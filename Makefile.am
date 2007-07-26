@@ -1,4 +1,4 @@
 SUBDIRS=kernel
 INCLUDE_SUBDIRS=kernel
 
-include aminclude.am
+include m4/aminclude.am

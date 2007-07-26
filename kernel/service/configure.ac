@@ -33,11 +33,11 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Core Kernel Library], [1.0],
+AC_INIT([UNISIM Core Service Library], [1.0],
 	[Gilles Mouchard <gilles.mouchard@cea.fr>],
 	[service])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
 AC_PATH_PROGS(SH, sh)
@@ -49,26 +49,11 @@ AC_PROG_RANLIB
 AC_LANG([C++])
 
 ###### CHECK FOR STANDARD C++ HEADERS #########################################
-
 AC_CHECK_HEADERS([iostream string list queue map iostream sstream],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
-
-######################## boost ##########################
-
-# Check if boost path has been overloaded
-AC_ARG_WITH(boost,
-	AS_HELP_STRING([--with-boost=<path>], [boost library to use (will be completed with /include and /lib)]))
-if test "x$with_boost" != "x"; then
-	AC_MSG_NOTICE([using boost at $with_boost])
-	LIBS+=" -L$with_boost/lib"
-	CPPFLAGS+=" -I$with_boost"
-fi
-	
-# Check for some boost graph headers
-AC_CHECK_HEADERS([boost/graph/adjacency_list.hpp boost/graph/topological_sort.hpp boost/graph/visitors.hpp],,\
-AC_MSG_ERROR([boost graph headers not found. Please install the boost graph development library. \
-Use --with-boost=<path> to overload default includes search path.]))
+###### CHECK FOR BOOST ########################################################
+UNISIM_CHECK_BOOST
 
 # files to generate
 #   this should include all the makefiles to generate
