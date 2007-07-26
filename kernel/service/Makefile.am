@@ -1,6 +1,6 @@
 #INCLUDES = -I$(top_srcdir)
-libdir = $(prefix)/lib/core/service
-includedir = $(prefix)/include/core/service
+libdir = $(prefix)/lib/kernel/service
+includedir = $(prefix)/include/kernel/service
 include_HEADERS = service.hh
 
 lib_LIBRARIES = libservices.a
