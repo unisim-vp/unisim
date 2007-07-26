@@ -1,2 +1,2 @@
-SUBDIRS=xml
-INCLUDE_SUBDIRS=xml
+SUBDIRS=xml simfloat arithmetic
+INCLUDE_SUBDIRS=xml simfloat arithmetic
