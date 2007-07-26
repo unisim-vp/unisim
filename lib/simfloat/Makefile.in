@@ -1,0 +1,12 @@
+
+INSTALL_PATH := @prefix@
+
+INCLUDES     := $(wildcard include/*.h) $(wildcard include/*.inline) $(wildcard include/*.template)
+INS_INCLUDES := $(INCLUDES:include/%=$(INSTALL_PATH)/%)
+
+all:
+
+install: $(INS_INCLUDES)
+
+$(INSTALL_PATH)/%:
+	install -m 0644 include/$* $(INSTALL_PATH)/include
