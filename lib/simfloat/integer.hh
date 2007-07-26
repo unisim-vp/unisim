@@ -2,8 +2,8 @@
                 Integer.h  -  Template for various types of integer
                              -------------------
     first release        : 15 Jul 2005
-    copyright ©          : (C) 2004-2005 CEA
-    authors              : Franck Védrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ï¿½          : (C) 2004-2005 CEA
+    authors              : Franck Vï¿½drine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -45,6 +45,10 @@
 #else
 #define GCC_INLINE
 #endif
+
+namespace unisim {
+namespace lib {
+namespace simfloat {
 
 namespace Numerics { namespace Integer {
 
@@ -1464,6 +1468,10 @@ operator<<(std::istream& isIn, TBigInt<IntegerTraits>& biInt) {
 }
 
 }} // end of namespace Numerics::Integer
+
+} // end of namespace simfloat
+} // end of namespace lib
+} // end of namespace unisim
 
 #endif // Numerics_Integer_IntegerH
 

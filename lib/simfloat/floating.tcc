@@ -2,8 +2,8 @@
                 Floating.template  -  Template for various types of floating point computations
                              -------------------
     first release        : 15 Jul 2005
-    copyright ©          : (C) 2004-2005 CEA
-    authors              : Franck Védrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ï¿½          : (C) 2004-2005 CEA
+    authors              : Franck Vï¿½drine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -24,18 +24,30 @@
 #ifndef Numerics_Double_FloatingTemplate
 #define Numerics_Double_FloatingTemplate
 #ifndef __GNUC__
-#include "Floating.h"
+#include "lib/simfloat/floating.hh"
 #else
-#include "Floating_gccopt.h"
+#include "lib/simfloat/floating_gccopt.hh"
 #endif
 
+namespace unisim {
+namespace lib {
+namespace simfloat {
+
 namespace Numerics {} // for precompiled headers
+
+} // end of namespace simfloat
+} // end of namespace lib
+} // end of namespace unisim
 
 #include <math.h>
 #if defined(__GNUC__) && (GCC_VERSION < 30000)
 #include <ctype.h>
 #endif
 #include <vector>
+
+namespace unisim {
+namespace lib {
+namespace simfloat {
 
 namespace Numerics { namespace Double {
 
@@ -3709,6 +3721,10 @@ TDoubleElement<FloatingBaseTraits>::read(std::istream& isIn, StatusAndControlFla
 
 }} // end of namespace Numerics::Double
 
-#include "Integer.template"
+} // end of namespace simfloat
+} // end of namespace lib
+} // end of namespace unisim
+
+#include "lib/simfloat/integer.tcc"
 
 #endif // Numerics_Double_FloatingTemplate
