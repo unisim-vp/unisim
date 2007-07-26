@@ -1,0 +1,2 @@
+SUBDIRS=xml
+INCLUDE_SUBDIRS=xml
