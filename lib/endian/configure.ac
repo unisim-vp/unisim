@@ -33,14 +33,25 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Libraries], [1.0])
+AC_INIT([UNISIM Endian Library], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[endian])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
 
-AC_CONFIG_SUBDIRS([xml simfloat arithmetic endian])
+AC_LANG([C++])
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+
+AC_CHECK_HEADERS([endian.h string.h],,\
+                 AC_MSG_ERROR([Some standard headers are missing.]))
 
 # files to generate
 #   this should include all the makefiles to generate
