@@ -1,4 +1,4 @@
-#INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir)/../..
 libdir = $(prefix)/lib/kernel/service
 includedir = $(prefix)/include/kernel/service
 include_HEADERS = service.hh

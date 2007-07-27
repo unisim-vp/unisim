@@ -32,9 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-
-//#include <core/services/service.hh>
-#include "service.hh"
+#include "kernel/service/service.hh"
 #include <sstream>
 #include <fstream>
 #include <stdlib.h>
