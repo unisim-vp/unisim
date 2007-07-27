@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "xml.hh"
+#include "lib/xml/xml.hh"
 #include <iostream>
 #include <fstream>
 #include <stdarg.h>

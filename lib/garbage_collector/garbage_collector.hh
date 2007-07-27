@@ -48,8 +48,8 @@ class PointerBase { };
 } // end of namespace lib
 } // end of namespace unisim
 
-void *operator new(std::size_t size, full_system::utils::garbage_collector::PointerBase);
-void *operator new[](std::size_t size, full_system::utils::garbage_collector::PointerBase);
+void *operator new(std::size_t size, unisim::lib::garbage_collector::PointerBase);
+void *operator new[](std::size_t size, unisim::lib::garbage_collector::PointerBase);
 
 namespace unisim {
 namespace lib {

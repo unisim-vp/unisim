@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir)/../..
 libdir = $(prefix)/lib/lib/garbage_collector
 includedir = $(prefix)/include/lib/garbage_collector
 include_HEADERS = garbage_collector.hh

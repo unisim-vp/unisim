@@ -32,22 +32,22 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <lib/garbage_collector/garbage_collector.hh>
+#include "lib/garbage_collector/garbage_collector.hh"
 #include <stdlib.h>
 
 using std::cerr;
 using std::endl;
 
-void *operator new(std::size_t size, full_system::utils::garbage_collector::PointerBase)
+void *operator new(std::size_t size, unisim::lib::garbage_collector::PointerBase)
 {
 //	cerr << "GarbageCollector::operator new " << size << endl;
-	return full_system::utils::garbage_collector::GarbageCollector::Allocate(size);
+	return unisim::lib::garbage_collector::GarbageCollector::Allocate(size);
 }
 
-void *operator new[](std::size_t size, full_system::utils::garbage_collector::PointerBase)
+void *operator new[](std::size_t size, unisim::lib::garbage_collector::PointerBase)
 {
 //	cerr << "GarbageCollector::operator new[] " << size << endl;
-	return full_system::utils::garbage_collector::GarbageCollector::Allocate(size);
+	return unisim::lib::garbage_collector::GarbageCollector::Allocate(size);
 }
 
 namespace unisim {
