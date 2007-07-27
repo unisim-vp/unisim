@@ -1,2 +1,2 @@
-SUBDIRS=xml arithmetic endian garbage_collector
-INCLUDE_SUBDIRS=xml arithmetic endian garbage_collector
+SUBDIRS=xml arithmetic endian garbage_collector hash_table
+INCLUDE_SUBDIRS=xml arithmetic endian garbage_collector hash_table

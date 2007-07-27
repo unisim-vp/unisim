@@ -33,14 +33,20 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Utility classes], [1.0])
+AC_INIT([UNISIM Hash Table Library], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[hash table])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
 
-AC_CONFIG_SUBDIRS([xml arithmetic endian garbage_collector hash_table])
+AC_LANG([C++])
 
 # files to generate
 #   this should include all the makefiles to generate
