@@ -32,20 +32,23 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
+/*******************************************************************
+ *                     IMPORTANT
+ * This class is a pure virtual class, so an interface, even if it
+ * doesn't look like one. The friend operators that you see below
+ * just call pure virtual methods.
+ * The class uses the so called 'friend virtual' method.
+ *******************************************************************/
+
 #ifndef __UNISIM_SERVICE_INTERFACES_LOGGER_HH__
 #define __UNISIM_SERVICE_INTERFACES_LOGGER_HH__
 
 #include <string>
-#include <iostream>
-#include "unisim/util/xml/xml.hh"
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 	
-using unisim::util::xml::Node;
-using unisim::util::xml::PtrList;
-
 /* Forward declaration of the interface */
 class Logger;
 
@@ -81,8 +84,11 @@ Logger &File(Logger &os);
 Logger &Function(Logger &os);
 Logger &Line(Logger &os);
 
-class Logger : public std::ostream {
+class Logger {
 public:
+	Logger();
+	virtual ~Logger();
+	
 	friend Logger &unisim::service::interfaces::operator <<(Logger &os, bool val);
 	friend Logger &unisim::service::interfaces::operator <<(Logger &os, const char *val);
 	friend Logger &unisim::service::interfaces::operator <<(Logger &os, std::string &val);
@@ -113,66 +119,191 @@ public:
 	friend Logger &unisim::service::interfaces::File(Logger &os);
 	friend Logger &unisim::service::interfaces::Function(Logger &os);
 	friend Logger &unisim::service::interfaces::Line(Logger &os);
-	
-//protected:
 
-	/* constructor and destructor */
-	Logger();
-	~Logger();
-	virtual void Message(unisim::util::xml::Node *node) = 0;
-	virtual void Flush() = 0;
-
-//	string name;
-	PtrList<unisim::util::xml::Node> *buffer;
-	unisim::util::xml::Node *current_node;
-//	stringstream buffer;
-//	enum StatusType {undefined = 0,
-//		debug_info = 1,
-//		debug_warning = 2,
-//		debug_error = 3};
-	enum NumericalMode {decimal = 0,
-				hexadecimal = 1};
-	NumericalMode num_status;
-	enum AppendMode {normal = 0,
-		file = 1,
-		function = 2,
-		line = 3};
-	AppendMode append_mode;
-
-	static const std::string string_bool;
-	static const std::string string_value;
-	static const std::string string_string;
-	static const std::string string_char;
-	static const std::string string_int;
-	static const std::string string_short_int;
-	static const std::string string_long_int;
-	static const std::string string_long_long_int;
-	static const std::string string_unsigned_char;
-	static const std::string string_unsigned_int;
-	static const std::string string_unsigned_short_int;
-	static const std::string string_unsigned_long_int;
-	static const std::string string_unsigned_long_long_int;
-	static const std::string string_float;
-	static const std::string string_double;
-	static const std::string string_mode;
-	static const std::string string_dec;
-	static const std::string string_hex;
-	static const std::string string_endl;
-	static const std::string string_debug_info;
-	static const std::string string_debug_warning;
-	static const std::string string_debug_error;
-	static const std::string string_source;
-	static const std::string string_file;
-	static const std::string string_function;
-	static const std::string string_line;
-	static const std::string string_time;
-	static const std::string string_message;
-
+protected:
+	virtual void Append(bool val) = 0;
+	virtual void Append(const char *val) = 0;
+	virtual void Append(std::string &val) = 0;
+	virtual void Append(const std::string &val) = 0;
+	virtual void Append(char val) = 0;
+	virtual void Append(unsigned char val) = 0;
+	virtual void Append(short int val) = 0;
+	virtual void Append(unsigned short int val) = 0;
+	virtual void Append(int val) = 0;
+	virtual void Append(unsigned int val) = 0;
+	virtual void Append(long int val) = 0;
+	virtual void Append(unsigned long int val) = 0;
+	virtual void Append(long long int val) = 0;
+	virtual void Append(unsigned long long int val) = 0;
+	virtual void Append(float val) = 0;
+	virtual void Append(double val) = 0;
+	virtual void AppendHex() = 0;
+	virtual void AppendDec() = 0;
+	virtual void AppendEndl() = 0;
+	virtual void AppendFlush() = 0;
+	virtual void AppendDebugInfo() = 0;		
+	virtual void AppendEndDebugInfo() = 0;		
+	virtual void AppendDebugWarning() = 0;
+	virtual void AppendEndDebugWarning() = 0;
+	virtual void AppendDebugError() = 0;
+	virtual void AppendEndDebugError() = 0;
+	virtual void AppendFile() = 0;
+	virtual void AppendFunction() = 0;
+	virtual void AppendLine() = 0;
 };
 
+Logger &operator <<(Logger &os, const char *val) {
+	os.Append(val);
+	return os;
 }
+
+Logger &operator <<(Logger &os, std::string &val) {
+	os.Append(val);
+	return os;
 }
+
+Logger &operator <<(Logger &os, const std::string &val) {
+	os.Append(val);
+	return os;
 }
+
+Logger &operator <<(Logger &os, bool val) {
+	os.Append(val);
+	return os;
+}
+
+Logger &operator <<(Logger &os, char val) {
+	os.Append(val);
+	return os;
+}
+
+Logger &operator <<(Logger &os, unsigned char val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, short int val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, unsigned short int val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, int val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, unsigned int val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, long int val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, unsigned long int val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, long long int val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, unsigned long long int val) {
+	os.Append(val);
+	return os;	
+}
+
+Logger &operator <<(Logger &os, float val) {
+	os.Append(val);
+	return os;
+}
+
+Logger &operator <<(Logger &os, double val) {
+	os.Append(val);
+	return os;
+}
+
+Logger &operator <<(Logger &os,	Logger& (*fn)(Logger&))	{ 
+	return (*fn)(os); 
+}
+		
+Logger &Hex(Logger &os) {
+	os.AppendHex();
+	return os;
+}
+
+Logger &Dec(Logger &os) {
+	os.AppendDec();
+	return os;
+}
+
+Logger &Endl(Logger &os) {
+	os.AppendEndl();
+	return os;	
+}
+
+Logger &Flush(Logger &os) {
+	os.AppendFlush();
+	return os;
+}
+
+Logger &DebugInfo(Logger &os) {
+	os.AppendDebugInfo();
+	return os;
+}
+
+Logger &EndDebugInfo(Logger &os) {
+	os.AppendEndDebugInfo();
+	return os;
+}
+
+Logger &DebugWarning(Logger &os) {
+	os.AppendDebugWarning();
+	return os;
+}
+
+Logger &EndDebugWarning(Logger &os) {
+	os.AppendEndDebugWarning();
+	return os;
+}
+
+Logger &DebugError(Logger &os) {
+	os.AppendDebugError();
+	return os;
+}
+
+Logger &EndDebugError(Logger &os) {
+	os.AppendEndDebugError();
+	return os;
+}
+
+Logger &File(Logger &os) {
+	os.AppendFile();
+	return os;
+}
+
+Logger &Function(Logger &os) {
+	os.AppendFunction();
+	return os;
+}
+
+Logger &Line(Logger &os) {
+	os.AppendLine();
+	return os;
+}
+
+} // end of namespace interface
+} // end of namespace service
+} // end of namespace unisim
 
 #endif /* __UNISIM_SERVICE_INTERFACES_LOGGER_HH__ */
 

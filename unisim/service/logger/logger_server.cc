@@ -204,7 +204,7 @@ Message(Node *node) {
 		stringstream tmp_str;
 		
 		tmp_str << time;
-		property = new Property(LoggerIF::string_time, tmp_str.str());
+		property = new Property(Logger::string_time, tmp_str.str());
 		*node << *property;
 	}
 	node_list->push_back(node);
@@ -244,7 +244,7 @@ LoggerServer::
 FlushTime(Node &node, ostream &os) {
 	const Property *time = NULL;
 	
-	time = node.GetProperty(LoggerIF::string_time);
+	time = node.GetProperty(Logger::string_time);
 	if(time != NULL) {
 		os << time->Value() << "secs ";
 	}
@@ -254,26 +254,26 @@ void
 LoggerServer::
 FlushMessage(Node &node, ostream &os) {
 	list<Node *> *nodes;
-	string object_name = node.GetProperty(LoggerIF::string_source)->Value(); //= node.Name();
+	string object_name = node.GetProperty(Logger::string_source)->Value(); //= node.Name();
 		
 	nodes = node.Childs();
 	list<Node *>::iterator it;
 	for(it = nodes->begin();it != nodes->end(); it++) {
-		if((**it).Name() == LoggerIF::string_debug_info) {
+		if((**it).Name() == Logger::string_debug_info) {
 			os << "\033[36;40m";
 			FlushTime(node, os);			
 			FlushDebugInfoNode(**it, os, object_name);
 			os << "\033[37;40m";
 			return;
 		}
-		if((**it).Name() == LoggerIF::string_debug_warning) {
+		if((**it).Name() == Logger::string_debug_warning) {
 			os << "\033[33;40m";
 			FlushTime(node, os);			
 			FlushDebugWarningNode(**it, os, object_name);
 			os << "\033[37;40m";
 			return;
 		}
-		if((**it).Name() == LoggerIF::string_debug_error) {
+		if((**it).Name() == Logger::string_debug_error) {
 			os << "\033[31;40m";
 			FlushTime(node, os);			
 			FlushDebugErrorNode(**it, os, object_name);
@@ -289,8 +289,8 @@ FlushMessage(Node &node, xmlTextWriterPtr &out) {
 	list<Node *> *nodes;
 	stringstream sstr;
 	int rc;
-	string object_name = node.GetProperty(LoggerIF::string_source)->Value(); //= node.Name();
-	string time_str = node.GetProperty(LoggerIF::string_time)->Value();
+	string object_name = node.GetProperty(Logger::string_source)->Value(); //= node.Name();
+	string time_str = node.GetProperty(Logger::string_time)->Value();
 	
 	sstr << node;
 	rc = xmlTextWriterStartElement(out, BAD_CAST "MESSAGE");
@@ -309,13 +309,13 @@ FlushMessage(Node &node, xmlTextWriterPtr &out) {
 	nodes = node.Childs();
 	list<Node *>::iterator it;
 	for(it = nodes->begin();it != nodes->end(); it++) {
-		if((**it).Name() == LoggerIF::string_debug_info) {
+		if((**it).Name() == Logger::string_debug_info) {
 			FlushDebugInfoNode(**it, out);
 		}
-		if((**it).Name() == LoggerIF::string_debug_warning) {
+		if((**it).Name() == Logger::string_debug_warning) {
 			FlushDebugWarningNode(**it, out);
 		}
-		if((**it).Name() == LoggerIF::string_debug_error) {
+		if((**it).Name() == Logger::string_debug_error) {
 			FlushDebugErrorNode(**it, out);
 		}
 	}
@@ -336,14 +336,14 @@ FlushLocation(Node &node, ostream &os) {
 	nodes = node.Childs();
 	list<Node *>::iterator it;
 	for(it = nodes->begin();it != nodes->end(); it++) {
-		if((**it).Name() == LoggerIF::string_file) {
-			file = (**it).GetProperty(LoggerIF::string_value);
+		if((**it).Name() == Logger::string_file) {
+			file = (**it).GetProperty(Logger::string_value);
 		}
-		if((**it).Name() == LoggerIF::string_function) {
-			function = (**it).GetProperty(LoggerIF::string_value);
+		if((**it).Name() == Logger::string_function) {
+			function = (**it).GetProperty(Logger::string_value);
 		}
-		if((**it).Name() == LoggerIF::string_line) {
-			line = (**it).GetProperty(LoggerIF::string_value);
+		if((**it).Name() == Logger::string_line) {
+			line = (**it).GetProperty(Logger::string_value);
 		}
 	}
 	if(file != NULL ||
@@ -375,14 +375,14 @@ FlushLocation(Node &node, xmlTextWriterPtr &out) {
 	nodes = node.Childs();
 	list<Node *>::iterator it;
 	for(it = nodes->begin();it != nodes->end(); it++) {
-		if((**it).Name() == LoggerIF::string_file) {
-			file = (**it).GetProperty(LoggerIF::string_value);
+		if((**it).Name() == Logger::string_file) {
+			file = (**it).GetProperty(Logger::string_value);
 		}
-		if((**it).Name() == LoggerIF::string_function) {
-			function = (**it).GetProperty(LoggerIF::string_value);
+		if((**it).Name() == Logger::string_function) {
+			function = (**it).GetProperty(Logger::string_value);
 		}
-		if((**it).Name() == LoggerIF::string_line) {
-			line = (**it).GetProperty(LoggerIF::string_value);
+		if((**it).Name() == Logger::string_line) {
+			line = (**it).GetProperty(Logger::string_value);
 		}
 	}
 	if(file != NULL ||
@@ -438,7 +438,7 @@ LoggerServer::
 FlushDebugInfoNode(Node &node, xmlTextWriterPtr &out) {
 	int rc;
 	
-	rc = xmlTextWriterStartElement(writer, BAD_CAST LoggerIF::string_debug_info.c_str());
+	rc = xmlTextWriterStartElement(writer, BAD_CAST Logger::string_debug_info.c_str());
 	if(rc < 0) {
 		cerr << "Error(LoggerServer::FlushMessage): couldn't write debug info element" << endl;
 	}
@@ -455,7 +455,7 @@ LoggerServer::
 FlushDebugWarningNode(Node &node, xmlTextWriterPtr &out) {
 	int rc;
 	
-	rc = xmlTextWriterStartElement(writer, BAD_CAST LoggerIF::string_debug_warning.c_str());
+	rc = xmlTextWriterStartElement(writer, BAD_CAST Logger::string_debug_warning.c_str());
 	if(rc < 0) {
 		cerr << "Error(LoggerServer::FlushMessage): couldn't write debug warning element" << endl;
 	}
@@ -472,7 +472,7 @@ LoggerServer::
 FlushDebugErrorNode(Node &node, xmlTextWriterPtr &out) {
 	int rc;
 	
-	rc = xmlTextWriterStartElement(writer, BAD_CAST LoggerIF::string_debug_error.c_str());
+	rc = xmlTextWriterStartElement(writer, BAD_CAST Logger::string_debug_error.c_str());
 	if(rc < 0) {
 		cerr << "Error(LoggerServer::FlushMessage): couldn't write debug error element" << endl;
 	}
@@ -492,63 +492,63 @@ FlushDebugNode(Node &node, ostream &os) {
 	nodes = node.Childs();
 	list<Node *>::iterator it;
 	for(it = nodes->begin();it != nodes->end(); it++) {
-		if((**it).Name() == LoggerIF::string_bool) {
+		if((**it).Name() == Logger::string_bool) {
 			FlushBoolNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_string) {
+		if((**it).Name() == Logger::string_string) {
 			FlushStringNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_char) {
+		if((**it).Name() == Logger::string_char) {
 			FlushCharNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_int) {
+		if((**it).Name() == Logger::string_int) {
 			FlushIntNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_short_int) {
+		if((**it).Name() == Logger::string_short_int) {
 			FlushShortIntNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_long_int) {
+		if((**it).Name() == Logger::string_long_int) {
 			FlushLongIntNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_long_long_int) {
+		if((**it).Name() == Logger::string_long_long_int) {
 			FlushLongLongIntNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_char) {
+		if((**it).Name() == Logger::string_unsigned_char) {
 			FlushUnsignedCharNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_int) {
+		if((**it).Name() == Logger::string_unsigned_int) {
 			FlushUnsignedIntNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_short_int) {
+		if((**it).Name() == Logger::string_unsigned_short_int) {
 			FlushUnsignedShortIntNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_long_int) {
+		if((**it).Name() == Logger::string_unsigned_long_int) {
 			FlushUnsignedLongIntNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_long_long_int) {
+		if((**it).Name() == Logger::string_unsigned_long_long_int) {
 			FlushUnsignedLongLongIntNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_float) {
+		if((**it).Name() == Logger::string_float) {
 			FlushFloatNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_double) {
+		if((**it).Name() == Logger::string_double) {
 			FlushDoubleNode(**it, os);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_endl) {
+		if((**it).Name() == Logger::string_endl) {
 			FlushEndlNode(**it, os);
 			continue;
 		}
@@ -563,63 +563,63 @@ FlushDebugNode(Node &node, xmlTextWriterPtr &out) {
 	nodes = node.Childs();
 	list<Node *>::iterator it;
 	for(it = nodes->begin();it != nodes->end(); it++) {
-		if((**it).Name() == LoggerIF::string_bool) {
+		if((**it).Name() == Logger::string_bool) {
 			FlushBoolNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_string) {
+		if((**it).Name() == Logger::string_string) {
 			FlushStringNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_char) {
+		if((**it).Name() == Logger::string_char) {
 			FlushCharNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_int) {
+		if((**it).Name() == Logger::string_int) {
 			FlushIntNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_short_int) {
+		if((**it).Name() == Logger::string_short_int) {
 			FlushShortIntNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_long_int) {
+		if((**it).Name() == Logger::string_long_int) {
 			FlushLongIntNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_long_long_int) {
+		if((**it).Name() == Logger::string_long_long_int) {
 			FlushLongLongIntNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_char) {
+		if((**it).Name() == Logger::string_unsigned_char) {
 			FlushUnsignedCharNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_int) {
+		if((**it).Name() == Logger::string_unsigned_int) {
 			FlushUnsignedIntNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_short_int) {
+		if((**it).Name() == Logger::string_unsigned_short_int) {
 			FlushUnsignedShortIntNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_long_int) {
+		if((**it).Name() == Logger::string_unsigned_long_int) {
 			FlushUnsignedLongIntNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_unsigned_long_long_int) {
+		if((**it).Name() == Logger::string_unsigned_long_long_int) {
 			FlushUnsignedLongLongIntNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_float) {
+		if((**it).Name() == Logger::string_float) {
 			FlushFloatNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_double) {
+		if((**it).Name() == Logger::string_double) {
 			FlushDoubleNode(**it, out);
 			continue;
 		}
-		if((**it).Name() == LoggerIF::string_endl) {
+		if((**it).Name() == Logger::string_endl) {
 			FlushEndlNode(**it, out);
 			continue;
 		}
@@ -629,8 +629,8 @@ FlushDebugNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushBoolNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_bool.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_bool.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushBoolNode): error" << endl;
 	rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
@@ -642,14 +642,14 @@ FlushBoolNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushBoolNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
+	const Property *value = node.GetProperty(Logger::string_value);
 	os << value->Value();
 }
 
 void
 LoggerServer::
 FlushStringNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
+	const Property *value = node.GetProperty(Logger::string_value);
 	int rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushStringNode): error" << endl;
@@ -658,14 +658,14 @@ FlushStringNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushStringNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
+	const Property *value = node.GetProperty(Logger::string_value);
 	os << value->Value();
 }
 
 void
 LoggerServer::
 FlushCharNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
+	const Property *value = node.GetProperty(Logger::string_value);
 	int rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushCharNode): error" << endl;
@@ -674,8 +674,8 @@ FlushCharNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushCharNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	char ch;
 	
@@ -687,13 +687,13 @@ FlushCharNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushIntNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_int.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_int.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushIntNode): error" << endl;
-	if(mode->Value() == LoggerIF::string_hex) {
-		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST LoggerIF::string_hex.c_str());
+	if(mode->Value() == Logger::string_hex) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST Logger::string_hex.c_str());
 		if(rc < 0)
 			cerr << "Error(LoggerServer::FlushIntNode): error" << endl;
 	}
@@ -706,14 +706,14 @@ FlushIntNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushIntNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	int i;
 	
 	str << value->Value();
 	str >> i;
-	if(mode->Value() == LoggerIF::string_hex)
+	if(mode->Value() == Logger::string_hex)
 		os << hex;
 	os << i;
 	os << dec;
@@ -722,13 +722,13 @@ FlushIntNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushShortIntNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_short_int.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_short_int.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushShortIntNode): error" << endl;
-	if(mode->Value() == LoggerIF::string_hex) {
-		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST LoggerIF::string_hex.c_str());
+	if(mode->Value() == Logger::string_hex) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST Logger::string_hex.c_str());
 		if(rc < 0)
 			cerr << "Error(LoggerServer::FlushShortIntNode): error" << endl;
 	}
@@ -741,14 +741,14 @@ FlushShortIntNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushShortIntNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	short int si;
 	
 	str << value->Value();
 	str >> si;
-	if(mode->Value() == LoggerIF::string_hex)
+	if(mode->Value() == Logger::string_hex)
 		os << hex;
 	os << si;
 	os << dec;
@@ -757,13 +757,13 @@ FlushShortIntNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushLongIntNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_long_int.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_long_int.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushLongIntNode): error" << endl;
-	if(mode->Value() == LoggerIF::string_hex) {
-		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST LoggerIF::string_hex.c_str());
+	if(mode->Value() == Logger::string_hex) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST Logger::string_hex.c_str());
 		if(rc < 0)
 			cerr << "Error(LoggerServer::FlushLongIntNode): error" << endl;
 	}
@@ -776,14 +776,14 @@ FlushLongIntNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushLongIntNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	long int li;
 	
 	str << value->Value();
 	str >> li;
-	if(mode->Value() == LoggerIF::string_hex)
+	if(mode->Value() == Logger::string_hex)
 		os << hex;
 	os << li;
 	os << dec;
@@ -792,13 +792,13 @@ FlushLongIntNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushLongLongIntNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_long_long_int.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_long_long_int.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushLongLongIntNode): error" << endl;
-	if(mode->Value() == LoggerIF::string_hex) {
-		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST LoggerIF::string_hex.c_str());
+	if(mode->Value() == Logger::string_hex) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST Logger::string_hex.c_str());
 		if(rc < 0)
 			cerr << "Error(LoggerServer::FlushLongLongIntNode): error" << endl;
 	}
@@ -811,14 +811,14 @@ FlushLongLongIntNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushLongLongIntNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	long long int lli;
 	
 	str << value->Value();
 	str >> lli;
-	if(mode->Value() == LoggerIF::string_hex)
+	if(mode->Value() == Logger::string_hex)
 		os << hex;
 	os << lli;
 	os << dec;
@@ -827,7 +827,7 @@ FlushLongLongIntNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushUnsignedCharNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
+	const Property *value = node.GetProperty(Logger::string_value);
 	int rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushUnsignedCharNode): error" << endl;
@@ -836,7 +836,7 @@ FlushUnsignedCharNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushUnsignedCharNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
+	const Property *value = node.GetProperty(Logger::string_value);
 	stringstream str;
 	unsigned char uc;
 	
@@ -848,13 +848,13 @@ FlushUnsignedCharNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushUnsignedIntNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_unsigned_int.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_unsigned_int.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushUnsignedIntNode): error" << endl;
-	if(mode->Value() == LoggerIF::string_hex) {
-		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST LoggerIF::string_hex.c_str());
+	if(mode->Value() == Logger::string_hex) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST Logger::string_hex.c_str());
 		if(rc < 0)
 			cerr << "Error(LoggerServer::FlushUnsignedIntNode): error" << endl;
 	}
@@ -867,14 +867,14 @@ FlushUnsignedIntNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushUnsignedIntNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	unsigned int ui;
 	
 	str << value->Value();
 	str >> ui;
-	if(mode->Value() == LoggerIF::string_hex)
+	if(mode->Value() == Logger::string_hex)
 		os << hex;
 	os << ui;
 	os << dec;
@@ -883,13 +883,13 @@ FlushUnsignedIntNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushUnsignedShortIntNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_unsigned_short_int.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_unsigned_short_int.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushUnsignedShortIntNode): error" << endl;
-	if(mode->Value() == LoggerIF::string_hex) {
-		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST LoggerIF::string_hex.c_str());
+	if(mode->Value() == Logger::string_hex) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST Logger::string_hex.c_str());
 		if(rc < 0)
 			cerr << "Error(LoggerServer::FlushUnsignedShortIntNode): error" << endl;
 	}
@@ -902,14 +902,14 @@ FlushUnsignedShortIntNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushUnsignedShortIntNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	unsigned short int usi;
 	
 	str << value->Value();
 	str >> usi;
-	if(mode->Value() == LoggerIF::string_hex)
+	if(mode->Value() == Logger::string_hex)
 		os << hex;
 	os << usi;
 	os << dec;
@@ -918,13 +918,13 @@ FlushUnsignedShortIntNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushUnsignedLongIntNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_unsigned_long_int.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_unsigned_long_int.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushUnsignedLongIntNode): error" << endl;
-	if(mode->Value() == LoggerIF::string_hex) {
-		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST LoggerIF::string_hex.c_str());
+	if(mode->Value() == Logger::string_hex) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST Logger::string_hex.c_str());
 		if(rc < 0)
 			cerr << "Error(LoggerServer::FlushUnsignedLongIntNode): error" << endl;
 	}
@@ -937,14 +937,14 @@ FlushUnsignedLongIntNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushUnsignedLongIntNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	unsigned long int uli;
 	
 	str << value->Value();
 	str >> uli;
-	if(mode->Value() == LoggerIF::string_hex)
+	if(mode->Value() == Logger::string_hex)
 		os << hex;
 	os << uli;
 	os << dec;
@@ -953,13 +953,13 @@ FlushUnsignedLongIntNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushUnsignedLongLongIntNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_unsigned_long_long_int.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_unsigned_long_long_int.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushUnsignedLongLongIntNode): error" << endl;
-	if(mode->Value() == LoggerIF::string_hex) {
-		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST LoggerIF::string_hex.c_str());
+	if(mode->Value() == Logger::string_hex) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "mode", BAD_CAST Logger::string_hex.c_str());
 		if(rc < 0)
 			cerr << "Error(LoggerServer::FlushUnsignedLongLongIntNode): error" << endl;
 	}
@@ -972,14 +972,14 @@ FlushUnsignedLongLongIntNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushUnsignedLongLongIntNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	unsigned long long int ulli;
 	
 	str << value->Value();
 	str >> ulli;
-	if(mode->Value() == LoggerIF::string_hex)
+	if(mode->Value() == Logger::string_hex)
 		os << hex;
 	os << ulli;
 	os << dec;
@@ -988,9 +988,9 @@ FlushUnsignedLongLongIntNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushFloatNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_float.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_float.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushFloatNode): error" << endl;
 	rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
@@ -1002,7 +1002,7 @@ FlushFloatNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushFloatNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
+	const Property *value = node.GetProperty(Logger::string_value);
 	stringstream str;
 	float f;
 	
@@ -1014,9 +1014,9 @@ FlushFloatNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushDoubleNode(Node &node, xmlTextWriterPtr &out) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
-	const Property *mode = node.GetProperty(LoggerIF::string_mode);
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_double.c_str());
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_double.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushDoubleNode): error" << endl;
 	rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
@@ -1028,7 +1028,7 @@ FlushDoubleNode(Node &node, xmlTextWriterPtr &out) {
 void
 LoggerServer::
 FlushDoubleNode(Node &node, ostream &os) {
-	const Property *value = node.GetProperty(LoggerIF::string_value);
+	const Property *value = node.GetProperty(Logger::string_value);
 	stringstream str;
 	double d;
 	
@@ -1040,7 +1040,7 @@ FlushDoubleNode(Node &node, ostream &os) {
 void
 LoggerServer::
 FlushEndlNode(Node &node, xmlTextWriterPtr &out) {
-	int rc = xmlTextWriterStartElement(out, BAD_CAST LoggerIF::string_endl.c_str());
+	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_endl.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushEndlNode): error" << endl;
 	xmlTextWriterEndElement(out);

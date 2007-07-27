@@ -69,12 +69,85 @@ public:
     void SetServer(LoggerServerInterface *server);
 
     /* Methods provided by the ServiceExport<unisim::service::interface::Logger> */	
-    virtual void Message(Node *node);
-    virtual void Flush();
-
+	virtual void Append(bool val);
+	virtual void Append(const char *val);
+	virtual void Append(std::string &val);
+	virtual void Append(const std::string &val);
+	virtual void Append(char val);
+	virtual void Append(unsigned char val);
+	virtual void Append(short int val);
+	virtual void Append(unsigned short int val);
+	virtual void Append(int val);
+	virtual void Append(unsigned int val);
+	virtual void Append(long int val);
+	virtual void Append(unsigned long int val);
+	virtual void Append(long long int val);
+	virtual void Append(unsigned long long int val);
+	virtual void Append(float val);
+	virtual void Append(double val);
+	virtual void AppendHex();
+	virtual void AppendDec();
+	virtual void AppendEndl();
+	virtual void AppendFlush();
+	virtual void AppendDebugInfo();		
+	virtual void AppendEndDebugInfo();		
+	virtual void AppendDebugWarning();
+	virtual void AppendEndDebugWarning();
+	virtual void AppendDebugError();
+	virtual void AppendEndDebugError();
+	virtual void AppendFile();
+	virtual void AppendFunction();
+	virtual void AppendLine();
+	
 private:
-    LoggerServerInterface *server;
+	void Message(Node *node);
+	void Flush();
+	
+	LoggerServerInterface *server;
     string client_name;
+
+	PtrList<unisim::util::xml::Node> *buffer;
+	unisim::util::xml::Node *current_node;
+
+	enum NumericalMode {decimal = 0,
+				hexadecimal = 1};
+	NumericalMode num_status;
+	enum AppendMode {normal = 0,
+		file = 1,
+		function = 2,
+		line = 3};
+	AppendMode append_mode;
+
+public:
+	static const std::string string_bool;
+	static const std::string string_value;
+	static const std::string string_string;
+	static const std::string string_char;
+	static const std::string string_int;
+	static const std::string string_short_int;
+	static const std::string string_long_int;
+	static const std::string string_long_long_int;
+	static const std::string string_unsigned_char;
+	static const std::string string_unsigned_int;
+	static const std::string string_unsigned_short_int;
+	static const std::string string_unsigned_long_int;
+	static const std::string string_unsigned_long_long_int;
+	static const std::string string_float;
+	static const std::string string_double;
+	static const std::string string_mode;
+	static const std::string string_dec;
+	static const std::string string_hex;
+	static const std::string string_endl;
+	static const std::string string_debug_info;
+	static const std::string string_debug_warning;
+	static const std::string string_debug_error;
+	static const std::string string_source;
+	static const std::string string_file;
+	static const std::string string_function;
+	static const std::string string_line;
+	static const std::string string_time;
+	static const std::string string_message;
+
 };
 
 } // end of namespace logger
