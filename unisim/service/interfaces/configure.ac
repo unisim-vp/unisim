@@ -33,9 +33,9 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Endian Library], [1.0],
-    [Gilles Mouchard <gilles.mouchard@cea.fr>],
-    [endian])
+AC_INIT([UNISIM Service Interfaces], [1.0],
+    [Gilles Mouchard <gilles.mouchard@cea.fr> Daniel Gracia Perez],
+    [service_interfaces])
 AC_CONFIG_AUX_DIR(config)
 		
 AM_INIT_AUTOMAKE
@@ -49,15 +49,18 @@ AC_PROG_RANLIB
 AC_LANG([C++])
 		
 ###### CHECK FOR STANDARD C HEADERS ###########################################
-		
 AC_CHECK_HEADERS([inttypes.h],,\
-     AC_MSG_ERROR([Some standard headers are missing.]))
+     AC_MSG_ERROR([Some standard C headers are missing.]))
 
 ###### CHECK FOR STANDARD C++ HEADERS #########################################
 		
 AC_CHECK_HEADERS([string iostream],,\
      AC_MSG_ERROR([Some standard headers are missing.]))
 
+###### CHECK FOR STANDARD C++ HEADERS ###########################################
+AC_CHECK_HEADERS([iostream sstream string],,\
+     AC_MSG_ERROR([Some standard C++ headers are missing.]))
+     
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
