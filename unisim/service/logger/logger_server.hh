@@ -36,13 +36,13 @@
 #define __UNISIM_SERVICE_LOGGER_LOGGERSERVER_HH__
 
 #include "unisim/service/interfaces/logger.hh"
+#include "unisim/service/logger/logger.hh"
 #include "unisim/service/logger/logger_server_interface.hh"
 #include "unisim/service/interfaces/time.hh"
 #include "unisim/util/xml/xml.hh"
 #include "unisim/kernel/service/service.hh"
-#include <zlib.h>
-#include <libxml2/libxml/encoding.h>
-#include <libxml2/libxml/xmlwriter.h>
+#include <libxml/encoding.h>
+#include <libxml/xmlwriter.h>
 
 namespace unisim {
 namespace service {
@@ -50,7 +50,7 @@ namespace logger {
 	
 using unisim::service::logger::Logger;
 using unisim::service::logger::LoggerServerInterface;
-using unisim::service::interface::Time;
+using unisim::service::interfaces::Time;
 using unisim::util::xml::Node;
 using unisim::util::xml::PtrList;
 using unisim::util::xml::Property;
@@ -58,7 +58,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::::Parameter;
+using unisim::kernel::service::Parameter;
 using namespace std;
 
 class LoggerServer : 
@@ -69,7 +69,7 @@ private:
 	
 public:
     /* Exported services */
-    ServiceExport<unisim::service::interface::Logger> *logger_export[MAX_LOGGERS];
+    ServiceExport<unisim::service::interfaces::Logger> *logger_export[MAX_LOGGERS];
     /* Imported services */
     ServiceImport<Time> time_import;
 		
@@ -90,8 +90,6 @@ private:
 
     Parameter<string> param_filename;
     string filename;
-//    ofstream file;
-//    gzFile zfile;
     xmlTextWriterPtr writer;
     Parameter<bool> param_zip;
     bool zip;
@@ -153,7 +151,7 @@ private:
     void FlushEndlNode(Node &node, xmlTextWriterPtr &out);
 };
 } // end of logger namespace
-} // end of plugins namespace
-} // end of full_sytem namespace
+} // end of service namespace
+} // end of unisim namespace
 
-#endif /* __FULLSYSTEM_PLUGINS_LOGGER2_LOGGER2SERVER_HH__ */
+#endif /* __UNISIM_SERVICE_LOGGER_LOGGERSERVER_HH__ */

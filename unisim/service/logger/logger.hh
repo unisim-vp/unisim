@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_LOGGER_HH__
 #define __UNISIM_SERVICE_LOGGER_HH__
 
-#include "unisim/service/interface/logger.hh"
+#include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/logger/logger_server_interface.hh"
 #include "unisim/kernel/service/service.hh"
 #include <string>
@@ -48,15 +48,14 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
-using unisim::service::interface::Logger;
 using unisim::service::logger::LoggerServerInterface;
 using std::string;
 
 class Logger :
-    public Service<unisim::service::interface::Logger> {
+    public Service<unisim::service::interfaces::Logger> {
 public:
     /* Exported services */
-    ServiceExport<unisim::service::interface::Logger> logger_export;
+    ServiceExport<unisim::service::interfaces::Logger> logger_export;
 	
     /* Constructor/Destructor */
     Logger(const char *name, Object *parent = 0);

@@ -184,15 +184,21 @@ AC_DEFUN_ONCE([UNISIM_CHECK_LIBXML2], [
 	AS_HELP_STRING([--with-libxml2=<path>], [path to the libxml2 library]))
 	
     if test "x$with_libxml2" != "x"; then
-	AC_MSG_NOTICE([using libxml2 at $with_libxml2])
-	LDFLAGS+=" -L$with_libxml2/lib"
-	CPPFLAGS+=" -I$with_libxml2/include"
+		AC_MSG_NOTICE([using libxml2 at $with_libxml2])
+		LDFLAGS+=" -L$with_libxml2/lib"
+		CPPFLAGS+=" -I$with_libxml2/include/libxml2"
     fi
 	
     # Check for some libxml2 headers
-    AC_CHECK_HEADER(libxml2/libxml/encoding.h, broken_xml2_inc=no, broken_xml2_inc=yes)
-    AC_CHECK_HEADER(libxml2/libxml/xmlwriter.h, , broken_xml2_inc=yes)
+    AC_CHECK_HEADER(libxml/encoding.h, broken_incxml2=no, broken_incxml2=yes)
+    AC_CHECK_HEADER(libxml/xmlwriter.h, , broken_incxml2=yes)
 	
+    if test "$broken_incxml2" == "yes"; then
+		AC_MSG_ERROR([libxml2 includes not found (/libxml2/libxml/*.hh). Please use --with-libxml2=<path>])
+    else
+		LIBS+=" -lxml2"
+    fi
+
     # Check for SDL functions
     AC_CHECK_LIB(xml2, xmlNewTextWriterFilename,
     AC_CHECK_LIB(xml2, xmlTextWriterSetIndent,
@@ -212,9 +218,9 @@ AC_DEFUN_ONCE([UNISIM_CHECK_LIBXML2], [
     broken_libxml2=yes)
 	
     if test "$broken_libxml2" == "yes"; then
-	AC_MSG_ERROR([installed xml2 Library is broken.])
+		AC_MSG_ERROR([installed xml2 Library is broken.])
     else
-	LIBS+=" -lxml2"
+		LIBS+=" -lxml2"
     fi
 ])
 

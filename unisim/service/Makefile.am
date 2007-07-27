@@ -1,2 +1,2 @@
-SUBDIRS=interfaces
-INCLUDE_SUBDIRS=interfaces
+SUBDIRS=interfaces logger
+INCLUDE_SUBDIRS=interfaces logger

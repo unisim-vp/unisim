@@ -43,22 +43,29 @@ namespace unisim {
 namespace service {
 namespace logger {
 
-Logger(const char *name, Object *parent) :
+typedef unisim::service::interfaces::Logger LoggerIF;
+
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::util::xml::Property;
+using unisim::util::xml::Node;
+
+Logger::Logger(const char *name, Object *parent) :
     Object(name, parent),
-    Service<unisim::service::interface::Logger>(name, parent),
+    Service<LoggerIF>(name, parent),
     logger_export("logger_export", this) {
 }
 
-~Logger() {
+Logger::~Logger() {
 }
 
 /* Service methods */
-void OnDisconnect() {
+void Logger::OnDisconnect() {
     if(server)
-	server->Flush();
+    	server->Flush();
 }
 
-bool Setup() {
+bool Logger::Setup() {
     if(logger_export.GetClient() != 0) {
     	client_name = logger_export.GetClient()->GetName();
     } else {
@@ -69,29 +76,27 @@ bool Setup() {
 }
 
 /* Method to connect the logger to a the server */
-void 
-Logger::
-SetServer(LoggerServerInterface *server) {
+void Logger::SetServer(LoggerServerInterface *server) {
     this->server = server;
 }
 
-/* Methods provided by the ServiceExport<LoggerInterface> */	
-void Message(Node *node) {
+/* Methods provided by the ServiceExport<LoggerIF> */	
+void Logger::Message(Node *node) {
     Node *name_node;
     Property *source_property;
 
     if(server) {
-	source_property = new Property(LoggerInterface::string_source, client_name);
-	name_node = new Node(LoggerInterface::string_message);
-	*name_node << *source_property;
-	*name_node << *node;
-	server->Message(name_node);
+    	source_property = new Property(LoggerIF::string_source, client_name);
+    	name_node = new Node(LoggerIF::string_message);
+    	*name_node << *source_property;
+    	*name_node << *node;
+    	server->Message(name_node);
     }
 }
 
-void Flush() {
+void Logger::Flush() {
     if(server)
-	server->Flush();
+    	server->Flush();
 }
 
 } // end of namespace logger

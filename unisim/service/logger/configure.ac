@@ -55,6 +55,8 @@ AC_CHECK_HEADERS([stdio.h stdarg.h],,\
 AC_CHECK_HEADERS([list string iostream fstream],,\
     AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
+UNISIM_CHECK_LIBXML2
+
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
