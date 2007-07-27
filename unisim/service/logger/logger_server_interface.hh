@@ -32,27 +32,27 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_PLUGINS_LOGGER2_LOGGERSERVERINTERFACE_HH__
-#define __FS_PLUGINS_LOGGER2_LOGGERSERVERINTERFACE_HH__
+#ifndef __UNISIM_SERVICE_LOGGER_LOGGERSERVERINTERFACE_HH__
+#define __UNISIM_SERVICE_LOGGER_LOGGERSERVERINTERFACE_HH__
 
-#include "utils/xml/xml.hh"
+#include "unisim/util/xml/xml.hh"
 
-namespace full_system {
-namespace plugins {
+namespace unisim {
+namespace service {
 namespace logger {
 	
-using full_system::utils::xml::Node;
-using full_system::utils::xml::PtrList;
+using unisim::util::xml::Node;
+using unisim::util::xml::PtrList;
 
 class LoggerServerInterface {
 public:
-	virtual void Message(Node *node) = 0;
-	virtual void Flush() = 0;
+    virtual void Message(Node *node) = 0;
+    virtual void Flush() = 0;
 private:
 }; 
 
 } // end of namespace logger
-} // end of namespace plugins
-} // end of namespace full_system
+} // end of namespace service
+} // end of namespace unisim
 
-#endif /* __FS_PLUGINS_LOGGER2_LOGGERSERVERINTERFACEHH__ */
+#endif /* __UNISIM_SERVICE_LOGGER_LOGGERSERVERINTERFACEHH__ */

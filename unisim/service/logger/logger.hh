@@ -32,54 +32,54 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_PLUGINS_LOGGER2_LOGGER_HH__
-#define __FS_PLUGINS_LOGGER2_LOGGER_HH__
+#ifndef __UNISIM_SERVICE_LOGGER_HH__
+#define __UNISIM_SERVICE_LOGGER_HH__
 
-#include "plugins/logger/logger_interface.hh"
-#include "plugins/logger/logger_server_interface.hh"
-#include "utils/services/service.hh"
+#include "unisim/service/interface/logger.hh"
+#include "unisim/service/logger/logger_server_interface.hh"
+#include "unisim/kernel/service/service.hh"
 #include <string>
 
-namespace full_system {
-namespace plugins {
+namespace unisim {
+namespace service {
 namespace logger {
 	
-using full_system::utils::services::Object;
-using full_system::utils::services::Service;
-using full_system::utils::services::ServiceExport;
-using full_system::utils::services::Parameter;
-using full_system::plugins::logger::LoggerInterface;
-using full_system::plugins::logger::LoggerServerInterface;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::Parameter;
+using unisim::service::interface::Logger;
+using unisim::service::logger::LoggerServerInterface;
 using std::string;
 
 class Logger :
-	public Service<LoggerInterface> {
+    public Service<unisim::service::interface::Logger> {
 public:
     /* Exported services */
-	ServiceExport<LoggerInterface> logger_export;
+    ServiceExport<unisim::service::interface::Logger> logger_export;
 	
     /* Constructor/Destructor */
-	Logger(const char *name, Object *parent = 0);
-	virtual ~Logger();
+    Logger(const char *name, Object *parent = 0);
+    virtual ~Logger();
 
     /* Service methods */
     virtual void OnDisconnect();
     virtual bool Setup();
     
     /* Method to connect the logger to a the server */
-	void SetServer(LoggerServerInterface *server);
+    void SetServer(LoggerServerInterface *server);
 
-	/* Methods provided by the ServiceExport<LoggerInterface> */	
-	virtual void Message(Node *node);
-	virtual void Flush();
+    /* Methods provided by the ServiceExport<unisim::service::interface::Logger> */	
+    virtual void Message(Node *node);
+    virtual void Flush();
 
 private:
-	LoggerServerInterface *server;
-	string client_name;
+    LoggerServerInterface *server;
+    string client_name;
 };
 
 } // end of namespace logger
-} // end of namespace plugins
-} // end of namespace full_system
+} // end of namespace service
+} // end of namespace unisim
 
-#endif /* __FS_PLUGINS_LOGGER2_LOGGER_HH__ */
+#endif /* __UNISIM_SERVICE_LOGGER_HH__ */

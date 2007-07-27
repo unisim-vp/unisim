@@ -32,82 +32,68 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "plugins/logger/logger.hh"
-#include "plugins/logger/logger_interface.hh"
-#include "plugins/logger/logger_server_interface.hh"
-#include "utils/services/service.hh"
-#include "utils/xml/xml.hh"
+#include "unisim/service/logger/logger.hh"
+#include "unisim/service/interfaces/logger.hh"
+#include "unisim/service/logger/logger_server_interface.hh"
+#include "unisim/kernel/service/service.hh"
+#include "unisim/util/xml/xml.hh"
 #include <string>
 
-using full_system::plugins::logger::Logger;
-using full_system::plugins::logger::LoggerInterface;
-using full_system::plugins::logger::LoggerServerInterface;
-using full_system::utils::services::Object;
-using full_system::utils::services::Service;
-using full_system::utils::xml::Property;
-using full_system::utils::xml::Node;
-//using full_system::utils::services::ServiceExport;
-using std::string;
+namespace unisim {
+namespace service {
+namespace logger {
 
-Logger::Logger(const char *name, Object *parent) :
-	Object(name, parent),
-	Service<LoggerInterface>(name, parent),
-	logger_export("logger_export", this) {
+Logger(const char *name, Object *parent) :
+    Object(name, parent),
+    Service<unisim::service::interface::Logger>(name, parent),
+    logger_export("logger_export", this) {
 }
 
-Logger::~Logger() {
+~Logger() {
 }
 
 /* Service methods */
-void 
-Logger::
-OnDisconnect() {
-	if(server)
-		server->Flush();
+void OnDisconnect() {
+    if(server)
+	server->Flush();
 }
 
-bool 
-Logger::
-Setup() {
-	if(logger_export.GetClient() != 0) {
-		client_name = logger_export.GetClient()->GetName();
-	} else {
-		client_name = "UnknownObject";
-	}
+bool Setup() {
+    if(logger_export.GetClient() != 0) {
+    	client_name = logger_export.GetClient()->GetName();
+    } else {
+    	client_name = "UnknownObject";
+    }
 
-	return true;
+    return true;
 }
 
 /* Method to connect the logger to a the server */
 void 
 Logger::
 SetServer(LoggerServerInterface *server) {
-	this->server = server;
+    this->server = server;
 }
 
 /* Methods provided by the ServiceExport<LoggerInterface> */	
-void 
-Logger::
-Message(Node *node) {
-	Node *name_node;
-	Property *source_property;
-//	cerr << GetName() << "::Message: server = " << server << endl;
-	if(server) {
-		source_property = new Property(LoggerInterface::string_source, client_name);
-		name_node = new Node(LoggerInterface::string_message);
-		*name_node << *source_property;
-		*name_node << *node;
-		server->Message(name_node);
+void Message(Node *node) {
+    Node *name_node;
+    Property *source_property;
 
-// 		name_node = new Node(client_name);
-// 		*name_node << *node; 
-// 		server->Message(name_node);
-	}
+    if(server) {
+	source_property = new Property(LoggerInterface::string_source, client_name);
+	name_node = new Node(LoggerInterface::string_message);
+	*name_node << *source_property;
+	*name_node << *node;
+	server->Message(name_node);
+    }
 }
 
-void 
-Logger::
-Flush() {
-	if(server)
-		server->Flush();
+void Flush() {
+    if(server)
+	server->Flush();
 }
+
+} // end of namespace logger
+} // end of namespace service
+} // end of namespace unisim
