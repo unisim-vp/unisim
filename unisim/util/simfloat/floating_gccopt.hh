@@ -52,7 +52,7 @@
 #include "lib/simfloat/integer_gccopt.hh"
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace simfloat {
 
 namespace Numerics { namespace Double {
@@ -3148,7 +3148,7 @@ operator<<(std::istream& isIn, TDoubleElement<FloatingBaseTraits>& deDouble) {
 }} // end of namespace Numerics::Double
 
 } // end of namespace simfloat
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
 #endif // Numerics_Double_FloatingH

@@ -64,7 +64,7 @@
 #endif
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace simfloat {
 
 namespace Numerics { namespace Integer {
@@ -3209,7 +3209,7 @@ operator<<(std::istream& isIn, TBigInt<IntegerTraits>& biInt) {
 }} // end of namespace Numerics::Integer
 
 } // end of namespace simfloat
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
 #endif // Numerics_Integer_IntegerH
