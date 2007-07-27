@@ -1,2 +1,2 @@
-SUBDIRS=kernel util
-INCLUDE_SUBDIRS=kernel util
+SUBDIRS=kernel util service
+INCLUDE_SUBDIRS=kernel util service

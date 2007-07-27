@@ -44,7 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([kernel util])
+AC_CONFIG_SUBDIRS([kernel util service])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
