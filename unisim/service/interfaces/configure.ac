@@ -52,7 +52,12 @@ AC_LANG([C++])
 		
 AC_CHECK_HEADERS([inttypes.h],,\
      AC_MSG_ERROR([Some standard headers are missing.]))
-				 
+
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+		
+AC_CHECK_HEADERS([string iostream],,\
+     AC_MSG_ERROR([Some standard headers are missing.]))
+
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
