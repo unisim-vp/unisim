@@ -1,0 +1,179 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+#ifndef __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_HH__
+#define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_HH__
+
+#include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/disassembly.hh>
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/memory.hh>
+
+
+#include <utils/debug/breakpoint_registry.hh>
+#include <utils/debug/watchpoint_registry.hh>
+#include <readline/readline.h>
+#include <readline/history.h>
+#include <utils/services/service.hh>
+#include <string>
+
+
+namespace unisim {
+namespace service {
+namespace debug {
+namespace inline_debugger {
+
+
+using std::list;
+using std::string;
+using std::cerr;
+using std::endl;
+using unisim::util::debug::BreakpointRegistry;
+using unisim::util::debug::Breakpoint;
+using unisim::util::debug::WatchpointRegistry;
+using unisim::util::debug::Watchpoint;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Client;
+using unisim::service::interfaces::SymbolTableLookupInterface;
+using unisim::service::interfaces::SymbolInterface;
+using unisim::service::interface::Registers;
+using unisim::service::interfaces::MemoryInterface;
+
+typedef enum
+{
+	INLINE_DEBUGGER_MODE_WAITING_USER,
+	INLINE_DEBUGGER_MODE_STEP,
+	INLINE_DEBUGGER_MODE_CONTINUE,
+	INLINE_DEBUGGER_MODE_CONTINUE_UNTIL,
+	INLINE_DEBUGGER_MODE_RESET
+} InlineDebuggerRunningMode;
+
+class InlineDebuggerBase
+{
+public:
+	InlineDebuggerBase();
+	virtual ~InlineDebuggerBase();
+protected:
+	static bool trap;
+private:
+	static void (*prev_sig_int_handler)(int);
+	static int alive_instances;
+	static void SigIntHandler(int signum);
+};
+
+template <class ADDRESS>
+class InlineDebugger :
+	public Service<DebugControlInterface<ADDRESS> >,
+	public Service<MemoryAccessReportingInterface<ADDRESS> >,
+	public Client<DebugDisasmInterface<ADDRESS> >,
+	public Client<MemoryInterface<ADDRESS> >,
+	public Client<CPURegistersInterface>,
+	public Client<SymbolTableLookupInterface<ADDRESS> >,
+	public InlineDebuggerBase
+{
+public:
+	ServiceExport<DebugControlInterface<ADDRESS> > debug_control_export;
+	ServiceExport<MemoryAccessReportingInterface<ADDRESS> > memory_access_reporting_export;
+	ServiceImport<DebugDisasmInterface<ADDRESS> > debug_disasm_import;
+	ServiceImport<MemoryInterface<ADDRESS> > memory_import;
+	ServiceImport<CPURegistersInterface> cpu_registers_import;
+	ServiceImport<SymbolTableLookupInterface<ADDRESS> > symbol_table_lookup_import;
+	
+	InlineDebugger(const char *name, Object *parent = 0);
+	virtual ~InlineDebugger();
+
+	// MemoryAccessReportingInterface
+	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+
+	// DebugControlInterface
+	virtual DebugCommand FetchDebugCommand(ADDRESS cia);
+
+	virtual void Trap();
+	virtual void OnDisconnect();
+private:
+	BreakpointRegistry<ADDRESS> breakpoint_registry;
+	WatchpointRegistry<ADDRESS> watchpoint_registry;
+	InlineDebuggerRunningMode running_mode;
+
+	ADDRESS disasm_addr;
+	ADDRESS dump_addr;
+
+	string prompt;
+	char last_line[256];
+	char line[256];
+	
+	bool ParseAddr(const char *s, ADDRESS& addr);
+	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
+	bool GetLine(char *line, int size);
+	bool IsBlankLine(const char *line);
+	bool IsQuitCommand(const char *cmd);
+	bool IsStepCommand(const char *cmd);
+	bool IsNextCommand(const char *cmd);
+	bool IsContinueCommand(const char *cmd);
+	bool IsDisasmCommand(const char *cmd);
+	bool IsBreakCommand(const char *cmd);
+	bool IsWatchCommand(const char *cmd);
+	bool IsDeleteCommand(const char *cmd);
+	bool IsDeleteWatchCommand(const char *cmd);
+	bool IsDumpCommand(const char *cmd);
+	bool IsHelpCommand(const char *cmd);
+	bool IsResetCommand(const char *cmd);
+
+	void Help();
+	void Disasm(ADDRESS addr, int count);
+	bool HasBreakpoint(ADDRESS addr);
+	void SetBreakpoint(ADDRESS addr);
+	void SetReadWatchpoint(ADDRESS addr, uint32_t size);
+	void SetWriteWatchpoint(ADDRESS addr, uint32_t size);
+	void DeleteBreakpoint(ADDRESS addr);
+	void DeleteReadWatchpoint(ADDRESS addr, uint32_t size);
+	void DeleteWriteWatchpoint(ADDRESS addr, uint32_t size);
+	void DumpBreakpoints();
+	void DumpWatchpoints();
+	void DumpMemory(ADDRESS addr);
+
+	static InlineDebugger<ADDRESS> *debugger;
+};
+
+} // end of namespace debug
+} // end of namespace service
+} // end of namespace unisim
+
+#endif
