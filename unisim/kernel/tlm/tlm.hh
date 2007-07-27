@@ -37,7 +37,7 @@
 #define __FULLSYSTEM_TLM_TLM_HH__
 
 #include <systemc.h>
-#include <utils/garbage_collector/garbage_collector.hh>
+#include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <list>
 #include <stack>
 #include <string>

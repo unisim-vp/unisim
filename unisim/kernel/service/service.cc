@@ -29,10 +29,10 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "kernel/service/service.hh"
+#include "unisim/kernel/service/service.hh"
 #include <sstream>
 #include <fstream>
 #include <stdlib.h>
@@ -43,8 +43,8 @@
 //#include <boost/graph/graphviz.hpp>
 
 namespace unisim {
-namespace core {
-namespace services {
+namespace kernel {
+namespace service {
 
 using std::hex;
 using std::cerr;
@@ -709,6 +709,6 @@ ParameterBase *ServiceManager::GetParameter(const char *name)
 	return &void_param;
 }
 
-} // end of namespace services
-} // end of namespace core
+} // end of namespace service
+} // end of namespace kernel
 } // end of namespace unisim

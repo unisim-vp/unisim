@@ -1,0 +1,2 @@
+SUBDIRS=xml arithmetic endian garbage_collector
+INCLUDE_SUBDIRS=xml arithmetic endian garbage_collector

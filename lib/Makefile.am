@@ -1,2 +1,0 @@
-SUBDIRS=xml simfloat arithmetic endian garbage_collector
-INCLUDE_SUBDIRS=xml simfloat arithmetic endian garbage_collector

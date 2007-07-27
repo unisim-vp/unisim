@@ -32,26 +32,26 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "lib/garbage_collector/garbage_collector.hh"
+#include "unisim/util/garbage_collector/garbage_collector.hh"
 #include <stdlib.h>
 
 using std::cerr;
 using std::endl;
 
-void *operator new(std::size_t size, unisim::lib::garbage_collector::PointerBase)
+void *operator new(std::size_t size, unisim::util::garbage_collector::PointerBase)
 {
 //	cerr << "GarbageCollector::operator new " << size << endl;
-	return unisim::lib::garbage_collector::GarbageCollector::Allocate(size);
+	return unisim::util::garbage_collector::GarbageCollector::Allocate(size);
 }
 
-void *operator new[](std::size_t size, unisim::lib::garbage_collector::PointerBase)
+void *operator new[](std::size_t size, unisim::util::garbage_collector::PointerBase)
 {
 //	cerr << "GarbageCollector::operator new[] " << size << endl;
-	return unisim::lib::garbage_collector::GarbageCollector::Allocate(size);
+	return unisim::util::garbage_collector::GarbageCollector::Allocate(size);
 }
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace garbage_collector {
 
 MemoryBlock *GarbageCollector::free_blocks[GarbageCollector::MAX_MEMORY_BLOCK_SIZE / GarbageCollector::MIN_MEMORY_BLOCK_SIZE];
@@ -158,5 +158,5 @@ void GarbageCollector::Catch(void *p)
 }
 
 } // end of namespace garbage_collector
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim

@@ -32,27 +32,27 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_LIB_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
-#define __UNISIM_LIB_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
+#ifndef __UNISIM_UTIL_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
+#define __UNISIM_UTIL_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
 
 #include <iostream>
 #include <stdlib.h>
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace garbage_collector {
 
 class PointerBase { };
 
 } // end of namespace garbage_collector
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
-void *operator new(std::size_t size, unisim::lib::garbage_collector::PointerBase);
-void *operator new[](std::size_t size, unisim::lib::garbage_collector::PointerBase);
+void *operator new(std::size_t size, unisim::util::garbage_collector::PointerBase);
+void *operator new[](std::size_t size, unisim::util::garbage_collector::PointerBase);
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace garbage_collector {
 
 using std::cerr;
@@ -274,7 +274,7 @@ inline T& Pointer<T>::operator [](unsigned int index) {
 } 
 
 } // end of namespace garbage_collector
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
 #endif

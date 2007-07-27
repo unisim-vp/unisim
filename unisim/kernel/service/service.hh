@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_CORE_SERVICES_SERVICE_HH__
-#define __UNISIM_CORE_SERVICES_SERVICE_HH__
+#ifndef __UNISIM_KERNEL_SERVICE_SERVICE_HH__
+#define __UNISIM_KERNEL_SERVICE_SERVICE_HH__
 
 #include <iostream>
 #include <string>
@@ -44,8 +44,8 @@
 #include <sstream>
 
 namespace unisim {
-namespace core {
-namespace services {
+namespace kernel {
+namespace service {
 
 using std::cout;
 using std::endl;
@@ -1001,8 +1001,8 @@ ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceE
 	return rhs;
 }
 
-} // end of namespace services
-} // end of namespace core
+} // end of namespace service
+} // end of namespace kernel
 } // end of namespace unisim
 
 #endif

@@ -32,11 +32,11 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_LIB_ARITHMETIC_ARITHMETIC_HH__
-#define __UNISIM_LIB_ARITHMETIC_ARITHMETIC_HH__
+#ifndef __UNISIM_UTIL_ARITHMETIC_ARITHMETIC_HH__
+#define __UNISIM_UTIL_ARITHMETIC_ARITHMETIC_HH__
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace arithmetic {
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
@@ -167,7 +167,7 @@ inline int32_t RotateRight(int32_t v, unsigned int n) { return RotateRight((uint
 inline int64_t RotateRight(int64_t v, unsigned int n) { return RotateRight((uint64_t) v, n); }
 
 } // end of namespace arithmetic
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
 #endif

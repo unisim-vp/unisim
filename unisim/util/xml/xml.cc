@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "lib/xml/xml.hh"
+#include "unisim/util/xml/xml.hh"
 #include <iostream>
 #include <fstream>
 #include <stdarg.h>
 #include <stdio.h>
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace xml {
 
 using std::list;
@@ -656,5 +656,5 @@ Node *Parser::ParseNode(istream& is)
 }
 
 } // end of namespace xml
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim

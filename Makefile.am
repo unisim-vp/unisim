@@ -1,4 +1,4 @@
-SUBDIRS=kernel lib
-INCLUDE_SUBDIRS=kernel lib
+SUBDIRS=unisim
+INCLUDE_SUBDIRS=unisim
 
 include m4/aminclude.am

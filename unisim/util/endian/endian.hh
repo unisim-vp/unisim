@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_LIB_ENDIAN_ENDIAN_HH__
-#define __UNISIM_LIB_ENDIAN_ENDIAN_HH__
+#ifndef __UNISIM_UTIL_ENDIAN_ENDIAN_HH__
+#define __UNISIM_UTIL_ENDIAN_ENDIAN_HH__
 
 #include <string.h>
 
@@ -49,7 +49,7 @@
 #endif
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace endian {
 
 typedef enum {E_BIG_ENDIAN, E_LITTLE_ENDIAN} endian_type;
@@ -409,7 +409,7 @@ inline void Target2Host(endian_type target_endian, uint32_t *dst, uint32_t *src,
 }
 
 } // end of namespace endian
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
 	

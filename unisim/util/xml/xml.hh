@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_LIB_XML_HH__
-#define __UNISIM_LIB_XML_HH__
+#ifndef __UNISIM_UTIL_XML_HH__
+#define __UNISIM_UTIL_XML_HH__
 
 #include <list>
 #include <string>
@@ -42,7 +42,7 @@
 #include <stdarg.h>
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace xml {
 
 using std::list;
@@ -144,7 +144,7 @@ private:
 extern void Error(const string& filename, int lineno, const char *format, ...);
 
 } // end of namespace xml
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
 #endif
