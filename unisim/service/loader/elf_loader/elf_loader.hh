@@ -62,7 +62,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
-using unisim::service::interfaces::Symbol;
+using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 

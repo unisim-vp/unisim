@@ -962,23 +962,23 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BuildSy
 	
 		for(sym = (Elf_Sym *) content, i = 0; i < nsymbols; sym++, i++)
 		{
-			typename SymbolInterface<T>::Type type;
+			typename Symbol<T>::Type type;
 	
 			switch(ELF32_ST_TYPE(sym->st_info))
 			{
-				case STT_NOTYPE: type = SymbolInterface<T>::SYM_NOTYPE; break;
-				case STT_OBJECT: type = SymbolInterface<T>::SYM_OBJECT; break;
-				case STT_FUNC: type = SymbolInterface<T>::SYM_FUNC; break;
-				case STT_SECTION: type = SymbolInterface<T>::SYM_SECTION; break;
-				case STT_FILE: type = SymbolInterface<T>::SYM_FILE; break;
-				case STT_COMMON: type = SymbolInterface<T>::SYM_COMMON; break;
-				case STT_TLS: type = SymbolInterface<T>::SYM_TLS; break;
-				case STT_NUM: type = SymbolInterface<T>::SYM_NUM; break;
-				case STT_LOOS: type = SymbolInterface<T>::SYM_LOOS; break;
-				case STT_HIOS: type = SymbolInterface<T>::SYM_HIOS; break;
-				case STT_LOPROC: type = SymbolInterface<T>::SYM_LOPROC; break;
-				case STT_HIPROC: type = SymbolInterface<T>::SYM_HIPROC; break;
-				default: type = SymbolInterface<T>::SYM_NOTYPE;
+				case STT_NOTYPE: type = Symbol<T>::SYM_NOTYPE; break;
+				case STT_OBJECT: type = Symbol<T>::SYM_OBJECT; break;
+				case STT_FUNC: type = Symbol<T>::SYM_FUNC; break;
+				case STT_SECTION: type = Symbol<T>::SYM_SECTION; break;
+				case STT_FILE: type = Symbol<T>::SYM_FILE; break;
+				case STT_COMMON: type = Symbol<T>::SYM_COMMON; break;
+				case STT_TLS: type = Symbol<T>::SYM_TLS; break;
+				case STT_NUM: type = Symbol<T>::SYM_NUM; break;
+				case STT_LOOS: type = Symbol<T>::SYM_LOOS; break;
+				case STT_HIOS: type = Symbol<T>::SYM_HIOS; break;
+				case STT_LOPROC: type = Symbol<T>::SYM_LOPROC; break;
+				case STT_HIPROC: type = Symbol<T>::SYM_HIPROC; break;
+				default: type = Symbol<T>::SYM_NOTYPE;
 			}
 	
 			string symbol_name(string_table + sym->st_name);
