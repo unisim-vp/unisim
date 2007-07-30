@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_HH__
 #define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_HH__
 
-#include <unisim/service/interfaces/symbol.hh>
+#include <unisim/util/debug/symbol.hh>
 #include <iostream>
 
 namespace unisim {
@@ -46,11 +46,11 @@ template <class T>
 class SymbolTableLookup
 {
 public:
-	virtual Symbol<T> *FindSymbol(const char *name, T addr, typename Symbol<T>::Type type) const = 0;
-	virtual Symbol<T> *FindSymbolByAddr(T addr) const = 0;
-	virtual Symbol<T> *FindSymbolByName(const char *name) const = 0;
-	virtual Symbol<T> *FindSymbolByName(const char *name, typename Symbol<T>::Type type) const = 0;
-	virtual Symbol<T> *FindSymbolByAddr(T addr, typename Symbol<T>::Type type) const = 0;
+	virtual typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
+	virtual typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const = 0;
+	virtual typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const = 0;
+	virtual typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
+	virtual typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
 };
 
 } // end of namespace interfaces

@@ -277,7 +277,7 @@ bool GDBServer<ADDRESS>::Setup()
 						bool cpu_has_reg = true;
 						bool cpu_has_right_reg_size = true;
 						
-						typename Registers::Register *reg = registers_import->GetRegister(reg_name.c_str());
+						typename unisim::util::debug::Register *reg = registers_import->GetRegister(reg_name.c_str());
 						
 						if(!reg)
 						{
@@ -572,7 +572,7 @@ GDBRegister::GDBRegister(const string& reg_name, int reg_size, GDBEndian endian)
 	this->reg = 0;
 }
 
-GDBRegister::GDBRegister(Registers::Register *reg, GDBEndian endian)
+GDBRegister::GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian)
 {
 	this->name = reg->GetName();
 	this->size = reg->GetSize();

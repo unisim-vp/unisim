@@ -35,6 +35,8 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_REGISTERS_HH__
 #define __UNISIM_SERVICE_INTERFACES_REGISTERS_HH__
 
+#include <unisim/util/debug/register.hh>
+
 namespace unisim {
 namespace service {
 namespace interfaces {
@@ -42,7 +44,7 @@ namespace interfaces {
 class Registers
 {
 public:
-	virtual Register *GetRegister(const char *name) = 0;
+	virtual unisim::util::debug::Register *GetRegister(const char *name) = 0;
 };
 
 } // end of namespace interfaces

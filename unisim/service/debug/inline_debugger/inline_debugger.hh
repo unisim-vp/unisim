@@ -61,7 +61,6 @@ using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::SymbolTableLookup;
-using unisim::service::interfaces::Symbol;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
 
@@ -69,6 +68,7 @@ using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::Breakpoint;
 using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Watchpoint;
+using unisim::util::debug::Symbol;
 
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;

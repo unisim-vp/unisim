@@ -45,6 +45,7 @@
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
+#include <unisim/util/debug/register.hh>
 
 #include <string>
 #include <vector>
@@ -84,7 +85,7 @@ class GDBRegister
 {
 public:
 	GDBRegister(const string& reg_name, int reg_size, GDBEndian endian);
-	GDBRegister(Registers::Register *reg, GDBEndian endian);
+	GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian);
 	inline const char *GetName() const { return name.c_str(); }
 	inline int GetSize() const { return size; }
 	bool SetValue(const string& hex);
@@ -92,13 +93,13 @@ public:
 	void GetValue(string& hex) const;
 	void GetValue(void *buffer) const;
 	inline int GetHexLength() const { return 2 * size; }
-	inline Registers::Register *GetRegisterInterface() { return reg; }
-	inline void SetRegisterInterface(Registers::Register *reg) { this->reg = reg; }
+	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
+	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
 	inline GDBEndian GetEndian() const { return endian; }
 private:
 	string name;
 	int size;
-	Registers::Register *reg;
+	unisim::util::debug::Register *reg;
 	GDBEndian endian;
 };
 
