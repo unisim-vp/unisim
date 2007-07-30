@@ -48,8 +48,8 @@ public:
 	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr) = 0;
 };
 
-} // end of namespace debug
-} // end of namespace plugins
-} // end of namespace full_system
+} // end of namespace interfaces
+} // end of namespace service
+} // end of namespace unisim
 
 #endif

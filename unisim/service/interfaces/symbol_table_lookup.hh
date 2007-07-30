@@ -35,7 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_HH__
 #define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_HH__
 
-#include <unsim/service/interfaces/symbol.hh
+#include <unisim/service/interfaces/symbol.hh>
 #include <iostream>
 
 namespace unisim {

@@ -47,6 +47,7 @@
 
 #include <unisim/kernel/service/service.hh>
 
+#include <inttypes.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <string>
@@ -61,7 +62,7 @@ using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Symbol;
-using unisim::service::interface::Registers;
+using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
 
 using unisim::util::debug::BreakpointRegistry;
@@ -124,7 +125,7 @@ public:
 	virtual ~InlineDebugger();
 
 	// MemoryAccessReportingInterface
-	virtual void ReportMemoryAccess(typename MemoryAccessReport<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReport<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
 
 	// DebugControlInterface

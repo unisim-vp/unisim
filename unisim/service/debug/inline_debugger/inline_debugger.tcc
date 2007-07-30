@@ -32,9 +32,10 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_HH_
-#define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_HH_
+#ifndef __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_TCC_
+#define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_TCC_
 
+#include <iostream>
 #include <readline/readline.h>
 
 namespace unisim {
@@ -82,7 +83,7 @@ void InlineDebugger<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReport<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReport<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size)) trap = true;
 }
@@ -111,7 +112,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
 	{
-		return DBG_STEP;
+		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 	
 	if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
@@ -122,7 +123,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	if(running_mode == INLINE_DEBUGGER_MODE_RESET)
 	{
 		running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-		return DBG_STEP;
+		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 
 	trap = false;
@@ -137,7 +138,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 		if(!GetLine(line, sizeof(line)))
 		{
-			return DBG_KILL;
+			return DebugControl<ADDRESS>::DBG_KILL;
 		}
 
 		if(IsBlankLine(line))
@@ -156,7 +157,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		{
 			case 1:
 				{
-					RegisterInterface *reg = cpu_registers_import->GetRegister(parm[0]);
+					typename Registers::Register *reg = registers_import->GetRegister(parm[0]);
 
 					if(reg)
 					{
@@ -190,21 +191,21 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsQuitCommand(parm[0]))
 				{
 					recognized = true;
-					return DBG_KILL;
+					return DebugControl<ADDRESS>::DBG_KILL;
 				}
 
 				if(IsStepCommand(parm[0]))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP;
 					strcpy(last_line, line);
-					return DBG_STEP;
+					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
 				if(IsNextCommand(parm[0]))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 					strcpy(last_line, line);
-					disasm_import->DebugDisasm(cia, cont_addr);
+					disasm_import->Disasm(cia, cont_addr);
 					if(HasBreakpoint(cont_addr))
 					{
 						running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
@@ -214,14 +215,14 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 						SetBreakpoint(cont_addr);
 					}
-					return DBG_STEP;
+					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
 				if(IsContinueCommand(parm[0]))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
 					strcpy(last_line, line);
-					return DBG_STEP;
+					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
 				if(IsDisasmCommand(parm[0]))
@@ -262,7 +263,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					running_mode = INLINE_DEBUGGER_MODE_RESET;
 					disasm_addr = 0;
 					dump_addr = 0;
-					return DBG_RESET;
+					return DebugControl<ADDRESS>::DBG_RESET;
 				}
 
 				break;
@@ -316,7 +317,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 					strcpy(last_line, line);
 					SetBreakpoint(cont_addr);
-					return DBG_STEP;
+					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				break;
 				
@@ -360,7 +361,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		
 		strcpy(last_line, line);
 	}
-	return DBG_KILL;
+	return DebugControl<ADDRESS>::DBG_KILL;
 }
 
 template <class ADDRESS>
@@ -420,13 +421,13 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 {
 	if(count > 0)
 	{
-		const SymbolInterface<ADDRESS> *last_symbol = 0;
+		const Symbol<ADDRESS> *last_symbol = 0;
 		ADDRESS next_addr;
 		do
 		{
 			cout.fill('0');
-			const SymbolInterface<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
-			string s = disasm_import->DebugDisasm(addr, next_addr);
+			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
+			string s = disasm_import->Disasm(addr, next_addr);
 			
 			if(symbol)
 			{
@@ -477,7 +478,7 @@ void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.SetWatchpoint(full_system::plugins::debug::MAT_READ, full_system::plugins::debug::MT_DATA, addr, size))
+	if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 	{
 		cout << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
@@ -486,7 +487,7 @@ void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.SetWatchpoint(full_system::plugins::debug::MAT_WRITE, full_system::plugins::debug::MT_DATA, addr, size))
+	if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 	{
 		cout << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
@@ -504,7 +505,7 @@ void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.RemoveWatchpoint(full_system::plugins::debug::MAT_READ, full_system::plugins::debug::MT_DATA, addr, size))
+	if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 	{
 		cout << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
@@ -513,7 +514,7 @@ void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.RemoveWatchpoint(full_system::plugins::debug::MAT_WRITE, full_system::plugins::debug::MT_DATA, addr, size))
+	if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 	{
 		cout << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
@@ -532,7 +533,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		cout << "*0x" << hex << addr << dec << " (";
 		if(symbol_table_lookup_import)
 		{
-			const SymbolInterface<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 			if(symbol)
 			{
@@ -557,25 +558,25 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 	{
 		ADDRESS addr = iter->GetAddress();
 		uint32_t size = iter->GetSize();
-		full_system::plugins::debug::MemoryAccessType mat = iter->GetMemoryAccessType();
-		full_system::plugins::debug::MemoryType mt = iter->GetMemoryType();
+		typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = iter->GetMemoryAccessType();
+		typename MemoryAccessReporting<ADDRESS>::MemoryType mt = iter->GetMemoryType();
 		
 		switch(mt)
 		{
-			case full_system::plugins::debug::MT_INSN:
+			case MemoryAccessReporting<ADDRESS>::MT_INSN:
 				cout << "insn"; // it should never occur
 				break;
-			case full_system::plugins::debug::MT_DATA:
+			case MemoryAccessReporting<ADDRESS>::MT_DATA:
 				cout << "data";
 				break;
 		}
 		cout << " ";
 		switch(mat)
 		{
-			case full_system::plugins::debug::MAT_READ:
+			case MemoryAccessReporting<ADDRESS>::MAT_READ:
 				cout << " read";
 				break;
-			case full_system::plugins::debug::MAT_WRITE:
+			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
 				cout << "write";
 				break;
 		}
@@ -585,7 +586,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		
 		if(symbol_table_lookup_import)
 		{
-			const SymbolInterface<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 			if(symbol)
 			{
@@ -642,7 +643,7 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 	
 	if(symbol_table_lookup_import)
 	{
-		const SymbolInterface<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
+		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 		
 		if(symbol)
 		{
@@ -664,7 +665,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 	
 	if(symbol_table_lookup_import)
 	{
-		const SymbolInterface<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
+		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 		
 		if(symbol)
 		{

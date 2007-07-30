@@ -1,2 +1,2 @@
-SUBDIRS=interfaces logger
-INCLUDE_SUBDIRS=interfaces logger
+SUBDIRS=interfaces logger debug
+INCLUDE_SUBDIRS=interfaces logger debug

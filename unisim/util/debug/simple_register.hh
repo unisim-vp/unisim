@@ -31,18 +31,73 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_UTIL_DEBUG_SIMPLE_REGISTER_HH__
+#define __UNISIM_UTIL_DEBUG_SIMPLE_REGISTER_HH__
 
-#include <unisim/service/debug/gdb_server/gdb_server.hh>
-#include <unisim/service/debug/gdb_server/gdb_server.tcc>
+#include <unisim/util/debug/register.hh>
+#include <string>
 
 namespace unisim {
-namespace service {
+namespace util {
 namespace debug {
-namespace gdb_server {
 
-template class GDBServer<uint64_t>;
+using std::string;
 
-} // end of namespace gdb_server
+template <class REGISTER_TYPE>
+class SimpleRegister : public Register
+{
+public:
+	SimpleRegister(const char *name, REGISTER_TYPE *value);
+	virtual ~SimpleRegister();
+	virtual const char *GetName() const;
+	virtual void GetValue(void *buffer) const;
+	virtual void SetValue(const void *buffer);
+	virtual int GetSize() const;
+private:
+	string name;
+	REGISTER_TYPE *value;
+};
+
+template <class REGISTER_TYPE>
+SimpleRegister<REGISTER_TYPE>::SimpleRegister(const char *_name, REGISTER_TYPE *_value) :
+	name(_name),
+	value(_value)
+{
+}
+
+template <class REGISTER_TYPE>
+SimpleRegister<REGISTER_TYPE>::~SimpleRegister()
+{
+}
+
+template <class REGISTER_TYPE>
+const char *SimpleRegister<REGISTER_TYPE>::GetName() const
+{
+	return name.c_str();
+}
+
+template <class REGISTER_TYPE>
+void SimpleRegister<REGISTER_TYPE>::GetValue(void *buffer) const
+{
+	*(REGISTER_TYPE *) buffer = *value;
+}
+
+
+template <class REGISTER_TYPE>
+void SimpleRegister<REGISTER_TYPE>::SetValue(const void *buffer)
+{
+	*value = *(REGISTER_TYPE *) buffer;
+}
+
+template <class REGISTER_TYPE>
+int SimpleRegister<REGISTER_TYPE>::GetSize() const
+{
+	return sizeof(REGISTER_TYPE);
+}
+
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
+
+#endif

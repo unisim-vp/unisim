@@ -32,75 +32,26 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_DEBUG_SIMPLE_REGISTER_SIMPLE_REGISTER_HH__
-#define __UNISIM_SERVICE_DEBUG_SIMPLE_REGISTER_SIMPLE_REGISTER_HH__
-
-#include <unisim/service/interfaces/register.hh>
-#include <string>
+#ifndef __UNISIM_UTIL_DEBUG_REGISTER_HH__
+#define __UNISIM_UTIL_DEBUG_REGISTER_HH__
 
 namespace unisim {
-namespace service {
+namespace util {
 namespace debug {
-namespace simple_register {
 
-using unisim::service::interfaces::Register;
-using std::string;
-
-template <class REGISTER_TYPE>
-class SimpleRegister : public Register
+class Register
 {
 public:
-	SimpleRegister(const char *name, REGISTER_TYPE *value);
-	virtual ~SimpleRegister();
-	virtual const char *GetName() const;
-	virtual void GetValue(void *buffer) const;
-	virtual void SetValue(const void *buffer);
-	virtual int GetSize() const;
-private:
-	string name;
-	REGISTER_TYPE *value;
+	virtual ~Register() {} // destructor seems to avoid memory leak
+	virtual const char *GetName() const = 0;
+	virtual void GetValue(void *buffer) const = 0;
+	virtual void SetValue(const void *buffer) = 0;
+	virtual int GetSize() const = 0;
 };
 
-template <class REGISTER_TYPE>
-SimpleRegister<REGISTER_TYPE>::SimpleRegister(const char *_name, REGISTER_TYPE *_value) :
-	name(_name),
-	value(_value)
-{
-}
-
-template <class REGISTER_TYPE>
-SimpleRegister<REGISTER_TYPE>::~SimpleRegister()
-{
-}
-
-template <class REGISTER_TYPE>
-const char *SimpleRegister<REGISTER_TYPE>::GetName() const
-{
-	return name.c_str();
-}
-
-template <class REGISTER_TYPE>
-void SimpleRegister<REGISTER_TYPE>::GetValue(void *buffer) const
-{
-	*(REGISTER_TYPE *) buffer = *value;
-}
-
-
-template <class REGISTER_TYPE>
-void SimpleRegister<REGISTER_TYPE>::SetValue(const void *buffer)
-{
-	*value = *(REGISTER_TYPE *) buffer;
-}
-
-template <class REGISTER_TYPE>
-int SimpleRegister<REGISTER_TYPE>::GetSize() const
-{
-	return sizeof(REGISTER_TYPE);
-}
-
-} // end of namespace simple_register
 } // end of namespace debug
-} // end of namespace service
+} // end of namespace util
 } // end of namespace unisim
 
 #endif
+

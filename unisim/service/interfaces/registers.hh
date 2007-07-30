@@ -42,16 +42,6 @@ namespace interfaces {
 class Registers
 {
 public:
-	class Register
-	{
-	public:
-		virtual ~Register() {} // destructor seems to avoid memory leak
-		virtual const char *GetName() const = 0;
-		virtual void GetValue(void *buffer) const = 0;
-		virtual void SetValue(const void *buffer) = 0;
-		virtual int GetSize() const = 0;
-	};
-
 	virtual Register *GetRegister(const char *name) = 0;
 };
 

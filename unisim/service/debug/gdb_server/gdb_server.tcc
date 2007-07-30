@@ -32,13 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_HH__
-#define __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_HH__
+#ifndef __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
+#define __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
+
+#include <unisim/util/xml/xml.hh>
 
 #include <iostream>
 #include <list>
+
 #include <string.h>
-#include <utils/xml/xml.hh>
 #include <unistd.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -162,8 +164,8 @@ bool GDBServer<ADDRESS>::Setup()
 	input_buffer_index = 0;
 	output_buffer_size = 0;
 
-	full_system::utils::xml::Parser *parser = new full_system::utils::xml::Parser();
-	full_system::utils::xml::Node *root_node = parser->Parse(architecture_description_filename);
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+	unisim::util::xml::Node *root_node = parser->Parse(architecture_description_filename);
 
 	delete parser;
 
@@ -171,15 +173,15 @@ bool GDBServer<ADDRESS>::Setup()
 	{
 		if(root_node->Name() == string("architecture"))
 		{
-			list<full_system::utils::xml::Node *>::const_iterator xml_program_counter_node;
+			list<unisim::util::xml::Node *>::const_iterator xml_program_counter_node;
 
 			bool has_architecture_name = false;
 			bool has_architecture_endian = false;
 			GDBEndian endian = GDB_BIG_ENDIAN;
 
-			const list<full_system::utils::xml::Property *> *root_node_properties = root_node->Properties();
+			const list<unisim::util::xml::Property *> *root_node_properties = root_node->Properties();
 					
-			list<full_system::utils::xml::Property *>::const_iterator root_node_property;
+			list<unisim::util::xml::Property *>::const_iterator root_node_property;
 			for(root_node_property = root_node_properties->begin(); root_node_property != root_node_properties->end(); root_node_property++)
 			{
 				if((*root_node_property)->Name() == string("name"))
@@ -216,24 +218,24 @@ bool GDBServer<ADDRESS>::Setup()
 				}
 				else
 				{
-					full_system::utils::xml::Error((*root_node_property)->Filename(), (*root_node_property)->LineNo(), "WARNING! ignoring property '%s'",(*root_node_property)->Name().c_str());
+					unisim::util::xml::Error((*root_node_property)->Filename(), (*root_node_property)->LineNo(), "WARNING! ignoring property '%s'",(*root_node_property)->Name().c_str());
 				}
 			}
 
 			if(!has_architecture_name)
 			{
-				full_system::utils::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! architecture has no property 'name'");
+				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! architecture has no property 'name'");
 				delete root_node;
 				return false;
 			}
 
 			if(!has_architecture_endian)
 			{
-				full_system::utils::xml::Error(root_node->Filename(), root_node->LineNo(), "WARNING! assuming target architecture endian is big endian");
+				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "WARNING! assuming target architecture endian is big endian");
 			}
 
-			const list<full_system::utils::xml::Node *> *xml_nodes = root_node->Childs();
-			list<full_system::utils::xml::Node *>::const_iterator xml_node;
+			const list<unisim::util::xml::Node *> *xml_nodes = root_node->Childs();
+			list<unisim::util::xml::Node *>::const_iterator xml_node;
 			bool has_program_counter = false;
 			string program_counter_name;
 
@@ -246,9 +248,9 @@ bool GDBServer<ADDRESS>::Setup()
 					int reg_size = 0;
 					bool has_reg_size = false;
 
-					const list<full_system::utils::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
+					const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
 					
-					list<full_system::utils::xml::Property *>::const_iterator xml_node_property;
+					list<unisim::util::xml::Property *>::const_iterator xml_node_property;
 					for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
 					{
 						if((*xml_node_property)->Name() == string("name"))
@@ -265,7 +267,7 @@ bool GDBServer<ADDRESS>::Setup()
 							}
 							else
 							{
-								full_system::utils::xml::Error((*xml_node_property)->Filename(), (*xml_node_property)->LineNo(), "WARNING! ignoring property '%s'",(*xml_node_property)->Name().c_str());
+								unisim::util::xml::Error((*xml_node_property)->Filename(), (*xml_node_property)->LineNo(), "WARNING! ignoring property '%s'",(*xml_node_property)->Name().c_str());
 							}
 						}
 					}
@@ -275,7 +277,7 @@ bool GDBServer<ADDRESS>::Setup()
 						bool cpu_has_reg = true;
 						bool cpu_has_right_reg_size = true;
 						
-						RegisterInterface *reg = registers_import->GetRegister(reg_name.c_str());
+						typename Registers::Register *reg = registers_import->GetRegister(reg_name.c_str());
 						
 						if(!reg)
 						{
@@ -295,7 +297,7 @@ bool GDBServer<ADDRESS>::Setup()
 								if(logger_import)
 								{
 									(*logger_import) << DebugWarning;
-									(*logger_import) << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << endl;
+									(*logger_import) << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << Endl;
 									(*logger_import) << EndDebugWarning;
 								}
 							}
@@ -312,7 +314,7 @@ bool GDBServer<ADDRESS>::Setup()
 					}
 					else
 					{
-						full_system::utils::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'name' or 'size' property",(*xml_node)->Name().c_str());
+						unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'name' or 'size' property",(*xml_node)->Name().c_str());
 					}
 				}
 				else
@@ -322,9 +324,9 @@ bool GDBServer<ADDRESS>::Setup()
 						xml_program_counter_node = xml_node;
 						has_program_counter = true;
 						bool has_program_counter_name = false;
-						const list<full_system::utils::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
+						const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
 						
-						list<full_system::utils::xml::Property *>::const_iterator xml_node_property;
+						list<unisim::util::xml::Property *>::const_iterator xml_node_property;
 						for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
 						{
 							if((*xml_node_property)->Name() == string("name"))
@@ -336,21 +338,21 @@ bool GDBServer<ADDRESS>::Setup()
 
 						if(!has_program_counter_name)
 						{
-							full_system::utils::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'name'", (*xml_node)->Name().c_str());
+							unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'name'", (*xml_node)->Name().c_str());
 							delete root_node;
 							return false;
 						}
 					}
 					else
 					{
-						full_system::utils::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! ignoring tag '%s'", (*xml_node)->Name().c_str());
+						unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! ignoring tag '%s'", (*xml_node)->Name().c_str());
 					}
 				}
 			}
 
 			if(!has_program_counter)
 			{
-				full_system::utils::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! architecture has no program counter");
+				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! architecture has no program counter");
 				delete root_node;
 				return false;
 			}
@@ -368,14 +370,14 @@ bool GDBServer<ADDRESS>::Setup()
 
 			if(!gdb_pc)
 			{
-				full_system::utils::xml::Error((*xml_program_counter_node)->Filename(), (*xml_program_counter_node)->LineNo(), "ERROR! program counter does not belong to registers");
+				unisim::util::xml::Error((*xml_program_counter_node)->Filename(), (*xml_program_counter_node)->LineNo(), "ERROR! program counter does not belong to registers");
 				delete root_node;
 				return false;
 			}
 		}
 		else
 		{
-			full_system::utils::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! root node is not named 'architecture'");
+			unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! root node is not named 'architecture'");
 			delete root_node;
 			return false;
 		}
@@ -384,7 +386,7 @@ bool GDBServer<ADDRESS>::Setup()
 	}
 	else
 	{
-		full_system::utils::xml::Error(architecture_description_filename, 0, "ERROR! no root node");
+		unisim::util::xml::Error(architecture_description_filename, 0, "ERROR! no root node");
 		return false;
 	}
 	
@@ -479,7 +481,7 @@ bool GDBServer<ADDRESS>::Setup()
 		if(logger_import)
 		{
 			(*logger_import) << DebugWarning;
-			(*logger_import) << "setsockopt failed requesting short latency" << endl;
+			(*logger_import) << "setsockopt failed requesting short latency" << Endl;
 			(*logger_import) << EndDebugWarning;
 		}
 	}
@@ -492,7 +494,7 @@ bool GDBServer<ADDRESS>::Setup()
 		if(logger_import)
 		{
 			(*logger_import) << DebugError;
-			(*logger_import) << "ioctlsocket failed" << endl;
+			(*logger_import) << "ioctlsocket failed" << Endl;
 			(*logger_import) << EndDebugError;
 		}
 #ifdef WIN32
@@ -513,7 +515,7 @@ bool GDBServer<ADDRESS>::Setup()
 		if(logger_import)
 		{
 			(*logger_import) << DebugError;
-			(*logger_import) << "fcntl failed" << endl;
+			(*logger_import) << "fcntl failed" << Endl;
 			(*logger_import) << EndDebugError;
 		}
 #ifdef WIN32
@@ -570,7 +572,7 @@ GDBRegister::GDBRegister(const string& reg_name, int reg_size, GDBEndian endian)
 	this->reg = 0;
 }
 
-GDBRegister::GDBRegister(RegisterInterface *reg, GDBEndian endian)
+GDBRegister::GDBRegister(Registers::Register *reg, GDBEndian endian)
 {
 	this->name = reg->GetName();
 	this->size = reg->GetSize();
@@ -691,7 +693,7 @@ bool GDBServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& v
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size)
+void GDBServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{
@@ -718,7 +720,7 @@ void GDBServer<ADDRESS>::Trap()
 }
 
 template <class ADDRESS>
-DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
+typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {
 	ADDRESS addr;
 	ADDRESS size;
@@ -729,7 +731,7 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 	{
 		if(--counter > 0)
 		{
-			return DBG_STEP;
+			return DebugControl<ADDRESS>::DBG_STEP;
 		}
 
 		counter = period;
@@ -746,14 +748,14 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 		}
 		else
 		{
-			return DBG_STEP;
+			return DebugControl<ADDRESS>::DBG_STEP;
 		}
 	}
 
 	if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
 	{
 		synched = true;
-		return DBG_SYNC;
+		return DebugControl<ADDRESS>::DBG_SYNC;
 	}
 
 	if(trap || running_mode == GDBSERVER_MODE_STEP)
@@ -769,7 +771,7 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 	{
 		if(!GetPacket(packet, true))
 		{
-			return DBG_KILL;
+			return DebugControl<ADDRESS>::DBG_KILL;
 		}
 	
 		unsigned int pos = 0;
@@ -778,12 +780,12 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 		switch(packet[pos++])
 		{
 			case 'g':
-				if(!ReadRegisters()) return DBG_KILL;
+				if(!ReadRegisters()) return DebugControl<ADDRESS>::DBG_KILL;
 				break;
 
 			case 'p':
 				if(!ParseHex(packet, pos, reg_num)) break;
-				if(!ReadRegister(reg_num)) return DBG_KILL;
+				if(!ReadRegister(reg_num)) return DebugControl<ADDRESS>::DBG_KILL;
 				break;
 
 			case 'G':
@@ -807,7 +809,7 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(pos != len) break;
-				if(!ReadMemory(addr, size)) return DBG_KILL;
+				if(!ReadMemory(addr, size)) return DebugControl<ADDRESS>::DBG_KILL;
 				break;
 	
 			case 'M':
@@ -826,7 +828,7 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 				{
 					running_mode = GDBSERVER_MODE_STEP;
 					synched = false;
-					return DBG_STEP;
+					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				if(gdb_pc)
 					gdb_pc->SetValue(&addr);
@@ -841,14 +843,14 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 				}
 				running_mode = GDBSERVER_MODE_STEP;
 				synched = false;
-				return DBG_STEP;
+				return DebugControl<ADDRESS>::DBG_STEP;
 				break;
 
 			case 'c':
 				if(!ParseHex(packet, pos, addr))
 				{
 					running_mode = GDBSERVER_MODE_CONTINUE;
-					return DBG_STEP;
+					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				if(gdb_pc)
 					gdb_pc->SetValue(&addr);
@@ -859,7 +861,7 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 					(*logger_import) << EndDebugWarning;
 				}
 				running_mode = GDBSERVER_MODE_CONTINUE;
-				return DBG_STEP;
+				return DebugControl<ADDRESS>::DBG_STEP;
 				break;
 
 			case 'H':
@@ -874,7 +876,7 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 				break;
 				
 			case 'R':
-				return DBG_RESET;
+				return DebugControl<ADDRESS>::DBG_RESET;
 				break;
 
 			case '?':
@@ -923,13 +925,13 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 				else if(packet.substr(0, 7) == "vCont;c")
 				{
 					running_mode = GDBSERVER_MODE_CONTINUE;
-					return DBG_STEP;
+					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				else if(packet.substr(0, 7) == "vCont;s")
 				{
 					running_mode = GDBSERVER_MODE_STEP;
 					synched = false;
-					return DBG_STEP;
+					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				else
 				{
@@ -943,7 +945,7 @@ DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 				}
 		} // end of switch
 	}
-	return DBG_KILL;
+	return DebugControl<ADDRESS>::DBG_KILL;
 }
 
 template <class ADDRESS>
@@ -1339,14 +1341,14 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			return true;
 
 		case 2:
-			return watchpoint_registry.SetWatchpoint(MAT_WRITE, MT_DATA, addr, size);
+			return watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
 
 		case 3:
-			return watchpoint_registry.SetWatchpoint(MAT_READ, MT_DATA, addr, size);
+			return watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
 
 		case 4:
-			if(!watchpoint_registry.SetWatchpoint(MAT_READ, MT_DATA, addr, size)) return false;
-			if(!watchpoint_registry.SetWatchpoint(MAT_WRITE, MT_DATA, addr, size)) return false;
+			if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)) return false;
+			if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)) return false;
 			return true;
 	}
 	return false;
@@ -1373,14 +1375,14 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			return true;
 
 		case 2:
-			return watchpoint_registry.RemoveWatchpoint(MAT_WRITE, MT_DATA, addr, size);
+			return watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
 
 		case 3:
-			return watchpoint_registry.RemoveWatchpoint(MAT_READ, MT_DATA, addr, size);
+			return watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
 
 		case 4:
-			if(!watchpoint_registry.RemoveWatchpoint(MAT_READ, MT_DATA, addr, size)) return false;
-			if(!watchpoint_registry.RemoveWatchpoint(MAT_WRITE, MT_DATA, addr, size)) return false;
+			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)) return false;
+			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)) return false;
 			return true;
 	}
 	return false;

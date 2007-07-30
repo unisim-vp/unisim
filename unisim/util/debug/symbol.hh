@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_HH__
-#define __UNISIM_SERVICE_INTERFACES_SYMBOL_HH__
+#ifndef __UNISIM_UTIL_DEBUG_SYMBOL_HH__
+#define __UNISIM_UTIL_DEBUG_SYMBOL_HH__
 
 #include <string>
 
 namespace unisim {
-namespace service {
-namespace interfaces {
+namespace util {
+namespace debug {
 
 template <class T>
 class Symbol
@@ -68,8 +68,8 @@ public:
 	virtual std::string GetFriendlyName(T addr) const = 0;
 };
 
-} // end of namespace interfaces
-} // end of namespace service
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim
 
 #endif

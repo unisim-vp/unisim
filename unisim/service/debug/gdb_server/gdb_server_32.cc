@@ -32,15 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <plugins/debug/gdb_server.hh>
-#include <plugins/debug/gdb_server.tpp>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.tcc>
 
-namespace full_system {
-namespace plugins {
+namespace unisim {
+namespace service {
 namespace debug {
+namespace gdb_server {
 
 template class GDBServer<uint32_t>;
 
+} // end of namespace gdb_server
 } // end of namespace debug
-} // end of namespace plugins
-} // end of namespace full_system
+} // end of namespace service
+} // end of namespace unisim

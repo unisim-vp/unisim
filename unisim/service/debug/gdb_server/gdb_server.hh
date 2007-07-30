@@ -49,6 +49,8 @@
 #include <string>
 #include <vector>
 
+#include <inttypes.h>
+
 namespace unisim {
 namespace service {
 namespace debug {
@@ -82,7 +84,7 @@ class GDBRegister
 {
 public:
 	GDBRegister(const string& reg_name, int reg_size, GDBEndian endian);
-	GDBRegister(RegisterInterface *reg, GDBEndian endian);
+	GDBRegister(Registers::Register *reg, GDBEndian endian);
 	inline const char *GetName() const { return name.c_str(); }
 	inline int GetSize() const { return size; }
 	bool SetValue(const string& hex);
@@ -90,13 +92,13 @@ public:
 	void GetValue(string& hex) const;
 	void GetValue(void *buffer) const;
 	inline int GetHexLength() const { return 2 * size; }
-	inline RegisterInterface *GetRegisterInterface() { return reg; }
-	inline void SetRegisterInterface(RegisterInterface *reg) { this->reg = reg; }
+	inline Registers::Register *GetRegisterInterface() { return reg; }
+	inline void SetRegisterInterface(Registers::Register *reg) { this->reg = reg; }
 	inline GDBEndian GetEndian() const { return endian; }
 private:
 	string name;
 	int size;
-	RegisterInterface *reg;
+	Registers::Register *reg;
 	GDBEndian endian;
 };
 
@@ -122,7 +124,7 @@ public:
 	
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
-	virtual DebugCommand FetchDebugCommand(ADDRESS cia);
+	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void Trap();
 	virtual bool Setup();
 	virtual void OnDisconnect();

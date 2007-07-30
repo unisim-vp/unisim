@@ -35,9 +35,9 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_CONTROL_HH__
 #define __UNISIM_SERVICE_INTERFACES_DEBUG_CONTROL_HH__
 
-namespace full_system {
-namespace plugins {
-namespace debug {
+namespace unisim {
+namespace service {
+namespace interfaces {
 
 template <class ADDRESS>
 class DebugControl
