@@ -32,10 +32,10 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_HH__
-#define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_HH__
+#ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_BUILD_HH__
+#define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_BUILD_HH__
 
-#include <unsim/service/interfaces/symbol.hh
+#include <unisim/util/debug/symbol.hh>
 #include <iostream>
 
 namespace unisim {
@@ -47,7 +47,7 @@ class SymbolTableBuild
 {
 public:
 	virtual void Reset() = 0;
-	virtual void AddSymbol(const char *name, T addr, T size, typename Symbol<T>::Type type) = 0;
+	virtual void AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type) = 0;
 	virtual void Dump(std::ostream& os) const = 0;
 };
 

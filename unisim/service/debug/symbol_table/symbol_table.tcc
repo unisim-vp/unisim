@@ -32,15 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FS_UTILS_DEBUG_SYMBOL_TABLE_TPP__
-#define __FS_UTILS_DEBUG_SYMBOL_TABLE_TPP__
+#ifndef __UNISIM_SERVICE_DEBUG_SYMBOL_TABLE_TCC__
+#define __UNISIM_SERVICE_DEBUG_SYMBOL_TABLE_TCC__
 
-namespace full_system {
-namespace utils {
+namespace unisim {
+namespace service {
 namespace debug {
+namespace symbol_table {
 
 template <class T>
-Symbol<T>::Symbol(const char *_name, T _addr, T _size, typename SymbolInterface<T>::Type _type) :
+Symbol<T>::Symbol(const char *_name, T _addr, T _size, typename unisim::util::debug::Symbol<T>::Type _type) :
 	name(_name),
 	addr(_addr),
 	size(_size),
@@ -67,7 +68,7 @@ T Symbol<T>::GetSize() const
 }
 
 template <class T>
-typename SymbolInterface<T>::Type Symbol<T>::GetType() const
+typename unisim::util::debug::Symbol<T>::Type Symbol<T>::GetType() const
 {
 	return type;
 }
@@ -78,7 +79,7 @@ string Symbol<T>::GetFriendlyName(T addr) const
 	stringstream sstr;
 	
 	sstr << name;
-	if(type == SymbolInterface<T>::SYM_FUNC)
+	if(type == unisim::util::debug::Symbol<T>::SYM_FUNC)
 		sstr << "()";
 	if(addr != this->addr && (addr - this->addr) <= size)
 		sstr << "+0x" << hex << addr - this->addr << dec;
@@ -89,8 +90,8 @@ string Symbol<T>::GetFriendlyName(T addr) const
 template <class T>
 SymbolTable<T>::SymbolTable(const char *name, Object *parent) :
 	Object(name, parent),
-	Service<SymbolTableLookupInterface<T> >(name, parent),
-	Service<SymbolTableBuildInterface<T> >(name, parent),
+	Service<SymbolTableLookup<T> >(name, parent),
+	Service<SymbolTableBuild<T> >(name, parent),
 	symbol_table_lookup_export("symbol-table-lookup-export", this),
 	symbol_table_build_export("symbol-table-build-export", this)
 {
@@ -119,7 +120,7 @@ void SymbolTable<T>::Reset()
 }
 
 template <class T>
-const SymbolInterface<T> *SymbolTable<T>::FindSymbol(const char *name, T addr, typename SymbolInterface<T>::Type type) const
+const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const
 {
 	typename list<Symbol<T> *>::const_iterator symbol_iter;
 	
@@ -137,33 +138,33 @@ const SymbolInterface<T> *SymbolTable<T>::FindSymbol(const char *name, T addr, t
 }
 
 template <class T>
-const SymbolInterface<T> *SymbolTable<T>::FindSymbolByAddr(T addr) const
+const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(T addr) const
 {
 	unsigned int i;
 	
 	for(i = 0; i < sizeof(symbol_registries) / sizeof(symbol_registries[0]); i++)
 	{
-		const SymbolInterface<T> *symbol = FindSymbolByAddr(addr, (typename SymbolInterface<T>::Type) i);
+		const unisim::util::debug::Symbol<T> *symbol = FindSymbolByAddr(addr, (typename unisim::util::debug::Symbol<T>::Type) i);
 		if(symbol) return symbol;
 	}
 	return 0;
 }
 
 template <class T>
-const SymbolInterface<T> *SymbolTable<T>::FindSymbolByName(const char *name) const
+const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByName(const char *name) const
 {
 	unsigned int i;
 	
 	for(i = 0; i < sizeof(symbol_registries) / sizeof(symbol_registries[0]); i++)
 	{
-		const SymbolInterface<T> *symbol = FindSymbolByName(name, (typename SymbolInterface<T>::Type) i);
+		const unisim::util::debug::Symbol<T> *symbol = FindSymbolByName(name, (typename unisim::util::debug::Symbol<T>::Type) i);
 		if(symbol) return symbol;
 	}
 	return 0;
 }
 
 template <class T>
-const SymbolInterface<T> *SymbolTable<T>::FindSymbolByName(const char *name, typename SymbolInterface<T>::Type type) const
+const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) const
 {
 	typename list<Symbol<T> *>::const_iterator symbol_iter;
 	
@@ -179,7 +180,7 @@ using std::endl;
 using std::cerr;
 
 template <class T>
-const SymbolInterface<T> *SymbolTable<T>::FindSymbolByAddr(T addr, typename SymbolInterface<T>::Type type) const
+const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const
 {
 	typename list<Symbol<T> *>::const_iterator symbol_iter;
 
@@ -194,7 +195,7 @@ const SymbolInterface<T> *SymbolTable<T>::FindSymbolByAddr(T addr, typename Symb
 }
 
 template <class T>
-void SymbolTable<T>::AddSymbol(const char *name, T addr, T size, typename SymbolInterface<T>::Type type)
+void SymbolTable<T>::AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type)
 {
 	Symbol<T> *symbol = new Symbol<T>(name, addr, size, type);
 	symbol_registries[type].push_back(symbol);
@@ -212,7 +213,7 @@ void SymbolTable<T>::Dump(ostream& os) const
 }
 
 template <class T>
-void SymbolTable<T>::Dump(ostream& os, typename SymbolInterface<T>::Type type) const
+void SymbolTable<T>::Dump(ostream& os, typename unisim::util::debug::Symbol<T>::Type type) const
 {
 	typename list<Symbol<T> *>::const_iterator symbol_iter;
 
@@ -222,9 +223,9 @@ void SymbolTable<T>::Dump(ostream& os, typename SymbolInterface<T>::Type type) c
 	}
 }
 
-
+} // end of namespace symbol_table
 } // end of namespace debug
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace service
+} // end of namespace unisim
 
 #endif

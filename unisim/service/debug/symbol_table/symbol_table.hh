@@ -62,6 +62,8 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::service::interfaces::SymbolTableLookup;
+using unisim::service::interfaces::SymbolTableBuild;
 
 template <class T>
 class Symbol : public unisim::util::debug::Symbol<T>
@@ -72,7 +74,7 @@ public:
 	virtual const char *GetName() const;
 	virtual T GetAddress() const;
 	virtual T GetSize() const;
-	virtual typename unisim::util::debug::Symbol<T><T>::Type GetType() const;
+	virtual typename unisim::util::debug::Symbol<T>::Type GetType() const;
 	virtual string GetFriendlyName(T addr) const;
 private:
 	string name;
@@ -93,17 +95,17 @@ public:
 	SymbolTable(const char *name, Object *parent = 0);
 	virtual ~SymbolTable();
 	virtual void Reset();
-	virtual const unisim::util::debug::Symbol<T><T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T><T>::Type type) const;
-	virtual const unisim::util::debug::Symbol<T><T> *FindSymbolByAddr(T addr) const;
-	virtual const unisim::util::debug::Symbol<T><T> *FindSymbolByName(const char *name) const;
-	virtual const unisim::util::debug::Symbol<T><T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T><T>::Type type) const;
-	virtual const unisim::util::debug::Symbol<T><T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T><T>::Type type) const ;
-	virtual void AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T><T>::Type type);
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) const;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const ;
+	virtual void AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type);
 	virtual void Dump(ostream& os) const;
-	virtual void Dump(ostream& os, typename unisim::util::debug::Symbol<T><T>::Type type) const;
+	virtual void Dump(ostream& os, typename unisim::util::debug::Symbol<T>::Type type) const;
 private:
 	
-	list<Symbol<T> *> symbol_registries[unisim::util::debug::Symbol<T><T>::SYM_HIPROC + 1];
+	list<Symbol<T> *> symbol_registries[unisim::util::debug::Symbol<T>::SYM_HIPROC + 1];
 };
 
 } // end of namespace symbol_table
