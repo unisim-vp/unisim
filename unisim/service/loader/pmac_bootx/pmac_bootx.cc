@@ -1,0 +1,913 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+#include <unisim/service/loader/pmac_bootx/pmac_bootx.hh>
+#include <unisim/util/endian/endian.hh>
+#include <stdio.h>
+
+namespace unisim {
+namespace service {
+namespace loader {
+namespace pmac_bootx {
+
+using namespace std;
+using namespace unisim::util::endian;
+using unisim::service::interfaces::Registers;
+
+static char Nibble2HexChar(uint8_t v)
+{
+	return v < 10 ? '0' + v : 'a' + v - 10;
+}
+
+static uint8_t HexChar2Nibble(char ch)
+{
+	if(ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+	if(ch >= '0' && ch <= '9') return ch - '0';
+	if(ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+	return 0;
+}
+
+static bool IsHexChar(char ch)
+{
+	if(ch >= 'a' && ch <= 'f') return true;
+	if(ch >= '0' && ch <= '9') return true;
+	if(ch >= 'A' && ch <= 'F') return true;
+	return false;
+}
+
+DeviceProperty *DeviceTree::CreateDeviceProperty(const char *name, const uint8_t *value, int32_t len)
+{
+	DeviceProperty *reloc_prop = (DeviceProperty *) Relocate(Malloc(sizeof(DeviceProperty)));
+	reloc_prop->name = Host2BigEndian(Malloc(strlen(name) + 1));
+	strcpy((char *) Relocate(BigEndian2Host(reloc_prop->name)), name);
+	reloc_prop->value = len > 0 ? Host2BigEndian(Malloc(len)) : 0;
+	if(value) memcpy(Relocate(BigEndian2Host(reloc_prop->value)), value, len);
+	reloc_prop->length = Host2BigEndian(len);
+	reloc_prop->next = 0;
+	return reloc_prop;
+}
+
+unsigned int DeviceTree::ExpandEscapeSequences(const string& s, char *buffer)
+{
+	unsigned int i, len;
+	unsigned int state = 0;
+	for(i = 0, len = 0; i <= s.length(); i++)
+	{
+		char c = s[i];
+		
+		switch(state)
+		{
+			case 0:
+				if(c == '\\')
+				{
+					state = 1;
+					break;
+				}
+				buffer[len++] = c;
+				break;
+			case 1:
+				if(c == '0')
+				{
+					buffer[len++] = 0;
+					state = 0;
+					break;
+				}
+				if(c == 'n')
+				{
+					buffer[len++] = '\n';
+					state = 0;
+					break;
+				}
+				if(c == 't')
+				{
+					buffer[len++] = '\t';
+					state = 0;
+					break;
+				}
+				if(c == 'r')
+				{
+					buffer[len++] = '\r';
+					state = 0;
+					break;
+				}
+				state = 0;
+				break;
+		}
+	}
+	buffer[len++] = 0;
+	return len;
+}
+
+DeviceProperty *DeviceTree::CreateDeviceProperty(const unisim::util::xml::Node *xml_node)
+{
+	if(xml_node->Name() == string("string_property"))
+	{
+		string name;
+		string value;
+
+		const list<unisim::util::xml::Property *> *xml_props = xml_node->Properties();
+		list<unisim::util::xml::Property *>::const_iterator xml_prop;
+
+		for(xml_prop = xml_props->begin(); xml_prop != xml_props->end(); xml_prop++)
+		{
+			if((*xml_prop)->Name() == string("name"))
+			{
+				name = (*xml_prop)->Value();
+			}
+			else
+			{
+				if((*xml_prop)->Name() == string("value"))
+				{
+					value = (*xml_prop)->Value();
+				}
+				else
+				{
+					unisim::util::xml::Error((*xml_prop)->Filename(), (*xml_prop)->LineNo(), "WARNING! ignoring property %s of tag %s", (*xml_prop)->Name().c_str(), xml_node->Name().c_str());
+				}
+			}
+		}
+
+		unsigned int i, n;
+		char buffer[value.length() + 1];
+		unsigned int len = ExpandEscapeSequences(value, buffer);
+		
+		return CreateDeviceProperty(name.c_str(), (uint8_t *) buffer, len);
+	}
+	else
+	{
+		if(xml_node->Name() == string("hex_property"))
+		{
+			string name;
+			string value;
+
+			const list<unisim::util::xml::Property *> *xml_props = xml_node->Properties();
+			list<unisim::util::xml::Property *>::const_iterator xml_prop;
+	
+			for(xml_prop = xml_props->begin(); xml_prop != xml_props->end(); xml_prop++)
+			{
+				if((*xml_prop)->Name() == string("name"))
+				{
+					name = (*xml_prop)->Value();
+				}
+				else
+				{
+					if((*xml_prop)->Name() == string("value"))
+					{
+						string hex_value = (*xml_prop)->Value();
+						uint32_t number_start = 0;
+						uint32_t bitcount = 0;
+						uint32_t i;
+						char c;
+						uint32_t offset;
+
+						for(i = 0; i < hex_value.length();)
+						{
+							c = hex_value[i];
+			
+							// ignoring something not hexadecimal character
+							if(IsHexChar(c)) 
+							{
+								bitcount += 4;
+								if(bitcount == 8) bitcount = 0;
+								i++;
+							}
+							else
+							{
+								if(bitcount)
+								{
+									// inserting a leading 0
+									hex_value.insert(number_start, "0");
+									// so move 'i' from one position to right
+									i++;
+									bitcount = 0;
+								}
+								// remove character at position 'i'
+								hex_value.erase(i,1);
+								number_start = i;
+							}
+						}
+
+						if(bitcount)
+						{
+							// inserting a leading 0
+							hex_value.insert(number_start, "0");
+						}
+						// at this point hex_value.length() must be an even number
+
+						uint32_t value_length = hex_value.length() / 2;
+						uint8_t value[value_length];
+					
+						for(offset = 0, i = 0; offset < value_length; i += 2, offset++)
+						{
+							value[offset] = (HexChar2Nibble(hex_value[i]) << 4) | HexChar2Nibble(hex_value[i+1]);
+						}
+
+						return CreateDeviceProperty(name.c_str(), value, value_length);
+					}
+					else
+					{
+						unisim::util::xml::Error((*xml_prop)->Filename(), (*xml_prop)->LineNo(), "WARNING! ignoring property %s of tag %s", (*xml_prop)->Name().c_str(), xml_node->Name().c_str());
+					}
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+void DeviceTree::DumpDeviceProperty(DeviceProperty *reloc_prop)
+{
+	int32_t length, i, j;
+	uint8_t *value;
+	fprintf(stderr, "\"%s\"\n", (char *) Relocate(BigEndian2Host(reloc_prop->name)));
+	length = BigEndian2Host(reloc_prop->length);
+	value = (uint8_t *) Relocate(BigEndian2Host(reloc_prop->value));
+	if(!value)
+	{
+		fprintf(stderr, "?\n");
+		return;
+	}
+	for(i = 0; i < length; i += 16)
+	{
+		for(j = 0; j < 16 && (i + j < length); j++)
+		{
+			fprintf(stderr, "%02x", value[i + j]);
+			if(j < 15) fprintf(stderr, " ");
+		}
+		for(; j < 16; j++)
+		{
+			fprintf(stderr, "  ");
+			if(j < 15) fprintf(stderr, " ");
+		}
+		fprintf(stderr, "    ");
+		for(j = 0; j < 16 && (i + j < length); j++)
+		{
+			uint8_t c = value[i + j];
+			fprintf(stderr, "%c", (c >= 32 && c < 128) ? c : '.');
+		}
+		fprintf(stderr, "\n");
+	}
+}
+
+DeviceNode *DeviceTree::CreateDeviceNode(DeviceNode *reloc_parent, const unisim::util::xml::Node *xml_node)
+{
+	DeviceNode *reloc_node = 0;
+
+	if(xml_node->Name() == string("devnode"))
+	{
+		reloc_node = (DeviceNode *) Relocate(Malloc(sizeof(DeviceNode)));
+		reloc_node->name = 0;
+		reloc_node->type = 0;
+		reloc_node->node = 0;
+		reloc_node->n_addrs = 0;
+		reloc_node->addrs = 0;
+		reloc_node->n_intrs = 0;
+		reloc_node->intrs = 0;
+		reloc_node->full_name = 0;
+		reloc_node->properties = 0;
+		reloc_node->parent = Host2BigEndian(UnRelocate(reloc_parent));
+		reloc_node->child = 0;
+		reloc_node->sibling = 0;
+		reloc_node->next = 0;	/* next device of same type */
+		if(last_reloc_node)
+		{
+			last_reloc_node->allnext = Host2BigEndian(UnRelocate(reloc_node));
+		}
+		reloc_node->allnext = 0; /* next in list of all nodes */
+	
+		last_reloc_node = reloc_node;
+
+		if(!reloc_parent)
+		{
+			char *name = "/";
+			reloc_node->full_name = Host2BigEndian(Malloc(strlen(name) + 1));
+			strcpy((char *) Relocate(BigEndian2Host(reloc_node->full_name)), name);
+		}
+
+		list<unisim::util::xml::Node *>::const_iterator xml_child;
+		const list<unisim::util::xml::Node *> *xml_childs = xml_node->Childs();
+	
+		// Check XML child nodes
+		for(xml_child = xml_childs->begin(); xml_child != xml_childs->end(); xml_child++)
+		{
+			if((*xml_child)->Name() != string("devnode") && (*xml_child)->Name() != string("string_property") && (*xml_child)->Name() != string("hex_property"))
+			{
+				unisim::util::xml::Error((*xml_child)->Filename(), (*xml_child)->LineNo(), "WARNING! expected either tag devnode/string_property/hex_property, ignoring tag %s", (*xml_child)->Name().c_str());
+			}
+		}
+
+		// Check XML node properties
+		list<unisim::util::xml::Property *>::const_iterator xml_prop;
+		const list<unisim::util::xml::Property *> *xml_props = xml_node->Properties();
+
+		if(!xml_props->empty())
+		{
+			unisim::util::xml::Error((*xml_prop)->Filename(), (*xml_prop)->LineNo(), "WARNING! ignoring properties of tag %s", xml_node->Name().c_str());
+		}
+
+		// Create Device properties and build a full name for the device node
+		for(xml_child = xml_childs->begin(); xml_child != xml_childs->end(); xml_child++)
+		{
+			if((*xml_child)->Name() == string("string_property") || (*xml_child)->Name() == string("hex_property"))
+			{
+				DeviceProperty *reloc_prop = CreateDeviceProperty(*xml_child);
+	
+				if(reloc_prop)
+				{
+					if(strcmp((char *) Relocate(BigEndian2Host(reloc_prop->name)), "name") == 0)
+					{
+						// the value of this device property is the name of the device node
+						
+						reloc_node->name = reloc_prop->value;
+						char *reloc_name = (char *) Relocate(BigEndian2Host(reloc_node->name));
+	
+						if(reloc_parent)
+						{
+							const char *reloc_parent_full_name = strcmp((char *) Relocate(BigEndian2Host(reloc_parent->full_name)), "/") == 0 ? "" : (char *) Relocate(BigEndian2Host(reloc_parent->full_name));
+							uint32_t parent_full_name_length = strlen(reloc_parent_full_name) + 1;
+							uint32_t name_length = strlen(reloc_name) + 1;
+							reloc_node->full_name = Host2BigEndian(Malloc(parent_full_name_length + name_length));
+							sprintf((char *) Relocate(BigEndian2Host(reloc_node->full_name)), "%s/%s", reloc_parent_full_name, reloc_name);
+						}
+					}
+	
+					DeviceProperty *reloc_pp;
+					DeviceProperty *reloc_prev;
+	
+					reloc_pp = (DeviceProperty *) Relocate(BigEndian2Host(reloc_node->properties));
+					reloc_prev = 0;
+			
+					if(reloc_pp)
+					{
+						do
+						{
+							reloc_prev = reloc_pp;
+						} while((reloc_pp = (DeviceProperty *) Relocate(BigEndian2Host(reloc_pp->next))) != 0);
+					}
+					
+					if(reloc_prev)
+					{
+						reloc_prev->next = Host2BigEndian(UnRelocate(reloc_prop));
+					}
+					else
+					{
+						reloc_node->properties = Host2BigEndian(UnRelocate(reloc_prop));
+					}
+				}
+			}
+		}
+
+		// Create child device nodes
+		for(xml_child = xml_childs->begin(); xml_child != xml_childs->end(); xml_child++)
+		{
+			if((*xml_child)->Name() == string("devnode"))
+			{
+				DeviceNode *reloc_child = CreateDeviceNode(reloc_node, *xml_child);
+
+				DeviceNode *reloc_sibling = (DeviceNode *) Relocate(BigEndian2Host(reloc_node->child));
+				DeviceNode *reloc_prev = 0;
+					
+				if(reloc_sibling)
+				{
+					do
+					{
+						reloc_prev = reloc_sibling;
+					} while((reloc_sibling = (DeviceNode *) Relocate(BigEndian2Host(reloc_sibling->sibling))) != 0);
+				}
+				
+				if(reloc_prev)
+				{
+					reloc_prev->sibling = Host2BigEndian(UnRelocate(reloc_child));
+				}
+				else
+				{
+					reloc_node->child = Host2BigEndian(UnRelocate(reloc_child));
+				}
+			}
+		}
+	}
+
+	return reloc_node;
+}
+
+void DeviceTree::DumpDeviceNode(DeviceNode *reloc_node)
+{
+	DeviceNode *reloc_child;
+	DeviceProperty *reloc_prop;
+	
+	fprintf(stderr, "Node %s\n", (char *) Relocate(BigEndian2Host(reloc_node->full_name)));
+	
+	reloc_prop = (DeviceProperty *) Relocate(BigEndian2Host(reloc_node->properties));
+	
+	if(reloc_prop)
+	{
+		fprintf(stderr, "Properties of %s\n", (char *) Relocate(BigEndian2Host(reloc_node->full_name)));
+		do
+		{
+			DumpDeviceProperty(reloc_prop);
+		} while((reloc_prop = (DeviceProperty *) Relocate(BigEndian2Host(reloc_prop->next))) != 0);
+	}
+	
+	reloc_child = (DeviceNode *) Relocate(BigEndian2Host(reloc_node->child));
+	
+	if(reloc_child)
+	{
+		do
+		{
+			DumpDeviceNode(reloc_child);
+		} while((reloc_child = (DeviceNode *) Relocate(BigEndian2Host(reloc_child->sibling))) != 0);
+	}	
+}
+
+
+DeviceTree::DeviceTree(BootInfos *boot_infos)
+{
+	root_node = 0;
+	last_reloc_node = 0;
+	this->boot_infos = boot_infos;
+	size = 0;
+	base = 0;
+}
+
+DeviceTree::~DeviceTree()
+{
+}
+
+uint32_t DeviceTree::Malloc(uint32_t size)
+{
+	this->size += size;
+	return boot_infos->Malloc(size) - base;
+}
+
+void *DeviceTree::Relocate(uint32_t offset)
+{
+	return offset ? boot_infos->Relocate(base + offset) : 0;
+}
+
+uint32_t DeviceTree::UnRelocate(void *p)
+{
+	return p ? boot_infos->UnRelocate((uint8_t *) p - base) : 0;
+}
+
+uint32_t DeviceTree::GetBase()
+{
+	return base;
+}
+
+uint32_t DeviceTree::GetSize()
+{
+	return size;
+}
+
+bool DeviceTree::Load(const string& filename)
+{
+	base = boot_infos->Malloc(4); // first 4 bytes must be set to zero
+
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+	unisim::util::xml::Node *xml_node;
+
+	xml_node = parser->Parse(filename);
+	delete parser;
+
+	if(xml_node)
+	{
+		//cerr << *xml_node << endl;
+		if(xml_node->Name() == string("devnode"))
+		{
+			root_node = CreateDeviceNode(0 /* no parent */, xml_node);
+			//DumpDeviceNode(root_node);
+		}
+		else
+		{
+			unisim::util::xml::Error(xml_node->Filename(), xml_node->LineNo(), "WARNING! expected tag devnode, got %s", xml_node->Name().c_str());
+		}
+		delete xml_node;
+	}
+
+	return root_node != 0;
+}
+
+DeviceNode *DeviceTree::FindDevice(const char *prop_name, const char *prop_string_value)
+{
+	DeviceNode *reloc_node;
+
+	for(reloc_node = root_node; reloc_node; reloc_node = (DeviceNode *) Relocate(BigEndian2Host(reloc_node->allnext)))
+	{
+		DeviceProperty *reloc_prop;
+		for(reloc_prop = (DeviceProperty *) Relocate(BigEndian2Host(reloc_node->properties)); reloc_prop; reloc_prop = (DeviceProperty *) Relocate(BigEndian2Host(reloc_prop->next)))
+		{
+			if(strcmp((char *) Relocate(BigEndian2Host(reloc_prop->name)), prop_name) == 0)
+			{
+				uint32_t prop_len = BigEndian2Host(reloc_prop->length);
+				if(strncmp(( char *) Relocate(BigEndian2Host(reloc_prop->value)), prop_string_value, prop_len - 1) == 0)
+				{
+					return reloc_node;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+uint8_t *DeviceTree::GetProperty(DeviceNode *reloc_node, const char *name, int32_t& len)
+{
+	DeviceProperty *reloc_prop;
+	for(reloc_prop = (DeviceProperty *) Relocate(BigEndian2Host(reloc_node->properties)); reloc_prop; reloc_prop = (DeviceProperty *) Relocate(BigEndian2Host(reloc_prop->next)))
+	{
+		if(strcmp((char *) Relocate(BigEndian2Host(reloc_prop->name)), name) == 0)
+		{
+			len = BigEndian2Host(reloc_prop->length);
+			return (uint8_t *) Relocate(BigEndian2Host(reloc_prop->value));
+		}
+	}
+	return 0;
+}
+
+BootInfos::BootInfos()
+{
+	size = 0;
+	max_size = MAX_BOOT_INFOS_IMAGE_SIZE;
+	image = (uint8_t *) malloc(max_size);
+}
+
+BootInfos::~BootInfos()
+{
+	free(image);
+}
+
+uint32_t BootInfos::Malloc(uint32_t size)
+{
+	uint32_t ret;
+	
+	if(size > 0)
+	{
+		size = (size + 3) & 0xfffffffcUL;
+		if(this->size + size > max_size)
+		{
+			cerr << "PANIC! Boot info image is too big: you should decrease the size of your initial ramdisk" << endl;
+			abort();
+		}
+	/*	if(this->size + size > max_size)
+		{
+			max_size = max_size * 2 > this->size + size ? max_size * 2 : this->size + size;
+			image = (uint8_t *) realloc(image, max_size);
+		}*/
+		ret = this->size;
+		memset(image + ret, 0, size);
+		this->size += size;
+		if(ret & 3) abort();
+	}
+	else
+	{
+		ret = this->size;
+	}
+	return ret;
+}
+
+void *BootInfos::Relocate(uint32_t offset)
+{
+	return offset ? image + offset : 0;
+}
+
+uint32_t BootInfos::UnRelocate(void *p)
+{
+	return p ? ((uint8_t *) p) - image : 0;
+}
+
+bool BootInfos::Load(const string& device_tree_filename, const string& kernel_parms, const string& ramdisk_filename, unsigned int screen_width, unsigned int screen_height)
+{
+	int i;
+	DeviceTree device_tree(this);
+	BootInfosImage *boot_infos;
+	//char *kernel_parms = "";
+
+	Malloc(sizeof(BootInfosImage));
+	boot_infos = (BootInfosImage *) image;
+
+	uint32_t kernel_parms_offset = Malloc(kernel_parms.length() + 1);
+	char *kernel_parms_image = (char *) Relocate(kernel_parms_offset);
+	strcpy(kernel_parms_image, kernel_parms.c_str());
+	
+	if(!ramdisk_filename.empty())
+	{
+		ifstream f(ramdisk_filename.c_str(), ifstream::in | ifstream::binary);
+		
+		if(f.seekg(0, ios::end).fail()) return false;
+
+		uint32_t ramdisk_size = f.tellg();
+		
+		if(f.seekg(0, ios::beg).fail()) return false;
+
+		uint32_t ramdisk_offset = Malloc(0);
+		uint32_t size_to_align_on_page_boundary = ((ramdisk_offset + 4095) & 0xfffff000UL) - ramdisk_offset;
+		Malloc(size_to_align_on_page_boundary);
+		ramdisk_offset = Malloc(ramdisk_size);
+		cerr << "Loading ramdisk at offset " << hex << ramdisk_offset << dec << endl;
+		
+		char *ramdisk = (char *) Relocate(ramdisk_offset);
+		
+		if(f.read(ramdisk, ramdisk_size).fail())
+		{
+			cerr << "ERROR! Can't load ramdisk file \"" << ramdisk_filename << "\"" << endl;
+			return false;
+		}
+	
+		boot_infos->ramDisk = Host2BigEndian(ramdisk_offset);
+		boot_infos->ramDiskSize = Host2BigEndian(ramdisk_size);
+	}
+	else
+	{
+		boot_infos->ramDisk = 0;
+		boot_infos->ramDiskSize = 0;
+	}
+
+	if(!device_tree.Load(device_tree_filename)) return false;
+
+	DeviceNode *display_device = device_tree.FindDevice("device_type", "display");
+
+	if(display_device)
+	{
+		int32_t len;
+		uint8_t *address_prop = device_tree.GetProperty(display_device, "address", len);
+
+		if(address_prop)
+		{
+			boot_infos->logicalDisplayBase = boot_infos->dispDeviceBase = *(uint32_t *) address_prop;
+		}
+		else
+		{
+			cerr << "WARNING! Can't find display device address in device tree" << endl;
+		}
+
+		uint8_t *depth_prop = device_tree.GetProperty(display_device, "depth", len);
+
+		if(depth_prop)
+		{
+			boot_infos->dispDeviceDepth = *(uint32_t *) depth_prop;
+		}
+		else
+		{
+			cerr << "WARNING! Can't find display device depth in device tree" << endl;
+		}
+
+		if(screen_width)
+		{
+			boot_infos->dispDeviceRect[2] = Host2BigEndian((uint32_t) screen_width); /* right */
+		}
+		else
+		{
+			uint8_t *width_prop = device_tree.GetProperty(display_device, "width", len);
+	
+			if(width_prop)
+			{
+				boot_infos->dispDeviceRect[2] = *(uint32_t *) width_prop; /* right */
+			}
+			else
+			{
+				cerr << "WARNING! Can't find display device width in device tree" << endl;
+			}
+		}
+
+		if(screen_height)
+		{
+			boot_infos->dispDeviceRect[3] = Host2BigEndian((uint32_t) screen_height); /* bottom */
+		}
+		else
+		{
+			uint8_t *height_prop = device_tree.GetProperty(display_device, "height", len);
+	
+			if(height_prop)
+			{
+				boot_infos->dispDeviceRect[3] = *(uint32_t *) height_prop; /* bottom */
+			}
+			else
+			{
+				cerr << "WARNING! Can't find display device height in device tree" << endl;
+			}
+		}
+
+		if(screen_width && depth_prop)
+		{
+			boot_infos->dispDeviceRowBytes = Host2BigEndian(screen_width * ((BigEndian2Host(*(uint32_t *) depth_prop) + 7) / 8));
+		}
+		else
+		{
+			uint8_t *linebytes_prop = device_tree.GetProperty(display_device, "linebytes", len);
+	
+			if(linebytes_prop)
+			{
+				boot_infos->dispDeviceRowBytes = *(uint32_t *) linebytes_prop;
+			}
+			else
+			{
+				cerr << "WARNING! Can't find display device bytes per scan line in device tree" << endl;
+			}
+		}
+	}
+	else
+	{
+		cerr << "WARNING! Can't find display device in device tree" << endl;
+	}
+
+	boot_infos->version = Host2BigEndian(BOOT_INFO_VERSION);
+	boot_infos->compatible_version = Host2BigEndian(BOOT_INFO_COMPATIBLE_VERSION);
+	boot_infos->machineID = 0; /* ? */
+	boot_infos->architecture = Host2BigEndian(BOOT_ARCH_PCI); /* ? */
+	boot_infos->deviceTreeOffset = Host2BigEndian(device_tree.GetBase());// + kernel_parms_size;
+	boot_infos->deviceTreeSize = Host2BigEndian(device_tree.GetSize()); /* ? */
+// 	boot_infos->ramDisk = 0;
+// 	boot_infos->ramDiskSize = 0;
+
+	boot_infos->dispDeviceRect[0] = 0; /* left */
+	boot_infos->dispDeviceRect[1] = 0; /* top */
+	boot_infos->dispDeviceColorsOffset = 0;
+	boot_infos->dispDeviceRegEntryOffset = 0; /* ? may be (char *) display_device - (char *) boot_infos*/
+	boot_infos->kernelParamsOffset = Host2BigEndian(kernel_parms_offset); /* ? */
+	for(i = 0; i < MAX_MEM_MAP_SIZE; i++)
+	{
+		boot_infos->physMemoryMap[i].physAddr = 0;
+		boot_infos->physMemoryMap[i].size = 0;
+	}
+	boot_infos->physMemoryMapSize = 0;
+	boot_infos->frameBufferSize = 0;
+	boot_infos->totalParamsSize = Host2BigEndian(size);
+
+	return true;
+}
+
+const uint8_t *BootInfos::GetImage()
+{
+	return image;
+}
+
+uint32_t BootInfos::GetImageSize()
+{
+	return size;
+}
+
+PMACBootX::PMACBootX(const char *name, Object *parent) :
+	Object(name, parent),
+	Service<LoaderInterface<uint32_t> >(name, parent),
+	Client<LoaderInterface<uint32_t> >(name, parent),
+	Client<MemoryInterface<uint32_t> >(name, parent),
+	Client<CPURegistersInterface>(name, parent),
+	loader_export("loader-export", this),
+	loader_import("loader-import", this),
+	memory_import("memory-import", this),
+	registers_import("cpu-registers-import", this),
+	device_tree_filename(),
+	kernel_parms(),
+	r1_value(0),
+	r3_value(0),
+	r4_value(0),
+	r5_value(0),
+	screen_width(0),
+	screen_height(0),
+	param_device_tree_filename("device-tree-filename", this, device_tree_filename),
+	param_kernel_parms("kernel-params", this, kernel_parms),
+	param_ramdisk_filename("ramdisk-filename", this, ramdisk_filename),
+	param_screen_width("screen-width", this, screen_width),
+	param_screen_height("screen-height", this, screen_height),
+	stack_base(0)
+{
+	SetupDependsOn(loader_import);
+	SetupDependsOn(memory_import);
+	SetupDependsOn(registers_import);
+}
+
+void PMACBootX::OnDisconnect()
+{
+}
+
+bool PMACBootX::Setup()
+{
+	if(!loader_import)
+	{
+		cerr << Object::GetName() << ": ERROR! no loader connected" << endl;
+		return false;
+	}
+	
+	if(!memory_import)
+	{
+		cerr << Object::GetName() << ": ERROR! no memory connected" << endl;
+		return false;
+	}
+
+	if(!registers_import)
+	{
+		cerr << Object::GetName() << ": ERROR! no cpu connected" << endl;
+		return false;
+	}
+		
+	BootInfos boot_infos;
+	uint32_t kernel_top_addr, boot_infos_addr;
+
+	kernel_top_addr = loader_import->GetTopAddr();
+
+	stack_base = 0x400000; // under first 512 KB
+
+	boot_infos_addr = (kernel_top_addr + 4095) & 0xfffff000; // align boot info to a page boundary
+
+	
+	r1_value = stack_base - 4;
+	r3_value = 0x426f6f58UL; /* 'BooX' */
+	r4_value = boot_infos_addr;
+	r5_value = 0; /* NULL */
+
+	if(!boot_infos.Load(device_tree_filename, kernel_parms, ramdisk_filename, screen_width, screen_height)) {
+		cerr << Object::GetName() << ": Error while loading kernel" << endl;
+		cerr << "   device_tree_filename = " << device_tree_filename << endl;
+		cerr << "   kernel_parms = " << kernel_parms << endl;
+		cerr << "   ramdisk_filename = " << ramdisk_filename << endl;
+		return false;
+	}
+	
+	const uint8_t *boot_infos_image = boot_infos.GetImage();
+	uint32_t boot_infos_image_size = boot_infos.GetImageSize();
+
+	cerr << Object::GetName() << ": Writing boot infos at 0x" << hex << boot_infos_addr << dec << endl;
+	
+	if(!memory_import->WriteMemory(boot_infos_addr, boot_infos_image, boot_infos_image_size))
+	{
+		cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << boot_infos_addr << " - @0x" << (boot_infos_addr +  boot_infos_image_size - 1) << dec << ")" << endl;
+		return false;
+	}
+
+	uint32_t entry_point = loader_import->GetEntryPoint();
+		
+	RegisterInterface *pc = registers_import->GetRegister("cia");
+	if(!pc) return false;
+	pc->SetValue(&entry_point);
+	RegisterInterface *r1 = registers_import->GetRegister("r1");
+	if(!r1) return false;
+	r1->SetValue(&r1_value);
+	RegisterInterface *r3 = registers_import->GetRegister("r3");
+	if(!r3) return false;
+	r3->SetValue(&r3_value);
+	RegisterInterface *r4 = registers_import->GetRegister("r4");
+	if(!r4) return false;
+	r4->SetValue(&r4_value);
+	RegisterInterface *r5 = registers_import->GetRegister("r5");
+	if(!r5) return false;
+	r5->SetValue(&r5_value);
+	
+	return true;
+}
+
+void PMACBootX::Reset()
+{
+	loader_import->Reset();
+/*	ClientIndependentSetup();
+	ClientDependentSetup();*/
+}
+
+uint32_t PMACBootX::GetEntryPoint() const
+{
+	return loader_import->GetEntryPoint();
+}
+
+uint32_t PMACBootX::GetTopAddr() const
+{
+	return loader_import->GetTopAddr();
+}
+
+uint32_t PMACBootX::GetStackBase() const
+{
+	return stack_base;
+}
+
+} // end of namespace pmac_bootx
+} // end of namespace loader
+} // end of namespace service
+} // end of namespace unisim
