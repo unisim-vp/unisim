@@ -32,13 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FS_UTILS_DEBUG_BREAKPOINT_REGISTRY_TPP__
-#define __FS_UTILS_DEBUG_BREAKPOINT_REGISTRY_TPP__
+#ifndef __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_TCC__
+#define __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_TCC__
 
 #include <iostream>
 
-namespace full_system {
-namespace utils {
+namespace unisim {
+namespace util {
 namespace debug {
 
 using std::cerr;
@@ -233,7 +233,7 @@ BreakpointMapPage<ADDRESS> *BreakpointRegistry<ADDRESS>::GetPage(ADDRESS addr)
 
 
 } // end of namespace debug
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace util
+} // end of namespace unisim
 
 #endif

@@ -32,27 +32,25 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FS_UTILS_DEBUG_WATCHPOINT_HH__
-#define __FS_UTILS_DEBUG_WATCHPOINT_HH__
+#ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
+#define __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 
-#include <plugins/debug/instruction_level_debug_interface.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <inttypes.h>
 #include <iostream>
 
-namespace full_system {
-namespace utils {
+namespace unisim {
+namespace util {
 namespace debug {
 
-using full_system::plugins::debug::MemoryType;
-using full_system::plugins::debug::MemoryAccessType;
-using namespace std;
+using unisim::service::interfaces::MemoryAccessReporting;
 
 template <class ADDRESS>
 class Watchpoint
 {
 public:
 
-	Watchpoint(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size)
+	Watchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 	{
 		this->mat = mat;
 		this->mt = mt;
@@ -60,11 +58,11 @@ public:
 		this->size = size;
 	}
 
-	inline MemoryAccessType GetMemoryAccessType() const { return mat; }
-	inline MemoryType GetMemoryType() const { return mt; }
+	inline typename MemoryAccessReporting<ADDRESS>::MemoryAccessType GetMemoryAccessType() const { return mat; }
+	inline typename MemoryAccessReporting<ADDRESS>::MemoryType GetMemoryType() const { return mt; }
 	inline ADDRESS GetAddress() const { return addr; }
 	inline uint32_t GetSize() const { return size; }
-	inline bool HasOverlap(ADDRESS addr, uint32_t size) const 
+	inline bool HasOverlap(ADDRESS addr, uint32_t size) const
 	{
 		ADDRESS a_lo = this->addr;
 		ADDRESS a_hi = this->addr + this->size - 1;
@@ -76,14 +74,14 @@ public:
 		return ovl_lo <= ovl_hi;
 	}
 private:
-	MemoryAccessType mat;
-	MemoryType mt;
+	typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat;
+	typename MemoryAccessReporting<ADDRESS>::MemoryType mt;
 	ADDRESS addr;
 	uint32_t size;
 };
 
 } // end of namespace debug
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace util
+} // end of namespace unisim
 
 #endif

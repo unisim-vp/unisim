@@ -32,15 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FS_UTILS_DEBUG_BREAKPOINT_REGISTRY_HH__
-#define __FS_UTILS_DEBUG_BREAKPOINT_REGISTRY_HH__
+#ifndef __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_HH__
+#define __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_HH__
 
-#include <plugins/debug/instruction_level_debug_interface.hh>
-#include <utils/debug/breakpoint.hh>
+#include <unisim/util/debug/breakpoint.hh>
 #include <list>
 
-namespace full_system {
-namespace utils {
+namespace unisim {
+namespace util {
 namespace debug {
 
 using std::list;
@@ -87,7 +86,7 @@ private:
 };
 
 } // end of namespace debug
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace util
+} // end of namespace unisim
 
 #endif

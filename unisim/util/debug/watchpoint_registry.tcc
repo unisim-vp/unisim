@@ -32,13 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FS_UTILS_DEBUG_WATCHPOINT_REGISTRY_TPP__
-#define __FS_UTILS_DEBUG_WATCHPOINT_REGISTRY_TPP__
+#ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_TCC__
+#define __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_TCC__
 
 #include <iostream>
 
-namespace full_system {
-namespace utils {
+namespace unisim {
+namespace util {
 namespace debug {
 
 using std::cerr;
@@ -60,23 +60,23 @@ WatchpointMapPage<ADDRESS>::~WatchpointMapPage()
 }
 
 template <class ADDRESS>
-void WatchpointMapPage<ADDRESS>::SetWatchpoint(MemoryAccessType mat, uint32_t offset, uint32_t size)
+void WatchpointMapPage<ADDRESS>::SetWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size)
 {
 	uint32_t i;
 	for(i = 0; i < size; i++, offset++)
-		map[offset / 16] |= ((mat & MAT_READ ? 0x01UL : 0) | (mat & MAT_WRITE ? 0x02UL : 0)) << (2 * (offset % 16));
+		map[offset / 16] |= ((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x01UL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0x02UL : 0)) << (2 * (offset % 16));
 }
 
 template <class ADDRESS>
-void WatchpointMapPage<ADDRESS>::RemoveWatchpoint(MemoryAccessType mat, uint32_t offset, uint32_t size)
+void WatchpointMapPage<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size)
 {
 	uint32_t i;
 	for(i = 0; i < size; i++, offset++)
-		map[offset / 16] &= ~(((mat & MAT_READ ? 0x01UL : 0) | (mat & MAT_WRITE ? 0x02UL : 0)) << (2 * (offset % 16)));
+		map[offset / 16] &= ~(((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x01UL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0x02UL : 0)) << (2 * (offset % 16)));
 }
 
 template <class ADDRESS>
-bool WatchpointMapPage<ADDRESS>::HasWatchpoint(MemoryAccessType mat, uint32_t offset, uint32_t size)
+bool WatchpointMapPage<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size)
 {
 	uint32_t offset_mod_16 = offset % 16;
 	uint32_t offset_div_16 = offset / 16;
@@ -84,48 +84,48 @@ bool WatchpointMapPage<ADDRESS>::HasWatchpoint(MemoryAccessType mat, uint32_t of
 	switch(size)
 	{
 		case 1:
-			return (map[offset_div_16] & (((mat & MAT_READ ? 0x1UL : 0) | (mat & MAT_WRITE ? 0x2UL : 0)) << (2 * offset_mod_16))) ? true : false;
+			return (map[offset_div_16] & (((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x1UL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0x2UL : 0)) << (2 * offset_mod_16))) ? true : false;
 		case 2:
 			if(offset_mod_16 <= 14)
 			{
-				return (map[offset_div_16] & (((mat & MAT_READ ? 0x5UL : 0) | (mat & MAT_WRITE ? 0xaUL : 0)) << (2 * offset_mod_16))) ? true : false;
+				return (map[offset_div_16] & (((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x5UL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0xaUL : 0)) << (2 * offset_mod_16))) ? true : false;
 			}
 			else
 			{
-				uint64_t mask = (uint64_t) ((mat & MAT_READ ? 0x5ULL : 0) | (mat & MAT_WRITE ? 0xaULL : 0)) << (2 * offset_mod_16);
+				uint64_t mask = (uint64_t) ((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x5ULL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0xaULL : 0)) << (2 * offset_mod_16);
 				return (map[offset_div_16] & (uint32_t) mask) || (map[offset_div_16 + 1] & (uint32_t)(mask >> 32)) ? true : false;
 			}
 			break;
 		case 4:
 			if(offset_mod_16 <= 12)
 			{
-				return (map[offset_div_16] & (((mat & MAT_READ ? 0x55UL : 0) | (mat & MAT_WRITE ? 0xaaUL : 0)) << (2 * offset_mod_16))) ? true : false;
+				return (map[offset_div_16] & (((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x55UL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0xaaUL : 0)) << (2 * offset_mod_16))) ? true : false;
 			}
 			else
 			{
-				uint64_t mask = (uint64_t) ((mat & MAT_READ ? 0x55ULL : 0) | (mat & MAT_WRITE ? 0xaaULL : 0)) << (2 * offset_mod_16);
+				uint64_t mask = (uint64_t) ((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x55ULL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0xaaULL : 0)) << (2 * offset_mod_16);
 				return (map[offset_div_16] & (uint32_t) mask) || (map[offset_div_16 + 1] & (uint32_t)(mask >> 32)) ? true : false;
 			}
 			break;
 		case 8:
 			if(offset_mod_16 <= 8)
 			{
-				return (map[offset_div_16] & (((mat & MAT_READ ? 0x5555UL : 0) | (mat & MAT_WRITE ? 0xaaaaUL : 0)) << (2 * offset_mod_16))) ? true : false;
+				return (map[offset_div_16] & (((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x5555UL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0xaaaaUL : 0)) << (2 * offset_mod_16))) ? true : false;
 			}
 			else
 			{
-				uint64_t mask = (uint64_t) ((mat & MAT_READ ? 0x5555ULL : 0) | (mat & MAT_WRITE ? 0xaaaaULL : 0)) << (2 * offset_mod_16);
+				uint64_t mask = (uint64_t) ((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x5555ULL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0xaaaaULL : 0)) << (2 * offset_mod_16);
 				return (map[offset_div_16] & (uint32_t) mask) || (map[offset_div_16 + 1] & (uint32_t)(mask >> 32)) ? true : false;
 			}
 			break;
 		case 16:
 			if(offset_mod_16 == 0)
 			{
-				return (map[offset_div_16] & (((mat & MAT_READ ? 0x55555555UL : 0) | (mat & MAT_WRITE ? 0xaaaaaaaaUL : 0)) << (2 * offset_mod_16))) ? true : false;
+				return (map[offset_div_16] & (((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x55555555UL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0xaaaaaaaaUL : 0)) << (2 * offset_mod_16))) ? true : false;
 			}
 			else
 			{
-				uint64_t mask = (uint64_t) ((mat & MAT_READ ? 0x55555555ULL : 0) | (mat & MAT_WRITE ? 0xaaaaaaaaULL : 0)) << (2 * offset_mod_16);
+				uint64_t mask = (uint64_t) ((mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x55555555ULL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0xaaaaaaaaULL : 0)) << (2 * offset_mod_16);
 				return (map[offset_div_16] & (uint32_t) mask) || (map[offset_div_16 + 1] & (uint32_t)(mask >> 32)) ? true : false;
 			}
 			break;
@@ -134,7 +134,7 @@ bool WatchpointMapPage<ADDRESS>::HasWatchpoint(MemoryAccessType mat, uint32_t of
 			// access is not 1, 2, 4, 8, or 16 bytes long
 			if(size)
 			{
-				uint32_t mask = (mat & MAT_READ ? 0x01UL : 0) | (mat & MAT_WRITE ? 0x02UL : 0);
+				uint32_t mask = (mat & MemoryAccessReporting<ADDRESS>::MAT_READ ? 0x01UL : 0) | (mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE ? 0x02UL : 0);
 				do
 				{
 					if(map[offset / 16] & (mask << (2 * (offset % 16)))) return true;
@@ -179,7 +179,7 @@ WatchpointRegistry<ADDRESS>::~WatchpointRegistry()
 }
 
 template <class ADDRESS>
-bool WatchpointRegistry<ADDRESS>::SetWatchpoint(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size)
+bool WatchpointRegistry<ADDRESS>::SetWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	AllocatePage(mt, addr);
 	WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
@@ -214,7 +214,7 @@ bool WatchpointRegistry<ADDRESS>::SetWatchpoint(MemoryAccessType mat, MemoryType
 }
 
 template <class ADDRESS>
-bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size)
+bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
 	if(!page) return false;
@@ -235,7 +235,7 @@ bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(MemoryAccessType mat, MemoryT
 }
 
 template <class ADDRESS>
-const Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS>::FindWatchpoint(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size)
+const Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS>::FindWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 //   cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ":"
 //        << "addr = 0x" << hex << addr << dec << " size = " << size 
@@ -253,7 +253,7 @@ const Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS>::FindWatchpoint(MemoryAcc
 }
 
 template <class ADDRESS>
-bool WatchpointRegistry<ADDRESS>::HasWatchpoint(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size)
+bool WatchpointRegistry<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
   WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
   if(!page) {
@@ -281,7 +281,7 @@ const list<Watchpoint<ADDRESS> >& WatchpointRegistry<ADDRESS>::GetWatchpoints()
 }
 
 template <class ADDRESS>
-void WatchpointRegistry<ADDRESS>::AllocatePage(MemoryType mt, ADDRESS addr)
+void WatchpointRegistry<ADDRESS>::AllocatePage(typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr)
 {
 	WatchpointMapPage<ADDRESS> *page;
 	ADDRESS base_addr = addr & ~(WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1);
@@ -307,7 +307,7 @@ void WatchpointRegistry<ADDRESS>::AllocatePage(MemoryType mt, ADDRESS addr)
 
 
 template <class ADDRESS>
-WatchpointMapPage<ADDRESS> *WatchpointRegistry<ADDRESS>::GetPage(MemoryType mt, ADDRESS addr)
+WatchpointMapPage<ADDRESS> *WatchpointRegistry<ADDRESS>::GetPage(typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr)
 {
 	WatchpointMapPage<ADDRESS> *prev, *page;
 	ADDRESS base_addr = addr & ~(WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1);
@@ -338,7 +338,7 @@ WatchpointMapPage<ADDRESS> *WatchpointRegistry<ADDRESS>::GetPage(MemoryType mt, 
 
 
 } // end of namespace debug
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace util
+} // end of namespace unisim
 
 #endif

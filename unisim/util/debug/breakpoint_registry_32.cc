@@ -32,16 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <utils/debug/breakpoint_registry.hh>
-#include <utils/debug/breakpoint_registry.tpp>
+#include <unisim/util/debug/breakpoint_registry.hh>
+#include <unisim/util/debug/breakpoint_registry.tcc>
 
-namespace full_system {
-namespace utils {
+namespace unisim {
+namespace util {
 namespace debug {
 
 template class BreakpointMapPage<uint32_t>;
 template class BreakpointRegistry<uint32_t>;
 
 } // end of namespace debug
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace util
+} // end of namespace unisim
