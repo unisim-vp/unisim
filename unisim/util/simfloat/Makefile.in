@@ -132,7 +132,7 @@ dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 host_alias = @host_alias@
 htmldir = @htmldir@
-includedir = $(prefix)/include/lib/simfloat
+includedir = $(prefix)/include/unisim/util/simfloat
 infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
@@ -468,8 +468,10 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-includeHEADERS
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) uninstall-hook
 
-.MAKE: install-am install-strip
+.MAKE: install-am install-strip uninstall-am
 
 .PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
 	clean-generic ctags dist dist-all dist-bzip2 dist-gzip \
@@ -483,9 +485,12 @@ uninstall-am: uninstall-includeHEADERS
 	install-ps install-ps-am install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
-	pdf-am ps ps-am tags uninstall uninstall-am \
+	pdf-am ps ps-am tags uninstall uninstall-am uninstall-hook \
 	uninstall-includeHEADERS
 
+
+uninstall-hook:
+	(rmdir $(includedir) || true)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

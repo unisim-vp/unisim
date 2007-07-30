@@ -9,5 +9,5 @@ install-exec-hook: $(libdir)/libdebug.a
 	(cd $(prefix)/lib && $(LN_S) $< libunisim_util_debug.a)
 uninstall-hook:
 	rm -f $(prefix)/lib/libunisim_util_debug.a
-	rmdir $(libdir)
-	rmdir $(includedir)
+	(rmdir $(libdir) || true)
+	(rmdir $(includedir) || true)

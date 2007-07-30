@@ -40,7 +40,7 @@ AM_INIT_AUTOMAKE
 
 AC_PROG_INSTALL
 
-AC_CONFIG_SUBDIRS([xml arithmetic endian garbage_collector hash_table])
+AC_CONFIG_SUBDIRS([xml arithmetic endian garbage_collector hash_table debug simfloat])
 
 # files to generate
 #   this should include all the makefiles to generate
