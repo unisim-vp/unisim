@@ -43,16 +43,8 @@ namespace service {
 namespace interfaces {
   
   template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-  class LinuxOS : public unisim::service::interfaces::OS {
+  class LinuxOS {
   public:
-    /**
-     * Set the binding between a system call implementation defined by its
-     *   name and its identifier.
-     *
-     * @param syscall_name The name of the system call we want to bind.
-     * @param syscall_id The number identifier that the system call will have.
-     */
-    virtual void SetSyscallId(const std::string &syscall_name, int syscall_id) = 0;
     /**
      * Executes a system call based on the binding done with the SetSyscallId
      *   method.

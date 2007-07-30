@@ -31,26 +31,51 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+ 
+#include <string>
+#include <sstream>
+#include <stdexcept>
+#include "unisim/service/os/linux_os/linux_os_exception.hh"
 
-#ifndef __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
-#define __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
-
-#include <sys/stat.h>
-#include <sys/times.h>
-#include "unisim/service/interfaces/cpu_os.hh"
-  
 namespace unisim {
 namespace service {
-namespace interfaces {
+namespace os {
+namespace linux_os {
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-class CPULinuxOS {
-public:
-    virtual void PerformExit(int ret) = 0;
-};
+using std::string;
+using std::stringstream;
+using std::endl;
+using std::runtime_error;
 
-} // end of interfaces namespace
+/* Exceptions implementation */
+UnimplementedSystemCall::UnimplementedSystemCall(const char *function,
+		const char *file,
+        int line,
+        unsigned int number) : runtime_error("") {
+	this->function = new string(function);
+	this->file = new string(file);
+	this->line = line;
+	this->number = number;
+	stringstream sstr;
+	sstr << "(" << *function
+       	<< ":" << *file
+       	<< ":" << line
+       	<< "): syscall number " << number << " not implemented (or not associated)" 
+       	<< endl;
+	str = sstr.str();
+}
+  
+UnimplementedSystemCall::~UnimplementedSystemCall() throw() {
+	delete function;
+	delete file;
+}
+  
+const char *
+UnimplementedSystemCall::what() const throw() {
+	return str.c_str();
+}
+
+} // end of linux_os namespace
+} // end of os namespace
 } // end of service namespace
-} // end of unisim namespace
-
-#endif // __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
+} // end of unisim

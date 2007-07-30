@@ -33,20 +33,33 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Service Library], [1.0])
+AC_INIT([UNISIM Service OS LinuxOS], [1.0],
+	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
+	[UnisimServiceOSLinuxOS])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR C HEADERS ####################################################
+AC_CHECK_HEADERS([stdio.h stdarg.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
+
+###### CHECK FOR C++ HEADERS ##################################################
+AC_CHECK_HEADERS([list string iostream fstream],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([interfaces logger os debug loader])
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

@@ -44,7 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([gdb_server inline_debugger symbol_table])
+AC_CONFIG_SUBDIRS([symbol_table])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

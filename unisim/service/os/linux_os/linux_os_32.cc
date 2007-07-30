@@ -31,26 +31,10 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+ 
+#include "unisim/service/os/linux_os/linux_os.hh"
+#include "unisim/service/os/linux_os/linux_os.tcc"
+#include <inttypes.h>
 
-#ifndef __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
-#define __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
-
-#include <sys/stat.h>
-#include <sys/times.h>
-#include "unisim/service/interfaces/cpu_os.hh"
-  
-namespace unisim {
-namespace service {
-namespace interfaces {
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-class CPULinuxOS {
-public:
-    virtual void PerformExit(int ret) = 0;
-};
-
-} // end of interfaces namespace
-} // end of service namespace
-} // end of unisim namespace
-
-#endif // __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
+template
+class unisim::service::os::linux_os::LinuxOS<uint32_t, uint32_t>;

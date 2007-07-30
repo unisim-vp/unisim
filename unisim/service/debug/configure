@@ -642,7 +642,7 @@ ac_subst_files=''
       ac_precious_vars='build_alias
 host_alias
 target_alias'
-ac_subdirs_all='gdb_server inline_debugger symbol_table'
+ac_subdirs_all='symbol_table'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -2212,7 +2212,7 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 ac_config_files="$ac_config_files Makefile"
 
 
-subdirs="$subdirs gdb_server inline_debugger symbol_table"
+subdirs="$subdirs symbol_table"
 
 
 # launch the generation of makefiles
