@@ -51,12 +51,13 @@ inline bool DebugEnabled()
 	return debug_enabled;
 }
 
-namespace full_system {
+namespace unisim {
+namespace kernel {
 namespace tlm {
 
 using std::stack;
 using std::list;
-using full_system::utils::garbage_collector::Pointer;
+using unisim::util::garbage_collector::Pointer;
 using std::string;
 
 template <typename REQ, typename RSP> class TlmMessage;
@@ -338,6 +339,7 @@ private:
 };
 
 } // end of tlm namespace
-} // end of full_system namespace
+} // end of kernel namespace
+} // end of unisim namespace
 
 #endif // __FULLSYSTEM_TLM_TLM_HH__

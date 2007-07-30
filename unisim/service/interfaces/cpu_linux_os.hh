@@ -53,6 +53,8 @@ public:
     virtual unsigned int Stat64Size(void) = 0;
     virtual void* ConvertTms(struct tms *) = 0;
     virtual unsigned int TmsSize(void) = 0;
+    
+    virtual void ARMLinuxOSExit(int ret) = 0;
   };
 
 } // end of interfaces namespace

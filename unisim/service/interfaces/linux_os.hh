@@ -53,7 +53,14 @@ namespace interfaces {
      * @param syscall_id The number identifier that the system call will have.
      */
     virtual void SetSyscallId(const std::string &syscall_name, int syscall_id) = 0;
-  };
+    /**
+     * Executes a system call based on the binding done with the SetSyscallId
+     *   method.
+     * 
+     * @param id the syscall identifier
+     */
+    virtual void ExecuteSystemCall(int id) = 0;
+};
 
 } // end of interfaces namespace
 } // end of service namespace
