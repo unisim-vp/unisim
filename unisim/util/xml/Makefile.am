@@ -7,7 +7,7 @@ includedir = $(prefix)/include/unisim/util/xml
 include_HEADERS = xml.hh
 
 install-exec-hook: $(libdir)/libxml.a
-	(cd $(prefix)/lib && $(LN_S) $< libunisim_util_xml.a)
+	if test ! -f $(prefix)/lib/libunisim_util_xml.a; then (cd $(prefix)/lib && $(LN_S) $< libunisim_util_xml.a); fi
 uninstall-hook:
 	rm -f $(prefix)/lib/libunisim_util_xml.a
 	(rmdir $(libdir) || true)

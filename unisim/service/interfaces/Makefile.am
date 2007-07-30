@@ -24,3 +24,6 @@ include_HEADERS = \
 # libdir = $(prefix)/lib/unisim/service/interfaces
 # lib_LIBRARIES = libinterfaces.a
 # libinterfaces_a_SOURCES = logger.cc
+
+uninstall-hook:
+	(rmdir $(includedir) || true)
