@@ -33,9 +33,9 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM ELF Loader service], [1.0],
+AC_INIT([UNISIM PowerMAC BootX boot loader emulation service], [1.0],
 	[Gilles Mouchard <gilles.mouchard@cea.fr>],
-	[elf_loader])
+	[pmac_bootx])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
@@ -53,18 +53,17 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
-AC_CHECK_HEADERS([inttypes.h],,\
+AC_CHECK_HEADERS([inttypes.h stdio.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR STANDARD C++ HEADERS #########################################
-AC_CHECK_HEADERS([iostream fstream],,\
+AC_CHECK_HEADERS([list string],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS ######################
 
 case $host in
 	*linux*)   # linux host
-		AC_CHECK_HEADERS([endian.h],, AC_MSG_ERROR([Some standard headers are missing.]))
 		;;
 	*mingw32*)  # win32 host
 		;;

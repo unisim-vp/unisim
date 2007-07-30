@@ -44,7 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([elf_loader])
+AC_CONFIG_SUBDIRS([elf_loader pmac_bootx])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

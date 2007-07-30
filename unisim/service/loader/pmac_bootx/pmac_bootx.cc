@@ -34,6 +34,7 @@
  
 #include <unisim/service/loader/pmac_bootx/pmac_bootx.hh>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/debug/register.hh>
 #include <stdio.h>
 
 namespace unisim {
@@ -44,6 +45,7 @@ namespace pmac_bootx {
 using namespace std;
 using namespace unisim::util::endian;
 using unisim::service::interfaces::Registers;
+using unisim::util::debug::Register;
 
 static char Nibble2HexChar(uint8_t v)
 {
@@ -778,10 +780,10 @@ uint32_t BootInfos::GetImageSize()
 
 PMACBootX::PMACBootX(const char *name, Object *parent) :
 	Object(name, parent),
-	Service<LoaderInterface<uint32_t> >(name, parent),
-	Client<LoaderInterface<uint32_t> >(name, parent),
-	Client<MemoryInterface<uint32_t> >(name, parent),
-	Client<CPURegistersInterface>(name, parent),
+	Service<Loader<uint32_t> >(name, parent),
+	Client<Loader<uint32_t> >(name, parent),
+	Client<Memory<uint32_t> >(name, parent),
+	Client<Registers>(name, parent),
 	loader_export("loader-export", this),
 	loader_import("loader-import", this),
 	memory_import("memory-import", this),
@@ -866,19 +868,19 @@ bool PMACBootX::Setup()
 
 	uint32_t entry_point = loader_import->GetEntryPoint();
 		
-	RegisterInterface *pc = registers_import->GetRegister("cia");
+	Register *pc = registers_import->GetRegister("cia");
 	if(!pc) return false;
 	pc->SetValue(&entry_point);
-	RegisterInterface *r1 = registers_import->GetRegister("r1");
+	Register *r1 = registers_import->GetRegister("r1");
 	if(!r1) return false;
 	r1->SetValue(&r1_value);
-	RegisterInterface *r3 = registers_import->GetRegister("r3");
+	Register *r3 = registers_import->GetRegister("r3");
 	if(!r3) return false;
 	r3->SetValue(&r3_value);
-	RegisterInterface *r4 = registers_import->GetRegister("r4");
+	Register *r4 = registers_import->GetRegister("r4");
 	if(!r4) return false;
 	r4->SetValue(&r4_value);
-	RegisterInterface *r5 = registers_import->GetRegister("r5");
+	Register *r5 = registers_import->GetRegister("r5");
 	if(!r5) return false;
 	r5->SetValue(&r5_value);
 	

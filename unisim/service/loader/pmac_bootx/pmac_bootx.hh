@@ -55,6 +55,7 @@ using std::list;
 using std::string;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::Loader;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
