@@ -32,17 +32,24 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/debug/inline_debugger/inline_debugger.tpp>
+#ifndef __UNISIM_SERVICE_INTERFACES_DISASSEMBLY_HH__
+#define __UNISIM_SERVICE_INTERFACES_DISASSEMBLY_HH__
+
+#include <string>
 
 namespace unisim {
 namespace service {
-namespace debug {
-namespace inline_debug {
+namespace interfaces {
 
-template class InlineDebugger<uint64_t>;
+template <class ADDRESS>
+class Disassembly
+{
+public:
+	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr) = 0;
+};
 
-} // end of namespace inline_debugger
 } // end of namespace debug
-} // end of namespace plugings
+} // end of namespace plugins
 } // end of namespace full_system
+
+#endif

@@ -42,38 +42,43 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 
+#include <unisim/util/debug/breakpoint_registry.hh>
+#include <unisim/util/debug/watchpoint_registry.hh>
 
-#include <utils/debug/breakpoint_registry.hh>
-#include <utils/debug/watchpoint_registry.hh>
+#include <unisim/kernel/service/service.hh>
+
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <utils/services/service.hh>
 #include <string>
-
 
 namespace unisim {
 namespace service {
 namespace debug {
 namespace inline_debugger {
 
+using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::Disassembly;
+using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::service::interfaces::SymbolTableLookup;
+using unisim::service::interfaces::Symbol;
+using unisim::service::interface::Registers;
+using unisim::service::interfaces::Memory;
 
-using std::list;
-using std::string;
-using std::cerr;
-using std::endl;
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::Breakpoint;
 using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Watchpoint;
+
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
-using unisim::service::interfaces::SymbolTableLookupInterface;
-using unisim::service::interfaces::SymbolInterface;
-using unisim::service::interface::Registers;
-using unisim::service::interfaces::MemoryInterface;
+
+using std::list;
+using std::string;
+using std::cerr;
+using std::endl;
 
 typedef enum
 {
@@ -99,31 +104,31 @@ private:
 
 template <class ADDRESS>
 class InlineDebugger :
-	public Service<DebugControlInterface<ADDRESS> >,
-	public Service<MemoryAccessReportingInterface<ADDRESS> >,
-	public Client<DebugDisasmInterface<ADDRESS> >,
-	public Client<MemoryInterface<ADDRESS> >,
-	public Client<CPURegistersInterface>,
-	public Client<SymbolTableLookupInterface<ADDRESS> >,
+	public Service<DebugControl<ADDRESS> >,
+	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Client<Disassembly<ADDRESS> >,
+	public Client<Memory<ADDRESS> >,
+	public Client<Registers>,
+	public Client<SymbolTableLookup<ADDRESS> >,
 	public InlineDebuggerBase
 {
 public:
-	ServiceExport<DebugControlInterface<ADDRESS> > debug_control_export;
-	ServiceExport<MemoryAccessReportingInterface<ADDRESS> > memory_access_reporting_export;
-	ServiceImport<DebugDisasmInterface<ADDRESS> > debug_disasm_import;
-	ServiceImport<MemoryInterface<ADDRESS> > memory_import;
-	ServiceImport<CPURegistersInterface> cpu_registers_import;
-	ServiceImport<SymbolTableLookupInterface<ADDRESS> > symbol_table_lookup_import;
+	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
+	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
+	ServiceImport<Disassembly<ADDRESS> > disasm_import;
+	ServiceImport<Memory<ADDRESS> > memory_import;
+	ServiceImport<Registers> registers_import;
+	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
 
 	// MemoryAccessReportingInterface
-	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportMemoryAccess(typename MemoryAccessReport<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReport<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
 
 	// DebugControlInterface
-	virtual DebugCommand FetchDebugCommand(ADDRESS cia);
+	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 
 	virtual void Trap();
 	virtual void OnDisconnect();
@@ -172,6 +177,7 @@ private:
 	static InlineDebugger<ADDRESS> *debugger;
 };
 
+} // end of namespace inline_debugger
 } // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim

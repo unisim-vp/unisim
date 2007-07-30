@@ -32,28 +32,30 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FS_MEMORIES_MEMORY_INTERFACE_HH__
-#define __FS_MEMORIES_MEMORY_INTERFACE_HH__
+#ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_HH__
+#define __UNISIM_SERVICE_INTERFACES_MEMORY_HH__
 
 #include <inttypes.h>
 
-namespace full_system {
-namespace memories {
+namespace unisim {
+namespace service {
+namespace interfaces {
 
 template <class ADDRESS>
-class MemoryInterface
+class Memory
 {
 public:
-	MemoryInterface(){}
-	virtual ~MemoryInterface(){}
+	Memory(){}
+	virtual ~Memory(){}
 
 	virtual void Reset() = 0;
 	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size) = 0;
 	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size) = 0;
 };
 
-} // end of namespace memories
-} // end of namespace full_system
+} // end of namespace interfaces
+} // end of namespace service
+} // end of namespace unisim
 
 #endif
 

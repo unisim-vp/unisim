@@ -32,17 +32,24 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/debug/inline_debugger/inline_debugger.tpp>
+#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_CONTROL_HH__
+#define __UNISIM_SERVICE_INTERFACES_DEBUG_CONTROL_HH__
 
-namespace unisim {
-namespace service {
+namespace full_system {
+namespace plugins {
 namespace debug {
-namespace inline_debug {
 
-template class InlineDebugger<uint64_t>;
+template <class ADDRESS>
+class DebugControl
+{
+public:
+	typedef enum { DBG_STEP, DBG_SYNC, DBG_KILL, DBG_RESET } DebugCommand;
 
-} // end of namespace inline_debugger
-} // end of namespace debug
-} // end of namespace plugings
-} // end of namespace full_system
+	virtual DebugCommand FetchDebugCommand(ADDRESS cia) = 0;
+};
+
+} // end of namespace interfaces
+} // end of namespace service
+} // end of namespace unisim
+
+#endif

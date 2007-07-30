@@ -32,14 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FS_PLUGINS_DEBUG_INLINE_DEBUGGER_HH__
-#define __FS_PLUGINS_DEBUG_INLINE_DEBUGGER_HH__
+#ifndef __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_HH_
+#define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_HH_
 
 #include <readline/readline.h>
 
-namespace full_system {
-namespace plugins {
+namespace unisim {
+namespace service {
 namespace debug {
+namespace inline_debugger {
 
 using std::cout;
 using std::hex;
@@ -48,17 +49,17 @@ using std::dec;
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Object(_name, _parent),
-	Service<DebugControlInterface<ADDRESS> >(_name, _parent),
-	Service<MemoryAccessReportingInterface<ADDRESS> >(_name, _parent),
-	Client<DebugDisasmInterface<ADDRESS> >(_name, _parent),
-	Client<MemoryInterface<ADDRESS> >(_name, _parent),
-	Client<CPURegistersInterface>(_name, _parent),
-	Client<SymbolTableLookupInterface<ADDRESS> >(_name, _parent),
+	Service<DebugControl<ADDRESS> >(_name, _parent),
+	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
+	Client<Disassembly<ADDRESS> >(_name, _parent),
+	Client<Memory<ADDRESS> >(_name, _parent),
+	Client<Registers>(_name, _parent),
+	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
-	debug_disasm_import("debug-disasm-import", this),
+	disasm_import("disasm-import", this),
 	memory_import("memory-import", this),
-	cpu_registers_import("cpu-registers-import", this),
+	registers_import("registers-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this)
 {
 	trap = false;
@@ -81,7 +82,7 @@ void InlineDebugger<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size)
+void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReport<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReport<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size)) trap = true;
 }
@@ -99,7 +100,7 @@ void InlineDebugger<ADDRESS>::Trap()
 }
 
 template <class ADDRESS>
-DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
+typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {
 	int count;
 	bool recognized = false;
@@ -203,7 +204,7 @@ DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 					strcpy(last_line, line);
-					debug_disasm_import->DebugDisasm(cia, cont_addr);
+					disasm_import->DebugDisasm(cia, cont_addr);
 					if(HasBreakpoint(cont_addr))
 					{
 						running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
@@ -425,7 +426,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 		{
 			cout.fill('0');
 			const SymbolInterface<ADDRESS> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr) : 0;
-			string s = debug_disasm_import->DebugDisasm(addr, next_addr);
+			string s = disasm_import->DebugDisasm(addr, next_addr);
 			
 			if(symbol)
 			{
@@ -783,9 +784,9 @@ bool InlineDebugger<ADDRESS>::IsResetCommand(const char *cmd)
 	return strcmp(cmd, "r") == 0 || strcmp(cmd, "run") == 0;
 }
 
-
+} // end of namespace inline_debugger
 } // end of namespace debug
-} // end of namespace plugings
-} // end of namespace full_system
+} // end of namespace service
+} // end of namespace unisim
 
 #endif

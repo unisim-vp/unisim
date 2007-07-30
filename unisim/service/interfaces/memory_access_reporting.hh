@@ -32,17 +32,28 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/debug/inline_debugger/inline_debugger.tpp>
+#ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
+#define __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
+
+#include <inttypes.h>
 
 namespace unisim {
 namespace service {
-namespace debug {
-namespace inline_debug {
+namespace interfaces {
 
-template class InlineDebugger<uint64_t>;
+template <class ADDRESS>
+class MemoryAccessReporting
+{
+public:
+	typedef enum { MAT_NONE = 0, MAT_READ = 1, MAT_WRITE = 2 } MemoryAccessType;
+	typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
 
-} // end of namespace inline_debugger
-} // end of namespace debug
-} // end of namespace plugings
-} // end of namespace full_system
+	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
+	virtual void ReportFinishedInstruction(ADDRESS next_addr) = 0;
+};
+
+} // end of namespace interfaces
+} // end of namespace service
+} // end of namespace unisim
+
+#endif

@@ -31,18 +31,16 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/debug/inline_debugger/inline_debugger.tpp>
 
-namespace unisim {
-namespace service {
+#include <plugins/debug/gdb_server.hh>
+#include <plugins/debug/gdb_server.tpp>
+
+namespace full_system {
+namespace plugins {
 namespace debug {
-namespace inline_debug {
 
-template class InlineDebugger<uint64_t>;
+template class GDBServer<uint64_t>;
 
-} // end of namespace inline_debugger
 } // end of namespace debug
-} // end of namespace plugings
+} // end of namespace plugins
 } // end of namespace full_system
