@@ -33,20 +33,22 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Component Library], [1.0])
+AC_INIT([UNISIM TLM Messages], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[TLMMessages])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
 AC_PROG_INSTALL
+
+AC_LANG([C++])
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([c++ tlm])
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-
