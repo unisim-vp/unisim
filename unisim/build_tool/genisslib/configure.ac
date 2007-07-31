@@ -52,10 +52,6 @@ AC_PROG_LEX
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
-###### CHECK FOR BOOST ########################################################
-
-UNISIM_CHECK_BOOST
-
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
