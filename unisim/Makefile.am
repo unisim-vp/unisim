@@ -1,7 +1,7 @@
 includedir = $(prefix)/include/unisim
 libdir= $(prefix)/lib/unisim
-SUBDIRS=kernel util service
-INCLUDE_SUBDIRS=kernel util service
+SUBDIRS=kernel util service component
+INCLUDE_SUBDIRS=kernel util service component
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

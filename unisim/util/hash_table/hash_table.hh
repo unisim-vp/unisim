@@ -32,12 +32,12 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FS_UTILS_HASH_HASH_TABLE_HH__
-#define __FS_UTILS_HASH_HASH_TABLE_HH__
+#ifndef __UNISIM_UTIL_HASH_TABLE_HASH_TABLE_HH__
+#define __UNISIM_UTIL_HASH_TABLE_HASH_TABLE_HH__
 
-namespace full_system {
-namespace utils {
-namespace hash {
+namespace unisim {
+namespace util {
+namespace hash_table {
 
 #if 0
 // IMPORTANT: Your ELEMENT class should look like this.
@@ -209,8 +209,8 @@ inline ELEMENT *HashTable<KEY, ELEMENT>::Find(KEY key)
 	return 0;
 }
 
-} // end of namespace hash
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace hash_table
+} // end of namespace util
+} // end of namespace unisim
 
 #endif

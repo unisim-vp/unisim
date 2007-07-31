@@ -1,0 +1,200 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez
+ */
+ 
+#ifndef __UNISIM_COMPONENT_CXX_MEMORY_RAM_MEMORY_TCC__
+#define __UNISIM_COMPONENT_CXX_MEMORY_RAM_MEMORY_TCC__
+
+#include <inttypes.h>
+#include "unisim/service/interfaces/memory.hh"
+#include "unisim/util/hash_table/hash_table.hh"
+#include "unisim/kernel/service/service.hh"
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace memory {
+namespace ram {
+
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::MemoryPage(PHYSICAL_ADDR _key) :
+	key(_key),
+	next(0)
+{
+	storage = new uint8_t[PAGE_SIZE];
+	memset(storage, 0, PAGE_SIZE);
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::~MemoryPage()
+{
+	delete[] storage;
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent) :
+	Object(name, parent),
+	Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent),
+	memory_export("memory-export", this),
+	org(0),
+	bytesize(0),
+	lo_addr(0),
+	hi_addr(0),
+	param_org("org", this, org),
+	param_bytesize("bytesize", this, bytesize)
+{
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+Memory<PHYSICAL_ADDR, PAGE_SIZE>::~Memory()
+{
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+void Memory<PHYSICAL_ADDR, PAGE_SIZE>::OnDisconnect()
+{
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::Setup()
+{
+	lo_addr = org;
+	hi_addr = org + (bytesize - 1);
+	return true;
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
+{
+	hash_table.Reset();
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size)
+{
+	uint32_t copied;
+	PHYSICAL_ADDR addr;
+
+	if(physical_addr < lo_addr || (physical_addr + (size - 1)) > hi_addr || (physical_addr + size) < physical_addr) return false;
+	// the third condition is for testing overwrapping (gdb did it !)
+	
+	PHYSICAL_ADDR key;
+	MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page;
+	copied = 0;
+	
+	addr = physical_addr - lo_addr;
+	do
+	{
+		uint32_t copy_size;
+		uint32_t max_copy_size;
+	
+		key = (addr + copied) / PAGE_SIZE;
+		page = hash_table.Find(key);
+		if(!page)
+		{
+			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+			hash_table.Insert(page);
+		}
+	
+		max_copy_size = PAGE_SIZE - ((addr + copied) & (PAGE_SIZE - 1));
+	
+		if(size - copied > max_copy_size)
+			copy_size = max_copy_size;
+		else
+			copy_size = size - copied;
+		
+		memcpy(&page->storage[(addr + copied) & (PAGE_SIZE - 1)],
+		       &((uint8_t *)buffer)[copied],
+		       copy_size);
+	
+		copied += copy_size;
+	} while(copied != size);
+	
+	return true;
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size)
+{
+	uint32_t copied;
+	PHYSICAL_ADDR addr;
+	
+	if(physical_addr < lo_addr || (physical_addr + (size - 1)) > hi_addr || (physical_addr + size) < physical_addr) return false;
+	// the third condition is for testing overwrapping (gdb did it !)
+	
+	PHYSICAL_ADDR key = physical_addr / PAGE_SIZE;
+	MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page;
+	copied = 0;
+	
+	addr = physical_addr - lo_addr;
+	do
+	{
+		uint32_t copy_size;
+		uint32_t max_copy_size;
+	
+		key = (addr + copied) / PAGE_SIZE;
+		page = hash_table.Find(key);
+		if(!page)
+		{
+			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+			hash_table.Insert(page);
+		}
+	
+		max_copy_size = PAGE_SIZE - ((addr + copied) & (PAGE_SIZE - 1));
+	
+		if(size - copied > max_copy_size)
+		copy_size = max_copy_size;
+		else
+		copy_size = size - copied;
+	
+		memcpy(&((uint8_t *)buffer)[copied], 
+		       &page->storage[(addr + copied) & (PAGE_SIZE - 1)],
+		       copy_size);
+	
+		copied += copy_size;
+	} while(copied != size);
+	
+	return true;
+}
+
+} // end of namespace ram
+} // end of namespace memory
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim 
+
+#endif // __UNISIM_COMPONENT_CXX_MEMORY_RAM_MEMORY_TCC__
