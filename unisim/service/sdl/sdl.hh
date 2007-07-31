@@ -63,6 +63,8 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::Video;
+using unisim::service::interfaces::Keyboard;
 
 template <class ADDRESS>
 class SDL :
