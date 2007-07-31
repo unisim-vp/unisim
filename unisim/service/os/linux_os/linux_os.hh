@@ -93,7 +93,7 @@ class LinuxOS :
 	public Client<Registers>,
 	public Client<Loader<ADDRESS_TYPE> >,
 	public Client<Logger> {
-  public:
+public:
     /* Exported services */
 	ServiceExport<LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE> > linux_os_export;
 
