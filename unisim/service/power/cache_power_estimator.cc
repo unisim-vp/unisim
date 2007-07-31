@@ -43,66 +43,66 @@ namespace unisim {
 namespace kernel {
 namespace service {
 
-template <> Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::Parameter(const char *_name, Object *_object, full_system::plugins::power::CachePowerEstimator::AccessMode& _storage, const char *_description) :
+template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::Parameter(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, const char *_description) :
 ParameterBase(_name, _object, _description), storage(&_storage)
 {
 }
 
-template <> Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
-template <> Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
-template <> Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
-template <> Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator double () const { return (double)(unsigned int)(*storage); }
-template <> Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator string () const
+template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
+template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
+template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
+template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator double () const { return (double)(unsigned int)(*storage); }
+template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator string () const
 {
 	switch(*storage)
 	{
-		case full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_NORMAL: return string("normal");
-		case full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL: return string("sequential");
-		case full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_FAST: return string("fast");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL: return string("normal");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL: return string("sequential");
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST: return string("fast");
 	}
 	return string("?");
 }
 
-template <> ParameterBase& Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator = (bool value) { return *this;}
+template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (bool value) { return *this;}
 
-template <> ParameterBase& Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator = (unsigned long long value)
+template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (unsigned long long value)
 {
 	switch(value)
 	{
-		case full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
-			*storage = full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
+			*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
 			break;
-		case full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_FAST:
-			*storage = full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_FAST;
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
+			*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
 			break;
-		case full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
+		case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
 		default:
-			*storage = full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
+			*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
 			break;
 	}
 	return *this;
 }
 
-template <> ParameterBase& Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator = (long long value)
+template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (long long value)
 {
 	return (*this) = (unsigned long long) value;
 }
 
-template <> ParameterBase& Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator = (double value)
+template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (double value)
 {
 	return (*this) = (unsigned long long) value;
 }
 
-template <> ParameterBase& Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>::operator = (const char *value)
+template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (const char *value)
 {
-	if(strcmp(value, "normal") == 0) *storage = full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_NORMAL; else
-	if(strcmp(value, "sequential") == 0) *storage = full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL; else
-	if(strcmp(value, "fast") == 0) *storage = full_system::plugins::power::CachePowerEstimator::ACCESS_MODE_FAST;
+	if(strcmp(value, "normal") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL; else
+	if(strcmp(value, "sequential") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL; else
+	if(strcmp(value, "fast") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
 	
 	return *this;
 }
 
-template class Parameter<full_system::plugins::power::CachePowerEstimator::AccessMode>;
+template class Parameter<unisim::service::power::CachePowerEstimator::AccessMode>;
 
 } // end of namespace service
 } // end of namespace kernel

@@ -33,20 +33,46 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Service Library], [1.0])
+AC_INIT([UNISIM Power service], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[power])
 AC_CONFIG_AUX_DIR(config)
-
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([inttypes.h math.h stdlib.h string.h stdio.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+AC_CHECK_HEADERS([iostream map],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR TARGET SPECIFIC HEADERS ######################
+
+case $host in
+	*linux*)   # linux host
+		;;
+	*mingw32*)  # win32 host
+		;;
+esac
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([interfaces logger os debug loader sdl power])
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-
