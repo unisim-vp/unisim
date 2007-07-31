@@ -1,0 +1,2 @@
+SUBDIRS=genisslib
+INCLUDE_SUBDIRS=genisslib

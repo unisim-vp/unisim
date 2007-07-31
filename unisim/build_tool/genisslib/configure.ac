@@ -33,20 +33,33 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM], [1.0])
+AC_INIT([UNISIM GenISSLib (ISS library Generator) building tool], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[genisslib])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CC
+# AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_YACC
+AC_PROG_LEX
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR BOOST ########################################################
+
+UNISIM_CHECK_BOOST
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([kernel util service build_tool component])
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

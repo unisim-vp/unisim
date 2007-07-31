@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM], [1.0])
+AC_INIT([UNISIM building tools], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -44,7 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([kernel util service build_tool component])
+AC_CONFIG_SUBDIRS([genisslib])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
