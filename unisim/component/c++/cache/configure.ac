@@ -33,18 +33,26 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Memory Component Library], [1.0])
+AC_INIT([UNISIM Cache Component Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
 
 AC_PROG_INSTALL
 
+###### CHECK FOR C HEADERS ####################################################
+AC_CHECK_HEADERS([inttypes.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
+
+###### CHECK FOR C++ HEADERS ##################################################
+AC_CHECK_HEADERS([iostream],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
+
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([memory cache])
+AC_CONFIG_SUBDIRS([mesi insn])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
