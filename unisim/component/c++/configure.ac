@@ -44,6 +44,11 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
+#UNISIM_CONFIG_SUBDIR(unisim-component-cxx-memory, memory)
+#UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache, cache)
+#UNISIM_CONFIG_SUBDIR(unisim-component-cxx-tlb tlb)
+#UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor, processor)
+
 AC_CONFIG_SUBDIRS([memory cache tlb processor])
 
 # launch the generation of makefiles

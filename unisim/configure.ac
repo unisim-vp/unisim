@@ -44,7 +44,10 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([kernel util service component])
+UNISIM_CONFIG_SUBDIR(unisim-kernel, kernel)
+UNISIM_CONFIG_SUBDIR(unisim-util, util)
+UNISIM_CONFIG_SUBDIR(unisim-service, service)
+UNISIM_CONFIG_SUBDIR(unisim-component, component)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

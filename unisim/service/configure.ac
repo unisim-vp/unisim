@@ -44,7 +44,13 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([interfaces logger os debug loader sdl power])
+UNISIM_CONFIG_SUBDIR(unisim-service-interfaces, interfaces)
+UNISIM_CONFIG_SUBDIR(unisim-service-logger, logger)
+UNISIM_CONFIG_SUBDIR(unisim-service-os, os)
+UNISIM_CONFIG_SUBDIR(unisim-service-debug, debug)
+UNISIM_CONFIG_SUBDIR(unisim-service-loader, loader)
+UNISIM_CONFIG_SUBDIR(unisim-service-sdl, sdl)
+UNISIM_CONFIG_SUBDIR(unisim-service-power, power)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

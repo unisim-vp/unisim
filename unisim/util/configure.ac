@@ -40,7 +40,13 @@ AM_INIT_AUTOMAKE
 
 AC_PROG_INSTALL
 
-AC_CONFIG_SUBDIRS([xml arithmetic endian garbage_collector hash_table debug simfloat])
+UNISIM_CONFIG_SUBDIR(unisim-util-xml, xml)
+UNISIM_CONFIG_SUBDIR(unisim-util-arithmetic, arithmetic)
+UNISIM_CONFIG_SUBDIR(unisim-util-endian, endian)
+UNISIM_CONFIG_SUBDIR(unisim-util-garbage_collector, garbage_collector)
+UNISIM_CONFIG_SUBDIR(unisim-util-hash_table, hash_table)
+UNISIM_CONFIG_SUBDIR(unisim-util-debug, debug)
+UNISIM_CONFIG_SUBDIR(unisim-util-simfloat, simfloat)
 
 # files to generate
 #   this should include all the makefiles to generate

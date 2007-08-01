@@ -44,6 +44,9 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
+#UNISIM_CONFIG_SUBDIR(unisim-component-cxx, c++)
+#UNISIM_CONFIG_SUBDIR(unisim-component-tlm, tlm)
+
 AC_CONFIG_SUBDIRS([c++ tlm])
 
 # launch the generation of makefiles

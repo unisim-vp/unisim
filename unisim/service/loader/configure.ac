@@ -44,7 +44,11 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([elf_loader pmac_bootx pmac_linux_kernel_loader linux_loader arm_generic_kernel_loader])
+UNISIM_CONFIG_SUBDIR(unisim-service-loader-elf_loader, elf_loader)
+UNISIM_CONFIG_SUBDIR(unisim-service-loader-pmac_bootx, pmac_bootx)
+UNISIM_CONFIG_SUBDIR(unisim-service-loader-pmac_linux_kernel_loader, pmac_linux_kernel_loader)
+UNISIM_CONFIG_SUBDIR(unisim-service-loader-linux_loader, linux_loader)
+UNISIM_CONFIG_SUBDIR(unisim-service-loader-arm_generic_kernel_loader, arm_generic_kernel_loader)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

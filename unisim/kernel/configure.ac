@@ -40,7 +40,8 @@ AM_INIT_AUTOMAKE
 
 AC_PROG_INSTALL
 
-AC_CONFIG_SUBDIRS([tlm service])
+UNISIM_CONFIG_SUBDIR(unisim-kernel-tlm, tlm)
+UNISIM_CONFIG_SUBDIR(unisim-kernel-service, service)
 
 # files to generate
 #   this should include all the makefiles to generate
