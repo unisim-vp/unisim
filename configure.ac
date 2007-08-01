@@ -44,7 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([unisim])
+AC_CONFIG_SUBDIRS([build_tool unisim])
 
 # doxygen options
 DX_HTML_FEATURE(ON)

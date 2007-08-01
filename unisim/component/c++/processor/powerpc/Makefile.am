@@ -1,5 +1,5 @@
 INCLUDES=-I$(top_srcdir)/../../../../..
-GENISSLIB=$(top_srcdir)/../../../../../unisim/build_tool/genisslib/genisslib
+GENISSLIB=$(top_srcdir)/../../../../../build_tool/genisslib/genisslib
 libdir= $(prefix)/lib/unisim/component/c++/processor/powerpc
 includedir = $(prefix)/include/unisim/component/c++/processor/powerpc
 lib_LIBRARIES = libpowerpc.a
