@@ -32,20 +32,24 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <processors/powerpc/powerpc.hh>
-#include <processors/powerpc/config.hh>
-#include <processors/powerpc/powerpc.tpp>
-#include <processors/powerpc/cpu.tpp>
-#include <processors/powerpc/fpu.tpp>
-#include <processors/powerpc/mmu.tpp>
+#include <unisim/component/c++/processor/powerpc/powerpc.hh>
+#include <unisim/component/c++/processor/powerpc/config.hh>
+#include <unisim/component/c++/processor/powerpc/powerpc.tcc>
+#include <unisim/component/c++/processor/powerpc/cpu.tcc>
+#include <unisim/component/c++/processor/powerpc/fpu.tcc>
+#include <unisim/component/c++/processor/powerpc/mmu.tcc>
 
-namespace full_system {
-namespace processors {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
 namespace powerpc {
 
 template class CPU<MPC7447AConfig>;
 
 } // end of namespace powerpc
-} // end of namespace processors
-} // end of namespace full_system
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 

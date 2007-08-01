@@ -32,38 +32,40 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __FS_PROCESSORS_POWERPC_FPU_TPP__
-#define __FS_PROCESSORS_POWERPC_FPU_TPP__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FPU_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FPU_TCC__
 
-#include <Floating.template>
+#include <unisim/util/simfloat/floating.tcc>
 
-namespace full_system {
-namespace processors {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
 namespace powerpc {
 
-using full_system::plugins::logger::operator<<;
-using full_system::plugins::logger::Hex;
-using full_system::plugins::logger::Dec;
-using full_system::plugins::logger::Endl;
-using full_system::plugins::logger::Endl;
-using full_system::plugins::logger::DebugInfo;
-using full_system::plugins::logger::DebugWarning;
-using full_system::plugins::logger::DebugError;
-using full_system::plugins::logger::EndDebugInfo;
-using full_system::plugins::logger::EndDebugWarning;
-using full_system::plugins::logger::EndDebugError;
+using unisim::service::interfaces::operator<<;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
 
 template <class CONFIG>
 FPU<CONFIG>::FPU(const char *name, Object *parent) :
 	Object(name, parent),
-	Client<LoggerInterface>(name, parent),
+	Client<Logger>(name, parent),
 	logger_import("logger-import", this),
 	fp32_estimate_inv_warning(false),
 	fp64_estimate_inv_sqrt_warning(false)
 {
 	int i;
 
-	registers_registry["fpscr"] = new SimpleRegisterInterface<uint32_t>("fpscr", &fpscr);
+	registers_registry["fpscr"] = new unisim::util::debug::SimpleRegister<uint32_t>("fpscr", &fpscr);
 
 	for(i = 0; i < 32; i++)
 	{
@@ -76,7 +78,7 @@ FPU<CONFIG>::FPU(const char *name, Object *parent) :
 template <class CONFIG>
 FPU<CONFIG>::~FPU()
 {
-	typename map<string, RegisterInterface *>::iterator reg_iter;
+	typename map<string, unisim::util::debug::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -97,9 +99,9 @@ void FPU<CONFIG>::DisableException()
 }
 
 template <class CONFIG>
-RegisterInterface *FPU<CONFIG>::GetRegister(const char *name)
+unisim::util::debug::Register *FPU<CONFIG>::GetRegister(const char *name)
 {
-	typename map<string, RegisterInterface *>::iterator reg_iter = registers_registry.find(name);
+	typename map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
 	return reg_iter != registers_registry.end() ? (*reg_iter).second : 0;
 }
 
@@ -1589,7 +1591,9 @@ void FPU<CONFIG>::SetFp32(unsigned int n, uint32_t value)
 }
 
 } // end of namespace powerpc
-} // end of namespace processors
-} // end of namespace full_system
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 #endif

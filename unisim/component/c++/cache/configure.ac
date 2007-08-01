@@ -38,7 +38,12 @@ AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+
+AC_LANG([C++])
 
 ###### CHECK FOR C HEADERS ####################################################
 AC_CHECK_HEADERS([inttypes.h],,\

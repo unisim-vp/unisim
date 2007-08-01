@@ -73,8 +73,8 @@ ostream& operator << (ostream& os, const MemoryPageTableEntry<VIRTUAL_ADDRESS, P
 template <class CONFIG>
 MMU<CONFIG>::MMU(const char *name, CacheInterface<physical_address_t> *icache_interface, CacheInterface<physical_address_t> *dcache_interface, BusInterface<physical_address_t> *bus_interface, Object *parent) :
 	Object(name, parent),
-	Client<MemoryInterface<address_t> >(name, parent),
-	Client<LoggerInterface>(name, parent),
+	Client<Memory<address_t> >(name, parent),
+	Client<Logger>(name, parent),
 	to_mem("to-mem", this),
 	to_dcache("to-dcache", this),
 	to_icache("to-icache", this),
@@ -106,44 +106,44 @@ MMU<CONFIG>::MMU(const char *name, CacheInterface<physical_address_t> *icache_in
 	{
 		stringstream sstr;
 		sstr << "dbat" << i << "u";
-		registers_registry[sstr.str().c_str()] = new SimpleRegisterInterface<uint32_t>(sstr.str().c_str(), &dbatu[i]);
+		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &dbatu[i]);
 	}
 
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
 	{
 		stringstream sstr;
 		sstr << "dbat" << i << "l";
-		registers_registry[sstr.str().c_str()] = new SimpleRegisterInterface<uint32_t>(sstr.str().c_str(), &dbatl[i]);
+		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &dbatl[i]);
 	}
 
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
 	{
 		stringstream sstr;
 		sstr << "ibat" << i << "u";
-		registers_registry[sstr.str().c_str()] = new SimpleRegisterInterface<uint32_t>(sstr.str().c_str(), &ibatu[i]);
+		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &ibatu[i]);
 	}
 
 	for(i = 0; i < CONFIG::NUM_BATS; i++)
 	{
 		stringstream sstr;
 		sstr << "ibat" << i << "l";
-		registers_registry[sstr.str().c_str()] = new SimpleRegisterInterface<uint32_t>(sstr.str().c_str(), &ibatl[i]);
+		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &ibatl[i]);
 	}
 
 	for(i = 0; i < 16; i++)
 	{
 		stringstream sstr;
 		sstr << "sr" << i;
-		registers_registry[sstr.str().c_str()] = new SimpleRegisterInterface<uint32_t>(sstr.str().c_str(), &sr[i]);
+		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &sr[i]);
 	}
 
-	registers_registry["sdr1"] = new SimpleRegisterInterface<uint32_t>("sdr1", &sdr1);
+	registers_registry["sdr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("sdr1", &sdr1);
 }
 
 template <class CONFIG>
 MMU<CONFIG>::~MMU()
 {
-	typename map<string, RegisterInterface *>::iterator reg_iter;
+	typename map<string, unisim::util::debug::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
@@ -1578,9 +1578,9 @@ void MMU<CONFIG>::DumpPageTable(ostream& os)
 }
 
 template <class CONFIG>
-RegisterInterface *MMU<CONFIG>::GetRegister(const char *name)
+unisim::util::debug::Register *MMU<CONFIG>::GetRegister(const char *name)
 {
-	typename map<string, RegisterInterface *>::iterator reg_iter = registers_registry.find(name);
+	typename map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
 	return reg_iter != registers_registry.end() ? (*reg_iter).second : 0;
 }
 
