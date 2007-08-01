@@ -149,9 +149,9 @@ class CPU :
 	public Service<Disassembly<typename CONFIG::address_t> >,
 	public Service<unisim::service::interfaces::Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
-	public Service<CPULinuxOS<typename CONFIG::address_t, typename CONFIG::address_t> >,
+	public Service<CPULinuxOS>,
 	public Client<Memory<typename CONFIG::address_t> >,
-	public Client<LinuxOS<typename CONFIG::address_t, typename CONFIG::address_t> >,
+	public Client<LinuxOS>,
 	public Client<Logger>,
 	public Client<CachePowerEstimator>,
 	public Client<PowerMode>
@@ -302,14 +302,14 @@ public:
 	ServiceExport<Disassembly<address_t> > disasm_export;
 	ServiceExport<unisim::service::interfaces::Registers> registers_export;
 	ServiceExport<Memory<address_t> > memory_export;
-	ServiceExport<CPULinuxOS<address_t, address_t> > cpu_linux_os_export;
+	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 
 	ServiceImport<Loader<physical_address_t> > kernel_loader_import;
 	ServiceImport<DebugControl<address_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<address_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
-	ServiceImport<LinuxOS<address_t, address_t> > linux_os_import;
+	ServiceImport<LinuxOS> linux_os_import;
 	ServiceImport<Logger> logger_import;
 	ServiceImport<Logger> fpu_logger_import;
 	ServiceImport<Logger> mmu_logger_import;

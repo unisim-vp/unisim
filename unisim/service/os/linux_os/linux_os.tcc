@@ -105,8 +105,8 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LinuxOS(const char *name, Object *parent) :
     Object(name, parent),
-	Service<unisim::service::interfaces::LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE> >(name, parent),
-	Client<CPULinuxOS<ADDRESS_TYPE, PARAMETER_TYPE> >(name, parent),
+	Service<unisim::service::interfaces::LinuxOS>(name, parent),
+	Client<CPULinuxOS>(name, parent),
 	Client<Memory<ADDRESS_TYPE> >(name, parent),
 	Client<Registers>(name, parent),
 	Client<Loader<ADDRESS_TYPE> >(name, parent),

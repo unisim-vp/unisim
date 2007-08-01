@@ -41,11 +41,10 @@
 namespace unisim {
 namespace service {
 namespace interfaces {
-  
-  template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-  class LinuxOS {
-  public:
-    /**
+
+class LinuxOS {
+public:
+	/**
      * Executes a system call based on the binding done with the SetSyscallId
      *   method.
      * 

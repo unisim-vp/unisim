@@ -43,7 +43,6 @@ namespace unisim {
 namespace service {
 namespace interfaces {
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class CPULinuxOS {
 public:
     virtual void PerformExit(int ret) = 0;

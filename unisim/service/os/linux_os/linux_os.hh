@@ -87,8 +87,8 @@ using unisim::util::debug::Register;
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class LinuxOS :
-	public Service<unisim::service::interfaces::LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE> >,
-	public Client<CPULinuxOS<ADDRESS_TYPE, PARAMETER_TYPE> >,
+	public Service<unisim::service::interfaces::LinuxOS>,
+	public Client<CPULinuxOS>,
 	public Client<Memory<ADDRESS_TYPE> >,
 	public Client<Registers>,
 	public Client<Loader<ADDRESS_TYPE> >,
@@ -98,7 +98,7 @@ public:
 	ServiceExport<LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE> > linux_os_export;
 
 	/* Imported services */
-	ServiceImport<CPULinuxOS<ADDRESS_TYPE, PARAMETER_TYPE> >  cpu_linux_os_import;
+	ServiceImport<CPULinuxOS>  cpu_linux_os_import;
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Logger> logger_import;
