@@ -33,20 +33,30 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Memory Component Library], [1.0])
+AC_INIT([UNISIM C++ TLB Component], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[tlb])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+
+AC_LANG([C++])
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+
+AC_CHECK_HEADERS([endian.h string.h],,\
+                 AC_MSG_ERROR([Some standard headers are missing.]))
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([memory cache tlb processor])
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

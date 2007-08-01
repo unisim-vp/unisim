@@ -1,0 +1,928 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+op add(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:266[9]:rc[1])
+add.execute = {
+	uint8_t ca, ov;
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	uint32_t result;
+	Add32(result, ca, ov, a, b, 0);
+	cpu->SetGPR(rd, result);
+	if(oe) {
+		if(ov) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result) ;
+	}
+}
+add.disasm = {
+	os << "add" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op addc(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:10[9]:rc[1])
+addc.execute = {
+	uint8_t carry, overflow;
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	uint32_t result;
+	Add32(result, carry, overflow, a, b, 0);
+	cpu->SetGPR(rd, result);
+	if(carry) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	if(oe) {
+		if(overflow) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+addc.disasm = {
+	os << "addc" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op adde(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:138[9]:rc[1])
+adde.execute = {
+	uint8_t CA, OV;
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	uint32_t result;
+	Add32(result, CA, OV, a, b, cpu->GetXER_CA());
+	cpu->SetGPR(rd, result);
+	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	if(oe) {
+		if(OV) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+adde.disasm = {
+	os << "adde" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op addi(14[6]:rd[5]:ra[5]:sext<32> simm[16])
+addi.execute = {
+	uint32_t result = (ra != 0 ? cpu->GetGPR(ra) + simm : simm);
+	cpu->SetGPR(rd, result);
+}
+addi.disasm = {
+	if(ra == 0)
+		os << "li r" << rd << ", " << simm;
+	else
+		os << "addi r" << rd << ", r" << ra << ", " << simm;
+}
+
+op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16])
+addic.execute = {
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = simm;
+	uint8_t CA, OV ;
+	uint32_t result;
+	Add32(result, CA, OV, a, b, 0) ;
+	cpu->SetGPR(rd, result);
+	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+}
+addic.disasm = {
+	os << "addic r" << rd << ", r" << ra << ", " << simm;
+}
+
+op addic_(13[6]:rd[5]:ra[5]:sext<32> simm[16])
+addic_.execute = {
+	uint8_t CA, OV ;
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = simm;
+	uint32_t result;
+	Add32(result, CA, OV, a, b, 0) ;
+	cpu->SetGPR(rd, result);
+	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	cpu->ComputeCR0(result);
+}
+addic_.disasm = {
+	os << "addic. r" << rd << ", r" << ra << ", " << simm;
+}
+
+op addis(15[6]:rd[5]:ra[5]:shl<16> sext<32> simm[16])
+addis.execute = {
+	uint32_t result = ra != 0 ? cpu->GetGPR(ra) + simm : simm;
+	cpu->SetGPR(rd, result);
+}
+addis.disasm = {
+	if(ra == 0)
+		os << "lis r" << rd << ", " << (simm >> 16);
+	else
+		os << "addis r" << rd << ", r" << ra << ", " << (simm >> 16);
+}
+
+op addme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:234[9]:rc[1])
+addme.execute = {
+	uint8_t CA, OV;
+	uint32_t result;
+	Add32(result, CA, OV, 0xFFFFFFFF, cpu->GetGPR(ra), cpu->GetXER_CA());
+	cpu->SetGPR(rd, result);
+ 	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	if(oe) {
+		if(OV) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+addme.disasm = {
+	os << "addme" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra;
+}
+
+op addze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:202[9]:rc[1])
+addze.execute = {
+	uint8_t CA, OV;
+	uint32_t result;
+	Add32(result, CA, OV, cpu->GetGPR(ra), cpu->GetXER_CA(), 0);
+	cpu->SetGPR(rd, result);
+	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	if(oe) {
+		if(OV) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+addze.disasm = {
+	os << "addze" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra;
+}
+
+
+op divw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:491[9]:rc[1])
+divw.execute = {
+	if((cpu->GetGPR(ra) == 0x80000000UL && cpu->GetGPR(rb) == 0xffffffffUL) || cpu->GetGPR(rb) == 0) {
+		cpu->SetGPR(rd, 0);
+		if(oe) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		}
+		if(rc) {
+			cpu->ResetCR0_LT();
+			cpu->ResetCR0_GT();
+			cpu->ResetCR0_EQ();
+			if(cpu->GetXER_SO()) cpu->SetCR0_SO(); else cpu->ResetCR0_SO();
+		}
+	} else {
+		int32_t _a = cpu->GetGPR(ra) ;
+		int32_t _b = cpu->GetGPR(rb) ;
+		int32_t _c = _a / _b ;
+		cpu->SetGPR(rd, _c);
+		if(oe) cpu->ResetXER_OV();
+		if(rc) {
+			cpu->ComputeCR0(_c);
+		}
+	}
+}
+divw.disasm = {
+	os << "divw" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op divwu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:459[9]:rc[1])
+divwu.execute = {
+	uint32_t _a = cpu->GetGPR(ra) ;
+	uint32_t _b = cpu->GetGPR(rb) ;
+	if(_b == 0) {
+		cpu->SetGPR(rd, 0);
+		if(oe) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		}
+		if(rc) {
+			cpu->ResetCR0_LT();
+			cpu->ResetCR0_GT();
+			cpu->ResetCR0_EQ();
+			cpu->SetCR0_SO();
+		}
+	} else {
+		uint32_t _c = _a / _b ;
+		cpu->SetGPR(rd, _c);
+		if(oe) cpu->ResetXER_OV();
+		if(rc) {
+			cpu->ComputeCR0(_c) ;
+		}
+	}
+}
+divwu.disasm = {
+	os << "divwu" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+
+op mulhw(31[6]:rd[5]:ra[5]:rb[5]:?[1]:75[9]:rc[1])
+mulhw.execute = {
+	int64_t a = (int32_t) cpu->GetGPR(ra);
+	int64_t b = (int32_t) cpu->GetGPR(rb);
+	int64_t _prod = a * b ;
+	uint32_t result = (int32_t)(_prod >> 32) ;
+	cpu->SetGPR(rd, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+mulhw.disasm = {
+	os << "mulhw" << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op mulhwu(31[6]:rd[5]:ra[5]:rb[5]:?[1]:11[9]:rc[1])
+mulhwu.execute = {
+	uint64_t _a = (uint32_t) cpu->GetGPR(ra);
+	uint64_t _b = (uint32_t) cpu->GetGPR(rb);
+	uint64_t _prod = _a * _b ;
+	_prod = _prod >> 32 ;
+	uint32_t result = (uint32_t) _prod ;
+	cpu->SetGPR(rd, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+mulhwu.disasm = {
+	os << "mulhwu" << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op mulli(07[6]:rd[5]:ra[5]: sext<32> simm[16])
+mulli.execute = {
+	int64_t _prod = (int64_t) cpu->GetGPR(ra) * (int64_t) simm;
+	uint32_t result = (uint32_t) _prod;
+	cpu->SetGPR(rd, result);
+}
+mulli.disasm = {
+	os << "mulli r" << rd << ", r" << ra << ", " << simm;
+}
+
+op mullw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:235[9]:rc[1])
+mullw.execute = {
+	int64_t _prod = (int64_t) cpu->GetGPR(ra) * (int64_t) cpu->GetGPR(rb) ;
+	uint32_t result = (uint32_t) _prod;
+	cpu->SetGPR(rd, result);
+	if(oe && (0xFFFFFFFF00000000ULL & _prod) != 0) {
+		cpu->SetXER_OV();
+		cpu->SetXER_SO();
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+mullw.disasm = {
+	os << "mullw r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op neg(31[6]:rd[5]:ra[5]:?[5]:oe[1]:104[9]:rc[1])
+neg.execute = {
+	if(cpu->GetGPR(ra) == 0x80000000UL)
+	{
+       	cpu->SetGPR(rd, 0x80000000UL);
+		if(oe)
+		{
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		}
+	}
+	else
+	{
+		uint32_t result = -cpu->GetGPR(ra); //(~GPR(ra)) + 1;
+		cpu->SetGPR(rd, result);
+		if(oe) cpu->ResetXER_OV();
+	}
+	if(rc) cpu->ComputeCR0(cpu->GetGPR(ra)); // FIXME: seems to be incorrect
+}
+neg.disasm = {
+	os << "neg" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra;
+}
+
+op subf(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:40[9]:rc[1])
+subf.execute = {
+	uint8_t CA, OV;
+	uint32_t result;
+	Add32(result, CA, OV, ~(cpu->GetGPR(ra)), cpu->GetGPR(rb), 1);
+	cpu->SetGPR(rd, result);
+	if(oe) {
+		if(OV) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+subf.disasm = {
+	os << "subf" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op subfc(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:8[9]:rc[1])
+subfc.execute = {
+	uint8_t CA, OV;
+	uint32_t result;
+	Add32(result, CA, OV, ~(cpu->GetGPR(ra)), cpu->GetGPR(rb), 1);
+	cpu->SetGPR(rd, result);
+	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	if(oe) {
+		if(OV) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+subfc.disasm = {
+	os << "subfc" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op subfe(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:136[9]:rc[1])
+subfe.execute = {
+	uint32_t a = ~cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	uint32_t c = cpu->GetXER_CA();
+	uint8_t CA, OV;
+	uint32_t result;
+	Add32(result, CA, OV, a, b, c);
+	cpu->SetGPR(rd, result);
+	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	if(oe) {
+		if(OV) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+subfe.disasm = {
+	os << "subfe" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra << ", r" << rb;
+}
+
+op subfic(08[6]:rd[5]:ra[5]:sext<32> simm[16])
+subfic.execute = {
+	uint8_t CA, OV = 0;
+	int32_t a = cpu->GetGPR(ra);
+	int32_t b = simm;
+	uint32_t result;
+	Add32(result, CA, OV, -a, b, 0);
+	cpu->SetGPR(rd, result);
+	if(CA || a == 0) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+}
+subfic.disasm = {
+	os << "subfic r" << rd << ", r" << ra << ", " << simm;
+}
+
+op subfme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:232[9]:rc[1])
+subfme.execute = {
+	uint8_t CA, OV;
+	uint32_t result;
+	Add32(result, CA, OV, ~(cpu->GetGPR(ra)), 0xFFFFFFFF, cpu->GetXER_CA());
+	cpu->SetGPR(rd, result);
+	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	if(oe) {
+		if(OV) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+subfme.disasm = {
+	os << "subfme" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra;
+}
+
+op subfze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:200[9]:rc[1])
+subfze.execute = {
+	uint8_t CA, OV;
+	uint32_t result;
+	Add32(result, CA, OV, ~(cpu->GetGPR(ra)), cpu->GetXER_CA(), 0);
+	cpu->SetGPR(rd, result);
+	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	if(oe) {
+		if(OV) {
+			cpu->SetXER_OV();
+			cpu->SetXER_SO();
+		} else {
+			cpu->ResetXER_OV();
+		}
+	}
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+subfze.disasm = {
+	os << "subfze" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra;
+}
+
+/****************************************************
+
+	INTEGER COMPARE INSTRUCTIONS
+
+****************************************************/
+
+op cmp(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:0[10]:?[1])
+cmp.execute = {
+	int32_t _a, _b ;
+	uint32_t _c;
+	_a = (int32_t) cpu->GetGPR(ra);
+	_b = (int32_t) cpu->GetGPR(rb);
+	if(_a<_b) {
+		_c = 1 << 3 ;
+	} else {
+		if(_a>_b) {
+			_c = 1 << 2 ;
+		} else {
+			_c = 1 << 1 ;
+		}
+	}
+	_c = _c | cpu->GetXER_SO();
+	cpu->SetCRF(crfD, _c);
+}
+cmp.disasm = {
+	os << "cmp cr" << crfD << ", " << l << ", r" << ra << ", r" << rb;
+}
+
+op cmpi(11[6]:crfD[3]:?[1]:l[1]:ra[5]:sext<32> simm[16])
+cmpi.execute = {
+	if(l) throw IllegalInstructionException<CONFIG>();
+	int32_t _a ;
+	uint32_t _c;
+	_a = cpu->GetGPR(ra) ;
+	if(_a<simm) {
+		_c = 1 << 2 ;
+	} else {
+		if(_a>simm) {
+			_c = 1 << 1 ;
+		} else {
+			_c = 1 ;
+		}
+	}
+	_c = (_c << 1) | cpu->GetXER_SO();
+	cpu->SetCRF(crfD, _c);
+}
+cmpi.disasm = {
+	os << "cmpi cr" << crfD << ", " << l << ", r" << ra << ", " << simm;
+}
+
+op cmpl(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:32[10]:?[1])
+cmpl.execute = {
+	if(l) throw IllegalInstructionException<CONFIG>();
+	uint32_t _a, _b, _c;
+	_a = cpu->GetGPR(ra) ;
+	_b = cpu->GetGPR(rb) ;
+	if(_a<_b) {
+		_c = 1 << 2 ;
+	} else {
+		if(_a>_b) {
+			_c = 1 << 1 ;
+		} else {
+			_c = 1 ;
+		}
+	}
+	_c = _c << 1 | cpu->GetXER_SO();
+	cpu->SetCRF(crfD, _c);
+}
+cmpl.disasm = {
+	os << "cmpl cr" << crfD << ", " << l << ", r" << ra << ", r" << rb;
+}
+
+op cmpli(10[6]:crfD[3]:?[1]:l[1]:ra[5]:uimm[16])
+cmpli.execute = {
+	if(l) throw IllegalInstructionException<CONFIG>();
+	uint32_t _a, _c;
+	if(l)
+	{
+		throw IllegalInstructionException<CONFIG>();
+	}
+	_a = cpu->GetGPR(ra) ;
+	if(_a<uimm) {
+		_c = 1 << 2 ;
+	} else {
+		if(_a>uimm) {
+			_c = 1 << 1 ;
+		} else {
+			_c = 1 ;
+		}
+	}
+	_c = (_c << 1) | cpu->GetXER_SO();
+	cpu->SetCRF(crfD, _c);
+}
+cmpli.disasm = {
+	os << "cmpli cr" << crfD << ", " << l << ", r" << ra << ", " << uimm;
+}
+
+/****************************************************
+
+	INTEGER LOGICAL INSTRUCTIONS
+
+****************************************************/
+
+op and(31[6]: rs[5]: ra[5]: rb[5]: 28[10]: rc[1])
+and.execute = {
+	uint32_t result = cpu->GetGPR(rs) & cpu->GetGPR(rb);
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+and.disasm = {
+	os << "and" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op andc(31[6]: rs[5]: ra[5]: rb[5]: 60[10]: rc[1])
+andc.execute = {
+	uint32_t result = cpu->GetGPR(rs) & ~(cpu->GetGPR(rb));
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+andc.disasm = {
+	os << "andc" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op andi_(28[6]:rs[5]:ra[5]:uimm[16])
+andi_.execute = {
+	uint32_t result = cpu->GetGPR(rs) & uimm;
+	cpu->SetGPR(ra, result);
+	cpu->ComputeCR0(result);
+}
+andi_.disasm = {
+	os << "andi. r" << ra << ", r" << rs << ", " << uimm;
+}
+
+op andis_(29[6]:rs[5]:ra[5]: shl<16> uimm[16])
+andis_.execute = {
+	uint32_t result = cpu->GetGPR(rs) & (uimm);
+	cpu->SetGPR(ra, result);
+	cpu->ComputeCR0(result);
+}
+andis_.disasm = {
+	os << "andis. r" << ra << ", r" << rs << ", " << (uimm >> 16);
+}
+
+op cntlzw(31[6]:rs[5]:ra[5]:?[5]:26[10]:rc[1])
+cntlzw.execute = {
+	uint32_t n = 0;
+	uint32_t m = 1 << 31;
+	while(n < 32)
+	{
+		if(cpu->GetGPR(rs) & m) break;
+		m >>= 1;
+		n++;
+	}
+	cpu->SetGPR(ra, n);
+	if(rc) cpu->ComputeCR0(n);
+ }
+cntlzw.disasm = {
+	os << "cntlzw" << (rc ? "." : "") << " r" << ra << ", r" << rs;
+}
+
+op eqv(31[6]:rs[5]:ra[5]:rb[5]:284[10]:rc[1])
+eqv.execute = {
+ uint32_t _c = ~(cpu->GetGPR(rs) ^ cpu->GetGPR(rb)) ;
+	cpu->SetGPR(ra, _c);
+	if(rc) {
+		cpu->ComputeCR0(_c) ;
+	}
+}
+eqv.disasm = {
+	os << "eqv" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op extsb(31[6]:rs[5]:ra[5]:?[5]:954[10]:rc[1])
+extsb.execute = {
+	uint32_t result = (uint32_t)(int32_t)(int8_t)(uint8_t) cpu->GetGPR(rs);
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+extsb.disasm = {
+	os << "extsb" << (rc ? "." : "") << " r" << ra << ", r" << rs;
+}
+
+op extsh(31[6]:rs[5]:ra[5]:?[5]:922[10]:rc[1])
+extsh.execute = {
+	uint32_t result = (uint32_t)(int32_t)(int16_t)(uint16_t) cpu->GetGPR(rs);
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result) ;
+	}
+}
+extsh.disasm = {
+	os << "extsh" << (rc ? "." : "") << " r" << ra << ", r" << rs;
+}
+
+op nand(31[6]:rs[5]:ra[5]:rb[5]:476[10]:rc[1])
+nand.execute = {
+	uint32_t result = ~(cpu->GetGPR(rs) & cpu->GetGPR(rb));
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+nand.disasm = {
+	os << "nand" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op nor(31[6]:rs[5]:ra[5]:rb[5]:124[10]:rc[1])
+nor.execute = {
+	uint32_t result = ~(cpu->GetGPR(rs) | cpu->GetGPR(rb));
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+nor.disasm = {
+	if(rs == rb)
+		os << "not" << (rc ? "." : "") << " r" << ra << ", r" << rs;
+	else
+		os << "nor" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op or(31[6]:rs[5]:ra[5]:rb[5]:444[10]:rc[1])
+or.execute = {
+	uint32_t result = cpu->GetGPR(rs) | cpu->GetGPR(rb);
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result) ;
+	}
+}
+or.disasm = {
+	if(rs == rb)
+		os << "mr" << (rc ? "." : "") << " r" << ra << ", r" << rs;
+	else
+		os << "or" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op orc(31[6]:rs[5]:ra[5]:rb[5]:412[10]:rc[1])
+orc.execute = {
+	uint32_t result = cpu->GetGPR(rs) | ~(cpu->GetGPR(rb));
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+orc.disasm = {
+	os << "orc" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op ori(24[6]:rs[5]:ra[5]:uimm[16])
+ori.execute = {
+	uint32_t result = cpu->GetGPR(rs) | uimm ;
+	cpu->SetGPR(ra, result);
+}
+ori.disasm = {
+	if(rs == 0 && ra == 0 && uimm == 0)
+		os << "nop";
+	else
+		os << "ori r" << ra << ", r" << rs << ", " << uimm;	
+}
+
+op oris(25[6]:rs[5]:ra[5]:shl<16> uimm[16])
+oris.execute = {
+	uint32_t result = cpu->GetGPR(rs) | uimm;
+	cpu->SetGPR(ra, result);
+}
+oris.disasm = {
+	os << "oris r" << ra << ", r" << rs << ", " << (uimm >> 16);
+}
+
+op xor(31[6]:rs[5]:ra[5]:rb[5]:316[10]:rc[1])
+xor.execute = {
+	uint32_t result = cpu->GetGPR(rs) ^ cpu->GetGPR(rb);
+	cpu->SetGPR(ra, result);
+	if(rc) cpu->ComputeCR0(result);
+}
+xor.disasm = {
+	os << "xor" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op xori(26[6]:rs[5]:ra[5]:uimm[16])
+xori.execute = {
+	uint32_t result = cpu->GetGPR(rs) ^ (uimm);
+	cpu->SetGPR(ra, result);
+}
+xori.disasm = {
+	os << "xori r" << ra << ", r" << rs << ", " << uimm;
+}
+
+op xoris(27[6]:rs[5]:ra[5]:shl<16> uimm[16])
+xoris.execute = {
+	uint32_t result = cpu->GetGPR(rs) ^ (uimm);
+	cpu->SetGPR(ra, result);
+}
+xoris.disasm = {
+	os << "xoris r" << ra << ", r" << rs << ", " << (uimm >> 16);
+}
+
+/****************************************************
+
+	INTEGER LOGICAL INSTRUCTIONS
+
+****************************************************/
+
+op rlwimi(20[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:rc[1])
+rlwimi.execute = {
+	uint32_t _r, _mask ;
+  	_r = RotateLeft(cpu->GetGPR(rs), sh) ;
+	_mask = cpu->Mask(mb, me) ;
+	uint32_t result = (_r & _mask) | (cpu->GetGPR(ra) & ~(_mask));
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+rlwimi.disasm = {
+	os << "rlwimi" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", " << sh << ", " << mb << ", " << me;
+}
+
+op rlwinm(21[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:rc[1])
+rlwinm.execute = {
+	uint32_t _r, _mask;
+	_r = RotateLeft(cpu->GetGPR(rs), sh);
+	_mask = cpu->Mask(mb, me);
+	uint32_t result = _r & _mask;
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+rlwinm.disasm = {
+	os << "rlwinm" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", " << sh << ", " << mb << ", " << me;
+}
+
+op rlwnm(23[6]:rs[5]:ra[5]:rb[5]:mb[5]:me[5]:rc[1])
+rlwnm.execute = {
+	uint32_t _r, _mask;
+	_r = RotateLeft(cpu->GetGPR(rs), cpu->GetGPR(rb));
+	_mask = cpu->Mask(mb, me);
+	uint32_t result = _r & _mask;
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+rlwnm.disasm = {
+	os << "rlwnm" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb << ", " << mb << ", " << me;
+}
+
+/****************************************************
+
+	INTEGER SHIFT INSTRUCTIONS
+
+****************************************************/
+
+op slw(31[6]:rs[5]:ra[5]:rb[5]:24[10]:rc[1])
+slw.execute = {
+	uint32_t result;
+	if((cpu->GetGPR(rb) & 0x20)!=0) {
+		result = 0;
+	} else {
+		result = cpu->GetGPR(rs) << (cpu->GetGPR(rb) & 0x1F);
+	}
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+slw.disasm = {
+	os << "slw" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op sraw(31[6]:rs[5]:ra[5]:rb[5]:792[10]:rc[1])
+sraw.execute = {
+	uint32_t n = cpu->GetGPR(rb);
+	int32_t result;
+	int32_t src = cpu->GetGPR(rs);
+
+	if(n == 0)
+	{
+		result = src;
+		cpu->ResetXER_CA();
+	}
+	else if(n & 0x20)
+	{
+		if(src < 0)
+		{
+			result = 0xffffffff;
+			if(src & 0x7fffffff) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+		}
+		else
+		{
+			result = 0;
+			cpu->ResetXER_CA();
+		}
+	}
+	else
+	{
+		n = n & 0x1f;
+		result = (int32_t) src >> n;
+		if(src < 0 && (src << (32 - n)) != 0) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	}
+	cpu->SetGPR(ra, result);
+	if(rc) {
+		cpu->ComputeCR0(result);
+	}
+}
+sraw.disasm = {
+	os << "sraw" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}
+
+op srawi(31[6]:rs[5]:ra[5]:sh[5]:824[10]:rc[1])
+srawi.execute = {
+	uint32_t n = sh;
+	int32_t result;
+	int32_t src = cpu->GetGPR(rs);
+
+	if(n == 0)
+	{
+		result = src;
+		cpu->ResetXER_CA();
+	}
+	else
+	{
+		result = src >> n;
+		if(src < 0 && (src << (32 - n)) != 0) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	}
+	cpu->SetGPR(ra, result);
+	if(rc) cpu->ComputeCR0(result);
+}
+srawi.disasm = {
+	os << "srawi" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", " << sh;
+}
+
+op srw(31[6]:rs[5]:ra[5]:rb[5]:536[10]:rc[1])
+srw.execute = {
+	unsigned int sh = cpu->GetGPR(rb) & 0x3f;
+	uint32_t result = (sh & 0x20) ? 0 : cpu->GetGPR(rs) >> (sh & 0x1f);
+	cpu->SetGPR(ra, result);
+	if(rc) cpu->ComputeCR0(result);
+}
+srw.disasm = {
+	os << "srw" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
+}

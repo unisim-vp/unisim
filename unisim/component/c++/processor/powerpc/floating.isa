@@ -1,0 +1,624 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+/***************************************************
+
+	FLOATING-POINT ARITHMETIC INSTRUCTIONS
+
+****************************************************/
+
+op fadd(63[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
+fadd.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64Add(fd, fa, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fadd.disasm = {
+	os << "fadd" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+}
+
+op fadds(59[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
+fadds.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32Add(fd, fa, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fadds.disasm = {
+	os << "fadds" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+}
+
+op fdiv(63[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
+fdiv.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64Div(fd, fa, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fdiv.disasm = {
+	os << "fdiv" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+}
+
+op fdivs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
+fdivs.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32Div(fd, fa, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fdivs.disasm = {
+	os << "fdivs" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+}
+
+op fmul(63[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1])
+fmul.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64Mul(fd, fa, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fmul.disasm = {
+	os << "fmul" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc;
+}
+
+op fmuls(59[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1])
+fmuls.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32Mul(fd, fa, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fmuls.disasm = {
+	os << "fmuls" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc;
+}
+
+op fres(59[6]:fd[5]:?[5]:fb[5]:?[5]:24[5]:rc[1])
+fres.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32EstimateInv(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fres.disasm = {
+	os << "fres" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+op frsqrte(63[6]:fd[5]:?[5]:fb[5]:?[5]:26[5]:rc[1])
+frsqrte.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64EstimateInvSqrt(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+frsqrte.disasm = {
+	os << "frsqrte" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+op fsub(63[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
+fsub.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64Sub(fd, fa, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fsub.disasm = {
+	os << "fsub" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+}
+
+op fsubs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
+fsubs.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32Sub(fd, fa, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fsubs.disasm = {
+	os << "fsubs" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fb;
+}
+
+op fsel(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:23[5]:rc[1])
+fsel.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64Select(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fsel.disasm = {
+	os << "fsel" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+op fsqrt(63[6]:fd[5]:?[5]:fb[5]:?[5]:22[5]:rc[1])
+fsqrt.execute = {
+	/* this optional instruction is not implemented */
+	throw IllegalInstructionException<CONFIG>();
+}
+fsqrt.disasm = {
+	os << "fsqrt" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+op fsqrts(59[6]:fd[5]:?[5]:fb[5]:?[5]:22[5]:rc[1])
+fsqrts.execute = {
+	/* this optional instruction is not implemented */
+	throw IllegalInstructionException<CONFIG>();
+}
+fsqrts.disasm = {
+	os << "fsqrts" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+/******************************************************
+
+	FLOATING POINT MULTIPLY-ADD INSTRUCTIONS
+
+******************************************************/
+
+op fmadd(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:29[5]:rc[1])
+fmadd.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64MulAdd(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fmadd.disasm = {
+	os << "fmadd" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+op fmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:29[5]:rc[1])
+fmadds.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32MulAdd(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fmadds.disasm = {
+	os << "fmadds" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+op fmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
+fmsub.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64MulSub(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fmsub.disasm = {
+	os << "fmsub" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+op fmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
+fmsubs.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32MulSub(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fmsubs.disasm = {
+	os << "fmsubs" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+op fnmadd(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
+fnmadd.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64NegMulAdd(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fnmadd.disasm = {
+	os << "fnmadd" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+op fnmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
+fnmadds.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32NegMulAdd(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fnmadds.disasm = {
+	os << "fnmadds" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+op fnmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
+fnmsub.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64NegMulSub(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fnmsub.disasm = {
+	os << "fnmsub" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+op fnmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
+fnmsubs.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp32NegMulSub(fd, fa, fb, fc);
+
+	if(rc) cpu->ComputeCR1();
+}
+fnmsubs.disasm = {
+	os << "fnmsubs" << (rc ? "." : "") << " f" << fd << ", f" << fa << ", f" << fc << ", f" << fb;
+}
+
+/**************************************************
+
+	FLOATING POINT COMPARE INSTRUCTIONS
+
+**************************************************/
+
+op fcmpo(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:32[10]:?[1])
+fcmpo.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64CompareOrdered(crfD, fa, fb);
+}
+fcmpo.disasm = {
+	os << "fcmpo cr" << crfD << ", f" << fa << ", f" << fb;
+}
+
+op fcmpu(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:0[10]:?[1])
+fcmpu.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64CompareUnordered(crfD, fa, fb);
+}
+fcmpu.disasm = {
+	os << "fcmpu cr" << crfD << ", f" << fa << ", f" << fb;
+}
+
+/**************************************************
+
+  FLOATING POINT ROUNDING-CONVERTING INSTRUCTIONS
+
+**************************************************/
+
+op fctiw(63[6]:fd[5]:?[5]:fb[5]:14[10]:rc[1])
+fctiw.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64ToInt32(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fctiw.disasm = {
+	os << "fctiw" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+
+op fctiwz(63[6]:fd[5]:?[5]:fb[5]:15[10]:rc[1])
+fctiwz.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64ToInt32TowardZero(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fctiwz.disasm = {
+	os << "fctiwz" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+op frsp(63[6]:fd[5]:?[5]:fb[5]:12[10]:rc[1])
+frsp.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64ToFp32(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+frsp.disasm = {
+	os << "frsp" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+/**************************************************
+
+	FLOATING POINT MOVE INSTRUCTIONS
+
+**************************************************/
+
+op fabs(63[6]:fd[5]:?[5]:fb[5]:264[10]:rc[1])
+fabs.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64Abs(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fabs.disasm = {
+	os << "fabs" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+op fmr(63[6]:fd[5]:?[5]:fb[5]:72[10]:rc[1])
+fmr.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64Move(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fmr.disasm = {
+	os << "fmr" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+op fnabs(63[6]:fd[5]:?[5]:fb[5]:136[10]:rc[1])
+fnabs.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64NegAbs(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fnabs.disasm = {
+	os << "fnabs" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+op fneg(63[6]:fd[5]:?[5]:fb[5]:40[10]:rc[1])
+fneg.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->Fp64Neg(fd, fb);
+
+	if(rc) cpu->ComputeCR1();
+}
+fneg.disasm = {
+	os << "fneg" << (rc ? "." : "") << " f" << fd << ", f" << fb;
+}
+
+/*****************************************************************
+
+	FLOATING-POINT STATUS & CONTROL REGISTER INSTRUCTIONS
+
+*****************************************************************/
+
+op mcrfs(63[6]:crfD[3]:?[2]:crfS[3]:?[7]:64[10]:?[1])
+mcrfs.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	cpu->SetCRF(crfD, (cpu->GetFPSCR() >> (4 * (7 - crfS))) & 0xf);
+	if(crfS == 0)
+		cpu->SetFPSCR(cpu->GetFPSCR() & 0x9fffffffUL); // Don't clear FEX and VX bits
+	else
+		cpu->SetFPSCR(cpu->GetFPSCR() & ~(0xffUL << (4 * (7 - crfS)))); // clear bit field
+}
+mcrfs.disasm = {
+	os << "mcrfs cr" << crfD << ", cr" << crfS;
+}
+
+op mffs(63[6]:fd[5]:?[10]:583[10]:rc[1])
+mffs.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	uint64_t _f;
+	_f = (uint64_t) cpu->GetFPSCR() | 0xfff8000000000000ULL;
+	cpu->SetFp64(fd, _f);
+	if(rc) cpu->ComputeCR1();
+}
+mffs.disasm = {
+	os << "mffs" << (rc ? "." : "") << " f" << fd;
+}
+
+op mtfsb0(63[6]:crbD[5]:?[10]:70[10]:rc[1])
+mtfsb0.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	if(crbD != 1 && crbD != 2)
+	{
+		cpu->SetFPSCR(cpu->GetFPSCR() & (~(1 << (31 - crbD))));
+	}
+	if(rc) cpu->ComputeCR1();
+}
+mtfsb0.disasm = {
+	os << "mtfsb0" << (rc ? "." : "") << " crb" << crbD;
+}
+
+op mtfsb1(63[6]:crbD[5]:?[10]:38[10]:rc[1])
+mtfsb1.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	if(crbD != 1 && crbD != 2)
+	{
+		cpu->SetFPSCR(cpu->GetFPSCR() | (1 << (31 - crbD)));
+	}
+	if(rc) cpu->ComputeCR1();
+}
+mtfsb1.disasm = {
+	os << "mtfsb1" << (rc ? "." : "") << " cr" << crbD;
+}
+
+op mtfsf(63[6]:?[1]:fm[8]:?[1]:fb[5]:711[10]:rc[1])
+mtfsf.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	uint32_t _m,_f, _fm, _rb,_c;
+	int _i;
+	_rb = cpu->GetFp64(fb);
+	_f = cpu->GetFPSCR();
+	_fm = fm;
+
+	if(_fm & 0x80)
+	{
+		_m = 0x60000000;
+	}
+	else
+	{
+		_m=0x0;
+	}
+	_c=0x1;
+	for(_i=0;_i< 8;_i++)
+	{
+		if(_c & _fm)
+		{
+			_m= _m | (0xf<<(_i*4));
+		}
+		_c=_c<<1;
+	}
+	_f = _rb & _m;
+	cpu->SetFPSCR(_f);
+	if(rc) cpu->ComputeCR1();
+}
+mtfsf.disasm = {
+	os << "mtfsf" << (rc ? "." : "") << " " << fm << ", f" << fb;
+}
+
+op mtfsfi(63[6]:crfD[3]:?[7]:imm[4]:?[1]:134[10]:rc[1])
+mtfsfi.execute = {
+	if(!cpu->GetMSR_FP())
+	{
+		throw FloatingPointUnavailableException<CONFIG>();
+	}
+
+	uint32_t mask = crfD ? 0xf : 0x9;
+	cpu->SetFPSCR((cpu->GetFPSCR() & (~(0xf << (4 * (7 - crfD))))) | ((imm & mask) << (4 * (7 - crfD))));
+	if(rc) cpu->ComputeCR1();
+}
+mtfsfi.disasm = {
+	os << "mtfsfi" << (rc ? "." : "") << " cr" << crfD << ", " << imm;
+}

@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_CACHE_INSN_CACHE_TCC__
 #define __UNISIM_COMPONENT_CXX_CACHE_INSN_CACHE_TCC__
 
-#include <unisim/component/cxx/cache/cache.tcc>
+#include <unisim/component/c++/cache/cache.tcc>
 
 namespace unisim {
 namespace component {

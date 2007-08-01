@@ -19,7 +19,7 @@
 /** @file GenISSLib.c
 	@brief generates the instruction set simulator library
 */
-#include <GenISSLib.h>
+#include <genisslib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +30,7 @@
 #define VERSION "2.0"
 #define AUTHOR "Gilles Mouchard"
 #define EMAIL "gilles.mouchard@cea.fr"
-#define COPYRIGHT "Copyright (c) 2003-2004 CEA and Universite Paris Sud"
+#define COPYRIGHT "Copyright (c) 2003-2007 CEA and Universite Paris Sud"
 
 #define DEFAULT_OUTPUT "iss"
 #define DEFAULT_NAMESPACE "iss"
@@ -4046,7 +4046,7 @@ int generate_iss(char *output, unsigned int word_size, unsigned int addr_size)
 
 	emit_close_file();
 
-	sprintf(filename, "%s.%s", output, template_parameters ? "tpp" : "cpp");
+	sprintf(filename, "%s.%s", output, template_parameters ? "tcc" : "cc");
 
 	if(!emit_open_file(filename))
 	{
@@ -4170,13 +4170,12 @@ void usage(char *genisslib_name)
 	fprintf(stderr, "usage: %s [-I <directory name>] [-o <output>] [-w <word_size>] [-v] [-E <output file name>] <input file name>\n"
 	"\t-I\tinclude a directory into the search path for includes\n"
 	"\t-o\tOutputs the instruction set simulator source code into <output>.h and <output>.c\n"
-	"\t\tThe default output is \"%s\", so the default output files are %s.h and %s.c.\n"
+	"\t\tThe default output is \"%s\", so the default output files are %s.hh and %s.cc/%s.tcc.\n"
 	"\t-w\tUses <word size> as the minimum bit size for holding an operand bit field\n"
 	"\t-v\tDisplays the version of %s\n"
-	"\t-E\tExpands the file <input file name> into <output file name>\n"
-	"\t-cpp\tGenerate C++ classes instead of C structs and functions.\n"
-	"\t\tSource code is output to <output>.cpp (see option -o) instead of <output>.c\n",
+	"\t-E\tExpands the file <input file name> into <output file name>\n",
 	genisslib_name,
+	DEFAULT_OUTPUT,
 	DEFAULT_OUTPUT,
 	DEFAULT_OUTPUT,
 	DEFAULT_OUTPUT,

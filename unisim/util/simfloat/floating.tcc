@@ -24,19 +24,19 @@
 #ifndef Numerics_Double_FloatingTemplate
 #define Numerics_Double_FloatingTemplate
 #ifndef __GNUC__
-#include "lib/simfloat/floating.hh"
+#include "unisim/util/simfloat/floating.hh"
 #else
-#include "lib/simfloat/floating_gccopt.hh"
+#include "unisim/util/simfloat/floating_gccopt.hh"
 #endif
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace simfloat {
 
 namespace Numerics {} // for precompiled headers
 
 } // end of namespace simfloat
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
 #include <math.h>
@@ -46,7 +46,7 @@ namespace Numerics {} // for precompiled headers
 #include <vector>
 
 namespace unisim {
-namespace lib {
+namespace util {
 namespace simfloat {
 
 namespace Numerics { namespace Double {
@@ -3722,9 +3722,9 @@ TDoubleElement<FloatingBaseTraits>::read(std::istream& isIn, StatusAndControlFla
 }} // end of namespace Numerics::Double
 
 } // end of namespace simfloat
-} // end of namespace lib
+} // end of namespace util
 } // end of namespace unisim
 
-#include "lib/simfloat/integer.tcc"
+#include "unisim/util/simfloat/integer.tcc"
 
 #endif // Numerics_Double_FloatingTemplate

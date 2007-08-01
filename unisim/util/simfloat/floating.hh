@@ -40,7 +40,7 @@
 #endif
 #endif
 #endif
-#include "lib/simfloat/integer.hh"
+#include <unisim/lib/simfloat/integer.hh>
 
 namespace unisim {
 namespace util {

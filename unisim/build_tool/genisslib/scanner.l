@@ -17,7 +17,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include <GenISSLib.h>
+#include <genisslib.h>
 #include <yy.h>
 #include <string.h>
 

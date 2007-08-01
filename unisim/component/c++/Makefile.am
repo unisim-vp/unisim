@@ -1,8 +1,8 @@
 includedir = $(prefix)/include/unisim/component/c++
 libdir= $(prefix)/lib/unisim/component/c++
 
-SUBDIRS=memory cache
-INCLUDE_SUBDIRS=memory cache
+SUBDIRS=memory cache tlb processor
+INCLUDE_SUBDIRS=memory cache tlb processor
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

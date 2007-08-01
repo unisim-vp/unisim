@@ -18,7 +18,7 @@
  ***************************************************************************/
 #include <stdio.h>
 #include <string.h>
-#include <GenISSLib.h>
+#include <genisslib.h>
 #include <stdarg.h>
 
 extern int yylex();

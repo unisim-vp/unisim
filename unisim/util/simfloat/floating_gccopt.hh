@@ -49,7 +49,7 @@
 #endif
 #endif
 #endif
-#include "lib/simfloat/integer_gccopt.hh"
+#include <unisim/util/simfloat/integer_gccopt.hh>
 
 namespace unisim {
 namespace util {
