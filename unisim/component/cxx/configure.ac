@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Memory Component Library], [1.0])
+AC_INIT([UNISIM CXX Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -49,6 +49,8 @@ UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache, cache)
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-tlb, tlb)
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor, processor)
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci, pci)
+UNISIM_CONFIG_SUBDIR(unisim-component-cxx-isa, isa)
+UNISIM_CONFIG_SUBDIR(unisim-component-cxx-bridge, bridge)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

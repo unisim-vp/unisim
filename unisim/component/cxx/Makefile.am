@@ -29,6 +29,16 @@ SUBDIRS += pci
 INCLUDE_SUBDIRS += pci
 endif
 
+if COND_isa
+SUBDIRS += isa
+INCLUDE_SUBDIRS += isa
+endif
+
+if COND_bridge
+SUBDIRS += bridge
+INCLUDE_SUBDIRS += bridge
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)
