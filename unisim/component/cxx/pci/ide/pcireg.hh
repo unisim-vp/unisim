@@ -33,8 +33,8 @@
  * Device register definitions for a device's PCI config space
  */
 
-#ifndef __PCIREG_H__
-#define __PCIREG_H__
+#ifndef __UNISIM_COMPONENT_CXX_PCI_IDE_PCIREG_HH__
+#define __UNISIM_COMPONENT_CXX_PCI_IDE_PCIREG_HH__
 
 #include <sys/types.h>
 #include <inttypes.h>
@@ -158,4 +158,4 @@ union PCIConfig {
 #define PCI_PRODUCT_SIMOS_SIMOS		0x1291
 #define PCI_PRODUCT_SIMOS_ETHER		0x1292
 
-#endif // __PCIREG_H__
+#endif // __UNISIM_COMPONENT_CXX_PCI_IDE_PCIREG_HH__

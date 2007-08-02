@@ -1,5 +1,5 @@
-includedir = $(prefix)/include/unisim/component/c++
-libdir= $(prefix)/lib/unisim/component/c++
+includedir = $(prefix)/include/unisim/component/cxx
+libdir= $(prefix)/lib/unisim/component/cxx
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -22,6 +22,11 @@ endif
 if COND_processor
 SUBDIRS += processor
 INCLUDE_SUBDIRS += processor
+endif
+
+if COND_pci
+SUBDIRS += pci
+INCLUDE_SUBDIRS += pci
 endif
 
 uninstall-hook:

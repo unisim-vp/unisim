@@ -48,6 +48,7 @@ UNISIM_CONFIG_SUBDIR(unisim-component-cxx-memory, memory)
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache, cache)
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-tlb, tlb)
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor, processor)
+UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci, pci)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

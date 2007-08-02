@@ -46,10 +46,10 @@ retaining the original license:
 
 //#include <systemc.h>
 #include <vector>
-#include "unisim/component/cxx/pci/pcidev.hh"
+#include "unisim/component/cxx/pci/ide/pcidev.hh"
 //#include "dev/ide_ctrl_abstract.hh"
-#include "unisim/component/cxx/pci/pcireg.hh"
-#include "unisim/component/cxx/pci/pci_master.hh"
+#include "unisim/component/cxx/pci/ide/pcireg.hh"
+#include "unisim/component/cxx/pci/ide/pci_master.hh"
 //#include "dev/io_device.hh"
 //#include "dev/ide_disk_abstract.hh"
 //#include "sim/sim_object_abstract.hh"

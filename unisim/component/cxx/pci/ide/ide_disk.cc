@@ -40,7 +40,7 @@ retaining the original license:
 #include <unisim/component/cxx/pci/ide/ide_disk.tcc>
 
 namespace unisim {
-namespace component
+namespace component {
 namespace cxx {
 namespace pci {
 namespace ide {
@@ -51,4 +51,5 @@ template class IdeDisk<uint64_t>;
 } // end of namespace ide
 } // end of namespace pci
 } // end of namespace cxx
+} // end of namespace component
 } // end of namespace unisim

@@ -47,7 +47,7 @@ retaining the original license:
 #include <stack>
 #include <list>
 
-#include "unisim/component/cxx/pci/ide/pcireg.h"
+#include "unisim/component/cxx/pci/ide/pcireg.hh"
 #include "unisim/component/cxx/pci/ide/event.hh"
 #include <unisim/util/endian/endian.hh>
 #include "unisim/component/cxx/pci/ide/pci_master.hh"

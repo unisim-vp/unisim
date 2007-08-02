@@ -49,7 +49,7 @@ retaining the original license:
 #include "unisim/component/cxx/pci/ide/disk_image.hh"
 #include "unisim/component/cxx/pci/ide/ide_disk.hh"
 #include "unisim/component/cxx/pci/ide/ide_ctrl.hh"
-#include "unisim/component/cxx/pci/pci_master.hh"
+#include "unisim/component/cxx/pci/ide/pci_master.hh"
 
 namespace unisim {
 namespace component {

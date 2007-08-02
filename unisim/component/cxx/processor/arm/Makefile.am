@@ -1,7 +1,7 @@
 INCLUDES=-I$(top_srcdir)/../../../../..
 GENISSLIB=$(top_srcdir)/../../../../../build_tool/genisslib/genisslib
-libdir= $(prefix)/lib/unisim/component/c++/processor/arm
-includedir = $(prefix)/include/unisim/component/c++/processor/arm
+libdir= $(prefix)/lib/unisim/component/cxx/processor/arm
+includedir = $(prefix)/include/unisim/component/cxx/processor/arm
 
 BUILT_SOURCES = armcpu.tcc armcpu.hh
 CLEANFILES = armcpu.tcc armcpu.hh

@@ -32,11 +32,14 @@
  * Authors: Paula Casero (pcasero@upc.edu), Alejandro Schenzle (schenzle@upc.edu)
  */
 
-#ifndef __FS_PCI_MASTER_HH__
-#define __FS_PCI_MASTER_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PCI_IDE_PCI_MASTER_HH__
+#define __UNISIM_COMPONENT_CXX_PCI_IDE_PCI_MASTER_HH__
 
-namespace full_system {
+namespace unisim {
+namespace component {
+namespace cxx {
 namespace pci {
+namespace ide {
 
 template <class ADDRESS_TYPE>
 class PCIMaster {
@@ -48,7 +51,10 @@ class PCIMaster {
 		virtual void notify() = 0;
 };
 
+} // end of namespace ide
 } // end of namespace pci
-} // end of namespace full_system
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 #endif

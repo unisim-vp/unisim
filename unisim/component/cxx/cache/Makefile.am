@@ -1,5 +1,5 @@
-includedir = $(prefix)/include/unisim/component/c++/cache
-libdir= $(prefix)/lib/unisim/component/c++/cache
+includedir = $(prefix)/include/unisim/component/cxx/cache
+libdir= $(prefix)/lib/unisim/component/cxx/cache
 include_HEADERS = cache.hh cache.tcc
 
 SUBDIRS=

@@ -42,10 +42,10 @@ retaining the original license:
 #include <string>
 #include <vector>
 
-#include "component/component/cxx/pci/ide/ide_ctrl.hh"
-#include "component/component/cxx/pci/ide/ide_disk.hh"
-#include "component/component/cxx/pci/pcireg.hh"
-#include "component/component/cxx/utils/endian/endian.hh"
+#include "unisim/component/cxx/pci/ide/ide_ctrl.hh"
+#include "unisim/component/cxx/pci/ide/ide_disk.hh"
+#include "unisim/component/cxx/pci/ide/pcireg.hh"
+#include "unisim/util/endian/endian.hh"
 
 using namespace std;
 

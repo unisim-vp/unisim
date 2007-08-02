@@ -1,5 +1,5 @@
-includedir = $(prefix)/include/unisim/component/c++/processor
-libdir= $(prefix)/lib/unisim/component/c++/processor
+includedir = $(prefix)/include/unisim/component/cxx/processor
+libdir= $(prefix)/lib/unisim/component/cxx/processor
 
 SUBDIRS=
 INCLUDE_SUBDIRS=

@@ -1,10 +1,10 @@
 INCLUDES=-I$(top_srcdir)/../../../../..
 
-libdir= $(prefix)/lib/unisim/component/c++/cache/insn
+libdir= $(prefix)/lib/unisim/component/cxx/cache/insn
 lib_LIBRARIES = libcache.a
 libcache_a_SOURCES = cache.cc
 
-includedir = $(prefix)/include/unisim/component/c++/cache/insn
+includedir = $(prefix)/include/unisim/component/cxx/cache/insn
 include_HEADERS = cache.hh cache.tcc
 
 install-exec-hook: $(libdir)/libcache.a
