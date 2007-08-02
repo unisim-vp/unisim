@@ -32,13 +32,13 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/c++/processor/arm/armcpu.hh"
-#include "unisim/component/c++/processor/arm/armcpu.tcc"
-#include "unisim/component/c++/processor/arm/cpu.hh"
-#include "unisim/component/c++/processor/arm/cpu.tcc"
-#include "unisim/component/c++/processor/arm/config.hh"
-#include "unisim/component/c++/processor/arm/exception.hh"
-#include "unisim/component/c++/processor/arm/exception.tcc"
+#include "unisim/component/cxx/processor/arm/armcpu.hh"
+#include "unisim/component/cxx/processor/arm/armcpu.tcc"
+#include "unisim/component/cxx/processor/arm/cpu.hh"
+#include "unisim/component/cxx/processor/arm/cpu.tcc"
+#include "unisim/component/cxx/processor/arm/config.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/processor/arm/exception.tcc"
 
 namespace unisim {
 namespace component {

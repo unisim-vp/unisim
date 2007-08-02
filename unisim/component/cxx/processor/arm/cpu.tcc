@@ -37,7 +37,7 @@
 
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/component/c++/cache/cache_interface.hh"
+#include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/debug/symbol.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include <sstream>

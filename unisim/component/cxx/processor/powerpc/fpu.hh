@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FPU_HH__
 
-#include <unisim/component/c++/processor/powerpc/floating.hh>
+#include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/registers.hh>

@@ -38,7 +38,7 @@ address {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
 {
-#include <unisim/component/c++/processor/powerpc/cpu.hh>
+#include <unisim/component/cxx/processor/powerpc/cpu.hh>
 }
 
 action {void} execute({CPU<CONFIG> *} {cpu}) {

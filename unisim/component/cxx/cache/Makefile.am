@@ -2,8 +2,18 @@ includedir = $(prefix)/include/unisim/component/c++/cache
 libdir= $(prefix)/lib/unisim/component/c++/cache
 include_HEADERS = cache.hh cache.tcc
 
-SUBDIRS=mesi insn
-INCLUDE_SUBDIRS=mesi insn
+SUBDIRS=
+INCLUDE_SUBDIRS=
+
+if COND_mesi
+SUBDIRS += mesi
+INCLUDE_SUBDIRS += mesi
+endif
+
+if COND_insn
+SUBDIRS += insn
+INCLUDE_SUBDIRS += insn
+endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -35,20 +35,20 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 
-#include <unisim/component/c++/processor/powerpc/powerpc_types.hh>
-#include <unisim/component/c++/processor/powerpc/fpu.hh>
-#include <unisim/component/c++/cache/mesi/cache.hh>
-#include <unisim/component/c++/cache/insn/cache.hh>
+#include <unisim/component/cxx/processor/powerpc/powerpc_types.hh>
+#include <unisim/component/cxx/processor/powerpc/fpu.hh>
+#include <unisim/component/cxx/cache/mesi/cache.hh>
+#include <unisim/component/cxx/cache/insn/cache.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
-#include <unisim/component/c++/cache/cache_interface.hh>
+#include <unisim/component/cxx/cache/cache_interface.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
 //#include <memories/endian_interface.hh>
-#include <unisim/component/c++/processor/powerpc/mmu.hh>
-#include <unisim/component/c++/processor/powerpc/exception.hh>
+#include <unisim/component/cxx/processor/powerpc/mmu.hh>
+#include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>

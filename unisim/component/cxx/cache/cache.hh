@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_CACHE_CACHE_HH__
 #define __UNISIM_COMPONENT_CXX_CACHE_CACHE_HH__
 
-#include <unisim/component/c++/cache/cache_interface.hh>
+#include <unisim/component/cxx/cache/cache_interface.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/cache_power_estimator.hh>

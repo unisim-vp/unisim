@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/component/c++/cache/mesi/cache.hh>
+#include <unisim/component/cxx/cache/mesi/cache.hh>
 
 namespace unisim {
 namespace component {

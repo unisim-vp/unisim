@@ -48,12 +48,12 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/util/debug/register.hh"
-#include "unisim/component/c++/processor/arm/exception.hh"
-#include "unisim/component/c++/cache/cache_interface.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/endian/endian.hh"
 #include <string>
 #include <inttypes.h>
-//#include "unisim/component/c++/processor/arm/config.hh"
+//#include "unisim/component/cxx/processor/arm/config.hh"
 //#include "memories/endian_interface.hh"
 //#include "generic/cache/cache_interface.hh"
 

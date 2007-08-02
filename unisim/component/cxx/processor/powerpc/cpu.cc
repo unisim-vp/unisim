@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/component/c++/processor/powerpc/powerpc.hh>
+#include <unisim/component/cxx/processor/powerpc/powerpc.hh>
 #include <unisim/util/simfloat/floating.tcc>
 
 namespace unisim {

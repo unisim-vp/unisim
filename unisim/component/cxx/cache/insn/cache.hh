@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_CACHE_INSN_CACHE_H__
 #define __UNISIM_COMPONENT_CXX_CACHE_INSN_CACHE_H__
 
-#include <unisim/component/c++/cache/cache.hh>
+#include <unisim/component/cxx/cache/cache.hh>
 #include <inttypes.h>
 
 namespace unisim {

@@ -44,7 +44,9 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([message debug memory])
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm-message, message)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm-debug, debug)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm-memory, memory)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

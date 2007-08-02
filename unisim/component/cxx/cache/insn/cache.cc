@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/component/c++/cache/insn/cache.hh>
+#include <unisim/component/cxx/cache/insn/cache.hh>
 
 namespace unisim {
 namespace component {

@@ -35,9 +35,9 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_TCC__
 
-#include <unisim/component/c++/processor/powerpc/exception.tcc>
-#include <unisim/component/c++/cache/mesi/cache.tcc>
-#include <unisim/component/c++/cache/insn/cache.tcc>
+#include <unisim/component/cxx/processor/powerpc/exception.tcc>
+#include <unisim/component/cxx/cache/mesi/cache.tcc>
+#include <unisim/component/cxx/cache/insn/cache.tcc>
 
 #include <sstream>
 #include <stdexcept>

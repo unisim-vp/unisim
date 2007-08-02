@@ -33,8 +33,8 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/c++/memory/ram/memory.hh"
-#include "unisim/component/c++/memory/ram/memory.tcc"
+#include "unisim/component/cxx/memory/ram/memory.hh"
+#include "unisim/component/cxx/memory/ram/memory.tcc"
 #include <inttypes.h>
 
 namespace unisim {

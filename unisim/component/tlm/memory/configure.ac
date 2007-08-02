@@ -44,7 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-AC_CONFIG_SUBDIRS([ram])
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm-memory-ram, ram)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

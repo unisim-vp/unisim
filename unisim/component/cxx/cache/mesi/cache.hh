@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_CACHE_MESI_CACHE_HH__
 #define __UNISIM_COMPONENT_CXX_CACHE_MESI_CACHE_HH__
 
-#include <unisim/component/c++/cache/cache.hh>
+#include <unisim/component/cxx/cache/cache.hh>
 #include <inttypes.h>
 
 namespace unisim {

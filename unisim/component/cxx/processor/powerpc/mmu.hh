@@ -36,11 +36,11 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MMU_HH__
 
 #include <unisim/service/interfaces/memory.hh>
-#include <unisim/component/c++/tlb/tlb.hh>
+#include <unisim/component/cxx/tlb/tlb.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/debug/simple_register.hh>
-#include <unisim/component/c++/cache/cache_interface.hh>
-#include <unisim/component/c++/processor/powerpc/exception.hh>
+#include <unisim/component/cxx/cache/cache_interface.hh>
+#include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/cache_power_estimator.hh>
