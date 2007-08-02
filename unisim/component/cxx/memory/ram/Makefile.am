@@ -9,7 +9,7 @@ include_HEADERS = memory.hh memory.tcc
 
 install-exec-hook: $(libdir)/libram.a
 	rm -f $(prefix)/lib/libunisim_component_cxx_memory_ram.a
-	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_cxx_memory_ram.a); fi
+	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_cxx_memory_ram.a)
 uninstall-hook:
 	rm -f $(prefix)/lib/libunisim_component_cxx_memory_ram.a
 	(rmdir $(libdir) || true)
