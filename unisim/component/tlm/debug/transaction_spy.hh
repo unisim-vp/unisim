@@ -43,6 +43,7 @@
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/logger.hh"
+#include "unisim/util/garbage_collector/garbage_collector.hh"
 #include <string>
 
 #define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
@@ -58,11 +59,26 @@ using unisim::kernel::tlm::ResponseListener;
 using unisim::kernel::tlm::TlmNoResponse;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Object;
-using unisim::kernel::servcie::Service;
+using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Client;
-using unisim::service::interface::Logger;
+using unisim::util::garbage_collector::Pointer;
 using std::string;
+
+using unisim::service::interfaces::Logger;
+using unisim::service::interfaces::operator<<;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::Line;
 
 template<class REQ>
 class RequestSpy {
@@ -158,8 +174,8 @@ TransactionSpy(const sc_module_name &name, Object *parent) :
 	Object(name, parent),
 	Client<Logger>(name, parent),
 	ResponseListener<REQ, RSP>(),
-	channel_inport("channel_inport"),
-	channel_outport("channel_outport"),
+	slave_port("slave_port"),
+	master_port("master_port"),
 	logger_import("logger_import", this),
 	source_module_name("source_module_name"),
 	source_port_name("source_port_name"),
@@ -170,7 +186,7 @@ TransactionSpy(const sc_module_name &name, Object *parent) :
 	param_target_module_name("target_module_name", this, target_module_name),
 	param_target_port_name("target_port_name", this, target_port_name) {
 	SetupDependsOn(logger_import);
-	channel_inport(*this);
+	slave_port(*this);
 }
 
 template<class REQ, class RSP>
@@ -205,7 +221,7 @@ template<class REQ, class RSP>
 bool
 TransactionSpy<REQ, RSP> ::
 Send(const Pointer<TlmMessage<REQ, RSP> > &message) {
-	if(ResponseListener<REQ, RSP>::Send(message, channel_outport)) {
+	if(ResponseListener<REQ, RSP>::Send(message, master_port)) {
 		/* inform that a request was sent through this channel, and return
 		 *   success */
 		if(logger_import) {

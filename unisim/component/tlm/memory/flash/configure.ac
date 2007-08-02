@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM TLM Memory Component Library], [1.0])
+AC_INIT([UNISIM TLM Flash Memory Component Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -44,8 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-memory-ram, ram)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-memory-flash, flash)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm-memory-am29lv, am29lv)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

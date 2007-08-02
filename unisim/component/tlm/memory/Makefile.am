@@ -9,6 +9,11 @@ SUBDIRS += ram
 INCLUDE_SUBDIRS += ram
 endif
 
+if COND_flash
+SUBDIRS += flash
+INCLUDE_SUBDIRS += flash
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)

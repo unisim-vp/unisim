@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_TLM_MESSAGE_MEMORY_HH__
 #define __UNISIM_COMPONENT_TLM_MESSAGE_MEMORY_HH__
 
-#include "unisim/tlm/debug/transaction_spy.hh"
+#include "unisim/component/tlm/debug/transaction_spy.hh"
 #include "unisim/service/interfaces/logger.hh"
 
 #include <inttypes.h>
@@ -87,13 +87,18 @@ class MemoryResponse
 public:
 	uint8_t read_data[DATA_SIZE]; // Data read from memory/target processor caches
 
-	friend unisim::service::interfaces::Logger& operator << <DATA_SIZE>(unisim::service::interfaces::Logger& os, 
+	friend unisim::service::interfaces::Logger& operator<< <DATA_SIZE>(unisim::service::interfaces::Logger& os, 
 			const MemoryResponse<DATA_SIZE>& rsp);
 };
 
 template <class ADDRESS, unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::LoggerInterface& os, const MemoryRequest<ADDRESS, DATA_SIZE>& req) {
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryRequest<ADDRESS, DATA_SIZE>& req) {
 	typedef MemoryRequest<ADDRESS, DATA_SIZE> ReqType;
+	
+	using unisim::service::interfaces::operator<<;
+	using unisim::service::interfaces::Hex;
+	using unisim::service::interfaces::Dec;
+	using unisim::service::interfaces::Endl;
 	
 	os << "- type = ";
 	switch(req.type) {
@@ -119,8 +124,13 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 }
 
 template <unsigned int DATA_SIZE>
-unisim::service::interfaces::LoggerInterface& operator << (unisim::service::interfaces::Logger& os, const MemoryResponse<DATA_SIZE>& rsp) {
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryResponse<DATA_SIZE>& rsp) {
 	typedef MemoryResponse<DATA_SIZE> RspType;
+	
+	using unisim::service::interfaces::operator<<;
+	using unisim::service::interfaces::Hex;
+	using unisim::service::interfaces::Dec;
+	using unisim::service::interfaces::Endl;
 	
 	os << "- read_data(hex) =" << Hex;
 	for(unsigned int i = 0; i < DATA_SIZE; i++) {
@@ -140,6 +150,10 @@ namespace component {
 namespace tlm {
 namespace debug {
 
+using unisim::service::interfaces::operator<<;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
 template<class ADDRESS, unsigned int DATA_SIZE>
 class RequestSpy<unisim::component::tlm::message::MemoryRequest<ADDRESS, DATA_SIZE> > {
 private:
