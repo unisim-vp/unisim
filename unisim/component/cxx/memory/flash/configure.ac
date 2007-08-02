@@ -44,8 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-memory-ram, ram)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-memory-flash, flash)
+UNISIM_CONFIG_SUBDIR(unisim-component-cxx-memory-am29lv, am29lv)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

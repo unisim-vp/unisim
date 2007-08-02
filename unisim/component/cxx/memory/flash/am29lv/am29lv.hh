@@ -54,7 +54,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
-using unisim::kernel::servcie::ServiceImport;
+using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
