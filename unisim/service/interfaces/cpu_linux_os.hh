@@ -35,8 +35,6 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
 #define __UNISIM_SERVICE_INTERFACES_CPU_LINUX_OS_HH__
 
-#include <sys/stat.h>
-#include <sys/times.h>
 #include "unisim/service/interfaces/cpu_os.hh"
   
 namespace unisim {
