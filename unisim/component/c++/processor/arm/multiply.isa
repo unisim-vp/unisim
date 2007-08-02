@@ -1,0 +1,391 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
+ 
+/**********************************************
+
+           MULTIPLY INSTRUCTIONS
+
+**********************************************/
+
+/* TODO: implement missing instructions:for E variants of version 5 and above
+ *  - smulxy
+ *  - smulwy
+ *  - smlaxy
+ *  - smlawy
+ *  - smlalxy
+ */
+
+/*******************************************************************
+ * mla instruction
+ */
+
+op mla(cond[4]:0b01[7]:s[1]:rd[4]:rn[4]:rs[4]:0b01001[4]:rm[4])
+
+mla.disasm = {
+	buffer << "mla";
+	cpu.DisasmCondition(cond, buffer);
+	if(s) buffer << "s";
+	buffer << " r" << rd << ", "
+		<< "r" << rm << ", "
+		<< "r" << rs << ", "
+		<< "r" << rn << "";
+}
+
+mla.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	res = rm_value * rs_value;
+	res += rn_value;
+	cpu.SetGPR(rd, res);
+  
+	if(s) {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+	}
+}
+
+/*
+ * end of mla instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * mul instruction
+ */
+
+op mul(cond[4]:0b0[7]:s[1]:rd[4]:sbz[4]:rs[4]:0b01001[4]:rm[4])
+
+mul.disasm = {
+	buffer << "mul";
+	cpu.DisasmCondition(cond, buffer);
+	if(s) buffer << "s";
+	buffer << " r" << rd << ", "
+		<< "r" << rm << ", "
+		<< "r" << rs << "";
+}
+
+mul.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	res = rm_value * rs_value;
+	cpu.SetGPR(rd, res);
+  
+	if(s) {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+	}
+}
+
+/*
+ * end of mul instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlal instruction
+ * Note: this instruction is only supported for the M variants, that is:
+ *    ARMV4TXM
+ *    ARMV5XM
+ *    ARMV5TXM
+ */
+
+{
+	CONFIG::ARCHITECTURE == CONFIG::ARMV3M ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV4 ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV4T ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5 ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5T ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5TEXP ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5TE
+}:op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b01001[4]:rm[4])
+
+smlal.disasm = {
+	buffer << "smlal";
+	cpu.DisasmCondition(cond, buffer);
+	if(s) buffer << "s";
+	buffer << " r" << rdhi << ", "
+		<< "r" << rdlo << ", "
+		<< "r" << rm << ", "
+		<< "r" << rs << "";
+}
+
+smlal.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	uint64_t res;
+	uint64_t res_lo, res_hi;
+	typename CONFIG::reg_t rdhi_value = inherited::rdhi_init + cpu.GetGPR(rdhi);
+	typename CONFIG::reg_t rdlo_value = inherited::rdlo_init + cpu.GetGPR(rdlo);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	res = rdlo_value + (((uint64_t)rdhi_value) << 32);
+	res += ((int64_t)rm_value) * ((int64_t)rs_value);
+	res_lo = res & (uint64_t)(~(uint32_t)0);
+	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
+	cpu.SetGPR(rdhi, (typename CONFIG::reg_t)res_hi);
+	cpu.SetGPR(rdlo, (typename CONFIG::reg_t)res_lo);
+
+	if(s) {
+		cpu.SetCPSR_N(res_hi & 0x80000000);
+		cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
+	}
+}
+
+/*
+ * end of smlal instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smull instruction
+ * Note: this instruction is only supported for the M variants, that is:
+ *    ARMV4TXM
+ *    ARMV5XM
+ *    ARMV5TXM
+ */
+
+{
+	CONFIG::ARCHITECTURE == CONFIG::ARMV3M ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV4 ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV4T ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5 ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5T ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5TEXP ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5TE
+}:op smull(cond[4]:0b0110[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+
+smull.disasm = {
+	buffer << "smull";
+	cpu.DisasmCondition(cond, buffer);
+	if(s) buffer << "s";
+	buffer << " r" << rdhi << ", "
+	<< "r" << rdlo << ", "
+	<< "r" << rm << ", "
+	<< "r" << rs << "";
+}
+
+smull.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	uint64_t res;
+	uint64_t res_lo, res_hi;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	res = ((int64_t)rm_value) * ((int64_t)rs_value);
+	res_lo = res & (uint64_t)(~(uint32_t)0);
+	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
+	cpu.SetGPR(rdhi, (typename CONFIG::reg_t)res_hi);
+	cpu.SetGPR(rdlo, (typename CONFIG::reg_t)res_lo);
+	
+	if(s) {
+		cpu.SetCPSR_N(res_hi & 0x80000000);
+		cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
+	}
+}
+
+/*
+ * end of smull instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * umlal instruction
+ * Note: this instruction is only supported for the M variants, that is:
+ *    ARMV4TXM
+ *    ARMV5XM
+ *    ARMV5TXM
+ */
+
+{
+	CONFIG::ARCHITECTURE == CONFIG::ARMV3M ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV4 ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV4T ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5 ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5T ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5TEXP ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5TE
+}:op umlal(cond[4]:0b0101[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+
+umlal.disasm = {
+	buffer << "umlal";
+	cpu.DisasmCondition(cond, buffer);
+	if(s) buffer << "s";
+	buffer << " r" << rdhi << ", "
+		<< "r" << rdlo << ", "
+		<< "r" << rm << ", "
+		<< "r" << rs << "";
+}
+
+umlal.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	uint64_t res;
+	uint64_t res_lo, res_hi;
+	typename CONFIG::reg_t rdhi_value = inherited::rdhi_init + cpu.GetGPR(rdhi);
+	typename CONFIG::reg_t rdlo_value = inherited::rdlo_init + cpu.GetGPR(rdlo);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	res = rdlo_value + (((uint64_t)rdhi_value) << 32);
+	res += ((int64_t)rm_value) * ((int64_t)rs_value);
+	res_lo = res & (uint64_t)(~(uint32_t)0);
+	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
+	cpu.SetGPR(rdhi, (typename CONFIG::reg_t)res_hi);
+	cpu.SetGPR(rdlo, (typename CONFIG::reg_t)res_lo);
+
+	if(s) {
+		cpu.SetCPSR_N(res_hi & 0x80000000);
+		cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
+	}
+}
+
+/*
+ * end of umlal instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * umull instruction
+ * Note: this instruction is only supported for the M variants, that is:
+ *    ARMV4TXM
+ *    ARMV5XM
+ *    ARMV5TXM
+ */
+
+{
+	CONFIG::ARCHITECTURE == CONFIG::ARMV3M ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV4 ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV4T ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5 ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5T ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5TEXP ||
+	CONFIG::ARCHITECTURE == CONFIG::ARMV5TE
+}:op umull(cond[4]:0b0100[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+
+umull.disasm = {
+	buffer << "umull";
+	cpu.DisasmCondition(cond, buffer);
+	if(s) buffer << "s";
+	buffer << " r" << rdhi << ", "
+		<< "r" << rdlo << ", "
+		<< "r" << rm << ", "
+		<< "r" << rs << "";
+}
+
+umull.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	uint64_t res;
+	uint64_t res_lo, res_hi;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	res = ((int64_t)rm_value) * ((int64_t)rs_value);
+	res_lo = res & (uint64_t)(~(uint32_t)0);
+	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
+	cpu.SetGPR(rdhi, (typename CONFIG::reg_t)res_hi);
+	cpu.SetGPR(rdlo, (typename CONFIG::reg_t)res_lo);
+
+	if(s) {
+		cpu.SetCPSR_N(res_hi & 0x80000000);
+		cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
+	}
+}
+
+/*
+ * end of umull instruction
+ *******************************************************************/
+
+group multiply_rn_init(mla)
+multiply_rn_init.initialize_rn_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rn == 15) inherited::rn_init = 8;
+	else inherited::rn_init = 0;
+}
+
+group multiply_rm_init(mla, mul, smlal, smull, umlal, umull)
+multiply_rm_init.initialize_rm_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rm == 15) inherited::rm_init = 8;
+	else inherited::rm_init = 0;
+}
+
+group multiply_rs_init(mla, mul, smlal, smull, umlal, umull)
+multiply_rs_init.initialize_rs_init = {
+	typedef Operation<CONFIG> inherited;
+	
+	if(rs == 15) inherited::rs_init = 8;
+	else inherited::rs_init = 0;
+}
+
+group multiply_rdhi_init(smlal, umlal)
+multiply_rdhi_init.initialize_rdhi_init = {
+	typedef Operation<CONFIG> inherited;
+	
+	if(rdhi == 15) inherited::rdhi_init = 8;
+	else inherited::rdhi_init = 0;
+}
+
+group multiply_rdlo_init(smlal, umlal)
+multiply_rdlo_init.initialize_rdlo_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rdlo == 15) inherited::rdlo_init = 8;
+	else inherited::rdlo_init = 0;
+}
+

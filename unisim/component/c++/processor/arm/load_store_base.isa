@@ -1,0 +1,1382 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
+ 
+/**********************************************
+
+         LOAD AND STORE INSTRUCTIONS
+
+**********************************************/
+
+{
+#include <iostream>
+}
+
+/*******************************************************************
+ * ldr instruction
+ */
+
+op ldr_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:offset[12])
+op ldr_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:offset[12])
+op ldr_imm_pre(cond[4]:0b010[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:offset[12])
+op ldr_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op ldr_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op ldr_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+group ldr_group(ldr_imm_post, ldr_imm_offset, ldr_imm_pre, \
+		ldr_reg_post, ldr_reg_offset, ldr_reg_pre)
+
+ldr_imm_post.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+}
+
+ldr_imm_offset.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+}
+
+ldr_imm_pre.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
+}
+
+ldr_reg_post.disasm = {
+			   buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+}
+
+ldr_reg_offset.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+}
+
+ldr_reg_pre.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
+}
+
+ldr_imm_post.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t new_rn_value = 0;
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value; // address used is the contents of rn
+	new_rn_value = cpu.LSWUBImmOffset(u, rn_value, offset);
+	cpu.SetGPR(rn, new_rn_value); // update rn
+	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	//   cout << "+++++ ldr_imm_post (address = 0x" << hex << address << dec
+	//   << "; value = 0x" << hex << value << dec << ")" << endl;
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+  
+	if(rd == cpu.PC_reg) {
+		// code valid for version 5 and above
+		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+		cpu.SetCPSR_T((value & 0x01) == 1);
+	} else {
+		cpu.SetGPR(rd, value);
+	}
+}
+
+ldr_imm_offset.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	//   cout << "+++++ ldr_imm_offset" << endl;
+	switch(address & 0x3) {
+	case 0x000:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+  
+	if(rd == cpu.PC_reg) {
+		// code valid for version 5 and above
+		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+		cpu.SetCPSR_T((value & 0x01) == 1);
+	} else {
+		cpu.SetGPR(rd, value);
+	}
+}
+
+ldr_imm_pre.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
+	cpu.SetGPR(rn, address); // update rn with the address
+	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	//   cout << "+++++ ldr_imm_pre" << endl;
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+  
+	if(rd == cpu.PC_reg) {
+		// code valid for version 5 and above
+		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+		cpu.SetCPSR_T((value & 0x01) == 1);
+	} else {
+		cpu.SetGPR(rd, value);
+	}
+}
+
+ldr_reg_post.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value;
+	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+  
+	if(rd == cpu.PC_reg) {
+		// code valid for version 5 and above
+		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+		cpu.SetCPSR_T((value & 0x01) == 1);
+	} else {
+		cpu.SetGPR(rd, value);
+	}
+}
+
+ldr_reg_offset.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+  
+	if(rd == cpu.PC_reg) {
+		// code valid for version 5 and above
+		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+		cpu.SetCPSR_T((value & 0x01) == 1);
+	} else {
+		cpu.SetGPR(rd, value);
+	}
+}
+
+ldr_reg_pre.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	cpu.SetGPR(rn, address);
+	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+  
+	if(rd == cpu.PC_reg) {
+		// code valid for version 5 and above
+		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+		cpu.SetCPSR_T((value & 0x01) == 1);
+	} else {
+		cpu.SetGPR(rd, value);
+	}
+}
+
+/*
+ * end of ldr instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrb instruction
+ */
+
+op ldrb_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:offset[12])
+op ldrb_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:offset[12])
+op ldrb_imm_pre(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:offset[12])
+op ldrb_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op ldrb_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op ldrb_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+ldrb_imm_post.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+}
+
+ldrb_imm_offset.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+}
+
+ldrb_imm_pre.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
+}
+
+ldrb_reg_post.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+}
+
+ldrb_reg_offset.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+}
+
+ldrb_reg_pre.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  cpu.DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
+}
+
+ldrb_imm_post.execute = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	uint8_t val8;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.GetGPR(rn); // address used is the contents of rn
+	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
+	if(!cpu.Read8(address, val8)) {
+		cerr << "ERROR(load_store.isa::ldrb_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val8;
+	cpu.SetGPR(rd, value);
+}
+
+ldrb_imm_offset.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	uint8_t val8;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+	if(!cpu.Read8(address, val8)) {
+		cerr << "ERROR(load_store.isa::ldrb_imm_offset): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val8;
+	cpu.SetGPR(rd, value);
+}
+
+ldrb_imm_pre.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	uint8_t val8;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
+	cpu.SetGPR(rn, address); // update rn with the address
+	if(!cpu.Read8(address, val8)) {
+		cerr << "ERROR(load_store.isa::ldrb_imm_pre): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val8;
+	cpu.SetGPR(rd, value);
+}
+
+ldrb_reg_post.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	uint8_t val8;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.GetGPR(rn);
+	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	if(!cpu.Read8(address, val8)) {
+		cerr << "ERROR(load_store.isa::ldrb_reg_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val8;
+	cpu.SetGPR(rd, value);
+}
+
+ldrb_reg_offset.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	uint8_t val8;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	if(!cpu.Read8(address, val8)) {
+		cerr << "ERROR(load_store.isa::ldrb_reg_offset): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val8;
+	cpu.SetGPR(rd, value);
+}
+
+ldrb_reg_pre.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	uint8_t val8;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	cpu.SetGPR(rn, address);
+	if(!cpu.Read8(address, val8)) {
+		cerr << "ERROR(load_store.isa::ldrb_reg_pre): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val8;
+	cpu.SetGPR(rd, value);
+}
+
+/*
+ * end of ldrb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrt instruction
+ * TODO: check running mode
+ */
+
+op ldrt_imm(cond[4]:0b0100[4]:u[1]:0b011[3]:rn[4]:rd[4]:offset[12])
+op ldrt_reg(cond[4]:0b0110[4]:u[1]:0b011[3]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+ldrt_imm.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "t r" << rd << ", ";
+  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+}
+
+ldrt_reg.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "t r" << rd << ", ";
+  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+}
+
+ldrt_imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value, value_r, value_l;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value;
+	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset));
+	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		break;
+	}
+	cpu.SetGPR(rd, value);
+}
+
+ldrt_reg.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value, value_r, value_l;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value;
+	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		break;
+	}
+	cpu.SetGPR(rd, value);  
+}
+
+/*
+ * end of ldrt instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrbt instruction
+ * TODO: check running mode
+ */
+
+op ldrbt_imm(cond[4]:0b0100[4]:u[1]:0b111[3]:rn[4]:rd[4]:offset[12])
+op ldrbt_reg(cond[4]:0b0110[4]:u[1]:0b111[3]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+ldrbt_imm.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "bt r" << rd << ", ";
+  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+}
+
+ldrbt_reg.disasm = {
+  buffer << "ldr";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "bt r" << rd << ", ";
+  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+}
+
+ldrbt_imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	uint8_t val;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value;
+	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset));
+	if(!cpu.Read8(address, val)) {
+		cerr << "ERROR(load_store.isa::ldrb_reg_pre): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val;
+	cpu.SetGPR(rd, value);
+}
+
+ldrbt_reg.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	uint8_t val;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value;
+	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	if(!cpu.Read8(address, val)) {
+		cerr << "ERROR(load_store.isa::ldrb_reg_pre): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val;
+	cpu.SetGPR(rd, value);  
+}
+
+/*
+ * end of ldrbt instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * str instruction
+ */
+
+op str_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:offset[12])
+op str_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:offset[12])
+op str_imm_pre(cond[4]:0b010[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:offset[12])
+op str_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op str_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op str_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+str_imm_post.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+}
+
+str_imm_offset.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+}
+
+str_imm_pre.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
+}
+
+str_reg_post.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+}
+
+str_reg_offset.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+}
+
+str_reg_pre.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r" << rd << ", ";
+  cpu.DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
+}
+
+str_imm_post.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value; // address used is the contents of rn
+	cpu.CheckAlignmentExcep(address); // TODO
+	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
+	value = rd_value;
+	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa:" << __FUNCTION__ << "): "
+			<< "Couldn't store data " 
+			<< "(address = " << hex << (address & ~(0x3)) << dec
+			<< ", value = " << hex << value << dec 
+			<< ", size = " << 4 << ")"<< endl;
+		exit(-1);
+	}
+}
+
+str_imm_offset.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+	cpu.CheckAlignmentExcep(address); // TODO
+	value = rd_value;
+
+	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::str_imm_offset): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+str_imm_pre.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
+	cpu.CheckAlignmentExcep(address); // TODO
+	cpu.SetGPR(rn, address); // update rn with the address
+	value = rd_value;
+	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::str_imm_pre): "
+			<< "Couldn't store data"
+			<< "(address = " << hex << (address & ~(0x3)) << dec
+			<< ", value = " << hex << value << dec 
+			<< ", size = " << 4 << ")"<< endl;
+		exit(-1);
+	}
+}
+
+str_reg_post.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value;
+	cpu.CheckAlignmentExcep(address); // TODO
+	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	value = rd_value;
+	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::str_reg_post): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+str_reg_offset.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	cpu.CheckAlignmentExcep(address); // TODO
+	value = rd_value;
+	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::str_reg_offset): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+str_reg_pre.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	cpu.CheckAlignmentExcep(address); // TODO
+	cpu.SetGPR(rn, address);
+	value = rd_value;
+	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::str_reg_pre): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+/*
+ * end of str instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * strb instruction
+ */
+
+op strb_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:offset[12])
+op strb_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:offset[12])
+op strb_imm_pre(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:offset[12])
+op strb_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op strb_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op strb_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+strb_imm_post.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+}
+
+strb_imm_offset.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+}
+
+strb_imm_pre.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
+}
+
+strb_reg_post.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+}
+
+strb_reg_offset.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+}
+
+strb_reg_pre.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "b r" << rd << ", ";
+  cpu.DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
+}
+
+strb_imm_post.execute = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::address_t address;
+	uint8_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	address = rn_value; // address used is the contents of rn
+	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
+	value = rd_value & 0x0FF;
+	if(!cpu.Write8(address, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strb_imm_post): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+strb_imm_offset.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	uint8_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+	value = rd_value & 0x0FF;
+	if(!cpu.Write8(address, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strb_imm_offset): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+strb_imm_pre.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	uint8_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
+	cpu.SetGPR(rn, address); // update rn with the address
+	value = rd_value & 0x0FF;
+	if(!cpu.Write8(address, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strb_imm_pre): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+strb_reg_post.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	uint8_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.GetGPR(rn);
+	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	value = rd_value & 0x0FF;
+	if(!cpu.Write8(address, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strb_reg_post): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+strb_reg_offset.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	uint8_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	value = rd_value & 0x0FF;
+	if(!cpu.Write8(address, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strb_reg_offset): "
+		<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+strb_reg_pre.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	uint8_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
+	cpu.SetGPR(rn, address);
+	value = rd_value & 0x0FF;
+	if(!cpu.Write8(address, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strb_reg_pre): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+/*
+ * end of strb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * strt instruction
+ * TODO: check running mode
+ */
+
+op strt_imm(cond[4]:0b010[3]:0b0[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:offset[12])
+op strt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+strt_imm.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "t r" << rd << ", ";
+  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+}
+
+strt_reg.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "t r" << rd << ", ";
+  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+}
+
+strt_imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value; // address used is the contents of rn
+	cpu.CheckAlignmentExcep(address); // TODO
+	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
+	value = rd_value;
+	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strt_imm): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+strt_reg.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	address = rn_value;
+	cpu.CheckAlignmentExcep(address); // TODO
+	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	value = rd_value;
+	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strt_reg): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+/*
+ * end of strt instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * strbt instruction
+ * TODO: check running mode
+ */
+
+op strbt_imm(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:offset[12])
+op strbt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+strbt_imm.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "bt r" << rd << ", ";
+  // LSWUB = Load Store Word or Unsigned Byte
+  cpu.DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
+}
+
+strbt_reg.disasm = {
+  buffer << "str";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "bt r" << rd << ", ";
+  cpu.DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
+}
+
+strbt_imm.execute = {
+	typename CONFIG::address_t address;
+	uint8_t value;
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = cpu.GetGPR(rn); // address used is the contents of rn
+	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, cpu.GetGPR(rn), offset)); // update rn
+	value = cpu.GetGPR(rd) & 0x0FF;
+	if(!cpu.Write8(address, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strbt_imm): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+strbt_reg.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::address_t address;
+	uint8_t value;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+  
+	address = rn_value;
+	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
+	value = rd_value & 0x0FF;
+	if(!cpu.Write8(address, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::strbt_reg): "
+			<< "Couldn't store data" << endl;
+		exit(-1);
+	}
+}
+
+/*
+ * end of strbt instruction
+ *******************************************************************/
+
+group load_store_rn_init(ldr_imm_post, ldr_imm_offset, ldr_imm_pre,\
+                         ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
+                         ldrb_imm_post, ldrb_imm_offset, ldrb_imm_pre, \
+                         ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+                         ldrt_imm, ldrt_reg, \
+                         ldrbt_imm, ldrbt_reg, \
+                         str_imm_post, str_imm_offset, str_imm_pre, \
+                         str_reg_post, str_reg_offset, str_reg_pre, \
+                         strb_imm_post, strb_imm_offset, strb_imm_pre, \
+                         strb_reg_post, strb_reg_offset, strb_reg_pre, \
+                         strt_imm, strt_reg, \
+                         strbt_imm, strbt_reg)
+load_store_rn_init.initialize_rn_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rn == 15) inherited::rn_init = 8;
+	else inherited::rn_init = 0;
+}
+
+group load_store_rm_init(ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
+                         ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+                         ldrt_reg, \
+                         ldrbt_reg, \
+                         str_reg_post, str_reg_offset, str_reg_pre, \
+                         strb_reg_post, strb_reg_offset, strb_reg_pre, \
+                         strt_reg, \
+                         strbt_reg)
+load_store_rm_init.initialize_rm_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rm == 15) inherited::rm_init = 8;
+	else inherited::rm_init = 0;
+}
+
+group load_store_rd_init(ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
+                         ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+                         ldrt_reg, \
+                         ldrbt_reg, \
+                         str_imm_post, str_imm_offset, str_imm_pre, \
+                         str_reg_post, str_reg_offset, str_reg_pre, \
+                         strb_imm_post, strb_imm_offset, strb_imm_pre, \
+                         strb_reg_post, strb_reg_offset, strb_reg_pre, \
+                         strt_imm, strt_reg, \
+                         strbt_imm, strbt_reg)
+load_store_rd_init.initialize_rd_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rd == 15) inherited::rd_init = 8;
+	else inherited::rd_init = 0;
+}

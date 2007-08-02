@@ -1,0 +1,3193 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
+ 
+/**********************************************
+
+        DATA PROCESSING INSTRUCTIONS
+
+**********************************************/
+
+/* TODO: implement missing instructions for ARMV5TE and ARMV5TEXP:
+ *  - qadd
+ *  - qdadd
+ *  - qsub
+ *  - qdsub
+ */
+ 
+/*******************************************************************
+ * and instruction
+ */
+
+op and_32imm(cond[4]:0b00[2]:0b1[1]:0b0000[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op and_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op and_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op ands_32imm(cond[4]:0b00[2]:0b1[1]:0b0000[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op ands_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op ands_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+and_32imm.disasm = {
+  buffer << "and";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+and_imm_shift.disasm = {
+  buffer << "and";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+and_reg_shift.disasm = {
+  buffer << "and";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+ands_32imm.disasm = {
+  buffer << "and";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+ands_imm_shift.disasm = {
+  buffer << "and";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+ands_reg_shift.disasm = {
+  buffer << "and";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+and_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s1 & s2;
+	cpu.SetGPR(rd, res);
+}
+
+and_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+  	res = s1 & s2;
+  	cpu.SetGPR(rd, res);
+}
+
+and_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s1 & s2;
+	cpu.SetGPR(rd, res);
+}
+
+ands_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = s1 & s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}	
+}
+
+ands_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1 & s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+ands_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1 & s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+/*
+ * end of and instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * eor instruction
+ */
+
+op eor_32imm(cond[4]:0b00[2]:0b1[1]:0b0001[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op eor_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op eor_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op eors_32imm(cond[4]:0b00[2]:0b1[1]:0b0001[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op eors_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op eors_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+eor_32imm.disasm = {
+  buffer << "eor";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+eor_imm_shift.disasm = {
+  buffer << "eor";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+eor_reg_shift.disasm = {
+  buffer << "eor";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+eors_32imm.disasm = {
+  buffer << "eor";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+eors_imm_shift.disasm = {
+  buffer << "eor";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+eors_reg_shift.disasm = {
+  buffer << "eor";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+eor_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s1 ^ s2;
+	cpu.SetGPR(rd, res);
+}
+
+eor_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s1 ^ s2;
+	cpu.SetGPR(rd, res);
+}
+
+eor_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+  
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s1 ^ s2;
+	cpu.SetGPR(rd, res);
+}
+
+eors_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = s1 ^ s2;
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+eors_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1 ^ s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+eors_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1 ^ s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}	
+}
+
+/*
+ * end of eor instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sub instruction
+ */
+
+op sub_32imm(cond[4]:0b00[2]:0b1[1]:0b0010[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op sub_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op sub_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op subs_32imm(cond[4]:0b00[2]:0b1[1]:0b0010[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op subs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op subs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+sub_32imm.disasm = {
+  buffer << "sub";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+sub_imm_shift.disasm = {
+  buffer << "sub";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+sub_reg_shift.disasm = {
+  buffer << "sub";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+subs_32imm.disasm = {
+  buffer << "sub";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+subs_imm_shift.disasm = {
+  buffer << "sub";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+subs_reg_shift.disasm = {
+  buffer << "sub";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+sub_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s1 - s2;
+	cpu.SetGPR(rd, res);
+}
+
+sub_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s1 - s2;
+	cpu.SetGPR(rd, res);
+}
+
+sub_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s1 - s2;
+	cpu.SetGPR(rd, res);
+}
+
+subs_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s1 - s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+	}
+}
+
+subs_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s1 - s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+	}
+}
+
+subs_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s1 - s2;
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+	}
+}
+
+/*
+ * end of sub instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * rsb instruction
+ */
+
+op rsb_32imm(cond[4]:0b00[2]:0b1[1]:0b0011[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op rsb_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op rsb_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op rsbs_32imm(cond[4]:0b00[2]:0b1[1]:0b0011[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op rsbs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op rsbs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+rsb_32imm.disasm = {
+  buffer << "rsb";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+rsb_imm_shift.disasm = {
+  buffer << "rsb";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+rsb_reg_shift.disasm = {
+  buffer << "rsb";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << " r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+rsbs_32imm.disasm = {
+  buffer << "rsb";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+rsbs_imm_shift.disasm = {
+  buffer << "rsb";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+rsbs_reg_shift.disasm = {
+  buffer << "rsb";
+  cpu.DisasmCondition(cond, buffer);
+  buffer << "s r";
+  buffer << rd;
+  buffer << ", r";
+  buffer << rn;
+  buffer << ", ";
+  cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+rsb_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s2 - s1;
+	cpu.SetGPR(rd, res);
+}
+
+rsb_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s2 - s1;
+	cpu.SetGPR(rd, res);
+}
+
+rsb_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s2 - s1;
+	cpu.SetGPR(rd, res);
+}
+
+rsbs_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s2 - s1;
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1)); // to check
+	}
+}
+
+rsbs_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s2 - s1;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1)); // to check
+	}
+}
+
+rsbs_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s2 - s1;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1)); // to check
+	}
+}
+
+/*
+ * end of rsb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * add instruction
+ */
+
+op add_32imm(cond[4]:0b00[2]:0b1[1]:0b0100[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op add_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op add_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op adds_32imm(cond[4]:0b00[2]:0b1[1]:0b0100[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op adds_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op adds_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+add_32imm.disasm = {
+	buffer << "add";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+add_imm_shift.disasm = {
+	buffer << "add";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+add_reg_shift.disasm = {
+	buffer << "add";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+adds_32imm.disasm = {
+	buffer << "add";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+adds_imm_shift.disasm = {
+	buffer << "add";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+adds_reg_shift.disasm = {
+	buffer << "add";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+add_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+  
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+  	res = s1 + s2;
+  	cpu.SetGPR(rd, res);
+}
+
+add_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s1 + s2;
+	cpu.SetGPR(rd, res);
+}
+
+add_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s1 + s2;
+	cpu.SetGPR(rd, res);
+}
+
+adds_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint8_t carry_out;
+	uint8_t overflow_out;
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	Add32(res, carry_out, overflow_out,
+			s1, s2, 0);
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(carry_out); // to check
+		cpu.SetCPSR_V(overflow_out); // to check
+	}
+}
+
+adds_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint8_t carry_out;
+	uint8_t overflow_out;
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	Add32(res, carry_out, overflow_out,
+			s1, s2, 0);
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(carry_out); // to check
+		cpu.SetCPSR_V(overflow_out); // to check
+	}
+}
+
+adds_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint8_t carry_out;
+	uint8_t overflow_out;
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	Add32(res, carry_out, overflow_out,
+			s1, s2, 0);
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(carry_out); // to check
+		cpu.SetCPSR_V(overflow_out); // to check
+	}
+}
+
+/*
+ * end of add instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * adc instruction
+ */
+
+op adc_32imm(cond[4]:0b00[2]:0b1[1]:0b0101[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op adc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op adc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op adcs_32imm(cond[4]:0b00[2]:0b1[1]:0b0101[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op adcs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op adcs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+adc_32imm.disasm = {
+	buffer << "adc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+adc_imm_shift.disasm = {
+	buffer << "adc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+adc_reg_shift.disasm = {
+	buffer << "adc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+adcs_32imm.disasm = {
+	buffer << "adc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+adcs_imm_shift.disasm = {
+	buffer << "adc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+adcs_reg_shift.disasm = {
+	buffer << "adc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+adc_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t carry_in;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
+	res = s1 + s2 + carry_in;
+	cpu.SetGPR(rd, res);
+}
+
+adc_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t carry_in;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
+	res = s1 + s2 + carry_in;
+	cpu.SetGPR(rd, res);
+}
+
+adc_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t carry_in;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
+	res = s1 + s2 + carry_in;
+	cpu.SetGPR(rd, res);
+}
+
+adcs_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	uint8_t carry_in;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint8_t carry_out;
+	uint8_t overflow_out;
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
+	Add32(res, carry_out, overflow_out,
+			s1, s2, carry_in);
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(carry_out); // to check
+		cpu.SetCPSR_V(overflow_out); // to check
+	}
+}
+
+adcs_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	uint8_t carry_in;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint8_t carry_out;
+	uint8_t overflow_out;
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
+	Add32(res, carry_out, overflow_out,
+			s1, s2, carry_in);
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(carry_out); // to check
+		cpu.SetCPSR_V(overflow_out); // to check
+	}
+}
+
+adcs_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	uint8_t carry_in;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint8_t carry_out;
+	uint8_t overflow_out;
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
+	Add32(res, carry_out, overflow_out,
+			s1, s2, carry_in);
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(carry_out); // to check
+		cpu.SetCPSR_V(overflow_out); // to check
+	}
+}
+
+/*
+ * end of adc instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sbc instruction
+ */
+
+op sbc_32imm(cond[4]:0b00[2]:0b1[1]:0b0110[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op sbc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op sbc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op sbcs_32imm(cond[4]:0b00[2]:0b1[1]:0b0110[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op sbcs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op sbcs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+sbc_32imm.disasm = {
+	buffer << "sbc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+sbc_imm_shift.disasm = {
+	buffer << "sbc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+sbc_reg_shift.disasm = {
+	buffer << "sbc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+sbcs_32imm.disasm = {
+	buffer << "sbc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+sbcs_imm_shift.disasm = {
+	buffer << "sbc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+sbcs_reg_shift.disasm = {
+	buffer << "sbc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+sbc_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s1 - s2 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+}
+
+sbc_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s1 - s2 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+}
+
+sbc_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s1 - s2 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+}
+
+sbcs_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s1 - s2 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
+	}
+}
+
+sbcs_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s1 - s2 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
+	}
+}
+
+sbcs_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s1 - s2 - in_neg_carry;;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2, in_neg_carry)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
+	}
+}
+
+/*
+ * end of sbc instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * rsc instruction
+ */
+
+op rsc_32imm(cond[4]:0b00[2]:0b1[1]:0b0111[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op rsc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op rsc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op rscs_32imm(cond[4]:0b00[2]:0b1[1]:0b0111[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op rscs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op rscs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+rsc_32imm.disasm = {
+	buffer << "rsc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+rsc_imm_shift.disasm = {
+	buffer << "rsc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+rsc_reg_shift.disasm = {
+	buffer << "rsc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+rscs_32imm.disasm = {
+	buffer << "rsc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+rscs_imm_shift.disasm = {
+	buffer << "rsc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+rscs_reg_shift.disasm = {
+	buffer << "rsc";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+rsc_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s2 - s1 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+}
+
+rsc_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s2 - s1 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+}
+
+rsc_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s2 - s1 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+}
+
+rscs_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s2 - s1 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
+	}
+}
+
+rscs_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s2 - s1 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
+	}
+}
+
+rscs_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t in_neg_carry;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
+	res = s2 - s1 - in_neg_carry;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(!cpu.BorrowFrom(res, s2, s1, in_neg_carry)); // to check
+		cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
+	}
+}
+
+/*
+ * end of rsc instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * tst instruction
+ */
+
+op tst_32imm(cond[4]:0b00[2]:0b1[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:rotate_imm[4]:imm[8])
+op tst_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op tst_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+tst_32imm.disasm = {
+	buffer << "tst";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+tst_imm_shift.disasm = {
+	buffer << "tst";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+tst_reg_shift.disasm = {
+	buffer << "tst";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+tst_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = s1 & s2;
+
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(shift_carry_out);
+	// nothing to do with overflow (V) flag
+}
+
+tst_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1 & s2;
+  
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(shift_carry_out);
+	// nothing to do with overflow (V) flag
+}
+
+tst_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1 & s2;
+	
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(shift_carry_out);
+	// nothing to do with overflow (V) flag
+}
+
+/*
+ * end of tst instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * teq instruction
+ */
+
+op teq_32imm(cond[4]:0b00[2]:0b1[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:rotate_imm[4]:imm[8])
+op teq_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op teq_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+teq_32imm.disasm = {
+	buffer << "teq";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+teq_imm_shift.disasm = {
+	buffer << "teq";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+teq_reg_shift.disasm = {
+	buffer << "teq";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+teq_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = s1 ^ s2;
+
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(shift_carry_out);
+	// nothing to do with overflow (V) flag
+}
+
+teq_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1 ^ s2;
+  
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(shift_carry_out);
+	// nothing to do with overflow (V) flag
+}
+
+teq_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1 ^ s2;
+  
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(shift_carry_out);
+	// nothing to do with overflow (V) flag
+}
+
+/*
+ * end of teq instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * cmp instruction
+ */
+
+op cmp_32imm(cond[4]:0b00[2]:0b1[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:rotate_imm[4]:imm[8])
+op cmp_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op cmp_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+cmp_32imm.disasm = {
+	buffer << "cmp";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+cmp_imm_shift.disasm = {
+	buffer << "cmp";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+
+cmp_reg_shift.disasm = {
+	buffer << "cmp";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+cmp_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = s1 - s2;
+	
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+}
+
+cmp_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1 - s2;
+  
+	cpu.SetCPSR_N((res & 0x80000000) != 0);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+}
+
+cmp_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1 - s2;
+  
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2)); // to check
+}
+
+/*
+ * end of cmp instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * cmn instruction
+ */
+
+op cmn_32imm(cond[4]:0b00[2]:0b1[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:rotate_imm[4]:imm[8])
+op cmn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op cmn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+cmn_32imm.disasm = {
+	buffer << "cmn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+cmn_imm_shift.disasm = {
+	buffer << "cmn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+cmn_reg_shift.disasm = {
+	buffer << "cmn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+cmn_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+  	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+  	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+  	if(!cpu.CheckCondition(cond)) return;
+
+  	s1 = rn_value;
+  	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+  	res = s1 + s2;
+
+  	cpu.SetCPSR_N(res & 0x80000000);
+  	cpu.SetCPSR_Z(res == 0);
+  	cpu.SetCPSR_C(cpu.CarryFrom(res, s1, s2)); // to check
+  	cpu.SetCPSR_V(cpu.AdditionOverflowFrom(res, s1, s2)); // to check
+}
+
+cmn_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1 + s2;
+  
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(cpu.CarryFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(cpu.AdditionOverflowFrom(res, s1, s2)); // to check
+}
+
+cmn_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1 + s2;
+	
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(cpu.CarryFrom(res, s1, s2)); // to check
+	cpu.SetCPSR_V(cpu.AdditionOverflowFrom(res, s1, s2)); // to check
+}
+
+/*
+ * end of cmn instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * orr instruction
+ */
+
+op orr_32imm(cond[4]:0b00[2]:0b1[1]:0b1100[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op orr_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op orr_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op orrs_32imm(cond[4]:0b00[2]:0b1[1]:0b1100[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op orrs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op orrs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+orr_32imm.disasm = {
+	buffer << "orr";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+orr_imm_shift.disasm = {
+	buffer << "orr";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+orr_reg_shift.disasm = {
+	buffer << "orr";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+orrs_32imm.disasm = {
+	buffer << "orr";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+orrs_imm_shift.disasm = {
+	buffer << "orr";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+orrs_reg_shift.disasm = {
+	buffer << "orr";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+orr_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s1 | s2;
+	cpu.SetGPR(rd, res);
+}
+
+orr_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s1 | s2;
+	cpu.SetGPR(rd, res);
+}
+
+orr_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s1 | s2;
+	cpu.SetGPR(rd, res);
+}
+
+orrs_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = s1 | s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+orrs_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1 | s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+orrs_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1 | s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+/*
+ * end of orr instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * mov instruction
+ */
+
+op mov_32imm(cond[4]:0b00[2]:0b1[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:rotate_imm[4]:imm[8])
+op mov_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+  //                 1110      00      0      1101      0    0000   0010  00000        00       0      1101
+op mov_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op movs_32imm(cond[4]:0b00[2]:0b1[1]:0b1101[4]:0b1[1]:sbz[4]:rd[4]:rotate_imm[4]:imm[8])
+op movs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b1[1]:sbz[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op movs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b1[1]:sbz[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+group mov(mov_32imm, mov_imm_shift, mov_reg_shift, \
+	  movs_32imm, movs_imm_shift, movs_reg_shift)
+
+mov_32imm.disasm = {
+	buffer << "mov";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+mov_imm_shift.disasm = {
+	buffer << "mov";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+mov_reg_shift.disasm = {
+	buffer << "mov";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+movs_32imm.disasm = {
+	buffer << "mov";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+movs_imm_shift.disasm = {
+	buffer << "mov";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+movs_reg_shift.disasm = {
+	buffer << "mov";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+mov_32imm.execute = {
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s1;
+	cpu.SetGPR(rd, res);
+}
+
+mov_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s1;
+	cpu.SetGPR(rd, res);
+}
+
+mov_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s1;
+	cpu.SetGPR(rd, res);
+}
+
+movs_32imm.execute = {
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = s1;
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+movs_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1;
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+movs_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}	
+}
+
+/*
+ * end of mov instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bic instruction
+ */
+
+op bic_32imm(cond[4]:0b00[2]:0b1[1]:0b1110[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op bic_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op bic_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op bics_32imm(cond[4]:0b00[2]:0b1[1]:0b1110[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op bics_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op bics_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+bic_32imm.disasm = {
+	buffer << "bic";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+bic_imm_shift.disasm = {
+	buffer << "bic";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+bic_reg_shift.disasm = {
+	buffer << "bic";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+bics_32imm.disasm = {
+	buffer << "bic";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+bics_imm_shift.disasm = {
+	buffer << "bic";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+bics_reg_shift.disasm = {
+	buffer << "bic";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", r";
+	buffer << rn;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+bic_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = s1 & ~s2;
+	cpu.SetGPR(rd, res);
+}
+
+bic_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = s1 & ~s2;
+	cpu.SetGPR(rd, res);
+}
+
+bic_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = s1 & ~s2;
+	cpu.SetGPR(rd, res);
+}
+
+bics_32imm.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = s1 & ~s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+bics_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = s1 & ~s2;
+	cpu.SetGPR(rd, res);
+	
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+bics_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = rn_value;
+	s2 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = s1 & ~s2;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+/*
+ * end of bic instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * mvn instruction
+ */
+
+op mvn_32imm(cond[4]:0b00[2]:0b1[1]:0b1111[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op mvn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op mvn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op mvns_32imm(cond[4]:0b00[2]:0b1[1]:0b1111[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
+op mvns_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op mvns_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+
+mvn_32imm.disasm = {
+	buffer << "mvn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+mvn_imm_shift.disasm = {
+	buffer << "mvn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+mvn_reg_shift.disasm = {
+	buffer << "mvn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << " r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+mvns_32imm.disasm = {
+	buffer << "mvn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
+}
+
+mvns_imm_shift.disasm = {
+	buffer << "mvn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
+}
+
+mvns_reg_shift.disasm = {
+	buffer << "mvn";
+	cpu.DisasmCondition(cond, buffer);
+	buffer << "s r";
+	buffer << rd;
+	buffer << ", ";
+	cpu.DisasmShiftOperandRegShift(rs, shift, rm, buffer);
+}
+
+mvn_32imm.execute = {
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperand32imm(rotate_imm, imm);
+	res = ~s1;
+	cpu.SetGPR(rd, res);
+}
+
+mvn_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+  
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value);
+	res = ~s1;
+	cpu.SetGPR(rd, res);
+}
+
+mvn_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+	
+	s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value);
+	res = ~s1;
+	cpu.SetGPR(rd, res);
+}
+
+mvns_32imm.execute = {
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperand32imm(rotate_imm, imm, &shift_carry_out);
+	res = ~s1;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+mvns_imm_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperandImmShift(shift_imm, shift, rm_value, &shift_carry_out);
+	res = ~s1;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+mvns_reg_shift.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1;
+	typename CONFIG::reg_t res;
+	bool shift_carry_out;
+	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+  
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
+
+	s1 = cpu.ShiftOperandRegShift(rs_value, shift, rm_value, &shift_carry_out);
+	res = ~s1;
+	cpu.SetGPR(rd, res);
+
+	if(rd == cpu.PC_reg) {
+		cpu.MoveSPSRtoCPSR();
+	} else {
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(shift_carry_out);
+		// nothing to do with overflow (V) flag
+	}
+}
+
+/*
+ * end of mvn instruction
+ *******************************************************************/
+
+group dp_rn_init(and_32imm, and_imm_shift, and_reg_shift, \
+                 ands_32imm, ands_imm_shift, ands_reg_shift, \
+                 eor_32imm, eor_imm_shift, eor_reg_shift, \
+                 eors_32imm, eors_imm_shift, eors_reg_shift, \
+                 sub_32imm, sub_imm_shift, sub_reg_shift, \
+                 subs_32imm, subs_imm_shift, subs_reg_shift, \
+                 rsb_32imm, rsb_imm_shift, rsb_reg_shift, \
+                 rsbs_32imm, rsbs_imm_shift, rsbs_reg_shift, \
+                 add_32imm, add_imm_shift, add_reg_shift, \
+                 adds_32imm, adds_imm_shift, adds_reg_shift, \
+                 adc_32imm, adc_imm_shift, adc_reg_shift, \
+                 adcs_32imm, adcs_imm_shift, adcs_reg_shift, \
+                 sbc_32imm, sbc_imm_shift, sbc_reg_shift, \
+                 sbcs_32imm, sbcs_imm_shift, sbcs_reg_shift, \
+                 rsc_32imm, rsc_imm_shift, rsc_reg_shift, \
+                 rscs_32imm, rscs_imm_shift, rscs_reg_shift, \
+                 tst_32imm, tst_imm_shift, tst_reg_shift, \
+                 teq_32imm, teq_imm_shift, teq_reg_shift, \
+                 cmp_32imm, cmp_imm_shift, cmp_reg_shift, \
+                 cmn_32imm, cmn_imm_shift, cmn_reg_shift, \
+                 orr_32imm, orr_imm_shift, orr_reg_shift, \
+                 orrs_32imm, orrs_imm_shift, orrs_reg_shift, \
+                 bic_32imm, bic_imm_shift, bic_reg_shift, \
+                 bics_32imm, bics_imm_shift, bics_reg_shift)
+dp_rn_init.initialize_rn_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rn == 15) inherited::rn_init = 8;
+	else inherited::rn_init = 0;
+}
+
+group dp_rm_init(and_imm_shift, and_reg_shift, \
+                 ands_imm_shift, ands_reg_shift, \
+                 eor_imm_shift, eor_reg_shift, \
+                 eors_imm_shift, eors_reg_shift, \
+                 sub_imm_shift, sub_reg_shift, \
+                 subs_imm_shift, subs_reg_shift, \
+                 rsb_imm_shift, rsb_reg_shift, \
+                 rsbs_imm_shift, rsbs_reg_shift, \
+                 add_imm_shift, add_reg_shift, \
+                 adds_imm_shift, adds_reg_shift, \
+                 adc_imm_shift, adc_reg_shift, \
+                 adcs_imm_shift, adcs_reg_shift, \
+                 sbc_imm_shift, sbc_reg_shift, \
+                 sbcs_imm_shift, sbcs_reg_shift, \
+                 rsc_imm_shift, rsc_reg_shift, \
+                 rscs_imm_shift, rscs_reg_shift, \
+                 tst_imm_shift, tst_reg_shift, \
+                 teq_imm_shift, teq_reg_shift, \
+                 cmp_imm_shift, cmp_reg_shift, \
+                 cmn_imm_shift, cmn_reg_shift, \
+                 orr_imm_shift, orr_reg_shift, \
+                 orrs_imm_shift, orrs_reg_shift, \
+                 mov_imm_shift, mov_reg_shift, \
+                 movs_imm_shift, movs_reg_shift, \
+                 bic_imm_shift, bic_reg_shift, \
+                 bics_imm_shift, bics_reg_shift, \
+                 mvn_imm_shift, mvn_reg_shift, \
+                 mvns_imm_shift, mvns_reg_shift)
+dp_rm_init.initialize_rm_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rm == 15) inherited::rm_init = 8;
+	else inherited::rm_init = 0;
+}
+
+group dp_rs_init(and_reg_shift, \
+                 ands_reg_shift, \
+                 eor_reg_shift, \
+                 eors_reg_shift, \
+                 sub_reg_shift, \
+                 subs_reg_shift, \
+                 rsb_reg_shift, \
+                 rsbs_reg_shift, \
+                 add_reg_shift, \
+                 adds_reg_shift, \
+                 adc_reg_shift, \
+                 adcs_reg_shift, \
+                 sbc_reg_shift, \
+                 sbcs_reg_shift, \
+                 rsc_reg_shift, \
+                 rscs_reg_shift, \
+                 tst_reg_shift, \
+                 teq_reg_shift, \
+                 cmp_reg_shift, \
+                 cmn_reg_shift, \
+                 orr_reg_shift, \
+                 orrs_reg_shift, \
+                 mov_reg_shift, \
+                 movs_reg_shift, \
+                 bic_reg_shift, \
+                 bics_reg_shift, \
+                 mvn_reg_shift, \
+                 mvns_reg_shift)
+dp_rs_init.initialize_rs_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if(rs == 15) inherited::rs_init = 8;
+	else inherited::rs_init = 0;
+}
+
