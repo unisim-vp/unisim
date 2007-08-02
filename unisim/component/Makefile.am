@@ -1,21 +1,18 @@
 includedir = $(prefix)/include/unisim/component
 libdir= $(prefix)/lib/unisim/component
 
-SUBDIRS=c++ tlm
-INCLUDE_SUBDIRS=c++ tlm
+SUBDIRS=
+INCLUDE_SUBDIRS=
 
-# SUBDIRS=
-# INCLUDE_SUBDIRS=
-# 
-# if COND_c++
-# SUBDIRS += c++
-# INCLUDE_SUBDIRS += c++
-# endif
-# 
-# if COND_tlm
-# SUBDIRS += tlm
-# INCLUDE_SUBDIRS += tlm
-# endif
+if COND_cxx
+SUBDIRS += cxx
+INCLUDE_SUBDIRS += cxx
+endif
+
+if COND_tlm
+SUBDIRS += tlm
+INCLUDE_SUBDIRS += tlm
+endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
