@@ -45,7 +45,6 @@ AC_PROG_INSTALL
 AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci-ide, ide)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci-net, net)
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci-video, video)
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci-macio, macio)
 

@@ -9,11 +9,6 @@ SUBDIRS += ide
 INCLUDE_SUBDIRS += ide
 endif
 
-if COND_net
-SUBDIRS += net
-INCLUDE_SUBDIRS += net
-endif
-
 if COND_video
 SUBDIRS += video
 INCLUDE_SUBDIRS += video
