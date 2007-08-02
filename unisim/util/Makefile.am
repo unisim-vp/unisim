@@ -38,6 +38,11 @@ SUBDIRS += simfloat
 INCLUDE_SUBDIRS += simfloat
 endif
 
+if COND_device
+SUBDIRS += device
+INCLUDE_SUBDIRS += device
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)

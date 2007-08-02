@@ -33,21 +33,15 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Utility classes], [1.0])
+AC_INIT([UNISIM Util Library], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[device])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
 AC_PROG_INSTALL
-
-UNISIM_CONFIG_SUBDIR(unisim-util-xml, xml)
-UNISIM_CONFIG_SUBDIR(unisim-util-arithmetic, arithmetic)
-UNISIM_CONFIG_SUBDIR(unisim-util-endian, endian)
-UNISIM_CONFIG_SUBDIR(unisim-util-garbage_collector, garbage_collector)
-UNISIM_CONFIG_SUBDIR(unisim-util-hash_table, hash_table)
-UNISIM_CONFIG_SUBDIR(unisim-util-debug, debug)
-UNISIM_CONFIG_SUBDIR(unisim-util-simfloat, simfloat)
-UNISIM_CONFIG_SUBDIR(unisim-util-device, device)
 
 # files to generate
 #   this should include all the makefiles to generate

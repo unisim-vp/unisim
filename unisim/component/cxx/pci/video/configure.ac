@@ -33,21 +33,29 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Utility classes], [1.0])
+AC_INIT([UNISIM CXX PCI video frame buffer Component], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
 
-UNISIM_CONFIG_SUBDIR(unisim-util-xml, xml)
-UNISIM_CONFIG_SUBDIR(unisim-util-arithmetic, arithmetic)
-UNISIM_CONFIG_SUBDIR(unisim-util-endian, endian)
-UNISIM_CONFIG_SUBDIR(unisim-util-garbage_collector, garbage_collector)
-UNISIM_CONFIG_SUBDIR(unisim-util-hash_table, hash_table)
-UNISIM_CONFIG_SUBDIR(unisim-util-debug, debug)
-UNISIM_CONFIG_SUBDIR(unisim-util-simfloat, simfloat)
-UNISIM_CONFIG_SUBDIR(unisim-util-device, device)
+AC_LANG([C++])
+
+###### CHECK FOR C HEADERS ####################################################
+AC_CHECK_HEADERS([inttypes.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
+
+###### CHECK FOR C++ HEADERS ##################################################
+AC_CHECK_HEADERS([iostream],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 # files to generate
 #   this should include all the makefiles to generate
@@ -56,3 +64,4 @@ AC_CONFIG_FILES([Makefile])
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
+
