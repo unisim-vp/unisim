@@ -125,6 +125,25 @@ typedef enum {
 class ARMDebugBase {
 public:
 	static const bool DEBUG_ENABLE = false;
+	
+	static const bool HAS_LOAD_STORE_V4 = false;
+	static const bool HAS_LOAD_STORE_V5E = false;
+	static const bool HAS_INSN_BX = false;
+	static const bool HAS_INSN_BLX = false;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_MOVES = false;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_LOADS = false;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_STORES = false;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_OPS = false;
+	static const bool HAS_INSN_ARITH_CLZ = false;
+	static const bool HAS_INSN_ARITH_MULT_UMULL = false;
+	static const bool HAS_INSN_ARITH_MULT_UMLAL = false;
+	static const bool HAS_INSN_ARITH_MULT_SMULL = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAL = false;
+	static const bool HAS_INSN_ARITH_MULT_SMULXY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMULWY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAXY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAWY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLALWY = false;
 };
 
 /**
@@ -149,6 +168,22 @@ public:
 	
 	static const bool HAS_LOAD_STORE_V4 = true;
 	static const bool HAS_LOAD_STORE_V5E = true;
+	static const bool HAS_INSN_BX = true;
+	static const bool HAS_INSN_BLX = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_MOVES = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_LOADS = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_STORES = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_OPS = true;
+	static const bool HAS_INSN_ARITH_CLZ = true;
+	static const bool HAS_INSN_ARITH_MULT_UMULL = true;
+	static const bool HAS_INSN_ARITH_MULT_UMLAL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLAL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULXY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULWY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLAXY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLAWY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLALWY = true;
 };
 
 class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {
@@ -195,6 +230,22 @@ public:
 
 	static const bool HAS_LOAD_STORE_V4 = true;
 	static const bool HAS_LOAD_STORE_V5E = true;
+	static const bool HAS_INSN_BX = true;
+	static const bool HAS_INSN_BLX = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_MOVES = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_LOADS = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_STORES = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_OPS = true;
+	static const bool HAS_INSN_ARITH_CLZ = true;
+	static const bool HAS_INSN_ARITH_MULT_UMULL = true;
+	static const bool HAS_INSN_ARITH_MULT_UMLAL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLAL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULXY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULWY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLAXY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLAWY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLALWY = true;
 };
 
 class ARM966E_S_BigEndian_Config : public ARM966E_SConfig {
