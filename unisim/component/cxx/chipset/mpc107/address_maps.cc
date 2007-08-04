@@ -35,17 +35,17 @@
 #include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_maps.tcc"
 
-//namespace unisim {
-//namespace component {
-//namespace cxx {
-//namespace chipset {
-//namespace mpc107 {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
+namespace mpc107 {
 
 template
-class unisim::component::cxx::chipset::mpc107::AddressMap<false>;
+class AddressMap<false>;
 
-//} // end of namespace mpc107
-//} // end of namespace chipset
-//} // end of namespace cxx
-//} // end of namespace component
-//} // end of namespace unisim
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
