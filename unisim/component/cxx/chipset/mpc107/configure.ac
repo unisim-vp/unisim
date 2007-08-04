@@ -33,25 +33,30 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM CXX Library], [1.0])
+AC_INIT([UNISIM C++ MPC107 Chipset Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR C HEADERS ####################################################
+AC_CHECK_HEADERS([inttypes.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
+
+###### CHECK FOR C++ HEADERS ##################################################
+AC_CHECK_HEADERS([string],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
-
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-memory, memory)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache, cache)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-tlb, tlb)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor, processor)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-pci, pci)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-isa, isa)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-bridge, bridge)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-chipset, chipset)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

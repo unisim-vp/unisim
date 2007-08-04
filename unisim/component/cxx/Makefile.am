@@ -39,6 +39,11 @@ SUBDIRS += bridge
 INCLUDE_SUBDIRS += bridge
 endif
 
+if COND_chipset
+SUBDIRS += chipset
+INCLUDE_SUBDIRS += chipset
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)
