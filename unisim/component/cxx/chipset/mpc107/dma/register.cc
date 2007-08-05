@@ -32,13 +32,15 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "chipsets/mpc107/dma/register.hh"
+#include "unisim/component/cxx/chipset/mpc107/dma/register.hh"
 
 #include <inttypes.h>
 #include <string>
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace dma {
 
@@ -81,7 +83,9 @@ Registers ::
 ~Registers() {
 }
 
-} // end of dma namespace
-} // end of mpc107 namespace
-} // end of chipsets namespca
-} // end of full_system namespace
+} // end of namespace dma
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace dma

@@ -32,48 +32,41 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_CHIPSETS_MPC107_DMA_DMA_HH__
-#define __FS_CHIPSETS_MPC107_DMA_DMA_HH__
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_DMA_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_DMA_HH__
 
 #include <inttypes.h>
 
-#include "utils/services/service.hh"
-#include "memories/memory_interface.hh"
-#include "plugins/logger/logger_interface.hh"
-#include "chipsets/mpc107/dma/buffer.hh"
-#include "chipsets/mpc107/dma/register.hh"
-#include "chipsets/mpc107/dma/dma_client_interface.hh"
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/logger.hh"
+#include "unisim/component/cxx/chipset/mpc107/dma/buffer.hh"
+#include "unisim/component/cxx/chipset/mpc107/dma/register.hh"
+#include "unisim/component/cxx/chipset/mpc107/dma/dma_client_interface.hh"
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace dma {
-	
-using full_system::utils::services::Object;
-using full_system::utils::services::Service;
-using full_system::utils::services::Client;
-using full_system::utils::services::Parameter;
-using full_system::utils::services::ServiceExport;
-using full_system::utils::services::ServiceImport;
-using full_system::memories::MemoryInterface;
-using namespace full_system::plugins::logger;
-// using full_system::chipsets::mpc107::MPC107;
-//using full_system::chipsets::mpc107::dma::Registers;
+
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::Logger;
 
 template <class PHYSICAL_ADDR, 
 	bool DEBUG = false>
 class DMA :
-		//	public Service<MemoryInterface<PHYSICAL_ADDR> >,
-	public Client<LoggerInterface> {
+	public Client<Logger> {
 public:
 	static const unsigned int NUM_IRQS = 4;
 	static const uint32_t ADDR_MASK = (uint32_t)0x0fffff;
 		
 	/* logger service */
-	ServiceImport<LoggerInterface> dma_logger_import;
-
-	//	/* memory service */
-	//	ServiceExport<MemoryInterface<PHYSICAL_ADDR> > memory_export;
+	ServiceImport<Logger> logger_import;
 
 	DMA(DMAClientInterface<PHYSICAL_ADDR> *_client, 
 		const char *name, Object *parent = 0);
@@ -83,16 +76,6 @@ public:
 	virtual bool Setup();
 	virtual void Reset();
 		
-	/* Methods to implement for 
-	 *   Service<MemoryInterface<PHYSICAL_ADDR> > */
-	//	virtual void Reset();
-	//	virtual bool ReadMemory(PHYSICAL_ADDR addr, 
-	//													void *buffer, 
-	//													uint32_t size);
-	//	virtual bool WriteMemory(PHYSICAL_ADDR addr, 
-	//													 const void *buffer, 
-	//													 uint32_t size);
-
 	uint32_t ReadRegister(PHYSICAL_ADDR addr, 
 						uint32_t size,
 						bool pci_access = false);
@@ -138,9 +121,11 @@ private:
 	void SendWrite(unsigned int channel, bool last);
 };
 
-} // end of dma namespace
-} // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of full_system namespace
+} // end of namespace dma
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
-#endif /* __FS_CHIPSETS_MPC107_DMA_DMA_HH__ */
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_DMA_HH__/

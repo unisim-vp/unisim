@@ -32,11 +32,13 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __FS_CHIPSETS_MPC107_DMA_DMA_CLIENT_INTERFACE_HH__
-#define __FS_CHIPSETS_MPC107_DMA_DMA_CLIENT_INTERFACE_HH__
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_DMACLIENTINTERFACE_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_DMACLIENTINTERFACE_HH__
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace dma {
 
@@ -59,8 +61,11 @@ public:
 							unsigned int channel) = 0;
 };
 
-} // end of dma namespace
-} // end of mpc107 namespace
-} // end of chipsets namespace
-} // end of full_system namespace
-#endif /* __FS_CHIPSETS_MPC107_DMA_DMA_CLIENT_INTERFACE_HH__ */
+} // end of namespace dma
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_DMACLIENTINTERFACE_HH__

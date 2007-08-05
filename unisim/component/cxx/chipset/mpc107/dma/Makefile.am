@@ -4,11 +4,16 @@ includedir = $(prefix)/include/unisim/component/cxx/chipset/mpc107/dma
 
 lib_LIBRARIES = libdma.a
 libdma_a_SOURCES = \
-	buffer_32.cc buffer_64.cc
+	buffer_32.cc buffer_64.cc \
+	register.cc \
+	dma.cc dma_debug.cc
 	
 include_HEADERS = \
-	buffer.hh buffer.tcc
-		
+	buffer.hh buffer.tcc \
+	register.hh \
+	dma_client_interface.hh \
+	dma.hh dma.tcc
+
 install-exec-hook: $(libdir)/libdma.a
 	rm -f $(prefix)/lib/libunisim_component_cxx_chipset_mpc107_dma.a
 	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_cxx_chipset_mpc107_dma.a)
