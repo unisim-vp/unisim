@@ -44,7 +44,7 @@ namespace mpc107 {
 namespace dma {
 
 template
-class Buffer<uint32_t>;
+class Buffer<uint64_t>;
 
 } // end of namespace dma
 } // end of namespace mpc107

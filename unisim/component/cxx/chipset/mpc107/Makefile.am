@@ -2,6 +2,9 @@ INCLUDES=-I$(top_srcdir)/../../../../..
 libdir= $(prefix)/lib/unisim/component/cxx/chipset/mpc107
 includedir = $(prefix)/include/unisim/component/cxx/chipset/mpc107
 
+SUBDIRS=dma
+INCLUDE_SUBDIRS=dma
+
 lib_LIBRARIES = libmpc107.a
 libmpc107_a_SOURCES = \
 	address_map_entry.cc \

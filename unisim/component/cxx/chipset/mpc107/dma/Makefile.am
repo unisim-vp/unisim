@@ -1,13 +1,18 @@
-libdir = $(prefix)/lib/chipsets/mpc107/dma
-includedir = $(prefix)/include/chipsets/mpc107/dma
+INCLUDES=-I$(top_srcdir)/../../../../../..
+libdir= $(prefix)/lib/unisim/component/cxx/chipset/mpc107/dma
+includedir = $(prefix)/include/unisim/component/cxx/chipset/mpc107/dma
 
-include_HEADERS = dma.hh dma_client_interface.hh \
-	buffer.hh register.hh \
-	dma.tpp buffer.tpp
-
-INCLUDES = -I$(top_srcdir)/src
-
-lib_LIBRARIES = libmpc107_dma.a
-libmpc107_dma_a_SOURCES = dma.cpp dma_debug.cpp \
-	buffer.cpp \
-	register.cpp
+lib_LIBRARIES = libdma.a
+libdma_a_SOURCES = \
+	buffer_32.cc buffer_64.cc
+	
+include_HEADERS = \
+	buffer.hh buffer.tcc
+		
+install-exec-hook: $(libdir)/libdma.a
+	rm -f $(prefix)/lib/libunisim_component_cxx_chipset_mpc107_dma.a
+	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_cxx_chipset_mpc107_dma.a)
+uninstall-hook:
+	rm -f $(prefix)/lib/libunisim_component_cxx_chipset_mpc107_dma.a
+	(rmdir $(libdir) || true)
+	(rmdir $(includedir) || true)
