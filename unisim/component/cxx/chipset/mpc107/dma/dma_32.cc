@@ -44,10 +44,7 @@ namespace mpc107 {
 namespace dma {
 
 template
-class DMA<uint32_t, true>;
-
-template
-class DMA<uint64_t, true>;
+class DMA<uint32_t, false>;
 
 } // end of namespace dma
 } // end of namespace mpc107

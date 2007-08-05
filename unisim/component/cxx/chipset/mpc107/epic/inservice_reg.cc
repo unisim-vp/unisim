@@ -32,10 +32,12 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "chipsets/mpc107/epic/inservice_reg.hh"
+#include "unisim/component/cxx/chipset/mpc107/epic/inservice_reg.hh"
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
 
@@ -101,7 +103,9 @@ void InserviceReg::RemoveIRQ() {
 	delete item;
 }
 
-} // end of epic namespace
-} // end of mpc107 namespace
-} // end of chipsets namespace
-} // end of full_system namespace
+} // end of namespace epic
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim

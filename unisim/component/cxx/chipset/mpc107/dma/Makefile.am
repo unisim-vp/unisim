@@ -6,7 +6,7 @@ lib_LIBRARIES = libdma.a
 libdma_a_SOURCES = \
 	buffer_32.cc buffer_64.cc \
 	register.cc \
-	dma.cc dma_debug.cc
+	dma_32.cc dma_64.cc dma_32_debug.cc dma_64_debug.cc
 	
 include_HEADERS = \
 	buffer.hh buffer.tcc \

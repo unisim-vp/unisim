@@ -32,20 +32,19 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "chipsets/mpc107/epic/register.hh"
+#include "unisim/component/cxx/chipset/mpc107/epic/register.hh"
 
 #include <inttypes.h>
 #include <string>
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
 
-using full_system::utils::services::Client;
-using full_system::utils::services::Object;
-using namespace full_system::plugins::logger;
-using namespace std;
+using std::string;
 
 const string Registers :: FRR_NAME = "FRR";
 const string Registers :: GCR_NAME = "GCR";
@@ -125,10 +124,7 @@ const string Registers :: IACK_NAME = "IACK";
 const string Registers :: EOI_NAME = "EOI";
  
 Registers :: 
-Registers(const char *name, Object *parent) :
-	Object(name, parent),
-	Client<LoggerInterface>(name, parent),
-	logger_import("logger_import", this) {
+Registers() {
 		
 	/* START registers initialization */
 	/* Global and timer registers */
@@ -204,7 +200,9 @@ Registers ::
 ~Registers() {
 }
 
-} // end of epic namespace
-} // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of full_system namespace
+} // end of namespace epic
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim

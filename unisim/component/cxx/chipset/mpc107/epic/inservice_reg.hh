@@ -32,13 +32,15 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __FS_CHIPSETS_MPC107_EPIC_INSERVICEREG_HH__
-#define __FS_CHIPSETS_MPC107_EPIC_INSERVICEREG_HH__
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_INSERVICEREG_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_INSERVICEREG_HH__
 
 #include <inttypes.h>
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
 
@@ -71,9 +73,11 @@ private:
 	IRQ *irq;
 };
 
-} // end of epic namespace
-} // end of mpc107 namespace
-} // end of chipsets namespace
-} // end of full_system namespace
+} // end of namespace epic
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
-#endif /* __FS_CHIPSETS_MPC107_EPIC_INSERVICEREG_HH__ */
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_INSERVICEREG_HH__

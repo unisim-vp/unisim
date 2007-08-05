@@ -32,47 +32,47 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_CHIPSETS_MPC107_EPIC_EPIC_HH__
-#define __FS_CHIPSETS_MPC107_EPIC_EPIC_HH__
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_HH__
 
 #include <inttypes.h>
 
-#include "utils/services/service.hh"
-#include "memories/memory_interface.hh"
-#include "plugins/logger/logger_interface.hh"
-#include "chipsets/mpc107/epic/register.hh"
-#include "chipsets/mpc107/epic/inservice_reg.hh"
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/logger.hh"
+#include "unisim/component/cxx/chipset/mpc107/epic/register.hh"
+#include "unisim/component/cxx/chipset/mpc107/epic/inservice_reg.hh"
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
-	
-using full_system::utils::services::Object;
-using full_system::utils::services::Service;
-using full_system::utils::services::Client;
-using full_system::utils::services::Parameter;
-using full_system::utils::services::ServiceExport;
-using full_system::utils::services::ServiceImport;
-using full_system::memories::MemoryInterface;
-using namespace full_system::plugins::logger;
-using full_system::chipsets::mpc107::epic::Registers;
+
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::Logger;
 
 template <class PHYSICAL_ADDR, 
 	bool DEBUG = false>
 class EPIC :
-	public Service<MemoryInterface<PHYSICAL_ADDR> >,
-	public Client<LoggerInterface> {
+	public Service<Memory<PHYSICAL_ADDR> >,
+	public Client<Logger> {
 public:
 	static const unsigned int NUM_IRQS = 4;
 	static const uint32_t ADDR_MASK = (uint32_t)0x0fffff;
 		
 	/* logger service */
-	ServiceImport<LoggerInterface> logger_import;
-	ServiceImport<LoggerInterface> reg_logger_import;
+	ServiceImport<Logger> logger_import;
 	
 	/* memory service */
-	ServiceExport<MemoryInterface<PHYSICAL_ADDR> > memory_export;
+	ServiceExport<Memory<PHYSICAL_ADDR> > memory_export;
 	
 	EPIC(const char *name, Object *parent = 0);
 	virtual ~EPIC();
@@ -218,9 +218,11 @@ private:
 	uint32_t ReadIACK();
 };
 
-} // end of epic namespace
-} // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of full_system namespace
+} // end of namespace epic
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
-#endif /* __FS_CHIPSETS_MPC107_EPIC_EPIC_HH__ */
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_HH__

@@ -32,30 +32,24 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_CHIPSETS_MPC107_EPIC_REGISTER_HH__
-#define __FS_CHIPSETS_MPC107_EPIC_REGISTER_HH__
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_REGISTER_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_REGISTER_HH__
 
 #include <inttypes.h>
-#include "utils/services/service.hh"
-#include "plugins/logger/logger_interface.hh"
+#include <string>
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
 
-using full_system::utils::services::Client;
-using full_system::utils::services::ServiceImport;
-using namespace full_system::plugins::logger;
+using std::string;
 
-class Registers :
-	public Client<LoggerInterface>
-{
+class Registers {
 public:
-	/* logger interface */
-	ServiceImport<LoggerInterface> logger_import;
-
-	Registers(const char *name, Object *parent = 0);
+	Registers();
 	~Registers();
 	
 	/* Global and timer registers */
@@ -244,9 +238,11 @@ public:
 private:
 };
 
-} // end of epic namespace
-} // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of full_system namespace
+} // end of namespace epic
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
-#endif /* __FS_CHIPSETS_MPC107_EPIC_REGISTER_HH__ */
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_REGISTER_HH__

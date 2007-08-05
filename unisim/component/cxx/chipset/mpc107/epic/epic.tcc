@@ -32,45 +32,47 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_CHIPSETS_MPC107_EPIC_EPIC_TPP__
-#define __FS_CHIPSETS_MPC107_EPIC_EPIC_TPP__
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__
 
 #include <inttypes.h>
 
-#include "utils/services/service.hh"
-#include "memories/memory_interface.hh"
-#include "plugins/logger/logger_interface.hh"
-
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
-	
+
+using unisim::service::interfaces::Logger;
+using unisim::service::interfaces::operator<<;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Line;
+
 #define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
 	
-using full_system::utils::services::Object;
-using full_system::utils::services::Service;
-using full_system::utils::services::Client;
-using full_system::utils::services::Parameter;
-using full_system::utils::services::ServiceExport;
-using full_system::utils::services::ServiceImport;
-using full_system::memories::MemoryInterface;
-using namespace full_system::plugins::logger;
-
 template <class PHYSICAL_ADDR, 
 	bool DEBUG>
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 EPIC(const char *name, Object *parent) :
 	Object(name, parent),
-	Service<MemoryInterface<PHYSICAL_ADDR> >(name, parent),
-	Client<LoggerInterface>(name, parent),
-	regs("registers", this),
+	Service<Memory<PHYSICAL_ADDR> >(name, parent),
+	Client<Logger>(name, parent),
 	memory_export("memory_export", this),
 	logger_import("logger_import", this),
-	reg_logger_import("reg_logger_import", this),
 	pending_reg(0),
+	regs(),
 	inservice_reg() {
-	regs.logger_import >> reg_logger_import;
 } 
 
 template <class PHYSICAL_ADDR, 
@@ -2043,9 +2045,11 @@ ResetEPIC() {
 
 #undef LOCATION
 
-} // end of epic namespace
-} // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of full_system namespace
+} // end of namespace epic
+} // end of namespace mpc107
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
-#endif /* __FS_CHIPSETS_MPC107_EPIC_EPIC_TPP__ */
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__

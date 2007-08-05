@@ -32,9 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/cxx/chipset/mpc107/epic/epic.hh"
-#include "unisim/component/cxx/chipset/mpc107/epic/epic.tcc"
-
+#include "unisim/component/cxx/chipset/mpc107/dma/dma.hh"
+#include "unisim/component/cxx/chipset/mpc107/dma/dma.tcc"
 #include <inttypes.h>
 
 namespace unisim {
@@ -42,14 +41,12 @@ namespace component {
 namespace cxx {
 namespace chipset {
 namespace mpc107 {
-namespace epic {
+namespace dma {
 
 template
-class EPIC<uint32_t, false>;
-template
-class EPIC<uint64_t, false>;
+class DMA<uint32_t, true>;
 
-} // end of namespace epic
+} // end of namespace dma
 } // end of namespace mpc107
 } // end of namespace chipset
 } // end of namespace cxx
