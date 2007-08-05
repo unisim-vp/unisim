@@ -6,7 +6,7 @@ lib_LIBRARIES = libepic.a
 libepic_a_SOURCES = \
 	register.cc \
 	inservice_reg.cc \
-	epic.cc epic_debug.cc
+	epic_32.cc epic_64.cc epic_32_debug.cc epic_64_debug.cc
 		
 include_HEADERS = \
 	register.hh \

@@ -46,8 +46,6 @@ namespace epic {
 
 template
 class EPIC<uint32_t, true>;
-template
-class EPIC<uint64_t, true>;
 
 } // end of namespace epic
 } // end of namespace mpc107
