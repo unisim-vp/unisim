@@ -31,28 +31,23 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.tcc"
+
+#include "chipsets/mpc107/epic/epic.hh"
+#include "chipsets/mpc107/epic/epic.tpp"
+
 #include <inttypes.h>
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace chipset {
+namespace full_system {
+namespace chipsets {
 namespace mpc107 {
+namespace epic {
 
-template 
-class PCIController<uint32_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint32_t, 32, uint64_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint64_t, 32, true>;
+template
+class EPIC<uint32_t, true>;
+template
+class EPIC<uint64_t, true>;
 
-} // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+} // end of epic namespace
+} // end of mpc107 namespace	
+} // end of chipsets namespace
+} // end of full_system namespace

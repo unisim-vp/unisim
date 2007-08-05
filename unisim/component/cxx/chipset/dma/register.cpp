@@ -31,28 +31,57 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.tcc"
+
+#include "chipsets/mpc107/dma/register.hh"
+
 #include <inttypes.h>
+#include <string>
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace chipset {
+namespace full_system {
+namespace chipsets {
 namespace mpc107 {
+namespace dma {
 
-template 
-class PCIController<uint32_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint32_t, 32, uint64_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint64_t, 32, true>;
+using std::string;
 
-} // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+const string Registers :: DMR_NAME_0 = "DMR0";
+const string Registers :: DMR_NAME_1 = "DMR1";
+const string Registers :: DSR_NAME_0 = "DSR0";
+const string Registers :: DSR_NAME_1 = "DSR1";
+const string Registers :: CDAR_NAME_0 = "CDAR0";
+const string Registers :: CDAR_NAME_1 = "CDAR1";
+const string Registers :: SAR_NAME_0 = "SAR0";
+const string Registers :: SAR_NAME_1 = "SAR1";
+const string Registers :: DAR_NAME_0 = "DAR0";
+const string Registers :: DAR_NAME_1 = "DAR1";
+const string Registers :: BCR_NAME_0 = "BCR0";
+const string Registers :: BCR_NAME_1 = "BCR1";
+const string Registers :: NDAR_NAME_0 = "NDAR0";
+const string Registers :: NDAR_NAME_1 = "NDAR1";
+
+Registers ::
+Registers() {
+	dmr[0] = 0;
+	dmr[1] = 0;
+	dsr[0] = 0;
+	dsr[1] = 0;
+	cdar[0] = 0;
+	cdar[1] = 0;
+	sar[0] = 0;
+	sar[1] = 0;
+	dar[0] = 0;
+	dar[1] = 0;
+	bcr[0] = 0;
+	bcr[1] = 0;
+	ndar[0] = 0;
+	ndar[1] = 0;
+}
+
+Registers ::
+~Registers() {
+}
+
+} // end of dma namespace
+} // end of mpc107 namespace
+} // end of chipsets namespca
+} // end of full_system namespace

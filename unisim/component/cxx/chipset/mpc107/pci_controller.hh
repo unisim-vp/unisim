@@ -32,31 +32,30 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_CHIPSETS_MPC107_PCI_CONTROLLER_HH_
-#define __FS_CHIPSETS_MPC107_PCI_CONTROLLER_HH_
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_HH__
 
-#include "pci/types.hh"
-#include "chipsets/mpc107/config_regs.hh"
-#include "chipsets/mpc107/address_maps.hh"
-#include "utils/endian/endian.hh"
-#include "plugins/logger/logger_interface.hh"
-#include "utils/services/service.hh"
-#include <string>
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/logger.hh"
+#include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
+#include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
+#include "unisim/component/cxx/pci/types.hh"
+#include "unisim/util/endian/endian.hh"
+#include <inttypes.h>
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 
-using namespace std;
-using full_system::pci::TransactionType;
-using full_system::pci::PCISpace;
-using full_system::chipsets::mpc107::ConfigurationRegisters;
-using full_system::chipsets::mpc107::AddressMap;
-using full_system::utils::endian::Host2LittleEndian;
-using full_system::utils::endian::LittleEndian2Host;
-using namespace full_system::plugins::logger;
-using full_system::utils::services::Object;
-using full_system::utils::services::Client;
+using unisim::component::cxx::pci::TransactionType;
+using unisim::component::cxx::pci::PCISpace;
+using unisim::util::endian::Host2LittleEndian;
+using unisim::util::endian::LittleEndian2Host;
+using unisim::service::interfaces::Logger;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Client;
 
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t SYSTEM_MAX_TRANSACTION_DATA_SIZE,
@@ -64,9 +63,9 @@ template <class SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t PCI_MAX_TRANSACTION_DATA_SIZE,
 		bool DEBUG = false>
 class PCIController :
-	public Client<LoggerInterface> {
+	public Client<Logger> {
 public:
-	ServiceImport<LoggerInterface> logger_import;
+	ServiceImport<Logger> logger_import;
 
 private:	
 	static const uint32_t LMBAR = 0x10;
@@ -193,7 +192,9 @@ private:
 };
 
 } // end of namespace mpc107
-} // end of namespace chipsets
-} // end of namespace full_system
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
-#endif /*__FS_CHIPSETS_MPC107_PCI_CONTROLLER_HH_*/
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_HH__

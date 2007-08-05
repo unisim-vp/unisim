@@ -32,27 +32,55 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.tcc"
+#ifndef __FS_CHIPSETS_MPC107_DMA_BUFFER_HH__
+#define __FS_CHIPSETS_MPC107_DMA_BUFFER_HH__
+
 #include <inttypes.h>
+#include "utils/garbage_collector/garbage_collector.hh"
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace chipset {
+namespace full_system {
+namespace chipsets {
 namespace mpc107 {
+namespace dma {
 
-template 
-class PCIController<uint32_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint32_t, 32, uint64_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint64_t, 32, true>;
+using full_system::utils::garbage_collector::Pointer;
 
+template <class PHYSICAL_ADDR>
+class Buffer {
+private:
+	class BufferEntry {
+	public:
+		Pointer<uint8_t> data;
+		unsigned int size;
+		unsigned int index;
+		Pointer<BufferEntry> next;
+	};
+
+	Pointer<BufferEntry> buffer;
+	Pointer<BufferEntry> last_buffer;
+	uint32_t buffer_size;
+
+public:
+	Buffer();
+	~Buffer();
+	void Initialize(PHYSICAL_ADDR source_addr, 
+									PHYSICAL_ADDR destination_addr,
+									PHYSICAL_ADDR _size);
+	void Write(Pointer<uint8_t> &_data, unsigned int _size);
+	unsigned int Read(Pointer<uint8_t> &_data, unsigned int _size);
+	unsigned int Size();
+	bool TransferFinished();
+	bool ExpectsData();
+
+	PHYSICAL_ADDR init_source_addr;
+	PHYSICAL_ADDR init_destination_addr;
+	PHYSICAL_ADDR transfer_size;
+	PHYSICAL_ADDR transferred_size;
+};
+
+} // end of namespace dma
 } // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+} // end of namespace chipsets
+} // end of namespace full_system
+
+#endif // __FS_CHIPSETS_MPC107_DMA_BUFFER_HH__

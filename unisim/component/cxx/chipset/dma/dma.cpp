@@ -31,28 +31,23 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.tcc"
+
+#include "chipsets/mpc107/dma/dma.hh"
+#include "chipsets/mpc107/dma/dma.tpp"
 #include <inttypes.h>
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace chipset {
+namespace full_system {
+namespace chipsets {
 namespace mpc107 {
+namespace dma {
 
-template 
-class PCIController<uint32_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint32_t, 32, uint64_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint64_t, 32, true>;
+template
+class DMA<uint32_t, false>;
 
+template
+class DMA<uint64_t, false>;
+
+} // end of namespace dma
 } // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+} // end of namespace chipsets
+} // end of namespace full_system

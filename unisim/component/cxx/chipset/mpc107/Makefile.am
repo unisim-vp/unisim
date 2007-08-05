@@ -6,12 +6,14 @@ lib_LIBRARIES = libmpc107.a
 libmpc107_a_SOURCES = \
 	address_map_entry.cc \
 	config_regs.cc \
-	address_maps.cc
+	address_maps.cc \
+	pci_controller.cc pci_controller_debug.cc
 	
 include_HEADERS = \
 	address_map_entry.hh \
 	config_regs.hh \
-	address_maps.hh address_maps.tcc
+	address_maps.hh address_maps.tcc \
+	pci_controller.hh pci_controller.tcc
 	
 install-exec-hook: $(libdir)/libmpc107.a
 	rm -f $(prefix)/lib/libunisim_component_cxx_chipset_mpc107.a

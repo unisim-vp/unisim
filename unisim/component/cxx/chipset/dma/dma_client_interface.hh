@@ -31,28 +31,36 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.tcc"
-#include <inttypes.h>
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace chipset {
+#ifndef __FS_CHIPSETS_MPC107_DMA_DMA_CLIENT_INTERFACE_HH__
+#define __FS_CHIPSETS_MPC107_DMA_DMA_CLIENT_INTERFACE_HH__
+
+namespace full_system {
+namespace chipsets {
 namespace mpc107 {
+namespace dma {
 
-template 
-class PCIController<uint32_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint32_t, 32, uint64_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint64_t, 32, true>;
+template<class PHYSICAL_ADDR>
+class DMAClientInterface {
+public:
+	virtual void DMAPCIWrite(PHYSICAL_ADDR addr,
+							Pointer<uint8_t> &data,
+							unsigned int size,
+							unsigned int channel) = 0;
+	virtual void DMAWrite(PHYSICAL_ADDR addr,
+							Pointer<uint8_t> &data,
+							unsigned int size,
+							unsigned int channel) = 0;
+	virtual void DMARead(PHYSICAL_ADDR addr,
+						unsigned int size,
+						unsigned int channel) = 0;
+	virtual void DMAPCIRead(PHYSICAL_ADDR addr,
+							unsigned int size,
+							unsigned int channel) = 0;
+};
 
-} // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+} // end of dma namespace
+} // end of mpc107 namespace
+} // end of chipsets namespace
+} // end of full_system namespace
+#endif /* __FS_CHIPSETS_MPC107_DMA_DMA_CLIENT_INTERFACE_HH__ */

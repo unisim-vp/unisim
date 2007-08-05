@@ -31,28 +31,49 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.tcc"
+
+#ifndef __FS_CHIPSETS_MPC107_EPIC_INSERVICEREG_HH__
+#define __FS_CHIPSETS_MPC107_EPIC_INSERVICEREG_HH__
+
 #include <inttypes.h>
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace chipset {
+namespace full_system {
+namespace chipsets {
 namespace mpc107 {
+namespace epic {
 
-template 
-class PCIController<uint32_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint32_t, 32, uint64_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint64_t, 32, true>;
+class InserviceReg {
+public:
+	InserviceReg();
+	~InserviceReg();
+	
+	bool HasIRQ();
+	uint32_t Vector();
+	uint32_t Priority();
+	uint32_t Id();
+	
+	/* Adds a new IRQ to the head of the register,
+	 *   note that this IRQ must have higher priority than IRQs already
+	 *   present in the register */
+	void PushIRQ(uint32_t vector, uint32_t priority, uint32_t id);
+	/* Removes the head IRQ of the register (that is, the IRQ with
+	 *   the highest priority */
+	void RemoveIRQ();
+private:
+	class IRQ {
+	public:
+		uint32_t vector;
+		uint32_t priority;
+		uint32_t id;
+		IRQ *prev;
+		IRQ *next;
+	};
+	IRQ *irq;
+};
 
-} // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+} // end of epic namespace
+} // end of mpc107 namespace
+} // end of chipsets namespace
+} // end of full_system namespace
+
+#endif /* __FS_CHIPSETS_MPC107_EPIC_INSERVICEREG_HH__ */

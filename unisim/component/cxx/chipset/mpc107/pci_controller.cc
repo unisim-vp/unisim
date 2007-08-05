@@ -32,12 +32,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "chipsets/mpc107/pci_controller.hh"
-#include "chipsets/mpc107/pci_controller.tpp"
+#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
+#include "unisim/component/cxx/chipset/mpc107/pci_controller.tcc"
 #include <inttypes.h>
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 
 template 
@@ -50,5 +52,7 @@ template
 class PCIController<uint64_t, 32, uint64_t, 32, false>;
 
 } // end of namespace mpc107
-} // end of namespace chipsets
-} // end of namespace full_system
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim

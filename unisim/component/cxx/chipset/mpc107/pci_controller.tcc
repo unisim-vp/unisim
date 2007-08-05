@@ -31,30 +31,33 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "pci/types.hh"
-#include "chipsets/mpc107/config_regs.hh"
-#include "chipsets/mpc107/address_maps.hh"
-#include "utils/endian/endian.hh"
-#include "plugins/logger/logger_interface.hh"
-#include "utils/services/service.hh"
-#include <string>
 
-namespace full_system {
-namespace chipsets {
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_TCC__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_TCC__
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 
-using namespace std;
-using full_system::pci::TransactionType;
-using full_system::pci::PCISpace;
-using full_system::chipsets::mpc107::ConfigurationRegisters;
-using full_system::chipsets::mpc107::AddressMap;
-using full_system::utils::endian::Host2LittleEndian;
-using full_system::utils::endian::LittleEndian2Host;
-using namespace full_system::plugins::logger;
-using full_system::utils::services::Object;
-using full_system::utils::services::Client;
-		
+using unisim::service::interfaces::Logger;
+using unisim::service::interfaces::operator<<;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Line;
+
+#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
 	uint32_t SYSTEM_MAX_TRANSACTION_DATA_SIZE,
 	class PCI_BUS_PHYSICAL_ADDR, 
@@ -71,11 +74,12 @@ PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	const char *name, 
 	Object *parent):
 	Object(name, parent),
-	Client<LoggerInterface>(name, parent),
+	Client<Logger>(name, parent),
 	logger_import("logger_import", this), 
 	deviceNumber(_deviceNumber),
 	config_regs(&_config_regs), 
 	addr_map(&_addr_map){
+	SetupDependsOn(logger_import);
 }
 	
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
@@ -90,7 +94,10 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		DEBUG>
 ::Setup() {
 	if (config_regs->picr1.value == 1) {
-		cerr << "Little endian mode not supported" << endl;
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "Little endian mode not supported" 
+				<< Endl << EndDebugError;
 		return false;
 	}		
 	return true;
@@ -107,6 +114,7 @@ void PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
 ::OnDisconnect() {
+	/* TODO */
 }
 	
 template <class SYSTEM_BUS_PHYSICAL_ADDR,
@@ -127,8 +135,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 				uint32_t &size) {
 	//normal read access
 
-	type = full_system::pci::TT_READ;
-	space = full_system::pci::SP_MEM;
+	type = unisim::component::cxx::pci::TT_READ;
+	space = unisim::component::cxx::pci::SP_MEM;
 	size = req_size;
 	if (config_regs->pci_command_reg.value & 0x0004) //we are in host mode
 		addr = req_addr;
@@ -155,8 +163,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 						uint32_t &size) {
 	//io read access
 
-	type = full_system::pci::TT_READ;
-	space = full_system::pci::SP_IO;
+	type = unisim::component::cxx::pci::TT_READ;
+	space = unisim::component::cxx::pci::SP_IO;
 	size = req_size;
 	addr = req_addr & 0x00FFFFFFUL;
 	return true;
@@ -179,9 +187,9 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 					PCISpace &space,
 					uint32_t &size) {		
 	//config read access
-	type = full_system::pci::TT_READ;
+	type = unisim::component::cxx::pci::TT_READ;
 	addr = config_addr + (req_addr & 0x03);
-	space = full_system::pci::SP_CONFIG;
+	space = unisim::component::cxx::pci::SP_CONFIG;
 	size = req_size;
 	return true;
 }
@@ -204,10 +212,9 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 				PCISpace &space,
 				uint8_t data[PCI_MAX_TRANSACTION_DATA_SIZE],
 				uint32_t &size) {
-//	cerr << "Info:" << __PRETTY_FUNCTION__ << endl;
 	//normal write 
-	type = full_system::pci::TT_WRITE;
-	space = full_system::pci::SP_MEM;
+	type = unisim::component::cxx::pci::TT_WRITE;
+	space = unisim::component::cxx::pci::SP_MEM;
 	size = req_size;
 	memcpy(data, req_data, size);
 	if (config_regs->pci_command_reg.value & 0x0004) //we are in host mode
@@ -237,8 +244,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 						uint8_t data[PCI_MAX_TRANSACTION_DATA_SIZE],
 						uint32_t &size) {
 	//io write 
-	type = full_system::pci::TT_WRITE;
-	space = full_system::pci::SP_IO;
+	type = unisim::component::cxx::pci::TT_WRITE;
+	space = unisim::component::cxx::pci::SP_IO;
 	size = req_size;
 	memcpy(data, req_data, size);
 	addr = req_addr & 0X00FFFFFFUL;
@@ -263,11 +270,9 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 						PCISpace &space,
 						uint8_t data[PCI_MAX_TRANSACTION_DATA_SIZE],
 						uint32_t &size) {
-//	cerr << "Info:" << __PRETTY_FUNCTION__ << endl;
-
 	//config write
-	type = full_system::pci::TT_WRITE;
-	space = full_system::pci::SP_CONFIG;
+	type = unisim::component::cxx::pci::TT_WRITE;
+	space = unisim::component::cxx::pci::SP_CONFIG;
 	addr = config_addr + (req_addr & 0x03);
 	size = req_size;
 	memcpy(data, req_data, size);
@@ -287,7 +292,6 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::SetConfigAddr(SYSTEM_BUS_PHYSICAL_ADDR req_addr,
 			uint8_t req_data[SYSTEM_MAX_TRANSACTION_DATA_SIZE],
 			uint32_t req_size) {
-//	cerr << "Info:" << __PRETTY_FUNCTION__ << endl;
 
 	bool result = true;
 	//Checking the range of the config_addr register
@@ -296,15 +300,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		if (req_size == 4) {
 			//Checking the word alingment
 			if ((req_addr & 0x03) == 0) {
-//				memcpy(&config_addr, &req_data, 4);	
-//				memcpy(&config_addr, req_data, 4);
 				config_addr = *(uint32_t *)req_data;
 				config_addr = LittleEndian2Host(config_addr);
-//				cerr << "config_addr = 0x" << hex << config_addr << dec 
-//					<< " req_data = 0x";
-//				for(unsigned int i = 0; i < req_size - 1; i++)
-//					cerr << hex << (unsigned int)req_data[i] << dec << " ";
-//				cerr << hex << (unsigned int)req_data[req_size - 1] << dec << endl;
 			}
 		}
 	} else {
@@ -324,8 +321,6 @@ PCI_BUS_PHYSICAL_ADDR PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
 ::HostToPci(SYSTEM_BUS_PHYSICAL_ADDR original) {
-//	cerr << "Info:" << __PRETTY_FUNCTION__ << endl;
-
 	PCI_BUS_PHYSICAL_ADDR pciAddr = original;
 
     uint32_t ombar = config_regs->GetRegister(OMBAR)->value;
@@ -351,8 +346,6 @@ SYSTEM_BUS_PHYSICAL_ADDR PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
 ::PciToHost(PCI_BUS_PHYSICAL_ADDR original) {
-//	cerr << "Info:" << __PRETTY_FUNCTION__ << endl;
-	
 	SYSTEM_BUS_PHYSICAL_ADDR memAddr = original;
 
     uint32_t lmbar = config_regs->GetRegister(LMBAR)->value;
@@ -396,7 +389,6 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::LocalReadConfigRequest(SYSTEM_BUS_PHYSICAL_ADDR req_addr,
 						uint32_t req_size, 
 						uint8_t data[SYSTEM_MAX_TRANSACTION_DATA_SIZE]) {
-//	cerr << "Info:" << __PRETTY_FUNCTION__ << endl;
 	ConfigurationRegister *creg;
 	int reg = (config_addr & 0xFF) + (req_addr & 0x03);
 
@@ -404,21 +396,21 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(creg == NULL) {
 		//I changed this to answer ffffff of the size of the request in this case
 		memset(data, 0xff, req_size);
-		cerr << "WARNING(" << __FUNCTION__ 
-			<< ":" << __FILE__
-			<< ":" << __LINE__ << "): "
-			<< " trying to access configuration register 0x"
-			<< hex << reg << dec << endl;
-//		return false; 
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
+				<< "trying to access configuration register 0x"
+				<< Hex << reg << Dec 
+				<< Endl << EndDebugWarning;
 		return true;
 	}
 	//I could check if the size is ok, but i think it's not necesary
 	if(!creg->AllowedSize(req_size)) {
-		cerr << "ERROR(" << __FUNCTION__ 
-			<< ":" << __FILE__
-			<< ":" << __LINE__ << "): "
-			<< "bad read size (received_size = " << req_size 
-			<< ", expected_size = 0x" << hex << creg->access_size << dec << ")" << endl;
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "bad read size (received_size = " << req_size 
+				<< ", expected_size = 0x" 
+				<< Hex << creg->access_size << Dec << ")" 
+				<< Endl << EndDebugError;
 		return false;		
 	}
 	switch(req_size) {
@@ -429,10 +421,10 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	case 2: {
 		switch(creg->byte_size) {
 		case 4: {
-			cerr << "TODO(" << __FUNCTION__
-				<< ":" << __FILE__
-				<< ":" << __LINE__ << "): "
-				<< "accessing a register of size 4 with size 2" << endl;
+			if(logger_import)
+				(*logger_import) << DebugError << LOCATION
+					<< "accessing a register of size 4 with size 2" 
+					<< Endl << EndDebugError;
 			return false;
 			break;}
 		case 2: {
@@ -476,7 +468,6 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		}
 		(*logger_import) << Dec << ")" << Endl << EndDebugInfo;
 	}
-//	memcpy(data, config_regs->GetRegister(reg)->value, req_size);
 	return true;
 }
 
@@ -498,17 +489,15 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	ConfigurationRegister *config_reg = config_regs->GetRegister(reg);
 	if(config_reg == NULL) {
 		if(logger_import)
-			(*logger_import) << DebugError
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugError << LOCATION
 				<< "error while trying to write configuration register 0x"
 				<< Hex << reg << Dec << Endl << EndDebugError;
 		return false;
 	}
 	//Check if it's writable, else quit
-	if (!(config_reg->permission & full_system::chipsets::mpc107::ConfigurationRegister::WriteAccess)) {
+	if (!(config_reg->permission & unisim::component::cxx::chipset::mpc107::ConfigurationRegister::WriteAccess)) {
 		if(DEBUG && logger_import) {
-			(*logger_import) << DebugInfo
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugInfo << LOCATION
 				<< "Write access to unwritable register " << config_reg->name
 				<< " with value = 0x" << Hex;
 			for(unsigned int i = 0; i < req_size - 1; i++)
@@ -520,27 +509,23 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	//Check the size
 	if (req_size != config_reg->byte_size)	{
-		cerr << "Not the right size, expected: " 
-			<< config_reg->byte_size 
-			<< ", received: " 
-			<< req_size << endl;
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "Not the right size, expected: " 
+				<< config_reg->byte_size 
+				<< ", received: " 
+				<< req_size 
+				<< Endl << EndDebugError;
 		return false;
 	}
 	
 	//As we have only implemented host mode, i'll say i have no space to allocate in the bars
 	if (reg >= 0x10 && reg <= 0x24) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Accessing bar registers in host mode (reg_name = " 
 			 	<< config_reg->name << ", reg_id = " << reg << ")" << Endl
 			 	<< EndDebugWarning;
-		}
-		cerr << "WARNING(" << __FUNCTION__
-			<< ":" << __FILE__
-			<< ":" << __LINE__ << "): "
-			<< " accessing bar registers in host mode (reg = " 
-		 	<< config_reg->name << ")" << endl;
 		uint32_t data;
 		memcpy(&data, req_data, 4);
 
@@ -658,9 +643,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	default: // Its a normal register, we just write it :)
 		//This is a caothic thing
 		config_regs->GetRegister(reg)->Write(reg, data, req_size);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 				<< "TODO register " << config_regs->GetRegister(reg)->name 
 				<< "(" << config_regs->GetRegister(reg)->long_name 
 				<< ") written (register number id = 0x" << Hex << reg << Dec << ")" 
@@ -684,8 +668,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* checking reserved bits */
 	if(data & (uint32_t)0x000fffff) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to write reserved bits 19-0 of the "
 				<< "Embedded Utilities Memory Block Base Address Register (EUMBBAR) to 0x"
 				<< Hex << (data & (uint32_t)0xfff00000) << Dec
@@ -697,8 +680,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	uint32_t val;
 	val = (data >> 20) & (uint32_t)0x0fff;
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Embbeded Utilities Memory Block Base Address Register with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "): " << Endl
@@ -721,7 +703,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* updating the address map */
 	if(!addr_map->Reset()) {
 		if(logger_import)
-			(*logger_import) << DebugError
+			(*logger_import) << DebugError << LOCATION
 				<< "Error while resetting the address map configuration when updating the "
 				<< "Embedded Utilities Memory Blocak Base Address Register with value = 0x"
 				<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl			
@@ -753,8 +735,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		if(data & (((uint32_t)1) << i)) {
 			data = data & ~(uint32_t)(((uint32_t)1) << i);
 			if(DEBUG && logger_import)
-				(*logger_import) << DebugWarning
-					<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to set reserved bit " << i << " of the PCI Command Register"
 					<< ", reseting it to 0" << Endl
 					<< EndDebugWarning;
@@ -763,8 +744,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(data & (((uint32_t)1) << 9)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 9);
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set fast back-to-back bit 9 of the PCI Command Register"
 				<< " which is hardwired to 0, reseting it to 0" << Endl
 				<< EndDebugWarning;
@@ -772,8 +752,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(data & (((uint32_t)1) << 7)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 7);
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 7 of the PCI Command Register"
 				<< ", reseting it to 0" << Endl
 				<< EndDebugWarning;
@@ -781,8 +760,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(data & (((uint32_t)1) << 5)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 5);
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 5 of the PCI Command Register"
 				<< ", reseting it to 0" << Endl
 				<< EndDebugWarning;
@@ -790,8 +768,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(data & (((uint32_t)1) << 3)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 3);
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set special cycles bit 3 of the PCI Command Register"
 				<< " which is hardwired to 0, reseting it to 0" << Endl
 				<< EndDebugWarning;
@@ -799,8 +776,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(data & (uint32_t)1) {
 		data = data & ~(uint32_t)1;
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set I/O space bit 0 of the PCI Command Register"
 				<< " which is hardwired to 0, reseting it to 0" << Endl
 				<< EndDebugWarning;
@@ -812,8 +788,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - then bit 2 bus master
 	 * - then bit 1 memory space */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the PCI Command Register with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " << Endl;
@@ -858,7 +833,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* updating the address map */
 	if(!addr_map->Reset()) {
 		if(logger_import)
-			(*logger_import) << DebugError
+			(*logger_import) << DebugError << LOCATION
 				<< "Error while resetting the address map configuration when updating the "
 				<< "PCI Command Register with value = 0x"
 				<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl			
@@ -895,9 +870,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	for(unsigned int i = 24; i < 31; i++) {
 		if((data & (((uint32_t)1) << i)) == 0) {
 			data = data | (uint32_t)(((uint32_t)1) << i);
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugWarning
-					<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			if(logger_import)
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to unset reserved bit " << i << " of the PICR1"
 					<< ", reseting it to 1" << Endl
 					<< EndDebugWarning;
@@ -905,9 +879,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	if(data & (((uint32_t)1) << 21)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 21);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 21 of the PICR1"
 				<< ", reseting it to 0" << Endl
 				<< EndDebugWarning;
@@ -915,17 +888,15 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if((data & (((uint32_t)1) << 20)) != (config_regs->picr1.value & (((uint32_t)1) << 20))) {
 		if(config_regs->picr1.value & (((uint32_t)1) << 20)) {
 			data = data | (uint32_t)(((uint32_t)1) << 20);
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugWarning
-					<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			if(logger_import)
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to unset read-only bit 20 (RCS0) of the PICR1"
 					<< ", reseting it to 1" << Endl
 					<< EndDebugWarning;
 		} else {
 			data = data & ~(uint32_t)(((uint32_t)1) << 20);
 			if(DEBUG && logger_import)
-				(*logger_import) << DebugWarning
-					<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to set read-only bit 20 (RCS0) of the PICR1"
 					<< ", reseting it to 0" << Endl
 					<< EndDebugWarning;
@@ -933,17 +904,15 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	if(data & (((uint32_t)1) << 19)) {
 		data = data & ~(uint32_t)(((uint32_t)1) << 19);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 19 of the PICR1"
 				<< ", reseting it to 0" << Endl
 				<< EndDebugWarning;
 	}
 	if(((data & (((uint32_t)1) << 18)) == 0) && (data & (((uint32_t)1) << 17))) {
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bits 19-19 (processor type) of the PICR1 to "
 				<< ((data & (((uint32_t)1) << 18)) ? "1" : "0")
 				<< ((data & (((uint32_t)1) << 17)) ? "1" : "0")
@@ -956,17 +925,15 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if((data & (((uint32_t)1) << 16)) && 
 		((config_regs->pci_command_reg.value & (((uint32_t)1) << 2)) == 0)) {
 		data = data & (((uint32_t)1) << 16);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bit 16 address map to 1 (address map A) while "
 				<< "chipset in agent mode (PCI command reg bit 2 is 0), "
 				<< "resetting it to 0" << Endl << EndDebugWarning;
 	}
 	if(data & (((uint32_t)1) << 15)) {
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bits 15-14 (multiprocessor identifer) to "
 				<< ((data & (((uint32_t)1) << 15)) ? "1" : "0")
 				<< ((data & (((uint32_t)1) << 14)) ? "1" : "0")
@@ -979,18 +946,16 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	for(unsigned int i = 8; i < 9; i++) {
 		if(data & (((uint32_t)1) << i)) {
 			data = data & ~(((uint32_t)1) << i);
-			if(DEBUG && logger_import)
-				(*logger_import) << DebugWarning
-					<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			if(logger_import)
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to set reserved bit " << i << " of the PICR1"
 					<< ", reseting it to 0" << Endl
 					<< EndDebugWarning;
 		}
 	}
 	if(((data >> 1) & ((uint32_t)1)) != (data & ((uint32_t)1))) {
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-					<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to set bits 1-0 (multiprocessor config) of PICR1 to "
 					<< ((data & ((uint32_t)2)) ? "1" : "0")
 					<< ((data & ((uint32_t)1)) ? "1" : "0")
@@ -1017,8 +982,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - bits 1-0 multiprocessor configuration (00 = uni, 11 = 2-way MP)
 	 */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the PICR1 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " << Endl;
@@ -1095,7 +1059,6 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 			(*logger_import) << "uniprocessor (00)";
 		(*logger_import) << Endl;
 	}
-//	config_regs->GetRegister(reg)->Write(reg, data, req_size);
 	config_regs->GetRegister(reg)->value = data;
 	if(DEBUG && logger_import) {
 		(*logger_import) << "checking PICR1 = 0x"
@@ -1105,7 +1068,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* updating the address map */
 	if(!addr_map->Reset()) {
 		if(logger_import)
-			(*logger_import) << DebugError
+			(*logger_import) << DebugError << LOCATION
 				<< "Error while resetting the address map configuration when updating the "
 				<< "Processor Interface Configuration Register 1 with value = 0x"
 				<< Hex << config_regs->GetRegister(reg)->value << Dec << Endl			
@@ -1140,9 +1103,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		case 1:	case 0:
 			if(data & (((uint32_t)1) << i)) {
 				data = data & ~(((uint32_t)1) << i);
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugWarning
-						<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				if(logger_import)
+					(*logger_import) << DebugWarning << LOCATION
 						<< "Trying to set reserved bit " << i << " of the PICR2"
 						<< ", reseting it to 0" << Endl
 						<< EndDebugWarning;
@@ -1155,9 +1117,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(((data >> 9) & ((uint32_t)3)) == 0) {
 		data = data | (((uint32_t)1) << 10);
 		data = data | (((uint32_t)1) << 9);
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bits 10-9 (LBCLAIM wait states) of the PICR2 to 0b00"
 				<< ", reseting them to 0b11" << Endl
 				<< EndDebugWarning;
@@ -1172,8 +1133,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - bits 3-2 (CF_APHASE_WS) address phase wait states
 	 */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the PICR2 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " << Endl;
@@ -1232,8 +1192,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* checking read-only bits 22-21 DBUS_SIZ[0-1] */
 	if(((data >> 21) & ((uint32_t)3)) != ((config_regs->mccr1.value >> 21) & ((uint32_t)3))) {
 		if(logger_import) {
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to modify (write) read-only bits 22-21 (DBUS_SIZ[0-1])"
 				<< " of MCCR1 (new value = "
 				<< (((data >> 22) & ((uint32_t)1)) ? "1" : "0")
@@ -1255,9 +1214,8 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		&& (config_regs->mccr4.value & (((uint32_t)1) << 22))
 		&& ((config_regs->mccr4.value & (((uint32_t)1) << 20)) == 0)
 		&& (config_regs->mccr2.value & (((uint32_t)1) << 18))) {
-		if(DEBUG && logger_import) {
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		if(logger_import) {
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Setting bit 16 (PCKEN) of register MCCR1, when setting at the "
 				<< "same time the SDRAM memory option (bit 17 = 0) and operating"
 				<< " in in-line buffer mode and in-line parity/ECC enabled, "
@@ -1287,8 +1245,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - bit 1-0 bank 0 row
 	 */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the MCCR1 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1376,8 +1333,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if((config_regs->mccr1.value & (uint32_t)(((uint32_t)1) << 17)) &&
 		((data >> 29) & ((uint32_t)7))) {
 		if(logger_import) 
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bits 31-29 (TS_WAIT_TIMER) to value 0x"
 				<< Hex << ((data >> 19) & ((uint32_t)7)) << Dec
 				<< " when using a ram type different than SDRAM (MCCR1[RAM_TYPE] == 1), "
@@ -1388,8 +1344,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if((config_regs->mccr1.value & (((uint32_t)1) << 16)) &&
 		(data & (((uint32_t)1) << 18))) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bit 18 (INLINE_RD_EN) when MCCR1[PCKEN] is set, "
 				<< "resetting it to 0" << Endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 18);
@@ -1397,16 +1352,14 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if(((config_regs->mccr1.value & (((uint32_t)1) << 17)) == 0) &&
 		(data & (((uint32_t)1) << 17))) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bit 17 (ECC_EN) when using SDRAM (MCCR1[RAM_TYPE] == 0), "
 				<< " resetting it to 0" << Endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 17);
 	}
 	if((data & (((uint32_t)1) << 17)) && (data & ((uint32_t)1))) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __FILE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bit 17 (ECC_EN) and bit 0 (RMW_PAR) at the same time, "
 				<< "resetting it (ECC_EN) to 0" << Endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 17);
@@ -1414,8 +1367,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if((data & (((uint32_t)1) << 17)) && (data & (((uint32_t)1) << 16)) && 
 		(config_regs->mccr4.value & (((uint32_t)1) << 20))) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __FILE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bit 17 (ECC_EN) and bit 16 (EDO) at the same time when "
 				<< "REGISTERED = 1, resetting ECC_EN to 0" << Endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 17);
@@ -1434,8 +1386,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	 * - bit 0 (RMW_PAR) read-modify-write (RMW) parity
 	 */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the MCCR2 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1530,8 +1481,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	val = ((data >> 20) & (uint32_t)0x0f);
 	if(val > 6) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Register MCCR3 data latency from read command (bits 23-20, RDLAT) "
 				<< "can not be bigger than 0x6 (trying to set it to 0x"
 				<< Hex << val << Dec << "), resetting to default value 0x0"
@@ -1542,8 +1492,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if((config_regs->mccr1.value & (((uint32_t)1) << 17)) &&
 		(val == 0)) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set CAS precharge interval of MCCR3 (bits 11-9, CP4) "
 				<< "to reserved value 0x0 when using a DRAM/EDO memory "
 				<< "(MCCR1[RAM_TYPE] == 1), setting it to 0x1 (0x"
@@ -1553,8 +1502,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	if(val > 2) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Register MCCR3 CAS precharge interval (bits 11-9, CP4) "
 				<< "can not be bigger than 0x2 (trying to set it to 0x"
 				<< Hex << val << Dec << "), resetting to default value 0x0 (or 0x1 "
@@ -1568,8 +1516,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	val = (data >> 3) & (uint32_t)7;
 	if(val == 1) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set MCCR3 RAS to CAS delay interval (bits 5-3, RCD2) "
 				<< "to reserved value 0x1, resetting it 0x0"
 				<< Endl << EndDebugWarning;
@@ -1578,8 +1525,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	val = data & (uint32_t)7;
 	if((val != 2) && (val != 3) && (val != 6) && (val != 5) && (val != 0)) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set MCCR3 RAS precharge interval (bits 2-0, RP1) "
 				<< "to reserved value 0x"
 				<< Hex << val << Dec << ", resetting it 0x0 (to 0x2 if MCCR1[RAM_TYPE] = 1)"
@@ -1591,8 +1537,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	if((val == 0) && (config_regs->mccr1.value & (((uint32_t)1) << 17))) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set MCCR3 RAS precharge interval (bits 2-0, RP1) "
 				<< "to reserved value 0x"
 				<< Hex << val << Dec << ", resetting it 0x2"
@@ -1601,8 +1546,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the MCCR3 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1667,8 +1611,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* checking reserved bit 16 */
 	if(data & (((uint32_t)1) << 16)) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set reserved bit 16 of register MCCR4, resetting it to 0"
 				<< Endl << EndDebugWarning;
 		data = data & ~(((uint32_t)1) << 16);
@@ -1676,8 +1619,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* checking that bits 22 and 20 (BUF_TYPE[0] and BUF_TYPE[1]) are different */
 	if(((data >> 22) & ((uint32_t)1)) == ((data >> 20) & ((uint32_t)1))) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to set bits 22 and 20 (BUF_TYPE[0] and BUF_TYPE[1]) of MCCR4 to the "
 				<< "same value, resetting them to 01"
 				<< Endl << EndDebugWarning;
@@ -1686,8 +1628,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	/* checking that bits 7-4 (ACTORW) are not set to reserved values 0001 */
 	if(((data >> 4) & (uint32_t)0xf) == 1) {
-		(*logger_import) << DebugWarning
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugWarning << LOCATION
 			<< "Trying to set bits 7-4 (ACTORW) of MCCR4 to the reserved value 0x1, "
 			<< "resetting it to 0x0" << Endl << EndDebugWarning;
 		data = data &  ~(((uint32_t)0x0f) << 4);
@@ -1695,8 +1636,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	uint32_t val;
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the MCCR4 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1751,7 +1691,6 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 			<< "   - setting burst to precharge bits 6-9 (bits 3-0, BSTOPRE[6-9]) to 0x"
 			<< Hex << val << Dec << Endl;
 	}
-//	config_regs->GetRegister(reg)->Write(reg, data, req_size);
 	config_regs->GetRegister(reg)->value = data;
 	if(DEBUG && logger_import) {
 		(*logger_import) << "checking MCCR3 = 0x"
@@ -1774,8 +1713,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteMemStartAddrReg1(int reg, uint32_t data, uint32_t req_size) {
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Memory Starting Address Register 1 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1812,8 +1750,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteMemStartAddrReg2(int reg, uint32_t data, uint32_t req_size) {
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Memory Starting Address Register 2 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1854,7 +1791,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		val = (data >> ((i * 8) + 2)) & (uint32_t)0x03f;
 		if(val != 0) {
 			if(logger_import)
-				(*logger_import) << DebugWarning
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to set reserved bits "
 					<< ((i * 8) + 7) << "-" << ((i * 8) + 2)
 					<< " of Extended Memory Starting Address Register 1 with value 0x"
@@ -1865,8 +1802,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Extended Memory Starting Address Register 1 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1907,7 +1843,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		val = (data >> ((i * 8) + 2)) & (uint32_t)0x03f;
 		if(val != 0) {
 			if(logger_import) 
-				(*logger_import) << DebugWarning
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to set reserved bits "
 					<< ((i * 8) + 7) << "-" << ((i * 8) + 2)
 					<< " of Extended Memory Starting Address Register 2 with value 0x"
@@ -1918,8 +1854,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Extended Memory Starting Address Register 2 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1956,8 +1891,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteMemEndAddrReg1(int reg, uint32_t data, uint32_t req_size) {
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Memory Ending Address Register 1 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -1994,8 +1928,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 ::WriteMemEndAddrReg2(int reg, uint32_t data, uint32_t req_size) {
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Memory Ending Address Register 2 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -2036,8 +1969,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		val = (data >> ((i * 8) + 2)) & (uint32_t)0x03f;
 		if(val != 0) {
 			if(logger_import)
-				(*logger_import) << DebugWarning
-					<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to set reserved bits "
 					<< ((i * 8) + 7) << "-" << ((i * 8) + 2)
 					<< " of Extended Memory Ending Address Register 1 with value 0x"
@@ -2048,8 +1980,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Extended Memory Ending Address Register 1 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -2090,8 +2021,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		val = (data >> ((i * 8) + 2)) & (uint32_t)0x03f;
 		if(val != 0) {
 			if(logger_import) 
-				(*logger_import) << DebugWarning
-					<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				(*logger_import) << DebugWarning << LOCATION
 					<< "Trying to set reserved bits "
 					<< ((i * 8) + 7) << "-" << ((i * 8) + 2)
 					<< " of Extended Memory Ending Address Register 2 with value 0x"
@@ -2102,8 +2032,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	/* showing the new register settings */
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Extended Memory Ending Address Register 2 with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -2141,8 +2070,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* checking request size */
 	if(req_size > 1) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to write Memory Bank Enable Register (0x"
 				<< Hex << MEM_BANK_EN_REG << Dec << ") "
 				<< "with a request of size " << req_size << "bytes, "
@@ -2167,8 +2095,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 			}
 			if(start_address >= end_address) {
 				if(logger_import) {
-					(*logger_import) << DebugWarning
-						<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+					(*logger_import) << DebugWarning << LOCATION
 						<< "Trying to enable bank " << i << " on the Memory Bank Enable Register "
 						<< "when the start address of the bank is bigger or equal than the end address "
 						<< "(start_address = 0x" << Hex << start_address << Dec
@@ -2181,8 +2108,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	}
 	/* showing enabled/disabled banks */ 
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Memory Bank Enable Register with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -2220,8 +2146,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	/* checking request size */
 	if(req_size > 1) {
 		if(logger_import)
-			(*logger_import) << DebugWarning
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+			(*logger_import) << DebugWarning << LOCATION
 				<< "Trying to write Memory Page Mode Register (0x"
 				<< Hex << reg << Dec << ") "
 				<< "with a request of size " << req_size << "bytes, "
@@ -2231,8 +2156,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		
 	/* showing entered value */ 
 	if(DEBUG && logger_import) {
-		(*logger_import) << DebugInfo
-			<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing the Memory Page Mode Register with value 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << config_regs->GetRegister(reg)->value << Dec << "), setting values: " 
@@ -2254,6 +2178,12 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	return true;	
 }
 
+#undef LOCATION
+
 } // end of namespace mpc107
-} // end of namespace chipsets
-} // end of namespace full_system
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_PCICONTROLLER_TCC__

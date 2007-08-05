@@ -31,28 +31,77 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
-#include "unisim/component/cxx/chipset/mpc107/pci_controller.tcc"
-#include <inttypes.h>
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace chipset {
+#include "chipsets/mpc107/epic/inservice_reg.hh"
+
+namespace full_system {
+namespace chipsets {
 namespace mpc107 {
+namespace epic {
 
-template 
-class PCIController<uint32_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint32_t, 32, uint64_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint32_t, 32, true>;
-template 
-class PCIController<uint64_t, 32, uint64_t, 32, true>;
+InserviceReg::InserviceReg() : irq(0) {
+}
 
-} // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+InserviceReg::~InserviceReg() {
+	while (HasIRQ()) {
+		RemoveIRQ();
+	}
+}
+
+bool InserviceReg::HasIRQ() {
+	return irq != 0;
+}
+
+uint32_t InserviceReg::Vector() {
+	if(!HasIRQ()) return 0;
+	
+	return irq->vector;
+}
+
+uint32_t InserviceReg::Priority() {
+	if(!HasIRQ()) return 0;
+	
+	return irq->priority;
+}
+
+uint32_t InserviceReg::Id() {
+	if(!HasIRQ()) return 0;
+	
+	return irq->id;
+}
+
+/* Adds a new IRQ to the head of the register,
+ *   note that this IRQ must have higher priority than IRQs already
+ *   present in the register */
+void InserviceReg::PushIRQ(uint32_t vector, uint32_t priority, uint32_t id) {
+	IRQ *item;
+	
+	item = new IRQ();
+	item->vector = vector;
+	item->priority = priority;
+	item->id = id;
+	
+	item->next = irq;
+	item->prev = 0;
+	if(HasIRQ())
+		irq->prev = item;
+	irq = item;
+}
+
+/* Removes the head IRQ of the register (that is, the IRQ with
+ *   the highest priority */
+void InserviceReg::RemoveIRQ() {
+	IRQ *item;
+	
+	if(!HasIRQ()) return;
+	item = irq;
+	irq = item->next;
+	if(HasIRQ())
+		irq->prev = 0;
+	delete item;
+}
+
+} // end of epic namespace
+} // end of mpc107 namespace
+} // end of chipsets namespace
+} // end of full_system namespace
