@@ -32,18 +32,20 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_CHIPSETS_MPC107_DMA_BUFFER_HH__
-#define __FS_CHIPSETS_MPC107_DMA_BUFFER_HH__
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_BUFFER_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_BUFFER_HH__
 
 #include <inttypes.h>
-#include "utils/garbage_collector/garbage_collector.hh"
+#include "unisim/util/garbage_collector/garbage_collector.hh"
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace dma {
 
-using full_system::utils::garbage_collector::Pointer;
+using unisim::util::garbage_collector::Pointer;
 
 template <class PHYSICAL_ADDR>
 class Buffer {
@@ -80,7 +82,9 @@ public:
 
 } // end of namespace dma
 } // end of namespace mpc107
-} // end of namespace chipsets
-} // end of namespace full_system
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace dma
 
-#endif // __FS_CHIPSETS_MPC107_DMA_BUFFER_HH__
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_DMA_BUFFER_HH__

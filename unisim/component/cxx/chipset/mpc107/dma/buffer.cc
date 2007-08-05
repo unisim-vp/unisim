@@ -32,12 +32,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "chipsets/mpc107/dma/buffer.hh"
-#include "chipsets/mpc107/dma/buffer.tpp"
+#include "unisim/component/cxx/chipset/mpc107/dma/buffer.hh"
+#include "unisim/component/cxx/chipset/mpc107/dma/buffer.tcc"
 #include <inttypes.h>
 
-namespace full_system {
-namespace chipsets {
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace chipset {
 namespace mpc107 {
 namespace dma {
 
@@ -49,6 +51,7 @@ class Buffer<uint64_t>;
 
 } // end of namespace dma
 } // end of namespace mpc107
-} // end of namespace chipsets
-} // end of namespace full_system
-
+} // end of namespace chipset
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace dma
