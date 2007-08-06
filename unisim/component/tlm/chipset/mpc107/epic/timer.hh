@@ -1,12 +1,13 @@
-#ifndef __FS_TLM_CHIPSETS_MPC107_EPIC_TIMER_HH__
-#define __FS_TLM_CHIPSETS_MPC107_EPIC_TIMER_HH__
+#ifndef __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_TIMER_HH__
+#define __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_TIMER_HH__
 
 #include <systemc.h>
 #include <list>
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace chipsets {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
 
@@ -36,8 +37,9 @@ private:
 
 } // end of epic namespace
 } // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of tlm namespace	
-} // end of full_system namespace
+} // end of chipset namespace
+} // end of tlm namespace
+} // end of component namespace
+} // end of unisim namespace
 
-#endif /* __FS_TLM_CHIPSETS_MPC107_EPIC_TIMER_HH__ */
+#endif // __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_TIMER_HH__

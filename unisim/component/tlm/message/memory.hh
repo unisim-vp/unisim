@@ -44,6 +44,7 @@
 
 #include "unisim/component/tlm/debug/transaction_spy.hh"
 #include "unisim/service/interfaces/logger.hh"
+#include "unisim/util/garbage_collector/garbage_collector.hh"
 
 #include <inttypes.h>
 
@@ -63,8 +64,7 @@ template <unsigned int DATA_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryResponse<DATA_SIZE>& rsp);
 
 template <class ADDRESS, unsigned int DATA_SIZE>
-class MemoryRequest
-{
+class MemoryRequest {
 public:
 	enum Type
 		{
@@ -82,8 +82,7 @@ public:
 };
 
 template <unsigned int DATA_SIZE>
-class MemoryResponse
-{
+class MemoryResponse {
 public:
 	uint8_t read_data[DATA_SIZE]; // Data read from memory/target processor caches
 
@@ -150,10 +149,6 @@ namespace component {
 namespace tlm {
 namespace debug {
 
-using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
 template<class ADDRESS, unsigned int DATA_SIZE>
 class RequestSpy<unisim::component::tlm::message::MemoryRequest<ADDRESS, DATA_SIZE> > {
 private:
@@ -162,6 +157,11 @@ private:
 
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PReqType &req) {
+		using unisim::service::interfaces::operator<<;
+		using unisim::service::interfaces::Hex;
+		using unisim::service::interfaces::Dec;
+		using unisim::service::interfaces::Endl;
+
 		os << "- type = ";
 		switch(req->type) {
 		case ReqType::READ:
@@ -197,6 +197,11 @@ private:
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PRspType &rsp, 
 		PReqType &req) {
+
+		using unisim::service::interfaces::operator<<;
+		using unisim::service::interfaces::Hex;
+		using unisim::service::interfaces::Dec;
+
 		os << "- read_data(hex) =" << Hex;
 		for(unsigned int i = 0; i < req->size; i++) {
 			os << " " << (unsigned int)rsp->read_data[i];

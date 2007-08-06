@@ -32,24 +32,24 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "tlm/chipsets/mpc107/epic/epic.hh"
-#include "tlm/chipsets/mpc107/epic/epic.tpp"
+#include "unisim/component/tlm/chipset/mpc107/epic/epic.hh"
+#include "unisim/component/tlm/chipset/mpc107/epic/epic.tcc"
 
 #include <inttypes.h>
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace chipsets {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
 	
 template
 class EPIC<uint32_t, 32, false>; 
-template
-class EPIC<uint64_t, 32, false>; 
 
 } // end of epic namespace
 } // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of tlm namespace	
+} // end of chipset namespace
+} // end of tlm namespace
+} // end of component namespace
 } // end of full_system namespace

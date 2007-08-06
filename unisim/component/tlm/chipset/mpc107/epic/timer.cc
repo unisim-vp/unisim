@@ -1,8 +1,10 @@
-#include "tlm/chipsets/mpc107/epic/timer.hh"
+#include "unisim/component/tlm/chipset/mpc107/epic/timer.hh"
+#include <systemc.h>
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace chipsets {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
 	
@@ -32,6 +34,7 @@ void Timer::TimeHandlerProcess(TimeHandler *handler) {
 
 } // end of epic namespace
 } // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of tlm namespace	
-} // end of full_system namespace
+} // end of chipset namespace
+} // end of tlm namespace
+} // end of component namespace
+} // end of unisim namespace

@@ -19,6 +19,11 @@ SUBDIRS += memory
 INCLUDE_SUBDIRS += memory
 endif
 
+if COND_chipset
+SUBDIRS += chipset
+INCLUDE_SUBDIRS += chipset
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)

@@ -32,61 +32,62 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_TLM_CHIPSETS_MPC107_EPIC_EPIC_TPP__
-#define __FS_TLM_CHIPSETS_MPC107_EPIC_EPIC_TPP__
+#ifndef __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_EPIC_TCC__
+#define __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_EPIC_TCC__
 
-#include <string>
-#include <systemc.h>
-#include "tlm/tlm.hh"
-#include "utils/services/service.hh"
-#include "utils/garbage_collector/garbage_collector.hh"
-#include "tlm/interrupt/interrupt.hh"
-#include "tlm/shared_memory/snooping_bus/message.hh"
-#include "chipsets/mpc107/epic/epic.hh"
-#include "plugins/logger/logger_interface.hh"
+#include <sstream>
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace chipsets {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
 	
-using full_system::tlm::TlmSendIf;
-using full_system::tlm::TlmMessage;
-using full_system::tlm::RequestPortIdentifier;
-using full_system::utils::services::Object;
-using full_system::tlm::interrupt::InterruptRequest;
-using full_system::tlm::shared_memory::snooping_bus::Request;
-using full_system::tlm::shared_memory::snooping_bus::Response;
-using namespace full_system::plugins::logger;
-using namespace std;
+using unisim::service::interfaces::Logger;
+using unisim::service::interfaces::operator<<;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Line;
 
+using std::stringstream;
+
+#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+	
 template <class PHYSICAL_ADDR, 
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
 		bool DEBUG>
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 EPIC(const sc_module_name &name, Object *parent) :
 	sc_module(name),
-	full_system::tlm::chipsets::mpc107::epic::EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG>::Object(name, parent),
-	full_system::chipsets::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>("epic_impl", parent),
-	int_outport("int_outport"),
-	soft_reset_outport("soft_reset_outport"),
-	req_inport("req_inport"),
-	sdram_inport("sdram_inport"),
+	Object(name, parent),
+	unisim::component::cxx::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>("epic_impl", parent),
+	irq_master_port("irq_master_port"),
+	soft_reset_master_port("soft_reset_master_port"),
+	slave_port("slave_port"),
+	sdram_slave_port("sdram_slave_port"),
 	sdram_clock_activated_mutex("sdram_clock_activated_mutex"),
 	sdram_clock_activated(false) {
-//	sdram_clock_event("sdram_clock_event") {
-	req_inport(*this);
+	slave_port(*this);
 	/* create irq ports and the objects to handle them */
 	for(unsigned int i = 0; i < inherited::NUM_IRQS; i++) {
-		stringstream irq_inport_name;
-		stringstream irq_inport_handler_name;
+		stringstream irq_slave_port_name;
+		stringstream irq_slave_port_handler_name;
 		
-		irq_inport_name << "irq_inport[" << i << "]";
-		irq_inport[i] = new sc_export<TlmSendIf<IntType> >(irq_inport_name.str().c_str());
-		irq_inport_handler_name << "irq_inport_handler[" << i << "]";
-		irq_handler[i] = new RequestPortIdentifier<InterruptRequest>(irq_inport_handler_name.str().c_str(), i, *this);
-		(*irq_inport[i])(*irq_handler[i]);  
+		irq_slave_port_name << "irq_slave_port[" << i << "]";
+		irq_slave_port[i] = new sc_export<TlmSendIf<IntType> >(irq_slave_port_name.str().c_str());
+		irq_slave_port_handler_name << "irq_slave_port_handler[" << i << "]";
+		irq_handler[i] = new RequestPortIdentifier<InterruptRequest>(irq_slave_port_handler_name.str().c_str(), i, *this);
+		(*irq_slave_port[i])(*irq_handler[i]);  
 	}
 	
 	SC_THREAD(SDRAMClock);
@@ -98,7 +99,7 @@ template <class PHYSICAL_ADDR,
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 ~EPIC() {
 	for(unsigned int i = 0; i < inherited::NUM_IRQS; i++) {
-		delete irq_inport[i];
+		delete irq_slave_port[i];
 		delete irq_handler[i];
 	}
 }
@@ -118,62 +119,30 @@ Send(const PMsgType &message) {
 		{
 			if(inherited::logger_import)
 				(*inherited::logger_import) << DebugInfo
-																		<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
-																		<< "Read received at address 0x" << Hex << req->addr << Dec
-																		<< Endl << EndDebugInfo;
+					<< LOCATION
+					<< "Read received at address 0x" << Hex << req->addr << Dec
+					<< Endl << EndDebugInfo;
 			data = ReadRegister(req->addr, req->size);
 			PRspType rsp = new(rsp) RspType();
 			for(unsigned int i = 0; i < req->size; i ++) {
 				rsp->read_data[i] = (uint8_t)((data >> (i * 8)) & (uint32_t)0x0ff);
 			}
-			rsp->read_status = RspType::RS_SHARED;
 			message->rsp = rsp;
 			message->GetResponseEvent()->notify();
 			return true;
 		}
 		break;
 	case ReqType::WRITE:
-			if(inherited::logger_import)
-				(*inherited::logger_import) << DebugInfo
-																		<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
-																		<< "Write received at address 0x" << Hex << req->addr << Dec
-																		<< Endl << EndDebugInfo;
+		if(inherited::logger_import)
+			(*inherited::logger_import) << DebugInfo
+				<< LOCATION
+				<< "Write received at address 0x" << Hex << req->addr << Dec
+				<< Endl << EndDebugInfo;
 		for(unsigned int i = 0; i < req->size; i++) {
 			data = data + (((uint32_t)(req->write_data[i])) << (i * 8));
 		}
 		WriteRegister(req->addr, data, req->size);
 		return true;
-		break;
-	case ReqType::READX:
-	case ReqType::INV_BLOCK:
-	case ReqType::FLUSH_BLOCK:
-	case ReqType::ZERO_BLOCK:
-	case ReqType::INV_TLB:
-		if(inherited::logger_import) {
-			(*inherited::logger_import) << DebugError
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
-				<< "Received unknown command ";
-			switch(req->type) {
-			case ReqType::READX:
-				(*inherited::logger_import) << "READX";
-				break;
-			case ReqType::INV_BLOCK:
-				(*inherited::logger_import) << "INV_BLOCK";
-				break;
-			case ReqType::FLUSH_BLOCK:
-				(*inherited::logger_import) << "FLUSH_BLOCK";
-				break;
-			case ReqType::ZERO_BLOCK:
-				(*inherited::logger_import) << "ZERO_BLOCK";
-				break;
-			case ReqType::INV_TLB:
-				(*inherited::logger_import) << "INV_TLB";
-				break;
-			}
-			(*inherited::logger_import) << " (address = 0x"
-				<< Hex << req->addr << Dec
-				<< ")" << Endl << EndDebugError;
-		}
 		break;
 	}
 	return false;
@@ -185,7 +154,6 @@ template <class PHYSICAL_ADDR,
 bool 
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 Send(const PIntMsgType &message, unsigned int id) {
-	
 	if(message->req->level)
 		inherited::SetIRQ(id, message->req->serial_id);
 	else
@@ -207,10 +175,10 @@ SetINT() {
 	
 	message->req = irq;
 	
-	if(!int_outport->Send(message)) {
+	if(!irq_master_port->Send(message)) {
 		if(inherited::logger_import)
 			(*inherited::logger_import) << DebugError
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				<< LOCATION
 				<< "TODO: handle interrupt requests that could not be handled"
 				<< Endl << EndDebugError; 
 		else
@@ -238,10 +206,10 @@ UnsetINT() {
 	
 	message->req = irq;
 	
-	if(!int_outport->Send(message)) {
+	if(!irq_master_port->Send(message)) {
 		if(inherited::logger_import)
 			(*inherited::logger_import) << DebugError
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				<< LOCATION
 				<< "TODO: handle interrupt requests that could not be handled"
 				<< Endl << EndDebugError; 
 		else
@@ -269,10 +237,10 @@ SetSoftReset() {
 	
 	message->req = irq;
 	
-	if(!soft_reset_outport->Send(message)) {
+	if(!soft_reset_master_port->Send(message)) {
 		if(inherited::logger_import)
 			(*inherited::logger_import) << DebugError
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				<< LOCATION
 				<< "TODO: handle soft reset interrupt requests that could not be handled"
 				<< Endl << EndDebugError; 
 		else
@@ -300,10 +268,10 @@ UnsetSoftReset() {
 	
 	message->req = irq;
 	
-	if(!soft_reset_outport->Send(message)) {
+	if(!soft_reset_master_port->Send(message)) {
 		if(inherited::logger_import)
 			(*inherited::logger_import) << DebugError
-				<< Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+				<< LOCATION
 				<< "TODO: handle soft reset interrupt requests that could not be handled"
 				<< Endl << EndDebugError; 
 		else
@@ -317,16 +285,6 @@ UnsetSoftReset() {
 	}
 }
 
-//template <class PHYSICAL_ADDR,
-//	uint32_t MAX_TRANSACTION_DATA_SIZE,
-//	bool DEBUG>
-//void
-//EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
-//Notify(uint64_t sdram_cycles) {
-//	/* this method creates a thread that when the sdram cycles are out
-//	 *   calls the TimeSignal method of the epic functional implementation */
-//}
-
 template <class PHYSICAL_ADDR,
 	uint32_t MAX_TRANSACTION_DATA_SIZE,
 	bool DEBUG>
@@ -337,7 +295,7 @@ ActivateSDRAMClock() {
 	if(!sdram_clock_activated) {
 		/* TODO: fix this function to set the initial delay time to the difference
 		 *   between current time and the sdram(multiplied by eight) time */
-		sc_time sdram_time = sc_time((double)(sdram_inport * 8), SC_FS);
+		sc_time sdram_time = sc_time((double)(sdram_slave_port * 8), SC_FS);
 		sdram_clock_event.notify(sdram_time);
 		sdram_clock_activated = true;
 	}
@@ -372,7 +330,7 @@ SDRAMClock() {
 			activated = sdram_clock_activated;
 			sdram_clock_activated_mutex.unlock();
 			if(activated) {
-				sc_time time = sc_time((double)(sdram_inport * 8), SC_FS);
+				sc_time time = sc_time((double)(sdram_slave_port * 8), SC_FS);
 				uint64_t sdram_clock_cycles = 
 					(uint64_t)(sc_time_stamp() / time);
 				inherited::TimeSignal(sdram_clock_cycles * 8);
@@ -401,10 +359,13 @@ EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 TimeEvent() {
 }
 
+#undef LOCATION
+
 } // end of epic namespace
 } // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of tlm namespace	
+} // end of chipset namespace
+} // end of tlm namespace
+} // end of component namespace
 } // end of full_system namespace
 
-#endif /* __FS_TLM_CHIPSETS_MPC107_EPIC_HH__ */
+#endif // __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_EPIC_TCC__

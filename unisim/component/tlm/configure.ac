@@ -47,6 +47,7 @@ AC_CONFIG_FILES([Makefile])
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm-message, message)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm-debug, debug)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm-memory, memory)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm-chipset, chipset)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

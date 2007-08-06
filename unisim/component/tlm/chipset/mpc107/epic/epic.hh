@@ -32,49 +32,52 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FS_TLM_CHIPSETS_MPC107_EPIC_EPIC_HH__
-#define __FS_TLM_CHIPSETS_MPC107_EPIC_EPIC_HH__
+#ifndef __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_EPIC_HH__
+#define __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_EPIC_HH__
 
+#include <inttypes.h>
 #include <systemc.h>
-#include "tlm/tlm.hh"
-#include "utils/services/service.hh"
-#include "utils/garbage_collector/garbage_collector.hh"
-#include "tlm/interrupt/interrupt.hh"
-#include "tlm/shared_memory/snooping_bus/message.hh"
-#include "chipsets/mpc107/epic/epic.hh"
-#include "tlm/chipsets/mpc107/epic/timer.hh"
+#include "unisim/kernel/tlm/tlm.hh"
+#include "unisim/kernel/service/service.hh"
+#include "unisim/util/garbage_collector/garbage_collector.hh"
+#include "unisim/component/tlm/message/interrupt.hh"
+#include "unisim/component/tlm/message/memory.hh"
+#include "unisim/component/cxx/chipset/mpc107/epic/epic.hh"
+#include "unisim/component/tlm/chipset/mpc107/epic/timer.hh"
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace chipsets {
+namespace chipset {
 namespace mpc107 {
 namespace epic {
-	
-using full_system::tlm::TlmSendIf;
-using full_system::tlm::TlmMessage;
-using full_system::tlm::RequestPortIdentifier;
-using full_system::tlm::RequestPortIdentifierInterface;
-using full_system::utils::services::Object;
-using full_system::utils::services::Service;
-using full_system::utils::services::Client;
-using full_system::tlm::interrupt::InterruptRequest;
-using full_system::tlm::shared_memory::snooping_bus::Request;
-using full_system::tlm::shared_memory::snooping_bus::Response;
+
+using unisim::kernel::tlm::TlmSendIf;
+using unisim::kernel::tlm::TlmMessage;
+using unisim::kernel::tlm::RequestPortIdentifier;
+using unisim::kernel::tlm::RequestPortIdentifierInterface;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::util::garbage_collector::Pointer;
+using unisim::component::tlm::message::InterruptRequest;
+using unisim::component::tlm::message::MemoryRequest;
+using unisim::component::tlm::message::MemoryResponse;
 
 template <class PHYSICAL_ADDR, 
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
 		bool DEBUG = false>
 class EPIC :
 	public sc_module,
-	public TlmSendIf<Request<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, 
-					 Response<MAX_TRANSACTION_DATA_SIZE> >,
+	public TlmSendIf<MemoryRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, 
+					 MemoryResponse<MAX_TRANSACTION_DATA_SIZE> >,
 	public RequestPortIdentifierInterface<InterruptRequest>,
-	public full_system::chipsets::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>,
+	public unisim::component::cxx::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>,
 	public Timer {
 private:
-	typedef Request<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE> ReqType;
+	typedef MemoryRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE> ReqType;
 	typedef Pointer<ReqType> PReqType;
-	typedef Response<MAX_TRANSACTION_DATA_SIZE> RspType;
+	typedef MemoryResponse<MAX_TRANSACTION_DATA_SIZE> RspType;
 	typedef Pointer<RspType> PRspType;
 	typedef TlmMessage<ReqType, RspType> MsgType;
 	typedef Pointer<MsgType> PMsgType;
@@ -84,21 +87,21 @@ private:
 	typedef TlmMessage<IntType> IntMsgType;
 	typedef Pointer<IntMsgType> PIntMsgType; 
 
-	typedef full_system::chipsets::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG> inherited;
+	typedef unisim::component::cxx::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG> inherited;
 public:
 	SC_HAS_PROCESS(EPIC);
 	
 	/* Module ports declaration */
 	/** Input port for incomming requests from the mpc107 bus */
-	sc_export<TlmSendIf<ReqType, RspType> > req_inport;
+	sc_export<TlmSendIf<ReqType, RspType> > slave_port;
 	/** Input port for the incomming interruptions */
-	sc_export<TlmSendIf<IntType> > *irq_inport[inherited::NUM_IRQS];
+	sc_export<TlmSendIf<IntType> > *irq_slave_port[inherited::NUM_IRQS];
 	/* output port for the outgoing interruptions */
-	sc_port<TlmSendIf<IntType> > int_outport;
+	sc_port<TlmSendIf<IntType> > irq_master_port;
 	/* output port for the soft reset interruption */
-	sc_port<TlmSendIf<IntType> > soft_reset_outport;
+	sc_port<TlmSendIf<IntType> > soft_reset_master_port;
 	/* input port for the sdram time signal */
-	sc_in<uint64_t> sdram_inport;
+	sc_in<uint64_t> sdram_slave_port;
 
 	EPIC(const sc_module_name &name, Object *parent = 0);
 	virtual ~EPIC();
@@ -133,8 +136,9 @@ private:
 	
 } // end of epic namespace
 } // end of mpc107 namespace	
-} // end of chipsets namespace
-} // end of tlm namespace	
+} // end of chipset namespace
+} // end of tlm namespace
+} // end of component namespace
 } // end of full_system namespace
 
-#endif /* __FS_TLM_CHIPSETS_MPC107_EPIC_HH__ */
+#endif // __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_EPIC_EPIC_HH__

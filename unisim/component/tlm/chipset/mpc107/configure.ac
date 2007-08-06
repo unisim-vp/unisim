@@ -33,8 +33,11 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM C++ EPIC MPC107 Chipset Library], [1.0])
+AC_INIT([UNISIM TLM MPC107 Chipset Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
@@ -47,16 +50,20 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR C HEADERS ####################################################
-AC_CHECK_HEADERS([inttypes.h],,\
-    AC_MSG_ERROR([Some standard C headers are missing.]))
+# AC_CHECK_HEADERS([inttypes.h],,\
+#    AC_MSG_ERROR([Some standard C headers are missing.]))
 
 ###### CHECK FOR C++ HEADERS ##################################################
-AC_CHECK_HEADERS([string],,\
-    AC_MSG_ERROR([Some standard C++ headers are missing.]))
+# AC_CHECK_HEADERS([string],,\
+#     AC_MSG_ERROR([Some standard C++ headers are missing.]))
+
+# UNISIM_CHECK_SYSTEMC
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
+
+AC_CONFIG_SUBDIRS([epic])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
