@@ -50,14 +50,14 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR C HEADERS ####################################################
-# AC_CHECK_HEADERS([inttypes.h],,\
-#    AC_MSG_ERROR([Some standard C headers are missing.]))
+AC_CHECK_HEADERS([inttypes.h],,\
+   AC_MSG_ERROR([Some standard C headers are missing.]))
 
 ###### CHECK FOR C++ HEADERS ##################################################
-# AC_CHECK_HEADERS([string],,\
-#     AC_MSG_ERROR([Some standard C++ headers are missing.]))
+AC_CHECK_HEADERS([list sstream],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
-# UNISIM_CHECK_SYSTEMC
+UNISIM_CHECK_SYSTEMC
 
 # files to generate
 #   this should include all the makefiles to generate

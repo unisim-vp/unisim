@@ -104,7 +104,7 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 	{
 		os << ",write_data=";
 		uint32_t i;
-		for(i = 0; i < req.size && i < MAX_SIZE; i++)
+		for(i = 0; i < req.size; i++)
 		{
 			os << (unsigned int) req.write_data[i];
 			if(i < req.size - 1) os << ",";
@@ -115,7 +115,7 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 }
 
 template <uint32_t MAX_SIZE>
-full_system::plugins::logger::LoggerInterface& operator << (full_system::plugins::logger::LoggerInterface& os, 
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
 		const PCIResponse<MAX_SIZE>& rsp) {
 	using unisim::service::interfaces::operator<<;
 	using unisim::service::interfaces::Hex;
@@ -155,28 +155,28 @@ public:
 		using unisim::service::interfaces::Dec;
 		
 		os << Hex << "PCI-REQ(space=";
-		switch(req.space)
+		switch(req->space)
 		{
 			case unisim::component::cxx::pci::SP_IO: os << "I/O"; break;
 			case unisim::component::cxx::pci::SP_MEM: os << "MEM"; break;
 			case unisim::component::cxx::pci::SP_CONFIG: os << "CONFIG"; break;
 		}
 		os << ",type=";
-		switch(req.type)
+		switch(req->type)
 		{
 			case unisim::component::cxx::pci::TT_READ: os << "READ"; break;
 			case unisim::component::cxx::pci::TT_WRITE: os << "WRITE"; break;
 		}
 		os << ",addr=";
-		os << "0x" << req.addr;
+		os << "0x" << req->addr;
 		if(req.type == unisim::component::cxx::pci::TT_WRITE)
 		{
 			os << ",write_data=";
 			uint32_t i;
-			for(i = 0; i < req.size && i < MAX_SIZE; i++)
+			for(i = 0; i < req->size; i++)
 			{
-				os << (unsigned int) req.write_data[i];
-				if(i < req.size - 1) os << ",";
+				os << (unsigned int) req->write_data[i];
+				if(i < req->size - 1) os << ",";
 			}
 		}
 	 	os << ")" << Dec;
@@ -204,7 +204,7 @@ public:
 		for(i = 0; i < req->size; i++)
 		{
 			os << (unsigned int) rsp.read_data[i];
-			if(i < MAX_SIZE - 1) os << ",";
+			if(i < req->size - 1) os << ",";
 		}
 	 	os << ")" << Dec;
 		return os;

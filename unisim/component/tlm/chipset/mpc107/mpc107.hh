@@ -32,10 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FULLSYSTEM_CHIPSETS_MPC107_MPC107_HH__
-#define __FULLSYSTEM_CHIPSETS_MPC107_MPC107_HH__
-
-//#define DEBUG_MEMORY
+#ifndef __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_MPC107_HH__
+#define __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_MPC107_HH__
 
 /*
  * ---------> systemc connections
@@ -75,59 +73,60 @@
  */
  
 #include <systemc.h>
-#include "tlm/tlm.hh"
-#include "tlm/shared_memory/snooping_bus/message.hh"
-#include "tlm/pci/message.hh"
-#include "utils/services/service.hh"
-#include "utils/garbage_collector/garbage_collector.hh"
-#include "memories/memory_interface.hh"
-#include "pci/pci_interface.hh"
-#include "generic/bus/bus_interface.hh"
-#include "chipsets/mpc107/address_maps.hh"
-#include "chipsets/mpc107/address_map_entry.hh"
-#include "chipsets/mpc107/config_regs.hh"
-#include "chipsets/mpc107/pci_controller.hh"
-#include "chipsets/mpc107/dma/dma.hh"
-#include "chipsets/mpc107/dma/dma_client_interface.hh"
-#include "tlm/chipsets/mpc107/epic/epic.hh"
-#include "tlm/interrupt/interrupt.hh"
-#include "plugins/logger/logger_interface.hh"
+#include "unisim/kernel/tlm/tlm.hh"
+#include "unisim/kernel/service/service.hh"
+#include "unisim/util/garbage_collector/garbage_collector.hh"
+#include "unisim/component/tlm/message/snooping_fsb.hh"
+#include "unisim/component/tlm/message/memory.hh"
+#include "unisim/component/tlm/message/pci.hh"
+#include "unisim/component/tlm/message/interrupt.hh"
+#include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/pci_device.hh"
+#include "unisim/service/interfaces/logger.hh"
+#include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
+#include "unisim/component/cxx/chipset/mpc107/address_map_entry.hh"
+#include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
+#include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
+#include "unisim/component/cxx/chipset/mpc107/dma/dma.hh"
+#include "unisim/component/cxx/chipset/mpc107/dma/dma_client_interface.hh"
+#include "unisim/component/tlm/chipset/mpc107/epic/epic.hh"
 #include <list>
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace chipsets {
+namespace chipset {
 namespace mpc107 {
 	
-using namespace std;
-using full_system::tlm::TlmSendIf;
-using full_system::tlm::TlmMessage;
-using full_system::tlm::ResponseListener;
-using full_system::tlm::shared_memory::snooping_bus::Request;
-using full_system::tlm::shared_memory::snooping_bus::Response;
-//using full_system::tlm::shared_memory::snooping_bus::BusRequest;
-//using full_system::tlm::shared_memory::snooping_bus::BusGrant;
-using full_system::tlm::pci::PCIRequest;
-using full_system::tlm::pci::PCIResponse;
-using full_system::utils::services::Object;
-using full_system::utils::services::Service;
-using full_system::utils::services::Client;
-using full_system::utils::services::Parameter;
-using full_system::utils::garbage_collector::Pointer;
-using full_system::utils::services::ServiceExport;
-using full_system::utils::services::ServiceImport;
-using full_system::memories::MemoryInterface;
-using full_system::pci::PCIInterface;
-using full_system::chipsets::mpc107::AddressMap;
-using full_system::chipsets::mpc107::AddressMapEntry;
-using full_system::chipsets::mpc107::PCIController;
-using full_system::chipsets::mpc107::ConfigurationRegister;
-using full_system::chipsets::mpc107::ConfigurationRegisters;
-using full_system::chipsets::mpc107::dma::DMA;
-using full_system::chipsets::mpc107::dma::DMAClientInterface;
-using full_system::tlm::chipsets::mpc107::epic::EPIC;
-using full_system::tlm::interrupt::InterruptRequest;
-using namespace full_system::plugins::logger;
+using std::list;
+using unisim::kernel::tlm::TlmSendIf;
+using unisim::kernel::tlm::TlmMessage;
+using unisim::kernel::tlm::ResponseListener;
+using unisim::kernel::tlm::AdvancedResponseListener;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
+using unisim::util::garbage_collector::Pointer;
+using unisim::component::tlm::message::SnoopingFSBRequest;
+using unisim::component::tlm::message::SnoopingFSBResponse;
+using unisim::component::tlm::message::MemoryRequest;
+using unisim::component::tlm::message::MemoryResponse;
+using unisim::component::tlm::message::PCIRequest;
+using unisim::component::tlm::message::PCIResponse;
+using unisim::component::tlm::message::InterruptRequest;
+using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::PCIDevice;
+using unisim::component::cxx::chipset::mpc107::AddressMap;
+using unisim::component::cxx::chipset::mpc107::AddressMapEntry;
+using unisim::component::cxx::chipset::mpc107::PCIController;
+using unisim::component::cxx::chipset::mpc107::ConfigurationRegister;
+using unisim::component::cxx::chipset::mpc107::ConfigurationRegisters;
+using unisim::component::cxx::chipset::mpc107::dma::DMA;
+using unisim::component::cxx::chipset::mpc107::dma::DMAClientInterface;
+using unisim::component::tlm::chipset::mpc107::epic::EPIC;
+using unisim::service::interfaces::Logger;
 		
 template <class PHYSICAL_ADDR, 
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
@@ -136,28 +135,36 @@ template <class PHYSICAL_ADDR,
 		bool DEBUG = false>
 class MPC107 :
 	public sc_module,
-	public TlmSendIf<Request<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, 
-					 Response<MAX_TRANSACTION_DATA_SIZE> >,
+	public TlmSendIf<SnoopingFSBRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, 
+					 SnoopingFSBResponse<MAX_TRANSACTION_DATA_SIZE> >,
 	public TlmSendIf<PCIRequest<PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE>,
 					PCIResponse<MAX_PCI_TRANSACTION_DATA_SIZE> >,
-	public AdvancedResponseListener<Request<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>,
-							Response<MAX_TRANSACTION_DATA_SIZE>,
+	public AdvancedResponseListener<MemoryRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>,
+							MemoryResponse<MAX_TRANSACTION_DATA_SIZE>,
 							PCIRequest<PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE>,
 							PCIResponse<MAX_PCI_TRANSACTION_DATA_SIZE> >,
+	public AdvancedResponseListener<MemoryRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>,
+							MemoryResponse<MAX_TRANSACTION_DATA_SIZE>,
+							SnoopingFSBRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>,
+							SnoopingFSBResponse<MAX_TRANSACTION_DATA_SIZE> >,
 	public DMAClientInterface<PHYSICAL_ADDR>,
-//	public DMA<PHYSICAL_ADDR, DEBUG>,
-	public Service<MemoryInterface<PHYSICAL_ADDR> >,
-	public Client<MemoryInterface<PHYSICAL_ADDR> >,
-	public Client<PCIInterface<PCI_ADDR> >,
-	public Client<LoggerInterface> {
-//	public Client<DeviceInterface<PHYSICAL_ADDR> > {
+	public Service<Memory<PHYSICAL_ADDR> >,
+	public Client<Memory<PHYSICAL_ADDR> >,
+	public Client<PCIDevice<PCI_ADDR> >,
+	public Client<Logger> {
 private:
-	typedef Request<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE> ReqType;
+	typedef SnoopingFSBRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE> ReqType;
 	typedef Pointer<ReqType> PReqType;
-	typedef Response<MAX_TRANSACTION_DATA_SIZE> RspType;
+	typedef SnoopingFSBResponse<MAX_TRANSACTION_DATA_SIZE> RspType;
 	typedef Pointer<RspType> PRspType;
 	typedef TlmMessage<ReqType, RspType> MsgType;
 	typedef Pointer<MsgType> PMsgType;
+	typedef MemoryRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE> MemReqType;
+	typedef Pointer<MemReqType> PMemReqType;
+	typedef MemoryResponse<MAX_TRANSACTION_DATA_SIZE> MemRspType;
+	typedef Pointer<MemRspType> PMemRspType;
+	typedef TlmMessage<MemReqType, MemRspType> MemMsgType;
+	typedef Pointer<MemMsgType> PMemMsgType;
 	typedef PCIRequest<PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE> PCIReqType;
 	typedef Pointer<PCIReqType> PPCIReqType;
 	typedef PCIResponse<MAX_PCI_TRANSACTION_DATA_SIZE> PCIRspType;
@@ -165,54 +172,50 @@ private:
 	typedef TlmMessage<PCIReqType, PCIRspType> PCIMsgType;
 	typedef Pointer<PCIMsgType> PPCIMsgType;
 
-	typedef InterruptRequest IntType;
-	typedef Pointer<InterruptRequest> PIntType;
+	typedef InterruptRequest IRQType;
+	typedef Pointer<IRQType> PIRQType;
 public:
 	SC_HAS_PROCESS(MPC107);
 
 	/* Module ports declaration */
 	/** Input port for incomming requests from the system bus */
-	sc_export<TlmSendIf<ReqType, RspType> > bus_inport;
-//	/** 
-//	 * Output request port to request system bus usage 
-//	 * (needed to inform processors of pci requests to the memory) */
-//	sc_port<TlmSendIf<BusRequest, BusGrant> > br_outport;
+	sc_export<TlmSendIf<ReqType, RspType> > slave_port;
 	/** 
 	 * Output port to send transactions to the system bus 
 	 * (needed to inform of pci requests to the memory) */
-	sc_port<TlmSendIf<ReqType, RspType> > bus_outport;
+	sc_port<TlmSendIf<ReqType, RspType> > master_port;
 	/** Input port to listen for pci requests */ 
-	sc_export<TlmSendIf<PCIReqType, PCIRspType> > slave_pci_port;
+	sc_export<TlmSendIf<PCIReqType, PCIRspType> > pci_slave_port;
 	/** Output port to send memory requests to the ram */
-	sc_port<TlmSendIf<ReqType, RspType> > ram_port;
+	sc_port<TlmSendIf<MemReqType, MemRspType> > ram_master_port;
 	/** Output port to send memory requests to the rom */
-	sc_port<TlmSendIf<ReqType, RspType> > rom_port;
+	sc_port<TlmSendIf<MemReqType, MemRspType> > rom_master_port;
 	/** Output port to send memory requests to the extended ram */
-	sc_port<TlmSendIf<ReqType, RspType> > erom_port;
+	sc_port<TlmSendIf<MemReqType, MemRspType> > erom_master_port;
 	/** Output port to send pci requests to devices (probably through a bus) */
-	sc_port<TlmSendIf<PCIReqType, PCIRspType> > pci_port;
+	sc_port<TlmSendIf<PCIReqType, PCIRspType> > pci_master_port;
 	/** Input port for the incomming interruptions
 	 * (to be directly attached to the EPIC) */
-	sc_export<TlmSendIf<IntType> > *irq_inport[full_system::tlm::chipsets::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>::NUM_IRQS];
+	sc_export<TlmSendIf<IRQType> > *irq_slave_port[unisim::component::tlm::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>::NUM_IRQS];
 	/** output port for the outgoing interruptions 
 	 * (to be directly attached to the EPIC) */
-	sc_port<TlmSendIf<IntType> > int_outport;
+	sc_port<TlmSendIf<IRQType> > irq_master_port;
 	/** output port for the outgoing soft reset interruption
 	 * (to be directly attached to the EPIC) */
-	sc_port<TlmSendIf<IntType> > soft_reset_outport;
+	sc_port<TlmSendIf<IRQType> > soft_reset_master_port;
 		
 	/* Service/client exports/imports declaration */
-	ServiceExport<MemoryInterface<PHYSICAL_ADDR> > memory_export;
-	ServiceImport<MemoryInterface<PHYSICAL_ADDR> > ram_import;
-	ServiceImport<MemoryInterface<PHYSICAL_ADDR> > rom_import;
-	ServiceImport<MemoryInterface<PHYSICAL_ADDR> > erom_import;
-	ServiceImport<PCIInterface<PCI_ADDR> > pci_import;
+	ServiceExport<Memory<PHYSICAL_ADDR> > memory_export;
+	ServiceImport<Memory<PHYSICAL_ADDR> > ram_import;
+	ServiceImport<Memory<PHYSICAL_ADDR> > rom_import;
+	ServiceImport<Memory<PHYSICAL_ADDR> > erom_import;
+	ServiceImport<PCIDevice<PCI_ADDR> > pci_import;
 	/* logger service */
-	ServiceImport<LoggerInterface> logger_import;
-	ServiceImport<LoggerInterface> pci_logger_import;
-	ServiceImport<LoggerInterface> addr_map_logger_import;
-	ServiceImport<LoggerInterface> epic_logger_import;
-	ServiceImport<LoggerInterface> epic_reg_logger_import;
+	ServiceImport<Logger> logger_import;
+	ServiceImport<Logger> pci_logger_import;
+	ServiceImport<Logger> addr_map_logger_import;
+	ServiceImport<Logger> epic_logger_import;
+	ServiceImport<Logger> epic_reg_logger_import;
 		
 	MPC107(const sc_module_name &name, Object *parent = 0);
 	virtual ~MPC107();
@@ -231,20 +234,35 @@ public:
 	virtual bool Send(const PPCIMsgType &message);
 	
 	/**
-	 * Method required by ResponseListener.
+	 * Method required by ResponseListener for memory requests comming from the PCI bus.
 	 * Called each time a request using the ResponseListener Send method receives a response. In this
 	 *   case is for requests comming through the PCI bus that must be send to the memory system. 
 	 * 
 	 * @param msg the message to send
 	 * @param port the port which should be used to send the message
 	 * @param orig_pci_msg the original pci message
-	 * @param who_pci_port the port which received the original pci message
+	 * @param who_pci_master_port the port which received the original message
 	 */
-	void ResponseReceived(const PMsgType &msg, 
-						sc_port<TlmSendIf<ReqType, RspType> > &port,
+	void ResponseReceived(const PMemMsgType &msg, 
+						sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
 						const PPCIMsgType &orig_pci_msg,
-						sc_export<TlmSendIf<PCIReqType, PCIRspType> > &who_pci_port);
-	
+						sc_export<TlmSendIf<PCIReqType, PCIRspType> > &who_pci_master_port);
+
+	/**
+	 * Method required by ResponseListener of memory requests comming from the FSB bus.
+	 * Called each time a request using the ResponseListener Send method receives a response. In this
+	 *   case is for requests comming through the FSB bus that must be send to the memory system. 
+	 * 
+	 * @param msg the message to send
+	 * @param port the port which should be used to send the message
+	 * @param orig_fsb_msg the original pci message
+	 * @param who_fsb_master_port the port which received the original message
+	 */
+	void ResponseReceived(const PMemMsgType &msg, 
+						sc_port<TlmSendIf<MemReqType, MemRspType> > &port,
+						const PMsgType &orig_fsb_msg,
+						sc_export<TlmSendIf<ReqType, RspType> > &who_fsb_master_port);
+
 	/* Methods required by the DMA controller to handle PCI and local memory space accesses */
 	virtual void DMARead(PHYSICAL_ADDR addr,
 		unsigned int size,
@@ -293,11 +311,11 @@ private:
 	/** 
 	 * Output port to send transactions to the EPIC 
 	 * (this is a private, not visible port ) */
-	sc_port<TlmSendIf<ReqType, RspType> > epic_outport;
+	sc_port<TlmSendIf<MemReqType, MemRspType> > epic_master_port;
 	/**
 	 * Output port to notify the sdram clock (the sdram cycle time) 
 	 *   to internal components, i.e., EPIC */
-	sc_out<uint64_t> sdram_outport;
+	sc_out<uint64_t> sdram_master_port;
 	/**
 	 * Signal to connect the sdram_outport to the EPIC sdram_inport
 	 */
@@ -352,6 +370,31 @@ private:
 	Parameter<unsigned int> param_frequency;
 	Parameter<uint64_t> param_sdram_cycle_time;
 	
+	/**
+	 * Translates a pci message to a fsb message.
+	 * 
+	 * @param pci_msg the pci message to translate.
+	 * 
+	 * @return the translated fsb message.
+	 */ 
+	PMsgType ConverttoFSBMsg(const PPCIMsgType &pci_msg);
+	/**
+	 * Translates a pci message to a memory message.
+	 * 
+	 * @param pci_msg the pci message to translate.
+	 * 
+	 * @return the translated memory message.
+	 */ 
+	PMemMsgType ConverttoMemMsg(const PPCIMsgType &pci_msg);
+	/**
+	 * Translates a fsb message to a memory message.
+	 * 
+	 * @param pci_msg the fsb message to translate.
+	 * 
+	 * @return the translated memory message.
+	 */ 
+	PMemMsgType ConverttoMemMsg(const PMsgType &fsb_msg);
+	
 	/** 
  	 * This method simply queues messages coming from PCI to be send to the memory system. 
 	 *   It notifies the dispatcher if necessary.
@@ -361,12 +404,23 @@ private:
 	 * 
 	 * @return true on succes, false otherwise
 	 */
-	bool SendPCItoMemory(const PPCIMsgType &pci_msg, sc_port<TlmSendIf<ReqType, RspType> > &out_port);
+	bool SendPCItoMemory(const PPCIMsgType &pci_msg, sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port);
+
+	/** 
+ 	 * This method simply queues messages coming from FSB to be send to the memory system. 
+	 *   It notifies the dispatcher if necessary.
+ 	 * 
+	 * @param fsb_msg   the pci message to send
+	 * @param out_port  the memory port that should be used
+	 * 
+	 * @return true on succes, false otherwise
+	 */
+	bool SendFSBtoMemory(const PMsgType &fsb_msg, sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port);
 
 	class PCItoMemoryReqType {
 	public:
 		PPCIMsgType pci_msg;
-		sc_port<TlmSendIf<ReqType, RspType> > *out_port;
+		sc_port<TlmSendIf<MemReqType, MemRspType> > *out_port;
 	};
 	/** list of pci requests to send to the memory system */
 	list<PCItoMemoryReqType *> pci_req_list;
@@ -396,11 +450,10 @@ private:
 	void DEBUG_PCI_REQ(const PPCIReqType &req);
 };
 
-} // end of namespace mpc107
-} // end of namespace chipset
+} // end of namespace unisim
+} // end of namespace component
 } // end of namespace tlm
-} // end of namespace full_system
+} // end of namespace chipset
+} // end of namespace mpc107
 
-//#undef DEBUG_MEMORY
-
-#endif // __FULLSYSTEM_CHIPSETS_MPC107_MPC107_HH__
+#endif // __UNISIM_COMPONENT_TLM_CHIPSET_MPC107_MPC107_HH__

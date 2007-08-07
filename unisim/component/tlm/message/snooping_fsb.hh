@@ -38,7 +38,7 @@
 
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
-#include "utils/garbage_collector/garbage_collector.hh"
+#include "unisim/component/tlm/debug/transaction_spy.hh"
 #include <inttypes.h>
 
 namespace unisim {

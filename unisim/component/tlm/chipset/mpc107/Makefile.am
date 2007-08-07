@@ -1,13 +1,22 @@
-DIST_SUBDIRS = epic
-SUBDIRS = epic
+INCLUDES=-I$(top_srcdir)/../../../../..
+libdir= $(prefix)/lib/unisim/component/tlm/chipset/mpc107
+includedir = $(prefix)/include/unisim/component/tlm/chipset/mpc107
 
-# includedir = $(prefix)/include/tlm/chipsets/mpc107
-# include_HEADERS = mpc107.hh mpc107.tpp
+SUBDIRS=epic
+INCLUDE_SUBDIRS=epic
 
-
-# INCLUDES = -I$(top_srcdir)/src
-# libdir = $(prefix)/lib/tlm/chipsets/mpc107
-
-# lib_LIBRARIES = libmpc107.a
-# libmpc107_a_SOURCES = mpc107.cpp mpc107_debug.cpp
-# libmpc107_a_CXXFLAGS = -finline-functions -DSC_INCLUDE_DYNAMIC_PROCESSES
+lib_LIBRARIES = libmpc107.a
+libmpc107_a_SOURCES = \
+	mpc107.cc mpc107_debug.cc
+libmpc107_a_CXXFLAGS = -DSC_INCLUDE_DYNAMIC_PROCESSES
+	
+include_HEADERS = \
+	mpc107.hh mpc107.tcc
+		
+install-exec-hook: $(libdir)/libmpc107.a
+	rm -f $(prefix)/lib/libunisim_component_tlm_chipset_mpc107.a
+	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_tlm_chipset_mpc107.a)
+uninstall-hook:
+	rm -f $(prefix)/lib/libunisim_component_tlm_chipset_mpc107.a
+	(rmdir $(libdir) || true)
+	(rmdir $(includedir) || true)

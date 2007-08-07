@@ -32,13 +32,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "tlm/chipsets/mpc107/mpc107.hh"
-#include "tlm/chipsets/mpc107/mpc107.tpp"
+#include "unisim/component/tlm/chipset/mpc107/mpc107.hh"
+#include "unisim/component/tlm/chipset/mpc107/mpc107.tcc"
 #include <inttypes.h>
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace chipsets {
+namespace chipset {
 namespace mpc107 {
 
 template 
@@ -53,4 +54,5 @@ class MPC107<uint64_t, 32, uint64_t, 32, true>;
 } // end of namespace mpc107
 } // end of namespace chipset
 } // end of namespace tlm
-} // end of namespace full_system
+} // end of namespcae component
+} // end of namespace unisim
