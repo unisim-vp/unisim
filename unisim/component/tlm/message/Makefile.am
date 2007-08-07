@@ -9,7 +9,9 @@ libmessage_a_SOURCES = \
 		
 include_HEADERS = \
 	memory.hh \
-	interrupt.hh
+	interrupt.hh \
+	pci.hh \
+	snooping_fsb.hh
 
 install-exec-hook: $(libdir)/libmessage.a
 	rm -f $(prefix)/lib/libunisim_component_tlm_message.a
