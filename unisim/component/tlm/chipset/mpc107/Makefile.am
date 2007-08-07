@@ -7,7 +7,10 @@ INCLUDE_SUBDIRS=epic
 
 lib_LIBRARIES = libmpc107.a
 libmpc107_a_SOURCES = \
-	mpc107.cc mpc107_debug.cc
+	mpc107_fsb32_pci32.cc mpc107_fsb32_pci32_debug.cc \
+	mpc107_fsb32_pci64.cc mpc107_fsb32_pci64_debug.cc \
+	mpc107_fsb64_pci32.cc mpc107_fsb64_pci32_debug.cc \
+	mpc107_fsb64_pci64.cc mpc107_fsb64_pci64_debug.cc
 libmpc107_a_CXXFLAGS = -DSC_INCLUDE_DYNAMIC_PROCESSES
 	
 include_HEADERS = \

@@ -43,7 +43,7 @@ namespace chipset {
 namespace mpc107 {
 
 template 
-class MPC107<uint32_t, 32, uint64_t, 32, false>;
+class MPC107<uint64_t, 32, uint64_t, 32, true>;
 	
 } // end of namespace mpc107
 } // end of namespace chipset
