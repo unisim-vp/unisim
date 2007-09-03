@@ -32,33 +32,30 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FULLSYSTEM_TLM_SHAREDMEMORY_SIMPLEBUS_MESSAGE_HH__
-#define __FULLSYSTEM_TLM_SHAREDMEMORY_SIMPLEBUS_MESSAGE_HH__
+#ifndef __UNISIM_COMPONENT_TLM_MESSAGE_SIMPLEFSB_HH__
+#define __UNISIM_COMPONENT_TLM_MESSAGE_SIMPLEFSB_HH__
 
+#include "unisim/service/interfaces/logger.hh"
+#include "unisim/util/garbage_collector/garbage_collector.hh"
+#include "unisim/component/tlm/debug/transaction_spy.hh"
 #include <inttypes.h>
-#include "utils/garbage_collector/garbage_collector.hh"
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace shared_memory {
-namespace simple_bus {
+namespace message {
 
-using full_system::utils::garbage_collector::Pointer;
+template <class ADDRESS, unsigned int DATA_SIZE>
+class SimpleFSBRequest;
+template <unsigned int DATA_SIZE>
+class SimpleFSBResponse;
+template <class ADDRESS, unsigned int DATA_SIZE>
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SimpleFSBRequest<ADDRESS, DATA_SIZE>& req);
+template <unsigned int DATA_SIZE>
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SimpleFSBResponse<DATA_SIZE>& rsp);
 
-class BusRequest
-{
-private:
-	bool req;
-};
-
-class BusGrant
-{
-public:
-	bool grant;
-};
-
-class Request<class ADDRESS_TYPE>
-{
+template <class ADDRESS, unsigned int DATA_SIZE>
+class SimpleFSBRequest {
 public:
 	enum Type {
 		READ,         // Read request
@@ -66,20 +63,143 @@ public:
 	};
 	
 	Type type;       // Request type
-	ADDRESS_TYPE addr;    // Address
+	ADDRESS addr;    // Address
 	unsigned int size;              // Size of bus transfer (<= DATA_SIZE)
-	Pointer<uint8_t> write_data;   // Data to write into memory
+	uint8_t write_data[DATA_SIZE];  // Data to write into memory
+
+	friend unisim::service::interfaces::Logger& operator << <ADDRESS, DATA_SIZE>(unisim::service::interfaces::Logger& os,
+			const SimpleFSBRequest<ADDRESS, DATA_SIZE>& req);
 };
 
-class Response
-{
+template <unsigned int DATA_SIZE>
+class SimpleFSBResponse {
 public:
-	Pointer<uint8_t> read_data; // Data read from memory/target processor caches
+	uint8_t read_data[DATA_SIZE]; // Data read from memory/target processor caches
+
+	friend unisim::service::interfaces::Logger& operator << <DATA_SIZE>(unisim::service::interfaces::Logger& os, 
+			const SimpleFSBResponse<DATA_SIZE>& rsp);
 };
 
-} // end of namespace simple_bus
-} // end of namespace shared_memory
-} // end of namespace tlm
-} // end of namespace full_system
+template <class ADDRESS, unsigned int DATA_SIZE>
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
+		const SimpleFSBRequest<ADDRESS, DATA_SIZE>& req) {
+	using unisim::service::interfaces::operator<<;
+	using unisim::service::interfaces::Endl;
+	using unisim::service::interfaces::Hex;
+	using unisim::service::interfaces::Dec;
+	
+	typedef SimpleFSBRequest<ADDRESS, DATA_SIZE> ReqType;
+	
+	os << "- type = ";
+	switch(req.type) {
+	case ReqType::READ:
+		os << "READ";
+		break;
+	case ReqType::WRITE:
+		os << "WRITE";
+		break;
+	}
+	os << Endl;
+	os << "- address = 0x" << Hex << req.addr << Dec << Endl;
+	os << "- size = " << req.size;
+	if(req.type == ReqType::WRITE) {
+		os << Endl;
+		os << "- write_data(hex) =" << Hex;
+		for(unsigned int i = 0; i < req.size; i++) {
+			os << " " << (unsigned int)req.write_data[i];
+		}
+		os << Dec;
+	}
+	return os;
+}
 
-#endif /* __FULLSYSTEM_TLM_SHAREDMEMORY_SIMPLEBUS_MESSAGE_HH__ */
+template <unsigned int DATA_SIZE>
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
+		const SimpleFSBResponse<DATA_SIZE>& rsp) {
+	using unisim::service::interfaces::operator<<;
+	using unisim::service::interfaces::Endl;
+	using unisim::service::interfaces::Hex;
+	using unisim::service::interfaces::Dec;
+	
+	typedef SimpleFSBResponse<DATA_SIZE> RspType;
+	
+	os << "- read_data(hex) =" << Hex;
+	for(unsigned int i = 0; i < DATA_SIZE; i++) {
+		os << " " << (unsigned int)rsp.read_data[i];
+	}
+	os << Dec;
+	return os;
+}
+
+} // end of namespace message
+} // end of namespace tlm
+} // end of namespace component
+} // end of namespace unisim
+
+namespace unisim {
+namespace component {
+namespace tlm {
+namespace debug {
+
+template<class ADDRESS, unsigned int DATA_SIZE>
+class RequestSpy<unisim::component::tlm::message::SimpleFSBRequest<ADDRESS, DATA_SIZE> > {
+private:
+	typedef unisim::component::tlm::message::SimpleFSBRequest<ADDRESS, DATA_SIZE> ReqType;
+	typedef unisim::util::garbage_collector::Pointer<ReqType> PReqType;
+
+public:
+	void Dump(unisim::service::interfaces::Logger &os, PReqType &req) {
+		using unisim::service::interfaces::operator<<;
+		using unisim::service::interfaces::Hex;
+		using unisim::service::interfaces::Dec;
+		using unisim::service::interfaces::Endl;
+
+		os << "- type = ";
+		switch(req->type) {
+		case ReqType::READ:
+			os << "READ";
+			break;
+		case ReqType::WRITE:
+			os << "WRITE";
+			break;
+		}
+		os << Endl;
+		os << "- address = 0x" << Hex << req->addr << Dec << Endl;
+		os << "- size = " << req->size;
+		if(req->type == ReqType::WRITE) {
+			os << Endl;
+			os << "- write_data(hex) =" << Hex;
+			for(unsigned int i = 0; i < req->size; i++) {
+				os << " " << (unsigned int)req->write_data[i];
+			}
+			os << Dec;
+		}
+	}
+};
+
+template <class ADDRESS, unsigned int DATA_SIZE>
+class ResponseSpy<unisim::component::tlm::message::SimpleFSBResponse<DATA_SIZE>, 
+	unisim::component::tlm::message::SimpleFSBRequest<ADDRESS, DATA_SIZE> > {
+private:
+	typedef unisim::component::tlm::message::SimpleFSBRequest<ADDRESS, DATA_SIZE> ReqType;
+	typedef unisim::component::tlm::message::SimpleFSBResponse<DATA_SIZE> RspType;
+	typedef unisim::util::garbage_collector::Pointer<ReqType> PReqType;
+	typedef unisim::util::garbage_collector::Pointer<RspType> PRspType;
+
+public:
+	void Dump(unisim::service::interfaces::Logger &os, PRspType &rsp, 
+		PReqType &req) {
+		os << "- read_data(hex) =" << Hex;
+		for(unsigned int i = 0; i < req->size; i++) {
+			os << " " << (unsigned int)rsp->read_data[i];
+		}
+		os << Dec;
+	}
+};
+
+} // end of namespace debug
+} // end of namespace tlm 
+} // end of namespace component
+} // end of namespace unisim
+
+#endif /* __UNISIM_COMPONENT_TLM_MESSAGE_SIMPLEFSB_HH__ */
