@@ -11,6 +11,7 @@ include_HEADERS = \
 	memory.hh \
 	interrupt.hh \
 	pci.hh \
+	simple_fsb.hh \
 	snooping_fsb.hh
 
 install-exec-hook: $(libdir)/libmessage.a

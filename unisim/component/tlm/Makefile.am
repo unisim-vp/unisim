@@ -24,6 +24,11 @@ SUBDIRS += chipset
 INCLUDE_SUBDIRS += chipset
 endif
 
+if COND_processor
+SUBDIRS += processor
+INCLUDE_SUBDIRS += processor
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)
