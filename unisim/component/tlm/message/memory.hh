@@ -211,7 +211,7 @@ public:
 };
 
 } // end of namespace debug
-} // end of namespace tlm 
+} // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
 

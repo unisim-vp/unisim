@@ -23,6 +23,11 @@ SUBDIRS += macio
 INCLUDE_SUBDIRS += macio
 endif
 
+if COND_debug
+SUBDIRS += debug
+INCLUDE_SUBDIRS += debug
+endif
+
 install-exec-hook: $(libdir)/libpci.a
 	rm -f $(prefix)/lib/libunisim_component_cxx_pci.a
 	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_cxx_pci.a)

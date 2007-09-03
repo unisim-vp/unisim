@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __FS_PLUGINS_UTILS_DEBUG_NETSTUB_HH__
-#define __FS_PLUGINS_UTILS_DEBUG_NETSTUB_HH__
+#ifndef __UNISIM_UTIL_DEBUG_NETSTUB_HH__
+#define __UNISIM_UTIL_DEBUG_NETSTUB_HH__
 
 #include <inttypes.h>
 #include <string>
 
-namespace full_system {
-namespace utils {
+namespace unisim {
+namespace util {
 namespace debug {
 
 using std::string;
@@ -130,7 +130,7 @@ protected:
 };
 
 } // end of namespace debug
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace util
+} // end of namespace unisim
 
 #endif

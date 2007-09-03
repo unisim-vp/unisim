@@ -1,0 +1,166 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+#ifndef __UNISIM_COMPONENT_CXX_PCI_DEBUG_PCI_STUB_HH__
+#define __UNISIM_COMPONENT_CXX_PCI_DEBUG_PCI_STUB_HH__
+
+#include <inttypes.h>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/device/register.hh>
+#include <unisim/service/interfaces/logger.hh>
+#include <string>
+#include <vector>
+#include <unisim/util/debug/netstub.hh>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/util/debug/breakpoint_registry.hh>
+#include <unisim/util/debug/watchpoint_registry.hh>
+#include <unisim/service/interfaces/symbol_table_lookup.hh>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace pci {
+namespace debug {
+
+using std::string;
+using std::vector;
+
+using namespace unisim::util::endian;
+using unisim::service::interfaces::Memory;
+using unisim::util::device::Register;
+using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::util::debug::BreakpointRegistry;
+using unisim::util::debug::WatchpointRegistry;
+using unisim::util::debug::Symbol;
+using unisim::service::interfaces::SymbolTableLookup;
+
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Parameter;
+using unisim::service::interfaces::Logger;
+using unisim::util::debug::NetStub;
+
+template <class ADDRESS>
+class PCIStub :
+	public NetStub<ADDRESS>,
+	public Service<Memory<ADDRESS> >,
+	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Client<Logger>,
+	public Client<SymbolTableLookup<ADDRESS> >
+{
+public:
+	typedef NetStub<ADDRESS> inherited;
+	typedef Register<uint32_t> reg32_t;
+	typedef Register<uint32_t> reg24_t;
+	typedef Register<uint16_t> reg16_t;
+	typedef Register<uint8_t> reg8_t;
+	
+	ServiceExport<Memory<ADDRESS> > memory_export;
+	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
+	ServiceImport<Logger> logger_import;
+	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	
+	PCIStub(const char *name, Object *parent = 0);
+	virtual ~PCIStub();
+
+	virtual void OnDisconnect();
+	virtual bool Setup();
+	virtual void Reset();
+	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
+	uint8_t ReadConfigByte(unsigned int offset);
+	void WriteConfigByte(unsigned int offset, uint8_t value);
+	virtual bool Read(ADDRESS addr, void *buffer, uint32_t size);
+	virtual bool Read(const char *symbol_name, void *data, uint32_t size);
+	virtual bool Write(ADDRESS addr, const void *buffer, uint32_t size);
+	virtual bool Write(const char *symbol_name, const void *buffer, uint32_t size);
+	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual bool SetBreakpoint(ADDRESS addr);
+	virtual bool SetBreakpoint(const char *symbol_name);
+	virtual bool RemoveBreakpoint(ADDRESS addr);
+	virtual bool RemoveBreakpoint(const char *symbol_name);
+	virtual void Trap(uint64_t& t, typename inherited::TIME_UNIT& tu);
+private:
+	uint8_t *storage;
+	uint32_t bytesize; // WARNING! must be a power of two
+	
+	Parameter<bool> param_is_server;
+	Parameter<string> param_server_name;
+	Parameter<unsigned int> param_tcp_port;
+	Parameter<uint32_t> param_bytesize;
+	Parameter<ADDRESS> param_initial_base_addr;
+	Parameter<uint32_t> param_pci_device_number;
+	Parameter<unsigned int> param_pci_bus_frequency;
+	Parameter<unsigned int> param_bus_frequency;
+	
+	BreakpointRegistry<ADDRESS> breakpoint_registry;
+	WatchpointRegistry<ADDRESS> watchpoint_registry;
+
+protected:
+	// PCI configuration registers
+	reg16_t pci_conf_device_id;
+	reg16_t pci_conf_vendor_id;
+	reg16_t pci_conf_status;
+	reg16_t pci_conf_command;
+	reg24_t pci_conf_class_code;
+	reg8_t pci_conf_revision_id;
+	reg8_t pci_conf_bist;
+	reg8_t pci_conf_header_type;
+	reg8_t pci_conf_latency_timer;
+	reg8_t pci_conf_cache_line_size;
+	reg32_t pci_conf_base_addr;
+
+	reg32_t pci_conf_carbus_cis_pointer;
+	reg16_t pci_conf_subsystem_id;
+	reg16_t pci_conf_subsystem_vendor_id;
+	
+	uint32_t pci_device_number;
+	ADDRESS initial_base_addr;
+	unsigned int pci_bus_frequency; // in Mhz
+	unsigned int bus_frequency; // in Mhz
+};
+
+} // end of namespace debug
+} // end of namespace pci
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif

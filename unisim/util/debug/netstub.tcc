@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __FS_UTILS_DEBUG_NETSTUB_TPP__
-#define __FS_UTILS_DEBUG_NETSTUB_TPP__
+#ifndef __UNISIM_UTIL_DEBUG_NETSTUB_TCC__
+#define __UNISIM_UTIL_DEBUG_NETSTUB_TCC__
 
 #include <iostream>
 #include <sstream>
@@ -55,8 +55,8 @@
 #include <unistd.h>
 #include <errno.h>
 
-namespace full_system {
-namespace utils {
+namespace unisim {
+namespace util {
 namespace debug {
 
 using namespace std;
@@ -1620,7 +1620,7 @@ bool NetStub<ADDRESS>::RemoveBreakpoint(const char *symbol_name)
 }
 
 } // end of namespace debug
-} // end of namespace utils
-} // end of namespace full_system
+} // end of namespace util
+} // end of namespace unisim
 
 #endif

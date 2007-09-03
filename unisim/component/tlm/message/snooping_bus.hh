@@ -33,13 +33,11 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_MESSAGE_SNOOPINGFSB_HH__
-#define __UNISIM_COMPONENT_TLM_MESSAGE_SNOOPINGFSB_HH__
+#ifndef __UNISIM_COMPONENT_TLM_MESSAGE_SNOOPING_BUS_HH__
+#define __UNISIM_COMPONENT_TLM_MESSAGE_SNOOPING_BUS_HH__
 
-#include "unisim/service/interfaces/logger.hh"
-#include "unisim/util/garbage_collector/garbage_collector.hh"
 #include "unisim/component/tlm/debug/transaction_spy.hh"
-#include <inttypes.h>
+#include "unisim/service/interfaces/logger.hh"
 
 namespace unisim {
 namespace component {
@@ -47,26 +45,29 @@ namespace tlm {
 namespace message {
 
 template <class ADDRESS, unsigned int DATA_SIZE>
-class SnoopingFSBRequest;
+class SnoopingBusRequest;
 template <unsigned int DATA_SIZE>
-class SnoopingFSBResponse;
-template <class ADDRESS, unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SnoopingFSBRequest<ADDRESS, DATA_SIZE>& req);
-template <unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SnoopingFSBResponse<DATA_SIZE>& rsp);
+class SnoopingBusResponse;
 
 template <class ADDRESS, unsigned int DATA_SIZE>
-class SnoopingFSBRequest {
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SnoopingBusRequest<ADDRESS, DATA_SIZE>& req);
+template <unsigned int DATA_SIZE>
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SnoopingBusResponse<DATA_SIZE>& rsp);
+
+template <class ADDRESS, unsigned int DATA_SIZE>
+class SnoopingBusRequest
+{
 public:
-	enum Type {
-		READ,         // Read request
-		READX,        // Read with intent to modify
-		WRITE,        // Write request
-		INV_BLOCK,    // Invalidate block
-		FLUSH_BLOCK,  // Flush block
-		ZERO_BLOCK,   // Fill in block with zero
-		INV_TLB       // Invalidate TLB set
-	};
+	enum Type
+		{
+			READ,         // Read request
+			READX,        // Read with intent to modify
+			WRITE,        // Write request
+			INV_BLOCK,    // Invalidate block
+			FLUSH_BLOCK,  // Flush block
+			ZERO_BLOCK,   // Fill in block with zero
+			INV_TLB       // Invalidate TLB set
+		};
 	
 	Type type;       // Request type
  	bool global;      // true if the request must be snooped by other processors
@@ -74,37 +75,30 @@ public:
 	unsigned int size;              // Size of bus transfer (<= DATA_SIZE)
 	uint8_t write_data[DATA_SIZE];  // Data to write into memory
 
-	friend unisim::service::interfaces::Logger& operator << <ADDRESS, DATA_SIZE>(unisim::service::interfaces::Logger& os,
-			const SnoopingFSBRequest<ADDRESS, DATA_SIZE>& req);
+	friend unisim::service::interfaces::Logger& operator << <ADDRESS, DATA_SIZE>(unisim::service::interfaces::Logger& os, const SnoopingBusRequest<ADDRESS, DATA_SIZE>& req);
 };
 
 template <unsigned int DATA_SIZE>
-class SnoopingFSBResponse {
+class SnoopingBusResponse
+{
 public:
-	typedef enum {
-		RS_MISS     = 0,   // target processor doesn't have the block
-		RS_SHARED   = 1,   // target processor has an unmodified copy of the block
-		RS_MODIFIED = 2,   // target processor has a modified copy of the block which need to be written back to memory
-		RS_BUSY     = 4    // target processor is busy and can't response to the snoop request. The initiator should retry later.
-	} ReadStatus;
+	typedef enum 
+		{
+			RS_MISS     = 0,   // target processor doesn't have the block
+			RS_SHARED   = 1,   // target processor has an unmodified copy of the block
+			RS_MODIFIED = 2,   // target processor has a modified copy of the block which need to be written back to memory
+			RS_BUSY     = 4    // target processor is busy and can't response to the snoop request. The initiator should retry later.
+		} ReadStatus;
 
 
 	ReadStatus read_status;       // Status of the target processor in case of READ or READX
 	uint8_t read_data[DATA_SIZE]; // Data read from memory/target processor caches
-
-	friend unisim::service::interfaces::Logger& operator << <DATA_SIZE>(unisim::service::interfaces::Logger& os, 
-			const SnoopingFSBResponse<DATA_SIZE>& rsp);
+	friend unisim::service::interfaces::Logger& operator << <DATA_SIZE>(unisim::service::interfaces::Logger& os, const SnoopingBusResponse<DATA_SIZE>& rsp);
 };
 
 template <class ADDRESS, unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
-		const SnoopingFSBRequest<ADDRESS, DATA_SIZE>& req) {
-	using unisim::service::interfaces::operator<<;
-	using unisim::service::interfaces::Endl;
-	using unisim::service::interfaces::Hex;
-	using unisim::service::interfaces::Dec;
-	
-	typedef SnoopingFSBRequest<ADDRESS, DATA_SIZE> ReqType;
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SnoopingBusRequest<ADDRESS, DATA_SIZE>& req) {
+	typedef SnoopingBusRequest<ADDRESS, DATA_SIZE> ReqType;
 	
 	os << "- type = ";
 	switch(req.type) {
@@ -143,14 +137,8 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 }
 
 template <unsigned int DATA_SIZE>
-unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
-		const SnoopingFSBResponse<DATA_SIZE>& rsp) {
-	using unisim::service::interfaces::operator<<;
-	using unisim::service::interfaces::Endl;
-	using unisim::service::interfaces::Hex;
-	using unisim::service::interfaces::Dec;
-	
-	typedef SnoopingFSBResponse<DATA_SIZE> RspType;
+unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const SnoopingBusResponse<DATA_SIZE>& rsp) {
+	typedef SnoopingBusResponse<DATA_SIZE> RspType;
 	
 	os << "- read_status = ";
 	switch(rsp.read_status) {
@@ -169,8 +157,8 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 }
 
 } // end of namespace message
-} // end of namespace tlm
 } // end of namespace component
+} // end of namespace tlm
 } // end of namespace unisim
 
 namespace unisim {
@@ -179,9 +167,9 @@ namespace tlm {
 namespace debug {
 
 template<class ADDRESS, unsigned int DATA_SIZE>
-class RequestSpy<unisim::component::tlm::message::SnoopingFSBRequest<ADDRESS, DATA_SIZE> > {
+class RequestSpy<unisim::component::tlm::message::SnoopingBusRequest<ADDRESS, DATA_SIZE> > {
 private:
-	typedef unisim::component::tlm::message::SnoopingFSBRequest<ADDRESS, DATA_SIZE> ReqType;
+	typedef unisim::component::tlm::message::SnoopingBusRequest<ADDRESS, DATA_SIZE> ReqType;
 	typedef unisim::util::garbage_collector::Pointer<ReqType> PReqType;
 
 public:
@@ -228,17 +216,20 @@ public:
 };
 
 template <class ADDRESS, unsigned int DATA_SIZE>
-class ResponseSpy<unisim::component::tlm::message::SnoopingFSBResponse<DATA_SIZE>, 
-	unisim::component::tlm::message::SnoopingFSBRequest<ADDRESS, DATA_SIZE> > {
+class ResponseSpy<unisim::component::tlm::message::SnoopingBusResponse<DATA_SIZE>, Request<ADDRESS, DATA_SIZE> > {
 private:
-	typedef unisim::component::tlm::message::SnoopingFSBRequest<ADDRESS, DATA_SIZE> ReqType;
-	typedef unisim::component::tlm::message::SnoopingFSBResponse<DATA_SIZE> RspType;
+	typedef unisim::component::tlm::message::SnoopingBusRequest<ADDRESS, DATA_SIZE> ReqType;
+	typedef unisim::component::tlm::message::SnoopingBusResponse<DATA_SIZE> RspType;
 	typedef unisim::util::garbage_collector::Pointer<ReqType> PReqType;
 	typedef unisim::util::garbage_collector::Pointer<RspType> PRspType;
 
 public:
-	void Dump(unisim::service::interfaces::Logger &os, PRspType &rsp, 
+	void Dump(LoggerInterface &os, PRspType &rsp, 
 		PReqType &req) {
+		using unisim::service::interfaces::operator<<;
+		using unisim::service::interfaces::Hex;
+		using unisim::service::interfaces::Dec;
+
 		os << "- read_status = ";
 		switch(rsp->read_status) {
 		case RspType::RS_MISS: os << "RS_MISS"; break;
@@ -255,9 +246,10 @@ public:
 	}
 };
 
+
 } // end of namespace debug
-} // end of namespace tlm 
+} // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_MESSAGE_SNOOPINGFSB_HH__
+#endif // __UNISIM_COMPONENT_TLM_MESSAGE_SNOOPING_BUS_HH__
