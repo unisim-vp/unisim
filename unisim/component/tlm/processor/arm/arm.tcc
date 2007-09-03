@@ -32,28 +32,43 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FULLSYSTEM_SHARED_MEMORY_SIMPLE_BUS_ARM_TPP__
-#define __FULLSYSTEM_SHARED_MEMORY_SIMPLE_BUS_ARM_TPP__
+#ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_TCC__
+#define __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_TCC__
 
 #include <systemc.h>
-#include <tlm/shared_memory/snooping_bus/message.hh>
-#include <tlm/tlm.hh>
+#include "unisim/kernel/tlm/tlm.hh"
+#include "unisim/component/tlm/message/simple_fsb.hh"
+#include "unisim/service/interfaces/logger.hh"
 
 #define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace shared_memory {
-namespace simple_bus {
+namespace processor {
+namespace arm {
 
-using namespace full_system::processors::arm;
-using full_system::generic::bus::BS_OK;
-using full_system::generic::bus::CS_SHARED;
-using full_system::generic::bus::CS_MISS;
-using full_system::tlm::TlmMessage;
-using full_system::tlm::TlmSendIf;
-using full_system::utils::garbage_collector::Pointer;
-using full_system::utils::services::Parameter;
+//using namespace full_system::processors::arm;
+//using full_system::generic::bus::BS_OK;
+//using full_system::generic::bus::CS_SHARED;
+//using full_system::generic::bus::CS_MISS;
+//using full_system::tlm::TlmMessage;
+//using full_system::tlm::TlmSendIf;
+//using full_system::utils::garbage_collector::Pointer;
+//using full_system::utils::services::Parameter;
+using unisim::service::interfaces::operator<<;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Line;
 
 template<class CONFIG>
 ARM<CONFIG> :: 
@@ -509,9 +524,12 @@ BusReadX(address_t addr,
 	wait();
 }
 
-} // end of namespace simple_bus
-} // end of namespace shared_memory
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace tlm
-} // end of namespace full_system
+} // end of namespace component
+} // end of namespace unisim
 
-#endif
+#undef LOCATION
+
+#endif // __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_TCC__

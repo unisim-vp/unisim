@@ -32,45 +32,45 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __FULLSYSTEM_SHARED_MEMORY_SIMPLE_BUS_ARM_HH__
-#define __FULLSYSTEM_SHARED_MEMORY_SIMPLE_BUS_ARM_HH__
+#ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_HH__
+#define __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_HH__
 
 #include <systemc.h>
-#include "processors/arm/armcpu.hh"
-#include "generic/cache/cache_interface.hh"
-#include "tlm/shared_memory/snooping_bus/message.hh"
-#include "tlm/tlm.hh"
+#include "unisim/component/cxx/processor/arm/armcpu.hh"
+#include "unisim/component/cxx/cache/cache_interface.hh"
+#include "unisim/component/tlm/message/simple_fsb.hh"
+#include "unisim/kernel/tlm/tlm.hh"
+#include "unisim/util/garbage_collector/garbage_collector.hh"
+#include <inttypes.h>
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace shared_memory {
-namespace simple_bus {
+namespace processor {
+namespace arm {
 
-using namespace full_system::processors::arm;
-using full_system::generic::bus::BS_OK;
-using full_system::generic::bus::CS_SHARED;
-using full_system::generic::bus::CS_MISS;
-using full_system::tlm::TlmMessage;
-using full_system::tlm::TlmSendIf;
-using full_system::utils::garbage_collector::Pointer;
-using full_system::utils::services::Parameter;
-using full_system::tlm::shared_memory::snooping_bus::Request;
-using full_system::tlm::shared_memory::snooping_bus::Response;
-using full_system::generic::cache::CacheInterface;
-using full_system::generic::cache::CacheControl;
+using unisim::component::cxx::processor::arm::CPU;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::tlm::TlmMessage;
+using unisim::kernel::tlm::TlmSendIf;
+using unisim::util::garbage_collector::Pointer;
+using unisim::component::tlm::message::SimpleFSBRequest;
+using unisim::component::tlm::message::SimpleFSBResponse;
+using unisim::component::cxx::cache::CacheInterface;
+using unisim::component::cxx::cache::CacheControl;
 
 template <class CONFIG>
 class ARM :
 	public sc_module,
-	public full_system::processors::arm::CPU<CONFIG>,
+	public CPU<CONFIG>,
 	public CacheInterface<typename CONFIG::address_t>
 {
 public:
 	typedef typename CONFIG::address_t address_t;
-	typedef full_system::processors::arm::CPU<CONFIG> inherited;
+	typedef CPU<CONFIG> inherited;
 	
 	// Bus port
-	sc_port<TlmSendIf<Request<physical_address_t, CONFIG::FSB_BURST_SIZE>, Response<CONFIG::FSB_BURST_SIZE> > > bus_port;
+	sc_port<TlmSendIf<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, Response<CONFIG::FSB_BURST_SIZE> > > master_port;
 	
 	ARM(const sc_module_name& name, Object *parent = 0);
 	virtual ~ARM();
@@ -141,9 +141,10 @@ private:
 	Parameter<bool> param_verbose_tlm_commands;
 };
 
-} // end of namespace simple_bus
-} // end of namespace shared_memory
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace tlm
-} // end of namespace full_system
+} // end of namespace component
+} // end of namespace unisim
 
-#endif
+#endif // __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_HH__
