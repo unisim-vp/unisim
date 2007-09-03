@@ -9,10 +9,10 @@ INCLUDE_SUBDIRS=
 # INCLUDE_SUBDIRS += arm
 # endif
 
-# if COND_powerpc
-# SUBDIRS += powerpc
-# INCLUDE_SUBDIRS += powerpc
-# endif
+if COND_powerpc
+SUBDIRS += powerpc
+INCLUDE_SUBDIRS += powerpc
+endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
