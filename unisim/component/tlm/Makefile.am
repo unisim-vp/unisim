@@ -24,6 +24,11 @@ SUBDIRS += chipset
 INCLUDE_SUBDIRS += chipset
 endif
 
+if COND_isa
+SUBDIRS += isa
+INCLUDE_SUBDIRS += isa
+endif
+
 if COND_processor
 SUBDIRS += processor
 INCLUDE_SUBDIRS += processor
