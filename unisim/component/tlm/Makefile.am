@@ -39,6 +39,11 @@ SUBDIRS += processor
 INCLUDE_SUBDIRS += processor
 endif
 
+if COND_bridge
+SUBDIRS += bridge
+INCLUDE_SUBDIRS += bridge
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)

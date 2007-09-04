@@ -64,8 +64,7 @@ template <class CONFIG>
 class ARM :
 	public sc_module,
 	public CPU<CONFIG>,
-	public CacheInterface<typename CONFIG::address_t>
-{
+	public CacheInterface<typename CONFIG::address_t> {
 public:
 	typedef typename CONFIG::address_t address_t;
 	typedef CPU<CONFIG> inherited;
