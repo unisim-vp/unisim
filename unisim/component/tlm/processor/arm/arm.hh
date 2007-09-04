@@ -51,6 +51,7 @@ namespace arm {
 
 using unisim::component::cxx::processor::arm::CPU;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Object;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
@@ -70,7 +71,7 @@ public:
 	typedef CPU<CONFIG> inherited;
 	
 	// Bus port
-	sc_port<TlmSendIf<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, Response<CONFIG::FSB_BURST_SIZE> > > master_port;
+	sc_port<TlmSendIf<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> > > master_port;
 	
 	ARM(const sc_module_name& name, Object *parent = 0);
 	virtual ~ARM();

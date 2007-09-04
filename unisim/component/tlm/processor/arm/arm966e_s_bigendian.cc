@@ -32,21 +32,24 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "tlm/shared_memory/simple_bus/arm.hh"
-#include "tlm/shared_memory/simple_bus/arm.tpp"
-#include "processors/arm/config.hh"
+#include "unisim/component/tlm/processor/arm/arm.hh"
+#include "unisim/component/tlm/processor/arm/arm.tcc"
+#include "unisim/component/cxx/processor/arm/config.hh"
 
-namespace full_system {
+namespace unisim {
+namespace component {
 namespace tlm {
-namespace shared_memory {
-namespace simple_bus {
+namespace processor {
+namespace arm {
 
-using full_system::processors::arm::ARM966E_S_BigEndian_Config;
+using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config;
 
 template
 class ARM<ARM966E_S_BigEndian_Config>;
 
-} // end of namespace simple_bus
-} // end of namespace shared_memory
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace tlm
-} // end of namespace full_system
+} // end of namespace component
+} // end of namespace unisim
+

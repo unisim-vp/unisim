@@ -76,7 +76,7 @@ ARM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	CPU<CONFIG>(name, this, parent),
-	bus_port("bus-port"),
+	master_port("master-port"),
 	cpu_cycle_time(),
 	bus_cycle_time(),
 	cpu_time(),
@@ -321,18 +321,16 @@ PrWrite(address_t addr,
 	BusSynchronize();
 
 	// bus transaction request
-	Pointer<Request<address_t, CONFIG::FSB_BURST_SIZE> > req = 
-		new(req) Request<address_t, CONFIG::FSB_BURST_SIZE>(); 
+	Pointer<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE> > req = 
+		new(req) SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>(); 
 	// message for bus transaction
-	Pointer<TlmMessage<Request<address_t, CONFIG::FSB_BURST_SIZE>, 
-		Response<CONFIG::FSB_BURST_SIZE> > > msg =
-		new(msg) TlmMessage<Request<address_t, CONFIG::FSB_BURST_SIZE>, 
-			Response<CONFIG::FSB_BURST_SIZE> >(req); 
+	Pointer<TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
+		SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> > > msg =
+		new(msg) TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
+			SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> >(req); 
 			
 	// transaction is a READ
-	req->type = Request<address_t, CONFIG::FSB_BURST_SIZE>::WRITE; 
-	// there is no snooping in the arm, so transactions are never global
-	req->global = false; 
+	req->type = SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>::WRITE; 
 	// transaction address
 	req->addr = addr; 
 	// actual transaction size
@@ -345,7 +343,7 @@ PrWrite(address_t addr,
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "PrWrite: loop until bus transaction request is accepted" 
 			<< Endl << EndDebugInfo;
-	while(!bus_port->Send(msg)) {
+	while(!master_port->Send(msg)) {
 		// if bus transaction request is not accepted then retry later
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
@@ -379,22 +377,20 @@ PrRead(address_t addr,
 	BusSynchronize();
 
 	// bus transaction request
-	Pointer<Request<address_t, CONFIG::FSB_BURST_SIZE> > req = 
-		new(req) Request<address_t, CONFIG::FSB_BURST_SIZE>(); 
+	Pointer<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE> > req = 
+		new(req) SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>(); 
 	// bus transaction response
-	Pointer<Response<CONFIG::FSB_BURST_SIZE> > rsp; 
+	Pointer<SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> > rsp; 
 	// event notified when bus transaction response is ready
 	sc_event rsp_ev; 
 	// message for bus transaction
-	Pointer<TlmMessage<Request<address_t, CONFIG::FSB_BURST_SIZE>, 
-		Response<CONFIG::FSB_BURST_SIZE> > > msg =
-		new(msg) TlmMessage<Request<address_t, CONFIG::FSB_BURST_SIZE>, 
-			Response<CONFIG::FSB_BURST_SIZE> >(req, rsp_ev); 
+	Pointer<TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
+		SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> > > msg =
+		new(msg) TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
+			SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> >(req, rsp_ev); 
 			
 	// transaction is a READ
-	req->type = Request<address_t, CONFIG::FSB_BURST_SIZE>::READ; 
-	// there is no snooping in the arm, so transactions are never global
-	req->global = false; 
+	req->type = SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>::READ; 
 	// transaction address
 	req->addr = addr; 
 	 // actual transaction size
@@ -405,7 +401,7 @@ PrRead(address_t addr,
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "PrRead: loop until bus transaction request is accepted" 
 			<< Endl << EndDebugInfo;
-	while(!bus_port->Send(msg)) {
+	while(!master_port->Send(msg)) {
 		// if bus transaction request is not accepted then retry later
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
@@ -432,18 +428,6 @@ PrRead(address_t addr,
 		 	<< "PrRead: response received"
 			<< Endl << EndDebugInfo;
 	
-	// check that the response is correctly received
-	// TODO : for the moment we just want RS_MISS responses, but this should
-	//   be modified later if other types of responses can be received
-	if(rsp->read_status != Response<CONFIG::FSB_BURST_SIZE>::RS_MISS) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError << LOCATION
-				<< "PrRead: response received with an unknown status"
-				<< Endl << EndDebugError;
-		sc_stop();
-		wait();
-	}
-		
 	// bus transaction response has been received at this point
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
