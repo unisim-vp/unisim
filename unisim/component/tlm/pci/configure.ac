@@ -48,6 +48,7 @@ UNISIM_CONFIG_SUBDIR(unisim-component-tlm-pci, macio)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm-pci, video)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm-pci, ide)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm-pci, debug)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm-pci, bus)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

@@ -24,6 +24,11 @@ SUBDIRS += debug
 INCLUDE_SUBDIRS += debug
 endif
 
+if COND_bus
+SUBDIRS += bus
+INCLUDE_SUBDIRS += bus
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)
