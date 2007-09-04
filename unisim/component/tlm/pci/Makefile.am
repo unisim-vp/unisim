@@ -4,9 +4,9 @@ libdir= $(prefix)/lib/unisim/component/tlm/pci
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
-if COND_macio
-SUBDIRS += macio
-INCLUDE_SUBDIRS += macio
+if COND_video
+SUBDIRS += video
+INCLUDE_SUBDIRS += video
 endif
 
 uninstall-hook:
