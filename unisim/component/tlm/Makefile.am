@@ -29,6 +29,11 @@ SUBDIRS += isa
 INCLUDE_SUBDIRS += isa
 endif
 
+if COND_pci
+SUBDIRS += pci
+INCLUDE_SUBDIRS += pci
+endif
+
 if COND_processor
 SUBDIRS += processor
 INCLUDE_SUBDIRS += processor

@@ -40,6 +40,7 @@
 #include "unisim/component/cxx/pci/types.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
+#include "unisim/component/tlm/debug/transaction_spy.hh"
 
 namespace unisim {
 namespace component {

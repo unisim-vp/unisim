@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM TLM Component Library], [1.0])
+AC_INIT([UNISIM TLM PCI Component Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -44,13 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-message, message)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-debug, debug)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-memory, memory)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-chipset, chipset)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-isa, isa)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-pci, pci)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm-processor, processor)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm-pci, macio)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
