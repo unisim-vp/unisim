@@ -24,6 +24,11 @@ SUBDIRS += component
 INCLUDE_SUBDIRS += component
 endif
 
+if COND_simulator
+SUBDIRS += simulator
+INCLUDE_SUBDIRS += simulator
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)

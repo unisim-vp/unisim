@@ -1,0 +1,1015 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+ 
+#include <unisim/component/tlm/processor/powerpc/powerpc.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
+#include <iostream>
+#include <getopt.h>
+#include <unisim/kernel/service/service.hh>
+#include <stdlib.h>
+#include <unisim/service/power/cache_power_estimator.hh>
+#include <unisim/component/tlm/shared_memory/snooping_bus/powerpc.hh>
+#include <unisim/component/tlm/memory/ram/memory.hh>
+#include <unisim/component/tlm/pci/video/display.hh>
+//#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
+#include <unisim/component/tlm/chipset/mpc107/mpc107.hh>
+#include <unisim/util/garbage_collector/garbage_collector.hh>
+#include <unisim/service/time/sc_time/time.hh>
+#include <unisim/component/tlm/pci/bus/bus.hh>
+#include <unisim/component/tlm/pci/ide/pci_ide_module.hh>
+#include <unisim/component/tlm/pci/macio/heathrow.hh>
+#include <unisim/component/cxx/pci/types.hh>
+#include <unisim/service/logger/logger_server.hh>
+#include <unisim/component/cxx/processor/powerpc/config.hh>
+#include <stdexcept>
+#include <unisim/service/sdl/sdl.hh>
+#include <tlm/bridges/pci_isa/bridge.hh>
+#include <tlm/isa/i8042/i8042.hh>
+#include <signal.h>
+
+#ifdef WIN32
+
+#include <windows.h>
+#include <winsock2.h>
+
+#else
+
+#include <sys/times.h>
+
+#endif
+
+
+typedef full_system::processors::powerpc::MPC7447AConfig CPU_CONFIG;
+
+static const bool DEBUG_INFORMATION = true;
+
+bool debug_enabled;
+
+void EnableDebug()
+{
+	debug_enabled = true;
+}
+
+void DisableDebug()
+{
+	debug_enabled = false;
+}
+
+void SigIntHandler(int signum)
+{
+	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	sc_stop();
+}
+
+
+using namespace std;
+using full_system::plugins::loader::PMACLinuxKernelLoader;
+using full_system::plugins::debug::GDBServer;
+using full_system::plugins::debug::InlineDebugger;
+using full_system::plugins::power::CachePowerEstimator;
+using full_system::utils::garbage_collector::GarbageCollector;
+using full_system::pci::pci64_address_t;
+using full_system::pci::pci32_address_t;
+using full_system::plugins::logger::LoggerServer;
+using full_system::utils::services::ServiceManager;
+
+void help(char *prog_name)
+{
+	cerr << "Usage: " << prog_name << " [<options>] <linux kernel> [linux kernel arguments]" << endl << endl;
+	cerr << "       'linux kernel' is an ELF32 uncompressed Linux kernel (vmlinux)" << endl;
+	cerr << "       A 'Mac OS BootX' loader is emulated instead of directly running an open firmware and a boot loader" << endl << endl;
+	cerr << "Options:" << endl;
+	cerr << "--inline-debugger" << endl;
+	cerr << "-d" << endl;
+	cerr << "            starts the inline debugger" << endl;
+	cerr << "--gdb-server <TCP port>" << endl;
+	cerr << "-g <TCP port>" << endl;
+	cerr << "            starts a gdb server" << endl << endl;
+	cerr << "--screen-width <width>" << endl;
+	cerr << "-x <width>" << endl;
+	cerr << "            changes the horizontal screen resolution" << endl << endl;
+	cerr << "--screen-height <height>" << endl;
+	cerr << "-y <height>" << endl;
+	cerr << "            changes the vertical screen resolution" << endl << endl;
+	cerr << "--capture <bitmap out filename>" << endl;
+	cerr << "-u <bitmap out filename>" << endl;
+	cerr << "            capture video display in a bitmap image sequence (BMP format)" << endl << endl;
+	cerr << "--gdb-server-arch-file <arch file>" << endl;
+	cerr << "-a  <arch file>" << endl;
+	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
+	cerr << "--device-tree" << endl;
+	cerr << "-t  <devtree file>" << endl;
+	cerr << "            uses <devtree file> as device tree for Linux kernel" << endl << endl;
+	cerr << "--video-refresh-period <period>" << endl;
+	cerr << "-f <period>" << endl;
+	cerr << "            refreshes video display every 'period' milliseconds" << endl << endl;
+	cerr << "--no-video" << endl;
+	cerr << "-n" << endl;
+	cerr << "            disable video output" << endl << endl;
+	cerr << "-i <count>" << endl;
+	cerr << "--max:inst <count>" << endl;
+	cerr << "            execute <count> instructions then exit" << endl << endl;
+	cerr << "-p" << endl;
+	cerr << "--power" << endl;
+	cerr << "            estimate power consumption of caches and TLBs" << endl << endl;
+	cerr << "-r <file>" << endl;
+	cerr << "--ramdisk <file>" << endl;
+	cerr << "            use ramdisk image in <file>" << endl << endl;
+	cerr << "-c <file>" << endl;
+	cerr << "--disk:image0 <file,file,...>" << endl;
+	cerr << "            use disk image in <file> for ide0" << endl << endl;
+	cerr << "-l <file>" << endl;
+	cerr << "--logger:file <file>" << endl;
+	cerr << "            store log file in <file>" << endl << endl;
+	cerr << "-z" << endl;
+	cerr << "--logger:zip" << endl;
+	cerr << "            zip log file" << endl << endl;
+	cerr << "-e" << endl;
+	cerr << "--logger:error" << endl;
+	cerr << "            pipe the log into the standard error" << endl << endl;
+	cerr << "-o" << endl;
+	cerr << "--logger:out" << endl;
+	cerr << "            pipe the log into the standard output" << endl << endl;
+	cerr << "--help" << endl;
+	cerr << "-h" << endl;
+	cerr << "            displays this help" << endl;
+}
+
+// Front Side Bus template parameters
+typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
+typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
+typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
+const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
+const uint32_t FSB_NUM_PROCS = 1;
+
+// PCI Bus template parameters
+typedef pci32_address_t PCI_ADDRESS_TYPE;
+const uint32_t PCI_MAX_DATA_SIZE = 32;        // in bytes
+const unsigned int PCI_NUM_MASTERS = 3;
+const unsigned int PCI_NUM_TARGETS = 6;
+const unsigned int PCI_NUM_MAPPINGS = 12;
+
+// ISA Bus template parameters
+const uint32_t ISA_MAX_DATA_SIZE = PCI_MAX_DATA_SIZE;
+
+// PCI IDE controller template parameters
+const unsigned int PCI_IDE_NUM_MAPPINGS = 5;
+const unsigned int PCI_IDE_MAX_IMAGES = 3;
+
+// PCI Network controller template parameters
+const unsigned int PCI_NET_NUM_MAPPINGS = 2;
+
+// PCI device numbers
+const unsigned int PCI_MPC107_DEV_NUM = 0;
+const unsigned int PCI_HEATHROW_DEV_NUM = 1;
+const unsigned int PCI_IDE_DEV_NUM = 2;
+const unsigned int PCI_NET_DEV_NUM = 3;
+const unsigned int PCI_DISPLAY_DEV_NUM = 4;
+const unsigned int PCI_ISA_BRIDGE_DEV_NUM = 5;
+
+// PCI target port numbers
+const unsigned int PCI_MPC107_TARGET_PORT = 0;
+const unsigned int PCI_HEATHROW_TARGET_PORT = 1;
+const unsigned int PCI_IDE_TARGET_PORT = 2;
+const unsigned int PCI_NET_TARGET_PORT = 3;
+const unsigned int PCI_DISPLAY_TARGET_PORT = 4;
+const unsigned int PCI_ISA_BRIDGE_TARGET_PORT = 5;
+
+// PCI master port numbers
+const unsigned int PCI_MPC107_MASTER_PORT = 0;
+const unsigned int PCI_IDE_MASTER_PORT = 1;
+const unsigned int PCI_NET_MASTER_PORT = 2;
+
+// Heathrow PIC interrupts
+const unsigned int PCI_IDE_IRQ = 47;
+const unsigned int PCI_NET_IRQ = 45;
+const unsigned int I8042_KBD_IRQ = 1;
+const unsigned int I8042_AUX_IRQ = 12;
+
+int sc_main(int argc, char *argv[])
+{
+#ifdef WIN32
+	// Loads the winsock2 dll
+	WORD wVersionRequested = MAKEWORD( 2, 2 );
+	WSADATA wsaData;
+	if(WSAStartup(wVersionRequested, &wsaData) != 0)
+	{
+		cerr << "WSAStartup failed" << endl;
+		return -1;
+	}
+#endif
+
+	GarbageCollector::Setup();
+
+	static struct option long_options[] = {
+	{"inline-debugger", no_argument, 0, 'd'},
+	{"gdb-server", required_argument, 0, 'g'},
+	{"gdb-server-arch-file", required_argument, 0, 'a'},
+	{"device-tree", required_argument, 0, 't'},
+	{"video-refresh-period", required_argument, 0, 'f'},
+	{"ramdisk", required_argument, 0, 'r'},
+	{"disk:image0", required_argument, 0, 'c'},
+	{"help", no_argument, 0, 'h'},
+	{"max:inst", required_argument, 0, 'i'},
+	{"power", no_argument, 0, 'p'},
+	{"logger:file", required_argument, 0, 'l'},
+	{"logger:zip", no_argument, 0, 'z'},
+	{"logger:error", no_argument, 0, 'e'},
+	{"logger:out", no_argument, 0, 'o'},
+	{"screen-width", required_argument, 0, 'x'},
+	{"screen-height", required_argument, 0, 'y'},
+	{"capture", required_argument, 0, 'u'},
+	{0, 0, 0, 0}
+	};
+
+	int c;
+	bool use_gdb_server = false;
+	bool use_inline_debugger = false;
+	bool estimate_power = false;
+	bool enable_video_output = true;
+	uint32_t video_refresh_period = 1000; // every 1 second
+	int gdb_server_tcp_port = 0;
+	char *device_tree_filename = "device_tree.xml";
+	char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	char *ramdisk_filename = "";
+	char *image0_filename = "";
+	char *bmp_out_filename = "";
+	uint64_t maxinst = 0; // maximum number of instruction to simulate
+	char *logger_filename = 0;
+	bool logger_zip = false;
+	bool logger_error = false;
+	bool logger_out = false;
+	bool logger_on = false;
+	uint32_t pci_bus_frequency = 33; // in Mhz
+	uint32_t isa_bus_frequency = 8; // in Mhz
+	uint32_t fsb_frequency = 75; // in Mhz
+	uint32_t sdram_cycle_time = 30303030; // in femto seconds (= 33Mhz)
+//	uint32_t sdram_frequency = 33; // in Mhz
+	uint32_t cpu_clock_multiplier = 4;
+	uint32_t tech_node = 130; // in nm
+	uint32_t display_width = 800; // in pixels
+	uint32_t display_height = 600; // in pixels
+	uint32_t display_depth = 15; // in bits per pixel
+	uint32_t display_vfb_size = 8 * 1024 * 1024; // 8 MB
+	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
+	double cpu_ipc = 1.0; // in instructions per cycle
+
+	
+	// Parse the command line arguments
+	while((c = getopt_long (argc, argv, "dg:a:t:f:r:c:hi:pl:zeonx:y:u:", long_options, 0)) != -1)
+	{
+		switch(c)
+		{
+			case 'd':
+				use_inline_debugger = true;
+				break;
+			case 'g':
+				use_gdb_server = true;
+				gdb_server_tcp_port = atoi(optarg);
+				break;
+			case 't':
+				device_tree_filename = optarg;
+				break;
+			case 'f':
+				video_refresh_period = atoi(optarg);
+				break;
+			case 'a':
+				gdb_server_arch_filename = optarg;
+				break;
+			case 'h':
+				help(argv[0]);
+				return 0;
+			case 'i':
+				maxinst = strtoull(optarg, 0, 0);
+				break;
+			case 'p':
+				estimate_power = true;
+				break;
+			case 'r':
+				ramdisk_filename = optarg;
+				break;
+			case 'c':
+				image0_filename = optarg;
+				break;
+			case 'l':
+				logger_filename = optarg;
+				break;
+			case 'z':
+				logger_zip = true;
+				break;
+			case 'e':
+				logger_error = true;
+				break;
+			case 'o':
+				logger_out = true;
+				break;
+			case 'n':
+				enable_video_output = false;
+				break;
+			case 'x':
+				display_width = atoi(optarg);
+				break;
+			case 'y':
+				display_height = atoi(optarg);
+				break;
+			case 'u':
+				bmp_out_filename = optarg;
+				break;
+		}
+	}
+	logger_on = logger_error || logger_out || (logger_filename != 0);
+
+	if(optind >= argc)
+	{
+		help(argv[0]);
+		return 0;
+	}
+
+	char *filename = argv[optind];
+	int sim_argc = argc - optind;
+	char **sim_argv = argv + optind;
+	char **sim_envp = environ;
+
+	if(!filename)
+	{
+		help(argv[0]);
+		return 0;
+	}
+
+	// Logger
+	LoggerServer *logger = 0;
+	if(logger_on)
+		logger = new LoggerServer("logger");
+	
+	// Time
+	full_system::tlm::Time *time = new full_system::tlm::Time("time");
+	
+	if(logger_on)
+		logger->time_import >> time->time_export;
+
+	full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *flash = 0;
+	full_system::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_display = 0;
+	full_system::plugins::sdl::SDL<PCI_ADDRESS_TYPE> *sdl = 0;
+	PMACLinuxKernelLoader *kloader = 0;
+	full_system::tlm::chipsets::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION> *mpc107 = 0;
+	full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *erom = 0;
+	full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *memory = new full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("memory");
+	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	full_system::tlm::shared_memory::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> *bus = new full_system::tlm::shared_memory::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>("bus");
+	full_system::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> *pci_bus = 0;
+	full_system::tlm::pci::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_IDE_NUM_MAPPINGS, PCI_IDE_MAX_IMAGES> *pci_ide = 0;
+	full_system::tlm::pci::PCIDevNet<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NET_NUM_MAPPINGS> *pci_net = 0;
+	full_system::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *heathrow = 0;
+	full_system::tlm::bridges::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_isa_bridge = 0;
+	full_system::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE> *i8042 = 0;
+	full_system::tlm::shared_memory::snooping_bus::PowerPC<CPU_CONFIG> *cpu = new full_system::tlm::shared_memory::snooping_bus::PowerPC<CPU_CONFIG>("cpu");
+
+	// The optional power estimators
+	CachePowerEstimator *il1_power_estimator = 0;
+	CachePowerEstimator *dl1_power_estimator = 0;
+	CachePowerEstimator *l2_power_estimator = 0;
+	CachePowerEstimator *itlb_power_estimator = 0;
+	CachePowerEstimator *dtlb_power_estimator = 0;
+
+	(*bus)["cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency); // Mhz
+
+	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
+	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
+	(*cpu)["bus-frequency"] = fsb_frequency;
+	(*cpu)["voltage"] = 1.3 * 1e3; // mV
+	(*cpu)["nice-frequency"] = 1000;
+	(*memory)["frequency"] = fsb_frequency;
+
+	if(maxinst)
+	{
+		(*cpu)["max-inst"] = maxinst;
+	}
+
+	(*cpu)["ipc"] = cpu_ipc;
+
+	// Connect the CPU to the Front Side Bus
+//	cpu->bus_req_port(*bus->br_port[0]);
+	cpu->bus_port(*bus->inport[0]);
+	(*bus->outport[0])(cpu->snoop_port);
+
+	cpu->memory_import >> bus->memory_export;
+	
+	if(inline_debugger)
+	{
+		// Connect inline-debugger to CPU
+		cpu->debug_control_import >> inline_debugger->debug_control_export;
+		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		inline_debugger->debug_disasm_import >> cpu->debug_disasm_export;
+		inline_debugger->memory_import >> cpu->memory_export;
+		inline_debugger->cpu_registers_import >> cpu->cpu_registers_export;
+	}
+	else if(gdb_server)
+	{
+		// GDB Server run-time configuration
+		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
+		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
+		
+		// Connect gdb-server to CPU
+		cpu->debug_control_import >> gdb_server->debug_control_export;
+		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
+		gdb_server->memory_import >> cpu->memory_export;
+		gdb_server->cpu_registers_import >> cpu->cpu_registers_export;
+	}
+
+	if(estimate_power)
+	{
+		// Instanciate the power estimators
+		il1_power_estimator = new CachePowerEstimator("il1-power-estimator");
+		dl1_power_estimator = new CachePowerEstimator("dl1-power-estimator");
+		l2_power_estimator = new CachePowerEstimator("l2-power-estimator");
+		itlb_power_estimator = new CachePowerEstimator("itlb-power-estimator");
+		dtlb_power_estimator = new CachePowerEstimator("dtlb-power-estimator");
+		
+		// Cache/TLB power estimators run-time configuration
+		(*il1_power_estimator)["cache-size"] = 32 * 1024;
+		(*il1_power_estimator)["line-size"] = 32;
+		(*il1_power_estimator)["associativity"] = 8;
+		(*il1_power_estimator)["rw-ports"] = 0;
+		(*il1_power_estimator)["excl-read-ports"] = 1;
+		(*il1_power_estimator)["excl-write-ports"] = 0;
+		(*il1_power_estimator)["single-ended-read-ports"] = 0;
+		(*il1_power_estimator)["banks"] = 4;
+		(*il1_power_estimator)["tech-node"] = tech_node;
+		(*il1_power_estimator)["output-width"] = 128;
+		(*il1_power_estimator)["tag-width"] = 64;
+		(*il1_power_estimator)["access-mode"] = "fast";
+	
+		(*dl1_power_estimator)["cache-size"] = 32 * 1024;
+		(*dl1_power_estimator)["line-size"] = 32;
+		(*dl1_power_estimator)["associativity"] = 8;
+		(*dl1_power_estimator)["rw-ports"] = 1;
+		(*dl1_power_estimator)["excl-read-ports"] = 0;
+		(*dl1_power_estimator)["excl-write-ports"] = 0;
+		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
+		(*dl1_power_estimator)["banks"] = 4;
+		(*dl1_power_estimator)["tech-node"] = tech_node;
+		(*dl1_power_estimator)["output-width"] = 64;
+		(*dl1_power_estimator)["tag-width"] = 64;
+		(*dl1_power_estimator)["access-mode"] = "fast";
+	
+		(*l2_power_estimator)["cache-size"] = 512 * 1024;
+		(*l2_power_estimator)["line-size"] = 32;
+		(*l2_power_estimator)["associativity"] = 8;
+		(*l2_power_estimator)["rw-ports"] = 1;
+		(*l2_power_estimator)["excl-read-ports"] = 0;
+		(*l2_power_estimator)["excl-write-ports"] = 0;
+		(*l2_power_estimator)["single-ended-read-ports"] = 0;
+		(*l2_power_estimator)["banks"] = 4;
+		(*l2_power_estimator)["tech-node"] = tech_node;
+		(*l2_power_estimator)["output-width"] = 256;
+		(*l2_power_estimator)["tag-width"] = 64;
+		(*l2_power_estimator)["access-mode"] = "fast";
+	
+		(*itlb_power_estimator)["cache-size"] = 128 * 2 * 4;
+		(*itlb_power_estimator)["line-size"] = 4;
+		(*itlb_power_estimator)["associativity"] = 2;
+		(*itlb_power_estimator)["rw-ports"] = 1;
+		(*itlb_power_estimator)["excl-read-ports"] = 0;
+		(*itlb_power_estimator)["excl-write-ports"] = 0;
+		(*itlb_power_estimator)["single-ended-read-ports"] = 0;
+		(*itlb_power_estimator)["banks"] = 4;
+		(*itlb_power_estimator)["tech-node"] = tech_node;
+		(*itlb_power_estimator)["output-width"] = 32;
+		(*itlb_power_estimator)["tag-width"] = 64;
+		(*itlb_power_estimator)["access-mode"] = "fast";
+	
+		(*dtlb_power_estimator)["cache-size"] = 128 * 2 * 4;
+		(*dtlb_power_estimator)["line-size"] = 4;
+		(*dtlb_power_estimator)["associativity"] = 2;
+		(*dtlb_power_estimator)["rw-ports"] = 1;
+		(*dtlb_power_estimator)["excl-read-ports"] = 0;
+		(*dtlb_power_estimator)["excl-write-ports"] = 0;
+		(*dtlb_power_estimator)["single-ended-read-ports"] = 0;
+		(*dtlb_power_estimator)["banks"] = 4;
+		(*dtlb_power_estimator)["tech-node"] = tech_node;
+		(*dtlb_power_estimator)["output-width"] = 32;
+		(*dtlb_power_estimator)["tag-width"] = 64;
+		(*dtlb_power_estimator)["access-mode"] = "fast";
+			
+		// Connect everything related to power estimation
+		cpu->il1_power_estimator_import >> il1_power_estimator->power_estimator_export;
+		cpu->il1_power_mode_import >> il1_power_estimator->power_mode_export;
+		cpu->dl1_power_estimator_import >> dl1_power_estimator->power_estimator_export;
+		cpu->dl1_power_mode_import >> dl1_power_estimator->power_mode_export;
+		cpu->l2_power_estimator_import >> l2_power_estimator->power_estimator_export;
+		cpu->l2_power_mode_import >> l2_power_estimator->power_mode_export;
+		cpu->itlb_power_estimator_import >> itlb_power_estimator->power_estimator_export;
+		cpu->itlb_power_mode_import >> itlb_power_estimator->power_mode_export;
+		cpu->dtlb_power_estimator_import >> dtlb_power_estimator->power_estimator_export;
+		cpu->dtlb_power_mode_import >> dtlb_power_estimator->power_mode_export;
+
+		il1_power_estimator->time_import >> time->time_export;
+		dl1_power_estimator->time_import >> time->time_export;
+		l2_power_estimator->time_import >> time->time_export;
+		itlb_power_estimator->time_import >> time->time_export;
+		dtlb_power_estimator->time_import >> time->time_export;
+	}
+
+	// logger parameters
+	if(logger_on) {
+		if(logger_filename) {
+			(*logger)["filename"] = logger_filename;
+			(*logger)["zip"] = logger_zip;
+		}
+		(*logger)["std_out"] = logger_out;
+		(*logger)["std_err"] = logger_error;
+	}
+
+	// Build the kernel parameters string from the command line arguments
+	string kernel_params;
+	int i;
+
+	for(i = 1; i < sim_argc; i++)
+	{
+		kernel_params += sim_argv[i];
+		if(i < sim_argc - 1) kernel_params += " ";
+	}
+
+	// Instanciation of simulation components:
+	//  - MPC107
+	//  - PCI Bus
+	//  - PCI PIIX4 IDE controller
+	//  - PCI DP83820 Network controller
+	//  - PCI Heathrow PIC controller
+	//  - EROM
+	//  - Flash memory
+	//  - PCI Display (just a frame buffer for now)
+	mpc107 = new full_system::tlm::chipsets::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION>("mpc107");
+	//FIXME add the quantity of mappings of the net card to pci bus
+	pci_bus = new full_system::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>("pci-bus");
+	pci_ide = new full_system::tlm::pci::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_IDE_NUM_MAPPINGS, PCI_IDE_MAX_IMAGES>("pci-ide");
+	pci_net = new full_system::tlm::pci::PCIDevNet<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NET_NUM_MAPPINGS>("pci-net");
+	heathrow = new full_system::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("heathrow");
+	erom = new full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("erom");
+	flash = new full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("flash");
+	pci_display = new full_system::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-display");
+	pci_isa_bridge = new full_system::tlm::bridges::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-isa-bridge");
+	i8042 = new full_system::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE>("i8042");
+	sdl = new full_system::plugins::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
+	
+	// Instanciate a Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
+	kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
+
+	// Memory run-time configuration
+	(*memory)["org"] = 0x00000000UL;
+	(*memory)["bytesize"] = memory_size;
+	
+	// MPC107 run-time configuration
+	(*mpc107)["a_address_map"] = false;
+	(*mpc107)["host_mode"] = true;
+	(*mpc107)["compatibility_hole"] = true;
+	(*mpc107)["memory_32bit_data_bus_size"] = true;
+	(*mpc107)["rom0_8bit_data_bus_size"] = false;
+	(*mpc107)["rom1_8bit_data_bus_size"] = false;
+	(*mpc107)["frequency"] = fsb_frequency;
+	(*mpc107)["sdram_cycle_time"] = sdram_cycle_time;
+
+	// EROM run-time configuration
+	(*erom)["org"] =  0x78000000UL;
+	(*erom)["bytesize"] = 2 * 8 * 1024 * 1024;
+	(*erom)["frequency"] = fsb_frequency;
+	
+	// Flash memory run-time configuration
+	(*flash)["org"] = 0xff000000UL;
+	(*flash)["bytesize"] = 2 * 8 * 1024 * 1024;
+	(*flash)["frequency"] = fsb_frequency;
+
+	// PCI MAC I/O Heathrow run-time configuration
+	(*heathrow)["initial-base-addr"] = 0xf3000000UL;
+	(*heathrow)["pci-device-number"] = PCI_HEATHROW_DEV_NUM;
+	(*heathrow)["bus-frequency"] = pci_bus_frequency;
+	
+	// PCI IDE run-time configuration
+	(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
+	if (strcmp(image0_filename, "") != 0) {
+		
+		char delims[] = ",";
+		char *result = NULL;
+		result = strtok( image0_filename, delims );
+		int i = 0;
+		while( result != NULL ) {
+			(*pci_ide)["disk-image"][i] = result;
+			(*pci_ide)["disk-channel"][i] = i/2;
+			(*pci_ide)["disk-num"][i] = i%2;
+			i++;
+			result = strtok( NULL, delims );
+		}          
+	}
+	(*pci_ide)["base-address"][0] = 0x18101;
+	(*pci_ide)["size"][0] = 8;
+	(*pci_ide)["register-number"][0] = 0x10;		
+	(*pci_ide)["base-address"][1] = 0x18109;
+	(*pci_ide)["size"][1] = 4;
+	(*pci_ide)["register-number"][1] = 0x14;
+	(*pci_ide)["base-address"][2] = 0x5;
+	(*pci_ide)["size"][2] = 8;
+	(*pci_ide)["register-number"][2] = 0x18;
+	(*pci_ide)["base-address"][3] = 0xd;
+	(*pci_ide)["size"][3] = 4;
+	(*pci_ide)["register-number"][3] = 0x1c;
+	(*pci_ide)["base-address"][4] = 0x18119;
+	(*pci_ide)["size"][4] = 16;
+	(*pci_ide)["register-number"][4] = 0x20;
+
+	// PCI Network controller run-time configuration
+	(*pci_net)["device-number"] = PCI_NET_DEV_NUM;
+	(*pci_net)["base-address"][0] = 0x18001;
+	(*pci_net)["size"][0] = 256;
+	(*pci_net)["register-number"][0] = 0x10;		
+	(*pci_net)["base-address"][1] = 0xf3080000UL;
+	(*pci_net)["size"][1] = 4096;
+	(*pci_net)["register-number"][1] = 0x14;
+
+	// Display run-time configuration
+	(*pci_display)["initial-base-addr"] = 0xa0000000UL;
+	(*pci_display)["bytesize"] = display_vfb_size; 
+	(*pci_display)["width"] = display_width;
+	(*pci_display)["height"] = display_height;
+	(*pci_display)["depth"] = display_depth;
+	(*pci_display)["pci-bus-frequency"] = pci_bus_frequency;
+	
+	// PCI-ISA Bridge run-time configuration
+	(*pci_isa_bridge)["initial-base-addr"] = 0x000a0000UL;
+	(*pci_isa_bridge)["initial-io-base-addr"] = 0; //0xfe000000UL;
+	(*pci_isa_bridge)["pci-bus-frequency"] = pci_bus_frequency;
+	(*pci_isa_bridge)["isa-bus-frequency"] = isa_bus_frequency;
+	(*pci_isa_bridge)["pci-device-number"] = PCI_ISA_BRIDGE_DEV_NUM;
+
+	// i8042 run-time configuration
+	(*i8042)["fsb-frequency"] = fsb_frequency;
+	(*i8042)["isa-bus-frequency"] = isa_bus_frequency;
+
+	// SDL run-time configuration
+	(*sdl)["refresh-period"] = video_refresh_period;
+	(*sdl)["bmp-out-filename"] = bmp_out_filename;	
+
+	// Kernel loader configuration
+	(*kloader)["pmac-bootx.device-tree-filename"] = device_tree_filename;
+	(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
+	(*kloader)["pmac-bootx.ramdisk-filename"] = ramdisk_filename;
+	(*kloader)["pmac-bootx.screen-width"] = display_width;
+	(*kloader)["pmac-bootx.screen-height"] = display_height;
+	(*kloader)["elf32-loader.filename"] = filename;
+	(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
+
+	// PCI Bus run-time configuration
+	(*pci_bus)["frequency"] = pci_bus_frequency;
+	
+	(*pci_bus)["base-address"][0] = 0;
+	(*pci_bus)["size"][0] = 1024 * 1024 * 1024;
+	(*pci_bus)["device-number"][0] = PCI_MPC107_DEV_NUM;
+	(*pci_bus)["target-port"][0] = PCI_MPC107_TARGET_PORT;
+	(*pci_bus)["register-number"][0] = 0x10;
+	(*pci_bus)["addr-type"][0] = "sp_mem";
+	
+	(*pci_bus)["base-address"][1] = 0xf3000000UL;
+	(*pci_bus)["size"][1] = 0x80000;
+	(*pci_bus)["device-number"][1] = PCI_HEATHROW_DEV_NUM;
+	(*pci_bus)["target-port"][1] = PCI_HEATHROW_TARGET_PORT;
+	(*pci_bus)["register-number"][1] = 0x10UL;
+	(*pci_bus)["addr-type"][1] = "sp_mem";
+	
+	(*pci_bus)["base-address"][2] = 0x18100UL;
+	(*pci_bus)["size"][2] = 8;
+	(*pci_bus)["device-number"][2] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][2] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][2] = 0x10UL;
+	(*pci_bus)["addr-type"][2] = "sp_io";
+	
+	(*pci_bus)["base-address"][3] = 0x18108UL;
+	(*pci_bus)["size"][3] = 4;
+	(*pci_bus)["device-number"][3] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][3] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][3] = 0x14UL;
+	(*pci_bus)["addr-type"][3] = "sp_io";
+	
+	(*pci_bus)["base-address"][4] = 0x4UL;
+	(*pci_bus)["size"][4] = 8;
+	(*pci_bus)["device-number"][4] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][4] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][4] = 0x18UL;
+	(*pci_bus)["addr-type"][4] = "sp_io";
+	
+	(*pci_bus)["base-address"][5] = 0xcUL;
+	(*pci_bus)["size"][5] = 4;
+	(*pci_bus)["device-number"][5] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][5] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][5] = 0x1cUL;
+	(*pci_bus)["addr-type"][5] = "sp_io";
+	
+	(*pci_bus)["base-address"][6] = 0x18118UL;
+	(*pci_bus)["size"][6] = 16;
+	(*pci_bus)["device-number"][6] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][6] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][6] = 0x20UL;
+	(*pci_bus)["addr-type"][6] = "sp_io";
+
+	(*pci_bus)["base-address"][7] = 0x18000UL;
+	(*pci_bus)["size"][7] = 256;
+	(*pci_bus)["device-number"][7] = PCI_NET_DEV_NUM;
+	(*pci_bus)["target-port"][7] = PCI_NET_TARGET_PORT;
+	(*pci_bus)["register-number"][7] = 0x10UL;
+	(*pci_bus)["addr-type"][7] = "sp_io";
+
+	(*pci_bus)["base-address"][8] = 0xf3080000UL;
+	(*pci_bus)["size"][8] = 4096;
+	(*pci_bus)["device-number"][8] = PCI_NET_DEV_NUM;
+	(*pci_bus)["target-port"][8] = PCI_NET_TARGET_PORT;
+	(*pci_bus)["register-number"][8] = 0x14UL;
+	(*pci_bus)["addr-type"][8] = "sp_mem";
+
+	(*pci_bus)["base-address"][9] = 0xa0000000UL;
+	(*pci_bus)["size"][9] = 0x800000;
+	(*pci_bus)["device-number"][9] = PCI_DISPLAY_DEV_NUM;
+	(*pci_bus)["target-port"][9] = PCI_DISPLAY_TARGET_PORT;
+	(*pci_bus)["register-number"][9] = 0x10UL;
+	(*pci_bus)["addr-type"][9] = "sp_mem";
+	
+	(*pci_bus)["base-address"][10] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
+	(*pci_bus)["size"][10] = 0x10000; // 64 KB
+	(*pci_bus)["device-number"][10] = PCI_ISA_BRIDGE_DEV_NUM;
+	(*pci_bus)["target-port"][10] = PCI_ISA_BRIDGE_TARGET_PORT;
+	(*pci_bus)["register-number"][10] = 0x10UL; // ISA I/O space mapped by BAR0
+	(*pci_bus)["addr-type"][10] = "sp_io";
+
+	(*pci_bus)["base-address"][11] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
+	(*pci_bus)["size"][11] = 0x60000; // 384 KB
+	(*pci_bus)["device-number"][11] = PCI_ISA_BRIDGE_DEV_NUM;
+	(*pci_bus)["target-port"][11] = PCI_ISA_BRIDGE_TARGET_PORT;
+	(*pci_bus)["register-number"][11] = 0x14UL; // ISA Memory space mapped by BAR1
+	(*pci_bus)["addr-type"][11] = "sp_mem";
+
+	// Connect everything
+	kloader->memory_import >> memory->memory_export;
+	kloader->cpu_registers_import >> cpu->cpu_registers_export;
+	cpu->kernel_loader_import >> kloader->loader_export;
+	cpu->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
+	bus->memory_import >> mpc107->memory_export;
+	pci_display->video_import >> sdl->video_export;
+	sdl->memory_import >> pci_display->memory_export;
+
+	(*bus->chipset_outport)(mpc107->bus_inport);
+	mpc107->bus_outport(*bus->chipset_inport);
+//	mpc107->br_outport(*bus->chipset_br_inport);
+	mpc107->ram_port(memory->bus_port);
+	mpc107->ram_import >> memory->memory_export;
+	mpc107->rom_port(flash->bus_port);
+	mpc107->rom_import >> flash->memory_export;
+	mpc107->erom_port(erom->bus_port);
+	mpc107->erom_import >> erom->memory_export;
+//		mpc107->fb_port(display->bus_port);
+//		mpc107->fb_import >> display->exp;
+	mpc107->pci_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
+	mpc107->pci_import >> *pci_bus->exp[0];
+//	mpc107->int_outport(*mpc107->irq_inport[0]);
+//		display->time_import >> time->time_export;
+	
+	(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(mpc107->slave_pci_port);
+	(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(heathrow->bus_port);
+	(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_ide->input_port);
+	(*pci_bus->output_port[PCI_NET_TARGET_PORT])(pci_net->input_port);
+	(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_display->bus_port);
+	(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_isa_bridge->pci_slave_port);
+	pci_ide->output_port (*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
+	pci_net->output_port (*pci_bus->input_port[PCI_NET_MASTER_PORT]);
+	pci_ide->irq_port (*heathrow->irq_port[PCI_IDE_IRQ]);
+	pci_net->irq_port (*heathrow->irq_port[PCI_NET_IRQ]);
+//	heathrow->cpu_irq_port(cpu->external_interrupt_port);
+//	mpc107->int_outport(*mpc107->irq_inport[0]);
+	heathrow->cpu_irq_port(*mpc107->irq_inport[0]);
+	mpc107->int_outport(cpu->external_interrupt_port);
+	mpc107->soft_reset_outport(cpu->soft_reset_port);
+	
+	pci_isa_bridge->isa_master_port(i8042->bus_port);
+	i8042->kbd_irq_port(*heathrow->irq_port[I8042_KBD_IRQ]);
+	i8042->aux_irq_port(*heathrow->irq_port[I8042_AUX_IRQ]);
+
+	i8042->keyboard_import >> sdl->keyboard_export;
+
+	if(inline_debugger)
+	{
+		inline_debugger->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
+	}
+	
+	/* logger connections */
+	if(logger_on) {
+		unsigned int logger_index = 0;
+/*		cpu->logger_import >> *logger->logger_export[logger_index++];
+		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
+		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
+		bus->logger_import >> *logger->logger_export[logger_index++];
+		mpc107->logger_import >> *logger->logger_export[logger_index++];
+		pci_bus->logger_import >> *logger->logger_export[logger_index++];
+		heathrow->logger_import >> *logger->logger_export[logger_index++];
+		pci_ide->logger_import >> *logger->logger_export[logger_index++];
+		pci_display->logger_import >> *logger->logger_export[logger_index++];
+		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
+		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
+		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
+		mpc107->epic_reg_logger_import >> *logger->logger_export[logger_index++];
+		sdl->logger_import >> *logger->logger_export[logger_index++];
+		pci_isa_bridge->logger_import >> *logger->logger_export[logger_index++];*/
+		i8042->logger_import >> *logger->logger_export[logger_index++];
+		//if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+	}
+
+#ifdef DEBUG_SERVICE
+	ServiceManager::Dump(cerr);
+#endif
+
+	if(ServiceManager::Setup())
+	{
+		cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
+
+#ifdef WIN32
+		FILETIME ftCreationTime;
+		FILETIME ftExitTime;
+		FILETIME ftKernelTime;
+		FILETIME ftUserTime;
+		unsigned __int64 time_start = 0, time_stop = 0;
+#else
+		struct tms time_start, time_stop;
+		double ratio;
+		clock_t utime;
+		clock_t stime;
+#endif
+		double spent_time = 0.0;
+
+#ifdef WIN32
+	if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
+	{
+		time_start = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
+		           + ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
+	}
+		
+#else
+		times(&time_start);
+#endif
+
+		EnableDebug();
+		void (*prev_sig_int_handler)(int);
+
+		if(!inline_debugger)
+		{
+			prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+		}
+
+		try
+		{
+			sc_start();
+		}
+		catch(std::runtime_error& e)
+		{
+			cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
+			cerr << e.what() << endl;
+		}
+
+		if(!inline_debugger)
+		{
+			signal(SIGINT, prev_sig_int_handler);
+		}
+
+		cerr << "Simulation finished" << endl;
+		cerr << "Simulation statistics:" << endl;
+
+#ifdef WIN32
+	if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
+	{
+		time_stop = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
+		          + ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
+	}
+	spent_time = (double)(time_stop - time_start) / 1e7;
+#else
+		times(&time_stop);
+		ratio= 1.0 / sysconf(_SC_CLK_TCK);
+		utime = time_stop.tms_utime - time_start.tms_utime;
+		stime = time_stop.tms_stime - time_start.tms_stime;
+		spent_time = ratio * (utime + stime);
+#endif
+
+		cerr << "simulation time: " << spent_time << " seconds" << endl;
+		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << endl;
+		cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << endl;
+		cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		if(estimate_power)
+		{
+			double total_dynamic_energy = il1_power_estimator->GetDynamicEnergy()
+				+ dl1_power_estimator->GetDynamicEnergy()
+				+ l2_power_estimator->GetDynamicEnergy()
+				+ itlb_power_estimator->GetDynamicEnergy()
+				+ dtlb_power_estimator->GetDynamicEnergy();
+	
+			double total_dynamic_power = il1_power_estimator->GetDynamicPower()
+				+ dl1_power_estimator->GetDynamicPower()
+				+ l2_power_estimator->GetDynamicPower()
+				+ itlb_power_estimator->GetDynamicPower()
+				+ dtlb_power_estimator->GetDynamicPower();
+	
+			double total_leakage_power = il1_power_estimator->GetLeakagePower()
+				+ dl1_power_estimator->GetLeakagePower()
+				+ l2_power_estimator->GetLeakagePower()
+				+ itlb_power_estimator->GetLeakagePower()
+				+ dtlb_power_estimator->GetLeakagePower();
+	
+			double total_power = total_dynamic_power + total_leakage_power;
+
+			cerr << "L1 instruction cache dynamic energy: " << il1_power_estimator->GetDynamicEnergy() << " J" << endl;
+			cerr << "L1 data cache dynamic energy: " << dl1_power_estimator->GetDynamicEnergy() << " J" << endl;
+			cerr << "L2 cache dynamic energy: " << l2_power_estimator->GetDynamicEnergy() << " J" << endl;
+			cerr << "Instruction TLB dynamic energy: " << itlb_power_estimator->GetDynamicEnergy() << " J" << endl;
+			cerr << "Data TLB dynamic energy: " << dtlb_power_estimator->GetDynamicEnergy() << " J" << endl;
+			cerr << "L1 instruction cache dynamic power: " << il1_power_estimator->GetDynamicPower() << " W" << endl;
+			cerr << "L1 data cache dynamic power: " << dl1_power_estimator->GetDynamicPower() << " W" << endl;
+			cerr << "L2 cache dynamic power: " << l2_power_estimator->GetDynamicPower() << " W" << endl;
+			cerr << "Instruction TLB dynamic power: " << itlb_power_estimator->GetDynamicPower() << " W" << endl;
+			cerr << "Data TLB dynamic power: " << dtlb_power_estimator->GetDynamicPower() << " W" << endl;
+			cerr << "L1 instruction cache leakage power: " << il1_power_estimator->GetLeakagePower() << " W" << endl;
+			cerr << "L1 data cache leakage power: " << dl1_power_estimator->GetLeakagePower() << " W" << endl;
+			cerr << "L2 cache leakage power: " << l2_power_estimator->GetLeakagePower() << " W" << endl;
+			cerr << "Instruction TLB leakage power: " << itlb_power_estimator->GetLeakagePower() << " W" << endl;
+			cerr << "Data TLB leakage power: " << dtlb_power_estimator->GetLeakagePower() << " W" << endl;
+	
+			cerr << "Total dynamic energy: " << total_dynamic_energy << " J" << endl;
+			cerr << "Total dynamic power: " << total_dynamic_power << " W" << endl;
+			cerr << "Total leakage power: " << total_leakage_power << " W" << endl;
+			cerr << "Total power (dynamic+leakage): " << total_power << " W" << endl;
+		}
+	}
+	else
+	{
+		cerr << "Can't start simulation because of previous errors" << endl;
+	}
+
+
+	if(memory) delete memory;
+	if(gdb_server) delete gdb_server;
+	if(inline_debugger) delete inline_debugger;
+	if(bus) delete bus;
+	if(cpu) delete cpu;
+	if(il1_power_estimator) delete il1_power_estimator;
+	if(dl1_power_estimator) delete dl1_power_estimator;
+	if(l2_power_estimator) delete l2_power_estimator;
+	if(itlb_power_estimator) delete itlb_power_estimator;
+	if(dtlb_power_estimator) delete dtlb_power_estimator;
+	if(time) delete time;
+	if(logger) delete logger;
+	if(flash) delete flash;
+	if(erom) delete erom;
+	if(pci_display) delete pci_display;
+	if(pci_isa_bridge) delete pci_isa_bridge;
+	if(i8042) delete i8042;
+	if(sdl) delete sdl;
+	if(kloader) delete kloader;
+	if(pci_ide) delete pci_ide;
+	if(mpc107) delete mpc107;
+	if(pci_bus) delete pci_bus;
+	if(pci_net) delete pci_net;
+	if(heathrow) delete heathrow;
+
+#ifdef WIN32
+	// releases the winsock2 resources
+	WSACleanup();
+#endif
+
+	return 0;
+}

@@ -52,6 +52,9 @@ namespace bus {
 using namespace std;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
+using unisim::component::tlm::message::PCIRequest;
+using unisim::component::tlm::message::PCIResponse;
+using unisim::util::garbage_collector::Pointer;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
@@ -61,7 +64,7 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::service::interfaces::PCIDevice;
-using unisim::service::interfaces::LoggerInterface;
+using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
@@ -73,6 +76,9 @@ using unisim::service::interfaces::DebugError;
 using unisim::service::interfaces::EndDebugInfo;
 using unisim::service::interfaces::EndDebugWarning;
 using unisim::service::interfaces::EndDebugError;
+using unisim::component::cxx::pci::PCISpace;
+using unisim::component::cxx::pci::TransactionType;
+
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE,
   		unsigned int NUM_MASTERS,
@@ -84,7 +90,7 @@ class Bus:public sc_module,
   						PCIResponse<MAX_DATA_SIZE> >,
   		public Service<PCIDevice<ADDRESS_TYPE> >,
   		public Client<PCIDevice<ADDRESS_TYPE> >,
-  		public Client<LoggerInterface> {
+  		public Client<Logger> {
 public:
 	typedef PCIRequest < ADDRESS_TYPE, MAX_DATA_SIZE > ReqType;
 	typedef PCIResponse < MAX_DATA_SIZE > RspType;
@@ -165,7 +171,7 @@ public:
 	ServiceImport<PCIDevice<ADDRESS_TYPE> > *import[NUM_TARGETS];
 
 	/* logger service */
-	ServiceImport<LoggerInterface> logger_import;
+	ServiceImport<Logger> logger_import;
 
 	SC_HAS_PROCESS(Bus);
 
@@ -174,7 +180,7 @@ public:
 		Object(name, parent),
 		Service<PCIDevice<ADDRESS_TYPE> >(name, parent),
 		Client<PCIDevice<ADDRESS_TYPE> >(name, parent),
-		Client<LoggerInterface>(name, parent),
+		Client<Logger>(name, parent),
 		param_base_address("base-address", this, base_address, NUM_MAPPINGS),
 		param_size("size", this, size, NUM_MAPPINGS),
 		param_device_number("device-number", this, device_number, NUM_MAPPINGS),

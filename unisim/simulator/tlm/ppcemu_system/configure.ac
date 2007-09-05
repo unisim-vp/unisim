@@ -33,24 +33,28 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM], [1.0])
+AC_INIT([UNISIM PowerPC system TLM simulator], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[ppcemu_system])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+UNISIM_CHECK_SYSTEMC
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-kernel, kernel)
-UNISIM_CONFIG_SUBDIR(unisim-util, util)
-UNISIM_CONFIG_SUBDIR(unisim-service, service)
-UNISIM_CONFIG_SUBDIR(unisim-component, component)
-UNISIM_CONFIG_SUBDIR(unisim-simulator, simulator)
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-
