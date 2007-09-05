@@ -2,7 +2,7 @@ INCLUDES=-I$(top_srcdir)/../../../../..
 libdir= $(prefix)/lib/unisim/component/tlm/fsb/snooping_bus
 includedir = $(prefix)/include/unisim/component/tlm/fsb/snooping_bus
 lib_LIBRARIES = libsnoopingbus.a
-libsnoopingbus_a_SOURCES = bus.cc
+libsnoopingbus_a_SOURCES = bus_addr32_size32_procs1.cc
 include_HEADERS = bus.hh bus.tcc
 
 install-exec-hook: $(libdir)/libsnoopingbus.a
