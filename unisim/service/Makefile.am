@@ -39,6 +39,11 @@ SUBDIRS += power
 INCLUDE_SUBDIRS += power
 endif
 
+if COND_time
+SUBDIRS += time
+INCLUDE_SUBDIRS += time
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)

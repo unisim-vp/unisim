@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Service Library], [1.0])
+AC_INIT([UNISIM Time Service Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -44,14 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-service-interfaces, interfaces)
-UNISIM_CONFIG_SUBDIR(unisim-service-logger, logger)
-UNISIM_CONFIG_SUBDIR(unisim-service-os, os)
-UNISIM_CONFIG_SUBDIR(unisim-service-debug, debug)
-UNISIM_CONFIG_SUBDIR(unisim-service-loader, loader)
-UNISIM_CONFIG_SUBDIR(unisim-service-sdl, sdl)
-UNISIM_CONFIG_SUBDIR(unisim-service-power, power)
-UNISIM_CONFIG_SUBDIR(unisim-service-time, time)
+UNISIM_CONFIG_SUBDIR(unisim-service-time-sc_time, sc_time)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
