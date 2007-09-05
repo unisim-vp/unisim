@@ -43,7 +43,7 @@
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
 #include <unisim/component/tlm/pci/video/display.hh>
-//#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
+#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
 #include <unisim/component/tlm/chipset/mpc107/mpc107.hh>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/time/sc_time/time.hh>
@@ -184,37 +184,26 @@ const unsigned int PCI_NUM_MAPPINGS = 12;
 // ISA Bus template parameters
 const uint32_t ISA_MAX_DATA_SIZE = PCI_MAX_DATA_SIZE;
 
-// PCI IDE controller template parameters
-const unsigned int PCI_IDE_NUM_MAPPINGS = 5;
-const unsigned int PCI_IDE_MAX_IMAGES = 3;
-
-// PCI Network controller template parameters
-const unsigned int PCI_NET_NUM_MAPPINGS = 2;
-
 // PCI device numbers
 const unsigned int PCI_MPC107_DEV_NUM = 0;
 const unsigned int PCI_HEATHROW_DEV_NUM = 1;
 const unsigned int PCI_IDE_DEV_NUM = 2;
-const unsigned int PCI_NET_DEV_NUM = 3;
-const unsigned int PCI_DISPLAY_DEV_NUM = 4;
-const unsigned int PCI_ISA_BRIDGE_DEV_NUM = 5;
+const unsigned int PCI_DISPLAY_DEV_NUM = 3;
+const unsigned int PCI_ISA_BRIDGE_DEV_NUM = 4;
 
 // PCI target port numbers
 const unsigned int PCI_MPC107_TARGET_PORT = 0;
 const unsigned int PCI_HEATHROW_TARGET_PORT = 1;
 const unsigned int PCI_IDE_TARGET_PORT = 2;
-const unsigned int PCI_NET_TARGET_PORT = 3;
-const unsigned int PCI_DISPLAY_TARGET_PORT = 4;
-const unsigned int PCI_ISA_BRIDGE_TARGET_PORT = 5;
+const unsigned int PCI_DISPLAY_TARGET_PORT = 3;
+const unsigned int PCI_ISA_BRIDGE_TARGET_PORT = 4;
 
 // PCI master port numbers
 const unsigned int PCI_MPC107_MASTER_PORT = 0;
 const unsigned int PCI_IDE_MASTER_PORT = 1;
-const unsigned int PCI_NET_MASTER_PORT = 2;
 
 // Heathrow PIC interrupts
 const unsigned int PCI_IDE_IRQ = 47;
-const unsigned int PCI_NET_IRQ = 45;
 const unsigned int I8042_KBD_IRQ = 1;
 const unsigned int I8042_AUX_IRQ = 12;
 
@@ -388,7 +377,7 @@ int sc_main(int argc, char *argv[])
 	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *memory = new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("memory");
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
-	//unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> *bus = new unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>("bus");
+	unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> *bus = new unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>("bus");
 	unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> *pci_bus = 0;
 	unisim::component::tlm::pci::ide::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_ide = 0;
 	unisim::component::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *heathrow = 0;
@@ -431,9 +420,9 @@ int sc_main(int argc, char *argv[])
 		// Connect inline-debugger to CPU
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		inline_debugger->debug_disasm_import >> cpu->debug_disasm_export;
+		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->cpu_registers_import >> cpu->cpu_registers_export;
+		inline_debugger->registers_import >> cpu->registers_export;
 	}
 	else if(gdb_server)
 	{
@@ -445,7 +434,7 @@ int sc_main(int argc, char *argv[])
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->cpu_registers_import >> cpu->cpu_registers_export;
+		gdb_server->registers_import >> cpu->registers_export;
 	}
 
 	if(estimate_power)
@@ -566,23 +555,21 @@ int sc_main(int argc, char *argv[])
 	//  - MPC107
 	//  - PCI Bus
 	//  - PCI PIIX4 IDE controller
-	//  - PCI DP83820 Network controller
 	//  - PCI Heathrow PIC controller
 	//  - EROM
 	//  - Flash memory
 	//  - PCI Display (just a frame buffer for now)
-	mpc107 = new full_system::tlm::chipsets::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION>("mpc107");
+	mpc107 = new unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION>("mpc107");
 	//FIXME add the quantity of mappings of the net card to pci bus
-	pci_bus = new full_system::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>("pci-bus");
-	pci_ide = new full_system::tlm::pci::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_IDE_NUM_MAPPINGS, PCI_IDE_MAX_IMAGES>("pci-ide");
-	pci_net = new full_system::tlm::pci::PCIDevNet<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NET_NUM_MAPPINGS>("pci-net");
-	heathrow = new full_system::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("heathrow");
-	erom = new full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("erom");
-	flash = new full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("flash");
-	pci_display = new full_system::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-display");
-	pci_isa_bridge = new full_system::tlm::bridges::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-isa-bridge");
-	i8042 = new full_system::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE>("i8042");
-	sdl = new full_system::plugins::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
+	pci_bus = new unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>("pci-bus");
+	pci_ide = new unisim::component::tlm::pci::ide::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-ide");
+	heathrow = new unisim::component::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("heathrow");
+	erom = new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("erom");
+	flash = new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("flash");
+	pci_display = new unisim::component::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-display");
+	pci_isa_bridge = new unisim::component::tlm::bridge::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-isa-bridge");
+	i8042 = new unisim::component::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE>("i8042");
+	sdl = new unisim::service::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
 	
 	// Instanciate a Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
 	kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
@@ -648,15 +635,6 @@ int sc_main(int argc, char *argv[])
 	(*pci_ide)["size"][4] = 16;
 	(*pci_ide)["register-number"][4] = 0x20;
 
-	// PCI Network controller run-time configuration
-	(*pci_net)["device-number"] = PCI_NET_DEV_NUM;
-	(*pci_net)["base-address"][0] = 0x18001;
-	(*pci_net)["size"][0] = 256;
-	(*pci_net)["register-number"][0] = 0x10;		
-	(*pci_net)["base-address"][1] = 0xf3080000UL;
-	(*pci_net)["size"][1] = 4096;
-	(*pci_net)["register-number"][1] = 0x14;
-
 	// Display run-time configuration
 	(*pci_display)["initial-base-addr"] = 0xa0000000UL;
 	(*pci_display)["bytesize"] = display_vfb_size; 
@@ -692,130 +670,125 @@ int sc_main(int argc, char *argv[])
 	// PCI Bus run-time configuration
 	(*pci_bus)["frequency"] = pci_bus_frequency;
 	
-	(*pci_bus)["base-address"][0] = 0;
-	(*pci_bus)["size"][0] = 1024 * 1024 * 1024;
-	(*pci_bus)["device-number"][0] = PCI_MPC107_DEV_NUM;
-	(*pci_bus)["target-port"][0] = PCI_MPC107_TARGET_PORT;
-	(*pci_bus)["register-number"][0] = 0x10;
-	(*pci_bus)["addr-type"][0] = "sp_mem";
+	unsigned int mapping_index = 0;
+
+	(*pci_bus)["base-address"][mapping_index] = 0;
+	(*pci_bus)["size"][mapping_index] = 1024 * 1024 * 1024;
+	(*pci_bus)["device-number"][mapping_index] = PCI_MPC107_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_MPC107_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x10;
+	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	mapping_index++;
 	
-	(*pci_bus)["base-address"][1] = 0xf3000000UL;
-	(*pci_bus)["size"][1] = 0x80000;
-	(*pci_bus)["device-number"][1] = PCI_HEATHROW_DEV_NUM;
-	(*pci_bus)["target-port"][1] = PCI_HEATHROW_TARGET_PORT;
-	(*pci_bus)["register-number"][1] = 0x10UL;
-	(*pci_bus)["addr-type"][1] = "sp_mem";
+	(*pci_bus)["base-address"][mapping_index] = 0xf3000000UL;
+	(*pci_bus)["size"][mapping_index] = 0x80000;
+	(*pci_bus)["device-number"][mapping_index] = PCI_HEATHROW_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_HEATHROW_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	mapping_index++;
 	
-	(*pci_bus)["base-address"][2] = 0x18100UL;
-	(*pci_bus)["size"][2] = 8;
-	(*pci_bus)["device-number"][2] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][2] = PCI_IDE_TARGET_PORT;
-	(*pci_bus)["register-number"][2] = 0x10UL;
-	(*pci_bus)["addr-type"][2] = "sp_io";
+	(*pci_bus)["base-address"][mapping_index] = 0x18100UL;
+	(*pci_bus)["size"][mapping_index] = 8;
+	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	mapping_index++;
 	
-	(*pci_bus)["base-address"][3] = 0x18108UL;
-	(*pci_bus)["size"][3] = 4;
-	(*pci_bus)["device-number"][3] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][3] = PCI_IDE_TARGET_PORT;
-	(*pci_bus)["register-number"][3] = 0x14UL;
-	(*pci_bus)["addr-type"][3] = "sp_io";
+	(*pci_bus)["base-address"][mapping_index] = 0x18108UL;
+	(*pci_bus)["size"][mapping_index] = 4;
+	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x14UL;
+	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	mapping_index++;
 	
-	(*pci_bus)["base-address"][4] = 0x4UL;
-	(*pci_bus)["size"][4] = 8;
-	(*pci_bus)["device-number"][4] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][4] = PCI_IDE_TARGET_PORT;
-	(*pci_bus)["register-number"][4] = 0x18UL;
-	(*pci_bus)["addr-type"][4] = "sp_io";
+	(*pci_bus)["base-address"][mapping_index] = 0x4UL;
+	(*pci_bus)["size"][mapping_index] = 8;
+	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x18UL;
+	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	mapping_index++;
 	
-	(*pci_bus)["base-address"][5] = 0xcUL;
-	(*pci_bus)["size"][5] = 4;
-	(*pci_bus)["device-number"][5] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][5] = PCI_IDE_TARGET_PORT;
-	(*pci_bus)["register-number"][5] = 0x1cUL;
-	(*pci_bus)["addr-type"][5] = "sp_io";
+	(*pci_bus)["base-address"][mapping_index] = 0xcUL;
+	(*pci_bus)["size"][mapping_index] = 4;
+	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x1cUL;
+	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	mapping_index++;
 	
-	(*pci_bus)["base-address"][6] = 0x18118UL;
+	(*pci_bus)["base-address"][mapping_index] = 0x18118UL;
 	(*pci_bus)["size"][6] = 16;
-	(*pci_bus)["device-number"][6] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][6] = PCI_IDE_TARGET_PORT;
-	(*pci_bus)["register-number"][6] = 0x20UL;
-	(*pci_bus)["addr-type"][6] = "sp_io";
+	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x20UL;
+	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	mapping_index++;
 
-	(*pci_bus)["base-address"][7] = 0x18000UL;
-	(*pci_bus)["size"][7] = 256;
-	(*pci_bus)["device-number"][7] = PCI_NET_DEV_NUM;
-	(*pci_bus)["target-port"][7] = PCI_NET_TARGET_PORT;
-	(*pci_bus)["register-number"][7] = 0x10UL;
-	(*pci_bus)["addr-type"][7] = "sp_io";
-
-	(*pci_bus)["base-address"][8] = 0xf3080000UL;
-	(*pci_bus)["size"][8] = 4096;
-	(*pci_bus)["device-number"][8] = PCI_NET_DEV_NUM;
-	(*pci_bus)["target-port"][8] = PCI_NET_TARGET_PORT;
-	(*pci_bus)["register-number"][8] = 0x14UL;
-	(*pci_bus)["addr-type"][8] = "sp_mem";
-
-	(*pci_bus)["base-address"][9] = 0xa0000000UL;
-	(*pci_bus)["size"][9] = 0x800000;
-	(*pci_bus)["device-number"][9] = PCI_DISPLAY_DEV_NUM;
-	(*pci_bus)["target-port"][9] = PCI_DISPLAY_TARGET_PORT;
-	(*pci_bus)["register-number"][9] = 0x10UL;
-	(*pci_bus)["addr-type"][9] = "sp_mem";
+	(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
+	(*pci_bus)["size"][mapping_index] = 0x800000;
+	(*pci_bus)["device-number"][mapping_index] = PCI_DISPLAY_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_DISPLAY_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
+	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	mapping_index++;
 	
-	(*pci_bus)["base-address"][10] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
-	(*pci_bus)["size"][10] = 0x10000; // 64 KB
-	(*pci_bus)["device-number"][10] = PCI_ISA_BRIDGE_DEV_NUM;
-	(*pci_bus)["target-port"][10] = PCI_ISA_BRIDGE_TARGET_PORT;
-	(*pci_bus)["register-number"][10] = 0x10UL; // ISA I/O space mapped by BAR0
-	(*pci_bus)["addr-type"][10] = "sp_io";
+	(*pci_bus)["base-address"][mapping_index] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
+	(*pci_bus)["size"][mapping_index] = 0x10000; // 64 KB
+	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x10UL; // ISA I/O space mapped by BAR0
+	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	mapping_index++;
 
-	(*pci_bus)["base-address"][11] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
-	(*pci_bus)["size"][11] = 0x60000; // 384 KB
-	(*pci_bus)["device-number"][11] = PCI_ISA_BRIDGE_DEV_NUM;
-	(*pci_bus)["target-port"][11] = PCI_ISA_BRIDGE_TARGET_PORT;
-	(*pci_bus)["register-number"][11] = 0x14UL; // ISA Memory space mapped by BAR1
-	(*pci_bus)["addr-type"][11] = "sp_mem";
+	(*pci_bus)["base-address"][mapping_index] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
+	(*pci_bus)["size"][mapping_index] = 0x60000; // 384 KB
+	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
+	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_TARGET_PORT;
+	(*pci_bus)["register-number"][mapping_index] = 0x14UL; // ISA Memory space mapped by BAR1
+	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	mapping_index++;
 
 	// Connect everything
 	kloader->memory_import >> memory->memory_export;
-	kloader->cpu_registers_import >> cpu->cpu_registers_export;
+	kloader->registers_import >> cpu->registers_export;
 	cpu->kernel_loader_import >> kloader->loader_export;
 	cpu->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
 	bus->memory_import >> mpc107->memory_export;
 	pci_display->video_import >> sdl->video_export;
 	sdl->memory_import >> pci_display->memory_export;
 
-	(*bus->chipset_outport)(mpc107->bus_inport);
-	mpc107->bus_outport(*bus->chipset_inport);
+	(*bus->chipset_outport)(mpc107->slave_port);
+	mpc107->master_port(*bus->chipset_inport);
 //	mpc107->br_outport(*bus->chipset_br_inport);
-	mpc107->ram_port(memory->bus_port);
+	mpc107->ram_master_port(memory->slave_port);
 	mpc107->ram_import >> memory->memory_export;
-	mpc107->rom_port(flash->bus_port);
+	mpc107->rom_master_port(flash->slave_port);
 	mpc107->rom_import >> flash->memory_export;
-	mpc107->erom_port(erom->bus_port);
+	mpc107->erom_master_port(erom->slave_port);
 	mpc107->erom_import >> erom->memory_export;
 //		mpc107->fb_port(display->bus_port);
 //		mpc107->fb_import >> display->exp;
-	mpc107->pci_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
+	mpc107->pci_master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
 	mpc107->pci_import >> *pci_bus->exp[0];
 //	mpc107->int_outport(*mpc107->irq_inport[0]);
 //		display->time_import >> time->time_export;
 	
-	(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(mpc107->slave_pci_port);
+	(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(mpc107->pci_slave_port);
 	(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(heathrow->bus_port);
 	(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_ide->input_port);
-	(*pci_bus->output_port[PCI_NET_TARGET_PORT])(pci_net->input_port);
 	(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_display->bus_port);
 	(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_isa_bridge->pci_slave_port);
 	pci_ide->output_port (*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
-	pci_net->output_port (*pci_bus->input_port[PCI_NET_MASTER_PORT]);
 	pci_ide->irq_port (*heathrow->irq_port[PCI_IDE_IRQ]);
-	pci_net->irq_port (*heathrow->irq_port[PCI_NET_IRQ]);
 //	heathrow->cpu_irq_port(cpu->external_interrupt_port);
 //	mpc107->int_outport(*mpc107->irq_inport[0]);
-	heathrow->cpu_irq_port(*mpc107->irq_inport[0]);
-	mpc107->int_outport(cpu->external_interrupt_port);
-	mpc107->soft_reset_outport(cpu->soft_reset_port);
+	heathrow->cpu_irq_port(*mpc107->irq_slave_port[0]);
+	mpc107->irq_master_port(cpu->external_interrupt_port);
+	mpc107->soft_reset_master_port(cpu->soft_reset_port);
 	
 	pci_isa_bridge->isa_master_port(i8042->bus_port);
 	i8042->kbd_irq_port(*heathrow->irq_port[I8042_KBD_IRQ]);
@@ -1001,7 +974,6 @@ int sc_main(int argc, char *argv[])
 	if(pci_ide) delete pci_ide;
 	if(mpc107) delete mpc107;
 	if(pci_bus) delete pci_bus;
-	if(pci_net) delete pci_net;
 	if(heathrow) delete heathrow;
 
 #ifdef WIN32
