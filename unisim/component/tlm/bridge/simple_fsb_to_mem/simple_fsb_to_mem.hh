@@ -101,6 +101,10 @@ public:
 	SimpleFSBToMemory(const sc_module_name& name, Object *parent = 0);
 	virtual ~SimpleFSBToMemory();
 	
+	bool Setup();
+	
+	bool Send(p_fsb_mem_t &fsb_msg);
+	
 private:
 	sc_fifo<p_fsb_msg_t> buffer_req;
 	sc_fifo<p_fsb_msg_t> buffer_rsp;
@@ -114,7 +118,8 @@ private:
 	bool verbose_all;
 	Parameter<bool> param_verbose_all;
 	
-	void Dispatch();
+	void DispatchMemory();
+	void DispatchFSB();
 };
 
 } // end of namespace simple_fsb_to_mem

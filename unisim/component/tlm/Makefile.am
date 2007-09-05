@@ -44,6 +44,11 @@ SUBDIRS += bridge
 INCLUDE_SUBDIRS += bridge
 endif
 
+if COND_fsb
+SUBDIRS += fsb
+INCLUDE_SUBDIRS += fsb
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)

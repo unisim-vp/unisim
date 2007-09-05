@@ -44,7 +44,7 @@ namespace simple_fsb_to_mem {
 #define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
 
 template <class CONFIG>
-SimpleFSBToMemory ::
+SimpleFSBToMemory<CONFIG> ::
 SimpleFSBToMemory(const sc_module_name& name, Object *parent = 0) :
 	Object(name, parent),
 	sc_module(name),
@@ -67,10 +67,90 @@ SimpleFSBToMemory(const sc_module_name& name, Object *parent = 0) :
 	buffer("buffer", CONFIG::BUFFER_SIZE) {
 	slave_port(this);
 	
-	SC_THREAD(Dispatch);
+	SC_THREAD(DispatchMemory);
+	SC_THREAD(DispatchFSB);
 	
 	SetupDependsOn(memory_import);
 	SetupDependsOn(logger_import);
+}
+
+template<class CONFIG>
+SimpleFSBToMemory<CONFIG> ::
+~SimpleFSBToMemory() {
+	
+}
+
+template<class CONFIG>
+bool
+SimpleFSBToMemory<CONFIG> ::
+Setup() {
+	if(!logger_import) {
+		if(CONFIG::debug)
+			cerr << "WARNING("
+				<< __FUNCTION__ << ":"
+				<< __FILE__ << ":"
+				<< __LINE__ << "): "
+				<< "No Logger exists to generate the output messages" << endl;
+	}
+	
+	if(fsb_cycle_time == 0) {
+		if(logger_import)
+			logger_import << DebugError << LOCATION
+				<< "fsb_cycle_time parameter should be set to a value bigger than 0"
+				<< Endl
+				<< EndDebugError;
+		return false;
+	}
+	
+	if(mem_cycle_time == 0) {
+		if(logger_import)
+			logger_import << DebugError << LOCATION
+				<< "mem_cycle_time paramater should be set to a value bigger than 0"
+				<< Endl
+				<< EndDebugError;
+		return false;
+	}
+	
+	fsb_cycle_sctime = sc_time((double)fsb_cycle_time, SC_PS);
+	mem_cycle_sctime = sc_time((double)mem_cycle_time, SC_PS);
+	
+	if(CONFIG::debug && verbose_all) {
+		if(logger_import) {
+			logger_import << DebugInfo << LOCATION
+				<< "fsb_cycle_time = " << fsb_cycle_time.to_string()
+				<< Endl << EndDebugInfo;
+			logger_import << DebugInfo << LOCATION
+				<< "mem_cycle_time = " << mem_cycle_time.to_string()
+				<< Endl << EndDebugInfo;
+		}
+	}
+	
+	return true;
+}
+
+template<class CONFIG>
+bool
+SimpleFSBToMemory<CONFIG> ::
+Send(p_fsb_mem_t &fsb_msg) {
+	/* check if there is room for the request in the queue,
+	 *   if not report that the request can not be accepted (return false) */
+	if(buffer_req.num_free() == 0)
+		return false;
+	buffer_req.write(fsb_msg);
+}
+
+template<class CONFIG>
+void 
+SimpleFSBToMemory<CONFIG> ::
+DispatchMemory() {
+	
+}
+
+template<class CONFIG>
+void 
+SimpleFSBToMemory<CONFIG> ::
+DispatchFSB() {
+	
 }
 
 #undef LOCATION
