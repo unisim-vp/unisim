@@ -80,7 +80,7 @@ bool PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
 		}
 	}
 
-	pci_config_data = new typename unisim::component::cxx::pci::PciConfigData("pciConfigData");
+	pci_config_data = new typename unisim::component::cxx::pci::ide::PciConfigData("pciConfigData");
 
 	for(unsigned int i = 0; i < NUM_MAPPINGS; i++) {
 		pci_config_data->BARSize[i] = size[i];//BARSize;
