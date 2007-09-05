@@ -50,7 +50,7 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR C HEADERS ####################################################
-AC_CHECK_HEADERS([inttypes.h],,\
+AC_CHECK_HEADERS([inttypes.h string.h],,\
     AC_MSG_ERROR([Some standard C headers are missing.]))
 
 ###### CHECK FOR C++ HEADERS ##################################################
