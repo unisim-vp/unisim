@@ -2,7 +2,8 @@ INCLUDES=-I$(top_srcdir)/../../../../..
 libdir= $(prefix)/lib/unisim/component/tlm/fsb/simple_bus
 includedir = $(prefix)/include/unisim/component/tlm/fsb/simple_bus
 lib_LIBRARIES = libsimplebus.a
-libsimplebus_a_SOURCES = bus.cc bus_debug.cc
+libsimplebus_a_SOURCES = bus_addr32_size32_procs1.cc \
+	bus_addr32_size32_procs1_debug.cc
 include_HEADERS = bus.hh bus.tcc
 
 install-exec-hook: $(libdir)/libsimplebus.a
