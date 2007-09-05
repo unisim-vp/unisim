@@ -1,7 +1,7 @@
 #!/bin/bash
 export m4_path="`pwd`/m4"
 echo "doing aclocal -I$m4_path; autoconf; autoheader; automake -a in"
-find . -name "configure.ac" -execdir sh -c \
+find . -name "configure.ac" -execdir /bin/bash -c \
 "current_path=\`pwd\`; \
 has_to_build=\"false\"; \
 if test -e configure.ac; \

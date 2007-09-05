@@ -55,6 +55,7 @@ AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 UNISIM_CHECK_SYSTEMC
+UNISIM_LINK(../../../../unisim/component/cxx/processor/powerpc, powerpc)
 
 # files to generate
 #   this should include all the makefiles to generate

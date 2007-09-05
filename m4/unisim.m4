@@ -309,3 +309,8 @@ AC_ARG_ENABLE($1,
 		AC_CONFIG_SUBDIRS([$2])
 	fi
 ])
+
+## UNISIM_LINK
+AC_DEFUN([UNISIM_LINK], [
+	LIBS+=" $1/lib$2.a"
+])
