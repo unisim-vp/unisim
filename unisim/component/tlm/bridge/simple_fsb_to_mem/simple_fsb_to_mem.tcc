@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
 #define __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
 
+#include <cmath>
+
 namespace unisim {
 namespace component {
 namespace tlm {
@@ -42,6 +44,8 @@ namespace bridge {
 namespace simple_fsb_to_mem {
 
 #define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+
+using unisim::kernel::service::Object;
 
 template <class CONFIG>
 SimpleFSBToMemory<CONFIG> ::
@@ -111,6 +115,15 @@ Setup() {
 		return false;
 	}
 	
+	if(CONFIG::FSB_BURST_SIZE != CONFIG::MEM_BURST_SIZE) {
+		if(logger_import)
+			logger_import << DebugError << LOCATION
+				<< "the size of the two busses differ, they should be the same"
+				<< Endl
+				<< EndDebugError;
+		return false;
+	}
+	
 	fsb_cycle_sctime = sc_time((double)fsb_cycle_time, SC_PS);
 	mem_cycle_sctime = sc_time((double)mem_cycle_time, SC_PS);
 	
@@ -131,12 +144,22 @@ Setup() {
 template<class CONFIG>
 bool
 SimpleFSBToMemory<CONFIG> ::
-Send(p_fsb_mem_t &fsb_msg) {
+Send(p_fsb_msg_t &fsb_msg) {
+	bool dispatch_needed = false;
+	
 	/* check if there is room for the request in the queue,
 	 *   if not report that the request can not be accepted (return false) */
-	if(buffer_req.num_free() == 0)
+	if(buffer_req.num_available() == 0)
+		dispatch_needed = true;
+	if(!buffer_req.nb_write(fsb_msg))
 		return false;
-	buffer_req.write(fsb_msg);
+		
+	if(dispatch_needed) {
+		uint64_t factor = ceil(sc_time_stamp() / mem_cycle_sctime);
+		dispatch_mem_ev.notify((factor * mem_cycle_sctime) - sc_time_stamp());
+	}
+	
+	return true;
 }
 
 template<class CONFIG>
@@ -144,13 +167,61 @@ void
 SimpleFSBToMemory<CONFIG> ::
 DispatchMemory() {
 	
+	while(1) {
+		p_fsb_msg_t fsb_msg;
+		sc_event read_ev;
+
+		wait(dispatch_mem_ev);
+		if(!buffer_req.nb_read(fsb_msg)) {
+			logger_import << DebugError << LOCATION
+				<< "trying to dispatch a message to the memory bus when none is available" << Endl
+				<< "Stopping simulation"
+				<< Endl << EndDebugError;
+			sc_stop();
+			wait();
+		}
+		
+		const p_fsb_req_t &fsb_req = fsb_msg->req;
+		p_mem_req_t mem_req = new(mem_req) mem_req_t();
+		p_mem_msg_t mem_msg = new(mem_msg) mem_msg_t(mem_req);
+		mem_req->addr = fsb_req->addr;
+		mem_req->size = fsb_req->size;
+		if(fsb_req->type == fsb_req_t::READ) {
+			mem_req->type = mem_req_t::READ;
+			mem_msg->PushResponseEvent(read_ev);
+			while(!master_port->Send(mem_msg))
+				wait(mem_cycle_sc_time);
+			wait(read_ev);
+			const p_mem_rsp_t &mem_rsp = mem_msg->rsp;
+			fsb_msg->rsp = new(fsb_msg->rsp) fsb_rsp_t();
+			memcpy(fsb_msg->rsp->read_data, mem_rsp->read_data, fsb_req->size);
+			sc_event *rsp_ev = fsb_msg->GetResponseEvent();
+			uint64_t factor = ceil(sc_time_stamp() / fsb_cycle_sctime);
+			rsp_ev->notify((factor * fsb_cycle_sctime) - sc_time_stamp());
+		} else {
+			mem_req->type = mem_req_t::WRITE;
+			memcpy(mem_req->write_data, fsb_req->write_data, fsb_req->size);
+			while(!master_port->Send(mem_msg))
+				wait(mem_cycle_sctime);
+		}
+		
+		if(buffer_req.num_available() != 0) {
+			uint64_t factor = ceil(sc_time_stamp() / mem_cycle_sctime);
+			dispatch_mem_ev.notify((factor * mem_cycle_sctime) - sc_time_stamp());
+		}
+	}
 }
 
-template<class CONFIG>
-void 
-SimpleFSBToMemory<CONFIG> ::
-DispatchFSB() {
-	
+bool ReadMemory(CONFIG::fsb_address_t addr, void *buffer, uint32_t size) {
+	if(memory_import)
+		return memory_import->ReadMemory((CONFIG::mem_address_t)addr, buffer, size);
+	return false;
+}
+
+bool WriteMemory(CONFIG::fsb_address_t addr, const void *buffer, uint32_t size) {
+	if(memory_import)
+		return memory_import->WriteMemory((CONFIG::mem_address_t)addr, buffer, size);
+	return false;
 }
 
 #undef LOCATION

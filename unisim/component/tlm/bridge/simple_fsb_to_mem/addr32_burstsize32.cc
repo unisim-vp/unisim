@@ -31,11 +31,10 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_CONFIG_HH__
-#define __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_CONFIG_HH__
 
-#include <inttypes.h>
+#include "unisim/component/tlm/bridge/simple_fsb_to_mem/config.hh"
+#include "unisim/component/tlm/bridge/simple_fsb_to_mem/simple_fsb_to_mem.hh"
+#include "unisim/component/tlm/bridge/simple_fsb_to_mem/simple_fsb_to_mem.tcc"
 
 namespace unisim {
 namespace component {
@@ -43,27 +42,8 @@ namespace tlm {
 namespace bridge {
 namespace simple_fsb_to_mem {
 
-/**
- * IMPORTANT
- * This implementation currently only supports busses with the same burst size
- */
-class Addr32BurstSize32_Config {
-public:
-	static const unsigned int FSB_BURST_SIZE = 32;
-	static const unsigned int MEM_BURST_SIZE = 32;
-	typedef uint32_t fsb_address_t;
-	typedef uint32_t mem_address_t;
-	static const bool DEBUG = false;
-};
-
-class Addr32BurstSize32Debug_Config {
-public:
-	static const unsigned int FSB_BURST_SIZE = 32;
-	static const unsigned int MEM_BURST_SIZE = 32;
-	typedef uint32_t fsb_address_t;
-	typedef uint32_t mem_address_t;
-	static const bool DEBUG = true;
-};
+template class
+SimpleFSBToMemory<Addr32BurstSize32_Config>;
 
 } // end of namespace simple_fsb_to_mem
 } // end of namespace bridge
@@ -71,4 +51,3 @@ public:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__

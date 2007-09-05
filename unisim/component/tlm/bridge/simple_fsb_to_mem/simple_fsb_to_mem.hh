@@ -40,6 +40,7 @@
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
+#include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include <inttypes.h>
 
@@ -50,7 +51,10 @@ namespace bridge {
 namespace simple_fsb_to_mem {
 
 using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
@@ -64,7 +68,7 @@ using unisim::service::interfaces::Logger;
 template <class CONFIG>
 class SimpleFSBToMemory :
 	public sc_module,
-	public TlmSendIf<SimpleFSBRequest<CONFIG::fsb_address_t, CONFIG::FSB_BURST_SIZE>,
+	public TlmSendIf<SimpleFSBRequest<typename CONFIG::fsb_address_t, CONFIG::FSB_BURST_SIZE>,
 		SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> >,
 	public Service<Memory<typename CONFIG::fsb_address_t> >,
 	public Client<Memory<typename CONFIG::mem_address_t> >,
@@ -101,13 +105,16 @@ public:
 	SimpleFSBToMemory(const sc_module_name& name, Object *parent = 0);
 	virtual ~SimpleFSBToMemory();
 	
-	bool Setup();
+	virtual bool Setup();
 	
-	bool Send(p_fsb_mem_t &fsb_msg);
-	
+	virtual bool Send(p_fsb_msg_t &fsb_msg);
+
+	virtual void Reset();
+	virtual bool ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size);
+
 private:
 	sc_fifo<p_fsb_msg_t> buffer_req;
-	sc_fifo<p_fsb_msg_t> buffer_rsp;
 	sc_time fsb_cycle_sctime;
 	sc_time mem_cycle_sctime;
 	
@@ -118,8 +125,8 @@ private:
 	bool verbose_all;
 	Parameter<bool> param_verbose_all;
 	
+	sc_event dispatch_mem_ev;
 	void DispatchMemory();
-	void DispatchFSB();
 };
 
 } // end of namespace simple_fsb_to_mem
