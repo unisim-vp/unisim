@@ -14,6 +14,11 @@ INCLUDE_SUBDIRS=
 # INCLUDE_SUBDIRS += snooping_fsb_to_mem
 # endif
 
+if COND_pci_isa
+SUBDIRS += pci_isa
+INCLUDE_SUBDIRS += pci_isa
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)

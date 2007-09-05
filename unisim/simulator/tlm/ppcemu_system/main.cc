@@ -41,7 +41,6 @@
 #include <unisim/kernel/service/service.hh>
 #include <stdlib.h>
 #include <unisim/service/power/cache_power_estimator.hh>
-#include <unisim/component/tlm/shared_memory/snooping_bus/powerpc.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
 #include <unisim/component/tlm/pci/video/display.hh>
 //#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
@@ -56,8 +55,8 @@
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <stdexcept>
 #include <unisim/service/sdl/sdl.hh>
-#include <tlm/bridges/pci_isa/bridge.hh>
-#include <tlm/isa/i8042/i8042.hh>
+#include <unisim/component/tlm/bridge/pci_isa/bridge.hh>
+#include <unisim/component/tlm/isa/i8042/i8042.hh>
 #include <signal.h>
 
 #ifdef WIN32
@@ -72,7 +71,7 @@
 #endif
 
 
-typedef full_system::processors::powerpc::MPC7447AConfig CPU_CONFIG;
+typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
 
 static const bool DEBUG_INFORMATION = true;
 
