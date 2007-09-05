@@ -2706,7 +2706,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size)
 }
 
 template <class CONFIG>
-string CPU<CONFIG>::DebugDisasm(address_t addr, address_t& next_addr)
+string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 {
 	stringstream sstr;
 	Operation<CONFIG> *operation;
@@ -2788,7 +2788,7 @@ void CPU<CONFIG>::DevOnBusError(BusStatus bs)
 
 /* PowerPC Linux OS Interface */
 template <class CONFIG>
-void CPU<CONFIG>::ARMLinuxOSExit(int ret)
+void CPU<CONFIG>::PerformExit(int ret)
 {
 	if(logger_import)
 		(*logger_import) << DebugInfo << "Program exited with code " << ret << Endl << EndDebugInfo;

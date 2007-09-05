@@ -367,7 +367,7 @@ public:
 	virtual void DevOnBusError(BusStatus bs);
 
 	// PowerPC Linux OS Interface
-	virtual void ARMLinuxOSExit(int ret);
+	virtual void PerformExit(int ret);
 
 	// Endian interface
     virtual endian_type GetEndianess();
@@ -1023,7 +1023,7 @@ public:
 	//=====================================================================
 	
 	virtual unisim::util::debug::Register *GetRegister(const char *name);
-	virtual string DebugDisasm(address_t addr, address_t& next_addr);
+	virtual string Disasm(address_t addr, address_t& next_addr);
 	virtual const char *GetArchitectureName() const;
 	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	string GetObjectFriendlyName(address_t addr);

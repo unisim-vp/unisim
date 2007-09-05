@@ -37,6 +37,9 @@ AC_INIT([UNISIM PowerPC system TLM simulator], [1.0],
 	[Gilles Mouchard <gilles.mouchard@cea.fr>],
 	[ppcemu_system])
 AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
     
 AM_INIT_AUTOMAKE
 
@@ -44,6 +47,8 @@ AC_PATH_PROGS(SH, sh)
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_RANLIB
+
+AC_LANG([C++])
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\

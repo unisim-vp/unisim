@@ -95,15 +95,15 @@ void SigIntHandler(int signum)
 
 
 using namespace std;
-using full_system::plugins::loader::PMACLinuxKernelLoader;
-using full_system::plugins::debug::GDBServer;
-using full_system::plugins::debug::InlineDebugger;
-using full_system::plugins::power::CachePowerEstimator;
-using full_system::utils::garbage_collector::GarbageCollector;
-using full_system::pci::pci64_address_t;
-using full_system::pci::pci32_address_t;
-using full_system::plugins::logger::LoggerServer;
-using full_system::utils::services::ServiceManager;
+using unisim::service::loader::pmac_linux_kernel_loader::PMACLinuxKernelLoader;
+using unisim::service::debug::gdb_server::GDBServer;
+using unisim::service::debug::inline_debugger::InlineDebugger;
+using unisim::service::power::CachePowerEstimator;
+using unisim::util::garbage_collector::GarbageCollector;
+using unisim::component::cxx::pci::pci64_address_t;
+using unisim::component::cxx::pci::pci32_address_t;
+using unisim::service::logger::LoggerServer;
+using unisim::kernel::service::ServiceManager;
 
 void help(char *prog_name)
 {
@@ -374,28 +374,27 @@ int sc_main(int argc, char *argv[])
 		logger = new LoggerServer("logger");
 	
 	// Time
-	full_system::tlm::Time *time = new full_system::tlm::Time("time");
+	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
 	
 	if(logger_on)
 		logger->time_import >> time->time_export;
 
-	full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *flash = 0;
-	full_system::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_display = 0;
-	full_system::plugins::sdl::SDL<PCI_ADDRESS_TYPE> *sdl = 0;
+	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *flash = 0;
+	unisim::component::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_display = 0;
+	unisim::service::sdl::SDL<PCI_ADDRESS_TYPE> *sdl = 0;
 	PMACLinuxKernelLoader *kloader = 0;
-	full_system::tlm::chipsets::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION> *mpc107 = 0;
-	full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *erom = 0;
-	full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *memory = new full_system::tlm::shared_memory::snooping_bus::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("memory");
+	unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION> *mpc107 = 0;
+	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *erom = 0;
+	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *memory = new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("memory");
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
-	full_system::tlm::shared_memory::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> *bus = new full_system::tlm::shared_memory::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>("bus");
-	full_system::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> *pci_bus = 0;
-	full_system::tlm::pci::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_IDE_NUM_MAPPINGS, PCI_IDE_MAX_IMAGES> *pci_ide = 0;
-	full_system::tlm::pci::PCIDevNet<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NET_NUM_MAPPINGS> *pci_net = 0;
-	full_system::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *heathrow = 0;
-	full_system::tlm::bridges::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_isa_bridge = 0;
-	full_system::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE> *i8042 = 0;
-	full_system::tlm::shared_memory::snooping_bus::PowerPC<CPU_CONFIG> *cpu = new full_system::tlm::shared_memory::snooping_bus::PowerPC<CPU_CONFIG>("cpu");
+	//unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> *bus = new unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>("bus");
+	unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> *pci_bus = 0;
+	unisim::component::tlm::pci::ide::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_ide = 0;
+	unisim::component::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *heathrow = 0;
+	unisim::component::tlm::bridge::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_isa_bridge = 0;
+	unisim::component::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE> *i8042 = 0;
+	unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> *cpu = new unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG>("cpu");
 
 	// The optional power estimators
 	CachePowerEstimator *il1_power_estimator = 0;
