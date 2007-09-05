@@ -29,23 +29,45 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
-#include "unisim/component/cxx/chipset/mpc107/address_maps.tcc"
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <signal.h>
 
 namespace unisim {
-namespace component {
-namespace cxx {
-namespace chipset {
-namespace mpc107 {
+namespace service {
+namespace debug {
+namespace inline_debugger {
 
-template
-class AddressMap<true>;
+bool InlineDebuggerBase::trap = false;
+int InlineDebuggerBase::alive_instances = 0;
+void (*InlineDebuggerBase::prev_sig_int_handler)(int);
 
-} // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
+InlineDebuggerBase::InlineDebuggerBase()
+{
+	if(alive_instances == 0)
+	{
+		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+	}
+	alive_instances++;
+}
+
+InlineDebuggerBase::~InlineDebuggerBase()
+{
+	if(--alive_instances > 0)
+	{
+		signal(SIGINT, prev_sig_int_handler);
+	}
+}
+
+void InlineDebuggerBase::SigIntHandler(int signum)
+{
+	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	trap = true;
+}
+
+} // end of namespace inline_debugger
+} // end of namespace debug
+} // end of namespace service
 } // end of namespace unisim

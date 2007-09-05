@@ -10,6 +10,7 @@ libmpc107_a_SOURCES = \
 	address_map_entry.cc \
 	config_regs.cc \
 	address_maps.cc \
+	address_maps_debug.cc \
 	pci_controller.cc pci_controller_debug.cc
 	
 include_HEADERS = \

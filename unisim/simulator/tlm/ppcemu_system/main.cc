@@ -177,9 +177,9 @@ const uint32_t FSB_NUM_PROCS = 1;
 // PCI Bus template parameters
 typedef pci32_address_t PCI_ADDRESS_TYPE;
 const uint32_t PCI_MAX_DATA_SIZE = 32;        // in bytes
-const unsigned int PCI_NUM_MASTERS = 3;
-const unsigned int PCI_NUM_TARGETS = 6;
-const unsigned int PCI_NUM_MAPPINGS = 12;
+const unsigned int PCI_NUM_MASTERS = 2;
+const unsigned int PCI_NUM_TARGETS = 5;
+const unsigned int PCI_NUM_MAPPINGS = 10;
 
 // ISA Bus template parameters
 const uint32_t ISA_MAX_DATA_SIZE = PCI_MAX_DATA_SIZE;

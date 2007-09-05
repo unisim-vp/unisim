@@ -195,8 +195,6 @@ AC_DEFUN_ONCE([UNISIM_CHECK_LIBXML2], [
 	
     if test "$broken_incxml2" == "yes"; then
 		AC_MSG_ERROR([libxml2 includes not found (/libxml2/libxml/*.hh). Please use --with-libxml2=<path>])
-    else
-		LIBS+=" -lxml2"
     fi
 
     # Check for SDL functions

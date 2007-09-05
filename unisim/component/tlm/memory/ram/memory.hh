@@ -99,9 +99,6 @@ public:
 	/** Setup
 	 * Initializes the service interface. */
 	virtual bool Setup();		
-	/** OnDisconnect
-	 * Method called when the service is disconnected */
-	virtual void OnDisconnect();
 	
 	/* Methods required by the TlmSendIf (Tlm send interface) */
 	/** 

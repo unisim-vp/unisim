@@ -54,8 +54,66 @@ AC_LANG([C++])
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
-UNISIM_CHECK_SYSTEMC
+UNISIM_LINK(../../../../unisim/component/tlm/pci/debug, debug)
+UNISIM_LINK(../../../../unisim/component/tlm/pci/macio, macio)
+UNISIM_LINK(../../../../unisim/component/tlm/pci/ide, ide)
+UNISIM_LINK(../../../../unisim/component/tlm/pci/video, video)
+UNISIM_LINK(../../../../unisim/component/tlm/chipset/mpc107, mpc107)
+UNISIM_LINK(../../../../unisim/component/tlm/chipset/mpc107/epic, epic)
+UNISIM_LINK(../../../../unisim/component/tlm/isa/i8042, i8042)
+UNISIM_LINK(../../../../unisim/component/tlm/message, message)
+UNISIM_LINK(../../../../unisim/component/tlm/fsb/simple_bus, simplebus)
+UNISIM_LINK(../../../../unisim/component/tlm/fsb/snooping_bus, snoopingbus)
+UNISIM_LINK(../../../../unisim/component/tlm/bridge/pci_isa, pci_isa)
+UNISIM_LINK(../../../../unisim/component/tlm/memory/ram, ram)
+UNISIM_LINK(../../../../unisim/component/tlm/memory/flash/am29lv, am29lv)
+UNISIM_LINK(../../../../unisim/component/tlm/processor/arm, arm)
+UNISIM_LINK(../../../../unisim/component/tlm/processor/powerpc, powerpc)
+
+UNISIM_LINK(../../../../unisim/component/cxx/processor/arm, arm)
 UNISIM_LINK(../../../../unisim/component/cxx/processor/powerpc, powerpc)
+UNISIM_LINK(../../../../unisim/component/cxx/pci/debug, debug)
+UNISIM_LINK(../../../../unisim/component/cxx/pci/macio, macio)
+UNISIM_LINK(../../../../unisim/component/cxx/pci, pci)
+UNISIM_LINK(../../../../unisim/component/cxx/pci/ide, ide)
+UNISIM_LINK(../../../../unisim/component/cxx/pci/video, video)
+UNISIM_LINK(../../../../unisim/component/cxx/chipset/mpc107, mpc107)
+UNISIM_LINK(../../../../unisim/component/cxx/chipset/mpc107/dma, dma)
+UNISIM_LINK(../../../../unisim/component/cxx/chipset/mpc107/epic, epic)
+UNISIM_LINK(../../../../unisim/component/cxx/isa/i8042, i8042)
+UNISIM_LINK(../../../../unisim/component/cxx/cache/insn, cache)
+UNISIM_LINK(../../../../unisim/component/cxx/cache/mesi, cache)
+UNISIM_LINK(../../../../unisim/component/cxx/bridge/pci_isa, pci_isa)
+UNISIM_LINK(../../../../unisim/component/cxx/memory/ram, ram)
+UNISIM_LINK(../../../../unisim/component/cxx/memory/flash/am29lv, am29lv)
+
+UNISIM_LINK(../../../../unisim/service/time/sc_time, time)
+UNISIM_LINK(../../../../unisim/service/power, power)
+UNISIM_LINK(../../../../unisim/service/debug/gdb_server, gdb_server)
+UNISIM_LINK(../../../../unisim/service/debug/inline_debugger, inline_debugger)
+UNISIM_LINK(../../../../unisim/service/os/linux_os, linux_os)
+UNISIM_LINK(../../../../unisim/service/loader/pmac_linux_kernel_loader, pmac_linux_kernel_loader)
+UNISIM_LINK(../../../../unisim/service/loader/pmac_bootx, pmac_bootx)
+UNISIM_LINK(../../../../unisim/service/loader/linux_loader, linux_loader)
+UNISIM_LINK(../../../../unisim/service/loader/elf_loader, elf_loader)
+UNISIM_LINK(../../../../unisim/service/debug/symbol_table, symbol_table)
+UNISIM_LINK(../../../../unisim/service/logger, logger)
+UNISIM_LINK(../../../../unisim/service/sdl, sdl)
+
+UNISIM_LINK(../../../../unisim/util/xml, xml)
+UNISIM_LINK(../../../../unisim/util/debug, debug)
+UNISIM_LINK(../../../../unisim/util/garbage_collector, garbage_collector)
+
+UNISIM_LINK(../../../../unisim/kernel/service, services)
+
+
+UNISIM_CHECK_BOOST
+UNISIM_CHECK_ZLIB
+UNISIM_CHECK_CURSES
+UNISIM_CHECK_READLINE
+UNISIM_CHECK_LIBXML2
+UNISIM_CHECK_SDL
+UNISIM_CHECK_SYSTEMC
 
 # files to generate
 #   this should include all the makefiles to generate

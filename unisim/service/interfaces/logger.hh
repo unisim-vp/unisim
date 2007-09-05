@@ -53,36 +53,36 @@ namespace interfaces {
 class Logger;
 
 /* Operators that can be applied to the Logger to build messages */
-Logger &operator <<(Logger &os, bool val);
-Logger &operator <<(Logger &os, const char *val);
-Logger &operator <<(Logger &os, std::string &val);
-Logger &operator <<(Logger &os, const std::string &val);
-Logger &operator <<(Logger &os, char val);
-Logger &operator <<(Logger &os, unsigned char val);
-Logger &operator <<(Logger &os, short int val);
-Logger &operator <<(Logger &os, unsigned short int val);
-Logger &operator <<(Logger &os, int val);
-Logger &operator <<(Logger &os, unsigned int val);
-Logger &operator <<(Logger &os, long int val);
-Logger &operator <<(Logger &os, unsigned long int val);
-Logger &operator <<(Logger &os, long long int val);
-Logger &operator <<(Logger &os, unsigned long long int val);
-Logger &operator <<(Logger &os, float val);
-Logger &operator <<(Logger &os, double val);
-Logger &operator <<(Logger &os, Logger& (*fn)(Logger&));
-Logger &Hex(Logger &os);
-Logger &Dec(Logger &os);
-Logger &Endl(Logger &os);
-Logger &Flush(Logger &os);
-Logger &DebugInfo(Logger &os);
-Logger &EndDebugInfo(Logger &os);
-Logger &DebugWarning(Logger &os);
-Logger &EndDebugWarning(Logger &os);
-Logger &DebugError(Logger &os);
-Logger &EndDebugError(Logger &os);
-Logger &File(Logger &os);
-Logger &Function(Logger &os);
-Logger &Line(Logger &os);
+inline Logger &operator <<(Logger &os, bool val);
+inline Logger &operator <<(Logger &os, const char *val);
+inline Logger &operator <<(Logger &os, std::string &val);
+inline Logger &operator <<(Logger &os, const std::string &val);
+inline Logger &operator <<(Logger &os, char val);
+inline Logger &operator <<(Logger &os, unsigned char val);
+inline Logger &operator <<(Logger &os, short int val);
+inline Logger &operator <<(Logger &os, unsigned short int val);
+inline Logger &operator <<(Logger &os, int val);
+inline Logger &operator <<(Logger &os, unsigned int val);
+inline Logger &operator <<(Logger &os, long int val);
+inline Logger &operator <<(Logger &os, unsigned long int val);
+inline Logger &operator <<(Logger &os, long long int val);
+inline Logger &operator <<(Logger &os, unsigned long long int val);
+inline Logger &operator <<(Logger &os, float val);
+inline Logger &operator <<(Logger &os, double val);
+inline Logger &operator <<(Logger &os, Logger& (*fn)(Logger&));
+inline Logger &Hex(Logger &os);
+inline Logger &Dec(Logger &os);
+inline Logger &Endl(Logger &os);
+inline Logger &Flush(Logger &os);
+inline Logger &DebugInfo(Logger &os);
+inline Logger &EndDebugInfo(Logger &os);
+inline Logger &DebugWarning(Logger &os);
+inline Logger &EndDebugWarning(Logger &os);
+inline Logger &DebugError(Logger &os);
+inline Logger &EndDebugError(Logger &os);
+inline Logger &File(Logger &os);
+inline Logger &Function(Logger &os);
+inline Logger &Line(Logger &os);
 
 class Logger {
 public:
@@ -152,151 +152,159 @@ protected:
 	virtual void AppendLine() = 0;
 };
 
-Logger &operator <<(Logger &os, const char *val) {
+inline Logger::Logger()
+{
+}
+
+inline Logger::~Logger()
+{
+}
+
+inline Logger &operator <<(Logger &os, const char *val) {
 	os.Append(val);
 	return os;
 }
 
-Logger &operator <<(Logger &os, std::string &val) {
+inline Logger &operator <<(Logger &os, std::string &val) {
 	os.Append(val);
 	return os;
 }
 
-Logger &operator <<(Logger &os, const std::string &val) {
+inline Logger &operator <<(Logger &os, const std::string &val) {
 	os.Append(val);
 	return os;
 }
 
-Logger &operator <<(Logger &os, bool val) {
+inline Logger &operator <<(Logger &os, bool val) {
 	os.Append(val);
 	return os;
 }
 
-Logger &operator <<(Logger &os, char val) {
+inline Logger &operator <<(Logger &os, char val) {
 	os.Append(val);
 	return os;
 }
 
-Logger &operator <<(Logger &os, unsigned char val) {
+inline Logger &operator <<(Logger &os, unsigned char val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, short int val) {
+inline Logger &operator <<(Logger &os, short int val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, unsigned short int val) {
+inline Logger &operator <<(Logger &os, unsigned short int val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, int val) {
+inline Logger &operator <<(Logger &os, int val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, unsigned int val) {
+inline Logger &operator <<(Logger &os, unsigned int val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, long int val) {
+inline Logger &operator <<(Logger &os, long int val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, unsigned long int val) {
+inline Logger &operator <<(Logger &os, unsigned long int val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, long long int val) {
+inline Logger &operator <<(Logger &os, long long int val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, unsigned long long int val) {
+inline Logger &operator <<(Logger &os, unsigned long long int val) {
 	os.Append(val);
 	return os;	
 }
 
-Logger &operator <<(Logger &os, float val) {
+inline Logger &operator <<(Logger &os, float val) {
 	os.Append(val);
 	return os;
 }
 
-Logger &operator <<(Logger &os, double val) {
+inline Logger &operator <<(Logger &os, double val) {
 	os.Append(val);
 	return os;
 }
 
-Logger &operator <<(Logger &os,	Logger& (*fn)(Logger&))	{ 
+inline Logger &operator <<(Logger &os,	Logger& (*fn)(Logger&))	{ 
 	return (*fn)(os); 
 }
 		
-Logger &Hex(Logger &os) {
+inline Logger &Hex(Logger &os) {
 	os.AppendHex();
 	return os;
 }
 
-Logger &Dec(Logger &os) {
+inline Logger &Dec(Logger &os) {
 	os.AppendDec();
 	return os;
 }
 
-Logger &Endl(Logger &os) {
+inline Logger &Endl(Logger &os) {
 	os.AppendEndl();
 	return os;	
 }
 
-Logger &Flush(Logger &os) {
+inline Logger &Flush(Logger &os) {
 	os.AppendFlush();
 	return os;
 }
 
-Logger &DebugInfo(Logger &os) {
+inline Logger &DebugInfo(Logger &os) {
 	os.AppendDebugInfo();
 	return os;
 }
 
-Logger &EndDebugInfo(Logger &os) {
+inline Logger &EndDebugInfo(Logger &os) {
 	os.AppendEndDebugInfo();
 	return os;
 }
 
-Logger &DebugWarning(Logger &os) {
+inline Logger &DebugWarning(Logger &os) {
 	os.AppendDebugWarning();
 	return os;
 }
 
-Logger &EndDebugWarning(Logger &os) {
+inline Logger &EndDebugWarning(Logger &os) {
 	os.AppendEndDebugWarning();
 	return os;
 }
 
-Logger &DebugError(Logger &os) {
+inline Logger &DebugError(Logger &os) {
 	os.AppendDebugError();
 	return os;
 }
 
-Logger &EndDebugError(Logger &os) {
+inline Logger &EndDebugError(Logger &os) {
 	os.AppendEndDebugError();
 	return os;
 }
 
-Logger &File(Logger &os) {
+inline Logger &File(Logger &os) {
 	os.AppendFile();
 	return os;
 }
 
-Logger &Function(Logger &os) {
+inline Logger &Function(Logger &os) {
 	os.AppendFunction();
 	return os;
 }
 
-Logger &Line(Logger &os) {
+inline Logger &Line(Logger &os) {
 	os.AppendLine();
 	return os;
 }
