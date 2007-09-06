@@ -1,5 +1,6 @@
 includedir = $(prefix)/include/unisim/service/loader
 libdir= $(prefix)/lib/unisim/service/loader
+loaderdir = $(prefix)/share/unisim/service/loader
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
@@ -31,4 +32,5 @@ endif
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)
+	(rmdir $(loaderdir) || true)
 

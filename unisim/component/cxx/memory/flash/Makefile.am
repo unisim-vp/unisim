@@ -1,5 +1,5 @@
-includedir = $(prefix)/include/unisim/component/c++/memory/flash
-libdir= $(prefix)/lib/unisim/component/c++/memory/flash
+includedir = $(prefix)/include/unisim/component/cxx/memory/flash
+libdir= $(prefix)/lib/unisim/component/cxx/memory/flash
 
 SUBDIRS=
 INCLUDE_SUBDIRS=

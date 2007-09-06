@@ -1,6 +1,6 @@
 includedir = $(prefix)/include/unisim/service/debug
 libdir= $(prefix)/lib/unisim/service/debug
-
+debugdir= $(prefix)/share/unisim/service/debug
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
@@ -22,4 +22,5 @@ endif
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)
+	(rmdir $(debugdir) || true)
 

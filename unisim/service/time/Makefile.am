@@ -1,5 +1,5 @@
-includedir = $(prefix)/include/unisim/service/sc_time
-libdir = $(prefix)/lib/unisim/service/sc_time
+includedir = $(prefix)/include/unisim/service/time
+libdir = $(prefix)/lib/unisim/service/time
 
 SUBDIRS=
 INCLUDE_SUBDIRS=

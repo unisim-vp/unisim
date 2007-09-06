@@ -1,5 +1,5 @@
 INCLUDES = -I$(top_srcdir)/../../../..
-libdir = $(prefix)/lib/unisim/service/time_sc_time
+libdir = $(prefix)/lib/unisim/service/time/sc_time
 includedir = $(prefix)/include/unisim/service/time/sc_time
 include_HEADERS = time.hh
 
