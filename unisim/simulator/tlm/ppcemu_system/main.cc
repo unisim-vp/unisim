@@ -811,6 +811,25 @@ int sc_main(int argc, char *argv[])
 	}
 	
 	if(logger_on && logger_messages) {
+		(*bus_msg_spy[0])["source_module_name"] = cpu->name();
+		(*bus_msg_spy[0])["source_port_name"] = cpu->bus_port.name();
+		(*bus_msg_spy[0])["target_module_name"] = bus->name();
+		(*bus_msg_spy[0])["target_port_name"] = bus->inport[0]->name();
+		(*bus_msg_spy[1])["source_module_name"] = bus->name();
+		(*bus_msg_spy[1])["source_port_name"] = bus->outport[0]->name();
+		(*bus_msg_spy[1])["target_module_name"] = cpu->name();
+		(*bus_msg_spy[1])["target_port_name"] = cpu->snoop_port.name();
+		(*bus_msg_spy[2])["source_module_name"] = bus->name();
+		(*bus_msg_spy[2])["source_port_name"] = bus->chipset_outport->name();
+		(*bus_msg_spy[2])["target_module_name"] = mpc107->name();
+		(*bus_msg_spy[2])["target_port_name"] = mpc107->slave_port.name();
+		(*bus_msg_spy[3])["source_module_name"] = mpc107->name();
+		(*bus_msg_spy[3])["source_port_name"] = mpc107->master_port.name();
+		(*bus_msg_spy[3])["target_module_name"] = bus->name();
+		(*bus_msg_spy[3])["target_port_name"] = bus->chipset_inport->name();
+	}
+	
+	if(logger_on && logger_messages) {
 		// Connect the CPU to the Front Side Bus
 		cpu->bus_port(bus_msg_spy[0]->slave_port);
 		bus_msg_spy[0]->master_port(*bus->inport[0]);

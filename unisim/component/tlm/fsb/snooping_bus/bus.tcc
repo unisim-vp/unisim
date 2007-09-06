@@ -111,8 +111,8 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	cycle_time(),
 	cycle_time_int(0),
 	cycle_time_parameter("cycle-time", this, cycle_time_int),
-	working_mutex("working_mutex"),
-	working(false),
+//	working_mutex("working_mutex"),
+//	working(false),
 	bus_synchro_event(),
 	next_serviced(0),
 	chipset_req_fifo("chipset_req_fifo"),
@@ -241,18 +241,19 @@ Send(const PTransactionMsgType &msg) {
 	if(!chipset_req_fifo.nb_write(msg))
 		return false;
 
-	/* if necessary, that is if there was no work to be done,
-	 *   notify the BusClock thread that a new request is available */
-	bool synchronize = true;
-	working_mutex.lock();
-	if(working) {
-		working_mutex.unlock();
-		synchronize = false;
-	}
-	working = true;
-	working_mutex.unlock();
+//	/* if necessary, that is if there was no work to be done,
+//	 *   notify the BusClock thread that a new request is available */
+//	bool synchronize = true;
+//	working_mutex.lock();
+//	if(working) {
+//		working_mutex.unlock();
+//		synchronize = false;
+//	}
+//	working = true;
+//	working_mutex.unlock();
 
-	if(synchronize) BusSynchronize();
+//	if(synchronize) 
+		BusSynchronize();
 	return true;
 }
 
@@ -281,16 +282,17 @@ Send(const PTransactionMsgType &msg, unsigned int id) {
 	
 	/* if necessary, that is if there was no work to be done,
 	 *   notify the BusClock thread that a new request is available */
-	bool synchronize = true;
-	working_mutex.lock();
-	if(working) {
-		working_mutex.unlock();
-		synchronize = false;
-	}
-	working = true;
-	working_mutex.unlock();
-
-	if(synchronize) BusSynchronize();
+//	bool synchronize = true;
+//	working_mutex.lock();
+//	if(working) {
+//		working_mutex.unlock();
+//		synchronize = false;
+//	}
+//	working = true;
+//	working_mutex.unlock();
+//
+//	if(synchronize) 
+		BusSynchronize();
 	return true;
 }
 	
@@ -314,16 +316,17 @@ ResponseReceived(const PTransactionMsgType &msg,
 		/* if necessary, that is if there was no work to be done,
 		 *   notify the BusClock thread that a new response from the 
 		 *   chipset is available (they are handled as request) */
-		bool synchronize = true;
-		working_mutex.lock();
-		if(working) {
-			working_mutex.unlock();
-			synchronize = false;
-		}
-		working = true;
-		working_mutex.unlock();
-
-		if(synchronize) BusSynchronize();
+//		bool synchronize = true;
+//		working_mutex.lock();
+//		if(working) {
+//			working_mutex.unlock();
+//			synchronize = false;
+//		}
+//		working = true;
+//		working_mutex.unlock();
+//
+//		if(synchronize) 
+			BusSynchronize();
 		return;
 	}
 	/* the response comes from one of the cpu ports, which means
@@ -377,9 +380,21 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 void 
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 BusClock() {
+	sc_time last_serviced_time;
+	sc_time current_time;
 	while(1) {
 		wait(bus_synchro_event);
-		
+		current_time = sc_time_stamp();
+		if(current_time <= last_serviced_time) {
+			if(logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Delaying bus cycle execution"
+					<< Endl << EndDebugInfo;
+			wait((last_serviced_time - current_time) + cycle_time);
+			last_serviced_time = sc_time_stamp();
+		} else
+			last_serviced_time = current_time;
+		last_serviced_time = sc_time_stamp();
 		if(logger_import) {
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Executing bus cycle" << Endl
@@ -416,9 +431,9 @@ BusClock() {
 					<< "no message to dispatch, this should never occur" << Endl
 					<< EndDebugWarning;
 			}
-			working_mutex.lock();
-			working = false;
-			working_mutex.unlock();
+//			working_mutex.lock();
+//			working = false;
+//			working_mutex.unlock();
 			continue;
 		}
 		/* dispatch the message */
@@ -428,17 +443,24 @@ BusClock() {
 			DispatchCPUMessage();
 		}
 		/* the message has been handled:
-		 * - increase time
 		 * - set the next_serviced to the next fifo
 		 * - check if there are still messages to handle, if so synchronize the bus
 		 *     again so it will be handled */
-		wait(cycle_time);
-		wait(SC_ZERO_TIME);
-		if(logger_import) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Dispatch finished" << Endl
-				<< EndDebugInfo;
-		}
+//		if(logger_import) 
+//			(*logger_import) << DebugInfo << LOCATION
+//				<< "Before wait(cycle_time)"
+//				<< Endl << EndDebugInfo;
+//		wait(cycle_time);
+//		if(logger_import) 
+//			(*logger_import) << DebugInfo << LOCATION
+//				<< "Before wait(SC_ZERO_TIME)"
+//				<< Endl << EndDebugInfo;
+//		wait(SC_ZERO_TIME);
+//		if(logger_import) {
+//			(*logger_import) << DebugInfo << LOCATION
+//				<< "Dispatch finished" << Endl
+//				<< EndDebugInfo;
+//		}
 		next_serviced += 1;
 		next_serviced = next_serviced % (NUM_PROCS + 1);
 		bool msg_found = false;
@@ -479,15 +501,23 @@ BusClock() {
 			if(logger_import) {
 				(*logger_import) << DebugInfo << LOCATION
 					<< "Finished bus cycle but a message found in one of " 
-					<< "the fifos (working=" << working << ")" << Endl
+					<< "the fifos" << Endl
 					<< EndDebugInfo;
 			}
 			BusSynchronize();
 		} else {
 			/* unset the working boolean, there is nothing else to do */
-			working_mutex.lock();
-			working = false;
-			working_mutex.unlock();			
+			if(logger_import) 
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Finished bus cycle"
+					<< Endl << EndDebugInfo;
+//			working_mutex.lock();
+//			if(logger_import)
+//				(*logger_import) << DebugInfo << LOCATION
+//					<< "working set to false"
+//					<< Endl << EndDebugInfo;
+//			working = false;
+//			working_mutex.unlock();			
 		}
 	}
 }
@@ -643,7 +673,7 @@ DispatchCPUMessage() {
 		wait();
 	} 
 	/* the message is a read with intent to modify (READX) or a read (READ),
-	 *   this is a little bit harder to handle harder to handle.
+	 *   this is a little bit harder to handle.
 	 * First send the message to all the cpus, then wait for all their answers,
 	 *   and once they have been received send the reply to the chipset */
 	if(NUM_PROCS > 1) {
@@ -657,7 +687,7 @@ DispatchCPUMessage() {
 		chipset_snoop = false;
 		for(unsigned int i = 0; i < NUM_PROCS; i++)
 			if(i != next_serviced)
-				if(!inheritedRspListener::Send(msg, *outport[i]))
+				while(!inheritedRspListener::Send(msg, *outport[i]))
 					wait(cycle_time);
 		wait(snoop_event);
 		chipset_snoop = false;
@@ -682,9 +712,11 @@ DispatchCPUMessage() {
 			msg->GetResponseEvent()->notify();
 		else
 			/* the request needs to be send to the chipset */
-			inheritedRspListener::Send(msg, *chipset_outport);
+			while(!inheritedRspListener::Send(msg, *chipset_outport))
+				wait(cycle_time);
 	} else
-		inheritedRspListener::Send(msg, *chipset_outport);
+		while(!inheritedRspListener::Send(msg, *chipset_outport))
+			wait(cycle_time);
 		
 }
 

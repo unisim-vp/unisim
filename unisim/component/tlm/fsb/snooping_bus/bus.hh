@@ -228,8 +228,8 @@ private:
 	sc_fifo<PTransactionMsgType> *req_fifo[NUM_PROCS];
 	sc_fifo<PTransactionMsgType> chipset_req_fifo;
 	sc_fifo<PTransactionMsgType> chipset_rsp_fifo;
-	sc_mutex working_mutex;
-	bool working;
+//	sc_mutex working_mutex;
+//	bool working;
 	sc_event bus_synchro_event;
 	unsigned int next_serviced;
 	static const unsigned int CHIPSET_ID = NUM_PROCS;
