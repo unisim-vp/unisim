@@ -804,7 +804,7 @@ int sc_main(int argc, char *argv[])
 	/* logger connections */
 	if(logger_on) {
 		unsigned int logger_index = 0;
-/*		cpu->logger_import >> *logger->logger_export[logger_index++];
+		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
 		bus->logger_import >> *logger->logger_export[logger_index++];
@@ -818,7 +818,7 @@ int sc_main(int argc, char *argv[])
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->epic_reg_logger_import >> *logger->logger_export[logger_index++];
 		sdl->logger_import >> *logger->logger_export[logger_index++];
-		pci_isa_bridge->logger_import >> *logger->logger_export[logger_index++];*/
+		pci_isa_bridge->logger_import >> *logger->logger_export[logger_index++];
 		i8042->logger_import >> *logger->logger_export[logger_index++];
 		//if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 	}

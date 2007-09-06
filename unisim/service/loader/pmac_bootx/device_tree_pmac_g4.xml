@@ -182,6 +182,7 @@
 						  		 81001018 00000000 00000001 00000000 00000010 
 						  		 8100101c 00000000 0000000b 00000000 00000010
 						  		 81001020 00000000 00018119 00000000 00000010"/>
+			<!-- these values seems strange !! May be an error -->
 			<hex_property name="reg"
 						  value="00001000 00000000 00000000 00000000 00000000 
 						 		 01001010 00000000 00000000 00000000 00000008
@@ -221,11 +222,16 @@
 			(ISA phys-addr, PCI phys-addr, size)
 			64-bit ISA/EISA phys-addr = (phys-hi, phys-lo) = 00000000000000000000000000000vti nnnnnnnn nnnnnnnn nnnnnnnn nnnnnnnn
 			96-bit PCI phys-addr = (phys-hi, phys-med, phys-lo) = npt000ss bbbbbbbb dddddfff rrrrrrrr hhhhhhhh hhhhhhhh hhhhhhhh hhhhhhhh llllllll llllllll llllllll llllllll
+			                                                    = 00000001 00000000 00100000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
 			32-bit size = zzzzzzzz
-			first value defines an I/O space for device 5 starting at 0x0000000000000000 (64 KB)
-			second value defines a memory space for device 5 stating at 0x0000000000000000 (16 MB) -->
-			<hex_property name="ranges" value="00000001 00000000 010028000000000000000000 00010000
-			                                   00000000 00000000 020028000000000000000000 01000000"/>
+			first value defines an I/O space for device 4 starting at 0x0000000000000000 (64 KB)
+			96-bit PCI phys-addr = (phys-hi, phys-med, phys-lo) = npt000ss bbbbbbbb dddddfff rrrrrrrr hhhhhhhh hhhhhhhh hhhhhhhh hhhhhhhh llllllll llllllll llllllll llllllll
+																= 00000001 00000000 00100000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+			second value defines a memory space for device 4 starting at 0x0000000000000000 (16 MB)
+			96-bit PCI phys-addr = (phys-hi, phys-med, phys-lo) = npt000ss bbbbbbbb dddddfff rrrrrrrr hhhhhhhh hhhhhhhh hhhhhhhh hhhhhhhh llllllll llllllll llllllll llllllll
+																= 00000010 00000000 00100000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 -->
+			<hex_property name="ranges" value="00000001 00000000 010020000000000000000000 00010000
+			                                   00000000 00000000 020020000000000000000000 01000000"/>
 			
 			<hex_property name="interrupts" value="00000001 00000003 0000000c 00000003"/>
 
