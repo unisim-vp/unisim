@@ -48,15 +48,17 @@
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/endian/endian.hh"
 #include <string>
+#include <sstream>
 #include <inttypes.h>
 //#include "unisim/component/cxx/processor/arm/config.hh"
 //#include "memories/endian_interface.hh"
 //#include "generic/cache/cache_interface.hh"
-
+	
 #ifdef GCC_INLINE
 #undef GCC_INLINE
 #endif
@@ -99,13 +101,14 @@ using unisim::service::interfaces::DebugError;
 using unisim::service::interfaces::EndDebugInfo;
 using unisim::service::interfaces::EndDebugWarning;
 using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Line;
 using unisim::util::debug::Register;
+using unisim::util::arithmetic::Add32;
 using unisim::component::cxx::cache::CacheInterface;
 using unisim::util::endian::endian_type;
 using std::string;
-
-//using full_system::generic::cache::CacheInterface;
-//using full_system::memories::endian_interface::endian_type;
 
 template<class CONFIG>
 class CPU :
@@ -131,7 +134,7 @@ public:
 	//=                  public service imports/exports                   =
 	//=====================================================================
 	
-	ServiceExport<Disassembly<address_t> > debug_disasm_export;
+	ServiceExport<Disassembly<address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
@@ -198,7 +201,7 @@ public:
 	 * @param next_addr The address following the requested instruction.
 	 * @return The disassembling of the requested instruction address.
 	 */
-    virtual string DebugDisasm(address_t addr, address_t &next_addr);
+    virtual string Disasm(address_t addr, address_t &next_addr);
 
 	//=====================================================================
 	//=                   Debugging methods                               =
@@ -381,7 +384,7 @@ public:
     /* Disassembling methods     END                              */
     /**************************************************************/
 
-    // ARM Linux OS Interface
+    // Linux OS Interface
 	virtual void PerformExit(int ret);
 
 	// Endian interface

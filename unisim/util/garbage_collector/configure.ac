@@ -33,9 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Garbage Collector Library], [1.0],
-	[Gilles Mouchard <gilles.mouchard@cea.fr>],
-	[garbage collector])
+AC_INIT([UNISIM Garbage Collector Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST

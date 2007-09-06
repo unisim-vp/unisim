@@ -45,6 +45,7 @@ AC_PROG_INSTALL
 AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-ppcemu_system, ppcemu_system)
+UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-armemu, armemu)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

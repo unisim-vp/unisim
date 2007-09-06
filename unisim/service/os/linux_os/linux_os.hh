@@ -95,7 +95,7 @@ class LinuxOS :
 	public Client<Logger> {
 public:
     /* Exported services */
-	ServiceExport<LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE> > linux_os_export;
+	ServiceExport<unisim::service::interfaces::LinuxOS> linux_os_export;
 
 	/* Imported services */
 	ServiceImport<CPULinuxOS>  cpu_linux_os_import;

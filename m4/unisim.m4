@@ -310,5 +310,5 @@ AC_ARG_ENABLE($1,
 
 ## UNISIM_LINK
 AC_DEFUN([UNISIM_LINK], [
-	LIBS+=" $1/lib$2.a"
+	LIBS="$1/lib$2.a $LIBS"
 ])

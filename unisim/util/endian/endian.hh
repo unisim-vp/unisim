@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_ENDIAN_ENDIAN_HH__
 #define __UNISIM_UTIL_ENDIAN_ENDIAN_HH__
 
+#include <inttypes.h>
 #include <string.h>
 
 #ifdef WIN32

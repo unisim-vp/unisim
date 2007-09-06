@@ -53,6 +53,7 @@ public:
 	static const unsigned int MEM_BURST_SIZE = 32;
 	typedef uint32_t fsb_address_t;
 	typedef uint32_t mem_address_t;
+	static const unsigned int BUFFER_SIZE = 16;
 	static const bool DEBUG = false;
 };
 
@@ -62,6 +63,7 @@ public:
 	static const unsigned int MEM_BURST_SIZE = 32;
 	typedef uint32_t fsb_address_t;
 	typedef uint32_t mem_address_t;
+	static const unsigned int BUFFER_SIZE = 16;
 	static const bool DEBUG = true;
 };
 

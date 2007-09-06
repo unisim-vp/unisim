@@ -93,7 +93,7 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<Logger>(name, parent),
-	debug_disasm_export("debug_disasm_export", this),
+	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_export("memory_export", this),
 	cpu_linux_os_export("cpu_linux_os_export", this),
@@ -254,7 +254,7 @@ GetRegister(const char *name) {
 template<class CONFIG>
 string
 CPU<CONFIG> ::
-DebugDisasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr) {
+Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr) {
   Operation<CONFIG> *op = NULL;
   op = Decoder<CONFIG>::Decode(addr);
   stringstream buffer;

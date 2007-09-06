@@ -46,42 +46,6 @@ template <{class} {CONFIG}>
 
 {
 #include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/service/interfaces/logger.hh"
-#include <sstream>
-	
-#ifdef GCC_INLINE
-#undef GCC_INLINE
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-#define GCC_INLINE __attribute__((always_inline))
-#else
-#define GCC_INLINE
-#endif
-
-using namespace std;
-using unisim::util::arithmetic::Add32;
-using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
-//using unisim::component::cxx::processor::arm::ARMV5XM;
-//using unisim::component::cxx::processor::arm::ARMV5T;
-//using unisim::component::cxx::processor::arm::ARMV5TXM;
-//using unisim::component::cxx::processor::arm::ARMV5TE;
-//using unisim::component::cxx::processor::arm::ARMV5TEXP;
-
 }
 
 include "constructors_dec.isa"

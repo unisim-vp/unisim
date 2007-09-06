@@ -33,9 +33,9 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM PowerPC system TLM simulator], [1.0],
-	[Gilles Mouchard <gilles.mouchard@cea.fr>],
-	[ppcemu_system])
+AC_INIT([UNISIM ARM user level TLM simulator], [1.0],
+	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
+	[armemu])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -54,18 +54,17 @@ AC_LANG([C++])
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
-
 UNISIM_CHECK_BOOST
 UNISIM_CHECK_CURSES
 UNISIM_CHECK_READLINE
 UNISIM_CHECK_LIBXML2
-UNISIM_CHECK_SDL
 UNISIM_CHECK_SYSTEMC
 
 UNISIM_LINK(../../../../unisim/kernel/service, services)
 
 UNISIM_LINK(../../../../unisim/util/xml, xml)
 UNISIM_LINK(../../../../unisim/util/debug, debug)
+UNISIM_LINK(../../../../unisim/util/endian, endian)
 UNISIM_LINK(../../../../unisim/util/garbage_collector, garbage_collector)
 
 UNISIM_LINK(../../../../unisim/service/time/sc_time, time)
@@ -103,6 +102,7 @@ UNISIM_LINK(../../../../unisim/component/tlm/processor/arm, arm)
 UNISIM_LINK(../../../../unisim/component/tlm/memory/flash/am29lv, am29lv)
 UNISIM_LINK(../../../../unisim/component/tlm/memory/ram, ram)
 UNISIM_LINK(../../../../unisim/component/tlm/bridge/pci_isa, pci_isa)
+UNISIM_LINK(../../../../unisim/component/tlm/bridge/simple_fsb_to_mem, simple_fsb_to_mem)
 UNISIM_LINK(../../../../unisim/component/tlm/fsb/snooping_bus, snoopingbus)
 UNISIM_LINK(../../../../unisim/component/tlm/fsb/simple_bus, simplebus)
 UNISIM_LINK(../../../../unisim/component/tlm/message, message)

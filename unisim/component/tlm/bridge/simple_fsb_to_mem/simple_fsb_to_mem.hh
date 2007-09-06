@@ -82,13 +82,13 @@ private:
 	typedef SimpleFSBResponse<FSB_BURST_SIZE> fsb_rsp_t;
 	typedef Pointer<fsb_req_t> p_fsb_req_t;
 	typedef Pointer<fsb_rsp_t> p_fsb_rsp_t;
-	typedef TlmMessage<p_fsb_req_t, p_fsb_rsp_t> fsb_msg_t;
+	typedef TlmMessage<fsb_req_t, fsb_rsp_t> fsb_msg_t;
 	typedef Pointer<fsb_msg_t> p_fsb_msg_t;
 	typedef MemoryRequest<mem_address_t, MEM_BURST_SIZE> mem_req_t;
 	typedef MemoryResponse<MEM_BURST_SIZE> mem_rsp_t;
 	typedef Pointer<mem_req_t> p_mem_req_t;
 	typedef Pointer<mem_rsp_t> p_mem_rsp_t;
-	typedef TlmMessage<p_mem_req_t, p_mem_rsp_t> mem_msg_t;
+	typedef TlmMessage<mem_req_t, mem_rsp_t> mem_msg_t;
 	typedef Pointer<mem_msg_t> p_mem_msg_t;
 	
 	
@@ -107,7 +107,7 @@ public:
 	
 	virtual bool Setup();
 	
-	virtual bool Send(p_fsb_msg_t &fsb_msg);
+	virtual bool Send(const p_fsb_msg_t &fsb_msg);
 
 	virtual void Reset();
 	virtual bool ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size);

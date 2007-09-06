@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
-#define __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
+#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_TCC__
+#define __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_TCC__
 
 #include <cmath>
 
@@ -43,13 +43,26 @@ namespace tlm {
 namespace bridge {
 namespace simple_fsb_to_mem {
 
-#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
-
 using unisim::kernel::service::Object;
+using unisim::service::interfaces::operator<<;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::Line;
+
+#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
 
 template <class CONFIG>
 SimpleFSBToMemory<CONFIG> ::
-SimpleFSBToMemory(const sc_module_name& name, Object *parent = 0) :
+SimpleFSBToMemory(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	Service<Memory<fsb_address_t> >(name, parent),
@@ -62,17 +75,16 @@ SimpleFSBToMemory(const sc_module_name& name, Object *parent = 0) :
 	logger_import("logger-import", this),
 	verbose_all(false),
 	param_verbose_all("verbose_all", this, verbose_all),
-	fsb_cycle_sctime(0),
+	fsb_cycle_sctime(),
 	fsb_cycle_time(0),
 	param_fsb_cycle_time("fsb_cycle_time", this, fsb_cycle_time),
-	mem_cycle_sctime(0),
+	mem_cycle_sctime(),
 	mem_cycle_time(0),
 	param_mem_cycle_time("mem_cycle_time", this, mem_cycle_time),
-	buffer("buffer", CONFIG::BUFFER_SIZE) {
-	slave_port(this);
+	buffer_req("buffer_req", CONFIG::BUFFER_SIZE) {
+	slave_port(*this);
 	
 	SC_THREAD(DispatchMemory);
-	SC_THREAD(DispatchFSB);
 	
 	SetupDependsOn(memory_import);
 	SetupDependsOn(logger_import);
@@ -89,7 +101,7 @@ bool
 SimpleFSBToMemory<CONFIG> ::
 Setup() {
 	if(!logger_import) {
-		if(CONFIG::debug)
+		if(CONFIG::DEBUG)
 			cerr << "WARNING("
 				<< __FUNCTION__ << ":"
 				<< __FILE__ << ":"
@@ -99,7 +111,7 @@ Setup() {
 	
 	if(fsb_cycle_time == 0) {
 		if(logger_import)
-			logger_import << DebugError << LOCATION
+			(*logger_import) << DebugError << LOCATION
 				<< "fsb_cycle_time parameter should be set to a value bigger than 0"
 				<< Endl
 				<< EndDebugError;
@@ -108,7 +120,7 @@ Setup() {
 	
 	if(mem_cycle_time == 0) {
 		if(logger_import)
-			logger_import << DebugError << LOCATION
+			(*logger_import) << DebugError << LOCATION
 				<< "mem_cycle_time paramater should be set to a value bigger than 0"
 				<< Endl
 				<< EndDebugError;
@@ -117,7 +129,7 @@ Setup() {
 	
 	if(CONFIG::FSB_BURST_SIZE != CONFIG::MEM_BURST_SIZE) {
 		if(logger_import)
-			logger_import << DebugError << LOCATION
+			(*logger_import) << DebugError << LOCATION
 				<< "the size of the two busses differ, they should be the same"
 				<< Endl
 				<< EndDebugError;
@@ -127,13 +139,13 @@ Setup() {
 	fsb_cycle_sctime = sc_time((double)fsb_cycle_time, SC_PS);
 	mem_cycle_sctime = sc_time((double)mem_cycle_time, SC_PS);
 	
-	if(CONFIG::debug && verbose_all) {
+	if(CONFIG::DEBUG && verbose_all) {
 		if(logger_import) {
-			logger_import << DebugInfo << LOCATION
-				<< "fsb_cycle_time = " << fsb_cycle_time.to_string()
+			(*logger_import) << DebugInfo << LOCATION
+				<< "fsb_cycle_time = " << fsb_cycle_sctime.to_string()
 				<< Endl << EndDebugInfo;
-			logger_import << DebugInfo << LOCATION
-				<< "mem_cycle_time = " << mem_cycle_time.to_string()
+			(*logger_import) << DebugInfo << LOCATION
+				<< "mem_cycle_time = " << mem_cycle_sctime.to_string()
 				<< Endl << EndDebugInfo;
 		}
 	}
@@ -144,7 +156,7 @@ Setup() {
 template<class CONFIG>
 bool
 SimpleFSBToMemory<CONFIG> ::
-Send(p_fsb_msg_t &fsb_msg) {
+Send(const p_fsb_msg_t &fsb_msg) {
 	bool dispatch_needed = false;
 	
 	/* check if there is room for the request in the queue,
@@ -155,8 +167,7 @@ Send(p_fsb_msg_t &fsb_msg) {
 		return false;
 		
 	if(dispatch_needed) {
-		uint64_t factor = ceil(sc_time_stamp() / mem_cycle_sctime);
-		dispatch_mem_ev.notify((factor * mem_cycle_sctime) - sc_time_stamp());
+		dispatch_mem_ev.notify((ceil(sc_time_stamp() / mem_cycle_sctime) * mem_cycle_sctime) - sc_time_stamp());
 	}
 	
 	return true;
@@ -173,7 +184,7 @@ DispatchMemory() {
 
 		wait(dispatch_mem_ev);
 		if(!buffer_req.nb_read(fsb_msg)) {
-			logger_import << DebugError << LOCATION
+			(*logger_import) << DebugError << LOCATION
 				<< "trying to dispatch a message to the memory bus when none is available" << Endl
 				<< "Stopping simulation"
 				<< Endl << EndDebugError;
@@ -190,14 +201,13 @@ DispatchMemory() {
 			mem_req->type = mem_req_t::READ;
 			mem_msg->PushResponseEvent(read_ev);
 			while(!master_port->Send(mem_msg))
-				wait(mem_cycle_sc_time);
+				wait(mem_cycle_sctime);
 			wait(read_ev);
 			const p_mem_rsp_t &mem_rsp = mem_msg->rsp;
 			fsb_msg->rsp = new(fsb_msg->rsp) fsb_rsp_t();
 			memcpy(fsb_msg->rsp->read_data, mem_rsp->read_data, fsb_req->size);
 			sc_event *rsp_ev = fsb_msg->GetResponseEvent();
-			uint64_t factor = ceil(sc_time_stamp() / fsb_cycle_sctime);
-			rsp_ev->notify((factor * fsb_cycle_sctime) - sc_time_stamp());
+			rsp_ev->notify((ceil(sc_time_stamp() / fsb_cycle_sctime)* fsb_cycle_sctime) - sc_time_stamp());
 		} else {
 			mem_req->type = mem_req_t::WRITE;
 			memcpy(mem_req->write_data, fsb_req->write_data, fsb_req->size);
@@ -206,21 +216,35 @@ DispatchMemory() {
 		}
 		
 		if(buffer_req.num_available() != 0) {
-			uint64_t factor = ceil(sc_time_stamp() / mem_cycle_sctime);
-			dispatch_mem_ev.notify((factor * mem_cycle_sctime) - sc_time_stamp());
+			dispatch_mem_ev.notify((ceil(sc_time_stamp() / mem_cycle_sctime) * mem_cycle_sctime) - sc_time_stamp());
 		}
 	}
 }
 
-bool ReadMemory(CONFIG::fsb_address_t addr, void *buffer, uint32_t size) {
+template<class CONFIG>
+void
+SimpleFSBToMemory<CONFIG> ::
+Reset() {
+	p_fsb_msg_t fsb_msg;
+	while(buffer_req.nb_read(fsb_msg));
+	return;
+}
+
+template<class CONFIG>
+bool
+SimpleFSBToMemory<CONFIG> ::
+ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size) {
 	if(memory_import)
-		return memory_import->ReadMemory((CONFIG::mem_address_t)addr, buffer, size);
+		return memory_import->ReadMemory((typename CONFIG::mem_address_t)addr, buffer, size);
 	return false;
 }
 
-bool WriteMemory(CONFIG::fsb_address_t addr, const void *buffer, uint32_t size) {
+template<class CONFIG>
+bool
+SimpleFSBToMemory<CONFIG> ::
+WriteMemory(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size) {
 	if(memory_import)
-		return memory_import->WriteMemory((CONFIG::mem_address_t)addr, buffer, size);
+		return memory_import->WriteMemory((typename CONFIG::mem_address_t)addr, buffer, size);
 	return false;
 }
 
@@ -232,4 +256,4 @@ bool WriteMemory(CONFIG::fsb_address_t addr, const void *buffer, uint32_t size) 
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
+#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_TCC__
