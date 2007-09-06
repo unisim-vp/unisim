@@ -883,13 +883,9 @@ int sc_main(int argc, char *argv[])
 		(*bus->chipset_outport)(mpc107->slave_port);
 		mpc107->master_port(*bus->chipset_inport);
 		mpc107->ram_master_port(memory->slave_port);
-		mpc107->ram_import >> memory->memory_export;
 		mpc107->rom_master_port(flash->slave_port);
-		mpc107->rom_import >> flash->memory_export;
 		mpc107->erom_master_port(erom->slave_port);
-		mpc107->erom_import >> erom->memory_export;
 		mpc107->pci_master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
-		mpc107->pci_import >> *pci_bus->exp[0];
 	
 		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(mpc107->pci_slave_port);
 		(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(heathrow->bus_port);
