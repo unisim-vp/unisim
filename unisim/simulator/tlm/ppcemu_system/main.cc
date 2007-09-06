@@ -57,6 +57,7 @@
 #include <unisim/service/sdl/sdl.hh>
 #include <unisim/component/tlm/bridge/pci_isa/bridge.hh>
 #include <unisim/component/tlm/isa/i8042/i8042.hh>
+#include <unisim/component/tlm/debug/transaction_spy.hh>
 #include <signal.h>
 
 #ifdef WIN32
@@ -207,6 +208,9 @@ const unsigned int PCI_IDE_IRQ = 47;
 const unsigned int I8042_KBD_IRQ = 1;
 const unsigned int I8042_AUX_IRQ = 12;
 
+// the maximum number of transaction spies (per type of message)
+const unsigned int MAX_TRANSACTION_SPY = 1024;
+
 int sc_main(int argc, char *argv[])
 {
 #ifdef WIN32
@@ -261,6 +265,7 @@ int sc_main(int argc, char *argv[])
 	bool logger_error = false;
 	bool logger_out = false;
 	bool logger_on = false;
+	bool logger_messages = false;
 	uint32_t pci_bus_frequency = 33; // in Mhz
 	uint32_t isa_bus_frequency = 8; // in Mhz
 	uint32_t fsb_frequency = 75; // in Mhz
@@ -277,7 +282,7 @@ int sc_main(int argc, char *argv[])
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:t:f:r:c:hi:pl:zeonx:y:u:", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "dg:a:t:f:r:c:hi:pl:zeomnx:y:u:", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -324,6 +329,9 @@ int sc_main(int argc, char *argv[])
 			case 'o':
 				logger_out = true;
 				break;
+			case 'm':
+				logger_messages = true;
+				break;
 			case 'n':
 				enable_video_output = false;
 				break;
@@ -359,9 +367,13 @@ int sc_main(int argc, char *argv[])
 
 	// Logger
 	LoggerServer *logger = 0;
-	if(logger_on)
+	if(logger_on) {
 		logger = new LoggerServer("logger");
-	
+		(*logger)["show-file"] = true;
+		(*logger)["show-function"] = true;
+		(*logger)["show-line"] = true;
+	}
+		
 	// Time
 	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
 	
@@ -407,11 +419,6 @@ int sc_main(int argc, char *argv[])
 	}
 
 	(*cpu)["ipc"] = cpu_ipc;
-
-	// Connect the CPU to the Front Side Bus
-//	cpu->bus_req_port(*bus->br_port[0]);
-	cpu->bus_port(*bus->inport[0]);
-	(*bus->outport[0])(cpu->snoop_port);
 
 	cpu->memory_import >> bus->memory_export;
 	
@@ -571,6 +578,27 @@ int sc_main(int argc, char *argv[])
 	i8042 = new unisim::component::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE>("i8042");
 	sdl = new unisim::service::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
 	
+	// the optional transaction spies
+	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::ReqType BusMsgReqType;
+	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::RspType BusMsgRspType;
+	typedef unisim::component::tlm::debug::TransactionSpy<BusMsgReqType, BusMsgRspType> BusMsgSpyType;
+	typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MemMsgReqType;
+	typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;
+	typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
+	typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>::ReqType PCIMsgReqType;
+	typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>::RspType PCIMsgRspType;
+	typedef unisim::component::tlm::debug::TransactionSpy<PCIMsgReqType, PCIMsgRspType> PCIMsgSpyType;
+	typedef unisim::component::tlm::message::InterruptRequest IRQReqSpyType;
+	typedef unisim::component::tlm::debug::TransactionSpy<IRQReqSpyType> IRQMsgSpyType;
+	BusMsgSpyType *bus_msg_spy[MAX_TRANSACTION_SPY];
+	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) bus_msg_spy[i] = NULL;
+	MemMsgSpyType *mem_msg_spy[MAX_TRANSACTION_SPY];
+	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) mem_msg_spy[i] = NULL;
+	PCIMsgSpyType *pci_msg_spy[MAX_TRANSACTION_SPY];
+	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) pci_msg_spy[i] = NULL;
+	IRQMsgSpyType *irq_msg_spy[MAX_TRANSACTION_SPY];
+	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) irq_msg_spy[i] = NULL;
+
 	// Instanciate a Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
 	kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
 
@@ -761,39 +789,109 @@ int sc_main(int argc, char *argv[])
 	pci_display->video_import >> sdl->video_export;
 	sdl->memory_import >> pci_display->memory_export;
 
-	(*bus->chipset_outport)(mpc107->slave_port);
-	mpc107->master_port(*bus->chipset_inport);
-//	mpc107->br_outport(*bus->chipset_br_inport);
-	mpc107->ram_master_port(memory->slave_port);
-	mpc107->ram_import >> memory->memory_export;
-	mpc107->rom_master_port(flash->slave_port);
-	mpc107->rom_import >> flash->memory_export;
-	mpc107->erom_master_port(erom->slave_port);
-	mpc107->erom_import >> erom->memory_export;
-//		mpc107->fb_port(display->bus_port);
-//		mpc107->fb_import >> display->exp;
-	mpc107->pci_master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
-	mpc107->pci_import >> *pci_bus->exp[0];
-//	mpc107->int_outport(*mpc107->irq_inport[0]);
-//		display->time_import >> time->time_export;
+	if(logger_on && logger_messages) {
+		bus_msg_spy[0] = new BusMsgSpyType("bus_msg_spy[0]");
+		bus_msg_spy[1] = new BusMsgSpyType("bus_msg_spy[1]");
+		bus_msg_spy[2] = new BusMsgSpyType("bus_msg_spy[2]");
+		bus_msg_spy[3] = new BusMsgSpyType("bus_msg_spy[3]");
+		mem_msg_spy[0] = new MemMsgSpyType("mem_msg_spy[0]");
+		mem_msg_spy[1] = new MemMsgSpyType("mem_msg_spy[1]");
+		mem_msg_spy[2] = new MemMsgSpyType("mem_msg_spy[2]");
+		pci_msg_spy[0] = new PCIMsgSpyType("pci_msg_spy[0]");
+		pci_msg_spy[1] = new PCIMsgSpyType("pci_msg_spy[1]");
+		pci_msg_spy[2] = new PCIMsgSpyType("pci_msg_spy[2]");
+		pci_msg_spy[3] = new PCIMsgSpyType("pci_msg_spy[3]");
+		pci_msg_spy[4] = new PCIMsgSpyType("pci_msg_spy[4]");
+		pci_msg_spy[5] = new PCIMsgSpyType("pci_msg_spy[5]");
+		pci_msg_spy[6] = new PCIMsgSpyType("pci_msg_spy[6]");
+		irq_msg_spy[0] = new IRQMsgSpyType("irq_msg_spy[0]");
+		irq_msg_spy[1] = new IRQMsgSpyType("irq_msg_spy[1]");
+		irq_msg_spy[2] = new IRQMsgSpyType("irq_msg_spy[2]");
+		irq_msg_spy[3] = new IRQMsgSpyType("irq_msg_spy[3]");
+	}
 	
-	(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(mpc107->pci_slave_port);
-	(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(heathrow->bus_port);
-	(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_ide->input_port);
-	(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_display->bus_port);
-	(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_isa_bridge->pci_slave_port);
-	pci_ide->output_port (*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
-	pci_ide->irq_port (*heathrow->irq_port[PCI_IDE_IRQ]);
-//	heathrow->cpu_irq_port(cpu->external_interrupt_port);
-//	mpc107->int_outport(*mpc107->irq_inport[0]);
-	heathrow->cpu_irq_port(*mpc107->irq_slave_port[0]);
-	mpc107->irq_master_port(cpu->external_interrupt_port);
-	mpc107->soft_reset_master_port(cpu->soft_reset_port);
-	
-	pci_isa_bridge->isa_master_port(i8042->bus_port);
-	i8042->kbd_irq_port(*heathrow->irq_port[I8042_KBD_IRQ]);
-	i8042->aux_irq_port(*heathrow->irq_port[I8042_AUX_IRQ]);
+	if(logger_on && logger_messages) {
+		// Connect the CPU to the Front Side Bus
+		cpu->bus_port(bus_msg_spy[0]->slave_port);
+		bus_msg_spy[0]->master_port(*bus->inport[0]);
+		(*bus->outport[0])(bus_msg_spy[1]->slave_port);
+		bus_msg_spy[1]->master_port(cpu->snoop_port);
+		(*bus->chipset_outport)(bus_msg_spy[2]->slave_port);
+		bus_msg_spy[2]->master_port(mpc107->slave_port);
+		mpc107->master_port(bus_msg_spy[3]->slave_port);
+		bus_msg_spy[3]->master_port(*bus->chipset_inport);
+		
+		mpc107->ram_master_port(mem_msg_spy[0]->slave_port);
+		mem_msg_spy[0]->master_port(memory->slave_port);
+		mpc107->rom_master_port(mem_msg_spy[1]->slave_port);
+		mem_msg_spy[1]->master_port(flash->slave_port);
+		mpc107->erom_master_port(mem_msg_spy[2]->slave_port);
+		mem_msg_spy[2]->master_port(erom->slave_port);
+		
+		mpc107->pci_master_port(pci_msg_spy[0]->slave_port);
+		pci_msg_spy[0]->master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
+		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(pci_msg_spy[1]->slave_port);
+		pci_msg_spy[1]->master_port(mpc107->pci_slave_port);
+		(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(pci_msg_spy[2]->slave_port);
+		pci_msg_spy[2]->master_port(heathrow->bus_port);
+		(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_msg_spy[3]->slave_port);
+		pci_msg_spy[3]->master_port(pci_ide->input_port);
+		(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_msg_spy[4]->slave_port);
+		pci_msg_spy[4]->master_port(pci_display->bus_port);
+		(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_msg_spy[5]->slave_port);
+		pci_msg_spy[5]->master_port(pci_isa_bridge->pci_slave_port);
+		pci_ide->output_port(pci_msg_spy[6]->slave_port);
+		pci_msg_spy[6]->master_port(*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
+		
+		pci_ide->irq_port(irq_msg_spy[0]->slave_port);
+		irq_msg_spy[0]->master_port(*heathrow->irq_port[PCI_IDE_IRQ]);
+		heathrow->cpu_irq_port(irq_msg_spy[1]->slave_port);
+		irq_msg_spy[1]->master_port(*mpc107->irq_slave_port[0]);
+		mpc107->irq_master_port(irq_msg_spy[2]->slave_port);
+		irq_msg_spy[2]->master_port(cpu->external_interrupt_port);
+		mpc107->soft_reset_master_port(irq_msg_spy[3]->slave_port);
+		irq_msg_spy[3]->master_port(cpu->soft_reset_port);
+		
+		pci_isa_bridge->isa_master_port(i8042->bus_port);
+		i8042->kbd_irq_port(*heathrow->irq_port[I8042_KBD_IRQ]);
+		i8042->aux_irq_port(*heathrow->irq_port[I8042_AUX_IRQ]);
+		
+	} else {
+		// Connect the CPU to the Front Side Bus
+		cpu->bus_port(*bus->inport[0]);
+		(*bus->outport[0])(cpu->snoop_port);
 
+		(*bus->chipset_outport)(mpc107->slave_port);
+		mpc107->master_port(*bus->chipset_inport);
+		mpc107->ram_master_port(memory->slave_port);
+		mpc107->ram_import >> memory->memory_export;
+		mpc107->rom_master_port(flash->slave_port);
+		mpc107->rom_import >> flash->memory_export;
+		mpc107->erom_master_port(erom->slave_port);
+		mpc107->erom_import >> erom->memory_export;
+		mpc107->pci_master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
+		mpc107->pci_import >> *pci_bus->exp[0];
+	
+		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(mpc107->pci_slave_port);
+		(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(heathrow->bus_port);
+		(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_ide->input_port);
+		(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_display->bus_port);
+		(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_isa_bridge->pci_slave_port);
+		pci_ide->output_port (*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
+		pci_ide->irq_port (*heathrow->irq_port[PCI_IDE_IRQ]);
+		heathrow->cpu_irq_port(*mpc107->irq_slave_port[0]);
+		mpc107->irq_master_port(cpu->external_interrupt_port);
+		mpc107->soft_reset_master_port(cpu->soft_reset_port);
+		
+		pci_isa_bridge->isa_master_port(i8042->bus_port);
+		i8042->kbd_irq_port(*heathrow->irq_port[I8042_KBD_IRQ]);
+		i8042->aux_irq_port(*heathrow->irq_port[I8042_AUX_IRQ]);
+	}		
+
+	mpc107->ram_import >> memory->memory_export;
+	mpc107->rom_import >> flash->memory_export;
+	mpc107->erom_import >> erom->memory_export;
+	mpc107->pci_import >> *pci_bus->exp[0];
 	i8042->keyboard_import >> sdl->keyboard_export;
 
 	if(inline_debugger)
@@ -821,6 +919,18 @@ int sc_main(int argc, char *argv[])
 		pci_isa_bridge->logger_import >> *logger->logger_export[logger_index++];
 		i8042->logger_import >> *logger->logger_export[logger_index++];
 		//if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++)
+			if(bus_msg_spy[i] != NULL)
+				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++)
+			if(mem_msg_spy[i] != NULL)
+				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++)
+			if(pci_msg_spy[i] != NULL)
+				pci_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++)
+			if(irq_msg_spy[i] != NULL)
+				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
 	}
 
 #ifdef DEBUG_SERVICE
@@ -951,6 +1061,14 @@ int sc_main(int argc, char *argv[])
 		cerr << "Can't start simulation because of previous errors" << endl;
 	}
 
+	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) {
+		if(bus_msg_spy[i] != NULL)
+			delete bus_msg_spy[i];
+		if(pci_msg_spy[i] != NULL)
+			delete pci_msg_spy[i];
+		if(irq_msg_spy[i] != NULL)
+			delete irq_msg_spy[i];
+	}
 
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;

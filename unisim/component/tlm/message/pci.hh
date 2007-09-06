@@ -170,7 +170,7 @@ public:
 		}
 		os << ",addr=";
 		os << "0x" << req->addr;
-		if(req.type == unisim::component::cxx::pci::TT_WRITE)
+		if(req->type == unisim::component::cxx::pci::TT_WRITE)
 		{
 			os << ",write_data=";
 			uint32_t i;
@@ -204,11 +204,11 @@ public:
 		uint32_t i;
 		for(i = 0; i < req->size; i++)
 		{
-			os << (unsigned int) rsp.read_data[i];
+			os << (unsigned int) rsp->read_data[i];
 			if(i < req->size - 1) os << ",";
 		}
 	 	os << ")" << Dec;
-		return os;
+	 	os << Endl;
 	}
 };
 
