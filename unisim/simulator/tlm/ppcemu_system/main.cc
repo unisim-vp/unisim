@@ -198,11 +198,11 @@ const unsigned int PCI_DISPLAY_DEV_NUM = 3;
 const unsigned int PCI_ISA_BRIDGE_DEV_NUM = 4;
 
 // PCI target port numbers
-const unsigned int PCI_MPC107_TARGET_PORT = 0;
-const unsigned int PCI_HEATHROW_TARGET_PORT = 1;
-const unsigned int PCI_IDE_TARGET_PORT = 2;
-const unsigned int PCI_DISPLAY_TARGET_PORT = 3;
-const unsigned int PCI_ISA_BRIDGE_TARGET_PORT = 4;
+const unsigned int PCI_MPC107_SLAVE_PORT = 0;
+const unsigned int PCI_HEATHROW_SLAVE_PORT = 1;
+const unsigned int PCI_IDE_SLAVE_PORT = 2;
+const unsigned int PCI_DISPLAY_SLAVE_PORT = 3;
+const unsigned int PCI_ISA_BRIDGE_SLAVE_PORT = 4;
 
 // PCI master port numbers
 const unsigned int PCI_MPC107_MASTER_PORT = 0;
@@ -651,7 +651,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0;
 	(*pci_bus)["size"][mapping_index] = 1024 * 1024 * 1024;
 	(*pci_bus)["device-number"][mapping_index] = PCI_MPC107_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_MPC107_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_MPC107_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10;
 	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
 	mapping_index++;
@@ -659,7 +659,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0xf3000000UL;
 	(*pci_bus)["size"][mapping_index] = 0x80000;
 	(*pci_bus)["device-number"][mapping_index] = PCI_HEATHROW_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_HEATHROW_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_HEATHROW_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
 	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
 	mapping_index++;
@@ -667,7 +667,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0x18100UL;
 	(*pci_bus)["size"][mapping_index] = 8;
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
 	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
 	mapping_index++;
@@ -675,7 +675,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0x18108UL;
 	(*pci_bus)["size"][mapping_index] = 4;
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x14UL;
 	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
 	mapping_index++;
@@ -683,7 +683,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0x4UL;
 	(*pci_bus)["size"][mapping_index] = 8;
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x18UL;
 	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
 	mapping_index++;
@@ -691,7 +691,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0xcUL;
 	(*pci_bus)["size"][mapping_index] = 4;
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x1cUL;
 	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
 	mapping_index++;
@@ -699,7 +699,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0x18118UL;
 	(*pci_bus)["size"][6] = 16;
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x20UL;
 	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
 	mapping_index++;
@@ -707,7 +707,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
 	(*pci_bus)["size"][mapping_index] = 0x800000;
 	(*pci_bus)["device-number"][mapping_index] = PCI_DISPLAY_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_DISPLAY_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_DISPLAY_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
 	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
 	mapping_index++;
@@ -715,7 +715,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
 	(*pci_bus)["size"][mapping_index] = 0x10000; // 64 KB
 	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL; // ISA I/O space mapped by BAR0
 	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
 	mapping_index++;
@@ -723,7 +723,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["base-address"][mapping_index] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
 	(*pci_bus)["size"][mapping_index] = 0x60000; // 384 KB
 	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_TARGET_PORT;
+	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x14UL; // ISA Memory space mapped by BAR1
 	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
 	mapping_index++;
@@ -845,75 +845,147 @@ int sc_main(int argc, char *argv[])
 		unsigned irq_msg_spy_index = 0;
 
 		cpu->bus_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = cpu->bus_port.name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->inport[0]);
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->inport[0]->name();
 		bus_msg_spy_index++;
 
 		(*bus->outport[0])(bus_msg_spy[bus_msg_spy_index]->slave_port);
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->outport[0]->name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(cpu->snoop_port);
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = cpu->snoop_port.name();
 		bus_msg_spy_index++;
 
 		(*bus->chipset_outport)(bus_msg_spy[bus_msg_spy_index]->slave_port);
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->chipset_outport->name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(mpc107->slave_port);
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = mpc107->slave_port.name();
 		bus_msg_spy_index++;
 
 		mpc107->master_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = mpc107->master_port.name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->chipset_inport);
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->chipset_inport->name();
 		bus_msg_spy_index++;
 
 		mpc107->ram_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->ram_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(memory->slave_port);
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = memory->slave_port.name();
 		mem_msg_spy_index++;
 
 		mpc107->rom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->rom_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(flash->slave_port);
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = flash->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = flash->slave_port.name();
 		mem_msg_spy_index++;
 
 		mpc107->erom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->erom_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(erom->slave_port);
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = erom->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = erom->slave_port.name();
 		mem_msg_spy_index++;
 		
 		mpc107->pci_master_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = mpc107->pci_master_port.name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_bus->input_port[PCI_MPC107_MASTER_PORT]->name();
 		pci_msg_spy_index++;
 
-		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_bus->output_port[PCI_MPC107_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_MPC107_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(mpc107->pci_slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = mpc107->pci_slave_port.name();
 		pci_msg_spy_index++;
 
-		(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_bus->output_port[PCI_HEATHROW_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_HEATHROW_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(heathrow->bus_port);
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = heathrow->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = heathrow->bus_port.name();
 		pci_msg_spy_index++;
 
-		(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_bus->output_port[PCI_IDE_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_IDE_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_ide->input_port);
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_ide->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_ide->input_port.name();
 		pci_msg_spy_index++;
 
-		(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_bus->output_port[PCI_DISPLAY_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_DISPLAY_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_display->bus_port);
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_display->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_display->bus_port.name();
 		pci_msg_spy_index++;
 
-		(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_bus->output_port[PCI_ISA_BRIDGE_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_ISA_BRIDGE_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_isa_bridge->pci_slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_isa_bridge->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_isa_bridge->pci_slave_port.name();
 		pci_msg_spy_index++;
 
 		pci_ide->output_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_ide->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_ide->output_port.name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_bus->input_port[PCI_IDE_MASTER_PORT]->name();
 		pci_msg_spy_index++;
 		
 		pci_ide->irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_ide->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = pci_ide->irq_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(*heathrow->irq_port[PCI_IDE_IRQ]);
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = heathrow->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = heathrow->irq_port[PCI_IDE_IRQ]->name();
 		irq_msg_spy_index++;
 
 		heathrow->cpu_irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = heathrow->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = heathrow->cpu_irq_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(*mpc107->irq_slave_port[0]);
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = mpc107->irq_slave_port[0]->name();
 		irq_msg_spy_index++;
 
 		mpc107->irq_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = mpc107->irq_master_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->external_interrupt_port);
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->external_interrupt_port.name();
 		irq_msg_spy_index++;
 
 		mpc107->soft_reset_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = mpc107->soft_reset_master_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->soft_reset_port);
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->soft_reset_port.name();
 		irq_msg_spy_index++;
 	}
 	else
@@ -929,11 +1001,11 @@ int sc_main(int argc, char *argv[])
 		mpc107->erom_master_port(erom->slave_port);
 		mpc107->pci_master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
 	
-		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(mpc107->pci_slave_port);
-		(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(heathrow->bus_port);
-		(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_ide->input_port);
-		(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_display->bus_port);
-		(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_isa_bridge->pci_slave_port);
+		(*pci_bus->output_port[PCI_MPC107_SLAVE_PORT])(mpc107->pci_slave_port);
+		(*pci_bus->output_port[PCI_HEATHROW_SLAVE_PORT])(heathrow->bus_port);
+		(*pci_bus->output_port[PCI_IDE_SLAVE_PORT])(pci_ide->input_port);
+		(*pci_bus->output_port[PCI_DISPLAY_SLAVE_PORT])(pci_display->bus_port);
+		(*pci_bus->output_port[PCI_ISA_BRIDGE_SLAVE_PORT])(pci_isa_bridge->pci_slave_port);
 		pci_ide->output_port (*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
 		pci_ide->irq_port (*heathrow->irq_port[PCI_IDE_IRQ]);
 		heathrow->cpu_irq_port(*mpc107->irq_slave_port[0]);
