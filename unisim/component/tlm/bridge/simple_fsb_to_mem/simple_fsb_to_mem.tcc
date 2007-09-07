@@ -77,10 +77,10 @@ SimpleFSBToMemory(const sc_module_name& name, Object *parent) :
 	param_verbose_all("verbose_all", this, verbose_all),
 	fsb_cycle_sctime(),
 	fsb_cycle_time(0),
-	param_fsb_cycle_time("fsb_cycle_time", this, fsb_cycle_time),
+	param_fsb_cycle_time("fsb-cycle-time", this, fsb_cycle_time),
 	mem_cycle_sctime(),
 	mem_cycle_time(0),
-	param_mem_cycle_time("mem_cycle_time", this, mem_cycle_time),
+	param_mem_cycle_time("mem-cycle-time", this, mem_cycle_time),
 	buffer_req("buffer_req", CONFIG::BUFFER_SIZE) {
 	slave_port(*this);
 	

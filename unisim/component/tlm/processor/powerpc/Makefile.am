@@ -1,4 +1,4 @@
-INCLUDES=-I$(top_srcdir)/../../../../..
+INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
 libdir= $(prefix)/lib/unisim/component/tlm/processor/powerpc
 includedir = $(prefix)/include/unisim/component/tlm/processor/powerpc
 lib_LIBRARIES = libpowerpc.a
