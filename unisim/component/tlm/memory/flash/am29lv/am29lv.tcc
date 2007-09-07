@@ -32,13 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_HH__
-#define __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_HH__
+#ifndef __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_TCC__
+#define __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_TCC__
 
 #include <systemc.h>
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/component/c++/memory/flash/am29lv/am29lv.hh"
+#include "unisim/component/cxx/memory/flash/am29lv/am29lv.hh"
 
 namespace unisim {
 namespace component {
@@ -52,8 +52,8 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::util::garbage_collector::Pointer;
-using unisim::component::cxx::memory::am29lv::CMD_READ;
-using unisim::component::cxx::memory::am29lv::CMD_WRITE;
+using unisim::component::cxx::memory::flash::am29lv::CMD_READ;
+using unisim::component::cxx::memory::flash::am29lv::CMD_WRITE;
 
 using unisim::component::tlm::message::MemoryRequest;
 using unisim::component::tlm::message::MemoryResponse;
@@ -118,8 +118,8 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 	while(1)
 	{
 		const Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > > message = input_queue.read();
-		const Pointer<Request<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE> >& req = message->GetRequest();
-		Pointer<Response<MAX_TRANSACTION_DATA_SIZE> > rsp = new(rsp) MemoryResponse<MAX_TRANSACTION_DATA_SIZE>();
+		const Pointer<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE> >& req = message->GetRequest();
+		Pointer<MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > rsp = new(rsp) MemoryResponse<MAX_TRANSACTION_DATA_SIZE>();
 		message->SetResponse(rsp);
 		
 		switch(req->type)

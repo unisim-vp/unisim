@@ -66,6 +66,7 @@ UNISIM_LINK(../../../../unisim/kernel/service, services)
 
 UNISIM_LINK(../../../../unisim/util/xml, xml)
 UNISIM_LINK(../../../../unisim/util/debug, debug)
+UNISIM_LINK(../../../../unisim/util/endian, endian)
 UNISIM_LINK(../../../../unisim/util/garbage_collector, garbage_collector)
 
 UNISIM_LINK(../../../../unisim/service/time/sc_time, time)

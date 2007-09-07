@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
+#include <unisim/component/tlm/memory/flash/am29lv/am29lv.hh>
 #include <unisim/component/tlm/pci/video/display.hh>
 #include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
 #include <unisim/component/tlm/chipset/mpc107/mpc107.hh>
@@ -168,6 +169,10 @@ void help(char *prog_name)
 	cerr << "            displays this help" << endl;
 }
 
+//=========================================================================
+//===                       Constants definitions                       ===
+//=========================================================================
+
 // Front Side Bus template parameters
 typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
@@ -209,7 +214,47 @@ const unsigned int I8042_KBD_IRQ = 1;
 const unsigned int I8042_AUX_IRQ = 12;
 
 // the maximum number of transaction spies (per type of message)
-const unsigned int MAX_TRANSACTION_SPY = 1024;
+const unsigned int MAX_BUS_TRANSACTION_SPY = 4;
+const unsigned int MAX_MEM_TRANSACTION_SPY = 3;
+const unsigned int MAX_PCI_TRANSACTION_SPY = 7;
+const unsigned int MAX_IRQ_TRANSACTION_SPY = 4;
+
+// Flash memory
+const uint32_t FLASH_BYTESIZE = 4 * unisim::component::cxx::memory::flash::am29lv::M; // 4 MB
+const uint32_t FLASH_IO_WIDTH = 8; // 64 bits
+typedef unisim::component::cxx::memory::flash::am29lv::AM29LV800BConfig FLASH_CONFIG;
+
+//=========================================================================
+//===                     Aliases for components classes                ===
+//=========================================================================
+
+typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> FRONT_SIDE_BUS;
+typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
+typedef unisim::component::tlm::memory::flash::am29lv::AM29LV<FLASH_CONFIG, FLASH_BYTESIZE, FLASH_IO_WIDTH, FSB_MAX_DATA_SIZE> FLASH;
+typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> PCI_BUS;
+typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
+typedef unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION> MPC107;
+typedef unisim::component::tlm::pci::ide::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_IDE;
+typedef unisim::component::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> HEATHROW;
+typedef unisim::component::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_DISPLAY;
+typedef unisim::component::tlm::bridge::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_ISA_BRIDGE;
+typedef unisim::component::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE> I8042;
+
+//=========================================================================
+//===               Aliases for transaction Spies classes               ===
+//=========================================================================
+
+typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::ReqType BusMsgReqType;
+typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::RspType BusMsgRspType;
+typedef unisim::component::tlm::debug::TransactionSpy<BusMsgReqType, BusMsgRspType> BusMsgSpyType;
+typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MemMsgReqType;
+typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;
+typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
+typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>::ReqType PCIMsgReqType;
+typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>::RspType PCIMsgRspType;
+typedef unisim::component::tlm::debug::TransactionSpy<PCIMsgReqType, PCIMsgRspType> PCIMsgSpyType;
+typedef unisim::component::tlm::message::InterruptRequest IRQReqSpyType;
+typedef unisim::component::tlm::debug::TransactionSpy<IRQReqSpyType> IRQMsgSpyType;
 
 int sc_main(int argc, char *argv[])
 {
@@ -270,7 +315,6 @@ int sc_main(int argc, char *argv[])
 	uint32_t isa_bus_frequency = 8; // in Mhz
 	uint32_t fsb_frequency = 75; // in Mhz
 	uint32_t sdram_cycle_time = 30303030; // in femto seconds (= 33Mhz)
-//	uint32_t sdram_frequency = 33; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
 	uint32_t display_width = 800; // in pixels
@@ -359,195 +403,13 @@ int sc_main(int argc, char *argv[])
 	char **sim_argv = argv + optind;
 	char **sim_envp = environ;
 
+	// If no filename has been specified then display the help
 	if(!filename)
 	{
 		help(argv[0]);
 		return 0;
 	}
-
-	// Logger
-	LoggerServer *logger = 0;
-	if(logger_on) {
-		logger = new LoggerServer("logger");
-		(*logger)["show-file"] = true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
-	}
-		
-	// Time
-	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
 	
-	if(logger_on)
-		logger->time_import >> time->time_export;
-
-	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *flash = 0;
-	unisim::component::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_display = 0;
-	unisim::service::sdl::SDL<PCI_ADDRESS_TYPE> *sdl = 0;
-	PMACLinuxKernelLoader *kloader = 0;
-	unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION> *mpc107 = 0;
-	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *erom = 0;
-	unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> *memory = new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("memory");
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
-	unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> *bus = new unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>("bus");
-	unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> *pci_bus = 0;
-	unisim::component::tlm::pci::ide::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_ide = 0;
-	unisim::component::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *heathrow = 0;
-	unisim::component::tlm::bridge::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> *pci_isa_bridge = 0;
-	unisim::component::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE> *i8042 = 0;
-	unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> *cpu = new unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG>("cpu");
-
-	// The optional power estimators
-	CachePowerEstimator *il1_power_estimator = 0;
-	CachePowerEstimator *dl1_power_estimator = 0;
-	CachePowerEstimator *l2_power_estimator = 0;
-	CachePowerEstimator *itlb_power_estimator = 0;
-	CachePowerEstimator *dtlb_power_estimator = 0;
-
-	(*bus)["cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency); // Mhz
-
-	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
-	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
-	(*cpu)["bus-frequency"] = fsb_frequency;
-	(*cpu)["voltage"] = 1.3 * 1e3; // mV
-	(*cpu)["nice-frequency"] = 1000;
-	(*memory)["frequency"] = fsb_frequency;
-
-	if(maxinst)
-	{
-		(*cpu)["max-inst"] = maxinst;
-	}
-
-	(*cpu)["ipc"] = cpu_ipc;
-
-	cpu->memory_import >> bus->memory_export;
-	
-	if(inline_debugger)
-	{
-		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-	}
-	else if(gdb_server)
-	{
-		// GDB Server run-time configuration
-		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
-		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
-		
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-	}
-
-	if(estimate_power)
-	{
-		// Instanciate the power estimators
-		il1_power_estimator = new CachePowerEstimator("il1-power-estimator");
-		dl1_power_estimator = new CachePowerEstimator("dl1-power-estimator");
-		l2_power_estimator = new CachePowerEstimator("l2-power-estimator");
-		itlb_power_estimator = new CachePowerEstimator("itlb-power-estimator");
-		dtlb_power_estimator = new CachePowerEstimator("dtlb-power-estimator");
-		
-		// Cache/TLB power estimators run-time configuration
-		(*il1_power_estimator)["cache-size"] = 32 * 1024;
-		(*il1_power_estimator)["line-size"] = 32;
-		(*il1_power_estimator)["associativity"] = 8;
-		(*il1_power_estimator)["rw-ports"] = 0;
-		(*il1_power_estimator)["excl-read-ports"] = 1;
-		(*il1_power_estimator)["excl-write-ports"] = 0;
-		(*il1_power_estimator)["single-ended-read-ports"] = 0;
-		(*il1_power_estimator)["banks"] = 4;
-		(*il1_power_estimator)["tech-node"] = tech_node;
-		(*il1_power_estimator)["output-width"] = 128;
-		(*il1_power_estimator)["tag-width"] = 64;
-		(*il1_power_estimator)["access-mode"] = "fast";
-	
-		(*dl1_power_estimator)["cache-size"] = 32 * 1024;
-		(*dl1_power_estimator)["line-size"] = 32;
-		(*dl1_power_estimator)["associativity"] = 8;
-		(*dl1_power_estimator)["rw-ports"] = 1;
-		(*dl1_power_estimator)["excl-read-ports"] = 0;
-		(*dl1_power_estimator)["excl-write-ports"] = 0;
-		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
-		(*dl1_power_estimator)["banks"] = 4;
-		(*dl1_power_estimator)["tech-node"] = tech_node;
-		(*dl1_power_estimator)["output-width"] = 64;
-		(*dl1_power_estimator)["tag-width"] = 64;
-		(*dl1_power_estimator)["access-mode"] = "fast";
-	
-		(*l2_power_estimator)["cache-size"] = 512 * 1024;
-		(*l2_power_estimator)["line-size"] = 32;
-		(*l2_power_estimator)["associativity"] = 8;
-		(*l2_power_estimator)["rw-ports"] = 1;
-		(*l2_power_estimator)["excl-read-ports"] = 0;
-		(*l2_power_estimator)["excl-write-ports"] = 0;
-		(*l2_power_estimator)["single-ended-read-ports"] = 0;
-		(*l2_power_estimator)["banks"] = 4;
-		(*l2_power_estimator)["tech-node"] = tech_node;
-		(*l2_power_estimator)["output-width"] = 256;
-		(*l2_power_estimator)["tag-width"] = 64;
-		(*l2_power_estimator)["access-mode"] = "fast";
-	
-		(*itlb_power_estimator)["cache-size"] = 128 * 2 * 4;
-		(*itlb_power_estimator)["line-size"] = 4;
-		(*itlb_power_estimator)["associativity"] = 2;
-		(*itlb_power_estimator)["rw-ports"] = 1;
-		(*itlb_power_estimator)["excl-read-ports"] = 0;
-		(*itlb_power_estimator)["excl-write-ports"] = 0;
-		(*itlb_power_estimator)["single-ended-read-ports"] = 0;
-		(*itlb_power_estimator)["banks"] = 4;
-		(*itlb_power_estimator)["tech-node"] = tech_node;
-		(*itlb_power_estimator)["output-width"] = 32;
-		(*itlb_power_estimator)["tag-width"] = 64;
-		(*itlb_power_estimator)["access-mode"] = "fast";
-	
-		(*dtlb_power_estimator)["cache-size"] = 128 * 2 * 4;
-		(*dtlb_power_estimator)["line-size"] = 4;
-		(*dtlb_power_estimator)["associativity"] = 2;
-		(*dtlb_power_estimator)["rw-ports"] = 1;
-		(*dtlb_power_estimator)["excl-read-ports"] = 0;
-		(*dtlb_power_estimator)["excl-write-ports"] = 0;
-		(*dtlb_power_estimator)["single-ended-read-ports"] = 0;
-		(*dtlb_power_estimator)["banks"] = 4;
-		(*dtlb_power_estimator)["tech-node"] = tech_node;
-		(*dtlb_power_estimator)["output-width"] = 32;
-		(*dtlb_power_estimator)["tag-width"] = 64;
-		(*dtlb_power_estimator)["access-mode"] = "fast";
-			
-		// Connect everything related to power estimation
-		cpu->il1_power_estimator_import >> il1_power_estimator->power_estimator_export;
-		cpu->il1_power_mode_import >> il1_power_estimator->power_mode_export;
-		cpu->dl1_power_estimator_import >> dl1_power_estimator->power_estimator_export;
-		cpu->dl1_power_mode_import >> dl1_power_estimator->power_mode_export;
-		cpu->l2_power_estimator_import >> l2_power_estimator->power_estimator_export;
-		cpu->l2_power_mode_import >> l2_power_estimator->power_mode_export;
-		cpu->itlb_power_estimator_import >> itlb_power_estimator->power_estimator_export;
-		cpu->itlb_power_mode_import >> itlb_power_estimator->power_mode_export;
-		cpu->dtlb_power_estimator_import >> dtlb_power_estimator->power_estimator_export;
-		cpu->dtlb_power_mode_import >> dtlb_power_estimator->power_mode_export;
-
-		il1_power_estimator->time_import >> time->time_export;
-		dl1_power_estimator->time_import >> time->time_export;
-		l2_power_estimator->time_import >> time->time_export;
-		itlb_power_estimator->time_import >> time->time_export;
-		dtlb_power_estimator->time_import >> time->time_export;
-	}
-
-	// logger parameters
-	if(logger_on) {
-		if(logger_filename) {
-			(*logger)["filename"] = logger_filename;
-			(*logger)["zip"] = logger_zip;
-		}
-		(*logger)["std_out"] = logger_out;
-		(*logger)["std_err"] = logger_error;
-	}
-
 	// Build the kernel parameters string from the command line arguments
 	string kernel_params;
 	int i;
@@ -557,55 +419,129 @@ int sc_main(int argc, char *argv[])
 		kernel_params += sim_argv[i];
 		if(i < sim_argc - 1) kernel_params += " ";
 	}
-
-	// Instanciation of simulation components:
-	//  - MPC107
-	//  - PCI Bus
-	//  - PCI PIIX4 IDE controller
-	//  - PCI Heathrow PIC controller
-	//  - EROM
-	//  - Flash memory
-	//  - PCI Display (just a frame buffer for now)
-	mpc107 = new unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION>("mpc107");
-	//FIXME add the quantity of mappings of the net card to pci bus
-	pci_bus = new unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>("pci-bus");
-	pci_ide = new unisim::component::tlm::pci::ide::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-ide");
-	heathrow = new unisim::component::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("heathrow");
-	erom = new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("erom");
-	flash = new unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE>("flash");
-	pci_display = new unisim::component::tlm::pci::video::Display<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-display");
-	pci_isa_bridge = new unisim::component::tlm::bridge::pci_isa::Bridge<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE>("pci-isa-bridge");
-	i8042 = new unisim::component::tlm::isa::i8042::I8042<ISA_MAX_DATA_SIZE>("i8042");
-	sdl = new unisim::service::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
 	
-	// the optional transaction spies
-	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::ReqType BusMsgReqType;
-	typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::RspType BusMsgRspType;
-	typedef unisim::component::tlm::debug::TransactionSpy<BusMsgReqType, BusMsgRspType> BusMsgSpyType;
-	typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MemMsgReqType;
-	typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;
-	typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
-	typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>::ReqType PCIMsgReqType;
-	typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION>::RspType PCIMsgRspType;
-	typedef unisim::component::tlm::debug::TransactionSpy<PCIMsgReqType, PCIMsgRspType> PCIMsgSpyType;
-	typedef unisim::component::tlm::message::InterruptRequest IRQReqSpyType;
-	typedef unisim::component::tlm::debug::TransactionSpy<IRQReqSpyType> IRQMsgSpyType;
-	BusMsgSpyType *bus_msg_spy[MAX_TRANSACTION_SPY];
-	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) bus_msg_spy[i] = NULL;
-	MemMsgSpyType *mem_msg_spy[MAX_TRANSACTION_SPY];
-	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) mem_msg_spy[i] = NULL;
-	PCIMsgSpyType *pci_msg_spy[MAX_TRANSACTION_SPY];
-	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) pci_msg_spy[i] = NULL;
-	IRQMsgSpyType *irq_msg_spy[MAX_TRANSACTION_SPY];
-	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) irq_msg_spy[i] = NULL;
+	//=========================================================================
+	//===                     Component instantiations                      ===
+	//=========================================================================
+	//  - PowerPC processor
+	CPU *cpu =new CPU("cpu");
+	//  - Front side bus
+	FRONT_SIDE_BUS *bus = new FRONT_SIDE_BUS("bus");
+	//  - MPC107 chipset
+	MPC107 *mpc107 = new MPC107("mpc107");
+	//  - RAM
+	MEMORY *memory = new MEMORY("memory");
+	//  - EROM
+	MEMORY *erom = new MEMORY("erom");
+	//  - Flash memory
+	FLASH *flash = new FLASH("flash");
+	//  - PCI Bus
+	PCI_BUS *pci_bus = new PCI_BUS("pci-bus");
+	//  - PCI PIIX4 IDE controller
+	PCI_IDE *pci_ide = new PCI_IDE("pci-ide");
+	//  - PCI Heathrow PIC controller
+	HEATHROW *heathrow = new HEATHROW("heathrow");
+	//  - PCI Display (just a frame buffer for now)
+	PCI_DISPLAY *pci_display = new PCI_DISPLAY("pci-display");
+	//  - PCI to ISA Bridge
+	PCI_ISA_BRIDGE *pci_isa_bridge = new PCI_ISA_BRIDGE("pci-isa-bridge");
+	//  - i8042 keyboard controller
+	I8042 *i8042 = new I8042("i8042");
 
-	// Instanciate a Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
-	kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
+	//=========================================================================
+	//===            Debugging stuff: Transaction spy instantiations        ===
+	//=========================================================================
+	BusMsgSpyType *bus_msg_spy[MAX_BUS_TRANSACTION_SPY];
+	MemMsgSpyType *mem_msg_spy[MAX_MEM_TRANSACTION_SPY];
+	PCIMsgSpyType *pci_msg_spy[MAX_PCI_TRANSACTION_SPY];
+	IRQMsgSpyType *irq_msg_spy[MAX_IRQ_TRANSACTION_SPY];
 
-	// Memory run-time configuration
+	if(logger_on && logger_messages)
+	{
+		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
+		{
+			stringstream sstr;
+			sstr << "bus_msg_spy[" << i << "]";
+			string name = sstr.str();
+			bus_msg_spy[i] = new BusMsgSpyType(name.c_str());
+		}
+		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
+		{
+			stringstream sstr;
+			sstr << "mem_msg_spy[" << i << "]";
+			string name = sstr.str();
+			mem_msg_spy[i] = new MemMsgSpyType(name.c_str());
+		}
+		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++)
+		{
+			stringstream sstr;
+			sstr << "pci_msg_spy[" << i << "]";
+			string name = sstr.str();
+			pci_msg_spy[i] = new PCIMsgSpyType(name.c_str());
+		}
+		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
+		{
+			stringstream sstr;
+			sstr << "irq_msg_spy[" << i << "]";
+			string name = sstr.str();
+			irq_msg_spy[i] = new IRQMsgSpyType(name.c_str());
+		}
+	}
+	else
+	{
+		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++) bus_msg_spy[i] = 0;
+		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++) mem_msg_spy[i] = 0;
+		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++) pci_msg_spy[i] = 0;
+		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++) irq_msg_spy[i] = 0;
+	}
+
+	//=========================================================================
+	//===                         Service instantiations                    ===
+	//=========================================================================
+	//  - Simple Direct Media Layer (www.libsdl.org)
+	unisim::service::sdl::SDL<PCI_ADDRESS_TYPE> *sdl = new unisim::service::sdl::SDL<PCI_ADDRESS_TYPE>("sdl");
+	//  - PowerMac Linux kernel loader
+	//    A Linux kernel loader acting as a firmware and a bootloader of a real PowerMac machine
+	PMACLinuxKernelLoader *kloader = new PMACLinuxKernelLoader("pmac-linux-kernel-loader");
+	//  - GDB server
+	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	//  - Inline debugger
+	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	//  - SystemC Time
+	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
+	//  - the optional power estimators
+	CachePowerEstimator *il1_power_estimator = estimate_power ? new CachePowerEstimator("il1-power-estimator") : 0;
+	CachePowerEstimator *dl1_power_estimator = estimate_power ? new CachePowerEstimator("dl1-power-estimator") : 0;
+	CachePowerEstimator *l2_power_estimator = estimate_power ? new CachePowerEstimator("l2-power-estimator") : 0;
+	CachePowerEstimator *itlb_power_estimator = estimate_power ? new CachePowerEstimator("itlb-power-estimator") : 0;
+	CachePowerEstimator *dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
+	//  - Logger
+	LoggerServer *logger = logger_on ? new LoggerServer("logger") : 0;
+
+	//=========================================================================
+	//===                     Component run-time configuration              ===
+	//=========================================================================
+
+	//  - Front Side Bus
+	(*bus)["cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency); // Mhz
+
+	//  - PowerPC processor
+	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
+	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
+	(*cpu)["bus-frequency"] = fsb_frequency;
+	(*cpu)["voltage"] = 1.3 * 1e3; // mV
+	(*cpu)["nice-frequency"] = 1000;
+	if(maxinst)
+	{
+		(*cpu)["max-inst"] = maxinst;
+	}
+	(*cpu)["ipc"] = cpu_ipc;
+
+	//  - RAM
+	(*memory)["frequency"] = fsb_frequency;
 	(*memory)["org"] = 0x00000000UL;
 	(*memory)["bytesize"] = memory_size;
-	
+
 	// MPC107 run-time configuration
 	(*mpc107)["a_address_map"] = false;
 	(*mpc107)["host_mode"] = true;
@@ -616,22 +552,24 @@ int sc_main(int argc, char *argv[])
 	(*mpc107)["frequency"] = fsb_frequency;
 	(*mpc107)["sdram_cycle_time"] = sdram_cycle_time;
 
-	// EROM run-time configuration
+	//  - EROM run-time configuration
 	(*erom)["org"] =  0x78000000UL;
 	(*erom)["bytesize"] = 2 * 8 * 1024 * 1024;
 	(*erom)["frequency"] = fsb_frequency;
 	
-	// Flash memory run-time configuration
-	(*flash)["org"] = 0xff000000UL;
-	(*flash)["bytesize"] = 2 * 8 * 1024 * 1024;
-	(*flash)["frequency"] = fsb_frequency;
+	//  - Flash memory run-time configuration
+    (*flash)["org"] = 0xff800000UL; //0xff000000UL;
+    (*flash)["bytesize"] = 8 * 1024 * 1024;
+    (*flash)["frequency"] = fsb_frequency;
+	(*flash)["endian"] = "big-endian";
 
-	// PCI MAC I/O Heathrow run-time configuration
+
+	//  - PCI MAC I/O Heathrow run-time configuration
 	(*heathrow)["initial-base-addr"] = 0xf3000000UL;
 	(*heathrow)["pci-device-number"] = PCI_HEATHROW_DEV_NUM;
 	(*heathrow)["bus-frequency"] = pci_bus_frequency;
 	
-	// PCI IDE run-time configuration
+	//  - PCI IDE run-time configuration
 	(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
 	if (strcmp(image0_filename, "") != 0) {
 		
@@ -645,11 +583,11 @@ int sc_main(int argc, char *argv[])
 			(*pci_ide)["disk-num"][i] = i%2;
 			i++;
 			result = strtok( NULL, delims );
-		}          
+		}
 	}
 	(*pci_ide)["base-address"][0] = 0x18101;
 	(*pci_ide)["size"][0] = 8;
-	(*pci_ide)["register-number"][0] = 0x10;		
+	(*pci_ide)["register-number"][0] = 0x10;
 	(*pci_ide)["base-address"][1] = 0x18109;
 	(*pci_ide)["size"][1] = 4;
 	(*pci_ide)["register-number"][1] = 0x14;
@@ -663,7 +601,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_ide)["size"][4] = 16;
 	(*pci_ide)["register-number"][4] = 0x20;
 
-	// Display run-time configuration
+	//  - Display run-time configuration
 	(*pci_display)["initial-base-addr"] = 0xa0000000UL;
 	(*pci_display)["bytesize"] = display_vfb_size; 
 	(*pci_display)["width"] = display_width;
@@ -671,22 +609,33 @@ int sc_main(int argc, char *argv[])
 	(*pci_display)["depth"] = display_depth;
 	(*pci_display)["pci-bus-frequency"] = pci_bus_frequency;
 	
-	// PCI-ISA Bridge run-time configuration
+	// - PCI-ISA Bridge run-time configuration
 	(*pci_isa_bridge)["initial-base-addr"] = 0x000a0000UL;
 	(*pci_isa_bridge)["initial-io-base-addr"] = 0; //0xfe000000UL;
 	(*pci_isa_bridge)["pci-bus-frequency"] = pci_bus_frequency;
 	(*pci_isa_bridge)["isa-bus-frequency"] = isa_bus_frequency;
 	(*pci_isa_bridge)["pci-device-number"] = PCI_ISA_BRIDGE_DEV_NUM;
 
-	// i8042 run-time configuration
+	//  - i8042 run-time configuration
 	(*i8042)["fsb-frequency"] = fsb_frequency;
 	(*i8042)["isa-bus-frequency"] = isa_bus_frequency;
 
-	// SDL run-time configuration
+	//=========================================================================
+	//===                      Service run-time configuration               ===
+	//=========================================================================
+
+	//  - GDB Server run-time configuration
+	if(gdb_server)
+	{
+		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
+		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
+	}
+
+	//  - SDL run-time configuration
 	(*sdl)["refresh-period"] = video_refresh_period;
 	(*sdl)["bmp-out-filename"] = bmp_out_filename;	
 
-	// Kernel loader configuration
+	//  - Kernel loader configuration
 	(*kloader)["pmac-bootx.device-tree-filename"] = device_tree_filename;
 	(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
 	(*kloader)["pmac-bootx.ramdisk-filename"] = ramdisk_filename;
@@ -696,9 +645,8 @@ int sc_main(int argc, char *argv[])
 	(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
 
 	// PCI Bus run-time configuration
-	(*pci_bus)["frequency"] = pci_bus_frequency;
-	
 	unsigned int mapping_index = 0;
+	(*pci_bus)["frequency"] = pci_bus_frequency;
 
 	(*pci_bus)["base-address"][mapping_index] = 0;
 	(*pci_bus)["size"][mapping_index] = 1024 * 1024 * 1024;
@@ -780,37 +728,9 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
 	mapping_index++;
 
-	// Connect everything
-	kloader->memory_import >> memory->memory_export;
-	kloader->registers_import >> cpu->registers_export;
-	cpu->kernel_loader_import >> kloader->loader_export;
-	cpu->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
-	bus->memory_import >> mpc107->memory_export;
-	pci_display->video_import >> sdl->video_export;
-	sdl->memory_import >> pci_display->memory_export;
-
-	if(logger_on && logger_messages) {
-		bus_msg_spy[0] = new BusMsgSpyType("bus_msg_spy[0]");
-		bus_msg_spy[1] = new BusMsgSpyType("bus_msg_spy[1]");
-		bus_msg_spy[2] = new BusMsgSpyType("bus_msg_spy[2]");
-		bus_msg_spy[3] = new BusMsgSpyType("bus_msg_spy[3]");
-		mem_msg_spy[0] = new MemMsgSpyType("mem_msg_spy[0]");
-		mem_msg_spy[1] = new MemMsgSpyType("mem_msg_spy[1]");
-		mem_msg_spy[2] = new MemMsgSpyType("mem_msg_spy[2]");
-		pci_msg_spy[0] = new PCIMsgSpyType("pci_msg_spy[0]");
-		pci_msg_spy[1] = new PCIMsgSpyType("pci_msg_spy[1]");
-		pci_msg_spy[2] = new PCIMsgSpyType("pci_msg_spy[2]");
-		pci_msg_spy[3] = new PCIMsgSpyType("pci_msg_spy[3]");
-		pci_msg_spy[4] = new PCIMsgSpyType("pci_msg_spy[4]");
-		pci_msg_spy[5] = new PCIMsgSpyType("pci_msg_spy[5]");
-		pci_msg_spy[6] = new PCIMsgSpyType("pci_msg_spy[6]");
-		irq_msg_spy[0] = new IRQMsgSpyType("irq_msg_spy[0]");
-		irq_msg_spy[1] = new IRQMsgSpyType("irq_msg_spy[1]");
-		irq_msg_spy[2] = new IRQMsgSpyType("irq_msg_spy[2]");
-		irq_msg_spy[3] = new IRQMsgSpyType("irq_msg_spy[3]");
-	}
-	
-	if(logger_on && logger_messages) {
+	//  - Transaction Spies
+	if(logger_on && logger_messages)
+	{
 		(*bus_msg_spy[0])["source_module_name"] = cpu->name();
 		(*bus_msg_spy[0])["source_port_name"] = cpu->bus_port.name();
 		(*bus_msg_spy[0])["target_module_name"] = bus->name();
@@ -828,54 +748,176 @@ int sc_main(int argc, char *argv[])
 		(*bus_msg_spy[3])["target_module_name"] = bus->name();
 		(*bus_msg_spy[3])["target_port_name"] = bus->chipset_inport->name();
 	}
+
+	//  - Loggers
+	if(logger_on)
+	{
+		if(logger_filename)
+		{
+			(*logger)["filename"] = logger_filename;
+			(*logger)["zip"] = logger_zip;
+		}
+		(*logger)["std_out"] = logger_out;
+		(*logger)["std_err"] = logger_error;
+		(*logger)["show-file"] = true;
+		(*logger)["show-function"] = true;
+		(*logger)["show-line"] = true;
+	}
+
+	//  - Cache/TLB power estimators run-time configuration
+	if(estimate_power)
+	{
+		(*il1_power_estimator)["cache-size"] = 32 * 1024;
+		(*il1_power_estimator)["line-size"] = 32;
+		(*il1_power_estimator)["associativity"] = 8;
+		(*il1_power_estimator)["rw-ports"] = 0;
+		(*il1_power_estimator)["excl-read-ports"] = 1;
+		(*il1_power_estimator)["excl-write-ports"] = 0;
+		(*il1_power_estimator)["single-ended-read-ports"] = 0;
+		(*il1_power_estimator)["banks"] = 4;
+		(*il1_power_estimator)["tech-node"] = tech_node;
+		(*il1_power_estimator)["output-width"] = 128;
+		(*il1_power_estimator)["tag-width"] = 64;
+		(*il1_power_estimator)["access-mode"] = "fast";
 	
-	if(logger_on && logger_messages) {
-		// Connect the CPU to the Front Side Bus
-		cpu->bus_port(bus_msg_spy[0]->slave_port);
-		bus_msg_spy[0]->master_port(*bus->inport[0]);
-		(*bus->outport[0])(bus_msg_spy[1]->slave_port);
-		bus_msg_spy[1]->master_port(cpu->snoop_port);
-		(*bus->chipset_outport)(bus_msg_spy[2]->slave_port);
-		bus_msg_spy[2]->master_port(mpc107->slave_port);
-		mpc107->master_port(bus_msg_spy[3]->slave_port);
-		bus_msg_spy[3]->master_port(*bus->chipset_inport);
+		(*dl1_power_estimator)["cache-size"] = 32 * 1024;
+		(*dl1_power_estimator)["line-size"] = 32;
+		(*dl1_power_estimator)["associativity"] = 8;
+		(*dl1_power_estimator)["rw-ports"] = 1;
+		(*dl1_power_estimator)["excl-read-ports"] = 0;
+		(*dl1_power_estimator)["excl-write-ports"] = 0;
+		(*dl1_power_estimator)["single-ended-read-ports"] = 0;
+		(*dl1_power_estimator)["banks"] = 4;
+		(*dl1_power_estimator)["tech-node"] = tech_node;
+		(*dl1_power_estimator)["output-width"] = 64;
+		(*dl1_power_estimator)["tag-width"] = 64;
+		(*dl1_power_estimator)["access-mode"] = "fast";
+	
+		(*l2_power_estimator)["cache-size"] = 512 * 1024;
+		(*l2_power_estimator)["line-size"] = 32;
+		(*l2_power_estimator)["associativity"] = 8;
+		(*l2_power_estimator)["rw-ports"] = 1;
+		(*l2_power_estimator)["excl-read-ports"] = 0;
+		(*l2_power_estimator)["excl-write-ports"] = 0;
+		(*l2_power_estimator)["single-ended-read-ports"] = 0;
+		(*l2_power_estimator)["banks"] = 4;
+		(*l2_power_estimator)["tech-node"] = tech_node;
+		(*l2_power_estimator)["output-width"] = 256;
+		(*l2_power_estimator)["tag-width"] = 64;
+		(*l2_power_estimator)["access-mode"] = "fast";
+	
+		(*itlb_power_estimator)["cache-size"] = 128 * 2 * 4;
+		(*itlb_power_estimator)["line-size"] = 4;
+		(*itlb_power_estimator)["associativity"] = 2;
+		(*itlb_power_estimator)["rw-ports"] = 1;
+		(*itlb_power_estimator)["excl-read-ports"] = 0;
+		(*itlb_power_estimator)["excl-write-ports"] = 0;
+		(*itlb_power_estimator)["single-ended-read-ports"] = 0;
+		(*itlb_power_estimator)["banks"] = 4;
+		(*itlb_power_estimator)["tech-node"] = tech_node;
+		(*itlb_power_estimator)["output-width"] = 32;
+		(*itlb_power_estimator)["tag-width"] = 64;
+		(*itlb_power_estimator)["access-mode"] = "fast";
+	
+		(*dtlb_power_estimator)["cache-size"] = 128 * 2 * 4;
+		(*dtlb_power_estimator)["line-size"] = 4;
+		(*dtlb_power_estimator)["associativity"] = 2;
+		(*dtlb_power_estimator)["rw-ports"] = 1;
+		(*dtlb_power_estimator)["excl-read-ports"] = 0;
+		(*dtlb_power_estimator)["excl-write-ports"] = 0;
+		(*dtlb_power_estimator)["single-ended-read-ports"] = 0;
+		(*dtlb_power_estimator)["banks"] = 4;
+		(*dtlb_power_estimator)["tech-node"] = tech_node;
+		(*dtlb_power_estimator)["output-width"] = 32;
+		(*dtlb_power_estimator)["tag-width"] = 64;
+		(*dtlb_power_estimator)["access-mode"] = "fast";
+	}
+
+	//=========================================================================
+	//===                        Components connection                      ===
+	//=========================================================================
+
+	if(logger_on && logger_messages)
+	{
+		unsigned bus_msg_spy_index = 0;
+		unsigned mem_msg_spy_index = 0;
+		unsigned pci_msg_spy_index = 0;
+		unsigned irq_msg_spy_index = 0;
+
+		cpu->bus_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
+		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->inport[0]);
+		bus_msg_spy_index++;
+
+		(*bus->outport[0])(bus_msg_spy[bus_msg_spy_index]->slave_port);
+		bus_msg_spy[bus_msg_spy_index]->master_port(cpu->snoop_port);
+		bus_msg_spy_index++;
+
+		(*bus->chipset_outport)(bus_msg_spy[bus_msg_spy_index]->slave_port);
+		bus_msg_spy[bus_msg_spy_index]->master_port(mpc107->slave_port);
+		bus_msg_spy_index++;
+
+		mpc107->master_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
+		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->chipset_inport);
+		bus_msg_spy_index++;
+
+		mpc107->ram_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
+		mem_msg_spy[mem_msg_spy_index]->master_port(memory->slave_port);
+		mem_msg_spy_index++;
+
+		mpc107->rom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
+		mem_msg_spy[mem_msg_spy_index]->master_port(flash->slave_port);
+		mem_msg_spy_index++;
+
+		mpc107->erom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
+		mem_msg_spy[mem_msg_spy_index]->master_port(erom->slave_port);
+		mem_msg_spy_index++;
 		
-		mpc107->ram_master_port(mem_msg_spy[0]->slave_port);
-		mem_msg_spy[0]->master_port(memory->slave_port);
-		mpc107->rom_master_port(mem_msg_spy[1]->slave_port);
-		mem_msg_spy[1]->master_port(flash->slave_port);
-		mpc107->erom_master_port(mem_msg_spy[2]->slave_port);
-		mem_msg_spy[2]->master_port(erom->slave_port);
+		mpc107->pci_master_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
+		pci_msg_spy_index++;
+
+		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		pci_msg_spy[pci_msg_spy_index]->master_port(mpc107->pci_slave_port);
+		pci_msg_spy_index++;
+
+		(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		pci_msg_spy[pci_msg_spy_index]->master_port(heathrow->bus_port);
+		pci_msg_spy_index++;
+
+		(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		pci_msg_spy[pci_msg_spy_index]->master_port(pci_ide->input_port);
+		pci_msg_spy_index++;
+
+		(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		pci_msg_spy[pci_msg_spy_index]->master_port(pci_display->bus_port);
+		pci_msg_spy_index++;
+
+		(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		pci_msg_spy[pci_msg_spy_index]->master_port(pci_isa_bridge->pci_slave_port);
+		pci_msg_spy_index++;
+
+		pci_ide->output_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
+		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
+		pci_msg_spy_index++;
 		
-		mpc107->pci_master_port(pci_msg_spy[0]->slave_port);
-		pci_msg_spy[0]->master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
-		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(pci_msg_spy[1]->slave_port);
-		pci_msg_spy[1]->master_port(mpc107->pci_slave_port);
-		(*pci_bus->output_port[PCI_HEATHROW_TARGET_PORT])(pci_msg_spy[2]->slave_port);
-		pci_msg_spy[2]->master_port(heathrow->bus_port);
-		(*pci_bus->output_port[PCI_IDE_TARGET_PORT])(pci_msg_spy[3]->slave_port);
-		pci_msg_spy[3]->master_port(pci_ide->input_port);
-		(*pci_bus->output_port[PCI_DISPLAY_TARGET_PORT])(pci_msg_spy[4]->slave_port);
-		pci_msg_spy[4]->master_port(pci_display->bus_port);
-		(*pci_bus->output_port[PCI_ISA_BRIDGE_TARGET_PORT])(pci_msg_spy[5]->slave_port);
-		pci_msg_spy[5]->master_port(pci_isa_bridge->pci_slave_port);
-		pci_ide->output_port(pci_msg_spy[6]->slave_port);
-		pci_msg_spy[6]->master_port(*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
-		
-		pci_ide->irq_port(irq_msg_spy[0]->slave_port);
-		irq_msg_spy[0]->master_port(*heathrow->irq_port[PCI_IDE_IRQ]);
-		heathrow->cpu_irq_port(irq_msg_spy[1]->slave_port);
-		irq_msg_spy[1]->master_port(*mpc107->irq_slave_port[0]);
-		mpc107->irq_master_port(irq_msg_spy[2]->slave_port);
-		irq_msg_spy[2]->master_port(cpu->external_interrupt_port);
-		mpc107->soft_reset_master_port(irq_msg_spy[3]->slave_port);
-		irq_msg_spy[3]->master_port(cpu->soft_reset_port);
-		
-		pci_isa_bridge->isa_master_port(i8042->bus_port);
-		i8042->kbd_irq_port(*heathrow->irq_port[I8042_KBD_IRQ]);
-		i8042->aux_irq_port(*heathrow->irq_port[I8042_AUX_IRQ]);
-		
-	} else {
+		pci_ide->irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
+		irq_msg_spy[irq_msg_spy_index]->master_port(*heathrow->irq_port[PCI_IDE_IRQ]);
+		irq_msg_spy_index++;
+
+		heathrow->cpu_irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
+		irq_msg_spy[irq_msg_spy_index]->master_port(*mpc107->irq_slave_port[0]);
+		irq_msg_spy_index++;
+
+		mpc107->irq_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
+		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->external_interrupt_port);
+		irq_msg_spy_index++;
+
+		mpc107->soft_reset_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
+		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->soft_reset_port);
+		irq_msg_spy_index++;
+	}
+	else
+	{
 		// Connect the CPU to the Front Side Bus
 		cpu->bus_port(*bus->inport[0]);
 		(*bus->outport[0])(cpu->snoop_port);
@@ -897,12 +939,64 @@ int sc_main(int argc, char *argv[])
 		heathrow->cpu_irq_port(*mpc107->irq_slave_port[0]);
 		mpc107->irq_master_port(cpu->external_interrupt_port);
 		mpc107->soft_reset_master_port(cpu->soft_reset_port);
-		
-		pci_isa_bridge->isa_master_port(i8042->bus_port);
-		i8042->kbd_irq_port(*heathrow->irq_port[I8042_KBD_IRQ]);
-		i8042->aux_irq_port(*heathrow->irq_port[I8042_AUX_IRQ]);
-	}		
+	}
 
+	pci_isa_bridge->isa_master_port(i8042->bus_port);
+	i8042->kbd_irq_port(*heathrow->irq_port[I8042_KBD_IRQ]);
+	i8042->aux_irq_port(*heathrow->irq_port[I8042_AUX_IRQ]);
+
+	//=========================================================================
+	//===                        Clients/Services connection                ===
+	//=========================================================================
+
+	cpu->memory_import >> bus->memory_export;
+	
+	if(inline_debugger)
+	{
+		// Connect inline-debugger to CPU
+		cpu->debug_control_import >> inline_debugger->debug_control_export;
+		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		inline_debugger->disasm_import >> cpu->disasm_export;
+		inline_debugger->memory_import >> cpu->memory_export;
+		inline_debugger->registers_import >> cpu->registers_export;
+	}
+	else if(gdb_server)
+	{
+		// Connect gdb-server to CPU
+		cpu->debug_control_import >> gdb_server->debug_control_export;
+		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
+		gdb_server->memory_import >> cpu->memory_export;
+		gdb_server->registers_import >> cpu->registers_export;
+	}
+
+	if(estimate_power)
+	{
+		// Connect everything related to power estimation
+		cpu->il1_power_estimator_import >> il1_power_estimator->power_estimator_export;
+		cpu->il1_power_mode_import >> il1_power_estimator->power_mode_export;
+		cpu->dl1_power_estimator_import >> dl1_power_estimator->power_estimator_export;
+		cpu->dl1_power_mode_import >> dl1_power_estimator->power_mode_export;
+		cpu->l2_power_estimator_import >> l2_power_estimator->power_estimator_export;
+		cpu->l2_power_mode_import >> l2_power_estimator->power_mode_export;
+		cpu->itlb_power_estimator_import >> itlb_power_estimator->power_estimator_export;
+		cpu->itlb_power_mode_import >> itlb_power_estimator->power_mode_export;
+		cpu->dtlb_power_estimator_import >> dtlb_power_estimator->power_estimator_export;
+		cpu->dtlb_power_mode_import >> dtlb_power_estimator->power_mode_export;
+
+		il1_power_estimator->time_import >> time->time_export;
+		dl1_power_estimator->time_import >> time->time_export;
+		l2_power_estimator->time_import >> time->time_export;
+		itlb_power_estimator->time_import >> time->time_export;
+		dtlb_power_estimator->time_import >> time->time_export;
+	}
+
+	kloader->memory_import >> memory->memory_export;
+	kloader->registers_import >> cpu->registers_export;
+	cpu->kernel_loader_import >> kloader->loader_export;
+	cpu->symbol_table_lookup_import >> kloader->symbol_table_lookup_export;
+	bus->memory_import >> mpc107->memory_export;
+	pci_display->video_import >> sdl->video_export;
+	sdl->memory_import >> pci_display->memory_export;
 	mpc107->ram_import >> memory->memory_export;
 	mpc107->rom_import >> flash->memory_export;
 	mpc107->erom_import >> erom->memory_export;
@@ -917,6 +1011,7 @@ int sc_main(int argc, char *argv[])
 	/* logger connections */
 	if(logger_on) {
 		unsigned int logger_index = 0;
+		logger->time_import >> time->time_export;
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
@@ -933,17 +1028,17 @@ int sc_main(int argc, char *argv[])
 		sdl->logger_import >> *logger->logger_export[logger_index++];
 		pci_isa_bridge->logger_import >> *logger->logger_export[logger_index++];
 		i8042->logger_import >> *logger->logger_export[logger_index++];
-		//if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++)
+		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)
 				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++)
+		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
 			if(mem_msg_spy[i] != NULL)
 				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++)
+		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++)
 			if(pci_msg_spy[i] != NULL)
 				pci_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++)
+		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
 			if(irq_msg_spy[i] != NULL)
 				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
 	}
@@ -1076,14 +1171,10 @@ int sc_main(int argc, char *argv[])
 		cerr << "Can't start simulation because of previous errors" << endl;
 	}
 
-	for(unsigned int i = 0; i < MAX_TRANSACTION_SPY; i++) {
-		if(bus_msg_spy[i] != NULL)
-			delete bus_msg_spy[i];
-		if(pci_msg_spy[i] != NULL)
-			delete pci_msg_spy[i];
-		if(irq_msg_spy[i] != NULL)
-			delete irq_msg_spy[i];
-	}
+	for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++) if(bus_msg_spy[i]) delete bus_msg_spy[i];
+	for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++) if(mem_msg_spy[i]) delete mem_msg_spy[i];
+	for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++) if(pci_msg_spy[i]) delete pci_msg_spy[i];
+	for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++) if(irq_msg_spy[i]) delete irq_msg_spy[i];
 
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
