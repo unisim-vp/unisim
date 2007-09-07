@@ -111,8 +111,6 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	cycle_time(),
 	cycle_time_int(0),
 	cycle_time_parameter("cycle-time", this, cycle_time_int),
-//	working_mutex("working_mutex"),
-//	working(false),
 	bus_synchro_event(),
 	next_serviced(0),
 	chipset_req_fifo("chipset_req_fifo"),
@@ -241,19 +239,7 @@ Send(const PTransactionMsgType &msg) {
 	if(!chipset_req_fifo.nb_write(msg))
 		return false;
 
-//	/* if necessary, that is if there was no work to be done,
-//	 *   notify the BusClock thread that a new request is available */
-//	bool synchronize = true;
-//	working_mutex.lock();
-//	if(working) {
-//		working_mutex.unlock();
-//		synchronize = false;
-//	}
-//	working = true;
-//	working_mutex.unlock();
-
-//	if(synchronize) 
-		BusSynchronize();
+	BusSynchronize();
 	return true;
 }
 
@@ -280,19 +266,7 @@ Send(const PTransactionMsgType &msg, unsigned int id) {
 		return false;
 	}
 	
-	/* if necessary, that is if there was no work to be done,
-	 *   notify the BusClock thread that a new request is available */
-//	bool synchronize = true;
-//	working_mutex.lock();
-//	if(working) {
-//		working_mutex.unlock();
-//		synchronize = false;
-//	}
-//	working = true;
-//	working_mutex.unlock();
-//
-//	if(synchronize) 
-		BusSynchronize();
+	BusSynchronize();
 	return true;
 }
 	
@@ -313,20 +287,8 @@ ResponseReceived(const PTransactionMsgType &msg,
 				<< EndDebugInfo;
 		}
 		chipset_rsp_fifo.write(msg);
-		/* if necessary, that is if there was no work to be done,
-		 *   notify the BusClock thread that a new response from the 
-		 *   chipset is available (they are handled as request) */
-//		bool synchronize = true;
-//		working_mutex.lock();
-//		if(working) {
-//			working_mutex.unlock();
-//			synchronize = false;
-//		}
-//		working = true;
-//		working_mutex.unlock();
-//
-//		if(synchronize) 
-			BusSynchronize();
+
+		BusSynchronize();
 		return;
 	}
 	/* the response comes from one of the cpu ports, which means
@@ -431,9 +393,6 @@ BusClock() {
 					<< "no message to dispatch, this should never occur" << Endl
 					<< EndDebugWarning;
 			}
-//			working_mutex.lock();
-//			working = false;
-//			working_mutex.unlock();
 			continue;
 		}
 		/* dispatch the message */
@@ -446,21 +405,6 @@ BusClock() {
 		 * - set the next_serviced to the next fifo
 		 * - check if there are still messages to handle, if so synchronize the bus
 		 *     again so it will be handled */
-//		if(logger_import) 
-//			(*logger_import) << DebugInfo << LOCATION
-//				<< "Before wait(cycle_time)"
-//				<< Endl << EndDebugInfo;
-//		wait(cycle_time);
-//		if(logger_import) 
-//			(*logger_import) << DebugInfo << LOCATION
-//				<< "Before wait(SC_ZERO_TIME)"
-//				<< Endl << EndDebugInfo;
-//		wait(SC_ZERO_TIME);
-//		if(logger_import) {
-//			(*logger_import) << DebugInfo << LOCATION
-//				<< "Dispatch finished" << Endl
-//				<< EndDebugInfo;
-//		}
 		next_serviced += 1;
 		next_serviced = next_serviced % (NUM_PROCS + 1);
 		bool msg_found = false;
@@ -511,13 +455,6 @@ BusClock() {
 				(*logger_import) << DebugInfo << LOCATION
 					<< "Finished bus cycle"
 					<< Endl << EndDebugInfo;
-//			working_mutex.lock();
-//			if(logger_import)
-//				(*logger_import) << DebugInfo << LOCATION
-//					<< "working set to false"
-//					<< Endl << EndDebugInfo;
-//			working = false;
-//			working_mutex.unlock();			
 		}
 	}
 }
