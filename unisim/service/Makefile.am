@@ -45,6 +45,11 @@ SUBDIRS += time
 INCLUDE_SUBDIRS += time
 endif
 
+if COND_tee
+SUBDIRS += tee
+INCLUDE_SUBDIRS += tee
+endif
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(libdir) || true)
