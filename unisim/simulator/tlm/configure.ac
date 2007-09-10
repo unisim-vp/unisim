@@ -45,6 +45,7 @@ AC_PROG_INSTALL
 AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-ppcemu_system, ppcemu_system)
+UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-ppcemu, ppcemu)
 UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-armemu, armemu)
 UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-embedded_ppc_g4_board, embedded_ppc_g4_board)
 

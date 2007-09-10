@@ -6,6 +6,11 @@ SUBDIRS += ppcemu_system
 INCLUDE_SUBDIRS += ppcemu_system
 endif
 
+if COND_ppcemu
+SUBDIRS += ppcemu
+INCLUDE_SUBDIRS += ppcemu
+endif
+
 if COND_armemu
 SUBDIRS += armemu
 INCLUDE_SUBDIRS += armemu
