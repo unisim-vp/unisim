@@ -1136,14 +1136,12 @@ int sc_main(int argc, char *argv[])
 		clock_t stime;
 #endif
 		double spent_time = 0.0;
-
 #ifdef WIN32
-	if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
-	{
-		time_start = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
-		           + ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
-	}
-		
+		if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
+		{
+			time_start = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
+					+ ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
+		}
 #else
 		times(&time_start);
 #endif
@@ -1175,12 +1173,12 @@ int sc_main(int argc, char *argv[])
 		cerr << "Simulation statistics:" << endl;
 
 #ifdef WIN32
-	if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
-	{
-		time_stop = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
-		          + ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
-	}
-	spent_time = (double)(time_stop - time_start) / 1e7;
+		if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
+		{
+			time_stop = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
+					+ ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
+		}
+		spent_time = (double)(time_stop - time_start) / 1e7;
 #else
 		times(&time_stop);
 		ratio= 1.0 / sysconf(_SC_CLK_TCK);
