@@ -237,10 +237,10 @@ template<class CONFIG>
 Register *
 CPU<CONFIG> ::
 GetRegister(const char *name) {
-  if(registers_registry.find(*(new string(name))) != registers_registry.end())
-    return registers_registry[*(new string(name))];
-  else 
-    return NULL;
+	if(registers_registry.find(*(new string(name))) != registers_registry.end())
+		return registers_registry[*(new string(name))];
+	else 
+		return NULL;
 }
 
 //=====================================================================
@@ -2549,6 +2549,7 @@ void
 CPU<CONFIG> ::
 PerformExit(int ret) {
   running = false;
+  Stop(ret);
 }
 
 /**************************************************************/

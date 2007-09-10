@@ -54,6 +54,9 @@
 #include "unisim/component/tlm/memory/ram/memory.hh"
 #include "unisim/component/tlm/bridge/simple_fsb_to_mem/config.hh"
 #include "unisim/component/tlm/bridge/simple_fsb_to_mem/simple_fsb_to_mem.hh"
+#include "unisim/component/tlm/debug/transaction_spy.hh"
+#include "unisim/component/tlm/message/simple_fsb.hh"
+#include "unisim/component/tlm/message/memory.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
@@ -67,7 +70,7 @@
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
-typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config CPU_CONFIG;
+typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig CPU_CONFIG;
 typedef unisim::component::tlm::bridge::simple_fsb_to_mem::Addr32BurstSize32_Config BRIDGE_CONFIG;
 
 //static const bool DEBUG_INFORMATION = true;
@@ -117,9 +120,6 @@ void help(char *prog_name) {
 	cerr << "-i <count>" << endl;
 	cerr << "--max:inst <count>" << endl;
 	cerr << "            execute <count> instructions then exit" << endl << endl;
-	cerr << "-l <file>" << endl;
-	cerr << "--logger:file <file>" << endl;
-	cerr << "            store log file in <file>" << endl << endl;
 	cerr << "-z" << endl;
 	cerr << "--logger:zip" << endl;
 	cerr << "            zip log file" << endl << endl;
@@ -129,6 +129,12 @@ void help(char *prog_name) {
 	cerr << "-o" << endl;
 	cerr << "--logger:out" << endl;
 	cerr << "            pipe the log into the standard output" << endl << endl;
+	cerr << "-m" << endl;
+	cerr << "--logger:message_spy" << endl;
+	cerr << "            create message spies (requires one log to work)" << endl << endl;
+	cerr << "-l <file>" << endl;
+	cerr << "--logger:file <file>" << endl;
+	cerr << "            store log file in <file>" << endl << endl;
 	cerr << "--help" << endl;
 	cerr << "-h" << endl;
 	cerr << "            displays this help" << endl;
@@ -141,6 +147,12 @@ typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
 const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 const uint32_t FSB_NUM_PROCS = 1;
 
+typedef unisim::component::tlm::message::SimpleFSBRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> BusMsgReqType;
+typedef unisim::component::tlm::message::SimpleFSBResponse<FSB_MAX_DATA_SIZE> BusMsgRspType;
+typedef unisim::component::tlm::debug::TransactionSpy<BusMsgReqType, BusMsgRspType> BusMsgSpyType;
+typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MemMsgReqType;
+typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;
+typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
 
 int main(int argc, char *argv[], char **envp) {
 	GarbageCollector::Setup();
@@ -155,6 +167,7 @@ int main(int argc, char *argv[], char **envp) {
 		{"logger:zip", no_argument, 0, 'z'},
 		{"logger:error", no_argument, 0, 'e'},
 		{"logger:out", no_argument, 0, 'o'},
+		{"logger:message_spy", no_argument, 0, 'm'},
 		{0, 0, 0, 0}
 	};
 
@@ -170,6 +183,7 @@ int main(int argc, char *argv[], char **envp) {
 	bool logger_error = false;
 	bool logger_out = false;
 	bool logger_on = false;
+	bool logger_messages = false;
 	const uint32_t fsb_frequency = 75; // in Mhz
 	const uint32_t mem_frequency = fsb_frequency * 4;
 	uint32_t cpu_clock_multiplier = 4;
@@ -177,7 +191,7 @@ int main(int argc, char *argv[], char **envp) {
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:zeol:", long_options, 0)) != -1) {
+	while((c = getopt_long (argc, argv, "dg:a:hi:zeoml:", long_options, 0)) != -1) {
 		switch(c) {
 		case 'd':
 			use_inline_debugger = true;
@@ -206,6 +220,9 @@ int main(int argc, char *argv[], char **envp) {
 			break;
 		case 'o':
 			logger_out = true;
+			break;
+		case 'm':
+			logger_messages = true;
 			break;
 		}
 	}
@@ -256,6 +273,12 @@ int main(int argc, char *argv[], char **envp) {
 	unisim::component::tlm::processor::arm::ARM<CPU_CONFIG> *cpu =
 		new unisim::component::tlm::processor::arm::ARM<CPU_CONFIG>("cpu"); 
 
+	BusMsgSpyType *bus_msg_spy = NULL;
+	MemMsgSpyType *mem_msg_spy = NULL;
+	if(logger_on && logger_messages) {
+		bus_msg_spy = new BusMsgSpyType("bus-msg-spy");
+		mem_msg_spy = new MemMsgSpyType("mem-msg-spy");
+	}
 	// In Linux mode, the system is not entirely simulated.
 	// This mode allows to run Linux applications without simulating all the peripherals.
 	// Every Linux system calls are caught and translated in host system calls.
@@ -299,9 +322,28 @@ int main(int argc, char *argv[], char **envp) {
 	// (*cpu)["verbose-tlm-run-thread"] = true;
 	// (*cpu)["verbose-tlm-commands"] = true;
 	
-	// Connect the CPU to the Front Side Bus
-	cpu->master_port(bridge->slave_port);
 
+	if(logger_on && logger_messages) {
+		(*bus_msg_spy)["source_module_name"] = cpu->name();
+		(*bus_msg_spy)["source_port_name"] = cpu->master_port.name();
+		(*bus_msg_spy)["target_module_name"] = bridge->name();
+		(*bus_msg_spy)["target_port_name"] = bridge->slave_port.name();
+		(*mem_msg_spy)["source_module_name"] = bridge->name();
+		(*mem_msg_spy)["source_port_name"] = bridge->master_port.name();
+		(*mem_msg_spy)["target_module_name"] = memory->name();
+		(*mem_msg_spy)["target_port_name"] = memory->slave_port.name();
+	}
+	
+	// Connect the CPU to the Front Side Bus
+	if(logger_on && logger_messages) {
+		cpu->master_port(bus_msg_spy->slave_port);
+		bus_msg_spy->master_port(bridge->slave_port);
+		bridge->master_port(mem_msg_spy->slave_port);
+		mem_msg_spy->master_port(memory->slave_port);
+	} else {
+		cpu->master_port(bridge->slave_port);
+		bridge->master_port(memory->slave_port);
+	}
 	cpu->memory_import >> bridge->memory_export;
 	
 	if(logger_on) {
@@ -309,6 +351,10 @@ int main(int argc, char *argv[], char **envp) {
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		bridge->logger_import >> *logger->logger_export[logger_index++];
 		linux_os->logger_import >> *logger->logger_export[logger_index++];
+		if(logger_messages) {
+			bus_msg_spy->logger_import >> *logger->logger_export[logger_index++];
+			mem_msg_spy->logger_import >> *logger->logger_export[logger_index++];
+		}
 	}
 	
 	if(inline_debugger)
@@ -353,6 +399,7 @@ int main(int argc, char *argv[], char **envp) {
 //	(*arm_linux_os)["endianess"] = E_BIG_ENDIAN;
 //	(*arm_linux_os)["memory-page-size"] = 4096;
 
+	(*linux_os)["system"] = "arm";
 	(*linux_os)["endianess"] = E_BIG_ENDIAN;
 	(*linux_os)["verbose"] = false;
 
@@ -389,7 +436,6 @@ int main(int argc, char *argv[], char **envp) {
 	bridge->memory_import >> memory->memory_export;
 
 	/* WARNING!!!! the bus request ports are not connected !!!!! */
-	bridge->master_port(memory->slave_port);
 //	(*bus->chipset_outport)(memory->bus_port);
 
 	if(use_inline_debugger)
@@ -469,6 +515,8 @@ int main(int argc, char *argv[], char **envp) {
 	if(cpu) delete cpu;
 	if(time) delete time;
 	if(logger) delete logger;
+	if(bus_msg_spy) delete bus_msg_spy;
+	if(mem_msg_spy) delete mem_msg_spy;
 
 	return 0;
 }

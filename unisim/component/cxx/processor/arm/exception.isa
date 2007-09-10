@@ -53,12 +53,12 @@ swi.disasm = {
 
 swi.execute = {
 	if(cpu.logger_import) 
-		(*cpu.logger_import) << DebugWarning
+		(*cpu.logger_import) << DebugInfo
 			<< Function << __FUNCTION__
 			<< File << __FILE__
 			<< Line << __LINE__
-			<< "executing swi"
-			<< Endl << EndDebugWarning;
+			<< "executing swi (#" << immed << ")"
+			<< Endl << EndDebugInfo;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	

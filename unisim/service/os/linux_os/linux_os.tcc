@@ -71,6 +71,7 @@ using std::dec;
 using std::endl;
 using std::flush;
 using std::cout;
+using std::cerr;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
@@ -128,6 +129,10 @@ LinuxOS(const char *name, Object *parent) :
 	mmap_base(0xd4000000),
 	current_syscall_id(0),
     current_syscall_name("") {
+	SetSyscallNameMap();
+
+	SetupDependsOn(registers_import);
+	SetupDependsOn(loader_import);
 	SetupDependsOn(logger_import);
  }
 
@@ -143,7 +148,7 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 OnDisconnect() {
 	if(logger_import)
-		(*logger_import) << DebugWarning
+		(*logger_import) << DebugWarning << LOCATION 
 			<< LOCATION
 			<< "TODO"
 			<< Endl << EndDebugWarning;
@@ -156,7 +161,7 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Setup() {
 	if(!cpu_linux_os_import) {
 		if(logger_import) {
-			(*logger_import) << DebugError
+			(*logger_import) << DebugError << LOCATION
 				<< cpu_linux_os_import.GetName() << " is not connected" << Endl
 				<< EndDebugError;
 		}
@@ -164,7 +169,7 @@ Setup() {
 	}
 	if(!memory_import) {
 		if(logger_import) {
-			(*logger_import) << DebugError
+			(*logger_import) << DebugError << LOCATION
 				<< memory_import.GetName() << " is not connected" << Endl
 				<< EndDebugError;
 		}
@@ -173,7 +178,7 @@ Setup() {
 	
 	if(!registers_import) {
 		if(logger_import) {
-			(*logger_import) << DebugError
+			(*logger_import) << DebugError << LOCATION
 				<< registers_import.GetName() << " is not connected" << Endl
 				<< EndDebugError;
 		}
@@ -181,21 +186,26 @@ Setup() {
 	}
 	
 	// check that the given system is supported
-	if(system != "arm" || system != "ppc") {
-		if(logger_import) {
-			(*logger_import) << DebugError
+	if(system != "arm" && system != "ppc") {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
 				<< "Unsupported system (" << system << "), this service only supports"
 				<< " arm and ppc systems" << Endl
 				<< EndDebugError;
-		}
+		return false;
 	}
 	// Call the system dependent setup
 	if(system == "arm") {
-		return ARMSetup();
+		if(!ARMSetup()) return false;
 	}
 	if(system == "ppc") {
-		return PPCSetup();
+		if(!PPCSetup()) return false;
 	}
+	if(logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Setup finished with success"
+			<< Endl << EndDebugInfo;
+	return true;
 }
 
 /**
@@ -301,8 +311,18 @@ ARMSetup() {
 
 	// Set initial CPU registers
 	PARAMETER_TYPE pc = loader_import->GetEntryPoint();
+	if(logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Setting register \"" << arm_regs[15]->GetName() << "\""
+			<< " to value 0x" << Hex << pc << Dec
+			<< Endl << EndDebugInfo;
 	arm_regs[15]->SetValue(&pc);
 	PARAMETER_TYPE st = loader_import->GetStackBase();
+	if(logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Setting register \"" << arm_regs[13]->GetName() << "\""
+			<< " to value 0x" << Hex << st << Dec
+			<< Endl << EndDebugInfo;
 	arm_regs[13]->SetValue(&st);
 	
 	return true;
@@ -442,6 +462,11 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 SetSyscallId(const string &syscall_name, int syscall_id) {
     syscall_t syscall_impl;
 
+    if(logger_import)
+    	(*logger_import) << DebugInfo << LOCATION
+    		<< "Associating syscall_name \"" << syscall_name << "\""
+    		<< "to syscall_id number " << syscall_id
+    		<< Endl << EndDebugInfo;
     if(HasSyscall(syscall_name)) {
     	if(HasSyscall(syscall_id)) {
     		stringstream s;
@@ -472,6 +497,12 @@ ExecuteSystemCall(int id) {
 	if (HasSyscall(translated_id)) {
 		current_syscall_id = translated_id;
 		current_syscall_name = syscall_name_assoc_map[translated_id];
+		if(logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Executing syscall(name = " << current_syscall_name << ";"
+				<< " id = " << translated_id << ";"
+				<< " unstranslated id = " << id << ")" << Endl
+				<< EndDebugInfo;
 		syscall_t y = syscall_impl_assoc_map[translated_id];
 		(this->*y)();
     } else
