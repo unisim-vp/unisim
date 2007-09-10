@@ -9,10 +9,10 @@ SUBDIRS += simple_fsb_to_mem
 INCLUDE_SUBDIRS += simple_fsb_to_mem
 endif
 
-# if COND_snooping_fsb_to_mem
-# SUBDIRS += snooping_fsb_to_mem
-# INCLUDE_SUBDIRS += snooping_fsb_to_mem
-# endif
+if COND_snooping_fsb_to_mem
+SUBDIRS += snooping_fsb_to_mem
+INCLUDE_SUBDIRS += snooping_fsb_to_mem
+endif
 
 if COND_pci_isa
 SUBDIRS += pci_isa
