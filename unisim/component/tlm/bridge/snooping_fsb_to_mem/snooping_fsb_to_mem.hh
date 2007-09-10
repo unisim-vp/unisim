@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
-#define __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
+#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_SNOOPINGFSBTOMEM_HH__
+#define __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_SNOOPINGFSBTOMEM_HH__
 
 #include <systemc.h>
 #include "unisim/component/tlm/message/snooping_fsb.hh"
@@ -48,7 +48,7 @@ namespace unisim {
 namespace component {
 namespace tlm {
 namespace bridge {
-namespace simple_fsb_to_mem {
+namespace snooping_fsb_to_mem {
 
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Service;
@@ -66,10 +66,10 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
 
 template <class CONFIG>
-class SimpleFSBToMemory :
+class SnoopingFSBToMemory :
 	public sc_module,
-	public TlmSendIf<SimpleFSBRequest<typename CONFIG::fsb_address_t, CONFIG::FSB_BURST_SIZE>,
-		SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> >,
+	public TlmSendIf<SnoopingFSBRequest<typename CONFIG::fsb_address_t, CONFIG::FSB_BURST_SIZE>,
+		SnoopingFSBResponse<CONFIG::FSB_BURST_SIZE> >,
 	public Service<Memory<typename CONFIG::fsb_address_t> >,
 	public Client<Memory<typename CONFIG::mem_address_t> >,
 	public Client<Logger> {
@@ -102,8 +102,8 @@ public:
 	ServiceImport<Memory<mem_address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 
-	SimpleFSBToMemory(const sc_module_name& name, Object *parent = 0);
-	virtual ~SimpleFSBToMemory();
+	SnoopingFSBToMemory(const sc_module_name& name, Object *parent = 0);
+	virtual ~SnoopingFSBToMemory();
 	
 	virtual bool Setup();
 	
@@ -135,4 +135,4 @@ private:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_SIMPLEFSBTOMEM_HH__
+#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_SNOOPINGFSBTOMEM_HH__

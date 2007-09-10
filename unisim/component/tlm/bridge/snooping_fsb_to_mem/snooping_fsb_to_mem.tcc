@@ -198,6 +198,8 @@ DispatchMemory() {
 		p_mem_msg_t mem_msg = new(mem_msg) mem_msg_t(mem_req);
 		mem_req->addr = fsb_req->addr;
 		mem_req->size = fsb_req->size;
+		sc_event *rsp_ev;
+		p_mem_rsp_t mem_rsp;
 		switch(fsb_req->type) {
 		case fsb_req_t::READ:
 		case fsb_req_t::READX:
@@ -206,11 +208,11 @@ DispatchMemory() {
 			while(!master_port->Send(mem_msg))
 				wait(mem_cycle_sctime);
 			wait(read_ev);
-			const p_mem_rsp_t &mem_rsp = mem_msg->rsp;
+			mem_rsp = mem_msg->rsp;
 			fsb_msg->rsp = new(fsb_msg->rsp) fsb_rsp_t();
 			memcpy(fsb_msg->rsp->read_data, mem_rsp->read_data, fsb_req->size);
 			fsb_msg->rsp->read_status = fsb_rsp_t::RS_SHARED;
-			sc_event *rsp_ev = fsb_msg->GetResponseEvent();
+			rsp_ev = fsb_msg->GetResponseEvent();
 			rsp_ev->notify((ceil(sc_time_stamp() / fsb_cycle_sctime)* fsb_cycle_sctime) - sc_time_stamp());
 			break;
 		case fsb_req_t::WRITE:

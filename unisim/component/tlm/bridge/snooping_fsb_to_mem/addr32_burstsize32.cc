@@ -32,20 +32,20 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/tlm/bridge/simple_fsb_to_mem/config.hh"
-#include "unisim/component/tlm/bridge/simple_fsb_to_mem/simple_fsb_to_mem.hh"
-#include "unisim/component/tlm/bridge/simple_fsb_to_mem/simple_fsb_to_mem.tcc"
+#include "unisim/component/tlm/bridge/snooping_fsb_to_mem/config.hh"
+#include "unisim/component/tlm/bridge/snooping_fsb_to_mem/snooping_fsb_to_mem.hh"
+#include "unisim/component/tlm/bridge/snooping_fsb_to_mem/snooping_fsb_to_mem.tcc"
 
 namespace unisim {
 namespace component {
 namespace tlm {
 namespace bridge {
-namespace simple_fsb_to_mem {
+namespace snooping_fsb_to_mem {
 
 template class
-SimpleFSBToMemory<Addr32BurstSize32_Config>;
+SnoopingFSBToMemory<Addr32BurstSize32_Config>;
 
-} // end of namespace simple_fsb_to_mem
+} // end of namespace snooping_fsb_to_mem
 } // end of namespace bridge
 } // end of namespace tlm
 } // end of namespace component
