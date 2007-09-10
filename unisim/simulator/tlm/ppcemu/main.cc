@@ -224,7 +224,6 @@ int sc_main(int argc, char *argv[])
 	uint32_t sdram_cycle_time = 30303030; // in femto seconds (= 33Mhz)
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
-	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
 	double cpu_ipc = 1.0; // in instructions per cycle
 
 	
@@ -378,7 +377,7 @@ int sc_main(int argc, char *argv[])
 	//  - RAM
 	(*memory)["frequency"] = fsb_frequency;
 	(*memory)["org"] = 0x00000000UL;
-	(*memory)["bytesize"] = memory_size;
+	(*memory)["bytesize"] = (uint32_t)-1;
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===
@@ -613,6 +612,8 @@ int sc_main(int argc, char *argv[])
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
 		bus->logger_import >> *logger->logger_export[logger_index++];
+		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
+		memory->logger_import >> *logger->logger_export[logger_index++];
 		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)
