@@ -563,87 +563,6 @@ int sc_main(int argc, char *argv[])
     (*flash)["frequency"] = fsb_frequency;
 	(*flash)["endian"] = "big-endian";
 
-
-	//  - PCI MAC I/O Heathrow run-time configuration
-	(*heathrow)["initial-base-addr"] = 0xf3000000UL;
-	(*heathrow)["pci-device-number"] = PCI_HEATHROW_DEV_NUM;
-	(*heathrow)["bus-frequency"] = pci_bus_frequency;
-	
-	//  - PCI IDE run-time configuration
-	(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
-	if (strcmp(image0_filename, "") != 0) {
-		
-		char delims[] = ",";
-		char *result = NULL;
-		result = strtok( image0_filename, delims );
-		int i = 0;
-		while( result != NULL ) {
-			(*pci_ide)["disk-image"][i] = result;
-			(*pci_ide)["disk-channel"][i] = i/2;
-			(*pci_ide)["disk-num"][i] = i%2;
-			i++;
-			result = strtok( NULL, delims );
-		}
-	}
-	(*pci_ide)["base-address"][0] = 0x18101;
-	(*pci_ide)["size"][0] = 8;
-	(*pci_ide)["register-number"][0] = 0x10;
-	(*pci_ide)["base-address"][1] = 0x18109;
-	(*pci_ide)["size"][1] = 4;
-	(*pci_ide)["register-number"][1] = 0x14;
-	(*pci_ide)["base-address"][2] = 0x5;
-	(*pci_ide)["size"][2] = 8;
-	(*pci_ide)["register-number"][2] = 0x18;
-	(*pci_ide)["base-address"][3] = 0xd;
-	(*pci_ide)["size"][3] = 4;
-	(*pci_ide)["register-number"][3] = 0x1c;
-	(*pci_ide)["base-address"][4] = 0x18119;
-	(*pci_ide)["size"][4] = 16;
-	(*pci_ide)["register-number"][4] = 0x20;
-
-	//  - Display run-time configuration
-	(*pci_display)["initial-base-addr"] = 0xa0000000UL;
-	(*pci_display)["bytesize"] = display_vfb_size; 
-	(*pci_display)["width"] = display_width;
-	(*pci_display)["height"] = display_height;
-	(*pci_display)["depth"] = display_depth;
-	(*pci_display)["pci-bus-frequency"] = pci_bus_frequency;
-	
-	// - PCI-ISA Bridge run-time configuration
-	(*pci_isa_bridge)["initial-base-addr"] = 0x000a0000UL;
-	(*pci_isa_bridge)["initial-io-base-addr"] = 0; //0xfe000000UL;
-	(*pci_isa_bridge)["pci-bus-frequency"] = pci_bus_frequency;
-	(*pci_isa_bridge)["isa-bus-frequency"] = isa_bus_frequency;
-	(*pci_isa_bridge)["pci-device-number"] = PCI_ISA_BRIDGE_DEV_NUM;
-
-	//  - i8042 run-time configuration
-	(*i8042)["fsb-frequency"] = fsb_frequency;
-	(*i8042)["isa-bus-frequency"] = isa_bus_frequency;
-
-	//=========================================================================
-	//===                      Service run-time configuration               ===
-	//=========================================================================
-
-	//  - GDB Server run-time configuration
-	if(gdb_server)
-	{
-		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
-		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
-	}
-
-	//  - SDL run-time configuration
-	(*sdl)["refresh-period"] = video_refresh_period;
-	(*sdl)["bmp-out-filename"] = bmp_out_filename;	
-
-	//  - Kernel loader configuration
-	(*kloader)["pmac-bootx.device-tree-filename"] = device_tree_filename;
-	(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
-	(*kloader)["pmac-bootx.ramdisk-filename"] = ramdisk_filename;
-	(*kloader)["pmac-bootx.screen-width"] = display_width;
-	(*kloader)["pmac-bootx.screen-height"] = display_height;
-	(*kloader)["elf32-loader.filename"] = filename;
-	(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
-
 	// PCI Bus run-time configuration
 	unsigned int mapping_index = 0;
 	(*pci_bus)["frequency"] = pci_bus_frequency;
@@ -727,6 +646,86 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["register-number"][mapping_index] = 0x14UL; // ISA Memory space mapped by BAR1
 	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
 	mapping_index++;
+
+	//  - PCI MAC I/O Heathrow run-time configuration
+	(*heathrow)["initial-base-addr"] = 0xf3000000UL;
+	(*heathrow)["pci-device-number"] = PCI_HEATHROW_DEV_NUM;
+	(*heathrow)["bus-frequency"] = pci_bus_frequency;
+	
+	//  - PCI IDE run-time configuration
+	(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
+	if (strcmp(image0_filename, "") != 0) {
+		
+		char delims[] = ",";
+		char *result = NULL;
+		result = strtok( image0_filename, delims );
+		int i = 0;
+		while( result != NULL ) {
+			(*pci_ide)["disk-image"][i] = result;
+			(*pci_ide)["disk-channel"][i] = i/2;
+			(*pci_ide)["disk-num"][i] = i%2;
+			i++;
+			result = strtok( NULL, delims );
+		}
+	}
+	(*pci_ide)["base-address"][0] = 0x18101;
+	(*pci_ide)["size"][0] = 8;
+	(*pci_ide)["register-number"][0] = 0x10;
+	(*pci_ide)["base-address"][1] = 0x18109;
+	(*pci_ide)["size"][1] = 4;
+	(*pci_ide)["register-number"][1] = 0x14;
+	(*pci_ide)["base-address"][2] = 0x5;
+	(*pci_ide)["size"][2] = 8;
+	(*pci_ide)["register-number"][2] = 0x18;
+	(*pci_ide)["base-address"][3] = 0xd;
+	(*pci_ide)["size"][3] = 4;
+	(*pci_ide)["register-number"][3] = 0x1c;
+	(*pci_ide)["base-address"][4] = 0x18119;
+	(*pci_ide)["size"][4] = 16;
+	(*pci_ide)["register-number"][4] = 0x20;
+
+	//  - Display run-time configuration
+	(*pci_display)["initial-base-addr"] = 0xa0000000UL;
+	(*pci_display)["bytesize"] = display_vfb_size; 
+	(*pci_display)["width"] = display_width;
+	(*pci_display)["height"] = display_height;
+	(*pci_display)["depth"] = display_depth;
+	(*pci_display)["pci-bus-frequency"] = pci_bus_frequency;
+	
+	// - PCI-ISA Bridge run-time configuration
+	(*pci_isa_bridge)["initial-base-addr"] = 0x000a0000UL;
+	(*pci_isa_bridge)["initial-io-base-addr"] = 0; //0xfe000000UL;
+	(*pci_isa_bridge)["pci-bus-frequency"] = pci_bus_frequency;
+	(*pci_isa_bridge)["isa-bus-frequency"] = isa_bus_frequency;
+	(*pci_isa_bridge)["pci-device-number"] = PCI_ISA_BRIDGE_DEV_NUM;
+
+	//  - i8042 run-time configuration
+	(*i8042)["fsb-frequency"] = fsb_frequency;
+	(*i8042)["isa-bus-frequency"] = isa_bus_frequency;
+
+	//=========================================================================
+	//===                      Service run-time configuration               ===
+	//=========================================================================
+
+	//  - GDB Server run-time configuration
+	if(gdb_server)
+	{
+		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
+		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
+	}
+
+	//  - SDL run-time configuration
+	(*sdl)["refresh-period"] = video_refresh_period;
+	(*sdl)["bmp-out-filename"] = bmp_out_filename;	
+
+	//  - Kernel loader configuration
+	(*kloader)["pmac-bootx.device-tree-filename"] = device_tree_filename;
+	(*kloader)["pmac-bootx.kernel-params"] = kernel_params.c_str();
+	(*kloader)["pmac-bootx.ramdisk-filename"] = ramdisk_filename;
+	(*kloader)["pmac-bootx.screen-width"] = display_width;
+	(*kloader)["pmac-bootx.screen-height"] = display_height;
+	(*kloader)["elf32-loader.filename"] = filename;
+	(*kloader)["elf32-loader.base-addr"] = 0x00400000UL;
 
 	//  - Transaction Spies
 	if(logger_on && logger_messages)
