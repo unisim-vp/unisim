@@ -154,8 +154,8 @@ const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 const uint32_t FSB_NUM_PROCS = 1;
 
 // the maximum number of transaction spies (per type of message)
-const unsigned int MAX_BUS_TRANSACTION_SPY = 4;
-const unsigned int MAX_MEM_TRANSACTION_SPY = 3;
+const unsigned int MAX_BUS_TRANSACTION_SPY = 3;
+const unsigned int MAX_MEM_TRANSACTION_SPY = 1;
 
 //=========================================================================
 //===                     Aliases for components classes                ===
@@ -225,6 +225,7 @@ int sc_main(int argc, char *argv[])
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
 	double cpu_ipc = 1.0; // in instructions per cycle
+	uint64_t fsb_cycle_time = (uint64_t)(1000000.0/(double)fsb_frequency); // Mhz
 
 	
 	// Parse the command line arguments
@@ -360,7 +361,7 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 
 	//  - Front Side Bus
-	(*bus)["cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency); // Mhz
+	(*bus)["cycle-time"] = fsb_cycle_time;
 
 	//  - PowerPC processor
 	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
@@ -374,6 +375,9 @@ int sc_main(int argc, char *argv[])
 	}
 	(*cpu)["ipc"] = cpu_ipc;
 
+	//  - Front side bus to memory bridge
+	(*fsb_to_mem_bridge)["fsb-cycle-time"] = fsb_cycle_time;
+	(*fsb_to_mem_bridge)["mem-cycle-time"] = sdram_cycle_time;
 	//  - RAM
 	(*memory)["frequency"] = fsb_frequency;
 	(*memory)["org"] = 0x00000000UL;
@@ -615,6 +619,7 @@ int sc_main(int argc, char *argv[])
 		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
 		memory->logger_import >> *logger->logger_export[logger_index++];
 		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+		linux_os->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)
 				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
@@ -629,7 +634,7 @@ int sc_main(int argc, char *argv[])
 
 	if(ServiceManager::Setup())
 	{
-		cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
+		cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
 
 #ifdef WIN32
 		FILETIME ftCreationTime;
@@ -757,6 +762,7 @@ int sc_main(int argc, char *argv[])
 	if(inline_debugger) delete inline_debugger;
 	if(bus) delete bus;
 	if(cpu) delete cpu;
+	if(fsb_to_mem_bridge) delete fsb_to_mem_bridge;
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
 	if(l2_power_estimator) delete l2_power_estimator;
@@ -764,6 +770,7 @@ int sc_main(int argc, char *argv[])
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
 	if(time) delete time;
 	if(logger) delete logger;
+	if(linux_os) delete linux_os;
 	if(elf32_loader) delete elf32_loader;
 	if(linux_loader) delete linux_loader;
 

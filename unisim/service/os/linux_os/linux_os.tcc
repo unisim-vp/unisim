@@ -186,7 +186,7 @@ Setup() {
 	}
 	
 	// check that the given system is supported
-	if(system != "arm" && system != "ppc") {
+	if(system != "arm" && system != "powerpc") {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Unsupported system (" << system << "), this service only supports"
@@ -198,7 +198,7 @@ Setup() {
 	if(system == "arm") {
 		if(!ARMSetup()) return false;
 	}
-	if(system == "ppc") {
+	if(system == "powerpc") {
 		if(!PPCSetup()) return false;
 	}
 	if(logger_import) 
