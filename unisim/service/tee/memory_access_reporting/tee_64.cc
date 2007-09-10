@@ -43,7 +43,7 @@ namespace tee {
 namespace memory_access_reporting {
 
 template
-class TeeMemoryAccessReporting<uint64_t>;
+class Tee<uint64_t>;
 
 } // end of namespace memory_access_reporting
 } // end of namespace tee

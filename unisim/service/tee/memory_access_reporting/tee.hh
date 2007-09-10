@@ -53,7 +53,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::MemoryAccessReporting;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS = 16>
-class TeeMemoryAccessReporting :
+class Tee :
 	public Client<MemoryAccessReporting<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >
 {
@@ -61,8 +61,8 @@ public:
 	ServiceExport<MemoryAccessReporting<ADDRESS> > in;
 	ServiceImport<MemoryAccessReporting<ADDRESS> > *out[MAX_IMPORTS];
 
-	TeeMemoryAccessReporting(const char *name, Object *parent = 0);
-	virtual ~TeeMemoryAccessReporting();
+	Tee(const char *name, Object *parent = 0);
+	virtual ~Tee();
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 			ADDRESS addr, uint32_t size);

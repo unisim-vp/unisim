@@ -79,6 +79,7 @@ UNISIM_LINK(../../../../unisim/service/loader/pmac_linux_kernel_loader, pmac_lin
 UNISIM_LINK(../../../../unisim/service/loader/linux_loader, linux_loader)
 UNISIM_LINK(../../../../unisim/service/logger, logger)
 UNISIM_LINK(../../../../unisim/service/sdl, sdl)
+UNISIM_LINK(../../../../unisim/service/tee/memory_access_reporting, tee_memory_access_reporting)
 
 UNISIM_LINK(../../../../unisim/component/cxx/cache/insn, cache)
 UNISIM_LINK(../../../../unisim/component/cxx/cache/mesi, cache)

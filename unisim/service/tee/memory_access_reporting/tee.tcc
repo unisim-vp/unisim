@@ -48,7 +48,7 @@ using std::stringstream;
 using std::string;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-TeeMemoryAccessReporting<ADDRESS, MAX_IMPORTS>::TeeMemoryAccessReporting(const char *name, Object *parent) :
+Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 	Object(name, parent),
 	Client<MemoryAccessReporting<ADDRESS> >(name, parent),
 	Service<MemoryAccessReporting<ADDRESS> >(name, parent),
@@ -65,12 +65,12 @@ TeeMemoryAccessReporting<ADDRESS, MAX_IMPORTS>::TeeMemoryAccessReporting(const c
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-TeeMemoryAccessReporting<ADDRESS, MAX_IMPORTS>::~TeeMemoryAccessReporting()
+Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 {
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void TeeMemoryAccessReporting<ADDRESS, MAX_IMPORTS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
+void Tee<ADDRESS, MAX_IMPORTS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 		typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 		ADDRESS addr, uint32_t size)
 {
@@ -82,7 +82,7 @@ void TeeMemoryAccessReporting<ADDRESS, MAX_IMPORTS>::ReportMemoryAccess(typename
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
-void TeeMemoryAccessReporting<ADDRESS, MAX_IMPORTS>::ReportFinishedInstruction(ADDRESS next_addr)
+void Tee<ADDRESS, MAX_IMPORTS>::ReportFinishedInstruction(ADDRESS next_addr)
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
