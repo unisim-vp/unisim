@@ -8,7 +8,7 @@ include_HEADERS = bridge.hh bridge.tcc
 
 install-exec-hook: $(libdir)/libbridge.a
 	rm -f $(prefix)/lib/libunisim_component_tlm_bridge_simple_fsb_to_mem_bridge.a
-	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_tlm_bridge_simple_fsb_to_mem_simple_fsb_to_mem.a)
+	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_tlm_bridge_simple_fsb_to_mem.a)
 uninstall-hook:
 	rm -f $(prefix)/lib/libunisim_component_tlm_bridge_simple_fsb_to_mem.a
 	(rmdir $(libdir) || true)
