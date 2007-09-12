@@ -52,7 +52,7 @@
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <stdexcept>
 #include <unisim/component/tlm/debug/transaction_spy.hh>
-#include <unisim/component/tlm/bridge/snooping_fsb_to_mem/snooping_fsb_to_mem.hh>
+#include <unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.hh>
 #include <unisim/component/tlm/bridge/snooping_fsb_to_mem/config.hh>
 #include <signal.h>
 
@@ -162,7 +162,7 @@ const unsigned int MAX_MEM_TRANSACTION_SPY = 1;
 //=========================================================================
 
 typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> FRONT_SIDE_BUS;
-typedef unisim::component::tlm::bridge::snooping_fsb_to_mem::SnoopingFSBToMemory<unisim::component::tlm::bridge::snooping_fsb_to_mem::Addr32BurstSize32_Config> FSB_TO_MEM_BRIDGE;
+typedef unisim::component::tlm::bridge::snooping_fsb_to_mem::Bridge<unisim::component::tlm::bridge::snooping_fsb_to_mem::Addr32BurstSize32_Config> FSB_TO_MEM_BRIDGE;
 typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
 typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
 

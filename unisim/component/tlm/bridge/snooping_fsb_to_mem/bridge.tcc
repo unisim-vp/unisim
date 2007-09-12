@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_TCC__
-#define __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_TCC__
+#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_TCC__
+#define __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_TCC__
 
 #include <cmath>
 
@@ -41,7 +41,7 @@ namespace unisim {
 namespace component {
 namespace tlm {
 namespace bridge {
-namespace simple_fsb_to_mem {
+namespace snooping_fsb_to_mem {
 
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::operator<<;
@@ -61,8 +61,8 @@ using unisim::service::interfaces::Line;
 #define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
 
 template <class CONFIG>
-SimpleFSBToMemory<CONFIG> ::
-SimpleFSBToMemory(const sc_module_name& name, Object *parent) :
+Bridge<CONFIG> ::
+Bridge(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	Service<Memory<fsb_address_t> >(name, parent),
@@ -91,14 +91,14 @@ SimpleFSBToMemory(const sc_module_name& name, Object *parent) :
 }
 
 template<class CONFIG>
-SimpleFSBToMemory<CONFIG> ::
-~SimpleFSBToMemory() {
+Bridge<CONFIG> ::
+~Bridge() {
 	
 }
 
 template<class CONFIG>
 bool
-SimpleFSBToMemory<CONFIG> ::
+Bridge<CONFIG> ::
 Setup() {
 	if(!logger_import) {
 		if(CONFIG::DEBUG)
@@ -155,7 +155,7 @@ Setup() {
 
 template<class CONFIG>
 bool
-SimpleFSBToMemory<CONFIG> ::
+Bridge<CONFIG> ::
 Send(const p_fsb_msg_t &fsb_msg) {
 	bool dispatch_needed = false;
 	
@@ -175,7 +175,7 @@ Send(const p_fsb_msg_t &fsb_msg) {
 
 template<class CONFIG>
 void 
-SimpleFSBToMemory<CONFIG> ::
+Bridge<CONFIG> ::
 DispatchMemory() {
 	
 	while(1) {
@@ -184,10 +184,11 @@ DispatchMemory() {
 
 		wait(dispatch_mem_ev);
 		if(!buffer_req.nb_read(fsb_msg)) {
-			(*logger_import) << DebugError << LOCATION
-				<< "trying to dispatch a message to the memory bus when none is available" << Endl
-				<< "Stopping simulation"
-				<< Endl << EndDebugError;
+			if(logger_import)
+				(*logger_import) << DebugError << LOCATION
+					<< "trying to dispatch a message to the memory bus when none is available" << Endl
+					<< "Stopping simulation"
+					<< Endl << EndDebugError;
 			sc_stop();
 			wait();
 		}
@@ -197,22 +198,42 @@ DispatchMemory() {
 		p_mem_msg_t mem_msg = new(mem_msg) mem_msg_t(mem_req);
 		mem_req->addr = fsb_req->addr;
 		mem_req->size = fsb_req->size;
-		if(fsb_req->type == fsb_req_t::READ) {
+		sc_event *rsp_ev;
+		p_mem_rsp_t mem_rsp;
+		switch(fsb_req->type) {
+		case fsb_req_t::READ:
+		case fsb_req_t::READX:
 			mem_req->type = mem_req_t::READ;
 			mem_msg->PushResponseEvent(read_ev);
 			while(!master_port->Send(mem_msg))
 				wait(mem_cycle_sctime);
 			wait(read_ev);
-			const p_mem_rsp_t &mem_rsp = mem_msg->rsp;
+			mem_rsp = mem_msg->rsp;
 			fsb_msg->rsp = new(fsb_msg->rsp) fsb_rsp_t();
 			memcpy(fsb_msg->rsp->read_data, mem_rsp->read_data, fsb_req->size);
-			sc_event *rsp_ev = fsb_msg->GetResponseEvent();
+			fsb_msg->rsp->read_status = fsb_rsp_t::RS_SHARED;
+			rsp_ev = fsb_msg->GetResponseEvent();
 			rsp_ev->notify((ceil(sc_time_stamp() / fsb_cycle_sctime)* fsb_cycle_sctime) - sc_time_stamp());
-		} else {
+			break;
+		case fsb_req_t::WRITE:
 			mem_req->type = mem_req_t::WRITE;
 			memcpy(mem_req->write_data, fsb_req->write_data, fsb_req->size);
 			while(!master_port->Send(mem_msg))
 				wait(mem_cycle_sctime);
+			break;
+		default:
+			if(logger_import) {
+				(*logger_import) << DebugWarning << LOCATION
+					<< "message ";
+				switch(fsb_req->type) {
+				case fsb_req_t::INV_BLOCK: (*logger_import) << "INV_BLOCK"; break;
+				case fsb_req_t::FLUSH_BLOCK: (*logger_import) << "FLUSH_BLOCK"; break;
+				case fsb_req_t::ZERO_BLOCK: (*logger_import) << "ZERO_BLOCK"; break;
+				case fsb_req_t::INV_TLB: (*logger_import) << "INV_TLB"; break;
+				}
+				(*logger_import) << " will be ignored (can not be handled by this module)"
+					<< Endl << EndDebugWarning;
+			}
 		}
 		
 		if(buffer_req.num_available() != 0) {
@@ -223,7 +244,7 @@ DispatchMemory() {
 
 template<class CONFIG>
 void
-SimpleFSBToMemory<CONFIG> ::
+Bridge<CONFIG> ::
 Reset() {
 	p_fsb_msg_t fsb_msg;
 	while(buffer_req.nb_read(fsb_msg));
@@ -232,7 +253,7 @@ Reset() {
 
 template<class CONFIG>
 bool
-SimpleFSBToMemory<CONFIG> ::
+Bridge<CONFIG> ::
 ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size) {
 	if(memory_import)
 		return memory_import->ReadMemory((typename CONFIG::mem_address_t)addr, buffer, size);
@@ -241,7 +262,7 @@ ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size) {
 
 template<class CONFIG>
 bool
-SimpleFSBToMemory<CONFIG> ::
+Bridge<CONFIG> ::
 WriteMemory(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size) {
 	if(memory_import)
 		return memory_import->WriteMemory((typename CONFIG::mem_address_t)addr, buffer, size);
@@ -250,10 +271,10 @@ WriteMemory(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t si
 
 #undef LOCATION
 
-} // end of namespace simple_fsb_to_mem
+} // end of namespace snooping_fsb_to_mem
 } // end of namespace bridge
 } // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_TCC__
+#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_TCC__

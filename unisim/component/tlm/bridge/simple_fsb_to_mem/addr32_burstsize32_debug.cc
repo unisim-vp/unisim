@@ -33,8 +33,8 @@
  */
 
 #include "unisim/component/tlm/bridge/simple_fsb_to_mem/config.hh"
-#include "unisim/component/tlm/bridge/simple_fsb_to_mem/simple_fsb_to_mem.hh"
-#include "unisim/component/tlm/bridge/simple_fsb_to_mem/simple_fsb_to_mem.tcc"
+#include "unisim/component/tlm/bridge/simple_fsb_to_mem/bridge.hh"
+#include "unisim/component/tlm/bridge/simple_fsb_to_mem/bridge.tcc"
 
 namespace unisim {
 namespace component {
@@ -43,7 +43,7 @@ namespace bridge {
 namespace simple_fsb_to_mem {
 
 template class
-SimpleFSBToMemory<Addr32BurstSize32Debug_Config>;
+Bridge<Addr32BurstSize32Debug_Config>;
 
 } // end of namespace simple_fsb_to_mem
 } // end of namespace bridge

@@ -32,11 +32,11 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
-#define __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
+#ifndef __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_HH__
+#define __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_HH__
 
 #include <systemc.h>
-#include "unisim/component/tlm/message/simple_fsb.hh"
+#include "unisim/component/tlm/message/snooping_fsb.hh"
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
@@ -48,7 +48,7 @@ namespace unisim {
 namespace component {
 namespace tlm {
 namespace bridge {
-namespace simple_fsb_to_mem {
+namespace snooping_fsb_to_mem {
 
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Service;
@@ -58,18 +58,18 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
-using unisim::component::tlm::message::SimpleFSBRequest;
-using unisim::component::tlm::message::SimpleFSBResponse;
+using unisim::component::tlm::message::SnoopingFSBRequest;
+using unisim::component::tlm::message::SnoopingFSBResponse;
 using unisim::component::tlm::message::MemoryRequest;
 using unisim::component::tlm::message::MemoryResponse;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
 
 template <class CONFIG>
-class SimpleFSBToMemory :
+class Bridge :
 	public sc_module,
-	public TlmSendIf<SimpleFSBRequest<typename CONFIG::fsb_address_t, CONFIG::FSB_BURST_SIZE>,
-		SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> >,
+	public TlmSendIf<SnoopingFSBRequest<typename CONFIG::fsb_address_t, CONFIG::FSB_BURST_SIZE>,
+		SnoopingFSBResponse<CONFIG::FSB_BURST_SIZE> >,
 	public Service<Memory<typename CONFIG::fsb_address_t> >,
 	public Client<Memory<typename CONFIG::mem_address_t> >,
 	public Client<Logger> {
@@ -78,8 +78,8 @@ private:
 	typedef typename CONFIG::mem_address_t mem_address_t;
 	static const unsigned int FSB_BURST_SIZE = CONFIG::FSB_BURST_SIZE;
 	static const unsigned int MEM_BURST_SIZE = CONFIG::MEM_BURST_SIZE;
-	typedef SimpleFSBRequest<fsb_address_t, FSB_BURST_SIZE> fsb_req_t;
-	typedef SimpleFSBResponse<FSB_BURST_SIZE> fsb_rsp_t;
+	typedef SnoopingFSBRequest<fsb_address_t, FSB_BURST_SIZE> fsb_req_t;
+	typedef SnoopingFSBResponse<FSB_BURST_SIZE> fsb_rsp_t;
 	typedef Pointer<fsb_req_t> p_fsb_req_t;
 	typedef Pointer<fsb_rsp_t> p_fsb_rsp_t;
 	typedef TlmMessage<fsb_req_t, fsb_rsp_t> fsb_msg_t;
@@ -93,7 +93,7 @@ private:
 	
 	
 public:
-	SC_HAS_PROCESS(SimpleFSBToMemory);
+	SC_HAS_PROCESS(Bridge);
 	
 	sc_export<TlmSendIf<fsb_req_t, fsb_rsp_t> > slave_port;
 	sc_port<TlmSendIf<mem_req_t, mem_rsp_t> > master_port;
@@ -102,8 +102,8 @@ public:
 	ServiceImport<Memory<mem_address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 
-	SimpleFSBToMemory(const sc_module_name& name, Object *parent = 0);
-	virtual ~SimpleFSBToMemory();
+	Bridge(const sc_module_name& name, Object *parent = 0);
+	virtual ~Bridge();
 	
 	virtual bool Setup();
 	
@@ -129,10 +129,10 @@ private:
 	void DispatchMemory();
 };
 
-} // end of namespace simple_fsb_to_mem
+} // end of namespace snooping_fsb_to_mem
 } // end of namespace bridge
 } // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SIMPLEFSBTOMEM_SIMPLEFSBTOMEM_HH__
+#endif // __UNISIM_COMPONENT_TLM_BRIDGE_SNOOPINGFSBTOMEM_BRIDGE_HH__

@@ -53,7 +53,7 @@
 #include "unisim/component/tlm/processor/arm/arm.hh"
 #include "unisim/component/tlm/memory/ram/memory.hh"
 #include "unisim/component/tlm/bridge/simple_fsb_to_mem/config.hh"
-#include "unisim/component/tlm/bridge/simple_fsb_to_mem/simple_fsb_to_mem.hh"
+#include "unisim/component/tlm/bridge/simple_fsb_to_mem/bridge.hh"
 #include "unisim/component/tlm/debug/transaction_spy.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
 #include "unisim/component/tlm/message/memory.hh"
@@ -268,8 +268,8 @@ int main(int argc, char *argv[], char **envp) {
 		use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = 
 		use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
-	unisim::component::tlm::bridge::simple_fsb_to_mem::SimpleFSBToMemory<BRIDGE_CONFIG> *bridge =
-		new unisim::component::tlm::bridge::simple_fsb_to_mem::SimpleFSBToMemory<BRIDGE_CONFIG>("bridge");
+	unisim::component::tlm::bridge::simple_fsb_to_mem::Bridge<BRIDGE_CONFIG> *bridge =
+		new unisim::component::tlm::bridge::simple_fsb_to_mem::Bridge<BRIDGE_CONFIG>("bridge");
 	unisim::component::tlm::processor::arm::ARM<CPU_CONFIG> *cpu =
 		new unisim::component::tlm::processor::arm::ARM<CPU_CONFIG>("cpu"); 
 

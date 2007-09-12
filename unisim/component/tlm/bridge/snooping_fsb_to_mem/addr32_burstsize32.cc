@@ -33,8 +33,8 @@
  */
 
 #include "unisim/component/tlm/bridge/snooping_fsb_to_mem/config.hh"
-#include "unisim/component/tlm/bridge/snooping_fsb_to_mem/snooping_fsb_to_mem.hh"
-#include "unisim/component/tlm/bridge/snooping_fsb_to_mem/snooping_fsb_to_mem.tcc"
+#include "unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.hh"
+#include "unisim/component/tlm/bridge/snooping_fsb_to_mem/bridge.tcc"
 
 namespace unisim {
 namespace component {
@@ -43,7 +43,7 @@ namespace bridge {
 namespace snooping_fsb_to_mem {
 
 template class
-SnoopingFSBToMemory<Addr32BurstSize32_Config>;
+Bridge<Addr32BurstSize32_Config>;
 
 } // end of namespace snooping_fsb_to_mem
 } // end of namespace bridge
