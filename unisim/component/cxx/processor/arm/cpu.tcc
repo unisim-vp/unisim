@@ -866,7 +866,7 @@ LSMdb(const typename CONFIG::reg_t val_reg,
 template<class CONFIG>
 typename CONFIG::address_t 
 CPU<CONFIG> ::
-CLSImm(const uint32_t u,
+CLSOpDec(const uint32_t u,
 		const uint32_t val_reg,
 		const uint32_t offset) {
 	typename CONFIG::address_t res;
@@ -2337,25 +2337,83 @@ Write32(typename CONFIG::address_t address, uint32_t &val) {
 /**************************************************************/
 
 template<class CONFIG>
-void 
+bool 
 CPU<CONFIG> ::
-MCRImplementation(uint32_t op1, uint32_t crn, uint32_t rd, uint32_t cp_num, uint32_t op2, uint32_t crm) {
+CoprocessorLoad(uint32_t cp_num, address_t address) {
 	if(logger_import)
 		(*logger_import) << DebugError << LOCATION
-			<< "This arm version does not support coprocessors (it is working in user mode)." 
+			<< "TODO"
 			<< Endl << EndDebugError;
-	exit(-1);
+	Stop(-1);
+}
+
+template<class CONFIG>
+bool 
+CPU<CONFIG> ::
+CoprocessorLoad(uint32_t cp_num, address_t address, uint32_t option) {
+	if(logger_import)
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+	Stop(-1);
+}
+
+template<class CONFIG>
+bool 
+CPU<CONFIG> ::
+CoprocessorStore(uint32_t cp_num, address_t address) {
+	if(logger_import)
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+	Stop(-1);
+}
+
+template<class CONFIG>
+bool 
+CPU<CONFIG> ::
+CoprocessorStore(uint32_t cp_num, address_t address, uint32_t option) {
+	if(logger_import)
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+	Stop(-1);
+}
+
+template<class CONFIG>
+void 
+CPU<CONFIG> ::
+CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
+		uint32_t crd, uint32_t crn, uint32_t crm) {
+	if(logger_import)
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+	Stop(-1);
+}
+
+template<class CONFIG>
+void 
+CPU<CONFIG> ::
+MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
+		uint32_t rd, uint32_t crn, uint32_t crm) {
+	if(logger_import)
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+	Stop(-1);
 }
 
 template<class CONFIG>
 void
 CPU<CONFIG> ::
-MRCImplementation(uint32_t op1, uint32_t crn, uint32_t rd, uint32_t cp_num, uint32_t op2, uint32_t crm) {
+MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
+		uint32_t rd, uint32_t crn, uint32_t crm) {
 	if(logger_import)
 		(*logger_import) << DebugError << LOCATION
-			<< "This arm version does not support coprocessors (it is working in user mode)." 
+			<< "TODO"
 			<< Endl << EndDebugError;
-	exit(-1);
+	Stop(-1);
 }
 
 /**************************************************************/
