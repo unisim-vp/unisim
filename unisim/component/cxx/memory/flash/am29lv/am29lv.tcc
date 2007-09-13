@@ -197,7 +197,7 @@ int AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetSector(typename CONFIG::ADDRESS addr)
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data)
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	unsigned int i;
 
@@ -212,16 +212,16 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 		   transition->initial_cycle == cycle[chip_num] &&
 		   transition->command == command &&
 		   (transition->wildcard_addr || (!transition->wildcard_addr && ((transition->addr >> config_addr_shift) == chip_addr))) &&
-		   (transition->wildcard_data || (!transition->wildcard_data && (endian == E_LITTLE_ENDIAN ? memcmp(transition->data, data, CHIP_IO_WIDTH) == 0 : ReverseCompare(transition->data, data, CHIP_IO_WIDTH)))))
+		   (transition->wildcard_data || (!transition->wildcard_data && size >= CHIP_IO_WIDTH && (endian == E_LITTLE_ENDIAN ? memcmp(transition->data, data, CHIP_IO_WIDTH) == 0 : ReverseCompare(transition->data, data, CHIP_IO_WIDTH)))))
 		{
 			state[chip_num] = transition->final_state;
 			cycle[chip_num] = transition->final_cycle;
 			switch(transition->action)
 			{
 				case ACT_NOP: return;
-				case ACT_READ: Read(chip_num, offset, data); return;
-				case ACT_READ_AUTOSELECT: ReadAutoselect(chip_num, offset, data); return;
-				case ACT_PROGRAM: Program(chip_num, offset, data); return;
+				case ACT_READ: Read(chip_num, offset, data, size); return;
+				case ACT_READ_AUTOSELECT: ReadAutoselect(chip_num, offset, data, size); return;
+				case ACT_PROGRAM: Program(chip_num, offset, data, size); return;
 				case ACT_CHIP_ERASE: ChipErase(chip_num); return;
 				case ACT_SECTOR_ERASE: SectorErase(chip_num, offset); return;
 			}
@@ -265,20 +265,20 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 
 	do
 	{
-		FSM(chip_num, command, addr, data);
-	} while(data += CHIP_IO_WIDTH, addr += CHIP_IO_WIDTH, chip_num = (chip_num + 1) % NUM_CHIPS, sz -= CHIP_IO_WIDTH);
+		FSM(chip_num, command, addr, data, sz > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : sz);
+	} while(data += CHIP_IO_WIDTH, addr += CHIP_IO_WIDTH, chip_num = (chip_num + 1) % NUM_CHIPS, (sz -= CHIP_IO_WIDTH) > 0);
 
 	return true;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data)
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
-	memcpy(data, storage + addr, CHIP_IO_WIDTH);
+	memcpy(data, storage + addr, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data)
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 
@@ -292,9 +292,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 				(*logger_import) << EndDebugInfo;
 			}
 			if(endian == E_LITTLE_ENDIAN)
-				memcpy(data, CONFIG::MANUFACTURER_ID, CHIP_IO_WIDTH);
+				memcpy(data, CONFIG::MANUFACTURER_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 			else
-				ReverseCopy(data, CONFIG::MANUFACTURER_ID, CHIP_IO_WIDTH);
+				ReverseCopy(data, CONFIG::MANUFACTURER_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 			return;
 		case CONFIG::DEVICE_ID_ADDR:
 			if(logger_import)
@@ -304,9 +304,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 				(*logger_import) << EndDebugInfo;
 			}
 			if(endian == E_LITTLE_ENDIAN)
-				memcpy(data, CONFIG::DEVICE_ID, CHIP_IO_WIDTH);
+				memcpy(data, CONFIG::DEVICE_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 			else
-				ReverseCopy(data, CONFIG::DEVICE_ID, CHIP_IO_WIDTH);
+				ReverseCopy(data, CONFIG::DEVICE_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 			return;
 		case CONFIG::SECTOR_PROTECT_VERIFY_ADDR:
 			{
@@ -321,26 +321,26 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 				if(sector_num >= 0 && sector_protect[sector_num])
 				{
 					if(endian == E_LITTLE_ENDIAN)
-						memcpy(data, CONFIG::PROTECTED, CHIP_IO_WIDTH);
+						memcpy(data, CONFIG::PROTECTED, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 					else
-						ReverseCopy(data, CONFIG::PROTECTED, CHIP_IO_WIDTH);
+						ReverseCopy(data, CONFIG::PROTECTED, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 				}
 				else
 				{
 					if(endian == E_LITTLE_ENDIAN)
-						memcpy(data, CONFIG::UNPROTECTED, CHIP_IO_WIDTH);
+						memcpy(data, CONFIG::UNPROTECTED, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 					else
-						ReverseCopy(data, CONFIG::UNPROTECTED, CHIP_IO_WIDTH);
+						ReverseCopy(data, CONFIG::UNPROTECTED, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 				}
 			}
 			return;
 	}
 
-	Read(chip_num, addr, data);
+	Read(chip_num, addr, data, size);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename CONFIG::ADDRESS addr, const uint8_t *data)
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename CONFIG::ADDRESS addr, const uint8_t *data, uint32_t size)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
@@ -367,16 +367,17 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << Hex << chip_addr << ": Programming ";
 		uint32_t i;
-		for(i = 0; i < CHIP_IO_WIDTH; i++)
+		uint32_t n = size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size;
+		for(i = 0; i < n; i++)
 		{
 			(*logger_import) << "0x" << (unsigned int) data[i];
-			if(i < CHIP_IO_WIDTH - 1) (*logger_import) << " ";
+			if(i < n - 1) (*logger_import) << " ";
 		}
 		(*logger_import) << Dec << Endl;
 		(*logger_import) << EndDebugInfo;
 	}
 
-	memcpy(storage + addr, data, CHIP_IO_WIDTH);
+	memcpy(storage + addr, data, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>

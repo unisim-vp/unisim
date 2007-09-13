@@ -104,10 +104,10 @@ private:
 	bool ReverseCompare(const uint8_t *data1, const uint8_t *data2, uint32_t size);
 	bool ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size);
 	int GetSector(typename CONFIG::ADDRESS addr);
-	void FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data);
-	void Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data);
-	void ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data);
-	void Program(unsigned int chip_num, typename CONFIG::ADDRESS addr, const uint8_t *data);
+	void FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
+	void Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
+	void ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
+	void Program(unsigned int chip_num, typename CONFIG::ADDRESS addr, const uint8_t *data, uint32_t size);
 	void ChipErase(unsigned int chip_num);
 	void SectorErase(unsigned int chip_num, typename CONFIG::ADDRESS addr);
 };
