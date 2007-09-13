@@ -44,10 +44,13 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
+###### CHECK FOR HOST ######################
+
+UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-ppcemu, ppcemu, *linux*)
 UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-ppcemu_system, ppcemu_system)
-UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-ppcemu, ppcemu)
-UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-armemu, armemu)
 UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-embedded_ppc_g4_board, embedded_ppc_g4_board)
+UNISIM_CONFIG_SUBDIR(unisim-simulator-tlm-armemu, armemu, *linux*)
+
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

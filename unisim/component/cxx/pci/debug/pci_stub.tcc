@@ -65,10 +65,12 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	Service<MemoryAccessReporting<ADDRESS> >(name, parent),
 	Client<Logger>(name, parent),
 	Client<SymbolTableLookup<ADDRESS> >(name, parent),
+	Client<Synchronizable>(name, parent),
 	memory_export("memory_export", this),
 	logger_import("logger-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
+	synchronizable_import("synchronizable-import", this),
 	bytesize(0),
 	storage(0),
 	param_bytesize("bytesize", this, bytesize),
@@ -368,6 +370,7 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS
 		typename inherited::TIME_UNIT tu;
 		uint64_t t;
 
+		synchronizable_import->Synchronize();
 		Trap(t, tu);
 		NetStub<ADDRESS>::PutTrapPacket(t, tu);
 	}
@@ -381,6 +384,7 @@ void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 		typename inherited::TIME_UNIT tu;
 		uint64_t t;
 
+		synchronizable_import->Synchronize();
 		Trap(t, tu);
 		NetStub<ADDRESS>::PutTrapPacket(t, tu);
 	}

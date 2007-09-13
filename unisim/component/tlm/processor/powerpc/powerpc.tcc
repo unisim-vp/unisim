@@ -98,11 +98,12 @@ void PowerPC<CONFIG>::Stop(int ret)
 }
 
 template <class CONFIG>
-void PowerPC<CONFIG>::Sync()
+void PowerPC<CONFIG>::Synchronize()
 {
 	sc_time time_spent = cpu_time - last_cpu_time;
 	last_cpu_time = cpu_time;
 	wait(time_spent);
+	next_nice_time = sc_time_stamp();
 }
 
 	

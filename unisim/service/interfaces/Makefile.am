@@ -1,24 +1,26 @@
 includedir = $(prefix)/include/unisim/service/interfaces
 include_HEADERS = \
-    cache_power_estimator.hh \
-    keyboard.hh \
-    memory.hh \
-    symbol_table_build.hh \
-    cpu_linux_os.hh \
-    linux_os.hh \
-    os.hh \
-    symbol_table_lookup.hh \
-    cpu_os.hh \
-    loader.hh \
-    power_mode.hh \
-    time.hh \
-    debug_control.hh \
-    logger.hh \
-    registers.hh \
-    video.hh \
-    disassembly.hh \
-    memory_access_reporting.hh \
-    resetable.hh
+	cache_power_estimator.hh \
+	cpu_os.hh \
+	disassembly.hh \
+	linux_os.hh \
+	logger.hh \
+	memory.hh \
+	pci_device.hh \
+	registers.hh \
+	symbol_table_build.hh \
+	synchronizable.hh \
+	video.hh \
+	cpu_linux_os.hh \
+	debug_control.hh \
+	keyboard.hh \
+	loader.hh \
+	memory_access_reporting.hh \
+	os.hh \
+	power_mode.hh \
+	resetable.hh \
+	symbol_table_lookup.hh \
+	time.hh
 
 # INCLUDES=-I$(top_srcdir)/../../..
 # libdir = $(prefix)/lib/unisim/service/interfaces

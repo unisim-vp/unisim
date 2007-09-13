@@ -8,8 +8,9 @@ libmessage_a_SOURCES = \
 	interrupt.cc
 		
 include_HEADERS = \
-	memory.hh \
 	interrupt.hh \
+	isa.hh \
+	memory.hh \
 	pci.hh \
 	simple_fsb.hh \
 	snooping_fsb.hh

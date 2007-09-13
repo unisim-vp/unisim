@@ -58,6 +58,7 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/cache_power_estimator.hh>
 #include <unisim/service/interfaces/power_mode.hh>
+#include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/service/interfaces/logger.hh>
 #include <map>
 #include <iostream>
@@ -88,6 +89,7 @@ using unisim::service::interfaces::LinuxOS;
 using unisim::service::interfaces::CPULinuxOS;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
+using unisim::service::interfaces::Synchronizable;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
 using unisim::service::interfaces::Logger;
@@ -153,7 +155,8 @@ class CPU :
 	public Client<LinuxOS>,
 	public Client<Logger>,
 	public Client<CachePowerEstimator>,
-	public Client<PowerMode>
+	public Client<PowerMode>,
+	public Service<Synchronizable>
 {
 public:
 	typedef typename CONFIG::address_t address_t;
@@ -302,6 +305,7 @@ public:
 	ServiceExport<unisim::service::interfaces::Registers> registers_export;
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
+	ServiceExport<Synchronizable> synchronizable_export;
 
 	ServiceImport<Loader<physical_address_t> > kernel_loader_import;
 	ServiceImport<DebugControl<address_t> > debug_control_import;
@@ -344,7 +348,7 @@ public:
 	void Step();
 	void Run();
 	virtual void Stop(int ret);
-	virtual void Sync();
+	virtual void Synchronize();
 	virtual void Reset();
 
 	//=====================================================================

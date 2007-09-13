@@ -74,6 +74,7 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	Client<Logger>(name, parent),
 	Client<CachePowerEstimator>(name, parent),
 	Client<PowerMode>(name, parent),
+	Service<Synchronizable>(name, parent),
 	disasm_export("disasm-export", this),
 	registers_export("registers-export", this),
 	memory_export("memory-export", this),
@@ -102,6 +103,7 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	internal_l2_power_mode_import("internal-l2-power-mode-import", this),
 	internal_itlb_power_mode_import("internal-itlb-power-mode-import", this),
 	internal_dtlb_power_mode_import("internal-dtlb-power-mode-import", this),
+	synchronizable_export("synchronizable-export", this),
 	dl1("dl1", CONFIG::L2_ENABLE ? &l2 : 0, bus_interface, this),
 	il1("il1", CONFIG::L2_ENABLE ? &l2 : 0, bus_interface, this),
 	l2("l2", 0, bus_interface, this),
@@ -1850,7 +1852,7 @@ void CPU<CONFIG>::Step()
 			if(dbg_cmd == DebugControl<address_t>::DBG_STEP) break;
 			if(dbg_cmd == DebugControl<address_t>::DBG_SYNC)
 			{
-				Sync();
+				Synchronize();
 				continue;
 			}
 
@@ -2995,7 +2997,7 @@ void CPU<CONFIG>::Stop(int ret)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Sync()
+void CPU<CONFIG>::Synchronize()
 {
 }
 

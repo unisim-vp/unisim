@@ -48,6 +48,7 @@
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/synchronizable.hh>
 
 namespace unisim {
 namespace component {
@@ -75,6 +76,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::Logger;
 using unisim::util::debug::NetStub;
+using unisim::service::interfaces::Synchronizable;
 
 template <class ADDRESS>
 class PCIStub :
@@ -82,7 +84,8 @@ class PCIStub :
 	public Service<Memory<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
 	public Client<Logger>,
-	public Client<SymbolTableLookup<ADDRESS> >
+	public Client<SymbolTableLookup<ADDRESS> >,
+	public Client<Synchronizable>
 {
 public:
 	typedef NetStub<ADDRESS> inherited;
@@ -95,6 +98,7 @@ public:
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceImport<Logger> logger_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	ServiceImport<Synchronizable> synchronizable_import;
 	
 	PCIStub(const char *name, Object *parent = 0);
 	virtual ~PCIStub();

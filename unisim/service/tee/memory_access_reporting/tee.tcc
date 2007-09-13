@@ -59,7 +59,7 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 	{
 		stringstream sstr;
 		sstr << "out[" << i << "]";
-		string import_name;
+		string import_name = sstr.str();
 		out[i] = new ServiceImport<MemoryAccessReporting<ADDRESS> >(import_name.c_str(), this);
 	}
 }
@@ -77,7 +77,8 @@ void Tee<ADDRESS, MAX_IMPORTS>::ReportMemoryAccess(typename MemoryAccessReportin
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i]) (*out[i])->ReportMemoryAccess(mat, mt, addr, size);
+		if(out[i])
+			if(*out[i]) (*out[i])->ReportMemoryAccess(mat, mt, addr, size);
 	}
 }
 
@@ -87,7 +88,8 @@ void Tee<ADDRESS, MAX_IMPORTS>::ReportFinishedInstruction(ADDRESS next_addr)
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
 	{
-		if(out[i]) (*out[i])->ReportFinishedInstruction(next_addr);
+		if(out[i])
+			if(*out[i]) (*out[i])->ReportFinishedInstruction(next_addr);
 	}
 }
 

@@ -53,12 +53,24 @@ AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 
-UNISIM_CHECK_BOOST
-UNISIM_CHECK_CURSES
-UNISIM_CHECK_READLINE
-UNISIM_CHECK_LIBXML2
-UNISIM_CHECK_SDL
-UNISIM_CHECK_SYSTEMC
+###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
+
+case $host in
+	*linux*)   # linux host
+		UNISIM_CHECK_BOOST
+		UNISIM_CHECK_CURSES
+		UNISIM_CHECK_READLINE
+		UNISIM_CHECK_LIBXML2
+		UNISIM_CHECK_SYSTEMC
+		;;
+	*mingw32*)  # win32 host
+		UNISIM_CHECK_BOOST
+		UNISIM_CHECK_READLINE
+		UNISIM_CHECK_LIBXML2
+		UNISIM_CHECK_SYSTEMC
+		LIBS+=" -lwsock32"
+		;;
+esac
 
 UNISIM_LINK(../../../../unisim/kernel/service, services)
 
@@ -71,7 +83,6 @@ UNISIM_LINK(../../../../unisim/service/time/sc_time, time)
 UNISIM_LINK(../../../../unisim/service/power, power)
 UNISIM_LINK(../../../../unisim/service/debug/gdb_server, gdb_server)
 UNISIM_LINK(../../../../unisim/service/debug/inline_debugger, inline_debugger)
-UNISIM_LINK(../../../../unisim/service/os/linux_os, linux_os)
 UNISIM_LINK(../../../../unisim/service/loader/elf_loader, elf_loader)
 UNISIM_LINK(../../../../unisim/service/debug/symbol_table, symbol_table)
 UNISIM_LINK(../../../../unisim/service/loader/pmac_bootx, pmac_bootx)

@@ -1,15 +1,24 @@
+## UNISIM_CHECK_WINSOCK2
+## Checks if the winsock2 library is available
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_WINSOCK2], [
+	AC_CHECK_HEADERS([winsock2.h],, AC_MSG_ERROR([Some standard headers are missing.]))
+	# Note: we can't check socket functions from libwsock32 because of the PASCAL calling convention. cdecl is mandatory for autoconf.
+	LIBS+=-lwsock32
+])
+
+
 ## UNISIM_CHECK_BOOST
 ## Checks if the boost library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN_ONCE([UNISIM_CHECK_BOOST], [
+AC_DEFUN([UNISIM_CHECK_BOOST], [
     # Check if boost path has been overloaded
     AC_ARG_WITH(boost,
 	AS_HELP_STRING([--with-boost=<path>], [boost library to use (will be completed with /include and /lib)]))
     if test "x$with_boost" != "x"; then
 	AC_MSG_NOTICE([using boost at $with_boost])
-	LIBS+=" -lboost"
-	LDFLAGS+=" -L$with_boost/lib"
 	CPPFLAGS+=" -I$with_boost"
     fi
 	
@@ -23,7 +32,7 @@ AC_DEFUN_ONCE([UNISIM_CHECK_BOOST], [
 ## Checks if the zlib library is installed
 ## Does not take parameters
 ####################################################
-AC_DEFUN_ONCE([UNISIM_CHECK_ZLIB], [
+AC_DEFUN([UNISIM_CHECK_ZLIB], [
     # Check if zlib path has been overloaded
     AC_ARG_WITH(zlib,
 	AS_HELP_STRING([--with-zlib=<path>], [zlib library to use (will be completed with /include and /lib)]))
@@ -55,7 +64,7 @@ AC_DEFUN_ONCE([UNISIM_CHECK_ZLIB], [
 ## Checks if the curses library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN_ONCE([UNISIM_CHECK_CURSES], [
+AC_DEFUN([UNISIM_CHECK_CURSES], [
     # Check if curses path has been overloaded
     AC_ARG_WITH(ncurses,
 	AS_HELP_STRING([--with-ncurses=<path>], [ncurses library to use (will be completed with /include and /lib)]))
@@ -82,7 +91,7 @@ AC_DEFUN_ONCE([UNISIM_CHECK_CURSES], [
 ## Checks if the realine library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN_ONCE([UNISIM_CHECK_READLINE], [
+AC_DEFUN([UNISIM_CHECK_READLINE], [
     # Check if readline path has been overloaded
     AC_ARG_WITH(readline,
 	AS_HELP_STRING([--with-readline=<path>], [readline library to use (will be completed with /include and /lib)]))
@@ -112,7 +121,7 @@ AC_DEFUN_ONCE([UNISIM_CHECK_READLINE], [
 ## Checks if the SDL library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN_ONCE([UNISIM_CHECK_SDL], [
+AC_DEFUN([UNISIM_CHECK_SDL], [
     # Check if SDL path has been overloaded
     AC_ARG_WITH(sdl,
 	AS_HELP_STRING([--with-sdl=<path>], [sdl library to use (will be completed with /include and /lib)]))
@@ -178,7 +187,7 @@ AC_DEFUN_ONCE([UNISIM_CHECK_SDL], [
 ## Checks if the libxml2 library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN_ONCE([UNISIM_CHECK_LIBXML2], [
+AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     # Check if libxml2 path has been overloaded
     AC_ARG_WITH(libxml2,
 	AS_HELP_STRING([--with-libxml2=<path>], [path to the libxml2 library]))
@@ -226,7 +235,7 @@ AC_DEFUN_ONCE([UNISIM_CHECK_LIBXML2], [
 ## Checks if the libxml2 library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN_ONCE([UNISIM_CHECK_SYSTEMC], [
+AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
     # Mimics the behavior of SystemC configure to guess where libsystemc.a is installed (e.g. lib-linux)
     CXX_COMP=`basename $CXX`
     case "$host" in
@@ -302,6 +311,58 @@ AC_ARG_ENABLE($1,
 	no) unisim_enabled=no ;;
 	*) AC_MSG_ERROR(bad value ${enableval} for --enable-$1) ;;
 	esac], [unisim_enabled=true])
+	if test "x$3" != x; then
+		supported_host1="$3"
+		supported_host2="$4"
+		supported_host3="$5"
+		supported_host4="$6"
+		supported_host5="$7"
+		supported_host6="$8"
+		supported_host7="$8"
+		case $host in
+			$supported_host1)
+				;;
+			*)
+				case $host in
+					$supported_host2)
+						;;
+					*)
+						case $host in
+							$supported_host3)
+								;;
+							*)
+								case $host in
+									$supported_host4)
+										;;
+									*)
+										case $host in
+											$supported_host5)
+												;;
+											*)
+												case $host in
+													$supported_host6)
+														;;
+													*)
+														case $host in
+															$supported_host7)
+																;;
+															*)
+																unisim_enabled=false
+																;;
+														esac
+														;;
+												esac
+												;;
+										esac
+										;;
+								esac
+								;;
+						esac
+						;;
+				esac
+				;;
+		esac
+	fi
 	AM_CONDITIONAL(COND_$2, test $unisim_enabled == true)
 	if test $unisim_enabled == true; then
 		AC_CONFIG_SUBDIRS([$2])

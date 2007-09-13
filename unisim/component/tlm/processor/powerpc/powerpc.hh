@@ -93,7 +93,7 @@ public:
 	PowerPC(const sc_module_name& name, Object *parent = 0);
 	virtual ~PowerPC();
 	virtual void Stop(int ret);
-	virtual void Sync();
+	virtual void Synchronize();
 	virtual bool Setup();
 	void BusSynchronize();
 	void Run();

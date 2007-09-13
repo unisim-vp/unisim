@@ -830,6 +830,7 @@ int sc_main(int argc, char *argv[])
 
 	*tee_memory_access_reporting->out[0] >> pci_stub->memory_access_reporting_export;
 	pci_stub->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+	pci_stub->synchronizable_import >> cpu->synchronizable_export;
 
 	if(inline_debugger)
 	{

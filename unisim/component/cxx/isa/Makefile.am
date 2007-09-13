@@ -1,5 +1,6 @@
 includedir = $(prefix)/include/unisim/component/cxx/isa
 libdir= $(prefix)/lib/unisim/component/cxx/isa
+include_HEADERS = types.hh
 
 SUBDIRS=
 INCLUDE_SUBDIRS=

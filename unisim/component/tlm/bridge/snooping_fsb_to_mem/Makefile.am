@@ -4,7 +4,7 @@ includedir = $(prefix)/include/unisim/component/tlm/bridge/snooping_fsb_to_mem
 lib_LIBRARIES = libbridge.a
 libbridge_a_SOURCES = addr32_burstsize32.cc \
 	addr32_burstsize32_debug.cc
-include_HEADERS = bridge.hh bridge.tcc
+include_HEADERS = bridge.hh bridge.tcc config.hh
 
 install-exec-hook: $(libdir)/libbridge.a
 	rm -f $(prefix)/lib/libunisim_component_tlm_bridge_snooping_fsb_to_mem.a

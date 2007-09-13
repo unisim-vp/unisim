@@ -1,6 +1,6 @@
 includedir = $(prefix)/include/unisim/component/cxx/cache
 libdir= $(prefix)/lib/unisim/component/cxx/cache
-include_HEADERS = cache.hh cache.tcc
+include_HEADERS = cache.hh cache.tcc cache_interface.hh
 
 SUBDIRS=
 INCLUDE_SUBDIRS=

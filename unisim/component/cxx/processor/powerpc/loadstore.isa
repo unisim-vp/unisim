@@ -1674,5 +1674,5 @@ stwcx_.disasm = {
 }
 
 op sync(31[6]:?[15]:598[10]:?[1])
-sync.execute = { cpu->Sync(); }
+sync.execute = { cpu->Synchronize(); }
 sync.disasm = { os << "sync"; }
