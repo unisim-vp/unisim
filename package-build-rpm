@@ -1,0 +1,4 @@
+#!/bin/sh
+mkdir -p ~/rpm/SOURCES
+checkinstall -R -A i686
+
