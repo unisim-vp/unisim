@@ -1,0 +1,4 @@
+#!/bin/sh
+mkdir -p ~/rpm/SOURCES
+checkinstall -D -A i686 --backup=no --install=no
+
