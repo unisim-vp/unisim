@@ -851,7 +851,6 @@ int sc_main(int argc, char *argv[])
 		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
-		mpc107->epic_reg_logger_import >> *logger->logger_export[logger_index++];
 		flash->logger_import >> *logger->logger_export[logger_index++];
 		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)

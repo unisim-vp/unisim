@@ -98,7 +98,6 @@ MPC107(const sc_module_name &name, Object *parent) :
 	pci_logger_import("pci_logger_import", this),
 	addr_map_logger_import("addr_map_logger_import", this),
 	epic_logger_import("epic_logger_import", this),
-	epic_reg_logger_import("epic_reg_logger_import", this),
 	a_address_map(false),
 	host_mode(true),
 	memory_32bit_data_bus_size(true),
@@ -147,7 +146,6 @@ MPC107(const sc_module_name &name, Object *parent) :
 	pci_controller.logger_import >> pci_logger_import;
 	addr_map.logger_import >> addr_map_logger_import;
 	epic.logger_import >> epic_logger_import;
-	epic.logger_import >> epic_reg_logger_import;
 	
 	SC_THREAD(PCIDispatch);
 	SC_THREAD(DispatchPCIReq);
@@ -158,7 +156,6 @@ MPC107(const sc_module_name &name, Object *parent) :
 	SetupDependsOn(pci_logger_import);
 	SetupDependsOn(addr_map_logger_import);
 	SetupDependsOn(epic_logger_import);
-	SetupDependsOn(epic_reg_logger_import);
 }
 
 template <class PHYSICAL_ADDR, 

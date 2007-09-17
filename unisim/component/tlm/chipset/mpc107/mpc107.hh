@@ -215,7 +215,6 @@ public:
 	ServiceImport<Logger> pci_logger_import;
 	ServiceImport<Logger> addr_map_logger_import;
 	ServiceImport<Logger> epic_logger_import;
-	ServiceImport<Logger> epic_reg_logger_import;
 		
 	MPC107(const sc_module_name &name, Object *parent = 0);
 	virtual ~MPC107();
