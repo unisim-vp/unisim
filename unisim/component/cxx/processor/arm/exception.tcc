@@ -71,6 +71,83 @@ IllegalInstructionException() :
 	ProgramException<CONFIG>("illegal instruction") {
 }
 
+template <class CONFIG>
+ResetException<CONFIG>::
+ResetException() {}
+
+template <class CONFIG>
+const char *
+ResetException<CONFIG>::
+what() const throw() {
+	return "reset exception";
+}
+
+template <class CONFIG>
+UndefinedInstructionException<CONFIG>::
+UndefinedInstructionException() {}
+
+template <class CONFIG>
+const char *
+UndefinedInstructionException<CONFIG>::
+what() const throw() {
+	return "undefined instruction exception";
+}
+
+template <class CONFIG>
+SoftwareInterruptException<CONFIG>::
+SoftwareInterruptException() {}
+
+template <class CONFIG>
+const char *
+SoftwareInterruptException<CONFIG>::
+what() const throw() {
+	return "software interrupt exception";
+}
+
+template <class CONFIG>
+PrefetchAbortException<CONFIG>::
+PrefetchAbortException() {}
+
+template <class CONFIG>
+const char *
+PrefetchAbortException<CONFIG>::
+what() const throw() {
+	return "prefetch abort exception";
+}
+
+template <class CONFIG>
+DataAbortException<CONFIG>::
+DataAbortException() {}
+
+template <class CONFIG>
+const char *
+DataAbortException<CONFIG>::
+what() const throw() {
+	return "data abort exception";
+}
+
+template <class CONFIG>
+IRQException<CONFIG>::
+IRQException() {}
+
+template <class CONFIG>
+const char *
+IRQException<CONFIG>::
+what() const throw() {
+	return "irq exception";
+}
+
+template <class CONFIG>
+FIQException<CONFIG>::
+FIQException() {}
+
+template <class CONFIG>
+const char * 
+FIQException<CONFIG>::
+what() const throw() {
+	return "fiq exception";
+}
+
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

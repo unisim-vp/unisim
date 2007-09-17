@@ -67,6 +67,62 @@ public:
 	IllegalInstructionException();
 };
 
+template <class CONFIG>
+class ResetException :
+	public Exception {
+public:
+	ResetException();
+	virtual const char *what() const throw();
+};
+
+template <class CONFIG>
+class UndefinedInstructionException :
+	public Exception {
+public:
+	UndefinedInstructionException();
+	virtual const char *what() const throw();
+};
+
+template <class CONFIG>
+class SoftwareInterruptException :
+	public Exception {
+public:
+	SoftwareInterruptException();
+	virtual const char *what() const throw();
+};
+
+template <class CONFIG>
+class PrefetchAbortException :
+	public Exception {
+public:
+	PrefetchAbortException();
+	virtual const char *what() const throw();
+};
+
+template <class CONFIG>
+class DataAbortException :
+	public Exception {
+public:
+	DataAbortException();
+	virtual const char *what() const throw();
+};
+
+template <class CONFIG>
+class IRQException :
+	public Exception {
+public:
+	IRQException();
+	virtual const char *what() const throw();
+};
+
+template <class CONFIG>
+class FIQException :
+	public Exception {
+public:
+	FIQException();
+	virtual const char *what() const throw();
+};
+
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

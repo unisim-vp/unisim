@@ -381,6 +381,7 @@ Step() {
 		} while(1);
 	}
 
+	try {
 	if(memory_access_reporting_import) {
 		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
@@ -439,10 +440,68 @@ Step() {
 	}
 	op->execute(*this);
 	instruction_counter++;
+	} 
+	catch(ResetException<CONFIG> &exc) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "uncaught processor reset exception :" << exc.what() 
+				<< Endl << EndDebugError;
+		Stop(1);
+	}
+	catch(UndefinedInstructionException<CONFIG> &exc) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "uncaught processor undefined instruction exception :" << exc.what() 
+				<< Endl << EndDebugError;
+		Stop(1);
+	}
+	catch(SoftwareInterruptException<CONFIG> &exc) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "uncaught processor software interrupt exception :" << exc.what() 
+				<< Endl << EndDebugError;
+		Stop(1);
+	}
+	catch(PrefetchAbortException<CONFIG> &exc) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "uncaught processor prefetch abort exception :" << exc.what() 
+				<< Endl << EndDebugError;
+		Stop(1);
+	}
+	catch(DataAbortException<CONFIG> &exc) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "uncaught processor data abort exception :" << exc.what() 
+				<< Endl << EndDebugError;
+		Stop(1);
+	}
+	catch(IRQException<CONFIG> &exc) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "uncaught processor IRQ exception :" << exc.what() 
+				<< Endl << EndDebugError;
+		Stop(1);
+	}
+	catch(FIQException<CONFIG> &exc) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "uncaught processor FIQ exception :" << exc.what() 
+				<< Endl << EndDebugError;
+		Stop(1);
+	}
+	catch(Exception &exc) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION 
+				<< "uncaught processor exception :" << exc.what() 
+				<< Endl << EndDebugError;
+		Stop(1);
+	}
 	
 	if(memory_access_reporting_import)
 		memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
 
+	
 }
 
 template<class CONFIG>
