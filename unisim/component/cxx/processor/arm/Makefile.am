@@ -1,10 +1,9 @@
 INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
-GENISSLIB=$(top_builddir)/../../../../../build_tool/genisslib/genisslib
-libdir= $(prefix)/lib/unisim/component/cxx/processor/arm
+# GENISSLIB=$(top_builddir)/../../../../../build_tool/genisslib/genisslib
 includedir = $(prefix)/include/unisim/component/cxx/processor/arm
 
-lib_LIBRARIES = libarm.a
-libarm_a_SOURCES = \
+lib_LIBRARIES = libunisim_component_cxx_processor_arm.a
+libunisim_component_cxx_processor_arm_a_SOURCES = \
 	cpu_arm9tdmi_littleendian.cc \
 	cpu_arm9tdmi_bigendian.cc \
 	cpu_arm9tdmi_littleendian_debug.cc \
@@ -36,12 +35,7 @@ armcpu.hh: $(srcdir)/arm.isa $(srcdir)/constructors_dec.isa \
 	$(srcdir)/load_store_v4.isa $(srcdir)/load_store_v5e.isa \
 	$(srcdir)/misc_arithmetic.isa $(srcdir)/multiply.isa \
 	$(srcdir)/semaphore.isa $(srcdir)/status_register_access.isa
-	$(GENISSLIB) -o armcpu -w 32 -I$(srcdir) $(srcdir)/arm.isa
+	$(GENISSLIB_PATH) -o armcpu -w 32 -I$(srcdir) $(srcdir)/arm.isa
 
-install-exec-hook: $(libdir)/libarm.a
-	rm -f $(prefix)/lib/libunisim_component_cxx_processor_arm.a
-	(cd $(prefix)/lib && $(LN_S) $< libunisim_component_cxx_processor_arm.a)
 uninstall-hook:
-	rm -f $(prefix)/lib/libunisim_component_cxx_processor_arm.a
-	(rmdir $(libdir) || true)
 	(rmdir $(includedir) || true)

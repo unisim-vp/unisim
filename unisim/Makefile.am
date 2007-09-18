@@ -27,4 +27,4 @@ uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(unisimdir) || true)
 
-include ../m4/aminclude.am
+include m4/aminclude.am

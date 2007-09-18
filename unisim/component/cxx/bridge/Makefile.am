@@ -1,5 +1,4 @@
 includedir = $(prefix)/include/unisim/component/cxx/bridge
-libdir= $(prefix)/lib/unisim/component/cxx/bridge
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -11,4 +10,3 @@ endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	(rmdir $(libdir) || true)

@@ -1,5 +1,4 @@
 includedir = $(prefix)/include/unisim/component/tlm/bridge
-libdir= $(prefix)/lib/unisim/component/tlm/bridge
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -21,4 +20,3 @@ endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	(rmdir $(libdir) || true)

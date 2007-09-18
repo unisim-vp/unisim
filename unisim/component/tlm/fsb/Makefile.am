@@ -1,5 +1,4 @@
 includedir = $(prefix)/include/unisim/component/tlm/fsb
-libdir= $(prefix)/lib/unisim/component/tlm/fsb
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -16,4 +15,3 @@ endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	(rmdir $(libdir) || true)
