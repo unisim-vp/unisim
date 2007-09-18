@@ -1,5 +1,4 @@
 includedir = $(prefix)/include/unisim/service/time
-libdir = $(prefix)/lib/unisim/service/time
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -11,4 +10,3 @@ endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	(rmdir $(libdir) || true)
