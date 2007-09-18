@@ -3,61 +3,8 @@
 ## Does not take parameters
 #####################################################
 AC_DEFUN([UNISIM_CHECK_WINSOCK2], [
-	AC_CHECK_HEADERS([winsock2.h],, AC_MSG_ERROR([Some standard headers are missing.]))
 	# Note: we can't check socket functions from libwsock32 because of the PASCAL calling convention. cdecl is mandatory for autoconf.
 	LIBS+=-lwsock32
-])
-
-
-## UNISIM_CHECK_BOOST
-## Checks if the boost library is installed
-## Does not take parameters
-#####################################################
-AC_DEFUN([UNISIM_CHECK_BOOST], [
-    # Check if boost path has been overloaded
-    AC_ARG_WITH(boost,
-	AS_HELP_STRING([--with-boost=<path>], [boost library to use (will be completed with /include and /lib)]))
-    if test "x$with_boost" != "x"; then
-	AC_MSG_NOTICE([using boost at $with_boost])
-	CPPFLAGS+=" -I$with_boost"
-    fi
-	
-    # Check for some boost graph headers
-    AC_CHECK_HEADERS([boost/graph/adjacency_list.hpp boost/graph/topological_sort.hpp boost/graph/visitors.hpp],,\
-	AC_MSG_ERROR([boost graph headers not found. Please install the boost graph development library. Use --with-boost=<path> to overload default includes search path.]))
-])
-
-
-## UNISIM_CHECK_ZLIB
-## Checks if the zlib library is installed
-## Does not take parameters
-####################################################
-AC_DEFUN([UNISIM_CHECK_ZLIB], [
-    # Check if zlib path has been overloaded
-    AC_ARG_WITH(zlib,
-	AS_HELP_STRING([--with-zlib=<path>], [zlib library to use (will be completed with /include and /lib)]))
-    if test "x$with_zlib" != "x"; then
-	AC_MSG_NOTICE([using zlib at $with_zlib])
-	LDFLAGS+=" -L$with_zlib/lib"
-	CPPFLAGS+=" -I$with_zlib/include"
-    fi
-	
-    # Check for zlib.h
-    AC_CHECK_HEADER(zlib.h,, AC_MSG_ERROR([zlib.h not found. Please install the zlib development library. Use --with-zlib=<path> to overload default includes search path.]))
-
-    # Check for functions gzopen, gzclose and gzprintf in libz.a
-    AC_CHECK_LIB(z, gzopen,
-    AC_CHECK_LIB(z, gzclose,
-    AC_CHECK_LIB(z, gzprintf, broken_zlib=no,
-    broken_zlib=yes),
-    broken_zlib=yes),
-    broken_zlib=yes)
-
-    if test "$broken_zlib" == "yes"; then
-	AC_MSG_ERROR([installed zlib is broken.])
-    else
-	LIBS+=" -lz"
-    fi
 ])
 
 ## UNISIM_CHECK_CURSES
@@ -85,6 +32,24 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
     else
 	LIBS+=" -lncurses"
     fi
+])
+
+## UNISIM_CHECK_UNISIM
+## Checks if the unisim library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_UNISIM], [
+    # Check if curses path has been overloaded
+    AC_ARG_WITH(unisim,
+	AS_HELP_STRING([--with-unisim=<path>], [unisim library to use (will be completed with /include and /lib)]))
+    if test "x$with_unisim" != "x"; then
+	AC_MSG_NOTICE([using unisim at $with_unisim])
+	LDFLAGS+=" -L$with_unisim/lib"
+	CPPFLAGS+=" -I$with_unisim/include"
+    fi
+	
+    # Check for ncurses.h
+    AC_CHECK_HEADER(unisim/kernel/service/service.hh,, AC_MSG_ERROR([service.hh not found. Please install the UNISIM libs.]))
 ])
 
 ## UNISIM_CHECK_READLINE
@@ -371,5 +336,5 @@ AC_ARG_ENABLE($1,
 
 ## UNISIM_LINK
 AC_DEFUN([UNISIM_LINK], [
-	LIBS="$1/lib$2.a $LIBS"
+	LIBS="-l$1 $LIBS"
 ])

@@ -6,4 +6,4 @@ SUBDIRS += genisslib
 INCLUDE_SUBDIRS += genisslib
 endif
 
-include ../m4/aminclude.am
+include m4/aminclude.am

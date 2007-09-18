@@ -1,3 +1,0 @@
-#!/bin/sh
-checkinstall -D -A i686 --backup=no --install=no --strip=no --stripso=no --nodoc
-
