@@ -48,7 +48,6 @@ UNISIM_CONFIG_SUBDIR(unisim-kernel, kernel)
 UNISIM_CONFIG_SUBDIR(unisim-util, util)
 UNISIM_CONFIG_SUBDIR(unisim-service, service)
 UNISIM_CONFIG_SUBDIR(unisim-component, component)
-UNISIM_CONFIG_SUBDIR(unisim-simulator, simulator)
 
 # doxygen options
 DX_HTML_FEATURE(ON)
