@@ -210,13 +210,16 @@ bool NetStub<ADDRESS>::Initialize()
 				cerr << "NETSTUB: Was not able to determine IP address from host name for" << server_name << ":" << tcp_port << endl;
 #endif
 			}
-			while(!connected && hp->h_addr_list[i] != NULL)
+			else
 			{
-				memcpy((char *) hp->h_addr_list[i],
-					(char *) &sonadr.sin_addr,
+				while(!connected && hp->h_addr_list[i] != NULL)
+				{
+					memcpy((char *) &sonadr.sin_addr,
+					(char *) hp->h_addr_list[i],
 					sizeof(sonadr.sin_addr));
-				connected = connect(sock, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
-				i++;
+					connected = connect(sock, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
+					i++;
+				}
 			}
 		}
 		if(!connected)

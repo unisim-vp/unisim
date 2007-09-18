@@ -1025,7 +1025,6 @@ void FPU<CONFIG>::Fp64EstimateInvSqrt(unsigned int fd, unsigned int fa)
 
 		SoftDouble half(0x3fe0000000000000ULL); // 0.5
 		SoftDouble u(b);
-		//u.setExponent(b.queryExponent() >> 2, b.queryExponent) < SoftDouble::getZeroExponent();
 		SoftDouble v;
 	
 		// Compute the square root using the babylonian method
@@ -1036,12 +1035,13 @@ void FPU<CONFIG>::Fp64EstimateInvSqrt(unsigned int fd, unsigned int fa)
 			b_over_u.divAssign(u, flags); // b / u
 			SoftDouble u_plus_b_over_u(u); // u
 			u_plus_b_over_u.plusAssign(b_over_u, flags); // u + b/u
+			u = u_plus_b_over_u;
 			u.multAssign(half, flags); // 0.5 * (u + b/u)
-			if(u.compare(v) == SoftDouble::CREqual) break; // this is not a good idea !
+			if(u.compare(v) == SoftDouble::CREqual) break;
 			v = u;
 		}
 		// u = sqrt(b)
-	
+
 		result.divAssign(u, flags); // result = 1/sqrt(b)
 	
 		// Compute FPSCR[FPRF]
