@@ -1,15 +1,9 @@
 INCLUDES = -I$(top_srcdir)/../../..
-libdir = $(prefix)/lib/unisim/kernel/service
 includedir = $(prefix)/include/unisim/kernel/service
 include_HEADERS = service.hh
 
-lib_LIBRARIES = libservices.a
-libservices_a_SOURCES = service.cc
+lib_LIBRARIES = libunisim_kernel_service.a
+libunisim_kernel_service_a_SOURCES = service.cc
 
-install-exec-hook: $(libdir)/libservices.a
-	rm -f $(prefix)/lib/libunisim_kernel_services.a
-	(cd $(prefix)/lib && $(LN_S) $< libunisim_kernel_services.a)
 uninstall-hook:
-	rm -f $(prefix)/lib/libunisim_kernel_services.a
-	(rmdir $(libdir) || true)
 	(rmdir $(includedir) || true)

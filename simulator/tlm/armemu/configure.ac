@@ -70,7 +70,7 @@ UNISIM_CHECK_READLINE
 UNISIM_CHECK_LIBXML2
 UNISIM_CHECK_SYSTEMC
 
-UNISIM_LINK(../../../unisim/kernel/service, services)
+UNISIM_LINK(../../../unisim/kernel/service, service)
 
 UNISIM_LINK(../../../unisim/util/xml, xml)
 UNISIM_LINK(../../../unisim/util/debug, debug)

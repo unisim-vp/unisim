@@ -1,5 +1,4 @@
 includedir = $(prefix)/include/unisim
-libdir= $(prefix)/lib/unisim
 unisimdir = $(prefix)/share/unisim
 SUBDIRS =
 INCLUDE_SUBDIRS =
@@ -26,7 +25,6 @@ endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	(rmdir $(libdir) || true)
 	(rmdir $(unisimdir) || true)
 
 include ../m4/aminclude.am

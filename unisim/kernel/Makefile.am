@@ -1,5 +1,4 @@
 includedir = $(prefix)/include/unisim/kernel
-libdir= $(prefix)/lib/unisim/kernel
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -16,4 +15,3 @@ endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	(rmdir $(libdir) || true)
