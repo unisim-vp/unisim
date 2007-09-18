@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM], [1.0])
+AC_INIT([UNISIM TLM Simulator Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -44,22 +44,13 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-kernel, kernel)
-UNISIM_CONFIG_SUBDIR(unisim-util, util)
-UNISIM_CONFIG_SUBDIR(unisim-service, service)
-UNISIM_CONFIG_SUBDIR(unisim-component, component)
-UNISIM_CONFIG_SUBDIR(unisim-simulator, simulator)
+###### CHECK FOR HOST ######################
 
-# doxygen options
-DX_HTML_FEATURE(ON)
-DX_CHM_FEATURE(OFF)
-DX_CHI_FEATURE(OFF)
-DX_MAN_FEATURE(OFF)
-DX_RTF_FEATURE(OFF)
-DX_XML_FEATURE(OFF)
-DX_PDF_FEATURE(OFF)
-DX_PS_FEATURE(OFF)
-DX_INIT_DOXYGEN(UNISIM, doxygen.cfg, source_doc)
+UNISIM_CONFIG_SUBDIR(simulator-tlm-ppcemu, ppcemu, *linux*)
+UNISIM_CONFIG_SUBDIR(simulator-tlm-ppcemu_system, ppcemu_system)
+UNISIM_CONFIG_SUBDIR(simulator-tlm-embedded_ppc_g4_board, embedded_ppc_g4_board)
+UNISIM_CONFIG_SUBDIR(simulator-tlm-armemu, armemu, *linux*)
+
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

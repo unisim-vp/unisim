@@ -46,6 +46,17 @@ AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(build_tool-genisslib, genisslib)
 
+# doxygen options
+DX_HTML_FEATURE(ON)
+DX_CHM_FEATURE(OFF)
+DX_CHI_FEATURE(OFF)
+DX_MAN_FEATURE(OFF)
+DX_RTF_FEATURE(OFF)
+DX_XML_FEATURE(OFF)
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(OFF)
+DX_INIT_DOXYGEN(UNISIM, doxygen.cfg, source_doc)
+
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
