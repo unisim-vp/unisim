@@ -1,15 +1,15 @@
 #!/bin/sh
-if test "x$1" == x; then
-    echo "Usage <source dir>"
+if test "x$1" == x || test "x$2" == x || test "x$3" == x; then
+    echo "Usage <source dir> <UNISIM library dir> <SystemC dir>"
     exit
 fi
 
-PACKAGE_NAME="unisim-build-tool"
+PACKAGE_NAME="unisim"
 VERSION="1.0-1"
 ARCH="i386"
-deps="libc6 (>= 2.5)"
+deps="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
 maintainer="Gilles Mouchard <gilles.mouchard@cea.fr>"
-description="UNISIM build tools"
+description="UNISIM simulators"
 install_path="usr"
 
 PACKAGE_LONG_NAME=${PACKAGE_NAME}_${VERSION}_${ARCH}
@@ -23,7 +23,7 @@ CONTROL_FILE=${TEMPORARY_INSTALL_DIR}/DEBIAN/control
 rm -rf ${TEMPORARY_CONFIG_DIR}
 mkdir -p ${TEMPORARY_CONFIG_DIR}
 cd ${TEMPORARY_CONFIG_DIR}
-$1/configure --prefix=${TEMPORARY_INSTALL_DIR}/${install_path} CXXFLAGS="-m32 -O3 -g3"
+$1/configure --prefix=${TEMPORARY_INSTALL_DIR}/${install_path} --with-unisim=$2 --with-systemc=$3 CPPFLAGS=-I/usr/include/libxml2 CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES"
 
 # install in the temporary install directory
 rm -rf ${TEMPORARY_INSTALL_DIR}
