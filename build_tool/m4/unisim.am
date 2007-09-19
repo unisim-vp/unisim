@@ -1,0 +1,27 @@
+all-local: all-local-bin all-local-libs 
+
+all-local-bin: $(bin_PROGRAMS)
+	if test "x$(bin_PROGRAMS)" != "x"; \
+	then \
+		rm -f $(top_builddir)/$(ROOT_DIR)/bin/$<; \
+		mkdir -p $(top_builddir)/$(ROOT_DIR)/bin; \
+		(cd $(top_builddir)/$(ROOT_DIR)/bin && $(LN_S) $(abs_top_builddir)/$< $<); \
+	fi
+
+all-local-libs: $(lib_LIBRARIES)
+	if test "x$(lib_LIBRARIES)" != "x"; \
+	then \
+		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$<; \
+		mkdir -p $(top_builddir)/$(ROOT_DIR)/lib; \
+		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$< $<); \
+	fi
+	
+clean-local:
+	if test "x$(bin_PROGRAMS)" != "x"; \
+	then \
+		rm -rf $(top_builddir)/$(ROOT_DIR)/bin; \
+	fi
+	if test "x$(lib_LIBRARIES)" != "x"; \
+	then \
+		rm -rf $(top_builddir)/$(ROOT_DIR)/lib; \
+	fi

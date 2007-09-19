@@ -47,6 +47,7 @@ AC_PROG_INSTALL
 AC_PROG_RANLIB
 AC_PROG_YACC
 AC_PROG_LEX
+AC_PROG_LN_S
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
