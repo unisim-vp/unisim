@@ -7,4 +7,4 @@ DEPS="libc6 (>= 2.5)" \
 MAINTAINER="Gilles Mouchard <gilles.mouchard@cea.fr>" \
 DESCRIPTION="UNISIM build tools" \
 INSTALL_PATH="usr" \
-./build-package.sh "CXXFLAGS=-m32 -O3 -g3" "CPPFLAGS=-I/usr/include/libxml2"
+./build-package.sh "CXX=g++" "CXXFLAGS=-m32 -O3 -g3" "CPPFLAGS=-I/usr/include/libxml2"

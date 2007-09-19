@@ -42,14 +42,21 @@ CONTROL_FILE=${TEMPORARY_INSTALL_DIR}/DEBIAN/control
 MD5SUMS_FILE=${TEMPORARY_INSTALL_DIR}/DEBIAN/md5sums
 
 # configure in the temporary configure directory
+echo "========================================="
+echo "=              configure                ="
+echo "========================================="
 rm -rf ${TEMPORARY_CONFIG_DIR}
 mkdir -p ${TEMPORARY_CONFIG_DIR}
 cd ${TEMPORARY_CONFIG_DIR}
 ${HERE}/${SOURCE_DIR}/configure --prefix=${TEMPORARY_INSTALL_DIR}/${INSTALL_PATH} "$@" || exit
 
 # install in the temporary install directory
+echo "========================================="
+echo "=             make install              ="
+echo "========================================="
 rm -rf ${TEMPORARY_INSTALL_DIR}
-fakeroot make install || exit
+NUM_PROCESSORS=`cat /proc/cpuinfo | grep processor | wc -l`
+fakeroot make -j ${NUM_PROCESSORS} install || exit
 
 # compute the installed size
 installed_size=`du ${TEMPORARY_INSTALL_DIR} -s -k | cut -f 1`
@@ -80,8 +87,20 @@ echo "Installed-Size: ${installed_size}" >> ${CONTROL_FILE}
 echo "Maintainer: ${MAINTAINER}" >> ${CONTROL_FILE}
 echo "Description: ${DESCRIPTION}" >> ${CONTROL_FILE}
 
+echo "========================================="
+echo "=            DEBIAN/control             ="
+echo "========================================="
 cat ${CONTROL_FILE}
+
+echo "========================================="
+echo "=            DEBIAN/md5sums             ="
+echo "========================================="
+cat ${MD5SUMS_FILE}
+
 # Build the package
+echo "========================================="
+echo "=            Package build              ="
+echo "========================================="
 fakeroot dpkg-deb --build ${TEMPORARY_INSTALL_DIR}
 mv ${TEMPORARY_INSTALL_DIR}/../${PACKAGE_FILENAME} ${HERE}/.
 

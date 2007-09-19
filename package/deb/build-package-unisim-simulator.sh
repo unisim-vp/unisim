@@ -12,4 +12,4 @@ DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.
 MAINTAINER="Gilles Mouchard <gilles.mouchard@cea.fr>" \
 DESCRIPTION="UNISIM simulators" \
 INSTALL_PATH="usr" \
-./build-package.sh "--with-unisim=$1" "--with-systemc=$2" "CXXFLAGS=-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES" "CPPFLAGS=-I/usr/include/libxml2"
+./build-package.sh --host=i686-pc-linux-gnu "CXX=g++" "--with-unisim=$1" "--with-systemc=$2" "CXXFLAGS=-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES" "CPPFLAGS=-I/usr/include/libxml2"
