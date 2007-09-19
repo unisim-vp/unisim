@@ -1,8 +1,0 @@
-Package: unisim-build-tool
-Version: 1.0-1
-Section: devel
-Priority: optional
-Architecture: i386
-Depends: libc6 (>= 2.5)
-Maintainer: Gilles Mouchard <gilles.mouchard@cea.fr>
-Description: UNISIM build tools

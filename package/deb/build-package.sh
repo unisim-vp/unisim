@@ -1,16 +1,37 @@
-#!/bin/sh
-if test "x$1" == x; then
-    echo "Usage <source dir>"
-    exit
+if test "x${SOURCE_DIR}" == x; then
+	echo "Please set SOURCE_DIR"
+	exit
 fi
 
-PACKAGE_NAME="unisim-build-tool"
-VERSION="1.0-1"
-ARCH="i386"
-deps="libc6 (>= 2.5)"
-maintainer="Gilles Mouchard <gilles.mouchard@cea.fr>"
-description="UNISIM build tools"
-install_path="usr"
+if test "x${PACKAGE_NAME}" == x; then
+	echo "Please set PACKAGE_NAME"
+	exit
+fi
+
+if test "x${VERSION}" == x; then
+	echo "Please set VERSION"
+	exit
+fi
+
+if test "x${ARCH}" == x; then
+	echo "Please set ARCH"
+	exit
+fi
+
+if test "x${DESCRIPTION}" == x; then
+	echo "Please set DESCRIPTION"
+	exit
+fi
+
+if test "x${MAINTAINER}" == x; then
+	echo "Please set MAINTAINER"
+	exit
+fi
+
+if test "x${INSTALL_PATH}" == x; then
+	echo "Please set INSTALL_PATH"
+	exit
+fi
 
 PACKAGE_LONG_NAME=${PACKAGE_NAME}_${VERSION}_${ARCH}
 PACKAGE_FILENAME=${PACKAGE_LONG_NAME}.deb
@@ -18,20 +39,35 @@ HERE=`pwd`
 TEMPORARY_INSTALL_DIR=$HOME/tmp/${PACKAGE_LONG_NAME}
 TEMPORARY_CONFIG_DIR=$HOME/tmp/${PACKAGE_LONG_NAME}_config
 CONTROL_FILE=${TEMPORARY_INSTALL_DIR}/DEBIAN/control
+MD5SUMS_FILE=${TEMPORARY_INSTALL_DIR}/DEBIAN/md5sums
 
 # configure in the temporary configure directory
 rm -rf ${TEMPORARY_CONFIG_DIR}
 mkdir -p ${TEMPORARY_CONFIG_DIR}
 cd ${TEMPORARY_CONFIG_DIR}
-$1/configure --prefix=${TEMPORARY_INSTALL_DIR}/${install_path} CXXFLAGS="-m32 -O3 -g3"
+${HERE}/${SOURCE_DIR}/configure --prefix=${TEMPORARY_INSTALL_DIR}/${INSTALL_PATH} "$@" || exit
 
 # install in the temporary install directory
 rm -rf ${TEMPORARY_INSTALL_DIR}
-fakeroot make install
+fakeroot make install || exit
 
 # compute the installed size
 installed_size=`du ${TEMPORARY_INSTALL_DIR} -s -k | cut -f 1`
+
+# build list of installed files
+cd ${TEMPORARY_INSTALL_DIR}
+file_list=`find .`
+
+# create DEBIAN dubdirectory
 mkdir -p ${TEMPORARY_INSTALL_DIR}/DEBIAN
+
+# Fill-in DEBIAN/md5sums
+for file in $file_list
+do
+     if test -f $file; then
+           md5sum $file | sed 's:./::' >> ${MD5SUMS_FILE}
+     fi
+done
 
 # Fill-in DEBIAN/control
 echo "Package: ${PACKAGE_NAME}" > ${CONTROL_FILE}
@@ -39,10 +75,10 @@ echo "Version: ${VERSION}" >> ${CONTROL_FILE}
 echo "Section: devel" >> ${CONTROL_FILE}
 echo "Priority: optional" >> ${CONTROL_FILE}
 echo "Architecture: i386" >> ${CONTROL_FILE}
-echo "Depends: ${deps}" >> ${CONTROL_FILE}
+echo "Depends: ${DEPS}" >> ${CONTROL_FILE}
 echo "Installed-Size: ${installed_size}" >> ${CONTROL_FILE}
-echo "Maintainer: ${maintainer}" >> ${CONTROL_FILE}
-echo "Description: ${description}" >> ${CONTROL_FILE}
+echo "Maintainer: ${MAINTAINER}" >> ${CONTROL_FILE}
+echo "Description: ${DESCRIPTION}" >> ${CONTROL_FILE}
 
 cat ${CONTROL_FILE}
 # Build the package
