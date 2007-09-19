@@ -8,3 +8,6 @@ include_HEADERS = am29lv.hh am29lv.tcc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../../../..
+include $(top_srcdir)/../../../../../m4/unisim.am

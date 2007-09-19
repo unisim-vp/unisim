@@ -6,3 +6,6 @@ include_HEADERS = disk_image.hh event.hh ide_atareg.hh ide_ctrl.hh ide_disk.hh i
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../../..
+include $(top_srcdir)/../../../../m4/unisim.am

@@ -30,11 +30,12 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-subdir = .
 DIST_COMMON = README $(am__configure_deps) $(include_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	config/install-sh config/missing
+	$(top_srcdir)/../../m4/unisim.am $(top_srcdir)/configure \
+	AUTHORS COPYING ChangeLog INSTALL NEWS config/install-sh \
+	config/missing
+subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -85,6 +86,7 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -139,12 +141,13 @@ target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 include_HEADERS = floating_gccopt.hh floating.hh integer_gccopt.hh integer.hh floating.tcc integer.tcc
+ROOT_DIR = ../..
 all: all-am
 
 .SUFFIXES:
 am--refresh:
 	@:
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
+$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/../../m4/unisim.am $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -368,7 +371,7 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(HEADERS)
+all-am: Makefile $(HEADERS) all-local
 installdirs:
 	for dir in "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -399,7 +402,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic mostlyclean-am
+clean-am: clean-generic clean-local mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -458,9 +461,9 @@ uninstall-am: uninstall-includeHEADERS
 
 .MAKE: install-am install-strip uninstall-am
 
-.PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
-	clean-generic ctags dist dist-all dist-bzip2 dist-gzip \
-	dist-shar dist-tarZ dist-zip distcheck distclean \
+.PHONY: CTAGS GTAGS all all-am all-local am--refresh check check-am \
+	clean clean-generic clean-local ctags dist dist-all dist-bzip2 \
+	dist-gzip dist-shar dist-tarZ dist-zip distcheck distclean \
 	distclean-generic distclean-tags distcleancheck distdir \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \
@@ -476,6 +479,52 @@ uninstall-am: uninstall-includeHEADERS
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+all-local: all-local-bin all-local-lib all-local-include 
+
+all-local-bin: $(bin_PROGRAMS)
+	if test "x$(bin_PROGRAMS)" != "x"; \
+	then \
+		rm -f $(top_builddir)/$(ROOT_DIR)/bin/$<; \
+		mkdir -p $(top_builddir)/$(ROOT_DIR)/bin; \
+		(cd $(top_builddir)/$(ROOT_DIR)/bin && $(LN_S) $(abs_top_builddir)/$< $<); \
+	fi
+
+all-local-lib: $(lib_LIBRARIES)
+	if test "x$(lib_LIBRARIES)" != "x"; \
+	then \
+		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$<; \
+		mkdir -p $(top_builddir)/$(ROOT_DIR)/lib; \
+		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$< $<); \
+	fi
+
+all-local-include: $(include_HEADERS)
+	if test "x$(include_HEADERS)" != "x"; \
+	then \
+		if test ! -d $(top_builddir)/$(ROOT_DIR)/include; \
+		then  \
+			(cd $(top_builddir)/$(ROOT_DIR) && $(LN_S) . include); \
+		fi \
+	fi
+
+clean-local: clean-local-bin clean-local-lib clean-local-include
+
+clean-local-bin:
+	if test "x$(bin_PROGRAMS)" != "x"; \
+	then \
+		rm -rf $(top_builddir)/$(ROOT_DIR)/bin; \
+	fi
+
+clean-local-lib:
+	if test "x$(lib_LIBRARIES)" != "x"; \
+	then \
+		rm -rf $(top_builddir)/$(ROOT_DIR)/lib; \
+	fi
+
+clean-local-include:
+	if test "x$(include_HEADERS)" != "x"; \
+	then \
+		rm -rf $(top_builddir)/$(ROOT_DIR)/include; \
+	fi
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

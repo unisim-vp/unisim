@@ -7,3 +7,6 @@ include_HEADERS = tee.hh tee.tcc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../..
+include $(top_srcdir)/../../../m4/unisim.am

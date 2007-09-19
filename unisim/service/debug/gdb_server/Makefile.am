@@ -10,3 +10,6 @@ dist_gdb_server_DATA = gdb_powerpc.xml gdb_armv4l.xml gdb_armv5b.xml
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(gdb_serverdir) || true)
+
+ROOT_DIR = ../../..
+include $(top_srcdir)/../../../m4/unisim.am

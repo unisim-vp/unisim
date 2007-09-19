@@ -3,3 +3,6 @@ include_HEADERS = floating_gccopt.hh floating.hh integer_gccopt.hh integer.hh fl
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../..
+include $(top_srcdir)/../../m4/unisim.am

@@ -6,3 +6,6 @@ include_HEADERS = pci_dev.hh pci_dev.tcc pci_ide_module.hh pci_ide_module.tcc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../../..
+include $(top_srcdir)/../../../../m4/unisim.am

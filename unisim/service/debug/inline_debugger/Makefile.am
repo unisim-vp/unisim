@@ -6,3 +6,7 @@ lib_LIBRARIES = libunisim_service_debug_inline_debugger.a
 libunisim_service_debug_inline_debugger_a_SOURCES = inline_debugger.cc inline_debugger_32.cc inline_debugger_64.cc
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../..
+include $(top_srcdir)/../../../m4/unisim.am
+	

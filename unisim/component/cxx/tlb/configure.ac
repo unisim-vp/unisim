@@ -42,6 +42,7 @@ AM_INIT_AUTOMAKE
 
 AC_PATH_PROGS(SH, sh)
 AC_PROG_INSTALL
+AC_PROG_LN_S
 
 # files to generate
 #   this should include all the makefiles to generate

@@ -10,3 +10,7 @@ dist_pmac_bootx_DATA = device_tree_pmac_g3.xml device_tree_pmac_g4.xml
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(pmac_bootxdir) || true)
+
+ROOT_DIR = ../../..
+include $(top_srcdir)/../../../m4/unisim.am
+	

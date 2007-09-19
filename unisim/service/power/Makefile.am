@@ -7,3 +7,6 @@ include_HEADERS = cache_power_estimator.hh cacti4_2.hh
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../..
+include $(top_srcdir)/../../m4/unisim.am

@@ -39,6 +39,7 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE
 
 AC_PROG_INSTALL
+AC_PROG_LN_S
 
 # files to generate
 #   this should include all the makefiles to generate

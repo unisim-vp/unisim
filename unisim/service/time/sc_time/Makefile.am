@@ -6,3 +6,6 @@ lib_LIBRARIES = libunisim_service_time_sc_time.a
 libunisim_service_time_sc_time_a_SOURCES = time.cc
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../..
+include $(top_srcdir)/../../../m4/unisim.am

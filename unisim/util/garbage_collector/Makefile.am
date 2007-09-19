@@ -7,3 +7,7 @@ libunisim_util_garbage_collector_a_SOURCES = garbage_collector.cc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../..
+include $(top_srcdir)/../../m4/unisim.am
+	

@@ -17,3 +17,6 @@ include_HEADERS = \
 		
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../../..
+include $(top_srcdir)/../../../../m4/unisim.am

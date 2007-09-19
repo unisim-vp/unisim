@@ -17,3 +17,6 @@ powerpc.hh: $(srcdir)/branch.isa $(srcdir)/condition.isa $(srcdir)/floating.isa 
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../../..
+include $(top_srcdir)/../../../../m4/unisim.am

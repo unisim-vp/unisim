@@ -7,3 +7,6 @@ libunisim_kernel_service_a_SOURCES = service.cc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../..
+include $(top_srcdir)/../../m4/unisim.am

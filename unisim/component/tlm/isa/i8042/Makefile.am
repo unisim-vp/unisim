@@ -6,3 +6,6 @@ include_HEADERS = i8042.hh i8042.tcc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../../..
+include $(top_srcdir)/../../../../m4/unisim.am

@@ -6,3 +6,7 @@ lib_LIBRARIES = libunisim_service_loader_elf_loader.a
 libunisim_service_loader_elf_loader_a_SOURCES = elf32_loader.cc elf64_loader.cc
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../../..
+include $(top_srcdir)/../../../m4/unisim.am
+	

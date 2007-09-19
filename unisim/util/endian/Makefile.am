@@ -7,3 +7,7 @@ libunisim_util_endian_a_SOURCES = endian.cc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../..
+include $(top_srcdir)/../../m4/unisim.am
+	

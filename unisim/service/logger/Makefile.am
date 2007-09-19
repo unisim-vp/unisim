@@ -7,3 +7,6 @@ include_HEADERS = logger.hh logger_server.hh logger_server_interface.hh
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+
+ROOT_DIR = ../..
+include $(top_srcdir)/../../m4/unisim.am
