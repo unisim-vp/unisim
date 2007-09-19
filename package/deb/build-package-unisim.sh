@@ -1,5 +1,5 @@
 #!/bin/sh
-if test "x$1" == x || test "x$2" == x; then
+if test "x$1" = x || test "x$2" = x; then
     echo "Usage <UNISIM build_tool dir> <SystemC dir>"
     exit
 fi

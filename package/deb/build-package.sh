@@ -1,34 +1,34 @@
-if test "x${SOURCE_DIR}" == x; then
+if test "x${SOURCE_DIR}" = x; then
 	echo "Please set SOURCE_DIR"
 	exit
 fi
 
-if test "x${PACKAGE_NAME}" == x; then
+if test "x${PACKAGE_NAME}" = x; then
 	echo "Please set PACKAGE_NAME"
 	exit
 fi
 
-if test "x${VERSION}" == x; then
+if test "x${VERSION}" = x; then
 	echo "Please set VERSION"
 	exit
 fi
 
-if test "x${ARCH}" == x; then
+if test "x${ARCH}" = x; then
 	echo "Please set ARCH"
 	exit
 fi
 
-if test "x${DESCRIPTION}" == x; then
+if test "x${DESCRIPTION}" = x; then
 	echo "Please set DESCRIPTION"
 	exit
 fi
 
-if test "x${MAINTAINER}" == x; then
+if test "x${MAINTAINER}" = x; then
 	echo "Please set MAINTAINER"
 	exit
 fi
 
-if test "x${INSTALL_PATH}" == x; then
+if test "x${INSTALL_PATH}" = x; then
 	echo "Please set INSTALL_PATH"
 	exit
 fi
