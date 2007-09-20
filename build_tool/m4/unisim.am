@@ -1,7 +1,7 @@
 all-local: all-local-bin all-local-lib all-local-include 
 	
 all-local-bin: $(bin_PROGRAMS)
-	if test "x$(bin_PROGRAMS)" != "x"; \
+	@if test "x$(bin_PROGRAMS)" != "x"; \
 	then \
 		rm -f $(top_builddir)/$(ROOT_DIR)/bin/$<; \
 		mkdir -p $(top_builddir)/$(ROOT_DIR)/bin; \
@@ -9,7 +9,7 @@ all-local-bin: $(bin_PROGRAMS)
 	fi
 
 all-local-lib: $(lib_LIBRARIES)
-	if test "x$(lib_LIBRARIES)" != "x"; \
+	@if test "x$(lib_LIBRARIES)" != "x"; \
 	then \
 		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$<; \
 		mkdir -p $(top_builddir)/$(ROOT_DIR)/lib; \
@@ -17,11 +17,14 @@ all-local-lib: $(lib_LIBRARIES)
 	fi
 	
 all-local-include: $(include_HEADERS)
-	if test "x$(include_HEADERS)" != "x"; \
+	@if test "x$(include_HEADERS)" != "x"; \
 	then \
 		if test ! -d $(top_builddir)/$(ROOT_DIR)/include; \
 		then  \
-			(cd $(top_builddir)/$(ROOT_DIR) && $(LN_S) . include); \
+			(cd $(top_builddir)/$(ROOT_DIR) && \
+			mkdir -p include && \
+			cd include && \
+			$(LN_S) $(top_srcdir)/$(ROOT_DIR)/unisim unisim); \
 		fi \
 	fi
 	
