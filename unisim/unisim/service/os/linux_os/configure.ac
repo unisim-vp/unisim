@@ -37,6 +37,7 @@ AC_INIT([UNISIM Service OS LinuxOS], [1.0],
 	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
 	[UnisimServiceOSLinuxOS])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET

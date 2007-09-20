@@ -37,6 +37,7 @@ AC_INIT([UNISIM Core Service Library], [1.0],
 	[Gilles Mouchard <gilles.mouchard@cea.fr>],
 	[service])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET

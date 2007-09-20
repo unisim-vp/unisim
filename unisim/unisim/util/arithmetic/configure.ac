@@ -37,6 +37,7 @@ AC_INIT([UNISIM Arithmetic Library], [1.0],
 	[Gilles Mouchard <gilles.mouchard@cea.fr>],
 	[arithmetic])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
     
 AM_INIT_AUTOMAKE
 

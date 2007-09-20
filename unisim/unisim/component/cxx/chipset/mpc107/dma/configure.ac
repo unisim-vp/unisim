@@ -35,6 +35,7 @@
 
 AC_INIT([UNISIM C++ DMA MPC107 Chipset Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
 
 AM_INIT_AUTOMAKE
 

@@ -37,6 +37,7 @@ AC_INIT([UNISIM ARM user level TLM simulator], [1.0],
 	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
 	[armemu])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET

@@ -37,6 +37,7 @@ AC_INIT([UNISIM Service Interfaces], [1.0],
     [Gilles Mouchard <gilles.mouchard@cea.fr> Daniel Gracia Perez],
     [service_interfaces])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
 		
 AM_INIT_AUTOMAKE
 		

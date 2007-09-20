@@ -31,19 +31,19 @@ all-local-include: $(include_HEADERS)
 clean-local: clean-local-bin clean-local-lib clean-local-include
 
 clean-local-bin:
-	if test "x$(bin_PROGRAMS)" != "x"; \
+	@if test "x$(bin_PROGRAMS)" != "x"; \
 	then \
 		rm -rf $(top_builddir)/$(ROOT_DIR)/bin; \
 	fi
 
 clean-local-lib:
-	if test "x$(lib_LIBRARIES)" != "x"; \
+	@if test "x$(lib_LIBRARIES)" != "x"; \
 	then \
 		rm -rf $(top_builddir)/$(ROOT_DIR)/lib; \
 	fi
 
 clean-local-include:
-	if test "x$(include_HEADERS)" != "x"; \
+	@if test "x$(include_HEADERS)" != "x"; \
 	then \
 		rm -rf $(top_builddir)/$(ROOT_DIR)/include; \
 	fi
