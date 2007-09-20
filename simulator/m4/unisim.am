@@ -21,7 +21,7 @@ all-local-include: $(include_HEADERS)
 	then \
 		if test ! -d $(top_builddir)/$(ROOT_DIR)/include; \
 		then  \
-			(cd $(top_builddir)/$(ROOT_DIR) && $(LN_S) $(top_srcdir)/$(ROOT_DIR)/.. include); \
+			(cd $(top_builddir)/$(ROOT_DIR) && $(LN_S) $(top_srcdir) include); \
 		fi \
 	fi
 	
