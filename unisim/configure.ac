@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM], [1.0])
+AC_INIT([UNISIM Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
@@ -44,10 +44,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-kernel, kernel)
-UNISIM_CONFIG_SUBDIR(unisim-util, util)
-UNISIM_CONFIG_SUBDIR(unisim-service, service)
-UNISIM_CONFIG_SUBDIR(unisim-component, component)
+AC_CONFIG_SUBDIRS([unisim])
 
 # doxygen options
 DX_HTML_FEATURE(ON)
