@@ -6,13 +6,13 @@ find . -name "configure.ac" -execdir /bin/bash -c \
 has_to_build=\"false\"; \
 if test -e configure.ac; \
 then \
-  if test ${m4_path}/acinclude.m4 -nt configure.ac || test ${m4_path}/unisim.m4 -nt configure.ac; \
-  then \
-    is_configure_ac_modified=\"true\"; \
-    has_to_build=\"true\"; \
-  fi; \
   if test -e configure; \
   then \
+    if test ${m4_path}/acinclude.m4 -nt configure || test ${m4_path}/unisim.m4 -nt configure; \
+    then \
+      is_configure_ac_modified=\"true\"; \
+      has_to_build=\"true\"; \
+    fi; \
     if test configure.ac -nt configure; \
     then \
       is_configure_ac_modified=\"true\"; \
@@ -25,13 +25,13 @@ then \
 fi;\
 if test -e Makefile.am; \
 then \
-  if test ${m4_path}/aminclude.am -nt Makefile.am || test ${m4_path}/unisim.am -nt Makefile.am; \
-  then \
-    is_makefile_am_modified=\"true\"; \
-    has_to_build=\"true\"; \
-  fi; \
   if test -e Makefile.in; \
   then \
+    if test ${m4_path}/aminclude.am -nt Makefile.in || test ${m4_path}/unisim.am -nt Makefile.in; \
+    then \
+      is_makefile_am_modified=\"true\"; \
+      has_to_build=\"true\"; \
+    fi; \
     if test Makefile.am -nt Makefile.in; \
     then \
       is_makefile_am_modified=\"true\"; \

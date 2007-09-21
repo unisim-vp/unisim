@@ -24,7 +24,7 @@ all-local-include: $(include_HEADERS)
 			(cd $(top_builddir)/$(ROOT_DIR) && \
 			mkdir -p include && \
 			cd include && \
-			$(LN_S) $(top_srcdir)/$(ROOT_DIR)/unisim unisim); \
+			$(LN_S) $(abs_top_srcdir)/$(ROOT_DIR)/unisim unisim); \
 		fi \
 	fi
 	

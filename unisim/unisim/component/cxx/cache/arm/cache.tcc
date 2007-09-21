@@ -30,26 +30,17 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *        : Adriana Carloganu (adriana.carloganu@cea.fr)
+ *       	Adriana Carloganu (adriana.carloganu@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  *------------------------------------------------------------
  * Description: 
- *  Arm Cache: - do not support coherence so BusInterface should not be used (empty functions)
- *             - used two replacement policies that could be selected by software
+ *  Arm Cache: - used two replacement policies that could be selected by software
  *             - could be enabled/disabled by software
  */
  //-----------------------------------------------------------
 
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_HH__
-
-#include <iostream> 
-#include <generic/bus/bus_interface.hh>
-#include <generic/memory/memory_interface.hh>
-#include <utils/services/service.hh>
-//#include <plugins/power/cache_power_estimator_interface.hh>
-//#include <plugins/power/power_mode_interface.hh>
-
-#include <processors/arm/cp15/cache/armcache_interface.hh>
+#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TCC__
+#define __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TCC__
 
 namespace unisim {
 namespace component {
@@ -57,145 +48,6 @@ namespace cxx {
 namespace cache {
 namespace arm {
 
-using namespace std;
-using full_system::generic::bus::BusInterface;
-using full_system::generic::bus::BusControl;
-using full_system::generic::bus::BC_NONE;
-using full_system::generic::bus::BC_GLOBAL;
-using full_system::generic::bus::CacheStatus;
-using full_system::generic::bus::CS_MISS;
-using full_system::generic::bus::CS_HIT;
-using full_system::generic::bus::CS_SHARED;
-using full_system::generic::bus::CS_MODIFIED;
-using full_system::generic::bus::CS_BUSY;
-
-// using full_system::plugins::debug::EventLevelDebugInterface;
-// using full_system::plugins::debug::EventLevelDebugStubInterface;
-
-using full_system::utils::services::Object;
-using full_system::utils::services::Service;
-using full_system::utils::services::Client;
-using full_system::utils::services::ServiceImport;
-using full_system::utils::services::ServiceExport;
-using full_system::generic::memory::MemoryInterface;
-//using full_system::plugins::power::CachePowerEstimatorInterface;
-//using full_system::plugins::power::PowerModeInterface;
-    
-    
-template <class CONFIG>
-class Cache : public ArmCacheInterface<typename CONFIG::ADDRESS>
-{
- public:
-  typedef typename CONFIG::ADDRESS ADDRESS;
-
-  Cache(const char* name,
-        ArmCacheInterface<ADDRESS>* next_level_cache,
-        BusInterface<ADDRESS>*      bus_interface,
-        Object* parent = 0);
-
-  virtual ~Cache();
-
-  inline uint32_t GetCacheSize()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-  ;
-
-  inline uint32_t GetCacheAssociativity()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-  ;
-
-  inline  uint32_t GetCacheBlockSize()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-  ;
-
-  inline void Enable()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-  ;
-
-  inline void Disable()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-  ;
-  
-  inline bool IsEnabled()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-  ;
-
-  inline void PrReset()
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-  ;
-  inline void SetLock(uint32_t lock, uint32_t index)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-  ;
-  // Proccessor -> Cache Interface
-  virtual void PrInvalidate();
-  virtual void PrInvalidateSet(uint32_t index);
-  virtual void PrInvalidateBlock(ADDRESS addr);
-  virtual void PrInvalidateBlock(uint32_t index, uint32_t way);   //add for Arm Cache
-  virtual void PrFlushBlock(ADDRESS addr);
-  virtual void PrFlushBlock(uint32_t index, uint32_t way);   //add for Arm Cache
-  virtual void PrCleanBlock(ADDRESS addr);
-  virtual void PrCleanBlock(uint32_t index, uint32_t way);   //add for Arm Cache
-  virtual void PrZeroBlock(ADDRESS addr);
-  virtual void PrWrite(ADDRESS addr, const void *buffer, uint32_t size);
-  virtual void PrRead(ADDRESS addr, void *buffer, uint32_t size, DataBlockState& st);
-  virtual void PrReadX(ADDRESS addr, void *buffer, uint32_t size, DataBlockState& st );
-
-  // Bus -> Cache Interface (cache snooping )
-  virtual void BusInvalidateBlock(ADDRESS physical_addr);
-  virtual void BusFlushBlock(ADDRESS physical_addr);
-  virtual void BusRead(ADDRESS, void *buffer, uint32_t size, BusControl bc, DataBlockState& st);
-  virtual void BusWrite(ADDRESS, const void *buffer, uint32_t size);
-  virtual void BusReadX(ADDRESS, void *buffer, uint32_t size, BusControl bc, DataBlockState& st);
-
-  // Cache -> Memory Interface (debugg dervice)
-  //virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size);
-  //virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size);
-
-
-//   ServiceImport<MemoryInterface<ADDRESS> > to_mem;
-//   ServiceExport<MemoryInterface<ADDRESS> > to_cpu;
-//   ServiceImport<CachePowerEstimatorInterface> power_estimator_import;
-//   ServiceImport<PowerModeInterface> power_mode_import;
-//   ServiceExport<PowerModeInterface> power_mode_export;
-
-private:
-  bool        enabled;
-  uint32_t       lock;
-  uint32_t lock_index;
-  uint32_t    NB_SETS;
-
-  ArmCacheInterface<ADDRESS>  *next_level_cache;
-  BusInterface<ADDRESS>       *bus_interface;
-
-  /* Cache blocks */
-  typename CONFIG::CACHE_SET cache[CONFIG::CACHE_SIZE / CONFIG::CACHE_BLOCK_SIZE / CONFIG::CACHE_ASSOCIATIVITY];
-
-
-  inline void decodeAddress(ADDRESS addr, ADDRESS& base_addr, uint32_t& index, uint32_t& offset);
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-  __attribute__((always_inline))
-#endif
-  DataBlockState selectNextBlockState(DataBlockState st, uint8_t op);
-
-  void loadDataFromNextLevel(ADDRESS add, void* buffer, uint32_t size, DataBlockState& st);
-  void storeDataInNextLevel(ADDRESS add, const void* buffer, uint32_t size);
-};
-//------------------------------------------------------
 template <class CONFIG>
 Cache<CONFIG>::Cache(const char *name, ArmCacheInterface<ADDRESS> *_next_level_cache, BusInterface<ADDRESS> *_bus_interface, Object *parent) :
 //   Object(name, parent),
@@ -806,10 +658,18 @@ DataBlockState Cache<CONFIG>::selectNextBlockState(DataBlockState st, uint8_t op
   return next_state;
 }
 
+//-----------------------------
+// template <class CONFIG>
+// void Cache<CONFIG>::broadcastBlockState(ADDRESS addr, DataBlockState block_state)
+// {
+// 
+// }
+//------------------------------
+
 } // end of namespace arm
 } // end of namespace cache
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-    
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_HH__
+
+#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TCC__

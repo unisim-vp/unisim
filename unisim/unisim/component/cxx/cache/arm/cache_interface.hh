@@ -116,14 +116,6 @@ public:
 
 	virtual void PrWrite(ADDRESS addr, const void *buffer, uint32_t size) = 0;
 	virtual void PrRead(ADDRESS addr, void *buffer, uint32_t size, DataBlockState& st) = 0;
-	virtual void PrReadX(ADDRESS addr, void *buffer, uint32_t size, DataBlockState& st) = 0;
-
-	virtual void BusInvalidateBlock(ADDRESS addr) = 0;
-	virtual void BusFlushBlock(ADDRESS addr) = 0;
-	virtual void BusRead(ADDRESS addr, void *buffer, uint32_t size, BusControl bc, DataBlockState& st) = 0;
-	virtual void BusReadX(ADDRESS addr, void *buffer, uint32_t size, BusControl bc, DataBlockState& st) = 0;
-	virtual void BusWrite(ADDRESS addr, const void *buffer, uint32_t size) = 0;
-
 };
 
 } // end of namespace arm
