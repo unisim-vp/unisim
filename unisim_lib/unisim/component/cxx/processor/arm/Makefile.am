@@ -15,12 +15,12 @@ libunisim_component_cxx_processor_arm_a_SOURCES = \
 
 include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \
-	armcpu.hh armcpu.tcc \
 	arm.isa constructors_dec.isa actions_dec.isa \
 	branch.isa coprocessor.isa data_processing.isa exception.isa \
 	load_store.isa load_store_base.isa load_store_multiple.isa \
 	load_store_v4.isa load_store_v5e.isa misc_arithmetic.isa multiply.isa \
 	semaphore.isa status_register_access.isa
+nodist_include_HEADERS = armcpu.tcc armcpu.hh
 
 BUILT_SOURCES = armcpu.tcc armcpu.hh
 CLEANFILES = armcpu.tcc armcpu.hh

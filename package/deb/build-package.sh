@@ -1,8 +1,3 @@
-if test "x${SOURCE_DIR}" = x; then
-	echo "Please set SOURCE_DIR"
-	exit
-fi
-
 if test "x${PACKAGE_NAME}" = x; then
 	echo "Please set PACKAGE_NAME"
 	exit
@@ -33,13 +28,21 @@ if test "x${INSTALL_PATH}" = x; then
 	exit
 fi
 
+HERE=`pwd`
 PACKAGE_LONG_NAME=${PACKAGE_NAME}_${VERSION}_${ARCH}
 PACKAGE_FILENAME=${PACKAGE_LONG_NAME}.deb
-HERE=`pwd`
-TEMPORARY_INSTALL_DIR=$HOME/tmp/${PACKAGE_LONG_NAME}
-TEMPORARY_CONFIG_DIR=$HOME/tmp/${PACKAGE_LONG_NAME}_config
+TEMPORARY_SOURCE_DIR=${HOME}/tmp/${TARBALL_NAME}
+TEMPORARY_INSTALL_DIR=${HOME}/tmp/${PACKAGE_LONG_NAME}
+TEMPORARY_CONFIG_DIR=${HOME}/tmp/${PACKAGE_LONG_NAME}_config
 CONTROL_FILE=${TEMPORARY_INSTALL_DIR}/DEBIAN/control
 MD5SUMS_FILE=${TEMPORARY_INSTALL_DIR}/DEBIAN/md5sums
+
+echo "========================================="
+echo "=              uncompress               ="
+echo "========================================="
+cd ${HOME}/tmp
+rm -rf ${TARBALL_NAME}
+tar zxvf ${HERE}/${TARBALL_NAME}.tar.gz
 
 # configure in the temporary configure directory
 echo "========================================="
@@ -48,7 +51,7 @@ echo "========================================="
 rm -rf ${TEMPORARY_CONFIG_DIR}
 mkdir -p ${TEMPORARY_CONFIG_DIR}
 cd ${TEMPORARY_CONFIG_DIR}
-${HERE}/${SOURCE_DIR}/configure --prefix=${TEMPORARY_INSTALL_DIR}/${INSTALL_PATH} "$@" || exit
+${TEMPORARY_SOURCE_DIR}/configure --prefix=${TEMPORARY_INSTALL_DIR}/${INSTALL_PATH} "$@" || exit
 
 # install in the temporary install directory
 echo "========================================="
@@ -104,6 +107,10 @@ echo "========================================="
 fakeroot dpkg-deb --build ${TEMPORARY_INSTALL_DIR}
 mv ${TEMPORARY_INSTALL_DIR}/../${PACKAGE_FILENAME} ${HERE}/.
 
+echo "========================================="
+echo "=       Clean temporary directories     ="
+echo "========================================="
 # cleanup every temporary directories
 rm -rf ${TEMPORARY_INSTALL_DIR}
 rm -rf ${TEMPORARY_CONFIG_DIR}
+rm -rf ${TEMPORARY_SOURCE_DIR}

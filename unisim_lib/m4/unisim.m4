@@ -25,19 +25,19 @@ AC_DEFUN([UNISIM_CHECK_BOOST], [
 	AC_MSG_ERROR([boost graph headers not found. Please install the boost graph development library. Use --with-boost=<path> to overload default includes search path.]))
 ])
 
-## UNISIM_CHECK_BOOST
-## Checks if the boost library is installed
+## UNISIM_CHECK_UNISIM_TOOLS
+## Checks if the UNISIM tools are installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN([UNISIM_CHECK_UNISIM_BUILD_TOOL], [
+AC_DEFUN([UNISIM_CHECK_UNISIM_TOOLS], [
     # Check if boost path has been overloaded
-    AC_ARG_WITH(unisim_build_tool,
-	AS_HELP_STRING([--with-unisim-build-tool=<path>], [UNISIM build tools to use (will be completed with /bin)]))
-    if test "x$with_unisim_build_tool" != "x"; then
-	AC_MSG_NOTICE([using UNISIM build tools at $with_unisim_build_tool])
-	AC_SUBST(GENISSLIB_PATH, $with_unisim_build_tool/bin/genisslib)
+    AC_ARG_WITH(unisim_tools,
+	AS_HELP_STRING([--with-unisim-tools=<path>], [UNISIM tools to use (will be completed with /bin)]))
+    if test "x$with_unisim_tools" != "x"; then
+	AC_MSG_NOTICE([using UNISIM tools at $with_unisim_tools])
+	AC_SUBST(GENISSLIB_PATH, $with_unisim_tools/bin/genisslib)
     else
-	AC_MSG_NOTICE([using UNISIM build tools at the default program path])
+	AC_MSG_NOTICE([using UNISIM tools at the default program path])
         AC_SUBST(GENISSLIB_PATH, genisslib)
     fi	    
     
@@ -45,7 +45,7 @@ AC_DEFUN([UNISIM_CHECK_UNISIM_BUILD_TOOL], [
     AC_CHECK_PROG(genisslib_installed, $GENISSLIB_PATH, true, false, /)
     
     if test "x$genisslib_installed" != "xtrue"; then
-            AC_MSG_ERROR([GenISSLib not found. Please install UNISIM build tools.])
+            AC_MSG_ERROR([GenISSLib not found. Please install UNISIM tools.])
     fi
 ])
 

@@ -34,22 +34,22 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
     fi
 ])
 
-## UNISIM_CHECK_UNISIM
+## UNISIM_CHECK_UNISIM_LIB
 ## Checks if the unisim library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN([UNISIM_CHECK_UNISIM], [
+AC_DEFUN([UNISIM_CHECK_UNISIM_LIB], [
     # Check if curses path has been overloaded
-    AC_ARG_WITH(unisim,
-	AS_HELP_STRING([--with-unisim=<path>], [unisim library to use (will be completed with /include and /lib)]))
-    if test "x$with_unisim" != "x"; then
-	AC_MSG_NOTICE([using unisim at $with_unisim])
-	LDFLAGS+=" -L$with_unisim/lib"
-	CPPFLAGS+=" -I$with_unisim/include"
+    AC_ARG_WITH(unisim_lib,
+	AS_HELP_STRING([--with-unisim-lib=<path>], [unisim library to use (will be completed with /include and /lib)]))
+    if test "x$with_unisim_lib" != "x"; then
+	AC_MSG_NOTICE([using unisim library at $with_unisim_lib])
+	LDFLAGS+=" -L$with_unisim_lib/lib"
+	CPPFLAGS+=" -I$with_unisim_lib/include"
     fi
 	
     # Check for ncurses.h
-    AC_CHECK_HEADER(unisim/kernel/service/service.hh,, AC_MSG_ERROR([service.hh not found. Please install the UNISIM libs.]))
+    AC_CHECK_HEADER(unisim/kernel/service/service.hh,, AC_MSG_ERROR([service.hh not found. Please install the UNISIM library.]))
 ])
 
 ## UNISIM_CHECK_READLINE

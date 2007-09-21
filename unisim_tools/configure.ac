@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM building tools], [1.0])
+AC_INIT([UNISIM tools], [1.0-1], [], [unisim-tools])
 AC_CONFIG_AUX_DIR(config)
 
 AM_INIT_AUTOMAKE
