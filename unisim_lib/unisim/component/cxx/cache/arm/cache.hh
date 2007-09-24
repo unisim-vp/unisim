@@ -47,7 +47,9 @@
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/memory.hh"
 
+#include "unisim/component/cxx/cache/arm/types.hh"
 #include "unisim/component/cxx/cache/arm/cache_interface.hh"
+#include "unisim/component/cxx/cache/arm/set.hh"
 
 namespace unisim {
 namespace component {
@@ -142,7 +144,7 @@ private:
 	CacheInterface<CONFIG> *next_mem_level;
 
 	/* Cache blocks */
-	CacheSet<CONFIG> cache[CONFIG::NB_SETS];
+	Set<CONFIG> cache[CONFIG::NSETS];
 
 	inline void DecodeAddress(address_t addr, address_t& tag, address_t& index, address_t& offset) INLINE;
 	DataBlockState selectNextBlockState(DataBlockState st, uint8_t op) INLINE;
@@ -155,6 +157,8 @@ protected:
 	bool verbose_all;
 	Parameter<bool> param_verbose_all;
 };
+
+#undef INLINE
 
 } // end of namespace arm
 } // end of namespace cache

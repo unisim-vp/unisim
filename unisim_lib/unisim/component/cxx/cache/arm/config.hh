@@ -1,4 +1,3 @@
-
 /*
  *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
@@ -36,24 +35,13 @@
 #define __UNISIM_COMPONENT_CXX_CACHE_ARM_CONFIG_HH__
 
 #include <inttypes.h>
+#include "unisim/component/cxx/cache/arm/types.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace cache {
 namespace arm {
-
-/** Allocation policies supported */
-typedef enum {
-	READ_ALLOCATE,
-	WRITE_ALLOCATE
-} AllocationPolicy;
-
-/** Write policies supported */
-typedef enum {
-	WRITE_THROUGH,
-	WRITE_BACK
-} WritePolicy;
 
 /** Base class for the arm caches configurations 
  * 
@@ -114,6 +102,13 @@ public:
 	 * - WriteBack
 	 */
 	static const WRITE_POLICY = WritePolicy::WRITE_THROUGH;
+	
+	/** the cache replacement policy
+	 * Two possibilites:
+	 * - Random replacement (RANDOM_REPLACEMENT)
+	 * - Round-robin replacement (ROUNDROBIN_REPLACEMENT)
+	 */
+	static const REPLACEMENT_POLICY = ReplacementPolicy::RANDOM_REPLACEMENT;
 };
 
 /** 
@@ -133,7 +128,6 @@ class ARMCache512bDMWT8bls_DebugConfig :
 public:
 	static const DEBUG_ENABLE = true;
 };
-	};
 
 } // end of namespace arm
 } // end of namespace cache
