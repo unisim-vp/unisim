@@ -1,8 +1,1 @@
-To install GenISSLib from the development version, just do:
-$ aclocal
-$ autoconf
-$ autoheader
-$ automake -a
-$ ./configure
-$ make
-$ make install
+See the top level file INSTALL

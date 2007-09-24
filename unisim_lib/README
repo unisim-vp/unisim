@@ -22,7 +22,7 @@ other Unisim packages:
 
 INSTALLATION (Linux/Unix/cygwin):
 ---------------------------------
-$ ./configure --with-unisim-tools=path-to-unisim-tools \
+$ ./configure --with-unisim-tools=path-to-unisim-tools-install-directory \
               --with-systemc=path-to-systemc-2.2.0
 $ make
 $ make install
@@ -70,23 +70,12 @@ $ ./configure \
     --build=i686-pc-linux-gnu
     --host=i586-mingw32msvc
     --prefix=path-to-install-directory \
+    --with-unisim-tools=path-to-unisim-tools-install-directory \
     --with-zlib=path-to-zlib-win32 \
     --with-readline=path-to-readline-win32 \
     --with-boost=path-to-boost-win32 \
     --with-sdl=path-to-sdl-win32 \
-    --with-simfloat=path-to-simfloat/include \
-    --with-genisslib=path-to-genisslib-executable \
     --with-systemc=path-to-systemc-root-install-directory
     CXXFLAGS="-m32 -O3 -g3"
 $ make
 $ make install
-
-Note: Linux system call translation is disabled for win32. ppcemu and armemu are not built at all.
-
-4) Running a simulator using FullSystem on Win32
-The following dynamic libraries must be present either in the directory where the simulator .exe file is located or in your \Windows\System32:
-- readline5.dll
-- SDL.dll
-- zlib1.dll
-
-See 2) to get these runtime libraries.
