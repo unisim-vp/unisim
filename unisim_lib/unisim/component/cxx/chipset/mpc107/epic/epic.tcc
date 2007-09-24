@@ -155,8 +155,8 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 			if(logger_import) {
 				(*logger_import) << DebugError
 					<< LOCATION
-					<< "Received a wrong irq id (id = " 
-					<< serial_id << ") when working in passthrough mode "
+					<< "Received a wrong irq id (id = " << id 
+					<< ", serial id = " << serial_id << ") when working in passthrough mode "
 					<< "(id should be 0), stopping simulation"
 					<< Endl << EndDebugWarning;
 			}
@@ -430,7 +430,7 @@ template <class PHYSICAL_ADDR,
 bool
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 PassthroughMode() {
-	if(regs.gcr & (uint32_t)0x10000000) return false;
+	if(regs.gcr & (uint32_t)0x20000000) return false;
 	return true;
 }
 
