@@ -1,0 +1,144 @@
+
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
+#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_CONFIG_HH__
+#define __UNISIM_COMPONENT_CXX_CACHE_ARM_CONFIG_HH__
+
+#include <inttypes.h>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace cache {
+namespace arm {
+
+/** Allocation policies supported */
+typedef enum {
+	READ_ALLOCATE,
+	WRITE_ALLOCATE
+} AllocationPolicy;
+
+/** Write policies supported */
+typedef enum {
+	WRITE_THROUGH,
+	WRITE_BACK
+} WritePolicy;
+
+/** Base class for the arm caches configurations 
+ * 
+ * This class defines the basic parameters of the arm caches. More concretely it defines
+ *   a 512 bytes direct-mapped write trough cache with line sizes of 8 bytes.
+ * This class is here to be inherited to create new configurations. */
+class ARMCacheBase {
+public:
+	/** enables/disables debug */
+	static const DEBUG_ENABLE = false;
+	
+	/** the address type of arm caches (always 32-bits) */
+	typedef uint32_t address_t;             // 32-bit effective address
+	
+	/** the line lenght in bytes
+	 * The line lenght in bytes. Four different possibilities are possible:
+	 *  - 0b1000 -> 8 bytes
+	 *  - 0b10000 -> 16 bytes
+	 *  - 0b100000 -> 32 bytes
+	 *  - 0b1000000 -> 64 bytes
+	 */
+	static const uint32_t LINELEN = 0b1000; // 8 bytes
+	/** cache size multiplier
+	 * This field is used to know the cache size, two different values are possible:
+	 *  - 2 (for 0.5, 1, 2, 4, 8, 16, 32 and 64 KB)
+	 *  - 3 (for 0.75, 1.5, 3, 6, 12, 24, 48 and 96KB)
+	 * Note that the CACHE_SIZE and ASSOCIATIVITY fields have already the multiplier 
+	 *    applied. This field is just for information.
+	 */
+	static const uint32_t MULTIPLIER = 2;
+	/** cache associativity
+	 *  This field defines the cache associativity. The following are valid values (X-ways):
+	 *    1 (direct-mapped), 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192 
+	 */
+	static const uint32_t ASSOCIATIVITY = 1;
+	/** cache size in bytes
+	 * Defines the cache size in KB. The following are valid values (in KB):
+	 *    0.5, 0.75, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96
+	 * and in bytes:
+	 *    512, 768, 1024, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576, 32768, 49152, 65536, 98304
+	 */
+	static const uint32_t SIZE = 512;
+	/** the number of sets
+	 * The number of sets in the cache.
+	 */
+	static const uint32_t NSETS = 64; // 0b1000000
+	
+	/** the cache allocation policy
+	 * We need to set one allocation policy: Read or Write
+	 * If Read allocate new lines will be allocated only on read misses, never for write misses
+	 * If Write allocate new lines will be allocated for read and write misses
+	 */
+	static const ALLOCATION_POLICY = AllocationPolicy::READ_ALLOCATE;
+	
+	/** the cache write policy
+	 * Two possibilities:
+	 * - WriteThrough
+	 * - WriteBack
+	 */
+	static const WRITE_POLICY = WritePolicy::WRITE_THROUGH;
+};
+
+/** 
+ * ARM cache of 512 bytes direct-mapped write through with line size of 8 bytes
+ */
+class ARMCache512bDMWT8bls_Config : //
+	public ARMCacheBase {
+	// nothing needs to be redefined, it corresponds to the default cache configuration
+};
+
+/** 
+ * ARM cache of 512 bytes direct-mapped write through with line size of 8 bytes
+ *   with debug mode activated
+ */
+class ARMCache512bDMWT8bls_DebugConfig :
+	public ARMCacheBase {
+public:
+	static const DEBUG_ENABLE = true;
+};
+	};
+
+} // end of namespace arm
+} // end of namespace cache
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_CONFIG_HH__

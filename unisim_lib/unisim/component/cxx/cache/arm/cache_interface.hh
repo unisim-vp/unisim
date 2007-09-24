@@ -74,22 +74,22 @@ namespace cxx {
 namespace cache {
 namespace arm {
 
-template <class ADDRESS>
+template <class address_t>
 class CacheInterface 
 {
 public:
 	virtual ~CacheInterface();
 
-	virtual void SetLock(uint32_t lock, uint32_t index) = 0;
+	virtual void SetLock(uint32_t lock, uint32_t set) = 0;
 
 	// invalidate without checking if modified data
-	virtual void PrInvalidateBlock(uint32_t index, uint32_t way) = 0;
+	virtual void PrInvalidateBlock(uint32_t set, uint32_t way) = 0;
 
 	// write modified data into memory then invalidate all copies in caches
-	virtual void PrFlushBlock(uint32_t index, uint32_t way) = 0;
+	virtual void PrFlushBlock(uint32_t set, uint32_t way) = 0;
 
 	// write modified data into memory, do not invalidate block
-	virtual void PrCleanBlock(uint32_t index, uint32_t way) = 0;
+	virtual void PrCleanBlock(uint32_t set, uint32_t way) = 0;
 
 
 	virtual uint32_t GetCacheSize()= 0;
@@ -103,19 +103,19 @@ public:
 	virtual void PrReset()   = 0;
 	// invalidate without checking if modified data
 	virtual void PrInvalidate() = 0;
-	virtual void PrInvalidateSet(uint32_t index) = 0;
-	virtual void PrInvalidateBlock(ADDRESS addr) = 0;
+	virtual void PrInvalidateSet(uint32_t set) = 0;
+	virtual void PrInvalidateBlock(address_t addr) = 0;
 
 	// write modified data into memory then invalidate all copies in caches
-	virtual void PrFlushBlock(ADDRESS addr) = 0;
+	virtual void PrFlushBlock(address_t addr) = 0;
 
 	// write modified data into memory, do not invalidate block
-	virtual void PrCleanBlock(ADDRESS addr) = 0;           //add for Arm Cache
+	virtual void PrCleanBlock(address_t addr) = 0;           //add for Arm Cache
 
-	virtual void PrZeroBlock(ADDRESS addr) = 0;
+	virtual void PrZeroBlock(address_t addr) = 0;
 
-	virtual void PrWrite(ADDRESS addr, const void *buffer, uint32_t size) = 0;
-	virtual void PrRead(ADDRESS addr, void *buffer, uint32_t size, DataBlockState& st) = 0;
+	virtual void PrWrite(address_t addr, const void *buffer, uint32_t size) = 0;
+	virtual void PrRead(address_t addr, void *buffer, uint32_t size) = 0;
 };
 
 } // end of namespace arm

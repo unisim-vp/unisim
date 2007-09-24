@@ -48,151 +48,258 @@ namespace cxx {
 namespace cache {
 namespace arm {
 
+using unisim::kernel::service::Object;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::Line;
+
+#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+
 template <class CONFIG>
-Cache<CONFIG>::Cache(const char *name, ArmCacheInterface<ADDRESS> *_next_level_cache, BusInterface<ADDRESS> *_bus_interface, Object *parent) :
-//   Object(name, parent),
-//   Service<MemoryInterface<ADDRESS> >(name, parent),
-//   Client<MemoryInterface<ADDRESS> >(name, parent),
+Cache<CONFIG> ::
+Cache(const char *name, 
+		CacheInterface<CONFIG> *_next_mem_level,
+		Object *parent) :
+	Object(name, parent),
+	Service<MemoryInterface<address_t> >(name, parent),
+	Client<MemoryInterface<address_t> >(name, parent),
+	memory_export("memory_export", this),
+	memory_import("memory_import", this),
+	logger_import("logger_import", this),
+	verbose_all(false),
+	param_verbose_all("verbose-all", this, verbose_all),
+	next_mem_level(_next_mem_level) {
+//	NB_SETS(CONFIG::CACHE_SIZE / 
+//			CONFIG::CACHE_BLOCK_SIZE / 
+//			CONFIG::CACHE_ASSOCIATIVITY)
 //   Client<CachePowerEstimatorInterface>(name, parent),
 //   Client<PowerModeInterface>(name, parent),
 //   Service<PowerModeInterface>(name, parent),
-//   to_mem("to-mem", this),
-//   to_cpu("to-cpu", this),
 //   power_estimator_import("power-estimator-import", this),
 //   power_mode_import("power-mode-import", this),
 //   power_mode_export("power-mode-export", this),
-  next_level_cache(_next_level_cache),
-  bus_interface(_bus_interface)
-{
-  NB_SETS = CONFIG::CACHE_SIZE / CONFIG::CACHE_BLOCK_SIZE / CONFIG::CACHE_ASSOCIATIVITY;
-  PrReset();
+	SetupDependsOn(logger_import);
+	PrReset();
 }
-//-----------------------------
+
 template <class CONFIG>
-Cache<CONFIG>::~Cache()
-{
+bool 
+Cache<CONFIG> ::
+Setup() {
+	if(CONFIG::DEBUG && verbose_all && !logger_import) {
+		cerr << "WARNING("
+			<< __FUNCTION__ << ":"
+			<< __FILE__ << ":"
+			<< __LINE__ << "): "
+			<< "No Logger exists to generate the output messages" << endl;
+	}
+	
+	if(NB_SETS != CONFIG::CACHE_SIZE / CONFIG::CACHE_BLOCK_SIZE / CONFIG::CACHE_ASSOCIATIVITY) {
+		if(logger_import) {
+			(*logger_import) << DebugError << LOCATION
+				<< "Invalid configuration (NB_SETS)"
+				<< Endl << EndDebugError;
+		}
+		return false;
+	}
+	
+	if(_next_mem_level == NULL) {
+		if(logger_import) {
+			(*logger_import) << DebugError << LOCATION
+				<< "No pointer to the next memory level was given"
+				<< Endl << EndDebugError;
+		}
+		return false;
+	}
+	return true;
+}
+
+template <class CONFIG>
+void 
+Cache<CONFIG> ::
+OnDisconnect() {
+	if(logger_import) {
+		(*logger_import) << DebugWarning << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+	}
+	// TODO
 }
 
 //-----------------------------
 template <class CONFIG>
-uint32_t Cache<CONFIG>::GetCacheSize()
-{
-  return CONFIG::CACHE_SIZE;
+Cache<CONFIG> ::
+~Cache() {
 }
 
 //-----------------------------
 template <class CONFIG>
-uint32_t Cache<CONFIG>::GetCacheAssociativity()
-{
-  return CONFIG::CACHE_ASSOCIATIVITY;
+uint32_t 
+Cache<CONFIG> ::
+GetCacheSize() {
+	return CONFIG::SIZE;
 }
 
 //-----------------------------
 template <class CONFIG>
-uint32_t Cache<CONFIG>::GetCacheBlockSize()
-{
-  return CONFIG::CACHE_BLOCK_SIZE;
+uint32_t 
+Cache<CONFIG> ::
+GetCacheAssociativity() {
+	return CONFIG::ASSOCIATIVITY;
 }
 
 //-----------------------------
 template <class CONFIG>
-void Cache<CONFIG>::Enable()
-{
-  enabled = true;
+uint32_t 
+Cache<CONFIG> ::
+GetCacheBlockSize() {
+	return CONFIG::LINELEN;
 }
 
 //-----------------------------
 template <class CONFIG>
-void Cache<CONFIG>::Disable()
-{
-  enabled = false;
+void 
+Cache<CONFIG> ::
+Enable() {
+	enabled = true;
 }
 
 //-----------------------------
 template <class CONFIG>
-bool Cache<CONFIG>::IsEnabled()
-{
-  return enabled;
+void 
+Cache<CONFIG> ::
+Disable() {
+	enabled = false;
 }
 
 //-----------------------------
 template <class CONFIG>
-void Cache<CONFIG>::PrReset()
-{
-  if(enabled){
-    PrInvalidate();
-    Disable();
-  }
+bool
+Cache<CONFIG> ::
+IsEnabled() {
+	return enabled;
 }
+
 //-----------------------------
 template <class CONFIG>
-void Cache<CONFIG>::SetLock(uint32_t lock, uint32_t index)
-{
-  uint32_t i; 
-  if(enabled){
-    this->lock       = lock;
-    this->lock_index = index;
-    for(i = 0; i < NB_SETS; i++){
-     // set all next_alloc to index 
-     cache[i].UpdateReplacementPolicy(1 , index, index);
-    }
-  }
+void
+Cache<CONFIG> ::
+PrReset() {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	if(enabled){
+//		PrInvalidate();
+//		Disable();
+//	}
+}
+
+//-----------------------------
+template <class CONFIG>
+void 
+Cache<CONFIG> ::
+SetLock(uint32_t lock, uint32_t index) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	uint32_t i; 
+//	if(enabled){
+//		this->lock       = lock;
+//		this->lock_index = index;
+//		for(i = 0; i < NB_SETS; i++){
+//			// set all next_alloc to index 
+//			cache[i].UpdateReplacementPolicy(1 , index, index);
+//		}
+//	}
 }
 
 //-----------------------------
 //invalidate all lines, including the locked-down
 template <class CONFIG>
-void Cache<CONFIG>::PrInvalidate()
-{
-  uint32_t i;
-  if(enabled){
-    for(i = 0; i < NB_SETS; i++){
-      cache[i].Invalidate();
-    }
-    lock = 0;
-    lock_index = 0;
-  }// else not enabled
+void 
+Cache<CONFIG> ::
+PrInvalidate() {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	uint32_t i;
+//	if(enabled){
+//		for(i = 0; i < NB_SETS; i++){
+//			cache[i].Invalidate();
+//		}
+//		lock = 0;
+//		lock_index = 0;
+//	}// else not enabled
 }
 
 //-----------------------------
 template <class CONFIG>
-void Cache<CONFIG>::PrInvalidateSet(uint32_t index)
-{
-  cerr << "WARNING : " << __FILE__ << " : " << __FUNCTION__ << " : Not implemented" << endl;
+void 
+Cache<CONFIG> ::
+PrInvalidateSet(uint32_t index) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
 }
 
 //-----------------------------
 // invalidate block in cache 
 template <class CONFIG>
-void Cache<CONFIG>::PrInvalidateBlock(ADDRESS addr)
-{
-  uint8_t*    buffer;
-  uint32_t     index;
-  uint32_t    offset;
-  uint32_t       way;
-  ADDRESS  base_addr;
-
-  if(enabled){
-    //find index for set, and tag for block
-    decodeAddress(addr, base_addr, index, offset);
-    cache[index].GetBlock(base_addr, way, (const void**)&buffer);
-
-    // range of way is checked in cache_set
-    cache[index].InvalidateBlock(way);
-    cache[index].UpdateReplacementPolicy(lock, lock_index, way);
-  }// else cache not enabled, nothing to do
+void 
+Cache<CONFIG> :: 
+PrInvalidateBlock(address_t addr) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	uint8_t*    buffer;
+//	uint32_t     index;
+//	uint32_t    offset;
+//	uint32_t       way;
+//	address_t  base_addr;
+//
+//	if(enabled){
+//		//find index for set, and tag for block
+//		decodeAddress(addr, base_addr, index, offset);
+//		cache[index].GetBlock(base_addr, way, (const void**)&buffer);
+//
+//		// range of way is checked in cache_set
+//		cache[index].InvalidateBlock(way);
+//		cache[index].UpdateReplacementPolicy(lock, lock_index, way);
+//	}// else cache not enabled, nothing to do
 }
 
 //-----------------------------
 //used by Arm Cache
 template <class CONFIG>
-void Cache<CONFIG>::PrInvalidateBlock(uint32_t index, uint32_t way)
-{
-  if(enabled && (index < NB_SETS)){
-    // range of way is checked in cache_set
-    cache[index].InvalidateBlock(way);
-    cache[index].UpdateReplacementPolicy(lock, lock_index, way);
-  } // else not enabled or index out of range, nothing to do
+void 
+Cache<CONFIG> ::
+PrInvalidateBlock(uint32_t index, uint32_t way) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	if(enabled && (index < NB_SETS)){
+//		// range of way is checked in cache_set
+//		cache[index].InvalidateBlock(way);
+//		cache[index].UpdateReplacementPolicy(lock, lock_index, way);
+//	} // else not enabled or index out of range, nothing to do
 }
 
 //-----------------------------
@@ -200,114 +307,148 @@ void Cache<CONFIG>::PrInvalidateBlock(uint32_t index, uint32_t way)
 // For coherence reason with FlushBlock( set, way) function,
 // the flush action is not propagate through cache hierarchy
 template <class CONFIG>
-void Cache<CONFIG>::PrFlushBlock(ADDRESS addr)
-{
-  uint8_t*    buffer;
-  uint32_t     index;
-  uint32_t    offset;
-  uint32_t       way;
-  ADDRESS  base_addr;
-
-  if(enabled){
-    //find index for set, and tag for block
-    decodeAddress(addr, base_addr, index, offset);
-
-    // get block index in set and data to be written into memory
-    // if block not in cache (miss) way = CACHE_ASSOCIATIVITY and buffer = NULL
-    cache[index].GetBlock(base_addr, way, (const void**)&buffer);
-
-    if(buffer){ // cache hit
-      if(cache[index].IsModifiedBlock(way)){
-        // should pass by next_level_cache for virtual addressed caches for address translation
-        storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
-      }// else no data to be written in memory 
-
-      //invalidate block
-      cache[index].InvalidateBlock(way);
-      cache[index].UpdateReplacementPolicy(lock, lock_index, way);
-    }// else miss, nothing to do in this cache
-  }// else cache not enabled
+void 
+Cache<CONFIG> ::
+PrFlushBlock(address_t addr) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	uint8_t*    buffer;
+//	uint32_t     index;
+//	uint32_t    offset;
+//	uint32_t       way;
+//	address_t  base_addr;
+//
+//	if(enabled){
+//		//find index for set, and tag for block
+//		decodeAddress(addr, base_addr, index, offset);
+//
+//		// get block index in set and data to be written into memory
+//		// if block not in cache (miss) way = CACHE_ASSOCIATIVITY and buffer = NULL
+//		cache[index].GetBlock(base_addr, way, (const void**)&buffer);
+//
+//		if(buffer) { // cache hit
+//			if(cache[index].IsModifiedBlock(way)) {
+//				// should pass by next_level_cache for virtual addressed caches for address translation
+//				storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
+//			}// else no data to be written in memory 
+//
+//			//invalidate block
+//			cache[index].InvalidateBlock(way);
+//			cache[index].UpdateReplacementPolicy(lock, lock_index, way);
+//		}// else miss, nothing to do in this cache
+//	}// else cache not enabled
 }
+
 //-----------------------------
 // if data modified, write it into memory, then invalidate blocks in cache
 // Could not invalidate block in next level cache as, if miss 
 // there is no information to find block in cache hierarchy (address is not available)
 
 template <class CONFIG>
-void Cache<CONFIG>::PrFlushBlock(uint32_t index, uint32_t way)
-{
-  uint8_t*     buffer;
-  ADDRESS   base_addr;
-  ADDRESS  block_addr;
-
-  if(enabled && (index < NB_SETS)){
-    // range of way is checked in cache_set
-    if(cache[index].IsModifiedBlock(way)){
-      cache[index].GetBlock(way, block_addr, (const void**)&buffer);
-      // should pass by next_level_cache for virtual addressed caches for address translation
-      storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
-    }
-    cache[index].InvalidateBlock(way);
-    cache[index].UpdateReplacementPolicy(lock, lock_index, way);
-  }// else cache not enabled
-
+void 
+Cache<CONFIG> ::
+PrFlushBlock(uint32_t index, uint32_t way) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	uint8_t*     buffer;
+//	address_t   base_addr;
+//	address_t  block_addr;
+//
+//	if(enabled && (index < NB_SETS)){
+//		// range of way is checked in cache_set
+//		if(cache[index].IsModifiedBlock(way)){
+//			cache[index].GetBlock(way, block_addr, (const void**)&buffer);
+//			// should pass by next_level_cache for virtual addressed caches for address translation
+//			storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
+//		}
+//		cache[index].InvalidateBlock(way);
+//		cache[index].UpdateReplacementPolicy(lock, lock_index, way);
+//	}// else cache not enabled
+//
 }
 
 //-----------------------------
 // if data modified, write it into memory
 template <class CONFIG>
-void Cache<CONFIG>::PrCleanBlock(ADDRESS addr)
-{
-  uint8_t*    buffer;
-  uint32_t     index;
-  uint32_t    offset;
-  uint32_t       way;
-  ADDRESS  base_addr;
-
-  if(enabled){
-    //find index for set, and tag for block
-    decodeAddress(addr, base_addr, index, offset);
-    cache[index].GetBlock(base_addr, way, (const void**)&buffer);
-
-    if(buffer){ // cache hit
-      if(cache[index].IsModifiedBlock(way)){
-         // should pass by next_level_cache for virtual addressed caches for address translation
-         storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
-         cache[index].SetBlockState(way, ST_EXCLUSIVE);
-      }// else no data to be written in memory 
-    }// else miss, nothing to do in this cache
-  } // else cache not enabled
+void 
+Cache<CONFIG> ::
+PrCleanBlock(address_t addr) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	uint8_t*    buffer;
+//	uint32_t     index;
+//	uint32_t    offset;
+//	uint32_t       way;
+//	address_t  base_addr;
+//
+//	if(enabled){
+//		//find index for set, and tag for block
+//		decodeAddress(addr, base_addr, index, offset);
+//		cache[index].GetBlock(base_addr, way, (const void**)&buffer);
+//
+//		if(buffer){ // cache hit
+//			if(cache[index].IsModifiedBlock(way)){
+//				// should pass by next_level_cache for virtual addressed caches for address translation
+//				storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
+//				cache[index].SetBlockState(way, ST_EXCLUSIVE);
+//			}// else no data to be written in memory 
+//		}// else miss, nothing to do in this cache
+//	} // else cache not enabled
 }
+
 //-----------------------------
 template <class CONFIG>
-void Cache<CONFIG>::PrCleanBlock(uint32_t index, uint32_t way)
-{
-  uint8_t*     buffer;
-  ADDRESS  block_addr;
-
-  if(enabled && (index < NB_SETS)){
-    // range of way is checked in cache_set
-    if(cache[index].IsModifiedBlock(way)){
-      cache[index].GetBlock(way, block_addr, (const void**)&buffer);
-      // should pass by next_level_cache for virtual addressed caches for address translation
-      storeDataInNextLevel(block_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
-      cache[index].SetBlockState(way, ST_EXCLUSIVE);
-    } // else not enabled or index out of range, nothing to do
-  }
+void 
+Cache<CONFIG> ::
+PrCleanBlock(uint32_t index, uint32_t way) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
+//	uint8_t*     buffer;
+//	address_t  block_addr;
+//
+//	if(enabled && (index < NB_SETS)){
+//		// range of way is checked in cache_set
+//		if(cache[index].IsModifiedBlock(way)){
+//			cache[index].GetBlock(way, block_addr, (const void**)&buffer);
+//			// should pass by next_level_cache for virtual addressed caches for address translation
+//			storeDataInNextLevel(block_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
+//			cache[index].SetBlockState(way, ST_EXCLUSIVE);
+//		} // else not enabled or index out of range, nothing to do
+//	}
 }
 
 //-----------------------------
 // fill with zeros the address addr
 template <class CONFIG>
-void Cache<CONFIG>::PrZeroBlock(ADDRESS addr)
-{
-  cerr << "WARNING : " << __FILE__ << " : " << __FUNCTION__ << " : Not implemented" << endl;
+void
+Cache<CONFIG> ::
+PrZeroBlock(address_t addr) {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO"
+			<< Endl << EndDebugError;
+		exit(-1);
+	}
 }
 
 //-----------------------------
 // Processor write data from memory
-// Two behaviours: cache with no support for coherence, cache supporting snooping coherence
-// 1. NO_COHERENCE support
 //  A. HIT in cache:
 //      - write data in cache
 //      - update block state (WB=>modified, WT=>no change)
@@ -324,94 +465,69 @@ void Cache<CONFIG>::PrZeroBlock(ADDRESS addr)
 //        - cache WriteThrough=>write data into memory
 //      ii. Read allocate cache
 //        - write data into next memory level
-// 2. SNOOP_COHERENCE support
-//  A. HIT in cache:
-//      - write data in cache
-//      - update block state(WB = modified, WT = no change)
-//      - update replacement policy
-//      - broadcast block state modified (all other copies will be invalidated)
-//      - cache WriteThrough=> write data into memory
-//  B. MISS in cache:
-//      i. Write allocate cache
-//        - find a block to replace
-//        - if block modified eq unique copy of data, write block into memory
-//        - load new cache block and block state (Unknown = from main memory, shared = several copies, exclusiv = one other copy)
-//        - write data in cache
-//        - update block state (WB => modified, WT => exclusif)
-//        - update replacement policy
-//        - broadcast block state modified (all other copies will be invalidated)
-//        - cache WriteThrough=> write data into memory
-//     ii. Read allocate cache
-//        - write data into memory
-//        - broadcast blockstate modified (all copies must be invalidated)
-// this function implements only not snooping cache (Arm like)
 template <class CONFIG>
-void Cache<CONFIG>::PrWrite(ADDRESS addr, const void *data, uint32_t size)
-{
-  uint8_t* buffer;
-  uint32_t  index;
-  uint32_t offset;
-  uint32_t    way;
+void
+Cache<CONFIG> ::
+PrWrite(address_t addr, const void *data, uint32_t size) {
+	uint8_t buffer[LINELEN];
+	address_t tag;
+	address_t set;
+	address_t pos;
+	bool hit;
+	
+	if(enabled) {
+		DecodeAddress(addr, tag, set, pos);
+		if(pos + size > CONFIG::LINELEN) {
+			if(CONFIG::DEBUG_ENABLE && logger_import) {
+				(logger_import) << DebugError << LOCATION
+					<< "Trying to read out of the cache line bounds" << Endl
+					<< "- address = 0x" << Hex << addr << Dec << Endl
+					<< "- tag = 0x" << Hex << tag << Dec << Endl
+					<< "- set = 0x" << Hex << set << Dec << "(" << set << ")" << Endl
+					<< "- pos = 0x" << Hex << pos << Dec << "(" << pos << ")" << Endl
+					<< "- size = " << size << Endl
+					<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << CONFIG::LINELEN << ")" << Endl
+					<< EndDebugError;
+				exit(-1);
+			}
+		}
+		cache[set].GetLine(tag, way, hit);
+		if(!hit) { // miss
+			if(CONFIG::ALLOCATION_POLICY == AllocationPolicy::READ_ALLOCATE) {
+				StoreDataInMem(addr, data, size);
+			} else { // AllocationPolicy::WRITE_ALLOCATE
+				// get the line that will be replaced
+				bool modified;
+				address_t replace_address;
+				cache[set].GetLineToReplace(way, replace_address, buffer, modified);
+				if(modified)
+					StoreDataInMem(replace_address, buffer, CONFIG::LINELEN);
+				cache[set].InvalidateLine(way);
+				
+				//get a pointer to the data to be written in cache
+				LoadDataFromMem(addr, buffer, CONFIG::LINELEN);
 
-  ADDRESS           base_addr;
-  ADDRESS           block_tag;
-  DataBlockState  block_state;
-
-  if(enabled){
-    decodeAddress(addr, base_addr, index, offset);
-    cache[index].GetBlock(base_addr, way, (const void**)&buffer);
-
-    if(!buffer){ // miss
-      if(CONFIG::CACHE_ALLOCATION_POLICY == READ_ALLOCATE){
-        // do not allocate cache block for write miss, send write to next level
-        storeDataInNextLevel(addr, data, size);
-        //if(CONFIG::CACHE_COHERENCE == SNOOP_COHERENCE){// force invalidation of other possible copies
-        //  broadcastBlockState(addr, ST_MOFIFIED);
-        //}
-        return;
-      }else{ //(CONFIG::CACHE_ALLOCATION_POLICY == WRITE_ALLOCATE)
-
-        // find block to replace
-        cache[index].GetBlockToReplace(way, block_tag, (const void**)&buffer);
-        if(cache[index].IsModifiedBlock(way)){
-          // need to save data before block replacement
-          storeDataInNextLevel(block_tag, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
-        }
-        cache[index].InvalidateBlock(way);
-
-        //get a pointer to the data to be written in cache
-        uint8_t line[CONFIG::CACHE_BLOCK_SIZE];
-        loadDataFromNextLevel(base_addr, line, CONFIG::CACHE_BLOCK_SIZE, block_state);
-
-        // allocate block
-        cache[index].AllocateBlock(way, base_addr, line, block_state);
-        cache[index].UpdateReplacementPolicy(lock, lock_index, way);
-      }
-    }// else hit
-
-    block_state = selectNextBlockState(block_state, WRITE_DATA);
-
-    // block in cache, either hit or allocate on miss
-    cache[index].WriteData(way, data, offset, size, block_state);
-    cache[index].SetBlockState(way, block_state); // modified or exclusive
-
-    if(CONFIG::CACHE_WRITE_POLICY == WRITE_THROUGH){
-      storeDataInNextLevel(addr, data, size);
-    }
-
-//     if(CONFIG::CACHE_COHERENCE == SNOOP_COHERENCE){
-//        broadcastBlockState(addr, ST_MODIFIED); // force invalidation of other possible copies
-//     }
-
-  }else{ // cache disable, send write to next level
-    storeDataInNextLevel(addr, data, size);
-  }
+				// allocate block
+				cache[set].AllocateLine(way, tag, buffer);
+				cache[set].UpdateReplacementPolicy(lock, lock_index, way); // ???
+				
+			}
+		}
+		
+		// Once the line is ready, the line can be modified
+		cache[set].WriteData(way, data, pos, size);
+		
+		if(CONFIG::WRITE_POLICY == WritePolicy::WRITE_THROUGH){
+			StoreDataInMem(addr, data, size);
+		}
+	} else { // cache is disabled
+		// store the data into memory
+		StoreDataInMem(addr, data, size);
+	}
 }
 
 //-----------------------------
 // Processor read data from memory
-// Two behaviours: cache with no support for coherence, cache supporting snooping coherence
-// 1. NO_COHERENCE support
 //  A. HIT in cache:
 //      - update replacement policy
 //      - data returned from cache
@@ -421,250 +537,124 @@ void Cache<CONFIG>::PrWrite(ADDRESS addr, const void *data, uint32_t size)
 //      - load new cache block 
 //      - update replacement policy
 //      - data returned from cache
-// 2. SNOOP_COHERENCE support
-//  A. HIT in cache:
-//      - update replacement policy
-//      - data returned from cache
-//  B. MISS in cache:
-//      - find a block to replace
-//      - if block modified eq unique copy of data, write block into memory
-//      - load new cache block and block state (Unknown = from main memory, shared = several copies, exclusif = one other copy)
-//      - update replacement policy
-//      - update and broadcast new block state(Unknown=>exclusif, exclusif=>shared, shared=>shared)
-//      - data returned from cache
-// this function implements only not snooping cache (Arm like)
 template <class CONFIG>
-void Cache<CONFIG>::PrRead(ADDRESS addr, void *data, uint32_t size, DataBlockState& st)
-{
-  uint8_t* buffer;
-  uint32_t  index;
-  uint32_t offset;
-  uint32_t    way;
+void 
+Cache<CONFIG> ::
+PrRead(address_t addr, void *data, uint32_t size, DataBlockState& st) {
+	uint8_t buffer[LINELEN];
+	address_t tag;
+	address_t set;
+	address_t pos;
+	bool hit;
+	
+	if(enabled) {
+		DecodeAddress(addr, tag, set, pos);
+		if(pos + size > CONFIG::LINELEN) {
+			if(CONFIG::DEBUG_ENABLE && logger_import) {
+				(logger_import) << DebugError << LOCATION
+					<< "Trying to read out of the cache line bounds" << Endl
+					<< "- address = 0x" << Hex << addr << Dec << Endl
+					<< "- tag = 0x" << Hex << tag << Dec << Endl
+					<< "- set = 0x" << Hex << set << Dec << "(" << set << ")" << Endl
+					<< "- pos = 0x" << Hex << pos << Dec << "(" << pos << ")" << Endl
+					<< "- size = " << size << Endl
+					<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << CONFIG::LINELEN << ")" << Endl
+					<< EndDebugError;
+				exit(-1);
+			}
+		}
+		cache[set].ReadData(tag, data, size, hit);
+		if(!hit) { // miss
+			// read operations always allocate
+			bool modified;
+			address_t replace_address;
+			cache[set].GetLineToReplace(way, replace_address, buffer, modified);
+			if(modified)
+				StoreDataInMem(replace_address, buffer, CONFIG::LINELEN);
+			cache[set].InvalidateLine(way);
+			
+			//get a pointer to the data to be written in cache
+			LoadDataFromMem(addr, buffer, CONFIG::LINELEN);
 
-  ADDRESS           base_addr;
-  ADDRESS           block_tag;
-  DataBlockState  block_state;
- 
-  if(enabled){
-    // search for block in cache
-    decodeAddress(addr, base_addr, index, offset);
-    cache[index].GetBlock(base_addr, way, (const void**)&buffer);
-
-    if(!buffer){ // miss, allways READ_ALLOCATE
-      // find block to replace
-      cache[index].GetBlockToReplace(way, block_tag, (const void**)&buffer);
-
-      if(cache[index].IsModifiedBlock(way)){
-        // need to save data before block replacement
-        storeDataInNextLevel(block_tag, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
-      }
-      cache[index].InvalidateBlock(way);
-
-      //get data block to be written in cache and it state from next memory level
-      uint8_t line[CONFIG::CACHE_BLOCK_SIZE];
-      loadDataFromNextLevel(base_addr, line, CONFIG::CACHE_BLOCK_SIZE, st);
-
-      // allocate block and update state
-      cache[index].AllocateBlock(way, base_addr, line, st);
-      cache[index].UpdateReplacementPolicy(lock, lock_index, way);
-
-    }//else hit
-    // here block is in cache anyway
-
-    // select new block state, depending on cache write policy ans cache coherence support
-    block_state = selectNextBlockState(st, READ_DATA);
-
-    cache[index].SetBlockState(way, block_state);
-    cache[index].ReadData(way, data, offset, size, st);
-
-    // broadcast new block state eq exclusive or shared
-    //if(CONFIG::CACHE_COHERENCE == SNOOP_COHERENCE){
-    //    broadcastBlockState(addr, block_state);
-    //}// no broadcast if no coherence support
-
-  }else{ // cache disable, read from next level
-    loadDataFromNextLevel(addr, data, size, st);
-  }
-}
-
-//-----------------------------
-template <class CONFIG>
-void Cache<CONFIG>::PrReadX(ADDRESS addr, void *buffer, uint32_t size, DataBlockState& st)
-{
-
-
-
-}
-//-----------------------------
-
-template <class CONFIG>
-void Cache<CONFIG>::BusInvalidateBlock(ADDRESS addr)
-{
-  cerr << "WARNING : " << __FILE__ << " : " << __FUNCTION__ << " : Not implemented" << endl;
-}
-//-----------------------------
-
-template <class CONFIG>
-void Cache<CONFIG>::BusFlushBlock(ADDRESS addr)
-{
-  cerr << "WARNING : " << __FILE__ << " : " << __FUNCTION__ << " : Not implemented" << endl;
-}
-//-----------------------------
-
-// this function is used when snooping is supported, other wise a cache does not receive demands from the bus
-// used in loadDataFromNextLevel when a block miss occurs in cache
-template <class CONFIG>
-void Cache<CONFIG>::BusRead(ADDRESS addr, void *data, uint32_t size, BusControl bc, DataBlockState& st)
-{
-//   uint8_t* buffer;
-//   ADDRESS base_addr;
-//   ADDRESS block_tag;
-//   uint32_t  index;
-//   uint32_t offset;
-//   uint32_t    way;
-//   CacheBlockState block_state;
-// 
-//   if(enabled){
-//     decodeAddress(addr, base_addr, index, offset);
-//     buffer = cache[index]->GetBlockDataIndex(base_addr, way);
-// 
-//     if(buffer){ // hit in this level
-//       if(cache[index]->IsModifiedBlock(way){
-//         storeDataInNextLevel(base_addr, buffer, CONFIG::CACHE_BLOCK_SIZE);
-//         cache[index]->SetState(ST_EXCLUSIVE);
-//       }
-//       cache[index]->Read(way, data, size, st);
-//     }else{ // miss
-//       if(next_level_cache){
-//         next_level_cache->BusRead(addr, data, size, bc, st);
-//       }else{ // no other level and miss
-//         st = ST_INVALID;
-//       }
-//     }
-//   }else{ // cache disable
-//     if(next_level_cache){
-//       next_level_cache->BusRead(addr, data, size, bc, st);
-//     }else{ // no other level 
-//       st = ST_INVALID;
-//     }
-//   }
-  cerr << "WARNING : " << __FILE__ << " : " << __FUNCTION__ << " : Not implemented" << endl;
-}
-//-----------------------------
-
-template <class CONFIG>
-void Cache<CONFIG>::BusReadX(ADDRESS addr, void *buffer, uint32_t size, BusControl bc, DataBlockState& st)
-{
- cerr << "WARNING : " << __FILE__ << " : " << __FUNCTION__ << " : Not implemented" << endl;
-}
-//-----------------------------
-
-template <class CONFIG>
-void Cache<CONFIG>::BusWrite(ADDRESS addr, const void *buffer, uint32_t size)
-{
-  cerr << "WARNING : " << __FILE__ << " : " << __FUNCTION__ << " : Not implemented" << endl;
+			// allocate block
+			cache[set].AllocateLine(way, tag, buffer);
+			cache[set].UpdateReplacementPolicy(lock, lock_index, way); // ???
+			
+			// perform the read
+			cache[set].ReadData(tag, data, size, hit);
+		}
+	} else { // cache is disabled
+		// load data from memory
+		LoadDataFromMem(addr, data, size);
+	}
 }
 
 //-----------------------------
 // PRIVATE FUNCTIONS
 //-----------------------------
 template <class CONFIG>
-inline void Cache<CONFIG>::decodeAddress(ADDRESS addr, ADDRESS& base_addr, uint32_t& index, uint32_t& offset)
-{
-  // +-----------------+--------+--------+
-  // |       tag       |  index | offset |
-  // +-----------------+--------+--------+
-  index     = (addr / CONFIG::CACHE_BLOCK_SIZE) % NB_SETS;
-  base_addr = addr & (~(CONFIG::CACHE_BLOCK_SIZE - 1));
-  offset    = addr & (CONFIG::CACHE_BLOCK_SIZE - 1);
+inline 
+void 
+Cache<CONFIG> ::
+DecodeAddress(address_t addr, 
+		address_t& tag, 
+		address_t& index, 
+		address_t& offset) {
+	// +-----------------+--------+--------+
+	// |       tag       |  index | offset |
+	// +-----------------+--------+--------+
+	// index     = (addr / CONFIG::CACHE_BLOCK_SIZE) % NB_SETS;
+	index = (addr / CONFIG::LINELEN) & (CONFIG::NSETS - 1);
+	// tag = addr & (~(CONFIG::CACHE_BLOCK_SIZE - 1));
+	tag = ((addr / CONFIG::LINELEN) / CONFIG::NSETS);
+	// offset = addr & (CONFIG::CACHE_BLOCK_SIZE - 1);
+	offset = addr & (CONFIG::LINELEN - 1);
 }
 
 //-----------------------------
 template <class CONFIG>
-void Cache<CONFIG>::loadDataFromNextLevel(ADDRESS addr, void* buffer, uint32_t size, DataBlockState& st)
-{
-  CacheStatus cs;
-  if(next_level_cache){
-    // Read the cache block from the next level cache
-    next_level_cache->PrRead(addr, buffer, size, st);
-  }else if(bus_interface){ //no next level cache, Read the data from memory
-    bus_interface->BusRead(addr, buffer, size, BC_NONE, cs);
-  }else{
-    cerr << "WARNING : " << __FUNCTION__ << " : failed, NO CONNECTION" << endl;
-    for(uint32_t i = 0; i < size; i++){
-      ((uint8_t*)buffer)[i] = 0xaa;
-    }
-  }
+void 
+Cache<CONFIG> ::
+LoadDataFromMem(address_t addr,
+		void* buffer, 
+		uint32_t size) {
+	next_mem_level->PrRead(addr, buffer, size);
+//	
+//	CacheStatus cs;
+//	if(next_level_cache) {
+//		// Read the cache block from the next level cache
+//		next_level_cache->PrRead(addr, buffer, size, st);
+//	}else 
+//		if(bus_interface) { //no next level cache, Read the data from memory
+//			bus_interface->BusRead(addr, buffer, size, BC_NONE, cs);
+//		}else{
+//			cerr << "WARNING : " << __FUNCTION__ << " : failed, NO CONNECTION" << endl;
+//			for(uint32_t i = 0; i < size; i++){
+//				((uint8_t*)buffer)[i] = 0xaa;
+//			}
+//		}
 }
 
 //----------------------------------------------
 
 template <class CONFIG>
-void Cache<CONFIG>::storeDataInNextLevel(ADDRESS addr, const void* buffer, uint32_t size)
-{
-  if(next_level_cache){
-    // Write into the next level cache
-    next_level_cache->PrWrite(addr, buffer, size);
-  }else if(bus_interface){
-    // Write into memory
-    bus_interface->BusWrite(addr, buffer, size, BC_NONE);
-  }else{
-    cerr << "WARNING : " << __FUNCTION__ << " : failed, NO CONNECTION" << endl;
-  }
+void 
+Cache<CONFIG> ::
+StoreDataInMem(address_t addr, const void* buffer, uint32_t size) {
+	next_mem_level->PrWrite(addr, buffer,size);
+	
+//	if(next_level_cache){
+//		// Write into the next level cache
+//		next_level_cache->PrWrite(addr, buffer, size);
+//	}else 
+//		if(bus_interface){
+//			// Write into memory
+//			bus_interface->BusWrite(addr, buffer, size, BC_NONE);
+//		}else{
+//			cerr << "WARNING : " << __FUNCTION__ << " : failed, NO CONNECTION" << endl;
+//		}
 }
 
-//----------------------------------------------
-template <class CONFIG>
-DataBlockState Cache<CONFIG>::selectNextBlockState(DataBlockState st, uint8_t op)
-{
-  DataBlockState next_state = st;
-
-  switch(st){
-   case ST_SHARED:
-    if(op == WRITE_DATA){
-      if(CONFIG::CACHE_WRITE_POLICY == WRITE_BACK){
-        next_state = ST_MODIFIED;
-      }else{ // write through, only one valid copie after modification
-        next_state = ST_EXCLUSIVE;
-      }
-    }else{// else read data
-      next_state = ST_SHARED;
-    }
-    break;
-   case ST_EXCLUSIVE:
-    if(op == WRITE_DATA){
-      if(CONFIG::CACHE_WRITE_POLICY == WRITE_BACK){
-        next_state = ST_MODIFIED;
-      }else{ // write through
-        next_state = ST_EXCLUSIVE;
-      }
-    }else{// else read data
-      next_state = ST_SHARED;
-    }
-    break;
-   case ST_UNKNOWN:
-    if(op == WRITE_DATA){
-      if(CONFIG::CACHE_WRITE_POLICY == WRITE_BACK){
-        next_state = ST_MODIFIED;
-      }else{ // write through
-        next_state = ST_EXCLUSIVE;
-      }
-    }else{// read data
-      next_state = ST_EXCLUSIVE;
-    }
-   default: // return same state
-    break;
-  }
-  return next_state;
-}
-
-//-----------------------------
-// template <class CONFIG>
-// void Cache<CONFIG>::broadcastBlockState(ADDRESS addr, DataBlockState block_state)
-// {
-// 
-// }
-//------------------------------
 
 } // end of namespace arm
 } // end of namespace cache
