@@ -106,11 +106,19 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency),
 	param_bus_frequency("bus-frequency", this, bus_frequency)
 {
+	SetupDependsOn(logger_import);
 }
 
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::Setup()
 {
+	if(logger_import)
+	{
+		(*logger_import) << DebugInfo;
+		(*logger_import) << "initial base address is 0x" << Hex << initial_base_addr << Dec << Endl;
+		(*logger_import) << "memory size is " << bytesize << " bytes" << Endl;
+		(*logger_import) << EndDebugInfo;
+	}
 	// PCI configuration registers initialization	
 	pci_conf_base_addr.Initialize("pci_conf_base_addr", "PCI Config Base Address", 0xfffffff0UL, initial_base_addr);
 

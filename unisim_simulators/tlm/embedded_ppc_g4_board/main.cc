@@ -151,6 +151,15 @@ void help(char *prog_name)
 	cerr << "-f" << endl;
 	cerr << "--force-use-virtual-address" << endl;
 	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
+	cerr << "-b <base physical address>" << endl;
+	cerr << "--pci-stub-base-address <base physical address>" << endl;
+	cerr << "            specify the pci-stub base physical address" << endl << endl;
+	cerr << "-y <byte size>" << endl;
+	cerr << "--pci-stub-memory-size <byte size>" << endl;
+	cerr << "            specify the pci-stub memory size (in bytes)" << endl << endl;
+	cerr << "-q <irq number>" << endl;
+	cerr << "--pci-stub-irq <irq number>" << endl;
+	cerr << "            specify the pci-stub IRQ number" << endl << endl;
 	cerr << "--help" << endl;
 	cerr << "-h" << endl;
 	cerr << "            displays this help" << endl;
@@ -258,6 +267,9 @@ int sc_main(int argc, char *argv[])
 	{"pci-stub-port", required_argument, 0, 'r'},
 	{"pci-stub-is-server", no_argument, 0, 'v'},
 	{"force-use-virtual-address", no_argument, 0, 'f'},
+	{"pci-stub-base-address", required_argument, 0, 'b'},
+	{"pci-stub-memory-size", required_argument, 0, 'y'},
+	{"pci-stub-irq", required_argument, 0, 'q'},
 	{0, 0, 0, 0}
 	};
 
@@ -281,7 +293,9 @@ int sc_main(int argc, char *argv[])
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
 	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
+	uint32_t pci_stub_base_address = 0xa0000000UL;
 	uint32_t pci_stub_memory_size = 1024 * 1024; // 1 MB
+	unsigned int pci_stub_irq = 0;
 	unsigned int pci_stub_tcp_port = 12345;
 	char *pci_stub_server_name = "localhost";
 	bool pci_stub_is_server = false;
@@ -290,7 +304,7 @@ int sc_main(int argc, char *argv[])
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:vf", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:vfb:y:q:", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -339,6 +353,15 @@ int sc_main(int argc, char *argv[])
 				break;
 			case 'f':
 				force_use_virtual_address = true;
+				break;
+			case 'b':
+				pci_stub_base_address = strtoul(optarg, NULL, 16);
+				break;
+			case 'y':
+				pci_stub_memory_size = atoi(optarg);
+				break;
+			case 'q':
+				pci_stub_irq = atoi(optarg);
 				break;
 		}
 	}
@@ -528,7 +551,7 @@ int sc_main(int argc, char *argv[])
 	mapping_index++;
 
 	// PCI stub run-time configuration
-	(*pci_stub)["initial-base-addr"] = 0xa0000000UL;
+	(*pci_stub)["initial-base-addr"] = pci_stub_base_address;
 	(*pci_stub)["bytesize"] = pci_stub_memory_size; 
 	(*pci_stub)["pci-bus-frequency"] = pci_bus_frequency;
 	(*pci_stub)["bus-frequency"] = fsb_frequency;
@@ -748,9 +771,9 @@ int sc_main(int argc, char *argv[])
 		pci_stub->cpu_irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
 		(*irq_msg_spy[2])["source_module_name"] = pci_stub->name();
 		(*irq_msg_spy[2])["source_port_name"] = pci_stub->cpu_irq_port.name();
-		irq_msg_spy[irq_msg_spy_index]->master_port(*mpc107->irq_slave_port[0]);
+		irq_msg_spy[irq_msg_spy_index]->master_port(*mpc107->irq_slave_port[pci_stub_irq]);
 		(*irq_msg_spy[2])["target_module_name"] = mpc107->name();
-		(*irq_msg_spy[2])["target_port_name"] = mpc107->irq_slave_port[0]->name();
+		(*irq_msg_spy[2])["target_port_name"] = mpc107->irq_slave_port[pci_stub_irq]->name();
 		irq_msg_spy_index++;
 	}
 	else
@@ -767,7 +790,7 @@ int sc_main(int argc, char *argv[])
 		(*pci_bus->output_port[PCI_STUB_TARGET_PORT])(pci_stub->bus_port);
 		mpc107->irq_master_port(cpu->external_interrupt_port);
 		mpc107->soft_reset_master_port(cpu->soft_reset_port);
-		pci_stub->cpu_irq_port(*mpc107->irq_slave_port[0]);
+		pci_stub->cpu_irq_port(*mpc107->irq_slave_port[pci_stub_irq]);
 	}
 
 	//=========================================================================
