@@ -114,6 +114,13 @@ public:
 		Object *parent = NULL);
 	virtual bool Setup();
 	virtual void OnDisconnect();
+	
+	void TranslateAddressSystemToPCIMem(SYSTEM_BUS_PHYSICAL_ADDR addr,
+			PCI_BUS_PHYSICAL_ADDR &translated_addr);
+	void TranslateAddressSystemToPCIIO(SYSTEM_BUS_PHYSICAL_ADDR addr,
+			PCI_BUS_PHYSICAL_ADDR &translated_addr);
+	void TranslateAddressSystemToPCIConfig(SYSTEM_BUS_PHYSICAL_ADDR addr,
+			PCI_BUS_PHYSICAL_ADDR &translated_addr);
 
 	bool GetReadRequest(SYSTEM_BUS_PHYSICAL_ADDR req_addr,
 						uint32_t req_size,

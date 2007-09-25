@@ -36,27 +36,26 @@
 #ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_TCC__
 #define __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_TCC__
 
+#include <stdlib.h>
+
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace cache {
 namespace arm {
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 Set<CONFIG>::Set()
 {
   Invalidate();
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 Set<CONFIG>::~Set()
 {
 
 }
 
-//----------------------------------------------------------------------------
 /* Arm Replacement Strategy uses the "two typical replacement strategies" described in ARM DDI 0100E/B5-7:
  *   - Random replacement
  *   - Round-robin replacement
@@ -68,32 +67,32 @@ Set<CONFIG>::~Set()
 template<class CONFIG>
 void 
 Set<CONFIG> ::
-UpdateReplacementPolicy(uint32_t lock, uint32_t base,  uint32_t way) {
+UpdateReplacementPolicy(uint32_t lock, uint32_t index,  uint32_t way) {
 
 	if(way > CONFIG::CACHE_ASSOCIATIVITY){
 		return;
 	}
 
-	// way <= CONFIG::CACHE_ASSOCIATIVITY){
+	// way <= CONFIG::CACHE_ASSOCIATIVITY
 	if(lock == 1){
-		// force next allocation to block specified by base
-		next_alloc = base;
-		this->base = base;
+		// force next allocation to block specified by index
+		next_alloc = index;
+		this->base = index;
 		return;
 	}
   
 	// lock == 0
 	uint32_t i;
 	// if a free block in unlocked area, choose it for next allocation
-	if(free_block){
+	if(free_line){
 		for(i = base; i < CONFIG::CACHE_ASSOCIATIVITY; i++){
-			if(!block[i].IsValid()){
+			if(!line[i].IsValid()){
 				next_alloc = i;
 				return;
 			}
 		}
 	}
-	// no free block in unlocked area, use relpacement policy
+	// no free block in unlocked area, use replacement policy
 	uint32_t size = CONFIG::CACHE_ASSOCIATIVITY - base;
 	switch(CONFIG::CACHE_REPLACEMENT_POLICY){
     case RP_RR:    // robin-round replacement, ARM application
@@ -106,7 +105,6 @@ UpdateReplacementPolicy(uint32_t lock, uint32_t base,  uint32_t way) {
     }
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
 void 
@@ -115,7 +113,6 @@ Reset() {
 	Invalidate();
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
 void 
@@ -123,31 +120,29 @@ Set<CONFIG> ::
 Invalidate() {
 	uint32_t i;
 
-	free_block = CONFIG::CACHE_ASSOCIATIVITY;
+	free_line = CONFIG::CACHE_ASSOCIATIVITY;
 	next_alloc = 0;
 	head       = 0;
 	base       = 0;
 
 	for(i = 0; i < CONFIG::CACHE_ASSOCIATIVITY; i++){
-		block[i].Invalidate();
+		line[i].Invalidate();
 	}
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
 void 
 Set<CONFIG> ::
-InvalidateBlock(uint32_t way) {
+InvalidateLine(uint32_t way) {
 	if(way < CONFIG::CACHE_ASSOCIATIVITY){
-		block[way].Invalidate();
-		if((way >= base)  && (free_block < CONFIG::CACHE_ASSOCIATIVITY)){
-			free_block++;
+		line[way].Invalidate();
+		if((way >= base)  && (free_line < CONFIG::CACHE_ASSOCIATIVITY)){
+			free_line++;
 		}
 	}// else out of array size
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
 void 
@@ -155,14 +150,12 @@ Set<CONFIG> ::
 ReadData(uint32_t way, 
 		void* buffer, 
 		uint32_t offset, 
-		uint32_t size, 
-		DataBlockState& st) {
+		uint32_t size) {
 	if(way < CONFIG::CACHE_ASSOCIATIVITY){
-		block[way].Read(buffer, offset, size, st);
+		line[way].Read(buffer, offset, size);
 	}
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
 void 
@@ -170,102 +163,73 @@ Set<CONFIG> ::
 WriteData(uint32_t way, 
 		const void* buffer, 
 		uint32_t offset, 
-		uint32_t size, 
-		DataBlockState st) {
+		uint32_t size) {
 	if(way < CONFIG::CACHE_ASSOCIATIVITY){
-		block[way].Write(buffer, offset, size, st);
+		line[way].Write(buffer, offset, size);
 	}
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
 void 
 Set<CONFIG> ::
-AllocateBlock(uint32_t way, 
+AllocateLine(uint32_t way, 
 		typename CONFIG::ADDRESS tag, 
-		const void* buffer, 
-		DataBlockState st) {
+		const void* buffer) {
 	if(way < CONFIG::CACHE_ASSOCIATIVITY){ 
-		block[way].Allocate(tag, buffer, st);
-		if(free_block > 0){ // allocate block could be done only in unlocked area
-			free_block--;
+		line[way].Allocate(tag, buffer);
+		if(free_line > 0){ // allocate block could be done only in unlocked area
+			free_line--;
 		}
 	}
 }
 
-//----------------------------------------------------------------------------
-
 template<class CONFIG>
 inline 
 void 
 Set<CONFIG> ::
-GetBlock(typename CONFIG::ADDRESS base_addr, 
+GetLine(typename CONFIG::ADDRESS base_addr, 
 		uint32_t& way, 
 		const void** buffer) {
-	if((way = findBlock(base_addr)) < CONFIG::CACHE_ASSOCIATIVITY){
-		*buffer = block[way].Data();
+	if((way = FindLine(base_addr)) < CONFIG::CACHE_ASSOCIATIVITY){
+		*buffer = line[way].Data();
 	} else {
 		*buffer = NULL;
 	}
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
 void 
 Set<CONFIG> ::
-GetBlockToReplace(uint32_t& way, 
+GetLineToReplace(uint32_t& way, 
 		typename CONFIG::ADDRESS& tag,
 		const void** buffer) {
 	way     = next_alloc;
-	tag     = block[way].Tag();
-	*buffer = block[way].Data();
+	tag     = line[way].Tag();
+	*buffer = line[way].Data();
 }
 
-//----------------------------------------------------------------------------
-template<class CONFIG>
-inline 
-bool 
-Set<CONFIG>::IsModifiedBlock(uint32_t way) {
-	if(way < CONFIG:: CACHE_ASSOCIATIVITY){
-		return block[way].IsModified();
-	}
-	return false;
-}
-
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
 bool 
 Set<CONFIG> ::
-IsValidBlock(uint32_t way) {
+IsModifiedLine(uint32_t way) {
 	if(way < CONFIG:: CACHE_ASSOCIATIVITY){
-		return block[way].IsValid();
+		return line[way].IsModified();
 	}
 	return false;
 }
 
-//----------------------------------------------------------------------------
 template<class CONFIG>
 inline 
-void 
+bool 
 Set<CONFIG> ::
-SetBlockState(uint32_t way, DataBlockState st) {
+IsValidLine(uint32_t way) {
 	if(way < CONFIG:: CACHE_ASSOCIATIVITY){
-		block[way].SetState(st);
+		return line[way].IsValid();
 	}
-}
-
-//----------------------------------------------------------------------------
-template<class CONFIG>
-inline 
-void 
-Set<CONFIG> :: 
-GetBlockState(uint32_t way, DataBlockState& st) {
-	if(way < CONFIG:: CACHE_ASSOCIATIVITY){
-		st = block[way].State();
-	}
+	return false;
 }
 
 //----------------------------------------------------------------------------
@@ -275,13 +239,13 @@ template<class CONFIG>
 inline 
 uint32_t 
 Set<CONFIG> ::
-findBlock(typename CONFIG::ADDRESS tag) {
+FindLine(typename CONFIG::ADDRESS tag) {
 	uint32_t i;
 	uint32_t way;
 
 	for(i = 0 ; i < CONFIG::CACHE_ASSOCIATIVITY; i++){
 		way = (head + i) % CONFIG::CACHE_ASSOCIATIVITY;
-		if(block[way].IsValid() && (block[way].Tag() == tag)){
+		if(line[way].IsValid() && (line[way].Tag() == tag)){
 			return way;
 		}
 	}

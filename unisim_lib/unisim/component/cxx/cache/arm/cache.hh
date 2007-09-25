@@ -110,6 +110,8 @@ public:
 	virtual bool Setup();
 	virtual void OnDisconnect();
 
+	virtual void SetLock(uint32_t lock, uint32_t index);
+
 	// Proccessor -> Cache Interface
 	virtual void PrInvalidate();
 	virtual void PrInvalidateSet(uint32_t index);
@@ -122,13 +124,11 @@ public:
 	virtual void PrZeroBlock(address_t addr);
 	virtual void PrWrite(address_t addr, const void *buffer, uint32_t size);
 	virtual void PrRead(address_t addr, void *buffer, uint32_t size);
-	virtual void PrReadX(address_t addr, void *buffer, uint32_t size);
 	
 	// Cache -> Memory Interface (debugg dervice)
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	
-
 	ServiceExport<MemoryInterface<address_t> > memory_export;
 	ServiceImport<MemoryInterface<address_t> > memory_import;
 	ServiceImport<Logger> logger_import;

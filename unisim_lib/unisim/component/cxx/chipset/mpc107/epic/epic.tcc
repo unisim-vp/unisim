@@ -98,18 +98,824 @@ Reset() {
 
 template <class PHYSICAL_ADDR, 
 	bool DEBUG>
+uint32_t 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+ReadMemoryIACK() {
+	uint32_t irq;
+	uint32_t vpr;
+	
+	/* Return the interrupt vector corresponding to the highest priority pending
+	 *   interrupt. Other actions:
+	 * - the associated bit in the IPR (irq_pending_reg) is cleared (if it is 
+	 *     configured as edge-sensitive)
+	 * - the ISR (inservice_reg) is updated
+	 * - the int signal is negated
+	 * If there is no interrupt pending returns the spurious vector value.
+	 */
+	/* check if there is at least an interruption in the irq_pending_reg, if 
+	 *   not return the spurious vector */
+	if(pending_reg == 0)
+		return regs.svr;
+	/* get the irq from the irq_selector. if there is no irq the return the 
+	 *   spurious vector */
+	//irq = irq_selector;
+	irq = GetHighestIRQ();
+	if(irq == 0)
+		return regs.svr;
+	/* get the vpr from the corresponding irq */
+	vpr = GetVPR(irq);
+	/* check the priority of the irq, if smaller than the processor or current
+	 *   irq in the inservice_reg, return the spurious vector */
+	uint32_t prio = GetPriority(vpr);
+	if(prio <= GetProcessorPriority())
+		return regs.svr;
+	if(inservice_reg.Priority())
+		if(prio <= inservice_reg.Priority())
+			return regs.svr;
+	return GetVector(vpr);
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
 bool
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
+	string name;
+	uint32_t data = 0;
+	bool handled = false;
+	
+	if(size != sizeof(uint8_t)) {
+		for(uint32_t i = 0; i < size; i++) {
+			if(!ReadMemory(addr + i, &((uint8_t *)buffer)[i], sizeof(uint8_t)))
+				return false;
+		}
+		return true;
+	}
+
+	PHYSICAL_ADDR base_addr = addr & ~((PHYSICAL_ADDR)0x03);
+	PHYSICAL_ADDR offset = addr & (PHYSICAL_ADDR)0x03;
+	
+	switch(base_addr & ADDR_MASK) {
+	case Registers::FRR : name = Registers::FRR_NAME; break;
+	case Registers::GCR : 
+		handled = true; 
+		data = regs.gcr;
+		name = Registers::GCR_NAME; 
+		break;
+	case Registers::EICR : 
+		handled = true;
+		data = regs.eicr;
+		name = Registers::EICR_NAME; 
+		break;
+	case Registers::EVI : name = Registers::EVI_NAME; break;
+	case Registers::PI : name = Registers::PI_NAME; break;
+	case Registers::SVR : name = Registers::SVR_NAME; break;
+	case Registers::TFRR : name = Registers::TFRR_NAME; break;
+	case Registers::GTCCR0 : 
+		handled = true;
+		data = regs.gtccr[0];
+		name = Registers::GTCCR0_NAME; 
+		break;
+	case Registers::GTBCR0 : 
+		handled = true;
+		data = regs.gtbcr[0];
+		name = Registers::GTBCR0_NAME; 
+		break;
+	case Registers::GTVPR0 : 
+		handled = true;
+		data = regs.gtvpr[0];
+		name = Registers::GTVPR0_NAME; 
+		break;
+	case Registers::GTDR0 : name = Registers::GTDR0_NAME; break;
+	case Registers::GTCCR1 :
+		handled = true;
+		data = regs.gtccr[1]; 
+		name = Registers::GTCCR1_NAME; 
+		break;
+	case Registers::GTBCR1 : 
+		handled = true;
+		data = regs.gtbcr[1];
+		name = Registers::GTBCR1_NAME; 
+		break;
+	case Registers::GTVPR1 : 
+		handled = true;
+		data = regs.gtvpr[1];
+		name = Registers::GTVPR1_NAME; 
+		break;
+	case Registers::GTDR1 : name = Registers::GTDR1_NAME; break;
+	case Registers::GTCCR2 : 
+		handled = true;
+		data = regs.gtccr[2];
+		name = Registers::GTCCR2_NAME; 
+		break;
+	case Registers::GTBCR2 : 
+		handled = true;
+		data = regs.gtbcr[2];
+		name = Registers::GTBCR2_NAME; 
+		break;
+	case Registers::GTVPR2 : 
+		handled = true;
+		data = regs.gtvpr[2];
+		name = Registers::GTVPR2_NAME; 
+		break;
+	case Registers::GTDR2 : name = Registers::GTDR2_NAME; break;
+	case Registers::GTCCR3 : 
+		handled = true;
+		data = regs.gtccr[3];
+		name = Registers::GTCCR3_NAME; 
+		break;
+	case Registers::GTBCR3 : 
+		handled = true;
+		data = regs.gtbcr[3];
+		name = Registers::GTBCR3_NAME; 
+		break;
+	case Registers::GTVPR3 : 
+		handled = true;
+		data = regs.gtvpr[3];
+		name = Registers::GTVPR3_NAME; 
+		break;
+	case Registers::GTDR3 : name = Registers::GTDR3_NAME; break;
+	case Registers::IVPR0 :
+//	case Registers::SVPR0 : 
+		handled = true;
+		if(DirectMode()) {
+			data = regs.ivpr[0];
+			name = Registers::IVPR0_NAME;
+		} else {
+			data = regs.svpr[0];
+			name = Registers::SVPR0_NAME;
+		} 
+		break;
+	case Registers::IDR0 : name = Registers::IDR0_NAME; break;
+//	case Registers::SDR0 : name = Registers::SDR0_NAME; break;
+	case Registers::IVPR1 : 
+//	case Registers::SVPR1 : 
+		handled = true;
+		if(DirectMode()) {
+			data = regs.ivpr[1];
+			name = Registers::IVPR1_NAME;
+		} else {
+			data = regs.svpr[1];
+			name = Registers::SVPR1_NAME;
+		} 
+		break;
+	case Registers::IDR1 : name = Registers::IDR1_NAME; break;
+//	case Registers::SDR1 : name = Registers::SDR1_NAME; break;
+	case Registers::IVPR2 : 
+//	case Registers::SVPR2 : 
+		handled = true;
+		if(DirectMode()) {
+			data = regs.ivpr[2];
+			name = Registers::IVPR2_NAME;
+		} else {
+			data = regs.svpr[2];
+			name = Registers::SVPR2_NAME;
+		} 
+		break;
+	case Registers::IDR2 : name = Registers::IDR2_NAME; break;
+//	case Registers::SDR2 : name = Registers::SDR2_NAME; break;
+	case Registers::IVPR3 : 
+//	case Registers::SVPR3 : 
+		handled = true;
+		if(DirectMode()) {
+			data = regs.ivpr[3];
+			name = Registers::IVPR3_NAME;
+		} else {
+			data = regs.svpr[3];
+			name = Registers::SVPR3_NAME;
+		} 
+		break;
+	case Registers::IDR3 : name = Registers::IDR3_NAME; break;
+//	case Registers::SDR3 : name = Registers::SDR3_NAME; break;
+	case Registers::IVPR4 : 
+//	case Registers::SVPR4 : 
+		handled = true;
+		if(DirectMode()) {
+			data = regs.ivpr[4];
+			name = Registers::IVPR4_NAME;
+		} else {
+			data = regs.svpr[4];
+			name = Registers::SVPR4_NAME;
+		} 
+		break;
+	case Registers::IDR4 : name = Registers::IDR4_NAME; break;
+//	case Registers::SDR4 : name = Registers::SDR4_NAME; break;
+	case Registers::SVPR5 : 
+		handled = true;
+		data = regs.svpr[5];
+		name = Registers::SVPR5_NAME;
+		break;
+	case Registers::SDR5 : name = Registers::SDR5_NAME; break;
+	case Registers::SVPR6 : 
+		handled = true;
+		data = regs.svpr[6];
+		name = Registers::SVPR6_NAME;
+		break;
+	case Registers::SDR6 : name = Registers::SDR6_NAME; break;
+	case Registers::SVPR7 : 
+		handled = true;
+		data = regs.svpr[7];
+		name = Registers::SVPR7_NAME;
+		break;
+	case Registers::SDR7 : name = Registers::SDR7_NAME; break;
+	case Registers::SVPR8 : 
+		handled = true;
+		data = regs.svpr[8];
+		name = Registers::SVPR8_NAME;
+		break;
+	case Registers::SDR8 : name = Registers::SDR8_NAME; break;
+	case Registers::SVPR9 : 
+		handled = true;
+		data = regs.svpr[9];
+		name = Registers::SVPR9_NAME;
+		break;
+	case Registers::SDR9 : name = Registers::SDR9_NAME; break;
+	case Registers::SVPR10 :
+		handled = true;
+		data = regs.svpr[10];
+		name = Registers::SVPR10_NAME;
+		break;
+	case Registers::SDR10 : name = Registers::SDR10_NAME; break;
+	case Registers::SVPR11 :
+		handled = true;
+		data = regs.svpr[11];
+		name = Registers::SVPR11_NAME;
+		break;
+	case Registers::SDR11 : name = Registers::SDR11_NAME; break;
+	case Registers::SVPR12 :
+		handled = true;
+		data = regs.svpr[12];
+		name = Registers::SVPR12_NAME;
+		break;
+	case Registers::SDR12 : name = Registers::SDR12_NAME; break;
+	case Registers::SVPR13 :
+		handled = true;
+		data = regs.svpr[13];
+		name = Registers::SVPR13_NAME;
+		break;
+	case Registers::SDR13 : name = Registers::SDR13_NAME; break;
+	case Registers::SVPR14 :
+		handled = true;
+		data = regs.svpr[14];
+		name = Registers::SVPR14_NAME;
+		break;
+	case Registers::SDR14 : name = Registers::SDR14_NAME; break;
+	case Registers::SVPR15 :
+		handled = true;
+		data = regs.svpr[15];
+		name = Registers::SVPR15_NAME;
+		break;
+	case Registers::SDR15 : name = Registers::SDR15_NAME; break;
+	case Registers::IIVPR0 : name = Registers::IIVPR0_NAME; break;
+	case Registers::IIDR0 : name = Registers::IIDR0_NAME; break;
+	case Registers::IIVPR1 : name = Registers::IIVPR1_NAME; break;
+	case Registers::IIDR1 : name = Registers::IIDR1_NAME; break;
+	case Registers::IIVPR2 : name = Registers::IIVPR2_NAME; break;
+	case Registers::IIDR2 : name = Registers::IIDR2_NAME; break;
+	case Registers::IIVPR3 : name = Registers::IIVPR3_NAME; break;
+	case Registers::IIDR3 : name = Registers::IIDR3_NAME; break;
+	case Registers::PCTPR : 
+		handled = true;
+		data = regs.pctpr;
+		name = Registers::PCTPR_NAME; 
+		break;
+	case Registers::IACK :
+		handled = true;
+		data = ReadMemoryIACK(); 
+		name = Registers::IACK_NAME; 
+		break;
+	case Registers::EOI : 
+		handled = true;
+		data = regs.eoi;
+		name = Registers::EOI_NAME; 
+		break;
+	default:
+		if(logger_import)
+			(*logger_import) << DebugWarning << LOCATION
+				<< "Trying to read EPIC register at reserved address 0x" << Hex << addr << Dec
+				<< ", reading 0" << Endl
+				<< EndDebugWarning;
+		*(uint8_t *)buffer = 0;
+		return false;
+		break;
+	}
+	
+	if(handled) {
+		data = data >> (offset * 8);
+		if(DEBUG && logger_import) 
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Reading register " << name << " (address = 0x"
+				<< Hex << addr << Dec
+				<< ", size = " << size << " bytes"
+				<< ", data = " << data << ")"
+				<< Endl << EndDebugInfo;
+		*(uint8_t *)buffer = (uint8_t)data;
+		return true;
+	}
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "TODO: trying to read register " << name << " (address 0x"
+			<< Hex << addr << Dec
+			<< ") of " << size << " bytes"
+			<< Endl << EndDebugWarning;
+	*(uint8_t *)buffer = 0;
 	return false;
 } 
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryGCR(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryEICR(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryGTVPR(uint32_t data, unsigned int id) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR,
+	bool DEBUG>
+void
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryGTBCR(uint32_t data, unsigned int id) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryVPR(uint32_t data, unsigned int id) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryPCTPR(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryIACK(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR,
+	bool DEBUG>
+void
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryEOI(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryEVI(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to write read-only register EVI with data 0x" 
+			<< Hex << data << Dec << ", resetting it to 0x"
+			<< Hex << regs.evi << Dec << Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryPI(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemorySVR(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryTFRR(uint32_t data) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryGTCCR(uint32_t data, unsigned int id) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryGTDR(uint32_t data, unsigned int id) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryDR(uint32_t data, unsigned int id) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryIIVPR(uint32_t data, unsigned int id) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void 
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemoryIIDR(uint32_t data, unsigned int id) {
+	if(logger_import)
+		(*logger_import) << DebugWarning << LOCATION
+			<< "Trying to modify register value through the memory interface, ignored"
+			<< Endl << EndDebugWarning;
+}
+
+template <class PHYSICAL_ADDR,
+	bool DEBUG>
+void
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+WriteMemory(PHYSICAL_ADDR addr, uint32_t data) {
+	string name;
+	bool handled = false;
+	
+	switch(addr & ADDR_MASK) {
+	case Registers::GCR : 
+		handled = true;
+		WriteMemoryGCR(data);
+		break;
+	case Registers::EICR :
+		handled = true;
+		WriteMemoryEICR(data);
+		break;
+	case Registers::EVI :
+		handled = true;
+		WriteMemoryEVI(data); 
+		break;
+	case Registers::PI :
+		handled = true;
+		WriteMemoryPI(data); 
+		break;
+	case Registers::SVR :
+		handled = true;
+		WriteMemorySVR(data); 
+		break;
+	case Registers::TFRR :
+		handled = true;
+		WriteMemoryTFRR(data); 
+		break;
+	case Registers::GTVPR0 :
+		handled = true;
+		WriteMemoryGTVPR(data, 0);
+		break;
+	case Registers::GTVPR1 :
+		handled = true;
+		WriteMemoryGTVPR(data, 1);
+		break;
+	case Registers::GTVPR2 :
+		handled = true;
+		WriteMemoryGTVPR(data, 2);
+		break;
+	case Registers::GTVPR3 :
+		handled = true;
+		WriteMemoryGTVPR(data, 3);
+		break;
+	case Registers::GTBCR0 :
+		handled = true;
+		WriteMemoryGTBCR(data, 0);
+		break;
+	case Registers::GTBCR1 :
+		handled = true;
+		WriteMemoryGTBCR(data, 1);
+		break;
+	case Registers::GTBCR2 :
+		handled = true;
+		WriteMemoryGTBCR(data, 2);
+		break;
+	case Registers::GTBCR3 :
+		handled = true;
+		WriteMemoryGTBCR(data, 3);
+		break;
+	case Registers::GTCCR0 :
+		handled = true;
+		WriteMemoryGTCCR(data, 0); 
+		break;
+	case Registers::GTCCR1 :
+		handled = true;
+		WriteMemoryGTCCR(data, 1); 
+		break;
+	case Registers::GTCCR2 :
+		handled = true;
+		WriteMemoryGTCCR(data, 2); 
+		break;
+	case Registers::GTCCR3 :	
+		handled = true;
+		WriteMemoryGTCCR(data, 3); 
+		break;
+	case Registers::GTDR0 :
+		handled = true;
+		WriteMemoryGTDR(data, 0); 
+		break;
+	case Registers::GTDR1 :
+		handled = true;
+		WriteMemoryGTDR(data, 1); 
+		break;
+	case Registers::GTDR2 :
+		handled = true;
+		WriteMemoryGTDR(data, 2); 
+		break;
+	case Registers::GTDR3 :
+		handled = true;
+		WriteMemoryGTDR(data, 3); 
+		break;
+	case Registers::SDR0 : // and IDR0
+		handled = true;
+		WriteMemoryDR(data, 0); 
+		break;
+	case Registers::SDR1 : // and IDR1
+		handled = true;
+		WriteMemoryDR(data, 1); 
+		break;
+	case Registers::SDR2 : // and IDR2
+		handled = true;
+		WriteMemoryDR(data, 2); 
+		break;
+	case Registers::SDR3 : // and IDR3
+		handled = true;
+		WriteMemoryDR(data, 3); 
+		break;
+	case Registers::SDR4 : // and IDR4
+		handled = true;
+		WriteMemoryDR(data, 4); 
+		break;
+	case Registers::SDR5 :
+		handled = true;
+		WriteMemoryDR(data, 5); 
+		break;
+	case Registers::SDR6 :
+		handled = true;
+		WriteMemoryDR(data, 6); 
+		break;
+	case Registers::SDR7 :
+		handled = true;
+		WriteMemoryDR(data, 7); 
+		break;
+	case Registers::SDR8 :
+		handled = true;
+		WriteMemoryDR(data, 8); 
+		break;
+	case Registers::SDR9 :
+		handled = true;
+		WriteMemoryDR(data, 9); 
+		break;
+	case Registers::SDR10 :
+		handled = true;
+		WriteMemoryDR(data, 10); 
+		break;
+	case Registers::SDR11 :
+		handled = true;
+		WriteMemoryDR(data, 11); 
+		break;
+	case Registers::SDR12 :
+		handled = true;
+		WriteMemoryDR(data, 12); 
+		break;
+	case Registers::SDR13 :
+		handled = true;
+		WriteMemoryDR(data, 13); 
+		break;
+	case Registers::SDR14 :
+		handled = true;
+		WriteMemoryDR(data, 14); 
+		break;
+	case Registers::SDR15 :
+		handled = true;
+		WriteMemoryDR(data, 15); 
+		break;
+	case Registers::SVPR0 : // and IVPR0
+		handled = true;
+		WriteMemoryVPR(data, 0);
+		break;
+	case Registers::SVPR1 : // and IVPR1
+		handled = true;
+		WriteMemoryVPR(data, 1);
+		break;
+	case Registers::SVPR2 : // and IVPR2
+		handled = true;
+		WriteMemoryVPR(data, 2);
+		break;
+	case Registers::SVPR3 : // and IVPR3
+		handled = true;
+		WriteMemoryVPR(data, 3);
+		break;
+	case Registers::SVPR4 :
+		handled = true;
+		WriteMemoryVPR(data, 4);
+		break;
+	case Registers::SVPR5 :
+		handled = true;
+		WriteMemoryVPR(data, 5);
+		break;
+	case Registers::SVPR6 :
+		handled = true;
+		WriteMemoryVPR(data, 6);
+		break;
+	case Registers::SVPR7 :
+		handled = true;
+		WriteMemoryVPR(data, 7);
+		break;
+	case Registers::SVPR8 :
+		handled = true;
+		WriteMemoryVPR(data, 8);
+		break;
+	case Registers::SVPR9 :
+		handled = true;
+		WriteMemoryVPR(data, 9);
+		break;
+	case Registers::SVPR10 :
+		handled = true;
+		WriteMemoryVPR(data, 10);
+		break;
+	case Registers::SVPR11 :
+		handled = true;
+		WriteMemoryVPR(data, 11);
+		break;
+	case Registers::SVPR12 :
+		handled = true;
+		WriteMemoryVPR(data, 12);
+		break;
+	case Registers::SVPR13 :
+		handled = true;
+		WriteMemoryVPR(data, 13);
+		break;
+	case Registers::SVPR14 :
+		handled = true;
+		WriteMemoryVPR(data, 14);
+		break;
+	case Registers::SVPR15 :
+		handled = true;
+		WriteMemoryVPR(data, 15);
+		break;
+	case Registers::IIVPR0 :
+		handled = true;
+		WriteMemoryIIVPR(data, 0); 
+		break;
+	case Registers::IIVPR1 :
+		handled = true;
+		WriteMemoryIIVPR(data, 1); 
+		break;
+	case Registers::IIVPR2 :
+		handled = true;
+		WriteMemoryIIVPR(data, 2); 
+		break;
+	case Registers::IIVPR3 :
+		handled = true;
+		WriteMemoryIIVPR(data, 3); 
+		break;
+	case Registers::IIDR0 :
+		handled = true;
+		WriteMemoryIIDR(data, 0); 
+		break;
+	case Registers::IIDR1 :
+		handled = true;
+		WriteMemoryIIDR(data, 1); 
+		break;
+	case Registers::IIDR2 :
+		handled = true;
+		WriteMemoryIIDR(data, 2); 
+		break;
+	case Registers::IIDR3 :
+		handled = true;
+		WriteMemoryIIDR(data, 4); 
+		break;
+	case Registers::PCTPR :
+		handled = true;
+		WriteMemoryPCTPR(data);
+		break;
+	case Registers::IACK :
+		handled = true;
+		WriteMemoryEICR(data);
+		break;
+	case Registers::EOI :
+		handled = true;
+		WriteMemoryEOI(data);
+		break;
+	}
+
+	if(!handled) {
+		if(DEBUG && logger_import) {
+			(*logger_import) << DebugWarning << LOCATION
+				<< "TODO: trying to write address 0x"
+				<< Hex << addr << Dec
+				<< " with data 0x" << Hex << data << Dec
+				<< Endl << EndDebugWarning;
+		}
+	}
+
+}
 
 template <class PHYSICAL_ADDR, 
 	bool DEBUG>
 bool
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteMemory(PHYSICAL_ADDR addr, const void *buffer, uint32_t size) {
-	return false;
+	for(uint32_t i = 0; i < size; i++) {
+		PHYSICAL_ADDR cur_addr = addr + i;
+		if(writememory_address != (cur_addr & ~(PHYSICAL_ADDR)0x03)) {
+			writememory_address = cur_addr & ~(PHYSICAL_ADDR)0x03;
+			writememory_data = 0;
+			writememory_mask = 0;
+		}
+		PHYSICAL_ADDR offset =
+			cur_addr & (PHYSICAL_ADDR)0x03;
+		writememory_data = ((uint8_t *)buffer)[i] << offset;
+		writememory_mask |= WRITEMEMORY_MASK_BYTE << offset;
+		if(writememory_mask == WRITEMEMORY_MASK_FULL) {
+			WriteMemory(writememory_address, writememory_data);
+			writememory_mask = 0;
+		}
+	}
+	return true;
+	
 } 
 
 template <class PHYSICAL_ADDR, 
@@ -521,12 +1327,14 @@ CheckInterruptions() {
 		UnsetINT();
 		return;
 	}
+	
 	if(GetPriority(irq) <= GetProcessorPriority()) {
 		/* the processor has more priority than the highest irq in the
 		 *   pending reg, do nothing */
 		UnsetINT();
 		return;
 	}
+	
 	if(inservice_reg.HasIRQ() &&
 		(GetPriority(irq) <= inservice_reg.Priority())) {
 		/* the current interruption in the inservice register has a higher

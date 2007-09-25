@@ -68,7 +68,9 @@ Cache(const char *name,
 	logger_import("logger_import", this),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
-	next_mem_level(_next_mem_level) {
+	next_mem_level(_next_mem_level),
+	lock(0),
+	lock_index(0) {
 //	NB_SETS(CONFIG::CACHE_SIZE / 
 //			CONFIG::CACHE_BLOCK_SIZE / 
 //			CONFIG::CACHE_ASSOCIATIVITY)
@@ -131,6 +133,24 @@ template <class CONFIG>
 Cache<CONFIG> ::
 ~Cache() {
 }
+
+template <class CONFIG>
+void 
+Cache<CONFIG> ::
+SetLock(uint32_t lock, uint32_t index) {
+	uint32_t i;
+	if(enabled){
+		this->lock       = lock;
+		this->lock_index = index;
+		for(i = 0; i < NB_SETS; i++){
+			// set all next_alloc to index
+			// UpdateReplacementPolicy is called with lock = 1 to force the next replacement,
+			//   once the first replacement has happened the lock parameter will be used
+			//   to update the replacement policy
+			cache[i].UpdateReplacementPolicy(1, index, index);
+	    }
+	}
+}	
 
 //-----------------------------
 template <class CONFIG>
@@ -540,7 +560,7 @@ PrWrite(address_t addr, const void *data, uint32_t size) {
 template <class CONFIG>
 void 
 Cache<CONFIG> ::
-PrRead(address_t addr, void *data, uint32_t size, DataBlockState& st) {
+PrRead(address_t addr, void *data, uint32_t size) {
 	uint8_t buffer[LINELEN];
 	address_t tag;
 	address_t set;

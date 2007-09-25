@@ -30,18 +30,17 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Adriana Carloganu (adriana.carloganu@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * 			Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 /****************************************************************
-            CACHE set for ARM processors
+            CACHE Line for ARM processors
 *****************************************************************/
 
-// !!!!!
-// ***** the use of this class assumes that user check and insure the validity of function parameters (expecially way and buffer size)
-// !!!!!
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
+#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_HH__
+#define __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_HH__
+
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
@@ -55,54 +54,24 @@ namespace arm {
 	#endif
 
 template <class CONFIG>
-class Set{
+class Line{
   public:
-    Set();
-    virtual ~Set();
+    Line();
+    virtual ~Line();
 
-    virtual void UpdateReplacementPolicy(uint32_t lock, 
-    		uint32_t index, 
-    		uint32_t way);
-
-    inline void Reset() INLINE;
-    inline void Invalidate() INLINE;
-
-    inline void InvalidateLine(uint32_t way) INLINE;
-
-    inline void ReadData(uint32_t way, 
-    		void* buffer, 
-    		uint32_t offset, 
-    		uint32_t size) INLINE;
-
-    inline void WriteData(uint32_t way, 
-    		const void* buffer, 
-    		uint32_t offset, 
-    		uint32_t size) INLINE;
-
-    inline void AllocateLine(uint32_t way, 
-    		typename CONFIG::address_t tag, 
-    		const void* buffer) INLINE;
-
-    inline void GetLine(typename CONFIG::address_t base_addr, 
-    		uint32_t& way, 
-    		const void** buffer) INLINE;
-    inline void GetLineToReplace(uint32_t& way, 
-    		typename CONFIG::address_t& tag, 
-    		const void** buffer) INLINE;
-
-    inline bool IsValidLine(uint32_t way) INLINE;
-
-    inline bool IsModifiedLine(uint32_t way) INLINE;
-
-  private:
-    uint32_t  base;
-    uint32_t  free_line;
-    uint32_t  next_alloc;
-    uint32_t  head;
- 
-    typename CONFIG::CACHE_LINE line[CONFIG::CACHE_ASSOCIATIVITY];
-
-    inline uint32_t FindLine(typename CONFIG::address_t tag) INLINE;
+    inline typename CONFIG::address_t Tag() INLINE;
+    inline const void* Data() INLINE;
+    inline bool IsModified() INLINE;
+    inline bool IsValid() INLINE;
+    void Invalidate() INLINE;
+    void Read(void* buffer, typename CONFIG::address_t offset, uint32_t size) INLINE;
+    void Write(const void* buffer, typename CONFIG::address_t offset, uint32_t size) INLINE;
+    void Allocate(typename CONFIG::address_t addr, const void* buffer) INLINE;
+private:
+	bool modifed;
+	bool valied;
+    typename CONFIG::address_t tag;
+    uint8_t data[CONFIG::CACHE_BLOCK_SIZE];
 };
 
 #undef INLINE
@@ -112,5 +81,6 @@ class Set{
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-    
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
+
+#endif __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_HH__
+

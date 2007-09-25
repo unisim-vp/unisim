@@ -216,6 +216,38 @@ private:
 	uint32_t GetVPR(uint32_t in_irq);
 	uint32_t GetHighestIRQ();
 	uint32_t ReadIACK();
+	
+	/**
+	 * Non intrusive IACK read method. Used by the memory service method ReadMemory
+	 */
+	uint32_t ReadMemoryIACK();
+	/*
+	 * Non intrusive write methods. Used by the memory service method WriteMemory
+	 */
+	uint32_t writememory_data;
+	uint32_t writememory_address;
+	uint32_t writememory_mask;
+	static const uint32_t WRITEMEMORY_MASK_BYTE = (uint32_t) 0xff;
+	static const uint32_t WRITEMEMORY_MASK_FULL = (uint32_t) 0xffffffff;
+	void WriteMemory(PHYSICAL_ADDR addr, uint32_t data);
+	void WriteMemoryGCR(uint32_t data);
+	void WriteMemoryEICR(uint32_t data);
+	void WriteMemoryEVI(uint32_t data); 
+	void WriteMemoryPI(uint32_t data); 
+	void WriteMemorySVR(uint32_t data); 
+	void WriteMemoryTFRR(uint32_t data); 
+	void WriteMemoryGTVPR(uint32_t data, unsigned int id);
+	void WriteMemoryGTBCR(uint32_t data, unsigned int id);
+	void WriteMemoryGTCCR(uint32_t data, unsigned int id); 
+	void WriteMemoryGTDR(uint32_t data, unsigned int id); 
+	void WriteMemoryDR(uint32_t data, unsigned int id); 
+	void WriteMemoryVPR(uint32_t data, unsigned int id);
+	void WriteMemoryIIVPR(uint32_t data, unsigned int id); 
+	void WriteMemoryIIDR(uint32_t data, unsigned int id); 
+	void WriteMemoryPCTPR(uint32_t data);
+	void WriteMemoryIACK(uint32_t data);
+	void WriteMemoryEOI(uint32_t data);
+	
 };
 
 } // end of namespace epic

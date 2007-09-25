@@ -122,12 +122,64 @@ template <class SYSTEM_BUS_PHYSICAL_ADDR,
 		class PCI_BUS_PHYSICAL_ADDR, 
 		uint32_t PCI_MAX_TRANSACTION_DATA_SIZE,
 		bool DEBUG>
-bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
+void 
+PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		SYSTEM_MAX_TRANSACTION_DATA_SIZE,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
-		DEBUG>
-::GetReadRequest(SYSTEM_BUS_PHYSICAL_ADDR req_addr,
+		DEBUG> ::
+TranslateAddressSystemToPCIMem(SYSTEM_BUS_PHYSICAL_ADDR addr,
+		PCI_BUS_PHYSICAL_ADDR &translated_addr) {
+	if (config_regs->pci_command_reg.value & 0x0004) //we are in host mode
+		translated_addr = addr;
+	else
+		translated_addr = HostToPci(addr);
+}
+
+template <class SYSTEM_BUS_PHYSICAL_ADDR,
+		uint32_t SYSTEM_MAX_TRANSACTION_DATA_SIZE,
+		class PCI_BUS_PHYSICAL_ADDR, 
+		uint32_t PCI_MAX_TRANSACTION_DATA_SIZE,
+		bool DEBUG>
+void 
+PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
+		SYSTEM_MAX_TRANSACTION_DATA_SIZE,
+		PCI_BUS_PHYSICAL_ADDR, 
+		PCI_MAX_TRANSACTION_DATA_SIZE,
+		DEBUG> ::
+TranslateAddressSystemToPCIIO(SYSTEM_BUS_PHYSICAL_ADDR addr,
+		PCI_BUS_PHYSICAL_ADDR &translated_addr) {
+	translated_addr = addr & 0x00FFFFFFUL;
+}
+
+template <class SYSTEM_BUS_PHYSICAL_ADDR,
+		uint32_t SYSTEM_MAX_TRANSACTION_DATA_SIZE,
+		class PCI_BUS_PHYSICAL_ADDR, 
+		uint32_t PCI_MAX_TRANSACTION_DATA_SIZE,
+		bool DEBUG>
+void 
+PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
+		SYSTEM_MAX_TRANSACTION_DATA_SIZE,
+		PCI_BUS_PHYSICAL_ADDR, 
+		PCI_MAX_TRANSACTION_DATA_SIZE,
+		DEBUG> ::
+TranslateAddressSystemToPCIConfig(SYSTEM_BUS_PHYSICAL_ADDR addr,
+		PCI_BUS_PHYSICAL_ADDR &translated_addr) {
+	translated_addr = config_addr + (addr & 0x03);
+}
+
+template <class SYSTEM_BUS_PHYSICAL_ADDR,
+		uint32_t SYSTEM_MAX_TRANSACTION_DATA_SIZE,
+		class PCI_BUS_PHYSICAL_ADDR, 
+		uint32_t PCI_MAX_TRANSACTION_DATA_SIZE,
+		bool DEBUG>
+bool 
+PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
+		SYSTEM_MAX_TRANSACTION_DATA_SIZE,
+		PCI_BUS_PHYSICAL_ADDR, 
+		PCI_MAX_TRANSACTION_DATA_SIZE,
+		DEBUG> ::
+GetReadRequest(SYSTEM_BUS_PHYSICAL_ADDR req_addr,
 				uint32_t req_size,
 				TransactionType &type,
 				PCI_BUS_PHYSICAL_ADDR &addr,
@@ -155,12 +207,12 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE, 
 		DEBUG>
-		::GetIOReadRequest(SYSTEM_BUS_PHYSICAL_ADDR req_addr,
-						uint32_t req_size,
-						TransactionType &type,
-						PCI_BUS_PHYSICAL_ADDR &addr,
-						PCISpace &space,
-						uint32_t &size) {
+::GetIOReadRequest(SYSTEM_BUS_PHYSICAL_ADDR req_addr,
+		uint32_t req_size,
+		TransactionType &type,
+		PCI_BUS_PHYSICAL_ADDR &addr,
+		PCISpace &space,
+		uint32_t &size) {
 	//io read access
 
 	type = unisim::component::cxx::pci::TT_READ;

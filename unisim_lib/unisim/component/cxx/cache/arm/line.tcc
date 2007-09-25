@@ -30,18 +30,11 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Adriana Carloganu (adriana.carloganu@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * 			Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-/****************************************************************
-            CACHE set for ARM processors
-*****************************************************************/
-
-// !!!!!
-// ***** the use of this class assumes that user check and insure the validity of function parameters (expecially way and buffer size)
-// !!!!!
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
+#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_TCC__
+#define __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_TCC__
 
 namespace unisim {
 namespace component {
@@ -49,68 +42,95 @@ namespace cxx {
 namespace cache {
 namespace arm {
 
-#define INLINE \ 
-	#if defined(__GNUC__) && (__GNUC__ >= 3) \
-		__attribute__((always_inline)) \
-	#endif
+template<class CONFIG>
+Line<CONFIG> ::
+Line() :
+		valid(false),
+		modified(false),
+		tag(0) {
+	memset(data, 0, CONFIG::CACHE_BLOCK_SIZE);
+}
 
-template <class CONFIG>
-class Set{
-  public:
-    Set();
-    virtual ~Set();
+template<class CONFIG>
+Line<CONFIG> ::
+~Line() {
+}
 
-    virtual void UpdateReplacementPolicy(uint32_t lock, 
-    		uint32_t index, 
-    		uint32_t way);
+template<class CONFIG>
+inline 
+typename CONFIG::address_t
+Line<CONFIG> ::
+Tag() {
+	return tag;
+}
 
-    inline void Reset() INLINE;
-    inline void Invalidate() INLINE;
+template<class CONFIG>
+inline 
+const void* 
+Line<CONFIG> ::
+Data() {
+	return (const void*)data;
+}
 
-    inline void InvalidateLine(uint32_t way) INLINE;
+template<class CONFIG>
+inline 
+bool 
+Line<CONFIG> ::
+IsValid() {
+	return valid;
+}
 
-    inline void ReadData(uint32_t way, 
-    		void* buffer, 
-    		uint32_t offset, 
-    		uint32_t size) INLINE;
+template<class CONFIG>
+inline 
+bool 
+Line<CONFIG> ::
+IsModified() {
+	return valid && modifed;
+}
 
-    inline void WriteData(uint32_t way, 
-    		const void* buffer, 
-    		uint32_t offset, 
-    		uint32_t size) INLINE;
+template<class CONFIG>
+inline 
+void 
+Line<CONFIG> ::
+Invalidate() {
+	valid = false;
+}
 
-    inline void AllocateLine(uint32_t way, 
-    		typename CONFIG::address_t tag, 
-    		const void* buffer) INLINE;
+template<class CONFIG>
+inline 
+void 
+Line<CONFIG> ::
+Read(void* buffer, typename CONFIG::address_t offset, uint32_t size) {
+  if((offset + size) < CONFIG::CACHE_BLOCK_SIZE){
+    memcpy(buffer, data + offset, size);
+  }// else read crosses cache block boundaries, ignore or message(?)
+}
 
-    inline void GetLine(typename CONFIG::address_t base_addr, 
-    		uint32_t& way, 
-    		const void** buffer) INLINE;
-    inline void GetLineToReplace(uint32_t& way, 
-    		typename CONFIG::address_t& tag, 
-    		const void** buffer) INLINE;
+template<class CONFIG>
+inline 
+void 
+Line<CONFIG> ::
+Write(const void* buffer, uint32_t offset, uint32_t size) {
+  if((offset + size) < CONFIG::CACHE_BLOCK_SIZE) {
+    memcpy(data + offset, buffer, size);
+  }// else write crosses cache block boundaries, ignore or message(?)
+}
 
-    inline bool IsValidLine(uint32_t way) INLINE;
+template<class CONFIG>
+inline 
+void 
+Line<CONFIG> ::
+Allocate(typename CONFIG::ADDRESS addr, const void* buffer) {
+  memcpy(data, buffer, CONFIG::CACHE_BLOCK_SIZE);
+  tag   = addr;
+  state = st;
+}
 
-    inline bool IsModifiedLine(uint32_t way) INLINE;
-
-  private:
-    uint32_t  base;
-    uint32_t  free_line;
-    uint32_t  next_alloc;
-    uint32_t  head;
- 
-    typename CONFIG::CACHE_LINE line[CONFIG::CACHE_ASSOCIATIVITY];
-
-    inline uint32_t FindLine(typename CONFIG::address_t tag) INLINE;
-};
-
-#undef INLINE
 
 } // end of namespace arm
 } // end of namespace cache
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-    
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
+
+#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_TCC__

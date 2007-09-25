@@ -312,6 +312,10 @@ private:
 	 * (this is a private, not visible port ) */
 	sc_port<TlmSendIf<MemReqType, MemRspType> > epic_master_port;
 	/**
+	 * Memory Import to connect to the epic to get access to 
+	 * the memory service */
+	ServiceImport<Memory<PHYSICAL_ADDR> > epic_memory_import;
+	/**
 	 * Output port to notify the sdram clock (the sdram cycle time) 
 	 *   to internal components, i.e., EPIC */
 	sc_out<uint64_t> sdram_master_port;
