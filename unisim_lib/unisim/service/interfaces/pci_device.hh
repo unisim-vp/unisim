@@ -42,16 +42,22 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class PCIDevice {
+class PCIDevice
+{
 public:
+	typedef enum
+	{
+		SP_MEM,
+		SP_IO,
+		SP_CONFIG
+	} PCISpace;
+
 	PCIDevice(){}
 	virtual ~PCIDevice(){}
 
 	virtual void Reset() = 0;
-	virtual bool PCIRead(ADDRESS addr, void *buffer, uint32_t size) = 0;
-	virtual bool PCIWrite(ADDRESS addr, const void *buffer, uint32_t size) = 0;
-	virtual bool PCIReadConfig(ADDRESS addr, void *buffer, uint32_t size) = 0;
-	virtual bool PCIWriteConfig(ADDRESS addr, const void *buffer, uint32_t size) = 0;
+	virtual bool PCIRead(PCISpace space, ADDRESS addr, void *buffer, uint32_t size) = 0;
+	virtual bool PCIWrite(PCISpace space, ADDRESS addr, const void *buffer, uint32_t size) = 0;
 };
 
 } // end of namespace interfaces

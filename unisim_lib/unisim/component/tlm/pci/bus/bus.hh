@@ -543,22 +543,51 @@ public:
 			if(*import[i]) (*import[i])->Reset();
 	}
 
-	virtual bool PCIRead(ADDRESS_TYPE addr, void *buffer, uint32_t size) {
-		return false;
+	virtual bool PCIRead(typename unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::PCISpace space, ADDRESS_TYPE addr, void *buffer, uint32_t size)
+	{
+		int device;
+
+		switch(space)
+		{
+			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_IO:
+				device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_IO);
+				break;
+			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_MEM:
+				device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
+				break;
+			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_CONFIG:
+				device = decode(addr);
+				break;
+		}
+
+		if(device >= NUM_TARGETS) return false;
+		if(! (*import[device])) return false;
+
+		return (*import[device])->PCIRead(space, addr, buffer, size);
 	}
 
-	virtual bool PCIWrite(ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
-		return false;
-	}
+	virtual bool PCIWrite(typename unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::PCISpace space, ADDRESS_TYPE addr, const void *buffer, uint32_t size)
+	{
+		int device;
 
-	virtual bool PCIReadConfig(ADDRESS_TYPE addr, void *buffer, uint32_t size) {
-		return false;
-	}
-	
-	virtual bool PCIWriteConfig(ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
-		return false;
-	}
+		switch(space)
+		{
+			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_IO:
+				device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_IO);
+				break;
+			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_MEM:
+				device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
+				break;
+			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_CONFIG:
+				device = decode(addr);
+				break;
+		}
 
+		if(device >= NUM_TARGETS) return false;
+		if(! (*import[device])) return false;
+
+		return (*import[device])->PCIWrite(space, addr, buffer, size);
+	}
 };
 
 
