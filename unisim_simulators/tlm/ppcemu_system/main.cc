@@ -1071,7 +1071,7 @@ int sc_main(int argc, char *argv[])
 	mpc107->ram_import >> memory->memory_export;
 	mpc107->rom_import >> flash->memory_export;
 	mpc107->erom_import >> erom->memory_export;
-	mpc107->pci_import >> *pci_bus->exp[0];
+	mpc107->pci_import >> *pci_bus->memory_export[PCI_MPC107_MASTER_PORT];
 	i8042->keyboard_import >> sdl->keyboard_export;
 
 	if(inline_debugger)

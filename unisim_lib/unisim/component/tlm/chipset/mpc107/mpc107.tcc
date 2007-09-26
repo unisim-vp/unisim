@@ -73,7 +73,6 @@ MPC107(const sc_module_name &name, Object *parent) :
 	Object(name, parent),
 	Service<Memory<PHYSICAL_ADDR> >(name, parent),
 	Client<Memory<PHYSICAL_ADDR> >(name, parent),
-	Client<PCIDevice<PCI_ADDR> >(name, parent),
 	Client<Logger>(name, parent),
 	dma(this, "DMA", this),
 	epic("epic", this),
@@ -986,43 +985,43 @@ ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
 				<< Hex << addr << Dec << ")" << Endl
 				<< EndDebugInfo;
 		pci_controller.TranslateAddressSystemToPCIMem(addr, pci_addr);
-		return pci_import->PCIRead(PCIDevice<PCI_ADDR>::SP_MEM, pci_addr, buffer, size);
+		return pci_import->ReadMemory(pci_addr, buffer, size);
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_1:
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "ReadMemory() to the PCI IO space 1 (address = "
+			(*logger_import) << DebugWarning
+				<< LOCATION
+				<< " accessing the PCI IO space 1 (address = " 
 				<< Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		pci_controller.TranslateAddressSystemToPCIIO(addr, pci_addr);
-		return pci_import->PCIRead(PCIDevice<PCI_ADDR>::SP_IO, pci_addr, buffer, size);
+				<< EndDebugWarning;
+		return false;
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_2:
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "ReadMemory() to the PCI IO space 2 (address = "
+			(*logger_import) << DebugWarning
+				<< LOCATION
+				<< " accessing the PCI IO space 2 (address = " 
 				<< Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		pci_controller.TranslateAddressSystemToPCIIO(addr, pci_addr);
-		return pci_import->PCIRead(PCIDevice<PCI_ADDR>::SP_IO, pci_addr, buffer, size);
+				<< EndDebugWarning;
+		return false;
 		break;
 	case AddressMapEntry::PCI_CONFIG_ADDRESS_REG:
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "ReadMemory() to the PCI config space (address = "
+			(*logger_import) << DebugWarning
+				<< LOCATION
+				<< " accessing the PCI Config Address Reg (address = " 
 				<< Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		pci_controller.TranslateAddressSystemToPCIConfig(addr, pci_addr);
-		return pci_import->PCIRead(PCIDevice<PCI_ADDR>::SP_CONFIG, pci_addr, buffer, size);
+				<< EndDebugWarning;
+		return false;
 		break;
 	case AddressMapEntry::PCI_CONFIG_DATA_REG:
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "ReadMemory() to the PCI config space (address = "
+			(*logger_import) << DebugWarning
+				<< LOCATION
+				<< " accessing the PCI Config Data Reg (address = " 
 				<< Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		pci_controller.TranslateAddressSystemToPCIConfig(addr, pci_addr);
-		return pci_import->PCIRead(PCIDevice<PCI_ADDR>::SP_CONFIG, pci_addr, buffer, size);
+				<< EndDebugWarning;
+		return false;
 		break;
 	case AddressMapEntry::PCI_INT_ACK:
 		if(DEBUG && logger_import)
@@ -1141,49 +1140,50 @@ WriteMemory(PHYSICAL_ADDR addr, const void *buffer, uint32_t size) {
 				<< Hex << addr << Dec << ")" << Endl
 				<< EndDebugInfo;
 		pci_controller.TranslateAddressSystemToPCIMem(addr, pci_addr);
-		return pci_import->PCIWrite(PCIDevice<PCI_ADDR>::SP_MEM, pci_addr, buffer, size);
+		return pci_import->WriteMemory(pci_addr, buffer, size);
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_1:
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "WriteMemory() to the PCI IO space 1 (address = "
+			(*logger_import) << DebugWarning
+				<< LOCATION
+				<< " accessing the PCI IO space 1 (address = " 
 				<< Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		pci_controller.TranslateAddressSystemToPCIIO(addr, pci_addr);
-		return pci_import->PCIWrite(PCIDevice<PCI_ADDR>::SP_IO, pci_addr, buffer, size);
+				<< EndDebugWarning;
+		return false;
 		break;
 	case AddressMapEntry::PCI_IO_SPACE_2:
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "WriteMemory() to the PCI IO space 2 (address = "
+			(*logger_import) << DebugWarning
+				<< LOCATION
+				<< " accessing the PCI IO space 2 (address = " 
 				<< Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		pci_controller.TranslateAddressSystemToPCIIO(addr, pci_addr);
-		return pci_import->PCIWrite(PCIDevice<PCI_ADDR>::SP_IO, pci_addr, buffer, size);
+				<< EndDebugWarning;
+		return false;
 		break;
 	case AddressMapEntry::PCI_CONFIG_ADDRESS_REG:
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "WriteMemory() to the PCI config space (address = "
+			(*logger_import) << DebugWarning
+				<< LOCATION
+				<< " accessing the PCI Config Address Reg (address = " 
 				<< Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		pci_controller.TranslateAddressSystemToPCIConfig(addr, pci_addr);
-		return pci_import->PCIWrite(PCIDevice<PCI_ADDR>::SP_CONFIG, pci_addr, buffer, size);
+				<< EndDebugWarning;
+		return false;
 		break;
 	case AddressMapEntry::PCI_CONFIG_DATA_REG:
 		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "WriteMemory() to the PCI config space (address = "
+			(*logger_import) << DebugWarning
+				<< LOCATION
+				<< " accessing the PCI Config Data Reg (address = " 
 				<< Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		pci_controller.TranslateAddressSystemToPCIConfig(addr, pci_addr);
-		return pci_import->PCIWrite(PCIDevice<PCI_ADDR>::SP_CONFIG, pci_addr, buffer, size);
+				<< EndDebugWarning;
+		return false;
 		break;
 	case AddressMapEntry::PCI_INT_ACK:
 		if(DEBUG && logger_import)
 			(*logger_import) << DebugWarning
 				<< LOCATION
-				<< " accessing the pci config data register" << Endl
+				<< " accessing the pci interruption acknowledgement (address = " 
+				<< Hex << addr << Dec << ")" << Endl
 				<< EndDebugWarning;
 		return false;
 		break;

@@ -1,5 +1,4 @@
 #!/bin/sh
-TARBALL_NAME="unisim-tools-1.0-1" \
 PACKAGE_NAME="unisim-tools" \
 VERSION="1.0-1" \
 ARCH="i386" \

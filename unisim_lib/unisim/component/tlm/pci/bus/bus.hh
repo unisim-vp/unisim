@@ -207,7 +207,7 @@ public:
 			output_port[i] =
 				new sc_port<TlmSendIfType>(s.str().c_str());
 			r << "memory_import[" << i << "]";
-			import[i] =
+			memory_import[i] =
 				new ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(r.str().c_str(), this);
 			SetupDependsOn(*memory_import[i]);
 		}
@@ -224,12 +224,12 @@ public:
 	~Bus() {
 		for(unsigned int i = 0; i < NUM_MASTERS; i++){
 			if (input_port[i]) delete input_port[i];
-	  		if (exp[i]) delete exp[i];
+	  		if (memory_export[i]) delete memory_export[i];
 		}
 
 		for (unsigned int i = 0; i < NUM_TARGETS; i++) {
 			if (output_port[i]) delete output_port[i];
-			if (import[i]) delete import[i];
+			if (memory_import[i]) delete memory_import[i];
 		}
 
 		for (unsigned int i = 0; i < NUM_MAPPINGS; i++) {
@@ -280,7 +280,7 @@ public:
 		cycle_time = sc_time(1.0 / (double) frequency, SC_US);
 		
     	for(unsigned int i = 0; i < NUM_TARGETS; i++)
-			if(!import[i])
+			if(!memory_import[i])
 				return false;
 		Reset ();
 
@@ -539,7 +539,7 @@ public:
 				devmap[i][j] = NULL;
 
 		for(unsigned int i = 0; i < NUM_TARGETS; i++)
-			if(*import[i]) (*import[i])->Reset();
+			if(*memory_import[i]) (*memory_import[i])->Reset();
 	}
 
 	virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size)
@@ -557,7 +557,7 @@ public:
 		if(device >= NUM_TARGETS) return false;
 		if(!(*memory_import[device])) return false;
 
-		return (*memory_import[device])->WriteMemory(space, addr, buffer, size);
+		return (*memory_import[device])->WriteMemory(addr, buffer, size);
 	}
 };
 

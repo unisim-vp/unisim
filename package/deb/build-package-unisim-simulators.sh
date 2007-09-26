@@ -4,7 +4,6 @@ if test "x$1" = x || test "x$2" = x; then
     exit
 fi
 
-TARBALL_NAME="unisim-simulators-1.0-1" \
 PACKAGE_NAME="unisim-simulators" \
 VERSION="1.0-1" \
 ARCH="i386" \

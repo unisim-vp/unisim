@@ -849,9 +849,9 @@ int sc_main(int argc, char *argv[])
 	mpc107->ram_import >> memory->memory_export;
 	mpc107->rom_import >> flash->memory_export;
 	mpc107->erom_import >> erom->memory_export;
-	mpc107->pci_import >> *pci_bus->exp[0];
+	mpc107->pci_import >> *pci_bus->memory_export[PCI_MPC107_MASTER_PORT];
 
-	*pci_bus->import[0] >> pci_stub->pci_device_export;
+	*pci_bus->memory_import[PCI_STUB_TARGET_PORT] >> pci_stub->memory_export; 
 	*tee_memory_access_reporting->out[0] >> pci_stub->memory_access_reporting_export;
 	pci_stub->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	pci_stub->synchronizable_import >> cpu->synchronizable_export;

@@ -81,7 +81,6 @@
 #include "unisim/component/tlm/message/pci.hh"
 #include "unisim/component/tlm/message/interrupt.hh"
 #include "unisim/service/interfaces/memory.hh"
-#include "unisim/service/interfaces/pci_device.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_map_entry.hh"
@@ -117,7 +116,6 @@ using unisim::component::tlm::message::PCIRequest;
 using unisim::component::tlm::message::PCIResponse;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::PCIDevice;
 using unisim::component::cxx::chipset::mpc107::AddressMap;
 using unisim::component::cxx::chipset::mpc107::AddressMapEntry;
 using unisim::component::cxx::chipset::mpc107::PCIController;
@@ -150,7 +148,6 @@ class MPC107 :
 	public DMAClientInterface<PHYSICAL_ADDR>,
 	public Service<Memory<PHYSICAL_ADDR> >,
 	public Client<Memory<PHYSICAL_ADDR> >,
-	public Client<PCIDevice<PCI_ADDR> >,
 	public Client<Logger> {
 private:
 	typedef SnoopingFSBRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE> ReqType;
@@ -209,7 +206,7 @@ public:
 	ServiceImport<Memory<PHYSICAL_ADDR> > ram_import;
 	ServiceImport<Memory<PHYSICAL_ADDR> > rom_import;
 	ServiceImport<Memory<PHYSICAL_ADDR> > erom_import;
-	ServiceImport<PCIDevice<PCI_ADDR> > pci_import;
+	ServiceImport<Memory<PCI_ADDR> > pci_import;
 	/* logger service */
 	ServiceImport<Logger> logger_import;
 	ServiceImport<Logger> pci_logger_import;
