@@ -6,7 +6,6 @@ include_HEADERS = \
 	linux_os.hh \
 	logger.hh \
 	memory.hh \
-	pci_device.hh \
 	registers.hh \
 	symbol_table_build.hh \
 	synchronizable.hh \
@@ -21,11 +20,6 @@ include_HEADERS = \
 	resetable.hh \
 	symbol_table_lookup.hh \
 	time.hh
-
-# INCLUDES=-I$(top_srcdir)/../../..
-# libdir = $(prefix)/lib/unisim/service/interfaces
-# lib_LIBRARIES = libinterfaces.a
-# libinterfaces_a_SOURCES = logger.cc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -63,7 +63,6 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	Object(name, parent),
 	Service<Memory<ADDRESS> >(name, parent),
 	Service<MemoryAccessReporting<ADDRESS> >(name, parent),
-	Service<PCIDevice<ADDRESS> >(name, parent),
 	Client<Logger>(name, parent),
 	Client<SymbolTableLookup<ADDRESS> >(name, parent),
 	Client<Synchronizable>(name, parent),
@@ -72,7 +71,6 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	synchronizable_import("synchronizable-import", this),
-	pci_device_export("pci-device-export", this),
 	bytesize(0),
 	storage(0),
 	param_bytesize("bytesize", this, bytesize),
@@ -184,50 +182,6 @@ bool PCIStub<ADDRESS>::ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t 
 	}
 	memcpy(buffer, storage + physical_addr - pci_conf_base_addr, size);
 	return true;
-}
-
-template <class ADDRESS>
-bool PCIStub<ADDRESS>::PCIRead(typename PCIDevice<ADDRESS>::PCISpace space, ADDRESS addr, void *buffer, uint32_t size)
-{
-	switch(space)
-	{
-		case PCIDevice<ADDRESS>::SP_IO:
-			return false;
-		case PCIDevice<ADDRESS>::SP_MEM:
-			return ReadMemory(addr, buffer, size);
-		case PCIDevice<ADDRESS>::SP_CONFIG:
-			{
-				uint32_t i;
-				for(i = 0; i < size; i++)
-				{
-					*((uint8_t *) buffer + i) = ReadConfigByte(addr + i);
-				}
-			}
-			return true;
-	}
-	return false;
-}
-
-template <class ADDRESS>
-bool PCIStub<ADDRESS>::PCIWrite(typename PCIDevice<ADDRESS>::PCISpace space, ADDRESS addr, const void *buffer, uint32_t size)
-{
-	switch(space)
-	{
-		case PCIDevice<ADDRESS>::SP_IO:
-			return false;
-		case PCIDevice<ADDRESS>::SP_MEM:
-			return WriteMemory(addr, buffer, size);
-		case PCIDevice<ADDRESS>::SP_CONFIG:
-			{
-				uint32_t i;
-				for(i = 0; i < size; i++)
-				{
-					WriteConfigByte(addr + i, *((uint8_t *) buffer + i));
-				}
-			}
-			return true;
-	}
-	return false;
 }
 
 template <class ADDRESS>

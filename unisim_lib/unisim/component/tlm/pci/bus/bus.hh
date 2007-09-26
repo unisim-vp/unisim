@@ -40,8 +40,8 @@
 #include <unisim/component/tlm/message/pci.hh>
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/endian/endian.hh>
-#include "unisim/service/interfaces/logger.hh"
-#include "unisim/service/interfaces/pci_device.hh"
+#include <unisim/service/interfaces/logger.hh>
+#include <unisim/service/interfaces/memory.hh>
 
 namespace unisim {
 namespace component {
@@ -63,7 +63,6 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
 using unisim::util::endian::Host2LittleEndian;
-using unisim::service::interfaces::PCIDevice;
 using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
@@ -88,8 +87,8 @@ template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE,
 class Bus:public sc_module,
   		public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>,
   						PCIResponse<MAX_DATA_SIZE> >,
-  		public Service<PCIDevice<ADDRESS_TYPE> >,
-  		public Client<PCIDevice<ADDRESS_TYPE> >,
+  		public Service<unisim::service::interfaces::Memory<ADDRESS_TYPE> >,
+  		public Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >,
   		public Client<Logger> {
 public:
 	typedef PCIRequest < ADDRESS_TYPE, MAX_DATA_SIZE > ReqType;
@@ -167,8 +166,8 @@ public:
 	sc_export<TlmSendIfType> *input_port[NUM_MASTERS];
 	sc_port<TlmSendIfType> *output_port[NUM_TARGETS];
 
-	ServiceExport<PCIDevice<ADDRESS_TYPE> > *exp[NUM_MASTERS];
-	ServiceImport<PCIDevice<ADDRESS_TYPE> > *import[NUM_TARGETS];
+	ServiceExport<unisim::service::interfaces::Memory<ADDRESS_TYPE> > *memory_export[NUM_MASTERS];
+	ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> > *memory_import[NUM_TARGETS];
 
 	/* logger service */
 	ServiceImport<Logger> logger_import;
@@ -178,8 +177,8 @@ public:
 	Bus(const sc_module_name &name, Object *parent = 0):
 		sc_module(name),
 		Object(name, parent),
-		Service<PCIDevice<ADDRESS_TYPE> >(name, parent),
-		Client<PCIDevice<ADDRESS_TYPE> >(name, parent),
+		Service<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
+		Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
 		Client<Logger>(name, parent),
 		param_base_address("base-address", this, base_address, NUM_MAPPINGS),
 		param_size("size", this, size, NUM_MAPPINGS),
@@ -197,9 +196,9 @@ public:
 	  		input_port[i] =
 	  			new sc_export<TlmSendIfType>(s.str().c_str());
 			(*input_port[i]) (*this);
-			r << "exp[" << i << "]";
-			exp[i] =
-				new ServiceExport<PCIDevice<ADDRESS_TYPE> >(r.str().c_str(), this);
+			r << "memory_export[" << i << "]";
+			memory_export[i] =
+				new ServiceExport<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(r.str().c_str(), this);
 		}
 
 		for (unsigned int i = 0; i < NUM_TARGETS; i++) {
@@ -207,10 +206,10 @@ public:
 			s << "output_port[" << i << "]";
 			output_port[i] =
 				new sc_port<TlmSendIfType>(s.str().c_str());
-			r << "import[" << i << "]";
+			r << "memory_import[" << i << "]";
 			import[i] =
-				new ServiceImport<PCIDevice<ADDRESS_TYPE> >(r.str().c_str(), this);
-			SetupDependsOn(*import[i]);
+				new ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(r.str().c_str(), this);
+			SetupDependsOn(*memory_import[i]);
 		}
 		
 		for (int i = 0; i < NUM_TARGETS; i++) {
@@ -543,50 +542,22 @@ public:
 			if(*import[i]) (*import[i])->Reset();
 	}
 
-	virtual bool PCIRead(typename unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::PCISpace space, ADDRESS_TYPE addr, void *buffer, uint32_t size)
+	virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size)
 	{
-		int device;
-
-		switch(space)
-		{
-			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_IO:
-				device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_IO);
-				break;
-			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_MEM:
-				device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
-				break;
-			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_CONFIG:
-				device = decode(addr);
-				break;
-		}
-
+		int device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
 		if(device >= NUM_TARGETS) return false;
-		if(! (*import[device])) return false;
+		if(!(*memory_import[device])) return false;
 
-		return (*import[device])->PCIRead(space, addr, buffer, size);
+		return (*memory_import[device])->ReadMemory(addr, buffer, size);
 	}
 
-	virtual bool PCIWrite(typename unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::PCISpace space, ADDRESS_TYPE addr, const void *buffer, uint32_t size)
+	virtual bool WriteMemory(ADDRESS_TYPE addr, const void *buffer, uint32_t size)
 	{
-		int device;
-
-		switch(space)
-		{
-			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_IO:
-				device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_IO);
-				break;
-			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_MEM:
-				device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
-				break;
-			case unisim::service::interfaces::PCIDevice<ADDRESS_TYPE>::SP_CONFIG:
-				device = decode(addr);
-				break;
-		}
-
+		int device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
 		if(device >= NUM_TARGETS) return false;
-		if(! (*import[device])) return false;
+		if(!(*memory_import[device])) return false;
 
-		return (*import[device])->PCIWrite(space, addr, buffer, size);
+		return (*memory_import[device])->WriteMemory(space, addr, buffer, size);
 	}
 };
 

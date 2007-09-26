@@ -49,7 +49,6 @@
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/synchronizable.hh>
-#include <unisim/service/interfaces/pci_device.hh>
 
 namespace unisim {
 namespace component {
@@ -78,14 +77,12 @@ using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::Logger;
 using unisim::util::debug::NetStub;
 using unisim::service::interfaces::Synchronizable;
-using unisim::service::interfaces::PCIDevice;
 
 template <class ADDRESS>
 class PCIStub :
 	public NetStub<ADDRESS>,
 	public Service<Memory<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
-	public Service<PCIDevice<ADDRESS> >,
 	public Client<Logger>,
 	public Client<SymbolTableLookup<ADDRESS> >,
 	public Client<Synchronizable>
@@ -99,7 +96,6 @@ public:
 	
 	ServiceExport<Memory<ADDRESS> > memory_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
-	ServiceExport<PCIDevice<ADDRESS> > pci_device_export;
 	ServiceImport<Logger> logger_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	ServiceImport<Synchronizable> synchronizable_import;
@@ -112,8 +108,6 @@ public:
 	virtual void Reset();
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
-	virtual bool PCIRead(typename PCIDevice<ADDRESS>::PCISpace space, ADDRESS addr, void *buffer, uint32_t size);
-	virtual bool PCIWrite(typename PCIDevice<ADDRESS>::PCISpace space, ADDRESS addr, const void *buffer, uint32_t size);
 	uint8_t ReadConfigByte(unsigned int offset);
 	void WriteConfigByte(unsigned int offset, uint8_t value);
 	virtual bool Read(ADDRESS addr, void *buffer, uint32_t size);
