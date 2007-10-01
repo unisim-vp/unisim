@@ -57,15 +57,12 @@ namespace cxx {
 namespace cache {
 namespace arm {
 
-#define INLINE \ 
-	#if defined(__GNUC__) && (__GNUC__ >= 3) \
-		__attribute__((always_inline)) \
-	#endif
-
 using namespace std;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
 //using full_system::generic::bus::BusInterface;
@@ -102,7 +99,7 @@ public:
 	typedef typename CONFIG::address_t address_t;
 
 	Cache(const char* name,
-			CacheInterface<CONFIG> *_next_mem_level,
+			CacheInterface<address_t> *_next_mem_level,
 			Object* parent = 0);
 
 	virtual ~Cache();
@@ -113,6 +110,7 @@ public:
 	virtual void SetLock(uint32_t lock, uint32_t index);
 
 	// Proccessor -> Cache Interface
+	virtual void PrReset();
 	virtual void PrInvalidate();
 	virtual void PrInvalidateSet(uint32_t index);
 	virtual void PrInvalidateBlock(address_t addr);
@@ -129,8 +127,8 @@ public:
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	
-	ServiceExport<MemoryInterface<address_t> > memory_export;
-	ServiceImport<MemoryInterface<address_t> > memory_import;
+	ServiceExport<Memory<address_t> > memory_export;
+	ServiceImport<Memory<address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 	//   ServiceImport<CachePowerEstimatorInterface> power_estimator_import;
 	//   ServiceImport<PowerModeInterface> power_mode_import;
@@ -141,24 +139,28 @@ private:
 	uint32_t       lock;
 	uint32_t lock_index;
 	
-	CacheInterface<CONFIG> *next_mem_level;
+	CacheInterface<address_t> *next_mem_level;
 
 	/* Cache blocks */
 	Set<CONFIG> cache[CONFIG::NSETS];
 
-	inline void DecodeAddress(address_t addr, address_t& tag, address_t& index, address_t& offset) INLINE;
-	DataBlockState selectNextBlockState(DataBlockState st, uint8_t op) INLINE;
+	void DecodeAddress(address_t addr, address_t& tag, address_t& index, address_t& offset);
+	
+	uint32_t GetCacheSize();
+	uint32_t GetCacheAssociativity();
+	uint32_t GetCacheLineSize();
+	void Enable();
+	void Disable();
+	bool IsEnabled();
 
-	void LoadDataFromMem(address_t add, void* buffer, uint32_t size) INLINE;
-	void StoreDataInMem(address_t add, const void* buffer, uint32_t size) INLINE;
+	void LoadDataFromMem(address_t add, void* buffer, uint32_t size);
+	void StoreDataInMem(address_t add, const void* buffer, uint32_t size);
 
 protected:
 	/* verbose options */
 	bool verbose_all;
 	Parameter<bool> param_verbose_all;
 };
-
-#undef INLINE
 
 } // end of namespace arm
 } // end of namespace cache

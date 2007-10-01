@@ -42,6 +42,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TCC__
 #define __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TCC__
 
+#include "unisim/component/cxx/cache/arm/set.tcc"
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -51,18 +53,34 @@ namespace arm {
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::Endl;
 
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+#define LOCATION File << __FILE__ << Function << __FUNCTION__ \
+	<< unisim::service::interfaces::Line << __LINE__
+
+#if (defined(__GNUC__) && (__GNUC__ >= 3))
+#define INLINE __attribute__((always_inline))
+#else
+#define INLINE 
+#endif
 
 template <class CONFIG>
 Cache<CONFIG> ::
 Cache(const char *name, 
-		CacheInterface<CONFIG> *_next_mem_level,
+		CacheInterface<address_t> *_next_mem_level,
 		Object *parent) :
 	Object(name, parent),
-	Service<MemoryInterface<address_t> >(name, parent),
-	Client<MemoryInterface<address_t> >(name, parent),
+	Service<Memory<address_t> >(name, parent),
+	Client<Memory<address_t> >(name, parent),
+	Client<Logger>(name, parent),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	logger_import("logger_import", this),
@@ -71,9 +89,9 @@ Cache(const char *name,
 	next_mem_level(_next_mem_level),
 	lock(0),
 	lock_index(0) {
-//	NB_SETS(CONFIG::CACHE_SIZE / 
-//			CONFIG::CACHE_BLOCK_SIZE / 
-//			CONFIG::CACHE_ASSOCIATIVITY)
+//	NSETS(CONFIG::SIZE / 
+//			CONFIG::LINELEN / 
+//			CONFIG::ASSOCIATIVITY)
 //   Client<CachePowerEstimatorInterface>(name, parent),
 //   Client<PowerModeInterface>(name, parent),
 //   Service<PowerModeInterface>(name, parent),
@@ -88,7 +106,7 @@ template <class CONFIG>
 bool 
 Cache<CONFIG> ::
 Setup() {
-	if(CONFIG::DEBUG && verbose_all && !logger_import) {
+	if(CONFIG::DEBUG_ENABLE && verbose_all && !logger_import) {
 		cerr << "WARNING("
 			<< __FUNCTION__ << ":"
 			<< __FILE__ << ":"
@@ -96,16 +114,16 @@ Setup() {
 			<< "No Logger exists to generate the output messages" << endl;
 	}
 	
-	if(NB_SETS != CONFIG::CACHE_SIZE / CONFIG::CACHE_BLOCK_SIZE / CONFIG::CACHE_ASSOCIATIVITY) {
+	if(CONFIG::NSETS != CONFIG::SIZE / CONFIG::LINELEN / CONFIG::ASSOCIATIVITY) {
 		if(logger_import) {
 			(*logger_import) << DebugError << LOCATION
-				<< "Invalid configuration (NB_SETS)"
+				<< "Invalid configuration (NSETS)"
 				<< Endl << EndDebugError;
 		}
 		return false;
 	}
 	
-	if(_next_mem_level == NULL) {
+	if(next_mem_level == NULL) {
 		if(logger_import) {
 			(*logger_import) << DebugError << LOCATION
 				<< "No pointer to the next memory level was given"
@@ -142,7 +160,7 @@ SetLock(uint32_t lock, uint32_t index) {
 	if(enabled){
 		this->lock       = lock;
 		this->lock_index = index;
-		for(i = 0; i < NB_SETS; i++){
+		for(i = 0; i < CONFIG::NSETS; i++){
 			// set all next_alloc to index
 			// UpdateReplacementPolicy is called with lock = 1 to force the next replacement,
 			//   once the first replacement has happened the lock parameter will be used
@@ -154,6 +172,7 @@ SetLock(uint32_t lock, uint32_t index) {
 
 //-----------------------------
 template <class CONFIG>
+inline INLINE
 uint32_t 
 Cache<CONFIG> ::
 GetCacheSize() {
@@ -162,6 +181,7 @@ GetCacheSize() {
 
 //-----------------------------
 template <class CONFIG>
+inline INLINE
 uint32_t 
 Cache<CONFIG> ::
 GetCacheAssociativity() {
@@ -170,14 +190,16 @@ GetCacheAssociativity() {
 
 //-----------------------------
 template <class CONFIG>
+inline INLINE
 uint32_t 
 Cache<CONFIG> ::
-GetCacheBlockSize() {
+GetCacheLineSize() {
 	return CONFIG::LINELEN;
 }
 
 //-----------------------------
 template <class CONFIG>
+inline INLINE
 void 
 Cache<CONFIG> ::
 Enable() {
@@ -186,6 +208,7 @@ Enable() {
 
 //-----------------------------
 template <class CONFIG>
+inline INLINE
 void 
 Cache<CONFIG> ::
 Disable() {
@@ -194,6 +217,7 @@ Disable() {
 
 //-----------------------------
 template <class CONFIG>
+inline INLINE
 bool
 Cache<CONFIG> ::
 IsEnabled() {
@@ -218,28 +242,6 @@ PrReset() {
 }
 
 //-----------------------------
-template <class CONFIG>
-void 
-Cache<CONFIG> ::
-SetLock(uint32_t lock, uint32_t index) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-		exit(-1);
-	}
-//	uint32_t i; 
-//	if(enabled){
-//		this->lock       = lock;
-//		this->lock_index = index;
-//		for(i = 0; i < NB_SETS; i++){
-//			// set all next_alloc to index 
-//			cache[i].UpdateReplacementPolicy(1 , index, index);
-//		}
-//	}
-}
-
-//-----------------------------
 //invalidate all lines, including the locked-down
 template <class CONFIG>
 void 
@@ -253,7 +255,7 @@ PrInvalidate() {
 	}
 //	uint32_t i;
 //	if(enabled){
-//		for(i = 0; i < NB_SETS; i++){
+//		for(i = 0; i < NSETS; i++){
 //			cache[i].Invalidate();
 //		}
 //		lock = 0;
@@ -315,7 +317,7 @@ PrInvalidateBlock(uint32_t index, uint32_t way) {
 			<< Endl << EndDebugError;
 		exit(-1);
 	}
-//	if(enabled && (index < NB_SETS)){
+//	if(enabled && (index < NSETS)){
 //		// range of way is checked in cache_set
 //		cache[index].InvalidateBlock(way);
 //		cache[index].UpdateReplacementPolicy(lock, lock_index, way);
@@ -347,13 +349,13 @@ PrFlushBlock(address_t addr) {
 //		decodeAddress(addr, base_addr, index, offset);
 //
 //		// get block index in set and data to be written into memory
-//		// if block not in cache (miss) way = CACHE_ASSOCIATIVITY and buffer = NULL
+//		// if block not in cache (miss) way = ASSOCIATIVITY and buffer = NULL
 //		cache[index].GetBlock(base_addr, way, (const void**)&buffer);
 //
 //		if(buffer) { // cache hit
 //			if(cache[index].IsModifiedBlock(way)) {
 //				// should pass by next_level_cache for virtual addressed caches for address translation
-//				storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
+//				storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::LINELEN);
 //			}// else no data to be written in memory 
 //
 //			//invalidate block
@@ -382,12 +384,12 @@ PrFlushBlock(uint32_t index, uint32_t way) {
 //	address_t   base_addr;
 //	address_t  block_addr;
 //
-//	if(enabled && (index < NB_SETS)){
+//	if(enabled && (index < NSETS)){
 //		// range of way is checked in cache_set
 //		if(cache[index].IsModifiedBlock(way)){
 //			cache[index].GetBlock(way, block_addr, (const void**)&buffer);
 //			// should pass by next_level_cache for virtual addressed caches for address translation
-//			storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
+//			storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::LINELEN);
 //		}
 //		cache[index].InvalidateBlock(way);
 //		cache[index].UpdateReplacementPolicy(lock, lock_index, way);
@@ -421,7 +423,7 @@ PrCleanBlock(address_t addr) {
 //		if(buffer){ // cache hit
 //			if(cache[index].IsModifiedBlock(way)){
 //				// should pass by next_level_cache for virtual addressed caches for address translation
-//				storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
+//				storeDataInNextLevel(base_addr, (const void*)(buffer), CONFIG::LINELEN);
 //				cache[index].SetBlockState(way, ST_EXCLUSIVE);
 //			}// else no data to be written in memory 
 //		}// else miss, nothing to do in this cache
@@ -442,12 +444,12 @@ PrCleanBlock(uint32_t index, uint32_t way) {
 //	uint8_t*     buffer;
 //	address_t  block_addr;
 //
-//	if(enabled && (index < NB_SETS)){
+//	if(enabled && (index < NSETS)){
 //		// range of way is checked in cache_set
 //		if(cache[index].IsModifiedBlock(way)){
 //			cache[index].GetBlock(way, block_addr, (const void**)&buffer);
 //			// should pass by next_level_cache for virtual addressed caches for address translation
-//			storeDataInNextLevel(block_addr, (const void*)(buffer), CONFIG::CACHE_BLOCK_SIZE);
+//			storeDataInNextLevel(block_addr, (const void*)(buffer), CONFIG::LINELEN);
 //			cache[index].SetBlockState(way, ST_EXCLUSIVE);
 //		} // else not enabled or index out of range, nothing to do
 //	}
@@ -489,17 +491,18 @@ template <class CONFIG>
 void
 Cache<CONFIG> ::
 PrWrite(address_t addr, const void *data, uint32_t size) {
-	uint8_t buffer[LINELEN];
+	uint8_t buffer[CONFIG::LINELEN];
 	address_t tag;
 	address_t set;
 	address_t pos;
+	address_t way;
 	bool hit;
 	
 	if(enabled) {
 		DecodeAddress(addr, tag, set, pos);
 		if(pos + size > CONFIG::LINELEN) {
 			if(CONFIG::DEBUG_ENABLE && logger_import) {
-				(logger_import) << DebugError << LOCATION
+				(*logger_import) << DebugError << LOCATION
 					<< "Trying to read out of the cache line bounds" << Endl
 					<< "- address = 0x" << Hex << addr << Dec << Endl
 					<< "- tag = 0x" << Hex << tag << Dec << Endl
@@ -513,7 +516,7 @@ PrWrite(address_t addr, const void *data, uint32_t size) {
 		}
 		cache[set].GetLine(tag, way, hit);
 		if(!hit) { // miss
-			if(CONFIG::ALLOCATION_POLICY == AllocationPolicy::READ_ALLOCATE) {
+			if(CONFIG::ALLOCATION_POLICY == READ_ALLOCATE) {
 				StoreDataInMem(addr, data, size);
 			} else { // AllocationPolicy::WRITE_ALLOCATE
 				// get the line that will be replaced
@@ -537,7 +540,7 @@ PrWrite(address_t addr, const void *data, uint32_t size) {
 		// Once the line is ready, the line can be modified
 		cache[set].WriteData(way, data, pos, size);
 		
-		if(CONFIG::WRITE_POLICY == WritePolicy::WRITE_THROUGH){
+		if(CONFIG::WRITE_POLICY == WRITE_THROUGH){
 			StoreDataInMem(addr, data, size);
 		}
 	} else { // cache is disabled
@@ -561,17 +564,18 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 PrRead(address_t addr, void *data, uint32_t size) {
-	uint8_t buffer[LINELEN];
+	uint8_t buffer[CONFIG::LINELEN];
 	address_t tag;
 	address_t set;
 	address_t pos;
+	address_t way;
 	bool hit;
 	
 	if(enabled) {
 		DecodeAddress(addr, tag, set, pos);
 		if(pos + size > CONFIG::LINELEN) {
 			if(CONFIG::DEBUG_ENABLE && logger_import) {
-				(logger_import) << DebugError << LOCATION
+				(*logger_import) << DebugError << LOCATION
 					<< "Trying to read out of the cache line bounds" << Endl
 					<< "- address = 0x" << Hex << addr << Dec << Endl
 					<< "- tag = 0x" << Hex << tag << Dec << Endl
@@ -613,7 +617,7 @@ PrRead(address_t addr, void *data, uint32_t size) {
 // PRIVATE FUNCTIONS
 //-----------------------------
 template <class CONFIG>
-inline 
+inline INLINE 
 void 
 Cache<CONFIG> ::
 DecodeAddress(address_t addr, 
@@ -623,16 +627,17 @@ DecodeAddress(address_t addr,
 	// +-----------------+--------+--------+
 	// |       tag       |  index | offset |
 	// +-----------------+--------+--------+
-	// index     = (addr / CONFIG::CACHE_BLOCK_SIZE) % NB_SETS;
+	// index     = (addr / CONFIG::LINELEN) % NSETS;
 	index = (addr / CONFIG::LINELEN) & (CONFIG::NSETS - 1);
-	// tag = addr & (~(CONFIG::CACHE_BLOCK_SIZE - 1));
+	// tag = addr & (~(CONFIG::LINELEN - 1));
 	tag = ((addr / CONFIG::LINELEN) / CONFIG::NSETS);
-	// offset = addr & (CONFIG::CACHE_BLOCK_SIZE - 1);
+	// offset = addr & (CONFIG::LINELEN - 1);
 	offset = addr & (CONFIG::LINELEN - 1);
 }
 
 //-----------------------------
 template <class CONFIG>
+inline INLINE
 void 
 Cache<CONFIG> ::
 LoadDataFromMem(address_t addr,
@@ -658,6 +663,7 @@ LoadDataFromMem(address_t addr,
 //----------------------------------------------
 
 template <class CONFIG>
+inline INLINE
 void 
 Cache<CONFIG> ::
 StoreDataInMem(address_t addr, const void* buffer, uint32_t size) {
@@ -675,6 +681,7 @@ StoreDataInMem(address_t addr, const void* buffer, uint32_t size) {
 //		}
 }
 
+#undef INLINE
 
 } // end of namespace arm
 } // end of namespace cache

@@ -32,7 +32,9 @@
  * Authors: Adriana Carloganu (adriana.carloganu@cea.fr)
  * 			Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
+#include <string.h>
+
 #ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_TCC__
 #define __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_TCC__
 
@@ -42,13 +44,19 @@ namespace cxx {
 namespace cache {
 namespace arm {
 
+#if (defined(__GNUC__) && (__GNUC__ >= 3))
+#define INLINE __attribute__((always_inline))
+#else
+#define INLINE
+#endif
+
 template<class CONFIG>
 Line<CONFIG> ::
 Line() :
 		valid(false),
 		modified(false),
 		tag(0) {
-	memset(data, 0, CONFIG::CACHE_BLOCK_SIZE);
+	memset(data, 0, CONFIG::LINELEN);
 }
 
 template<class CONFIG>
@@ -57,7 +65,7 @@ Line<CONFIG> ::
 }
 
 template<class CONFIG>
-inline 
+inline INLINE  
 typename CONFIG::address_t
 Line<CONFIG> ::
 Tag() {
@@ -65,7 +73,7 @@ Tag() {
 }
 
 template<class CONFIG>
-inline 
+inline INLINE
 const void* 
 Line<CONFIG> ::
 Data() {
@@ -73,7 +81,7 @@ Data() {
 }
 
 template<class CONFIG>
-inline 
+inline INLINE
 bool 
 Line<CONFIG> ::
 IsValid() {
@@ -81,15 +89,15 @@ IsValid() {
 }
 
 template<class CONFIG>
-inline 
+inline  INLINE
 bool 
 Line<CONFIG> ::
 IsModified() {
-	return valid && modifed;
+	return valid && modified;
 }
 
 template<class CONFIG>
-inline 
+inline INLINE
 void 
 Line<CONFIG> ::
 Invalidate() {
@@ -97,35 +105,35 @@ Invalidate() {
 }
 
 template<class CONFIG>
-inline 
+inline INLINE
 void 
 Line<CONFIG> ::
 Read(void* buffer, typename CONFIG::address_t offset, uint32_t size) {
-  if((offset + size) < CONFIG::CACHE_BLOCK_SIZE){
+  if((offset + size) < CONFIG::LINELEN){
     memcpy(buffer, data + offset, size);
   }// else read crosses cache block boundaries, ignore or message(?)
 }
 
 template<class CONFIG>
-inline 
+inline INLINE
 void 
 Line<CONFIG> ::
-Write(const void* buffer, uint32_t offset, uint32_t size) {
-  if((offset + size) < CONFIG::CACHE_BLOCK_SIZE) {
+Write(const void* buffer, typename CONFIG::address_t offset, uint32_t size) {
+  if((offset + size) < CONFIG::LINELEN) {
     memcpy(data + offset, buffer, size);
   }// else write crosses cache block boundaries, ignore or message(?)
 }
 
 template<class CONFIG>
-inline 
+inline INLINE
 void 
 Line<CONFIG> ::
-Allocate(typename CONFIG::ADDRESS addr, const void* buffer) {
-  memcpy(data, buffer, CONFIG::CACHE_BLOCK_SIZE);
-  tag   = addr;
-  state = st;
+Allocate(typename CONFIG::address_t tag, const void* buffer) {
+  memcpy(data, buffer, CONFIG::LINELEN);
+  this->tag   = tag;
 }
 
+#undef INLINE
 
 } // end of namespace arm
 } // end of namespace cache

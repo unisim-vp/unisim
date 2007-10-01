@@ -48,33 +48,26 @@ namespace cxx {
 namespace cache {
 namespace arm {
 
-#define INLINE \ 
-	#if defined(__GNUC__) && (__GNUC__ >= 3) \
-		__attribute__((always_inline)) \
-	#endif
-
 template <class CONFIG>
 class Line{
   public:
     Line();
     virtual ~Line();
 
-    inline typename CONFIG::address_t Tag() INLINE;
-    inline const void* Data() INLINE;
-    inline bool IsModified() INLINE;
-    inline bool IsValid() INLINE;
-    void Invalidate() INLINE;
-    void Read(void* buffer, typename CONFIG::address_t offset, uint32_t size) INLINE;
-    void Write(const void* buffer, typename CONFIG::address_t offset, uint32_t size) INLINE;
-    void Allocate(typename CONFIG::address_t addr, const void* buffer) INLINE;
+    typename CONFIG::address_t Tag();
+    const void* Data();
+    bool IsModified();
+    bool IsValid();
+    void Invalidate();
+    void Read(void* buffer, typename CONFIG::address_t offset, uint32_t size);
+    void Write(const void* buffer, typename CONFIG::address_t offset, uint32_t size);
+    void Allocate(typename CONFIG::address_t addr, const void* buffer);
 private:
-	bool modifed;
-	bool valied;
+	bool modified;
+	bool valid;
     typename CONFIG::address_t tag;
-    uint8_t data[CONFIG::CACHE_BLOCK_SIZE];
+    uint8_t data[CONFIG::LINELEN];
 };
-
-#undef INLINE
 
 } // end of namespace arm
 } // end of namespace cache
@@ -82,5 +75,5 @@ private:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_HH__
+#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_HH__
 

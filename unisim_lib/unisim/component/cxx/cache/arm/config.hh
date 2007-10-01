@@ -51,19 +51,19 @@ namespace arm {
 class ARMCacheBase {
 public:
 	/** enables/disables debug */
-	static const DEBUG_ENABLE = false;
+	static const bool DEBUG_ENABLE = false;
 	
 	/** the address type of arm caches (always 32-bits) */
 	typedef uint32_t address_t;             // 32-bit effective address
 	
 	/** the line lenght in bytes
 	 * The line lenght in bytes. Four different possibilities are possible:
-	 *  - 0b1000 -> 8 bytes
-	 *  - 0b10000 -> 16 bytes
-	 *  - 0b100000 -> 32 bytes
-	 *  - 0b1000000 -> 64 bytes
+	 *  - 0b1000 0x8 -> 8 bytes
+	 *  - 0b10000 0x10-> 16 bytes
+	 *  - 0b100000 0x20-> 32 bytes
+	 *  - 0b1000000 0x40-> 64 bytes
 	 */
-	static const uint32_t LINELEN = 0b1000; // 8 bytes
+	static const uint32_t LINELEN = 0x8; // 8 bytes
 	/** cache size multiplier
 	 * This field is used to know the cache size, two different values are possible:
 	 *  - 2 (for 0.5, 1, 2, 4, 8, 16, 32 and 64 KB)
@@ -94,21 +94,22 @@ public:
 	 * If Read allocate new lines will be allocated only on read misses, never for write misses
 	 * If Write allocate new lines will be allocated for read and write misses
 	 */
-	static const ALLOCATION_POLICY = AllocationPolicy::READ_ALLOCATE;
+	static const AllocationPolicy ALLOCATION_POLICY = READ_ALLOCATE;
+	//AllocationPolicy::READ_ALLOCATE;
 	
 	/** the cache write policy
 	 * Two possibilities:
 	 * - WriteThrough
 	 * - WriteBack
 	 */
-	static const WRITE_POLICY = WritePolicy::WRITE_THROUGH;
+	static const WritePolicy WRITE_POLICY = WRITE_THROUGH;
 	
 	/** the cache replacement policy
 	 * Two possibilites:
 	 * - Random replacement (RANDOM_REPLACEMENT)
 	 * - Round-robin replacement (ROUNDROBIN_REPLACEMENT)
 	 */
-	static const REPLACEMENT_POLICY = ReplacementPolicy::RANDOM_REPLACEMENT;
+	static const ReplacementPolicy REPLACEMENT_POLICY = RANDOM_REPLACEMENT;
 };
 
 /** 
@@ -126,7 +127,7 @@ class ARMCache512bDMWT8bls_Config : //
 class ARMCache512bDMWT8bls_DebugConfig :
 	public ARMCacheBase {
 public:
-	static const DEBUG_ENABLE = true;
+	static const bool DEBUG_ENABLE = true;
 };
 
 } // end of namespace arm

@@ -42,21 +42,21 @@ namespace cache {
 namespace arm {
 
 /** Allocation policies supported */
-typedef enum {
+enum AllocationPolicy {
 	READ_ALLOCATE,
 	WRITE_ALLOCATE
-} AllocationPolicy;
+};
 
 /** Write policies supported */
-typedef enum {
+enum WritePolicy {
 	WRITE_THROUGH,
 	WRITE_BACK
-} WritePolicy;
+};
 
-typedef enum {
+enum ReplacementPolicy {
 	ROUNDROBIN_REPLACEMENT,
 	RANDOM_REPLACEMENT
-} ReplacementPolicy;
+};
 
 } // end of namespace arm
 } // end of namespace cache

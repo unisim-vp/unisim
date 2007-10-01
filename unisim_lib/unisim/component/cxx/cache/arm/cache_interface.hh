@@ -39,9 +39,6 @@
 
 #include <inttypes.h>
 
-#include <generic/bus/bus_interface.hh>
-#include <generic/cache/cache_interface.hh>
-
 
 // Physical addressed cache connection
 // +-------------+                             +----------+                             +---------+                       +---------+

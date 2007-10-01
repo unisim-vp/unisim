@@ -29,21 +29,12 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Adriana Carloganu (adriana.carloganu@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-/****************************************************************
-            CACHE set for ARM processors
-*****************************************************************/
 
-// !!!!!
-// ***** the use of this class assumes that user check and insure the validity of function parameters (expecially way and buffer size)
-// !!!!!
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
-
-#include "unisim/component/cxx/cache/arm/line.hh"
+#include "unisim/component/cxx/cache/arm/config.hh"
+#include "unisim/component/cxx/cache/arm/cache.hh"
+#include "unisim/component/cxx/cache/arm/cache.tcc"
 
 namespace unisim {
 namespace component {
@@ -51,62 +42,19 @@ namespace cxx {
 namespace cache {
 namespace arm {
 
-template <class CONFIG>
-class Set{
-  public:
-    Set();
-    virtual ~Set();
-
-    virtual void UpdateReplacementPolicy(uint32_t lock, 
-    		uint32_t index, 
-    		uint32_t way);
-
-    void Reset();
-    void Invalidate();
-
-    void InvalidateLine(uint32_t way);
-
-    void ReadData(uint32_t way, 
-    		void* buffer, 
-    		uint32_t offset, 
-    		uint32_t size);
-
-    void WriteData(uint32_t way, 
-    		const void* buffer, 
-    		uint32_t offset, 
-    		uint32_t size);
-
-    void AllocateLine(uint32_t way, 
-    		typename CONFIG::address_t tag, 
-    		const void* buffer);
-
-    void GetLine(typename CONFIG::address_t base_addr, 
-    		uint32_t& way, 
-    		bool &hit);
-    void GetLineToReplace(uint32_t& way, 
-    		typename CONFIG::address_t& tag, 
-    		void* buffer,
-    		bool &modified);
-
-    bool IsValidLine(uint32_t way);
-
-    bool IsModifiedLine(uint32_t way);
-
-  private:
-    uint32_t  base;
-    uint32_t  free_line;
-    uint32_t  next_alloc;
-    uint32_t  head;
- 
-    Line<CONFIG> line[CONFIG::ASSOCIATIVITY];
-
-    uint32_t FindLine(typename CONFIG::address_t tag);
-};
+/**
+ * Instantiation of a cache class of:
+ * - 512 bytes of size
+ * - direct-mapped
+ * - write-through
+ * - 8 bytes line size
+ * - debug
+ */
+template
+class Cache<ARMCache512bDMWT8bls_DebugConfig>;
 
 } // end of namespace arm
 } // end of namespace cache
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-    
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
