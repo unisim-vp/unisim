@@ -957,6 +957,10 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 	 *   if so, bypass the interrupt signal to the output directly
 	 *   without doing anything */
 	if(PassthroughMode()) {
+		if(DEBUG && logger_import) 
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Received IRQ on port " << id
+				<< Endl << EndDebugInfo;
 		if(id != 0) {
 			if(logger_import) {
 				(*logger_import) << DebugError
@@ -978,6 +982,10 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 	 *   If in direct mode the serial_id will be ignored.
 	 */
 	if(DirectMode()) {
+		if(DEBUG && logger_import) 
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Received IRQ on port " << id
+				<< Endl << EndDebugInfo;
 		/* direct mode */
 		/* check that id isn't bigger than 3 (only 4 direct irqs) */
 		if(id > 3) {
@@ -993,6 +1001,10 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 		}
 		SetDirectIRQ(id);
 	} else {
+		if(DEBUG && logger_import) 
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Received IRQ on port " << id << " (serial_id = " << serial_id << ")"
+				<< Endl << EndDebugInfo;
 		/* Serial mode */
 		/* check that id is 0 (only port for serial irqs), and serial_id
 		 *   is smaller than 16 */
@@ -1072,6 +1084,110 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 			return;
 		}
 	}
+}
+
+template <class PHYSICAL_ADDR,
+	bool DEBUG>
+uint32_t
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+GetVPRFromIRQMask(uint32_t mask) {
+	uint32_t vpr;
+	switch(mask) {
+	case IRQ_T0:
+		vpr = regs.gtvpr[0];
+		break;
+	case IRQ_T1:
+		vpr = regs.gtvpr[1];
+		break;
+	case IRQ_T2:
+		vpr = regs.gtvpr[2];
+		break;
+	case IRQ_T3:
+		vpr = regs.gtvpr[3];
+		break;
+	case IRQ_DMA0:
+		vpr = regs.iivpr[0];
+		break;
+	case IRQ_DMA1:
+		vpr = regs.iivpr[1];
+		break;
+	case IRQ_MU:
+		vpr = regs.iivpr[2];
+		break;
+	case IRQ_I2C:
+		vpr = regs.iivpr[3];
+		break;
+	case IRQ_0:
+		if(SerialMode())
+			vpr = regs.svpr[0];
+		else
+			vpr = regs.ivpr[0];
+		break;
+	case IRQ_1:
+		if(SerialMode())
+			vpr = regs.svpr[1];
+		else
+			vpr = regs.ivpr[1];
+		break;
+	case IRQ_2:
+		if(SerialMode())
+			vpr = regs.svpr[2];
+		else
+			vpr = regs.ivpr[2];
+		break;
+	case IRQ_3:
+		if(SerialMode())
+			vpr = regs.svpr[3];
+		else
+			vpr = regs.ivpr[3];
+		break;
+	case IRQ_4:
+		if(SerialMode())
+			vpr = regs.svpr[4];
+		else
+			vpr = regs.ivpr[4];
+		break;
+	case IRQ_5:
+		vpr = regs.svpr[5];
+		break;
+	case IRQ_6:
+		vpr = regs.svpr[6];
+		break;
+	case IRQ_7:
+		vpr = regs.svpr[7];
+		break;
+	case IRQ_8:
+		vpr = regs.svpr[8];
+		break;
+	case IRQ_9:
+		vpr = regs.svpr[9];
+		break;
+	case IRQ_10:
+		vpr = regs.svpr[10];
+		break;
+	case IRQ_11:
+		vpr = regs.svpr[11];
+		break;
+	case IRQ_12:
+		vpr = regs.svpr[12];
+		break;
+	case IRQ_13:
+		vpr = regs.svpr[13];
+		break;
+	case IRQ_14:
+		vpr = regs.svpr[14];
+		break;
+	case IRQ_15:
+		vpr = regs.svpr[15];
+		break;
+	default:
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "Unknown mask received (mask = 0x" << Hex << mask << Dec
+				<< Endl << DebugError;
+		StopSimulation();
+	}
+	return vpr;
 }
 
 template <class PHYSICAL_ADDR,
@@ -1172,10 +1288,23 @@ EPIC<PHYSICAL_ADDR, DEBUG> ::
 SetDirectIRQ(unsigned int id) {
 	uint32_t vpr;
 
+	if(DEBUG && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Handling direct IRQ received on port " << id
+			<< Endl << EndDebugInfo;
+
 	/* get the vpr */
 	vpr = regs.ivpr[id];
+	if(DEBUG && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "ivpr[" << id << "] = 0x" << Hex << vpr << Dec
+			<< Endl << EndDebugInfo;
 	/* set the activity bit */
 	if(GetActivity(vpr)) {
+		if(DEBUG && logger_import) 
+			(*logger_import) << DebugInfo << LOCATION
+				<< "nothing needs to be done, the irq was already set up"
+				<< Endl << EndDebugInfo;
 		/* nothing needs to be done, the irq was already set up */
 		return;
 	}
@@ -1191,11 +1320,29 @@ SetDirectIRQ(unsigned int id) {
 		StopSimulation();
 		return;
 	}
+	if(DEBUG && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "activity bit set (ivpr[" << id << "] = 0x" << Hex << vpr << Dec << ")"
+			<< "(regs.ivpr[" << id << "] = 0x" << Hex << regs.ivpr[id] << Dec << ")"
+			<< Endl << EndDebugInfo;
 	/* set corresponding bit in the pending_reg register */
 	uint32_t mask = GetDirectIRQMask(id);
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Updating pending register with the mask correspondent to ivpr[" << id << "]" << Endl
+			<< "- mask = 0x" << Hex << mask << Dec << Endl
+			<< "- pending_reg = 0x" << Hex << pending_reg << Dec << Endl;
 	pending_reg = pending_reg | mask;
-	
+	if(DEBUG && logger_import)
+		(*logger_import)
+			<< "- modified pending_reg = 0x" << Hex << pending_reg << Dec << Endl
+			<< EndDebugInfo;
 	CheckInterruptions();
+	if(DEBUG && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Finished handling direct IRQ received on port " << id
+			<< Endl << EndDebugInfo;
+
 }
 
 template <class PHYSICAL_ADDR, 
@@ -1313,38 +1460,105 @@ template <class PHYSICAL_ADDR,
 void
 EPIC<PHYSICAL_ADDR, DEBUG> ::
 CheckInterruptions() {
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Checking interruptions"
+			<< Endl << EndDebugInfo;
+
 	uint32_t irq = GetHighestIRQ();
+	
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Highest IRQ = 0x" << Hex << irq << Dec
+			<< Endl << EndDebugInfo;
 	
 	if(irq == 0) {
 		/* no interruption pending */
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "No interrupt pending, unsetting external interruptions to the processor"
+				<< Endl << EndDebugInfo;
 		UnsetINT();
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Finished checking interruptions"
+				<< Endl << EndDebugInfo;
 		return;
 	}
 	
-	if(GetPriority(irq) == 0) {
+	uint32_t vpr = GetVPRFromIRQMask(irq);
+	uint32_t prio = GetPriority(vpr);
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "vpr of irq mask (0x" << Hex << irq << Dec << ")"
+			<< " is 0x" << Hex << vpr << Dec << Endl
+			<< "- priority = 0x" << Hex << prio << Dec
+			<< Endl << EndDebugInfo;
+	
+	if(prio == 0) {
 		/* if the highest irq has a priority of 0, the interruption
 		 *   is disabled, do nothing */
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "The highest irq has a priority of 0, the interruption is disabled"
+				<< Endl << EndDebugInfo;
 		UnsetINT();
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Finished checking interruptions"
+				<< Endl << EndDebugInfo;
 		return;
 	}
 	
-	if(GetPriority(irq) <= GetProcessorPriority()) {
+	if(prio <= GetProcessorPriority()) {
 		/* the processor has more priority than the highest irq in the
 		 *   pending reg, do nothing */
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "processor priority (0x" << Hex << GetProcessorPriority() << Dec << ")"
+				<< " higher than the interruption priority (0x" << Hex << prio << Dec << ")"
+				<< ", unsetting external interruptions to the processor"
+				<< Endl << EndDebugInfo;
 		UnsetINT();
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Finished checking interruptions"
+				<< Endl << EndDebugInfo;
 		return;
 	}
 	
 	if(inservice_reg.HasIRQ() &&
-		(GetPriority(irq) <= inservice_reg.Priority())) {
+		(prio <= inservice_reg.Priority())) {
 		/* the current interruption in the inservice register has a higher
 		 *   priority than the highest irq in the pending reg, do nothing */
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "the current interruption in the inservice register has a higher priority "
+				<< "(0x" << Hex << inservice_reg.Priority() << Dec << ")"
+				<< " than the highest irq in the pending register "
+				<< "(max_prio = 0x" << Hex << prio << Dec << ")"
+				<< ", unsetting external interruptions to the processor"
+				<< Endl << EndDebugInfo;
 		UnsetINT();
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Finished checking interruptions"
+				<< Endl << EndDebugInfo;
 		return;
 	}
 	
 	/* an interruption needs to be notified to the processor */
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "interruption with mask 0x" << Hex << irq << Dec 
+			<< " needs to be notified to the processor"
+			<< ", setting external interruptions to the processor"
+			<< Endl << EndDebugInfo;
 	SetINT();
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Finished checking interruptions"
+			<< Endl << EndDebugInfo;
 }
 
 template <class PHYSICAL_ADDR, 

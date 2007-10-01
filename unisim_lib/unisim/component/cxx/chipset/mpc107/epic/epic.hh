@@ -170,6 +170,7 @@ private:
 	static const uint32_t IRQ_15 = (uint32_t)0x0800000;
 //	static const uint32_t IRQ_16 = (uint32_t)0x01000000;
 	
+	uint32_t GetVPRFromIRQMask(uint32_t mask);
 	bool PassthroughMode();
 	bool MixedMode();
 	bool SerialMode();

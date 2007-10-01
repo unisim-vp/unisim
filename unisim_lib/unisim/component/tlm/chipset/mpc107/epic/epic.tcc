@@ -62,7 +62,7 @@ using unisim::service::interfaces::Line;
 using std::stringstream;
 
 #define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
-	
+
 template <class PHYSICAL_ADDR, 
 		uint32_t MAX_TRANSACTION_DATA_SIZE,
 		bool DEBUG>
