@@ -270,105 +270,9 @@ Reset() {
 template<class CONFIG> 
 void 
 ARM<CONFIG> :: 
-PrInvalidateBlock(address_t addr, 
-	CacheControl cc) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrInvalidateBlock"
-			<< Endl << EndDebugError;
-	sc_stop();
-	wait();
-}
-
-template<class CONFIG> 
-void 
-ARM<CONFIG> :: 
-PrFlushBlock(address_t addr, 
-	CacheControl cc) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrFlushBlock"
-			<< Endl << EndDebugError;
-	sc_stop();
-	wait();
-}
-
-template<class CONFIG> 
-void 
-ARM<CONFIG> :: 
-PrZeroBlock(address_t addr, 
-	CacheControl cc) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrZeroBlock"
-			<< Endl << EndDebugError;
-	sc_stop();
-	wait();
-}
-
-template<class CONFIG> 
-void 
-ARM<CONFIG> :: 
-PrWrite(address_t addr, 
-	const void *buffer, 
-	uint32_t size, 
-	CacheControl cc) {
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Performing PrWrite"
-			<< Endl << EndDebugInfo;
-	// synchonize with bus cycle time
-	BusSynchronize();
-
-	// bus transaction request
-	Pointer<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE> > req = 
-		new(req) SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>(); 
-	// message for bus transaction
-	Pointer<TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
-		SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> > > msg =
-		new(msg) TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
-			SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> >(req); 
-			
-	// transaction is a READ
-	req->type = SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>::WRITE; 
-	// transaction address
-	req->addr = addr; 
-	// actual transaction size
-	req->size = size;
-	// copy the data to the message
-	memcpy(req->write_data, buffer, size);
-			
-	// loop until the request succeeds
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "PrWrite: loop until bus transaction request is accepted" 
-			<< Endl << EndDebugInfo;
-	while(!master_port->Send(msg)) {
-		// if bus transaction request is not accepted then retry later
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "PrWrite: retry transaction request"
-				<< Endl << EndDebugInfo;
-		wait(bus_cycle_time);
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "PrWrite: retrying transaction request"
-				<< Endl << EndDebugInfo;
-	}
-			
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "PrWrite finished"
-			<< Endl << EndDebugInfo;
-}
-
-template<class CONFIG> 
-void 
-ARM<CONFIG> :: 
 PrRead(address_t addr, 
 	void *buffer, 
-	uint32_t size, 
-	CacheControl cc) {
+	uint32_t size) {
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "Performing PrRead"
@@ -445,64 +349,265 @@ PrRead(address_t addr,
 template<class CONFIG> 
 void 
 ARM<CONFIG> :: 
-PrReadX(address_t addr, 
-	void *buffer, 
-	uint32_t size, 
-	CacheControl cc) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrReadX"
-			<< Endl << EndDebugError;
-	sc_stop();
-	wait();
-}
-
-template<class CONFIG> 
-void 
-ARM<CONFIG> :: 
-BusInvalidateBlock(address_t addr) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command BusInvalidateBlock"
-			<< Endl << EndDebugError;
-	sc_stop();
-	wait();
-}
-
-template<class CONFIG> 
-void 
-ARM<CONFIG> :: 
-BusFlushBlock(address_t addr) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command BusFlushBlock"
-			<< Endl << EndDebugError;
-	sc_stop();
-	wait();
-}
-
-template<class CONFIG> 
-void 
-ARM<CONFIG> :: 
-BusRead(address_t addr, 
-	void *buffer, uint32_t size) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command BusRead"
-			<< Endl << EndDebugError;
-	sc_stop();
-	wait();
-}
-
-template<class CONFIG> 
-void 
-ARM<CONFIG> :: 
-BusReadX(address_t addr, 
-	void *buffer, 
+PrWrite(address_t addr, 
+	const void *buffer, 
 	uint32_t size) {
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Performing PrWrite"
+			<< Endl << EndDebugInfo;
+	// synchonize with bus cycle time
+	BusSynchronize();
+
+	// bus transaction request
+	Pointer<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE> > req = 
+		new(req) SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>(); 
+	// message for bus transaction
+	Pointer<TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
+		SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> > > msg =
+		new(msg) TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
+			SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> >(req); 
+			
+	// transaction is a READ
+	req->type = SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>::WRITE; 
+	// transaction address
+	req->addr = addr; 
+	// actual transaction size
+	req->size = size;
+	// copy the data to the message
+	memcpy(req->write_data, buffer, size);
+			
+	// loop until the request succeeds
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "PrWrite: loop until bus transaction request is accepted" 
+			<< Endl << EndDebugInfo;
+	while(!master_port->Send(msg)) {
+		// if bus transaction request is not accepted then retry later
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "PrWrite: retry transaction request"
+				<< Endl << EndDebugInfo;
+		wait(bus_cycle_time);
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "PrWrite: retrying transaction request"
+				<< Endl << EndDebugInfo;
+	}
+			
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "PrWrite finished"
+			<< Endl << EndDebugInfo;
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+SetLock(uint32_t lock, uint32_t set) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command BusReadX"
+			<< "Unsupported command SetLock"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrInvalidateBlock(uint32_t set, uint32_t way) {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrInvalidateBlock"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrFlushBlock(uint32_t set, uint32_t way) {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrFlushBlock"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrCleanBlock(uint32_t set, uint32_t way) {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrCleanBlock"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+uint32_t 
+ARM<CONFIG>::
+GetCacheSize() {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command GetCacheSize"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+	
+	return 0;
+}
+
+template<class CONFIG>
+uint32_t 
+ARM<CONFIG>::
+GetCacheAssociativity() {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command GetCacheAssociativity"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+	
+	return 0;
+}
+
+template<class CONFIG>
+uint32_t 
+ARM<CONFIG>::
+GetCacheBlockSize() {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command GetCacheBlockSize"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+	
+	return 0;
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+Enable() {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command Enable"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+Disable() {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command Disable"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+bool
+ARM<CONFIG>::
+IsEnabled() {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command IsEnabled"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+	
+	return false;
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrReset() {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrReset"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrInvalidate() {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrInvalidate"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrInvalidateSet(uint32_t set) {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrInvalideSet"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrInvalidateBlock(address_t addr) {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrInvalidateBlock"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrFlushBlock(address_t addr) {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrFlushBlock"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrCleanBlock(address_t addr) {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrCleanBlock"
+			<< Endl << EndDebugError;
+	sc_stop();
+	wait();
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG>::
+PrZeroBlock(address_t addr) {
+	if(inherited::logger_import) 
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Unsupported command PrZeroBlock"
 			<< Endl << EndDebugError;
 	sc_stop();
 	wait();

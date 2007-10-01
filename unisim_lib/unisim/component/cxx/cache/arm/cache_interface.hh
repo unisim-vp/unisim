@@ -75,7 +75,7 @@ template <class address_t>
 class CacheInterface 
 {
 public:
-	virtual ~CacheInterface();
+	virtual ~CacheInterface() {}
 
 	virtual void SetLock(uint32_t lock, uint32_t set) = 0;
 

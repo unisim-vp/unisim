@@ -163,7 +163,7 @@ Registers() {
 	}
 		
 	/* interrupt source configuration registers */
-	for(unsigned int i = 0; i < 4; i++) {
+	for(unsigned int i = 0; i < 5; i++) {
 		ivpr[i] = (uint32_t)0x0
 			| ((uint32_t)0x01 << 31) /* M */
 			| ((uint32_t)0x0 << 30) /* A */
@@ -172,6 +172,15 @@ Registers() {
 			| ((uint32_t)0x0 << 16) /* PRIORITY */
 			| (uint32_t)0x0; /* VECTOR */
 		svpr[i] = ivpr[i]; 
+	}
+	for(unsigned int i = 6; i < 16; i++) {
+		svpr[i] = (uint32_t)0x0
+			| ((uint32_t)0x01 << 31) /* M */
+			| ((uint32_t)0x0 << 30) /* A */
+			| ((uint32_t)0x0 << 23) /* P */
+			| ((uint32_t)0x0 << 22) /* S */
+			| ((uint32_t)0x0 << 16) /* PRIORITY */
+			| (uint32_t)0x0; /* VECTOR */
 	}
 	for(unsigned int i = 0; i < 16; i++) {
 		idr[i] = (uint32_t)0x0

@@ -83,7 +83,8 @@ LoggerServer::LoggerServer(const char *name, Object *parent) :
 	param_show_file("show-file", this, show_file),
 	show_line(false),
 	param_show_line("show-line", this, show_line),
-	node_list() {
+	node_list(),
+	writer(NULL) {
 	/* create the individual loggers */
 	for(unsigned int i = 0; i < MAX_LOGGERS; i++) {
 		stringstream s;

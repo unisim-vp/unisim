@@ -50,7 +50,9 @@
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/component/cxx/cache/cache_interface.hh"
+#include "unisim/component/cxx/cache/arm/cache_interface.hh"
+#include "unisim/component/cxx/cache/arm/cache.hh"
+// #include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/endian/endian.hh"
 #include <string>
 #include <sstream>
@@ -106,7 +108,8 @@ using unisim::service::interfaces::File;
 using unisim::service::interfaces::Line;
 using unisim::util::debug::Register;
 using unisim::util::arithmetic::Add32;
-using unisim::component::cxx::cache::CacheInterface;
+// using unisim::component::cxx::cache::CacheInterface;
+using unisim::component::cxx::cache::arm::CacheInterface;
 using unisim::util::endian::endian_type;
 using std::string;
 

@@ -968,7 +968,7 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 					<< "Received a wrong irq id (id = " << id 
 					<< ", serial id = " << serial_id << ") when working in passthrough mode "
 					<< "(id should be 0), stopping simulation"
-					<< Endl << EndDebugWarning;
+					<< Endl << EndDebugError;
 			}
 			StopSimulation();
 		}
@@ -994,7 +994,7 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 					<< LOCATION
 					<< "Received a wrong irq id (id = " << id << "), "
 					<< "stopping simulation"
-					<< Endl << EndDebugWarning;
+					<< Endl << EndDebugError;
 			}
 			StopSimulation();
 			return;
@@ -1015,7 +1015,7 @@ SetIRQ(unsigned int id, unsigned int serial_id) {
 					<< "Received a wrong irq serial_id (serial_id = " 
 					<< serial_id << "), "
 					<< "stopping simulation"
-					<< Endl << EndDebugWarning;
+					<< Endl << EndDebugError;
 			}
 			StopSimulation();
 			return;
@@ -1040,7 +1040,7 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 					<< "Received a wrong irq id (id = " 
 					<< serial_id << ") when working in passthrough mode "
 					<< "(id should be 0), stopping simulation"
-					<< Endl << EndDebugWarning;
+					<< Endl << EndDebugError;
 			}
 			StopSimulation();
 		}
@@ -1062,7 +1062,7 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 					<< LOCATION
 					<< "Received a wrong irq id (id = " << id << "), "
 					<< "stopping simulation"
-					<< Endl << EndDebugWarning;
+					<< Endl << EndDebugError;
 			}
 			StopSimulation();
 			return;
@@ -1078,7 +1078,7 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 					<< "Received a wrong irq serial_id (serial_id = " 
 					<< serial_id << "), "
 					<< "stopping simulation"
-					<< Endl << EndDebugWarning;
+					<< Endl << EndDebugError;
 			}
 			StopSimulation();
 			return;
@@ -1268,7 +1268,7 @@ SetGlobalTimerIRQ(unsigned int id) {
 				<< LOCATION
 				<< "Error while trying to set the activity bit of gtvpr["
 				<< id << "]"
-				<< Endl << EndDebugWarning;
+				<< Endl << EndDebugError;
 		}
 		StopSimulation();
 		return;
@@ -1315,7 +1315,7 @@ SetDirectIRQ(unsigned int id) {
 				<< LOCATION
 				<< "Error while trying to set the activity bit of ivpr["
 				<< id << "]"
-				<< Endl << EndDebugWarning;
+				<< Endl << EndDebugError;
 		}
 		StopSimulation();
 		return;
@@ -1366,7 +1366,7 @@ SetSerialIRQ(unsigned int id) {
 				<< LOCATION
 				<< "Error while trying to set the activity bit of ivpr["
 				<< id << "]"
-				<< Endl << EndDebugWarning;
+				<< Endl << EndDebugError;
 		}
 		StopSimulation();
 		return;
@@ -2052,7 +2052,7 @@ WriteSVR(uint32_t data) {
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Setting Spurious Vector Register (SVR) to 0x"
 			<< Hex << data << Dec
-			<< Endl << EndDebugWarning;
+			<< Endl << EndDebugInfo;
 }
 
 template <class PHYSICAL_ADDR, 
@@ -2065,7 +2065,7 @@ WriteTFRR(uint32_t data) {
 			<< "Setting Timer Frequency Reporting Register (TFRR) to 0x"
 			<< Hex << data << Dec << " (previous value = 0x"
 			<< Hex << regs.tfrr << Dec << ")"
-			<< Endl << EndDebugWarning;
+			<< Endl << EndDebugInfo;
 	regs.tfrr = data;
 }
 

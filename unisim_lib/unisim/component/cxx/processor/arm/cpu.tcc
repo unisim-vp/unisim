@@ -399,7 +399,7 @@ Step() {
 			<< Endl << EndDebugInfo;
 	if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
 		insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
-		memory_interface->PrRead(insn_cache_line_address, insn_cache_line, 4 * 8, CC_NONE);
+		memory_interface->PrRead(insn_cache_line_address, insn_cache_line, 4 * 8);
 	} 
 	insn = insn_cache_line[(current_pc & (typename CONFIG::address_t)0x1F) >> 2];
 //	insn_t insn_check;
@@ -2283,7 +2283,7 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read8(typename CONFIG::address_t address, uint8_t &val) {
-	memory_interface->PrRead(address, &val, 1, CC_NONE);
+	memory_interface->PrRead(address, &val, 1);
 
 	if(memory_access_reporting_import)
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
@@ -2297,7 +2297,7 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read16(typename CONFIG::address_t address, uint16_t &val) {
-	memory_interface->PrRead(address, &val, 2, CC_NONE);
+	memory_interface->PrRead(address, &val, 2);
 
 	val = Host2Target(CONFIG::ENDIANESS, val);
   
@@ -2313,7 +2313,7 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read32(typename CONFIG::address_t address, uint32_t &val) {
-	memory_interface->PrRead(address, &val, 4, CC_NONE);
+	memory_interface->PrRead(address, &val, 4);
 
 	val = Target2Host(CONFIG::ENDIANESS, val);
 
@@ -2337,7 +2337,7 @@ Write8(typename CONFIG::address_t address, uint8_t &val) {
 	uint8_t value;
   
 	value = val;
-	memory_interface->PrWrite(address, &value, 1, CC_NONE);
+	memory_interface->PrWrite(address, &value, 1);
 
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
@@ -2360,7 +2360,7 @@ Write16(typename CONFIG::address_t address, uint16_t &val) {
 	uint16_t cp;
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
-	memory_interface->PrWrite(address, &cp, 2, CC_NONE);
+	memory_interface->PrWrite(address, &cp, 2);
 
 	if(memory_access_reporting_import)
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
@@ -2377,7 +2377,7 @@ Write32(typename CONFIG::address_t address, uint32_t &val) {
   
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
-	memory_interface->PrWrite(address, &cp, 4, CC_NONE);
+	memory_interface->PrWrite(address, &cp, 4);
 
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
@@ -2650,7 +2650,7 @@ template<class CONFIG>
 void 
 CPU<CONFIG> :: 
 Fetch(void *buffer, typename CONFIG::address_t addr, uint32_t size) {
-	memory_interface->PrRead(addr, buffer, size, CC_NONE);
+	memory_interface->PrRead(addr, buffer, size);
 }
 
 /**************************************************************/

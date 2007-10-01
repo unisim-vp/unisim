@@ -37,7 +37,8 @@
 
 #include <systemc.h>
 #include "unisim/component/cxx/processor/arm/armcpu.hh"
-#include "unisim/component/cxx/cache/cache_interface.hh"
+// #include "unisim/component/cxx/cache/cache_interface.hh"
+#include "unisim/component/cxx/cache/arm/cache_interface.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
@@ -57,8 +58,7 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SimpleFSBRequest;
 using unisim::component::tlm::message::SimpleFSBResponse;
-using unisim::component::cxx::cache::CacheInterface;
-using unisim::component::cxx::cache::CacheControl;
+using unisim::component::cxx::cache::arm::CacheInterface;
 
 template <class CONFIG>
 class ARM :
@@ -86,31 +86,27 @@ public:
 
 	virtual void Reset();
 	
-	virtual void PrInvalidateBlock(address_t addr, 
-			CacheControl cc);
-	virtual void PrFlushBlock(address_t addr, 
-			CacheControl cc);
-	virtual void PrZeroBlock(address_t addr, 
-			CacheControl cc);
-	virtual void PrWrite(address_t addr, 
-			const void *buffer, 
-			uint32_t size, 
-			CacheControl cc);
-	virtual void PrRead(address_t addr, 
-			void *buffer, 
-			uint32_t size, 
-			CacheControl cc);
-	virtual void PrReadX(address_t addr, 
-			void *buffer, 
-			uint32_t size, 
-			CacheControl cc);
-	virtual void BusInvalidateBlock(address_t addr);
-	virtual void BusFlushBlock(address_t addr);
-	virtual void BusRead(address_t addr, 
-			void *buffer, uint32_t size);
-	virtual void BusReadX(address_t addr, 
-			void *buffer, 
-			uint32_t size);
+	// cache interface implemented by the arm processor to get the request from the caches
+	virtual void PrWrite(address_t addr, const void *buffer, uint32_t size);
+	virtual void PrRead(address_t addr, void *buffer, uint32_t size);
+	// the following instruction exist in the arm cache interface but they can not be used 
+	virtual void SetLock(uint32_t lock, uint32_t set);
+	virtual void PrInvalidateBlock(uint32_t set, uint32_t way);
+	virtual void PrFlushBlock(uint32_t set, uint32_t way);
+	virtual void PrCleanBlock(uint32_t set, uint32_t way);
+	virtual uint32_t GetCacheSize();
+	virtual uint32_t GetCacheAssociativity();
+	virtual uint32_t GetCacheBlockSize();
+	virtual void Enable();
+	virtual void Disable();
+	virtual bool IsEnabled();
+	virtual void PrReset();
+	virtual void PrInvalidate();
+	virtual void PrInvalidateSet(uint32_t set);
+	virtual void PrInvalidateBlock(address_t addr);
+	virtual void PrFlushBlock(address_t addr);
+	virtual void PrCleanBlock(address_t addr);
+	virtual void PrZeroBlock(address_t addr);
 
 private:
 	bool DebugEnable();

@@ -37,6 +37,7 @@
 
 #include <inttypes.h>
 #include "unisim/util/endian/endian.hh"
+#include "unisim/component/cxx/cache/arm/config.hh"
 
 namespace unisim {
 namespace component {
@@ -47,6 +48,9 @@ namespace arm {
 using unisim::util::endian::endian_type;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
+
+using unisim::component::cxx::cache::arm::ARMCache512bDMWT8bls_Config;
+using unisim::component::cxx::cache::arm::ARMCache512bDMWT8bls_DebugConfig;
 
 /**
  * The different processor models supported.
@@ -122,7 +126,7 @@ typedef enum {
 	V2 = 2
 } THUMBInsnSetVersion;
 
-class ARMDebugBase {
+class ARMBase {
 public:
 	static const bool DEBUG_ENABLE = false;
 	
@@ -144,13 +148,18 @@ public:
 	static const bool HAS_INSN_ARITH_MULT_SMLAXY = false;
 	static const bool HAS_INSN_ARITH_MULT_SMLAWY = false;
 	static const bool HAS_INSN_ARITH_MULT_SMLALWY = false;
+	
+	static const bool HAS_INSN_CACHE_L1 = false;
+	static const bool HAS_DATA_CACHE_L1 = false;
+	static const bool HAS_UNIFIED_CACHE_L1 = false;
+	static const bool HAS_CACHE_L2 = false;
 };
 
 /**
  * Describes the configuration of the ARM9TDMI processor
  */
 class ARM9TDMIConfig : 
-	public ARMDebugBase {
+	public ARMBase {
 public:
 	typedef uint32_t address_t;             // 32-bit effective address
 	typedef uint32_t reg_t;                 // register type
@@ -184,6 +193,14 @@ public:
 	static const bool HAS_INSN_ARITH_MULT_SMLAXY = true;
 	static const bool HAS_INSN_ARITH_MULT_SMLAWY = true;
 	static const bool HAS_INSN_ARITH_MULT_SMLALWY = true;
+	
+	static const bool HAS_INSN_CACHE_L1 = true;
+	static const bool HAS_DATA_CACHE_L1 = true;
+	static const bool HAS_CACHE_L2 = true;
+	
+	static const ARMCache512bDMWT8bls_Config cache_il1;
+	static const ARMCache512bDMWT8bls_Config cache_dl1;
+	static const ARMCache512bDMWT8bls_Config cache_l2;
 };
 
 class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {
@@ -195,6 +212,10 @@ class ARM9TDMI_BigEndian_DebugConfig : public ARM9TDMIConfig {
 public:
 	static const bool DEBUG_ENABLE = true;
 	static const endian_type ENDIANESS = E_BIG_ENDIAN;
+
+	static const ARMCache512bDMWT8bls_DebugConfig cache_il1;
+	static const ARMCache512bDMWT8bls_DebugConfig cache_dl1;
+	static const ARMCache512bDMWT8bls_DebugConfig cache_l2;
 };
 
 class ARM9TDMI_LittleEndian_Config : public ARM9TDMIConfig {
@@ -206,13 +227,17 @@ class ARM9TDMI_LittleEndian_DebugConfig : public ARM9TDMIConfig {
 public:
 	static const bool DEBUG_ENABLE = true;
 	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
+
+	static const ARMCache512bDMWT8bls_DebugConfig cache_il1;
+	static const ARMCache512bDMWT8bls_DebugConfig cache_dl1;
+	static const ARMCache512bDMWT8bls_DebugConfig cache_l2;
 };
 
 /**
  * Describes the configuration of the ARM966E-S processor
  */
 class ARM966E_SConfig :
-	public ARMDebugBase {
+	public ARMBase {
 public:
 	typedef uint32_t address_t;
 	typedef uint32_t reg_t;
