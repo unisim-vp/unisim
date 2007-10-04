@@ -50,7 +50,7 @@
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/component/cxx/cache/arm/cache_interface.hh"
+#include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/component/cxx/cache/arm/cache.hh"
 // #include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/endian/endian.hh"

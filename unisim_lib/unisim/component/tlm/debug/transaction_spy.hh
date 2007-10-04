@@ -205,7 +205,6 @@ Setup() {
 			<< "no logger connected to the channel module, "
 			<< "no channel log will be generated"
 			<< endl;
-		return false;
 	}
 	return true;
 }

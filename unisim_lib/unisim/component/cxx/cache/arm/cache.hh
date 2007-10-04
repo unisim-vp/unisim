@@ -48,7 +48,7 @@
 #include "unisim/service/interfaces/memory.hh"
 
 #include "unisim/component/cxx/cache/arm/types.hh"
-#include "unisim/component/cxx/cache/arm/cache_interface.hh"
+#include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/component/cxx/cache/arm/set.hh"
 
 namespace unisim {
@@ -65,6 +65,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
+using unisim::component::cxx::processor::arm::CacheInterface;
 //using full_system::generic::bus::BusInterface;
 //using full_system::generic::bus::BusControl;
 //using full_system::generic::bus::BC_NONE;

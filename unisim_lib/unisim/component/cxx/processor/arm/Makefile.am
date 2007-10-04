@@ -15,6 +15,7 @@ libunisim_component_cxx_processor_arm_a_SOURCES = \
 
 include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \
+	cache_interface.hh \
 	arm.isa constructors_dec.isa actions_dec.isa \
 	branch.isa coprocessor.isa data_processing.isa exception.isa \
 	load_store.isa load_store_base.isa load_store_multiple.isa \

@@ -152,7 +152,7 @@ Setup() {
 				<< "could not open output file for logging" << endl;
 			return false;
 		}
-		int rc = xmlTextWriterSetIndent(writer, 2);
+		int rc = xmlTextWriterSetIndent(writer, 0);
 		if(rc < 0) {
 			cerr << "Warning(LoggerServer::Setup): could not set indentation" << endl;
 		}
@@ -288,24 +288,30 @@ void
 LoggerServer::
 FlushMessage(Node &node, xmlTextWriterPtr &out) {
 	list<Node *> *nodes;
-	stringstream sstr;
 	int rc;
-	string object_name = node.GetProperty(Logger::string_source)->Value(); //= node.Name();
-	string time_str = node.GetProperty(Logger::string_time)->Value();
+	const Property *object_property = node.GetProperty(Logger::string_source);
+	const Property *time_property = node.GetProperty(Logger::string_time);
+//	string object_name = node.GetProperty()->Value(); //= node.Name();
+//	string time_str = node.GetProperty(Logger::string_time)->Value();
 	
-	sstr << node;
 	rc = xmlTextWriterStartElement(out, BAD_CAST "MESSAGE");
 	if(rc < 0) {
 		cerr << "Error(LoggerServer::FlushMessage): couldn't not add an element" << endl;
 	}
-	rc = xmlTextWriterWriteAttribute(out, BAD_CAST "source", BAD_CAST object_name.c_str());
-	if(rc < 0) {
-		cerr << "Error(LoggerServer::FlushMessage): couldn't not append source attribute" << endl;
+	if(object_property) { 
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "source", BAD_CAST object_property->Value().c_str());
+		if(rc < 0) 
+			cerr << "Error(LoggerServer::FlushMessage): couldn't not append source attribute" << endl;
+	} else 
+		cerr << "Error(LoggerServer::FlushMessage): couldn't not find source attribute" << endl;
+		
+	if(time_property) {
+		rc = xmlTextWriterWriteAttribute(out, BAD_CAST "time", BAD_CAST time_property->Value().c_str());
+		if(rc < 0) {
+			cerr << "Error(LoggerServer::FlushMessage): couldn't not append time attribute" << endl;
+		}
 	}
-	rc = xmlTextWriterWriteAttribute(out, BAD_CAST "time", BAD_CAST time_str.c_str());
-	if(rc < 0) {
-		cerr << "Error(LoggerServer::FlushMessage): couldn't not append time attribute" << endl;
-	}
+		
 	
 	nodes = node.Childs();
 	list<Node *>::iterator it;

@@ -37,8 +37,7 @@
 
 #include <systemc.h>
 #include "unisim/component/cxx/processor/arm/armcpu.hh"
-// #include "unisim/component/cxx/cache/cache_interface.hh"
-#include "unisim/component/cxx/cache/arm/cache_interface.hh"
+#include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
@@ -58,7 +57,7 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SimpleFSBRequest;
 using unisim::component::tlm::message::SimpleFSBResponse;
-using unisim::component::cxx::cache::arm::CacheInterface;
+using unisim::component::cxx::processor::arm::CacheInterface;
 
 template <class CONFIG>
 class ARM :

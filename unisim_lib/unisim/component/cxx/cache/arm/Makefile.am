@@ -9,8 +9,7 @@ include_HEADERS = cache.hh cache.tcc \
 	set.hh set.tcc \
 	line.hh line.tcc \
 	config.hh \
-	types.hh \
-	cache_interface.hh
+	types.hh
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
