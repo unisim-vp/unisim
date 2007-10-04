@@ -14,10 +14,10 @@ SUBDIRS += insn
 INCLUDE_SUBDIRS += insn
 endif
 
-if COND_arm
-SUBDIRS += arm
-INCLUDE_SUBDIRS += arm
-endif
+# if COND_arm
+# SUBDIRS += arm
+# INCLUDE_SUBDIRS += arm
+# endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

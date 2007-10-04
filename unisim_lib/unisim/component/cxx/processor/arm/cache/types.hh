@@ -32,29 +32,38 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/cxx/cache/arm/config.hh"
-#include "unisim/component/cxx/cache/arm/cache.hh"
-#include "unisim/component/cxx/cache/arm/cache.tcc"
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_TYPES_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_TYPES_HH__
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
-/**
- * Instantiation of a cache class of:
- * - 512 bytes of size
- * - direct-mapped
- * - write-through
- * - 8 bytes line size
- * - no debug
- */
-template
-class Cache<ARMCache512bDMWT8bls_Config>;
+/** Allocation policies supported */
+enum AllocationPolicy {
+	READ_ALLOCATE,
+	WRITE_ALLOCATE
+};
 
-} // end of namespace arm
+/** Write policies supported */
+enum WritePolicy {
+	WRITE_THROUGH,
+	WRITE_BACK
+};
+
+enum ReplacementPolicy {
+	ROUNDROBIN_REPLACEMENT,
+	RANDOM_REPLACEMENT
+};
+
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_TYPES_HH__

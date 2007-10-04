@@ -32,15 +32,16 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/cxx/cache/arm/config.hh"
-#include "unisim/component/cxx/cache/arm/cache.hh"
-#include "unisim/component/cxx/cache/arm/cache.tcc"
+#include "unisim/component/cxx/processor/arm/cache/config.hh"
+#include "unisim/component/cxx/processor/arm/cache/cache.hh"
+#include "unisim/component/cxx/processor/arm/cache/cache.tcc"
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
 /**
  * Instantiation of a cache class of:
@@ -53,8 +54,9 @@ namespace arm {
 template
 class Cache<ARMCache512bDMWT8bls_DebugConfig>;
 
-} // end of namespace arm
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim

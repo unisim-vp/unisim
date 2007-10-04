@@ -33,18 +33,19 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_TCC__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_TCC__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_SET_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_SET_TCC__
 
 #include <stdlib.h>
 #include <time.h>
-#include "unisim/component/cxx/cache/arm/line.tcc"
+#include "unisim/component/cxx/processor/arm/cache/line.tcc"
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE __attribute__((always_inline))
@@ -263,10 +264,12 @@ FindLine(typename CONFIG::address_t tag) {
 }
 
 #undef INLINE
-} // end of namespace arm
+
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
     
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_TCC__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_SET_TCC__

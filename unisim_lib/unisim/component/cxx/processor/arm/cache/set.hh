@@ -40,16 +40,17 @@
 // !!!!!
 // ***** the use of this class assumes that user check and insure the validity of function parameters (expecially way and buffer size)
 // !!!!!
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_SET_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_SET_HH__
 
-#include "unisim/component/cxx/cache/arm/line.hh"
+#include "unisim/component/cxx/processor/arm/cache/line.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
 template <class CONFIG>
 class Set{
@@ -103,10 +104,11 @@ class Set{
     uint32_t FindLine(typename CONFIG::address_t tag);
 };
 
-} // end of namespace arm
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
     
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_SET_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_SET_HH__

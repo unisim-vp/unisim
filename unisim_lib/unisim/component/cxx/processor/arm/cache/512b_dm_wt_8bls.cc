@@ -29,51 +29,34 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Adriana Carloganu (adriana.carloganu@cea.fr)
- * 			Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-/****************************************************************
-            CACHE Line for ARM processors
-*****************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_HH__
-
-#include <inttypes.h>
+#include "unisim/component/cxx/processor/arm/cache/config.hh"
+#include "unisim/component/cxx/processor/arm/cache/cache.hh"
+#include "unisim/component/cxx/processor/arm/cache/cache.tcc"
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
-template <class CONFIG>
-class Line{
-  public:
-    Line();
-    virtual ~Line();
+/**
+ * Instantiation of a cache class of:
+ * - 512 bytes of size
+ * - direct-mapped
+ * - write-through
+ * - 8 bytes line size
+ * - no debug
+ */
+template
+class Cache<ARMCache512bDMWT8bls_Config>;
 
-    typename CONFIG::address_t Tag();
-    const void* Data();
-    bool IsModified();
-    bool IsValid();
-    void Invalidate();
-    void Read(void* buffer, typename CONFIG::address_t offset, uint32_t size);
-    void Write(const void* buffer, typename CONFIG::address_t offset, uint32_t size);
-    void Allocate(typename CONFIG::address_t addr, const void* buffer);
-private:
-	bool modified;
-	bool valid;
-    typename CONFIG::address_t tag;
-    uint8_t data[CONFIG::LINELEN];
-};
-
-} // end of namespace arm
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_HH__
-

@@ -39,16 +39,17 @@
  */
  //-----------------------------------------------------------
 
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TCC__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TCC__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_TCC__
 
-#include "unisim/component/cxx/cache/arm/set.tcc"
+#include "unisim/component/cxx/processor/arm/cache/set.tcc"
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::File;
@@ -681,12 +682,14 @@ StoreDataInMem(address_t addr, const void* buffer, uint32_t size) {
 //		}
 }
 
+#undef LOCATION
 #undef INLINE
 
-} // end of namespace arm
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TCC__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_TCC__

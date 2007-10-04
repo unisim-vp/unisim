@@ -39,23 +39,24 @@
  */
  //-----------------------------------------------------------
 
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_HH__
 
 #include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/memory.hh"
 
-#include "unisim/component/cxx/cache/arm/types.hh"
+#include "unisim/component/cxx/processor/arm/cache/types.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
-#include "unisim/component/cxx/cache/arm/set.hh"
+#include "unisim/component/cxx/processor/arm/cache/set.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
 using namespace std;
 using unisim::kernel::service::Service;
@@ -65,30 +66,6 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
-using unisim::component::cxx::processor::arm::CacheInterface;
-//using full_system::generic::bus::BusInterface;
-//using full_system::generic::bus::BusControl;
-//using full_system::generic::bus::BC_NONE;
-//using full_system::generic::bus::BC_GLOBAL;
-//using full_system::generic::bus::CacheStatus;
-//using full_system::generic::bus::CS_MISS;
-//using full_system::generic::bus::CS_HIT;
-//using full_system::generic::bus::CS_SHARED;
-//using full_system::generic::bus::CS_MODIFIED;
-//using full_system::generic::bus::CS_BUSY;
-
-// using full_system::plugins::debug::EventLevelDebugInterface;
-// using full_system::plugins::debug::EventLevelDebugStubInterface;
-
-//using full_system::utils::services::Object;
-//using full_system::utils::services::Service;
-//using full_system::utils::services::Client;
-//using full_system::utils::services::ServiceImport;
-//using full_system::utils::services::ServiceExport;
-//using full_system::generic::memory::MemoryInterface;
-//using full_system::plugins::power::CachePowerEstimatorInterface;
-//using full_system::plugins::power::PowerModeInterface;
-    
     
 template <class CONFIG>
 class Cache : 
@@ -163,10 +140,11 @@ protected:
 	Parameter<bool> param_verbose_all;
 };
 
-} // end of namespace arm
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
     
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_HH__

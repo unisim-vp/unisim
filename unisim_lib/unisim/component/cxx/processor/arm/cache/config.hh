@@ -31,17 +31,18 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_CONFIG_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CONFIG_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CONFIG_HH__
 
 #include <inttypes.h>
-#include "unisim/component/cxx/cache/arm/types.hh"
+#include "unisim/component/cxx/processor/arm/cache/types.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
 /** Base class for the arm caches configurations 
  * 
@@ -130,10 +131,11 @@ public:
 	static const bool DEBUG_ENABLE = true;
 };
 
-} // end of namespace arm
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_CONFIG_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CONFIG_HH__

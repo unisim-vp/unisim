@@ -11,11 +11,17 @@ libunisim_component_cxx_processor_arm_a_SOURCES = \
 	cpu_arm966e_s_littleendian.cc \
 	cpu_arm966e_s_bigendian.cc \
 	cpu_arm966e_s_littleendian_debug.cc \
-	cpu_arm966e_s_bigendian_debug.cc
+	cpu_arm966e_s_bigendian_debug.cc \
+	cache/512b_dm_wt_8bls.cc cache/512b_dm_wt_8bls_debug.cc
 
 include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \
 	cache_interface.hh \
+	cache/cache.hh cache/cache.tcc \
+	cache/set.hh cache/set.tcc \
+	cache/line.hh cache/line.tcc \
+	cache/config.hh \
+	cache/types.hh \
 	arm.isa constructors_dec.isa actions_dec.isa \
 	branch.isa coprocessor.isa data_processing.isa exception.isa \
 	load_store.isa load_store_base.isa load_store_multiple.isa \

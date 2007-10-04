@@ -35,14 +35,15 @@
 
 #include <string.h>
 
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_TCC__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_TCC__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_LINE_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_LINE_TCC__
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE __attribute__((always_inline))
@@ -135,10 +136,11 @@ Allocate(typename CONFIG::address_t tag, const void* buffer) {
 
 #undef INLINE
 
-} // end of namespace arm
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_LINE_TCC__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_LINE_TCC__

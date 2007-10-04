@@ -1,4 +1,3 @@
-
 /*
  *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
@@ -37,7 +36,7 @@
 
 #include <inttypes.h>
 #include "unisim/util/endian/endian.hh"
-#include "unisim/component/cxx/cache/arm/config.hh"
+#include "unisim/component/cxx/processor/arm/cache/config.hh"
 
 namespace unisim {
 namespace component {
@@ -49,8 +48,8 @@ using unisim::util::endian::endian_type;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 
-using unisim::component::cxx::cache::arm::ARMCache512bDMWT8bls_Config;
-using unisim::component::cxx::cache::arm::ARMCache512bDMWT8bls_DebugConfig;
+using unisim::component::cxx::processor::arm::cache::ARMCache512bDMWT8bls_Config;
+using unisim::component::cxx::processor::arm::cache::ARMCache512bDMWT8bls_DebugConfig;
 
 /**
  * The different processor models supported.

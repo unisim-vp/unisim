@@ -29,39 +29,53 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Adriana Carloganu (adriana.carloganu@cea.fr)
+ * 			Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
+ 
+/****************************************************************
+            CACHE Line for ARM processors
+*****************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TYPES_HH__
-#define __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TYPES_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_LINE_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_LINE_HH__
+
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace cache {
+namespace processor {
 namespace arm {
+namespace cache {
 
-/** Allocation policies supported */
-enum AllocationPolicy {
-	READ_ALLOCATE,
-	WRITE_ALLOCATE
+template <class CONFIG>
+class Line{
+  public:
+    Line();
+    virtual ~Line();
+
+    typename CONFIG::address_t Tag();
+    const void* Data();
+    bool IsModified();
+    bool IsValid();
+    void Invalidate();
+    void Read(void* buffer, typename CONFIG::address_t offset, uint32_t size);
+    void Write(const void* buffer, typename CONFIG::address_t offset, uint32_t size);
+    void Allocate(typename CONFIG::address_t addr, const void* buffer);
+private:
+	bool modified;
+	bool valid;
+    typename CONFIG::address_t tag;
+    uint8_t data[CONFIG::LINELEN];
 };
 
-/** Write policies supported */
-enum WritePolicy {
-	WRITE_THROUGH,
-	WRITE_BACK
-};
-
-enum ReplacementPolicy {
-	ROUNDROBIN_REPLACEMENT,
-	RANDOM_REPLACEMENT
-};
-
-} // end of namespace arm
 } // end of namespace cache
+} // end of namespace arm
+} // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_CACHE_ARM_CACHE_TYPES_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_LINE_HH__
+
