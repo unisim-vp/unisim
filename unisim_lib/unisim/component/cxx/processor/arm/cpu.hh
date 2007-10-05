@@ -753,6 +753,10 @@ protected:
 	Parameter<bool> param_verbose_setup;
 	bool verbose_step;
 	Parameter<bool> param_verbose_step;
+	
+	// verbose methods
+	bool VerboseSetup();
+	bool VerboseStep();
 };
 
 } // end of namespace arm

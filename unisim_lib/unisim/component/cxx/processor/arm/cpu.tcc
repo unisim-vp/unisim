@@ -51,6 +51,12 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
+#if (defined(__GNUC__) && (__GNUC__ >= 3))
+#define INLINE __attribute__((always_inline))
+#else
+#define INLINE
+#endif
+
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Line;
@@ -115,6 +121,7 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	running(true) {
 	/* setting setup dependencies */
 	SetupDependsOn(logger_import);
+	SetupDependsOn(linux_os_import);
 	
 	/* Reset all the registers */
 	InitGPR();
@@ -128,9 +135,6 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 		fake_fpr[i] = 0;
 	}
 	fake_fps = 0;
-
-	/* by default use the user mode */
-	SetCPSR_Mode(USER_MODE);
 
 	/* initialize the check condition table */
 	InitializeCheckConditionTable();
@@ -150,25 +154,53 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Setup() {
-	
 	/* check verbose settings */
-	if(verbose_all) {
+	if(CONFIG::DEBUG_ENABLE && verbose_all) {
 		verbose_setup = true;
 		verbose_step = true;
 	}
-	if(verbose_all && logger_import) {
+	if(CONFIG::DEBUG_ENABLE && verbose_all && logger_import) {
 		(*logger_import) << DebugInfo << LOCATION
 			<< "verbose-all = true"
 			<< Endl << EndDebugInfo;
 	} else {
-		if(verbose_setup && logger_import)
+		if(CONFIG::DEBUG_ENABLE && verbose_setup && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "verbose-setup = true"
 				<< Endl << EndDebugInfo;
-		if(verbose_step && logger_import)
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "verbose-step = true"
 				<< Endl << EndDebugInfo;
+	}
+	
+	/* check if the emulator is running in user or system mode and perform
+	 *   the corresponding initialization
+	 * if linux_os_import is connected then we are running in user mode,
+	 *   otherwise we are running in system mode
+	 */ 
+	if(linux_os_import) {
+		/* we are running in user mode:
+		 * - set CPSR to user mode
+		 * - initialize the cache system
+		 */
+		// set CPSR to user mode
+		SetCPSR_Mode(USER_MODE);
+		if(VerboseSetup()) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Running \"" << GetName() << "\" in user mode"
+				<< Endl << EndDebugInfo;
+		}
+		// initialize the cache system
+		
+	} else {
+		/* we are running in system mode */
+		if(logger_import) {
+			(*logger_import) << DebugError << LOCATION
+				<< "TODO: Running \"" << GetName() << "\" in system mode"
+				<< Endl << EndDebugError;
+		}
+		return false;
 	}
 
 	/* setting debugging registers */
@@ -2675,9 +2707,29 @@ PerformExit(int ret) {
 
 /* endianess methods */
 template<class CONFIG>
-endian_type CPU<CONFIG> ::
+endian_type 
+CPU<CONFIG> ::
 GetEndianess() {
   return CONFIG::ENDIANESS;
+}
+
+/**************************************************************/
+/* Verbose methods (protected)                            END */
+/**************************************************************/
+template<class CONFIG>
+inline INLINE
+bool
+CPU<CONFIG> ::
+VerboseSetup() {
+	return CONFIG::DEBUG_ENABLE && verbose_setup && logger_import;
+}
+
+template<class CONFIG>
+inline INLINE
+bool
+CPU<CONFIG> ::
+VerboseStep() {
+	return CONFIG::DEBUG_ENABLE && verbose_step && logger_import;
 }
 
 } // end of namespace arm
@@ -2687,6 +2739,8 @@ GetEndianess() {
 } // end of namespace unisim
 
 #undef LOCATION
+
+#undef INLINE
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 
