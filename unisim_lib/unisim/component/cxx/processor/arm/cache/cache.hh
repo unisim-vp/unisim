@@ -59,22 +59,19 @@ namespace arm {
 namespace cache {
 
 using namespace std;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
-    
+
 template <class CONFIG>
 class Cache : 
-	public CacheInterface<typename CONFIG::address_t>,
-	public Service<Memory<typename CONFIG::address_t> >,
-	public Client<Memory<typename CONFIG::address_t> >,
-	public Client<Logger> {
+	public CacheInterfaceWithMemoryService<typename CONFIG::address_t> {
 public:
 	typedef typename CONFIG::address_t address_t;
+	typedef CacheInterfaceWithMemoryService<address_t> inherited;
 
 	Cache(const char* name,
 			CacheInterface<address_t> *_next_mem_level,
@@ -102,12 +99,13 @@ public:
 	virtual void PrRead(address_t addr, void *buffer, uint32_t size);
 	
 	// Cache -> Memory Interface (debugg dervice)
+	virtual void Reset();
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	
-	ServiceExport<Memory<address_t> > memory_export;
-	ServiceImport<Memory<address_t> > memory_import;
-	ServiceImport<Logger> logger_import;
+//	ServiceExport<Memory<address_t> > memory_export;
+//	ServiceImport<Memory<address_t> > memory_import;
+//	ServiceImport<Logger> logger_import;
 	//   ServiceImport<CachePowerEstimatorInterface> power_estimator_import;
 	//   ServiceImport<PowerModeInterface> power_mode_import;
 	//   ServiceExport<PowerModeInterface> power_mode_export;
@@ -138,6 +136,19 @@ protected:
 	/* verbose options */
 	bool verbose_all;
 	Parameter<bool> param_verbose_all;
+	bool verbose_pr_read;
+	Parameter<bool> param_verbose_pr_read;
+	bool VerbosePrRead();
+	bool verbose_pr_write;
+	Parameter<bool> param_verbose_pr_write;
+	bool VerbosePrWrite();
+	bool verbose_read_memory;
+	Parameter<bool> param_verbose_read_memory;
+	bool VerboseReadMemory();
+	bool verbose_write_memory;
+	Parameter<bool> param_verbose_write_memory;
+	bool VerboseWriteMemory();
+	bool HasVerbose();
 };
 
 } // end of namespace cache

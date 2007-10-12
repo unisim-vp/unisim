@@ -160,7 +160,7 @@ ReadData(uint32_t way,
 		void* buffer, 
 		uint32_t offset, 
 		uint32_t size) {
-	if(way < CONFIG::ASSOCIATIVITY){
+	if(way < CONFIG::ASSOCIATIVITY) {
 		line[way].Read(buffer, offset, size);
 	}
 }
@@ -214,11 +214,33 @@ Set<CONFIG> ::
 GetLineToReplace(uint32_t& way, 
 		typename CONFIG::address_t& tag,
 		void* buffer,
+		bool &valid,
 		bool &modified) {
 	way     = next_alloc;
 	tag     = line[way].Tag();
+	valid = line[way].IsValid();
 	modified = line[way].IsModified();
 	if(modified) memcpy(buffer, line[way].Data(), CONFIG::LINELEN);
+}
+
+template<class CONFIG>
+inline INLINE
+void
+Set<CONFIG> ::
+ValidateLine(uint32_t way) {
+	if(way < CONFIG::ASSOCIATIVITY) {
+		line[way].Validate();
+	}
+}
+
+template<class CONFIG>
+inline INLINE
+void
+Set<CONFIG> ::
+ModifyLine(uint32_t way) {
+	if(way < CONFIG::ASSOCIATIVITY) {
+		line[way].Modify();
+	}
 }
 
 template<class CONFIG>

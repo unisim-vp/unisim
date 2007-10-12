@@ -1323,19 +1323,21 @@ SetDirectIRQ(unsigned int id) {
 	if(DEBUG && logger_import) 
 		(*logger_import) << DebugInfo << LOCATION
 			<< "activity bit set (ivpr[" << id << "] = 0x" << Hex << vpr << Dec << ")"
-			<< "(regs.ivpr[" << id << "] = 0x" << Hex << regs.ivpr[id] << Dec << ")"
+			<< "(previous ivprt[" << id << "] = 0x" << Hex << regs.ivpr[id] << Dec << ")"
 			<< Endl << EndDebugInfo;
+	regs.ivpr[id] = vpr;
 	/* set corresponding bit in the pending_reg register */
 	uint32_t mask = GetDirectIRQMask(id);
 	if(DEBUG && logger_import)
 		(*logger_import) << DebugInfo << LOCATION
-			<< "Updating pending register with the mask correspondent to ivpr[" << id << "]" << Endl
+			<< "Updating pending register with the mask correspondent to ivpr[" << id << "] = 0x"
+			<< Hex << regs.ivpr[id] << Dec << ":" << Endl
 			<< "- mask = 0x" << Hex << mask << Dec << Endl
-			<< "- pending_reg = 0x" << Hex << pending_reg << Dec << Endl;
+			<< "- previous pending_reg = 0x" << Hex << pending_reg << Dec << Endl;
 	pending_reg = pending_reg | mask;
 	if(DEBUG && logger_import)
 		(*logger_import)
-			<< "- modified pending_reg = 0x" << Hex << pending_reg << Dec << Endl
+			<< "- new pending_reg = 0x" << Hex << pending_reg << Dec << Endl
 			<< EndDebugInfo;
 	CheckInterruptions();
 	if(DEBUG && logger_import) 
@@ -1778,6 +1780,7 @@ EPIC<PHYSICAL_ADDR, DEBUG> ::
 WriteVPR(uint32_t data, unsigned int id) {
 	uint32_t orig_data = data;
 	uint32_t *reg = NULL;
+	uint32_t prev_reg = 0;
 	string name;
 	
 	/* check with register are we modifying IVPR or SVPR */
@@ -1839,6 +1842,8 @@ WriteVPR(uint32_t data, unsigned int id) {
 	case 14: reg = &regs.svpr[14]; name = Registers::SVPR14_NAME;	break;
 	case 15: reg = &regs.svpr[15]; name = Registers::SVPR15_NAME;	break;
 	}
+	
+	prev_reg = *reg;
 	
 	/* cheking reserved bits */
 	if(data & (uint32_t)0x3f000000) {
@@ -1916,6 +1921,22 @@ WriteVPR(uint32_t data, unsigned int id) {
 	*reg = data;
 	if(DEBUG && logger_import) 
 		(*logger_import) << "Checking " << name << " = 0x" << Hex << *reg << Dec << Endl << EndDebugInfo;
+	// if the vpr activity bit is set and the previous mask was set and unset with the new data
+	//   then we need to check if a new interruption needs to be requested to the processor
+	if(GetActivity(data)) {
+		if(GetMask(prev_reg)) {
+			if(!GetMask(data)) {
+				if(DEBUG && logger_import) {
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Mask bit of " << name << " changed from 1 (disable) to 0 (enable), "
+						<< "checking interruptions to check if the processor should be signaled with "
+						<< "an interruption" << Endl
+						<< EndDebugInfo;
+				}
+				CheckInterruptions();
+			}
+		}
+	}
 }
 
 template <class PHYSICAL_ADDR, 
@@ -2569,9 +2590,15 @@ GetHighestIRQ() {
 	uint32_t max_prio = 0;
 	uint32_t irq = 0;
 
-	for(uint32_t i = IRQ_T0; i < (IRQ_15 + 1); i = i << 1) {
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Checking the pending register for the highest present IRQ" << Endl
+			<< " - pending register = 0x" << Hex << pending_reg << Dec
+			<< Endl << EndDebugInfo;	
+
+	for(uint32_t i = IRQ_T0; i <= IRQ_15; i = i << 1) {
 		if(pending_reg & i) {
-			vpr = GetVPR(i);
+			vpr = GetVPRFromIRQMask(i);
 			// ignore the irq if the interruption is masked
 			if(!GetMask(vpr)) {
 				// get the priority of the irq

@@ -39,6 +39,10 @@
 
 #include <inttypes.h>
 
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/logger.hh"
+#include "unisim/service/interfaces/memory.hh"
+
 
 // Physical addressed cache connection
 // +-------------+                             +----------+                             +---------+                       +---------+
@@ -71,13 +75,21 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
+using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::Logger;
+
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
+using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::Logger;
+
 template <class address_t>
-class CacheInterface 
-{
+class CacheInterface {
 public:
 	virtual ~CacheInterface() {}
-
-	virtual void SetLock(uint32_t lock, uint32_t set) = 0;
 
 	// invalidate without checking if modified data
 	virtual void PrInvalidateBlock(uint32_t set, uint32_t way) = 0;
@@ -87,15 +99,6 @@ public:
 
 	// write modified data into memory, do not invalidate block
 	virtual void PrCleanBlock(uint32_t set, uint32_t way) = 0;
-
-
-	virtual uint32_t GetCacheSize()= 0;
-	virtual uint32_t GetCacheAssociativity() = 0;
-	virtual uint32_t GetCacheBlockSize() = 0;
-
-	virtual void Enable()    = 0;
-	virtual void Disable()   = 0;
-	virtual bool IsEnabled() = 0;
 
 	virtual void PrReset()   = 0;
 	// invalidate without checking if modified data
@@ -113,6 +116,44 @@ public:
 
 	virtual void PrWrite(address_t addr, const void *buffer, uint32_t size) = 0;
 	virtual void PrRead(address_t addr, void *buffer, uint32_t size) = 0;
+};
+
+template <class address_t>
+class CacheInterfaceWithMemoryService :
+	public CacheInterface<address_t>,
+	public Service<Memory<address_t> >,
+	public Client<Memory<address_t> >,
+	public Client<Logger> {
+public:
+	CacheInterfaceWithMemoryService(const char *name,
+			Object *parent) :
+		Object(name, parent),
+		Service<Memory<address_t> >(name, parent),
+		Client<Memory<address_t> >(name, parent),
+		Client<Logger>(name, parent),
+		memory_export("memory_export", this),
+		memory_import("memory_import", this),
+		logger_import("logger_import", this) {}
+
+	virtual ~CacheInterfaceWithMemoryService() {}
+	
+	virtual void SetLock(uint32_t lock, uint32_t set) = 0;
+
+	virtual uint32_t GetCacheSize()= 0;
+	virtual uint32_t GetCacheAssociativity() = 0;
+	virtual uint32_t GetCacheLineSize() = 0;
+
+	virtual void Enable()    = 0;
+	virtual void Disable()   = 0;
+	virtual bool IsEnabled() = 0;
+	
+	ServiceExport<Memory<address_t> > memory_export;
+	ServiceImport<Memory<address_t> > memory_import;
+	ServiceImport<Logger> logger_import;
+
+//	virtual void Reset() = 0;
+//	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size) = 0;
+//	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size) = 0;
 };
 
 } // end of namespace arm

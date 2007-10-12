@@ -55,6 +55,9 @@ using unisim::component::cxx::cache::BS_OK;
 using unisim::component::cxx::cache::BS_ERROR;
 using unisim::component::cxx::cache::CS_MISS;
 using unisim::component::cxx::cache::CacheStatus;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::Line;
 
 
 
@@ -2951,6 +2954,11 @@ void CPU<CONFIG>::AckDecrementerOverflow()
 template <class CONFIG>
 void CPU<CONFIG>::ReqExternalInterrupt()
 {
+	if(logger_import) {
+		(*logger_import) << DebugInfo << File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+			<< "Received external interrupt"
+			<< Endl << EndDebugInfo;
+	}
 	external_interrupt = true;
 	ReqAsynchronousInterrupt();
 }

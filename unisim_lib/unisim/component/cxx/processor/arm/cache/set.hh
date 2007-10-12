@@ -65,7 +65,12 @@ class Set{
     void Reset();
     void Invalidate();
 
+    void ValidateLine(uint32_t way);
     void InvalidateLine(uint32_t way);
+    bool IsValidLine(uint32_t way);
+
+    void ModifyLine(uint32_t way);
+    bool IsModifiedLine(uint32_t way);
 
     void ReadData(uint32_t way, 
     		void* buffer, 
@@ -87,11 +92,8 @@ class Set{
     void GetLineToReplace(uint32_t& way, 
     		typename CONFIG::address_t& tag, 
     		void* buffer,
+    		bool &valid,
     		bool &modified);
-
-    bool IsValidLine(uint32_t way);
-
-    bool IsModifiedLine(uint32_t way);
 
   private:
     uint32_t  base;

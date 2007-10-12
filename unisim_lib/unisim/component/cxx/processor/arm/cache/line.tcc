@@ -99,6 +99,22 @@ IsModified() {
 
 template<class CONFIG>
 inline INLINE
+void
+Line<CONFIG> ::
+Validate() {
+	valid = true;
+}
+
+template<class CONFIG>
+inline INLINE
+void
+Line<CONFIG> ::
+Modify() {
+	modified = true;
+}
+
+template<class CONFIG>
+inline INLINE
 void 
 Line<CONFIG> ::
 Invalidate() {
@@ -110,9 +126,14 @@ inline INLINE
 void 
 Line<CONFIG> ::
 Read(void* buffer, typename CONFIG::address_t offset, uint32_t size) {
-  if((offset + size) < CONFIG::LINELEN){
-    memcpy(buffer, data + offset, size);
-  }// else read crosses cache block boundaries, ignore or message(?)
+//	cerr << "+++ Read offset = " << offset << " size = " << size 
+//		<< " (this->tag = 0x" << hex << tag << dec << ") data = ";
+//	for(unsigned int i = 0; i < CONFIG::LINELEN; i++)
+//		cerr << hex << (unsigned int)data[i] << dec << " ";
+//	cerr << endl;
+	if((offset + size) <= CONFIG::LINELEN){
+		memcpy(buffer, &(data[offset]), size);
+	}// else read crosses cache block boundaries, ignore or message(?)
 }
 
 template<class CONFIG>
@@ -120,7 +141,7 @@ inline INLINE
 void 
 Line<CONFIG> ::
 Write(const void* buffer, typename CONFIG::address_t offset, uint32_t size) {
-  if((offset + size) < CONFIG::LINELEN) {
+  if((offset + size) <= CONFIG::LINELEN) {
     memcpy(data + offset, buffer, size);
   }// else write crosses cache block boundaries, ignore or message(?)
 }
@@ -131,6 +152,11 @@ void
 Line<CONFIG> ::
 Allocate(typename CONFIG::address_t tag, const void* buffer) {
   memcpy(data, buffer, CONFIG::LINELEN);
+//  cerr << "+++ tag = " << hex << tag << dec << " Allocate = ";
+//  for(unsigned int i = 0; i < CONFIG::LINELEN; i++) {
+//	  cerr << " " << hex << (unsigned int)(data[i]) << dec;
+//  }
+//  cerr << endl;
   this->tag   = tag;
 }
 

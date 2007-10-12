@@ -110,6 +110,8 @@ using unisim::util::debug::Register;
 using unisim::util::arithmetic::Add32;
 // using unisim::component::cxx::cache::CacheInterface;
 using unisim::component::cxx::processor::arm::CacheInterface;
+using unisim::component::cxx::processor::arm::CacheInterfaceWithMemoryService;
+using unisim::component::cxx::processor::arm::cache::Cache;
 using unisim::util::endian::endian_type;
 using std::string;
 
@@ -148,6 +150,10 @@ public:
 	ServiceImport<Memory<address_t> > memory_import;
 	ServiceImport<LinuxOS> linux_os_import;
 	ServiceImport<Logger> logger_import;
+	
+	ServiceImport<Logger> cache_l1_logger_import;
+	ServiceImport<Logger> cache_il1_logger_import;
+	ServiceImport<Logger> cache_l2_logger_import;
 
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
@@ -506,6 +512,7 @@ public:
     /* Memory access methods       START                          */
     /**************************************************************/
     
+    inline bool ReadInsn(address_t address, uint32_t &val) GCC_INLINE;
     inline bool Read8(address_t address, uint8_t &val) GCC_INLINE;
     inline bool Read16(address_t address, uint16_t &val) GCC_INLINE;
     inline bool Read32(address_t address, uint32_t &val) GCC_INLINE;
@@ -744,6 +751,17 @@ private:
 
     /** variable signaling if the machine is running */
     bool running;
+    
+    /** the cache level 1 if data and instruction caches are unified
+     *  and data cache level 1 if not */
+    CacheInterfaceWithMemoryService<typename CONFIG::cache_l1_t::address_t> *cache_l1;
+    /** the instruction cache level 1 if instruction and data cache are not unified */
+    CacheInterfaceWithMemoryService<typename CONFIG::insn_cache_l1_t::address_t> *cache_il1;
+    /** the unified cache level 2 */
+    CacheInterfaceWithMemoryService<typename CONFIG::cache_l2_t::address_t> *cache_l2;
+    
+    /** this method initialize the cache/mmu/cp15 memory system */
+    void CreateMemorySystem();
 
 protected:
 	// verbose parameters
@@ -753,10 +771,17 @@ protected:
 	Parameter<bool> param_verbose_setup;
 	bool verbose_step;
 	Parameter<bool> param_verbose_step;
+	bool verbose_dump_regs_start;
+	Parameter<bool> param_verbose_dump_regs_start;
+	bool verbose_dump_regs_end;
+	Parameter<bool> param_verbose_dump_regs_end;
 	
 	// verbose methods
 	bool VerboseSetup();
 	bool VerboseStep();
+	void VerboseDumpRegs();
+	void VerboseDumpRegsStart();
+	void VerboseDumpRegsEnd();
 };
 
 } // end of namespace arm

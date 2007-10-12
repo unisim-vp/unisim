@@ -51,7 +51,6 @@ namespace processor {
 namespace arm {
 namespace cache {
 
-using unisim::kernel::service::Object;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::DebugInfo;
@@ -76,17 +75,20 @@ using unisim::service::interfaces::Endl;
 template <class CONFIG>
 Cache<CONFIG> ::
 Cache(const char *name, 
-		CacheInterface<address_t> *_next_mem_level,
+		CacheInterface<typename CONFIG::address_t> *_next_mem_level,
 		Object *parent) :
 	Object(name, parent),
-	Service<Memory<address_t> >(name, parent),
-	Client<Memory<address_t> >(name, parent),
-	Client<Logger>(name, parent),
-	memory_export("memory_export", this),
-	memory_import("memory_import", this),
-	logger_import("logger_import", this),
+	CacheInterfaceWithMemoryService<typename CONFIG::address_t>(name, parent),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
+	verbose_pr_read(false),
+	param_verbose_pr_read("verbose-pr-read", this, verbose_pr_read),
+	verbose_pr_write(false),
+	param_verbose_pr_write("verbose-pr-write", this, verbose_pr_write),
+	verbose_read_memory(false),
+	param_verbose_read_memory("verbose-read-memory", this, verbose_read_memory),
+	verbose_write_memory(false),
+	param_verbose_write_memory("verbose-write-memory", this, verbose_write_memory),
 	next_mem_level(_next_mem_level),
 	lock(0),
 	lock_index(0) {
@@ -99,7 +101,7 @@ Cache(const char *name,
 //   power_estimator_import("power-estimator-import", this),
 //   power_mode_import("power-mode-import", this),
 //   power_mode_export("power-mode-export", this),
-	SetupDependsOn(logger_import);
+	SetupDependsOn(inherited::logger_import);
 	PrReset();
 }
 
@@ -107,7 +109,12 @@ template <class CONFIG>
 bool 
 Cache<CONFIG> ::
 Setup() {
-	if(CONFIG::DEBUG_ENABLE && verbose_all && !logger_import) {
+	if(verbose_all) {
+		verbose_pr_read = true;
+		verbose_pr_write = true;
+	}
+	
+	if(CONFIG::DEBUG_ENABLE && HasVerbose() && !inherited::logger_import) {
 		cerr << "WARNING("
 			<< __FUNCTION__ << ":"
 			<< __FILE__ << ":"
@@ -116,8 +123,8 @@ Setup() {
 	}
 	
 	if(CONFIG::NSETS != CONFIG::SIZE / CONFIG::LINELEN / CONFIG::ASSOCIATIVITY) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(inherited::logger_import) {
+			(*inherited::logger_import) << DebugError << LOCATION
 				<< "Invalid configuration (NSETS)"
 				<< Endl << EndDebugError;
 		}
@@ -125,8 +132,8 @@ Setup() {
 	}
 	
 	if(next_mem_level == NULL) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
+		if(inherited::logger_import) {
+			(*inherited::logger_import) << DebugError << LOCATION
 				<< "No pointer to the next memory level was given"
 				<< Endl << EndDebugError;
 		}
@@ -139,8 +146,8 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 OnDisconnect() {
-	if(logger_import) {
-		(*logger_import) << DebugWarning << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugWarning << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
 	}
@@ -230,11 +237,10 @@ template <class CONFIG>
 void
 Cache<CONFIG> ::
 PrReset() {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
 //	if(enabled){
 //		PrInvalidate();
@@ -248,12 +254,12 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 PrInvalidate() {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 //	uint32_t i;
 //	if(enabled){
 //		for(i = 0; i < NSETS; i++){
@@ -269,12 +275,12 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 PrInvalidateSet(uint32_t index) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 }
 
 //-----------------------------
@@ -283,12 +289,12 @@ template <class CONFIG>
 void 
 Cache<CONFIG> :: 
 PrInvalidateBlock(address_t addr) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 //	uint8_t*    buffer;
 //	uint32_t     index;
 //	uint32_t    offset;
@@ -312,12 +318,12 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 PrInvalidateBlock(uint32_t index, uint32_t way) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 //	if(enabled && (index < NSETS)){
 //		// range of way is checked in cache_set
 //		cache[index].InvalidateBlock(way);
@@ -333,12 +339,12 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 PrFlushBlock(address_t addr) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 //	uint8_t*    buffer;
 //	uint32_t     index;
 //	uint32_t    offset;
@@ -375,12 +381,12 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 PrFlushBlock(uint32_t index, uint32_t way) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 //	uint8_t*     buffer;
 //	address_t   base_addr;
 //	address_t  block_addr;
@@ -404,12 +410,12 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 PrCleanBlock(address_t addr) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 //	uint8_t*    buffer;
 //	uint32_t     index;
 //	uint32_t    offset;
@@ -436,12 +442,12 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 PrCleanBlock(uint32_t index, uint32_t way) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 //	uint8_t*     buffer;
 //	address_t  block_addr;
 //
@@ -462,12 +468,12 @@ template <class CONFIG>
 void
 Cache<CONFIG> ::
 PrZeroBlock(address_t addr) {
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
+	if(inherited::logger_import) {
+		(*inherited::logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
-		exit(-1);
 	}
+	exit(-1);
 }
 
 //-----------------------------
@@ -501,9 +507,23 @@ PrWrite(address_t addr, const void *data, uint32_t size) {
 	
 	if(enabled) {
 		DecodeAddress(addr, tag, set, pos);
+		if(VerbosePrWrite()) {
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "Write on 0x" << Hex << addr << Dec
+				<< " of size " << size << Endl
+				<< " - write data = " << Hex;
+			for(unsigned int i = 0; i < size; i++) 
+				(*inherited::logger_import) << (unsigned int)(((uint8_t *)data)[i]) << " ";
+			(*inherited::logger_import)
+				<< Endl 
+				<< " - tag = 0x" << Hex << tag << Dec << Endl
+				<< " - set = " << set << Endl
+				<< " - pos = " << pos << Endl 
+				<< EndDebugInfo;
+		}
 		if(pos + size > CONFIG::LINELEN) {
-			if(CONFIG::DEBUG_ENABLE && logger_import) {
-				(*logger_import) << DebugError << LOCATION
+			if(CONFIG::DEBUG_ENABLE && inherited::logger_import) {
+				(*inherited::logger_import) << DebugError << LOCATION
 					<< "Trying to read out of the cache line bounds" << Endl
 					<< "- address = 0x" << Hex << addr << Dec << Endl
 					<< "- tag = 0x" << Hex << tag << Dec << Endl
@@ -512,40 +532,122 @@ PrWrite(address_t addr, const void *data, uint32_t size) {
 					<< "- size = " << size << Endl
 					<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << CONFIG::LINELEN << ")" << Endl
 					<< EndDebugError;
-				exit(-1);
 			}
+			exit(-1);
 		}
 		cache[set].GetLine(tag, way, hit);
 		if(!hit) { // miss
 			if(CONFIG::ALLOCATION_POLICY == READ_ALLOCATE) {
+				if(VerbosePrWrite())
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Write access to 0x" << Hex << addr << Dec
+						<< " missed, sending write to the following memory level"
+						<< Endl << EndDebugInfo;
 				StoreDataInMem(addr, data, size);
+				return;
 			} else { // AllocationPolicy::WRITE_ALLOCATE
+				if(VerbosePrWrite())
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Write access to 0x" << Hex << addr << Dec
+						<< " missed, refetching cache line"
+						<< Endl << EndDebugInfo;
 				// get the line that will be replaced
+				bool valid;
 				bool modified;
 				address_t replace_address;
-				cache[set].GetLineToReplace(way, replace_address, buffer, modified);
-				if(modified)
+				cache[set].GetLineToReplace(way, replace_address, buffer, valid, modified);
+				if(valid && modified) {
+					if(VerbosePrWrite())
+						(*inherited::logger_import) << DebugInfo << LOCATION
+							<< "Replacing cache line with address 0x"
+							<< Hex << replace_address << Dec << " with: " << Endl
+							<< " - set = " << set << Endl
+							<< " - way = " << way << Endl
+							<< " - valid = " << valid << Endl
+							<< " - modified = " << modified
+							<< Endl << EndDebugInfo;
 					StoreDataInMem(replace_address, buffer, CONFIG::LINELEN);
+				} else {
+					if(VerbosePrWrite())
+						(*inherited::logger_import) << DebugInfo << LOCATION
+							<< "Replacing set = " << set << " way = " << way
+							<< Endl << EndDebugInfo;
+				}
 				cache[set].InvalidateLine(way);
 				
+				if(VerbosePrWrite())
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Refetching cache line with address 0x"
+						<< Hex << addr << Dec
+						<< Endl << EndDebugInfo;
+
 				//get a pointer to the data to be written in cache
-				LoadDataFromMem(addr, buffer, CONFIG::LINELEN);
+				LoadDataFromMem(addr & ~(typename CONFIG::address_t)(CONFIG::LINELEN - 1), buffer, CONFIG::LINELEN);
+				if(VerbosePrWrite()) {
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Fetched cache line:" << Endl
+						<< " - addr = 0x" << Hex << addr << Dec << Endl
+						<< " - data = " << Hex;
+					for(unsigned int i = 0; i < CONFIG::LINELEN; i++) 
+						(*inherited::logger_import) << (unsigned int)(buffer[i]) << " ";
+					(*inherited::logger_import) << Dec << Endl
+						<< EndDebugInfo;
+				}
 
 				// allocate block
 				cache[set].AllocateLine(way, tag, buffer);
+				cache[set].ValidateLine(way);
 				cache[set].UpdateReplacementPolicy(lock, lock_index, way); // ???
 				
 			}
 		}
 		
+		if(VerbosePrWrite()) {
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "Write addr = 0x" << Hex << addr << Dec
+				<< " with size = " << size
+				<< " (hit = " << hit << ", set = " << set 
+				<< ", way = " << way << ", pos = " << pos << ")" << Endl
+				<< " - data = " << Hex;
+			for(unsigned int i = 0; i < size; i++)
+				(*inherited::logger_import) << (unsigned int)(((uint8_t *)data)[i])
+					<< " ";
+			(*inherited::logger_import) << Dec << Endl;
+		}
 		// Once the line is ready, the line can be modified
 		cache[set].WriteData(way, data, pos, size);
+		if(VerbosePrWrite()) {
+			uint8_t buffer[CONFIG::LINELEN];
+			cache[set].ReadData(way, buffer, 0, CONFIG::LINELEN);
+			(*inherited::logger_import) 
+				<< " - modified line = " << Hex;
+			for(unsigned int i = 0; i < CONFIG::LINELEN; i++)
+				(*inherited::logger_import) << (unsigned int)(buffer[i])
+					<< " ";
+			(*inherited::logger_import) << Dec << Endl
+				<< EndDebugInfo;
+		}
+		cache[set].ModifyLine(way);
 		
 		if(CONFIG::WRITE_POLICY == WRITE_THROUGH){
+			if(VerbosePrWrite()) {
+				(*inherited::logger_import) << DebugInfo << LOCATION
+					<< "Applying write through policy, sending write to the next"
+					<< " memory level (addr = 0x" << Hex << addr << Dec
+					<< ", size = " << size << ")" << Endl
+					<< EndDebugInfo;
+			}
 			StoreDataInMem(addr, data, size);
 		}
 	} else { // cache is disabled
 		// store the data into memory
+		if(VerbosePrRead()) {
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "Cache disabled, forwarding "
+				<< "write on 0x" << Hex << addr << Dec
+				<< " of size " << size
+				<< Endl << EndDebugInfo;
+		}
 		StoreDataInMem(addr, data, size);
 	}
 }
@@ -574,9 +676,19 @@ PrRead(address_t addr, void *data, uint32_t size) {
 	
 	if(enabled) {
 		DecodeAddress(addr, tag, set, pos);
+		if(VerbosePrRead()) {
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "Read on 0x" << Hex << addr << Dec
+				<< " of size " << size
+				<< Endl 
+				<< " - tag = 0x" << Hex << tag << Dec << Endl
+				<< " - set = " << set << Endl
+				<< " - pos = " << pos << Endl 
+				<< EndDebugInfo;
+		}
 		if(pos + size > CONFIG::LINELEN) {
-			if(CONFIG::DEBUG_ENABLE && logger_import) {
-				(*logger_import) << DebugError << LOCATION
+			if(CONFIG::DEBUG_ENABLE && inherited::logger_import) {
+				(*inherited::logger_import) << DebugError << LOCATION
 					<< "Trying to read out of the cache line bounds" << Endl
 					<< "- address = 0x" << Hex << addr << Dec << Endl
 					<< "- tag = 0x" << Hex << tag << Dec << Endl
@@ -585,30 +697,87 @@ PrRead(address_t addr, void *data, uint32_t size) {
 					<< "- size = " << size << Endl
 					<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << CONFIG::LINELEN << ")" << Endl
 					<< EndDebugError;
-				exit(-1);
 			}
+			exit(-1);
 		}
-		cache[set].ReadData(tag, data, size, hit);
+		cache[set].GetLine(tag, way, hit);
 		if(!hit) { // miss
+			if(VerbosePrRead())
+				(*inherited::logger_import) << DebugInfo << LOCATION
+					<< "Read access to 0x" << Hex << addr << Dec
+					<< " missed, refetching cache line"
+					<< Endl << EndDebugInfo;
 			// read operations always allocate
+			bool valid;
 			bool modified;
 			address_t replace_address;
-			cache[set].GetLineToReplace(way, replace_address, buffer, modified);
-			if(modified)
+			cache[set].GetLineToReplace(way, replace_address, buffer, valid, modified);
+			if(valid && modified) {
+				if(VerbosePrRead())
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Replacing cache line with address 0x"
+						<< Hex << replace_address << Dec << " with: " << Endl
+						<< " - set = " << set << Endl
+						<< " - way = " << way << Endl
+						<< " - valid = " << valid << Endl
+						<< " - modified = " << modified
+						<< Endl << EndDebugInfo;
 				StoreDataInMem(replace_address, buffer, CONFIG::LINELEN);
+			} else {
+				if(VerbosePrRead())
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Replacing set = " << set << " way = " << way
+						<< Endl << EndDebugInfo;
+			}
 			cache[set].InvalidateLine(way);
 			
+			if(VerbosePrRead())
+				(*inherited::logger_import) << DebugInfo << LOCATION
+					<< "Refetching cache line with address 0x"
+					<< Hex << addr << Dec
+					<< Endl << EndDebugInfo;
 			//get a pointer to the data to be written in cache
-			LoadDataFromMem(addr, buffer, CONFIG::LINELEN);
-
+			LoadDataFromMem(addr & ~(typename CONFIG::address_t)(CONFIG::LINELEN - 1), buffer, CONFIG::LINELEN);
+			if(VerbosePrRead()) {
+				(*inherited::logger_import) << DebugInfo << LOCATION
+					<< "Fetched cache line:" << Endl
+					<< " - addr = 0x" << Hex << addr << Dec << Endl
+					<< " - data = " << Hex;
+				for(unsigned int i = 0; i < CONFIG::LINELEN; i++) 
+					(*inherited::logger_import) << (unsigned int)(buffer[i]) << " ";
+				(*inherited::logger_import) << Dec << Endl
+					<< EndDebugInfo;
+			}
+			
 			// allocate block
 			cache[set].AllocateLine(way, tag, buffer);
+			cache[set].ValidateLine(way);
 			cache[set].UpdateReplacementPolicy(lock, lock_index, way); // ???
 			
 			// perform the read
-			cache[set].ReadData(tag, data, size, hit);
+		}
+		cache[set].ReadData(way, data, pos, size);
+		if(VerbosePrRead()) {
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "Read addr = 0x" << Hex << addr << Dec
+				<< " with size = " << size
+				<< " after miss (set = " << set 
+				<< ", way = " << way << ", pos = " << pos << ")" << Endl
+				<< " - data = " << Hex;
+			for(unsigned int i = 0; i < size; i++)
+				(*inherited::logger_import) << (unsigned int)(((uint8_t *)data)[i])
+					<< " ";
+			(*inherited::logger_import) << Dec << Endl
+				<< EndDebugInfo;
 		}
 	} else { // cache is disabled
+		if(VerbosePrRead()) {
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "Cache disabled, forwarding "
+				<< "read on 0x" << Hex << addr << Dec
+				<< " of size " << size
+				<< Endl << EndDebugInfo;
+		}
 		// load data from memory
 		LoadDataFromMem(addr, data, size);
 	}
@@ -681,6 +850,210 @@ StoreDataInMem(address_t addr, const void* buffer, uint32_t size) {
 //			cerr << "WARNING : " << __FUNCTION__ << " : failed, NO CONNECTION" << endl;
 //		}
 }
+
+template <class CONFIG>
+void
+Cache<CONFIG> ::
+Reset() {
+}
+
+template <class CONFIG>
+bool
+Cache<CONFIG> ::
+ReadMemory(address_t addr, void *data, uint32_t size) {
+	address_t tag;
+	address_t set;
+	address_t pos;
+	address_t way;
+	bool hit;
+
+	if(VerboseReadMemory()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Read memory on address 0x" << Hex << addr << Dec
+			<< " of size = " << size << Endl
+			<< EndDebugInfo;
+	}
+	if(enabled) {
+		for(uint32_t i = 0; i < size; i++) {
+			DecodeAddress(addr + i, tag, set, pos);
+			cache[set].GetLine(tag, way, hit);
+			if(!hit) { // miss
+				if(inherited::memory_import) {
+					if(!inherited::memory_import->ReadMemory(addr + i, &(((uint8_t *)data)[i]), 1)) { 
+						if(VerboseReadMemory()) {
+							(*inherited::logger_import) << DebugInfo << LOCATION
+								<< "Failed read memory on address 0x" << Hex << addr << Dec
+								<< " of size = " << size 
+								<< ", because of error when performing ReadMemory on memory_import" << Endl
+								<< EndDebugInfo;
+						}
+						return false;
+					}
+				} else {
+					if(VerboseReadMemory()) {
+						(*inherited::logger_import) << DebugInfo << LOCATION
+							<< "Fead memory on address 0x" << Hex << addr << Dec
+							<< " of size = " << size 
+							<< ", because memory_import is not connected" << Endl
+							<< EndDebugInfo;
+					}
+					return false;
+				}
+			} else
+				cache[set].ReadData(tag, &(((uint8_t *)data)[i]), pos, 1);
+		}
+	} else { // cache is disabled
+		// load data from memory
+		if(inherited::memory_import) {
+			if(!inherited::memory_import->ReadMemory(addr, data, size)) {
+				if(VerboseReadMemory()) {
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Failed read memory on address 0x" << Hex << addr << Dec
+						<< " of size = " << size
+						<< ", because of error when performing ReadMemory on memory_import" << Endl
+						<< EndDebugInfo;
+				}
+				return false;
+			}
+		}
+	}
+	if(VerboseReadMemory()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Succeded read memory on address 0x" << Hex << addr << Dec
+			<< " of size = " << size << " :" << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++)
+			(*inherited::logger_import) << " " << (unsigned int)(((uint8_t *)data)[i]);
+		(*inherited::logger_import) << Endl << EndDebugInfo;
+	}
+	return true;
+}
+
+template <class CONFIG>
+bool 
+Cache<CONFIG> ::
+WriteMemory(address_t addr, const void *buffer, uint32_t size) {
+	address_t tag;
+	address_t set;
+	address_t pos;
+	address_t way;
+	bool hit;
+
+	if(VerboseWriteMemory()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Write memory on address 0x" << Hex << addr << Dec
+			<< " of size = " << size << " :" << Endl
+			<< " -data =";
+		for(unsigned int i = 0; i < size; i++)
+			(*inherited::logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
+		(*inherited::logger_import) << Endl << EndDebugInfo;
+	}
+	if(enabled) {
+		for(uint32_t i = 0; i < size; i++) {
+			DecodeAddress(addr + i, tag, set, pos);
+			cache[set].GetLine(tag, way, hit);
+			if(hit)
+				cache[set].WriteData(tag, &(((uint8_t *)buffer)[i]), pos, 1);
+			if(inherited::memory_import) {
+				if(!inherited::memory_import->WriteMemory(addr + i, &(((uint8_t *)buffer)[i]), 1)) {
+					if(VerboseWriteMemory())
+						(*inherited::logger_import) << DebugInfo << LOCATION
+							<< "Failed write memory on address 0x" << Hex << addr << Dec
+							<< " of size = " << size
+							<< ", because of error when performing WriteMemory on memory_import" << Endl
+							<< EndDebugInfo;
+					return false;
+				}
+			} else {
+				if(VerboseWriteMemory())
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Failed write memory on address 0x" << Hex << addr << Dec
+						<< " of size = " << size
+						<< ", because memory_import is not connected" << Endl
+						<< EndDebugInfo;
+				return false;
+			}
+		}
+	} else {
+		if(inherited::memory_import) {
+			if(!inherited::memory_import->WriteMemory(addr, buffer, size)) {
+				if(VerboseWriteMemory())
+					(*inherited::logger_import) << DebugInfo << LOCATION
+						<< "Failed write memory on address 0x" << Hex << addr << Dec
+						<< " of size = " << size
+						<< ", because of error when performing WriteMemory on memory_import" << Endl
+						<< EndDebugInfo;
+				return false;
+			}
+		} else {
+			if(VerboseWriteMemory())
+				(*inherited::logger_import) << DebugInfo << LOCATION
+					<< "Failed write memory on address 0x" << Hex << addr << Dec
+					<< " of size = " << size
+					<< ", because memory_import is not connected" << Endl
+					<< EndDebugInfo;
+			return false;		
+		}
+	}
+	if(VerboseWriteMemory()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Succeded write memory on address 0x" << Hex << addr << Dec
+			<< " of size = " << size << " :" << Endl
+			<< " -data =";
+		for(unsigned int i = 0; i < size; i++)
+			(*inherited::logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
+		(*inherited::logger_import) << Endl << EndDebugInfo;
+	}
+	return true;
+}
+
+/**********************************************************************/
+/* Verbose methods                                              START */
+/**********************************************************************/
+
+template <class CONFIG>
+inline INLINE
+bool 
+Cache<CONFIG> ::
+VerbosePrRead() {
+	return CONFIG::DEBUG_ENABLE && verbose_pr_read && inherited::logger_import;
+}
+
+template <class CONFIG>
+inline INLINE
+bool 
+Cache<CONFIG> ::
+VerbosePrWrite() {
+	return CONFIG::DEBUG_ENABLE && verbose_pr_write && inherited::logger_import;
+}
+
+template <class CONFIG>
+inline INLINE
+bool 
+Cache<CONFIG> ::
+VerboseReadMemory() {
+	return CONFIG::DEBUG_ENABLE && verbose_read_memory && inherited::logger_import;
+}
+
+template <class CONFIG>
+inline INLINE
+bool 
+Cache<CONFIG> ::
+VerboseWriteMemory() {
+	return CONFIG::DEBUG_ENABLE && verbose_write_memory && inherited::logger_import;
+}
+
+template <class CONFIG>
+inline INLINE
+bool
+Cache<CONFIG> ::
+HasVerbose() {
+	return verbose_all || verbose_pr_read || verbose_pr_write;
+}
+
+/**********************************************************************/
+/* Verbose methods                                                END */
+/**********************************************************************/
 
 #undef LOCATION
 #undef INLINE

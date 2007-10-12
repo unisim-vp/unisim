@@ -109,19 +109,29 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	memory_import("memory_import", this),
 	linux_os_import("linux_os_import", this),
 	logger_import("logger_import", this),
+	cache_l1_logger_import("cache_l1_logger_import", this),
+	cache_il1_logger_import("cache_il1_logger_import", this),
+	cache_l2_logger_import("cache_l2_logger_import", this),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
 	param_verbose_setup("verbose-setup", this, verbose_setup),
 	verbose_step(false),
 	param_verbose_step("verbose-step", this, verbose_step),
+	verbose_dump_regs_start(false),
+	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
+	verbose_dump_regs_end(false),
+	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
 	memory_interface(_memory_interface),
 	instruction_counter(0),
 	insn_cache_line_address(0),
+	cache_l1(0),
+	cache_il1(0),
+	cache_l2(0),
 	running(true) {
 	/* setting setup dependencies */
 	SetupDependsOn(logger_import);
-	SetupDependsOn(linux_os_import);
+//	SetupDependsOn(linux_os_import);
 	
 	/* Reset all the registers */
 	InitGPR();
@@ -138,6 +148,8 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 
 	/* initialize the check condition table */
 	InitializeCheckConditionTable();
+	
+	CreateMemorySystem();
 }
 
 // Destructor
@@ -158,6 +170,8 @@ Setup() {
 	if(CONFIG::DEBUG_ENABLE && verbose_all) {
 		verbose_setup = true;
 		verbose_step = true;
+		verbose_dump_regs_start = true;
+		verbose_dump_regs_end = true;
 	}
 	if(CONFIG::DEBUG_ENABLE && verbose_all && logger_import) {
 		(*logger_import) << DebugInfo << LOCATION
@@ -171,6 +185,14 @@ Setup() {
 		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "verbose-step = true"
+				<< Endl << EndDebugInfo;
+		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-dump-regs-end = true"
+				<< Endl << EndDebugInfo;
+		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-dump-regs-start = true"
 				<< Endl << EndDebugInfo;
 	}
 	
@@ -192,7 +214,9 @@ Setup() {
 				<< Endl << EndDebugInfo;
 		}
 		// initialize the cache system
-		
+		if(cache_l1 != 0) cache_l1->Enable();
+		if(cache_il1 != 0) cache_il1->Enable();
+		if(cache_l2 != 0) cache_l2->Enable();
 	} else {
 		/* we are running in system mode */
 		if(logger_import) {
@@ -359,6 +383,8 @@ Step() {
 	Operation<CONFIG> *op = NULL;
 	current_pc = GetGPR(PC_reg);
 
+	VerboseDumpRegsStart();
+	
 	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Starting step at PC = 0x"
@@ -414,64 +440,71 @@ Step() {
 	}
 
 	try {
-	if(memory_access_reporting_import) {
+		if(memory_access_reporting_import) {
+			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Reporting memory acces for fetch at address 0x"
+					<< Hex << current_pc << Dec
+					<< Endl << EndDebugInfo;
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, current_pc, 4);
+		}
+
+		insn_t insn;
 		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
-				<< "Reporting memory acces for fetch at address 0x"
+				<< "Fetching (reading) instruction at address 0x"
 				<< Hex << current_pc << Dec
 				<< Endl << EndDebugInfo;
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, current_pc, 4);
-	}
+		
+		ReadInsn(current_pc, insn);
+//		if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
+//			insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
+//			ReadInsnLine();
+//			//	memory_interface->PrRead(insn_cache_line_address, insn_cache_line, 4 * 8);
+//		} 
+//		insn = insn_cache_line[(current_pc & (typename CONFIG::address_t)0x1F) >> 2];
+		//	insn_t insn_check;
+		//	memory_interface->PrRead(current_pc, &insn_check, 4, CC_NONE);
+		//	if(insn != insn_check) {
+		//		cerr << "error at pc address = 0x" << hex << current_pc << dec << endl;
+		//		cerr << "insn = 0x" << hex << insn << dec 
+		//			<< ", insn_check = 0x" << hex << insn_check << dec << endl;
+		//		cerr << "align = " << ((current_pc & (typename CONFIG::address_t)0x1F) >> 2) << endl;
+		//		cerr << "insn_cache_line =";
+		//		for(unsigned int i = 0; i < 8; i++)
+		//			cerr << " 0x" << hex << insn_cache_line[i] << dec;
+		//		cerr << endl;
+		//		exit(-1);
+		//	}
+	
+		if(CONFIG::ENDIANESS == E_BIG_ENDIAN)
+			insn = BigEndian2Host(insn);
+		else
+			insn = LittleEndian2Host(insn);
+	
+		/* Decode current PC */
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Decoding instruction at 0x" 
+				<< Hex << current_pc << Dec 
+				<< Endl << EndDebugInfo;
+		op = Decoder<CONFIG>::Decode(current_pc, insn);
+		/* Execute instruction */
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) {
+			stringstream disasm_str;
+			op->disasm(*this, disasm_str);
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Executing instruction "
+				<< disasm_str.str()
+				<< " at 0x" << Hex << current_pc << Dec 
+				<< " (0x" << Hex << insn << Dec << ")"
+				<< Endl << EndDebugInfo;
+		}
+		op->execute(*this);
+		
+		VerboseDumpRegsEnd();
 
-	insn_t insn;
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Fetching (reading) instruction at address 0x"
-			<< Hex << current_pc << Dec
-			<< Endl << EndDebugInfo;
-	if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
-		insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
-		memory_interface->PrRead(insn_cache_line_address, insn_cache_line, 4 * 8);
-	} 
-	insn = insn_cache_line[(current_pc & (typename CONFIG::address_t)0x1F) >> 2];
-//	insn_t insn_check;
-//	memory_interface->PrRead(current_pc, &insn_check, 4, CC_NONE);
-//	if(insn != insn_check) {
-//		cerr << "error at pc address = 0x" << hex << current_pc << dec << endl;
-//		cerr << "insn = 0x" << hex << insn << dec 
-//			<< ", insn_check = 0x" << hex << insn_check << dec << endl;
-//		cerr << "align = " << ((current_pc & (typename CONFIG::address_t)0x1F) >> 2) << endl;
-//		cerr << "insn_cache_line =";
-//		for(unsigned int i = 0; i < 8; i++)
-//			cerr << " 0x" << hex << insn_cache_line[i] << dec;
-//		cerr << endl;
-//		exit(-1);
-//	}
-	
-	if(CONFIG::ENDIANESS == E_BIG_ENDIAN)
-		insn = BigEndian2Host(insn);
-	else
-		insn = LittleEndian2Host(insn);
-	
-	/* Decode current PC */
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Decoding instruction at 0x" 
-			<< Hex << current_pc << Dec 
-			<< Endl << EndDebugInfo;
-	op = Decoder<CONFIG>::Decode(current_pc, insn);
-	/* Execute instruction */
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) {
-		stringstream disasm_str;
-		op->disasm(*this, disasm_str);
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Executing instruction "
-			<< disasm_str.str()
-			<< " at 0x" << Hex << current_pc << Dec 
-			<< Endl << EndDebugInfo;
-	}
-	op->execute(*this);
-	instruction_counter++;
+		instruction_counter++;
 	} 
 	catch(ResetException<CONFIG> &exc) {
 		if(logger_import)
@@ -1591,13 +1624,17 @@ CPU<CONFIG> ::
 DumpRegs() const {
   ostringstream str;
 
-  for(unsigned int i = 0; i < 4; i++) {
-    str << "r" << (i * 4) << " = 0x" << hex << GetGPR(i * 4) << dec; 
-    for(unsigned int j = 1; j < 4; j++) {
-      str << "\t r" << ((i * 4) + j) << " = 0x" << hex << GetGPR((i * 4) + j) << dec; 
-    }
-    str << endl;
+  for(unsigned int i = 0; i < 16; i++) {
+	  str << "r" << i << " = 0x" << hex << GetGPR(i) << dec << ", ";
   }
+  
+//  for(unsigned int i = 0; i < 4; i++) {
+//    str << "r" << (i * 4) << " = 0x" << hex << GetGPR(i * 4) << dec; 
+//    for(unsigned int j = 1; j < 4; j++) {
+//      str << "\t r" << ((i * 4) + j) << " = 0x" << hex << GetGPR((i * 4) + j) << dec; 
+//    }
+//    str << endl;
+//  }
 
   str << "cpsr = (" << hex << GetCPSR() << dec << ") ";
   typename CONFIG::reg_t mask;
@@ -1605,7 +1642,7 @@ DumpRegs() const {
     if((mask & GetCPSR()) != 0) str << "1";
     else str << "0";
   }
-  str << endl;
+//  str << endl;
 
   return str.str();
 }
@@ -2312,10 +2349,31 @@ SubtractionOverflowFrom(const typename CONFIG::reg_t res, const typename CONFIG:
 /**************************************************************/
 
 template<class CONFIG>
+bool
+CPU<CONFIG> ::
+ReadInsn(typename CONFIG::address_t address, uint32_t &val) {
+	if(CONFIG::HAS_INSN_CACHE_L1) {
+		cache_il1->PrRead(address, &val, 4);
+		return true;
+	}
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+		cache_l1->PrRead(address, &val, 4);
+		return true;
+	}
+	
+	memory_interface->PrRead(address, &val, 4);
+	return true;
+}
+
+
+template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read8(typename CONFIG::address_t address, uint8_t &val) {
-	memory_interface->PrRead(address, &val, 1);
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+		cache_l1->PrRead(address, &val, 1);
+	} else
+		memory_interface->PrRead(address, &val, 1);
 
 	if(memory_access_reporting_import)
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
@@ -2329,7 +2387,10 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read16(typename CONFIG::address_t address, uint16_t &val) {
-	memory_interface->PrRead(address, &val, 2);
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+		cache_l1->PrRead(address, &val, 2);
+	} else 
+		memory_interface->PrRead(address, &val, 2);
 
 	val = Host2Target(CONFIG::ENDIANESS, val);
   
@@ -2345,7 +2406,10 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read32(typename CONFIG::address_t address, uint32_t &val) {
-	memory_interface->PrRead(address, &val, 4);
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+		cache_l1->PrRead(address, &val, 4);
+	} else
+		memory_interface->PrRead(address, &val, 4);
 
 	val = Target2Host(CONFIG::ENDIANESS, val);
 
@@ -2366,10 +2430,14 @@ Write8(typename CONFIG::address_t address, uint8_t &val) {
 			<< "address = 0x" << Hex << address << Dec
 			<< ", value = " << Hex << val << Dec
 			<< Endl << EndDebugInfo;
+
 	uint8_t value;
   
 	value = val;
-	memory_interface->PrWrite(address, &value, 1);
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+		cache_l1->PrWrite(address, &value, 1);
+	} else
+		memory_interface->PrWrite(address, &value, 1);
 
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
@@ -2392,7 +2460,10 @@ Write16(typename CONFIG::address_t address, uint16_t &val) {
 	uint16_t cp;
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
-	memory_interface->PrWrite(address, &cp, 2);
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+		cache_l1->PrWrite(address, &cp, 2);
+	} else
+		memory_interface->PrWrite(address, &cp, 2);
 
 	if(memory_access_reporting_import)
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
@@ -2409,7 +2480,10 @@ Write32(typename CONFIG::address_t address, uint32_t &val) {
   
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
-	memory_interface->PrWrite(address, &cp, 4);
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+		cache_l1->PrWrite(address, &cp, 4);
+	} else
+		memory_interface->PrWrite(address, &cp, 4);
 
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
@@ -2710,12 +2784,83 @@ template<class CONFIG>
 endian_type 
 CPU<CONFIG> ::
 GetEndianess() {
-  return CONFIG::ENDIANESS;
+	return CONFIG::ENDIANESS;
 }
 
 /**************************************************************/
-/* Verbose methods (protected)                            END */
+/* Memory system creation methods (private)             START */
 /**************************************************************/
+
+template<class CONFIG>
+inline INLINE
+void 
+CPU<CONFIG> ::
+CreateMemorySystem() {
+	if(CONFIG::HAS_CACHE_L2) {
+		cerr << "Configuring cache level 2" << endl;
+		cache_l2 = new Cache<typename CONFIG::cache_l2_t>("cache_l2", memory_interface, this);
+		cache_l2->memory_import >> memory_import;
+		cache_l2->logger_import >> cache_l2_logger_import;
+		if(CONFIG::HAS_INSN_CACHE_L1) {
+			cerr << "Configuring instruction cache level 1" << endl;
+			cache_il1 = new Cache<typename CONFIG::insn_cache_l1_t>("cache_il1", cache_l2, this);
+			cache_il1->logger_import >> cache_il1_logger_import;
+			if(CONFIG::HAS_DATA_CACHE_L1) {
+				cerr << "Configuring data cache level 1" << endl;
+				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", cache_l2, this);
+				cache_l1->memory_import >> cache_l2->memory_export;
+				memory_export >> cache_l1->memory_export;
+				cache_l1->logger_import >> cache_l1_logger_import;
+			} else {
+				cerr << "No data data cache level 1" << endl;
+				cache_l1 = cache_l2;
+				memory_export >> cache_l2->memory_export;
+			}
+		} else {
+			if(CONFIG::HAS_DATA_CACHE_L1) {
+				cerr << "Configuring unisified cache level 1" << endl;
+				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_l1", cache_l2, this);
+				cache_l1->memory_import >> cache_l2->memory_export;
+				memory_export >> cache_l1->memory_export;
+				cache_l1->logger_import >> cache_l1_logger_import;
+			}
+		}
+	} else {
+		if(CONFIG::HAS_INSN_CACHE_L1) {
+			cache_il1 = new Cache<typename CONFIG::insn_cache_l1_t>("cache_il1", memory_interface, this);
+			cerr << "Configuring instruction cache level 1" << endl;
+			cache_il1->logger_import >> cache_il1_logger_import;
+			if(CONFIG::HAS_DATA_CACHE_L1) {
+				cerr << "Configuring data cache level 1" << endl;
+				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", memory_interface, this);
+				cache_l1->memory_import >> memory_import;
+				memory_export >> cache_l1->memory_export;
+				cache_l1->logger_import >> cache_l1_logger_import;
+			}
+		} else {
+			if(CONFIG::HAS_DATA_CACHE_L1) {
+				cerr << "Configuring unified cache level 1" << endl;
+				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", memory_interface, this);
+				cache_l1->memory_import >> memory_import;
+				memory_export >> cache_l1->memory_export;
+				cache_l1->logger_import >> cache_l1_logger_import;
+			} else {
+				cerr << "No caches present in this system" << endl;
+				//			cache_l1 = memory_interface;
+				//			memory_export >> memory_import;
+			}
+		}
+	}
+}
+
+/**************************************************************/
+/* Memory system creation methods (private)               END */
+/**************************************************************/
+
+/**************************************************************/
+/* Verbose methods (protected)                          START */
+/**************************************************************/
+
 template<class CONFIG>
 inline INLINE
 bool
@@ -2731,6 +2876,57 @@ CPU<CONFIG> ::
 VerboseStep() {
 	return CONFIG::DEBUG_ENABLE && verbose_step && logger_import;
 }
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+VerboseDumpRegs() {
+	for(unsigned int i = 0; i < 4; i++) {
+		for(unsigned int j = 0; j < 4; j++)
+			(*logger_import)
+				<< "\t- r" << ((i*4) + j) << " = 0x" << Hex << GetGPR((i*4) + j) << Dec;
+		(*logger_import) << Endl;
+	}
+	(*logger_import) << "\t- cpsr = (" << hex << GetCPSR() << dec << ") ";
+	typename CONFIG::reg_t mask;
+	for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
+		if((mask & GetCPSR()) != 0) (*logger_import) << "1";
+		else (*logger_import) << "0";
+	}
+	(*logger_import) << Endl;
+	
+}
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+VerboseDumpRegsStart() {
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Register dump before starting instruction execution: " << Endl;
+		VerboseDumpRegs();
+		(*logger_import) << EndDebugInfo;
+	}
+}
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+VerboseDumpRegsEnd() {
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Register dump at the end of instruction execution: " << Endl;
+		VerboseDumpRegs();
+		(*logger_import) << EndDebugInfo;
+	}
+}
+
+/**************************************************************/
+/* Verbose methods (protected)                            END */
+/**************************************************************/
 
 } // end of namespace arm
 } // end of namespace processor

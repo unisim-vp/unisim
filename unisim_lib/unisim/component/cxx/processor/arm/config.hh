@@ -50,6 +50,8 @@ using unisim::util::endian::E_LITTLE_ENDIAN;
 
 using unisim::component::cxx::processor::arm::cache::ARMCache512bDMWT8bls_Config;
 using unisim::component::cxx::processor::arm::cache::ARMCache512bDMWT8bls_DebugConfig;
+using unisim::component::cxx::processor::arm::cache::ARMCache64KBDMWT32bls_Config;
+using unisim::component::cxx::processor::arm::cache::ARMCache64KBDMWT32bls_DebugConfig;
 
 /**
  * The different processor models supported.
@@ -197,9 +199,18 @@ public:
 	static const bool HAS_DATA_CACHE_L1 = true;
 	static const bool HAS_CACHE_L2 = true;
 	
-	static const ARMCache512bDMWT8bls_Config cache_il1;
-	static const ARMCache512bDMWT8bls_Config cache_dl1;
-	static const ARMCache512bDMWT8bls_Config cache_l2;
+	typedef ARMCache64KBDMWT32bls_Config cache_l1_t;
+	typedef ARMCache64KBDMWT32bls_Config insn_cache_l1_t;
+	typedef ARMCache64KBDMWT32bls_Config cache_l2_t;
+};
+
+class ARM9TDMIDebugConfig : public ARM9TDMIConfig {
+public:
+	static const bool DEBUG_ENABLE = true;
+
+	typedef ARMCache64KBDMWT32bls_DebugConfig cache_l1_t;
+	typedef ARMCache64KBDMWT32bls_DebugConfig insn_cache_l1_t;
+	typedef ARMCache64KBDMWT32bls_DebugConfig cache_l2_t;
 };
 
 class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {
@@ -207,14 +218,9 @@ public:
 	static const endian_type ENDIANESS = E_BIG_ENDIAN;
 };
 
-class ARM9TDMI_BigEndian_DebugConfig : public ARM9TDMIConfig {
+class ARM9TDMI_BigEndian_DebugConfig : public ARM9TDMIDebugConfig {
 public:
-	static const bool DEBUG_ENABLE = true;
 	static const endian_type ENDIANESS = E_BIG_ENDIAN;
-
-	static const ARMCache512bDMWT8bls_DebugConfig cache_il1;
-	static const ARMCache512bDMWT8bls_DebugConfig cache_dl1;
-	static const ARMCache512bDMWT8bls_DebugConfig cache_l2;
 };
 
 class ARM9TDMI_LittleEndian_Config : public ARM9TDMIConfig {
@@ -222,14 +228,9 @@ public:
 	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
 };
 
-class ARM9TDMI_LittleEndian_DebugConfig : public ARM9TDMIConfig {
+class ARM9TDMI_LittleEndian_DebugConfig : public ARM9TDMIDebugConfig {
 public:
-	static const bool DEBUG_ENABLE = true;
 	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-
-	static const ARMCache512bDMWT8bls_DebugConfig cache_il1;
-	static const ARMCache512bDMWT8bls_DebugConfig cache_dl1;
-	static const ARMCache512bDMWT8bls_DebugConfig cache_l2;
 };
 
 /**
@@ -270,6 +271,20 @@ public:
 	static const bool HAS_INSN_ARITH_MULT_SMLAXY = true;
 	static const bool HAS_INSN_ARITH_MULT_SMLAWY = true;
 	static const bool HAS_INSN_ARITH_MULT_SMLALWY = true;
+
+	typedef ARMCache512bDMWT8bls_Config cache_l1_t;
+	typedef ARMCache512bDMWT8bls_Config insn_cache_l1_t;
+	typedef ARMCache512bDMWT8bls_Config cache_l2_t;
+};
+
+class ARM966E_SDebugConfig :
+	public ARM966E_SConfig {
+public:
+	static const bool DEBUG_ENABLE = true;
+	
+	typedef ARMCache512bDMWT8bls_DebugConfig cache_l1_t;
+	typedef ARMCache512bDMWT8bls_DebugConfig insn_cache_l1_t;
+	typedef ARMCache512bDMWT8bls_DebugConfig cache_l2_t;
 };
 
 class ARM966E_S_BigEndian_Config : public ARM966E_SConfig {
@@ -277,9 +292,8 @@ public:
 	static const endian_type ENDIANESS = E_BIG_ENDIAN;
 };
 
-class ARM966E_S_BigEndian_DebugConfig : public ARM966E_SConfig {
+class ARM966E_S_BigEndian_DebugConfig : public ARM966E_SDebugConfig {
 public:
-	static const bool DEBUG_ENABLE = true;
 	static const endian_type ENDIANESS = E_BIG_ENDIAN;
 };
 
@@ -288,9 +302,8 @@ public:
 	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
 };
 
-class ARM966E_S_LittleEndian_DebugConfig : public ARM966E_SConfig {
+class ARM966E_S_LittleEndian_DebugConfig : public ARM966E_SDebugConfig {
 public:
-	static const bool DEBUG_ENABLE = true;
 	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
 };
 
