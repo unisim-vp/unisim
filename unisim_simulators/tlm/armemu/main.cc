@@ -70,7 +70,10 @@
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
-typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig CPU_CONFIG;
+//typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_Config CPU_CONFIG;
+typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig CPU_CONFIG;
+//typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config CPU_CONFIG;
+//typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig CPU_CONFIG;
 typedef unisim::component::tlm::bridge::simple_fsb_to_mem::Addr32BurstSize32_Config BRIDGE_CONFIG;
 
 //static const bool DEBUG_INFORMATION = true;
@@ -247,7 +250,7 @@ int main(int argc, char *argv[], char **envp) {
 	LoggerServer *logger = 0;
 	if(logger_on) {
 		logger = new LoggerServer("logger");
-		(*logger)["show-file"] = true;
+		(*logger)["show-file"] = false; //true;
 		(*logger)["show-function"] = true;
 		(*logger)["show-line"] = true;
 	}
@@ -318,6 +321,11 @@ int main(int argc, char *argv[], char **envp) {
 	// (*cpu)["verbose-all"] = true;
 	// (*cpu)["verbose-setup"] = true;
 	(*cpu)["verbose-step"] = true;
+	(*cpu)["verbose-dump-regs-start"] = true;
+	(*cpu)["verbose-dump-regs-end"] = true;
+	(*cpu)["cache_dl1.verbose-all"] = true;
+	(*cpu)["cache_il1.verbose-all"] = true;
+	(*cpu)["cache_l2.verbose-all"] = true;
 	// (*cpu)["verbose-tlm-bus-synchronize"] = true;
 	// (*cpu)["verbose-tlm-run-thread"] = true;
 	// (*cpu)["verbose-tlm-commands"] = true;
@@ -349,6 +357,9 @@ int main(int argc, char *argv[], char **envp) {
 	if(logger_on) {
 		unsigned int logger_index = 0;
 		cpu->logger_import >> *logger->logger_export[logger_index++];
+		cpu->cache_l1_logger_import >> *logger->logger_export[logger_index++];
+		cpu->cache_il1_logger_import >> *logger->logger_export[logger_index++];
+		cpu->cache_l2_logger_import >> *logger->logger_export[logger_index++];
 		bridge->logger_import >> *logger->logger_export[logger_index++];
 		linux_os->logger_import >> *logger->logger_export[logger_index++];
 		if(logger_messages) {

@@ -70,7 +70,7 @@ then \
   then \
     autoheader; \
   fi; \
-  automake -a; \
+  automake -ac; \
 else \
   echo \"skipping:  \$current_path\"; \
 fi" \;

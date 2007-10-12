@@ -769,11 +769,11 @@ int sc_main(int argc, char *argv[])
 		irq_msg_spy_index++;
 
 		pci_stub->cpu_irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[2])["source_module_name"] = pci_stub->name();
-		(*irq_msg_spy[2])["source_port_name"] = pci_stub->cpu_irq_port.name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_stub->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = pci_stub->cpu_irq_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(*mpc107->irq_slave_port[pci_stub_irq]);
-		(*irq_msg_spy[2])["target_module_name"] = mpc107->name();
-		(*irq_msg_spy[2])["target_port_name"] = mpc107->irq_slave_port[pci_stub_irq]->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = mpc107->irq_slave_port[pci_stub_irq]->name();
 		irq_msg_spy_index++;
 	}
 	else
