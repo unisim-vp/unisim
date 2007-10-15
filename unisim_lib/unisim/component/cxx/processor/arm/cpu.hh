@@ -764,6 +764,11 @@ private:
     void CreateMemorySystem();
 
 protected:
+	// parameters for the 966E_S configuration
+	bool arm966es_initram;
+	Parameter<bool> param_arm966es_initram;
+	bool arm966es_vinithi;
+	Parameter<bool> param_arm966es_vinithi;
 	// verbose parameters
 	bool verbose_all;
 	Parameter<bool> param_verbose_all;

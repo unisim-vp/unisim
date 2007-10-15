@@ -262,7 +262,7 @@ ldm_1_da.execute = {
 	num_regs = cpu.LSMda(rn_value, reg_list,
 						&start_address, &end_address,
 						&rn_new_val);
-  
+	
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {

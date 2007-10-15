@@ -121,6 +121,7 @@ private:
 	Set<CONFIG> cache[CONFIG::NSETS];
 
 	void DecodeAddress(address_t addr, address_t& tag, address_t& index, address_t& offset);
+	address_t CodeAddress(address_t tag, address_t index);
 	
 	uint32_t GetCacheSize();
 	uint32_t GetCacheAssociativity();

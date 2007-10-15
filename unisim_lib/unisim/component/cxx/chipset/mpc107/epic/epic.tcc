@@ -2735,6 +2735,11 @@ ReadIACK() {
 	uint32_t irq;
 	uint32_t vpr;
 	
+	if(DEBUG && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Performing read on register IACK"
+			<< Endl << EndDebugInfo;
+	}
 	/* Return the interrupt vector corresponding to the highest priority pending
 	 *   interrupt. Other actions:
 	 * - the associated bit in the IPR (irq_pending_reg) is cleared (if it is 
@@ -2745,35 +2750,121 @@ ReadIACK() {
 	 */
 	/* check if there is at least an interruption in the irq_pending_reg, if 
 	 *   not return the spurious vector */
-	if(pending_reg == 0)
+	if(pending_reg == 0) {
+		if(DEBUG && logger_import) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "No pending interruption found in the pending register (pending_reg = 0x0),"
+				<< " returning spurious vector (svr = 0x" << Hex << regs.svr << Dec << ")"
+				<< Endl << EndDebugInfo;
+		}
 		return regs.svr;
+	}
+	if(DEBUG && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Found interruptions pending in the pending register (pending_reg = 0x"
+			<< Hex << pending_reg << Dec << ")" << Endl
+			<< EndDebugInfo;
+	}
 	/* get the irq from the irq_selector. if there is no irq the return the 
 	 *   spurious vector */
 	//irq = irq_selector;
 	irq = GetHighestIRQ();
-	if(irq == 0)
+	if(irq == 0) {
+		if(DEBUG && logger_import) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "No interruption active found from the pending register, returning"
+				<< " spurious vector (svr = 0x" << Hex << regs.svr << Dec << ")"
+				<< Endl << EndDebugInfo;
+		}
 		return regs.svr;
+	}
+	if(DEBUG && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Found the highest interruption active and non masked found in the pending register,"
+			<< " irq mask = 0x" << Hex << irq << Dec
+			<< Endl << EndDebugInfo;
+	}
 	/* get the vpr from the corresponding irq */
-	vpr = GetVPR(irq);
+	vpr = GetVPRFromIRQMask(irq);
 	/* check the priority of the irq, if smaller than the processor or current
 	 *   irq in the inservice_reg, return the spurious vector */
 	uint32_t prio = GetPriority(vpr);
-	if(prio <= GetProcessorPriority())
+	if(prio <= GetProcessorPriority()) {
+		if(DEBUG && logger_import) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Irq priority smaller than the processor priority, returning spurious vector (svr = 0x"
+				<< Hex << regs.svr << Dec << "):" << Endl
+				<< " - irq mask = 0x" << Hex << irq << Dec << Endl
+				<< " - vpr = 0x" << Hex << vpr << Dec << " (priority = " << prio << ")" << Endl
+				<< " - processor priority = " << GetProcessorPriority() << Endl
+				<< EndDebugInfo;
+		}
 		return regs.svr;
-	if(inservice_reg.Priority())
-		if(prio <= inservice_reg.Priority())
+	}
+	if(DEBUG && logger_import) {
+		if(DEBUG && logger_import) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Irq priority higher than the processor priority:" << Endl
+				<< " - irq mask = 0x" << Hex << irq << Dec << Endl
+				<< " - vpr = 0x" << Hex << vpr << Dec << " (priority = " << prio << ")" << Endl
+				<< " - processor priority = " << GetProcessorPriority() << Endl
+				<< EndDebugInfo;
+		}
+	}
+	if(inservice_reg.Priority()) {
+		if(prio <= inservice_reg.Priority()) {
+			if(DEBUG && logger_import) {
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Irq priority smaller than the inservice irq priority, returning spurious vector (svr = 0x"
+					<< Hex << regs.svr << Dec << "):" << Endl
+					<< " - irq mask = 0x" << Hex << irq << Dec << Endl
+					<< " - vpr = 0x" << Hex << vpr << Dec << " (priority = " << prio << ")" << Endl
+					<< " - inservice irq priority = " << inservice_reg.Priority() << Endl
+					<< EndDebugInfo;
+			}
 			return regs.svr;
+		}
+	}
+	if(DEBUG && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Irq priority higher than the inservice irq priority:" << Endl
+			<< " - irq mask = 0x" << Hex << irq << Dec << Endl
+			<< " - vpr = 0x" << Hex << vpr << Dec << " (priority = " << prio << ")" << Endl
+			<< " - inservice irq priority = " << inservice_reg.Priority() << Endl
+			<< EndDebugInfo;
+	}
 	/* clear the corresponding pending register if configured as 
 	 *   edge-sensitive */
 	bool edge_sensitive = EdgeSensitive(irq, vpr);
 	if(edge_sensitive) {
+		if(DEBUG && logger_import) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Clearing pending register from irq 0x" << Hex << irq << Dec
+				<< ", because irq is edge sensitive"
+				<< Endl << EndDebugInfo;
+		}
 		pending_reg = pending_reg & ~irq;
 	}
 	/* put the irq vector in the inservice_reg */
 	// TODO: inservice_reg = vpr;
+	if(DEBUG && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Putting irq 0x" << Hex << irq << Dec << " in the inservice register"
+			<< Endl << EndDebugInfo;
+	}
 	inservice_reg.PushIRQ(vpr, prio, irq);
 	/* disable the int signal */
+	if(DEBUG && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Unsetting interrupt signal"
+			<< Endl << EndDebugInfo;
+	}
 	UnsetINT();
+	if(DEBUG && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Returning irq 0x" << Hex << irq << " vector (irq vector = 0x" << GetVector(vpr) << Dec << ")"
+			<< Endl << EndDebugInfo;
+	}
 	return GetVector(vpr);
 }
 
@@ -3047,7 +3138,7 @@ ReadRegister(PHYSICAL_ADDR addr, uint32_t size) {
 				<< "Reading register " << name << " (address = 0x"
 				<< Hex << addr << Dec
 				<< ", size = " << size << " bytes"
-				<< ", data = " << data << ")"
+				<< ", data = 0x" << Hex << data << Dec << ")"
 				<< Endl << EndDebugInfo;
 		return data;
 	}

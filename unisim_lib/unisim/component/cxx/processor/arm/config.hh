@@ -48,10 +48,22 @@ using unisim::util::endian::endian_type;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 
+using unisim::component::cxx::processor::arm::cache::ARMCache512bDMWB8bls_Config;
+using unisim::component::cxx::processor::arm::cache::ARMCache512bDMWB8bls_DebugConfig;
 using unisim::component::cxx::processor::arm::cache::ARMCache512bDMWT8bls_Config;
 using unisim::component::cxx::processor::arm::cache::ARMCache512bDMWT8bls_DebugConfig;
+using unisim::component::cxx::processor::arm::cache::ARMCache32KBDMWB32bls_Config;
+using unisim::component::cxx::processor::arm::cache::ARMCache32KBDMWB32bls_DebugConfig;
+using unisim::component::cxx::processor::arm::cache::ARMCache32KBDMWT32bls_Config;
+using unisim::component::cxx::processor::arm::cache::ARMCache32KBDMWT32bls_DebugConfig;
+using unisim::component::cxx::processor::arm::cache::ARMCache64KBDMWB32bls_Config;
+using unisim::component::cxx::processor::arm::cache::ARMCache64KBDMWB32bls_DebugConfig;
 using unisim::component::cxx::processor::arm::cache::ARMCache64KBDMWT32bls_Config;
 using unisim::component::cxx::processor::arm::cache::ARMCache64KBDMWT32bls_DebugConfig;
+using unisim::component::cxx::processor::arm::cache::ARMCache96KBDMWB32bls_Config;
+using unisim::component::cxx::processor::arm::cache::ARMCache96KBDMWB32bls_DebugConfig;
+using unisim::component::cxx::processor::arm::cache::ARMCache96KBDMWT32bls_Config;
+using unisim::component::cxx::processor::arm::cache::ARMCache96KBDMWT32bls_DebugConfig;
 
 /**
  * The different processor models supported.
@@ -199,18 +211,18 @@ public:
 	static const bool HAS_DATA_CACHE_L1 = true;
 	static const bool HAS_CACHE_L2 = true;
 	
-	typedef ARMCache64KBDMWT32bls_Config cache_l1_t;
-	typedef ARMCache64KBDMWT32bls_Config insn_cache_l1_t;
-	typedef ARMCache64KBDMWT32bls_Config cache_l2_t;
+	typedef ARMCache32KBDMWT32bls_Config cache_l1_t;
+	typedef ARMCache32KBDMWT32bls_Config insn_cache_l1_t;
+	typedef ARMCache96KBDMWT32bls_Config cache_l2_t;
 };
 
 class ARM9TDMIDebugConfig : public ARM9TDMIConfig {
 public:
 	static const bool DEBUG_ENABLE = true;
 
-	typedef ARMCache64KBDMWT32bls_DebugConfig cache_l1_t;
-	typedef ARMCache64KBDMWT32bls_DebugConfig insn_cache_l1_t;
-	typedef ARMCache64KBDMWT32bls_DebugConfig cache_l2_t;
+	typedef ARMCache32KBDMWB32bls_DebugConfig cache_l1_t;
+	typedef ARMCache32KBDMWB32bls_DebugConfig insn_cache_l1_t;
+	typedef ARMCache64KBDMWB32bls_DebugConfig cache_l2_t;
 };
 
 class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {

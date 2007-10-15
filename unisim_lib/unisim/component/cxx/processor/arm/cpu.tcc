@@ -128,7 +128,14 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	cache_l1(0),
 	cache_il1(0),
 	cache_l2(0),
-	running(true) {
+	running(true),
+	/* initialization of parameters for the 966es  START*/
+	arm966es_initram(false),
+	param_arm966es_initram("arm966es_initram", this, arm966es_initram),
+	arm966es_vinithi(false),
+	param_arm966es_vinithi("arm966es_vinithi", this, arm966es_vinithi) 
+	/* initialization of parameters for the 966es  END */
+	{
 	/* setting setup dependencies */
 	SetupDependsOn(logger_import);
 //	SetupDependsOn(linux_os_import);
@@ -276,6 +283,14 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size) {
+	if(addr <= (uint32_t)0xbfffb664 && addr + size > (uint32_t)0xbfffb664) {
+		cerr << Object::GetName() << ": WriteMemory 0x" << hex << addr << dec
+			<< " " << size << " bytes:";
+		for(unsigned int i = 0; i < size; i++) {
+			cerr << " " << hex << (unsigned int)((uint8_t *)buffer)[i] << dec;
+		}
+		cerr << endl;
+	}
 	if(memory_import)
 		return memory_import->WriteMemory(addr, buffer, size);
 	return false;
@@ -1453,6 +1468,14 @@ InitGPR() {
   
   for(unsigned int i = 0; i < num_phys_gprs; i++) 
     phys_gpr[i] = 0;
+  
+  /* Depending on the configuration being used set the initial pc */
+  if(CONFIG::MODEL == ARM966E_S) {
+	  if(arm966es_vinithi)
+		  gpr[15] = (address_t)0xffff0000;
+	  else
+		  gpr[15] = (address_t)0x00000000;
+  }
 }
 
 template<class CONFIG>
@@ -2352,6 +2375,11 @@ template<class CONFIG>
 bool
 CPU<CONFIG> ::
 ReadInsn(typename CONFIG::address_t address, uint32_t &val) {
+	if(CONFIG::DEBUG_ENABLE && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "address = 0x" << Hex << address << Dec
+			<< Endl << EndDebugInfo;
+
 	if(CONFIG::HAS_INSN_CACHE_L1) {
 		cache_il1->PrRead(address, &val, 4);
 		return true;
@@ -2370,6 +2398,11 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read8(typename CONFIG::address_t address, uint8_t &val) {
+	if(CONFIG::DEBUG_ENABLE && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "address = 0x" << Hex << address << Dec
+			<< Endl << EndDebugInfo;
+
 	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
 		cache_l1->PrRead(address, &val, 1);
 	} else
@@ -2387,6 +2420,11 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read16(typename CONFIG::address_t address, uint16_t &val) {
+	if(CONFIG::DEBUG_ENABLE && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "address = 0x" << Hex << address << Dec
+			<< Endl << EndDebugInfo;
+
 	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
 		cache_l1->PrRead(address, &val, 2);
 	} else 
@@ -2406,6 +2444,11 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read32(typename CONFIG::address_t address, uint32_t &val) {
+	if(CONFIG::DEBUG_ENABLE && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "address = 0x" << Hex << address << Dec
+			<< Endl << EndDebugInfo;
+
 	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
 		cache_l1->PrRead(address, &val, 4);
 	} else
@@ -2425,7 +2468,7 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Write8(typename CONFIG::address_t address, uint8_t &val) {
-	if(logger_import)
+	if(CONFIG::DEBUG_ENABLE && logger_import)
 		(*logger_import) << DebugInfo << LOCATION
 			<< "address = 0x" << Hex << address << Dec
 			<< ", value = " << Hex << val << Dec
@@ -2451,7 +2494,7 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Write16(typename CONFIG::address_t address, uint16_t &val) {
-	if(logger_import)
+	if(CONFIG::DEBUG_ENABLE && logger_import)
 		(*logger_import) << DebugInfo << LOCATION
 			<< "address = 0x" << Hex << address << Dec
 			<< ", value = " << Hex << val << Dec
@@ -2477,6 +2520,12 @@ template<class CONFIG>
 bool CPU<CONFIG> ::
 Write32(typename CONFIG::address_t address, uint32_t &val) {
 	uint32_t cp;
+
+	if(CONFIG::DEBUG_ENABLE && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "address = 0x" << Hex << address << Dec
+			<< ", value = " << Hex << val << Dec
+			<< Endl << EndDebugInfo;
   
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
@@ -2738,7 +2787,7 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 CheckAlignmentExcep(typename CONFIG::address_t addr) {
-	if(logger_import)
+	if(CONFIG::DEBUG_ENABLE && logger_import)
 		(*logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;

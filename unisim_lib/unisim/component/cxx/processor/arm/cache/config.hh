@@ -131,6 +131,48 @@ public:
 	static const bool DEBUG_ENABLE = true;
 };
 
+class ARMCache512bDMWB8bls_Config : //
+	public ARMCacheBase {
+public:
+	static const WritePolicy WRITE_POLICY = WRITE_BACK;
+};
+
+class ARMCache512bDMWB8bls_DebugConfig :
+	public ARMCache512bDMWB8bls_Config {
+public:
+	static const bool DEBUG_ENABLE = true;
+};
+
+class ARMCache32KBDMWT32bls_Config :
+	public ARMCacheBase {
+public:
+	static const uint32_t LINELEN = 0x20; // 32 bytes
+	static const uint32_t MULTIPLIER = 2;
+	static const uint32_t ASSOCIATIVITY = 1;
+	static const uint32_t SIZE = 32*1024;
+	static const uint32_t NSETS = 1024; // 0b1000000
+	static const AllocationPolicy ALLOCATION_POLICY = READ_ALLOCATE;
+	static const ReplacementPolicy REPLACEMENT_POLICY = RANDOM_REPLACEMENT;
+};
+
+class ARMCache32KBDMWT32bls_DebugConfig :
+	public ARMCache32KBDMWT32bls_Config {
+public:
+	static const bool DEBUG_ENABLE = true;
+};
+
+class ARMCache32KBDMWB32bls_Config :
+	public ARMCache32KBDMWT32bls_Config {
+public:
+	static const WritePolicy WRITE_POLICY = WRITE_BACK;
+};
+
+class ARMCache32KBDMWB32bls_DebugConfig :
+	public ARMCache32KBDMWB32bls_Config {
+public:
+	static const bool DEBUG_ENABLE = true;
+};
+
 class ARMCache64KBDMWT32bls_Config :
 	public ARMCacheBase {
 public:
@@ -140,7 +182,6 @@ public:
 	static const uint32_t SIZE = 64*1024;
 	static const uint32_t NSETS = 2048; // 0b1000000
 	static const AllocationPolicy ALLOCATION_POLICY = READ_ALLOCATE;
-	static const WritePolicy WRITE_POLICY = WRITE_THROUGH;
 	static const ReplacementPolicy REPLACEMENT_POLICY = RANDOM_REPLACEMENT;
 };
 
@@ -149,6 +190,49 @@ class ARMCache64KBDMWT32bls_DebugConfig :
 public:
 	static const bool DEBUG_ENABLE = true;
 };
+
+class ARMCache64KBDMWB32bls_Config :
+	public ARMCache64KBDMWT32bls_Config {
+public:
+	static const WritePolicy WRITE_POLICY = WRITE_BACK;
+};
+
+class ARMCache64KBDMWB32bls_DebugConfig :
+	public ARMCache64KBDMWB32bls_Config {
+public:
+	static const bool DEBUG_ENABLE = true;
+};
+
+class ARMCache96KBDMWT32bls_Config :
+	public ARMCacheBase {
+public:
+	static const uint32_t LINELEN = 0x20; // 32 bytes
+	static const uint32_t MULTIPLIER = 3;
+	static const uint32_t ASSOCIATIVITY = 1;
+	static const uint32_t SIZE = 96*1024;
+	static const uint32_t NSETS = 3072; // 0b1000000
+	static const AllocationPolicy ALLOCATION_POLICY = READ_ALLOCATE;
+	static const ReplacementPolicy REPLACEMENT_POLICY = RANDOM_REPLACEMENT;
+};
+
+class ARMCache96KBDMWT32bls_DebugConfig :
+	public ARMCache96KBDMWT32bls_Config {
+public:
+	static const bool DEBUG_ENABLE = true;
+};
+
+class ARMCache96KBDMWB32bls_Config :
+	public ARMCache96KBDMWT32bls_Config {
+public:
+	static const WritePolicy WRITE_POLICY = WRITE_BACK;
+};
+
+class ARMCache96KBDMWB32bls_DebugConfig :
+	public ARMCache96KBDMWB32bls_Config {
+public:
+	static const bool DEBUG_ENABLE = true;
+};
+
 
 } // end of namespace cache
 } // end of namespace arm
