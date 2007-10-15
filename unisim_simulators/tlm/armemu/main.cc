@@ -70,8 +70,8 @@
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
-//typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_Config CPU_CONFIG;
-typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig CPU_CONFIG;
+typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_Config CPU_CONFIG;
+//typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig CPU_CONFIG;
 //typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config CPU_CONFIG;
 //typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig CPU_CONFIG;
 typedef unisim::component::tlm::bridge::simple_fsb_to_mem::Addr32BurstSize32_Config BRIDGE_CONFIG;
@@ -323,9 +323,15 @@ int main(int argc, char *argv[], char **envp) {
 	(*cpu)["verbose-step"] = true;
 	(*cpu)["verbose-dump-regs-start"] = true;
 	(*cpu)["verbose-dump-regs-end"] = true;
-	(*cpu)["cache_dl1.verbose-all"] = true;
-	(*cpu)["cache_il1.verbose-all"] = true;
-	(*cpu)["cache_l2.verbose-all"] = true;
+//	(*cpu)["cache_dl1.verbose-all"] = true;
+	(*cpu)["cache_dl1.verbose-pr-read"] = true;
+	(*cpu)["cache_dl1.verbose-pr-write"] = true;
+//	(*cpu)["cache_il1.verbose-all"] = true;
+	(*cpu)["cache_il1.verbose-pr-read"] = true;
+	(*cpu)["cache_il1.verbose-pr-write"] = true;
+//	(*cpu)["cache_l2.verbose-all"] = true;
+	(*cpu)["cache_l2.verbose-pr-read"] = true;
+	(*cpu)["cache_l2.verbose-pr-write"] = true;
 	// (*cpu)["verbose-tlm-bus-synchronize"] = true;
 	// (*cpu)["verbose-tlm-run-thread"] = true;
 	// (*cpu)["verbose-tlm-commands"] = true;
