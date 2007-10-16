@@ -572,7 +572,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_MPC107_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_MPC107_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	(*pci_bus)["addr-type"][mapping_index] = "mem";
 	mapping_index++;
 	
 	(*pci_bus)["base-address"][mapping_index] = 0xf3000000UL;
@@ -580,7 +580,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_HEATHROW_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_HEATHROW_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	(*pci_bus)["addr-type"][mapping_index] = "mem";
 	mapping_index++;
 	
 	(*pci_bus)["base-address"][mapping_index] = 0x18100UL;
@@ -588,7 +588,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	(*pci_bus)["addr-type"][mapping_index] = "i/o";
 	mapping_index++;
 	
 	(*pci_bus)["base-address"][mapping_index] = 0x18108UL;
@@ -596,7 +596,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x14UL;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	(*pci_bus)["addr-type"][mapping_index] = "i/o";
 	mapping_index++;
 	
 	(*pci_bus)["base-address"][mapping_index] = 0x4UL;
@@ -604,7 +604,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x18UL;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	(*pci_bus)["addr-type"][mapping_index] = "i/o";
 	mapping_index++;
 	
 	(*pci_bus)["base-address"][mapping_index] = 0xcUL;
@@ -612,7 +612,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x1cUL;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	(*pci_bus)["addr-type"][mapping_index] = "i/o";
 	mapping_index++;
 	
 	(*pci_bus)["base-address"][mapping_index] = 0x18118UL;
@@ -620,7 +620,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_IDE_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_IDE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x20UL;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	(*pci_bus)["addr-type"][mapping_index] = "i/o";
 	mapping_index++;
 
 	(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
@@ -628,7 +628,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_DISPLAY_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_DISPLAY_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	(*pci_bus)["addr-type"][mapping_index] = "mem";
 	mapping_index++;
 	
 	(*pci_bus)["base-address"][mapping_index] = 0; //0xfe000000UL; // ISA I/O is at the very beginning of PCI I/O space
@@ -636,7 +636,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL; // ISA I/O space mapped by BAR0
-	(*pci_bus)["addr-type"][mapping_index] = "sp_io";
+	(*pci_bus)["addr-type"][mapping_index] = "i/o";
 	mapping_index++;
 
 	(*pci_bus)["base-address"][mapping_index] = 0x000a0000UL; // ISA Memory is at the very beginning of compatibility hole
@@ -644,7 +644,7 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_ISA_BRIDGE_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_ISA_BRIDGE_SLAVE_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x14UL; // ISA Memory space mapped by BAR1
-	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	(*pci_bus)["addr-type"][mapping_index] = "mem";
 	mapping_index++;
 
 	//  - PCI MAC I/O Heathrow run-time configuration

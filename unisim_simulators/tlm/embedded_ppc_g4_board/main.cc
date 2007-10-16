@@ -31,7 +31,11 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
 #include <iostream>
 #include <getopt.h>
 #include <stdlib.h>
@@ -151,12 +155,9 @@ void help(char *prog_name)
 	cerr << "-f" << endl;
 	cerr << "--force-use-virtual-address" << endl;
 	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
-	cerr << "-b <base physical address>" << endl;
-	cerr << "--pci-stub-base-address <base physical address>" << endl;
-	cerr << "            specify the pci-stub base physical address" << endl << endl;
-	cerr << "-y <byte size>" << endl;
-	cerr << "--pci-stub-memory-size <byte size>" << endl;
-	cerr << "            specify the pci-stub memory size (in bytes)" << endl << endl;
+	cerr << "-n <base address>,<size>,<space>:..." << endl;
+	cerr << "--pci-stub-regions <base address>,<size>,<space>[:...]" << endl;
+	cerr << "            specify the pci-stub regions (up to 6). 'space' is either 'mem' or 'i/o'" << endl << endl;
 	cerr << "-q <irq number>" << endl;
 	cerr << "--pci-stub-irq <irq number>" << endl;
 	cerr << "            specify the pci-stub IRQ number" << endl << endl;
@@ -267,8 +268,7 @@ int sc_main(int argc, char *argv[])
 	{"pci-stub-port", required_argument, 0, 'r'},
 	{"pci-stub-is-server", no_argument, 0, 'v'},
 	{"force-use-virtual-address", no_argument, 0, 'f'},
-	{"pci-stub-base-address", required_argument, 0, 'b'},
-	{"pci-stub-memory-size", required_argument, 0, 'y'},
+	{"pci-stub-regions", required_argument, 0, 'n'},
 	{"pci-stub-irq", required_argument, 0, 'q'},
 	{0, 0, 0, 0}
 	};
@@ -293,8 +293,7 @@ int sc_main(int argc, char *argv[])
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
 	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
-	uint32_t pci_stub_base_address = 0xa0000000UL;
-	uint32_t pci_stub_memory_size = 1024 * 1024; // 1 MB
+	char *pci_stub_regions = "";
 	unsigned int pci_stub_irq = 0;
 	unsigned int pci_stub_tcp_port = 12345;
 	char *pci_stub_server_name = "localhost";
@@ -304,7 +303,7 @@ int sc_main(int argc, char *argv[])
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:vfb:y:q:", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:vfn:q:", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -354,11 +353,8 @@ int sc_main(int argc, char *argv[])
 			case 'f':
 				force_use_virtual_address = true;
 				break;
-			case 'b':
-				pci_stub_base_address = strtoul(optarg, NULL, 16);
-				break;
-			case 'y':
-				pci_stub_memory_size = atoi(optarg);
+			case 'n':
+				pci_stub_regions = strdup(optarg);
 				break;
 			case 'q':
 				pci_stub_irq = atoi(optarg);
@@ -539,7 +535,7 @@ int sc_main(int argc, char *argv[])
     (*pci_bus)["device-number"][mapping_index] = PCI_MPC107_DEV_NUM;
     (*pci_bus)["target-port"][mapping_index] = 0;
     (*pci_bus)["register-number"][mapping_index] = 0x10;
-    (*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+    (*pci_bus)["addr-type"][mapping_index] = "mem";
     mapping_index++;
 
 	(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
@@ -547,17 +543,58 @@ int sc_main(int argc, char *argv[])
 	(*pci_bus)["device-number"][mapping_index] = PCI_STUB_DEV_NUM;
 	(*pci_bus)["target-port"][mapping_index] = PCI_STUB_TARGET_PORT;
 	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-	(*pci_bus)["addr-type"][mapping_index] = "sp_mem";
+	(*pci_bus)["addr-type"][mapping_index] = "mem";
 	mapping_index++;
 
 	// PCI stub run-time configuration
-	(*pci_stub)["initial-base-addr"] = pci_stub_base_address;
-	(*pci_stub)["bytesize"] = pci_stub_memory_size; 
-	(*pci_stub)["pci-bus-frequency"] = pci_bus_frequency;
-	(*pci_stub)["bus-frequency"] = fsb_frequency;
-	(*pci_stub)["tcp-port"] = pci_stub_tcp_port;
-	(*pci_stub)["server-name"] = pci_stub_server_name;
-	(*pci_stub)["is-server"] = pci_stub_is_server;
+	{
+		uint32_t pci_stub_initial_base_addr[6];
+		uint32_t pci_stub_region_size[6];
+		char pci_stub_address_space[6][256];
+		int nargs = sscanf(pci_stub_regions,
+		"%" PRIx32 ",%" PRIu32 ",%255s "
+		"%" PRIx32 ",%" PRIu32 ",%255s "
+		"%" PRIx32 ",%" PRIu32 ",%255s "
+		"%" PRIx32 ",%" PRIu32 ",%255s "
+		"%" PRIx32 ",%" PRIu32 ",%255s "
+		"%" PRIx32 ",%" PRIu32 ",%255s",
+		&pci_stub_initial_base_addr[0],
+		&pci_stub_region_size[0],
+		&pci_stub_address_space[0],
+		&pci_stub_initial_base_addr[1],
+		&pci_stub_region_size[1],
+		&pci_stub_address_space[1],
+		&pci_stub_initial_base_addr[2],
+		&pci_stub_region_size[2],
+		&pci_stub_address_space[2],
+		&pci_stub_initial_base_addr[3],
+		&pci_stub_region_size[3],
+		&pci_stub_address_space[3],
+		&pci_stub_initial_base_addr[4],
+		&pci_stub_region_size[4],
+		&pci_stub_address_space[4],
+		&pci_stub_initial_base_addr[5],
+		&pci_stub_region_size[5],
+		&pci_stub_address_space[5]);
+
+		if(nargs > 0)
+		{
+			int num_regions = nargs / 3;
+			int num_region;
+			for(num_region = 0; num_region < num_regions; num_region++)
+			{
+				(*pci_stub)["initial-base-addr"][num_region] = pci_stub_initial_base_addr[num_region];
+				(*pci_stub)["region-size"][num_region] = pci_stub_region_size[num_region];
+				(*pci_stub)["address-space"][num_region] = pci_stub_address_space[num_region];
+			}
+		}
+
+		(*pci_stub)["pci-bus-frequency"] = pci_bus_frequency;
+		(*pci_stub)["bus-frequency"] = fsb_frequency;
+		(*pci_stub)["tcp-port"] = pci_stub_tcp_port;
+		(*pci_stub)["server-name"] = pci_stub_server_name;
+		(*pci_stub)["is-server"] = pci_stub_is_server;
+	}
 	
 	//=========================================================================
 	//===                      Service run-time configuration               ===
@@ -855,6 +892,8 @@ int sc_main(int argc, char *argv[])
 	*tee_memory_access_reporting->out[0] >> pci_stub->memory_access_reporting_export;
 	pci_stub->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	pci_stub->synchronizable_import >> cpu->synchronizable_export;
+	pci_stub->memory_import >> cpu->memory_export;
+	pci_stub->registers_import >> cpu->registers_export;
 
 	if(inline_debugger)
 	{
