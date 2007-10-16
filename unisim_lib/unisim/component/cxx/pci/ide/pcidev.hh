@@ -267,7 +267,7 @@ PciDev<ADDRESS_TYPE>::PciDev(PciDev<ADDRESS_TYPE>::Params *p)
 			<< __LINE__ << ")" << endl;
     }
     
-    cerr << "+++ PciDev<ADDRESS_TYPE>: " << this << endl;
+    //cerr << "+++ PciDev<ADDRESS_TYPE>: " << this << endl;
 }
 
 template<class ADDRESS_TYPE>
@@ -296,26 +296,26 @@ bool PciDev<ADDRESS_TYPE>::readConfig(ADDRESS_TYPE offset, int size, uint8_t *da
 			
 		*(uint8_t*)data = *(uint8_t*)&config.data[offset];
         	
-    	fprintf(stderr, 
+/*    	fprintf(stderr, 
             "read device: %#x function: %#x register: %#x %d bytes: data: %#x\n",
             _params->deviceNum, _params->functionNum, offset, size,
-            *(uint8_t*)data);
+            *(uint8_t*)data);*/
 			break;
 		}
       case sizeof(uint16_t): {
         *(uint16_t*)data = *(uint16_t*)&config.data[offset];
-		    fprintf(stderr, 
+/*		    fprintf(stderr, 
             "read device: %#x function: %#x register: %#x %d bytes: data: %#x\n",
             _params->deviceNum, _params->functionNum, offset, size,
-            *(uint16_t*)data);
+            *(uint16_t*)data);*/
 		}
         break;
       case sizeof(uint32_t): {
         *(uint32_t*)data = *(uint32_t*)&config.data[offset];
-		    fprintf(stderr, 
+/*		    fprintf(stderr, 
             "read device: %#x function: %#x register: %#x %d bytes: data: %#x\n",
             _params->deviceNum, _params->functionNum, offset, size,
-            *(uint32_t*)data);
+            *(uint32_t*)data);*/
 		}
         break;
       default: {
@@ -347,9 +347,9 @@ bool PciDev<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const uint
     switch (size) {
       case sizeof(uint8_t): // 1-byte access
 		{ 
-		    fprintf(stderr,  
-            "write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
-            _params->deviceNum, _params->functionNum, offset, size, data8);
+// 		    fprintf(stderr,  
+//             "write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
+//             _params->deviceNum, _params->functionNum, offset, size, data8);
 
 			switch (offset) {
 	  		case PCI0_INTERRUPT_LINE:
@@ -359,7 +359,7 @@ bool PciDev<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const uint
             	config.cacheLineSize = data8;
 				break;
           	case PCI_LATENCY_TIMER: {
-				cerr << "writing latency timer" << endl;
+				//cerr << "writing latency timer" << endl;
 	    		config.latencyTimer = data8;
 	    		break;
 			}
@@ -382,9 +382,9 @@ bool PciDev<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const uint
 		break;
       case sizeof(uint16_t): // 2-byte access
 		{ 
-		    fprintf(stderr,  
-            "write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
-            _params->deviceNum, _params->functionNum, offset, size, data16);
+// 		    fprintf(stderr,  
+//             "write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
+//             _params->deviceNum, _params->functionNum, offset, size, data16);
 
 			switch (offset) {
 	  		case PCI_COMMAND:
@@ -407,9 +407,10 @@ bool PciDev<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const uint
 		}
 		break;
       case sizeof(uint32_t): // 4-byte access
-		{ 	fprintf(stderr,  
-    	       	"write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
-        	   	_params->deviceNum, _params->functionNum, offset, size, data32);
+		{
+// 			fprintf(stderr,  
+//     	       	"write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
+//         	   	_params->deviceNum, _params->functionNum, offset, size, data32);
 
 			switch (offset) {
 	  		case PCI0_BASE_ADDR0:

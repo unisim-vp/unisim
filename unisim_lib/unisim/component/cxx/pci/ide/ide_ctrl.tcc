@@ -263,18 +263,20 @@ IdeController<ADDRESS_TYPE>::readConfig(ADDRESS_TYPE offset, int size, uint8_t *
         switch (size) {
           case sizeof(uint8_t): {
             *data = config_regs.data[config_offset];
-	        DPRINTF(IdeCtrl, "PCI read offset: %#x size: %#x data: %#x\n",
-                offset, size, (uint32_t)*(uint8_t*)data); }
+	        //DPRINTF(IdeCtrl, "PCI read offset: %#x size: %#x data: %#x\n",
+            //    offset, size, (uint32_t)*(uint8_t*)data);
+			}
             break;
           case sizeof(uint16_t): {
             *(uint16_t*)data = *(uint16_t*)&config_regs.data[config_offset];
-	        DPRINTF(IdeCtrl, "PCI read offset: %#x size: %#x data: %#x\n",
-                offset, size, *(uint16_t*)data); }
+	        //DPRINTF(IdeCtrl, "PCI read offset: %#x size: %#x data: %#x\n",
+            //    offset, size, *(uint16_t*)data);
+			}
             break;
           case sizeof(uint32_t): {
             *(uint32_t*)data = *(uint32_t*)&config_regs.data[config_offset]; 
-        	DPRINTF(IdeCtrl, "PCI read offset: %#x size: %#x data: %#x\n",
-                offset, size, *(uint32_t*)data);
+        	//DPRINTF(IdeCtrl, "PCI read offset: %#x size: %#x data: %#x\n",
+            //    offset, size, *(uint32_t*)data);
 			}
             break;
           default:
@@ -316,7 +318,7 @@ IdeController<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const ui
     } else {
         panic2("Write of unimplemented PCI inherited::config. register: %x\n", offset);
     }
-	if (size == 1) {
+/*	if (size == 1) {
     	DPRINTF(IdeCtrl, "PCI write offset: %#x size: %#x data: %#x\n",
             offset, size, (uint32_t)*(uint8_t*)data);
 	}
@@ -324,10 +326,10 @@ IdeController<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const ui
 		DPRINTF(IdeCtrl, "PCI write offset: %#x size: %#x data: %#x\n",
             offset, size, *(uint16_t*)data);
 	}
-		else {
-			DPRINTF(IdeCtrl, "PCI write offset: %#x size: %#x data: %#x\n",
-            offset, size, *(uint32_t*)data);
-		}
+	else {
+		DPRINTF(IdeCtrl, "PCI write offset: %#x size: %#x data: %#x\n",
+        offset, size, *(uint32_t*)data);
+	}*/
 		
     // Catch the writes to specific PCI registers that have side affects
     // (like updating the PIO ranges)

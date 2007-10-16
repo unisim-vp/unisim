@@ -660,15 +660,15 @@ bool ServiceManager::Setup()
 			if(peer_object)
 			{
 				add_edge(peer_object->GetID(), (*object_iter).second->GetID(), dependency_graph);
-				cerr << peer_object->GetID() << ":" << peer_object->GetName() << "->" 
-					<< (*object_iter).second->GetName() << ":" << (*object_iter).second->GetName() << endl;
+//				cerr << peer_object->GetID() << ":" << peer_object->GetName() << "->" 
+//					<< (*object_iter).second->GetName() << ":" << (*object_iter).second->GetName() << endl;
 			}
 		}
 
 	}
 
- 	ofstream of("deps.dot");
- 	boost::write_graphviz(of, dependency_graph);
+// 	ofstream of("deps.dot");
+// 	boost::write_graphviz(of, dependency_graph);
 
 	bool has_cycle = false;
 	CycleDetector vis(has_cycle);

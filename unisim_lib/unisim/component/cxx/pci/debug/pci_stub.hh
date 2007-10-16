@@ -49,6 +49,8 @@
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/synchronizable.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/component/cxx/pci/types.hh>
 
 namespace unisim {
 namespace component {
@@ -58,6 +60,7 @@ namespace debug {
 
 using std::string;
 using std::vector;
+using std::list;
 
 using namespace unisim::util::endian;
 using unisim::service::interfaces::Memory;
@@ -74,9 +77,11 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ParameterArray;
 using unisim::service::interfaces::Logger;
 using unisim::util::debug::NetStub;
 using unisim::service::interfaces::Synchronizable;
+using unisim::service::interfaces::Registers;
 
 template <class ADDRESS>
 class PCIStub :
@@ -85,9 +90,13 @@ class PCIStub :
 	public Service<MemoryAccessReporting<ADDRESS> >,
 	public Client<Logger>,
 	public Client<SymbolTableLookup<ADDRESS> >,
-	public Client<Synchronizable>
+	public Client<Synchronizable>,
+	public Client<Memory<ADDRESS> >,
+	public Client<Registers>
 {
 public:
+	static const unsigned int NUM_REGIONS = 6; // This value *must not* be modified
+
 	typedef NetStub<ADDRESS> inherited;
 	typedef Register<uint32_t> reg32_t;
 	typedef Register<uint32_t> reg24_t;
@@ -99,6 +108,8 @@ public:
 	ServiceImport<Logger> logger_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	ServiceImport<Synchronizable> synchronizable_import;
+	ServiceImport<Memory<ADDRESS> > memory_import;
+	ServiceImport<Registers> registers_import;
 	
 	PCIStub(const char *name, Object *parent = 0);
 	virtual ~PCIStub();
@@ -106,36 +117,38 @@ public:
 	virtual void OnDisconnect();
 	virtual bool Setup();
 	virtual void Reset();
+	bool Read(ADDRESS physical_addr, void *buffer, uint32_t size, unisim::component::cxx::pci::PCISpace space, const bool monitor = true);
+	bool Write(ADDRESS physical_addr, const void *buffer, uint32_t size, unisim::component::cxx::pci::PCISpace space, const bool monitor = true);
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
-	uint8_t ReadConfigByte(unsigned int offset);
-	void WriteConfigByte(unsigned int offset, uint8_t value);
-	virtual bool Read(ADDRESS addr, void *buffer, uint32_t size);
-	virtual bool Read(const char *symbol_name, void *data, uint32_t size);
-	virtual bool Write(ADDRESS addr, const void *buffer, uint32_t size);
-	virtual bool Write(const char *symbol_name, const void *buffer, uint32_t size);
+	virtual bool Read(ADDRESS addr, void *data, uint32_t size, typename inherited::SPACE space);
+	virtual bool Write(ADDRESS addr, const void *data, uint32_t size, typename inherited::SPACE space);
+	virtual bool ReadRegister(const char *name, uint32_t& value);
+	virtual bool WriteRegister(const char *name, uint32_t value);
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
 	virtual bool SetBreakpoint(ADDRESS addr);
 	virtual bool SetBreakpoint(const char *symbol_name);
+	virtual bool SetReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
+	virtual bool SetWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
 	virtual bool RemoveBreakpoint(ADDRESS addr);
 	virtual bool RemoveBreakpoint(const char *symbol_name);
-	virtual void Trap(uint64_t& t, typename inherited::TIME_UNIT& tu);
+	virtual bool RemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
+	virtual bool RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
+	virtual void Trap();
 private:
-	uint8_t *storage;
-	uint32_t bytesize; // WARNING! must be a power of two
-	
 	Parameter<bool> param_is_server;
 	Parameter<string> param_server_name;
 	Parameter<unsigned int> param_tcp_port;
-	Parameter<uint32_t> param_bytesize;
-	Parameter<ADDRESS> param_initial_base_addr;
+	ParameterArray<ADDRESS> param_initial_base_addr;
+	ParameterArray<unisim::component::cxx::pci::PCISpace> param_address_space;
+	ParameterArray<uint32_t> param_region_size;
 	Parameter<uint32_t> param_pci_device_number;
 	Parameter<unsigned int> param_pci_bus_frequency;
 	Parameter<unsigned int> param_bus_frequency;
 	
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
-	WatchpointRegistry<ADDRESS> watchpoint_registry;
+	WatchpointRegistry<ADDRESS> watchpoint_registry[3]; // one registry for each of the three address spaces
 
 protected:
 	// PCI configuration registers
@@ -149,16 +162,22 @@ protected:
 	reg8_t pci_conf_header_type;
 	reg8_t pci_conf_latency_timer;
 	reg8_t pci_conf_cache_line_size;
-	reg32_t pci_conf_base_addr;
+	reg32_t pci_conf_base_addr[NUM_REGIONS];
 
 	reg32_t pci_conf_carbus_cis_pointer;
 	reg16_t pci_conf_subsystem_id;
 	reg16_t pci_conf_subsystem_vendor_id;
 	
 	uint32_t pci_device_number;
-	ADDRESS initial_base_addr;
+	ADDRESS initial_base_addr[NUM_REGIONS];
+	unisim::component::cxx::pci::PCISpace address_space[NUM_REGIONS]; // SP_MEM or SP_IO
+	uint32_t region_size[NUM_REGIONS]; // in bytes
+	uint8_t *storage[NUM_REGIONS]; // region contents
 	unsigned int pci_bus_frequency; // in Mhz
 	unsigned int bus_frequency; // in Mhz
+
+	list<typename inherited::TRAP> traps;
+
 };
 
 } // end of namespace debug

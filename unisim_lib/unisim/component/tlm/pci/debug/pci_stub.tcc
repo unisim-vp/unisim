@@ -49,8 +49,7 @@ PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIStub(const sc_module_name& name, Object
 	bus_port("bus-port"),
 	cpu_irq_port("cpu-irq-port"),
 	pci_bus_cycle_time(),
-	bus_cycle_time(),
-	has_intr(false)
+	bus_cycle_time()
 {
 	SC_HAS_PROCESS(PCIStub);
 	
@@ -74,76 +73,21 @@ bool PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq,
 	unsigned int pci_req_size = pci_req->size;
 	TransactionType pci_transaction_type = pci_req->type;
 	
-	switch(pci_space)
+	switch(pci_transaction_type)
 	{
-		case SP_MEM:
-			switch(pci_transaction_type)
+		case TT_READ:
 			{
-				case TT_READ:
-				{
-					Pointer<PCIRsp> pci_rsp = new(pci_rsp) PCIRsp();
-				
-					inherited::Read(pci_addr, pci_rsp->read_data, pci_req_size);
-				
-					message->rsp = pci_rsp;
-					sc_event *rsp_ev = message->GetResponseEvent();
-					rsp_ev->notify(pci_bus_cycle_time);
-				}
-				break;
-				case TT_WRITE:
-					inherited::Write(pci_addr, pci_req->write_data, pci_req_size);
-					break;
-			}
-			break;
-		case SP_IO:
-			if(inherited::logger_import)
-				(*inherited::logger_import) << DebugWarning << "I don't have I/O space" << Endl << EndDebugWarning;
-			break;
-		case SP_CONFIG:
-			if(((pci_addr >> 11) & 31) != inherited::pci_device_number)
-			{
-				if(inherited::logger_import)
-				{
-					(*inherited::logger_import) << DebugWarning;
-					(*inherited::logger_import) << "out of range configuration space access\n" << Endl;
-					(*inherited::logger_import) << "PCI config base address is 0x" << Hex << inherited::pci_conf_base_addr << Dec << Endl;
-					(*inherited::logger_import) << "Requested address is 0x" << Hex << pci_addr << Dec << Endl;
-					(*inherited::logger_import) << EndDebugWarning;
-				}
-			}
+				Pointer<PCIRsp> pci_rsp = new(pci_rsp) PCIRsp();
 			
-			switch(pci_transaction_type)
-			{
-				case TT_READ:
-					{
-						Pointer<PCIRsp> pci_rsp = new(pci_rsp) PCIRsp();
-					
-						unsigned int byte_num, pci_conf_offset;
-						for(byte_num = 0, pci_conf_offset = pci_addr & 0xff; byte_num < pci_req_size; byte_num++, pci_conf_offset++)
-						{
-							pci_rsp->read_data[byte_num] = inherited::ReadConfigByte(pci_conf_offset);
-							if(inherited::logger_import)
-								(*inherited::logger_import) << DebugInfo << "Reading PCI config at 0x" << Hex << pci_conf_offset << ": value=0x" << (unsigned int) pci_rsp->read_data[byte_num] << Dec << Endl << EndDebugInfo;
-						}
-					
-						message->rsp = pci_rsp;
-						sc_event *rsp_ev = message->GetResponseEvent();
-						rsp_ev->notify(pci_bus_cycle_time);
-					}
-					break;
-				case TT_WRITE:
-					{
-						unsigned int byte_num, pci_conf_offset;
-						unsigned int pci_req_size = pci_req->size;
-						for(byte_num = 0, pci_conf_offset = pci_addr & 0xff; byte_num < pci_req_size; byte_num++, pci_conf_offset++)
-						{
-							if(inherited::logger_import)
-								(*inherited::logger_import) << DebugInfo << "Writing PCI config at 0x" << Hex << pci_conf_offset << ": value=0x" << (unsigned int) pci_req->write_data[byte_num] << Dec << Endl << EndDebugInfo;
-							inherited::WriteConfigByte(pci_conf_offset, pci_req->write_data[byte_num]);
-						}
-					}
-					break;
+				inherited::Read(pci_addr, pci_rsp->read_data, pci_req_size, pci_space);
+			
+				message->rsp = pci_rsp;
+				sc_event *rsp_ev = message->GetResponseEvent();
+				rsp_ev->notify(pci_bus_cycle_time);
 			}
+			break;
+		case TT_WRITE:
+			inherited::Write(pci_addr, pci_req->write_data, pci_req_size, pci_space);
 			break;
 	}
 		
@@ -172,26 +116,19 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Stop()
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Intr(uint32_t intr_id)
+void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Intr(uint32_t intr_id, bool level)
 {
-	has_intr = true;
+	intr_fifo.write(level);
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Run(uint64_t duration, typename inherited::inherited::TIME_UNIT tu)
+void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Run(uint64_t duration, typename inherited::inherited::TIME_UNIT duration_tu)
 {
-	if(has_intr)
-	{
-		has_intr = false;
-		ev_trigger_intr.notify(SC_ZERO_TIME);
-		wait(SC_ZERO_TIME);
-	}
-	
 	if(duration)
 	{
 		sc_time_unit sc_tu = SC_MS;
 		
-		switch(tu)
+		switch(duration_tu)
 		{
 			case inherited::inherited::TU_FS: sc_tu = SC_FS; break;
 			case inherited::inherited::TU_PS: sc_tu = SC_PS; break;
@@ -207,6 +144,22 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Run(uint64_t duration, typename inher
 	{
 		wait(trap);
 	}
+
+	typename inherited::inherited::TIME_UNIT tu;
+	sc_time time_res = sc_get_time_resolution();
+	double time_res_sec = time_res.to_seconds();
+
+	if(::fabs(time_res_sec - 1.0) <= 0.5) tu = inherited::inherited::TU_S; else
+	if(::fabs(time_res_sec - 1.0e-3) <= 0.5e-3) tu = inherited::inherited::TU_MS; else
+	if(::fabs(time_res_sec - 1.0e-6) <= 0.5e-6) tu = inherited::inherited::TU_US; else
+	if(::fabs(time_res_sec - 1.0e-9) <= 0.5e-9) tu = inherited::inherited::TU_NS; else
+	if(::fabs(time_res_sec - 1.0e-12) <= 0.5e-12) tu = inherited::inherited::TU_PS; else
+	if(::fabs(time_res_sec - 1.0e-15) <= 0.5e-15) tu = inherited::inherited::TU_FS; else Stop();
+	
+	uint64_t t = (uint64_t) sc_time_stamp().value();
+
+	inherited::inherited::PutTrapPacket(t, tu, inherited::traps);
+	inherited::traps.clear();
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
@@ -214,24 +167,31 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::TriggerInterrupt()
 {
 	while(1)
 	{
-		wait(ev_trigger_intr);
+		bool level = intr_fifo.read();
+		
+		Pointer<TlmMessage<InterruptRequest> > message = new(message) TlmMessage<InterruptRequest>();
+		Pointer<InterruptRequest> irq = new (irq) InterruptRequest();
+		irq->level = level;
+		irq->serial_id = 0;
+		message->req = irq;
 		
 		if(inherited::logger_import)
 		{
 			(*inherited::logger_import) << DebugInfo;
-			(*inherited::logger_import) << "interrupt at " << sc_time_stamp().to_string() << Endl;
+			(*inherited::logger_import) << "sending interrupt request (level = " << level << ") at " << sc_time_stamp().to_string() << Endl;
 			(*inherited::logger_import) << EndDebugInfo;
 		}
 
-		Pointer<TlmMessage<InterruptRequest> > message = new(message) TlmMessage<InterruptRequest>();
-		Pointer<InterruptRequest> irq = new (irq) InterruptRequest();
-		irq->level = true;
-		irq->serial_id = 0;
-		message->req = irq;
-		
 		while(!cpu_irq_port->Send(message))
 		{
 			wait(bus_cycle_time);
+		}
+
+		if(inherited::logger_import)
+		{
+			(*inherited::logger_import) << DebugInfo;
+			(*inherited::logger_import) << "accepted interrupt request (level = " << level << ") at " << sc_time_stamp().to_string() << Endl;
+			(*inherited::logger_import) << EndDebugInfo;
 		}
 	}
 }
@@ -246,22 +206,9 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Process()
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Trap(uint64_t& t, typename inherited::inherited::TIME_UNIT& tu)
+void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Trap()
 {
 	trap.notify(SC_ZERO_TIME);
-
-	sc_time time_res = sc_get_time_resolution();
-	double time_res_sec = time_res.to_seconds();
-
-	if(::fabs(time_res_sec - 1.0) <= 0.5) tu = inherited::inherited::TU_S; else
-	if(::fabs(time_res_sec - 1.0e-3) <= 0.5e-3) tu = inherited::inherited::TU_MS; else
-	if(::fabs(time_res_sec - 1.0e-6) <= 0.5e-6) tu = inherited::inherited::TU_US; else
-	if(::fabs(time_res_sec - 1.0e-9) <= 0.5e-9) tu = inherited::inherited::TU_NS; else
-	if(::fabs(time_res_sec - 1.0e-12) <= 0.5e-12) tu = inherited::inherited::TU_PS; else
-	if(::fabs(time_res_sec - 1.0e-15) <= 0.5e-15) tu = inherited::inherited::TU_FS; else Stop();
-	
-	t = sc_time_stamp().value();
-
 	wait(SC_ZERO_TIME);
 }
 

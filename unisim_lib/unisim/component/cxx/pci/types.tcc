@@ -92,11 +92,11 @@ template <> Parameter<PCISpace>::operator double () const {
 template <> Parameter<PCISpace>::operator string () const {
 	switch(*storage) {
 	case SP_MEM:
-		return "sp_mem";
+		return "mem";
 	case SP_IO:
-		return "sp_io";
+		return "i/o";
 	case SP_CONFIG:
-		return "sp_config";
+		return "cfg";
 	} 
 }
   
@@ -143,11 +143,11 @@ template <> ParameterBase& Parameter<PCISpace>::operator = (double value) {
 }
 
 template <> ParameterBase& Parameter<PCISpace>::operator = (const char *value) { 
-	if (string(value) == string("sp_mem"))
+	if (string(value) == string("mem"))
 		*storage = SP_MEM;
-	if (string(value) == string("sp_io"))
+	if (string(value) == string("i/o"))
 		*storage = SP_IO; 
-	if (string(value) == string("sp_config"))
+	if (string(value) == string("cfg"))
 		*storage = SP_CONFIG;
  	return *this;
 }

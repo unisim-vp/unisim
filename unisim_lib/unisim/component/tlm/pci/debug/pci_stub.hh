@@ -113,17 +113,16 @@ public:
 	virtual bool Setup();
 	virtual void Start();
 	virtual void Stop();
-	virtual void Intr(uint32_t intr_id);
+	virtual void Intr(uint32_t intr_id, bool level);
 	virtual void Run(uint64_t duration, typename inherited::inherited::TIME_UNIT tu);
 	void TriggerInterrupt();
 	void Process();
-	virtual void Trap(uint64_t& t, typename inherited::inherited::TIME_UNIT& tu);
+	virtual void Trap();
 private:
 	
 	sc_time pci_bus_cycle_time;
 	sc_time bus_cycle_time;
-	sc_event ev_trigger_intr;
-	bool has_intr;
+	sc_fifo<bool> intr_fifo;
 	sc_event trap;
 };
 

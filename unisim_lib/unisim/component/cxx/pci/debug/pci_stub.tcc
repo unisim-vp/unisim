@@ -66,18 +66,18 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	Client<Logger>(name, parent),
 	Client<SymbolTableLookup<ADDRESS> >(name, parent),
 	Client<Synchronizable>(name, parent),
+	Client<Memory<ADDRESS> >(name, parent),
+	Client<Registers>(name, parent),
 	memory_export("memory_export", this),
 	logger_import("logger-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	synchronizable_import("synchronizable-import", this),
-	bytesize(0),
-	storage(0),
-	param_bytesize("bytesize", this, bytesize),
+	memory_import("memory-import", this),
+	registers_import("registers-import", this),
 	pci_device_number(0),
 	pci_bus_frequency(33),
 	bus_frequency(0),
-	initial_base_addr(0),
 	breakpoint_registry(),
 	watchpoint_registry(),
 
@@ -101,31 +101,130 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	param_server_name("server-name", this, inherited::server_name),
 	param_tcp_port("tcp-port", this, inherited::tcp_port),
 	param_is_server("is-server", this, inherited::is_server),
-	param_initial_base_addr("initial-base-addr", this, initial_base_addr),
+	param_initial_base_addr("initial-base-addr", this, initial_base_addr, NUM_REGIONS),
+	param_address_space("address-space", this, address_space, NUM_REGIONS),
+	param_region_size("region-size", this, region_size, NUM_REGIONS),
 	param_pci_device_number("pci-device-number", this, pci_device_number),
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency),
 	param_bus_frequency("bus-frequency", this, bus_frequency)
 {
 	SetupDependsOn(logger_import);
+
+	unsigned num_region;
+	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
+	{
+		initial_base_addr[num_region] = 0;
+		address_space[num_region] = unisim::component::cxx::pci::SP_MEM;
+		region_size[num_region] = 0;
+	}
 }
 
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::Setup()
 {
+	if(!memory_import)
+	{
+		if(logger_import)
+		{
+			(*logger_import) << DebugError;
+			(*logger_import) << memory_import.GetName() << " is not connected" << Endl;
+			(*logger_import) << EndDebugError;
+		}
+		return false;
+	}
+
+	if(!registers_import)
+	{
+		if(logger_import)
+		{
+			(*logger_import) << DebugError;
+			(*logger_import) << registers_import.GetName() << " is not connected" << Endl;
+			(*logger_import) << EndDebugError;
+		}
+		return false;
+	}
+
+	if(!synchronizable_import)
+	{
+		if(logger_import)
+		{
+			(*logger_import) << DebugError;
+			(*logger_import) << synchronizable_import.GetName() << " is not connected" << Endl;
+			(*logger_import) << EndDebugError;
+		}
+		return false;
+	}
+
 	if(logger_import)
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "initial base address is 0x" << Hex << initial_base_addr << Dec << Endl;
-		(*logger_import) << "memory size is " << bytesize << " bytes" << Endl;
-		(*logger_import) << EndDebugInfo;
+		unsigned int num_region;
+
+		for(num_region = 0; num_region < NUM_REGIONS; num_region++)
+		{
+			if(region_size[num_region] > 0)
+			{
+				(*logger_import) << DebugInfo;
+				(*logger_import) << "Region #" << num_region << " : initial base address is 0x" << Hex << initial_base_addr[num_region] << Dec << ", region size is " << region_size[num_region] << " bytes, address space is ";
+				switch(address_space[num_region])
+				{
+					case unisim::component::cxx::pci::SP_MEM:
+						(*logger_import) << "mem";
+						break;
+					case unisim::component::cxx::pci::SP_IO:
+						(*logger_import) << "i/o";
+						break;
+					case unisim::component::cxx::pci::SP_CONFIG:
+						(*logger_import) << "cfg";
+				}
+				(*logger_import) << Endl;
+				(*logger_import) << EndDebugInfo;
+			}
+			else
+			{
+				(*logger_import) << DebugInfo;
+				(*logger_import) << "No region #" << num_region << Endl;
+				(*logger_import) << EndDebugInfo;
+			}
+		}
 	}
 	// PCI configuration registers initialization	
-	pci_conf_base_addr.Initialize("pci_conf_base_addr", "PCI Config Base Address", 0xfffffff0UL, initial_base_addr);
 
 	pci_conf_command = pci_conf_command | 0x2; // active memory space
 
-	storage = new uint8_t[bytesize];
-	memset(storage, 0, bytesize);
+	unsigned int num_region;
+	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
+	{
+		if(region_size[num_region] > 0)
+		{
+			stringstream sstr_short_name;
+			sstr_short_name << "pci_conf_base_addr[" << num_region << "]";
+			string short_name = sstr_short_name.str();
+			stringstream sstr_long_name;
+			sstr_long_name << "PCI Config Base Address " << num_region << "]";
+			string long_name = sstr_long_name.str();
+			switch(address_space[num_region])
+			{
+				case unisim::component::cxx::pci::SP_MEM:
+					pci_conf_base_addr[num_region].Initialize(short_name.c_str(), long_name.c_str(), 0xfffffff0UL, initial_base_addr[num_region]);
+					break;
+				case unisim::component::cxx::pci::SP_IO:
+					pci_conf_base_addr[num_region].Initialize(short_name.c_str(), long_name.c_str(), 0xfffffffcUL, initial_base_addr[num_region]);
+					break;
+				case unisim::component::cxx::pci::SP_CONFIG:
+					if(logger_import)
+					{
+						(*logger_import) << DebugInfo;
+						(*logger_import) << "ignoring region #" << num_region << " because it's configuration space" << Endl;
+						(*logger_import) << EndDebugInfo;
+					}
+					region_size[num_region] = 0;
+					continue;
+			}
+
+			storage[num_region] = new uint8_t[region_size[num_region]];
+			memset(storage[num_region], 0, region_size[num_region]);
+		}
+	}
 
 	inherited::Initialize();
 	
@@ -135,10 +234,15 @@ bool PCIStub<ADDRESS>::Setup()
 template <class ADDRESS>
 PCIStub<ADDRESS>::~PCIStub()
 {
-	if(storage)
+	unsigned int num_region;
+
+	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
 	{
-		delete[] storage;
-		storage = 0;
+		if(storage[num_region])
+		{
+			delete[] storage[num_region];
+			storage[num_region] = 0;
+		}
 	}
 }
 
@@ -153,234 +257,279 @@ void PCIStub<ADDRESS>::Reset()
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size)
+bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, PCISpace space, const bool monitor)
 {
-	if(physical_addr < pci_conf_base_addr || (physical_addr + (size - 1)) >= (pci_conf_base_addr + bytesize) || (physical_addr + size) < physical_addr) return false;
-	// the third condition is for testing overwrapping (gdb did it !)
-
-	if(logger_import)
+	if(space == unisim::component::cxx::pci::SP_CONFIG)
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "Writing " << size << " bytes at 0x" << Hex << physical_addr << Dec << Endl;
-		(*logger_import) << EndDebugInfo;
+		if(size > 0)
+		{
+			if(((addr >> 11) & 31) != pci_device_number) return false;
+
+			uint32_t offset = addr & 0xff;
+
+			uint8_t *data = (uint8_t *) buffer;
+			do
+			{
+				uint8_t value = *data;
+
+				switch(offset)
+				{
+					case 0x04: pci_conf_command = (pci_conf_command & 0xff00) | value; continue;
+					case 0x05: pci_conf_command = (pci_conf_command & 0x00ff) | ((uint16_t) value << 8); continue;
+					case 0x0f: pci_conf_bist = value; continue;
+				}
+
+				if(offset >= 0x10 && offset <= 0x27)
+				{
+					uint32_t num_region = (offset - 0x10) >> 2;
+					if(address_space[num_region] != unisim::component::cxx::pci::SP_CONFIG)
+					{
+						uint32_t mask = ~(0xffUL << ((offset - 0x10) & 0x3));
+						switch(address_space[num_region])
+						{
+							case unisim::component::cxx::pci::SP_MEM:
+								mask = mask & 0xfffffff0UL;
+								break;
+							case unisim::component::cxx::pci::SP_IO:
+								mask = mask & 0xfffffffcUL;
+								break;
+						}
+				
+						pci_conf_base_addr[num_region] = ((pci_conf_base_addr[num_region] & mask) == mask && value == 0xff) ?
+						                                 (~region_size[num_region] + 1) : (pci_conf_base_addr[num_region] & mask) | value;
+					}
+					continue;
+				}
+			} while(++offset, ++data, --size);
+		}
+		
+		return true;
 	}
-	memcpy(storage + physical_addr - pci_conf_base_addr, buffer, size);
-	return true;
+
+	unsigned int num_region;
+
+	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
+	{
+		if(region_size[num_region] == 0) return false;
+		if(address_space[num_region] != space) continue;
+		if(addr >= pci_conf_base_addr[num_region] && (addr + (size - 1)) < (pci_conf_base_addr[num_region] + region_size[num_region]) && (addr + size) >= addr)
+		{
+			if(logger_import)
+			{
+				(*logger_import) << DebugInfo;
+				(*logger_import) << "Writing " << size << " bytes at 0x" << Hex << addr << Dec << " (region #" << num_region << ")" << Endl;
+				(*logger_import) << EndDebugInfo;
+			}
+			memcpy(storage[num_region] + addr - pci_conf_base_addr[num_region], buffer, size);
+
+			if(monitor)
+			{
+				typename inherited::SPACE sp;
+				switch(space)
+				{
+					case unisim::component::cxx::pci::SP_MEM: sp = inherited::SP_DEV_MEM; break;
+					case unisim::component::cxx::pci::SP_IO: sp = inherited::SP_DEV_IO; break;
+				}
+				if(watchpoint_registry[sp].HasWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+				{
+					synchronizable_import->Synchronize();
+			
+					typename inherited::TRAP trap;
+					trap.type = inherited::TRAP_WATCHPOINT;
+					trap.watchpoint.wtype = inherited::WATCHPOINT_WRITE;
+					trap.watchpoint.addr = addr;
+					trap.watchpoint.size = size;
+					trap.watchpoint.space = sp;
+					traps.push_back(trap);
+			
+					Trap();
+				}
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, PCISpace space, const bool monitor)
+{
+	if(space == unisim::component::cxx::pci::SP_CONFIG)
+	{
+		if(size > 0)
+		{
+			if(((addr >> 11) & 31) != pci_device_number) return false;
+
+			uint32_t offset = addr & 0xff;
+
+			uint8_t *data = (uint8_t *) buffer;
+			do
+			{
+				switch(offset)
+				{
+					case 0x00: *data = pci_conf_vendor_id; continue;
+					case 0x01: *data = pci_conf_vendor_id >> 8; continue;
+					case 0x02: *data = pci_conf_device_id; continue;
+					case 0x03: *data = pci_conf_device_id >> 8; continue;
+					case 0x04: *data = pci_conf_command; continue;
+					case 0x05: *data = pci_conf_command >> 8; continue;
+					case 0x06: *data = pci_conf_status; continue;
+					case 0x07: *data = pci_conf_status >> 8; continue;
+					case 0x08: *data = pci_conf_revision_id; continue;
+					case 0x09: *data = pci_conf_class_code; continue;
+					case 0x0a: *data = pci_conf_class_code >> 8; continue;
+					case 0x0b: *data = pci_conf_class_code >> 16; continue;
+					case 0x0c: *data = pci_conf_cache_line_size; continue;
+					case 0x0d: *data = pci_conf_latency_timer; continue;
+					case 0x0e: *data = pci_conf_header_type; continue;
+					case 0x0f: *data = pci_conf_bist; continue;
+					case 0x28: *data = 0xf1; continue;
+					case 0x29: *data = 0xff; continue;
+					case 0x2a: *data = 0xff; continue;
+					case 0x2b: *data = 0xff; continue;
+				}
+
+				if(offset >= 0x10 && offset <= 0x27)
+				{
+					uint32_t num_region = (offset - 0x10) >> 2;
+					uint32_t shift = 8 * ((offset - 0x10) & 0x3);
+					*data = pci_conf_base_addr[num_region] >> shift;
+					continue;
+				}
+			
+				*data = 0x00;
+			} while(++offset, ++data, --size);
+		}
+		
+		return true;
+	}
+
+	unsigned int num_region;
+
+	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
+	{
+		if(region_size[num_region] == 0) return false;
+		if(address_space[num_region] != space) continue;
+		if(addr >= pci_conf_base_addr[num_region] && (addr + (size - 1)) < (pci_conf_base_addr[num_region] + region_size[num_region]) && (addr + size) >= addr)
+		{
+			if(logger_import)
+			{
+				(*logger_import) << DebugInfo;
+				(*logger_import) << "Reading " << size << " bytes at 0x" << Hex << addr << Dec << " (region #" << num_region << ")" << Endl;
+				(*logger_import) << EndDebugInfo;
+			}
+			memcpy(buffer, storage[num_region] + addr - pci_conf_base_addr[num_region], size);
+
+			if(monitor)
+			{
+				typename inherited::SPACE sp;
+				switch(space)
+				{
+					case unisim::component::cxx::pci::SP_MEM: sp = inherited::SP_DEV_MEM; break;
+					case unisim::component::cxx::pci::SP_IO: sp = inherited::SP_DEV_IO; break;
+				}
+				if(watchpoint_registry[sp].HasWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+				{
+					synchronizable_import->Synchronize();
+			
+					typename inherited::TRAP trap;
+					trap.type = inherited::TRAP_WATCHPOINT;
+					trap.watchpoint.wtype = inherited::WATCHPOINT_READ;
+					trap.watchpoint.addr = addr;
+					trap.watchpoint.size = size;
+					trap.watchpoint.space = sp;
+					traps.push_back(trap);
+			
+					Trap();
+				}
+			}
+
+			return true;
+		}
+	}
+	return false;
 }
 
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size)
 {
-	if(physical_addr < pci_conf_base_addr || (physical_addr + (size - 1)) >= (pci_conf_base_addr + bytesize) || (physical_addr + size) < physical_addr) return false;
-	// the third condition is for testing overwrapping (gdb did it !)
-	
-	if(logger_import)
+	return Read(physical_addr, buffer, size, unisim::component::cxx::pci::SP_MEM, false);
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size)
+{
+	return Write(physical_addr, buffer, size, unisim::component::cxx::pci::SP_MEM, false);
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, typename inherited::SPACE space)
+{
+	switch(space)
 	{
-		(*logger_import) << DebugInfo;
-		(*logger_import) << "Reading " << size << " bytes at 0x" << Hex << physical_addr << Dec << Endl;
-		(*logger_import) << EndDebugInfo;
+		case inherited::SP_CPU_MEM: return memory_import->ReadMemory(addr, buffer, size);
+		case inherited::SP_DEV_MEM: return Read(addr, buffer, size, unisim::component::cxx::pci::SP_MEM, false);
+		case inherited::SP_DEV_IO: return Read(addr, buffer, size, unisim::component::cxx::pci::SP_IO, false);
 	}
-	memcpy(buffer, storage + physical_addr - pci_conf_base_addr, size);
+	return false;
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, typename inherited::SPACE space)
+{
+	switch(space)
+	{
+		case inherited::SP_CPU_MEM: return memory_import->WriteMemory(addr, buffer, size);
+		case inherited::SP_DEV_MEM: return Write(addr, buffer, size, unisim::component::cxx::pci::SP_MEM, false);
+		case inherited::SP_DEV_IO: return Write(addr, buffer, size, unisim::component::cxx::pci::SP_IO, false);
+	}
+	return false;
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::ReadRegister(const char *name, uint32_t& value)
+{
+	unisim::util::debug::Register *reg = registers_import->GetRegister(name);
+	if(!reg) return false;
+	if(reg->GetSize() != sizeof(value)) return false;
+	reg->GetValue(&value);
 	return true;
 }
 
 template <class ADDRESS>
-uint8_t PCIStub<ADDRESS>::ReadConfigByte(unsigned int offset)
+bool PCIStub<ADDRESS>::WriteRegister(const char *name, uint32_t value)
 {
-	switch(offset)
-	{
-		case 0x00:
-			return pci_conf_vendor_id;
-			break;
-		case 0x01:
-			return pci_conf_vendor_id >> 8;
-			break;
-		case 0x02:
-			return pci_conf_device_id;
-			break;
-		case 0x03:
-			return pci_conf_device_id >> 8;
-			break;
-		case 0x04:
-			return pci_conf_command;
-			break;
-		case 0x05:
-			return pci_conf_command >> 8;
-			break;
-		case 0x06:
-			return pci_conf_status;
-			break;
-		case 0x07:
-			return pci_conf_status >> 8;
-			break;
-		case 0x08:
-			return pci_conf_revision_id;
-			break;
-		case 0x09:
-			return pci_conf_class_code;
-			break;
-		case 0x0a:
-			return pci_conf_class_code >> 8;
-			break;
-		case 0x0b:
-			return pci_conf_class_code >> 16;
-			break;
-		case 0x0c:
-			return pci_conf_cache_line_size;
-			break;
-		case 0x0d:
-			return pci_conf_latency_timer;
-			break;
-		case 0x0e:
-			return pci_conf_header_type;
-			break;
-		case 0x0f:
-			return pci_conf_bist;
-			break;
-		case 0x10:
-			return pci_conf_base_addr;
-			break;
-		case 0x11:
-			return pci_conf_base_addr >> 8;
-			break;
-		case 0x12:
-			return pci_conf_base_addr >> 16;
-			break;
-		case 0x13:
-			return pci_conf_base_addr >> 24;
-			break;
-		case 0x28:
-			return 0xf1;
-		case 0x29:
-			return 0xff;
-		case 0x2a:
-			return 0xff;
-		case 0x2b:
-			return 0xff;
-	}
-	return 0x00;
-}
-
-template <class ADDRESS>
-void PCIStub<ADDRESS>::WriteConfigByte(unsigned int offset, uint8_t value)
-{
-	switch(offset)
-	{
-		case 0x04:
-			pci_conf_command = (pci_conf_command & 0xff00) | value;
-			break;
-		case 0x05:
-			pci_conf_command = (pci_conf_command & 0x00ff) | ((uint16_t) value << 8);
-			break;
-		case 0x0f:
-			pci_conf_bist = value;
-			break;
-		case 0x10:
-			pci_conf_base_addr = ((pci_conf_base_addr & 0xffffff00UL) == 0xffffff00UL && value == 0xff) ?
-				                     (~bytesize + 1) :
-				(pci_conf_base_addr & 0xffffff00UL) | value;
-			break;
-		case 0x11:
-			pci_conf_base_addr = ((pci_conf_base_addr & 0xffff00f0UL) == 0xffff00f0UL && value == 0xff) ?
-				                     (~bytesize + 1) :
-				(pci_conf_base_addr & 0xffff00f0UL) | ((uint16_t) value << 8);
-			break;
-		case 0x12:
-			pci_conf_base_addr = ((pci_conf_base_addr & 0xff00fff0UL) == 0xff00fff0UL && value == 0xff) ?
-				                     (~bytesize + 1) :
-				(pci_conf_base_addr & 0xff00fff0UL) | ((uint16_t) value << 16);
-			break;
-		case 0x13:
-			pci_conf_base_addr = ((pci_conf_base_addr & 0x00fffff0UL) == 0x00fffff0UL && value == 0xff) ?
-				                     (~bytesize + 1) :
-				(pci_conf_base_addr & 0x00fffff0UL) | ((uint16_t) value << 24);
-			break;
-	}
-}
-
-template <class ADDRESS>
-bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size)
-{
-	return ReadMemory(addr, buffer, size);
-}
-
-template <class ADDRESS>
-bool PCIStub<ADDRESS>::Read(const char *symbol_name, void *buffer, uint32_t size)
-{
-	if(!symbol_table_lookup_import)
-	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "No symbol table connected. Can't lookup symbol \"" << symbol_name << "\"" << Endl;
-			(*logger_import) << EndDebugWarning;
-		}
-		return false;
-	}
-
-	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(symbol_name);
-
-	if(!symbol)
-	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "Symbol \"" << symbol_name << "\" not found" << Endl;
-			(*logger_import) << EndDebugWarning;
-		}
-		return false;
-	}
-
-	return ReadMemory(symbol->GetAddress(), buffer, size);
-}
-
-template <class ADDRESS>
-bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size)
-{
-	return WriteMemory(addr, buffer, size);
-}
-
-template <class ADDRESS>
-bool PCIStub<ADDRESS>::Write(const char *symbol_name, const void *buffer, uint32_t size)
-{
-	if(!symbol_table_lookup_import)
-	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "No symbol table connected. Can't lookup symbol \"" << symbol_name << "\"" << Endl;
-			(*logger_import) << EndDebugWarning;
-		}
-		return false;
-	}
-
-	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(symbol_name);
-
-	if(!symbol)
-	{
-		if(logger_import)
-		{
-			(*logger_import) << DebugWarning;
-			(*logger_import) << "Symbol \"" << symbol_name << "\" not found" << Endl;
-			(*logger_import) << EndDebugWarning;
-		}
-		return false;
-	}
-
-	return WriteMemory(symbol->GetAddress(), buffer, size);
+	unisim::util::debug::Register *reg = registers_import->GetRegister(name);
+	if(!reg) return false;
+	if(reg->GetSize() != sizeof(value)) return false;
+	reg->SetValue(&value);
+	return true;
 }
 
 template <class ADDRESS>
 void PCIStub<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
+	if(watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoint(mat, mt, addr, size))
 	{
-		typename inherited::TIME_UNIT tu;
-		uint64_t t;
-
 		synchronizable_import->Synchronize();
-		Trap(t, tu);
-		NetStub<ADDRESS>::PutTrapPacket(t, tu);
+
+		typename inherited::TRAP trap;
+		trap.type = inherited::TRAP_WATCHPOINT;
+		switch(mat)
+		{
+			case MemoryAccessReporting<ADDRESS>::MAT_READ:
+				trap.watchpoint.wtype = inherited::WATCHPOINT_READ;
+				break;
+			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
+				trap.watchpoint.wtype = inherited::WATCHPOINT_WRITE;
+				break;
+		}
+		trap.watchpoint.addr = addr;
+		trap.watchpoint.size = size;
+		trap.watchpoint.space = inherited::SP_CPU_MEM;
+		traps.push_back(trap);
+
+		Trap();
 	}
 }
 
@@ -389,12 +538,14 @@ void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
-		typename inherited::TIME_UNIT tu;
-		uint64_t t;
-
 		synchronizable_import->Synchronize();
-		Trap(t, tu);
-		NetStub<ADDRESS>::PutTrapPacket(t, tu);
+
+		typename inherited::TRAP trap;
+		trap.type = inherited::TRAP_BREAKPOINT;
+		trap.breakpoint.addr = next_addr;
+		traps.push_back(trap);
+
+		Trap();
 	}
 }
 
@@ -434,6 +585,19 @@ bool PCIStub<ADDRESS>::SetBreakpoint(const char *symbol_name)
 }
 
 template <class ADDRESS>
+bool PCIStub<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
+{
+	return watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
+{
+	return watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+}
+
+
+template <class ADDRESS>
 bool PCIStub<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
 {
 	return breakpoint_registry.RemoveBreakpoint(addr);
@@ -470,10 +634,21 @@ bool PCIStub<ADDRESS>::RemoveBreakpoint(const char *symbol_name)
 }
 
 template <class ADDRESS>
-void PCIStub<ADDRESS>::Trap(uint64_t& t, typename inherited::TIME_UNIT& tu)
+bool PCIStub<ADDRESS>::RemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	t = 0;
-	tu = inherited::TU_MS;
+	return watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+}
+
+template <class ADDRESS>
+bool PCIStub<ADDRESS>::RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
+{
+	return watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+}
+
+
+template <class ADDRESS>
+void PCIStub<ADDRESS>::Trap()
+{
 }
 
 } // end of namespace debug
