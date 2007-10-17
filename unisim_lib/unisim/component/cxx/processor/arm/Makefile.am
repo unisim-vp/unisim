@@ -33,8 +33,8 @@ include_HEADERS = config.hh cpu.hh cpu.tcc \
 	load_store_v4.isa load_store_v5e.isa misc_arithmetic.isa multiply.isa \
 	semaphore.isa status_register_access.isa
 	
-nodist_include_HEADERS = armcpu.tcc armcpu.hh
-nodist_include_HEADERS = \
+nodist_include_HEADERS = 
+	armcpu.tcc armcpu.hh \
 	cache/cache.hh cache/cache.tcc \
 	cache/set.hh cache/set.tcc \
 	cache/line.hh cache/line.tcc \
