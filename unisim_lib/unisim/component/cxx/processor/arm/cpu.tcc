@@ -37,9 +37,10 @@
 
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/component/cxx/cache/cache_interface.hh"
+#include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/util/debug/symbol.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/config.hh"
 #include <sstream>
 
 #define LOCATION Function << __FUNCTION__ << File <<  __FILE__ << Line << __LINE__
@@ -66,7 +67,6 @@ using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::LittleEndian2Host;
-using unisim::component::cxx::cache::CC_NONE;
 using unisim::util::arithmetic::RotateRight;
 using std::stringstream;
 //using full_system::utils::registers::SimpleRegisterInterface;
@@ -131,9 +131,9 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	running(true),
 	/* initialization of parameters for the 966es  START*/
 	arm966es_initram(false),
-	param_arm966es_initram("arm966es_initram", this, arm966es_initram),
+	param_arm966es_initram("arm966es-initram", this, arm966es_initram),
 	arm966es_vinithi(false),
-	param_arm966es_vinithi("arm966es_vinithi", this, arm966es_vinithi) 
+	param_arm966es_vinithi("arm966es-vinithi", this, arm966es_vinithi) 
 	/* initialization of parameters for the 966es  END */
 	{
 	/* setting setup dependencies */
@@ -212,6 +212,7 @@ Setup() {
 		/* we are running in user mode:
 		 * - set CPSR to user mode
 		 * - initialize the cache system
+		 * - the initial pc will be set by linux
 		 */
 		// set CPSR to user mode
 		SetCPSR_Mode(USER_MODE);
@@ -226,12 +227,27 @@ Setup() {
 		if(cache_l2 != 0) cache_l2->Enable();
 	} else {
 		/* we are running in system mode */
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< "TODO: Running \"" << GetName() << "\" in system mode"
-				<< Endl << EndDebugError;
+		/* currently supported: arm966e_s
+		 * if different report error */
+		if(CONFIG::MODEL != ARM966E_S) {
+			if(logger_import) {
+				(*logger_import) << DebugError << LOCATION
+					<< "Running \"" << GetName() << "\" in system mode"
+					<< ". Only arm966e_s can run under this mode"
+					<< Endl << EndDebugError;
+			}
+			return false;
 		}
-		return false;
+		// set CPSR to system mode
+		SetCPSR_Mode(SYSTEM_MODE);
+		// set initial pc
+		/* Depending on the configuration being used set the initial pc */
+		if(CONFIG::MODEL == ARM966E_S) {
+			if(arm966es_vinithi)
+				gpr[15] = (address_t)0xffff0000;
+			else
+				gpr[15] = (address_t)0x00000000;
+		}
 	}
 
 	/* setting debugging registers */
@@ -1468,14 +1484,6 @@ InitGPR() {
   
   for(unsigned int i = 0; i < num_phys_gprs; i++) 
     phys_gpr[i] = 0;
-  
-  /* Depending on the configuration being used set the initial pc */
-  if(CONFIG::MODEL == ARM966E_S) {
-	  if(arm966es_vinithi)
-		  gpr[15] = (address_t)0xffff0000;
-	  else
-		  gpr[15] = (address_t)0x00000000;
-  }
 }
 
 template<class CONFIG>

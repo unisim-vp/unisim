@@ -229,16 +229,18 @@ bool ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup()
 				}
 				else
 				{
-					if(!memory_import->WriteMemory(segment_addr, segment, segment_size))
+					if(segment_size > 0) 
 					{
-						cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << endl;
-						success = false;
+						if(!memory_import->WriteMemory(segment_addr, segment, segment_size))
+						{
+							cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << endl;
+							success = false;
+						}
+						else 
+						{
+							cerr << Object::GetName() << ": write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << endl;
+						}
 					}
-					else 
-					{
-						cerr << Object::GetName() << ": write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << endl;
-					}
-					
 				}
 
 				free(segment);
