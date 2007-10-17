@@ -50,6 +50,7 @@ UNISIM_CONFIG_SUBDIR(simulator-tlm-ppcemu, ppcemu, *linux*)
 UNISIM_CONFIG_SUBDIR(simulator-tlm-ppcemu_system, ppcemu_system)
 UNISIM_CONFIG_SUBDIR(simulator-tlm-embedded_ppc_g4_board, embedded_ppc_g4_board)
 UNISIM_CONFIG_SUBDIR(simulator-tlm-armemu, armemu, *linux*)
+UNISIM_CONFIG_SUBDIR(simulator-tlm-arm966e_s, arm966e_s)
 
 
 # launch the generation of makefiles

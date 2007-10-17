@@ -16,6 +16,11 @@ SUBDIRS += armemu
 INCLUDE_SUBDIRS += armemu
 endif
 
+if COND_arm966e_s
+SUBDIRS += arm966e_s
+INCLUDE_SUBDIRS += arm966e_s
+endif
+
 if COND_embedded_ppc_g4_board
 SUBDIRS += embedded_ppc_g4_board
 INCLUDE_SUBDIRS += embedded_ppc_g4_board
