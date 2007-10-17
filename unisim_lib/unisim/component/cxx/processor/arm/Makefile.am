@@ -15,7 +15,6 @@ libunisim_component_cxx_processor_arm_a_SOURCES = \
 	cpu_arm966e_s_bigendian.cc \
 	cpu_arm966e_s_littleendian_debug.cc \
 	cpu_arm966e_s_bigendian_debug.cc \
-nobase_libunisim_component_cxx_processor_arm_a_SOURCES = \
 	cache/512b_dm_wb_8bls.cc cache/512b_dm_wb_8bls_debug.cc \
 	cache/512b_dm_wt_8bls.cc cache/512b_dm_wt_8bls_debug.cc \
 	cache/32kb_dm_wb_32bls.cc cache/32kb_dm_wb_32bls_debug.cc \
@@ -23,27 +22,31 @@ nobase_libunisim_component_cxx_processor_arm_a_SOURCES = \
 	cache/64kb_dm_wb_32bls.cc cache/64kb_dm_wb_32bls_debug.cc \
 	cache/64kb_dm_wt_32bls.cc cache/64kb_dm_wt_32bls_debug.cc \
 	cache/96kb_dm_wb_32bls.cc cache/96kb_dm_wb_32bls_debug.cc \
-	cache/96kb_dm_wt_32bls.cc cache/96kb_dm_wt_32bls_debug.cc
+	cache/96kb_dm_wt_32bls.cc cache/96kb_dm_wt_32bls_debug.cc \
+	coprocessor/cp15_arm966e_s/cp15.cc
 
 include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \
 	cache_interface.hh \
+	coprocessor_interface.hh \
 	arm.isa constructors_dec.isa actions_dec.isa \
 	branch.isa coprocessor.isa data_processing.isa exception.isa \
 	load_store.isa load_store_base.isa load_store_multiple.isa \
 	load_store_v4.isa load_store_v5e.isa misc_arithmetic.isa multiply.isa \
 	semaphore.isa status_register_access.isa
 	
-nodist_include_HEADERS = \
-	armcpu.tcc armcpu.hh
 nobase_include_HEADERS = \
 	cache/cache.hh cache/cache.tcc \
 	cache/set.hh cache/set.tcc \
 	cache/line.hh cache/line.tcc \
 	cache/config.hh \
-	cache/types.hh
+	cache/types.hh \
+	coprocessor/cp15_arm966e_s/cp15.hh \
+	coprocessor/cp15_arm966e_s/cp15.tcc
 
-
+nodist_include_HEADERS = \
+	armcpu.tcc armcpu.hh
+	
 BUILT_SOURCES = armcpu.tcc armcpu.hh
 CLEANFILES = armcpu.tcc armcpu.hh
 
