@@ -155,9 +155,9 @@ void help(char *prog_name)
 	cerr << "-f" << endl;
 	cerr << "--force-use-virtual-address" << endl;
 	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
-	cerr << "-n <base address>,<size>,<space>:..." << endl;
-	cerr << "--pci-stub-regions <base address>,<size>,<space>[:...]" << endl;
-	cerr << "            specify the pci-stub regions (up to 6). 'space' is either 'mem' or 'i/o'" << endl << endl;
+	cerr << "-n <base address>,<byte size>,<address space>[...]" << endl;
+	cerr << "--pci-stub-regions <base address>,<byte size>,<address space>[...]" << endl;
+	cerr << "            specify the pci-stub regions (up to 6 separated by one or more space characters). 'address space' is either 'mem' or 'i/o'" << endl << endl;
 	cerr << "-q <irq number>" << endl;
 	cerr << "--pci-stub-irq <irq number>" << endl;
 	cerr << "            specify the pci-stub IRQ number" << endl << endl;

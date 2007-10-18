@@ -52,52 +52,63 @@ class NetStub
 public:
 	typedef enum
 	{
-		PKC_START     =  0, // start
-		PKC_STOP      =  1, // stop
-		PKC_WRITE     =  2, // write
-		PKC_READ      =  3, // read
-		PKC_WRITEREG  =  4, // write CPU register
-		PKC_READREG   =  5, // read CPU register
-		PKC_INTR      =  6, // set interrupt level
-		PKC_RUN       =  7, // run
-		PKC_SETBRK    =  8, // set breakpoint
-		PKC_SETWRITEW =  9, // set write watchpoint
-		PKC_SETREADW  = 10, // set read watchpoint
-		PKC_RMBRK     = 11, // remove breakpoint
-		PKC_RMWRITEW  = 12, // remove write watchpoint
-		PKC_RMREADW   = 13, // remove read watchpoint
-		PKC_TRAP      = 14  // trap on breakpoint/watchpoint
+		PKC_MIN         =  0,
+		PKC_START       =  0, // start
+		PKC_STOP        =  1, // stop
+		PKC_WRITEREG    =  2, // write CPU register
+		PKC_READREG     =  3, // read CPU register
+		PKC_WRITE       =  4, // write
+		PKC_READ        =  5, // read
+		PKC_INTR        =  6, // set interrupt level
+		PKC_RUN         =  7, // run
+		PKC_SETBRK      =  8, // set breakpoint
+		PKC_SETWRITEW   =  9, // set write watchpoint
+		PKC_SETREADW    = 10, // set read watchpoint
+		PKC_RMBRK       = 11, // remove breakpoint
+		PKC_RMWRITEW    = 12, // remove write watchpoint
+		PKC_RMREADW     = 13, // remove read watchpoint
+		PKC_TRAP        = 14, // trap on breakpoint/watchpoint
+		PKC_MAX         = 14
 	} PK_COMMAND;
 
 	typedef enum
 	{
+		TU_MIN = 0,
 		TU_FS = 0, // 1e-15 s
 		TU_PS = 1, // 1e-12 s
 		TU_NS = 2, // 1e-9 s
 		TU_US = 3, // 1e-6 s
 		TU_MS = 4, // 1e-3 s
-		TU_S  = 5  // 1 s
+		TU_S  = 5, // 1 s
+		TU_MAX = 5
 	} TIME_UNIT;
 
 	typedef enum
 	{
+		SP_MIN = 0,
 		SP_CPU_MEM = 0, // CPU view of memory.
 		                // WARNING! Be aware that MMU may be activated so that effective addresses
 		                // are not physical addresses
 		SP_DEV_MEM = 1, // Local device memory
-		SP_DEV_IO = 2   // local device I/O space (i.e. device registers)
+		SP_DEV_IO  = 2, // local device I/O space
+		SP_MAX = 2
 	} SPACE;
 
 	typedef enum
 	{
+		TRAP_MIN = 0,
 		TRAP_BREAKPOINT = 0,
-		TRAP_WATCHPOINT = 1
+		TRAP_WATCHPOINT = 1,
+		NUM_TRAP_TYPES  = 2,
+		TRAP_MAX = 2
 	} TRAP_TYPE;
 
 	typedef enum
 	{
-		WATCHPOINT_READ = 0,
-		WATCHPOINT_WRITE = 1
+		WATCHPOINT_MIN = 0,
+		WATCHPOINT_READ      = 0,
+		WATCHPOINT_WRITE     = 1,
+		WATCHPOINT_MAX = 1
 	} WATCHPOINT_TYPE;
 
 	typedef union
@@ -175,36 +186,12 @@ public:
 	bool ParseTrap(const string& packet, unsigned int& pos, uint64_t& t, TIME_UNIT& tu, list<TRAP>& traps);
 private:
 	int sock;
-	string s_command_start;
-	string s_command_stop;
-	string s_command_read;
-	string s_command_write;
-	string s_command_read_register;
-	string s_command_write_register;
-	string s_command_intr;
-	string s_command_run;
-	string s_command_setbrk;
-	string s_command_set_read_watchpoint;
-	string s_command_set_write_watchpoint;
-	string s_command_rmbrk;
-	string s_command_remove_read_watchpoint;
-	string s_command_remove_write_watchpoint;
-	string s_command_trap;
-	string s_tu_fs;
-	string s_tu_ps;
-	string s_tu_ns;
-	string s_tu_us;
-	string s_tu_ms;
-	string s_tu_s;
-	string s_true;
-	string s_false;
-	string s_cpu_mem;
-	string s_dev_mem;
-	string s_dev_io;
-	string s_trap_breakpoint;
-	string s_trap_watchpoint;
-	string s_watchpoint_read;
-	string s_watchpoint_write;
+	string s_command[PKC_MAX - PKC_MIN + 1];
+	string s_tu[TU_MAX - TU_MIN + 1];
+	string s_bool[2];
+	string s_space[SP_MAX - SP_MIN + 1];
+	string s_trap_type[TRAP_MAX - TRAP_MIN + 1];
+	string s_watchpoint_type[WATCHPOINT_MAX - WATCHPOINT_MIN + 1];
 	TIME_UNIT default_tu;
 
 protected:

@@ -67,38 +67,43 @@ NetStub<ADDRESS>::NetStub(const char *_server_name, unsigned int _tcp_port, bool
 	server_name(_server_name),
 	tcp_port(_tcp_port),
 	sock(-1),
-	s_command_start("start"),
-	s_command_stop("stop"),
-	s_command_read("read"),
-	s_command_write("write"),
-	s_command_write_register("writereg"),
-	s_command_read_register("readreg"),
-	s_command_run("run"),
-	s_command_intr("intr"),
-	s_command_setbrk("setbrk"),
-	s_command_set_write_watchpoint("setwritew"),
-	s_command_set_read_watchpoint("setreadw"),
-	s_command_rmbrk("rmbrk"),
-	s_command_remove_write_watchpoint("rmwritew"),
-	s_command_remove_read_watchpoint("rmreadw"),
-	s_command_trap("trap"),
-	s_tu_fs("fs"),
-	s_tu_ps("ps"),
-	s_tu_ns("ns"),
-	s_tu_us("us"),
-	s_tu_ms("ms"),
-	s_tu_s("s"),
-	s_true("true"),
-	s_false("false"),
-	s_cpu_mem("cpu_mem"),
-	s_dev_mem("dev_mem"),
-	s_dev_io("dev_io"),
-	s_trap_breakpoint("breakpoint"),
-	s_trap_watchpoint("watchpoint"),
-	s_watchpoint_read("read"),
-	s_watchpoint_write("write"),
 	default_tu(TU_MS)
 {
+	s_command[PKC_START] = "start";
+	s_command[PKC_STOP] = "stop";
+	s_command[PKC_READ] = "read";
+	s_command[PKC_WRITE] = "write";
+	s_command[PKC_WRITEREG] = "writereg";
+	s_command[PKC_READREG] = "readreg";
+	s_command[PKC_RUN] = "run";
+	s_command[PKC_INTR] = "intr";
+	s_command[PKC_SETBRK] = "setbrk";
+	s_command[PKC_SETWRITEW] = "setwritew";
+	s_command[PKC_SETREADW] = "setreadw";
+	s_command[PKC_RMBRK] = "rmbrk";
+	s_command[PKC_RMWRITEW] = "rmwritew";
+	s_command[PKC_RMREADW] = "rmreadw";
+	s_command[PKC_TRAP] = "trap";
+
+	s_tu[TU_FS] = "fs";
+	s_tu[TU_PS] = "ps";
+	s_tu[TU_NS] = "ns";
+	s_tu[TU_US] = "us";
+	s_tu[TU_MS] = "ms";
+	s_tu[TU_S] = "s";
+
+	s_bool[0] = "false";
+	s_bool[1] = "true";
+
+	s_trap_type[TRAP_BREAKPOINT] = "breakpoint";
+	s_trap_type[TRAP_WATCHPOINT] = "watchpoint";
+
+	s_watchpoint_type[WATCHPOINT_READ] = "read";
+	s_watchpoint_type[WATCHPOINT_WRITE] = "write";
+
+	s_space[SP_CPU_MEM] = "cpu_mem";
+	s_space[SP_DEV_MEM] = "dev_mem";
+	s_space[SP_DEV_IO] = "dev_io";
 }
 
 template <class ADDRESS>
@@ -563,18 +568,15 @@ bool NetStub<ADDRESS>::ParseHex(const string& s, unsigned int& pos, uint32_t& va
 template <class ADDRESS>
 bool NetStub<ADDRESS>::ParseBool(const string& s, unsigned int& pos, bool& value)
 {
-	if(s.compare(pos, s_true.length(), s_true) == 0)
+	unsigned int i;
+	for(i = 0; i <= 1; i++)
 	{
-		value = true;
-		pos += s_true.length();
-		return true;
-	}
-	
-	if(s.compare(pos, s_false.length(), s_false) == 0)
-	{
-		value = false;
-		pos += s_false.length();
-		return true;
+		if(s.compare(pos, s_bool[i].length(), s_bool[i]) == 0)
+		{
+			value = i ? true : false;
+			pos += s_bool[i].length();
+			return true;
+		}
 	}
 
 	uint32_t int_value;
@@ -583,6 +585,8 @@ bool NetStub<ADDRESS>::ParseBool(const string& s, unsigned int& pos, bool& value
 		value = (int_value != 0);
 		return true;
 	}
+
+	return false;
 }
 
 template <class ADDRESS>
@@ -715,133 +719,22 @@ bool NetStub<ADDRESS>::ParseSymbol(const string& packet, unsigned int& pos, ADDR
 template <class ADDRESS>
 bool NetStub<ADDRESS>::ParseCommand(const string& packet, unsigned int& pos, PK_COMMAND& command)
 {
-	if(packet.compare(pos, s_command_start.length(), s_command_start) == 0)
+	for(command = PKC_MIN; command <= PKC_MAX; command = (PK_COMMAND)(command + 1))
 	{
-		command = PKC_START;
-		pos += s_command_start.length();
-		return true;
-	}
-	
-	if(packet.compare(pos, s_command_stop.length(), s_command_stop) == 0)
-	{
-		command = PKC_STOP;
-		pos += s_command_stop.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_read_register.length(), s_command_read_register) == 0)
-	{
-		command = PKC_READREG;
-		pos += s_command_read_register.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_write_register.length(), s_command_write_register) == 0)
-	{
-		command = PKC_WRITEREG;
-		pos += s_command_write_register.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_read.length(), s_command_read) == 0)
-	{
-		command = PKC_READ;
-		pos += s_command_read.length();
-		return true;
-	}
-	
-	if(packet.compare(pos, s_command_write.length(), s_command_write) == 0)
-	{
-		command = PKC_WRITE;
-		pos += s_command_write.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_intr.length(), s_command_intr) == 0)
-	{
-		command = PKC_INTR;
-		pos += s_command_intr.length();
-		return true;
-	}
-	
-	if(packet.compare(pos, s_command_run.length(), s_command_run) == 0)
-	{
-		command = PKC_RUN;
-		pos += s_command_run.length();
-		return true;
-	}
-	
-	if(packet.compare(pos, s_command_setbrk.length(), s_command_setbrk) == 0)
-	{
-		command = PKC_SETBRK;
-		pos += s_command_setbrk.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_set_write_watchpoint.length(), s_command_set_write_watchpoint) == 0)
-	{
-		command = PKC_SETWRITEW;
-		pos += s_command_set_write_watchpoint.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_set_read_watchpoint.length(), s_command_set_read_watchpoint) == 0)
-	{
-		command = PKC_SETREADW;
-		pos += s_command_set_read_watchpoint.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_rmbrk.length(), s_command_rmbrk) == 0)
-	{
-		command = PKC_RMBRK;
-		pos += s_command_rmbrk.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_remove_read_watchpoint.length(), s_command_remove_read_watchpoint) == 0)
-	{
-		command = PKC_RMREADW;
-		pos += s_command_remove_read_watchpoint.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_remove_write_watchpoint.length(), s_command_remove_write_watchpoint) == 0)
-	{
-		command = PKC_RMWRITEW;
-		pos += s_command_remove_write_watchpoint.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_command_trap.length(), s_command_trap) == 0)
-	{
-		command = PKC_TRAP;
-		pos += s_command_trap.length();
-		return true;
+		if(packet.compare(pos, s_command[command].length(), s_command[command]) == 0)
+		{
+			pos += s_command[command].length();
+			return true;
+		}
 	}
 
 	uint32_t value;
 	if(ParseHex(packet, pos, value))
 	{
-		switch(value)
+		if(value >= PKC_MIN && value <= PKC_MAX)
 		{
-			case PKC_START:
-			case PKC_STOP:
-			case PKC_READ:
-			case PKC_WRITE:
-			case PKC_READREG:
-			case PKC_WRITEREG:
-			case PKC_INTR:
-			case PKC_RUN:
-			case PKC_SETBRK:
-			case PKC_SETWRITEW:
-			case PKC_SETREADW:
-			case PKC_RMBRK:
-			case PKC_RMWRITEW:
-			case PKC_RMREADW:
-			case PKC_TRAP:
-				command = (PK_COMMAND) value;
-				return true;
+			command = (PK_COMMAND) value;
+			return true;
 		}
 	}
 		
@@ -851,55 +744,22 @@ bool NetStub<ADDRESS>::ParseCommand(const string& packet, unsigned int& pos, PK_
 template <class ADDRESS>
 bool NetStub<ADDRESS>::ParseTimeUnit(const string& packet, unsigned int& pos, TIME_UNIT& tu)
 {
-	if(packet.compare(pos, s_tu_fs.length(), s_tu_fs) == 0)
+	for(tu = TU_MIN; tu <= TU_MAX; tu = (TIME_UNIT)(tu + 1))
 	{
-		tu = TU_FS;
-		pos += s_tu_fs.length();
-		return true;
+		if(packet.compare(pos, s_tu[tu].length(), s_tu[tu]) == 0)
+		{
+			pos += s_tu[tu].length();
+			return true;
+		}
 	}
-	if(packet.compare(pos, s_tu_ps.length(), s_tu_ps) == 0)
-	{
-		tu = TU_PS;
-		pos += s_tu_ps.length();
-		return true;
-	}
-	if(packet.compare(pos, s_tu_ns.length(), s_tu_ns) == 0)
-	{
-		tu = TU_NS;
-		pos += s_tu_ns.length();
-		return true;
-	}
-	if(packet.compare(pos, s_tu_us.length(), s_tu_us) == 0)
-	{
-		tu = TU_US;
-		pos += s_tu_us.length();
-		return true;
-	}
-	if(packet.compare(pos, s_tu_ms.length(), s_tu_ms) == 0)
-	{
-		tu = TU_MS;
-		pos += s_tu_ms.length();
-		return true;
-	}
-	if(packet.compare(pos, s_tu_s.length(), s_tu_s) == 0)
-	{
-		tu = TU_S;
-		pos += s_tu_s.length();
-		return true;
-	}
+
 	uint32_t value;
 	if(ParseHex(packet, pos, value))
 	{
-		switch(value)
+		if(value >= TU_MIN && value <= TU_MAX)
 		{
-			case TU_FS:
-			case TU_PS:
-			case TU_NS:
-			case TU_US:
-			case TU_MS:
-			case TU_S:
-				tu = (TIME_UNIT) value;
-				return true;
+			tu = (TIME_UNIT) value;
+			return true;
 		}
 	}
 	return false;
@@ -908,37 +768,22 @@ bool NetStub<ADDRESS>::ParseTimeUnit(const string& packet, unsigned int& pos, TI
 template <class ADDRESS>
 bool NetStub<ADDRESS>::ParseSpace(const string& packet, unsigned int& pos, SPACE& space)
 {
-	if(packet.compare(pos, s_cpu_mem.length(), s_cpu_mem) == 0)
+	for(space = SP_MIN; space <= SP_MAX; space = (SPACE)(space + 1))
 	{
-		space = SP_CPU_MEM;
-		pos += s_cpu_mem.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_dev_mem.length(), s_dev_mem) == 0)
-	{
-		space = SP_DEV_MEM;
-		pos += s_dev_mem.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_dev_io.length(), s_dev_io) == 0)
-	{
-		space = SP_DEV_IO;
-		pos += s_dev_io.length();
-		return true;
+		if(packet.compare(pos, s_space[space].length(), s_space[space]) == 0)
+		{
+			pos += s_space[space].length();
+			return true;
+		}
 	}
 
 	uint32_t value;
 	if(ParseHex(packet, pos, value))
 	{
-		switch(value)
+		if(value >= SP_MIN && value <= SP_MAX)
 		{
-			case SP_CPU_MEM:
-			case SP_DEV_MEM:
-			case SP_DEV_IO:
-				space = (SPACE) value;
-				return true;
+			space = (SPACE) value;
+			return true;
 		}
 	}
 	return false;
@@ -947,29 +792,22 @@ bool NetStub<ADDRESS>::ParseSpace(const string& packet, unsigned int& pos, SPACE
 template <class ADDRESS>
 bool NetStub<ADDRESS>::ParseTrapType(const string& packet, unsigned int& pos, TRAP_TYPE& trap_type)
 {
-	if(packet.compare(pos, s_trap_breakpoint.length(), s_trap_breakpoint) == 0)
+	for(trap_type = TRAP_MIN; trap_type <= TRAP_MAX; trap_type = (TRAP_TYPE)(trap_type + 1))
 	{
-		trap_type = TRAP_BREAKPOINT;
-		pos += s_trap_breakpoint.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_trap_watchpoint.length(), s_trap_watchpoint) == 0)
-	{
-		trap_type = TRAP_WATCHPOINT;
-		pos += s_trap_watchpoint.length();
-		return true;
+		if(packet.compare(pos, s_trap_type[trap_type].length(), s_trap_type[trap_type]) == 0)
+		{
+			pos += s_trap_type[trap_type].length();
+			return true;
+		}
 	}
 
 	uint32_t value;
 	if(ParseHex(packet, pos, value))
 	{
-		switch(value)
+		if(value >= TRAP_MIN && value <= TRAP_MAX)
 		{
-			case TRAP_BREAKPOINT:
-			case TRAP_WATCHPOINT:
-				trap_type = (TRAP_TYPE) value;
-				return true;
+			trap_type = (TRAP_TYPE) value;
+			return true;
 		}
 	}
 	return false;
@@ -978,29 +816,22 @@ bool NetStub<ADDRESS>::ParseTrapType(const string& packet, unsigned int& pos, TR
 template <class ADDRESS>
 bool NetStub<ADDRESS>::ParseWatchpointType(const string& packet, unsigned int& pos, WATCHPOINT_TYPE& watchpoint_type)
 {
-	if(packet.compare(pos, s_watchpoint_read.length(), s_watchpoint_read) == 0)
+	for(watchpoint_type = WATCHPOINT_MIN; watchpoint_type <= WATCHPOINT_MAX; watchpoint_type = (WATCHPOINT_TYPE)(watchpoint_type + 1))
 	{
-		watchpoint_type = WATCHPOINT_READ;
-		pos += s_watchpoint_read.length();
-		return true;
-	}
-
-	if(packet.compare(pos, s_watchpoint_write.length(), s_watchpoint_write) == 0)
-	{
-		watchpoint_type = WATCHPOINT_WRITE;
-		pos += s_watchpoint_write.length();
-		return true;
+		if(packet.compare(pos, s_watchpoint_type[watchpoint_type].length(), s_watchpoint_type[watchpoint_type]) == 0)
+		{
+			pos += s_watchpoint_type[watchpoint_type].length();
+			return true;
+		}
 	}
 
 	uint32_t value;
 	if(ParseHex(packet, pos, value))
 	{
-		switch(value)
+		if(value >= WATCHPOINT_MIN && value <= WATCHPOINT_MAX)
 		{
-			case WATCHPOINT_READ:
-			case WATCHPOINT_WRITE:
-				watchpoint_type = (WATCHPOINT_TYPE) value;
-				return true;
+			watchpoint_type = (WATCHPOINT_TYPE) value;
+			return true;
 		}
 	}
 	return false;
@@ -1146,26 +977,6 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 #endif
 		return false;
 	}
-	//cerr << Object::GetName() << ": at " << pos << " got ';'" << endl;
-	
-	*data = new uint8_t[size];
-	
-	if(!ParseHex(packet, pos, *data, size))
-	{
-#ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting some data" << endl;
-#endif
-		return false;
-	}
-	//cerr << Object::GetName() << ": at " << pos << " got some data" << endl;
-
-	if(!ParseChar(packet, pos, ';'))
-	{
-#ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
-#endif
-		return false;
-	}
 
 	if(!ParseSpace(packet, pos, space))
 	{
@@ -1175,6 +986,28 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 		return false;
 	}
 
+	if(size > 0)
+	{
+		if(!ParseChar(packet, pos, ';'))
+		{
+#ifdef DEBUG_NETSTUB
+			cerr << "NETSTUB: expecting ';'" << endl;
+#endif
+			return false;
+		}
+		//cerr << Object::GetName() << ": at " << pos << " got ';'" << endl;
+	
+		*data = new uint8_t[size];
+		
+		if(!ParseHex(packet, pos, *data, size))
+		{
+#ifdef DEBUG_NETSTUB
+			cerr << "NETSTUB: expecting some data" << endl;
+#endif
+			return false;
+		}
+		//cerr << Object::GetName() << ": at " << pos << " got some data" << endl;
+	}
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
@@ -1817,45 +1650,44 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 template <class ADDRESS>
 bool NetStub<ADDRESS>::PutStartPacket(const TIME_UNIT tu, const uint32_t device_id, const uint32_t tag)
 {
+	if(tu < TU_MIN || tu > TU_MAX) return false;
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_start << ';';
-	switch(tu)
-	{
-		case TU_FS: sstr << s_tu_fs; break;
-		case TU_PS: sstr << s_tu_ps; break;
-		case TU_NS: sstr << s_tu_ns; break;
-		case TU_US: sstr << s_tu_us; break;
-		case TU_MS: sstr << s_tu_ms; break;
-		case TU_S: sstr << s_tu_s; break;
-	}
+	sstr << s_command[PKC_START] << ';';
+	sstr << s_tu[tu];
 	return PutPacket(sstr.str(), device_id, tag);
 }
 
 template <class ADDRESS>
 bool NetStub<ADDRESS>::PutStopPacket(const uint32_t device_id, const uint32_t tag)
 {
-	return PutPacket(s_command_stop, device_id, tag);
+	return PutPacket(s_command[PKC_STOP], device_id, tag);
 }
 
 template <class ADDRESS>
 bool NetStub<ADDRESS>::PutWritePacket(ADDRESS addr, uint32_t size, uint8_t *data, SPACE space, const uint32_t device_id, const uint32_t tag)
 {
+	if(space < SP_MIN || space > SP_MAX) return false;
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_write << ';';
+	sstr << s_command[PKC_WRITE] << ';';
 	sstr << '*' << addr << ';';
 	sstr << size << ';';
-	sstr << space;
-	
-	uint32_t i;
-		
-	for(i = 0; i < size; i++)
+	sstr << s_space[space];
+
+	if(size > 0)
 	{
-		sstr << Nibble2HexChar(data[i] >> 4);
-		sstr << Nibble2HexChar(data[i] & 0xf);
+		sstr << ';';
+	
+		uint32_t i;
+			
+		for(i = 0; i < size; i++)
+		{
+			sstr << Nibble2HexChar(data[i] >> 4);
+			sstr << Nibble2HexChar(data[i] & 0xf);
+		}
 	}
 	return PutPacket(sstr.str(), device_id, tag);
 }
@@ -1866,7 +1698,7 @@ bool NetStub<ADDRESS>::PutWriteRegisterPacket(const char *name, const uint32_t& 
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_write_register << ';';
+	sstr << s_command[PKC_WRITEREG] << ';';
 	sstr << name << ';';
 	sstr << value;
 	return PutPacket(sstr.str(), device_id, tag);
@@ -1878,7 +1710,7 @@ bool NetStub<ADDRESS>::PutReadRegisterPacket(const char *name, const uint32_t de
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_write_register << ';';
+	sstr << s_command[PKC_READREG] << ';';
 	sstr << name;
 	return PutPacket(sstr.str(), device_id, tag);
 }
@@ -1886,13 +1718,15 @@ bool NetStub<ADDRESS>::PutReadRegisterPacket(const char *name, const uint32_t de
 template <class ADDRESS>
 bool NetStub<ADDRESS>::PutReadPacket(ADDRESS addr, uint32_t size, SPACE space, const uint32_t device_id, const uint32_t tag)
 {
+	if(space < SP_MIN || space > SP_MAX) return false;
+
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_read << ';';
+	sstr << s_command[PKC_READ] << ';';
 	sstr << '*' << addr << ';';
 	sstr << size << ';';
-	sstr << space;
+	sstr << s_space[space];
 	return PutPacket(sstr.str(), device_id, tag);
 }
 
@@ -1902,9 +1736,9 @@ bool NetStub<ADDRESS>::PutIntrPacket(uint32_t intr_id, bool level, const uint32_
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_intr << ';';
+	sstr << s_command[PKC_INTR] << ';';
 	sstr << intr_id << ';';
-	sstr << level;
+	sstr << s_bool[level ? 1 : 0];
 	return PutPacket(sstr.str(), device_id, tag);
 }
 
@@ -1914,7 +1748,7 @@ bool NetStub<ADDRESS>::PutRunPacket(uint64_t duration, const uint32_t device_id,
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_run << ';';
+	sstr << s_command[PKC_RUN] << ';';
 	sstr << duration;
 	return PutPacket(sstr.str(), device_id, tag);
 }
@@ -1922,20 +1756,13 @@ bool NetStub<ADDRESS>::PutRunPacket(uint64_t duration, const uint32_t device_id,
 template <class ADDRESS>
 bool NetStub<ADDRESS>::PutRunPacket(uint64_t duration, TIME_UNIT tu, const uint32_t device_id, const uint32_t tag)
 {
+	if(tu < TU_MIN || tu > TU_MAX) return false;
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_run << ';';
+	sstr << s_command[PKC_RUN] << ';';
 	sstr << duration << ';';
-	switch(tu)
-	{
-		case TU_FS: sstr << s_tu_fs; break;
-		case TU_PS: sstr << s_tu_ps; break;
-		case TU_NS: sstr << s_tu_ns; break;
-		case TU_US: sstr << s_tu_us; break;
-		case TU_MS: sstr << s_tu_ms; break;
-		case TU_S: sstr << s_tu_s; break;
-	}
+	sstr << s_tu[tu];
 	return PutPacket(sstr.str(), device_id, tag);
 }
 
@@ -1945,7 +1772,7 @@ bool NetStub<ADDRESS>::PutSetBreakpointPacket(ADDRESS addr, const uint32_t devic
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_setbrk << ';';
+	sstr << s_command[PKC_SETBRK] << ';';
 	sstr << '*' << addr;
 	return PutPacket(sstr.str(), device_id, tag);	
 }
@@ -1956,8 +1783,36 @@ bool NetStub<ADDRESS>::PutSetBreakpointPacket(const char *symbol_name, const uin
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_setbrk << ';';
+	sstr << s_command[PKC_SETBRK] << ';';
 	sstr << symbol_name;
+	return PutPacket(sstr.str(), device_id, tag);	
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::PutSetReadWatchpointPacket(ADDRESS addr, uint32_t size, SPACE space, const uint32_t device_id, const uint32_t tag)
+{
+	if(space < SP_MIN || space > SP_MAX) return false;
+	stringstream sstr;
+	
+	sstr << std::hex;
+	sstr << s_command[PKC_SETREADW] << ';';
+	sstr << addr << ';';
+	sstr << size << ';';
+	sstr << s_space[space];
+	return PutPacket(sstr.str(), device_id, tag);	
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::PutSetWriteWatchpointPacket(ADDRESS addr, uint32_t size, SPACE space, const uint32_t device_id, const uint32_t tag)
+{
+	if(space < SP_MIN || space > SP_MAX) return false;
+	stringstream sstr;
+	
+	sstr << std::hex;
+	sstr << s_command[PKC_SETWRITEW] << ';';
+	sstr << addr << ';';
+	sstr << size << ';';
+	sstr << s_space[space];
 	return PutPacket(sstr.str(), device_id, tag);	
 }
 
@@ -1967,7 +1822,7 @@ bool NetStub<ADDRESS>::PutRemoveBreakpointPacket(ADDRESS addr, const uint32_t de
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_rmbrk << ';';
+	sstr << s_command[PKC_RMBRK] << ';';
 	sstr << '*' << addr;
 	return PutPacket(sstr.str(), device_id, tag);	
 }
@@ -1978,57 +1833,68 @@ bool NetStub<ADDRESS>::PutRemoveBreakpointPacket(const char *symbol_name, const 
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_rmbrk << ';';
+	sstr << s_command[PKC_RMBRK] << ';';
 	sstr << symbol_name;
+	return PutPacket(sstr.str(), device_id, tag);	
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::PutRemoveReadWatchpointPacket(ADDRESS addr, uint32_t size, SPACE space, const uint32_t device_id, const uint32_t tag)
+{
+	if(space < SP_MIN || space > SP_MAX) return false;
+	stringstream sstr;
+	
+	sstr << std::hex;
+	sstr << s_command[PKC_RMREADW] << ';';
+	sstr << addr << ';';
+	sstr << size << ';';
+	sstr << s_space[space];
+	return PutPacket(sstr.str(), device_id, tag);	
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::PutRemoveWriteWatchpointPacket(ADDRESS addr, uint32_t size, SPACE space, const uint32_t device_id, const uint32_t tag)
+{
+	if(space < SP_MIN || space > SP_MAX) return false;
+	stringstream sstr;
+	
+	sstr << std::hex;
+	sstr << s_command[PKC_RMWRITEW] << ';';
+	sstr << addr << ';';
+	sstr << size << ';';
+	sstr << s_space[space];
 	return PutPacket(sstr.str(), device_id, tag);	
 }
 
 template <class ADDRESS>
 bool NetStub<ADDRESS>::PutTrapPacket(uint64_t t, TIME_UNIT tu, const list<TRAP>& traps, const uint32_t device_id, const uint32_t tag)
 {
+	if(tu < TU_MIN || tu > TU_MAX) return false;
 	stringstream sstr;
 	
 	sstr << std::hex;
-	sstr << s_command_trap << ';';
+	sstr << s_command[PKC_TRAP] << ';';
 	sstr << t << ';';
-	sstr << tu;
+	sstr << s_tu[tu];
 	
 	typename list<TRAP>::const_iterator trap_iter;
 
 	for(trap_iter = traps.begin(); trap_iter != traps.end(); trap_iter++)
 	{
 		sstr << ';';
+		if(trap_iter->type < TRAP_MIN || trap_iter->type > TRAP_MAX) return false;
+		sstr << s_trap_type[trap_iter->type];
 		switch(trap_iter->type)
 		{
 			case TRAP_BREAKPOINT:
-				sstr << s_trap_breakpoint << ';' << std::hex << trap_iter->breakpoint.addr;
+				sstr << ';' << std::hex << trap_iter->breakpoint.addr;
 				break;
 			case TRAP_WATCHPOINT:
-				sstr << s_trap_watchpoint << ';';
-
-				switch(trap_iter->watchpoint.wtype)
-				{
-					case WATCHPOINT_READ:
-						sstr << s_watchpoint_read;
-						break;
-					case WATCHPOINT_WRITE:
-						sstr << s_watchpoint_write;
-						break;
-				}
-
-				sstr << ';' << std::hex << trap_iter->watchpoint.addr << ';' << trap_iter->watchpoint.size << ';';
-				switch(trap_iter->watchpoint.space)
-				{
-					case SP_CPU_MEM:
-						sstr << s_cpu_mem;
-						break;
-					case SP_DEV_MEM:
-						sstr << s_dev_mem;
-						break;
-					case SP_DEV_IO:
-						sstr << s_dev_io;
-						break;
-				}
+				if(trap_iter->watchpoint.wtype < WATCHPOINT_MIN || trap_iter->watchpoint.wtype > WATCHPOINT_MAX) return false;
+				if(trap_iter->watchpoint.space < SP_MIN || trap_iter->watchpoint.space > SP_MAX) return false;
+				sstr << ';' << s_watchpoint_type[trap_iter->watchpoint.wtype];
+				sstr << ';' << std::hex << trap_iter->watchpoint.addr << ';' << trap_iter->watchpoint.size;
+				sstr << ';' << s_space[trap_iter->watchpoint.space];
 				break;
 		}
 	}
@@ -2069,14 +1935,15 @@ void NetStub<ADDRESS>::Step()
 				return;
 			}
 			
+#ifdef DEBUG_NETSTUB
+			cerr << "NETSTUB: parsing command '" << s_command[pk_command] << "'" << endl;
+#endif
+
 			switch(pk_command)
 			{
 				case PKC_START:
 				{
 					TIME_UNIT pk_tu;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_start << "'" << endl;
-#endif
 					
 					if(!ParseStart(packet, pos, pk_tu))
 					{
@@ -2086,14 +1953,14 @@ void NetStub<ADDRESS>::Step()
 					
 					default_tu = pk_tu;
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command_start << "'" << endl;
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
 #endif
 					Start();
 					break;
 				}
 				case PKC_STOP:
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command_stop << "'" << endl;
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
 #endif
 					Stop();
 					return;
@@ -2104,16 +1971,13 @@ void NetStub<ADDRESS>::Step()
 					uint32_t pk_size;
 					uint8_t *pk_data;
 					SPACE pk_space;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_read << "'" << endl;
-#endif
 					if(!ParseRead(packet, pos, pk_addr, pk_size, pk_space))
 					{
 						Stop();
 						return;
 					}
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command_read << "'" << endl;
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
 #endif
 					
 					pk_data = new uint8_t[pk_size];
@@ -2140,16 +2004,13 @@ void NetStub<ADDRESS>::Step()
 					uint32_t pk_size;
 					uint8_t *pk_data;
 					SPACE pk_space;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_write << "'" << endl;
-#endif
 					if(!ParseWrite(packet, pos, pk_addr, pk_size, &pk_data, pk_space))
 					{
 						Stop();
 						return;
 					}
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command_write << "'" << endl;
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
 #endif
 					
 					if(!Write(pk_addr, pk_data, pk_size, pk_space))
@@ -2167,9 +2028,6 @@ void NetStub<ADDRESS>::Step()
 					string pk_register_name;
 					uint32_t pk_data;
 
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_write_register << "'" << endl;
-#endif
 					if(!ParseWriteRegister(packet, pos, pk_register_name, pk_data))
 					{
 						Stop();
@@ -2177,7 +2035,7 @@ void NetStub<ADDRESS>::Step()
 					}
 
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command_write_register << "'" << endl;
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
 #endif
 					
 					if(!WriteRegister(pk_register_name.c_str(), pk_data))
@@ -2194,9 +2052,6 @@ void NetStub<ADDRESS>::Step()
 					string pk_register_name;
 					uint32_t pk_data;
 
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_read_register << "'" << endl;
-#endif
 					if(!ParseReadRegister(packet, pos, pk_register_name))
 					{
 						Stop();
@@ -2204,7 +2059,7 @@ void NetStub<ADDRESS>::Step()
 					}
 
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command_read_register << "'" << endl;
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
 #endif
 					
 					if(!ReadRegister(pk_register_name.c_str(), pk_data))
@@ -2226,16 +2081,13 @@ void NetStub<ADDRESS>::Step()
 				{
 					uint32_t pk_intr_id;
 					bool level;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_intr << "'" << endl;
-#endif
 					if(!ParseIntr(packet, pos, pk_intr_id, level))
 					{
 						Stop();
 						return;
 					}
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command_intr << "'" << endl;
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
 #endif
 					Intr(pk_intr_id, level);
 					break;
@@ -2246,16 +2098,13 @@ void NetStub<ADDRESS>::Step()
 					TIME_UNIT pk_tu;
 					uint64_t pk_duration;
 					
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_run << "'" << endl;
-#endif
 					if(!ParseRun(packet, pos, pk_duration, pk_tu))
 					{
 						Stop();
 						return;
 					}
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command_run << "'" << endl;
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
 #endif
 					Run(pk_duration, pk_tu);
 					break;
@@ -2265,14 +2114,15 @@ void NetStub<ADDRESS>::Step()
 				{
 					ADDRESS pk_addr;
 					string pk_symbol_name;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_setbrk << "'" << endl;
-#endif
 					if(!ParseSetBreakpoint(packet, pos, pk_addr, pk_symbol_name))
 					{
 						Stop();
 						return;
 					}
+
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
+#endif
 					if(pk_symbol_name.empty() ? !SetBreakpoint(pk_addr) : !SetBreakpoint(pk_symbol_name.c_str()))
 					{
 #ifdef DEBUG_NETSTUB
@@ -2287,14 +2137,15 @@ void NetStub<ADDRESS>::Step()
 					ADDRESS pk_addr;
 					uint32_t pk_size;
 					SPACE pk_space;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_set_write_watchpoint << "'" << endl;
-#endif
 					if(!ParseSetWriteWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
 					{
 						Stop();
 						return;
 					}
+
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
+#endif
 					if(!SetWriteWatchpoint(pk_addr, pk_size, pk_space))
 					{
 #ifdef DEBUG_NETSTUB
@@ -2309,14 +2160,15 @@ void NetStub<ADDRESS>::Step()
 					ADDRESS pk_addr;
 					uint32_t pk_size;
 					SPACE pk_space;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_set_read_watchpoint << "'" << endl;
-#endif
 					if(!ParseSetReadWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
 					{
 						Stop();
 						return;
 					}
+
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
+#endif
 					if(!SetReadWatchpoint(pk_addr, pk_size, pk_space))
 					{
 #ifdef DEBUG_NETSTUB
@@ -2330,15 +2182,14 @@ void NetStub<ADDRESS>::Step()
 				{
 					ADDRESS pk_addr;
 					string pk_symbol_name;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_setbrk << "'" << endl;
-#endif
 					if(!ParseRemoveBreakpoint(packet, pos, pk_addr, pk_symbol_name))
 					{
 						Stop();
 						return;
 					}
-					cerr << "pk_symbol_name = " << pk_symbol_name << endl;
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
+#endif
 					if(pk_symbol_name.empty() ? !RemoveBreakpoint(pk_addr) : !RemoveBreakpoint(pk_symbol_name.c_str()))
 					{
 #ifdef DEBUG_NETSTUB
@@ -2353,14 +2204,14 @@ void NetStub<ADDRESS>::Step()
 					ADDRESS pk_addr;
 					uint32_t pk_size;
 					SPACE pk_space;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_remove_write_watchpoint << "'" << endl;
-#endif
 					if(!ParseRemoveWriteWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
 					{
 						Stop();
 						return;
 					}
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
+#endif
 					if(!RemoveWriteWatchpoint(pk_addr, pk_size, pk_space))
 					{
 #ifdef DEBUG_NETSTUB
@@ -2375,14 +2226,14 @@ void NetStub<ADDRESS>::Step()
 					ADDRESS pk_addr;
 					uint32_t pk_size;
 					SPACE pk_space;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: parsing command '" << s_command_remove_read_watchpoint << "'" << endl;
-#endif
 					if(!ParseRemoveReadWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
 					{
 						Stop();
 						return;
 					}
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
+#endif
 					if(!RemoveReadWatchpoint(pk_addr, pk_size, pk_space))
 					{
 #ifdef DEBUG_NETSTUB
@@ -2394,7 +2245,7 @@ void NetStub<ADDRESS>::Step()
 
 				case PKC_TRAP:
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: ignoring command '" << s_command_trap << "'" << endl;
+					cerr << "NETSTUB: ignoring command '" << s_command[pk_command] << "'" << endl;
 #endif
 					break;
 			}
