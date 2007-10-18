@@ -32,8 +32,10 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_CP15_ARM966E_S_CP15_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_CP15_ARM966E_S_CP15_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_HH__
+
+#include "unisim/kernel/service/service.hh"
 
 #include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
 
@@ -43,7 +45,10 @@ namespace cxx {
 namespace processor {
 namespace arm {
 namespace coprocessor {
-namespace cp15_arm966e_s {
+namespace arm966e_s {
+
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Parameter;
 
 using unisim::component::cxx::processor::arm::CPInterface;
 
@@ -52,13 +57,18 @@ class CP15 :
 	public CPInterface<CONFIG> {
 private:
 	typedef typename CONFIG::reg_t reg_t;
-
+	typedef CPInterface<CONFIG> inherited;
+		
 public:
-	CP15();
+	CP15(const char *name,
+			Object *parent = 0);
+	
+	virtual bool Setup();
+	
 	/** Gives the name of the Coprocessor component.
 	 * @return The name of the componenet (constant character string pointer)
 	 */
-	virtual const char* Name();
+	virtual const char* Description();
 	/** Gives the name of a specified register
 	 * @param[in] id : unsigned 32 bits integer for register id 
 	 * @return The name of the componenet (constant character string pointer)
@@ -82,9 +92,46 @@ public:
 	 * @param[in] val     : value to be written in the register (REGISTER type)
 	 */
 	virtual void  WriteRegister(uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, reg_t value);
+
+private:
+	reg_t id_code_reg;
+	reg_t tcm_size_reg;
+	reg_t control_reg;
+	reg_t core_reg;
+	reg_t tpi_reg; // trace process identifier register
+	reg_t conf_control_reg;
+	reg_t bist_control_reg;
+	reg_t ibist_addr_reg;
+	reg_t ibist_gen_reg;
+	reg_t dbist_addr_reg;
+	reg_t dbist_gen_reg;
+	
+	void InitRegs();
+	void WriteControlReg(reg_t value);
+	
+	// Parameters
+	uint32_t silicon_revision_number;
+	Parameter<uint32_t> param_silicon_revision_number;
+	uint32_t dtcmsize;
+	Parameter<uint32_t> param_dtcmsize;
+	uint32_t itcmsize;
+	Parameter<uint32_t> param_itcmsize;
+	// Verbose parameters
+	bool verbose_all;
+	Parameter<bool> param_verbose_all;
+	bool verbose_read_reg;
+	Parameter<bool> param_verbose_read_reg;
+	bool verbose_write_reg;
+	Parameter<bool> param_verbose_write_reg;
+	
+	// verbose methods
+	bool VerboseAll();
+	bool VerboseReadReg();
+	bool VerboseWriteReg();
+	
 };
 
-} // end of namespace cp15_arm966e_s
+} // end of namespace arm966e_s
 } // end of namespace coprocessor
 } // end of namespace arm
 } // end of namespace processor
@@ -92,4 +139,4 @@ public:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_CP15_ARM966E_S_CP15_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_HH__

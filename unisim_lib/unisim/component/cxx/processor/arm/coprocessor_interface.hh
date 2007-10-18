@@ -42,11 +42,21 @@
 
 #include <inttypes.h>
 
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/logger.hh"
+
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+
+using unisim::service::interfaces::Logger;
+
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::Logger;
 
 // opcode1 = should be 0b000 for mcr/mrc valid instructions
 // opcode2 = additional opcode; if not needed, 0b0000 must be specified
@@ -58,12 +68,18 @@ namespace arm {
 /** This class describes the communication interface between Arm CPU and a Coprocessor
  */
 template<class CONFIG>
-class CPInterface
-{
+class CPInterface :
+	public Client<Logger> {
 private:
 	typedef typename CONFIG::reg_t reg_t;
 	
 public:
+	CPInterface(const char *name, 
+			Object *parent) :
+		Object(name, parent),
+		Client<Logger>(name, parent),
+		logger_import("logger_import", this) {}		
+	
 	/// Destructor.
 	virtual ~CPInterface(){};
 
@@ -99,6 +115,8 @@ public:
      */
     virtual void  WriteRegister(uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, reg_t value) = 0;
 
+
+	ServiceImport<Logger> logger_import;
 };
 
 } // end of namespace arm

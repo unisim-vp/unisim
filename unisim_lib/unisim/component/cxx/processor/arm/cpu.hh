@@ -52,6 +52,8 @@
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/component/cxx/processor/arm/cache/cache.hh"
+#include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
+#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
 // #include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/endian/endian.hh"
 #include <string>
@@ -133,6 +135,10 @@ private:
 	typedef typename CONFIG::reg_t reg_t;
 	typedef typename CONFIG::sreg_t sreg_t;
 	typedef typename CONFIG::insn_t insn_t;
+	
+	typedef 
+		unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15<CONFIG> 
+		cp15_966es_t;
 	
 public:
 	//=====================================================================
@@ -684,6 +690,11 @@ private:
 	/** the interface to the memory system */
 	CacheInterface<address_t> *memory_interface;
 	
+	/** the table of coprocessors */
+	CPInterface<CONFIG> *cp[16];
+	/** cp15 for the arm966e_s */
+	cp15_966es_t *cp15_966es;
+	
 	/** the instruction counter */
 	uint64_t instruction_counter;
 	
@@ -759,6 +770,10 @@ private:
     CacheInterfaceWithMemoryService<typename CONFIG::insn_cache_l1_t::address_t> *cache_il1;
     /** the unified cache level 2 */
     CacheInterfaceWithMemoryService<typename CONFIG::cache_l2_t::address_t> *cache_l2;
+    
+    /** this methods creates the different coprocessors.
+     * This method needs to be called before CreateMemorySystem */
+    void CreateCpSystem();
     
     /** this method initialize the cache/mmu/cp15 memory system */
     void CreateMemorySystem();

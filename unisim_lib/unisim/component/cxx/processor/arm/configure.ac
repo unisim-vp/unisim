@@ -59,7 +59,7 @@ UNISIM_CHECK_UNISIM_TOOLS
 
 # files to generate
 #   this should include all the makefiles to generate
-AC_CONFIG_FILES([Makefile cache/Makefile])
+AC_CONFIG_FILES([Makefile])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

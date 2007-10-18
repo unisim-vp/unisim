@@ -156,6 +156,8 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	/* initialize the check condition table */
 	InitializeCheckConditionTable();
 	
+	CreateCpSystem();
+
 	CreateMemorySystem();
 }
 
@@ -2843,6 +2845,25 @@ CPU<CONFIG> ::
 GetEndianess() {
 	return CONFIG::ENDIANESS;
 }
+
+/**************************************************************/
+/* Coprocessors creation methods (private)              START */
+/**************************************************************/
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+CreateCpSystem() {
+	for(unsigned int i = 0; i < 16; i++)
+		cp[i] = 0;
+	
+	
+}
+
+/**************************************************************/
+/* Coprocessors creation methods (private)              END   */
+/**************************************************************/
 
 /**************************************************************/
 /* Memory system creation methods (private)             START */

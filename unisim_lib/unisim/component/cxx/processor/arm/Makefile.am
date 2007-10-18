@@ -1,8 +1,7 @@
-SUBDIRS = cache
-INCLUDE_SUBDIRS = cache
+# SUBDIRS = cache
+# INCLUDE_SUBDIRS = cache
 
 INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
-# GENISSLIB=$(top_builddir)/../../../../../build_tool/genisslib/genisslib
 includedir = $(prefix)/include/unisim/component/cxx/processor/arm
 
 lib_LIBRARIES = libunisim_component_cxx_processor_arm.a
@@ -23,7 +22,7 @@ libunisim_component_cxx_processor_arm_a_SOURCES = \
 	cache/64kb_dm_wt_32bls.cc cache/64kb_dm_wt_32bls_debug.cc \
 	cache/96kb_dm_wb_32bls.cc cache/96kb_dm_wb_32bls_debug.cc \
 	cache/96kb_dm_wt_32bls.cc cache/96kb_dm_wt_32bls_debug.cc \
-	coprocessor/cp15_arm966e_s/cp15.cc
+	coprocessor/arm966e_s/cp15.cc
 
 include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \
@@ -41,8 +40,8 @@ nobase_include_HEADERS = \
 	cache/line.hh cache/line.tcc \
 	cache/config.hh \
 	cache/types.hh \
-	coprocessor/cp15_arm966e_s/cp15.hh \
-	coprocessor/cp15_arm966e_s/cp15.tcc
+	coprocessor/arm966e_s/cp15.hh \
+	coprocessor/arm966e_s/cp15.tcc
 
 nodist_include_HEADERS = \
 	armcpu.tcc armcpu.hh
