@@ -63,15 +63,16 @@ using unisim::service::interfaces::Logger;
 // crn     = primary register involved in instruction
 // crm     = additional register; if not needed,  0 must be specified
 
+#include <inttypes.h>
 
 /// Arm Coprocessor generic interface.
 /** This class describes the communication interface between Arm CPU and a Coprocessor
  */
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 class CPInterface :
 	public Client<Logger> {
 private:
-	typedef typename CONFIG::reg_t reg_t;
+	typedef uint32_t reg_t;
 	
 public:
 	CPInterface(const char *name, 
@@ -86,7 +87,7 @@ public:
 	/* Gives the name of the Coprocessor component.
 	 * @return The name of the componenet (constant character string pointer)
 	 */
-	virtual const char* Name() = 0;
+	virtual const char* Description() = 0;
 
 	/* Gives the name of a specified register
 	 * @param[in] id : unsigned 32 bits integer for register id 
@@ -104,7 +105,11 @@ public:
      * @param[in]  crm     : the "crm" field of the instruction code (unsigned 8 bits integer)
      * @param[out] r       : pointer to a REGISTER variable that will receive the register value
      */
-    virtual void ReadRegister(uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, reg_t& reg) = 0;
+    virtual void ReadRegister(uint8_t opcode1, 
+    		uint8_t opcode2, 
+    		uint8_t crn, 
+    		uint8_t crm, 
+    		reg_t& reg) = 0;
 
     /** Write a value in a register
      * @param[in] opcode1 : the "opcode1" field of the instruction code (unsigned 8 bits integer)
@@ -113,7 +118,11 @@ public:
      * @param[in] crm     : the "crm" field of the instruction code (unsigned 8 bits integer)
      * @param[in] val     : value to be written in the register (REGISTER type)
      */
-    virtual void  WriteRegister(uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, reg_t value) = 0;
+    virtual void  WriteRegister(uint8_t opcode1,
+    		uint8_t opcode2, 
+    		uint8_t crn, 
+    		uint8_t crm, 
+    		reg_t value) = 0;
 
 
 	ServiceImport<Logger> logger_import;

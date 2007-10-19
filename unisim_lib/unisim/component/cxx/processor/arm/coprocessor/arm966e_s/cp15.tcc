@@ -64,12 +64,12 @@ using unisim::service::interfaces::Endl;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 
-template<class CONFIG>
-CP15<CONFIG> ::
+template<bool DEBUG_ENABLE>
+CP15<DEBUG_ENABLE> ::
 CP15(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	CPInterface<CONFIG>(name, parent),
+	CPInterface<DEBUG_ENABLE>(name, parent),
 	silicon_revision_number(0),
 	param_silicon_revision_number("silicon-revision-number", this, silicon_revision_number),
 	dtcmsize(0),
@@ -85,9 +85,9 @@ CP15(const char *name,
 	SetupDependsOn(inherited::logger_import);
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 bool
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 Setup() {
 	// check verbose parameters
 	if(verbose_all) {
@@ -122,16 +122,16 @@ Setup() {
 	return true;
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 const char *
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 Description() {
 	return "CP15(ARM966E_S)";
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 const char* 
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 RegisterName(uint32_t id, uint32_t option) {
 	switch(id) {
 	case 0:
@@ -185,15 +185,15 @@ RegisterName(uint32_t id, uint32_t option) {
 	
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 void 
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 Reset() {
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 void 
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 ReadRegister(uint8_t opcode1, 
 		uint8_t opcode2, 
 		uint8_t crn, 
@@ -286,9 +286,9 @@ ReadRegister(uint8_t opcode1,
 	}
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 void  
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 WriteRegister(uint8_t opcode1, 
 		uint8_t opcode2, 
 		uint8_t crn, 
@@ -301,10 +301,10 @@ WriteRegister(uint8_t opcode1,
 	}
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 INLINE
 void
-CP15<CONFIG> :: 
+CP15<DEBUG_ENABLE> :: 
 InitRegs() {
 	// initializing id code
 	// 31-24: implementer 0x41
@@ -390,10 +390,10 @@ InitRegs() {
 	dbist_gen_reg = 0;
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 INLINE
 void
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 WriteControlReg(reg_t value) {
 	reg_t final_value = value;
 	reg_t orig_value;
@@ -461,28 +461,28 @@ WriteControlReg(reg_t value) {
 	control_reg = final_value;
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 INLINE
 bool
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 VerboseAll() {
-	return CONFIG::DEBUG_ENABLE && verbose_all && inherited::logger_import; 
+	return DEBUG_ENABLE && verbose_all && inherited::logger_import; 
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 INLINE
 bool
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 VerboseReadReg() {
-	return CONFIG::DEBUG_ENABLE && verbose_read_reg && inherited::logger_import; 
+	return DEBUG_ENABLE && verbose_read_reg && inherited::logger_import; 
 }
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 INLINE
 bool
-CP15<CONFIG> ::
+CP15<DEBUG_ENABLE> ::
 VerboseWriteReg() {
-	return CONFIG::DEBUG_ENABLE && verbose_write_reg && inherited::logger_import; 
+	return DEBUG_ENABLE && verbose_write_reg && inherited::logger_import; 
 }
 
 #undef INLINE

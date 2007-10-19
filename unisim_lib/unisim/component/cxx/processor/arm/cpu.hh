@@ -137,7 +137,7 @@ private:
 	typedef typename CONFIG::insn_t insn_t;
 	
 	typedef 
-		unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15<CONFIG> 
+		unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15<CONFIG::DEBUG_ENABLE> 
 		cp15_966es_t;
 	
 public:
@@ -691,7 +691,7 @@ private:
 	CacheInterface<address_t> *memory_interface;
 	
 	/** the table of coprocessors */
-	CPInterface<CONFIG> *cp[16];
+	CPInterface<CONFIG::DEBUG_ENABLE> *cp[16];
 	/** cp15 for the arm966e_s */
 	cp15_966es_t *cp15_966es;
 	

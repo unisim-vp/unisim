@@ -2621,11 +2621,14 @@ void
 CPU<CONFIG> ::
 MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm) {
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	Stop(-1);
+	if(cp[cp_num] == 0) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "TODO"
+				<< Endl << EndDebugError;
+		Stop(-1);
+	}
+	cp[cp_num]->WriteRegister(op1, op2, crn, crm, GetGPR(rd));
 }
 
 template<class CONFIG>
@@ -2633,11 +2636,14 @@ void
 CPU<CONFIG> ::
 MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm) {
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	Stop(-1);
+	if(cp[cp_num] == 0) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "TODO"
+				<< Endl << EndDebugError;
+		Stop(-1);
+	}
+	cp[cp_num]->ReadRegister(op1, op2, crn, crm, gpr[rd]);
 }
 
 /**************************************************************/
@@ -2858,7 +2864,10 @@ CreateCpSystem() {
 	for(unsigned int i = 0; i < 16; i++)
 		cp[i] = 0;
 	
-	
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es = new cp15_966es_t("cp15", this);
+		cp[15] = cp15_966es;
+	}
 }
 
 /**************************************************************/

@@ -52,12 +52,12 @@ using unisim::kernel::service::Parameter;
 
 using unisim::component::cxx::processor::arm::CPInterface;
 
-template<class CONFIG>
+template<bool DEBUG_ENABLE>
 class CP15 : 
-	public CPInterface<CONFIG> {
+	public CPInterface<DEBUG_ENABLE> {
 private:
-	typedef typename CONFIG::reg_t reg_t;
-	typedef CPInterface<CONFIG> inherited;
+	typedef uint32_t reg_t;
+	typedef CPInterface<DEBUG_ENABLE> inherited;
 		
 public:
 	CP15(const char *name,
@@ -83,7 +83,11 @@ public:
 	 * @param[in]  crm     : the "crm" field of the instruction code (unsigned 8 bits integer)
 	 * @param[out] r       : pointer to a REGISTER variable that will receive the register value
 	 */
-	virtual void ReadRegister(uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, reg_t& reg);
+	virtual void ReadRegister(uint8_t opcode1, 
+			uint8_t opcode2, 
+			uint8_t crn, 
+			uint8_t crm, 
+			reg_t& reg);
 	/** Write a value in a register	
 	 * @param[in] opcode1 : the "opcode1" field of the instruction code (unsigned 8 bits integer)
 	 * @param[in] opcode2 : the "opcode2" field of the instruction code (unsigned 8 bits integer)
@@ -91,7 +95,11 @@ public:
 	 * @param[in] crm     : the "crm" field of the instruction code (unsigned 8 bits integer)
 	 * @param[in] val     : value to be written in the register (REGISTER type)
 	 */
-	virtual void  WriteRegister(uint8_t opcode1, uint8_t opcode2, uint8_t crn, uint8_t crm, reg_t value);
+	virtual void  WriteRegister(uint8_t opcode1,
+			uint8_t opcode2, 
+			uint8_t crn, 
+			uint8_t crm, 
+			reg_t value);
 
 private:
 	reg_t id_code_reg;

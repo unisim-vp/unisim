@@ -34,23 +34,11 @@
  
 #include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
 #include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.tcc"
-#include "unisim/component/cxx/processor/arm/config.hh"
 
 using unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15;
-using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig;
-using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_DebugConfig;
 
 template
-class CP15<ARM966E_S_BigEndian_Config>;
+class CP15<true>;
 
 template
-class CP15<ARM966E_S_BigEndian_DebugConfig>;
-
-template
-class CP15<ARM966E_S_LittleEndian_Config>;
-
-template
-class CP15<ARM966E_S_LittleEndian_DebugConfig>;
-
+class CP15<false>;

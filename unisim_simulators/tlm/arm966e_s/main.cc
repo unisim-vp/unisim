@@ -36,6 +36,7 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <signal.h>
+
 #ifdef WIN32
 
 #include <windows.h>
@@ -68,7 +69,7 @@
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
-typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config CPU_CONFIG;
+typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig CPU_CONFIG;
 //typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig CPU_CONFIG;
 typedef unisim::component::tlm::bridge::simple_fsb_to_mem::Addr32BurstSize32_Config BRIDGE_CONFIG;
 
@@ -422,13 +423,28 @@ int main(int argc, char *argv[], char **envp) {
 	{
 		cerr << "Starting simulation at system privilege level" << endl;
 
+#ifdef WIN32
+		FILETIME ftCreationTime;
+		FILETIME ftExitTime;
+		FILETIME ftKernelTime;
+		FILETIME ftUserTime;
+		unsigned __int64 time_start = 0, time_stop = 0;
+#else
 		struct tms time_start, time_stop;
 		double ratio;
 		clock_t utime;
 		clock_t stime;
-		double spent_time;
+#endif
+		double spent_time = 0.0;
 
+#ifdef WIN32
+		if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime)) {
+			time_start = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
+				+ ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
+		}
+#else
 		times(&time_start);
+#endif
 
 		EnableDebug();
 		void (*prev_sig_int_handler)(int);
@@ -456,11 +472,19 @@ int main(int argc, char *argv[], char **envp) {
 		cerr << "Simulation finished" << endl;
 		cerr << "Simulation statistics:" << endl;
 
+#ifdef WIN32
+		if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime)) {
+			time_stop = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
+				+ ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
+		}
+		spent_time = (double)(time_stop - time_start) / 1e7;
+#else
 		times(&time_stop);
 		ratio= 1.0 / sysconf(_SC_CLK_TCK);
 		utime = time_stop.tms_utime - time_start.tms_utime;
 		stime = time_stop.tms_stime - time_start.tms_stime;
 		spent_time = ratio * (utime + stime);
+#endif
 
 		cerr << "simulation time: " << spent_time << " seconds" << endl;
 		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
