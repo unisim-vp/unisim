@@ -272,6 +272,13 @@ bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, PC
 			{
 				uint8_t value = *data;
 
+				if(logger_import)
+				{
+					(*logger_import) << DebugInfo;
+					(*logger_import) << "Writing 0x" << Hex << value << Dec << " in configuration space at 0x" << Hex << addr << Dec << Endl;
+					(*logger_import) << EndDebugInfo;
+				}
+
 				switch(offset)
 				{
 					case 0x04: pci_conf_command = (pci_conf_command & 0xff00) | value; continue;
@@ -398,6 +405,13 @@ bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, PCISpace 
 				}
 			
 				*data = 0x00;
+
+				if(logger_import)
+				{
+					(*logger_import) << DebugInfo;
+					(*logger_import) << "Reading 0x" << Hex << (*data) << Dec << " in configuration space at 0x" << Hex << addr << Dec << Endl;
+					(*logger_import) << EndDebugInfo;
+				}
 			} while(++offset, ++data, --size);
 		}
 		

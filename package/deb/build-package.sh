@@ -43,7 +43,7 @@ echo "=              uncompress               ="
 echo "========================================="
 cd ${HOME}/tmp
 rm -rf ${TARBALL_NAME}
-tar zxvf ${HERE}/${TARBALL_NAME}.tar.gz
+tar zxvf ${HERE}/${TARBALL_NAME}.tar.gz || exit
 
 # configure in the temporary configure directory
 echo "========================================="

@@ -493,14 +493,15 @@ bool NetStub<ADDRESS>::PutHex(uint32_t value)
 	}
 	
 	int i;
-	for(i = 4 * (sizeof(value) - 1) + 4; i >= 0; i -= 4)
+	for(i = 8 * (sizeof(value) - 1) + 4; i >= 0; i -= 4)
 	{
 		if(value >> i) break;
 	}
-	for(; i >= 0; i--)
+	for(; i >= 0; i -= 4)
 	{
 		if(!PutChar(Nibble2HexChar(value >> i))) return false;
 	}
+	return true;
 }
 
 template <class ADDRESS>
@@ -630,7 +631,7 @@ bool NetStub<ADDRESS>::ParseHex(const string& s, unsigned int& pos, uint8_t *buf
 		if(!IsHexChar(c))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: expecting an hexadecimal character (got '" << c << "')" << endl;
+			cerr << "NETSTUB: expecting an hexadecimal character at col #" << (pos + 1) << " (got '" << c << "')" << endl;
 #endif
 			return false;
 		}
@@ -682,7 +683,7 @@ bool NetStub<ADDRESS>::ParseAddress(const string& packet, unsigned int& pos, ADD
 		if(!ParseHex(packet, pos, addr))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: expecting an address" << endl;
+			cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 			return false;
 		}
@@ -698,7 +699,7 @@ bool NetStub<ADDRESS>::ParseSymbol(const string& packet, unsigned int& pos, ADDR
 		if(!ParseHex(packet, pos, addr))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: expecting an address" << endl;
+			cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 			return false;
 		}
@@ -708,7 +709,7 @@ bool NetStub<ADDRESS>::ParseSymbol(const string& packet, unsigned int& pos, ADDR
 		if(!ParseString(packet, pos, 0, symbol_name))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: expecting a symbol name" << endl;
+			cerr << "NETSTUB: expecting a symbol name at col #" << (pos + 1) << endl;
 #endif
 			return false;
 		}
@@ -845,7 +846,7 @@ bool NetStub<ADDRESS>::ParseStart(const string& packet, unsigned int& pos, TIME_
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -858,7 +859,7 @@ bool NetStub<ADDRESS>::ParseStart(const string& packet, unsigned int& pos, TIME_
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 
@@ -877,7 +878,7 @@ bool NetStub<ADDRESS>::ParseRead(const string& packet, unsigned int& pos, ADDRES
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -885,7 +886,7 @@ bool NetStub<ADDRESS>::ParseRead(const string& packet, unsigned int& pos, ADDRES
 	if(!ParseAddress(packet, pos, addr))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an address" << endl;
+		cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -894,7 +895,7 @@ bool NetStub<ADDRESS>::ParseRead(const string& packet, unsigned int& pos, ADDRES
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -902,7 +903,7 @@ bool NetStub<ADDRESS>::ParseRead(const string& packet, unsigned int& pos, ADDRES
 	if(!ParseHex(packet, pos, size))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a size" << endl;
+		cerr << "NETSTUB: expecting a size at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -910,7 +911,7 @@ bool NetStub<ADDRESS>::ParseRead(const string& packet, unsigned int& pos, ADDRES
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -918,7 +919,7 @@ bool NetStub<ADDRESS>::ParseRead(const string& packet, unsigned int& pos, ADDRES
 	if(!ParseSpace(packet, pos, space))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a space ('cpu_mem', 'dev_mem', 'dev_io')" << endl;
+		cerr << "NETSTUB: expecting an address space ('cpu_mem', 'dev_mem', 'dev_io') at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -926,7 +927,7 @@ bool NetStub<ADDRESS>::ParseRead(const string& packet, unsigned int& pos, ADDRES
 	if(pos < packet.length())
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 #endif
 	}
 	return true;
@@ -938,7 +939,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -946,7 +947,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 	if(!ParseAddress(packet, pos, addr))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an address" << endl;
+		cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -955,7 +956,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -964,7 +965,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 	if(!ParseHex(packet, pos, size))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a size" << endl;
+		cerr << "NETSTUB: expecting a size at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -973,7 +974,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -981,7 +982,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 	if(!ParseSpace(packet, pos, space))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a space ('cpu_mem', 'dev_mem', 'dev_io')" << endl;
+		cerr << "NETSTUB: expecting an address space ('cpu_mem', 'dev_mem', 'dev_io') at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -991,7 +992,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 		if(!ParseChar(packet, pos, ';'))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: expecting ';'" << endl;
+			cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 			return false;
 		}
@@ -1002,7 +1003,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 		if(!ParseHex(packet, pos, *data, size))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: expecting some data" << endl;
+			cerr << "NETSTUB: expecting some data at col #" << (pos + 1) << endl;
 #endif
 			return false;
 		}
@@ -1011,7 +1012,7 @@ bool NetStub<ADDRESS>::ParseWrite(const string& packet, unsigned int& pos, ADDRE
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	
@@ -1024,7 +1025,7 @@ bool NetStub<ADDRESS>::ParseWriteRegister(const string& packet, unsigned int& po
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1032,18 +1033,15 @@ bool NetStub<ADDRESS>::ParseWriteRegister(const string& packet, unsigned int& po
 	if(!ParseString(packet, pos, ';', register_name))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a register name" << endl;
+		cerr << "NETSTUB: expecting a register name at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
 
-	cerr << "got register name = \"" << register_name << "\"" << endl;
-	cerr << "currently at pos" << pos << endl;
-
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1051,7 +1049,7 @@ bool NetStub<ADDRESS>::ParseWriteRegister(const string& packet, unsigned int& po
 	if(!ParseHex(packet, pos, value))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a value" << endl;
+		cerr << "NETSTUB: expecting a value at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1059,7 +1057,7 @@ bool NetStub<ADDRESS>::ParseWriteRegister(const string& packet, unsigned int& po
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 
@@ -1072,7 +1070,7 @@ bool NetStub<ADDRESS>::ParseReadRegister(const string& packet, unsigned int& pos
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1080,7 +1078,7 @@ bool NetStub<ADDRESS>::ParseReadRegister(const string& packet, unsigned int& pos
 	if(!ParseString(packet, pos, 0, register_name))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a register name" << endl;
+		cerr << "NETSTUB: expecting a register name at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1088,7 +1086,7 @@ bool NetStub<ADDRESS>::ParseReadRegister(const string& packet, unsigned int& pos
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 
@@ -1101,7 +1099,7 @@ bool NetStub<ADDRESS>::ParseIntr(const string& packet, unsigned int& pos, uint32
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1109,7 +1107,7 @@ bool NetStub<ADDRESS>::ParseIntr(const string& packet, unsigned int& pos, uint32
 	if(!ParseHex(packet, pos, intr_id))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an interrupt id" << endl;
+		cerr << "NETSTUB: expecting an interrupt id at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1118,7 +1116,7 @@ bool NetStub<ADDRESS>::ParseIntr(const string& packet, unsigned int& pos, uint32
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1126,14 +1124,14 @@ bool NetStub<ADDRESS>::ParseIntr(const string& packet, unsigned int& pos, uint32
 	if(!ParseBool(packet, pos, level))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an interrupt level (0/1 or true/false)" << endl;
+		cerr << "NETSTUB: expecting an interrupt level (0/1 or true/false) at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	return true;
@@ -1151,7 +1149,7 @@ bool NetStub<ADDRESS>::ParseRun(const string& packet, unsigned int& pos, uint64_
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1159,7 +1157,7 @@ bool NetStub<ADDRESS>::ParseRun(const string& packet, unsigned int& pos, uint64_
 	if(!ParseHex(packet, pos, duration))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a duration" << endl;
+		cerr << "NETSTUB: expecting a duration at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1174,7 +1172,7 @@ bool NetStub<ADDRESS>::ParseRun(const string& packet, unsigned int& pos, uint64_
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1183,7 +1181,7 @@ bool NetStub<ADDRESS>::ParseRun(const string& packet, unsigned int& pos, uint64_
 	if(!ParseTimeUnit(packet, pos, tu))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a time unit" << endl;
+		cerr << "NETSTUB: expecting a time unit at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1191,7 +1189,7 @@ bool NetStub<ADDRESS>::ParseRun(const string& packet, unsigned int& pos, uint64_
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	return true;
@@ -1203,7 +1201,7 @@ bool NetStub<ADDRESS>::ParseSetBreakpoint(const string& packet, unsigned int& po
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1211,7 +1209,7 @@ bool NetStub<ADDRESS>::ParseSetBreakpoint(const string& packet, unsigned int& po
 	if(!ParseSymbol(packet, pos, addr, symbol_name))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an address or a symbol name" << endl;
+		cerr << "NETSTUB: expecting an address or a symbol name at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1219,7 +1217,7 @@ bool NetStub<ADDRESS>::ParseSetBreakpoint(const string& packet, unsigned int& po
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	return true;
@@ -1231,7 +1229,7 @@ bool NetStub<ADDRESS>::ParseSetReadWatchpoint(const string& packet, unsigned int
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1239,7 +1237,7 @@ bool NetStub<ADDRESS>::ParseSetReadWatchpoint(const string& packet, unsigned int
 	if(!ParseAddress(packet, pos, addr))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an address" << endl;
+		cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1248,7 +1246,7 @@ bool NetStub<ADDRESS>::ParseSetReadWatchpoint(const string& packet, unsigned int
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1256,7 +1254,7 @@ bool NetStub<ADDRESS>::ParseSetReadWatchpoint(const string& packet, unsigned int
 	if(!ParseHex(packet, pos, size))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a size" << endl;
+		cerr << "NETSTUB: expecting a size at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1264,7 +1262,7 @@ bool NetStub<ADDRESS>::ParseSetReadWatchpoint(const string& packet, unsigned int
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1272,7 +1270,7 @@ bool NetStub<ADDRESS>::ParseSetReadWatchpoint(const string& packet, unsigned int
 	if(!ParseSpace(packet, pos, space))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a space ('cpu_mem', 'dev_mem', 'dev_io')" << endl;
+		cerr << "NETSTUB: expecting an address space ('cpu_mem', 'dev_mem', 'dev_io') at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1280,7 +1278,7 @@ bool NetStub<ADDRESS>::ParseSetReadWatchpoint(const string& packet, unsigned int
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	return true;
@@ -1292,7 +1290,7 @@ bool NetStub<ADDRESS>::ParseSetWriteWatchpoint(const string& packet, unsigned in
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1300,7 +1298,7 @@ bool NetStub<ADDRESS>::ParseSetWriteWatchpoint(const string& packet, unsigned in
 	if(!ParseAddress(packet, pos, addr))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an address" << endl;
+		cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1309,7 +1307,7 @@ bool NetStub<ADDRESS>::ParseSetWriteWatchpoint(const string& packet, unsigned in
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1317,7 +1315,7 @@ bool NetStub<ADDRESS>::ParseSetWriteWatchpoint(const string& packet, unsigned in
 	if(!ParseHex(packet, pos, size))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a size" << endl;
+		cerr << "NETSTUB: expecting a size at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1325,7 +1323,7 @@ bool NetStub<ADDRESS>::ParseSetWriteWatchpoint(const string& packet, unsigned in
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1333,7 +1331,7 @@ bool NetStub<ADDRESS>::ParseSetWriteWatchpoint(const string& packet, unsigned in
 	if(!ParseSpace(packet, pos, space))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a space ('cpu_mem', 'dev_mem', 'dev_io')" << endl;
+		cerr << "NETSTUB: expecting an address space ('cpu_mem', 'dev_mem', 'dev_io') at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1341,7 +1339,7 @@ bool NetStub<ADDRESS>::ParseSetWriteWatchpoint(const string& packet, unsigned in
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	return true;
@@ -1353,7 +1351,7 @@ bool NetStub<ADDRESS>::ParseRemoveBreakpoint(const string& packet, unsigned int&
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1361,7 +1359,7 @@ bool NetStub<ADDRESS>::ParseRemoveBreakpoint(const string& packet, unsigned int&
 	if(!ParseSymbol(packet, pos, addr, symbol_name))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an address or a symbol name" << endl;
+		cerr << "NETSTUB: expecting an address or a symbol name at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1369,7 +1367,7 @@ bool NetStub<ADDRESS>::ParseRemoveBreakpoint(const string& packet, unsigned int&
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	return true;
@@ -1381,7 +1379,7 @@ bool NetStub<ADDRESS>::ParseRemoveWriteWatchpoint(const string& packet, unsigned
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1389,7 +1387,7 @@ bool NetStub<ADDRESS>::ParseRemoveWriteWatchpoint(const string& packet, unsigned
 	if(!ParseAddress(packet, pos, addr))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an address" << endl;
+		cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1398,7 +1396,7 @@ bool NetStub<ADDRESS>::ParseRemoveWriteWatchpoint(const string& packet, unsigned
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1406,7 +1404,7 @@ bool NetStub<ADDRESS>::ParseRemoveWriteWatchpoint(const string& packet, unsigned
 	if(!ParseHex(packet, pos, size))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a size" << endl;
+		cerr << "NETSTUB: expecting a size at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1414,7 +1412,7 @@ bool NetStub<ADDRESS>::ParseRemoveWriteWatchpoint(const string& packet, unsigned
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1422,7 +1420,7 @@ bool NetStub<ADDRESS>::ParseRemoveWriteWatchpoint(const string& packet, unsigned
 	if(!ParseSpace(packet, pos, space))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a space ('cpu_mem', 'dev_mem', 'dev_io')" << endl;
+		cerr << "NETSTUB: expecting an address space ('cpu_mem', 'dev_mem', 'dev_io') at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1430,7 +1428,7 @@ bool NetStub<ADDRESS>::ParseRemoveWriteWatchpoint(const string& packet, unsigned
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	return true;
@@ -1442,7 +1440,7 @@ bool NetStub<ADDRESS>::ParseRemoveReadWatchpoint(const string& packet, unsigned 
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1450,7 +1448,7 @@ bool NetStub<ADDRESS>::ParseRemoveReadWatchpoint(const string& packet, unsigned 
 	if(!ParseAddress(packet, pos, addr))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting an address" << endl;
+		cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1459,7 +1457,7 @@ bool NetStub<ADDRESS>::ParseRemoveReadWatchpoint(const string& packet, unsigned 
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1467,7 +1465,7 @@ bool NetStub<ADDRESS>::ParseRemoveReadWatchpoint(const string& packet, unsigned 
 	if(!ParseHex(packet, pos, size))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a size" << endl;
+		cerr << "NETSTUB: expecting a size at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1475,7 +1473,7 @@ bool NetStub<ADDRESS>::ParseRemoveReadWatchpoint(const string& packet, unsigned 
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1483,7 +1481,7 @@ bool NetStub<ADDRESS>::ParseRemoveReadWatchpoint(const string& packet, unsigned 
 	if(!ParseSpace(packet, pos, space))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a space ('cpu_mem', 'dev_mem', 'dev_io')" << endl;
+		cerr << "NETSTUB: expecting an address space ('cpu_mem', 'dev_mem', 'dev_io') at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1491,7 +1489,7 @@ bool NetStub<ADDRESS>::ParseRemoveReadWatchpoint(const string& packet, unsigned 
 #ifdef DEBUG_NETSTUB
 	if(pos < packet.length())
 	{
-		cerr << "NETSTUB: ignoring extra characters at pos " << pos << endl;
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
 	}
 #endif
 	return true;
@@ -1503,7 +1501,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1511,7 +1509,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 	if(!ParseHex(packet, pos, t))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a time" << endl;
+		cerr << "NETSTUB: expecting a time at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1519,7 +1517,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 	if(!ParseChar(packet, pos, ';'))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting ';'" << endl;
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1528,7 +1526,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 	if(!ParseTimeUnit(packet, pos, tu))
 	{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: expecting a time unit" << endl;
+		cerr << "NETSTUB: expecting a time unit at col #" << (pos + 1) << endl;
 #endif
 		return false;
 	}
@@ -1540,7 +1538,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 		if(!ParseChar(packet, pos, ';'))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: expecting ';'" << endl;
+			cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 			return false;
 		}
@@ -1550,7 +1548,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 		if(!ParseTrapType(packet, pos, trap.type))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: expecting a trap type" << endl;
+			cerr << "NETSTUB: expecting a trap type at col #" << (pos + 1) << endl;
 #endif
 		}
 
@@ -1560,7 +1558,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseChar(packet, pos, ';'))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting ';'" << endl;
+					cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1568,7 +1566,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseAddress(packet, pos, trap.breakpoint.addr))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting an address" << endl;
+					cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1578,7 +1576,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseChar(packet, pos, ';'))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting ';'" << endl;
+					cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1586,7 +1584,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseWatchpointType(packet, pos, trap.watchpoint.wtype))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting a watchpoint type" << endl;
+					cerr << "NETSTUB: expecting a watchpoint type at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1594,7 +1592,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseChar(packet, pos, ';'))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting ';'" << endl;
+					cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1602,7 +1600,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseAddress(packet, pos, trap.watchpoint.addr))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting an address" << endl;
+					cerr << "NETSTUB: expecting an address at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1610,7 +1608,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseChar(packet, pos, ';'))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting ';'" << endl;
+					cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1618,7 +1616,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseHex(packet, pos, trap.watchpoint.size))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting a size" << endl;
+					cerr << "NETSTUB: expecting a size at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1626,7 +1624,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseChar(packet, pos, ';'))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting ';'" << endl;
+					cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1634,7 +1632,7 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 				if(!ParseSpace(packet, pos, trap.watchpoint.space))
 				{
 #ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: expecting a space ('cpu_mem', 'dev_mem', 'dev_io')" << endl;
+					cerr << "NETSTUB: expecting an address space ('cpu_mem', 'dev_mem', 'dev_io') at col #" << (pos + 1) << endl;
 #endif
 					return false;
 				}
@@ -1796,7 +1794,7 @@ bool NetStub<ADDRESS>::PutSetReadWatchpointPacket(ADDRESS addr, uint32_t size, S
 	
 	sstr << std::hex;
 	sstr << s_command[PKC_SETREADW] << ';';
-	sstr << addr << ';';
+	sstr << '*' << addr << ';';
 	sstr << size << ';';
 	sstr << s_space[space];
 	return PutPacket(sstr.str(), device_id, tag);	
@@ -1810,7 +1808,7 @@ bool NetStub<ADDRESS>::PutSetWriteWatchpointPacket(ADDRESS addr, uint32_t size, 
 	
 	sstr << std::hex;
 	sstr << s_command[PKC_SETWRITEW] << ';';
-	sstr << addr << ';';
+	sstr << '*' << addr << ';';
 	sstr << size << ';';
 	sstr << s_space[space];
 	return PutPacket(sstr.str(), device_id, tag);	
@@ -1846,7 +1844,7 @@ bool NetStub<ADDRESS>::PutRemoveReadWatchpointPacket(ADDRESS addr, uint32_t size
 	
 	sstr << std::hex;
 	sstr << s_command[PKC_RMREADW] << ';';
-	sstr << addr << ';';
+	sstr << '*' << addr << ';';
 	sstr << size << ';';
 	sstr << s_space[space];
 	return PutPacket(sstr.str(), device_id, tag);	
@@ -1860,7 +1858,7 @@ bool NetStub<ADDRESS>::PutRemoveWriteWatchpointPacket(ADDRESS addr, uint32_t siz
 	
 	sstr << std::hex;
 	sstr << s_command[PKC_RMWRITEW] << ';';
-	sstr << addr << ';';
+	sstr << '*' << addr << ';';
 	sstr << size << ';';
 	sstr << s_space[space];
 	return PutPacket(sstr.str(), device_id, tag);	
@@ -1887,13 +1885,13 @@ bool NetStub<ADDRESS>::PutTrapPacket(uint64_t t, TIME_UNIT tu, const list<TRAP>&
 		switch(trap_iter->type)
 		{
 			case TRAP_BREAKPOINT:
-				sstr << ';' << std::hex << trap_iter->breakpoint.addr;
+				sstr << ';' << '*' << std::hex << trap_iter->breakpoint.addr;
 				break;
 			case TRAP_WATCHPOINT:
 				if(trap_iter->watchpoint.wtype < WATCHPOINT_MIN || trap_iter->watchpoint.wtype > WATCHPOINT_MAX) return false;
 				if(trap_iter->watchpoint.space < SP_MIN || trap_iter->watchpoint.space > SP_MAX) return false;
 				sstr << ';' << s_watchpoint_type[trap_iter->watchpoint.wtype];
-				sstr << ';' << std::hex << trap_iter->watchpoint.addr << ';' << trap_iter->watchpoint.size;
+				sstr << ';' << std::hex << '*' << trap_iter->watchpoint.addr << ';' << trap_iter->watchpoint.size;
 				sstr << ';' << s_space[trap_iter->watchpoint.space];
 				break;
 		}
@@ -1930,7 +1928,7 @@ void NetStub<ADDRESS>::Step()
 			if(!ParseCommand(packet, pos, pk_command))
 			{
 #ifdef DEBUG_NETSTUB
-				cerr << "NETSTUB: expecting a command" << endl;
+				cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
 #endif
 				return;
 			}

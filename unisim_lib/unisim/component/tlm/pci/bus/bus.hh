@@ -131,7 +131,8 @@ private:
 	list<DeviceRequest *> device_request_list;
 	list<DeviceRequest *> device_request_free_list;
 	sc_event device_dispatch_event;
-	
+
+	unsigned int num_mappings;	
 	DevReg *devmap[NUM_TARGETS][NUM_BARS];
 	int portToDevNumberMap[NUM_TARGETS];
 	int devNumberToPortMap[32];
@@ -148,6 +149,7 @@ private:
 	uint32_t register_number[NUM_MAPPINGS];
 	PCISpace addr_type[NUM_MAPPINGS];
 
+	Parameter<unsigned int> param_num_mappings;
 	ParameterArray<ADDRESS_TYPE> param_base_address;
 	ParameterArray<ADDRESS_TYPE> param_size;
 	ParameterArray<uint32_t> param_device_number;
@@ -186,9 +188,11 @@ public:
 		param_target_port("target-port", this, target_port, NUM_MAPPINGS),
 		param_register_number("register-number", this, register_number, NUM_MAPPINGS),
 		param_addr_type("addr-type", this, addr_type, NUM_MAPPINGS),
+		param_num_mappings("num-mappings", this, num_mappings),
 		frequency(0),
 		param_frequency("frequency", this, frequency),
-		logger_import("logger_import", this) {
+		logger_import("logger_import", this),
+		num_mappings(0) {
 		SetupDependsOn(logger_import);
 		for(unsigned int i = 0; i < NUM_MASTERS; i++){
 			stringstream s, r;
@@ -232,7 +236,7 @@ public:
 			if (memory_import[i]) delete memory_import[i];
 		}
 
-		for (unsigned int i = 0; i < NUM_MAPPINGS; i++) {
+		for (unsigned int i = 0; i < num_mappings; i++) {
 			int regNumber = (register_number[i] - 16)/ 4;
 			DevReg *devReg = devmap[target_port[i]][regNumber];
 			if(devReg) delete devReg;
@@ -301,7 +305,7 @@ public:
 //			 
 //		}
 		
-		for (unsigned int i = 0; i < NUM_MAPPINGS; i++) {
+		for (unsigned int i = 0; i < num_mappings; i++) {
 			int regNumber = (register_number[i] - 16)/ 4;
 			DevReg *devReg = devmap[target_port[i]][regNumber];
 			if(devReg == NULL) {

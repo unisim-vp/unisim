@@ -185,7 +185,7 @@ typedef pci32_address_t PCI_ADDRESS_TYPE;
 const uint32_t PCI_MAX_DATA_SIZE = 32;        // in bytes
 const unsigned int PCI_NUM_MASTERS = 1;
 const unsigned int PCI_NUM_TARGETS = 2;
-const unsigned int PCI_NUM_MAPPINGS = 2;
+const unsigned int PCI_NUM_MAPPINGS = 7;
 
 // PCI device numbers
 const unsigned int PCI_MPC107_DEV_NUM = 0;
@@ -536,15 +536,7 @@ int sc_main(int argc, char *argv[])
     (*pci_bus)["target-port"][mapping_index] = 0;
     (*pci_bus)["register-number"][mapping_index] = 0x10;
     (*pci_bus)["addr-type"][mapping_index] = "mem";
-    mapping_index++;
-
-	(*pci_bus)["base-address"][mapping_index] = 0xa0000000UL;
-	(*pci_bus)["size"][mapping_index] = 0x100000;
-	(*pci_bus)["device-number"][mapping_index] = PCI_STUB_DEV_NUM;
-	(*pci_bus)["target-port"][mapping_index] = PCI_STUB_TARGET_PORT;
-	(*pci_bus)["register-number"][mapping_index] = 0x10UL;
-	(*pci_bus)["addr-type"][mapping_index] = "mem";
-	mapping_index++;
+	(*pci_bus)["num-mappings"] = ++mapping_index; 
 
 	// PCI stub run-time configuration
 	{
@@ -583,6 +575,14 @@ int sc_main(int argc, char *argv[])
 			int num_region;
 			for(num_region = 0; num_region < num_regions; num_region++)
 			{
+				(*pci_bus)["base-address"][mapping_index] = pci_stub_initial_base_addr[num_region];
+				(*pci_bus)["size"][mapping_index] = pci_stub_region_size[num_region];
+				(*pci_bus)["device-number"][mapping_index] = PCI_STUB_DEV_NUM;
+				(*pci_bus)["target-port"][mapping_index] = PCI_STUB_TARGET_PORT;
+				(*pci_bus)["register-number"][mapping_index] = 0x10UL + (4 * num_region);
+				(*pci_bus)["addr-type"][mapping_index] = pci_stub_address_space[num_region];
+				(*pci_bus)["num-mappings"] = ++mapping_index; 
+
 				(*pci_stub)["initial-base-addr"][num_region] = pci_stub_initial_base_addr[num_region];
 				(*pci_stub)["region-size"][num_region] = pci_stub_region_size[num_region];
 				(*pci_stub)["address-space"][num_region] = pci_stub_address_space[num_region];
@@ -907,10 +907,13 @@ int sc_main(int argc, char *argv[])
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
+/*
 		bus->logger_import >> *logger->logger_export[logger_index++];
 		mpc107->logger_import >> *logger->logger_export[logger_index++];
 		pci_bus->logger_import >> *logger->logger_export[logger_index++];
+*/
 		pci_stub->logger_import >> *logger->logger_export[logger_index++];
+/*
 		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
@@ -928,6 +931,7 @@ int sc_main(int argc, char *argv[])
 		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
 			if(irq_msg_spy[i] != NULL)
 				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+*/
 	}
 
 #ifdef DEBUG_SERVICE
