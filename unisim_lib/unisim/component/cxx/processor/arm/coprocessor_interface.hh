@@ -65,6 +65,12 @@ using unisim::service::interfaces::Logger;
 
 #include <inttypes.h>
 
+class CPUCPInterface {
+public:
+	virtual ~CPUCPInterface() {};
+	virtual void CoprocessorStop(unsigned int cp_id, int ret) = 0;
+};
+
 /// Arm Coprocessor generic interface.
 /** This class describes the communication interface between Arm CPU and a Coprocessor
  */
@@ -76,7 +82,11 @@ private:
 	
 public:
 	CPInterface(const char *name, 
-			Object *parent) :
+			unsigned int _cp_id,
+			CPUCPInterface *_cpu,
+			Object *parent = 0) :
+		cp_id(_cp_id),
+		cpu(_cpu),
 		Object(name, parent),
 		Client<Logger>(name, parent),
 		logger_import("logger_import", this) {}		
@@ -124,8 +134,38 @@ public:
     		uint8_t crm, 
     		reg_t value) = 0;
 
+    /** Perform a coprocessor operation
+     * @param[in] opcode1 : the "opcode1" field of the instruction code (unsigned 8 bits integer)
+     * @param[in] opcode2 : the "opcode2" field of the instruction code (unsigned 8 bits integer)
+     * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
+     * @param[in] crn     : the "crn" field of the instruction code (unsigned 8 bits integer)
+     * @param[in] crm     : the "crm" field of the instruction code (unsigned 8 bits integer)
+     */
+    virtual void Operation(uint8_t opcode1,
+    		uint8_t opcode2,
+    		uint8_t crd,
+    		uint8_t crn,
+    		uint8_t crm) = 0;
 
+    /** Perform a coprocessor load
+     * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
+	 * @param[in] address : the address to load data from
+     */
+    virtual void Load(uint8_t crd,
+    		reg_t address) = 0;
+
+    /** Perform a coprocessor load
+     * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
+	 * @param[in] address : the address to store the data to
+     */
+    virtual void Store(uint8_t crd,
+    		reg_t address) = 0;
+    
 	ServiceImport<Logger> logger_import;
+	
+protected:
+	CPUCPInterface *cpu;
+	unsigned int cp_id;
 };
 
 } // end of namespace arm

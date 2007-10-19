@@ -32,24 +32,68 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
-#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.tcc"
-#include "unisim/component/cxx/processor/arm/config.hh"
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_HH__
 
-using unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15;
-using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig;
-using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_DebugConfig;
+#include <inttypes.h>
 
-template
-class CP15<ARM966E_S_BigEndian_Config>;
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/logger.hh"
 
-template
-class CP15<ARM966E_S_BigEndian_DebugConfig>;
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace tcm {
 
-template
-class CP15<ARM966E_S_LittleEndian_Config>;
+using unisim::service::interfaces::Logger;
 
-template
-class CP15<ARM966E_S_LittleEndian_DebugConfig>;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::Logger;
+
+
+template<uint32_t SIZE, bool DEBUG_ENABLE>
+class TCM :
+	public Client<Logger> {
+public:
+	ServiceImport<Logger> logger_import;
+	
+	TCM(const char *name,
+			Object *parent = 0);
+	virtual ~TCM();
+	
+	virtual bool Setup();
+	
+private:
+	uint8_t data[((uint32_t)1 << (SIZE - 1)) * 1024];
+};
+
+template<class CONFIG>
+class DTCM : 
+	public TCM<CONFIG::DTCM_SIZE, CONFIG::DEBUG_ENABLE> {
+public:
+	DTCM(const char *name,
+			Object *parent = 0);
+	~DTCM();
+};
+
+template<class CONFIG>
+class ITCM : 
+	public TCM<CONFIG::ITCM_SIZE, CONFIG::DEBUG_ENABLE> {
+public:
+	ITCM(const char *name,
+			Object *parent = 0);
+	~ITCM();
+};
+
+} // end of namespace tcm
+} // end of namespace arm
+} // end of namespace processor
+} // end of namespace component
+} // end of namespace cxx
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_HH__

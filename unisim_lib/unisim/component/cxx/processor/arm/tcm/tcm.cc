@@ -32,24 +32,38 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
-#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.tcc"
+#include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
+#include "unisim/component/cxx/processor/arm/tcm/tcm.tcc"
 #include "unisim/component/cxx/processor/arm/config.hh"
 
-using unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15;
+using unisim::component::cxx::processor::arm::tcm::DTCM;
+using unisim::component::cxx::processor::arm::tcm::ITCM;
 using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config;
 using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig;
 using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_Config;
 using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_DebugConfig;
 
 template
-class CP15<ARM966E_S_BigEndian_Config>;
+class DTCM<ARM966E_S_BigEndian_Config>;
 
 template
-class CP15<ARM966E_S_BigEndian_DebugConfig>;
+class DTCM<ARM966E_S_BigEndian_DebugConfig>;
 
 template
-class CP15<ARM966E_S_LittleEndian_Config>;
+class DTCM<ARM966E_S_LittleEndian_Config>;
 
 template
-class CP15<ARM966E_S_LittleEndian_DebugConfig>;
+class DTCM<ARM966E_S_LittleEndian_DebugConfig>;
+
+template
+class ITCM<ARM966E_S_BigEndian_Config>;
+
+template
+class ITCM<ARM966E_S_BigEndian_DebugConfig>;
+
+template
+class ITCM<ARM966E_S_LittleEndian_Config>;
+
+template
+class ITCM<ARM966E_S_LittleEndian_DebugConfig>;
+

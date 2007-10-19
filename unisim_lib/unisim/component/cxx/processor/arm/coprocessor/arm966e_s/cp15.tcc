@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_TCC__
 
+#include "unisim/util/endian/endian.hh"
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -51,6 +53,8 @@ namespace arm966e_s {
 #define INLINE inline
 #endif
 
+using unisim::util::endian::E_BIG_ENDIAN;
+
 using unisim::service::interfaces::DebugInfo;
 using unisim::service::interfaces::DebugWarning;
 using unisim::service::interfaces::DebugError;
@@ -64,18 +68,16 @@ using unisim::service::interfaces::Endl;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 
-template<bool DEBUG_ENABLE>
-CP15<DEBUG_ENABLE> ::
+template<class CONFIG>
+CP15<CONFIG> ::
 CP15(const char *name,
+		unsigned int _cp_id,
+		CPUCPInterface *_cpu,
 		Object *parent) :
 	Object(name, parent),
-	CPInterface<DEBUG_ENABLE>(name, parent),
+	CPInterface<CONFIG::DEBUG_ENABLE>(name, _cp_id, _cpu, parent),
 	silicon_revision_number(0),
 	param_silicon_revision_number("silicon-revision-number", this, silicon_revision_number),
-	dtcmsize(0),
-	param_dtcmsize("dtcmsize", this, dtcmsize),
-	itcmsize(0),
-	param_itcmsize("itcmsize", this, itcmsize),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_read_reg(false),
@@ -85,9 +87,9 @@ CP15(const char *name,
 	SetupDependsOn(inherited::logger_import);
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 bool
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 Setup() {
 	// check verbose parameters
 	if(verbose_all) {
@@ -102,36 +104,22 @@ Setup() {
 				<< Endl << EndDebugError;
 		return false;
 	}
-	if(dtcmsize > (uint32_t)0x11) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError << LOCATION
-				<< "dtcmsize parameter should be smaller or equal than 0x11"
-				<< Endl << EndDebugError;
-		return false;
-	}
-	if(itcmsize > (uint32_t)0x11) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError << LOCATION
-				<< "itcmsize parameter should be smaller or equal than 0x11"
-				<< Endl << EndDebugError;
-		return false;
-	}
 	
 	InitRegs();
 
 	return true;
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 const char *
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 Description() {
 	return "CP15(ARM966E_S)";
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 const char* 
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 RegisterName(uint32_t id, uint32_t option) {
 	switch(id) {
 	case 0:
@@ -185,15 +173,15 @@ RegisterName(uint32_t id, uint32_t option) {
 	
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 void 
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 Reset() {
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 void 
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 ReadRegister(uint8_t opcode1, 
 		uint8_t opcode2, 
 		uint8_t crn, 
@@ -286,9 +274,9 @@ ReadRegister(uint8_t opcode1,
 	}
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 void  
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 WriteRegister(uint8_t opcode1, 
 		uint8_t opcode2, 
 		uint8_t crn, 
@@ -301,10 +289,58 @@ WriteRegister(uint8_t opcode1,
 	}
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
+void
+CP15<CONFIG> :: 
+Operation(uint8_t opcode1,
+		uint8_t opcode2,
+		uint8_t crd,
+		uint8_t crn,
+		uint8_t crm) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Operations not supported on this coprocessor: "
+			<< " - opcode1 = 0x" << Hex << opcode1 << Endl
+			<< " - opcode2 = 0x" << opcode2 << Dec << Endl
+			<< " - crd = " << crd << Endl
+			<< " - crn = " << crn << Endl
+			<< " - crm = " << crm << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void
+CP15<CONFIG> :: 
+Load(uint8_t crd,
+		reg_t address) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Loads not supported on this coprocessor: "
+			<< " - crd = " << crd << Endl
+			<< " - address = 0x" << Hex << address << Dec << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void
+CP15<CONFIG> :: 
+Store(uint8_t crd,
+		reg_t address) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Stores not supported on this coprocessor: "
+			<< " - crd = " << crd << Endl
+			<< " - address = 0x" << Hex << address << Dec << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
 INLINE
 void
-CP15<DEBUG_ENABLE> :: 
+CP15<CONFIG> :: 
 InitRegs() {
 	// initializing id code
 	// 31-24: implementer 0x41
@@ -330,12 +366,14 @@ InitRegs() {
 	// 2    : instruction TCM absent (implementation specific)
 	// 1-0  : reserved 0x0
 	tcm_size_reg = 0;
-	tcm_size_reg += ((reg_t)dtcmsize) << 18;
-	if(dtcmsize == 0)
+	if(CONFIG::HAS_DTCM) {
+		tcm_size_reg += ((reg_t)CONFIG::DTCM_SIZE) << 18;
 		tcm_size_reg += ((reg_t)1) << 14;
-	tcm_size_reg += ((reg_t)itcmsize) << 6;
-	if(itcmsize == 0)
+	}
+	if(CONFIG::HAS_ITCM) {
+		tcm_size_reg += ((reg_t)CONFIG::ITCM_SIZE) << 6;
 		tcm_size_reg += ((reg_t)1) << 2;
+	}
 	
 	// initializing control register
 	// 31-16: reserved 0x0
@@ -344,7 +382,7 @@ InitRegs() {
 	// 13   : alternate vector select (value of VINITHI)
 	// 12   : instruction TCM enable (value of INITRAM)
 	// 11-8 : reserved 0xf
-	// 7    : endianess 0x0
+	// 7    : endianess CONFIG::ENDIANESS
 	// 6-4  : reserved 0x7
 	// 3    : BIU write buffer enable 0x0
 	// 2    : data TCM enable (value of INITRAM)
@@ -356,6 +394,8 @@ InitRegs() {
 	if((*inherited::GetParent())["arm966es-initram"])
 		control_reg += ((reg_t)1) << 12;
 	control_reg += ((reg_t)0x0f) << 8;
+	if(CONFIG::ENDIANESS != E_BIG_ENDIAN)
+		control_reg += ((reg_t)1) << 7;
 	control_reg += ((reg_t)0x07) << 4;
 	if((*inherited::GetParent())["arm966es-initram"])
 		control_reg += ((reg_t)1) << 2;
@@ -390,10 +430,10 @@ InitRegs() {
 	dbist_gen_reg = 0;
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 INLINE
 void
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 WriteControlReg(reg_t value) {
 	reg_t final_value = value;
 	reg_t orig_value;
@@ -461,28 +501,28 @@ WriteControlReg(reg_t value) {
 	control_reg = final_value;
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 INLINE
 bool
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 VerboseAll() {
-	return DEBUG_ENABLE && verbose_all && inherited::logger_import; 
+	return CONFIG::DEBUG_ENABLE && verbose_all && inherited::logger_import; 
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 INLINE
 bool
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 VerboseReadReg() {
-	return DEBUG_ENABLE && verbose_read_reg && inherited::logger_import; 
+	return CONFIG::DEBUG_ENABLE && verbose_read_reg && inherited::logger_import; 
 }
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 INLINE
 bool
-CP15<DEBUG_ENABLE> ::
+CP15<CONFIG> ::
 VerboseWriteReg() {
-	return DEBUG_ENABLE && verbose_write_reg && inherited::logger_import; 
+	return CONFIG::DEBUG_ENABLE && verbose_write_reg && inherited::logger_import; 
 }
 
 #undef INLINE

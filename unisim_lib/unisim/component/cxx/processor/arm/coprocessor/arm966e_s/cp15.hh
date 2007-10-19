@@ -52,17 +52,18 @@ using unisim::kernel::service::Parameter;
 
 using unisim::component::cxx::processor::arm::CPInterface;
 
-template<bool DEBUG_ENABLE>
+template<class CONFIG>
 class CP15 : 
-	public CPInterface<DEBUG_ENABLE> {
+	public CPInterface<CONFIG::DEBUG_ENABLE> {
 private:
 	typedef uint32_t reg_t;
-	typedef CPInterface<DEBUG_ENABLE> inherited;
+	typedef CPInterface<CONFIG::DEBUG_ENABLE> inherited;
 		
 public:
 	CP15(const char *name,
-			Object *parent = 0);
-	
+			unsigned int _cp_id,
+			CPUCPInterface *_cpu,
+			Object *parent = 0);	
 	virtual bool Setup();
 	
 	/** Gives the name of the Coprocessor component.
@@ -100,6 +101,30 @@ public:
 			uint8_t crn, 
 			uint8_t crm, 
 			reg_t value);
+    /** Perform a coprocessor operation
+     * @param[in] opcode1 : the "opcode1" field of the instruction code (unsigned 8 bits integer)
+     * @param[in] opcode2 : the "opcode2" field of the instruction code (unsigned 8 bits integer)
+     * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
+     * @param[in] crn     : the "crn" field of the instruction code (unsigned 8 bits integer)
+     * @param[in] crm     : the "crm" field of the instruction code (unsigned 8 bits integer)
+     */
+    virtual void Operation(uint8_t opcode1,
+    		uint8_t opcode2,
+    		uint8_t crd,
+    		uint8_t crn,
+    		uint8_t crm);
+    /** Perform a coprocessor load
+     * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
+	 * @param[in] address : the address to load data from
+     */
+    virtual void Load(uint8_t crd,
+    		reg_t address);
+    /** Perform a coprocessor load
+     * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
+	 * @param[in] address : the address to store the data to
+     */
+    virtual void Store(uint8_t crd,
+    		reg_t address);
 
 private:
 	reg_t id_code_reg;
@@ -120,10 +145,6 @@ private:
 	// Parameters
 	uint32_t silicon_revision_number;
 	Parameter<uint32_t> param_silicon_revision_number;
-	uint32_t dtcmsize;
-	Parameter<uint32_t> param_dtcmsize;
-	uint32_t itcmsize;
-	Parameter<uint32_t> param_itcmsize;
 	// Verbose parameters
 	bool verbose_all;
 	Parameter<bool> param_verbose_all;

@@ -157,6 +157,8 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	InitializeCheckConditionTable();
 	
 	CreateCpSystem();
+	
+	CreateTCMSystem();
 
 	CreateMemorySystem();
 }
@@ -621,6 +623,13 @@ void
 CPU<CONFIG> ::
 Sync() {
 	
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+CoprocessorStop(unsigned int cp_id, int ret) {
+	Stop(ret);
 }
 
 //=====================================================================
@@ -2865,13 +2874,38 @@ CreateCpSystem() {
 		cp[i] = 0;
 	
 	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es = new cp15_966es_t("cp15", this);
+		cp15_966es = new cp15_966es_t("cp15", 15, this, this);
 		cp[15] = cp15_966es;
 	}
 }
 
 /**************************************************************/
 /* Coprocessors creation methods (private)              END   */
+/**************************************************************/
+
+/**************************************************************/
+/* TCM creation methods (private)                       START */
+/**************************************************************/
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+CreateTCMSystem() {
+	dtcm = 0;
+	itcm = 0;
+	
+	if(CONFIG::HAS_DTCM) {
+		dtcm = new dtcm_t("dtcm", this);
+	}
+	
+	if(CONFIG::HAS_ITCM) {
+		itcm = new itcm_t("itcm", this);
+	}
+}
+
+/**************************************************************/
+/* TCM creation methods (private)                       END   */
 /**************************************************************/
 
 /**************************************************************/

@@ -22,7 +22,8 @@ libunisim_component_cxx_processor_arm_a_SOURCES = \
 	cache/64kb_dm_wt_32bls.cc cache/64kb_dm_wt_32bls_debug.cc \
 	cache/96kb_dm_wb_32bls.cc cache/96kb_dm_wb_32bls_debug.cc \
 	cache/96kb_dm_wt_32bls.cc cache/96kb_dm_wt_32bls_debug.cc \
-	coprocessor/arm966e_s/cp15.cc
+	coprocessor/arm966e_s/cp15.cc \
+	tcm/tcm.cc
 
 include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \
@@ -41,7 +42,8 @@ nobase_include_HEADERS = \
 	cache/config.hh \
 	cache/types.hh \
 	coprocessor/arm966e_s/cp15.hh \
-	coprocessor/arm966e_s/cp15.tcc
+	coprocessor/arm966e_s/cp15.tcc \
+	tcm/tcm.hh tcm/tcm.tcc
 
 nodist_include_HEADERS = \
 	armcpu.tcc armcpu.hh

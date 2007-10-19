@@ -54,6 +54,7 @@
 #include "unisim/component/cxx/processor/arm/cache/cache.hh"
 #include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
 #include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
+#include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
 // #include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/endian/endian.hh"
 #include <string>
@@ -120,6 +121,7 @@ using std::string;
 template<class CONFIG>
 class CPU :
 	public Decoder<CONFIG>,
+	public CPUCPInterface,
 	public Client<Loader<typename CONFIG::address_t> >,
     public Client<LinuxOS>,
     public Service<CPULinuxOS>,
@@ -137,8 +139,14 @@ private:
 	typedef typename CONFIG::insn_t insn_t;
 	
 	typedef 
-		unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15<CONFIG::DEBUG_ENABLE> 
+		unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15<CONFIG> 
 		cp15_966es_t;
+	typedef
+		unisim::component::cxx::processor::arm::tcm::DTCM<CONFIG>
+		dtcm_t;
+	typedef
+		unisim::component::cxx::processor::arm::tcm::ITCM<CONFIG>
+		itcm_t;
 	
 public:
 	//=====================================================================
@@ -184,7 +192,9 @@ public:
 	void Run();
 	virtual void Stop(int ret);
 	virtual void Sync();
-
+	// method required by coprocessors
+	virtual void CoprocessorStop(unsigned int cp_id, int ret);
+	
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
@@ -695,6 +705,11 @@ private:
 	/** cp15 for the arm966e_s */
 	cp15_966es_t *cp15_966es;
 	
+	/** dtcm for the arm966e_s */
+	dtcm_t *dtcm;
+	/** itcm for the arm966e_s */
+	itcm_t *itcm;
+	
 	/** the instruction counter */
 	uint64_t instruction_counter;
 	
@@ -771,9 +786,13 @@ private:
     /** the unified cache level 2 */
     CacheInterfaceWithMemoryService<typename CONFIG::cache_l2_t::address_t> *cache_l2;
     
-    /** this methods creates the different coprocessors.
+    /** this method creates the different coprocessors.
      * This method needs to be called before CreateMemorySystem */
     void CreateCpSystem();
+    
+    /** this method creates the different TCM components.
+     * This method needs to be called before CreateMemorySystem */
+    void CreateTCMSystem();
     
     /** this method initialize the cache/mmu/cp15 memory system */
     void CreateMemorySystem();

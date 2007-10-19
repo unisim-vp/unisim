@@ -32,24 +32,69 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
-#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.tcc"
-#include "unisim/component/cxx/processor/arm/config.hh"
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_TCC__
 
-using unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15;
-using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig;
-using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_DebugConfig;
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+namespace tcm {
 
-template
-class CP15<ARM966E_S_BigEndian_Config>;
+template<uint32_t SIZE, bool DEBUG_ENABLE>
+TCM<SIZE, DEBUG_ENABLE> ::
+TCM(const char *name,
+		Object *parent) :
+	Object(name, parent),
+	Client<Logger>(name, parent),
+	logger_import("logger_import", this){
+	SetupDependsOn(logger_import);
+}
 
-template
-class CP15<ARM966E_S_BigEndian_DebugConfig>;
+template<uint32_t SIZE, bool DEBUG_ENABLE>
+TCM<SIZE, DEBUG_ENABLE> ::
+~TCM() {
+}
 
-template
-class CP15<ARM966E_S_LittleEndian_Config>;
+template<uint32_t SIZE, bool DEBUG_ENABLE>
+bool
+TCM<SIZE, DEBUG_ENABLE> ::
+Setup() {
+	return true;
+}
 
-template
-class CP15<ARM966E_S_LittleEndian_DebugConfig>;
+template<class CONFIG>
+DTCM<CONFIG> ::
+DTCM(const char *name,
+		Object *parent) :
+	Object(name, parent),
+	TCM<CONFIG::DTCM_SIZE, CONFIG::DEBUG_ENABLE>(name, parent) {
+}
+
+template<class CONFIG>
+DTCM<CONFIG> ::
+~DTCM() {	
+}
+
+template<class CONFIG>
+ITCM<CONFIG> ::
+ITCM(const char *name,
+		Object *parent) :
+	Object(name, parent),
+	TCM<CONFIG::ITCM_SIZE, CONFIG::DEBUG_ENABLE>(name, parent) {
+}
+
+template<class CONFIG>
+ITCM<CONFIG> ::
+~ITCM() {	
+}
+
+} // end of namespace tcm
+} // end of namespace arm
+} // end of namespace processor
+} // end of namespace component
+} // end of namespace cxx
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_TCC__
