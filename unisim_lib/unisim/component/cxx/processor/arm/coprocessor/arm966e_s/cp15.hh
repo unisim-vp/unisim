@@ -37,7 +37,10 @@
 
 #include "unisim/kernel/service/service.hh"
 
+#include "unisim/service/interfaces/memory.hh"
+
 #include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
+#include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
 
 namespace unisim {
 namespace component {
@@ -49,20 +52,35 @@ namespace arm966e_s {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
+using unisim::service::interfaces::Memory;
 
 using unisim::component::cxx::processor::arm::CPInterface;
+using unisim::component::cxx::processor::arm::tcm::DTCM;
+using unisim::component::cxx::processor::arm::tcm::ITCM;
 
 template<class CONFIG>
 class CP15 : 
-	public CPInterface<CONFIG::DEBUG_ENABLE> {
+	public CPInterface<CONFIG::DEBUG_ENABLE>,
+	public Service<Memory<typename CONFIG::address_t> >,
+	public Client<Memory<typename CONFIG::address_t> > {
 private:
 	typedef uint32_t reg_t;
 	typedef CPInterface<CONFIG::DEBUG_ENABLE> inherited;
-		
+	typedef typename CONFIG::address_t address_t;
+	
 public:
+	ServiceImport<Memory<typename CONFIG::address_t> > memory_import;
+	ServiceExport<Memory<typename CONFIG::address_t> > memory_export;
+
 	CP15(const char *name,
 			unsigned int _cp_id,
 			CPUCPInterface *_cpu,
+			DTCM<CONFIG> *_dtcm,
+			ITCM<CONFIG> *_itcm,
 			Object *parent = 0);	
 	virtual bool Setup();
 	
@@ -125,6 +143,11 @@ public:
      */
     virtual void Store(uint8_t crd,
     		reg_t address);
+    
+	// CP15 -> Memory Interface (debugg dervice)
+//	virtual void Reset();
+	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 
 private:
 	reg_t id_code_reg;
@@ -139,6 +162,9 @@ private:
 	reg_t dbist_addr_reg;
 	reg_t dbist_gen_reg;
 	
+	DTCM<CONFIG> *dtcm;
+	ITCM<CONFIG> *itcm;
+
 	void InitRegs();
 	void WriteControlReg(reg_t value);
 	

@@ -42,34 +42,59 @@ namespace processor {
 namespace arm {
 namespace tcm {
 
-template<uint32_t SIZE, bool DEBUG_ENABLE>
-TCM<SIZE, DEBUG_ENABLE> ::
+template<class CONFIG, bool DATA_TCM>
+TCM<CONFIG, DATA_TCM> ::
 TCM(const char *name,
 		Object *parent) :
 	Object(name, parent),
+	Client<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<Logger>(name, parent),
-	logger_import("logger_import", this){
+	memory_import("memory_import", this),
+	logger_import("logger_import", this) {
 	SetupDependsOn(logger_import);
 }
 
-template<uint32_t SIZE, bool DEBUG_ENABLE>
-TCM<SIZE, DEBUG_ENABLE> ::
+template<class CONFIG, bool DATA_TCM>
+TCM<CONFIG, DATA_TCM> ::
 ~TCM() {
 }
 
-template<uint32_t SIZE, bool DEBUG_ENABLE>
+template<class CONFIG, bool DATA_TCM>
 bool
-TCM<SIZE, DEBUG_ENABLE> ::
+TCM<CONFIG, DATA_TCM> ::
 Setup() {
 	return true;
 }
+
+// Memory Interface (debugg dervice)
+template<class CONFIG, bool DATA_TCM>
+void
+TCM<CONFIG, DATA_TCM> ::
+Reset() {
+	
+}
+
+template<class CONFIG, bool DATA_TCM>
+bool
+TCM<CONFIG, DATA_TCM> ::
+ReadMemory(address_t addr, void *buffer, uint32_t size) {
+	return false;
+}
+
+template<class CONFIG, bool DATA_TCM>
+bool
+TCM<CONFIG, DATA_TCM> ::
+WriteMemory(address_t addr, const void *buffer, uint32_t size) {
+	return false;
+}
+
 
 template<class CONFIG>
 DTCM<CONFIG> ::
 DTCM(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	TCM<CONFIG::DTCM_SIZE, CONFIG::DEBUG_ENABLE>(name, parent) {
+	TCM<CONFIG, true>(name, parent) {
 }
 
 template<class CONFIG>
@@ -82,7 +107,7 @@ ITCM<CONFIG> ::
 ITCM(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	TCM<CONFIG::ITCM_SIZE, CONFIG::DEBUG_ENABLE>(name, parent) {
+	TCM<CONFIG, false>(name, parent) {
 }
 
 template<class CONFIG>

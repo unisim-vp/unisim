@@ -786,17 +786,18 @@ private:
     /** the unified cache level 2 */
     CacheInterfaceWithMemoryService<typename CONFIG::cache_l2_t::address_t> *cache_l2;
     
+    /** this method initialize the cache/mmu/cp15 memory system */
+    void CreateMemorySystem();
+
     /** this method creates the different coprocessors.
      * This method needs to be called before CreateMemorySystem */
     void CreateCpSystem();
     
     /** this method creates the different TCM components.
-     * This method needs to be called before CreateMemorySystem */
+     * This method needs to be called before CreateMemorySystem 
+     * and CreateCpSystem */
     void CreateTCMSystem();
     
-    /** this method initialize the cache/mmu/cp15 memory system */
-    void CreateMemorySystem();
-
 protected:
 	// parameters for the 966E_S configuration
 	bool arm966es_initram;

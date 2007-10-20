@@ -39,6 +39,7 @@
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/logger.hh"
+#include "unisim/service/interfaces/memory.hh"
 
 namespace unisim {
 namespace component {
@@ -52,13 +53,19 @@ using unisim::service::interfaces::Logger;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
 
 
-template<uint32_t SIZE, bool DEBUG_ENABLE>
+template<class CONFIG, bool DATA_TCM>
 class TCM :
+	public Client<Memory<typename CONFIG::address_t> >,
 	public Client<Logger> {
+private:
+	typedef typename CONFIG::address_t address_t;
+	
 public:
+	ServiceImport<Memory<address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 	
 	TCM(const char *name,
@@ -67,13 +74,20 @@ public:
 	
 	virtual bool Setup();
 	
+	// Memory Interface (debugg dervice)
+	virtual void Reset();
+	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
+
 private:
+	static const uint32_t SIZE =
+		(DATA_TCM?(CONFIG::DTCM_SIZE):(CONFIG::ITCM_SIZE));
 	uint8_t data[((uint32_t)1 << (SIZE - 1)) * 1024];
 };
 
 template<class CONFIG>
 class DTCM : 
-	public TCM<CONFIG::DTCM_SIZE, CONFIG::DEBUG_ENABLE> {
+	public TCM<CONFIG, true> {
 public:
 	DTCM(const char *name,
 			Object *parent = 0);
@@ -82,7 +96,7 @@ public:
 
 template<class CONFIG>
 class ITCM : 
-	public TCM<CONFIG::ITCM_SIZE, CONFIG::DEBUG_ENABLE> {
+	public TCM<CONFIG, false> {
 public:
 	ITCM(const char *name,
 			Object *parent = 0);

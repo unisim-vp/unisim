@@ -73,9 +73,15 @@ CP15<CONFIG> ::
 CP15(const char *name,
 		unsigned int _cp_id,
 		CPUCPInterface *_cpu,
+		DTCM<CONFIG> *_dtcm,
+		ITCM<CONFIG> *_itcm,
 		Object *parent) :
 	Object(name, parent),
 	CPInterface<CONFIG::DEBUG_ENABLE>(name, _cp_id, _cpu, parent),
+	Client<Memory<typename CONFIG::address_t> >(name, parent),
+	Service<Memory<typename CONFIG::address_t> >(name, parent),
+	memory_import("memory_import", this),
+	memory_export("memory_export", this),
 	silicon_revision_number(0),
 	param_silicon_revision_number("silicon-revision-number", this, silicon_revision_number),
 	verbose_all(false),
@@ -335,6 +341,20 @@ Store(uint8_t crd,
 			<< " - address = 0x" << Hex << address << Dec << Endl
 			<< EndDebugError;
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+bool 
+CP15<CONFIG> ::
+ReadMemory(address_t addr, void *buffer, uint32_t size) {
+	return false;
+}
+
+template<class CONFIG>
+bool 
+CP15<CONFIG> ::
+WriteMemory(address_t addr, const void *buffer, uint32_t size) {
+	return false;
 }
 
 template<class CONFIG>

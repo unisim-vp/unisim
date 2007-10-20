@@ -156,10 +156,10 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	/* initialize the check condition table */
 	InitializeCheckConditionTable();
 	
-	CreateCpSystem();
-	
 	CreateTCMSystem();
 
+	CreateCpSystem();
+	
 	CreateMemorySystem();
 }
 
@@ -2874,7 +2874,7 @@ CreateCpSystem() {
 		cp[i] = 0;
 	
 	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es = new cp15_966es_t("cp15", 15, this, this);
+		cp15_966es = new cp15_966es_t("cp15", 15, this, dtcm, itcm, this);
 		cp[15] = cp15_966es;
 	}
 }
