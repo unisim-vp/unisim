@@ -900,10 +900,12 @@ InitRegs() {
 	tcm_size_reg = 0;
 	if(CONFIG::HAS_DTCM) {
 		tcm_size_reg += ((reg_t)CONFIG::DTCM_SIZE) << 18;
+	} else {
 		tcm_size_reg += ((reg_t)1) << 14;
 	}
 	if(CONFIG::HAS_ITCM) {
 		tcm_size_reg += ((reg_t)CONFIG::ITCM_SIZE) << 6;
+	} else {
 		tcm_size_reg += ((reg_t)1) << 2;
 	}
 	
