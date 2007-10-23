@@ -114,8 +114,8 @@ public:
 
 	virtual void PrZeroBlock(address_t addr) = 0;
 
-	virtual void PrWrite(address_t addr, const void *buffer, uint32_t size) = 0;
-	virtual void PrRead(address_t addr, void *buffer, uint32_t size) = 0;
+	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) = 0;
+	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size) = 0;
 };
 
 template <class address_t>

@@ -41,6 +41,7 @@
 
 #include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
 #include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
+#include "unisim/component/cxx/processor/arm/cache_interface.hh"
 
 namespace unisim {
 namespace component {
@@ -58,12 +59,14 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
 
+using unisim::component::cxx::processor::arm::CacheInterface;
 using unisim::component::cxx::processor::arm::CPInterface;
 using unisim::component::cxx::processor::arm::tcm::DTCM;
 using unisim::component::cxx::processor::arm::tcm::ITCM;
 
 template<class CONFIG>
 class CP15 : 
+	public CacheInterface<typename CONFIG::address_t>,
 	public CPInterface<CONFIG::DEBUG_ENABLE>,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Client<Memory<typename CONFIG::address_t> > {
@@ -73,14 +76,17 @@ private:
 	typedef typename CONFIG::address_t address_t;
 	
 public:
-	ServiceImport<Memory<typename CONFIG::address_t> > memory_import;
-	ServiceExport<Memory<typename CONFIG::address_t> > memory_export;
+	ServiceImport<Memory<address_t> > itcm_memory_import;
+	ServiceImport<Memory<address_t> > dtcm_memory_import;
+	ServiceImport<Memory<address_t> > memory_import;
+	ServiceExport<Memory<address_t> > memory_export;
 
 	CP15(const char *name,
 			unsigned int _cp_id,
 			CPUCPInterface *_cpu,
 			DTCM<CONFIG> *_dtcm,
 			ITCM<CONFIG> *_itcm,
+			CacheInterface<address_t> *_memory_interface,
 			Object *parent = 0);	
 	virtual bool Setup();
 	
@@ -144,7 +150,21 @@ public:
     virtual void Store(uint8_t crd,
     		reg_t address);
     
-	// CP15 -> Memory Interface (debugg dervice)
+    /* Cache interface required methods */
+	virtual void PrInvalidateBlock(uint32_t set, uint32_t way);
+	virtual void PrFlushBlock(uint32_t set, uint32_t way);
+	virtual void PrCleanBlock(uint32_t set, uint32_t way);
+	virtual void PrReset();
+	virtual void PrInvalidate();
+	virtual void PrInvalidateSet(uint32_t set);
+	virtual void PrInvalidateBlock(address_t addr);
+	virtual void PrFlushBlock(address_t addr);
+	virtual void PrCleanBlock(address_t addr);
+	virtual void PrZeroBlock(address_t addr);
+	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
+	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
+    
+    // CP15 -> Memory Interface (debugg dervice)
 //	virtual void Reset();
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
@@ -164,9 +184,24 @@ private:
 	
 	DTCM<CONFIG> *dtcm;
 	ITCM<CONFIG> *itcm;
+	CacheInterface<address_t> *memory_interface;
 
+	/* Private register methods */
 	void InitRegs();
 	void WriteControlReg(reg_t value);
+	bool DTCMEnabled();
+	bool ITCMEnabled();
+	
+	/* Private memory methods */
+	bool IsTCMAddress(address_t addr);
+	bool IsDTCMAddress(address_t addr);
+	bool IsITCMAddress(address_t addr);
+	void MemWrite(address_t addr, const uint8_t *buffer, uint32_t size);
+	void MemRead(address_t addr, uint8_t *buffer, uint32_t size);
+	void DTCMWrite(address_t addr, const uint8_t *buffer, uint32_t size);
+	void DTCMRead(address_t addr, uint8_t *buffer, uint32_t size);
+	void ITCMWrite(address_t addr, const uint8_t *buffer, uint32_t size);
+	void ITCMRead(address_t addr, uint8_t *buffer, uint32_t size);
 	
 	// Parameters
 	uint32_t silicon_revision_number;
@@ -178,12 +213,23 @@ private:
 	Parameter<bool> param_verbose_read_reg;
 	bool verbose_write_reg;
 	Parameter<bool> param_verbose_write_reg;
+	bool verbose_pr_read;
+	Parameter<bool> param_verbose_pr_read;
+	bool verbose_pr_write;
+	Parameter<bool> param_verbose_pr_write;
+	bool verbose_debug_read;
+	Parameter<bool> param_verbose_debug_read;
+	bool verbose_debug_write;
+	Parameter<bool> param_verbose_debug_write;
 	
 	// verbose methods
 	bool VerboseAll();
 	bool VerboseReadReg();
 	bool VerboseWriteReg();
-	
+	bool VerbosePrRead();
+	bool VerbosePrWrite();
+	bool VerboseDebugWrite();
+	bool VerboseDebugRead();
 };
 
 } // end of namespace arm966e_s

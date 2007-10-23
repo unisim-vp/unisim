@@ -86,8 +86,8 @@ public:
 	virtual void Reset();
 	
 	// cache interface implemented by the arm processor to get the request from the caches
-	virtual void PrWrite(address_t addr, const void *buffer, uint32_t size);
-	virtual void PrRead(address_t addr, void *buffer, uint32_t size);
+	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
+	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
 	// the following instruction exist in the arm cache interface but they can not be used 
 	virtual void SetLock(uint32_t lock, uint32_t set);
 	virtual void PrInvalidateBlock(uint32_t set, uint32_t way);

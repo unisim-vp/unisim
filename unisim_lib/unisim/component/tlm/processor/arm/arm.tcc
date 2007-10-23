@@ -271,7 +271,7 @@ template<class CONFIG>
 void 
 ARM<CONFIG> :: 
 PrRead(address_t addr, 
-	void *buffer, 
+	uint8_t *buffer, 
 	uint32_t size) {
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -350,7 +350,7 @@ template<class CONFIG>
 void 
 ARM<CONFIG> :: 
 PrWrite(address_t addr, 
-	const void *buffer, 
+	const uint8_t *buffer, 
 	uint32_t size) {
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION

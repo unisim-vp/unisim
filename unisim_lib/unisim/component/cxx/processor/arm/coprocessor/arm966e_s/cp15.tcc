@@ -75,11 +75,17 @@ CP15(const char *name,
 		CPUCPInterface *_cpu,
 		DTCM<CONFIG> *_dtcm,
 		ITCM<CONFIG> *_itcm,
+		CacheInterface<address_t> *_memory_interface,
 		Object *parent) :
 	Object(name, parent),
 	CPInterface<CONFIG::DEBUG_ENABLE>(name, _cp_id, _cpu, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
+	dtcm(_dtcm),
+	itcm(_itcm),
+	memory_interface(_memory_interface),
+	dtcm_memory_import("dtcm_memory_import", this),
+	itcm_memory_import("itcm_memory_import", this),
 	memory_import("memory_import", this),
 	memory_export("memory_export", this),
 	silicon_revision_number(0),
@@ -89,7 +95,15 @@ CP15(const char *name,
 	verbose_read_reg(false),
 	param_verbose_read_reg("verbose-read-reg", this, verbose_read_reg),
 	verbose_write_reg(false),
-	param_verbose_write_reg("verbose-write-reg", this, verbose_write_reg) {
+	param_verbose_write_reg("verbose-write-reg", this, verbose_write_reg),
+	verbose_pr_read(false),
+	param_verbose_pr_read("verbose-pr-read", this, verbose_pr_read),
+	verbose_pr_write(false),
+	param_verbose_pr_write("verbose-pr-write", this, verbose_pr_write),
+	verbose_debug_read(false),
+	param_verbose_debug_read("verbose-debug-read", this, verbose_debug_read),
+	verbose_debug_write(false),
+	param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write) {
 	SetupDependsOn(inherited::logger_import);
 }
 
@@ -101,6 +115,10 @@ Setup() {
 	if(verbose_all) {
 		verbose_read_reg = true;
 		verbose_write_reg = true;
+		verbose_pr_read = true;
+		verbose_pr_write = true;
+		verbose_debug_read = true;
+		verbose_debug_write = true;
 	}
 	// check parameters
 	if(silicon_revision_number > (uint32_t)0x0fff) {
@@ -343,19 +361,513 @@ Store(uint8_t crd,
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
+/************************************************************/
+/* Cache interface methods                            START */
+/************************************************************/
+/* Note: the only available methods are PrWrite and PrRead  */
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrInvalidateBlock(uint32_t set, uint32_t way) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
+			<< " - set = " << set << Endl
+			<< " - way = " << way << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrFlushBlock(uint32_t set, uint32_t way) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrFlushBlock) not supported on this coprocessor: "
+			<< " - set = " << set << Endl
+			<< " - way = " << way << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrCleanBlock(uint32_t set, uint32_t way){
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrCleanBlock) not supported on this coprocessor: "
+			<< " - set = " << set << Endl
+			<< " - way = " << way << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrReset(){
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrReset) not supported on this coprocessor"
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrInvalidate() {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrInvalidate) not supported on this coprocessor"
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrInvalidateSet(uint32_t set){
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrInvalidateSet) not supported on this coprocessor: "
+			<< " - set = " << set << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrInvalidateBlock(address_t addr) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrFlushBlock(address_t addr) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrFlushBlock) not supported on this coprocessor: "
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrCleanBlock(address_t addr) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrFlushBlock) not supported on this coprocessor: "
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrZeroBlock(address_t addr) {
+	if(inherited::logger_import)
+		(*inherited::logger_import) << DebugError << LOCATION
+			<< "Method (PrZeroBlock) not supported on this coprocessor: "
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< EndDebugError;
+	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
+	/* First check if the acces if for a TCM memory, if so check that
+	 *   the corresponding TCM is enabled, otherwise send the request 
+	 *   through the memory interface
+	 * If it is not a TCM access then send it to the memory interface
+	 */
+	if(VerbosePrWrite()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Write received:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++)
+			(*inherited::logger_import) << " " << (unsigned int)buffer[i];
+		(*inherited::logger_import) << Dec << Endl;
+	}
+	if(IsTCMAddress(addr)) {
+		/* it is a TCM address */
+		if(IsITCMAddress(addr)) {
+			/* it is a ITCM address, check that the ITCM is enabled */
+			if(ITCMEnabled()) {
+				if(VerbosePrWrite())
+					(*inherited::logger_import)
+						<< " - sending to ITCM" << Endl
+						<< EndDebugInfo;
+				ITCMWrite(addr, buffer, size);
+			} else {
+				if(VerbosePrWrite())
+					(*inherited::logger_import)
+						<< " - sending to main memory (ITCM disabled)" << Endl
+						<< EndDebugInfo;
+				MemWrite(addr, buffer, size);
+			}
+		} else {
+			/* it is a DTCM address, check that the DTCM is enabled */
+			if(DTCMEnabled()) {
+				if(VerbosePrWrite())
+					(*inherited::logger_import)
+						<< " - sending to DTCM" << Endl
+						<< EndDebugInfo;
+				DTCMWrite(addr, buffer, size);
+			} else {
+				if(VerbosePrWrite())
+					(*inherited::logger_import)
+						<< " - sending to main memory (DTCM disabled)" << Endl
+						<< EndDebugInfo;
+				MemWrite(addr, buffer, size);
+			}
+		}
+	} else {
+		if(VerbosePrWrite())
+			(*inherited::logger_import)
+				<< " - sending to main memory" << Endl
+				<< EndDebugInfo;
+		MemWrite(addr, buffer, size);
+	}
+}
+
+template<class CONFIG>
+void 
+CP15<CONFIG> ::
+PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
+	/* First check if the acces if for a TCM memory, if so check that
+	 *   the corresponding TCM is enabled, otherwise send the request 
+	 *   through the memory interface
+	 * If it is not a TCM access then send it to the memory interface
+	 */
+	if(VerbosePrRead()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Read received:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl;
+	}
+	if(IsTCMAddress(addr)) {
+		/* it is a TCM address */
+		if(IsITCMAddress(addr)) {
+			/* it is a ITCM address, check that the ITCM is enabled */
+			if(ITCMEnabled()) {
+				if(VerbosePrRead())
+					(*inherited::logger_import)
+						<< " - sending to ITCM" << Endl
+						<< EndDebugInfo;
+				ITCMRead(addr, buffer, size);
+			} else {
+				if(VerbosePrRead())
+					(*inherited::logger_import)
+						<< " - sending to main memory (ITCM disabled)" << Endl
+						<< EndDebugInfo;
+				MemRead(addr, buffer, size);
+			}
+		} else {
+			/* it is a DTCM address, check that the DTCM is enabled */
+			if(DTCMEnabled()) {
+				if(VerbosePrRead())
+					(*inherited::logger_import)
+						<< " - sending to DTCM" << Endl
+						<< EndDebugInfo;
+				DTCMRead(addr, buffer, size);
+			} else {
+				if(VerbosePrRead())
+					(*inherited::logger_import)
+						<< " - sending to main memory (DTCM disabled)" << Endl
+						<< EndDebugInfo;
+				MemRead(addr, buffer, size);
+			}
+		}
+	} else {
+		if(VerbosePrRead())
+			(*inherited::logger_import)
+				<< " - sending to main memory" << Endl
+				<< EndDebugInfo;
+		MemRead(addr, buffer, size);
+	}
+	if(VerbosePrRead()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Read done:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++) {
+			(*inherited::logger_import) << " " << (unsigned int)buffer[i];
+		}
+		(*inherited::logger_import) << Endl
+			<< EndDebugInfo;
+	}
+}
+
+/************************************************************/
+/* Cache interface methods                            END   */
+/************************************************************/
+
+/************************************************************/
+/* Memory interface methods                           START */
+/************************************************************/
+
 template<class CONFIG>
 bool 
 CP15<CONFIG> ::
 ReadMemory(address_t addr, void *buffer, uint32_t size) {
-	return false;
+	bool success = false;
+	
+	/* First check if the acces if for a TCM memory, if so check that
+	 *   the corresponding TCM is enabled, otherwise send the request 
+	 *   through the memory interface
+	 * If it is not a TCM access then send it to the memory interface
+	 */
+	if(VerboseDebugRead()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Read received:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl;
+	}
+	if(IsTCMAddress(addr)) {
+		/* it is a TCM address */
+		if(IsITCMAddress(addr)) {
+			/* it is a ITCM address, check that the ITCM is enabled */
+			if(ITCMEnabled()) {
+				if(itcm_memory_import) {
+					if(VerboseDebugRead())
+						(*inherited::logger_import)
+							<< " - sending to ITCM" << Endl
+							<< EndDebugInfo;
+					success = itcm_memory_import->ReadMemory(addr, buffer, size);
+				} else {
+					if(VerboseDebugRead())
+						(*inherited::logger_import)
+							<< " - could not send it because itcm_memory_import not connected"
+							<< Endl << EndDebugInfo;
+					return false;
+				}
+			} else {
+				if(memory_import) {
+					if(VerboseDebugRead())
+						(*inherited::logger_import)
+							<< " - sending to main memory (ITCM disabled)" << Endl
+							<< EndDebugInfo;
+					success = memory_import->ReadMemory(addr, buffer, size);
+				} else {
+					if(VerboseDebugRead())
+						(*inherited::logger_import)
+							<< " - could not send it because memory_import not connected"
+							<< Endl << EndDebugInfo;
+					return false;
+				}
+			}
+		} else {
+			/* it is a DTCM address, check that the DTCM is enabled */
+			if(DTCMEnabled()) {
+				if(dtcm_memory_import) {
+					if(VerboseDebugRead())
+						(*inherited::logger_import)
+							<< " - sending to DTCM" << Endl
+							<< EndDebugInfo;
+					success = dtcm_memory_import->ReadMemory(addr, buffer, size);
+				} else {
+					if(VerboseDebugRead())
+						(*inherited::logger_import)
+							<< " - could not send it because dtcm_memory_import not connected"
+							<< Endl << EndDebugInfo;
+					return false;
+				}
+			} else {
+				if(memory_import) {
+					if(VerboseDebugRead())
+						(*inherited::logger_import)
+							<< " - sending to main memory (DTCM disabled)" << Endl
+							<< EndDebugInfo;
+					success = memory_import->ReadMemory(addr, buffer, size);
+				} else {
+					if(VerboseDebugRead())
+						(*inherited::logger_import)
+							<< " - could not send it because memory_import not connected"
+							<< Endl << EndDebugInfo;
+					return false;
+				}
+			}
+		}
+	} else {
+		if(memory_import) {
+			if(VerboseDebugRead())
+				(*inherited::logger_import)
+					<< " - sending to main memory" << Endl
+					<< EndDebugInfo;
+			success = memory_import->ReadMemory(addr, buffer, size);
+		} else {
+			if(VerboseDebugRead())
+				(*inherited::logger_import)
+					<< " - could not send it because memory_import not connected"
+					<< Endl << EndDebugInfo;
+			return false;
+		}
+	}
+	if(VerboseDebugRead() && success) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Read done:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++) {
+			(*inherited::logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+		}
+		(*inherited::logger_import) << Dec << Endl
+			<< EndDebugInfo;
+	} else {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Read failed:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< EndDebugInfo;
+	}
+	return success;
 }
 
 template<class CONFIG>
 bool 
 CP15<CONFIG> ::
 WriteMemory(address_t addr, const void *buffer, uint32_t size) {
-	return false;
+	bool success = false;
+	
+	/* First check if the acces if for a TCM memory, if so check that
+	 *   the corresponding TCM is enabled, otherwise send the request 
+	 *   through the memory interface
+	 * If it is not a TCM access then send it to the memory interface
+	 */
+	if(VerboseDebugWrite()) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Write received:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+			for(unsigned int i = 0; i < size; i++) {
+				(*inherited::logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+			}
+			(*inherited::logger_import) << Dec << Endl;
+	}
+	if(IsTCMAddress(addr)) {
+		/* it is a TCM address */
+		if(IsITCMAddress(addr)) {
+			/* it is a ITCM address, check that the ITCM is enabled */
+			if(ITCMEnabled()) {
+				if(itcm_memory_import) {
+					if(VerboseDebugWrite())
+						(*inherited::logger_import)
+							<< " - sending to ITCM" << Endl
+							<< EndDebugInfo;
+					success = itcm_memory_import->WriteMemory(addr, buffer, size);
+				} else {
+					if(VerboseDebugWrite())
+						(*inherited::logger_import)
+							<< " - could not send it because itcm_memory_import not connected"
+							<< Endl << EndDebugInfo;
+					return false;
+				}
+			} else {
+				if(memory_import) {
+					if(VerboseDebugWrite())
+						(*inherited::logger_import)
+							<< " - sending to main memory (ITCM disabled)" << Endl
+							<< EndDebugInfo;
+					success = memory_import->WriteMemory(addr, buffer, size);
+				} else {
+					if(VerboseDebugWrite())
+						(*inherited::logger_import)
+							<< " - could not send it because memory_import not connected"
+							<< Endl << EndDebugInfo;
+					return false;
+				}
+			}
+		} else {
+			/* it is a DTCM address, check that the DTCM is enabled */
+			if(DTCMEnabled()) {
+				if(dtcm_memory_import) {
+					if(VerboseDebugWrite())
+						(*inherited::logger_import)
+							<< " - sending to DTCM" << Endl
+							<< EndDebugInfo;
+					success = dtcm_memory_import->WriteMemory(addr, buffer, size);
+				} else {
+					if(VerboseDebugWrite())
+						(*inherited::logger_import)
+							<< " - could not send it because dtcm_memory_import not connected"
+							<< Endl << EndDebugInfo;
+					return false;
+				}
+			} else {
+				if(memory_import) {
+					if(VerboseDebugWrite())
+						(*inherited::logger_import)
+							<< " - sending to main memory (DTCM disabled)" << Endl
+							<< EndDebugInfo;
+					success = memory_import->WriteMemory(addr, buffer, size);
+				} else {
+					if(VerboseDebugWrite())
+						(*inherited::logger_import)
+							<< " - could not send it because memory_import not connected"
+							<< Endl << EndDebugInfo;
+					return false;
+				}
+			}
+		}
+	} else {
+		if(memory_import) {
+			if(VerboseDebugWrite())
+				(*inherited::logger_import)
+					<< " - sending to main memory" << Endl
+					<< EndDebugInfo;
+			success = memory_import->WriteMemory(addr, buffer, size);
+		} else {
+			if(VerboseDebugWrite())
+				(*inherited::logger_import)
+					<< " - could not send it because memory_import not connected"
+					<< Endl << EndDebugInfo;
+			return false;
+		}
+	}
+	if(VerboseDebugWrite() && !success) {
+		(*inherited::logger_import) << DebugInfo << LOCATION
+			<< "Write failed:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++) {
+			(*inherited::logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+		}
+		(*inherited::logger_import) << Endl
+			<< EndDebugInfo;
+	}
+	return success;
 }
+
+/************************************************************/
+/* Memory interface methods                           END   */
+/************************************************************/
+
+/************************************************************/
+/* Private register methods                           START */
+/************************************************************/
 
 template<class CONFIG>
 INLINE
@@ -525,6 +1037,110 @@ template<class CONFIG>
 INLINE
 bool
 CP15<CONFIG> ::
+DTCMEnabled() {
+	if(control_reg & ((reg_t)1 << 2))
+		return true;
+	return false;
+}
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
+ITCMEnabled() {
+	if(control_reg & ((reg_t)1 << 12))
+		return true;
+	return false;	
+}
+
+/************************************************************/
+/* Private register methods                           START */
+/************************************************************/
+
+/************************************************************/
+/* Private memory methods                            START */
+/************************************************************/
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
+IsTCMAddress(address_t addr) {
+	return addr < (address_t)0x08000000;
+}
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
+IsDTCMAddress(address_t addr) {
+	return IsTCMAddress(addr) && addr >= (address_t)0x04000000;
+}
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
+IsITCMAddress(address_t addr) {
+	return addr < (address_t)0x04000000;
+}
+
+template<class CONFIG>
+INLINE
+void
+CP15<CONFIG> ::
+MemWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
+	memory_interface->PrWrite(addr, buffer, size);
+}
+
+template<class CONFIG>
+INLINE
+void
+CP15<CONFIG> ::
+MemRead(address_t addr, uint8_t *buffer, uint32_t size) {
+	memory_interface->PrRead(addr, buffer, size);
+}
+
+template<class CONFIG>
+INLINE
+void
+CP15<CONFIG> ::
+DTCMWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
+	dtcm->PrWrite(addr, buffer, size);
+}
+
+template<class CONFIG>
+INLINE
+void
+CP15<CONFIG> ::
+DTCMRead(address_t addr, uint8_t *buffer, uint32_t size) {
+	dtcm->PrRead(addr, buffer, size);
+}
+
+template<class CONFIG>
+INLINE
+void
+CP15<CONFIG> ::
+ITCMWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
+	itcm->PrWrite(addr, buffer, size);
+}
+
+template<class CONFIG>
+INLINE
+void
+CP15<CONFIG> ::
+ITCMRead(address_t addr, uint8_t *buffer, uint32_t size) {
+	itcm->PrRead(addr, buffer, size);
+}
+
+/************************************************************/
+/* Private memory methods                            END    */
+/************************************************************/
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
 VerboseAll() {
 	return CONFIG::DEBUG_ENABLE && verbose_all && inherited::logger_import; 
 }
@@ -543,6 +1159,38 @@ bool
 CP15<CONFIG> ::
 VerboseWriteReg() {
 	return CONFIG::DEBUG_ENABLE && verbose_write_reg && inherited::logger_import; 
+}
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
+VerbosePrRead() {
+	return CONFIG::DEBUG_ENABLE && verbose_pr_read && inherited::logger_import; 
+}
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
+VerbosePrWrite() {
+	return CONFIG::DEBUG_ENABLE && verbose_pr_write && inherited::logger_import; 
+}
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
+VerboseDebugRead() {
+	return CONFIG::DEBUG_ENABLE && verbose_debug_read && inherited::logger_import; 
+}
+
+template<class CONFIG>
+INLINE
+bool
+CP15<CONFIG> ::
+VerboseDebugWrite() {
+	return CONFIG::DEBUG_ENABLE && verbose_debug_write && inherited::logger_import; 
 }
 
 #undef INLINE

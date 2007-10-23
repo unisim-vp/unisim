@@ -1067,6 +1067,7 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 			StopSimulation();
 			return;
 		}
+		UnsetDirectIRQ(id);
 	} else {
 		/* Serial mode */
 		/* check that id is 0 (only port for serial irqs), and serial_id
@@ -1083,6 +1084,7 @@ UnsetIRQ(unsigned int id, unsigned int serial_id) {
 			StopSimulation();
 			return;
 		}
+		UnsetSerialIRQ(serial_id);
 	}
 }
 
@@ -1351,6 +1353,72 @@ template <class PHYSICAL_ADDR,
 	bool DEBUG>
 void
 EPIC<PHYSICAL_ADDR, DEBUG> ::
+UnsetDirectIRQ(unsigned int id) {
+	uint32_t vpr;
+
+	if(DEBUG && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Handling direct unset IRQ received on port " << id
+			<< Endl << EndDebugInfo;
+
+	/* get the vpr */
+	vpr = regs.ivpr[id];
+	if(DEBUG && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "ivpr[" << id << "] = 0x" << Hex << vpr << Dec
+			<< Endl << EndDebugInfo;
+	/* set the activity bit */
+	if(!GetActivity(vpr)) {
+		if(DEBUG && logger_import) 
+			(*logger_import) << DebugInfo << LOCATION
+				<< "nothing needs to be done, the irq wasn't set up"
+				<< Endl << EndDebugInfo;
+		/* nothing needs to be done, the irq was already set up */
+		return;
+	}
+	UnsetActivity(vpr);
+	if(GetActivity(vpr)) {
+		if(logger_import) {
+			(*logger_import) << DebugError
+				<< LOCATION
+				<< "Error while trying to unset the activity bit of ivpr["
+				<< id << "]"
+				<< Endl << EndDebugError;
+		}
+		StopSimulation();
+		return;
+	}
+	if(DEBUG && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "activity bit unset (ivpr[" << id << "] = 0x" << Hex << vpr << Dec << ")"
+			<< "(previous ivprt[" << id << "] = 0x" << Hex << regs.ivpr[id] << Dec << ")"
+			<< Endl << EndDebugInfo;
+	regs.ivpr[id] = vpr;
+	/* set corresponding bit in the pending_reg register */
+	uint32_t mask = GetDirectIRQMask(id);
+	if(DEBUG && logger_import)
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Updating pending register removing the mask correspondent to ivpr[" << id << "] = 0x"
+			<< Hex << regs.ivpr[id] << Dec << ":" << Endl
+			<< "- mask = 0x" << Hex << mask << Dec << Endl
+			<< "- previous pending_reg = 0x" << Hex << pending_reg << Dec << Endl;
+	pending_reg = pending_reg & ~mask;
+	if(DEBUG && logger_import)
+		(*logger_import)
+			<< "- new pending_reg = 0x" << Hex << pending_reg << Dec << Endl
+			<< EndDebugInfo;
+	CheckInterruptions();
+	if(DEBUG && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Finished handling direct unset IRQ received on port " << id
+			<< Endl << EndDebugInfo;
+
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void
+EPIC<PHYSICAL_ADDR, DEBUG> ::
 SetSerialIRQ(unsigned int id) {
 	uint32_t vpr;
 	
@@ -1376,6 +1444,39 @@ SetSerialIRQ(unsigned int id) {
 	/* set corresponding bit in the pending_reg register */
 	uint32_t mask = GetSerialIRQMask(id);
 	pending_reg = pending_reg | mask;
+	
+	CheckInterruptions();
+}
+
+template <class PHYSICAL_ADDR, 
+	bool DEBUG>
+void
+EPIC<PHYSICAL_ADDR, DEBUG> ::
+UnsetSerialIRQ(unsigned int id) {
+	uint32_t vpr;
+	
+	/* get the vpr */
+	vpr = regs.svpr[id];
+	/* set the activity bit */
+	if(!GetActivity(vpr)) {
+		/* nothing needs to be done, the irq wasn't set up */
+		return;
+	}
+	UnsetActivity(vpr);
+	if(GetActivity(vpr)) {
+		if(logger_import) {
+			(*logger_import) << DebugError
+				<< LOCATION
+				<< "Error while trying to unset the activity bit of ivpr["
+				<< id << "]"
+				<< Endl << EndDebugError;
+		}
+		StopSimulation();
+		return;
+	}
+	/* unset corresponding bit in the pending_reg register */
+	uint32_t mask = GetSerialIRQMask(id);
+	pending_reg = pending_reg & ~mask;
 	
 	CheckInterruptions();
 }

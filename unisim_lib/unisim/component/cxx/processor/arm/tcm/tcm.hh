@@ -51,21 +51,24 @@ namespace tcm {
 using unisim::service::interfaces::Logger;
 
 using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
+using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
 
 
 template<class CONFIG, bool DATA_TCM>
 class TCM :
-	public Client<Memory<typename CONFIG::address_t> >,
+	public Service<Memory<typename CONFIG::address_t> >,
 	public Client<Logger> {
 private:
 	typedef typename CONFIG::address_t address_t;
 	
 public:
-	ServiceImport<Memory<address_t> > memory_import;
+	ServiceExport<Memory<address_t> > memory_export;
 	ServiceImport<Logger> logger_import;
 	
 	TCM(const char *name,
@@ -73,6 +76,10 @@ public:
 	virtual ~TCM();
 	
 	virtual bool Setup();
+	
+	// access methods
+	void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
+	void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
 	
 	// Memory Interface (debugg dervice)
 	virtual void Reset();
@@ -82,7 +89,26 @@ public:
 private:
 	static const uint32_t SIZE =
 		(DATA_TCM?(CONFIG::DTCM_SIZE):(CONFIG::ITCM_SIZE));
-	uint8_t data[((uint32_t)1 << (SIZE - 1)) * 1024];
+	static const uint32_t BYTE_SIZE =
+		((uint32_t)1 << (SIZE - 1)) * 1024;
+	uint8_t data[BYTE_SIZE];
+
+	// verbose parameters and variables
+	Parameter<bool> param_verbose_all;
+	bool verbose_all;
+	Parameter<bool> param_verbose_pr_read;
+	bool verbose_pr_read;
+	Parameter<bool> param_verbose_pr_write;
+	bool verbose_pr_write;
+	Parameter<bool> param_verbose_debug_read;
+	bool verbose_debug_read;
+	Parameter<bool> param_verbose_debug_write;
+	bool verbose_debug_write;
+	// verbose methods
+	bool VerbosePrRead();
+	bool VerbosePrWrite();
+	bool VerboseDebugRead();
+	bool VerboseDebugWrite();
 };
 
 template<class CONFIG>

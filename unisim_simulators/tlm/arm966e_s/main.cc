@@ -314,14 +314,17 @@ int main(int argc, char *argv[], char **envp) {
 	(*cpu)["verbose-dump-regs-start"] = true;
 	(*cpu)["verbose-dump-regs-end"] = true;
 //	(*cpu)["cache_dl1.verbose-all"] = true;
-	(*cpu)["cache_dl1.verbose-pr-read"] = true;
-	(*cpu)["cache_dl1.verbose-pr-write"] = true;
+//	(*cpu)["cache_dl1.verbose-pr-read"] = true;
+//	(*cpu)["cache_dl1.verbose-pr-write"] = true;
 //	(*cpu)["cache_il1.verbose-all"] = true;
-	(*cpu)["cache_il1.verbose-pr-read"] = true;
-	(*cpu)["cache_il1.verbose-pr-write"] = true;
+//	(*cpu)["cache_il1.verbose-pr-read"] = true;
+//	(*cpu)["cache_il1.verbose-pr-write"] = true;
 //	(*cpu)["cache_l2.verbose-all"] = true;
-	(*cpu)["cache_l2.verbose-pr-read"] = true;
-	(*cpu)["cache_l2.verbose-pr-write"] = true;
+//	(*cpu)["cache_l2.verbose-pr-read"] = true;
+//	(*cpu)["cache_l2.verbose-pr-write"] = true;
+	(*cpu)["cp15.verbose-all"] = true;
+	(*cpu)["dtcm.verbose-all"] = true;
+	(*cpu)["itcm.verbose-all"] = true;
 	// (*cpu)["verbose-tlm-bus-synchronize"] = true;
 	// (*cpu)["verbose-tlm-run-thread"] = true;
 	// (*cpu)["verbose-tlm-commands"] = true;
@@ -356,6 +359,9 @@ int main(int argc, char *argv[], char **envp) {
 		cpu->cache_l1_logger_import >> *logger->logger_export[logger_index++];
 		cpu->cache_il1_logger_import >> *logger->logger_export[logger_index++];
 		cpu->cache_l2_logger_import >> *logger->logger_export[logger_index++];
+		cpu->cp15_logger_import >> *logger->logger_export[logger_index++];
+		cpu->itcm_logger_import >> *logger->logger_export[logger_index++];
+		cpu->dtcm_logger_import >> *logger->logger_export[logger_index++];
 		bridge->logger_import >> *logger->logger_export[logger_index++];
 		if(logger_messages) {
 			bus_msg_spy->logger_import >> *logger->logger_export[logger_index++];

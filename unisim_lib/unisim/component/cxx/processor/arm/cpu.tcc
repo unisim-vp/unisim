@@ -112,6 +112,9 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	cache_l1_logger_import("cache_l1_logger_import", this),
 	cache_il1_logger_import("cache_il1_logger_import", this),
 	cache_l2_logger_import("cache_l2_logger_import", this),
+	cp15_logger_import("cp15_logger_import", this),
+	itcm_logger_import("itcm_logger_import", this),
+	dtcm_logger_import("dtcm_logger_import", this),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
@@ -2399,16 +2402,21 @@ ReadInsn(typename CONFIG::address_t address, uint32_t &val) {
 			<< "address = 0x" << Hex << address << Dec
 			<< Endl << EndDebugInfo;
 
-	if(CONFIG::HAS_INSN_CACHE_L1) {
-		cache_il1->PrRead(address, &val, 4);
-		return true;
-	}
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-		cache_l1->PrRead(address, &val, 4);
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(address, (uint8_t *)&val, 4);
 		return true;
 	}
 	
-	memory_interface->PrRead(address, &val, 4);
+	if(CONFIG::HAS_INSN_CACHE_L1) {
+		cache_il1->PrRead(address, (uint8_t *)&val, 4);
+		return true;
+	}
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+		cache_l1->PrRead(address, (uint8_t *)&val, 4);
+		return true;
+	}
+	
+	memory_interface->PrRead(address, (uint8_t *)&val, 4);
 	return true;
 }
 
@@ -2422,11 +2430,15 @@ Read8(typename CONFIG::address_t address, uint8_t &val) {
 			<< "address = 0x" << Hex << address << Dec
 			<< Endl << EndDebugInfo;
 
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-		cache_l1->PrRead(address, &val, 1);
-	} else
-		memory_interface->PrRead(address, &val, 1);
-
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(address, &val, 1);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrRead(address, &val, 1);
+		} else
+			memory_interface->PrRead(address, &val, 1);
+	}
+	
 	if(memory_access_reporting_import)
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
@@ -2444,11 +2456,15 @@ Read16(typename CONFIG::address_t address, uint16_t &val) {
 			<< "address = 0x" << Hex << address << Dec
 			<< Endl << EndDebugInfo;
 
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-		cache_l1->PrRead(address, &val, 2);
-	} else 
-		memory_interface->PrRead(address, &val, 2);
-
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(address, (uint8_t *)&val, 2);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrRead(address, (uint8_t *)&val, 2);
+		} else 
+			memory_interface->PrRead(address, (uint8_t *)&val, 2);
+	}
+		
 	val = Host2Target(CONFIG::ENDIANESS, val);
   
 	if(memory_access_reporting_import) 
@@ -2468,11 +2484,15 @@ Read32(typename CONFIG::address_t address, uint32_t &val) {
 			<< "address = 0x" << Hex << address << Dec
 			<< Endl << EndDebugInfo;
 
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-		cache_l1->PrRead(address, &val, 4);
-	} else
-		memory_interface->PrRead(address, &val, 4);
-
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(address, (uint8_t *)&val, 4);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrRead(address, (uint8_t *)&val, 4);
+		} else
+			memory_interface->PrRead(address, (uint8_t *)&val, 4);
+	}
+	
 	val = Target2Host(CONFIG::ENDIANESS, val);
 
 	if(memory_access_reporting_import) 
@@ -2496,11 +2516,15 @@ Write8(typename CONFIG::address_t address, uint8_t &val) {
 	uint8_t value;
   
 	value = val;
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-		cache_l1->PrWrite(address, &value, 1);
-	} else
-		memory_interface->PrWrite(address, &value, 1);
-
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrWrite(address, &value, 1);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrWrite(address, &value, 1);
+		} else
+			memory_interface->PrWrite(address, &value, 1);
+	}
+	
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
 				MemoryAccessReporting<address_t>::MT_DATA,
@@ -2522,11 +2546,15 @@ Write16(typename CONFIG::address_t address, uint16_t &val) {
 	uint16_t cp;
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-		cache_l1->PrWrite(address, &cp, 2);
-	} else
-		memory_interface->PrWrite(address, &cp, 2);
-
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrWrite(address, (uint8_t *)&cp, 2);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrWrite(address, (uint8_t *)&cp, 2);
+		} else
+			memory_interface->PrWrite(address, (uint8_t *)&cp, 2);
+	}
+	
 	if(memory_access_reporting_import)
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
 				MemoryAccessReporting<address_t>::MT_DATA,
@@ -2548,11 +2576,15 @@ Write32(typename CONFIG::address_t address, uint32_t &val) {
   
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-		cache_l1->PrWrite(address, &cp, 4);
-	} else
-		memory_interface->PrWrite(address, &cp, 4);
-
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrWrite(address, (uint8_t *)&cp, 4);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrWrite(address, (uint8_t *)&cp, 4);
+		} else
+			memory_interface->PrWrite(address, (uint8_t *)&cp, 4);
+	}
+	
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
 				MemoryAccessReporting<address_t>::MT_DATA,
@@ -2830,7 +2862,7 @@ template<class CONFIG>
 void 
 CPU<CONFIG> :: 
 Fetch(void *buffer, typename CONFIG::address_t addr, uint32_t size) {
-	memory_interface->PrRead(addr, buffer, size);
+	memory_interface->PrRead(addr, (uint8_t *)buffer, size);
 }
 
 /**************************************************************/
@@ -2874,8 +2906,9 @@ CreateCpSystem() {
 		cp[i] = 0;
 	
 	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es = new cp15_966es_t("cp15", 15, this, dtcm, itcm, this);
+		cp15_966es = new cp15_966es_t("cp15", 15, this, dtcm, itcm, memory_interface, this);
 		cp[15] = cp15_966es;
+		cp[15]->logger_import >> cp15_logger_import;
 	}
 }
 
@@ -2897,10 +2930,12 @@ CreateTCMSystem() {
 	
 	if(CONFIG::HAS_DTCM) {
 		dtcm = new dtcm_t("dtcm", this);
+		dtcm->logger_import >> dtcm_logger_import;
 	}
 	
 	if(CONFIG::HAS_ITCM) {
 		itcm = new itcm_t("itcm", this);
+		itcm->logger_import >> itcm_logger_import;
 	}
 }
 
@@ -2917,6 +2952,13 @@ inline INLINE
 void 
 CPU<CONFIG> ::
 CreateMemorySystem() {
+	if(CONFIG::MODEL == ARM966E_S) {
+		memory_export >> cp15_966es->memory_export;
+		cp15_966es->memory_import >> memory_import;
+		cp15_966es->itcm_memory_import >> itcm->memory_export;
+		cp15_966es->dtcm_memory_import >> dtcm->memory_export;
+		return;
+	}
 	if(CONFIG::HAS_CACHE_L2) {
 		cerr << "Configuring cache level 2" << endl;
 		cache_l2 = new Cache<typename CONFIG::cache_l2_t>("cache_l2", memory_interface, this);

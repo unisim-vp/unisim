@@ -42,15 +42,48 @@ namespace processor {
 namespace arm {
 namespace tcm {
 
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::Line;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+
+#define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+
+#if (defined(__GNUC__) && (__GNUC__ >= 3))
+#define INLINE inline __attribute__((always_inline))
+#else
+#define INLINE inline
+#endif
+
 template<class CONFIG, bool DATA_TCM>
 TCM<CONFIG, DATA_TCM> ::
 TCM(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	Client<Memory<typename CONFIG::address_t> >(name, parent),
+	Service<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<Logger>(name, parent),
-	memory_import("memory_import", this),
-	logger_import("logger_import", this) {
+	memory_export("memory_import", this),
+	logger_import("logger_import", this),
+	param_verbose_all("verbose-all", this, verbose_all),
+	verbose_all(false),
+	param_verbose_pr_read("verbose-pr-read", this, verbose_pr_read),
+	verbose_pr_read(false),
+	param_verbose_pr_write("verbose-pr-write", this, verbose_pr_write),
+	verbose_pr_write(false),
+	param_verbose_debug_read("verbose-debug-read", this, verbose_debug_read),
+	verbose_debug_read(false),
+	param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write),
+	verbose_debug_write(false) {
+	/* initialize the memory to 0 */
+	bzero(data, SIZE);
 	SetupDependsOn(logger_import);
 }
 
@@ -63,7 +96,59 @@ template<class CONFIG, bool DATA_TCM>
 bool
 TCM<CONFIG, DATA_TCM> ::
 Setup() {
+	if(verbose_all) {
+		verbose_pr_read = true;
+		verbose_pr_write = true;
+		verbose_debug_read = true;
+		verbose_debug_write = true;
+	}
+	
 	return true;
+}
+
+template<class CONFIG, bool DATA_TCM>
+INLINE void
+TCM<CONFIG, DATA_TCM> ::
+PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
+	// align address and perform write
+	address_t aligned_address;
+	
+	aligned_address = addr & (BYTE_SIZE - 1);
+	if(aligned_address + size >= BYTE_SIZE) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "Out of bonds read:" << Endl
+				<< " - address = 0x" << Hex << addr << Dec << Endl
+				<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
+				<< " - size = " << size << Endl
+				<< " - mem_size = " << BYTE_SIZE << Endl
+				<< EndDebugError;
+		exit(-1);
+	}
+	memcpy(&data[aligned_address], buffer, size);
+}
+
+template<class CONFIG, bool DATA_TCM>
+INLINE
+void
+TCM<CONFIG, DATA_TCM> ::
+PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
+	// align address and perform read
+	address_t aligned_address;
+	
+	aligned_address = addr & (BYTE_SIZE - 1);
+	if(aligned_address + size >= BYTE_SIZE) {
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "Out of bonds read:" << Endl
+				<< " - address = 0x" << Hex << addr << Dec << Endl
+				<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
+				<< " - size = " << size << Endl
+				<< " - mem_size = " << BYTE_SIZE << Endl
+				<< EndDebugError;
+		exit(-1);
+	}
+	memcpy(buffer, &data[aligned_address], size);
 }
 
 // Memory Interface (debugg dervice)
@@ -78,16 +163,67 @@ template<class CONFIG, bool DATA_TCM>
 bool
 TCM<CONFIG, DATA_TCM> ::
 ReadMemory(address_t addr, void *buffer, uint32_t size) {
-	return false;
+	// align address and perform read
+	address_t aligned_address;
+	
+	aligned_address = addr & (BYTE_SIZE - 1);
+	if(aligned_address + size >= BYTE_SIZE) {
+		// copy byte per byte
+		for(unsigned int i = 0; i < aligned_address + size; i++)
+			((uint8_t *)buffer)[i] = data[i & (BYTE_SIZE - 1)];
+	} else 
+		memcpy(buffer, &data[aligned_address], size);
+	return true;
 }
 
 template<class CONFIG, bool DATA_TCM>
 bool
 TCM<CONFIG, DATA_TCM> ::
 WriteMemory(address_t addr, const void *buffer, uint32_t size) {
-	return false;
+	// align address and perform read
+	address_t aligned_address;
+	
+	aligned_address = addr & (BYTE_SIZE - 1);
+	if(aligned_address + size >= BYTE_SIZE) {
+		// copy byte per byte
+		for(unsigned int i = 0; i < aligned_address + size; i++)
+			data[i & (BYTE_SIZE - 1)] = ((uint8_t *)buffer)[i];
+	} else 
+		memcpy(&data[aligned_address], data, size);
+	return true;
 }
 
+template<class CONFIG, bool DATA_TCM>
+INLINE
+bool
+TCM<CONFIG, DATA_TCM> ::
+VerbosePrWrite() {
+	return CONFIG::DEBUG_ENABLE && logger_import && verbose_pr_write;
+}
+
+template<class CONFIG, bool DATA_TCM>
+INLINE
+bool
+TCM<CONFIG, DATA_TCM> ::
+VerbosePrRead() {
+	return CONFIG::DEBUG_ENABLE && logger_import && verbose_pr_read;
+}
+
+template<class CONFIG, bool DATA_TCM>
+INLINE
+bool
+TCM<CONFIG, DATA_TCM> ::
+VerboseDebugWrite() {
+	return CONFIG::DEBUG_ENABLE && logger_import && verbose_debug_write;
+}
+
+template<class CONFIG, bool DATA_TCM>
+INLINE
+bool
+TCM<CONFIG, DATA_TCM> ::
+VerboseDebugRead() {
+	return CONFIG::DEBUG_ENABLE && logger_import && verbose_debug_read;
+}
 
 template<class CONFIG>
 DTCM<CONFIG> ::
@@ -114,6 +250,10 @@ template<class CONFIG>
 ITCM<CONFIG> ::
 ~ITCM() {	
 }
+
+#undef INLINE
+
+#undef LOCATION
 
 } // end of namespace tcm
 } // end of namespace arm

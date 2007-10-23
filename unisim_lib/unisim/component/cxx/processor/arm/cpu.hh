@@ -169,6 +169,11 @@ public:
 	ServiceImport<Logger> cache_il1_logger_import;
 	ServiceImport<Logger> cache_l2_logger_import;
 
+	ServiceImport<Logger> cp15_logger_import;
+	
+	ServiceImport<Logger> itcm_logger_import;
+	ServiceImport<Logger> dtcm_logger_import;
+	
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
 	//=====================================================================

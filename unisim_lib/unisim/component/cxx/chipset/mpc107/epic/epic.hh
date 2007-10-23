@@ -187,7 +187,9 @@ private:
 	
 	void SetGlobalTimerIRQ(unsigned int id);
 	void SetDirectIRQ(unsigned int id);
+	void UnsetDirectIRQ(unsigned int id);
 	void SetSerialIRQ(unsigned int id);
+	void UnsetSerialIRQ(unsigned int id);
 	
 	void WriteGCR(uint32_t data);
 	void WriteEICR(uint32_t data);

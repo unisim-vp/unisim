@@ -95,8 +95,8 @@ public:
 	virtual void PrCleanBlock(address_t addr);
 	virtual void PrCleanBlock(uint32_t index, uint32_t way);   //add for Arm Cache
 	virtual void PrZeroBlock(address_t addr);
-	virtual void PrWrite(address_t addr, const void *buffer, uint32_t size);
-	virtual void PrRead(address_t addr, void *buffer, uint32_t size);
+	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
+	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
 	
 	// Cache -> Memory Interface (debugg dervice)
 	virtual void Reset();
@@ -130,8 +130,8 @@ private:
 	void Disable();
 	bool IsEnabled();
 
-	void LoadDataFromMem(address_t add, void* buffer, uint32_t size);
-	void StoreDataInMem(address_t add, const void* buffer, uint32_t size);
+	void LoadDataFromMem(address_t add, uint8_t* buffer, uint32_t size);
+	void StoreDataInMem(address_t add, const uint8_t* buffer, uint32_t size);
 
 protected:
 	/* verbose options */

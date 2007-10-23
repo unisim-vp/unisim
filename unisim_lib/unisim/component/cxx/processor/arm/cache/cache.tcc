@@ -499,7 +499,7 @@ PrZeroBlock(address_t addr) {
 template <class CONFIG>
 void
 Cache<CONFIG> ::
-PrWrite(address_t addr, const void *data, uint32_t size) {
+PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 	uint8_t buffer[CONFIG::LINELEN];
 	address_t tag;
 	address_t set;
@@ -679,7 +679,7 @@ PrWrite(address_t addr, const void *data, uint32_t size) {
 template <class CONFIG>
 void 
 Cache<CONFIG> ::
-PrRead(address_t addr, void *data, uint32_t size) {
+PrRead(address_t addr, uint8_t *data, uint32_t size) {
 	uint8_t buffer[CONFIG::LINELEN];
 	address_t tag;
 	address_t set;
@@ -846,7 +846,7 @@ inline INLINE
 void 
 Cache<CONFIG> ::
 LoadDataFromMem(address_t addr,
-		void* buffer, 
+		uint8_t* buffer, 
 		uint32_t size) {
 	next_mem_level->PrRead(addr, buffer, size);
 //	
@@ -871,7 +871,7 @@ template <class CONFIG>
 inline INLINE
 void 
 Cache<CONFIG> ::
-StoreDataInMem(address_t addr, const void* buffer, uint32_t size) {
+StoreDataInMem(address_t addr, const uint8_t* buffer, uint32_t size) {
 	next_mem_level->PrWrite(addr, buffer,size);	
 //	if(next_level_cache){
 //		// Write into the next level cache
