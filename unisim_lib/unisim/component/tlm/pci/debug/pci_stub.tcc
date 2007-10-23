@@ -104,25 +104,25 @@ bool PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup()
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Start()
+void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeStart()
 {
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Stop()
+void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeStop()
 {
 	sc_stop();
 	wait();
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Intr(uint32_t intr_id, bool level)
+void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeIntr(uint32_t intr_id, bool level)
 {
 	intr_fifo.write(level);
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Run(uint64_t duration, typename inherited::inherited::TIME_UNIT duration_tu)
+void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeRun(uint64_t duration, typename inherited::inherited::TIME_UNIT duration_tu, uint64_t& t, typename inherited::inherited::TIME_UNIT& tu, list<typename inherited::inherited::TRAP>& traps)
 {
 	if(duration)
 	{
@@ -145,7 +145,6 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Run(uint64_t duration, typename inher
 		wait(trap);
 	}
 
-	typename inherited::inherited::TIME_UNIT tu;
 	sc_time time_res = sc_get_time_resolution();
 	double time_res_sec = time_res.to_seconds();
 
@@ -154,11 +153,11 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Run(uint64_t duration, typename inher
 	if(::fabs(time_res_sec - 1.0e-6) <= 0.5e-6) tu = inherited::inherited::TU_US; else
 	if(::fabs(time_res_sec - 1.0e-9) <= 0.5e-9) tu = inherited::inherited::TU_NS; else
 	if(::fabs(time_res_sec - 1.0e-12) <= 0.5e-12) tu = inherited::inherited::TU_PS; else
-	if(::fabs(time_res_sec - 1.0e-15) <= 0.5e-15) tu = inherited::inherited::TU_FS; else Stop();
+	if(::fabs(time_res_sec - 1.0e-15) <= 0.5e-15) tu = inherited::inherited::TU_FS; else ServeStop();
 	
-	uint64_t t = (uint64_t) sc_time_stamp().value();
+	t = (uint64_t) sc_time_stamp().value();
 
-	inherited::inherited::PutTrapPacket(t, tu, inherited::traps);
+	traps = inherited::traps;
 	inherited::traps.clear();
 }
 
@@ -201,7 +200,7 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Process()
 {
 	while(1)
 	{
-		inherited::inherited::Step();
+		inherited::inherited::Serve();
 	}
 }
 

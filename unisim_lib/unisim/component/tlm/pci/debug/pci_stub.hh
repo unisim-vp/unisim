@@ -111,10 +111,10 @@ public:
 	virtual ~PCIStub();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
 	virtual bool Setup();
-	virtual void Start();
-	virtual void Stop();
-	virtual void Intr(uint32_t intr_id, bool level);
-	virtual void Run(uint64_t duration, typename inherited::inherited::TIME_UNIT tu);
+	virtual void ServeStart();
+	virtual void ServeStop();
+	virtual void ServeIntr(uint32_t intr_id, bool level);
+	virtual void ServeRun(uint64_t duration, typename inherited::inherited::TIME_UNIT duration_tu, uint64_t& t, typename inherited::inherited::TIME_UNIT& tu, list<typename inherited::inherited::TRAP>& traps);
 	void TriggerInterrupt();
 	void Process();
 	virtual void Trap();
@@ -124,6 +124,7 @@ private:
 	sc_time bus_cycle_time;
 	sc_fifo<bool> intr_fifo;
 	sc_event trap;
+	bool stopped;
 };
 
 } // end of namespace debug

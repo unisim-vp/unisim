@@ -139,11 +139,11 @@ bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
 		if(breakpoint->GetAddress() == addr)
 		{
 			breakpoints.erase(breakpoint);
-			break;
+			return true;
 		}
 	}
 
-	return true;
+	return false;
 }
 
 template <class ADDRESS>

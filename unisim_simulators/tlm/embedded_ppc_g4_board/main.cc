@@ -75,7 +75,7 @@
 #endif
 
 
-static const bool DEBUG_INFORMATION = true;
+static const bool DEBUG_INFORMATION = false;
 
 bool debug_enabled;
 
@@ -907,13 +907,10 @@ int sc_main(int argc, char *argv[])
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
-/*
-		bus->logger_import >> *logger->logger_export[logger_index++];
+		//bus->logger_import >> *logger->logger_export[logger_index++];
 		mpc107->logger_import >> *logger->logger_export[logger_index++];
 		pci_bus->logger_import >> *logger->logger_export[logger_index++];
-*/
 		pci_stub->logger_import >> *logger->logger_export[logger_index++];
-/*
 		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
@@ -931,7 +928,6 @@ int sc_main(int argc, char *argv[])
 		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
 			if(irq_msg_spy[i] != NULL)
 				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-*/
 	}
 
 #ifdef DEBUG_SERVICE
@@ -1087,6 +1083,7 @@ int sc_main(int argc, char *argv[])
 	if(erom) delete erom;
 	if(mpc107) delete mpc107;
 	if(pci_bus) delete pci_bus;
+	if(pci_stub) delete pci_stub;
 
 #ifdef WIN32
 	// releases the winsock2 resources

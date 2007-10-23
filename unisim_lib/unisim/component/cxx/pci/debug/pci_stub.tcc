@@ -226,9 +226,7 @@ bool PCIStub<ADDRESS>::Setup()
 		}
 	}
 
-	inherited::Initialize();
-	
-	return true;
+	return inherited::Initialize();
 }
 
 template <class ADDRESS>
@@ -477,7 +475,7 @@ bool PCIStub<ADDRESS>::WriteMemory(ADDRESS physical_addr, const void *buffer, ui
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, typename inherited::SPACE space)
+bool PCIStub<ADDRESS>::ServeRead(ADDRESS addr, void *buffer, uint32_t size, typename inherited::SPACE space)
 {
 	switch(space)
 	{
@@ -489,7 +487,7 @@ bool PCIStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, typename 
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, typename inherited::SPACE space)
+bool PCIStub<ADDRESS>::ServeWrite(ADDRESS addr, const void *buffer, uint32_t size, typename inherited::SPACE space)
 {
 	switch(space)
 	{
@@ -501,7 +499,7 @@ bool PCIStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, ty
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::ReadRegister(const char *name, uint32_t& value)
+bool PCIStub<ADDRESS>::ServeReadRegister(const char *name, uint32_t& value)
 {
 	unisim::util::debug::Register *reg = registers_import->GetRegister(name);
 	if(!reg) return false;
@@ -511,7 +509,7 @@ bool PCIStub<ADDRESS>::ReadRegister(const char *name, uint32_t& value)
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::WriteRegister(const char *name, uint32_t value)
+bool PCIStub<ADDRESS>::ServeWriteRegister(const char *name, uint32_t value)
 {
 	unisim::util::debug::Register *reg = registers_import->GetRegister(name);
 	if(!reg) return false;
@@ -564,13 +562,13 @@ void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::SetBreakpoint(ADDRESS addr)
+bool PCIStub<ADDRESS>::ServeSetBreakpoint(ADDRESS addr)
 {
 	return breakpoint_registry.SetBreakpoint(addr);
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::SetBreakpoint(const char *symbol_name)
+bool PCIStub<ADDRESS>::ServeSetBreakpoint(const char *symbol_name)
 {
 	if(!symbol_table_lookup_import)
 	{
@@ -599,26 +597,26 @@ bool PCIStub<ADDRESS>::SetBreakpoint(const char *symbol_name)
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
+bool PCIStub<ADDRESS>::ServeSetReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
 	return watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
+bool PCIStub<ADDRESS>::ServeSetWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
 	return watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
 }
 
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
+bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(ADDRESS addr)
 {
 	return breakpoint_registry.RemoveBreakpoint(addr);
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::RemoveBreakpoint(const char *symbol_name)
+bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(const char *symbol_name)
 {
 	if(!symbol_table_lookup_import)
 	{
@@ -648,13 +646,13 @@ bool PCIStub<ADDRESS>::RemoveBreakpoint(const char *symbol_name)
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::RemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
+bool PCIStub<ADDRESS>::ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
 	return watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
 }
 
 template <class ADDRESS>
-bool PCIStub<ADDRESS>::RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
+bool PCIStub<ADDRESS>::ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
 	return watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
 }

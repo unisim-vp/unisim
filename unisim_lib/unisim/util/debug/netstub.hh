@@ -50,6 +50,19 @@ template <class ADDRESS>
 class NetStub
 {
 public:
+	static const unsigned int MAX_BUFFER_SIZE = 256;
+
+	typedef enum
+	{
+		STATUS_MIN = 0,
+		STATUS_OK = 0, // ok
+		STATUS_FAILED = 1, // something has failed
+		STATUS_INTERNAL_ERROR = 2, // internal error (mostly protocol errors)
+		STATUS_BROKEN_PIPE = 3, // broken communication pipe
+		STATUS_ABORTED = 4, // simulation finished not because of a stop
+		STATUS_MAX = 4
+	} STATUS;
+
 	typedef enum
 	{
 		PKC_MIN         =  0,
@@ -68,7 +81,8 @@ public:
 		PKC_RMWRITEW    = 12, // remove write watchpoint
 		PKC_RMREADW     = 13, // remove read watchpoint
 		PKC_TRAP        = 14, // trap on breakpoint/watchpoint
-		PKC_MAX         = 14
+		PKC_STATUS      = 15, // reply when nothing more than is expected
+		PKC_MAX         = 15
 	} PK_COMMAND;
 
 	typedef enum
@@ -133,8 +147,34 @@ public:
 	virtual ~NetStub();
 
 	bool Initialize();
+
+	// Helper methods
+	STATUS Start(TIME_UNIT tu);
+	STATUS Stop();
+	STATUS Read(ADDRESS addr, void *buffer, uint32_t size, SPACE space);
+	STATUS Write(ADDRESS addr, const void *buffer, uint32_t size, SPACE space);
+	STATUS WriteRegister(const char *name, uint32_t value);
+	STATUS ReadRegister(const char *name, uint32_t& value);
+	STATUS Intr(uint32_t intr_id, bool level);
+	STATUS Run(int64_t duration, TIME_UNIT duration_tu, uint64_t& t, TIME_UNIT& tu, list<TRAP>& traps);
+	STATUS SetBreakpoint(ADDRESS addr);
+	STATUS SetBreakpoint(const char *symbol_name);
+	STATUS SetReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+	STATUS SetWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+	STATUS RemoveBreakpoint(ADDRESS addr);
+	STATUS RemoveBreakpoint(const char *symbol_name);
+	STATUS RemoveReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+	STATUS RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+	const char *GetName(PK_COMMAND command) const;
+	const char *GetName(TIME_UNIT tu) const;
+	const char *GetName(SPACE space) const;
+	const char *GetName(TRAP_TYPE trap_type) const;
+	const char *GetName(WATCHPOINT_TYPE watchpoint_type) const;
+
+	// Protocol methods
 	bool GetChar(char& c, bool blocking);
 	bool PutChar(char c);
+	bool FlushOutput();
 	bool GetPacket(string& s, bool blocking, uint32_t& device_id, uint32_t& tag);
 	bool PutPacket(const string& s, const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool PutHex(uint32_t value);
@@ -142,7 +182,7 @@ public:
 	bool PutStopPacket(const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool PutWritePacket(ADDRESS addr, uint32_t size, uint8_t *data, SPACE space, const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool PutReadPacket(ADDRESS addr, uint32_t size, SPACE space, const uint32_t device_id = 0, const uint32_t tag = 0);
-	bool PutWriteRegisterPacket(const char *name, const uint32_t& value, const uint32_t device_id = 0, const uint32_t tag = 0);
+	bool PutWriteRegisterPacket(const char *name, uint32_t value, const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool PutReadRegisterPacket(const char *name, const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool PutIntrPacket(uint32_t intr_id, bool level, const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool PutRunPacket(const uint64_t duration = 0, const uint32_t device_id = 0, const uint32_t tag = 0);
@@ -156,6 +196,7 @@ public:
 	bool PutRemoveReadWatchpointPacket(ADDRESS addr, uint32_t size, SPACE space, const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool PutRemoveWriteWatchpointPacket(ADDRESS addr, uint32_t size, SPACE space, const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool PutTrapPacket(uint64_t t, TIME_UNIT tu, const list<TRAP>& traps, const uint32_t device_id = 0, const uint32_t tag = 0);
+	bool PutStatusPacket(STATUS status, const uint32_t device_id = 0, const uint32_t tag = 0);
 	bool ParseChar(const string& packet, unsigned int& pos, char c);
 	bool ParseString(const string& packet, unsigned int& pos, char separator, string& s);
 	bool ParseHex(const string& s, unsigned int& pos, uint32_t& value);
@@ -169,6 +210,7 @@ public:
 	bool ParseSpace(const string& packet, unsigned int& pos, SPACE& space);
 	bool ParseTrapType(const string& packet, unsigned int& pos, TRAP_TYPE& trap_type);
 	bool ParseWatchpointType(const string& packet, unsigned int& pos, WATCHPOINT_TYPE& watchpoint_type);
+	bool ParseStatus(const string& packet, unsigned int& pos, STATUS& status);
 	bool ParseStart(const string& packet, unsigned int& pos, TIME_UNIT& tu);
 	bool ParseStop(const string& packet, unsigned int& pos);
 	bool ParseRead(const string& packet, unsigned int& pos, ADDRESS& addr, uint32_t& size, SPACE& space);
@@ -184,38 +226,52 @@ public:
 	bool ParseRemoveReadWatchpoint(const string& packet, unsigned int& pos, ADDRESS& addr, uint32_t& size, SPACE& space);
 	bool ParseRemoveWriteWatchpoint(const string& packet, unsigned int& pos, ADDRESS& addr, uint32_t& size, SPACE& space);
 	bool ParseTrap(const string& packet, unsigned int& pos, uint64_t& t, TIME_UNIT& tu, list<TRAP>& traps);
+	bool ParseStatusPacket(const string& packet, unsigned int& pos, STATUS& status);
+
 private:
 	int sock;
+	string s_status[STATUS_MAX - STATUS_MIN + 1];
 	string s_command[PKC_MAX - PKC_MIN + 1];
 	string s_tu[TU_MAX - TU_MIN + 1];
 	string s_bool[2];
 	string s_space[SP_MAX - SP_MIN + 1];
 	string s_trap_type[TRAP_MAX - TRAP_MIN + 1];
 	string s_watchpoint_type[WATCHPOINT_MAX - WATCHPOINT_MIN + 1];
-	TIME_UNIT default_tu;
-
 protected:
+	TIME_UNIT default_tu;
 	bool is_server;
 	string server_name;
 	unsigned int tcp_port;
-	
-	void Step();
-	virtual void Start();
-	virtual void Stop();
-	virtual bool Read(ADDRESS addr, void *data, uint32_t size, SPACE space);
-	virtual bool Write(ADDRESS addr, const void *data, uint32_t size, SPACE space);
-	virtual bool ReadRegister(const char *name, uint32_t& value);
-	virtual bool WriteRegister(const char *name, uint32_t value);
-	virtual void Intr(uint32_t intr_id, bool level);
-	virtual void Run(uint64_t duration, TIME_UNIT tu);
-	virtual bool SetBreakpoint(ADDRESS addr);
-	virtual bool SetBreakpoint(const char *symbol_name);
-	virtual bool SetReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
-	virtual bool SetWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
-	virtual bool RemoveBreakpoint(ADDRESS addr);
-	virtual bool RemoveBreakpoint(const char *symbol_name);
-	virtual bool RemoveReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
-	virtual bool RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+
+	uint32_t tag;
+	uint32_t device_id;
+	bool started;
+	bool stopped;
+
+	unsigned int input_buffer_size;
+	unsigned int input_buffer_index;
+	char input_buffer[MAX_BUFFER_SIZE];
+
+	unsigned int output_buffer_size;
+	char output_buffer[MAX_BUFFER_SIZE];
+
+	void Serve();
+	virtual void ServeStart();
+	virtual void ServeStop();
+	virtual void ServeIntr(uint32_t intr_id, bool level);
+	virtual void ServeRun(uint64_t duration, TIME_UNIT duration_tu, uint64_t& t, TIME_UNIT& tu, list<TRAP>& traps);
+	virtual bool ServeRead(ADDRESS addr, void *buffer, uint32_t size, SPACE space);
+	virtual bool ServeWrite(ADDRESS addr, const void *buffer, uint32_t size, SPACE space);
+	virtual bool ServeReadRegister(const char *name, uint32_t& value);
+	virtual bool ServeWriteRegister(const char *name, uint32_t value);
+	virtual bool ServeSetBreakpoint(ADDRESS addr);
+	virtual bool ServeSetBreakpoint(const char *symbol_name);
+	virtual bool ServeSetReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+	virtual bool ServeSetWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+	virtual bool ServeRemoveBreakpoint(ADDRESS addr);
+	virtual bool ServeRemoveBreakpoint(const char *symbol_name);
+	virtual bool ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+	virtual bool ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
 };
 
 } // end of namespace debug

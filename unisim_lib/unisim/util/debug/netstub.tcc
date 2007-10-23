@@ -39,13 +39,17 @@
 #include <sstream>
 #include <sys/types.h>
 
+
 #ifdef WIN32
+
 #include <winsock2.h>
+
 #else
 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 #include <netdb.h>
 #include <sys/times.h>
 #include <fcntl.h>
@@ -67,8 +71,21 @@ NetStub<ADDRESS>::NetStub(const char *_server_name, unsigned int _tcp_port, bool
 	server_name(_server_name),
 	tcp_port(_tcp_port),
 	sock(-1),
-	default_tu(TU_MS)
+	default_tu(TU_MS),
+	input_buffer_size(0),
+	input_buffer_index(0),
+	output_buffer_size(0),
+	tag(0),
+	device_id(0),
+	started(true),
+	stopped(false)
 {
+	s_status[STATUS_OK] = "ok";
+	s_status[STATUS_FAILED] = "failed";
+	s_status[STATUS_INTERNAL_ERROR] = "internal_error";
+	s_status[STATUS_BROKEN_PIPE] = "broken_pipe";
+	s_status[STATUS_ABORTED] = "aborted";
+
 	s_command[PKC_START] = "start";
 	s_command[PKC_STOP] = "stop";
 	s_command[PKC_READ] = "read";
@@ -84,6 +101,7 @@ NetStub<ADDRESS>::NetStub(const char *_server_name, unsigned int _tcp_port, bool
 	s_command[PKC_RMWRITEW] = "rmwritew";
 	s_command[PKC_RMREADW] = "rmreadw";
 	s_command[PKC_TRAP] = "trap";
+	s_command[PKC_STATUS] = "status";
 
 	s_tu[TU_FS] = "fs";
 	s_tu[TU_PS] = "ps";
@@ -109,6 +127,13 @@ NetStub<ADDRESS>::NetStub(const char *_server_name, unsigned int _tcp_port, bool
 template <class ADDRESS>
 bool NetStub<ADDRESS>::Initialize()
 {
+	input_buffer_size = 0;
+	input_buffer_index = 0;
+	output_buffer_size = 0;
+	tag = 0;
+	device_id = 0;
+	stopped = false;
+	started = false;
 	sock = -1;
 	
 	if(is_server)
@@ -261,7 +286,16 @@ bool NetStub<ADDRESS>::Initialize()
 #ifdef DEBUG_NETSTUB
 		cerr << "NETSTUB: Connection established" << endl;
 #endif
-		
+
+    /* set short latency */
+    int opt = 1;
+    if(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt)) < 0)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: setsockopt failed requesting short latency" << endl;
+#endif
+	}
+
 #ifdef WIN32
 		u_long NonBlock = 1;
 		if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
@@ -307,6 +341,11 @@ bool NetStub<ADDRESS>::Initialize()
 template <class ADDRESS>
 NetStub<ADDRESS>::~NetStub()
 {
+	if(started && !stopped)
+	{
+		PutStatusPacket(STATUS_ABORTED, device_id, tag + 1);
+	}
+
 	if(sock >= 0)
 	{
 #ifdef WIN32
@@ -343,65 +382,97 @@ inline bool IsHexChar(char ch)
 template <class ADDRESS>
 bool NetStub<ADDRESS>::GetChar(char& c, bool blocking)
 {
-	do
+	if(input_buffer_size == 0)
 	{
-#ifdef WIN32
-		int r = recv(sock, &c, 1, 0);
-		if(r == 0 || r == SOCKET_ERROR)
-#else
-		ssize_t r = read(sock, &c, 1);
-		if(r <= 0)
-#endif
+		do
 		{
 #ifdef WIN32
-			if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
+			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
+			if(r == 0 || r == SOCKET_ERROR)
 #else
-			if(r < 0 && errno == EAGAIN)
+			ssize_t r = read(sock, input_buffer, sizeof(input_buffer));
+			if(r <= 0)
 #endif
 			{
-				if(blocking)
-				{
 #ifdef WIN32
-					Sleep(10); // sleep for 10ms
+				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 #else
-					usleep(10000); // sleep for 10ms
+				if(r < 0 && errno == EAGAIN)
 #endif
-					continue;
-				}
-				else
 				{
-					return false;
+					if(blocking)
+					{
+#ifdef WIN32
+						Sleep(1); // sleep for 10ms
+#else
+						usleep(1000); // sleep for 10ms
+#endif
+						continue;
+					}
+					else
+					{
+						return false;
+					}
 				}
-			}
 			
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: Can't read from socket" << endl;
+				cerr << "NETSTUB: Can't read from socket" << endl;
 #endif
-			return false;
+				return false;
+			}
+			input_buffer_index = 0;
+			input_buffer_size = r;
+			break;
+		} while(1);
+	}
+
+	c = input_buffer[input_buffer_index++];
+	input_buffer_size--;
+	return true;
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::FlushOutput()
+{
+	if(output_buffer_size > 0)
+	{
+//		cerr << "begin: output_buffer_size = " << output_buffer_size << endl;
+		unsigned int index = 0;
+		do
+		{
+#ifdef WIN32
+			int r = send(sock, output_buffer + index, output_buffer_size, 0);
+			if(r == 0 || r == SOCKET_ERROR)
+#else
+			ssize_t r = write(sock, output_buffer + index, output_buffer_size);
+			if(r <= 0)
+#endif
+			{
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: can't write into socket" << endl;
+#endif
+				return false;
+			}
+
+			index += r;
+			output_buffer_size -= r;
+//			cerr << "output_buffer_size = " << output_buffer_size << endl;
 		}
-		//cerr << "Get: '" << c << "'" << endl;
-		return true;
-	} while(1);
-	return false;
+		while(output_buffer_size > 0);
+	}
+//	cerr << "end: output_buffer_size = " << output_buffer_size << endl;
+	return true;
 }
 
 template <class ADDRESS>
 bool NetStub<ADDRESS>::PutChar(char c)
 {
-	//cerr << "Put: '" << c << "'" << endl;
-#ifdef WIN32
-	int r = send(sock, &c, 1, 0);
-	if(r == 0 || r == SOCKET_ERROR)
-#else
-	ssize_t r = write(sock, &c, 1);
-	if(r <= 0)
-#endif
+	if(output_buffer_size >= sizeof(output_buffer))
 	{
-#ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: Can't write on socket" << endl;
-#endif
-		return false;
+		if(!FlushOutput()) return false;
 	}
+
+	output_buffer[output_buffer_size++] = c;
 	return true;
 }
 
@@ -526,7 +597,7 @@ bool NetStub<ADDRESS>::PutPacket(const string& s, const uint32_t device_id, cons
 	if(!PutChar(';')) return false;
 	if(!PutHex(tag)) return false;
 	if(!PutChar('$')) return false;
-	
+	if(!FlushOutput()) return false;
 #ifdef DEBUG_NETSTUB
 	cerr << "NETSTUB: sent '$" << s << "#" << std::hex << device_id << ";" << tag << std::dec << "$'" << endl;
 #endif
@@ -832,6 +903,30 @@ bool NetStub<ADDRESS>::ParseWatchpointType(const string& packet, unsigned int& p
 		if(value >= WATCHPOINT_MIN && value <= WATCHPOINT_MAX)
 		{
 			watchpoint_type = (WATCHPOINT_TYPE) value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::ParseStatus(const string& packet, unsigned int& pos, STATUS& status)
+{
+	for(status = STATUS_MIN; status <= STATUS_MAX; status = (STATUS)(status + 1))
+	{
+		if(packet.compare(pos, s_status[status].length(), s_status[status]) == 0)
+		{
+			pos += s_status[status].length();
+			return true;
+		}
+	}
+
+	uint32_t value;
+	if(ParseHex(packet, pos, value))
+	{
+		if(value >= STATUS_MIN && value <= STATUS_MAX)
+		{
+			status = (STATUS) value;
 			return true;
 		}
 	}
@@ -1646,6 +1741,36 @@ bool NetStub<ADDRESS>::ParseTrap(const string& packet, unsigned int& pos, uint64
 }
 
 template <class ADDRESS>
+bool NetStub<ADDRESS>::ParseStatusPacket(const string& packet, unsigned int& pos, STATUS& status)
+{
+	if(pos == packet.length()) return true;
+	
+	if(!ParseChar(packet, pos, ';'))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting ';' at col #" << (pos + 1) << endl;
+#endif
+		return false;
+	}
+	
+	if(!ParseStatus(packet, pos, status))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a value at col #" << (pos + 1) << endl;
+#endif
+	}
+	
+#ifdef DEBUG_NETSTUB
+	if(pos < packet.length())
+	{
+		cerr << "NETSTUB: ignoring extra characters at col #" << (pos + 1) << endl;
+	}
+#endif
+
+	return true;
+}
+
+template <class ADDRESS>
 bool NetStub<ADDRESS>::PutStartPacket(const TIME_UNIT tu, const uint32_t device_id, const uint32_t tag)
 {
 	if(tu < TU_MIN || tu > TU_MAX) return false;
@@ -1691,7 +1816,7 @@ bool NetStub<ADDRESS>::PutWritePacket(ADDRESS addr, uint32_t size, uint8_t *data
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::PutWriteRegisterPacket(const char *name, const uint32_t& value, const uint32_t device_id, const uint32_t tag)
+bool NetStub<ADDRESS>::PutWriteRegisterPacket(const char *name, uint32_t value, const uint32_t device_id, const uint32_t tag)
 {
 	stringstream sstr;
 	
@@ -1900,452 +2025,1188 @@ bool NetStub<ADDRESS>::PutTrapPacket(uint64_t t, TIME_UNIT tu, const list<TRAP>&
 }
 
 template <class ADDRESS>
-void NetStub<ADDRESS>::Step()
+bool NetStub<ADDRESS>::PutStatusPacket(STATUS status, const uint32_t device_id, const uint32_t tag)
 {
-	if(sock >= 0)
+	if(status < STATUS_MIN || status > STATUS_MAX) return false;
+	stringstream sstr;
+	
+	sstr << std::hex;
+	sstr << s_command[PKC_STATUS] << ';';
+	sstr << s_status[status];
+	return PutPacket(sstr.str(), device_id, tag);
+}
+
+
+template <class ADDRESS>
+const char *NetStub<ADDRESS>::GetName(PK_COMMAND command) const
+{
+	return (command >= PKC_MIN && command <= PKC_MAX) ? s_command[command].c_str() : 0;
+}
+
+template <class ADDRESS>
+const char *NetStub<ADDRESS>::GetName(TIME_UNIT tu) const
+{
+	return (tu >= TU_MIN && tu <= TU_MAX) ? s_tu[tu].c_str() : 0;
+}
+
+template <class ADDRESS>
+const char *NetStub<ADDRESS>::GetName(SPACE space) const
+{
+	return (space >= SP_MIN && space <= SP_MAX) ? s_space[space].c_str() : 0;
+}
+
+template <class ADDRESS>
+const char *NetStub<ADDRESS>::GetName(TRAP_TYPE trap_type) const
+{
+	return (trap_type >= TRAP_MIN && trap_type <= TRAP_MAX) ? s_trap_type[trap_type].c_str() : 0;
+}
+
+template <class ADDRESS>
+const char *NetStub<ADDRESS>::GetName(WATCHPOINT_TYPE watchpoint_type) const
+{
+	return (watchpoint_type >= WATCHPOINT_MIN && watchpoint_type <= WATCHPOINT_MAX) ? s_watchpoint_type[watchpoint_type].c_str() : 0;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::Start(TIME_UNIT tu)
+{
+	if(!PutStartPacket(tu, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
 	{
-		string packet;
-		unsigned int pos;
-		PK_COMMAND pk_command;
-		uint32_t pk_device_id;
-		uint32_t pk_tag;
-		
-		while(1)
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_BROKEN_PIPE;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::Stop()
+{
+	if(!PutStopPacket(device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::Read(ADDRESS addr, void *buffer, uint32_t size, SPACE space)
+{
+	if(!PutReadPacket(addr, size, space, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+	ADDRESS pk_addr;
+	uint32_t pk_size;
+	SPACE pk_space;
+	uint8_t *pk_data;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command == PKC_STATUS)
+	{
+		STATUS status;
+		if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: Got status '" << s_status[status] << "'" << endl;
+#endif
+		return status;
+	}
+
+	if(pk_command != PKC_WRITE)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(!ParseWrite(packet, pos, pk_addr, pk_size, &pk_data, pk_space)) return STATUS_INTERNAL_ERROR;
+
+	if(pk_size != size)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected data size of " << pk_size << " bytes" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_space != space)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected space '" << GetName(pk_space) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	memcpy(buffer, pk_data, pk_size);
+	delete[] pk_data;
+	return STATUS_OK;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::Write(ADDRESS addr, const void *buffer, uint32_t size, SPACE space)
+{
+	if(!PutWritePacket(addr, size, (uint8_t *) buffer, space, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::WriteRegister(const char *name, uint32_t value)
+{
+	if(!PutWriteRegisterPacket(name, value, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::ReadRegister(const char *name, uint32_t& value)
+{
+	if(!PutReadRegisterPacket(name, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command == PKC_STATUS)
+	{
+		STATUS status;
+		if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: Got status '" << s_status[status] << "'" << endl;
+#endif
+		return status;
+	}
+
+	if(pk_command != PKC_WRITEREG)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	string pk_register_name;
+
+	if(!ParseWriteRegister(packet, pos, pk_register_name, value)) return STATUS_INTERNAL_ERROR;
+
+	if(pk_register_name != name)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected register '" << pk_register_name << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	return STATUS_OK;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::Intr(uint32_t intr_id, bool level)
+{
+	if(!PutIntrPacket(intr_id, level, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::Run(int64_t duration, TIME_UNIT duration_tu, uint64_t& t, TIME_UNIT& tu, list<TRAP>& traps)
+{
+	if(!PutRunPacket(duration, duration_tu, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command == PKC_STATUS)
+	{
+		STATUS status;
+		if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: Got status '" << s_status[status] << "'" << endl;
+#endif
+		return status;
+	}
+
+	if(pk_command != PKC_TRAP)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	return ParseTrap(packet, pos, t, tu, traps) ? STATUS_OK : STATUS_INTERNAL_ERROR;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::SetBreakpoint(ADDRESS addr)
+{
+	if(!PutSetBreakpointPacket(addr, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::SetBreakpoint(const char *symbol_name)
+{
+	if(!PutSetBreakpointPacket(symbol_name, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
+{
+	if(!PutSetReadWatchpointPacket(addr, size, space, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
+{
+	if(!PutSetWriteWatchpointPacket(addr, size, space, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
+{
+	if(!PutRemoveBreakpointPacket(addr, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::RemoveBreakpoint(const char *symbol_name)
+{
+	if(!PutRemoveBreakpointPacket(symbol_name, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::RemoveReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
+{
+	if(!PutRemoveReadWatchpointPacket(addr, size, space, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+typename NetStub<ADDRESS>::STATUS NetStub<ADDRESS>::RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
+{
+	if(!PutRemoveWriteWatchpointPacket(addr, size, space, device_id, ++tag)) return STATUS_BROKEN_PIPE;
+
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	uint32_t pk_device_id;
+
+	if(!GetPacket(packet, true, pk_device_id, tag)) return STATUS_BROKEN_PIPE;
+	pos = 0;
+	if(!ParseCommand(packet, pos, pk_command))
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	if(pk_command != PKC_STATUS)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: unexpected command '" << GetName(pk_command) << "'" << endl;
+#endif
+		return STATUS_INTERNAL_ERROR;
+	}
+
+	STATUS status;
+	if(!ParseStatusPacket(packet, pos, status)) return STATUS_INTERNAL_ERROR;
+
+	return status;
+}
+
+template <class ADDRESS>
+void NetStub<ADDRESS>::Serve()
+{
+	string packet;
+	unsigned int pos;
+	PK_COMMAND pk_command;
+	
+	while(1)
+	{
+#ifdef DEBUG_NETSTUB
+		cerr << "NETSTUB: Reading packet..." << endl;
+#endif
+		if(!GetPacket(packet, true, device_id, tag))
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: Reading packet..." << endl;
+			cerr << "NETSTUB: GetPacket failed" << endl;
 #endif
-			if(!GetPacket(packet, true, pk_device_id, pk_tag))
-			{
+			stopped = true; ServeStop();
+			return;
+		}
+	
+		pos = 0;
+		if(!ParseCommand(packet, pos, pk_command))
+		{
 #ifdef DEBUG_NETSTUB
-				cerr << "NETSTUB: failed" << endl;
+			cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
 #endif
-				Stop();
-				return;
-			}
-		
-			pos = 0;
-			if(!ParseCommand(packet, pos, pk_command))
-			{
-#ifdef DEBUG_NETSTUB
-				cerr << "NETSTUB: expecting a command at col #" << (pos + 1) << endl;
-#endif
-				return;
-			}
+			PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+			stopped = true; ServeStop();
+			return;
+		}
 			
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: parsing command '" << s_command[pk_command] << "'" << endl;
+		cerr << "NETSTUB: parsing command '" << GetName(pk_command) << "'" << endl;
 #endif
 
-			switch(pk_command)
+		switch(pk_command)
+		{
+			case PKC_START:
 			{
-				case PKC_START:
+				TIME_UNIT pk_tu;
+				
+				if(!ParseStart(packet, pos, pk_tu))
 				{
-					TIME_UNIT pk_tu;
-					
-					if(!ParseStart(packet, pos, pk_tu))
-					{
-						Stop();
-						return;
-					}
-					
-					default_tu = pk_tu;
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					Start();
-					break;
-				}
-				case PKC_STOP:
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					Stop();
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
 					return;
-					
-				case PKC_READ:
-				{
-					ADDRESS pk_addr;
-					uint32_t pk_size;
-					uint8_t *pk_data;
-					SPACE pk_space;
-					if(!ParseRead(packet, pos, pk_addr, pk_size, pk_space))
-					{
-						Stop();
-						return;
-					}
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					
-					pk_data = new uint8_t[pk_size];
-					memset(pk_data, 0, pk_size);
-					if(!Read(pk_addr, pk_data, pk_size, pk_space))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: memory read failed" << endl;
-#endif
-					}
-					if(!PutWritePacket(pk_addr, pk_size, pk_data, pk_space, pk_device_id, pk_tag))
-					{
-						delete[] pk_data;
-						Stop();
-						return;
-					}
-					delete[] pk_data;
-					break;
 				}
 				
-				case PKC_WRITE:
+				default_tu = pk_tu;
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				started = true;
+				ServeStart();
+				if(!PutStatusPacket(STATUS_OK, device_id, tag + 1))
 				{
-					ADDRESS pk_addr;
-					uint32_t pk_size;
-					uint8_t *pk_data;
-					SPACE pk_space;
-					if(!ParseWrite(packet, pos, pk_addr, pk_size, &pk_data, pk_space))
-					{
-						Stop();
-						return;
-					}
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					
-					if(!Write(pk_addr, pk_data, pk_size, pk_space))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: memory write failed" << endl;
-#endif
-					}
-					delete[] pk_data;
-					break;
+					stopped = true; ServeStop();
+					return;
 				}
-
-				case PKC_WRITEREG:
-				{
-					string pk_register_name;
-					uint32_t pk_data;
-
-					if(!ParseWriteRegister(packet, pos, pk_register_name, pk_data))
-					{
-						Stop();
-						return;
-					}
-
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					
-					if(!WriteRegister(pk_register_name.c_str(), pk_data))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: register write failed" << endl;
-#endif
-					}
-					break;
-				}
-
-				case PKC_READREG:
-				{
-					string pk_register_name;
-					uint32_t pk_data;
-
-					if(!ParseReadRegister(packet, pos, pk_register_name))
-					{
-						Stop();
-						return;
-					}
-
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					
-					if(!ReadRegister(pk_register_name.c_str(), pk_data))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: register read failed" << endl;
-#endif
-					}
-
-					if(!PutWriteRegisterPacket(pk_register_name.c_str(), pk_data, pk_device_id, pk_tag))
-					{
-						Stop();
-						return;
-					}
-					break;
-				}
-				
-				case PKC_INTR:
-				{
-					uint32_t pk_intr_id;
-					bool level;
-					if(!ParseIntr(packet, pos, pk_intr_id, level))
-					{
-						Stop();
-						return;
-					}
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					Intr(pk_intr_id, level);
-					break;
-				}
-				
-				case PKC_RUN:
-				{
-					TIME_UNIT pk_tu;
-					uint64_t pk_duration;
-					
-					if(!ParseRun(packet, pos, pk_duration, pk_tu))
-					{
-						Stop();
-						return;
-					}
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					Run(pk_duration, pk_tu);
-					break;
-				}
-
-				case PKC_SETBRK:
-				{
-					ADDRESS pk_addr;
-					string pk_symbol_name;
-					if(!ParseSetBreakpoint(packet, pos, pk_addr, pk_symbol_name))
-					{
-						Stop();
-						return;
-					}
-
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					if(pk_symbol_name.empty() ? !SetBreakpoint(pk_addr) : !SetBreakpoint(pk_symbol_name.c_str()))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: Can't set breakpoint" << endl;
-#endif
-					}
-					break;
-				}
-
-				case PKC_SETWRITEW:
-				{
-					ADDRESS pk_addr;
-					uint32_t pk_size;
-					SPACE pk_space;
-					if(!ParseSetWriteWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
-					{
-						Stop();
-						return;
-					}
-
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					if(!SetWriteWatchpoint(pk_addr, pk_size, pk_space))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: Can't set write watchpoint" << endl;
-#endif
-					}
-					break;
-				}
-
-				case PKC_SETREADW:
-				{
-					ADDRESS pk_addr;
-					uint32_t pk_size;
-					SPACE pk_space;
-					if(!ParseSetReadWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
-					{
-						Stop();
-						return;
-					}
-
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					if(!SetReadWatchpoint(pk_addr, pk_size, pk_space))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: Can't set read watchpoint" << endl;
-#endif
-					}
-					break;
-				}
-
-				case PKC_RMBRK:
-				{
-					ADDRESS pk_addr;
-					string pk_symbol_name;
-					if(!ParseRemoveBreakpoint(packet, pos, pk_addr, pk_symbol_name))
-					{
-						Stop();
-						return;
-					}
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					if(pk_symbol_name.empty() ? !RemoveBreakpoint(pk_addr) : !RemoveBreakpoint(pk_symbol_name.c_str()))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: Can't remove breakpoint" << endl;
-#endif
-					}
-					break;
-				}
-
-				case PKC_RMWRITEW:
-				{
-					ADDRESS pk_addr;
-					uint32_t pk_size;
-					SPACE pk_space;
-					if(!ParseRemoveWriteWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
-					{
-						Stop();
-						return;
-					}
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					if(!RemoveWriteWatchpoint(pk_addr, pk_size, pk_space))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: Can't remove write watchpoint" << endl;
-#endif
-					}
-					break;
-				}
-
-				case PKC_RMREADW:
-				{
-					ADDRESS pk_addr;
-					uint32_t pk_size;
-					SPACE pk_space;
-					if(!ParseRemoveReadWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
-					{
-						Stop();
-						return;
-					}
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: processing command '" << s_command[pk_command] << "'" << endl;
-#endif
-					if(!RemoveReadWatchpoint(pk_addr, pk_size, pk_space))
-					{
-#ifdef DEBUG_NETSTUB
-						cerr << "NETSTUB: Can't remove read watchpoint" << endl;
-#endif
-					}
-					break;
-				}
-
-				case PKC_TRAP:
-#ifdef DEBUG_NETSTUB
-					cerr << "NETSTUB: ignoring command '" << s_command[pk_command] << "'" << endl;
-#endif
-					break;
+				break;
 			}
+			case PKC_STOP:
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				PutStatusPacket(STATUS_OK, device_id, tag + 1);
+				stopped = true; ServeStop();
+				return;
+				
+			case PKC_READ:
+			{
+				ADDRESS pk_addr;
+				uint32_t pk_size;
+				uint8_t *pk_data;
+				SPACE pk_space;
+				if(!ParseRead(packet, pos, pk_addr, pk_size, pk_space))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				
+				pk_data = new uint8_t[pk_size];
+				memset(pk_data, 0, pk_size);
+				if(!ServeRead(pk_addr, pk_data, pk_size, pk_space))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: memory read failed" << endl;
+#endif
+					if(!PutStatusPacket(STATUS_FAILED, device_id, tag + 1))
+					{
+						stopped = true; ServeStop();
+					}
+					return;
+				}
+				if(!PutWritePacket(pk_addr, pk_size, pk_data, pk_space, device_id, tag + 1))
+				{
+					delete[] pk_data;
+					stopped = true; ServeStop();
+					return;
+				}
+				delete[] pk_data;
+				break;
+			}
+			
+			case PKC_WRITE:
+			{
+				ADDRESS pk_addr;
+				uint32_t pk_size;
+				uint8_t *pk_data;
+				SPACE pk_space;
+				if(!ParseWrite(packet, pos, pk_addr, pk_size, &pk_data, pk_space))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				STATUS status = STATUS_OK;
+				if(!ServeWrite(pk_addr, pk_data, pk_size, pk_space))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: memory write failed" << endl;
+#endif
+					status = STATUS_FAILED;
+				}
+				else
+				{
+					delete[] pk_data;
+				}
+				if(!PutStatusPacket(status, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			case PKC_WRITEREG:
+			{
+				string pk_register_name;
+				uint32_t pk_data;
+
+				if(!ParseWriteRegister(packet, pos, pk_register_name, pk_data))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				
+				STATUS status = STATUS_OK;
+				if(!ServeWriteRegister(pk_register_name.c_str(), pk_data))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: register write failed" << endl;
+#endif
+					status = STATUS_FAILED;
+				}
+				if(!PutStatusPacket(status, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			case PKC_READREG:
+			{
+				string pk_register_name;
+				uint32_t pk_data;
+
+				if(!ParseReadRegister(packet, pos, pk_register_name))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				
+				if(!ServeReadRegister(pk_register_name.c_str(), pk_data))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: register read failed" << endl;
+#endif
+					if(!PutStatusPacket(STATUS_FAILED, device_id, tag + 1))
+					{
+						stopped = true; ServeStop();
+					}
+					return;
+				}
+
+				if(!PutWriteRegisterPacket(pk_register_name.c_str(), pk_data, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+			
+			case PKC_INTR:
+			{
+				uint32_t pk_intr_id;
+				bool level;
+				if(!ParseIntr(packet, pos, pk_intr_id, level))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				ServeIntr(pk_intr_id, level);
+				if(!PutStatusPacket(STATUS_OK, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+			
+			case PKC_RUN:
+			{
+				TIME_UNIT pk_tu;
+				uint64_t pk_duration;
+				uint64_t t;
+				TIME_UNIT tu;
+				list<TRAP> traps;
+				
+				if(!ParseRun(packet, pos, pk_duration, pk_tu))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				ServeRun(pk_duration, pk_tu, t, tu, traps);
+
+				if(!PutTrapPacket(t, tu, traps, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			case PKC_SETBRK:
+			{
+				ADDRESS pk_addr;
+				string pk_symbol_name;
+				if(!ParseSetBreakpoint(packet, pos, pk_addr, pk_symbol_name))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				STATUS status = STATUS_OK;
+				if(pk_symbol_name.empty() ? !ServeSetBreakpoint(pk_addr) : !ServeSetBreakpoint(pk_symbol_name.c_str()))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: Can't set breakpoint" << endl;
+#endif
+					status = STATUS_FAILED;
+				}
+				if(!PutStatusPacket(status, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			case PKC_SETWRITEW:
+			{
+				ADDRESS pk_addr;
+				uint32_t pk_size;
+				SPACE pk_space;
+				if(!ParseSetWriteWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				STATUS status = STATUS_OK;
+				if(!ServeSetWriteWatchpoint(pk_addr, pk_size, pk_space))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: Can't set write watchpoint" << endl;
+#endif
+					status = STATUS_FAILED;
+				}
+				if(!PutStatusPacket(status, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			case PKC_SETREADW:
+			{
+				ADDRESS pk_addr;
+				uint32_t pk_size;
+				SPACE pk_space;
+				if(!ParseSetReadWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				STATUS status = STATUS_OK;
+				if(!ServeSetReadWatchpoint(pk_addr, pk_size, pk_space))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: Can't set read watchpoint" << endl;
+#endif
+					status = STATUS_FAILED;
+				}
+				if(!PutStatusPacket(status, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			case PKC_RMBRK:
+			{
+				ADDRESS pk_addr;
+				string pk_symbol_name;
+				if(!ParseRemoveBreakpoint(packet, pos, pk_addr, pk_symbol_name))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				STATUS status = STATUS_OK;
+				if(pk_symbol_name.empty() ? !ServeRemoveBreakpoint(pk_addr) : !ServeRemoveBreakpoint(pk_symbol_name.c_str()))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "netstub: can't remove breakpoint" << endl;
+#endif
+					status = STATUS_FAILED;
+				}
+				if(!PutStatusPacket(status, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			case PKC_RMWRITEW:
+			{
+				ADDRESS pk_addr;
+				uint32_t pk_size;
+				SPACE pk_space;
+				if(!ParseRemoveWriteWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				STATUS status = STATUS_OK;
+				if(!ServeRemoveWriteWatchpoint(pk_addr, pk_size, pk_space))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: Can't remove write watchpoint" << endl;
+#endif
+					status = STATUS_FAILED;
+				}
+				if(!PutStatusPacket(status, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			case PKC_RMREADW:
+			{
+				ADDRESS pk_addr;
+				uint32_t pk_size;
+				SPACE pk_space;
+				if(!ParseRemoveReadWatchpoint(packet, pos, pk_addr, pk_size, pk_space))
+				{
+					PutStatusPacket(STATUS_INTERNAL_ERROR, device_id, tag + 1);
+					stopped = true; ServeStop();
+					return;
+				}
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: processing command '" << GetName(pk_command) << "'" << endl;
+#endif
+				STATUS status = STATUS_OK;
+				if(!ServeRemoveReadWatchpoint(pk_addr, pk_size, pk_space))
+				{
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: Can't remove read watchpoint" << endl;
+#endif
+					status = STATUS_FAILED;
+				}
+				if(!PutStatusPacket(status, device_id, tag + 1))
+				{
+					stopped = true; ServeStop();
+					return;
+				}
+				break;
+			}
+
+			default:
+#ifdef DEBUG_NETSTUB
+				cerr << "NETSTUB: ignoring command '" << GetName(pk_command) << "'" << endl;
+#endif
+				break;
 		}
 	}
-	else
-	{
-		Start();
-		Run(0xffffffffUL, TU_S); // run forever
-		Stop();
-	}
 }
 
 template <class ADDRESS>
-void NetStub<ADDRESS>::Start()
+void NetStub<ADDRESS>::ServeStart()
 {
 }
 
 template <class ADDRESS>
-void NetStub<ADDRESS>::Stop()
+void NetStub<ADDRESS>::ServeStop()
 {
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::Read(ADDRESS addr, void *data, uint32_t size, SPACE space)
+void NetStub<ADDRESS>::ServeIntr(uint32_t intr_id, bool level)
 {
-	return false;
+}
+
+
+template <class ADDRESS>
+void NetStub<ADDRESS>::ServeRun(uint64_t duration, TIME_UNIT duration_tu, uint64_t& t, TIME_UNIT& tu, list<TRAP>& traps)
+{
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::Write(ADDRESS addr, const void *data, uint32_t size, SPACE space)
-{
-	return false;
-}
-
-template <class ADDRESS>
-bool NetStub<ADDRESS>::ReadRegister(const char *name, uint32_t& value)
+bool NetStub<ADDRESS>::ServeRead(ADDRESS addr, void *buffer, uint32_t size, SPACE space)
 {
 	return false;
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::WriteRegister(const char *name, uint32_t value)
+bool NetStub<ADDRESS>::ServeWrite(ADDRESS addr, const void *buffer, uint32_t size, SPACE space)
 {
 	return false;
 }
 
 template <class ADDRESS>
-void NetStub<ADDRESS>::Intr(uint32_t intr_id, bool level)
-{
-}
-
-template <class ADDRESS>
-void NetStub<ADDRESS>::Run(uint64_t duration, TIME_UNIT tu)
-{
-}
-
-template <class ADDRESS>
-bool NetStub<ADDRESS>::SetBreakpoint(ADDRESS addr)
+bool NetStub<ADDRESS>::ServeReadRegister(const char *name, uint32_t& value)
 {
 	return false;
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::SetBreakpoint(const char *symbol_name)
+bool NetStub<ADDRESS>::ServeWriteRegister(const char *name, uint32_t value)
 {
 	return false;
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
+bool NetStub<ADDRESS>::ServeSetBreakpoint(ADDRESS addr)
 {
 	return false;
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
-{
-	return false;
-}
-
-
-template <class ADDRESS>
-bool NetStub<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
+bool NetStub<ADDRESS>::ServeSetBreakpoint(const char *symbol_name)
 {
 	return false;
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::RemoveBreakpoint(const char *symbol_name)
+bool NetStub<ADDRESS>::ServeSetReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
 {
 	return false;
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::RemoveReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
+bool NetStub<ADDRESS>::ServeSetWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
 {
 	return false;
 }
 
 template <class ADDRESS>
-bool NetStub<ADDRESS>::RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
+bool NetStub<ADDRESS>::ServeRemoveBreakpoint(ADDRESS addr)
+{
+	return false;
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::ServeRemoveBreakpoint(const char *symbol_name)
+{
+	return false;
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
+{
+	return false;
+}
+
+template <class ADDRESS>
+bool NetStub<ADDRESS>::ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space)
 {
 	return false;
 }

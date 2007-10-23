@@ -119,22 +119,25 @@ public:
 	virtual void Reset();
 	bool Read(ADDRESS physical_addr, void *buffer, uint32_t size, unisim::component::cxx::pci::PCISpace space, const bool monitor = true);
 	bool Write(ADDRESS physical_addr, const void *buffer, uint32_t size, unisim::component::cxx::pci::PCISpace space, const bool monitor = true);
+
+	virtual void ServeRun(uint64_t duration, typename inherited::TIME_UNIT duration_tu, uint64_t& t, typename inherited::TIME_UNIT& tu, list<typename inherited::TRAP>& traps) = 0;
+	virtual bool ServeRead(ADDRESS addr, void *buffer, uint32_t size, typename inherited::SPACE space);
+	virtual bool ServeWrite(ADDRESS addr, const void *buffer, uint32_t size, typename inherited::SPACE space);
+	virtual bool ServeReadRegister(const char *name, uint32_t& value);
+	virtual bool ServeWriteRegister(const char *name, uint32_t value);
+	virtual bool ServeSetBreakpoint(ADDRESS addr);
+	virtual bool ServeSetBreakpoint(const char *symbol_name);
+	virtual bool ServeSetReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
+	virtual bool ServeSetWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
+	virtual bool ServeRemoveBreakpoint(ADDRESS addr);
+	virtual bool ServeRemoveBreakpoint(const char *symbol_name);
+	virtual bool ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
+	virtual bool ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
+
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
-	virtual bool Read(ADDRESS addr, void *data, uint32_t size, typename inherited::SPACE space);
-	virtual bool Write(ADDRESS addr, const void *data, uint32_t size, typename inherited::SPACE space);
-	virtual bool ReadRegister(const char *name, uint32_t& value);
-	virtual bool WriteRegister(const char *name, uint32_t value);
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
-	virtual bool SetBreakpoint(ADDRESS addr);
-	virtual bool SetBreakpoint(const char *symbol_name);
-	virtual bool SetReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
-	virtual bool SetWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
-	virtual bool RemoveBreakpoint(ADDRESS addr);
-	virtual bool RemoveBreakpoint(const char *symbol_name);
-	virtual bool RemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
-	virtual bool RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space);
 	virtual void Trap();
 private:
 	Parameter<bool> param_is_server;
@@ -177,7 +180,6 @@ protected:
 	unsigned int bus_frequency; // in Mhz
 
 	list<typename inherited::TRAP> traps;
-
 };
 
 } // end of namespace debug
