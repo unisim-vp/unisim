@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM GenISSLib (ISS library Generator) building tool], [1.0],
+AC_INIT([UNISIM GenISSLib (ISS library Generator) building tool], [2.1],
 	[Gilles Mouchard <gilles.mouchard@cea.fr>],
 	[genisslib])
 AC_CONFIG_AUX_DIR(config)
@@ -41,8 +41,8 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE
 
 AC_PATH_PROGS(SH, sh)
-AC_PROG_CC
-# AC_PROG_CXX
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 AC_PROG_YACC
