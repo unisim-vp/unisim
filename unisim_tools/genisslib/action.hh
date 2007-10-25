@@ -1,5 +1,22 @@
-#ifndef ACTION_HH
-#define ACTION_HH
+/***************************************************************************
+                                 action.hh
+                             -------------------
+    begin                : Thu May 25 2003
+    copyright            : (C) 2003-2007 CEA and Universite Paris Sud
+    authors              : Gilles Mouchard, Yves Lhuillier
+    email                : gilles.mouchard@cea.fr, yves.lhuillier@cea.fr
+***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License version 2        *
+ *   as published by the Free Software Foundation.                         *
+ *                                                                         *
+ ***************************************************************************/
+
+#ifndef __ACTION_HH__
+#define __ACTION_HH__
 
 #include <fwd.hh>
 #include <conststr.hh>
@@ -48,4 +65,4 @@ struct ActionProto_t : virtual ReferenceCounter {
 
 std::ostream& operator<<( std::ostream& _sink, ActionProto_t const& _ap );
 
-#endif // ACTION_HH
+#endif // __ACTION_HH__

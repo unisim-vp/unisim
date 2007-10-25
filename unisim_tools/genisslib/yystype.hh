@@ -1,23 +1,22 @@
 /***************************************************************************
-          GenISSLib.h  -  Instruction Set Simulator Library Generator
+                                 yystype.hh
                              -------------------
     begin                : Thu May 25 2003
-    copyright            : (C) 2003 CEA and Universite Paris Sud
-    author               : Gilles Mouchard
-    email                : mouchard@lri.fr
+    copyright            : (C) 2003-2007 CEA and Universite Paris Sud
+    authors              : Gilles Mouchard, Yves Lhuillier
+    email                : gilles.mouchard@cea.fr, yves.lhuillier@cea.fr
 ***************************************************************************/
 
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
+ *   it under the terms of the GNU General Public License version 2        *
+ *   as published by the Free Software Foundation.                         *
  *                                                                         *
  ***************************************************************************/
 
-#ifndef __GENISSLIB_H__
-#define __GENISSLIB_H__
+#ifndef __YYSTYPE_HH__
+#define __YYSTYPE_HH__
 
 #include <fwd.hh>
 
@@ -45,4 +44,4 @@ union  yylval_t {
 /* define the type of yylval */
 #define YYSTYPE yylval_t
 
-#endif
+#endif // __YYSTYPE_HH__

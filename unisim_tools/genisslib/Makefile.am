@@ -30,3 +30,6 @@ genisslib_SOURCES = parser.yy scanner.ll action.cc bitfield.cc cli.cc \
 
 ROOT_DIR = ..
 include $(top_srcdir)/../m4/unisim.am
+
+dist-hook:
+	rm -f $(distdir)/scanner.cc $(distdir)/parser.cc $(distdir)/parser.h

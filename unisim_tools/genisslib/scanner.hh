@@ -1,5 +1,22 @@
-#ifndef SCANNER_HH
-#define SCANNER_HH
+/***************************************************************************
+                                 scanner.hh
+                             -------------------
+    begin                : Thu May 25 2003
+    copyright            : (C) 2003-2007 CEA and Universite Paris Sud
+    authors              : Gilles Mouchard, Yves Lhuillier
+    email                : gilles.mouchard@cea.fr, yves.lhuillier@cea.fr
+***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License version 2        *
+ *   as published by the Free Software Foundation.                         *
+ *                                                                         *
+ ***************************************************************************/
+
+#ifndef __SCANNER_HH__
+#define __SCANNER_HH__
 
 #include <fwd.hh>
 #include <conststr.hh>
@@ -63,4 +80,4 @@ int yyerror( char const* _s );
 int yypanicf( char const *_filename, int _lineno, char const* _format, ... );
 int yyparse();
 
-#endif // SCANNER_HH
+#endif // __SCANNER_HH__

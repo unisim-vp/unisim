@@ -1,18 +1,17 @@
 /***************************************************************************
-         genisslib.cpp  -  Instruction Set Simulator Library Generator
+                                   main.cc
                              -------------------
     begin                : Thu May 25 2003
-    copyright            : (C) 2003 CEA and Universite Paris Sud
-    author               : Gilles Mouchard
-    email                : mouchard@lri.fr, gilles.mouchard@cea.fr
+    copyright            : (C) 2003-2007 CEA and Universite Paris Sud
+    authors              : Gilles Mouchard, Yves Lhuillier
+    email                : gilles.mouchard@cea.fr, yves.lhuillier@cea.fr
 ***************************************************************************/
 
 /***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
+ *   it under the terms of the GNU General Public License version 2        *
+ *   as published by the Free Software Foundation.                         *
  *                                                                         *
  ***************************************************************************/
 
@@ -41,8 +40,8 @@ struct GIL : public CLI {
     cerr << "       " << m_displayname << " v" VERSION "\n"
          << "built date : " __DATE__ "\n"
          << "copyright  : " COPYRIGHT "\n"
-         << "author     : " AUTHOR "\n"
-         << "email      : " EMAIL << endl;
+         << "authors    : " AUTHORS "\n"
+         << "emails     : " EMAILS << endl;
   }
   
   char const* outputprefix;

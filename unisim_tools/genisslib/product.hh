@@ -1,5 +1,22 @@
-#ifndef PRODUCT_HH
-#define PRODUCT_HH
+/***************************************************************************
+                                 product.hh
+                             -------------------
+    begin                : Thu May 25 2003
+    copyright            : (C) 2003-2007 CEA and Universite Paris Sud
+    authors              : Gilles Mouchard, Yves Lhuillier
+    email                : gilles.mouchard@cea.fr, yves.lhuillier@cea.fr
+***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License version 2        *
+ *   as published by the Free Software Foundation.                         *
+ *                                                                         *
+ ***************************************************************************/
+
+#ifndef __PRODUCT_HH__
+#define __PRODUCT_HH__
 
 #include <fwd.hh>
 #include <iosfwd>
@@ -28,4 +45,4 @@ struct Product_t {
   void                ns_leave( std::vector<ConstStr_t> const& _namespace );
 };
 
-#endif // PRODUCT_HH
+#endif // __PRODUCT_HH__

@@ -1,5 +1,22 @@
-#ifndef STRIMMUTABLE_HH
-#define STRIMMUTABLE_HH
+/***************************************************************************
+                                 conststr.hh
+                             -------------------
+    begin                : Thu May 25 2003
+    copyright            : (C) 2003-2007 CEA and Universite Paris Sud
+    authors              : Gilles Mouchard, Yves Lhuillier
+    email                : gilles.mouchard@cea.fr, yves.lhuillier@cea.fr
+***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License version 2        *
+ *   as published by the Free Software Foundation.                         *
+ *                                                                         *
+ ***************************************************************************/
+
+#ifndef __STRIMMUTABLE_HH__
+#define __STRIMMUTABLE_HH__
 
 /*** Classes an method for handling strings. Here, string refer to the
  *** C-fashioned strings: null-terminated arrays of char.
@@ -53,4 +70,4 @@ struct ConstStr_t {
   char const*                   str() const { return m_instance ? m_instance->m_string : 0; }
 };
 
-#endif // STRIMMUTABLE_HH
+#endif // __STRIMMUTABLE_HH__

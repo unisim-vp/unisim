@@ -1,5 +1,22 @@
-#ifndef OPERATION_HH
-#define OPERATION_HH
+/***************************************************************************
+                                 operation.hh
+                             -------------------
+    begin                : Thu May 25 2003
+    copyright            : (C) 2003-2007 CEA and Universite Paris Sud
+    authors              : Gilles Mouchard, Yves Lhuillier
+    email                : gilles.mouchard@cea.fr, yves.lhuillier@cea.fr
+***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License version 2        *
+ *   as published by the Free Software Foundation.                         *
+ *                                                                         *
+ ***************************************************************************/
+
+#ifndef __OPERATION_HH__
+#define __OPERATION_HH__
 
 #include <inttypes.h>
 #include <fwd.hh>
@@ -45,4 +62,4 @@ struct Group_t : virtual ReferenceCounter {
   Group_t( ConstStr_t _symbol, Vect_t<Operation_t>& _operations, ConstStr_t _filename, int _lineno );
 };
 
-#endif // OPERATION_HH
+#endif // __OPERATION_HH__
