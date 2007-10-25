@@ -61,7 +61,7 @@ armcpu.hh: $(srcdir)/arm.isa $(srcdir)/constructors_dec.isa \
 	$(srcdir)/load_store_v4.isa $(srcdir)/load_store_v5e.isa \
 	$(srcdir)/misc_arithmetic.isa $(srcdir)/multiply.isa \
 	$(srcdir)/semaphore.isa $(srcdir)/status_register_access.isa
-	cd $(srcdir); $(GENISSLIB_PATH) -o armcpu -w 32 -I$(srcdir) $(srcdir)/arm.isa
+	cd $(srcdir); $(GENISSLIB_PATH) -o armcpu -w 32 -I $(srcdir) $(srcdir)/arm.isa
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

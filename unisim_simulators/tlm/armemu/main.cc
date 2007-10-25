@@ -36,16 +36,6 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <signal.h>
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#else
-
-#include <sys/times.h>
-
-#endif
 
 #include "unisim/kernel/service/service.hh"
 
@@ -59,13 +49,13 @@
 #include "unisim/component/tlm/message/memory.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
+#include "unisim/service/time/host_time/time.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/loader/linux_loader/linux_loader.hh"
 #include "unisim/service/os/linux_os/linux_os.hh"
-#include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/logger/logger_server.hh"
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
@@ -105,6 +95,7 @@ using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::os::linux_os::LinuxOS;
 using unisim::service::logger::LoggerServer;
 using unisim::service::time::sc_time::ScTime;
+using unisim::service::time::host_time::HostTime;
 using unisim::kernel::service::ServiceManager;
 
 void help(char *prog_name) {
@@ -158,7 +149,6 @@ typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMs
 typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
 
 int main(int argc, char *argv[], char **envp) {
-	GarbageCollector::Setup();
 
 	static struct option long_options[] = {
 		{"inline-debugger", no_argument, 0, 'd'},
@@ -257,6 +247,7 @@ int main(int argc, char *argv[], char **envp) {
 	
 	// Time
 	ScTime *time = new ScTime("time");
+	HostTime *host_time = new HostTime("host-time");
 	
 	if(logger_on)
 		logger->time_import >> time->time_export;
@@ -469,13 +460,7 @@ int main(int argc, char *argv[], char **envp) {
 	{
 		cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
 
-		struct tms time_start, time_stop;
-		double ratio;
-		clock_t utime;
-		clock_t stime;
-		double spent_time;
-
-		times(&time_start);
+		double time_start = host_time->GetTime();
 
 		EnableDebug();
 		void (*prev_sig_int_handler)(int);
@@ -503,11 +488,8 @@ int main(int argc, char *argv[], char **envp) {
 		cerr << "Simulation finished" << endl;
 		cerr << "Simulation statistics:" << endl;
 
-		times(&time_stop);
-		ratio= 1.0 / sysconf(_SC_CLK_TCK);
-		utime = time_stop.tms_utime - time_start.tms_utime;
-		stime = time_stop.tms_stime - time_start.tms_stime;
-		spent_time = ratio * (utime + stime);
+		double time_stop = host_time->GetTime();
+		double spent_time = time_stop - time_start;
 
 		cerr << "simulation time: " << spent_time << " seconds" << endl;
 		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;

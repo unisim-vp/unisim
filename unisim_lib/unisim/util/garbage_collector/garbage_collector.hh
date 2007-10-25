@@ -69,7 +69,6 @@ struct MemoryBlock
 class GarbageCollector
 {
 public:
-	static void Setup();
 	static void Reset();
 
 	static /* inline */ bool Collect(void *p)
@@ -91,10 +90,12 @@ __attribute__((always_inline))
 	;
 	
 private:
+	static bool Setup();
 	static void AtExit();
 	static const unsigned int MIN_MEMORY_BLOCK_SIZE = 32;
 	static const unsigned int MAX_MEMORY_BLOCK_SIZE = 32 * MIN_MEMORY_BLOCK_SIZE;
 	static const unsigned int MAGIC = 0x5f47435f; // '_GC_';
+	static bool done_setup;
 	
 	static MemoryBlock *free_blocks[MAX_MEMORY_BLOCK_SIZE / MIN_MEMORY_BLOCK_SIZE];
 };

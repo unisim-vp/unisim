@@ -266,8 +266,6 @@ int sc_main(int argc, char *argv[])
 	}
 #endif
 
-	GarbageCollector::Setup();
-
 	static struct option long_options[] = {
 	{"inline-debugger", no_argument, 0, 'd'},
 	{"gdb-server", required_argument, 0, 'g'},

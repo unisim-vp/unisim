@@ -54,16 +54,22 @@ namespace unisim {
 namespace util {
 namespace garbage_collector {
 
+bool GarbageCollector::done_setup = GarbageCollector::Setup();
+
 MemoryBlock *GarbageCollector::free_blocks[GarbageCollector::MAX_MEMORY_BLOCK_SIZE / GarbageCollector::MIN_MEMORY_BLOCK_SIZE];
 
 void GarbageCollector::AtExit() {
 	Reset();
 }
 
-void GarbageCollector::Setup()
+bool GarbageCollector::Setup()
 {
-	atexit(AtExit);
-	memset(free_blocks, 0, sizeof(free_blocks));
+	if(!done_setup)
+	{
+		atexit(AtExit);
+		memset(free_blocks, 0, sizeof(free_blocks));
+	}
+	return true;
 }
 
 void GarbageCollector::Reset()
