@@ -83,7 +83,7 @@ TCM(const char *name,
 	param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write),
 	verbose_debug_write(false) {
 	/* initialize the memory to 0 */
-	bzero(data, SIZE);
+	memset(data, 0, SIZE);
 	SetupDependsOn(logger_import);
 }
 

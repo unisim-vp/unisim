@@ -59,7 +59,7 @@ echo "========================================="
 echo "=             make install              ="
 echo "========================================="
 rm -rf ${TEMPORARY_INSTALL_DIR}
-NUM_PROCESSORS=`cat /proc/cpuinfo | grep processor | wc -l`
+NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep processor | wc -l`
 fakeroot make -j ${NUM_PROCESSORS} install || exit
 
 # compute the installed size

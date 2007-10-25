@@ -165,6 +165,7 @@ public:
 	STATUS RemoveBreakpoint(const char *symbol_name);
 	STATUS RemoveReadWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
 	STATUS RemoveWriteWatchpoint(ADDRESS addr, uint32_t size, SPACE space);
+	const char *GetName(STATUS status) const;
 	const char *GetName(PK_COMMAND command) const;
 	const char *GetName(TIME_UNIT tu) const;
 	const char *GetName(SPACE space) const;

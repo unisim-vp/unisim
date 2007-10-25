@@ -2036,6 +2036,11 @@ bool NetStub<ADDRESS>::PutStatusPacket(STATUS status, const uint32_t device_id, 
 	return PutPacket(sstr.str(), device_id, tag);
 }
 
+template <class ADDRESS>
+const char *NetStub<ADDRESS>::GetName(STATUS status) const
+{
+	return (status >= STATUS_MIN && status <= STATUS_MAX) ? s_status[status].c_str() : 0;
+}
 
 template <class ADDRESS>
 const char *NetStub<ADDRESS>::GetName(PK_COMMAND command) const

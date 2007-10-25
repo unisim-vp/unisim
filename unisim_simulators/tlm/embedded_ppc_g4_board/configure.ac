@@ -80,6 +80,7 @@ UNISIM_LINK(unisim_util_endian)
 UNISIM_LINK(unisim_util_garbage_collector)
 
 UNISIM_LINK(unisim_service_time_sc_time)
+UNISIM_LINK(unisim_service_time_host_time)
 UNISIM_LINK(unisim_service_power)
 UNISIM_LINK(unisim_service_debug_gdb_server)
 UNISIM_LINK(unisim_service_debug_inline_debugger)

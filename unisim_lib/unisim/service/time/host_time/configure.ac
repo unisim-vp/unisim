@@ -33,21 +33,50 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Time Service Library], [1.0])
+AC_INIT([UNISIM inline debugger service], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[inline_debugger])
 AC_CONFIG_AUX_DIR(config)
-
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([inttypes.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+AC_CHECK_HEADERS([string iostream],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR TARGET SPECIFIC HEADERS ######################
+
+case $host in
+	*linux*)   # linux host
+		;;
+	*mingw32*)  # win32 host
+		;;
+esac
+
+###### CHECK FOR EXTERNAL LIBRARIES ######################
+
+UNISIM_CHECK_SYSTEMC
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-service-time-sc_time, sc_time)
-UNISIM_CONFIG_SUBDIR(unisim-service-time-host_time, host_time)
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

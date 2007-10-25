@@ -48,6 +48,7 @@
 #include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/time/sc_time/time.hh>
+#include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/logger/logger_server.hh>
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <stdexcept>
@@ -60,10 +61,6 @@
 
 #include <windows.h>
 #include <winsock2.h>
-
-#else
-
-#include <sys/times.h>
 
 #endif
 
@@ -347,6 +344,8 @@ int sc_main(int argc, char *argv[])
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *time = new unisim::service::time::sc_time::ScTime("time");
+	//  - Host Time
+	unisim::service::time::host_time::HostTime *host_time = new unisim::service::time::host_time::HostTime("host-time");
 	//  - the optional power estimators
 	CachePowerEstimator *il1_power_estimator = estimate_power ? new CachePowerEstimator("il1-power-estimator") : 0;
 	CachePowerEstimator *dl1_power_estimator = estimate_power ? new CachePowerEstimator("dl1-power-estimator") : 0;
@@ -636,28 +635,7 @@ int sc_main(int argc, char *argv[])
 	{
 		cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
 
-#ifdef WIN32
-		FILETIME ftCreationTime;
-		FILETIME ftExitTime;
-		FILETIME ftKernelTime;
-		FILETIME ftUserTime;
-		unsigned __int64 time_start = 0, time_stop = 0;
-#else
-		struct tms time_start, time_stop;
-		double ratio;
-		clock_t utime;
-		clock_t stime;
-#endif
-		double spent_time = 0.0;
-#ifdef WIN32
-		if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
-		{
-			time_start = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
-					+ ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
-		}
-#else
-		times(&time_start);
-#endif
+		double time_start = host_time->GetTime();
 
 		EnableDebug();
 		void (*prev_sig_int_handler)(int);
@@ -685,20 +663,8 @@ int sc_main(int argc, char *argv[])
 		cerr << "Simulation finished" << endl;
 		cerr << "Simulation statistics:" << endl;
 
-#ifdef WIN32
-		if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime))
-		{
-			time_stop = ((unsigned __int64) ftKernelTime.dwLowDateTime | ((unsigned __int64) ftKernelTime.dwHighDateTime << 32))
-					+ ((unsigned __int64) ftUserTime.dwLowDateTime | ((unsigned __int64) ftUserTime.dwHighDateTime << 32));
-		}
-		spent_time = (double)(time_stop - time_start) / 1e7;
-#else
-		times(&time_stop);
-		ratio= 1.0 / sysconf(_SC_CLK_TCK);
-		utime = time_stop.tms_utime - time_start.tms_utime;
-		stime = time_stop.tms_stime - time_start.tms_stime;
-		spent_time = ratio * (utime + stime);
-#endif
+		double time_stop = host_time->GetTime();
+		double spent_time = time_stop - time_start;
 
 		cerr << "simulation time: " << spent_time << " seconds" << endl;
 		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
