@@ -37,7 +37,7 @@ struct GIL : public CLI {
   }
   
   void version() {
-    cerr << "       " << m_displayname << " v" VERSION "\n"
+    cerr << "       " << m_displayname << " v" GENISSLIB_VERSION "\n"
          << "built date : " __DATE__ "\n"
          << "copyright  : " COPYRIGHT "\n"
          << "authors    : " AUTHORS "\n"

@@ -19,7 +19,7 @@
 #define __MAIN_HH__
 
 #define GENISSLIB "GenISSLib"
-//#define VERSION "2.0"
+#define GENISSLIB_VERSION "2.1"
 #define AUTHORS "Gilles Mouchard, Yves Lhuillier"
 #define EMAILS "gilles.mouchard@cea.fr, yves.lhuillier@cea.fr"
 #define COPYRIGHT "Copyright (c) 2003-2007 CEA and Universite Paris Sud"
