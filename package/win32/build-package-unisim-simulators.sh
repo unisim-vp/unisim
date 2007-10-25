@@ -6,6 +6,5 @@ fi
 
 PACKAGE_NAME="unisim-simulators" \
 VERSION="1.0-1" \
-MAINTAINER="Gilles Mouchard <gilles.mouchard@cea.fr>" \
-DESCRIPTION="UNISIM Library" \
+LICENSE_FILE="share/unisim_simulators/COPYING" \
 ./build-package.sh "--with-unisim-lib=$1" "--with-systemc=$2" "CXXFLAGS=-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" "CPPFLAGS=-I$3/include -I$3/include/libxml2" "--with-sdl=$4" "--with-boost=$5" "LDFLAGS=-L$3/lib"

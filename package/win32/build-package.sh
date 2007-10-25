@@ -8,8 +8,8 @@ if test "x${VERSION}" = x; then
 	exit
 fi
 
-if test "x${DESCRIPTION}" = x; then
-	echo "Please set DESCRIPTION"
+if test "x${LICENSE_FILE}" = x; then
+	echo "Please set LICENSE_FILE"
 	exit
 fi
 
@@ -60,7 +60,7 @@ echo "AppSupportURL=http://www.unisim.org" >> ${ISS_FILENAME}
 echo "AppUpdatesURL=http://www.unisim.org" >> ${ISS_FILENAME}
 echo "DefaultDirName={pf}\\${PACKAGE_LONG_NAME}" >> ${ISS_FILENAME}
 echo "DefaultGroupName=${PACKAGE_LONG_NAME}" >> ${ISS_FILENAME}
-# echo "LicenseFile=COPYING" >> ${ISS_FILENAME}
+echo "LicenseFile=./${LICENSE_FILE}" >> ${ISS_FILENAME}
 echo "OutputDir=dist" >> ${ISS_FILENAME}
 echo "OutputBaseFilename=${PACKAGE_LONG_NAME}" >> ${ISS_FILENAME}
 echo "Compression=lzma" >> ${ISS_FILENAME}
