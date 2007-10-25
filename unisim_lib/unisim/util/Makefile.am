@@ -1,4 +1,6 @@
 includedir = $(prefix)/include/unisim/util
+sharedir = $(prefix)/share/unisim_lib/unisim/util
+
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
@@ -42,5 +44,8 @@ SUBDIRS += device
 INCLUDE_SUBDIRS += device
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)

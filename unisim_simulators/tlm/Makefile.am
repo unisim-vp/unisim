@@ -1,3 +1,5 @@
+sharedir = $(prefix)/share/unisim_simulators/tlm
+
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
@@ -25,3 +27,8 @@ if COND_embedded_ppc_g4_board
 SUBDIRS += embedded_ppc_g4_board
 INCLUDE_SUBDIRS += embedded_ppc_g4_board
 endif
+
+share_DATA = COPYING
+
+uninstall-hook:
+	(rmdir $(sharedir) || true)

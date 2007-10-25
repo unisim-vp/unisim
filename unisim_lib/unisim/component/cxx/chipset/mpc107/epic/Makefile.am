@@ -1,5 +1,6 @@
 INCLUDES=-I$(top_srcdir)/../../../../../..
 includedir = $(prefix)/include/unisim/component/cxx/chipset/mpc107/epic
+sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/chipset/mpc107/epic
 
 lib_LIBRARIES = libunisim_component_cxx_chipset_mpc107_epic.a
 libunisim_component_cxx_chipset_mpc107_epic_a_SOURCES = \
@@ -14,7 +15,10 @@ include_HEADERS = \
 	
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	
+	(rmdir $(sharedir) || true)
+
+share_DATA = COPYING
+
 ROOT_DIR = ../../../../../..
 include $(top_srcdir)/../../../../../../m4/unisim.am
 	

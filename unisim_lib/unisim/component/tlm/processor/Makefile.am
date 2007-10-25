@@ -1,4 +1,5 @@
 includedir = $(prefix)/include/unisim/component/tlm/processor
+sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/processor
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -13,5 +14,8 @@ SUBDIRS += powerpc
 INCLUDE_SUBDIRS += powerpc
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)

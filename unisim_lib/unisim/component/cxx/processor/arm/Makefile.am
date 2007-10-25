@@ -3,6 +3,7 @@
 
 INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
 includedir = $(prefix)/include/unisim/component/cxx/processor/arm
+sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/arm
 
 lib_LIBRARIES = libunisim_component_cxx_processor_arm.a
 libunisim_component_cxx_processor_arm_a_SOURCES = \
@@ -63,8 +64,11 @@ armcpu.hh: $(srcdir)/arm.isa $(srcdir)/constructors_dec.isa \
 	$(srcdir)/semaphore.isa $(srcdir)/status_register_access.isa
 	cd $(srcdir); $(GENISSLIB_PATH) -o armcpu -w 32 -I $(srcdir) $(srcdir)/arm.isa
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)
 
 ROOT_DIR = ../../../../..
 include $(top_srcdir)/../../../../../m4/unisim.am

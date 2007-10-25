@@ -1,4 +1,5 @@
 includedir = $(prefix)/include/unisim/component/tlm/fsb
+sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/fsb
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -13,5 +14,8 @@ SUBDIRS += snooping_bus
 INCLUDE_SUBDIRS += snooping_bus
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)

@@ -1,4 +1,5 @@
 includedir = $(prefix)/include/unisim/component/cxx/isa
+sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/isa
 include_HEADERS = types.hh
 
 SUBDIRS=
@@ -11,6 +12,9 @@ endif
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)
+
+share_DATA = COPYING
 
 ROOT_DIR = ../../../..
 include $(top_srcdir)/../../../../m4/unisim.am

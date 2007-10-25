@@ -1,5 +1,5 @@
 includedir = $(prefix)/include/unisim/service/loader
-loaderdir = $(prefix)/share/unisim/service/loader
+sharedir = $(prefix)/share/unisim_lib/unisim/service/loader
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
@@ -28,7 +28,9 @@ SUBDIRS += arm_generic_kernel_loader
 INCLUDE_SUBDIRS += arm_generic_kernel_loader
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	(rmdir $(loaderdir) || true)
+	(rmdir $(sharedir) || true)
 

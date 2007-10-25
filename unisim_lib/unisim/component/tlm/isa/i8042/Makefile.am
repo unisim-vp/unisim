@@ -1,11 +1,15 @@
 INCLUDES=-I$(top_srcdir)/../../../../..
 includedir = $(prefix)/include/unisim/component/tlm/isa/i8042
+sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/isa/i8042
 lib_LIBRARIES = libunisim_component_tlm_isa_i8042.a
 libunisim_component_tlm_isa_i8042_a_SOURCES = i8042.cc
 include_HEADERS = i8042.hh i8042.tcc
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)
 
 ROOT_DIR = ../../../../..
 include $(top_srcdir)/../../../../../m4/unisim.am

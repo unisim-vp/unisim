@@ -1,3 +1,5 @@
+sharedir = $(prefix)/share/unisim_simulators
+
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
@@ -15,5 +17,10 @@ if COND_tlm
 SUBDIRS += tlm
 INCLUDE_SUBDIRS += tlm
 endif
+
+share_DATA = COPYING
+
+uninstall-hook:
+	(rmdir $(sharedir) || true)
 
 include m4/aminclude.am

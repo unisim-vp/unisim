@@ -1,4 +1,5 @@
 includedir = $(prefix)/include/unisim/component/tlm/pci
+sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/pci
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -28,5 +29,8 @@ SUBDIRS += bus
 INCLUDE_SUBDIRS += bus
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)

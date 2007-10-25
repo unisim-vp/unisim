@@ -1,5 +1,6 @@
 INCLUDES=-I$(top_srcdir)/../../../../..
 includedir = $(prefix)/include/unisim/component/tlm/chipset/mpc107
+sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/chipset/mpc107
 
 SUBDIRS=epic
 INCLUDE_SUBDIRS=epic
@@ -16,9 +17,12 @@ libunisim_component_tlm_chipset_mpc107_a_CXXFLAGS = -DSC_INCLUDE_DYNAMIC_PROCESS
 	
 include_HEADERS = \
 	mpc107.hh mpc107.tcc
-		
+
+share_DATA = COPYING
+	
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)
 
 ROOT_DIR = ../../../../..
 include $(top_srcdir)/../../../../../m4/unisim.am

@@ -1,4 +1,5 @@
 includedir = $(prefix)/include/unisim/component/cxx
+sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -43,5 +44,8 @@ SUBDIRS += chipset
 INCLUDE_SUBDIRS += chipset
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)

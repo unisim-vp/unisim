@@ -1,5 +1,6 @@
 INCLUDES=-I$(top_srcdir)/../../../../../..
 includedir = $(prefix)/include/unisim/component/cxx/chipset/mpc107/dma
+sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/chipset/mpc107/dma
 
 lib_LIBRARIES = libunisim_component_cxx_chipset_mpc107_dma.a
 libunisim_component_cxx_chipset_mpc107_dma_a_SOURCES = \
@@ -15,7 +16,10 @@ include_HEADERS = \
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	
+	(rmdir $(sharedir) || true)
+
+share_DATA = COPYING
+
 ROOT_DIR = ../../../../../..
 include $(top_srcdir)/../../../../../../m4/unisim.am
 	

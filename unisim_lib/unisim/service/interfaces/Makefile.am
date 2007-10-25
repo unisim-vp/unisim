@@ -1,4 +1,5 @@
 includedir = $(prefix)/include/unisim/service/interfaces
+sharedir = $(prefix)/share/unisim_lib/unisim/service/interfaces
 include_HEADERS = \
 	cache_power_estimator.hh \
 	cpu_os.hh \
@@ -21,8 +22,11 @@ include_HEADERS = \
 	symbol_table_lookup.hh \
 	time.hh
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)
 
 ROOT_DIR = ../../..
 include $(top_srcdir)/../../../m4/unisim.am

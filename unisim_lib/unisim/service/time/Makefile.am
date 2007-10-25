@@ -1,4 +1,5 @@
 includedir = $(prefix)/include/unisim/service/time
+sharedir = $(prefix)/share/unisim_lib/unisim/service/time
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -13,5 +14,8 @@ SUBDIRS += host_time
 INCLUDE_SUBDIRS += host_time
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)

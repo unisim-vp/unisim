@@ -1,5 +1,5 @@
 includedir = $(prefix)/include/unisim/kernel
-
+sharedir = $(prefix)/share/unisim_lib/unisim/kernel
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
@@ -13,5 +13,8 @@ SUBDIRS += service
 INCLUDE_SUBDIRS += service
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)

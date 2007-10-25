@@ -1,5 +1,5 @@
 includedir = $(prefix)/include/unisim/service/debug
-debugdir= $(prefix)/share/unisim/service/debug
+sharedir = $(prefix)/share/unisim_lib/unisim/service/debug
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
@@ -18,7 +18,9 @@ SUBDIRS += symbol_table
 INCLUDE_SUBDIRS += symbol_table
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
-	(rmdir $(debugdir) || true)
+	(rmdir $(sharedir) || true)
 

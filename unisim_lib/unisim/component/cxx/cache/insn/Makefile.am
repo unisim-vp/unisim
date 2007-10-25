@@ -1,3 +1,4 @@
+sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/cache/insn
 INCLUDES=-I$(top_srcdir)/../../../../..
 
 lib_LIBRARIES = libunisim_component_cxx_cache_insn.a
@@ -8,6 +9,9 @@ include_HEADERS = cache.hh cache.tcc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)
+
+share_DATA = COPYING
 
 ROOT_DIR = ../../../../..
 include $(top_srcdir)/../../../../../m4/unisim.am

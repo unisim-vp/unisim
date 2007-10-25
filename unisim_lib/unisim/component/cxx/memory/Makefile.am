@@ -1,4 +1,5 @@
 includedir = $(prefix)/include/unisim/component/cxx/memory
+sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/memory
 
 SUBDIRS=
 INCLUDE_SUBDIRS=
@@ -13,5 +14,8 @@ SUBDIRS += flash
 INCLUDE_SUBDIRS += flash
 endif
 
+share_DATA = COPYING
+
 uninstall-hook:
 	(rmdir $(includedir) || true)
+	(rmdir $(sharedir) || true)
