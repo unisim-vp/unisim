@@ -60,7 +60,7 @@
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
-typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_Config CPU_CONFIG;
+typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig CPU_CONFIG;
 //typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig CPU_CONFIG;
 //typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config CPU_CONFIG;
 //typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig CPU_CONFIG;

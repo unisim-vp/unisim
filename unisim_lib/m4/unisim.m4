@@ -232,3 +232,21 @@ AC_ARG_ENABLE($1,
 		AC_CONFIG_SUBDIRS([$2])
 	fi
 ])
+
+## UNISIM_RELEASE
+## Create the variable COND_release that the user can use 
+##   in Makefile.am to decide what needs to be compile for release (--enable-release)
+##   or just for development (--disable-release) (default)
+## No parameters
+#####################################################
+AC_DEFUN([UNISIM_RELEASE], [
+AC_ARG_ENABLE($1,
+	AS_HELP_STRING([--enable-release], [build all the library versions])
+	AS_HELP_STRING([--disable-release], [build the minimum number of library versions (default)]),
+	[case "${enableval}" in
+	yes) unisim_enabled_release=true ;;
+	no) unisim_enabled_release=false ;;
+	*) AC_MSG_ERROR(bad value ${enableval} for --enable-release) ;;
+	esac], [unisim_enabled_release=false])
+	AM_CONDITIONAL(COND_release, test x$unisim_enabled_release = xtrue)
+])

@@ -6,25 +6,30 @@ includedir = $(prefix)/include/unisim/component/cxx/processor/arm
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/arm
 
 lib_LIBRARIES = libunisim_component_cxx_processor_arm.a
+
 libunisim_component_cxx_processor_arm_a_SOURCES = \
+	cpu_arm9tdmi_bigendian_debug.cc \
+	cpu_arm966e_s_bigendian_debug.cc \
+	cache/32kb_dm_wb_32bls.cc cache/32kb_dm_wb_32bls_debug.cc \
+	cache/96kb_dm_wb_32bls.cc cache/96kb_dm_wb_32bls_debug.cc \
+	coprocessor/arm966e_s/cp15.cc \
+	tcm/tcm.cc
+
+if COND_release
+libunisim_component_cxx_processor_arm_a_SOURCES += \
 	cpu_arm9tdmi_littleendian.cc \
 	cpu_arm9tdmi_bigendian.cc \
 	cpu_arm9tdmi_littleendian_debug.cc \
-	cpu_arm9tdmi_bigendian_debug.cc \
 	cpu_arm966e_s_littleendian.cc \
 	cpu_arm966e_s_bigendian.cc \
 	cpu_arm966e_s_littleendian_debug.cc \
-	cpu_arm966e_s_bigendian_debug.cc \
 	cache/512b_dm_wb_8bls.cc cache/512b_dm_wb_8bls_debug.cc \
 	cache/512b_dm_wt_8bls.cc cache/512b_dm_wt_8bls_debug.cc \
-	cache/32kb_dm_wb_32bls.cc cache/32kb_dm_wb_32bls_debug.cc \
 	cache/32kb_dm_wt_32bls.cc cache/32kb_dm_wt_32bls_debug.cc \
 	cache/64kb_dm_wb_32bls.cc cache/64kb_dm_wb_32bls_debug.cc \
 	cache/64kb_dm_wt_32bls.cc cache/64kb_dm_wt_32bls_debug.cc \
-	cache/96kb_dm_wb_32bls.cc cache/96kb_dm_wb_32bls_debug.cc \
-	cache/96kb_dm_wt_32bls.cc cache/96kb_dm_wt_32bls_debug.cc \
-	coprocessor/arm966e_s/cp15.cc \
-	tcm/tcm.cc
+	cache/96kb_dm_wt_32bls.cc cache/96kb_dm_wt_32bls_debug.cc 
+endif
 
 include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \

@@ -362,6 +362,27 @@ Store(uint8_t crd,
 }
 
 /************************************************************/
+/* Specific arm966e_s cp15 methods                    START */
+/************************************************************/
+
+template<class CONFIG>
+INLINE
+typename CONFIG::address_t
+CP15<CONFIG> ::
+GetExceptionVectorAddr() {
+	// read bit 13 of the control register (alternate vector select) 
+	// if 0 return 0x0
+	// if 1 return 0xffff0000
+	if(control_reg & (((uint32_t)1) << 13))
+		return (address_t)0xffff0000;
+	return (address_t)0x0;
+}
+
+/************************************************************/
+/* Specific arm966e_s cp15 methods                    END   */
+/************************************************************/
+
+/************************************************************/
 /* Cache interface methods                            START */
 /************************************************************/
 /* Note: the only available methods are PrWrite and PrRead  */
@@ -723,23 +744,25 @@ ReadMemory(address_t addr, void *buffer, uint32_t size) {
 			return false;
 		}
 	}
-	if(VerboseDebugRead() && success) {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Read done:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
-		for(unsigned int i = 0; i < size; i++) {
-			(*inherited::logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+	if(VerboseDebugRead()) {
+		if(success) {
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "Read done:" << Endl
+				<< " - address = 0x" << Hex << addr << Dec << Endl
+				<< " - size = " << size << Endl
+				<< " - data =" << Hex;
+			for(unsigned int i = 0; i < size; i++) {
+				(*inherited::logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+			}
+			(*inherited::logger_import) << Dec << Endl
+				<< EndDebugInfo;
+		} else {
+			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< "Read failed:" << Endl
+				<< " - address = 0x" << Hex << addr << Dec << Endl
+				<< " - size = " << size << Endl
+				<< EndDebugInfo;
 		}
-		(*inherited::logger_import) << Dec << Endl
-			<< EndDebugInfo;
-	} else {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Read failed:" << Endl
-			<< " - address = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< EndDebugInfo;
 	}
 	return success;
 }

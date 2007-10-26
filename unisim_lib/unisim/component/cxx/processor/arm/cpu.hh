@@ -474,6 +474,7 @@ public:
     
     /* SPSR access functions */
     inline void SetSPSR(uint32_t val) GCC_INLINE;
+    inline uint32_t GetSPSR() GCC_INLINE;
     inline void SetSPSR_NZCV(bool n,
 		      bool z,
 		      bool c,
@@ -503,7 +504,7 @@ public:
     inline void UnsetSPSR_T() GCC_INLINE;
     inline bool GetSPSR_T() GCC_INLINE;
     inline void SetSPSR_Mode(uint32_t mode) GCC_INLINE;
-    inline uint32_t GetSPSR() GCC_INLINE;
+    inline uint32_t GetSPSR_Mode() GCC_INLINE;
 
     /* gets spsr index from current running mode */
     inline uint32_t GetSPSRIndex() GCC_INLINE;
@@ -637,6 +638,32 @@ public:
     
     /**************************************************************/
     /* Coprocessor methods          END                           */
+    /**************************************************************/
+
+    /**************************************************************/
+    /* Exception methods            START                         */
+    /**************************************************************/
+
+    inline void PerformResetException() GCC_INLINE;
+    inline void PerformUndefInsnException() GCC_INLINE;
+    inline void PerformSWIException() GCC_INLINE;
+    inline void PerformPrefetchAbortException() GCC_INLINE;
+    inline void PerformDataAbortException() GCC_INLINE;
+    inline void PerformIRQException() GCC_INLINE;
+    inline void PerformFIQException() GCC_INLINE;
+    
+    inline address_t GetExceptionVectorAddr() GCC_INLINE;
+    
+    inline address_t GetResetExceptionAddr() GCC_INLINE;
+    inline address_t GetUndefInsnExceptionAddr() GCC_INLINE;
+    inline address_t GetSWIExceptionAddr() GCC_INLINE;
+    inline address_t GetPrefetchAbortExceptionAddr() GCC_INLINE;
+    inline address_t GetDataAbortExceptionAddr() GCC_INLINE;
+    inline address_t GetIRQExceptionAddr() GCC_INLINE;
+    inline address_t GetFIQExceptionAddr() GCC_INLINE;
+    
+    /**************************************************************/
+    /* Exception methods            END                           */
     /**************************************************************/
 
     /* masks for the different running modes */

@@ -149,6 +149,12 @@ public:
      */
     virtual void Store(uint8_t crd,
     		reg_t address);
+
+    /* Specific methods of the arm966e_s cp15 */
+    /** Get the base address of the exception vector
+     * @return the base address of the exception vector
+     */
+    address_t GetExceptionVectorAddr();
     
     /* Cache interface required methods */
 	virtual void PrInvalidateBlock(uint32_t set, uint32_t way);

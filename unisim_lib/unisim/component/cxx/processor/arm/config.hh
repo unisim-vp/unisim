@@ -223,9 +223,9 @@ public:
 	static const bool HAS_DATA_CACHE_L1 = true;
 	static const bool HAS_CACHE_L2 = true;
 	
-	typedef ARMCache32KBDMWT32bls_Config cache_l1_t;
-	typedef ARMCache32KBDMWT32bls_Config insn_cache_l1_t;
-	typedef ARMCache96KBDMWT32bls_Config cache_l2_t;
+	typedef ARMCache32KBDMWB32bls_Config cache_l1_t;
+	typedef ARMCache32KBDMWB32bls_Config insn_cache_l1_t;
+	typedef ARMCache96KBDMWB32bls_Config cache_l2_t;
 };
 
 class ARM9TDMIDebugConfig : public ARM9TDMIConfig {
@@ -234,7 +234,7 @@ public:
 
 	typedef ARMCache32KBDMWB32bls_DebugConfig cache_l1_t;
 	typedef ARMCache32KBDMWB32bls_DebugConfig insn_cache_l1_t;
-	typedef ARMCache64KBDMWB32bls_DebugConfig cache_l2_t;
+	typedef ARMCache96KBDMWB32bls_DebugConfig cache_l2_t;
 };
 
 class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {};

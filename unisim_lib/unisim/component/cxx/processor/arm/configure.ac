@@ -56,6 +56,7 @@ AC_CHECK_HEADERS([iostream],,\
     AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 UNISIM_CHECK_UNISIM_TOOLS
+UNISIM_RELEASE
 
 # files to generate
 #   this should include all the makefiles to generate

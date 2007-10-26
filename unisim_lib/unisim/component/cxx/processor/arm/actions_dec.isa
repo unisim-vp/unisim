@@ -33,7 +33,7 @@
  */
  
 action {void} execute({CPU<CONFIG> &} {cpu}) {
-	throw IllegalInstructionException<CONFIG>();
+	throw UndefinedInstructionException<CONFIG>();
 }
 
 action {void} disasm({CPU<CONFIG> &} {cpu}, {stringstream &} {buffer}) {

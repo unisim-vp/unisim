@@ -61,25 +61,20 @@ swi.execute = {
 			<< Endl << EndDebugInfo;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-	
+
+	if(!cpu.CheckCondition(cond)) return;
+
 	if(cpu.linux_os_import) {
+		// we are executing on linux emulation mode
+		// use linux_os_import
 		try {
 			cpu.linux_os_import->ExecuteSystemCall(immed);
 		} catch(exception &e) {
-    
 			cerr << e.what() << endl;
-			exit(-1);
 		}
 	} else {
-		if(cpu.logger_import)
-			(*cpu.logger_import) << DebugError 
-				<< Function << __FUNCTION__
-				<< File << __FILE__
-				<< Line << __LINE__
-				<< " linux_os_import not defined, unable to execute system call ("
-				<< immed << ")" << Endl
-				<< EndDebugError;
-		cpu.Stop(0);
+		// we are executing on full system mode
+		throw SoftwareInterruptException<CONFIG>();
 	}
 }
 

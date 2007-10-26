@@ -114,7 +114,7 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 	address_t aligned_address;
 	
 	aligned_address = addr & (BYTE_SIZE - 1);
-	if(aligned_address + size >= BYTE_SIZE) {
+	if(aligned_address + size > BYTE_SIZE) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Out of bonds read:" << Endl
@@ -124,6 +124,17 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 				<< " - mem_size = " << BYTE_SIZE << Endl
 				<< EndDebugError;
 		exit(-1);
+	}
+	if(VerbosePrWrite()) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Writing:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++)
+			(*logger_import) << " " << buffer[i];
+		(*logger_import) << Dec << Endl << EndDebugInfo;
 	}
 	memcpy(&data[aligned_address], buffer, size);
 }
@@ -137,7 +148,7 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 	address_t aligned_address;
 	
 	aligned_address = addr & (BYTE_SIZE - 1);
-	if(aligned_address + size >= BYTE_SIZE) {
+	if(aligned_address + size > BYTE_SIZE) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Out of bonds read:" << Endl
@@ -149,6 +160,17 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 		exit(-1);
 	}
 	memcpy(buffer, &data[aligned_address], size);
+	if(VerbosePrRead()) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Reading:" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - read data =" << Hex;
+		for(unsigned int i = 0; i < size; i++)
+			(*logger_import) << " " << buffer[i];
+		(*logger_import) << Dec << Endl << EndDebugInfo;
+	}
 }
 
 // Memory Interface (debugg dervice)
@@ -167,12 +189,24 @@ ReadMemory(address_t addr, void *buffer, uint32_t size) {
 	address_t aligned_address;
 	
 	aligned_address = addr & (BYTE_SIZE - 1);
-	if(aligned_address + size >= BYTE_SIZE) {
+	if(aligned_address + size > BYTE_SIZE) {
 		// copy byte per byte
 		for(unsigned int i = 0; i < aligned_address + size; i++)
 			((uint8_t *)buffer)[i] = data[i & (BYTE_SIZE - 1)];
 	} else 
 		memcpy(buffer, &data[aligned_address], size);
+
+	if(VerboseDebugRead()) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Reading (debug):" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++)
+			(*logger_import) << " " << ((uint8_t *)buffer)[i];
+		(*logger_import) << Dec << Endl << EndDebugInfo;
+	}
 	return true;
 }
 
@@ -184,7 +218,20 @@ WriteMemory(address_t addr, const void *buffer, uint32_t size) {
 	address_t aligned_address;
 	
 	aligned_address = addr & (BYTE_SIZE - 1);
-	if(aligned_address + size >= BYTE_SIZE) {
+
+	if(VerboseDebugWrite()) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Writing (debug):" << Endl
+			<< " - address = 0x" << Hex << addr << Dec << Endl
+			<< " - aligned_address = 0x" << Hex << aligned_address << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++)
+			(*logger_import) << " " << ((uint8_t *)buffer)[i];
+		(*logger_import) << Dec << Endl << EndDebugInfo;
+	}
+	
+	if(aligned_address + size > BYTE_SIZE) {
 		// copy byte per byte
 		for(unsigned int i = 0; i < aligned_address + size; i++)
 			data[i & (BYTE_SIZE - 1)] = ((uint8_t *)buffer)[i];

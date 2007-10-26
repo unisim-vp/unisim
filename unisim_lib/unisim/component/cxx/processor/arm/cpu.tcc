@@ -251,9 +251,12 @@ Setup() {
 		/* Depending on the configuration being used set the initial pc */
 		if(CONFIG::MODEL == ARM966E_S) {
 			if(arm966es_vinithi)
-				gpr[15] = (address_t)0xffff0000;
+				SetGPR(15, (address_t)0xffff0000);
 			else
-				gpr[15] = (address_t)0x00000000;
+				SetGPR(15, (address_t)0x00000000);
+			/* disable normal and fast interruptions */
+			SetCPSR_F();
+			SetCPSR_I();
 		}
 	}
 
@@ -477,16 +480,16 @@ Step() {
 		} while(1);
 	}
 
-	try {
-		if(memory_access_reporting_import) {
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Reporting memory acces for fetch at address 0x"
-					<< Hex << current_pc << Dec
-					<< Endl << EndDebugInfo;
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, current_pc, 4);
-		}
+	if(memory_access_reporting_import) {
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Reporting memory acces for fetch at address 0x"
+				<< Hex << current_pc << Dec
+				<< Endl << EndDebugInfo;
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, current_pc, 4);
+	}
 
+	try {
 		insn_t insn;
 		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
@@ -552,18 +555,20 @@ Step() {
 		Stop(1);
 	}
 	catch(UndefinedInstructionException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor undefined instruction exception :" << exc.what() 
-				<< Endl << EndDebugError;
-		Stop(1);
+		if(VerboseStep()) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Received undefined instruction exception: " << exc.what()
+				<< Endl << EndDebugInfo;
+		}
+		PerformUndefInsnException();
 	}
 	catch(SoftwareInterruptException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor software interrupt exception :" << exc.what() 
-				<< Endl << EndDebugError;
-		Stop(1);
+		if(VerboseStep()) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Received software interrupt exception: " << exc.what()
+				<< Endl << EndDebugInfo;
+		}
+		PerformSWIException();
 	}
 	catch(PrefetchAbortException<CONFIG> &exc) {
 		if(logger_import)
@@ -1513,29 +1518,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode) {
   //    * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
   //    * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
   //    */
-
-  if((src_mode != USER_MODE) &&
-     (src_mode != SYSTEM_MODE) &&
-     (src_mode != SUPERVISOR_MODE) &&
-     (src_mode != ABORT_MODE) &&
-     (src_mode != UNDEFINED_MODE) &&
-     (src_mode != IRQ_MODE) &&
-     (src_mode != FIQ_MODE)) {
-    cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-	 << " unknown source running mode (0x" << hex << src_mode << dec << ")" << endl;
-    exit(-1);
-  }
-  if((tar_mode != USER_MODE) &&
-     (tar_mode != SYSTEM_MODE) &&
-     (tar_mode != SUPERVISOR_MODE) &&
-     (tar_mode != ABORT_MODE) &&
-     (tar_mode != UNDEFINED_MODE) &&
-     (tar_mode != IRQ_MODE) &&
-     (tar_mode != FIQ_MODE)) {
-    cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-	 << " unknown target running mode (0x" << hex << tar_mode << dec << ")" << endl;
-    exit(-1);
-  }
+	
   /* Backup current running mode */
   switch(src_mode) {
   case USER_MODE:
@@ -1920,7 +1903,7 @@ template<class CONFIG>
 uint32_t 
 CPU<CONFIG> ::
 GetCPSR_Mode() {
-	uint32_t mode = cpsr & ~(CPSR_RUNNING_MODE_MASK);
+	uint32_t mode = cpsr & CPSR_RUNNING_MODE_MASK;
 	return mode;
 }
 
@@ -2237,6 +2220,17 @@ GetSPSR_T() {
 }
 
 template<class CONFIG>
+uint32_t
+CPU<CONFIG> ::
+GetSPSR_Mode() {
+	unsigned int rm;
+
+	rm = GetSPSRIndex();
+
+	return spsr[rm] & (SPSR_RUNNING_MODE_MASK);
+}
+
+template<class CONFIG>
 void 
 CPU<CONFIG> ::
 SetSPSR_Mode(uint32_t mode) {
@@ -2268,14 +2262,18 @@ GetSPSRIndex() {
 
 	switch(cpsr & CPSR_RUNNING_MODE_MASK) {
 	case USER_MODE:
-		cerr << "ERROR(" << __FUNCTION__ << "): ";
-		cerr << "trying to modify SPSR under USER_MODE." << endl;
-		exit(-1);
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "Trying to modify SPSR under USER_MODE" << Endl
+				<< EndDebugError;
+		Stop(-1);
 		break;
 	case SYSTEM_MODE:
-		cerr << "ERROR(" << __FUNCTION__ << "): ";
-		cerr << "trying to modify SPSR under SYSTEM_MODE." << endl;
-		exit(-1);
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "Trying to modify SPSR under SYSTEM_MODE" << Endl
+				<< EndDebugError;
+		Stop(-1);
 		break;
 	case SUPERVISOR_MODE:
 		rm = 0;
@@ -2306,7 +2304,15 @@ GetSPSRIndex() {
 template<class CONFIG>
 void CPU<CONFIG> ::
 MoveSPSRtoCPSR() {
-
+	/* SPSR needs to be moved to CPSR
+	 * This means that we need to change the register mapping if the running mode has changed
+	 */
+	uint32_t src_mode = GetCPSR_Mode();
+	uint32_t dst_mode = GetSPSR_Mode();
+	uint32_t cur_spsr = GetSPSR();
+	SetCPSR(cur_spsr);
+	if(src_mode != dst_mode)
+		SetGPRMapping(src_mode, dst_mode);
 }
 
 /* Instruction condition checking method */
@@ -2692,6 +2698,247 @@ MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 /**************************************************************/
 
 /**************************************************************/
+/* Exception methods            START                         */
+/**************************************************************/
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformResetException() {
+	// - get current mode
+	// - switch to reset mode
+	// - R14_svc undefined
+	// - SPSR_svc undefined
+	// - set ARM state 
+	// - disable fast interrupts
+	// - disable normal interrupts
+	// - jump to interruption vector
+	uint32_t cur_mode = GetCPSR_Mode();
+	uint32_t cur_cpsr = GetCPSR();
+	SetCPSR_Mode(SUPERVISOR_MODE);
+	SetGPRMapping(cur_mode, SUPERVISOR_MODE);
+	SetGPR(14, 0);
+	SetSPSR(0);
+	UnsetCPSR_T();
+	SetCPSR_F();
+	SetCPSR_I();
+	SetGPR(PC_reg, GetResetExceptionAddr());	
+}
+
+template<class CONFIG>
+void 
+CPU<CONFIG> ::
+PerformUndefInsnException() {
+	// - get current mode
+	// - switch to supervisor mode
+	// - address of this insn + 4 ==> R14_svc (pc already set to the right value)
+	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
+	// - set ARM state 
+	// - disable normal interrupts
+	// - jump to interruption vector
+	uint32_t cur_mode = GetCPSR_Mode();
+	uint32_t cur_cpsr = GetCPSR();
+	SetCPSR_Mode(UNDEFINED_MODE);
+	SetGPRMapping(cur_mode, UNDEFINED_MODE);
+	SetGPR(14, GetGPR(PC_reg));
+	SetSPSR(cur_cpsr);
+	UnsetCPSR_T();
+	SetCPSR_I();
+	SetGPR(PC_reg, GetUndefInsnExceptionAddr());
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformSWIException() {
+	// - get current mode
+	// - switch to supervisor mode
+	// - address of this swi + 4 ==> R14_svc (pc already set to the right value)
+	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
+	// - set ARM state 
+	// - disable normal interrupts
+	// - jump to interruption vector
+	uint32_t cur_mode = GetCPSR_Mode();
+	uint32_t cur_cpsr = GetCPSR();
+	SetCPSR_Mode(SUPERVISOR_MODE);
+	SetGPRMapping(cur_mode, SUPERVISOR_MODE);
+	SetGPR(14, GetGPR(PC_reg));
+	SetSPSR(cur_cpsr);
+	UnsetCPSR_T();
+	SetCPSR_I();
+	SetGPR(PC_reg, GetSWIExceptionAddr());
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformPrefetchAbortException() {
+	// - get current mode
+	// - switch to abort mode
+	// - address of this swi + 4 ==> R14_svc (pc already set to the right value)
+	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
+	// - set ARM state 
+	// - disable normal interrupts
+	// - jump to interruption vector
+	uint32_t cur_mode = GetCPSR_Mode();
+	uint32_t cur_cpsr = GetCPSR();
+	SetCPSR_Mode(ABORT_MODE);
+	SetGPRMapping(cur_mode, ABORT_MODE);
+	SetGPR(14, GetGPR(PC_reg));
+	SetSPSR(cur_cpsr);
+	UnsetCPSR_T();
+	SetCPSR_I();
+	SetGPR(PC_reg, GetPrefetchAbortExceptionAddr());
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformDataAbortException() {
+	// - get current mode
+	// - switch to abort mode
+	// - address of the instrucction that produced the data abort + 8 ==> R14_svc
+	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
+	// - set ARM state 
+	// - disable normal interrupts
+	// - jump to interruption vector
+	uint32_t cur_mode = GetCPSR_Mode();
+	uint32_t cur_cpsr = GetCPSR();
+	SetCPSR_Mode(SUPERVISOR_MODE);
+	SetGPRMapping(cur_mode, ABORT_MODE);
+	SetGPR(14, GetGPR(PC_reg) + 0x4);
+	SetSPSR(cur_cpsr);
+	UnsetCPSR_T();
+	SetCPSR_I();
+	SetGPR(PC_reg, GetDataAbortExceptionAddr());
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformIRQException() {
+	// - get current mode
+	// - switch to abort mode
+	// - address of the next instruction to be executed + 4 ==> R14_svc
+	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
+	// - set ARM state 
+	// - disable normal interrupts
+	// - jump to interruption vector
+	uint32_t cur_mode = GetCPSR_Mode();
+	uint32_t cur_cpsr = GetCPSR();
+	SetCPSR_Mode(IRQ_MODE);
+	SetGPRMapping(cur_mode, IRQ_MODE);
+	SetGPR(14, GetGPR(PC_reg) + 0x4);
+	SetSPSR(cur_cpsr);
+	UnsetCPSR_T();
+	SetCPSR_I();
+	SetGPR(PC_reg, GetIRQExceptionAddr());
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformFIQException() {
+	// - get current mode
+	// - switch to reset mode
+	// - address of this swi + 4 ==> R14_svc (pc already set to the right value)
+	// - CPSR (before switching to supervisor mode) ==> SPSR_svc
+	// - set ARM state 
+	// - disable fast interrupts
+	// - disable normal interrupts
+	// - jump to interruption vector
+	uint32_t cur_mode = GetCPSR_Mode();
+	uint32_t cur_cpsr = GetCPSR();
+	SetCPSR_Mode(FIQ_MODE);
+	SetGPRMapping(cur_mode, FIQ_MODE);
+	SetGPR(14, GetGPR(PC_reg));
+	SetSPSR(cur_cpsr);
+	UnsetCPSR_T();
+	SetCPSR_F();
+	SetCPSR_I();
+	SetGPR(PC_reg, GetFIQExceptionAddr());	
+}
+
+template<class CONFIG>
+typename CONFIG::address_t
+CPU<CONFIG> ::
+GetExceptionVectorAddr() {
+	// action depends on the cpu model 
+	if(CONFIG::MODEL == ARM966E_S) {
+		// the cp15 should be able to get us the right value
+		return cp15_966es->GetExceptionVectorAddr();
+	} else {
+		if(logger_import) {
+			(*logger_import) << DebugError << LOCATION
+				<< "TODO: exception vector address reporting is not implemented "
+				<< "for this architecture" << Endl
+				<< EndDebugError;
+		}
+		Stop(-1);
+	}
+}
+
+template<class CONFIG>
+typename CONFIG::address_t 
+CPU<CONFIG> ::
+GetResetExceptionAddr() {
+// vector + 0
+	return GetExceptionVectorAddr() + (address_t)0x0;
+}
+
+template<class CONFIG>
+typename CONFIG::address_t 
+CPU<CONFIG> ::
+GetUndefInsnExceptionAddr() {
+// vector + 0x4
+	return GetExceptionVectorAddr() + (address_t)0x04;
+}
+
+template<class CONFIG>
+typename CONFIG::address_t 
+CPU<CONFIG> ::
+GetSWIExceptionAddr() {
+// vector + 0x8
+	return GetExceptionVectorAddr() + (address_t)0x08;
+}
+
+template<class CONFIG>
+typename CONFIG::address_t 
+CPU<CONFIG> ::
+GetPrefetchAbortExceptionAddr() {
+// vector + 0xc
+	return GetExceptionVectorAddr() + (address_t)0x0c;
+}
+
+template<class CONFIG>
+typename CONFIG::address_t 
+CPU<CONFIG> ::
+GetDataAbortExceptionAddr() {
+// vector + 0x10
+	return GetExceptionVectorAddr() + (address_t)0x010;
+}
+
+template<class CONFIG>
+typename CONFIG::address_t 
+CPU<CONFIG> ::
+GetIRQExceptionAddr() {
+// vector + 0x18
+	return GetExceptionVectorAddr() + (address_t)0x018;
+}
+
+template<class CONFIG>
+typename CONFIG::address_t 
+CPU<CONFIG> ::
+GetFIQExceptionAddr() {
+// vector + 0x1c
+	return GetExceptionVectorAddr() + (address_t)0x01c;
+}
+
+/**************************************************************/
+/* Exception methods            END                           */
+/**************************************************************/
+
+/**************************************************************/
 /* Condition table methods    START                           */
 /**************************************************************/
 
@@ -3051,7 +3298,7 @@ VerboseDumpRegs() {
 				<< "\t- r" << ((i*4) + j) << " = 0x" << Hex << GetGPR((i*4) + j) << Dec;
 		(*logger_import) << Endl;
 	}
-	(*logger_import) << "\t- cpsr = (" << hex << GetCPSR() << dec << ") ";
+	(*logger_import) << "\t- cpsr = (" << Hex << GetCPSR() << Dec << ") ";
 	typename CONFIG::reg_t mask;
 	for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
 		if((mask & GetCPSR()) != 0) (*logger_import) << "1";
