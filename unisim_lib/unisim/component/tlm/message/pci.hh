@@ -82,7 +82,7 @@ public:
 template <class ADDRESS_TYPE, uint32_t MAX_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os,
 		const PCIRequest<ADDRESS_TYPE, MAX_SIZE>& req) {
-	using unisim::service::interfaces::operator<<;
+	//using unisim::service::interfaces::operator<<;
 	using unisim::service::interfaces::Hex;
 	using unisim::service::interfaces::Dec;
 	
@@ -118,7 +118,7 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 template <uint32_t MAX_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
 		const PCIResponse<MAX_SIZE>& rsp) {
-	using unisim::service::interfaces::operator<<;
+	//using unisim::service::interfaces::operator<<;
 	using unisim::service::interfaces::Hex;
 	using unisim::service::interfaces::Dec;
 	
@@ -151,7 +151,7 @@ private:
 
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PReqType &req) {
-		using unisim::service::interfaces::operator<<;
+		//using unisim::service::interfaces::operator<<;
 		using unisim::service::interfaces::Hex;
 		using unisim::service::interfaces::Dec;
 		
@@ -196,7 +196,7 @@ private:
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PRspType &rsp, 
 		PReqType &req) {
-		using unisim::service::interfaces::operator<<;
+		//using unisim::service::interfaces::operator<<;
 		using unisim::service::interfaces::Hex;
 		using unisim::service::interfaces::Dec;
 		

@@ -94,7 +94,7 @@ template <class ADDRESS, unsigned int DATA_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryRequest<ADDRESS, DATA_SIZE>& req) {
 	typedef MemoryRequest<ADDRESS, DATA_SIZE> ReqType;
 	
-	using unisim::service::interfaces::operator<<;
+	//using unisim::service::interfaces::operator<<;
 	using unisim::service::interfaces::Hex;
 	using unisim::service::interfaces::Dec;
 	using unisim::service::interfaces::Endl;
@@ -126,7 +126,7 @@ template <unsigned int DATA_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, const MemoryResponse<DATA_SIZE>& rsp) {
 	typedef MemoryResponse<DATA_SIZE> RspType;
 	
-	using unisim::service::interfaces::operator<<;
+	//using unisim::service::interfaces::operator<<;
 	using unisim::service::interfaces::Hex;
 	using unisim::service::interfaces::Dec;
 	using unisim::service::interfaces::Endl;
@@ -157,7 +157,7 @@ private:
 
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PReqType &req) {
-		using unisim::service::interfaces::operator<<;
+		//using unisim::service::interfaces::operator<<;
 		using unisim::service::interfaces::Hex;
 		using unisim::service::interfaces::Dec;
 		using unisim::service::interfaces::Endl;
@@ -198,7 +198,7 @@ public:
 	void Dump(unisim::service::interfaces::Logger &os, PRspType &rsp, 
 		PReqType &req) {
 
-		using unisim::service::interfaces::operator<<;
+		//using unisim::service::interfaces::operator<<;
 		using unisim::service::interfaces::Hex;
 		using unisim::service::interfaces::Dec;
 

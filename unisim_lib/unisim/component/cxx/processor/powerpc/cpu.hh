@@ -93,7 +93,7 @@ using unisim::service::interfaces::Synchronizable;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

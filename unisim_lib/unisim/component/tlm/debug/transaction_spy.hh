@@ -66,7 +66,7 @@ using unisim::util::garbage_collector::Pointer;
 using std::string;
 
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

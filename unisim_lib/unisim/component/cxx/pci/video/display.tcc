@@ -44,7 +44,7 @@ namespace pci {
 namespace video {
 
 using namespace std;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;
@@ -101,7 +101,7 @@ Display<ADDRESS>::Display(const char *name, Object *parent) :
 	param_pci_device_number("pci-device-number", this, pci_device_number),
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency)
 {
-	SetupDependsOn(video_import);
+	Object::SetupDependsOn(video_import);
 }
 
 template <class ADDRESS>

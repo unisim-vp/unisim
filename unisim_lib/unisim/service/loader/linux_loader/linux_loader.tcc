@@ -65,8 +65,8 @@ namespace linux_loader {
     param_argv("argv", this, argv, MAX_ARGC),
     param_envc("envc", this, envc),
     param_envp("envp", this, envp, MAX_ENVC) {
-    SetupDependsOn(memory_import);
-    SetupDependsOn(loader_import);
+    Object::SetupDependsOn(memory_import);
+    Object::SetupDependsOn(loader_import);
   }
   
   template<class T>

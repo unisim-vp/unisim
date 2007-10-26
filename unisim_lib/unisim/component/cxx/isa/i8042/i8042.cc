@@ -40,7 +40,7 @@ namespace cxx {
 namespace isa {
 namespace i8042 {
 
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

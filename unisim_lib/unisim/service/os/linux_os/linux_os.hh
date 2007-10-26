@@ -78,7 +78,7 @@ using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::DebugError;
 using unisim::service::interfaces::EndDebugError;
 using unisim::service::interfaces::Endl;

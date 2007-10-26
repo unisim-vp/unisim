@@ -128,12 +128,12 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	param_bus_frequency("bus-frequency", this, bus_frequency),
 	param_max_inst("max-inst", this, max_inst)
 {
-	SetupDependsOn(internal_il1_power_mode_import);
-	SetupDependsOn(internal_dl1_power_mode_import);
-	SetupDependsOn(internal_l2_power_mode_import);
-	SetupDependsOn(internal_itlb_power_mode_import);
-	SetupDependsOn(internal_dtlb_power_mode_import);
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(internal_il1_power_mode_import);
+	Object::SetupDependsOn(internal_dl1_power_mode_import);
+	Object::SetupDependsOn(internal_l2_power_mode_import);
+	Object::SetupDependsOn(internal_itlb_power_mode_import);
+	Object::SetupDependsOn(internal_dtlb_power_mode_import);
+	Object::SetupDependsOn(logger_import);
 
 	this->bus_interface = bus_interface;
 

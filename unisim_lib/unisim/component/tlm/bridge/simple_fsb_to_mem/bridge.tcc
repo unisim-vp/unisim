@@ -44,7 +44,7 @@ namespace bridge {
 namespace simple_fsb_to_mem {
 
 using unisim::kernel::service::Object;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::DebugInfo;
 using unisim::service::interfaces::DebugWarning;
 using unisim::service::interfaces::DebugError;
@@ -86,8 +86,8 @@ Bridge(const sc_module_name& name, Object *parent) :
 	
 	SC_THREAD(DispatchMemory);
 	
-	SetupDependsOn(memory_import);
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(memory_import);
+	Object::SetupDependsOn(logger_import);
 }
 
 template<class CONFIG>
@@ -156,7 +156,8 @@ Setup() {
 template<class CONFIG>
 bool
 Bridge<CONFIG> ::
-Send(const p_fsb_msg_t &fsb_msg) {
+//Send(const p_fsb_msg_t &fsb_msg) {
+Send(const Pointer<TlmMessage<SimpleFSBRequest<typename CONFIG::fsb_address_t, Bridge<CONFIG>::FSB_BURST_SIZE>, SimpleFSBResponse<Bridge<CONFIG>::FSB_BURST_SIZE> > >& fsb_msg) {
 	bool dispatch_needed = false;
 	
 	/* check if there is room for the request in the queue,

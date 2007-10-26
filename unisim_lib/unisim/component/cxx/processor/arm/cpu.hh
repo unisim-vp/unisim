@@ -96,7 +96,7 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

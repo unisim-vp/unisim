@@ -325,9 +325,10 @@ mullw.disasm = {
 
 op neg(31[6]:rd[5]:ra[5]:?[5]:oe[1]:104[9]:rc[1])
 neg.execute = {
+	uint32_t result;
 	if(cpu->GetGPR(ra) == 0x80000000UL)
 	{
-       	cpu->SetGPR(rd, 0x80000000UL);
+		result = 0x80000000UL;
 		if(oe)
 		{
 			cpu->SetXER_OV();
@@ -336,11 +337,11 @@ neg.execute = {
 	}
 	else
 	{
-		uint32_t result = -cpu->GetGPR(ra); //(~GPR(ra)) + 1;
-		cpu->SetGPR(rd, result);
+		result = -cpu->GetGPR(ra); //(~GPR(ra)) + 1;
 		if(oe) cpu->ResetXER_OV();
 	}
-	if(rc) cpu->ComputeCR0(cpu->GetGPR(ra)); // FIXME: seems to be incorrect
+	cpu->SetGPR(rd, result);
+	if(rc) cpu->ComputeCR0(result);
 }
 neg.disasm = {
 	os << "neg" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra;

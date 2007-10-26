@@ -65,7 +65,7 @@ using unisim::kernel::service::ParameterArray;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::component::tlm::message::InterruptRequest;
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

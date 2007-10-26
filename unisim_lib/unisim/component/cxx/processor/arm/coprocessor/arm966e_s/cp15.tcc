@@ -104,7 +104,7 @@ CP15(const char *name,
 	param_verbose_debug_read("verbose-debug-read", this, verbose_debug_read),
 	verbose_debug_write(false),
 	param_verbose_debug_write("verbose-debug-write", this, verbose_debug_write) {
-	SetupDependsOn(inherited::logger_import);
+	Object::SetupDependsOn(inherited::logger_import);
 }
 
 template<class CONFIG>

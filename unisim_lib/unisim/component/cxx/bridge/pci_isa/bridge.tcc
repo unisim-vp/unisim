@@ -48,7 +48,7 @@ namespace pci_isa {
 using namespace unisim::util::endian;
 // using std::stringstream;
 using namespace std;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

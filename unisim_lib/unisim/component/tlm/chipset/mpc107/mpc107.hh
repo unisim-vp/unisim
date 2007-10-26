@@ -102,6 +102,7 @@ using unisim::kernel::tlm::TlmSendIf;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::ResponseListener;
 using unisim::kernel::tlm::AdvancedResponseListener;
+using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;

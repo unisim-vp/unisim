@@ -46,6 +46,7 @@ retaining the original license:
 #include "unisim/component/cxx/pci/ide/ide_disk.hh"
 #include "unisim/component/cxx/pci/ide/pcireg.hh"
 #include "unisim/util/endian/endian.hh"
+#include "unisim/component/cxx/pci/ide/pcidev.tcc"
 
 using namespace std;
 

@@ -81,7 +81,7 @@ using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::DebugInfo;
 using unisim::service::interfaces::EndDebugInfo;
 using unisim::service::interfaces::DebugWarning;
@@ -131,9 +131,9 @@ LinuxOS(const char *name, Object *parent) :
     current_syscall_name("") {
 	SetSyscallNameMap();
 
-	SetupDependsOn(registers_import);
-	SetupDependsOn(loader_import);
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(registers_import);
+	Object::SetupDependsOn(loader_import);
+	Object::SetupDependsOn(logger_import);
  }
 
 /** Destructor. */

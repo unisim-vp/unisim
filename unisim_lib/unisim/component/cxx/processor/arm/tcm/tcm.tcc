@@ -84,7 +84,7 @@ TCM(const char *name,
 	verbose_debug_write(false) {
 	/* initialize the memory to 0 */
 	memset(data, 0, SIZE);
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(logger_import);
 }
 
 template<class CONFIG, bool DATA_TCM>

@@ -56,7 +56,7 @@ namespace arm {
 //using full_system::tlm::TlmSendIf;
 //using full_system::utils::garbage_collector::Pointer;
 //using full_system::utils::services::Parameter;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

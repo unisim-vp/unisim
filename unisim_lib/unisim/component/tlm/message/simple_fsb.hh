@@ -83,7 +83,7 @@ public:
 template <class ADDRESS, unsigned int DATA_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
 		const SimpleFSBRequest<ADDRESS, DATA_SIZE>& req) {
-	using unisim::service::interfaces::operator<<;
+	//using unisim::service::interfaces::operator<<;
 	using unisim::service::interfaces::Endl;
 	using unisim::service::interfaces::Hex;
 	using unisim::service::interfaces::Dec;
@@ -116,7 +116,7 @@ unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::L
 template <unsigned int DATA_SIZE>
 unisim::service::interfaces::Logger& operator << (unisim::service::interfaces::Logger& os, 
 		const SimpleFSBResponse<DATA_SIZE>& rsp) {
-	using unisim::service::interfaces::operator<<;
+	//using unisim::service::interfaces::operator<<;
 	using unisim::service::interfaces::Endl;
 	using unisim::service::interfaces::Hex;
 	using unisim::service::interfaces::Dec;
@@ -149,7 +149,7 @@ private:
 
 public:
 	void Dump(unisim::service::interfaces::Logger &os, PReqType &req) {
-		using unisim::service::interfaces::operator<<;
+		//using unisim::service::interfaces::operator<<;
 		using unisim::service::interfaces::Hex;
 		using unisim::service::interfaces::Dec;
 		using unisim::service::interfaces::Endl;

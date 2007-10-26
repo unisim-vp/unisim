@@ -72,7 +72,7 @@
 
 typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
 
-static const bool DEBUG_INFORMATION = true;
+static const bool DEBUG_INFORMATION = false;
 
 bool debug_enabled;
 

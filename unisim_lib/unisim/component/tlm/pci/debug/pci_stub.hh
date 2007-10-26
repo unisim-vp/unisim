@@ -78,7 +78,7 @@ using unisim::component::tlm::message::InterruptRequest;
 using unisim::component::cxx::pci::TransactionType;
 using unisim::component::cxx::pci::PCISpace;
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

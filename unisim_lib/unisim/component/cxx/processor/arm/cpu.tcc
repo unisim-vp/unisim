@@ -140,8 +140,8 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	/* initialization of parameters for the 966es  END */
 	{
 	/* setting setup dependencies */
-	SetupDependsOn(logger_import);
-//	SetupDependsOn(linux_os_import);
+	Object::SetupDependsOn(logger_import);
+//	Object::SetupDependsOn(linux_os_import);
 	
 	/* Reset all the registers */
 	InitGPR();

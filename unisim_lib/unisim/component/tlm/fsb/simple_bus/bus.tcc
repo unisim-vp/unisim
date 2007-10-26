@@ -47,7 +47,7 @@ namespace simple_bus {
 
 using std::stringstream;
 using unisim::kernel::service::Object;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::DebugInfo;
 using unisim::service::interfaces::DebugWarning;
 using unisim::service::interfaces::DebugError;
@@ -116,7 +116,7 @@ Bus(const sc_module_name& module_name, Object *parent) :
 	bus_synchro_event(),
 	next_serviced(0),
 	chipset_rsp_fifo("chipset_rsp_fifo") {
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(logger_import);
 	/* create input ports and name them */
 	for(unsigned int i = 0; i < NUM_PROCS; i++) {
 		stringstream s;

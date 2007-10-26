@@ -69,8 +69,8 @@ ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImp
 	param_base_addr("base-addr", this, base_addr),
 	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address)
 {
-	SetupDependsOn(memory_import);
-	SetupDependsOn(symbol_table_build_import);
+	Object::SetupDependsOn(memory_import);
+	Object::SetupDependsOn(symbol_table_build_import);
 }
 
 template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

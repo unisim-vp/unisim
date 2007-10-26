@@ -51,7 +51,7 @@ using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;
@@ -77,7 +77,7 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent) :
 	param_endian("endian", this, endian),
 	param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS)
 {
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(logger_import);
 
 	uint32_t chip_io_width;
 	for(config_addr_shift = 0, chip_io_width = CHIP_IO_WIDTH; chip_io_width > 1; chip_io_width >>= 1, config_addr_shift++);

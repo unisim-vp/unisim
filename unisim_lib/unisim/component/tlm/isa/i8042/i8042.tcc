@@ -49,7 +49,7 @@ using unisim::component::cxx::isa::SP_MEM;
 using unisim::component::cxx::isa::TT_WRITE;
 using unisim::component::cxx::isa::TT_READ;
 
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

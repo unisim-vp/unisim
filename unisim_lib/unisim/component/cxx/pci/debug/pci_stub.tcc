@@ -44,7 +44,7 @@ namespace pci {
 namespace debug {
 
 using namespace std;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;
@@ -108,7 +108,7 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency),
 	param_bus_frequency("bus-frequency", this, bus_frequency)
 {
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(logger_import);
 
 	unsigned num_region;
 	for(num_region = 0; num_region < NUM_REGIONS; num_region++)

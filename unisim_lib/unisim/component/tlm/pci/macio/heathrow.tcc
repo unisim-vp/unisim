@@ -49,7 +49,7 @@ using unisim::component::cxx::pci::SP_MEM;
 using unisim::component::cxx::pci::SP_IO;
 using unisim::component::cxx::pci::SP_CONFIG;
 
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;

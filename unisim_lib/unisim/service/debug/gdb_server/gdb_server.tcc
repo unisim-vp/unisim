@@ -71,7 +71,7 @@ using std::endl;
 using std::hex;
 using std::dec;
 using std::list;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
@@ -138,7 +138,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
 	param_tcp_port("tcp-port", this, tcp_port),
 	param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename)
 {
-	SetupDependsOn(registers_import);
+	Object::SetupDependsOn(registers_import);
 
 	counter = period;
 }

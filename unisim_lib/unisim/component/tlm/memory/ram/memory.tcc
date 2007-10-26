@@ -43,7 +43,7 @@ namespace tlm {
 namespace memory {
 namespace ram {
 
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;
@@ -70,7 +70,7 @@ Memory(const sc_module_name& name, Object *parent) :
 	param_frequency("frequency", this, frequency),
 	logger_import("logger-import", this) {
 	slave_port(*this);
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(logger_import);
 }
 
 /* Destructor */

@@ -51,6 +51,7 @@ namespace bridge {
 namespace simple_fsb_to_mem {
 
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
@@ -107,7 +108,8 @@ public:
 	
 	virtual bool Setup();
 	
-	virtual bool Send(const p_fsb_msg_t &fsb_msg);
+	//virtual bool Send(const p_fsb_msg_t &fsb_msg);
+	virtual bool Send(const Pointer<TlmMessage<SimpleFSBRequest<typename CONFIG::fsb_address_t, Bridge<CONFIG>::FSB_BURST_SIZE>, SimpleFSBResponse<Bridge<CONFIG>::FSB_BURST_SIZE> > >& fsb_msg);
 
 	virtual void Reset();
 	virtual bool ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size);

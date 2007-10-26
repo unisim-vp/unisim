@@ -42,7 +42,7 @@ namespace chipset {
 namespace mpc107 {
 
 using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;
@@ -79,7 +79,7 @@ PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	deviceNumber(_deviceNumber),
 	config_regs(&_config_regs), 
 	addr_map(&_addr_map){
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(logger_import);
 }
 	
 template <class SYSTEM_BUS_PHYSICAL_ADDR,

@@ -43,7 +43,7 @@ namespace tlm {
 namespace chipset {
 namespace mpc107 {
 
-using unisim::service::interfaces::operator<<;
+//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::DebugInfo;
 using unisim::service::interfaces::DebugWarning;
 using unisim::service::interfaces::DebugError;
@@ -116,7 +116,7 @@ MPC107(const sc_module_name &name, Object *parent) :
 	config_regs(),
 	pci_controller(0, config_regs, addr_map, "pci_controller", this),
 	addr_map(config_regs, "address_mapper", this) {
-	SetupDependsOn(logger_import);
+	Object::SetupDependsOn(logger_import);
 	slave_port(*this);
 	pci_slave_port(*this);
 	
@@ -154,10 +154,10 @@ MPC107(const sc_module_name &name, Object *parent) :
 	SC_THREAD(DispatchDMALocalMemoryAccess);
 	SC_THREAD(DispatchDMAPCIAccess);
 	
-	SetupDependsOn(logger_import);
-	SetupDependsOn(pci_logger_import);
-	SetupDependsOn(addr_map_logger_import);
-	SetupDependsOn(epic_logger_import);
+	Object::SetupDependsOn(logger_import);
+	Object::SetupDependsOn(pci_logger_import);
+	Object::SetupDependsOn(addr_map_logger_import);
+	Object::SetupDependsOn(epic_logger_import);
 }
 
 template <class PHYSICAL_ADDR, 

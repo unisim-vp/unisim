@@ -101,7 +101,7 @@ Cache(const char *name,
 //   power_estimator_import("power-estimator-import", this),
 //   power_mode_import("power-mode-import", this),
 //   power_mode_export("power-mode-export", this),
-	SetupDependsOn(inherited::logger_import);
+	Object::SetupDependsOn(inherited::logger_import);
 	PrReset();
 }
 
