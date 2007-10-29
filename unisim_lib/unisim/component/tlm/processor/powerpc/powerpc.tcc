@@ -114,7 +114,6 @@ bool PowerPC<CONFIG>::Setup()
 	cpu_cycle_time = sc_time(1.0 / (double) (*this)["cpu-frequency"], SC_US);
 	bus_cycle_time = sc_time(1.0 / (double) (*this)["bus-frequency"], SC_US);
 	nice_time = sc_time(1.0 / nice_frequency, SC_SEC);
-	cerr << "nice_time = " << nice_time << endl;
 	return true;
 }
 

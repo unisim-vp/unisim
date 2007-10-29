@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/cache/mesi/cache.hh>
 #include <unisim/component/cxx/cache/insn/cache.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
@@ -77,6 +78,7 @@ using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::MemoryInjection;
 using unisim::component::cxx::cache::BusInterface;
 using unisim::component::cxx::cache::BusStatus;
 using unisim::component::cxx::cache::BusControl;
@@ -150,6 +152,7 @@ class CPU :
 	public Service<Disassembly<typename CONFIG::address_t> >,
 	public Service<unisim::service::interfaces::Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
+	public Service<MemoryInjection<typename CONFIG::address_t> >,
 	public Service<CPULinuxOS>,
 	public Client<Memory<typename CONFIG::address_t> >,
 	public Client<LinuxOS>,
@@ -304,6 +307,7 @@ public:
 	ServiceExport<Disassembly<address_t> > disasm_export;
 	ServiceExport<unisim::service::interfaces::Registers> registers_export;
 	ServiceExport<Memory<address_t> > memory_export;
+	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 	ServiceExport<Synchronizable> synchronizable_export;
 
@@ -394,6 +398,8 @@ public:
 	void WriteMemory64(address_t addr, uint64_t value);
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
+	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
+	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
 	void ReadMemoryBuffer(address_t addr, void *buffer, uint32_t size);
 	void WriteMemoryBuffer(address_t addr, const void *buffer, uint32_t size);
 

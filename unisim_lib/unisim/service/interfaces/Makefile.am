@@ -7,6 +7,7 @@ include_HEADERS = \
 	linux_os.hh \
 	logger.hh \
 	memory.hh \
+	memory_injection.hh \
 	registers.hh \
 	symbol_table_build.hh \
 	synchronizable.hh \

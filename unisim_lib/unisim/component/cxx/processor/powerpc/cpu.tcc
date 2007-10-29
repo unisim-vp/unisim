@@ -71,6 +71,7 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<unisim::service::interfaces::Registers>(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
+	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
 	Service<CPULinuxOS>(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<LinuxOS>(name, parent),
@@ -81,6 +82,7 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	disasm_export("disasm-export", this),
 	registers_export("registers-export", this),
 	memory_export("memory-export", this),
+	memory_injection_export("memory-injection-export", this),
 	cpu_linux_os_export("cpu-linux-os-export", this),
 	kernel_loader_import("kernel-loader-import", this),
 	debug_control_import("debug-control-import", this),
@@ -408,35 +410,6 @@ bool CPU<CONFIG>::Setup()
 		if(CONFIG::HAS_HID1_ABE) SetHID1_ABE(); // enable address only broadcast
 
 		if(CONFIG::HAS_L2CR_L2E) SetL2CR_L2E(); // enable L2 cache
-		
-#if 0
-		if(!printk_buf_addr)
-		{
-			if(symbol_table)
-			{
-				const Symbol<address_t> *symbol;
-				
-				symbol = symbol_table_lookup_import->FindSymbolByName("printk_buf.7", Symbol<address_t>::SYM_OBJECT);
-				
-				if(!symbol)
-				{
-					symbol = symbol_table_lookup_import->FindSymbolByName("printk_buf.6", Symbol<address_t>::SYM_OBJECT);
-				}
-				
-				if(!symbol)
-				{
-					symbol = symbol_table_lookup_import->FindSymbolByName("printk_buf.898", Symbol<address_t>::SYM_OBJECT);
-				}
-				
-				if(symbol)
-				{
-					printk_buf_addr = symbol->GetAddress();
-					printk_buf_size = symbol->GetSize();
-					cerr << "Found printk_buf at 0x" << hex << printk_buf_addr << std::dec << "(" << printk_buf_size << " bytes)" << endl;
-				}
-			}
-		}
-#endif
 	}
 	return true;
 }
@@ -2692,6 +2665,44 @@ template <class CONFIG>
 bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size)
 {
 	return mmu.WriteMemory(addr, buffer, size);
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::InjectReadMemory(address_t addr, void *buffer, uint32_t size)
+{
+	if(size > 0)
+	{
+		uint32_t sz;
+		uint8_t *dst = (uint8_t *) buffer;
+		do
+		{
+			sz = size > 4 ? 4 : size;
+			ReadMemoryBuffer(addr, dst, sz);
+			dst += sz;
+			addr += sz;
+			size -= sz;
+		} while(size > 0);
+	}
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t size)
+{
+	if(size > 0)
+	{
+		uint32_t sz;
+		const uint8_t *src = (const uint8_t *) buffer;
+		do
+		{
+			sz = size > 4 ? 4 : size;
+			WriteMemoryBuffer(addr, src, sz);
+			src += sz;
+			addr += sz;
+			size -= sz;
+		} while(size > 0);
+	}
+	return true;
 }
 
 template <class CONFIG>

@@ -67,7 +67,7 @@
 
 typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
 
-static const bool DEBUG_INFORMATION = true;
+static const bool DEBUG_INFORMATION = false;
 
 bool debug_enabled;
 
@@ -594,6 +594,7 @@ int sc_main(int argc, char *argv[])
 	cpu->linux_os_import >> linux_os->linux_os_export;
 	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
+	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
