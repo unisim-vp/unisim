@@ -20,6 +20,7 @@ if COND_release
 libunisim_component_cxx_processor_arm_a_SOURCES += \
 	cpu_arm9tdmi_littleendian.cc \
 	cpu_arm9tdmi_bigendian.cc \
+	cpu_arm9tdmi_bigendian_nocache.cc \
 	cpu_arm9tdmi_littleendian_debug.cc \
 	cpu_arm966e_s_littleendian.cc \
 	cpu_arm966e_s_bigendian.cc \

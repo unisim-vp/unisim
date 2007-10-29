@@ -13,6 +13,7 @@ libunisim_component_tlm_processor_arm_a_SOURCES += \
 	arm966e_s_littleendian.cc \
 	arm966e_s_littleendian_debug.cc \
 	arm9tdmi_bigendian.cc \
+	arm9tdmi_bigendian_nocache.cc \
 	arm9tdmi_littleendian.cc \
 	arm9tdmi_littleendian_debug.cc
 endif 

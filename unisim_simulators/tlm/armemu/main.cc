@@ -60,10 +60,28 @@
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
-typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig CPU_CONFIG;
-//typedef unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig CPU_CONFIG;
-//typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config CPU_CONFIG;
-//typedef unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig CPU_CONFIG;
+#ifdef ARMEMU_DEBUG
+	#ifdef ARMEMU_NOCACHE
+		typedef 
+			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_NoCache_DebugConfig 
+			CPU_CONFIG;
+	#else
+		typedef 
+			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig 
+			CPU_CONFIG;
+	#endif // ARMEMU_NOCACHE
+#else
+	#ifdef ARMEMU_NOCACHE
+		typedef 
+			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_NoCache_Config 
+			CPU_CONFIG;
+	#else
+		typedef 
+			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig 
+			CPU_CONFIG;
+	#endif // ARMEMU_NOCACHE
+#endif // ARMEMU_DEBUG
+
 typedef unisim::component::tlm::bridge::simple_fsb_to_mem::Addr32BurstSize32_Config BRIDGE_CONFIG;
 
 //static const bool DEBUG_INFORMATION = true;

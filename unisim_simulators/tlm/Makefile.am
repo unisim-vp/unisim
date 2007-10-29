@@ -18,11 +18,6 @@ SUBDIRS += armemu
 INCLUDE_SUBDIRS += armemu
 endif
 
-if COND_armemu_nocache
-SUBDIRS += armemu_nocache
-INCLUDE_SUBDIRS += armemu_nocache
-endif
-
 if COND_arm966e_s
 SUBDIRS += arm966e_s
 INCLUDE_SUBDIRS += arm966e_s
