@@ -121,10 +121,7 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	num_insn_in_prefetch_buffer(0),
 	cur_insn_in_prefetch_buffer(0),
 	icache_enabled(false),
-#if 0
-	printk_buf_addr(0),
-	printk_buf_size(0),
-#endif
+	dcache_enabled(false),
 	param_cpu_frequency("cpu-frequency", this, cpu_frequency),
 	param_voltage("voltage", this, voltage),
 	param_bus_frequency("bus-frequency", this, bus_frequency),
@@ -2030,6 +2027,7 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 			if(logger_import)
 				(*logger_import) << DebugInfo << "Enabling L1 Data Cache" << Endl << EndDebugInfo;
 			dl1.Enable();
+			dcache_enabled = true;
 		}
 		
 		if(old_hid0_dce && !GetHID0_DCE())
@@ -2037,6 +2035,7 @@ void CPU<CONFIG>::SetHID0(uint32_t value)
 			if(logger_import)
 				(*logger_import) << DebugInfo << "Disabling L1 Data Cache" << Endl << EndDebugInfo;
 			dl1.Disable();
+			dcache_enabled = GetL2CR_L2E() ? true : false;
 		}
 	}
 	
@@ -2202,6 +2201,7 @@ void CPU<CONFIG>::SetL2CR(uint32_t value)
 				(*logger_import) << DebugInfo << "Enabling L2 Cache" << Endl << EndDebugInfo;
 			l2.Enable();
 			icache_enabled = GetHID0_ICE() ? true : false;
+			dcache_enabled = GetHID0_DCE() ? true : false;
 		}
 		
 		if(old_l2cr_l2e && !GetL2CR_L2E())
@@ -2210,6 +2210,7 @@ void CPU<CONFIG>::SetL2CR(uint32_t value)
 				(*logger_import) << DebugInfo << "Disabling L2 Cache" << Endl << EndDebugInfo;
 			l2.Disable();
 			icache_enabled = GetHID0_ICE() ? true : false;
+			dcache_enabled = GetHID0_DCE() ? true : false;
 		}
 	}
 
@@ -2676,7 +2677,8 @@ bool CPU<CONFIG>::InjectReadMemory(address_t addr, void *buffer, uint32_t size)
 		uint8_t *dst = (uint8_t *) buffer;
 		do
 		{
-			sz = size > 4 ? 4 : size;
+			uint32_t size_to_block_boundary = dcache_enabled ? CONFIG::L1_DATA_CACHE_BLOCK_SIZE - (addr & (CONFIG::L1_DATA_CACHE_BLOCK_SIZE - 1)) : FSB_WIDTH - (addr & (FSB_WIDTH - 1));
+			sz = size > size_to_block_boundary ? size_to_block_boundary : size;
 			ReadMemoryBuffer(addr, dst, sz);
 			dst += sz;
 			addr += sz;
@@ -2695,7 +2697,8 @@ bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t
 		const uint8_t *src = (const uint8_t *) buffer;
 		do
 		{
-			sz = size > 4 ? 4 : size;
+			uint32_t size_to_block_boundary = dcache_enabled ? CONFIG::L1_DATA_CACHE_BLOCK_SIZE - (addr & (CONFIG::L1_DATA_CACHE_BLOCK_SIZE - 1)) : FSB_WIDTH - (addr & (FSB_WIDTH - 1));
+			sz = size > size_to_block_boundary ? size_to_block_boundary : size;
 			WriteMemoryBuffer(addr, src, sz);
 			src += sz;
 			addr += sz;

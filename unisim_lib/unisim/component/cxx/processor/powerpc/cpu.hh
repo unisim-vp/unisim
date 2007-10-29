@@ -1299,6 +1299,7 @@ private:
 	unsigned int cur_insn_in_prefetch_buffer;                  //!< Prefetch buffer index of the current instruction to be executed
 	uint32_t prefetch_buffer[NUM_PREFETCH_BUFFER_ENTRIES];     //!< The instruction prefetch buffer
 	bool icache_enabled;
+	bool dcache_enabled;
 	
 	//=====================================================================
 	//=                      Debugging stuffs                             =
