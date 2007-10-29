@@ -2432,7 +2432,7 @@ const char *CPU<CONFIG>::GetArchitectureName() const
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::ReadMemoryBuffer(address_t addr, void *buffer, uint32_t size)
+void CPU<CONFIG>::ReadMemoryBuffer(address_t addr, void *buffer, uint32_t size)
 {
 	mmu.ReadDataMemory(addr, buffer, size, GetPrivilegeLevel());
 
@@ -2443,24 +2443,8 @@ inline void CPU<CONFIG>::ReadMemoryBuffer(address_t addr, void *buffer, uint32_t
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::WriteMemoryBuffer(address_t addr, const void *buffer, uint32_t size)
+void CPU<CONFIG>::WriteMemoryBuffer(address_t addr, const void *buffer, uint32_t size)
 {
-#if 0
-	if(printk_buf_addr && addr >= printk_buf_addr && addr < printk_buf_addr + printk_buf_size)
-	{
-		uint32_t i;
-		cout << "\033[31m";
-		for(i = 0; i < size; i++)
-		{
-			char c = ((const char *) buffer)[i];
-			if(c != 0) {
-				//cerr << c;
-				cout << c;
-			}
-		}
-		cout << "\033[37m";
-	}
-#endif
 	mmu.WriteDataMemory(addr, buffer, size, GetPrivilegeLevel());
 
 	if(memory_access_reporting_import)

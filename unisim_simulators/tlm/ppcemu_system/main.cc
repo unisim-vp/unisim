@@ -542,7 +542,6 @@ int sc_main(int argc, char *argv[])
 	// MPC107 run-time configuration
 	(*mpc107)["a_address_map"] = false;
 	(*mpc107)["host_mode"] = true;
-	(*mpc107)["compatibility_hole"] = true;
 	(*mpc107)["memory_32bit_data_bus_size"] = true;
 	(*mpc107)["rom0_8bit_data_bus_size"] = false;
 	(*mpc107)["rom1_8bit_data_bus_size"] = false;

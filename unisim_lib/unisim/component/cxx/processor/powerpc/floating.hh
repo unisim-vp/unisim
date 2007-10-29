@@ -297,9 +297,9 @@ class SoftFloat : public HostFloat::BuiltDouble {
   private:
    typedef HostFloat::BuiltDouble inherited;
 
-   static double getFromInt(uint32_t uDouble)
-      {  double result; memcpy(&result, &uDouble, 4); return result; }
-   static uint32_t getFromDouble(double arg)
+   static float getFromInt(uint32_t uFloat)
+      {  float result; memcpy(&result, &uFloat, 4); return result; }
+   static uint32_t getFromDouble(float arg)
       {  uint32_t result; memcpy(&result, &arg, 4); return result; }
   public:
    SoftFloat() : inherited() {}

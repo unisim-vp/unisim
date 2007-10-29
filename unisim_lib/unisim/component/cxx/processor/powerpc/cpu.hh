@@ -394,16 +394,8 @@ public:
 	void WriteMemory64(address_t addr, uint64_t value);
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
-	void ReadMemoryBuffer(address_t addr, void *buffer, uint32_t size)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-			__attribute__((always_inline))
-#endif
-	;
-	void WriteMemoryBuffer(address_t addr, const void *buffer, uint32_t size)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-			__attribute__((always_inline))
-#endif
-	;
+	void ReadMemoryBuffer(address_t addr, void *buffer, uint32_t size);
+	void WriteMemoryBuffer(address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=                         utility methods                           =
@@ -1416,11 +1408,6 @@ private:
 	inline bool IsMPC74X() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745; }
 	inline bool IsMPC75X() { return CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
 	inline bool IsMPC7X5() { return CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC755; }
-
-#if 0
-	address_t printk_buf_addr;
-	uint32_t printk_buf_size;
-#endif
 };
 
 } // end of namespace powerpc
