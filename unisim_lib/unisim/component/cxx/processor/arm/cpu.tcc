@@ -96,11 +96,13 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<Registers>(name, parent),
+	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<Logger>(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
+	memory_injection_export("memory_injection_export", this),
 	memory_export("memory_export", this),
 	cpu_linux_os_export("cpu_linux_os_export", this),
 	debug_control_import("debug_control_import", this),
@@ -121,6 +123,8 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	param_verbose_setup("verbose-setup", this, verbose_setup),
 	verbose_step(false),
 	param_verbose_step("verbose-step", this, verbose_step),
+	verbose_step_insn(false),
+	param_verbose_step_insn("verbose-step-insn", this, verbose_step_insn),
 	verbose_dump_regs_start(false),
 	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
 	verbose_dump_regs_end(false),
@@ -289,6 +293,81 @@ OnDisconnect() {
 //=====================================================================
 
 //=====================================================================
+//=             memory injection interface methods              START =
+//=====================================================================
+template<class CONFIG>
+bool 
+CPU<CONFIG> :: 
+InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
+	uint32_t t_size;
+	uint32_t index = 0;
+
+	while(size != 0) {
+		t_size = 4;
+
+		if(size < 4) {
+			t_size = 2;
+			if(size < 2) {
+				t_size = 1;
+			}
+		}
+		if(CONFIG::HAS_DATA_CACHE_L1) {
+			cache_l1->PrRead(addr + index, &(((uint8_t *)buffer)[index]), t_size);
+			index += t_size;
+		} else {
+			if(CONFIG::HAS_CACHE_L2) {
+				cache_l2->PrRead(addr + index, &(((uint8_t *)buffer)[index]), t_size);
+				index += t_size;
+			} else {
+				for(unsigned int i = 0; i < t_size; i++) {
+					Read8(addr + index, ((uint8_t *)buffer)[index]);
+					index++;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+template<class CONFIG>
+bool 
+CPU<CONFIG> ::
+InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size) {
+	uint32_t t_size;
+	uint32_t index = 0;
+
+	while(size != 0) {
+		t_size = 4;
+
+		if(size < 4) {
+			t_size = 2;
+			if(size < 2) {
+				t_size = 1;
+			}
+		}
+		if(CONFIG::HAS_DATA_CACHE_L1) {
+			cache_l1->PrWrite(addr + index, &(((uint8_t *)buffer)[index]), t_size);
+			index += t_size;
+		} else {
+			if(CONFIG::HAS_CACHE_L2) {
+				cache_l2->PrWrite(addr + index, &(((uint8_t *)buffer)[index]), t_size);
+				index += t_size;
+			} else {
+				for(unsigned int i = 0; i < t_size; i++) {
+					Write8(addr + index, ((uint8_t *)buffer)[index]);
+					index++;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+//=====================================================================
+//=             memory injection interface methods              END   =
+//=====================================================================
+
+//=====================================================================
 //=             memory interface methods                        START =
 //=====================================================================
 template<class CONFIG>
@@ -309,14 +388,6 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size) {
-	if(addr <= (uint32_t)0xbfffb664 && addr + size > (uint32_t)0xbfffb664) {
-		cerr << Object::GetName() << ": WriteMemory 0x" << hex << addr << dec
-			<< " " << size << " bytes:";
-		for(unsigned int i = 0; i < size; i++) {
-			cerr << " " << hex << (unsigned int)((uint8_t *)buffer)[i] << dec;
-		}
-		cerr << endl;
-	}
 	if(memory_import)
 		return memory_import->WriteMemory(addr, buffer, size);
 	return false;
@@ -418,8 +489,36 @@ template<class CONFIG>
 void
 CPU<CONFIG> ::
 Step() {
+//	uint64_t insn_min = (uint64_t)10197700; // 2090000;
+//	uint64_t insn_max = (uint64_t)10198000; //insn_min + (uint64_t)10000;
+	
 	reg_t current_pc;
 	reg_t next_pc;
+
+//	reg_t data_l1;
+//	reg_t data_il1;
+//	reg_t end_data_l1;
+//	reg_t end_data_il1;
+	
+//	if(instruction_counter == insn_min) {
+//		(*this)["verbose-step"] = true;
+//		(*this)["verbose-dump-regs-end"] = true;
+//		if(cache_l1) {
+//			(*cache_l1)["verbose-all"] = false;
+//			(*cache_l1)["verbose-pr-read"] = true;
+//			(*cache_l1)["verbose-pr-write"] = true;
+//			(*cache_il1)["verbose-all"] = false;
+//			(*cache_il1)["verbose-pr-read"] = true;
+//			(*cache_il1)["verbose-pr-write"] = true;
+//			(*cache_l2)["verbose-all"] = false;
+//			(*cache_l2)["verbose-pr-read"] = true;
+//			(*cache_l2)["verbose-pr-write"] = true;
+//		}
+//	}
+//	
+//	if(instruction_counter == insn_max) {
+//		Stop(-1);
+//	}
 
 	Operation<CONFIG> *op = NULL;
 	current_pc = GetGPR(PC_reg);
@@ -488,7 +587,28 @@ Step() {
 				<< Endl << EndDebugInfo;
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, current_pc, 4);
 	}
-
+	
+//	if(cache_l1) {
+//		data_l1 = 0;
+//		end_data_l1 = 0;
+//		(*cache_l1)["verbose-read-memory"] = false;
+//		(*cache_l1)["verbose-write-memory"] = false;
+//		(*cache_l2)["verbose-read-memory"] = false;
+//		(*cache_l2)["verbose-write-memory"] = false;
+//		cache_l1->ReadMemory((address_t)0xD40AC01D, &data_l1, 1);
+//		(*cache_l1)["verbose-read-memory"] = true;
+//		(*cache_l1)["verbose-write-memory"] = true;
+//		(*cache_l2)["verbose-read-memory"] = true;
+//		(*cache_l2)["verbose-write-memory"] = true;
+//	} else {
+//		data_l1 = 0;
+//		end_data_l1 = 0;
+//		memory_import->ReadMemory((address_t)0xD40AC01D, &data_l1, 1);
+//	}
+//	if(cache_il1) {
+//		cache_il1->ReadMemory((address_t)0xBFFFB804, &data_il1, 4);
+//	}
+//	
 	try {
 		insn_t insn;
 		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
@@ -531,19 +651,87 @@ Step() {
 				<< Endl << EndDebugInfo;
 		op = Decoder<CONFIG>::Decode(current_pc, insn);
 		/* Execute instruction */
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) {
+		if(CONFIG::DEBUG_ENABLE && (verbose_step || verbose_step_insn) && logger_import) {
 			stringstream disasm_str;
 			op->disasm(*this, disasm_str);
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Executing instruction "
 				<< disasm_str.str()
 				<< " at 0x" << Hex << current_pc << Dec 
-				<< " (0x" << Hex << insn << Dec << ")"
+				<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
 				<< Endl << EndDebugInfo;
 		}
+//		if(CONFIG::DEBUG_ENABLE && logger_import && (instruction_counter >= insn_min)) {
+//			stringstream disasm_str;
+//			op->disasm(*this, disasm_str);
+//			(*logger_import) << DebugInfo << LOCATION
+//				<< "Executing instruction "
+//				<< disasm_str.str()
+//				<< " at 0x" << Hex << current_pc << Dec 
+//				<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
+//				<< Endl << EndDebugInfo;
+//		}
 		op->execute(*this);
 		
 		VerboseDumpRegsEnd();
+//		if(CONFIG::DEBUG_ENABLE && logger_import && (instruction_counter >= insn_min)) {
+//			(*logger_import) << DebugInfo << LOCATION
+//				<< "Register dump at the end of instruction execution: " << Endl;
+//			VerboseDumpRegs();
+//			(*logger_import) << EndDebugInfo;
+//		}
+//		if(cache_l1) {
+//			(*cache_l1)["verbose-read-memory"] = false;
+//			(*cache_l1)["verbose-write-memory"] = false;
+//			(*cache_l2)["verbose-read-memory"] = false;
+//			(*cache_l2)["verbose-write-memory"] = false;
+//			if(cache_l1->ReadMemory((address_t)0xD40AC01D, &end_data_l1, 1)) {
+//				if(data_l1 != end_data_l1) {
+//					cerr << "0xD40AC01D different in cache_l1 after executing 0x"
+//						<< hex << current_pc << dec << endl
+//						<< " - instructions executed = " << instruction_counter << endl
+//						<< " - initial data = 0x" << hex << data_l1 << dec << endl
+//						<< " - end data     = 0x" << hex << end_data_l1 << dec << endl;
+////					Stop(-1);
+//				}
+//			} else {
+//				cerr << "Error reading 0xD40AC01C on cache_l1 after executing" << endl;
+//				Stop(-1);
+//			}
+//			(*cache_l1)["verbose-read-memory"] = true;
+//			(*cache_l1)["verbose-write-memory"] = true;
+//			(*cache_l2)["verbose-read-memory"] = true;
+//			(*cache_l2)["verbose-write-memory"] = true;
+//		} else {
+//			if(memory_import->ReadMemory((address_t)0xD40AC01D, &end_data_l1, 1)) {
+//				if(data_l1 != end_data_l1) {
+//					cerr << "0xD40AC01D different in memory after executing 0x"
+//						<< hex << current_pc << dec << endl
+//						<< " - instructions executed = " << instruction_counter << endl
+//						<< " - initial data = 0x" << hex << data_l1 << dec << endl
+//						<< " - end data     = 0x" << hex << end_data_l1 << dec << endl;
+////					Stop(-1);
+//				}
+//			} else {
+//				cerr << "Error reading 0xD40AC01C on memory after executing" << endl;
+//				Stop(-1);
+//			}
+//		}
+//		if(cache_il1) {
+//			if(cache_il1->ReadMemory((address_t)0xBFFFB804, &end_data_il1, 4)) {
+//				if(data_il1 != end_data_il1) {
+//					cerr << "0x3ca80 different in cache_il1 after executing 0x"
+//						<< hex << current_pc << dec << endl
+//						<< " - instructions executed = " << instruction_counter << endl
+//						<< " - initial data = 0x" << hex << data_il1 << dec << endl
+//						<< " - end data     = 0x" << hex << end_data_il1 << dec << endl;
+//					Stop(-1);
+//				}
+//			} else {
+//				cerr << "Error reading 0x3ca80 on cache_il1 after executing" << endl;
+//				Stop(-1);
+//			}
+//		}
 
 		instruction_counter++;
 	} 
@@ -2403,11 +2591,6 @@ template<class CONFIG>
 bool
 CPU<CONFIG> ::
 ReadInsn(typename CONFIG::address_t address, uint32_t &val) {
-	if(CONFIG::DEBUG_ENABLE && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "address = 0x" << Hex << address << Dec
-			<< Endl << EndDebugInfo;
-
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, (uint8_t *)&val, 4);
 		return true;
@@ -2431,11 +2614,6 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read8(typename CONFIG::address_t address, uint8_t &val) {
-	if(CONFIG::DEBUG_ENABLE && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "address = 0x" << Hex << address << Dec
-			<< Endl << EndDebugInfo;
-
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, &val, 1);
 	} else {
@@ -2457,11 +2635,6 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read16(typename CONFIG::address_t address, uint16_t &val) {
-	if(CONFIG::DEBUG_ENABLE && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "address = 0x" << Hex << address << Dec
-			<< Endl << EndDebugInfo;
-
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, (uint8_t *)&val, 2);
 	} else {
@@ -2485,11 +2658,6 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read32(typename CONFIG::address_t address, uint32_t &val) {
-	if(CONFIG::DEBUG_ENABLE && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "address = 0x" << Hex << address << Dec
-			<< Endl << EndDebugInfo;
-
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, (uint8_t *)&val, 4);
 	} else {
@@ -2513,12 +2681,6 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Write8(typename CONFIG::address_t address, uint8_t &val) {
-	if(CONFIG::DEBUG_ENABLE && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "address = 0x" << Hex << address << Dec
-			<< ", value = " << Hex << val << Dec
-			<< Endl << EndDebugInfo;
-
 	uint8_t value;
   
 	value = val;
@@ -2543,12 +2705,6 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Write16(typename CONFIG::address_t address, uint16_t &val) {
-	if(CONFIG::DEBUG_ENABLE && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "address = 0x" << Hex << address << Dec
-			<< ", value = " << Hex << val << Dec
-			<< Endl << EndDebugInfo;
-
 	uint16_t cp;
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
@@ -2574,12 +2730,6 @@ bool CPU<CONFIG> ::
 Write32(typename CONFIG::address_t address, uint32_t &val) {
 	uint32_t cp;
 
-	if(CONFIG::DEBUG_ENABLE && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "address = 0x" << Hex << address << Dec
-			<< ", value = " << Hex << val << Dec
-			<< Endl << EndDebugInfo;
-  
 	cp = Host2Target(CONFIG::ENDIANESS, val);
 
 	if(CONFIG::MODEL == ARM966E_S) {
@@ -3215,6 +3365,7 @@ CreateMemorySystem() {
 			cerr << "Configuring instruction cache level 1" << endl;
 			cache_il1 = new Cache<typename CONFIG::insn_cache_l1_t>("cache_il1", cache_l2, this);
 			cache_il1->logger_import >> cache_il1_logger_import;
+			cache_il1->memory_import >> cache_l2->memory_export;
 			if(CONFIG::HAS_DATA_CACHE_L1) {
 				cerr << "Configuring data cache level 1" << endl;
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", cache_l2, this);

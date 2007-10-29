@@ -240,9 +240,10 @@ int main(int argc, char *argv[], char **envp) {
 	LoggerServer *logger = 0;
 	if(logger_on) {
 		logger = new LoggerServer("logger");
-		(*logger)["show-file"] = false; //true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
+		(*logger)["show-time"] = false;
+		(*logger)["show-file"] = false;
+		(*logger)["show-function"] = false;
+		(*logger)["show-line"] = false;
 	}
 	
 	// Time
@@ -311,18 +312,10 @@ int main(int argc, char *argv[], char **envp) {
 	// setting verbose parameters
 	// (*cpu)["verbose-all"] = true;
 	// (*cpu)["verbose-setup"] = true;
-	(*cpu)["verbose-step"] = true;
-	(*cpu)["verbose-dump-regs-start"] = true;
-	(*cpu)["verbose-dump-regs-end"] = true;
-//	(*cpu)["cache_dl1.verbose-all"] = true;
-	(*cpu)["cache_dl1.verbose-pr-read"] = true;
-	(*cpu)["cache_dl1.verbose-pr-write"] = true;
-//	(*cpu)["cache_il1.verbose-all"] = true;
-	(*cpu)["cache_il1.verbose-pr-read"] = true;
-	(*cpu)["cache_il1.verbose-pr-write"] = true;
-//	(*cpu)["cache_l2.verbose-all"] = true;
-	(*cpu)["cache_l2.verbose-pr-read"] = true;
-	(*cpu)["cache_l2.verbose-pr-write"] = true;
+	(*cpu)["verbose-step"] = false;
+	(*cpu)["verbose-step-insn"] = false;
+	(*cpu)["verbose-dump-regs-start"] = false;
+	(*cpu)["verbose-dump-regs-end"] = false;
 	// (*cpu)["verbose-tlm-bus-synchronize"] = true;
 	// (*cpu)["verbose-tlm-run-thread"] = true;
 	// (*cpu)["verbose-tlm-commands"] = true;
@@ -359,6 +352,7 @@ int main(int argc, char *argv[], char **envp) {
 		cpu->cache_l2_logger_import >> *logger->logger_export[logger_index++];
 		bridge->logger_import >> *logger->logger_export[logger_index++];
 		linux_os->logger_import >> *logger->logger_export[logger_index++];
+		memory->logger_import >> *logger->logger_export[logger_index++];
 		if(logger_messages) {
 			bus_msg_spy->logger_import >> *logger->logger_export[logger_index++];
 			mem_msg_spy->logger_import >> *logger->logger_export[logger_index++];
@@ -409,7 +403,7 @@ int main(int argc, char *argv[], char **envp) {
 
 	(*linux_os)["system"] = "arm";
 	(*linux_os)["endianess"] = E_BIG_ENDIAN;
-	(*linux_os)["verbose"] = false;
+	(*linux_os)["verbose"] = true;
 
 	// Linux loader run-time configuration
 	(*linux_loader)["endianess"] = E_BIG_ENDIAN;

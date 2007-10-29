@@ -4,7 +4,8 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/processor/arm
 lib_LIBRARIES = libunisim_component_tlm_processor_arm.a
 libunisim_component_tlm_processor_arm_a_SOURCES = \
 	arm966e_s_bigendian_debug.cc \
-	arm9tdmi_bigendian_debug.cc
+	arm9tdmi_bigendian_debug.cc \
+	arm9tdmi_bigendian_nocache_debug.cc
 	
 if COND_release
 libunisim_component_tlm_processor_arm_a_SOURCES += \

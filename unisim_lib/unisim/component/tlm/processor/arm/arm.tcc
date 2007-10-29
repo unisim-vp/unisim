@@ -368,7 +368,7 @@ PrWrite(address_t addr,
 		new(msg) TlmMessage<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, 
 			SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> >(req); 
 			
-	// transaction is a READ
+	// transaction is a WRITE
 	req->type = SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>::WRITE; 
 	// transaction address
 	req->addr = addr; 

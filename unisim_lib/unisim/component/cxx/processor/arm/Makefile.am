@@ -9,6 +9,7 @@ lib_LIBRARIES = libunisim_component_cxx_processor_arm.a
 
 libunisim_component_cxx_processor_arm_a_SOURCES = \
 	cpu_arm9tdmi_bigendian_debug.cc \
+	cpu_arm9tdmi_bigendian_nocache_debug.cc \
 	cpu_arm966e_s_bigendian_debug.cc \
 	cache/32kb_dm_wb_32bls.cc cache/32kb_dm_wb_32bls_debug.cc \
 	cache/96kb_dm_wb_32bls.cc cache/96kb_dm_wb_32bls_debug.cc \

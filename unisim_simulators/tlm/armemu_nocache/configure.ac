@@ -35,7 +35,7 @@
 
 AC_INIT([UNISIM ARM user level (without cache) TLM simulator], [1.0],
 	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
-	[armemu-nocache])
+	[armemu_nocache])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD

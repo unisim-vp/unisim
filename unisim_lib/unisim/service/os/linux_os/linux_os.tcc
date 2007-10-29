@@ -50,6 +50,7 @@
 #include "unisim/service/interfaces/cpu_linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/os/linux_os/linux_os_exception.hh"
@@ -79,6 +80,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
 //using unisim::service::interfaces::operator<<;
@@ -109,11 +111,13 @@ LinuxOS(const char *name, Object *parent) :
 	Service<unisim::service::interfaces::LinuxOS>(name, parent),
 	Client<CPULinuxOS>(name, parent),
 	Client<Memory<ADDRESS_TYPE> >(name, parent),
+	Client<MemoryInjection<ADDRESS_TYPE> >(name, parent),
 	Client<Registers>(name, parent),
 	Client<Loader<ADDRESS_TYPE> >(name, parent),
 	Client<Logger>(name, parent),
 	linux_os_export("linux-os-export", this),
 	memory_import("memory-import", this),
+	memory_injection_import("memory-injection-import", this),
 	registers_import("registers-import", this),
 	logger_import("logger-import", this),
 	loader_import("loader-import", this),
@@ -171,6 +175,14 @@ Setup() {
 		if(logger_import) {
 			(*logger_import) << DebugError << LOCATION
 				<< memory_import.GetName() << " is not connected" << Endl
+				<< EndDebugError;
+		}
+		return false;
+	}
+	if(!memory_injection_import) {
+		if(logger_import) {
+			(*logger_import) << DebugError << LOCATION
+				<< memory_injection_import.GetName() << " is not connected" << Endl
 				<< EndDebugError;
 		}
 		return false;
@@ -424,6 +436,44 @@ PPCSetup() {
     return true;
 }
 
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size) {
+	memory_injection_import->InjectReadMemory(addr, buffer, size);
+	if(verbose && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "OS read memory: " << Endl
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++) {
+			(*logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
+		}
+		(*logger_import) << Dec << Endl
+			<< EndDebugInfo;
+	}
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
+	if(verbose && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "OS write memory: " << Endl
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++) {
+			(*logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
+		}
+		(*logger_import) << Dec << Endl
+			<< EndDebugInfo;
+	}
+	memory_injection_import->InjectWriteMemory(addr, buffer, size);
+}
+
 /**
  * Checks that an implementation exists for a syscall name.
  *
@@ -559,7 +609,7 @@ StringLength(ADDRESS_TYPE addr) {
     char buffer;
     
     while(1) {
-    	memory_import->ReadMemory(addr, &buffer, 1);
+    	ReadMem(addr, &buffer, 1);
     	if(buffer == 0) return len;
     	len++;
     	addr += 1;
@@ -611,7 +661,7 @@ LSC_read() {
    
 	if(buf) {
 		ret = read(fd, buf, count);
-		if(ret > 0) memory_import->WriteMemory(buf_addr, buf, ret);
+		if(ret > 0) WriteMem(buf_addr, buf, ret);
 		free(buf);
 	} else {
 		ret = (size_t)-1;
@@ -644,7 +694,7 @@ LSC_write() {
 	ret = (size_t)-1;
    
 	if(buf) {
-		memory_import->ReadMemory(buf_addr, buf, count);
+		ReadMem(buf_addr, buf, count);
 		if((fd == 1 || fd == 2)) {
 			char *tbuf = new char[count + 1];
 			memcpy(tbuf, buf, count);
@@ -682,7 +732,7 @@ LSC_open() {
 	addr = GetSystemCallParam(0);
 	pathnamelen = StringLength(addr);
 	pathname = (char *) malloc(pathnamelen + 1);
-	memory_import->ReadMemory(addr, pathname, pathnamelen + 1);
+	ReadMem(addr, pathname, pathnamelen + 1);
 	flags = GetSystemCallParam(1);
 	mode = GetSystemCallParam(2);
 	ret = open(pathname, flags, mode);
@@ -781,7 +831,7 @@ LSC_access() {
 	addr = GetSystemCallParam(0);
 	pathnamelen = StringLength(addr);
 	pathname = (char *) malloc(pathnamelen + 1);
-	memory_import->ReadMemory(addr, pathname, pathnamelen + 1);
+	ReadMem(addr, pathname, pathnamelen + 1);
 	mode = GetSystemCallParam(1);
 	ret = access(pathname, mode);
 	if(verbose && logger_import)
@@ -805,7 +855,7 @@ LSC_times() {
 	ret = times(&buf);	
 	new_buf = ConvertTms(&buf);
 	buf_addr = GetSystemCallParam(0);
-	memory_import->WriteMemory(buf_addr, new_buf, TmsSize());
+	WriteMem(buf_addr, new_buf, TmsSize());
 	if(verbose && logger_import)
 		(*logger_import) << DebugInfo << LOCATION
 			<< "times(buf=0x" << Hex << buf_addr << Dec << ") return " << ret 
@@ -941,7 +991,7 @@ LSC_fstat() {
 		ret = fstat(fd, buf);
 		if(ret >= 0) {
 			char *newbuf = (char *)(ConvertStat(buf));
-			memory_import->WriteMemory(buf_address, newbuf, StatSize());
+			WriteMem(buf_address, newbuf, StatSize());
 			free(newbuf);
 			free(buf);
 		} else 
@@ -1000,7 +1050,7 @@ LSC_llseek() {
 			lseek_ret64 = lseek_ret;
 			if(Swap())
 				PerformSwap(&lseek_ret64, sizeof(lseek_ret64));
-			memory_import->WriteMemory(result_addr, &lseek_ret64, sizeof(lseek_ret64));
+			WriteMem(result_addr, &lseek_ret64, sizeof(lseek_ret64));
 			SetSystemCallStatus((PARAMETER_TYPE)lseek_ret, false);
 		} else 
 			SetSystemCallStatus((PARAMETER_TYPE)errno, true);
@@ -1110,7 +1160,7 @@ LSC_fstat64() {
 	if(buf) {
 		ret = fstat64(fd, buf);
 		char *newbuf = (char *)(ConvertStat64(buf));
-		memory_import->WriteMemory(buf_address, newbuf, Stat64Size());
+		WriteMem(buf_address, newbuf, Stat64Size());
 		free(newbuf);
 		free(buf);
 	} else 

@@ -241,6 +241,13 @@ class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {};
 
 class ARM9TDMI_BigEndian_DebugConfig : public ARM9TDMIDebugConfig {};
 
+class ARM9TDMI_BigEndian_NoCache_DebugConfig : public ARM9TDMIDebugConfig {
+public:
+	static const bool HAS_INSN_CACHE_L1 = false;
+	static const bool HAS_DATA_CACHE_L1 = false;
+	static const bool HAS_CACHE_L2 = false;
+};
+
 class ARM9TDMI_LittleEndian_Config : public ARM9TDMIConfig {
 public:
 	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;

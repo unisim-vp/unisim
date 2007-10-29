@@ -97,6 +97,8 @@ private:
     bool std_out;
     Parameter<bool> param_std_err;
     bool std_err;
+    Parameter<bool> param_show_time;
+    bool show_time;
     Parameter<bool> param_show_function;
     bool show_function;
     Parameter<bool> param_show_line;

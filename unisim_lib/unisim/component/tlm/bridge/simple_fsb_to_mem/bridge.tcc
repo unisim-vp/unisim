@@ -164,9 +164,28 @@ Send(const Pointer<TlmMessage<SimpleFSBRequest<typename CONFIG::fsb_address_t, B
 	 *   if not report that the request can not be accepted (return false) */
 	if(buffer_req.num_available() == 0)
 		dispatch_needed = true;
+	if(logger_import && (fsb_msg->req->addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) {
+		if(fsb_msg->req->type == fsb_req_t::READ)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Read memory on:" << Endl
+				<< " - addr = 0x" << Hex << fsb_msg->req->addr << Dec << Endl
+				<< " - size = " << fsb_msg->req->size << Endl
+				<< EndDebugInfo;
+		else {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Write memory on:" << Endl
+				<< " - addr = 0x" << Hex << fsb_msg->req->addr << Dec << Endl
+				<< " - size = " << fsb_msg->req->size << Endl
+				<< " - data =" << Hex;
+			for(uint32_t i = 0; i < fsb_msg->req->size; i++) 
+				(*logger_import) << " " << (unsigned int)fsb_msg->req->write_data[i];
+			(*logger_import) << Dec << Endl << EndDebugInfo;
+		}
+	}
+	
+	
 	if(!buffer_req.nb_write(fsb_msg))
 		return false;
-		
 	if(dispatch_needed) {
 		dispatch_mem_ev.notify((ceil(sc_time_stamp() / mem_cycle_sctime) * mem_cycle_sctime) - sc_time_stamp());
 	}
@@ -185,15 +204,34 @@ DispatchMemory() {
 
 		wait(dispatch_mem_ev);
 		if(!buffer_req.nb_read(fsb_msg)) {
-			(*logger_import) << DebugError << LOCATION
-				<< "trying to dispatch a message to the memory bus when none is available" << Endl
-				<< "Stopping simulation"
-				<< Endl << EndDebugError;
+			if(logger_import)
+				(*logger_import) << DebugError << LOCATION
+					<< "trying to dispatch a message to the memory bus when none is available" << Endl
+					<< "Stopping simulation"
+					<< Endl << EndDebugError;
 			sc_stop();
 			wait();
 		}
 		
 		const p_fsb_req_t &fsb_req = fsb_msg->req;
+		if(logger_import && (fsb_msg->req->addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) {
+			if(fsb_msg->req->type == fsb_req_t::READ)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Sending read memory on:" << Endl
+					<< " - addr = 0x" << Hex << fsb_msg->req->addr << Dec << Endl
+					<< " - size = " << fsb_msg->req->size << Endl
+					<< EndDebugInfo;
+			else {
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Sending write memory on:" << Endl
+					<< " - addr = 0x" << Hex << fsb_msg->req->addr << Dec << Endl
+					<< " - size = " << fsb_msg->req->size << Endl
+					<< " - data =" << Hex;
+				for(uint32_t i = 0; i < fsb_msg->req->size; i++) 
+					(*logger_import) << " " << (unsigned int)fsb_msg->req->write_data[i];
+				(*logger_import) << Dec << Endl << EndDebugInfo;
+			}
+		}
 		p_mem_req_t mem_req = new(mem_req) mem_req_t();
 		p_mem_msg_t mem_msg = new(mem_msg) mem_msg_t(mem_req);
 		mem_req->addr = fsb_req->addr;
@@ -201,8 +239,16 @@ DispatchMemory() {
 		if(fsb_req->type == fsb_req_t::READ) {
 			mem_req->type = mem_req_t::READ;
 			mem_msg->PushResponseEvent(read_ev);
-			while(!master_port->Send(mem_msg))
+			while(!master_port->Send(mem_msg)) {
+				if(logger_import && (fsb_msg->req->addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) {
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Re-sending read memory on:" << Endl
+						<< " - addr = 0x" << Hex << fsb_msg->req->addr << Dec << Endl
+						<< " - size = " << fsb_msg->req->size << Endl
+						<< EndDebugInfo;
+				}
 				wait(mem_cycle_sctime);
+			}
 			wait(read_ev);
 			const p_mem_rsp_t &mem_rsp = mem_msg->rsp;
 			fsb_msg->rsp = new(fsb_msg->rsp) fsb_rsp_t();
@@ -213,6 +259,16 @@ DispatchMemory() {
 			mem_req->type = mem_req_t::WRITE;
 			memcpy(mem_req->write_data, fsb_req->write_data, fsb_req->size);
 			while(!master_port->Send(mem_msg))
+				if(logger_import && (fsb_msg->req->addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) {
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Sending write memory on:" << Endl
+						<< " - addr = 0x" << Hex << fsb_msg->req->addr << Dec << Endl
+						<< " - size = " << fsb_msg->req->size << Endl
+						<< " - data =" << Hex;
+					for(uint32_t i = 0; i < fsb_msg->req->size; i++) 
+						(*logger_import) << " " << (unsigned int)fsb_msg->req->write_data[i];
+					(*logger_import) << Dec << Endl << EndDebugInfo;
+				}
 				wait(mem_cycle_sctime);
 		}
 		
@@ -235,9 +291,39 @@ template<class CONFIG>
 bool
 Bridge<CONFIG> ::
 ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size) {
+	bool ret = false;
+	
+	if(logger_import && (addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Read memory on:" << Endl
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< EndDebugInfo;
+	
 	if(memory_import)
-		return memory_import->ReadMemory((typename CONFIG::mem_address_t)addr, buffer, size);
-	return false;
+		if(memory_import->ReadMemory((typename CONFIG::mem_address_t)addr, buffer, size))
+			ret = ReadMemoryOnBuffer(addr, buffer, size);
+
+	if(logger_import && (addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) {
+		if(ret) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Read memory succeded on:" << Endl
+				<< " - addr = 0x" << Hex << addr << Dec << Endl
+				<< " - size = " << size << Endl
+				<< " - data =" << Hex;
+			for(unsigned int i = 0; i < size; i++) 
+				(*logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+			(*logger_import) << Dec << Endl << EndDebugInfo;
+		} else {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Read memory failed on:" << Endl
+				<< " - addr = 0x" << Hex << addr << Dec << Endl
+				<< " - size = " << size << Endl
+				<< EndDebugInfo;
+		}
+	}
+	
+	return ret;
 }
 
 template<class CONFIG>
@@ -245,8 +331,155 @@ bool
 Bridge<CONFIG> ::
 WriteMemory(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size) {
 	if(memory_import)
-		return memory_import->WriteMemory((typename CONFIG::mem_address_t)addr, buffer, size);
+		if(memory_import->WriteMemory((typename CONFIG::mem_address_t)addr, buffer, size))
+			return WriteMemoryOnBuffer(addr, buffer, size);
+		else
+			return false;
 	return false;
+}
+
+template<class CONFIG>
+bool
+Bridge<CONFIG> ::
+ReadMemoryOnBuffer(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size) {
+	/* for each write entry of the message queue try to read the addresss (byte per byte)
+	 * if data found then write it on buffer */
+	unsigned int num_req = buffer_req.num_available();
+	p_fsb_msg_t fsb_msg;
+	bool ret = true;
+
+	if(logger_import && (addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Read memory on buffer:" << Endl
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - reqs in queue = " << num_req << Endl
+			<< EndDebugInfo;
+
+	for(unsigned int i = 0; i < num_req; i++) {
+		if(buffer_req.nb_read(fsb_msg)) {
+			if(!buffer_req.nb_write(fsb_msg)) {
+				ReadMemoryOnEntry(addr, buffer, size, fsb_msg);
+				buffer_req.write(fsb_msg);
+				i++;
+				for(; i < num_req; i++) {
+					buffer_req.read(fsb_msg);
+					buffer_req.write(fsb_msg);
+				}
+				ret = false;
+			}
+		} else {
+			for(;i < num_req; i++) {
+				buffer_req.read(fsb_msg);
+				buffer_req.write(fsb_msg);
+			}
+			ret = false;
+		}
+	}
+	
+	if(logger_import && (addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) {
+		if(ret) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Read memory succeded on buffer:" << Endl
+				<< " - addr = 0x" << Hex << addr << Dec << Endl
+				<< " - size = " << size << Endl
+				<< " - data =" << Hex;
+			for(unsigned int i = 0; i < size; i++) 
+				(*logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+			(*logger_import) << Dec << Endl << EndDebugInfo;
+		} else {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Read memory failed on:" << Endl
+				<< " - addr = 0x" << Hex << addr << Dec << Endl
+				<< " - size = " << size << Endl
+				<< EndDebugInfo;
+		}
+	}
+
+	return ret;
+}
+
+template<class CONFIG>
+bool
+Bridge<CONFIG> ::
+WriteMemoryOnBuffer(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size) {
+	/* for each write entry of the message queue try to write the address (byte per byte) */
+	unsigned int num_req = buffer_req.num_available();
+	p_fsb_msg_t fsb_msg;
+	
+	for(unsigned int i = 0; i < num_req; i++) {
+		if(buffer_req.nb_read(fsb_msg)) {
+			if(!buffer_req.nb_write(fsb_msg)) {
+				WriteMemoryOnEntry(addr, buffer, size, fsb_msg);
+				buffer_req.write(fsb_msg);
+				i++;
+				for(; i < num_req; i++) {
+					buffer_req.read(fsb_msg);
+					buffer_req.write(fsb_msg);
+				}
+				return false;
+			}
+		} else {
+			for(;i < num_req; i++) {
+				buffer_req.read(fsb_msg);
+				buffer_req.write(fsb_msg);
+			}
+			return false;
+		}
+	}
+	return true;
+}
+
+template<class CONFIG>
+bool
+Bridge<CONFIG> ::
+ReadMemoryOnEntry(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size, p_fsb_msg_t &fsb_msg) {
+	if(logger_import && (addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Read memory on entry:" << Endl
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< EndDebugInfo;
+	}
+	if(fsb_msg->req->type == fsb_req_t::WRITE) {
+		for(uint32_t i = 0; i < size; i++) {
+			if((addr + i >= fsb_msg->req->addr) && (addr + i < fsb_msg->req->addr) + size) {
+				uint32_t pos = (addr + i) - fsb_msg->req->addr;
+				((uint8_t *)buffer)[i] = fsb_msg->req->write_data[pos];
+			}
+		}
+	}
+	if(logger_import && (addr == (typename CONFIG::fsb_address_t)0xD40AC01D)) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Read memory succeded on buffer:" << Endl
+			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< " - size = " << size << Endl
+			<< " - data =" << Hex;
+		for(unsigned int i = 0; i < size; i++) 
+			(*logger_import) << " " << (unsigned int)((uint8_t *)buffer)[i];
+		(*logger_import) << Dec << Endl
+			<< " - entry addr = 0x" << Hex << fsb_msg->req->size << Dec << Endl
+			<< " - entry size = " << fsb_msg->req->size << Endl
+			<< " - entry data =" << Hex;
+		for(unsigned int i = 0; i < fsb_msg->req->size; i++)
+			(*logger_import) << " " << (unsigned int)fsb_msg->req->write_data[i];
+		(*logger_import) << Dec << Endl << EndDebugInfo;
+	}
+}
+
+template<class CONFIG>
+bool
+Bridge<CONFIG> ::
+WriteMemoryOnEntry(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size, p_fsb_msg_t &fsb_msg) {
+	if(fsb_msg->req->type == fsb_req_t::WRITE) {
+		for(uint32_t i = 0; i < size; i++) {
+			if((addr + i >= fsb_msg->req->addr) && (addr + i < fsb_msg->req->addr) + size) {
+				uint32_t pos = (addr + i) - fsb_msg->req->addr;
+				fsb_msg->req->write_data[pos] = ((uint8_t *)buffer)[i];
+			}
+		}
+		
+	}
 }
 
 #undef LOCATION

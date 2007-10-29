@@ -49,6 +49,7 @@
 #include "unisim/service/interfaces/cpu_linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/os/linux_os/linux_os_exception.hh"
@@ -76,6 +77,7 @@ using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::CPULinuxOS;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
 //using unisim::service::interfaces::operator<<;
@@ -90,6 +92,7 @@ class LinuxOS :
 	public Service<unisim::service::interfaces::LinuxOS>,
 	public Client<CPULinuxOS>,
 	public Client<Memory<ADDRESS_TYPE> >,
+	public Client<MemoryInjection<ADDRESS_TYPE> >,
 	public Client<Registers>,
 	public Client<Loader<ADDRESS_TYPE> >,
 	public Client<Logger> {
@@ -100,6 +103,7 @@ public:
 	/* Imported services */
 	ServiceImport<CPULinuxOS>  cpu_linux_os_import;
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
+	ServiceImport<MemoryInjection<ADDRESS_TYPE> > memory_injection_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Logger> logger_import;
 	ServiceImport<Loader<ADDRESS_TYPE> > loader_import; 
@@ -118,6 +122,9 @@ public:
 private:
 	bool ARMSetup();
 	bool PPCSetup();
+	
+	bool ReadMem(ADDRESS_TYPE, void *buffer, uint32_t size);
+	bool WriteMem(ADDRESS_TYPE, const void *buffer, uint32_t size);
 	
 	int GetSyscallNumber(int id);
 	int ARMGetSyscallNumber(int id);

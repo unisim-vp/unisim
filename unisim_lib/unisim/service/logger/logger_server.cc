@@ -77,6 +77,8 @@ LoggerServer::LoggerServer(const char *name, Object *parent) :
 	param_std_out("std_out", this, std_out),
 	std_err(false),
 	param_std_err("std_err", this, std_err),
+	show_time(false),
+	param_show_time("show-time", this, show_time),
 	show_function(false),
 	param_show_function("show-function", this, show_function),
 	show_file(false),
@@ -244,10 +246,12 @@ void
 LoggerServer::
 FlushTime(Node &node, ostream &os) {
 	const Property *time = NULL;
-	
-	time = node.GetProperty(Logger::string_time);
-	if(time != NULL) {
-		os << time->Value() << "secs ";
+
+	if(show_time) {
+		time = node.GetProperty(Logger::string_time);
+		if(time != NULL) {
+			os << time->Value() << "secs ";
+		}
 	}
 }
 
@@ -343,14 +347,20 @@ FlushLocation(Node &node, ostream &os) {
 	nodes = node.Childs();
 	list<Node *>::iterator it;
 	for(it = nodes->begin();it != nodes->end(); it++) {
-		if((**it).Name() == Logger::string_file) {
-			file = (**it).GetProperty(Logger::string_value);
+		if(show_file) {
+			if((**it).Name() == Logger::string_file) {
+				file = (**it).GetProperty(Logger::string_value);
+			}
 		}
-		if((**it).Name() == Logger::string_function) {
-			function = (**it).GetProperty(Logger::string_value);
+		if(show_function) {
+			if((**it).Name() == Logger::string_function) {
+				function = (**it).GetProperty(Logger::string_value);
+			}
 		}
-		if((**it).Name() == Logger::string_line) {
-			line = (**it).GetProperty(Logger::string_value);
+		if(show_line) {
+			if((**it).Name() == Logger::string_line) {
+				line = (**it).GetProperty(Logger::string_value);
+			}
 		}
 	}
 	if(file != NULL ||

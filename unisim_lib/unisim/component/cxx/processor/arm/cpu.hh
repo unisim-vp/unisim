@@ -45,6 +45,7 @@
 #include "unisim/service/interfaces/symbol_table_build.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 #include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/util/debug/register.hh"
@@ -94,6 +95,7 @@ using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
 //using unisim::service::interfaces::operator<<;
@@ -125,6 +127,7 @@ class CPU :
 	public Client<Loader<typename CONFIG::address_t> >,
     public Client<LinuxOS>,
     public Service<CPULinuxOS>,
+    public Service<MemoryInjection<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
 	public Service<Disassembly<typename CONFIG::address_t> >,
@@ -155,6 +158,7 @@ public:
 	
 	ServiceExport<Disassembly<address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
+	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 
@@ -200,6 +204,12 @@ public:
 	// method required by coprocessors
 	virtual void CoprocessorStop(unsigned int cp_id, int ret);
 	
+	//=====================================================================
+	//=             memory injection interface methods                    =
+	//=====================================================================
+	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
+	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
+
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
@@ -843,6 +853,8 @@ protected:
 	Parameter<bool> param_verbose_setup;
 	bool verbose_step;
 	Parameter<bool> param_verbose_step;
+	bool verbose_step_insn;
+	Parameter<bool> param_verbose_step_insn;
 	bool verbose_dump_regs_start;
 	Parameter<bool> param_verbose_dump_regs_start;
 	bool verbose_dump_regs_end;

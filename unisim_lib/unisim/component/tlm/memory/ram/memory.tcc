@@ -135,6 +135,17 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 						<< " Send() received a READ request" << Endl
 						<< EndDebugInfo; 	
 				ReadMemory(req->addr, rsp->read_data, req->size);
+				if(logger_import && (req->addr == (PHYSICAL_ADDR)0xD40AC01D)) {
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Read memory on:" << Endl
+						<< " - addr = 0x" << Hex << req->addr << Dec << Endl
+						<< " - size = " << req->size << Endl
+						<< " - data =" << Hex;
+					for(unsigned int i = 0; i < req->size; i++) 
+						(*logger_import) << " " << (unsigned int)rsp->read_data[i];
+					(*logger_import) << Dec << Endl << EndDebugInfo;
+				}
+
 				sc_event *rsp_ev = message->GetResponseEvent();
 				if(rsp_ev) rsp_ev->notify(cycle_time);
 			}
@@ -146,6 +157,16 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 					<< sc_time_stamp().to_string() 
 					<< " Send() received a WRITE request" << Endl
 					<< EndDebugInfo; 	
+		if(logger_import && (req->addr == (PHYSICAL_ADDR)0xD40AC01D)) {
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Write memory on:" << Endl
+				<< " - addr = 0x" << Hex << req->addr << Dec << Endl
+				<< " - size = " << req->size << Endl
+				<< " - data =" << Hex;
+			for(unsigned int i = 0; i < req->size; i++) 
+				(*logger_import) << " " << (unsigned int)req->write_data[i];
+			(*logger_import) << Dec << Endl << EndDebugInfo;
+		}
 			WriteMemory(req->addr, req->write_data, req->size);
 			break;
 	}
