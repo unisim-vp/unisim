@@ -273,10 +273,10 @@ int sc_main(int argc, char *argv[])
 	bool use_inline_debugger = false;
 	bool estimate_power = false;
 	int gdb_server_tcp_port = 0;
-	char *gdb_server_arch_filename = "gdb_powerpc.xml";
-	char *ramdisk_filename = "";
+	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *ramdisk_filename = "";
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
-	char *logger_filename = 0;
+	const char *logger_filename = 0;
 	bool logger_zip = false;
 	bool logger_error = false;
 	bool logger_out = false;
@@ -288,10 +288,10 @@ int sc_main(int argc, char *argv[])
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
 	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
-	char *pci_stub_regions = "";
+	const char *pci_stub_regions = "";
 	unsigned int pci_stub_irq = 0;
 	unsigned int pci_stub_tcp_port = 12345;
-	char *pci_stub_server_name = "localhost";
+	const char *pci_stub_server_name = "localhost";
 	bool pci_stub_is_server = false;
 	double cpu_ipc = 1.0; // in instructions per cycle
 	bool force_use_virtual_address = false;

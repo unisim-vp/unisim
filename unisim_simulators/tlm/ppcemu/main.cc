@@ -207,7 +207,7 @@ int sc_main(int argc, char *argv[])
 	bool use_inline_debugger = false;
 	bool estimate_power = false;
 	int gdb_server_tcp_port = 0;
-	char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
 	char *logger_filename = 0;
 	bool logger_zip = false;

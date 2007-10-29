@@ -180,8 +180,8 @@ int main(int argc, char *argv[], char **envp) {
 	bool use_gdb_server = false;
 	bool use_inline_debugger = false;
 	int gdb_server_tcp_port = 0;
-	char *device_tree_filename = "device_tree.xml";
-	char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *device_tree_filename = "device_tree.xml"; // FIXME: is this variable really useful ?
+	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
 	char *logger_filename = 0;
 	bool logger_zip = false;

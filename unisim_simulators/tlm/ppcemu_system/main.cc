@@ -294,11 +294,11 @@ int sc_main(int argc, char *argv[])
 	bool enable_video_output = true;
 	uint32_t video_refresh_period = 1000; // every 1 second
 	int gdb_server_tcp_port = 0;
-	char *device_tree_filename = "device_tree.xml";
-	char *gdb_server_arch_filename = "gdb_powerpc.xml";
-	char *ramdisk_filename = "";
-	char *image0_filename = "";
-	char *bmp_out_filename = "";
+	const char *device_tree_filename = "device_tree.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *ramdisk_filename = "";
+	const char *image0_filename = "";
+	const char *bmp_out_filename = "";
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
 	char *logger_filename = 0;
 	bool logger_zip = false;
@@ -651,10 +651,10 @@ int sc_main(int argc, char *argv[])
 	//  - PCI IDE run-time configuration
 	(*pci_ide)["device-number"] = PCI_IDE_DEV_NUM;
 	if (strcmp(image0_filename, "") != 0) {
-		
+		char *_image0_filename = strdup(image0_filename);
 		char delims[] = ",";
 		char *result = NULL;
-		result = strtok( image0_filename, delims );
+		result = strtok( _image0_filename, delims );
 		int i = 0;
 		while( result != NULL ) {
 			(*pci_ide)["disk-image"][i] = result;
@@ -663,6 +663,7 @@ int sc_main(int argc, char *argv[])
 			i++;
 			result = strtok( NULL, delims );
 		}
+		free(_image0_filename);
 	}
 	(*pci_ide)["base-address"][0] = 0x18101;
 	(*pci_ide)["size"][0] = 8;
