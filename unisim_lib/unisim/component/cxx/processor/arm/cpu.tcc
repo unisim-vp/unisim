@@ -299,32 +299,20 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> :: 
 InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
-	uint32_t t_size;
 	uint32_t index = 0;
 
 	while(size != 0) {
-		t_size = 4;
-
-		if(size < 4) {
-			t_size = 2;
-			if(size < 2) {
-				t_size = 1;
-			}
-		}
 		if(CONFIG::HAS_DATA_CACHE_L1) {
-			cache_l1->PrRead(addr + index, &(((uint8_t *)buffer)[index]), t_size);
-			index += t_size;
+			cache_l1->PrRead(addr + index, &(((uint8_t *)buffer)[index]), 1);
 		} else {
 			if(CONFIG::HAS_CACHE_L2) {
-				cache_l2->PrRead(addr + index, &(((uint8_t *)buffer)[index]), t_size);
-				index += t_size;
+				cache_l2->PrRead(addr + index, &(((uint8_t *)buffer)[index]), 1);
 			} else {
-				for(unsigned int i = 0; i < t_size; i++) {
-					Read8(addr + index, ((uint8_t *)buffer)[index]);
-					index++;
-				}
+				Read8(addr + index, ((uint8_t *)buffer)[index]);
 			}
 		}
+		index++;
+		size--;
 	}
 	return true;
 }
@@ -333,32 +321,20 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size) {
-	uint32_t t_size;
 	uint32_t index = 0;
 
 	while(size != 0) {
-		t_size = 4;
-
-		if(size < 4) {
-			t_size = 2;
-			if(size < 2) {
-				t_size = 1;
-			}
-		}
 		if(CONFIG::HAS_DATA_CACHE_L1) {
-			cache_l1->PrWrite(addr + index, &(((uint8_t *)buffer)[index]), t_size);
-			index += t_size;
+			cache_l1->PrWrite(addr + index, &(((uint8_t *)buffer)[index]), 1);
 		} else {
 			if(CONFIG::HAS_CACHE_L2) {
-				cache_l2->PrWrite(addr + index, &(((uint8_t *)buffer)[index]), t_size);
-				index += t_size;
+				cache_l2->PrWrite(addr + index, &(((uint8_t *)buffer)[index]), 1);
 			} else {
-				for(unsigned int i = 0; i < t_size; i++) {
-					Write8(addr + index, ((uint8_t *)buffer)[index]);
-					index++;
-				}
+				Write8(addr + index, ((uint8_t *)buffer)[index]);
 			}
 		}
+		index++;
+		size--;
 	}
 	return true;
 }
@@ -489,36 +465,8 @@ template<class CONFIG>
 void
 CPU<CONFIG> ::
 Step() {
-//	uint64_t insn_min = (uint64_t)10197700; // 2090000;
-//	uint64_t insn_max = (uint64_t)10198000; //insn_min + (uint64_t)10000;
-	
 	reg_t current_pc;
 	reg_t next_pc;
-
-//	reg_t data_l1;
-//	reg_t data_il1;
-//	reg_t end_data_l1;
-//	reg_t end_data_il1;
-	
-//	if(instruction_counter == insn_min) {
-//		(*this)["verbose-step"] = true;
-//		(*this)["verbose-dump-regs-end"] = true;
-//		if(cache_l1) {
-//			(*cache_l1)["verbose-all"] = false;
-//			(*cache_l1)["verbose-pr-read"] = true;
-//			(*cache_l1)["verbose-pr-write"] = true;
-//			(*cache_il1)["verbose-all"] = false;
-//			(*cache_il1)["verbose-pr-read"] = true;
-//			(*cache_il1)["verbose-pr-write"] = true;
-//			(*cache_l2)["verbose-all"] = false;
-//			(*cache_l2)["verbose-pr-read"] = true;
-//			(*cache_l2)["verbose-pr-write"] = true;
-//		}
-//	}
-//	
-//	if(instruction_counter == insn_max) {
-//		Stop(-1);
-//	}
 
 	Operation<CONFIG> *op = NULL;
 	current_pc = GetGPR(PC_reg);
@@ -588,27 +536,6 @@ Step() {
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, current_pc, 4);
 	}
 	
-//	if(cache_l1) {
-//		data_l1 = 0;
-//		end_data_l1 = 0;
-//		(*cache_l1)["verbose-read-memory"] = false;
-//		(*cache_l1)["verbose-write-memory"] = false;
-//		(*cache_l2)["verbose-read-memory"] = false;
-//		(*cache_l2)["verbose-write-memory"] = false;
-//		cache_l1->ReadMemory((address_t)0xD40AC01D, &data_l1, 1);
-//		(*cache_l1)["verbose-read-memory"] = true;
-//		(*cache_l1)["verbose-write-memory"] = true;
-//		(*cache_l2)["verbose-read-memory"] = true;
-//		(*cache_l2)["verbose-write-memory"] = true;
-//	} else {
-//		data_l1 = 0;
-//		end_data_l1 = 0;
-//		memory_import->ReadMemory((address_t)0xD40AC01D, &data_l1, 1);
-//	}
-//	if(cache_il1) {
-//		cache_il1->ReadMemory((address_t)0xBFFFB804, &data_il1, 4);
-//	}
-//	
 	try {
 		insn_t insn;
 		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
@@ -661,77 +588,9 @@ Step() {
 				<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
 				<< Endl << EndDebugInfo;
 		}
-//		if(CONFIG::DEBUG_ENABLE && logger_import && (instruction_counter >= insn_min)) {
-//			stringstream disasm_str;
-//			op->disasm(*this, disasm_str);
-//			(*logger_import) << DebugInfo << LOCATION
-//				<< "Executing instruction "
-//				<< disasm_str.str()
-//				<< " at 0x" << Hex << current_pc << Dec 
-//				<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
-//				<< Endl << EndDebugInfo;
-//		}
 		op->execute(*this);
 		
 		VerboseDumpRegsEnd();
-//		if(CONFIG::DEBUG_ENABLE && logger_import && (instruction_counter >= insn_min)) {
-//			(*logger_import) << DebugInfo << LOCATION
-//				<< "Register dump at the end of instruction execution: " << Endl;
-//			VerboseDumpRegs();
-//			(*logger_import) << EndDebugInfo;
-//		}
-//		if(cache_l1) {
-//			(*cache_l1)["verbose-read-memory"] = false;
-//			(*cache_l1)["verbose-write-memory"] = false;
-//			(*cache_l2)["verbose-read-memory"] = false;
-//			(*cache_l2)["verbose-write-memory"] = false;
-//			if(cache_l1->ReadMemory((address_t)0xD40AC01D, &end_data_l1, 1)) {
-//				if(data_l1 != end_data_l1) {
-//					cerr << "0xD40AC01D different in cache_l1 after executing 0x"
-//						<< hex << current_pc << dec << endl
-//						<< " - instructions executed = " << instruction_counter << endl
-//						<< " - initial data = 0x" << hex << data_l1 << dec << endl
-//						<< " - end data     = 0x" << hex << end_data_l1 << dec << endl;
-////					Stop(-1);
-//				}
-//			} else {
-//				cerr << "Error reading 0xD40AC01C on cache_l1 after executing" << endl;
-//				Stop(-1);
-//			}
-//			(*cache_l1)["verbose-read-memory"] = true;
-//			(*cache_l1)["verbose-write-memory"] = true;
-//			(*cache_l2)["verbose-read-memory"] = true;
-//			(*cache_l2)["verbose-write-memory"] = true;
-//		} else {
-//			if(memory_import->ReadMemory((address_t)0xD40AC01D, &end_data_l1, 1)) {
-//				if(data_l1 != end_data_l1) {
-//					cerr << "0xD40AC01D different in memory after executing 0x"
-//						<< hex << current_pc << dec << endl
-//						<< " - instructions executed = " << instruction_counter << endl
-//						<< " - initial data = 0x" << hex << data_l1 << dec << endl
-//						<< " - end data     = 0x" << hex << end_data_l1 << dec << endl;
-////					Stop(-1);
-//				}
-//			} else {
-//				cerr << "Error reading 0xD40AC01C on memory after executing" << endl;
-//				Stop(-1);
-//			}
-//		}
-//		if(cache_il1) {
-//			if(cache_il1->ReadMemory((address_t)0xBFFFB804, &end_data_il1, 4)) {
-//				if(data_il1 != end_data_il1) {
-//					cerr << "0x3ca80 different in cache_il1 after executing 0x"
-//						<< hex << current_pc << dec << endl
-//						<< " - instructions executed = " << instruction_counter << endl
-//						<< " - initial data = 0x" << hex << data_il1 << dec << endl
-//						<< " - end data     = 0x" << hex << end_data_il1 << dec << endl;
-//					Stop(-1);
-//				}
-//			} else {
-//				cerr << "Error reading 0x3ca80 on cache_il1 after executing" << endl;
-//				Stop(-1);
-//			}
-//		}
 
 		instruction_counter++;
 	} 

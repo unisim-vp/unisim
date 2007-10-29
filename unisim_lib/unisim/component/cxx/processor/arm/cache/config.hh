@@ -134,6 +134,7 @@ public:
 class ARMCache512bDMWB8bls_Config : //
 	public ARMCacheBase {
 public:
+	static const AllocationPolicy ALLOCATION_POLICY = WRITE_ALLOCATE;
 	static const WritePolicy WRITE_POLICY = WRITE_BACK;
 };
 
@@ -164,6 +165,7 @@ public:
 class ARMCache32KBDMWB32bls_Config :
 	public ARMCache32KBDMWT32bls_Config {
 public:
+	static const AllocationPolicy ALLOCATION_POLICY = WRITE_ALLOCATE;
 	static const WritePolicy WRITE_POLICY = WRITE_BACK;
 };
 
@@ -194,6 +196,7 @@ public:
 class ARMCache64KBDMWB32bls_Config :
 	public ARMCache64KBDMWT32bls_Config {
 public:
+	static const AllocationPolicy ALLOCATION_POLICY = WRITE_ALLOCATE;
 	static const WritePolicy WRITE_POLICY = WRITE_BACK;
 };
 
@@ -224,6 +227,7 @@ public:
 class ARMCache96KBDMWB32bls_Config :
 	public ARMCache96KBDMWT32bls_Config {
 public:
+	static const AllocationPolicy ALLOCATION_POLICY = WRITE_ALLOCATE;
 	static const WritePolicy WRITE_POLICY = WRITE_BACK;
 };
 

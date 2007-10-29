@@ -114,10 +114,6 @@ public:
 	virtual void Reset();
 	virtual bool ReadMemory(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size);
-	bool ReadMemoryOnBuffer(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size);
-	bool WriteMemoryOnBuffer(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size);
-	bool ReadMemoryOnEntry(typename CONFIG::fsb_address_t addr, void *buffer, uint32_t size, p_fsb_msg_t &fsb_msg);
-	bool WriteMemoryOnEntry(typename CONFIG::fsb_address_t addr, const void *buffer, uint32_t size, p_fsb_msg_t &fsb_msg);
 
 private:
 	sc_fifo<p_fsb_msg_t> buffer_req;

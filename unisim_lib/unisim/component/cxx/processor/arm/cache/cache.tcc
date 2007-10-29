@@ -840,7 +840,10 @@ DecodeAddress(address_t addr,
 	// |       tag       |  index | offset |
 	// +-----------------+--------+--------+
 	// index     = (addr / CONFIG::LINELEN) % NSETS;
-	index = (addr / CONFIG::LINELEN) & (CONFIG::NSETS - 1);
+	if(CONFIG::MULTIPLIER == 2)
+		index = (addr / CONFIG::LINELEN) & (CONFIG::NSETS - 1);
+	else
+		index = (addr / CONFIG::LINELEN) % CONFIG::NSETS;
 	// tag = addr & (~(CONFIG::LINELEN - 1));
 	tag = addr & (~(CONFIG::LINELEN - 1)); //((addr / CONFIG::LINELEN) / CONFIG::NSETS);
 	// offset = addr & (CONFIG::LINELEN - 1);
@@ -996,23 +999,6 @@ WriteMemory(address_t addr, const void *buffer, uint32_t size) {
 	address_t way;
 	bool hit;
 
-//	if(addr <= (uint32_t)0xbfffb664 && addr + size > (uint32_t)0xbfffb664) {
-//		uint8_t my_buffer[1024];
-//		ReadMemory(addr, my_buffer, size);
-//		cerr << Object::GetName() << ": WriteMemory 0x" << hex << addr << dec
-//			<< " " << size << " bytes" << endl;
-//		cerr << " - data  =";
-//		for(unsigned int i = 0; i < size; i++) {
-//			cerr << " " << hex << (unsigned int)((uint8_t *)buffer)[i] << dec;
-//		}
-//		cerr << endl;
-//		cerr << " - prev  =";
-//		for(unsigned int i = 0; i < size; i++) {
-//			cerr << " " << hex << (unsigned int)((uint8_t *)my_buffer)[i] << dec;
-//		}
-//		cerr << endl;
-//	}
-
 	if(VerboseWriteMemory()) {
 		DecodeAddress(addr, tag, set, pos);
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -1063,24 +1049,6 @@ WriteMemory(address_t addr, const void *buffer, uint32_t size) {
 			(*inherited::logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
 		(*inherited::logger_import) << Dec << Endl << EndDebugInfo;
 	}
-
-//	if(addr <= (uint32_t)0xbfffb664 && addr + size > (uint32_t)0xbfffb664) {
-//		uint8_t my_buffer[1024];
-//		
-//		cerr << Object::GetName() << ": Checking WriteMemory 0x" << hex << addr << dec
-//			<< " " << size << " bytes" << endl;
-//		cerr << " - data  =";
-//		for(unsigned int i = 0; i < size; i++) {
-//			cerr << " " << hex << (unsigned int)((uint8_t *)buffer)[i] << dec;
-//		}
-//		cerr << endl;
-//		cerr << " - check =";
-//		ReadMemory(addr, my_buffer, size);
-//		for(unsigned int i = 0; i < size; i++) {
-//			cerr << " " << hex << (unsigned int)((uint8_t *)my_buffer)[i] << dec;
-//		}
-//		cerr << endl;
-//	}
 
 	return true;
 }
