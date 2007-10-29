@@ -240,7 +240,7 @@ AC_ARG_ENABLE($1,
 ## No parameters
 #####################################################
 AC_DEFUN([UNISIM_RELEASE], [
-AC_ARG_ENABLE($1,
+AC_ARG_ENABLE(release,
 	AS_HELP_STRING([--enable-release], [build all the library versions])
 	AS_HELP_STRING([--disable-release], [build the minimum number of library versions (default)]),
 	[case "${enableval}" in
