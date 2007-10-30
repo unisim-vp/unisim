@@ -545,6 +545,7 @@ public:
     /**************************************************************/
     
     inline bool ReadInsn(address_t address, uint32_t &val) GCC_INLINE;
+    inline bool ReadInsnLine(address_t address, uint8_t *val, uint32_t size);
     inline bool Read8(address_t address, uint8_t &val) GCC_INLINE;
     inline bool Read16(address_t address, uint16_t &val) GCC_INLINE;
     inline bool Read32(address_t address, uint32_t &val) GCC_INLINE;

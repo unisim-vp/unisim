@@ -1,20 +1,22 @@
 all-local: all-local-bin all-local-lib all-local-include 
 	
 all-local-bin: $(bin_PROGRAMS)
-	@if test "x$(bin_PROGRAMS)" != "x"; \
-	then \
-		rm -f $(top_builddir)/$(ROOT_DIR)/bin/$<; \
+	@list='$(bin_PROGRAMS)'; \
+	for p in $$list; do \
+		echo "var = $$p"; \
+		rm -f $(top_builddir)/$(ROOT_DIR)/bin/$$p; \
 		mkdir -p $(top_builddir)/$(ROOT_DIR)/bin; \
-		(cd $(top_builddir)/$(ROOT_DIR)/bin && $(LN_S) $(abs_top_builddir)/$< $<); \
-	fi
+		(cd $(top_builddir)/$(ROOT_DIR)/bin && $(LN_S) $(abs_top_builddir)/$$p $$p); \
+	done
 
 all-local-lib: $(lib_LIBRARIES)
-	@if test "x$(lib_LIBRARIES)" != "x"; \
-	then \
-		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$<; \
+	@list='$(lib_LIBRARIES)'; \
+	for p in $$list; do \
+		echo "var = $$p"; \
+		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$$p; \
 		mkdir -p $(top_builddir)/$(ROOT_DIR)/lib; \
-		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$< $<); \
-	fi
+		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$$p $$p); \
+	done
 	
 all-local-include: $(include_HEADERS)
 	@if test "x$(include_HEADERS)" != "x"; \

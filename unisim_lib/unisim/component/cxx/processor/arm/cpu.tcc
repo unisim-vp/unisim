@@ -544,13 +544,12 @@ Step() {
 				<< Hex << current_pc << Dec
 				<< Endl << EndDebugInfo;
 		
-		ReadInsn(current_pc, insn);
-//		if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
-//			insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
-//			ReadInsnLine();
-//			//	memory_interface->PrRead(insn_cache_line_address, insn_cache_line, 4 * 8);
-//		} 
-//		insn = insn_cache_line[(current_pc & (typename CONFIG::address_t)0x1F) >> 2];
+//		ReadInsn(current_pc, insn);
+		if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
+			insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
+			ReadInsnLine(insn_cache_line_address, (uint8_t *)&insn_cache_line, 4 *8);
+		} 
+		insn = insn_cache_line[(current_pc & (typename CONFIG::address_t)0x1F) >> 2];
 		//	insn_t insn_check;
 		//	memory_interface->PrRead(current_pc, &insn_check, 4, CC_NONE);
 		//	if(insn != insn_check) {
@@ -2468,6 +2467,29 @@ ReadInsn(typename CONFIG::address_t address, uint32_t &val) {
 	return true;
 }
 
+template<class CONFIG>
+bool
+CPU<CONFIG> ::
+ReadInsnLine(typename CONFIG::address_t address, uint8_t *val, uint32_t size) {
+	if(CONFIG::HAS_INSN_CACHE_L1) {
+		cache_il1->PrRead(address, val, size);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1) {
+			cache_l1->PrRead(address, val, size);
+		} else {
+			if(CONFIG::HAS_CACHE_L2) {
+				cache_l2->PrRead(address, val, size);
+			} else {
+				if(CONFIG::MODEL != ARM966E_S) {
+					cp15_966es->PrRead(address, val, size);
+				} else {
+					memory_interface->PrRead(address, val, size);
+				}
+			}
+		}
+	}
+	return true;
+}
 
 template<class CONFIG>
 bool 

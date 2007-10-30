@@ -77,7 +77,7 @@
 			CPU_CONFIG;
 	#else
 		typedef 
-			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig 
+			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_Config 
 			CPU_CONFIG;
 	#endif // ARMEMU_NOCACHE
 #endif // ARMEMU_DEBUG
