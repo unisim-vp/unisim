@@ -88,8 +88,8 @@ public:
 	virtual ~TLB();
 
 	// Power mode interface
-	virtual void SetPowerMode(unsigned int frequency, unsigned int voltage);
-	virtual unsigned int GetMaxFrequency(); // in Mhz
+	virtual void SetPowerMode(unsigned int cycle_time, unsigned int voltage);
+	virtual unsigned int GetMinCycleTime(); // in ps
 	virtual unsigned int GetDefaultVoltage(); // in mV
 
 	void Invalidate();
@@ -155,15 +155,15 @@ void TLB<MEMORY_PAGE_TABLE_ENTRY_T, VIRTUAL_ADDRESS_T, NUM_TLB_ENTRIES, MEMORY_P
 }
 
 template <class MEMORY_PAGE_TABLE_ENTRY_T, class VIRTUAL_ADDRESS_T, uint32_t NUM_TLB_ENTRIES, uint32_t MEMORY_PAGE_SIZE, uint32_t TLB_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
-void TLB<MEMORY_PAGE_TABLE_ENTRY_T, VIRTUAL_ADDRESS_T, NUM_TLB_ENTRIES, MEMORY_PAGE_SIZE, TLB_ASSOCIATIVITY, REPLACEMENT_POLICY>::SetPowerMode(unsigned int frequency, unsigned int voltage)
+void TLB<MEMORY_PAGE_TABLE_ENTRY_T, VIRTUAL_ADDRESS_T, NUM_TLB_ENTRIES, MEMORY_PAGE_SIZE, TLB_ASSOCIATIVITY, REPLACEMENT_POLICY>::SetPowerMode(unsigned int cycle_time, unsigned int voltage)
 {
-	if(power_mode_import) power_mode_import->SetPowerMode(frequency, voltage);
+	if(power_mode_import) power_mode_import->SetPowerMode(cycle_time, voltage);
 }
 	
 template <class MEMORY_PAGE_TABLE_ENTRY_T, class VIRTUAL_ADDRESS_T, uint32_t NUM_TLB_ENTRIES, uint32_t MEMORY_PAGE_SIZE, uint32_t TLB_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
-unsigned int TLB<MEMORY_PAGE_TABLE_ENTRY_T, VIRTUAL_ADDRESS_T, NUM_TLB_ENTRIES, MEMORY_PAGE_SIZE, TLB_ASSOCIATIVITY, REPLACEMENT_POLICY>::GetMaxFrequency()
+unsigned int TLB<MEMORY_PAGE_TABLE_ENTRY_T, VIRTUAL_ADDRESS_T, NUM_TLB_ENTRIES, MEMORY_PAGE_SIZE, TLB_ASSOCIATIVITY, REPLACEMENT_POLICY>::GetMinCycleTime()
 {
-	return power_mode_import ? power_mode_import->GetMaxFrequency() : 0;
+	return power_mode_import ? power_mode_import->GetMinCycleTime() : 0;
 }
 
 template <class MEMORY_PAGE_TABLE_ENTRY_T, class VIRTUAL_ADDRESS_T, uint32_t NUM_TLB_ENTRIES, uint32_t MEMORY_PAGE_SIZE, uint32_t TLB_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>

@@ -59,17 +59,17 @@ using std::map;
 class CacheProfileKey
 {
 public:
-	unsigned int frequency; // Mhz
+	unsigned int cycle_time; // Mhz
 	unsigned int voltage; // mV
 	
-	CacheProfileKey(unsigned int f, unsigned int v) : frequency(f), voltage(v)
+	CacheProfileKey(unsigned int t, unsigned int v) : cycle_time(t), voltage(v)
 	{
 	}
 	
 	inline bool operator < (CacheProfileKey rhs) const
 	{
-		if(frequency < rhs.frequency) return true;
-		if(frequency > rhs.frequency) return false;
+		if(cycle_time < rhs.cycle_time) return true;
+		if(cycle_time > rhs.cycle_time) return false;
 		return voltage < rhs.voltage;
 	}
 };
@@ -78,7 +78,7 @@ class CacheProfile : public CacheProfileKey
 {
 public:
 	CacheProfile(
-		unsigned int frequency,
+		unsigned int cycle_time,
 		unsigned int voltage,
 		double dyn_energy_per_read,
 		double dyn_energy_per_write,
@@ -118,8 +118,8 @@ public:
 	virtual double GetLeakagePower();
 	
 	// Power mode interface
-	virtual void SetPowerMode(unsigned int frequency, unsigned int voltage);
-	virtual unsigned int GetMaxFrequency();
+	virtual void SetPowerMode(unsigned int cycle_time, unsigned int voltage);
+	virtual unsigned int GetMinCycleTime();
 	virtual unsigned int GetDefaultVoltage();
 
 private:
@@ -161,7 +161,7 @@ private:
 	int Ntspd;
 	double Nspd;
 	
-	unsigned int max_frequency;
+	unsigned int min_cycle_time;
 	unsigned int default_voltage;
 	
 	double time_stamp; // in seconds

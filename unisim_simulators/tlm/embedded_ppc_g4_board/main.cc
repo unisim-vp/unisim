@@ -283,9 +283,9 @@ int sc_main(int argc, char *argv[])
 	bool logger_on = false;
 	bool logger_messages = false;
 	uint32_t pci_bus_frequency = 33; // in Mhz
-	uint32_t fsb_frequency = 75; // in Mhz
-	uint32_t sdram_cycle_time = 30303030; // in femto seconds (= 33Mhz)
+	double cpu_frequency = 300.0; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
+	double fsb_frequency = cpu_frequency / cpu_clock_multiplier; // FIXME: to be removed
 	uint32_t tech_node = 130; // in nm
 	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
 	const char *pci_stub_regions = "";
@@ -295,6 +295,9 @@ int sc_main(int argc, char *argv[])
 	bool pci_stub_is_server = false;
 	double cpu_ipc = 1.0; // in instructions per cycle
 	bool force_use_virtual_address = false;
+	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+	uint32_t mem_cycle_time = fsb_cycle_time;
 
 	
 	// Parse the command line arguments
@@ -483,14 +486,14 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 
 	//  - Front Side Bus
-	(*bus)["cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency); // Mhz
+	(*bus)["cycle-time"] = fsb_cycle_time;
 
 	//  - PowerPC processor
-	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
-	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
-	(*cpu)["bus-frequency"] = fsb_frequency;
+	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
+	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
+	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
 	(*cpu)["voltage"] = 1.3 * 1e3; // mV
-	(*cpu)["nice-frequency"] = 1000;
+	(*cpu)["nice-time"] = 1000000000; // 1 ms
 	if(maxinst)
 	{
 		(*cpu)["max-inst"] = maxinst;
@@ -498,7 +501,7 @@ int sc_main(int argc, char *argv[])
 	(*cpu)["ipc"] = cpu_ipc;
 
 	//  - RAM
-	(*memory)["frequency"] = fsb_frequency;
+	(*memory)["cycle-time"] = mem_cycle_time;
 	(*memory)["org"] = 0x00000000UL;
 	(*memory)["bytesize"] = memory_size;
 
@@ -509,17 +512,17 @@ int sc_main(int argc, char *argv[])
     (*mpc107)["rom0_8bit_data_bus_size"] = false;
     (*mpc107)["rom1_8bit_data_bus_size"] = false;
     (*mpc107)["frequency"] = fsb_frequency;
-	(*mpc107)["sdram_cycle_time"] = sdram_cycle_time;
+	(*mpc107)["sdram_cycle_time"] = mem_cycle_time;
 
 	//  - EROM run-time configuration
 	(*erom)["org"] =  0x78000000UL;
 	(*erom)["bytesize"] = 2 * 8 * 1024 * 1024;
-	(*erom)["frequency"] = fsb_frequency;
+	(*erom)["cycle-time"] = mem_cycle_time;
 	
 	//  - Flash memory run-time configuration
     (*flash)["org"] = 0xff800000UL; //0xff000000UL;
     (*flash)["bytesize"] = 8 * 1024 * 1024;
-    (*flash)["frequency"] = fsb_frequency;
+    (*flash)["cycle-time"] = mem_cycle_time;
 	(*flash)["endian"] = "big-endian";
 
 	// PCI Bus run-time configuration

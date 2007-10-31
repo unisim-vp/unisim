@@ -114,17 +114,17 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	l2("l2", 0, bus_interface, this),
 	mmu("mmu", CONFIG::L1_INSN_ENABLE ? (CacheInterface<physical_address_t> *) &il1 : (CONFIG::L2_ENABLE ? (CacheInterface<physical_address_t> *) &l2 : 0), CONFIG::L1_DATA_ENABLE ? (CacheInterface<physical_address_t> *) &dl1 : (CONFIG::L2_ENABLE ? (CacheInterface<physical_address_t> *) &l2 : 0), bus_interface, this),
 	fpu("fpu", this),
-	cpu_frequency(0),
+	cpu_cycle_time(0),
 	voltage(0),
-	bus_frequency(0),
+	bus_cycle_time(0),
 	max_inst(0xffffffffffffffffULL),
 	num_insn_in_prefetch_buffer(0),
 	cur_insn_in_prefetch_buffer(0),
 	icache_enabled(false),
 	dcache_enabled(false),
-	param_cpu_frequency("cpu-frequency", this, cpu_frequency),
+	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time),
 	param_voltage("voltage", this, voltage),
-	param_bus_frequency("bus-frequency", this, bus_frequency),
+	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time),
 	param_max_inst("max-inst", this, max_inst)
 {
 	Object::SetupDependsOn(internal_il1_power_mode_import);
@@ -283,13 +283,31 @@ bool CPU<CONFIG>::Setup()
 		SetMSR_PR();
 	}
 	
-	unsigned int max_frequency = 0xffffffffUL;
+	unsigned int min_cycle_time = 0;
+
+	if(CONFIG::ITLB_ENABLE)
+	{
+		if(!internal_itlb_power_mode_import) return false;
+		unsigned int itlb_min_cycle_time = internal_itlb_power_mode_import->GetMinCycleTime();
+		if(itlb_min_cycle_time > 0 && itlb_min_cycle_time > min_cycle_time) min_cycle_time = itlb_min_cycle_time;
+		unsigned int itlb_default_voltage = internal_itlb_power_mode_import->GetDefaultVoltage();
+		if(voltage <= 0) voltage = itlb_default_voltage;
+	}
+
+	if(CONFIG::DTLB_ENABLE)
+	{
+		if(!internal_dtlb_power_mode_import) return false;
+		unsigned int dtlb_min_cycle_time = internal_dtlb_power_mode_import->GetMinCycleTime();
+		if(dtlb_min_cycle_time > 0 && dtlb_min_cycle_time > min_cycle_time) min_cycle_time = dtlb_min_cycle_time;
+		unsigned int dtlb_default_voltage = internal_dtlb_power_mode_import->GetDefaultVoltage();
+		if(voltage <= 0) voltage = dtlb_default_voltage;
+	}
 	
 	if(CONFIG::L1_INSN_ENABLE)
 	{
 		if(!internal_il1_power_mode_import) return false;
-		unsigned int il1_max_frequency = internal_il1_power_mode_import->GetMaxFrequency();
-		if(il1_max_frequency > 0 && il1_max_frequency < max_frequency) max_frequency = il1_max_frequency;
+		unsigned int il1_min_cycle_time = internal_il1_power_mode_import->GetMinCycleTime();
+		if(il1_min_cycle_time > 0 && il1_min_cycle_time > min_cycle_time) min_cycle_time = il1_min_cycle_time;
 		unsigned int il1_default_voltage = internal_il1_power_mode_import->GetDefaultVoltage();
 		if(voltage <= 0) voltage = il1_default_voltage;
 	}
@@ -297,8 +315,8 @@ bool CPU<CONFIG>::Setup()
 	if(CONFIG::L1_DATA_ENABLE)
 	{
 		if(!internal_dl1_power_mode_import) return false;
-		unsigned int dl1_max_frequency = internal_dl1_power_mode_import->GetMaxFrequency();
-		if(dl1_max_frequency > 0 && dl1_max_frequency < max_frequency) max_frequency = dl1_max_frequency;
+		unsigned int dl1_min_cycle_time = internal_dl1_power_mode_import->GetMinCycleTime();
+		if(dl1_min_cycle_time > 0 && dl1_min_cycle_time > min_cycle_time) min_cycle_time = dl1_min_cycle_time;
 		unsigned int dl1_default_voltage = internal_dl1_power_mode_import->GetDefaultVoltage();
 		if(voltage <= 0) voltage = dl1_default_voltage;
 	}
@@ -306,39 +324,41 @@ bool CPU<CONFIG>::Setup()
 	if(CONFIG::L2_ENABLE)
 	{
 		if(!internal_l2_power_mode_import) return false;
-		unsigned int l2_max_frequency = internal_l2_power_mode_import->GetMaxFrequency();
-		if(l2_max_frequency > 0 && l2_max_frequency < max_frequency) max_frequency = l2_max_frequency;
+		unsigned int l2_min_cycle_time = internal_l2_power_mode_import->GetMinCycleTime();
+		if(l2_min_cycle_time > 0 && l2_min_cycle_time > min_cycle_time) min_cycle_time = l2_min_cycle_time;
 		unsigned int l2_default_voltage = internal_l2_power_mode_import->GetDefaultVoltage();
 		if(voltage <= 0) voltage = l2_default_voltage;
 	}
 	
-
-	if(cpu_frequency > 0)
+	if(min_cycle_time > 0)
 	{
-		if(cpu_frequency > max_frequency)
+		if(cpu_cycle_time > 0)
 		{
-			if(logger_import)
+			if(cpu_cycle_time < min_cycle_time)
 			{
-				(*logger_import) << DebugWarning;
-				(*logger_import) << "A frequency of " << cpu_frequency << " Mhz is too high for the simulated hardware !" << Endl;
-				(*logger_import) << "cpu frequency should be < " << max_frequency << " Mhz." << Endl;
-				(*logger_import) << EndDebugWarning;
+				if(logger_import)
+				{
+					(*logger_import) << DebugWarning;
+					(*logger_import) << "A cycle time of " << cpu_cycle_time << " ps is too low for the simulated hardware !" << Endl;
+					(*logger_import) << "cpu cycle time should be >= " << min_cycle_time << " ps." << Endl;
+					(*logger_import) << EndDebugWarning;
+				}
 			}
+		}
+		else
+		{
+			cpu_cycle_time = min_cycle_time;
 		}
 	}
 	else
 	{
-		if(max_frequency != 0xffffffffUL)
-		{
-			cpu_frequency = max_frequency;
-		}
-		else
+		if(cpu_cycle_time <= 0)
 		{
 			// We can't provide a valid configuration automatically
 			if(logger_import)
 			{
 				(*logger_import) << DebugError;
-				(*logger_import) << "user must provide a cpu frequency > 0" << Endl;
+				(*logger_import) << "user must provide a cpu cycle time > 0" << Endl;
 				(*logger_import) << EndDebugError;
 			}
 			return false;
@@ -347,7 +367,7 @@ bool CPU<CONFIG>::Setup()
 
 	if(logger_import)
 	{
-		(*logger_import) << DebugInfo << "cpu frequency of " << cpu_frequency << " Mhz" << Endl << EndDebugInfo;
+		(*logger_import) << DebugInfo << "cpu cycle time of " << cpu_cycle_time << " ps" << Endl << EndDebugInfo;
 	}
 
 	if(voltage <= 0)
@@ -365,27 +385,27 @@ bool CPU<CONFIG>::Setup()
 		
 		(*logger_import) << "voltage of " << ((double) voltage / 1e3) << " V" << Endl;
 
-		if(bus_frequency > 0)
-			(*logger_import) << "bus frequency of " << bus_frequency << " Mhz" << Endl;
+		if(bus_cycle_time > 0)
+			(*logger_import) << "bus cycle time of " << bus_cycle_time << " ps" << Endl;
 		
 		(*logger_import) << EndDebugInfo;
 		
-		if(bus_frequency <= 0)
+		if(bus_cycle_time <= 0)
 		{
 			(*logger_import) << DebugError;
-			(*logger_import) << "bus frequency must be > 0" << Endl;
+			(*logger_import) << "bus cycle time must be > 0" << Endl;
 			(*logger_import) << EndDebugError;
 		}
 	}
 
 	if(internal_il1_power_mode_import)
-		internal_il1_power_mode_import->SetPowerMode(cpu_frequency, voltage);
+		internal_il1_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
 	
 	if(internal_dl1_power_mode_import)
-		internal_dl1_power_mode_import->SetPowerMode(cpu_frequency, voltage);
+		internal_dl1_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
 	
 	if(internal_l2_power_mode_import)
-		internal_l2_power_mode_import->SetPowerMode(cpu_frequency, voltage);
+		internal_l2_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
 	
 	if(linux_os_import)
 	{

@@ -67,15 +67,15 @@ Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIA
 }
 
 template <class CACHE_BLOCK, class PHYSICAL_ADDRESS, uint32_t CACHE_SIZE, uint32_t CACHE_BLOCK_SIZE, uint32_t CACHE_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
-void Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIATIVITY, REPLACEMENT_POLICY>::SetPowerMode(unsigned int frequency, unsigned int voltage)
+void Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIATIVITY, REPLACEMENT_POLICY>::SetPowerMode(unsigned int cycle_time, unsigned int voltage)
 {
-	if(power_mode_import) power_mode_import->SetPowerMode(frequency, voltage);
+	if(power_mode_import) power_mode_import->SetPowerMode(cycle_time, voltage);
 }
 
 template <class CACHE_BLOCK, class PHYSICAL_ADDRESS, uint32_t CACHE_SIZE, uint32_t CACHE_BLOCK_SIZE, uint32_t CACHE_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
-unsigned int Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIATIVITY, REPLACEMENT_POLICY>::GetMaxFrequency()
+unsigned int Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIATIVITY, REPLACEMENT_POLICY>::GetMinCycleTime()
 {
-	return power_mode_import ? power_mode_import->GetMaxFrequency() : 0;
+	return power_mode_import ? power_mode_import->GetMinCycleTime() : 0;
 }
 template <class CACHE_BLOCK, class PHYSICAL_ADDRESS, uint32_t CACHE_SIZE, uint32_t CACHE_BLOCK_SIZE, uint32_t CACHE_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
 unsigned int Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIATIVITY, REPLACEMENT_POLICY>::GetDefaultVoltage()

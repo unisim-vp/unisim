@@ -181,7 +181,7 @@ int main(int argc, char *argv[], char **envp) {
 	bool use_inline_debugger = false;
 	int gdb_server_tcp_port = 0;
 	const char *device_tree_filename = "device_tree.xml"; // FIXME: is this variable really useful ?
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = "gdb_powerpc.xml"; // FIXME: should be "gdb_armv5b" ?
 	uint64_t maxinst = 0; // maximum number of instruction to simulate
 	char *logger_filename = 0;
 	bool logger_zip = false;
@@ -189,10 +189,12 @@ int main(int argc, char *argv[], char **envp) {
 	bool logger_out = false;
 	bool logger_on = false;
 	bool logger_messages = false;
-	const uint32_t fsb_frequency = 75; // in Mhz
-	const uint32_t mem_frequency = fsb_frequency * 4;
+	const double cpu_frequency = 300.0; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
 	double cpu_ipc = 1.0; // in instructions per cycle
+	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+	uint32_t mem_cycle_time = fsb_cycle_time;
 
 	
 	// Parse the command line arguments
@@ -297,18 +299,18 @@ int main(int argc, char *argv[], char **envp) {
 	(*cpu)["arm966es-vinithi"] = true; // defines initial pc (true = 0xffff0000, false = 0x00000000)
 	(*cpu)["arm966es-initram"] = false; // defines if the tcm memory is enabled at boot
 	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
-	(*cpu)["cpu-cycle-time"] = (uint64_t)(250000.0/(double)fsb_frequency);
+	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
 //	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
-	(*cpu)["bus-cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency);
+	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
 //	(*cpu)["bus-frequency"] = fsb_frequency;
-	(*cpu)["nice-time"] = (uint64_t)(10000000.0/(double)fsb_frequency);
+	(*cpu)["nice-time"] = 1000000000ULL; // 1 ms
 //	(*cpu)["voltage"] = 1.3 * 1e3; // mV
 	(*cpu)["ipc"] = cpu_ipc;
 
-	(*bridge)["fsb-cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency);
-	(*bridge)["mem-cycle-time"] = (uint64_t)(1000000.0/(double)mem_frequency);
+	(*bridge)["fsb-cycle-time"] = fsb_cycle_time;
+	(*bridge)["mem-cycle-time"] = mem_cycle_time;
 
-	(*memory)["frequency"] = mem_frequency;
+	(*memory)["cycle-time"] = mem_cycle_time;
 
 	if(maxinst)
 	{

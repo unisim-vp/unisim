@@ -66,8 +66,9 @@ Memory(const sc_module_name& name, Object *parent) :
 	sc_module(name),
 	unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>(name, parent),
 	slave_port("slave-port"),
-	frequency(0),
-	param_frequency("frequency", this, frequency),
+	cycle_time(0),
+	cycle_sctime(),
+	param_cycle_time("cycle-time", this, cycle_time),
 	logger_import("logger-import", this) {
 	slave_port(*this);
 	Object::SetupDependsOn(logger_import);
@@ -96,12 +97,12 @@ Setup() {
 	} 
 	if(DEBUG && logger_import) 
 		(*logger_import) << DebugInfo << LOCATION
-			<< " frequency of " << frequency << " Mhz" 
+			<< " cycle time of " << cycle_time << " ps" 
 			<< Endl << EndDebugInfo;
-	if(!frequency) {
+	if(!cycle_time) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
-				<< "frequency must be different than 0" << Endl
+				<< "cycle time must be different than 0" << Endl
 				<< EndDebugError;
 		else
 			cerr << "ERROR("
@@ -109,10 +110,10 @@ Setup() {
 				<< __FUNCTION__ << ":"
 				<< __FILE__ << ":"
 				<< __LINE__ << "): "
-				<< "frequency must be different than 0" << endl;  
+				<< "cycle time must be different than 0" << endl;  
 		return false;
 	}
-	cycle_time = sc_time(1.0 / (double) frequency, SC_US);
+	cycle_sctime = sc_time(cycle_time, SC_PS);
 	return unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>::Setup();
 }
 
@@ -136,7 +137,7 @@ Send(const Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, DATA_SIZE>,
 						<< EndDebugInfo; 	
 				ReadMemory(req->addr, rsp->read_data, req->size);
 				sc_event *rsp_ev = message->GetResponseEvent();
-				if(rsp_ev) rsp_ev->notify(cycle_time);
+				if(rsp_ev) rsp_ev->notify(cycle_sctime);
 			}
 			break;
 			

@@ -215,12 +215,13 @@ int sc_main(int argc, char *argv[])
 	bool logger_out = false;
 	bool logger_on = false;
 	bool logger_messages = false;
-	uint32_t fsb_frequency = 75; // in Mhz
-	uint32_t sdram_cycle_time = 30303030; // in femto seconds (= 33Mhz)
+	double cpu_frequency = 300.0; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
 	double cpu_ipc = 1.0; // in instructions per cycle
-	uint64_t fsb_cycle_time = (uint64_t)(1000000.0/(double)fsb_frequency); // Mhz
+	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+	uint32_t mem_cycle_time = fsb_cycle_time;
 
 	
 	// Parse the command line arguments
@@ -361,11 +362,10 @@ int sc_main(int argc, char *argv[])
 	(*bus)["cycle-time"] = fsb_cycle_time;
 
 	//  - PowerPC processor
-	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
-	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
-	(*cpu)["bus-frequency"] = fsb_frequency;
+	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
+	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
+	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
 	(*cpu)["voltage"] = 1.3 * 1e3; // mV
-	(*cpu)["nice-frequency"] = 1000;
 	if(maxinst)
 	{
 		(*cpu)["max-inst"] = maxinst;
@@ -374,9 +374,9 @@ int sc_main(int argc, char *argv[])
 
 	//  - Front side bus to memory bridge
 	(*fsb_to_mem_bridge)["fsb-cycle-time"] = fsb_cycle_time;
-	(*fsb_to_mem_bridge)["mem-cycle-time"] = sdram_cycle_time;
+	(*fsb_to_mem_bridge)["mem-cycle-time"] = mem_cycle_time;
 	//  - RAM
-	(*memory)["frequency"] = fsb_frequency;
+	(*memory)["cycle-time"] = mem_cycle_time;
 	(*memory)["org"] = 0x00000000UL;
 	(*memory)["bytesize"] = (uint32_t)-1;
 
@@ -422,6 +422,7 @@ int sc_main(int argc, char *argv[])
 		(*logger)["show-file"] = true;
 		(*logger)["show-function"] = true;
 		(*logger)["show-line"] = true;
+		(*logger)["show-time"] = true;
 	}
 
 	//  - Cache/TLB power estimators run-time configuration

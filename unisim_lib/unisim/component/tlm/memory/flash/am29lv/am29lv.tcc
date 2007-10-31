@@ -76,8 +76,9 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29LV(const sc_m
 	sc_module(name),
 	unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH>(name, parent),
 	slave_port("slave-port"),
-	frequency(0),
-	param_frequency("frequency", this, frequency)
+	cycle_time(0),
+	cycle_sctime(),
+	param_cycle_time("cycle-time", this, cycle_time)
 {
 	SC_HAS_PROCESS(AM29LV);
 
@@ -97,11 +98,11 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Setup()
 	if(inherited::logger_import)
 	{
 		(*inherited::logger_import) << DebugInfo;
-		(*inherited::logger_import) << "Frequency of " << frequency << " Mhz" << Endl;
+		(*inherited::logger_import) << "cycle time of " << cycle_time << " ps" << Endl;
 		(*inherited::logger_import) << EndDebugInfo;
 	}
-	if(!frequency) return false;
-	cycle_time = sc_time(1.0 / (double) frequency, SC_US);
+	if(!cycle_time) return false;
+	cycle_sctime = sc_time(cycle_time, SC_PS);
 
 	return inherited::Setup();
 }
@@ -137,7 +138,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 						memset(rsp->read_data, 0, req->size);
 					}
 					sc_event *rsp_ev = message->GetResponseEvent();
-					if(rsp_ev) rsp_ev->notify(cycle_time);
+					if(rsp_ev) rsp_ev->notify(cycle_sctime);
 				}
 				break;
 				
@@ -153,7 +154,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 				}
 				break;
 		}
-		wait(cycle_time);
+		wait(cycle_sctime);
 	}
 }
 

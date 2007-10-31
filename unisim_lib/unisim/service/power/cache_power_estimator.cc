@@ -117,12 +117,12 @@ using std::endl;
 using std::string;
 
 CacheProfile::CacheProfile(
-	unsigned int _frequency,
+	unsigned int _cycle_time,
 	unsigned int _voltage,
 	double _dyn_energy_per_read,
 	double _dyn_energy_per_write,
 	double _leak_power) :
-	CacheProfileKey(_frequency, _voltage),
+	CacheProfileKey(_cycle_time, _voltage),
 	dyn_energy_per_read(_dyn_energy_per_read),
 	dyn_energy_per_write(_dyn_energy_per_write),
 	leak_power(_leak_power),
@@ -172,7 +172,7 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	Ntbl(0),
 	Ntspd(0),
 	Nspd(0.0),
-	max_frequency(0),
+	min_cycle_time(0),
 	time_stamp(0.0)
 {
 }
@@ -189,13 +189,13 @@ CachePowerEstimator::~CachePowerEstimator()
 	}
 }
 
-void CachePowerEstimator::SetPowerMode(unsigned int frequency, unsigned int voltage)
+void CachePowerEstimator::SetPowerMode(unsigned int cycle_time, unsigned int voltage)
 {
 	double new_time_stamp = time_import->GetTime(); // in seconds
 	
 	map<CacheProfileKey, CacheProfile *>::iterator prof_iter;
 	
-	prof_iter = profiles.find(CacheProfileKey(frequency, voltage));
+	prof_iter = profiles.find(CacheProfileKey(cycle_time, voltage));
 	
 	if(prof_iter != profiles.end())
 	{
@@ -237,13 +237,13 @@ void CachePowerEstimator::SetPowerMode(unsigned int frequency, unsigned int volt
 	
 	//cacti.output_data(&total_result.result,&total_result.area,&total_result.params);
 	
-	if(frequency > max_frequency)
+	if(cycle_time < min_cycle_time)
 	{
-		cerr << GetName() << ": WARNING! A frequency of " << frequency << " Mhz is too high for the simulated hardware !" << endl;
+		cerr << GetName() << ": WARNING! A cycle of " << cycle_time << " ps is too low for the simulated hardware !" << endl;
 	}
 	
 	CacheProfile *prof = new CacheProfile(
-		frequency,
+		cycle_time,
 		voltage,
 		total_result.result.total_power_allbanks.readOp.dynamic,
 		total_result.result.total_power_allbanks.writeOp.dynamic,
@@ -253,7 +253,7 @@ void CachePowerEstimator::SetPowerMode(unsigned int frequency, unsigned int volt
 	current_profile = prof;
 	time_stamp = new_time_stamp;
 
-// 	cerr << "(cycle-time=" << (1e3 / (double) prof->frequency)
+// 	cerr << "(cycle-time=" << prof->cycle_time
 // 			<<" ns, min-cycle-time=" << (total_result.result.cycle_time * 1e9)
 // 			<<  " ns, frequency=" << prof->frequency
 // 			<< " Mhz, voltage=" << ((double) prof->voltage / 1e3)
@@ -264,9 +264,9 @@ void CachePowerEstimator::SetPowerMode(unsigned int frequency, unsigned int volt
 
 }
 
-unsigned int CachePowerEstimator::GetMaxFrequency()
+unsigned int CachePowerEstimator::GetMinCycleTime()
 {
-	return max_frequency;
+	return min_cycle_time;
 }
 
 unsigned int CachePowerEstimator::GetDefaultVoltage()
@@ -388,15 +388,15 @@ bool CachePowerEstimator::Setup()
 	Ntspd = total_result.result.best_Ntspd;
 	Nspd = total_result.result.best_Nspd;
 	
-	max_frequency = (unsigned int)(1.0 / (total_result.result.cycle_time * 1e6));
+	min_cycle_time = (unsigned int)(total_result.result.cycle_time * 1e12);
 	default_voltage = (unsigned int) floor(VddPow * 1000.0);
 	
 	cerr << GetName() << ": Ndwl=" << Ndwl << ", Ndbl=" << Ndbl
 			<< ", Ntwl=" << Ntbl << ", Ntspd=" << Ntspd
-			<< ", Nspd=" << Nspd << ", max frequency=" << max_frequency << " Mhz, default VddPow=" << VddPow << " V" << endl;
+			<< ", Nspd=" << Nspd << ", min cycle time=" << min_cycle_time << " ps, default VddPow=" << VddPow << " V" << endl;
 
 	
-	SetPowerMode(max_frequency, default_voltage);
+	SetPowerMode(min_cycle_time, default_voltage);
 	return true;
 }
 

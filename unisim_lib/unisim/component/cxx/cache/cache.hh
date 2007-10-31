@@ -96,8 +96,8 @@ public:
 	void Invalidate();
 
 	// Cache Power mode interface
-	virtual void SetPowerMode(unsigned int frequency, unsigned int voltage);
-	virtual unsigned int GetMaxFrequency(); // in Mhz
+	virtual void SetPowerMode(unsigned int cycle_time, unsigned int voltage);
+	virtual unsigned int GetMinCycleTime(); // in ps
 	virtual unsigned int GetDefaultVoltage(); // in mV
 
 	// Memory interface

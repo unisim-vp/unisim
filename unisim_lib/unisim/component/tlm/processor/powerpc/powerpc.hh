@@ -67,6 +67,7 @@ class PowerPC :
 	public TlmSendIf<SnoopingFSBRequest<typename CONFIG::physical_address_t, CONFIG::FSB_BURST_SIZE>, SnoopingFSBResponse<CONFIG::FSB_BURST_SIZE> >
 {
 public:
+	typedef unisim::component::cxx::processor::powerpc::CPU<CONFIG> inherited;
 	typedef typename CONFIG::address_t address_t;
 	typedef typename CONFIG::virtual_address_t virtual_address_t;
 	typedef typename CONFIG::physical_address_t physical_address_t;
@@ -116,17 +117,17 @@ public:
 	BusStatus DevInvalidateTLBEntry(physical_address_t addr, BusControl bc);
 	void DevOnBusError(BusStatus bs);
 private:
-	sc_time cpu_cycle_time;
-	sc_time bus_cycle_time;
-	sc_time cpu_time;
-	sc_time bus_time;
-	sc_time last_cpu_time;
-	sc_time nice_time;
-	sc_time next_nice_time;
-	double nice_frequency;
+	sc_time cpu_cycle_sctime;
+	sc_time bus_cycle_sctime;
+	sc_time cpu_sctime;
+	sc_time bus_sctime;
+	sc_time last_cpu_sctime;
+	sc_time nice_sctime;
+	sc_time next_nice_sctime;
+	uint64_t nice_time;
 	double ipc;
 	
-	Parameter<double> param_nice_frequency;
+	Parameter<uint64_t> param_nice_time;
 	Parameter<double> param_ipc;
 
 	class ExternalInterruptListener :

@@ -195,9 +195,11 @@ int main(int argc, char *argv[], char **envp) {
 	bool logger_out = false;
 	bool logger_on = false;
 	bool logger_messages = false;
-	const uint32_t fsb_frequency = 75; // in Mhz
-	const uint32_t mem_frequency = fsb_frequency * 4;
-	uint32_t cpu_clock_multiplier = 4;
+	const double cpu_frequency = 300.0; // in Mhz
+	const uint32_t cpu_clock_multiplier = 4;
+	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+	uint32_t mem_cycle_time = fsb_cycle_time;
 	double cpu_ipc = 1.0; // in instructions per cycle
 
 	
@@ -309,18 +311,18 @@ int main(int argc, char *argv[], char **envp) {
 	symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol_table");
 
 	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
-	(*cpu)["cpu-cycle-time"] = (uint64_t)(250000.0/(double)fsb_frequency);
+	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
 //	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
-	(*cpu)["bus-cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency);
+	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
 //	(*cpu)["bus-frequency"] = fsb_frequency;
-	(*cpu)["nice-time"] = (uint64_t)(10000000.0/(double)fsb_frequency);
+	(*cpu)["nice-time"] = 100000000000ULL; // 100 ms //fsb_cycle_time; // FIXME: warning! this value is too low (it may dramatically lower the simulation performance)
 //	(*cpu)["voltage"] = 1.3 * 1e3; // mV
 	(*cpu)["ipc"] = cpu_ipc;
 
-	(*bridge)["fsb-cycle-time"] = (uint64_t)(1000000.0/(double)fsb_frequency);
-	(*bridge)["mem-cycle-time"] = (uint64_t)(1000000.0/(double)mem_frequency);
+	(*bridge)["fsb-cycle-time"] = fsb_cycle_time;
+	(*bridge)["mem-cycle-time"] = mem_cycle_time;
 
-	(*memory)["frequency"] = mem_frequency;
+	(*memory)["cycle-time"] = mem_cycle_time;
 
 	if(maxinst)
 	{

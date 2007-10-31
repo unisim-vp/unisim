@@ -112,12 +112,12 @@ public:
 											MemoryResponse<DATA_SIZE> > >& message);
 	
 private:
-	/** The bus frequency in Mhz*/
-	unsigned int frequency;
+	/** The cycle time in ps */
+	unsigned int cycle_time;
 	/** The frequency in sc_time format */
-	sc_time cycle_time;
+	sc_time cycle_sctime;
 	/** The parameter to set frequency */
-	Parameter<unsigned int> param_frequency;
+	Parameter<unsigned int> param_cycle_time;
 };
 
 } // end of namespace unisim

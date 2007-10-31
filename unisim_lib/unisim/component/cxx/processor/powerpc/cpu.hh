@@ -1281,15 +1281,6 @@ private:
 	ServiceImport<PowerMode> internal_itlb_power_mode_import;
 
 	//=====================================================================
-	//=                 CPU Frequency/Voltage/Bus Cycle                   =
-	//=====================================================================
-	
-	unsigned int cpu_frequency;  //!< CPU frequency in Mhz
-	unsigned int voltage;        //!< CPU voltage in mV
-	unsigned int bus_frequency;  //!< Front side bus frequency in Mhz
-	uint64_t bus_cycle;          //!< Number of front side bus cycles
-
-	//=====================================================================
 	//=               Instruction prefetch buffer                         =
 	//=====================================================================
 	
@@ -1315,10 +1306,10 @@ private:
 	//=                    CPU run-time parameters                        =
 	//=====================================================================
 	
-	Parameter<unsigned int> param_cpu_frequency;              //!< linked to member cpu_frequency
-	Parameter<unsigned int> param_voltage;                    //!< linked to member voltage
-	Parameter<unsigned int> param_bus_frequency;              //!< linked to member bus_frequency
-	Parameter<uint64_t> param_max_inst;                       //!< linked to member max_inst
+	Parameter<uint64_t> param_cpu_cycle_time;             //!< linked to member cpu_cycle_time
+	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
+	Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
+	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
 
 	//=====================================================================
 	//=                   lwarx/stwcx. reservation                        =
@@ -1415,6 +1406,16 @@ private:
 	inline bool IsMPC74X() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745; }
 	inline bool IsMPC75X() { return CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
 	inline bool IsMPC7X5() { return CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC755; }
+
+protected:
+	//=====================================================================
+	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
+	//=====================================================================
+	
+	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
+	uint64_t voltage;        //!< CPU voltage in mV
+	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
+	uint64_t bus_cycle;      //!< Number of front side bus cycles
 };
 
 } // end of namespace powerpc
