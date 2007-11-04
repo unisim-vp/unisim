@@ -699,11 +699,11 @@ LSC_write() {
 			char *tbuf = new char[count + 1];
 			memcpy(tbuf, buf, count);
 			tbuf[count] = '\0';
-			string *str = new string(tbuf);
-			cout << (*str);
+			string str(tbuf);
+			cout << (str);
 			cout << flush;
 			ret = count;
-			delete str;
+			delete[] tbuf;
 		} else 
 			ret = write(fd, buf, count);
 		free(buf);

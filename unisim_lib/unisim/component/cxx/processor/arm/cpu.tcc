@@ -43,6 +43,10 @@
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include <sstream>
 
+//#include <sys/types.h>
+//#include <unistd.h>
+//#include <proc/readproc.h>
+
 #define LOCATION Function << __FUNCTION__ << File <<  __FILE__ << Line << __LINE__
 // #define ARM_OPTIMIZATION
 
@@ -381,8 +385,8 @@ template<class CONFIG>
 Register *
 CPU<CONFIG> ::
 GetRegister(const char *name) {
-	if(registers_registry.find(*(new string(name))) != registers_registry.end())
-		return registers_registry[*(new string(name))];
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
 	else 
 		return NULL;
 }
@@ -589,6 +593,27 @@ Step() {
 		}
 		op->execute(*this);
 		
+//		{
+//			pid_t pidlist[2];
+//			PROCTAB *PT;
+//			proc_t proc;
+//			pidlist[0] = getpid();
+//			pidlist[1] = 0;
+//			PT = openproc(PROC_FILLSTAT|PROC_FILLARG|PROC_PID, pidlist);
+//			while(readproc(PT, &proc)) {
+//				get_proc_stats(proc.tid, &proc);
+//				if(prev_vm_size != proc.vm_size) {
+//					prev_vm_size = proc.vm_size;
+//					stringstream disasm_str;
+//					op->disasm(*this, disasm_str);
+//					cerr << "vmsize: 0x" << hex << current_pc << dec << ": "
+//						<< proc.vm_size 
+//						<< ":\t" << disasm_str.str() << endl;
+//				}
+//				if(proc.cmdline) free((void *)*proc.cmdline);
+//			}
+//			closeproc(PT);
+//		}
 		VerboseDumpRegsEnd();
 
 		instruction_counter++;
@@ -654,8 +679,6 @@ Step() {
 	
 	if(memory_access_reporting_import)
 		memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
-
-	
 }
 
 template<class CONFIG>
@@ -2480,10 +2503,15 @@ ReadInsnLine(typename CONFIG::address_t address, uint8_t *val, uint32_t size) {
 			if(CONFIG::HAS_CACHE_L2) {
 				cache_l2->PrRead(address, val, size);
 			} else {
-				if(CONFIG::MODEL != ARM966E_S) {
+				if(CONFIG::MODEL == ARM966E_S) {
 					cp15_966es->PrRead(address, val, size);
 				} else {
-					memory_interface->PrRead(address, val, size);
+					for(uint32_t i = 0; i < size; i += CONFIG::FSB_BURST_SIZE) {
+						if((i - size) < CONFIG::FSB_BURST_SIZE) 
+							memory_interface->PrRead(address, val, size);
+						else
+							memory_interface->PrRead(address, val, size);
+					}
 				}
 			}
 		}
