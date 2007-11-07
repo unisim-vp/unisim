@@ -1,3 +1,4 @@
+#!/bin/sh
 if test "x${PACKAGE_NAME}" = x; then
 	echo "Please set PACKAGE_NAME"
 	exit

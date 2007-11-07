@@ -1284,11 +1284,9 @@ private:
 	//=               Instruction prefetch buffer                         =
 	//=====================================================================
 	
-	static const unsigned int NUM_PREFETCH_BUFFER_ENTRIES = 6; //!< Maximum number of instruction in the prefetch buffer
-
 	unsigned int num_insn_in_prefetch_buffer;                  //!< Number of instructions currently in the prefetch buffer
 	unsigned int cur_insn_in_prefetch_buffer;                  //!< Prefetch buffer index of the current instruction to be executed
-	uint32_t prefetch_buffer[NUM_PREFETCH_BUFFER_ENTRIES];     //!< The instruction prefetch buffer
+	uint32_t prefetch_buffer[CONFIG::NUM_PREFETCH_BUFFER_ENTRIES];     //!< The instruction prefetch buffer
 	bool icache_enabled;
 	bool dcache_enabled;
 	

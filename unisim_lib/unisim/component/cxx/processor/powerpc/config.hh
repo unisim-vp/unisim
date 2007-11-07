@@ -316,7 +316,13 @@ public:
 	// Programming model parameters
 	static const unsigned int NUM_VRS = 0;
 	static const unsigned int NUM_SPRGS = 0;
-	
+
+	// Simulation performance speed-up features
+	static const bool PREFETCH_BUFFER_ENABLE = true; // enable faster fetch
+	static const unsigned int NUM_PREFETCH_BUFFER_ENTRIES = 8; //!< Maximum number of instruction in the prefetch buffer
+	static const bool IABR_ENABLE = false;
+	static const bool DABR_ENABLE = false;
+
 	// MMU parameters
 	static const unsigned int NUM_BATS = 0;
 	static const bool HAS_SOFTWARE_TABLE_SEARCH_SUPPORT = false;

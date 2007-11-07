@@ -33,32 +33,20 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM tools], [1.0-1], [], [unisim-tools])
+AC_INIT([UNISIM mkinitrd], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[genisslib])
 AC_CONFIG_AUX_DIR(config)
-
+    
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
 AC_PROG_INSTALL
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(build_tool-genisslib, genisslib)
-UNISIM_CONFIG_SUBDIR(build_tool-mkinitrd, mkinitrd)
-
-# doxygen options
-DX_HTML_FEATURE(ON)
-DX_CHM_FEATURE(OFF)
-DX_CHI_FEATURE(OFF)
-DX_MAN_FEATURE(OFF)
-DX_RTF_FEATURE(OFF)
-DX_XML_FEATURE(OFF)
-DX_PDF_FEATURE(OFF)
-DX_PS_FEATURE(OFF)
-DX_INIT_DOXYGEN(UNISIM, doxygen.cfg, source_doc)
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

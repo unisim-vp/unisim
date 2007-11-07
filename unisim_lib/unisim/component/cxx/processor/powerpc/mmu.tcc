@@ -740,18 +740,6 @@ typename CONFIG::physical_address_t MMU<CONFIG>::TranslateAddress(typename CONFI
 		// Scan each IBAT register to find a translation
 		for(bat_num = 0; bat_num < num_ibats; bat_num++)
 		{
-/*			if(addr == 0xc0174524)
-			{
-				cerr << "BEPI = 0x" << hex << bepi << endl;
-				cerr << "IBAT" << dec << bat_num << "U = 0x" << hex << GetIBATU(bat_num) << endl;
-				cerr << "IBAT" << dec <<bat_num << "L = 0x" << hex << GetIBATL(bat_num) << endl;
-				cerr << "IBAT" << dec << bat_num << "U_BEPI = 0x" << hex << (GetIBATU(bat_num) >> 17) << endl;
-				cerr << "IBAT" << dec << bat_num << "U_BL = 0x" << hex << GetIBATU_BL(bat_num) << endl;
-				if((bepi & 0x7800) == (GetIBATU_BEPI(bat_num) & 0x7800))
-				{
-					cerr << "BEPI match" << endl;
-				}
-			}*/
 			// Check if IBAT register match
 			if((bepi & 0x7800) == (GetIBATU_BEPI(bat_num) & 0x7800) // compare the 4 most significative bits of
 				// the 15 most significative bits in EA and 15-bit IBAT BEPI field
@@ -815,7 +803,6 @@ typename CONFIG::physical_address_t MMU<CONFIG>::TranslateAddress(typename CONFI
 					{
 						if(!(mmc & MMC_DEBUG_ENABLE))
 						{
-							cerr << "BAT Hit" << endl;
 							throw DSIProtectionViolationException<CONFIG>(addr, memory_access_type);
 						}
 					}

@@ -1871,39 +1871,47 @@ void CPU<CONFIG>::Step()
 		address_t addr = GetCIA();
 		uint32_t insn;
 		
-		if(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer)
+		if(CONFIG::PREFETCH_BUFFER_ENABLE)
 		{
-			uint32_t size_to_block_boundary = icache_enabled ? CONFIG::L1_INSN_CACHE_BLOCK_SIZE - (addr & (CONFIG::L1_INSN_CACHE_BLOCK_SIZE - 1)) : FSB_WIDTH - (addr & (FSB_WIDTH - 1));
-			physical_address_t physical_addr;
-			// refill the prefetch buffer with up to one cache line, not much
-			uint32_t read_size = mmu.ReadInsnMemory(addr, GetPrivilegeLevel(), prefetch_buffer, sizeof(prefetch_buffer) > size_to_block_boundary ? size_to_block_boundary : sizeof(prefetch_buffer), physical_addr);
-			num_insn_in_prefetch_buffer = read_size / 4;
-			cur_insn_in_prefetch_buffer = 0;
-		}
-		insn = prefetch_buffer[cur_insn_in_prefetch_buffer];
+			if(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer)
+			{
+				uint32_t size_to_block_boundary = icache_enabled ? CONFIG::L1_INSN_CACHE_BLOCK_SIZE - (addr & (CONFIG::L1_INSN_CACHE_BLOCK_SIZE - 1)) : FSB_WIDTH - (addr & (FSB_WIDTH - 1));
+				physical_address_t physical_addr;
+				// refill the prefetch buffer with up to one cache line, not much
+				uint32_t read_size = mmu.ReadInsnMemory(addr, GetPrivilegeLevel(), prefetch_buffer, sizeof(prefetch_buffer) > size_to_block_boundary ? size_to_block_boundary : sizeof(prefetch_buffer), physical_addr);
+				num_insn_in_prefetch_buffer = read_size / 4;
+				cur_insn_in_prefetch_buffer = 0;
+			}
+			insn = prefetch_buffer[cur_insn_in_prefetch_buffer];
 #if BYTE_ORDER == LITTLE_ENDIAN
-		BSwap(insn);
+			BSwap(insn);
 #endif
+		}
+		else
+		{
+			physical_address_t physical_addr;
+			insn = mmu.ReadInsnMemory(addr, GetPrivilegeLevel(), physical_addr);
+		}
 
 		if(memory_access_reporting_import)
 		{
 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_INSN, addr, 4);
 		}
 
-		/* Check for instruction address breakpoint */
-		if(GetIABR_BE() && GetIABR_TE() == GetMSR_IR() && ((GetCIA() >> 2) & 0x3fffffffUL) == GetIABR_ADDR())
+		if(CONFIG::IABR_ENABLE && CONFIG::HAS_IABR)
 		{
-			throw InstructionAddressBreakpointException<CONFIG>();
+			/* Check for instruction address breakpoint */
+			if(GetIABR_BE() && GetIABR_TE() == GetMSR_IR() && ((GetCIA() >> 2) & 0x3fffffffUL) == GetIABR_ADDR())
+			{
+				throw InstructionAddressBreakpointException<CONFIG>();
+			}
 		}
-	
+
 		operation = Decoder<CONFIG>::Decode(addr, insn);
 
 		/* execute the instruction */
 		operation->execute(this);
 
-		/* update the instruction counter */
-		instruction_counter++;
-	
 		if(HasAsynchronousInterrupt())
 		{
 			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw SystemResetException<CONFIG>();
@@ -1953,18 +1961,24 @@ void CPU<CONFIG>::Step()
 	}
 
 	/* go to the next instruction */
-	if(GetNIA() != sequential_nia)
+	if(CONFIG::PREFETCH_BUFFER_ENABLE)
 	{
-		// branch or exception is being taken: flush the prefetch buffer
-		num_insn_in_prefetch_buffer = 0;
-		cur_insn_in_prefetch_buffer = 0;
-	}
-	else
-	{
-		cur_insn_in_prefetch_buffer++;
+		if(GetNIA() != sequential_nia)
+		{
+			// branch or exception is being taken: flush the prefetch buffer
+			num_insn_in_prefetch_buffer = 0;
+			cur_insn_in_prefetch_buffer = 0;
+		}
+		else
+		{
+			cur_insn_in_prefetch_buffer++;
+		}
 	}
 
 	SetCIA(GetNIA());
+
+	/* update the instruction counter */
+	instruction_counter++;
 	
 	if(memory_access_reporting_import)
 	{
@@ -2434,6 +2448,14 @@ void CPU<CONFIG>::ReadMemoryBuffer(address_t addr, void *buffer, uint32_t size)
 	{
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_DATA, addr, size);
 	}
+
+	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
+	{
+		if(GetDABR_DR() && ((addr >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT())
+		{
+			throw DSIDataAddressBreakpointException<CONFIG>(addr, MAT_READ);
+		}
+	}
 }
 
 template <class CONFIG>
@@ -2444,6 +2466,14 @@ void CPU<CONFIG>::WriteMemoryBuffer(address_t addr, const void *buffer, uint32_t
 	if(memory_access_reporting_import)
 	{
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE, MemoryAccessReporting<address_t>::MT_DATA, addr, size);
+	}
+
+	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
+	{
+		if(GetDABR_DW() && ((addr >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT())
+		{
+			throw DSIDataAddressBreakpointException<CONFIG>(addr, MAT_WRITE);
+		}
 	}
 }
 
