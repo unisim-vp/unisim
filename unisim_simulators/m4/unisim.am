@@ -3,7 +3,6 @@ all-local: all-local-bin all-local-lib all-local-include
 all-local-bin: $(bin_PROGRAMS)
 	@list='$(bin_PROGRAMS)'; \
 	for p in $$list; do \
-		echo "var = $$p"; \
 		rm -f $(top_builddir)/$(ROOT_DIR)/bin/$$p; \
 		mkdir -p $(top_builddir)/$(ROOT_DIR)/bin; \
 		(cd $(top_builddir)/$(ROOT_DIR)/bin && $(LN_S) $(abs_top_builddir)/$$p $$p); \
@@ -12,7 +11,6 @@ all-local-bin: $(bin_PROGRAMS)
 all-local-lib: $(lib_LIBRARIES)
 	@list='$(lib_LIBRARIES)'; \
 	for p in $$list; do \
-		echo "var = $$p"; \
 		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$$p; \
 		mkdir -p $(top_builddir)/$(ROOT_DIR)/lib; \
 		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$$p $$p); \

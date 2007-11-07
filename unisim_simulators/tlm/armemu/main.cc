@@ -63,21 +63,21 @@
 #ifdef ARMEMU_DEBUG
 	#ifdef ARMEMU_NOCACHE
 		typedef 
-			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_NoCache_DebugConfig 
+			unisim::component::cxx::processor::arm::ARM9TDMI_NoCache_DebugConfig 
 			CPU_CONFIG;
 	#else
 		typedef 
-			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig 
+			unisim::component::cxx::processor::arm::ARM9TDMI_DebugConfig 
 			CPU_CONFIG;
 	#endif // ARMEMU_NOCACHE
 #else
 	#ifdef ARMEMU_NOCACHE
 		typedef 
-			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_NoCache_Config 
+			unisim::component::cxx::processor::arm::ARM9TDMI_NoCache_Config 
 			CPU_CONFIG;
 	#else
 		typedef 
-			unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_Config 
+			unisim::component::cxx::processor::arm::ARM9TDMI_Config 
 			CPU_CONFIG;
 	#endif // ARMEMU_NOCACHE
 #endif // ARMEMU_DEBUG
