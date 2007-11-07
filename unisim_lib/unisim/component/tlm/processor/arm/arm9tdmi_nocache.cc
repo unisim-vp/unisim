@@ -42,10 +42,10 @@ namespace tlm {
 namespace processor {
 namespace arm {
 
-using unisim::component::cxx::processor::arm::ARM9TDMI_BigEndian_DebugConfig;
+using unisim::component::cxx::processor::arm::ARM9TDMI_NoCache_Config;
 
 template
-class ARM<ARM9TDMI_BigEndian_DebugConfig>;
+class ARM<ARM9TDMI_NoCache_Config>;
 
 } // end of namespace arm
 } // end of namespace processor

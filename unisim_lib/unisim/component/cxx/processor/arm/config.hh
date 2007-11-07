@@ -141,7 +141,7 @@ typedef enum {
 
 class ARMBase {
 public:
-	static const endian_type ENDIANESS = E_BIG_ENDIAN;
+//	static const endian_type ENDIANESS = E_BIG_ENDIAN;
 
 	static const bool DEBUG_ENABLE = false;
 	
@@ -183,7 +183,7 @@ public:
 /**
  * Describes the configuration of the ARM9TDMI processor
  */
-class ARM9TDMIConfig : 
+class ARM9TDMI_Config : 
 	public ARMBase {
 public:
 	typedef uint32_t address_t;             // 32-bit effective address
@@ -228,7 +228,7 @@ public:
 	typedef ARMCache96KBDMWB32bls_Config cache_l2_t;
 };
 
-class ARM9TDMIDebugConfig : public ARM9TDMIConfig {
+class ARM9TDMI_DebugConfig : public ARM9TDMI_Config {
 public:
 	static const bool DEBUG_ENABLE = true;
 
@@ -237,38 +237,50 @@ public:
 	typedef ARMCache96KBDMWB32bls_DebugConfig cache_l2_t;
 };
 
-class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {};
-
-class ARM9TDMI_BigEndian_NoCache_Config : public ARM9TDMI_BigEndian_Config {
+class ARM9TDMI_NoCache_Config : public ARM9TDMI_Config {
 public:
 	static const bool HAS_INSN_CACHE_L1 = false;
 	static const bool HAS_DATA_CACHE_L1 = false;
 	static const bool HAS_CACHE_L2 = false;
 };
 
-class ARM9TDMI_BigEndian_DebugConfig : public ARM9TDMIDebugConfig {};
-
-class ARM9TDMI_BigEndian_NoCache_DebugConfig : public ARM9TDMIDebugConfig {
+class ARM9TDMI_NoCache_DebugConfig : public ARM9TDMI_NoCache_Config {
 public:
-	static const bool HAS_INSN_CACHE_L1 = false;
-	static const bool HAS_DATA_CACHE_L1 = false;
-	static const bool HAS_CACHE_L2 = false;
+	static const bool DEBUG_ENABLE = true;
 };
 
-class ARM9TDMI_LittleEndian_Config : public ARM9TDMIConfig {
-public:
-	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-};
+//class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {};
+//
+//class ARM9TDMI_BigEndian_NoCache_Config : public ARM9TDMI_BigEndian_Config {
+//public:
+//	static const bool HAS_INSN_CACHE_L1 = false;
+//	static const bool HAS_DATA_CACHE_L1 = false;
+//	static const bool HAS_CACHE_L2 = false;
+//};
+//
+//class ARM9TDMI_BigEndian_DebugConfig : public ARM9TDMIDebugConfig {};
+//
+//class ARM9TDMI_BigEndian_NoCache_DebugConfig : public ARM9TDMIDebugConfig {
+//public:
+//	static const bool HAS_INSN_CACHE_L1 = false;
+//	static const bool HAS_DATA_CACHE_L1 = false;
+//	static const bool HAS_CACHE_L2 = false;
+//};
 
-class ARM9TDMI_LittleEndian_DebugConfig : public ARM9TDMIDebugConfig {
-public:
-	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-};
+//class ARM9TDMI_LittleEndian_Config : public ARM9TDMIConfig {
+//public:
+////	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
+//};
+
+//class ARM9TDMI_LittleEndian_DebugConfig : public ARM9TDMIDebugConfig {
+//public:
+////	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
+//};
 
 /**
  * Describes the configuration of the ARM966E-S processor
  */
-class ARM966E_SConfig :
+class ARM966E_S_Config :
 	public ARMBase {
 public:
 	typedef uint32_t address_t;
@@ -311,25 +323,25 @@ public:
 	static const uint32_t DTCM_SIZE = (uint32_t)0x011;
 };
 
-class ARM966E_SDebugConfig :
-	public ARM966E_SConfig {
+class ARM966E_S_DebugConfig :
+	public ARM966E_S_Config {
 public:
 	static const bool DEBUG_ENABLE = true;
 };
 
-class ARM966E_S_BigEndian_Config : public ARM966E_SConfig {};
-
-class ARM966E_S_BigEndian_DebugConfig : public ARM966E_SDebugConfig {};
-
-class ARM966E_S_LittleEndian_Config : public ARM966E_SConfig {
-public:
-	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-};
-
-class ARM966E_S_LittleEndian_DebugConfig : public ARM966E_SDebugConfig {
-public:
-	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-};
+//class ARM966E_S_BigEndian_Config : public ARM966E_SConfig {};
+//
+//class ARM966E_S_BigEndian_DebugConfig : public ARM966E_SDebugConfig {};
+//
+//class ARM966E_S_LittleEndian_Config : public ARM966E_SConfig {
+//public:
+////	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
+//};
+//
+//class ARM966E_S_LittleEndian_DebugConfig : public ARM966E_SDebugConfig {
+//public:
+////	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
+//};
 
 } // end of namespace arm
 } // end of namespace processor

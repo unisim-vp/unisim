@@ -60,6 +60,9 @@ AC_CHECK_HEADERS([iostream string list queue map iostream sstream],,\
 ###### CHECK FOR BOOST ########################################################
 UNISIM_CHECK_BOOST
 
+###### CHECK FOR LIBXML2 ######################################################
+UNISIM_CHECK_LIBXML2
+
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])

@@ -39,56 +39,30 @@
 using unisim::component::cxx::processor::arm::tcm::TCM;
 using unisim::component::cxx::processor::arm::tcm::DTCM;
 using unisim::component::cxx::processor::arm::tcm::ITCM;
-using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_BigEndian_DebugConfig;
-using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_Config;
-using unisim::component::cxx::processor::arm::ARM966E_S_LittleEndian_DebugConfig;
+using unisim::component::cxx::processor::arm::ARM966E_S_Config;
+using unisim::component::cxx::processor::arm::ARM966E_S_DebugConfig;
 
 template
-class TCM<ARM966E_S_BigEndian_Config, true>;
+class TCM<ARM966E_S_Config, true>;
 
 template
-class TCM<ARM966E_S_BigEndian_DebugConfig, true>;
+class TCM<ARM966E_S_DebugConfig, true>;
 
 template
-class TCM<ARM966E_S_LittleEndian_Config, true>;
+class TCM<ARM966E_S_Config, false>;
 
 template
-class TCM<ARM966E_S_LittleEndian_DebugConfig, true>;
+class TCM<ARM966E_S_DebugConfig, false>;
 
 template
-class TCM<ARM966E_S_BigEndian_Config, false>;
+class DTCM<ARM966E_S_Config>;
 
 template
-class TCM<ARM966E_S_BigEndian_DebugConfig, false>;
+class DTCM<ARM966E_S_DebugConfig>;
 
 template
-class TCM<ARM966E_S_LittleEndian_Config, false>;
+class ITCM<ARM966E_S_Config>;
 
 template
-class TCM<ARM966E_S_LittleEndian_DebugConfig, false>;
-
-template
-class DTCM<ARM966E_S_BigEndian_Config>;
-
-template
-class DTCM<ARM966E_S_BigEndian_DebugConfig>;
-
-template
-class DTCM<ARM966E_S_LittleEndian_Config>;
-
-template
-class DTCM<ARM966E_S_LittleEndian_DebugConfig>;
-
-template
-class ITCM<ARM966E_S_BigEndian_Config>;
-
-template
-class ITCM<ARM966E_S_BigEndian_DebugConfig>;
-
-template
-class ITCM<ARM966E_S_LittleEndian_Config>;
-
-template
-class ITCM<ARM966E_S_LittleEndian_DebugConfig>;
+class ITCM<ARM966E_S_DebugConfig>;
 

@@ -44,6 +44,7 @@
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/logger.hh"
+#include "unisim/util/endian/endian.hh"
 
 namespace unisim {
 namespace component {
@@ -57,6 +58,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::Logger;
+using unisim::util::endian::endian_type;
 
 // opcode1 = should be 0b000 for mcr/mrc valid instructions
 // opcode2 = additional opcode; if not needed, 0b0000 must be specified
@@ -68,6 +70,7 @@ using unisim::service::interfaces::Logger;
 class CPUCPInterface {
 public:
 	virtual ~CPUCPInterface() {};
+	virtual endian_type CoprocessorGetEndianess() = 0;
 	virtual void CoprocessorStop(unsigned int cp_id, int ret) = 0;
 };
 

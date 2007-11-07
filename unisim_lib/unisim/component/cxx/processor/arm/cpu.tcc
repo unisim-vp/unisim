@@ -73,20 +73,6 @@ using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::util::arithmetic::RotateRight;
 using std::stringstream;
-//using full_system::utils::registers::SimpleRegisterInterface;
-//using full_system::utils::debug::SymbolInterface;
-//using full_system::utils::arithmetic::RotateRight;
-//using full_system::utils::endian::Host2Target;
-//using full_system::utils::endian::Target2Host;
-//using full_system::utils::endian::BigEndian2Host;
-//using full_system::utils::endian::LittleEndian2Host;
-//using full_system::generic::cache::CC_NONE;
-//using full_system::plugins::debug::DBG_STEP;
-//using full_system::plugins::debug::DBG_SYNC;
-//using full_system::plugins::debug::DBG_KILL;
-//using full_system::plugins::debug::DBG_RESET;
-//using full_system::plugins::debug::DebugCommand;
-//using std::stringstream;
 
 // Constructor
 template<class CONFIG>
@@ -121,6 +107,8 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	cp15_logger_import("cp15_logger_import", this),
 	itcm_logger_import("itcm_logger_import", this),
 	dtcm_logger_import("dtcm_logger_import", this),
+	default_endianess(E_BIG_ENDIAN),
+	param_default_endianess("default-endianess", this, default_endianess),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
@@ -568,7 +556,9 @@ Step() {
 		//		exit(-1);
 		//	}
 	
-		if(CONFIG::ENDIANESS == E_BIG_ENDIAN)
+
+	//		if(CONFIG::ENDIANESS == E_BIG_ENDIAN)
+		if(GetEndianess() == E_BIG_ENDIAN)
 			insn = BigEndian2Host(insn);
 		else
 			insn = LittleEndian2Host(insn);
@@ -707,6 +697,13 @@ void
 CPU<CONFIG> ::
 CoprocessorStop(unsigned int cp_id, int ret) {
 	Stop(ret);
+}
+
+template<class CONFIG>
+endian_type
+CPU<CONFIG> ::
+CoprocessorGetEndianess() {
+	return GetEndianess();
 }
 
 //=====================================================================
@@ -2553,8 +2550,9 @@ Read16(typename CONFIG::address_t address, uint16_t &val) {
 			memory_interface->PrRead(address, (uint8_t *)&val, 2);
 	}
 		
-	val = Host2Target(CONFIG::ENDIANESS, val);
-  
+//	val = Host2Target(CONFIG::ENDIANESS, val);
+	val = Host2Target(GetEndianess(), val);
+	
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
@@ -2576,8 +2574,9 @@ Read32(typename CONFIG::address_t address, uint32_t &val) {
 			memory_interface->PrRead(address, (uint8_t *)&val, 4);
 	}
 	
-	val = Target2Host(CONFIG::ENDIANESS, val);
-
+	// val = Target2Host(CONFIG::ENDIANESS, val);
+	val = Target2Host(GetEndianess(), val);
+	
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
 				MemoryAccessReporting<address_t>::MT_DATA,
@@ -2615,8 +2614,9 @@ bool
 CPU<CONFIG> ::
 Write16(typename CONFIG::address_t address, uint16_t &val) {
 	uint16_t cp;
-	cp = Host2Target(CONFIG::ENDIANESS, val);
-
+//	cp = Host2Target(CONFIG::ENDIANESS, val);
+	cp = Host2Target(GetEndianess(), val);
+	
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrWrite(address, (uint8_t *)&cp, 2);
 	} else {
@@ -2639,7 +2639,8 @@ bool CPU<CONFIG> ::
 Write32(typename CONFIG::address_t address, uint32_t &val) {
 	uint32_t cp;
 
-	cp = Host2Target(CONFIG::ENDIANESS, val);
+//	cp = Host2Target(CONFIG::ENDIANESS, val);
+	cp = Host2Target(GetEndianess(), val);
 
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrWrite(address, (uint8_t *)&cp, 4);
@@ -3196,7 +3197,8 @@ template<class CONFIG>
 endian_type 
 CPU<CONFIG> ::
 GetEndianess() {
-	return CONFIG::ENDIANESS;
+	return default_endianess;
+//	return CONFIG::ENDIANESS;
 }
 
 /**************************************************************/

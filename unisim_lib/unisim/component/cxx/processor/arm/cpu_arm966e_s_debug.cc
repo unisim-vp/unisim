@@ -47,10 +47,11 @@ namespace processor {
 namespace arm {
 	
 template
-class CPU<ARM9TDMI_LittleEndian_Config>;
+class CPU<ARM966E_S_DebugConfig>;
 
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+

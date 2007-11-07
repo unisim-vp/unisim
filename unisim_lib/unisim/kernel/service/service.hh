@@ -109,9 +109,10 @@ public:
 
 	static void Dump(ostream& os);
 	static void DumpParameters(ostream& os);
+	static bool XmlfyParameters(const char *filename);
+	static bool LoadXmlParameters(const char *filename);
 
 	static bool Setup();
-
 
 	static ParameterBase *GetParameter(const char *name);
 

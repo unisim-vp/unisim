@@ -201,8 +201,9 @@ public:
 	void Run();
 	virtual void Stop(int ret);
 	virtual void Sync();
-	// method required by coprocessors
+	// methods required by coprocessors
 	virtual void CoprocessorStop(unsigned int cp_id, int ret);
+	virtual endian_type CoprocessorGetEndianess();
 	
 	//=====================================================================
 	//=             memory injection interface methods                    =
@@ -842,6 +843,9 @@ private:
     void CreateTCMSystem();
     
 protected:
+	// endianess parameter
+	endian_type default_endianess;
+	Parameter<endian_type> param_default_endianess;
 	// parameters for the 966E_S configuration
 	bool arm966es_initram;
 	Parameter<bool> param_arm966es_initram;

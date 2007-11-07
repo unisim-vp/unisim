@@ -31,26 +31,25 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
-
-#include "unisim/component/cxx/processor/arm/armcpu.hh"
-#include "unisim/component/cxx/processor/arm/armcpu.tcc"
-#include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/cpu.tcc"
+ 
+#include "unisim/component/tlm/processor/arm/arm.hh"
+#include "unisim/component/tlm/processor/arm/arm.tcc"
 #include "unisim/component/cxx/processor/arm/config.hh"
-#include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/component/cxx/processor/arm/exception.tcc"
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm {
 namespace processor {
 namespace arm {
-	
+
+using unisim::component::cxx::processor::arm::ARM966E_S_Config;
+
 template
-class CPU<ARM9TDMI_LittleEndian_DebugConfig>;
+class ARM<ARM966E_S_Config>;
 
 } // end of namespace arm
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
+

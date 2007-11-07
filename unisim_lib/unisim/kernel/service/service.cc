@@ -42,6 +42,9 @@
 #include <boost/graph/visitors.hpp>
 #include <boost/graph/graphviz.hpp>
 
+#include <libxml/encoding.h>
+#include <libxml/xmlwriter.h>
+
 namespace unisim {
 namespace kernel {
 namespace service {
@@ -52,6 +55,8 @@ using std::endl;
 using std::stringstream;
 using std::ofstream;
 using namespace boost;
+
+static const char *XML_ENCODING = "UTF-8"; 
 
 //=============================================================================
 //=                             ParameterBase                                 =
@@ -191,6 +196,14 @@ ParameterBase& ParameterArray<TYPE>::operator [] (unsigned int index)
 //=============================================================================
 //=                         specialized Parameter<>                           =
 //=============================================================================
+
+template <>
+Parameter<bool>::Parameter(const char *_name, Object *_owner, bool& _storage, const char *_description) :
+	ParameterBase(_name, _owner, _description), storage(&_storage)
+{
+}
+
+template <> Parameter<bool>::operator string () const { stringstream sstr; sstr << (*storage?"true":"false"); return sstr.str(); }
 
 template <> ParameterBase& Parameter<bool>::operator = (const char *value) { *storage = strcmp(value, "true") == 0; return *this; }
 template <> ParameterBase& Parameter<char>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
@@ -613,6 +626,128 @@ void ServiceManager::DumpParameters(ostream &os) {
 		os << (*param_iter).second->GetName() << " = \"" << ((string) *(*param_iter).second) << "\"" << endl;
 	}
 	os << endl;
+}
+
+bool ServiceManager::XmlfyParameters(const char *filename) {
+    xmlTextWriterPtr writer;
+    
+	writer = xmlNewTextWriterFilename(filename, 0);
+	if(writer == NULL) {
+		cerr << "Error(ServiceManager::XmlfyParameters): "
+			<< "could not open output file for logging" << endl;
+		return false;
+	}
+	int rc = xmlTextWriterSetIndent(writer, 2);
+	if(rc < 0) {
+		cerr << "Warning(ServiceManager::XmlfyParameters): could not set indentation" << endl;
+	}
+	rc = xmlTextWriterStartDocument(writer, NULL, XML_ENCODING, NULL);
+	if(rc < 0) {
+		cerr << "Error(ServiceManager::XmlfyParameters): "
+			<< "error starting the xml document" << endl;
+		return false;
+	}
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "PARAMETERS");
+	if(rc < 0) {
+		cerr << "Error(ServiceManager::XmlfyParameters): "
+			<< "error starting the xml document" << endl;
+		return false;
+	}
+
+	map<const char *, ParameterBase *, ltstr>::iterator param_iter;
+
+	for(param_iter = params.begin(); param_iter != params.end(); param_iter++) {
+		// opening parameter element
+		rc = xmlTextWriterStartElement(writer, BAD_CAST "parameter");
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): "
+				<< "error writing parameter element" << endl;
+			return false;
+		}
+		
+		// writing parameter name 
+		rc = xmlTextWriterStartElement(writer, BAD_CAST "name");
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): "
+				<< "error writing parameter name element" << endl;
+			return false;
+		}
+		rc = xmlTextWriterWriteFormatString(writer, "%s", (*param_iter).second->GetName());
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter name value" << endl;
+			return false;
+		}
+		rc = xmlTextWriterEndElement(writer);
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): "
+				<< "could not close the parameter name element" << endl;
+			return false;
+		}
+		
+		// writing parameter value
+		rc = xmlTextWriterStartElement(writer, BAD_CAST "value");
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): "
+				<< "error writing parameter value element" << endl;
+			return false;
+		}
+		rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*param_iter).second).c_str());
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter value" << endl;
+			return false;
+		}
+		rc = xmlTextWriterEndElement(writer);
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): "
+				<< "could not close the parameter value element" << endl;
+			return false;
+		}
+		
+		// writing parameter description
+		rc = xmlTextWriterStartElement(writer, BAD_CAST "description");
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): "
+				<< "error writing parameter description element" << endl;
+			return false;
+		}
+		rc = xmlTextWriterWriteFormatString(writer, "%s", (*param_iter).second->GetDescription());
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter description" << endl;
+			return false;
+		}
+		rc = xmlTextWriterEndElement(writer);
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): "
+				<< "could not close the parameter description element" << endl;
+			return false;
+		}
+		
+		// closing parameter element
+		rc = xmlTextWriterEndElement(writer);
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyParameters): "
+				<< "could not close the parameter element" << endl;
+			return false;
+		}
+	}
+
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) {
+		cerr << "Error(ServiceManager::XmlfyParameters): "
+			<< "could not close the root element" << endl;
+	}
+	rc = xmlTextWriterEndDocument(writer);
+	if(rc < 0) {
+		cerr << "Warning(ServiceManager::XmlfyParameters): "
+			<< "could not correctly close the XMLWriter" << endl;
+	}
+	xmlFreeTextWriter(writer);
+
+	return true;
+}
+
+bool ServiceManager::LoadXmlParameters(const char *filename) {
+	
 }
 
 struct MyVertexProperty

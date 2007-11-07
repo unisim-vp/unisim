@@ -47,7 +47,7 @@ namespace processor {
 namespace arm {
 	
 template
-class CPU<ARM966E_S_BigEndian_Config>;
+class CPU<ARM9TDMI_DebugConfig>;
 
 } // end of namespace arm
 } // end of namespace processor
