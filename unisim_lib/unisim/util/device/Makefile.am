@@ -2,7 +2,7 @@ includedir = $(prefix)/include/unisim/util/device
 sharedir = $(prefix)/share/unisim_lib/unisim/util/device
 include_HEADERS = register.hh register_map.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

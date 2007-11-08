@@ -8,7 +8,7 @@ includedir = $(prefix)/include/unisim/component/tlm/memory/ram
 sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/memory/ram
 include_HEADERS = memory.hh memory.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

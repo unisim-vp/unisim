@@ -6,7 +6,7 @@ libunisim_component_tlm_fsb_simple_bus_a_SOURCES = bus_addr32_size32_procs1.cc \
 	bus_addr32_size32_procs1_debug.cc
 include_HEADERS = bus.hh bus.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

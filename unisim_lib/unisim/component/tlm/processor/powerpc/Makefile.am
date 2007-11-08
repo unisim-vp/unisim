@@ -5,7 +5,7 @@ lib_LIBRARIES = libunisim_component_tlm_processor_powerpc.a
 libunisim_component_tlm_processor_powerpc_a_SOURCES = mpc755.cc mpc7447a.cc
 include_HEADERS = powerpc.hh powerpc.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

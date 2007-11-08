@@ -6,7 +6,7 @@ includedir = $(prefix)/include/unisim/util/xml
 sharedir = $(prefix)/share/unisim_lib/unisim/util/xml
 include_HEADERS = xml.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

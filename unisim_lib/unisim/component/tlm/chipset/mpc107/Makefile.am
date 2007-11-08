@@ -18,7 +18,7 @@ libunisim_component_tlm_chipset_mpc107_a_CXXFLAGS = -DSC_INCLUDE_DYNAMIC_PROCESS
 include_HEADERS = \
 	mpc107.hh mpc107.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 	
 uninstall-hook:
 	(rmdir $(includedir) || true)

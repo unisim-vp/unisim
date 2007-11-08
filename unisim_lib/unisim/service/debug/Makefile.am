@@ -18,7 +18,7 @@ SUBDIRS += symbol_table
 INCLUDE_SUBDIRS += symbol_table
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

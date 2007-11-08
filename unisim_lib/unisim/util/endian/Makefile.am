@@ -6,7 +6,7 @@ include_HEADERS = endian.hh
 lib_LIBRARIES = libunisim_util_endian.a
 libunisim_util_endian_a_SOURCES = endian.cc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

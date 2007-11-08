@@ -2,7 +2,7 @@ sharedir = $(prefix)/share/unisim_lib
 SUBDIRS = unisim
 INCLUDE_SUBDIRS = unisim
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(sharedir) || true)

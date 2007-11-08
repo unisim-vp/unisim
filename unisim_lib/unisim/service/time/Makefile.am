@@ -14,7 +14,7 @@ SUBDIRS += host_time
 INCLUDE_SUBDIRS += host_time
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

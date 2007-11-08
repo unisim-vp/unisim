@@ -6,7 +6,7 @@ includedir = $(prefix)/include/unisim/service/power
 sharedir = $(prefix)/share/unisim_lib/unisim/service/power
 include_HEADERS = cache_power_estimator.hh cacti4_2.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -6,7 +6,7 @@ include_HEADERS = pmac_linux_kernel_loader.hh
 lib_LIBRARIES = libunisim_service_loader_pmac_linux_kernel_loader.a
 libunisim_service_loader_pmac_linux_kernel_loader_a_SOURCES = pmac_linux_kernel_loader.cc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

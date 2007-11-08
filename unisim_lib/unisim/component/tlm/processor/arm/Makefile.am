@@ -16,7 +16,7 @@ endif
 
 include_HEADERS = arm.hh arm.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

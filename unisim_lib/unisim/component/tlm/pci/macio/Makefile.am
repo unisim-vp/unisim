@@ -5,7 +5,7 @@ lib_LIBRARIES = libunisim_component_tlm_pci_macio.a
 libunisim_component_tlm_pci_macio_a_SOURCES = heathrow_32.cc heathrow_64.cc
 include_HEADERS = heathrow.hh heathrow.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

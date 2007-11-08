@@ -18,7 +18,7 @@ SUBDIRS += tlm
 INCLUDE_SUBDIRS += tlm
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(sharedir) || true)

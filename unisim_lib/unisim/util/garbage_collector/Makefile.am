@@ -6,7 +6,7 @@ include_HEADERS = garbage_collector.hh
 lib_LIBRARIES = libunisim_util_garbage_collector.a
 libunisim_util_garbage_collector_a_SOURCES = garbage_collector.cc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

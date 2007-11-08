@@ -7,7 +7,7 @@ includedir = $(prefix)/include/unisim/component/tlm/memory/flash/am29lv
 sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/memory/flash/am29lv
 include_HEADERS = am29lv.hh am29lv.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

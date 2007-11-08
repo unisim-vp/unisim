@@ -9,7 +9,7 @@ SUBDIRS += mpc107
 INCLUDE_SUBDIRS += mpc107
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

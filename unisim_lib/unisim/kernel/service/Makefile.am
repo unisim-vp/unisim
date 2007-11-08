@@ -6,7 +6,7 @@ include_HEADERS = service.hh xml_helper.hh
 lib_LIBRARIES = libunisim_kernel_service.a
 libunisim_kernel_service_a_SOURCES = service.cc xml_helper.cc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

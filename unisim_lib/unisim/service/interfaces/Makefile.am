@@ -23,7 +23,7 @@ include_HEADERS = \
 	symbol_table_lookup.hh \
 	time.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -28,7 +28,7 @@ SUBDIRS += embedded_ppc_g4_board
 INCLUDE_SUBDIRS += embedded_ppc_g4_board
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(sharedir) || true)

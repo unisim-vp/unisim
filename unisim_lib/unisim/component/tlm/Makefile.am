@@ -49,7 +49,7 @@ SUBDIRS += fsb
 INCLUDE_SUBDIRS += fsb
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

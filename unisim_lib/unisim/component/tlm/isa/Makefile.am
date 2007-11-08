@@ -9,7 +9,7 @@ SUBDIRS += i8042
 INCLUDE_SUBDIRS += i8042
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

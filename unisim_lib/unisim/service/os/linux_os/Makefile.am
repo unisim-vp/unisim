@@ -6,7 +6,7 @@ includedir = $(prefix)/include/unisim/service/os/linux_os
 sharedir = $(prefix)/share/unisim_lib/unisim/service/os/linux_os
 include_HEADERS = linux_os.hh linux_os.tcc linux_os_exception.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -28,7 +28,7 @@ SUBDIRS += arm_generic_kernel_loader
 INCLUDE_SUBDIRS += arm_generic_kernel_loader
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

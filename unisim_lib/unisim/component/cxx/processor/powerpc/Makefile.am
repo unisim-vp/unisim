@@ -17,7 +17,7 @@ powerpc.hh: $(srcdir)/branch.isa $(srcdir)/condition.isa $(srcdir)/floating.isa 
 	$(srcdir)/loadstore.isa $(srcdir)/misc.isa $(srcdir)/altivec.isa $(srcdir)/ppc.isa
 	cd $(srcdir); $(GENISSLIB_PATH) -I $(srcdir) -o powerpc -w 32 $(srcdir)/ppc.isa
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

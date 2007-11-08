@@ -5,7 +5,7 @@ lib_LIBRARIES = libunisim_component_tlm_isa_i8042.a
 libunisim_component_tlm_isa_i8042_a_SOURCES = i8042.cc
 include_HEADERS = i8042.hh i8042.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

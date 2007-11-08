@@ -6,7 +6,7 @@ includedir = $(prefix)/include/unisim/service/sdl
 sharedir = $(prefix)/share/unisim_lib/unisim/service/sdl
 include_HEADERS = sdl.hh sdl.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

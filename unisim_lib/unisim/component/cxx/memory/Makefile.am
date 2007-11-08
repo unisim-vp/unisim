@@ -14,7 +14,7 @@ SUBDIRS += flash
 INCLUDE_SUBDIRS += flash
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -5,7 +5,7 @@ lib_LIBRARIES = libunisim_component_tlm_pci_debug.a
 libunisim_component_tlm_pci_debug_a_SOURCES = pci_stub_32.cc pci_stub_64.cc
 include_HEADERS = pci_stub.hh pci_stub.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -14,7 +14,7 @@ SUBDIRS += snooping_bus
 INCLUDE_SUBDIRS += snooping_bus
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

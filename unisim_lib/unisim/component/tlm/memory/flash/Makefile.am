@@ -9,7 +9,7 @@ SUBDIRS += am29lv
 INCLUDE_SUBDIRS += am29lv
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

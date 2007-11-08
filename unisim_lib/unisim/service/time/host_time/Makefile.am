@@ -6,7 +6,7 @@ include_HEADERS = time.hh
 lib_LIBRARIES = libunisim_service_time_host_time.a
 libunisim_service_time_host_time_a_SOURCES = time.cc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

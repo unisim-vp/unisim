@@ -23,7 +23,7 @@ SUBDIRS += component
 INCLUDE_SUBDIRS += component
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

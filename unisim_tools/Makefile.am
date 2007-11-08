@@ -13,7 +13,7 @@ SUBDIRS += mkinitrd
 INCLUDE_SUBDIRS += mkinitrd
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(sharedir) || true)

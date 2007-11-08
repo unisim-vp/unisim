@@ -11,7 +11,7 @@ bin_PROGRAMS += arm966e_s
 arm966e_s_SOURCES = main.cc
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(sharedir) || true)

@@ -6,7 +6,7 @@ include_HEADERS = symbol_table.hh symbol_table.tcc
 lib_LIBRARIES = libunisim_service_debug_symbol_table.a
 libunisim_service_debug_symbol_table_a_SOURCES = symbol_table_32.cc symbol_table_64.cc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

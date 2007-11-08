@@ -2,7 +2,7 @@ includedir = $(prefix)/include/unisim/component/tlm/debug
 sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/debug
 include_HEADERS = transaction_spy.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

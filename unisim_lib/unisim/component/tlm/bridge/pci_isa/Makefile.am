@@ -5,7 +5,7 @@ lib_LIBRARIES = libunisim_component_tlm_bridge_pci_isa.a
 libunisim_component_tlm_bridge_pci_isa_a_SOURCES = bridge_32.cc bridge_64.cc
 include_HEADERS = bridge.hh bridge.tcc
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

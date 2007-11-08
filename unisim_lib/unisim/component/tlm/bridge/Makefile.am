@@ -19,7 +19,7 @@ SUBDIRS += pci_isa
 INCLUDE_SUBDIRS += pci_isa
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -14,7 +14,7 @@ SUBDIRS += powerpc
 INCLUDE_SUBDIRS += powerpc
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

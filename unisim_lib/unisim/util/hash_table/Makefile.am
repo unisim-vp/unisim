@@ -2,7 +2,7 @@ includedir = $(prefix)/include/unisim/util/hash_table
 sharedir = $(prefix)/share/unisim_lib/unisim/util/hash_table
 include_HEADERS = hash_table.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

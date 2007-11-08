@@ -9,7 +9,7 @@ SUBDIRS += linux_os
 INCLUDE_SUBDIRS += linux_os
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

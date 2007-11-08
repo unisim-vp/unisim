@@ -14,7 +14,7 @@ SUBDIRS += arm
 INCLUDE_SUBDIRS += arm
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

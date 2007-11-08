@@ -3,7 +3,7 @@ includedir = $(prefix)/include/unisim/component/tlm/pci/bus
 sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/pci/bus
 include_HEADERS = bus.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

@@ -67,7 +67,7 @@ armcpu.hh: $(srcdir)/arm.isa $(srcdir)/constructors_dec.isa \
 	$(srcdir)/semaphore.isa $(srcdir)/status_register_access.isa
 	cd $(srcdir); $(GENISSLIB_PATH) -o armcpu -w 32 -I $(srcdir) $(srcdir)/arm.isa
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

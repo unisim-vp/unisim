@@ -44,7 +44,7 @@ SUBDIRS += device
 INCLUDE_SUBDIRS += device
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

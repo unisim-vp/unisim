@@ -6,7 +6,7 @@ includedir = $(prefix)/include/unisim/service/logger
 sharedir = $(prefix)/share/unisim_lib/unisim/service/logger
 include_HEADERS = logger.hh logger_server.hh logger_server_interface.hh
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

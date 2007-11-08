@@ -14,7 +14,7 @@ armemu_nocache_SOURCES = main.cc
 armemu_nocache_CPPFLAGS = -DARMEMU_NOCACHE
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(sharedir) || true)

@@ -49,7 +49,7 @@ SUBDIRS += tee
 INCLUDE_SUBDIRS += tee
 endif
 
-share_DATA = COPYING
+dist_share_DATA = COPYING
 
 uninstall-hook:
 	(rmdir $(includedir) || true)
