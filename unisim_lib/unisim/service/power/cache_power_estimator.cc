@@ -44,7 +44,7 @@ namespace kernel {
 namespace service {
 
 template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::Parameter(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, const char *_description) :
-ParameterBase(_name, _object, _description), storage(&_storage)
+ParameterBase(_name, _object, "cache power estimator access mode", _description), storage(&_storage)
 {
 }
 

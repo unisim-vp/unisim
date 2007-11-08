@@ -47,7 +47,7 @@ using namespace unisim::component::cxx::pci;
 
 
 template <> Parameter<PCISpace>::Parameter(const char *_name, Object *_object, PCISpace& _storage, const char *_description) :
-	ParameterBase(_name, _object, _description), storage(&_storage)
+	ParameterBase(_name, _object, "pci space", _description), storage(&_storage)
 {
 }
 
@@ -155,8 +155,8 @@ template <> ParameterBase& Parameter<PCISpace>::operator = (const char *value) {
 //  template class Parameter<PCISpace>;
   
 template <>
-ParameterArray<PCISpace>::ParameterArray(const char *_name, Object *_owner, PCISpace *_params, unsigned int dim) :
-	ParameterBase(_name, _owner),
+ParameterArray<PCISpace>::ParameterArray(const char *_name, Object *_owner, PCISpace *_params, unsigned int dim, const char *_description) :
+	ParameterBase(_name, _owner, "pci space", _description),
 	params()
 {
 	unsigned int i;

@@ -50,7 +50,7 @@ using unisim::util::endian::E_BIG_ENDIAN;
 //   }
 
   template <> Parameter<endian_type>::Parameter(const char *_name, Object *_object, endian_type& _storage, const char *_description) :
-    ParameterBase(_name, _object, _description), storage(&_storage)
+    ParameterBase(_name, _object, "endianess", _description), storage(&_storage)
   {
   }
 

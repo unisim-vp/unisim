@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchar@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifndef __UNISIM_KERNEL_SERVICE_SERVICE_HH__
@@ -40,7 +41,6 @@
 #include <list>
 #include <queue>
 #include <map>
-#include <iostream>
 #include <sstream>
 
 namespace unisim {
@@ -120,6 +120,7 @@ public:
 private:
 	friend class Object;
 	friend class ParameterBase;
+	friend class XMLHelper;
 
 	struct ltstr
 	{
@@ -133,6 +134,8 @@ private:
 	static map<const char *, ServiceImportBase *, ltstr> imports;
 	static map<const char *, ServiceExportBase *, ltstr> exports;
 	static map<const char *, ParameterBase *, ltstr> params;
+//
+//	static void ProcessXmlParameterNode(xmlTextReaderPtr reader);
 };
 
 //=============================================================================
@@ -143,11 +146,12 @@ class ParameterBase
 {
 public:
 	ParameterBase();
-	ParameterBase(const char *name, Object *owner, const char *description = NULL);
+	ParameterBase(const char *name, Object *owner, const char *type, const char *description);
 	virtual ~ParameterBase();
 
 	const char *GetName() const;
 	const char *GetDescription() const;
+	const char *GetType() const;
 
 	virtual operator bool () const;
 	operator char () const;
@@ -183,6 +187,7 @@ private:
 	string name;
 	Object *owner;
 	string description;
+	string type;
 };
 
 //=============================================================================
@@ -217,7 +222,7 @@ template <class TYPE>
 class ParameterArray : public ParameterBase
 {
 public:
-	ParameterArray(const char *name, Object *_owner, TYPE *params, unsigned int dim);
+	ParameterArray(const char *name, Object *_owner, TYPE *params, unsigned int dim, const char *description = NULL);
 	virtual ~ParameterArray();
 
 	virtual ParameterBase& operator [] (unsigned int index);

@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 #include "unisim/kernel/service/service.hh"
@@ -42,8 +43,7 @@
 #include <boost/graph/visitors.hpp>
 #include <boost/graph/graphviz.hpp>
 
-#include <libxml/encoding.h>
-#include <libxml/xmlwriter.h>
+#include "unisim/kernel/service/xml_helper.hh"
 
 namespace unisim {
 namespace kernel {
@@ -56,15 +56,14 @@ using std::stringstream;
 using std::ofstream;
 using namespace boost;
 
-static const char *XML_ENCODING = "UTF-8"; 
-
 //=============================================================================
 //=                             ParameterBase                                 =
 //=============================================================================
 	
-ParameterBase::ParameterBase(const char *_name, Object *_owner, const char *_description) :
+ParameterBase::ParameterBase(const char *_name, Object *_owner, const char *_type, const char *_description) :
 	name(_owner ? _owner->GetName() + string(".") + string(_name) : _name), 
 	description(_description ? _description : ""),
+	type(_type ? _type : ""),
 	owner(_owner)
 {
 	ServiceManager::Register(this);
@@ -88,6 +87,11 @@ const char *ParameterBase::GetName() const
 const char *ParameterBase::GetDescription() const
 {
 	return description.c_str();
+}
+
+const char *ParameterBase::GetType() const
+{
+	return type.c_str();
 }
 
 ParameterBase::operator bool () const { return false; }
@@ -136,9 +140,8 @@ ParameterBase& ParameterBase::operator [] (unsigned int index)
 
 template <class TYPE>
 Parameter<TYPE>::Parameter(const char *_name, Object *_owner, TYPE& _storage, const char *_description) :
-	ParameterBase(_name, _owner, _description), storage(&_storage)
-{
-}
+	ParameterBase(_name, _owner, "string", _description), storage(&_storage)
+{}
 
 template <class TYPE> Parameter<TYPE>::operator bool () const { return (*storage) ? true : false; }
 template <class TYPE> Parameter<TYPE>::operator long long () const { return (long long) *storage; }
@@ -156,8 +159,8 @@ template <class TYPE> ParameterBase& Parameter<TYPE>::operator = (double value) 
 //=============================================================================
 
 template <class TYPE>
-ParameterArray<TYPE>::ParameterArray(const char *_name, Object *_owner, TYPE *_params, unsigned int dim) :
-	ParameterBase(_name, _owner),
+ParameterArray<TYPE>::ParameterArray(const char *_name, Object *_owner, TYPE *_params, unsigned int dim, const char *_description) :
+	ParameterBase(_name, _owner, "string", _description),
 	params()
 {
 	unsigned int i;
@@ -166,7 +169,7 @@ ParameterArray<TYPE>::ParameterArray(const char *_name, Object *_owner, TYPE *_p
 		stringstream sstr;
 		
 		sstr << _name << "[" << i << "]";
-		params.push_back(new Parameter<TYPE>(sstr.str().c_str(), _owner, *(_params + i)));
+		params.push_back(new Parameter<TYPE>(sstr.str().c_str(), _owner, *(_params + i), _description));
 	}
 }
 
@@ -199,9 +202,73 @@ ParameterBase& ParameterArray<TYPE>::operator [] (unsigned int index)
 
 template <>
 Parameter<bool>::Parameter(const char *_name, Object *_owner, bool& _storage, const char *_description) :
-	ParameterBase(_name, _owner, _description), storage(&_storage)
-{
-}
+	ParameterBase(_name, _owner, "bool", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<char>::Parameter(const char *_name, Object *_owner, char& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "char", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<short>::Parameter(const char *_name, Object *_owner, short& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "short", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<int>::Parameter(const char *_name, Object *_owner, int& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "int", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<long>::Parameter(const char *_name, Object *_owner, long& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "long", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<long long>::Parameter(const char *_name, Object *_owner, long long& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "long long", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<unsigned char>::Parameter(const char *_name, Object *_owner, unsigned char& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "unsigned char", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<unsigned short>::Parameter(const char *_name, Object *_owner, unsigned short& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "unsigned short", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<unsigned int>::Parameter(const char *_name, Object *_owner, unsigned int& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "unsigned int", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<unsigned long>::Parameter(const char *_name, Object *_owner, unsigned long& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "unsigned long", _description), storage(&_storage)
+{}
+
+template <>
+Parameter<unsigned long long>::Parameter(const char *_name, Object *_owner, unsigned long long& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "unsigned long long", _description), storage(&_storage)
+{}
+
+template <> 
+Parameter<double>::Parameter(const char *_name, Object *_owner, double& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "double", _description), storage(&_storage)
+{}
+
+template <> 
+Parameter<float>::Parameter(const char *_name, Object *_owner, float& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "float", _description), storage(&_storage)
+{}
+
+template <> 
+Parameter<string>::Parameter(const char *_name, Object *_owner, string& _storage, const char *_description) :
+	ParameterBase(_name, _owner, "string", _description), storage(&_storage)
+{}
 
 template <> Parameter<bool>::operator string () const { stringstream sstr; sstr << (*storage?"true":"false"); return sstr.str(); }
 
@@ -218,11 +285,6 @@ template <> ParameterBase& Parameter<unsigned long>::operator = (const char *val
 template <> ParameterBase& Parameter<unsigned long long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
 template <> ParameterBase& Parameter<float>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
 template <> ParameterBase& Parameter<double>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
-
-template <> Parameter<string>::Parameter(const char *_name, Object *_owner, string& _storage, const char *_description) :
-	ParameterBase(_name, _owner, _description), storage(&_storage)
-{
-}
 
 template <> Parameter<string>::operator bool () const { return *storage == string("true"); }
 template <> Parameter<string>::operator long long () const { return strtoll(storage->c_str(), 0, 0); }
@@ -629,125 +691,15 @@ void ServiceManager::DumpParameters(ostream &os) {
 }
 
 bool ServiceManager::XmlfyParameters(const char *filename) {
-    xmlTextWriterPtr writer;
-    
-	writer = xmlNewTextWriterFilename(filename, 0);
-	if(writer == NULL) {
-		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "could not open output file for logging" << endl;
-		return false;
-	}
-	int rc = xmlTextWriterSetIndent(writer, 2);
-	if(rc < 0) {
-		cerr << "Warning(ServiceManager::XmlfyParameters): could not set indentation" << endl;
-	}
-	rc = xmlTextWriterStartDocument(writer, NULL, XML_ENCODING, NULL);
-	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "error starting the xml document" << endl;
-		return false;
-	}
-	rc = xmlTextWriterStartElement(writer, BAD_CAST "PARAMETERS");
-	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "error starting the xml document" << endl;
-		return false;
-	}
-
-	map<const char *, ParameterBase *, ltstr>::iterator param_iter;
-
-	for(param_iter = params.begin(); param_iter != params.end(); param_iter++) {
-		// opening parameter element
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "parameter");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter element" << endl;
-			return false;
-		}
-		
-		// writing parameter name 
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "name");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter name element" << endl;
-			return false;
-		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", (*param_iter).second->GetName());
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter name value" << endl;
-			return false;
-		}
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter name element" << endl;
-			return false;
-		}
-		
-		// writing parameter value
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "value");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter value element" << endl;
-			return false;
-		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*param_iter).second).c_str());
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter value" << endl;
-			return false;
-		}
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter value element" << endl;
-			return false;
-		}
-		
-		// writing parameter description
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "description");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter description element" << endl;
-			return false;
-		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", (*param_iter).second->GetDescription());
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter description" << endl;
-			return false;
-		}
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter description element" << endl;
-			return false;
-		}
-		
-		// closing parameter element
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter element" << endl;
-			return false;
-		}
-	}
-
-	rc = xmlTextWriterEndElement(writer);
-	if(rc < 0) {
-		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "could not close the root element" << endl;
-	}
-	rc = xmlTextWriterEndDocument(writer);
-	if(rc < 0) {
-		cerr << "Warning(ServiceManager::XmlfyParameters): "
-			<< "could not correctly close the XMLWriter" << endl;
-	}
-	xmlFreeTextWriter(writer);
-
-	return true;
+	XMLHelper xml_helper;
+	
+	return xml_helper.XmlfyParameters(filename);
 }
 
 bool ServiceManager::LoadXmlParameters(const char *filename) {
+	XMLHelper xml_helper;
 	
+	return xml_helper.LoadXmlParameters(filename);
 }
 
 struct MyVertexProperty

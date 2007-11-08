@@ -61,7 +61,7 @@ using unisim::component::cxx::memory::flash::am29lv::MODE_X8;
 using unisim::component::cxx::memory::flash::am29lv::MODE_X16;
 
 template <> Parameter<MODE>::Parameter(const char *_name, Object *_object, MODE& _storage, const char *_description) :
-	ParameterBase(_name, _object, _description), storage(&_storage)
+	ParameterBase(_name, _object, "memory flash am29lv mode", _description), storage(&_storage)
 {
 }
 
