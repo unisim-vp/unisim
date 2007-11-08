@@ -453,8 +453,10 @@ int main(int argc, char *argv[], char **envp) {
 	ServiceManager::Dump(cerr);
 #endif
 
-	ServiceManager::XmlfyParameters("parameters.xml");
-	exit(-1);
+//	ServiceManager::XmlfyParameters("parameters.xml");
+//	ServiceManager::LoadXmlParameters("parameters.xml");
+//	ServiceManager::XmlfyParameters("parameters.copy.xml");
+//	exit(-1);
 	
 	if(ServiceManager::Setup())
 	{
