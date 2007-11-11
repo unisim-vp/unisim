@@ -39,11 +39,41 @@
 **********************************************/
 
 /*******************************************************************
- * b (conditional branch) instruction
- * b (conditional branch) instruction
- * bl (branch with link) instruction
- * bx (branch and exchange) instruction
- * blx (branch with link and exchange) instruction
+ * adc (add with carry)
+ * add (add immediate)
+ * add (add large immediate)
+ * add (add register)
+ * add (high registers)
+ * add (immediate to program counter)
+ * add (immediate to stack pointer)
+ * add (increment stack pointer)
+ * and (logical and)
+ * asr (arithmetic shift right immediate)
+ * asr (arithmetic shift right register)
+ * bic (bit clear)
+ * cmn (compare negative register)
+ * cmp (compare immediate)
+ * cmp (compare register)
+ * cmp (compare high registers)
+ * eor (exclusive or)
+ * lsl (logical shift left immediate)
+ * lsl (logical shift left register)
+ * lsr (logical shift right immediate)
+ * lsr (logical shift right register)
+ * mov (move immediate)
+ * mov (move a low register to another low register)
+ * mov (move high registers)
+ * mul (multiply)
+ * mvn (move not register)
+ * neg (negate register)
+ * orr (logical or)
+ * ror (rotate right register)
+ * sbc (subtract with carry register)
+ * sub (subtract immediate)
+ * sub (subtract large immediate)
+ * sub (subtract register)
+ * sub (decrement stack pointer)
+ * tst (test register)
  */
 
 /*******************************************************************/
