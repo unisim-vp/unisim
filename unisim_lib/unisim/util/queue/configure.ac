@@ -33,22 +33,41 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Utility classes], [1.0])
+AC_INIT([UNISIM Queue Library], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[queue])
 AC_CONFIG_AUX_DIR(config)
-
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
 
-UNISIM_CONFIG_SUBDIR(unisim-util-xml, xml)
-UNISIM_CONFIG_SUBDIR(unisim-util-arithmetic, arithmetic)
-UNISIM_CONFIG_SUBDIR(unisim-util-endian, endian)
-UNISIM_CONFIG_SUBDIR(unisim-util-garbage_collector, garbage_collector)
-UNISIM_CONFIG_SUBDIR(unisim-util-hash_table, hash_table)
-UNISIM_CONFIG_SUBDIR(unisim-util-debug, debug)
-UNISIM_CONFIG_SUBDIR(unisim-util-simfloat, simfloat)
-UNISIM_CONFIG_SUBDIR(unisim-util-device, device)
-UNISIM_CONFIG_SUBDIR(unisim-util-queue, queue)
+AC_LANG([C++])
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([inttypes.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+AC_CHECK_HEADERS([list iostream],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR TARGET SPECIFIC HEADERS ######################
+
+case $host in
+	*linux*)   # linux host
+		;;
+	*mingw32*)  # win32 host
+		;;
+esac
 
 # files to generate
 #   this should include all the makefiles to generate

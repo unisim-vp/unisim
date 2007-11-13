@@ -44,6 +44,11 @@ SUBDIRS += device
 INCLUDE_SUBDIRS += device
 endif
 
+if COND_queue
+SUBDIRS += queue
+INCLUDE_SUBDIRS += queue
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:
