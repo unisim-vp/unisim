@@ -23,6 +23,9 @@
 #include <strtools.hh>
 #include <sourcecode.hh>
 #include <comment.hh>
+#include <iostream>
+
+using namespace std;
 
 ConstStr_t               Scanner::filename = 0;
 int                      Scanner::lineno = 1;
@@ -379,7 +382,7 @@ Scanner::locate( char const* _name ) {
   
   for( std::vector<ConstStr_t>::iterator iter = s_lookupdirs.begin(); iter != s_lookupdirs.end(); iter++ ) {
     buffer.clear().write( iter->str() ).write( "/" ).write( _name );
-    if( not access( buffer.m_storage, R_OK ) ) continue;
+    if( access( buffer.m_storage, R_OK ) != 0 ) continue;
     return buffer.m_storage;
   }
   return _name;
