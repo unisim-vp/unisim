@@ -50,10 +50,13 @@ nobase_include_HEADERS = \
 	tcm/tcm.hh tcm/tcm.tcc
 
 nodist_include_HEADERS = \
-	armcpu.tcc armcpu.hh
+	armcpu.tcc armcpu.hh \
+	thumbcpu.tcc thumbcpu.hh
 	
-BUILT_SOURCES = armcpu.tcc armcpu.hh
-CLEANFILES = armcpu.tcc armcpu.hh
+BUILT_SOURCES = armcpu.tcc armcpu.hh \
+	thumbcpu.tcc thumbcpu.hh
+CLEANFILES = armcpu.tcc armcpu.hh \
+	thumbcpu.tcc thumbcpu.hh
 
 armcpu.tcc: armcpu.hh 
 armcpu.hh: $(srcdir)/arm.isa $(srcdir)/constructors_dec.isa \
@@ -66,6 +69,16 @@ armcpu.hh: $(srcdir)/arm.isa $(srcdir)/constructors_dec.isa \
 	$(srcdir)/misc_arithmetic.isa $(srcdir)/multiply.isa \
 	$(srcdir)/semaphore.isa $(srcdir)/status_register_access.isa
 	cd $(srcdir); $(GENISSLIB_PATH) -o armcpu -w 32 -I $(srcdir) $(srcdir)/arm.isa
+
+thumbcpu.tcc: thumbcpu.hh 
+thumbcpu.hh: $(srcdir)/thumb_arm.isa $(srcdir)/thumb_constructors_dec.isa \
+	$(srcdir)/thumb_actions_dec.isa \
+	$(srcdir)/thumb_branch.isa \
+	$(srcdir)/thumb_data_processing.isa \
+	$(srcdir)/thumb_exception.isa \
+	$(srcdir)/thumb_load_store_reg.isa \
+	$(srcdir)/thumb_load_store_multiple.isa
+	cd $(srcdir); $(GENISSLIB_PATH) -o thumbcpu -w 32 -I $(srcdir) $(srcdir)/thumb_arm.isa
 
 dist_share_DATA = COPYING
 

@@ -39,11 +39,42 @@
 **********************************************/
 
 /*******************************************************************
- * b (conditional branch) instruction
- * b (conditional branch) instruction
- * bl (branch with link) instruction
- * bx (branch and exchange) instruction
- * blx (branch with link and exchange) instruction
+ * ldmia (load multiple) instruction
  */
 
-/*******************************************************************/
+op ldmia(0b11001[5]:rn[3]:reg_list[8])
+
+/*
+ * end of ldmia (load multiple) instruction
+ *******************************************************************/
+
+/*******************************************************************
+* pop (pop multiple) instruction
+ */
+
+op pop(0b1011110[7]:r[1]:reg_list[8])
+
+/*
+ * end of pop (pop multiple) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * push (push multiple) instruction
+ */
+
+op push(0b1011010[7]:r[1]:reg_list[8])
+
+/*
+ * end of push (push multiple) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * stmia (store multiple) instruction
+ */
+
+op stmia(0b11000[5]:rn[3]:reg_list[8])
+
+/*
+ * end of stmia (store multiple) instruction
+ *******************************************************************/
+

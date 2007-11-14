@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_HH__
 
 #include <systemc.h>
-#include "unisim/component/cxx/processor/arm/armcpu.hh"
+#include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
 #include "unisim/kernel/tlm/tlm.hh"

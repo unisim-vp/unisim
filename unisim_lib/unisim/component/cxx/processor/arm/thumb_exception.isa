@@ -39,11 +39,21 @@
 **********************************************/
 
 /*******************************************************************
- * b (conditional branch) instruction
- * b (conditional branch) instruction
- * bl (branch with link) instruction
- * bx (branch and exchange) instruction
- * blx (branch with link and exchange) instruction
+ * bkpt (breakpoint) instruction
  */
 
-/*******************************************************************/
+op bkpt(0b10111110[8]:imm[8])
+
+/*
+ * end of bkpt (breakpoint) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * swi (software interrupt) instruction
+ */
+
+op swi(0b11011111[8]:imm[8])
+
+/*
+ * end of swi (software interrupt) instruction
+ *******************************************************************/

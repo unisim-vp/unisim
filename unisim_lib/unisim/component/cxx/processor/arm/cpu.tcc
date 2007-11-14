@@ -42,6 +42,7 @@
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include <sstream>
+#include <iostream>
 
 //#include <sys/types.h>
 //#include <unistd.h>
@@ -72,7 +73,13 @@ using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::util::arithmetic::RotateRight;
-using std::stringstream;
+
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
+using std::ostringstream;
 
 // Constructor
 template<class CONFIG>
@@ -391,8 +398,8 @@ template<class CONFIG>
 string
 CPU<CONFIG> ::
 Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr) {
-  Operation<CONFIG> *op = NULL;
-  op = Decoder<CONFIG>::Decode(addr);
+  typename isa::arm32::Operation<CONFIG> *op = NULL;
+  op = arm32_decoder.Decode(addr);
   stringstream buffer;
   op->disasm(*this, buffer);
   return buffer.str();
@@ -460,7 +467,7 @@ Step() {
 	reg_t current_pc;
 	reg_t next_pc;
 
-	Operation<CONFIG> *op = NULL;
+	typename isa::arm32::Operation<CONFIG> *op = NULL;
 	current_pc = GetGPR(PC_reg);
 
 	VerboseDumpRegsStart();
@@ -569,7 +576,7 @@ Step() {
 				<< "Decoding instruction at 0x" 
 				<< Hex << current_pc << Dec 
 				<< Endl << EndDebugInfo;
-		op = Decoder<CONFIG>::Decode(current_pc, insn);
+		op = arm32_decoder.Decode(current_pc, insn);
 		/* Execute instruction */
 		if(CONFIG::DEBUG_ENABLE && (verbose_step || verbose_step_insn) && logger_import) {
 			stringstream disasm_str;

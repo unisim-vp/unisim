@@ -32,6 +32,12 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */ 
 
+var cond_init : {unsigned int}
+
+constructor action initialize_cond_init() {
+	cond_init = 0;
+}
+
 var rn_init : {unsigned int}
 var rm_init : {unsigned int}
 var rd_init : {unsigned int}
@@ -68,3 +74,8 @@ constructor action initialize_rdp1_init() {
   rdp1_init = 0;
 }
 
+var rm_index : {unsigned int}
+
+constructor action initialize_rm_index() {
+	rm_index = 0;
+}

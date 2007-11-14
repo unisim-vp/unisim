@@ -39,11 +39,263 @@
 **********************************************/
 
 /*******************************************************************
- * b (conditional branch) instruction
- * b (conditional branch) instruction
- * bl (branch with link) instruction
- * bx (branch and exchange) instruction
- * blx (branch with link and exchange) instruction
+ * b(1) (conditional branch) instruction
+ * op b_1(0b1101[4]:cond[4]:sext<32> imm[8])
  */
 
-/*******************************************************************/
+op b_1_0xxx(0b1101[4]:0b0[1]:sub_cond[3]:sext<32> imm[8])
+op b_1_10xx(0b1101[4]:0b10[2]:sub_cond[2]:sext<32> imm[8])
+op b_1_110x(0b1101[4]:0b110[3]:sub_cond[1]:sext<32> imm[8])
+
+b_1_0xxx.initialize_cond_init = {
+	typedef Operation<CONFIG> inherited;
+
+	inherited::cond_init = sub_cond;
+}
+
+b_1_10xx.initialize_cond_init = {
+	typedef Operation<CONFIG> inherited;
+
+	inherited::cond_init = sub_cond + 8;
+}
+
+b_1_110x.initialize_cond_init = {
+	typedef Operation<CONFIG> inherited;
+
+	inherited::cond_init = sub_cond + 12;
+}
+
+group b_1(b_1_0xxx, b_1_10xx, b_1_110x)
+
+b_1.disasm = {
+	typedef Operation<CONFIG> inherited;
+	buffer << "b";
+	cpu.DisasmCondition(inherited::cond_init, buffer);
+	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
+}
+
+b_1.execute = {
+		typedef Operation<CONFIG> inherited;
+
+		typename CONFIG::reg_t new_PC;
+		  
+		if(!cpu.CheckCondition(inherited::cond_init)) {
+			cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+			return;
+		}
+		
+		new_PC = cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1);
+		cpu.SetGPR(cpu.PC_reg, new_PC);
+}
+
+/*
+ * end of b(1) (conditional branch) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * b(2) (unconditional branch) instruction
+ * op b_2(0b11100[5]:sext<32> imm[11])
+ */
+
+op b_2(0b11100[5]:sext<32> imm[11])
+
+b_2.disasm = {
+		typedef Operation<CONFIG> inherited;
+	
+	buffer << "b";
+	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
+}
+
+b_2.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t new_PC;
+	
+	new_PC = cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1);
+	cpu.SetGPR(cpu.PC_reg, new_PC);
+}
+
+/*
+ * end of b(2) (unconditional branch) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bl (branch with link) instruction
+ * op bl(0b111[3]:0b1[1]:h2[1]:offset[11])
+ */
+
+op bl(0b111[3]:0b1[1]:h2[1]:offset[11])
+
+bl.disasm = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::sreg_t bl_soffset;
+	
+	if(offset & 0x0400)
+		bl_soffset = (int32_t)((~(uint32_t)0x0400) + offset);
+	else
+		bl_soffset = offset;
+	
+	buffer << "bl";
+	buffer << " 0x" << hex 
+		<< ((bl_soffset << 12) + cpu.GetGPR(cpu.PC_reg) + 4 + (offset << 1))
+		<< dec;
+}
+
+bl.execute = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::reg_t new_PC;
+	
+	typename CONFIG::sreg_t bl_soffset;
+	
+	if(offset & 0x0400)
+		bl_soffset = (int32_t)((~(uint32_t)0x0400) + offset);
+	else
+		bl_soffset = offset;
+	
+	if(h2) {
+		new_PC = cpu.GetGPR(cpu.LR_reg) + (offset << 11);
+		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 3);
+		cpu.SetGPR(cpu.PC_reg, new_PC);
+	} else {
+		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 4 + (bl_soffset << 12));
+	}
+}
+
+/*
+ * end of bl (branch with link) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bx (branch and exchange) instruction
+ * op bx(0b010001110[9]:h2[1]:rm[3]:sbz[3])
+ */
+
+op bx(0b010001110[9]:h2[1]:rm[3]:sbz[3])
+
+bx.disasm = {
+		typedef Operation<CONFIG> inherited;
+
+	buffer << "bx "
+		<< "r" << inherited::rm_index << endl;
+}
+
+bx.initialize_rm_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if((h2 << 3) + rm == CPU<CONFIG>::PC_reg)
+		inherited::rm_init = 4;
+	else
+		inherited::rm_init = 0;
+}
+
+bx.initialize_rm_index = {
+	typedef Operation<CONFIG> inherited;
+
+	inherited::rm_index = (h2 << 3) + rm;
+}
+
+bx.execute = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::reg_t new_PC;
+	typename CONFIG::reg_t rm_value;
+	
+	rm_value = inherited::rm_init + cpu.GetGPR(inherited::rm_index);
+	
+	if(rm_value & 1) {
+		cpu.SetCPSR_T(true);
+	} else {
+		cpu.SetCPSR_T(false);
+	}
+	
+	cpu.SetGPR(cpu.PC_reg, rm_value & ~(typename CONFIG::reg_t)1);
+}
+
+/*
+ * end of bx (branch and exchange) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * blx(1) (branch with link and exchange) instruction
+ * op blx_1(0b111[3]:0b01[2]:sext<32> imm[11])
+ */
+
+op blx_1(0b111[3]:0b01[2]:offset[11])
+
+blx_1.disasm = {
+	typedef Operation<CONFIG> inherited;
+	
+	typename CONFIG::sreg_t blx_soffset;
+	
+	if(offset & 0x0400)
+		blx_soffset = (int32_t)((~(uint32_t)0x0400) + offset);
+	else
+		blx_soffset = offset;
+	
+	buffer << "blx";
+	buffer << " 0x" << hex 
+		<< ((blx_soffset << 12) + cpu.GetGPR(cpu.PC_reg) + 4 + (offset << 1))
+		<< dec;
+}
+
+blx_1.execute = {
+	typename CONFIG::reg_t new_PC;
+	
+	new_PC = (cpu.GetGPR(cpu.LR_reg) + (offset << 1)) & (typename CONFIG::reg_t)0xFFFFFFFC;
+	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 3);
+	cpu.SetGPR(cpu.PC_reg, new_PC);
+}
+
+/*
+ * end of blx(1) (branch with link and exchange) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * blx(2) (branch with link and exchange) instruction
+ * op blx_2(0b111[3]:0b01[2]:sext<32> imm[11])
+ */
+
+op blx_2(0b010001111[9]:h2[1]:rm[3]:sbz[3])
+
+blx_2.initialize_rm_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if((h2 << 3) + rm == CPU<CONFIG>::PC_reg)
+		inherited::rm_init = 4;
+	else
+		inherited::rm_init = 0;
+}
+
+blx_2.initialize_rm_index = {
+		typedef Operation<CONFIG> inherited;
+
+	inherited::rm_index = (h2 << 3) + rm;
+}
+
+blx_2.disasm = {
+	typedef Operation<CONFIG> inherited;
+	
+	buffer << "blx r" << inherited::rm_index; 
+}
+
+blx_2.execute = {
+	typedef Operation<CONFIG> inherited;
+	typename CONFIG::reg_t rm_value;
+	
+	rm_value = inherited::rm_init + cpu.GetGPR(inherited::rm_index);
+	
+	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 3);
+	if(rm_value & 1) {
+		cpu.SetCPSR_T(true);
+	} else {
+		cpu.SetCPSR_T(false);
+	}
+	
+	cpu.SetGPR(cpu.PC_reg, rm_value & ~(typename CONFIG::reg_t)1);
+}
+
+/*
+ * end of blx(2) (branch with link and exchange) instruction
+ *******************************************************************/

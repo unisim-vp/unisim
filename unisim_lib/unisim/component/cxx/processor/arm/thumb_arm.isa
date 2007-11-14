@@ -38,13 +38,50 @@
 
 **********************************************/
 
-namespace unisim::component::cxx::processor::arm
+namespace unisim::component::cxx::processor::arm::isa::thumb
 big_endian
 address {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
-{
-#include "unisim/component/cxx/processor/arm/cpu.hh"
+decl {
+#include <sstream>
+	
+using std::stringstream;
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+
+template<class CONFIG>
+class CPU;
+
+} // end of namespace arm 
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+} // end of decl
+
+impl {
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/service/interfaces/logger.hh"
+	
+using unisim::component::cxx::processor::arm::UndefinedInstructionException;
+using unisim::service::interfaces::DebugInfo;
+using unisim::service::interfaces::DebugWarning;
+using unisim::service::interfaces::DebugError;
+using unisim::service::interfaces::EndDebugInfo;
+using unisim::service::interfaces::EndDebugWarning;
+using unisim::service::interfaces::EndDebugError;
+using unisim::service::interfaces::Endl;
+using unisim::service::interfaces::Hex;
+using unisim::service::interfaces::Dec;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::Line;
 }
 
 include "thumb_constructors_dec.isa"

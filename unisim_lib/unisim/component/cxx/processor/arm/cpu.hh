@@ -56,6 +56,8 @@
 #include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
 #include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
 #include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
+#include "unisim/component/cxx/processor/arm/armcpu.hh"
+#include "unisim/component/cxx/processor/arm/thumbcpu.hh"
 // #include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/endian/endian.hh"
 #include <string>
@@ -119,10 +121,11 @@ using unisim::component::cxx::processor::arm::CacheInterfaceWithMemoryService;
 using unisim::component::cxx::processor::arm::cache::Cache;
 using unisim::util::endian::endian_type;
 using std::string;
+using std::stringstream;
+using std::map;
 
 template<class CONFIG>
 class CPU :
-	public Decoder<CONFIG>,
 	public CPUCPInterface,
 	public Client<Loader<typename CONFIG::address_t> >,
     public Client<LinuxOS>,
@@ -736,6 +739,9 @@ public:
     void CheckAlignmentExcep(address_t addr); // TODO
 
 private:
+	typename isa::arm32::Decoder<CONFIG> arm32_decoder;
+	typename isa::thumb::Decoder<CONFIG> thumb_decoder;
+
 	/** 
 	 * the copy of the last cache line accessed by the cpu and its address, 
 	 *   this speed ups execution, because the memory is not accessed */
