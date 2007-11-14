@@ -371,7 +371,7 @@ Isa::generate_decoder_class_definition( Product_t& _product ) const {
   _product.code( "\tOperation" );
   _product.template_abrev( m_tparams );
   _product.code( " *Decode(%s addr, CodeType insn);\n", m_addrtype.str() );
-  _product.code( "\tvirtual void Fetch(void *, %s, uint32_t) = 0;\n", m_addrtype.str() );
+  _product.code( "\tvirtual void Fetch(void *, %s, uint32_t) ;\n", m_addrtype.str() );
   _product.code( "\tvoid InvalidateDecodingCacheEntry(%s addr);\n", m_addrtype.str() );
   _product.code( "\tvoid InvalidateDecodingCache();\n\n" );
   _product.code( "\tvoid SetLittleEndian();\n" );
@@ -770,6 +770,16 @@ Isa::generate_decoder( Product_t& _product, unsigned int word_size ) const {
   _product.code( "{\n" );
   _product.code( "\tInvalidateDecodingCache();\n" );
   _product.code( "}\n\n" );
+  
+  _product.template_signature( m_tparams );
+  _product.code( "void Decoder" );
+  _product.template_abrev( m_tparams );
+  _product.code( "::Fetch(void *, %s, uint32_t)\n", m_addrtype.str() );
+  _product.code( "{\n" );
+  _product.code( "\tcerr << \"Calling unimplemented virtual method Fetch\" << endl; \n" );
+  _product.code( "\tabort(); \n" );
+  _product.code( "}\n\n" );
+  
 
   _product.template_signature( m_tparams );
   _product.code( "Operation" );
