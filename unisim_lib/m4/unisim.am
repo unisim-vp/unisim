@@ -1,4 +1,4 @@
-all-local: all-local-bin all-local-lib all-local-include 
+all-local: all-local-bin all-local-lib all-local-include all-local-built
 	
 all-local-bin: $(bin_PROGRAMS)
 	@list='$(bin_PROGRAMS)'; \
@@ -26,6 +26,16 @@ all-local-include: $(include_HEADERS)
 			cd include && \
 			$(LN_S) $(abs_top_srcdir)/$(ROOT_DIR)/unisim unisim); \
 		fi \
+	fi
+	
+all-local-built: $(BUILT_SOURCES)
+	@if test "$(abs_top_srcdir)" != "$(abs_top_builddir)"; \
+	then \
+		list='$(BUILT_SOURCES)'; \
+		for p in $$list; do \
+			(cd $(abs_top_srcdir) && \
+			$(LN_S) $(abs_top_builddir)/$$p $$p); \
+		done \
 	fi
 	
 clean-local: clean-local-bin clean-local-lib clean-local-include

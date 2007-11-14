@@ -43,30 +43,30 @@ nobase_include_HEADERS = \
 	coprocessor/arm966e_s/cp15.hh \
 	coprocessor/arm966e_s/cp15.tcc \
 	tcm/tcm.hh tcm/tcm.tcc \
-	isa/arm32/arm.isa isa/arm32/constructors_dec.isa isa/arm32/actions_dec.isa \
+	isa/arm32/arm32.isa isa/arm32/constructors_dec.isa isa/arm32/actions_dec.isa \
 	isa/arm32/branch.isa isa/arm32/coprocessor.isa isa/arm32/data_processing.isa isa/arm32/exception.isa \
 	isa/arm32/load_store.isa isa/arm32/load_store_base.isa isa/arm32/load_store_multiple.isa \
 	isa/arm32/load_store_v4.isa isa/arm32/load_store_v5e.isa isa/arm32/misc_arithmetic.isa isa/arm32/multiply.isa \
 	isa/arm32/semaphore.isa isa/arm32/status_register_access.isa \
-	isa/thumb/thumb_arm.isa isa/thumb/thumb_constructors_dec.isa \
-	isa/thumb/thumb_actions_dec.isa \
-	isa/thumb/thumb_branch.isa \
-	isa/thumb/thumb_data_processing.isa \
-	isa/thumb/thumb_exception.isa \
-	isa/thumb/thumb_load_store_reg.isa \
-	isa/thumb/thumb_load_store_multiple.isa
+	isa/thumb/thumb.isa isa/thumb/constructors_dec.isa \
+	isa/thumb/actions_dec.isa \
+	isa/thumb/branch.isa \
+	isa/thumb/data_processing.isa \
+	isa/thumb/exception.isa \
+	isa/thumb/load_store_reg.isa \
+	isa/thumb/load_store_multiple.isa
 	
 nodist_include_HEADERS = \
-	armcpu.tcc armcpu.hh \
-	thumbcpu.tcc thumbcpu.hh
+	isa_arm32.tcc isa_arm32.hh \
+	isa_thumb.tcc isa_thumb.hh
 	
-BUILT_SOURCES = armcpu.tcc armcpu.hh \
-	thumbcpu.tcc thumbcpu.hh
-CLEANFILES = armcpu.tcc armcpu.hh \
-	thumbcpu.tcc thumbcpu.hh
+BUILT_SOURCES = isa_arm32.tcc isa_arm32.hh \
+	isa_thumb.tcc isa_thumb.hh
+CLEANFILES = isa_arm32.tcc isa_arm32.hh \
+	isa_thumb.tcc isa_thumb.hh
 
-armcpu.tcc: armcpu.hh 
-armcpu.hh: $(srcdir)/isa/arm32/arm.isa $(srcdir)/isa/arm32/constructors_dec.isa \
+isa_arm32.tcc: isa_arm32.hh 
+isa_arm32.hh: $(srcdir)/isa/arm32/arm32.isa $(srcdir)/isa/arm32/constructors_dec.isa \
 	$(srcdir)/isa/arm32/actions_dec.isa $(srcdir)/isa/arm32/branch.isa \
 	$(srcdir)/isa/arm32/coprocessor.isa $(srcdir)/isa/arm32/data_processing.isa \
 	$(srcdir)/isa/arm32/exception.isa \
@@ -75,17 +75,17 @@ armcpu.hh: $(srcdir)/isa/arm32/arm.isa $(srcdir)/isa/arm32/constructors_dec.isa 
 	$(srcdir)/isa/arm32/load_store_v4.isa $(srcdir)/isa/arm32/load_store_v5e.isa \
 	$(srcdir)/isa/arm32/misc_arithmetic.isa $(srcdir)/isa/arm32/multiply.isa \
 	$(srcdir)/isa/arm32/semaphore.isa $(srcdir)/isa/arm32/status_register_access.isa
-	$(GENISSLIB_PATH) -o armcpu -w 32 -I $(srcdir)/isa/arm32 $(srcdir)/isa/arm32/arm.isa
+	$(GENISSLIB_PATH) -o isa_arm32 -w 32 -I $(srcdir)/isa/arm32 $(srcdir)/isa/arm32/arm32.isa
 
-thumbcpu.tcc: thumbcpu.hh 
-thumbcpu.hh: $(srcdir)/isa/thumb/thumb_arm.isa $(srcdir)/isa/thumb/thumb_constructors_dec.isa \
-	$(srcdir)/isa/thumb/thumb_actions_dec.isa \
-	$(srcdir)/isa/thumb/thumb_branch.isa \
-	$(srcdir)/isa/thumb/thumb_data_processing.isa \
-	$(srcdir)/isa/thumb/thumb_exception.isa \
-	$(srcdir)/isa/thumb/thumb_load_store_reg.isa \
-	$(srcdir)/isa/thumb/thumb_load_store_multiple.isa
-	$(GENISSLIB_PATH) -o thumbcpu -w 32 -I $(srcdir)/isa/thumb $(srcdir)/isa/thumb/thumb_arm.isa
+isa_thumb.tcc: isa_thumb.hh 
+isa_thumb.hh: $(srcdir)/isa/thumb/thumb.isa $(srcdir)/isa/thumb/constructors_dec.isa \
+	$(srcdir)/isa/thumb/actions_dec.isa \
+	$(srcdir)/isa/thumb/branch.isa \
+	$(srcdir)/isa/thumb/data_processing.isa \
+	$(srcdir)/isa/thumb/exception.isa \
+	$(srcdir)/isa/thumb/load_store_reg.isa \
+	$(srcdir)/isa/thumb/load_store_multiple.isa
+	$(GENISSLIB_PATH) -o isa_thumb -w 32 -I $(srcdir)/isa/thumb $(srcdir)/isa/thumb/thumb.isa
 
 dist_share_DATA = COPYING
 

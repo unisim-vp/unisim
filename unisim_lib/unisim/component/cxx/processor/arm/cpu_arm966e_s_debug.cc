@@ -32,10 +32,6 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#include "unisim/component/cxx/processor/arm/armcpu.hh"
-#include "unisim/component/cxx/processor/arm/armcpu.tcc"
-#include "unisim/component/cxx/processor/arm/thumbcpu.hh"
-#include "unisim/component/cxx/processor/arm/thumbcpu.tcc"
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/cpu.tcc"
 #include "unisim/component/cxx/processor/arm/config.hh"

@@ -43,6 +43,8 @@
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include <sstream>
 #include <iostream>
+#include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
+#include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
 
 //#include <sys/types.h>
 //#include <unistd.h>
@@ -3166,21 +3168,6 @@ CheckAlignmentExcep(typename CONFIG::address_t addr) {
 
 /**************************************************************/
 /* Alignment checking methods  END                            */
-/**************************************************************/
-
-/**************************************************************/
-/* Decode fecth method  START                                 */
-/**************************************************************/
-
-template<class CONFIG>
-void 
-CPU<CONFIG> :: 
-Fetch(void *buffer, typename CONFIG::address_t addr, uint32_t size) {
-	memory_interface->PrRead(addr, (uint8_t *)buffer, size);
-}
-
-/**************************************************************/
-/* Decode fecth method  END                                   */
 /**************************************************************/
 
 /**************************************************************/

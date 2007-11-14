@@ -56,8 +56,8 @@
 #include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
 #include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
 #include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
-#include "unisim/component/cxx/processor/arm/armcpu.hh"
-#include "unisim/component/cxx/processor/arm/thumbcpu.hh"
+#include "unisim/component/cxx/processor/arm/isa_arm32.hh"
+#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
 // #include "unisim/component/cxx/cache/cache_interface.hh"
 #include "unisim/util/endian/endian.hh"
 #include <string>
@@ -255,12 +255,6 @@ public:
 	string GetObjectFriendlyName(address_t addr);
 	string GetFunctionFriendlyName(address_t addr);
   
-    //=====================================================================
-	//=             instruction fetch (unused, but mandatory)             =
-	//=====================================================================
-	
-	virtual void Fetch(void *buffer, address_t addr, uint32_t size); // called by inherited class Decoder
-
     /**************************************************************/
     /* Operand decoding methods     START                         */
     /**************************************************************/

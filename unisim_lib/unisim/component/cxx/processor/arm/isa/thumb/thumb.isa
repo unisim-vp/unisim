@@ -84,11 +84,11 @@ using unisim::service::interfaces::Function;
 using unisim::service::interfaces::Line;
 }
 
-include "thumb_constructors_dec.isa"
-include "thumb_actions_dec.isa"
+include "constructors_dec.isa"
+include "actions_dec.isa"
 
-include "thumb_branch.isa"
-include "thumb_data_processing.isa"
-include "thumb_load_store_reg.isa"
-include "thumb_load_store_multiple.isa"
-include "thumb_exception.isa"
+include "branch.isa"
+include "data_processing.isa"
+include "load_store_reg.isa"
+include "load_store_multiple.isa"
+include "exception.isa"
