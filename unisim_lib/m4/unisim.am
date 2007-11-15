@@ -34,6 +34,7 @@ all-local-built: $(BUILT_SOURCES)
 		list='$(BUILT_SOURCES)'; \
 		for p in $$list; do \
 			(cd $(abs_top_srcdir) && \
+			rm -f $$p && \
 			$(LN_S) $(abs_top_builddir)/$$p $$p); \
 		done \
 	fi
