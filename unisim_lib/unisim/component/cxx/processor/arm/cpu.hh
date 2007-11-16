@@ -436,6 +436,7 @@ public:
     const static unsigned int nextPC_reg = 16;
     const static unsigned int PC_reg = 15;
     const static unsigned int LR_reg = 14;
+    const static unsigned int SP_reg = 13;
     
     /* GPR access functions */
     void InitGPR();

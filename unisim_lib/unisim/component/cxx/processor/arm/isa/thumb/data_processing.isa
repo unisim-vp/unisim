@@ -78,7 +78,30 @@ adc.execute = {
  * NOTE: mov(2) is equivalent to add(1)
  */
 
-op add_1(0b0001110[7]:imm[3]:rm[3]:rd[3])
+op add_1(0b0001110[7]:imm[3]:rn[3]:rd[3])
+
+add_1.disasm = {
+		buffer << "add r" << rd << ", r" << rn << ", #" << dec << imm;
+}
+
+add_1.execute = {
+		typename CONFIG::reg_t res;
+		typename CONFIG::reg_t s1;
+		uint8_t carry_in, carry_out, overflow_out;
+		
+		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+		
+		s1 = cpu.GetGPR(rn);
+		carry_in = 0;
+		Add32(res, carry_out, overflow_out,
+				s1, imm, carry_in);
+		cpu.SetGPR(rd, res);
+
+		cpu.SetCPSR_N(res & 0x80000000);
+		cpu.SetCPSR_Z(res == 0);
+		cpu.SetCPSR_C(carry_out); // to check
+		cpu.SetCPSR_V(overflow_out); // to check
+}
 
 /*
  * end of add(1) (add immediate) instruction
@@ -90,6 +113,29 @@ op add_1(0b0001110[7]:imm[3]:rm[3]:rd[3])
 
 op add_2(0b00110[5]:rd[3]:imm[8])
 
+add_2.disasm = {
+	buffer << "add r" << rd << ", #" << dec << imm;
+}
+
+add_2.execute = {
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t s1;
+	uint8_t carry_in, carry_out, overflow_out;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	s1 = cpu.GetGPR(rd);
+	carry_in = 0;
+	Add32(res, carry_out, overflow_out,
+			s1, imm, carry_in);
+
+	cpu.SetGPR(rd, res);
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(carry_out); // to check
+	cpu.SetCPSR_V(overflow_out); // to check
+}
+
 /*
  * end of add (add large immediate) instruction
  *******************************************************************/
@@ -99,6 +145,31 @@ op add_2(0b00110[5]:rd[3]:imm[8])
  */
 
 op add_3(0b0001100[7]:rm[3]:rn[3]:rd[3])
+
+add_3.disasm = {
+	buffer << "add r" << rd << ", r" << rn << ", r" << rm;
+}
+
+add_3.execute = {
+	typename CONFIG::reg_t res;
+	typename CONFIG::reg_t s1, s2;
+	uint8_t carry_in, carry_out, overflow_out;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	s1 = cpu.GetGPR(rm);
+	s2 = cpu.GetGPR(rn);
+	
+	carry_in = 0;
+	Add32(res, carry_out, overflow_out,
+			s1, s2, carry_in);
+
+	cpu.SetGPR(rd, res);
+	cpu.SetCPSR_N(res & 0x80000000);
+	cpu.SetCPSR_Z(res == 0);
+	cpu.SetCPSR_C(carry_out); // to check
+	cpu.SetCPSR_V(overflow_out); // to check
+}
 
 /*
  * end of add (add register) instruction
@@ -110,6 +181,51 @@ op add_3(0b0001100[7]:rm[3]:rn[3]:rd[3])
 
 op add_4(0b01000100[8]:h1[1]:h2[1]:rm[3]:rd[3])
 
+add_4.initialize_rm_index = {
+	typedef Operation<CONFIG> inherited;
+
+	inherited::rm_index = (h2 << 3) + rm;
+}
+
+add_4.initialize_rd_index = {
+	typedef Operation<CONFIG> inherited;
+
+	inherited::rd_index = (h1 << 3) + rd;
+}
+
+add_4.initialize_rm_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if((h2 << 3) + rm == CPU<CONFIG>::PC_reg)
+		inherited::rm_init = 4;
+}
+
+add_4.initialize_rd_init = {
+	typedef Operation<CONFIG> inherited;
+
+	if((h1 << 3) + rd == CPU<CONFIG>::PC_reg)
+		inherited::rd_init = 4;
+}
+
+add_4.disasm = {
+	typedef Operation<CONFIG> inherited;
+	
+	buffer << "add r" << inherited::rd_index << ", r" << inherited::rm_index;
+}
+
+add_4.execute = {
+	typedef Operation<CONFIG> inherited;
+
+	typename CONFIG::reg_t s1, s2, res;
+	s1 = cpu.GetGPR(inherited::rd_index) + inherited::rd_init;
+	s2 = cpu.GetGPR(inherited::rm_index) + inherited::rm_init;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+
+	res = s1 + s2;
+	cpu.SetGPR(inherited::rd_index, res);
+}
+
 /*
  * end of add (add high registers) instruction
  *******************************************************************/
@@ -119,6 +235,24 @@ op add_4(0b01000100[8]:h1[1]:h2[1]:rm[3]:rd[3])
  */
 
 op add_5(0b10100[5]:rd[3]:imm[8])
+
+add_5.disasm = {
+	buffer << "add r" << rd << ", PC, #" << dec << ((unsigned int)imm * 4);
+}
+
+add_5.execute = {
+	typename CONFIG::reg_t s1, s2, res;
+	typename CONFIG::reg_t pc;
+	
+	pc = cpu.GetGPR(cpu.PC_reg);
+	cpu.SetGPR(cpu.PC_reg, pc + 2);
+	
+	s1 = pc & (typename CONFIG::reg_t)0xfffffffc;
+	s2 = ((typename CONFIG::reg_t)imm) << 2;
+	res = s1 + s2;
+	
+	cpu.SetGPR(rd, res);
+}
 
 /*
  * end of add (add immediate to program counter) instruction
@@ -130,6 +264,22 @@ op add_5(0b10100[5]:rd[3]:imm[8])
 
 op add_6(0b10101[5]:rd[3]:imm[8])
 
+add_6.disasm = {
+	buffer << "add r" << rd << ", SP, #" << dec << ((unsigned int)imm * 4);
+}
+
+add_6.execute = {
+	typename CONFIG::reg_t s1, s2, res;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	s1 = cpu.GetGPR(cpu.SP_reg) & (typename CONFIG::reg_t)0xfffffffc;
+	s2 = ((typename CONFIG::reg_t)imm) << 2;
+	res = s1 + s2;
+	
+	cpu.SetGPR(rd, res);
+}
+
 /*
  * end of add (add immediate to stack pointer) instruction
  *******************************************************************/
@@ -139,6 +289,16 @@ op add_6(0b10101[5]:rd[3]:imm[8])
  */
 
 op add_7(0b101100000[9]:imm[7])
+
+add_7.disasm = {
+	buffer << "add SP, #" << (unsigned int)imm * 4;
+}
+
+add_7.execute = {
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	cpu.SetGPR(cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + ((typename CONFIG::reg_t)imm * 4));
+}
 
 /*
  * end of add (increment stack pointer) instruction
