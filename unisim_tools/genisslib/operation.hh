@@ -29,9 +29,9 @@ struct Operation_t : virtual ReferenceCounter {
   ConstStr_t                    m_symbol;            /**< The associated symbol */
   Vect_t<BitField_t>            m_bitfields;         /**< The bit field list of the operation */
   Vect_t<Action_t>              m_actions;           /**< The list of actions of the operation */
-  unsigned int                  m_size;              /**< Number of bits of the operation */
-  uint64_t                      m_opmask;            /**< the opcode mask */
-  uint64_t                      m_opcode;            /**< the opcode */
+//   unsigned int                  m_size;              /**< Number of bits of the operation */
+//   uint64_t                      m_opmask;            /**< the opcode mask */
+//   uint64_t                      m_opcode;            /**< the opcode */
   ConstStr_t                    m_filename;          /**< the filename where the operation was declared */
   int                           m_lineno;            /**< the line number where the operation was declared */
   Vect_t<Comment_t>             m_comments;          /**< The list of the C comment associated with the operation */

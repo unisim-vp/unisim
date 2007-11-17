@@ -22,12 +22,15 @@ noinst_HEADERS = \
 	comment.hh \
 	main.hh \
 	referencecounting.hh \
-	variable.hh
+	variable.hh \
+	riscgenerator.hh \
+	generator.hh
 
 bin_PROGRAMS = genisslib
 genisslib_SOURCES = parser.yy scanner.ll action.cc bitfield.cc cli.cc \
 		comment.cc conststr.cc isa.cc main.cc operation.cc product.cc \
-		referencecounting.cc sourcecode.cc strtools.cc variable.cc
+		referencecounting.cc sourcecode.cc strtools.cc variable.cc \
+		generator.cc riscgenerator.cc
 
 dist_share_DATA = COPYING
 

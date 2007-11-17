@@ -134,15 +134,10 @@ main( int argc, char** argv, char** envp ) {
 
       isa.expand( expandfile );
     }
-  
-    isa.computetypes();
-    
-    if( not isa.sanity_checks() )
-      throw CLI::Exit_t( 1 );
     
     Product_t product( gil.outputprefix );
     
-    if( not isa.generate_iss( product, gil.minwordsize ) ) {
+    if( not isa.compile( product, gil.minwordsize ) ) {
       cerr << GENISSLIB ": compilation aborted.\n";
       throw CLI::Exit_t( 1 );
     }

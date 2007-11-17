@@ -1,5 +1,5 @@
 /***************************************************************************
-                                    fw.hh
+                                   generator.hh
                              -------------------
     begin                : Thu May 25 2003
     copyright            : (C) 2003-2007 CEA and Universite Paris Sud
@@ -15,25 +15,22 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef __FWD_HH__
-#define __FWD_HH__
+#ifndef __GENERATOR_HH__
+#define __GENERATOR_HH__
 
-struct SourceCode_t;
-struct Operation_t;
-struct ActionProto_t;
-struct Comment_t;
-struct CodePair_t;
-struct Action_t;
-struct Group_t;
-struct Variable_t;
-struct BitField_t;
-struct Isa;
-struct Product_t;
-struct ConstStr_t;
-struct Generator;
+#include <fwd.hh>
 
-template <class Type_t> struct Vect_t;
+struct Generator {
+  Isa const*                          m_isa;
+  
+  Generator( Isa const* _isa );
+  virtual ~Generator() {};
+  
+  virtual bool                  finalize() = 0;
+  virtual bool                  sanity_checks() const = 0;
+  virtual bool                  generate_iss( Product_t& _product, unsigned int word_size ) const = 0;
+  
+  Isa const&                    isa() const { return *m_isa; }
+};
 
-namespace Str { struct Buf; }
-
-#endif // __FWD_HH__
+#endif // __GENERATOR_HH__

@@ -40,20 +40,10 @@ using namespace std;
 */
 Operation_t::Operation_t( ConstStr_t _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
                           Vect_t<Variable_t>& _vars, SourceCode_t* _op_condition, ConstStr_t _filename, int _lineno )
-  : m_symbol( _symbol ), m_bitfields( _bitfields ), m_size( 0 ), m_opmask( 0 ), m_opcode( 0 ),
+  : m_symbol( _symbol ), m_bitfields( _bitfields ),
     m_filename( _filename ), m_lineno( _lineno ),
     m_comments( _comments ), m_variables( _vars ), m_condition( _op_condition )
 {
-  for( Vect_t<BitField_t>::const_iterator iter = _bitfields.begin(); iter < _bitfields.end(); ++ iter )
-    m_size += (*iter)->m_size;
-  
-  unsigned int shift = m_size;
-  for( Vect_t<BitField_t>::const_iterator iter = _bitfields.begin(); iter < _bitfields.end(); ++ iter ) {
-    shift -= (*iter)->m_size;
-    if( not (*iter)->hasopcode() ) continue;
-    m_opcode |= (*iter)->opcode() << shift;
-    m_opmask |= (*iter)->mask() << shift;
-  }
 }
 
 /** Delete an operation object

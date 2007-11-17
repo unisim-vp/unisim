@@ -35,7 +35,7 @@ struct BitField_t : virtual ReferenceCounter {
   virtual void          fills( std::ostream& _sink ) const = 0;
   virtual ConstStr_t    symbol() const { return 0; }
   virtual bool          hasopcode() const { return false; }
-  virtual uint64_t      opcode() const { throw InternalError; return 0; }
+  virtual uint64_t      bits() const { throw InternalError; return 0; }
   uint64_t              mask() const { return (uint64_t( 1 ) << m_size)-1; }
   virtual unsigned int  operand_size() const { return 0; }
   virtual char const*   ctype( unsigned int _minsize ) const { return 0; }
@@ -53,7 +53,7 @@ struct OpcodeBitField_t : public BitField_t {
   
   OpcodeBitField_t*     clone() const { return new OpcodeBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
-  uint64_t              opcode() const { return m_value; };
+  uint64_t              bits() const { return m_value; };
   bool                  hasopcode() const { return true; }
 };
 

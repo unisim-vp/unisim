@@ -281,16 +281,6 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl var_lis
   delete vars;
   Scanner::comments.clear();
 
-  {
-    Operation_t const* prev_op = Scanner::isa().operation_with_opcode( operation->m_opmask, operation->m_opcode );
-    if( prev_op ) {
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: operation `%s' conflicts with operation `%s'",
-                operation->m_symbol.str(), prev_op->m_symbol.str() );
-      yyerrorf( prev_op->m_filename, prev_op->m_lineno, "operation `%s' was declared here", prev_op->m_symbol.str() );
-      YYABORT;
-    }
-  }
-
   $$ = operation;
 }
 ;
