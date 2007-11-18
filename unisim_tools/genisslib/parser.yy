@@ -289,17 +289,8 @@ bitfield_list : bitfield
 {
   $$ = new Vect_t<BitField_t>( $1 );
 }
-           | bitfield_list ':' bitfield
+  | bitfield_list ':' bitfield
 {
-  if( $3->symbol() ) {
-    Vect_t<BitField_t>::const_iterator node;
-    for( node = $1->begin(); node < $1->end(); ++ node )
-      if( (*node)->symbol() == $3->symbol() ) break;
-    if( node < $1->end() ) { // found one
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: duplicated bit field `%s'", $3->symbol().str() );
-      YYABORT;
-    }
-  }
   $$ = $1->append( $3 );
 }
 ;
@@ -308,11 +299,11 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
 {
   $$ = new OpcodeBitField_t( $3, $1 );
 }
-        | shift sext size_modifier TOK_IDENT '[' TOK_INTEGER ']'
+  | shift sext size_modifier TOK_IDENT '[' TOK_INTEGER ']'
 {
   $$ = new OperandBitField_t( $6, ConstStr_t( $4, Scanner::symbols ), $1, $3, $2 );
 }
-        | '?' '[' TOK_INTEGER ']'
+  | '?' '[' TOK_INTEGER ']'
 {
   $$ = new UnusedBitField_t( $3 );
 }

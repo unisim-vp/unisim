@@ -309,10 +309,10 @@ Scanner::charname( char _char ) {
   default: break;
   }
   
-  if( _char < 32 )
+  if( _char < 32 or _char >= 126 )
     return Str::fmt( "char #%d", _char );
 
-  return Str::fmt( "'\\%d'", _char );
+  return Str::fmt( "'%c'", _char );
 }
 
 /** Return the name of a token

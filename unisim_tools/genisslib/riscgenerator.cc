@@ -50,7 +50,7 @@ RiscGenerator::finalize() {
   for( Vect_t<Operation_t>::const_iterator op = isa().m_operations.begin(); op < isa().m_operations.end(); ++ op ) {
     unsigned int size = 0;
     for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf )
-      size += (*bf)->m_size;
+      size += (**bf).m_size;
     if( size > 64 ) {
       yyerrorf( (**op).m_filename, (**op).m_lineno, "error: can't process opcode wider than 64 bits (operation `%s`, %u bits).",
                 (**op).m_symbol.str(), size );
@@ -63,10 +63,10 @@ RiscGenerator::finalize() {
     unsigned int shift = size;
     uint64_t mask = 0, bits = 0;
     for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
-      shift -= (*bf)->m_size;
-      if( not (*bf)->hasopcode() ) continue;
-      bits |= (*bf)->bits() << shift;
-      mask |= (*bf)->mask() << shift;
+      shift -= (**bf).m_size;
+      if( not (**bf).hasopcode() ) continue;
+      bits |= (**bf).bits() << shift;
+      mask |= (**bf).mask() << shift;
     }
     m_opcodes[*op] = OpCode_t( size, mask, bits );
   }
@@ -116,31 +116,44 @@ RiscGenerator::sanity_checks() const {
     }
 
     if( opcode( *op ).m_size != m_codebitsize )
-      yyerrorf( (*op)->m_filename, (*op)->m_lineno, "warning: operation `%s' is %u-bit long instead of %u-bit",
-                (*op)->m_symbol.str(), opcode( *op ).m_size, m_codebitsize );
-
-    if( not (*op)->m_variables.empty() ) {
-      for( Vect_t<Variable_t>::const_iterator checked = (*op)->m_variables.begin(); checked < (*op)->m_variables.end(); ++ checked ) {
+      yyerrorf( (**op).m_filename, (**op).m_lineno, "warning: operation `%s' is %u-bit long instead of %u-bit",
+                (**op).m_symbol.str(), opcode( *op ).m_size, m_codebitsize );
+    
+    // Looking for bitfield conflicts
+    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+      ConstStr_t bf_symbol = (**bf).symbol();
+      if( not bf_symbol ) continue;
+      for( Vect_t<BitField_t>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
+        ConstStr_t pbf_symbol = (**pbf).symbol();
+        if( pbf_symbol != bf_symbol ) continue;
+        yyerrorf( (**op).m_filename, (**op).m_lineno, "error: duplicated bit field `%s' in operation `%s'",
+                  bf_symbol.str(), (**op).m_symbol.str() );
+        return false;
+      }
+    }
+    
+    if( not (**op).m_variables.empty() ) {
+      for( Vect_t<Variable_t>::const_iterator checked = (**op).m_variables.begin(); checked < (**op).m_variables.end(); ++ checked ) {
         Vect_t<Variable_t>::const_iterator found;
         for( found = isa().m_vars.begin(); found < isa().m_vars.end(); ++ found )
-          if( (*found)->m_symbol == (*checked)->m_symbol ) break;
+          if( (**found).m_symbol == (**checked).m_symbol ) break;
         
         if( (found < isa().m_vars.end()) ) {
-          yyerrorf( (*checked)->m_ctype->m_filename, (*checked)->m_ctype->m_lineno,
+          yyerrorf( (**checked).m_ctype->m_filename, (**checked).m_ctype->m_lineno,
                     "error: in operation `%s', variable `%s' is already defined as global",
-                    (*op)->m_symbol.str(), (*checked)->m_symbol.str() );
-          yyerrorf( (*found)->m_ctype->m_filename, (*found)->m_ctype->m_lineno,
-                    "variable `%s' previously defined here", (*found)->m_symbol.str() );
+                    (**op).m_symbol.str(), (**checked).m_symbol.str() );
+          yyerrorf( (**found).m_ctype->m_filename, (**found).m_ctype->m_lineno,
+                    "variable `%s' previously defined here", (**found).m_symbol.str() );
           return false;
         }
         
-        for( found = (*op)->m_variables.begin(); found < checked; ++ found )
-          if( (*found)->m_symbol == (*checked)->m_symbol ) break;
+        for( found = (**op).m_variables.begin(); found < checked; ++ found )
+          if( (**found).m_symbol == (**checked).m_symbol ) break;
 
         if( found < checked ) {
-          yyerrorf( (*checked)->m_ctype->m_filename, (*checked)->m_ctype->m_lineno,
+          yyerrorf( (**checked).m_ctype->m_filename, (**checked).m_ctype->m_lineno,
                     "error: in operation `%s', variable `%s' is defined several times",
-                    (*op)->m_symbol.str(), (*checked)->m_symbol.str() );
+                    (**op).m_symbol.str(), (**checked).m_symbol.str() );
           return false;
         }
       }
@@ -265,12 +278,12 @@ RiscGenerator::generate_operation_class_definition( Product_t& _product, unsigne
   _product.code( "\tinline %s GetEncoding() { return encoding; }\n", m_codetype.str() );
   _product.code( "\tinline const char *GetName() { return name; }\n" );
   
-  for( Vect_t<Variable_t>::const_iterator iter = isa().m_vars.begin(); iter < isa().m_vars.end(); ++ iter ) {
-    _product.usercode( (*iter)->m_ctype->m_filename.str(),
-                       (*iter)->m_ctype->m_lineno,
+  for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
+    _product.usercode( (**var).m_ctype->m_filename.str(),
+                       (**var).m_ctype->m_lineno,
                        "\t%s %s;",
-                       (*iter)->m_ctype->m_content.str(),
-                       (*iter)->m_symbol.str() );
+                       (**var).m_ctype->m_content.str(),
+                       (**var).m_symbol.str() );
   }
   
   for( intptr_t idx = isa().m_actionprotos.size(); (--idx) >= 0; ) {
@@ -293,11 +306,11 @@ RiscGenerator::generate_operation_class_definition( Product_t& _product, unsigne
       bool intra = false;
       for( Vect_t<CodePair_t>::const_iterator param = isa().m_actionprotos[idx]->m_params.begin(); param < isa().m_actionprotos[idx]->m_params.end(); ++ param ) {
         if( intra ) _product.code( ",\n" ); else intra = true;
-        _product.usercode( (*param)->m_ctype->m_filename.str(), (*param)->m_ctype->m_lineno,
-                           "\t%s", (*param)->m_ctype->m_content.str() );
+        _product.usercode( (**param).m_ctype->m_filename.str(), (**param).m_ctype->m_lineno,
+                           "\t%s", (**param).m_ctype->m_content.str() );
           
-        _product.usercode( (*param)->m_csymbol->m_filename.str(), (*param)->m_csymbol->m_lineno,
-                           "\t%s", (*param)->m_csymbol->m_content.str() );
+        _product.usercode( (**param).m_csymbol->m_filename.str(), (**param).m_csymbol->m_lineno,
+                           "\t%s", (**param).m_csymbol->m_content.str() );
       }
     }
 
@@ -318,36 +331,36 @@ void
 RiscGenerator::generate_operation_impl_class_definition( Product_t& _product, unsigned int word_size ) const {
   for( Vect_t<Operation_t>::const_reverse_iterator op = isa().m_operations.rbegin(); op < isa().m_operations.rend(); ++ op ) {
     _product.template_signature( isa().m_tparams );
-    _product.code( "class Op%s : public Operation", Str::capitalize( (*op)->m_symbol ).str() );
+    _product.code( "class Op%s : public Operation", Str::capitalize( (**op).m_symbol ).str() );
     _product.template_abrev( isa().m_tparams );
     _product.code( "\n" );
 
     _product.code( "{\n" );
     _product.code( "public:\n" );
-    _product.code( "\tOp%s(CodeType code, %s addr);\n", Str::capitalize( (*op)->m_symbol ).str(), isa().m_addrtype.str() );
+    _product.code( "\tOp%s(CodeType code, %s addr);\n", Str::capitalize( (**op).m_symbol ).str(), isa().m_addrtype.str() );
       
-    for( Vect_t<BitField_t>::const_iterator iter = (*op)->m_bitfields.begin(); iter < (*op)->m_bitfields.end(); ++ iter ) {
-      ConstStr_t bf_symbol = (*iter)->symbol();
+    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+      ConstStr_t bf_symbol = (**bf).symbol();
       if( not bf_symbol ) continue;
-      _product.code( "\t%s %s;\n", (*iter)->ctype( word_size ), bf_symbol.str() );
+      _product.code( "\t%s %s;\n", (**bf).ctype( word_size ), bf_symbol.str() );
     }
 
-    if( not (*op)->m_variables.empty() ) {
-      for( Vect_t<Variable_t>::const_iterator iter = (*op)->m_variables.begin(); iter < (*op)->m_variables.end(); ++ iter ) {
-        _product.usercode( (*iter)->m_ctype->m_filename.str(),
-                           (*iter)->m_ctype->m_lineno,
+    if( not (**op).m_variables.empty() ) {
+      for( Vect_t<Variable_t>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
+        _product.usercode( (**var).m_ctype->m_filename.str(),
+                           (**var).m_ctype->m_lineno,
                            "\t\t\t%s %s;",
-                           (*iter)->m_ctype->m_content.str(),
-                           (*iter)->m_symbol.str() );
+                           (**var).m_ctype->m_content.str(),
+                           (**var).m_symbol.str() );
       }
     }
       
-    for( Vect_t<Action_t>::const_iterator action = (*op)->m_actions.begin(); action < (*op)->m_actions.end(); ++ action ) {
-      ActionProto_t const* actionproto = (*action)->m_actionproto;
+    for( Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action ) {
+      ActionProto_t const* actionproto = (**action).m_actionproto;
       
       if( not actionproto->m_comments.empty() ) {
-        for( Vect_t<Comment_t>::const_iterator comment = actionproto->m_comments.begin(); comment < actionproto->m_comments.end(); ++ comment )
-          _product.code( "\t%s\n", (*comment)->m_content.str() );
+        for( Vect_t<Comment_t>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm )
+          _product.code( "\t%s\n", (**comm).m_content.str() );
       }
           
       _product.code( "\tvirtual\n" );
@@ -366,10 +379,10 @@ RiscGenerator::generate_operation_impl_class_definition( Product_t& _product, un
         bool intra = false;
         for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param ) {
           if( intra ) _product.code( ",\n" ); else intra = true;
-          _product.usercode( (*param)->m_ctype->m_filename.str(), (*param)->m_ctype->m_lineno,
-                             "\t%s", (*param)->m_ctype->m_content.str() );
-          _product.usercode( (*param)->m_csymbol->m_filename.str(), (*param)->m_csymbol->m_lineno,
-                             "\t%s", (*param)->m_csymbol->m_content.str() );
+          _product.usercode( (**param).m_ctype->m_filename.str(), (**param).m_ctype->m_lineno,
+                             "\t%s", (**param).m_ctype->m_content.str() );
+          _product.usercode( (**param).m_csymbol->m_filename.str(), (**param).m_csymbol->m_lineno,
+                             "\t%s", (**param).m_csymbol->m_content.str() );
         }
         _product.code( "\t" );
       }
@@ -433,10 +446,10 @@ RiscGenerator::generate_default_actions( Product_t& _product ) const {
       bool intra = false;
       for( Vect_t<CodePair_t>::const_iterator param = isa().m_actionprotos[idx]->m_params.begin(); param < isa().m_actionprotos[idx]->m_params.end(); ++ param ) {
         if( intra ) _product.code( ",\n" ); else intra = true;
-        _product.usercode( (*param)->m_ctype->m_filename.str(), (*param)->m_ctype->m_lineno,
-                           "\t%s", (*param)->m_ctype->m_content.str() );
-        _product.usercode( (*param)->m_csymbol->m_filename.str(), (*param)->m_csymbol->m_lineno,
-                           "\t%s", (*param)->m_csymbol->m_content.str() );
+        _product.usercode( (**param).m_ctype->m_filename.str(), (**param).m_ctype->m_lineno,
+                           "\t%s", (**param).m_ctype->m_content.str() );
+        _product.usercode( (**param).m_csymbol->m_filename.str(), (**param).m_csymbol->m_lineno,
+                           "\t%s", (**param).m_csymbol->m_content.str() );
       }
     }
 
@@ -455,17 +468,17 @@ RiscGenerator::generate_default_actions( Product_t& _product ) const {
 void
 RiscGenerator::generate_operation_member_methods( Product_t& _product, unsigned int word_size ) const {
   for( Vect_t<Operation_t>::const_reverse_iterator op = isa().m_operations.rbegin(); op < isa().m_operations.rend(); ++ op ) {
-    if( not (*op)->m_comments.empty() ) {
-      for( Vect_t<Comment_t>::const_iterator comment = (*op)->m_comments.begin(); comment < (*op)->m_comments.end(); ++ comment )
-        _product.code( "%s\n", (*comment)->m_content.str() );
+    if( not (**op).m_comments.empty() ) {
+      for( Vect_t<Comment_t>::const_iterator comm = (**op).m_comments.begin(); comm < (**op).m_comments.end(); ++ comm )
+        _product.code( "%s\n", (**comm).m_content.str() );
     }
       
-    for( Vect_t<Action_t>::const_iterator action = (*op)->m_actions.begin(); action < (*op)->m_actions.end(); ++ action ) {
-      ActionProto_t const* actionproto = (*action)->m_actionproto;
+    for( Vect_t<Action_t>::const_iterator action = (**op).m_actions.begin(); action < (**op).m_actions.end(); ++ action ) {
+      ActionProto_t const* actionproto = (**action).m_actionproto;
 
-      if( not (*action)->m_comments.empty() ) {
-        for( Vect_t<Comment_t>::const_iterator iter = (*action)->m_comments.begin(); iter < (*action)->m_comments.end(); ++ iter )
-          _product.code( "%s\n", (*iter)->m_content.str() );
+      if( not (**action).m_comments.empty() ) {
+        for( Vect_t<Comment_t>::const_iterator comm = (**action).m_comments.begin(); comm < (**action).m_comments.end(); ++ comm )
+          _product.code( "%s\n", (**comm).m_content.str() );
       }
 
       _product.template_signature( isa().m_tparams );
@@ -481,7 +494,7 @@ RiscGenerator::generate_operation_member_methods( Product_t& _product, unsigned 
         _product.code( "\nvoid\n" );
       }
 
-      _product.code( "Op%s", Str::capitalize( (*op)->m_symbol ).str() );
+      _product.code( "Op%s", Str::capitalize( (**op).m_symbol ).str() );
       _product.template_abrev( isa().m_tparams );
       _product.code( "::%s(", actionproto->m_symbol.str() );
 
@@ -489,16 +502,16 @@ RiscGenerator::generate_operation_member_methods( Product_t& _product, unsigned 
         bool intra = false;            
         for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param ) {
           if( intra ) _product.code( ",\n" ); else intra = true;
-          _product.usercode( (*param)->m_ctype->m_filename.str(), (*param)->m_ctype->m_lineno,
-                             "\t%s", (*param)->m_ctype->m_content.str() );
-          _product.usercode( (*param)->m_csymbol->m_filename.str(), (*param)->m_csymbol->m_lineno,
-                             "\t%s", (*param)->m_csymbol->m_content.str() );
+          _product.usercode( (**param).m_ctype->m_filename.str(), (**param).m_ctype->m_lineno,
+                             "\t%s", (**param).m_ctype->m_content.str() );
+          _product.usercode( (**param).m_csymbol->m_filename.str(), (**param).m_csymbol->m_lineno,
+                             "\t%s", (**param).m_csymbol->m_content.str() );
         }
       }
 
       _product.code( ")\n{\n" );
-      _product.usercode( (*action)->m_source_code->m_filename.str(), (*action)->m_source_code->m_lineno,
-                         "{%s}", (*action)->m_source_code->m_content.str() );
+      _product.usercode( (**action).m_source_code->m_filename.str(), (**action).m_source_code->m_lineno,
+                         "{%s}", (**action).m_source_code->m_content.str() );
       _product.code( "}\n" );
     }
 
@@ -507,10 +520,10 @@ RiscGenerator::generate_operation_member_methods( Product_t& _product, unsigned 
     _product.template_signature( isa().m_tparams );
     _product.code( "static Operation" );
     _product.template_abrev( isa().m_tparams );
-    _product.code( " *DecodeOp%s(", Str::capitalize( (*op)->m_symbol ).str() );
+    _product.code( " *DecodeOp%s(", Str::capitalize( (**op).m_symbol ).str() );
     _product.code( "CodeType code, %s addr)\n", isa().m_addrtype.str() );
     _product.code( "{\n" );
-    _product.code( "\treturn new Op%s", Str::capitalize( (*op)->m_symbol ).str() );
+    _product.code( "\treturn new Op%s", Str::capitalize( (**op).m_symbol ).str() );
     _product.template_abrev( isa().m_tparams );
     _product.code( "(code, addr);\n" );
     _product.code( "}\n\n" );
@@ -521,38 +534,38 @@ void
 RiscGenerator::generate_operation_constructors( Product_t& _product, unsigned int word_size ) const {
   for( Vect_t<Operation_t>::const_reverse_iterator op = isa().m_operations.rbegin(); op < isa().m_operations.rend(); ++ op ) {
     _product.template_signature( isa().m_tparams );
-    _product.code( "Op%s", Str::capitalize( (*op)->m_symbol ).str() );
+    _product.code( "Op%s", Str::capitalize( (**op).m_symbol ).str() );
     _product.template_abrev( isa().m_tparams );
     _product.code( "::Op%s(CodeType code, %s addr) : Operation",
-                   Str::capitalize( (*op)->m_symbol ).str(),
+                   Str::capitalize( (**op).m_symbol ).str(),
                    isa().m_addrtype.str() );
     _product.template_abrev( isa().m_tparams );
     _product.code( "(code, addr, \"%s\")\n",
-                   (*op)->m_symbol.str() );
+                   (**op).m_symbol.str() );
     _product.code( "{\n" );
     
-    for( Vect_t<Variable_t>::const_iterator iter = isa().m_vars.begin(); iter < isa().m_vars.end(); ++ iter ) {
-      if( not (*iter)->m_cinit ) continue;
-      _product.code( "\t%s = ", (*iter)->m_symbol.str() );
-      _product.usercode((*iter)->m_cinit->m_filename.str(), (*iter)->m_cinit->m_lineno, "%s;\n", (*iter)->m_cinit->m_content.str() );
+    for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
+      if( not (**var).m_cinit ) continue;
+      _product.code( "\t%s = ", (**var).m_symbol.str() );
+      _product.usercode((**var).m_cinit->m_filename.str(), (**var).m_cinit->m_lineno, "%s;\n", (**var).m_cinit->m_content.str() );
     }
 
-    if( not (*op)->m_variables.empty() ) {
-      for( Vect_t<Variable_t>::const_iterator iter = (*op)->m_variables.begin(); iter < (*op)->m_variables.end(); ++ iter ) {
-        if( (*iter)->m_cinit ) {
-          _product.code( "\t%s = ", (*iter)->m_symbol.str() );
-          _product.usercode( (*iter)->m_cinit->m_filename.str(), (*iter)->m_cinit->m_lineno, "%s;\n", (*iter)->m_cinit->m_content.str() );
+    if( not (**op).m_variables.empty() ) {
+      for( Vect_t<Variable_t>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
+        if( (**var).m_cinit ) {
+          _product.code( "\t%s = ", (**var).m_symbol.str() );
+          _product.usercode( (**var).m_cinit->m_filename.str(), (**var).m_cinit->m_lineno, "%s;\n", (**var).m_cinit->m_content.str() );
         }
       }
     }
     
     unsigned int shift = opcode( *op ).m_size;
-    for( Vect_t<BitField_t>::const_iterator iter = (*op)->m_bitfields.begin(); iter < (*op)->m_bitfields.end(); ++ iter ) {
-      shift -= (*iter)->m_size;
-      ConstStr_t bf_symbol = (*iter)->symbol();
+    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+      shift -= (**bf).m_size;
+      ConstStr_t bf_symbol = (**bf).symbol();
       if( not bf_symbol ) continue;
         
-      _product.code( "\t%s = %s;\n", bf_symbol.str(), (*iter)->cexpr_opaccess( word_size, shift, "code" ).str() );
+      _product.code( "\t%s = %s;\n", bf_symbol.str(), (**bf).cexpr_opaccess( word_size, shift, "code" ).str() );
     }
 
     _product.code( "}\n\n" );
@@ -603,10 +616,10 @@ RiscGenerator::generate_decoder( Product_t& _product, unsigned int word_size ) c
   _product.code( "\tmemset(decode_hash_table, 0, sizeof(decode_hash_table));\n" );
   
   for( Vect_t<Operation_t>::const_reverse_iterator op = isa().m_operations.rbegin(); op < isa().m_operations.rend(); ++ op ) {
-    if( (*op)->m_condition ) {
+    if( (**op).m_condition ) {
       _product.code( "if(" );
-      _product.usercode( (*op)->m_condition->m_filename.str(), (*op)->m_condition->m_lineno,
-                        "%s", (*op)->m_condition->m_content.str() );
+      _product.usercode( (**op).m_condition->m_filename.str(), (**op).m_condition->m_lineno,
+                        "%s", (**op).m_condition->m_content.str() );
       _product.code( ") " );
     }
     _product.code( "\tdecode_table.push_back(DecodeTableEntry" );
@@ -614,7 +627,7 @@ RiscGenerator::generate_decoder( Product_t& _product, unsigned int word_size ) c
     _product.code( "(0x%llx%s, 0x%llx%s, DecodeOp%s",
                    opcode( *op ).m_bits, m_immedsuffix.str(),
                    opcode( *op ).m_mask, m_immedsuffix.str(),
-                   Str::capitalize( (*op)->m_symbol ).str() );
+                   Str::capitalize( (**op).m_symbol ).str() );
     _product.template_abrev( isa().m_tparams );
     _product.code( "));\n" );
   }
@@ -1057,7 +1070,7 @@ RiscGenerator::generate_iss( Product_t& _product, unsigned int _wordsize ) const
   _product.ns_leave( isa().m_namespace );
   
   for( Vect_t<SourceCode_t>::const_iterator srccode = isa().m_decl_srccodes.begin(); srccode < isa().m_decl_srccodes.end(); ++ srccode ) {
-    _product.usercode( (*srccode)->m_filename.str(), (*srccode)->m_lineno, "%s", (*srccode)->m_content.str() );
+    _product.usercode( (**srccode).m_filename.str(), (**srccode).m_lineno, "%s", (**srccode).m_content.str() );
   }
   
   _product.code( "#ifndef ROTL\n" );
@@ -1093,7 +1106,7 @@ RiscGenerator::generate_iss( Product_t& _product, unsigned int _wordsize ) const
                  , _product.m_prefix.str() );
   
   for( Vect_t<SourceCode_t>::const_iterator srccode = isa().m_impl_srccodes.begin(); srccode < isa().m_impl_srccodes.end(); ++ srccode )
-    _product.usercode( (*srccode)->m_filename.str(), (*srccode)->m_lineno, "%s", (*srccode)->m_content.str() );
+    _product.usercode( (**srccode).m_filename.str(), (**srccode).m_lineno, "%s", (**srccode).m_content.str() );
   
   _product.ns_enter( isa().m_namespace );
   
