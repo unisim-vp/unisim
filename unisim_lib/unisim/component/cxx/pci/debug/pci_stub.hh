@@ -141,6 +141,8 @@ public:
 	virtual void Trap();
 private:
 	Parameter<bool> param_is_server;
+	Parameter<unsigned int> param_protocol;
+	Parameter<string> param_pipe_name;
 	Parameter<string> param_server_name;
 	Parameter<unsigned int> param_tcp_port;
 	ParameterArray<ADDRESS> param_initial_base_addr;

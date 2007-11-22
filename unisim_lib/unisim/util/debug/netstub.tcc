@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifndef __UNISIM_UTIL_DEBUG_NETSTUB_TCC__
@@ -48,6 +49,7 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <linux/un.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
@@ -66,9 +68,14 @@ namespace debug {
 using namespace std;
 	
 template <class ADDRESS>
-NetStub<ADDRESS>::NetStub(const char *_server_name, unsigned int _tcp_port, bool _is_server) :
+NetStub<ADDRESS>::NetStub(bool _is_server, 
+	unsigned int _protocol,
+	const char *_server_name, unsigned int _tcp_port,
+	const char *_pipename) :
 	is_server(_is_server),
 	server_name(_server_name),
+	protocol(_protocol),
+	pipename(_pipename),
 	tcp_port(_tcp_port),
 	sock(-1),
 	default_tu(TU_MS),
@@ -127,6 +134,8 @@ NetStub<ADDRESS>::NetStub(const char *_server_name, unsigned int _tcp_port, bool
 template <class ADDRESS>
 bool NetStub<ADDRESS>::Initialize()
 {
+	bool bind_failed = true;
+
 	input_buffer_size = 0;
 	input_buffer_index = 0;
 	output_buffer_size = 0;
@@ -142,9 +151,17 @@ bool NetStub<ADDRESS>::Initialize()
 		cerr << "NETSTUB: Starting as server" << endl;
 #endif
 		struct sockaddr_in addr;
+		struct sockaddr_un addr_un;
 		int server_sock;
 	
-		server_sock = socket(AF_INET, SOCK_STREAM, 0);
+		if(protocol == protocol_af_inet) 
+		{
+			server_sock = socket(AF_INET, SOCK_STREAM, 0);
+		}
+		else
+		{
+			server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+		}
 		
 		if(server_sock < 0)
 		{
@@ -155,10 +172,23 @@ bool NetStub<ADDRESS>::Initialize()
 		}
 		
 		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_port = htons(tcp_port);
-		addr.sin_addr.s_addr = INADDR_ANY;
-		if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
+		memset(&addr_un, 0, sizeof(addr_un));
+		if(protocol == protocol_af_inet)
+		{
+			addr.sin_family = AF_INET;
+			addr.sin_port = htons(tcp_port);
+			addr.sin_addr.s_addr = INADDR_ANY;
+			bind_failed =
+				(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0);
+		}
+		else
+		{
+			addr_un.sun_family = AF_UNIX;
+			memcpy(addr_un.sun_path, pipename.c_str(), strlen(pipename.c_str()) + 1);
+			bind_failed =
+				(bind(server_sock, (struct sockaddr *) &addr_un, sizeof(addr_un)) < 0);
+		}
+		if(bind_failed)
 		{
 #ifdef DEBUG_NETSTUB
 			cerr << "NETSTUB: bind failed" << endl;
@@ -191,12 +221,26 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: Waiting for client connection on TCP port " << tcp_port << endl;
+		if(protocol == protocol_af_inet)
+		{
+			cerr << "NETSTUB: Waiting for client connection on TCP port " << tcp_port << endl;
+		}
+		else
+		{
+			cerr << "NETSTUB: Waiting for client connection of pipename " << pipename << endl;
+		}
 #endif
-		
-		addr_len = sizeof(addr);
-		sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
-		
+		if(protocol == protocol_af_inet) 
+		{
+			addr_len = sizeof(addr);
+			sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
+		}
+		else
+		{
+			addr_len = sizeof(addr_un);
+			sock = accept(server_sock, (struct sockaddr *) &addr_un, &addr_len);
+		}
+
 		if(sock < 0)
 		{
 #ifdef DEBUG_NETSTUB
@@ -223,49 +267,91 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 		bool connected = false;
 		struct sockaddr_in sonadr;
-		sock = socket(PF_INET, SOCK_STREAM, 0);
+		struct sockaddr_un sonadr_un;
+		
+		if(protocol == protocol_af_inet)
+		{
+			sock = socket(PF_INET, SOCK_STREAM, 0);
+		}
+		else
+		{
+			sock = socket(PF_UNIX, SOCK_STREAM, 0);
+		}
+
 		if(sock < 0)
 		{
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: Can't create socket for connection to " << server_name << ":" << tcp_port << endl;
+			if(protocol == protocol_af_inet)
+			{
+				cerr << "NETSTUB: Can't create socket for connection to " << server_name
+					<< ":" << tcp_port << endl;
+			}
+			else
+			{
+				cerr << "NETSTUB: Can't create socket for connection on pipename "
+					<< pipename << endl;
+			}
 #endif
 			return false;
 		}
 		memset((char *) &sonadr, 0, sizeof(sonadr));
-		sonadr.sin_family = AF_INET;
-		sonadr.sin_port = htons(tcp_port);
-		sonadr.sin_addr.s_addr = inet_addr(server_name.c_str());
-#ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: Trying to connect to " << server_name.c_str() << endl;
-#endif
-		if(sonadr.sin_addr.s_addr != -1)
-		{
-			//host format is xxx.yyy.zzz.ttt
-			connected = connect(sock, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
+		memset((char *) &sonadr_un, 0, sizeof(sonadr_un));
+		if(protocol == protocol_af_inet) {
+			sonadr.sin_family = AF_INET;
+			sonadr.sin_port = htons(tcp_port);
+			sonadr.sin_addr.s_addr = inet_addr(server_name.c_str());
 		}
 		else
 		{
-			//host format is www.whereitis.gnu need to ask dns
-			struct hostent *hp;
-			int i = 0;
-			hp = gethostbyname(server_name.c_str());
-			if(!hp)
-			{
+			sonadr_un.sun_family = AF_UNIX;
+			memcpy(sonadr_un.sun_path, pipename.c_str(), strlen(pipename.c_str()) + 1);
+		}
+
 #ifdef DEBUG_NETSTUB
-				cerr << "NETSTUB: Was not able to determine IP address from host name for" << server_name << ":" << tcp_port << endl;
+		if(protocol == protocol_af_inet)
+		{
+			cerr << "NETSTUB: Trying to connect to " << server_name << endl;
+		}
+		else
+		{
+			cerr << "NETSTUB: Trying to connect to pipename " << pipename << endl;
+		}
 #endif
+		if(protocol == protocol_af_inet)
+		{
+			if(sonadr.sin_addr.s_addr != -1)
+			{
+				//host format is xxx.yyy.zzz.ttt
+				connected = connect(sock, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
 			}
 			else
 			{
-				while(!connected && hp->h_addr_list[i] != NULL)
+				//host format is www.whereitis.gnu need to ask dns
+				struct hostent *hp;
+				int i = 0;
+				hp = gethostbyname(server_name.c_str());
+				if(!hp)
 				{
-					memcpy((char *) &sonadr.sin_addr,
-					(char *) hp->h_addr_list[i],
-					sizeof(sonadr.sin_addr));
-					connected = connect(sock, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
-					i++;
+#ifdef DEBUG_NETSTUB
+					cerr << "NETSTUB: Was not able to determine IP address from host name for" << server_name << ":" << tcp_port << endl;
+#endif
+				}
+				else
+				{
+					while(!connected && hp->h_addr_list[i] != NULL)
+					{
+						memcpy((char *) &sonadr.sin_addr,
+						(char *) hp->h_addr_list[i],
+						sizeof(sonadr.sin_addr));
+						connected = connect(sock, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
+						i++;
+					}
 				}
 			}
+		}
+		else
+		{
+			connected = connect(sock, (struct sockaddr *) &sonadr_un, sizeof(sonadr_un)) != -1;
 		}
 		if(!connected)
 		{
@@ -276,7 +362,14 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 			sock = -1;
 #ifdef DEBUG_NETSTUB
-			cerr << "NETSTUB: Can't connect to " << server_name << ":" << tcp_port << endl;
+			if(protocol == protocol_af_inet)
+			{
+				cerr << "NETSTUB: Can't connect to " << server_name << ":" << tcp_port << endl;
+			}
+			else
+			{
+				cerr << "NETSTUB: Can't connect to pipename " << pipename << endl;
+			}
 #endif
 		}
 	}
@@ -286,15 +379,17 @@ bool NetStub<ADDRESS>::Initialize()
 #ifdef DEBUG_NETSTUB
 		cerr << "NETSTUB: Connection established" << endl;
 #endif
+		/* we can stop here if we are using af_unix */
+		if(protocol == protocol_af_unix) return true;
 
-    /* set short latency */
-    int opt = 1;
-    if(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt)) < 0)
-	{
+		/* set short latency */
+		int opt = 1;
+		if(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt)) < 0)
+		{
 #ifdef DEBUG_NETSTUB
-		cerr << "NETSTUB: setsockopt failed requesting short latency" << endl;
+			cerr << "NETSTUB: setsockopt failed requesting short latency" << endl;
 #endif
-	}
+		}
 
 #ifdef WIN32
 		u_long NonBlock = 1;
@@ -302,7 +397,7 @@ bool NetStub<ADDRESS>::Initialize()
 		{
 #ifdef DEBUG_NETSTUB
 			cerr << "NETSTUB: ioctlsocket failed" << endl;
-#endif
+#endif	
 			closesocket(sock);
 			sock = -1;
 			return false;

@@ -59,7 +59,7 @@ using unisim::util::debug::Symbol;
 	
 template <class ADDRESS>
 PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
-	NetStub<ADDRESS>("localhost", 10000, false),
+	NetStub<ADDRESS>(false, 0, "localhost", 10000, "pipe"),
 	Object(name, parent),
 	Service<Memory<ADDRESS> >(name, parent),
 	Service<MemoryAccessReporting<ADDRESS> >(name, parent),
@@ -98,8 +98,10 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	pci_conf_subsystem_vendor_id("pci_conf_subsystem_vendor_id", "PCI Config Subsystem Vendor ID", 0x0, 0x0),
 
 	// Parameters initialization
+	param_protocol("protocol", this, inherited::protocol),
 	param_server_name("server-name", this, inherited::server_name),
 	param_tcp_port("tcp-port", this, inherited::tcp_port),
+	param_pipe_name("pipe-name", this, inherited::pipename),
 	param_is_server("is-server", this, inherited::is_server),
 	param_initial_base_addr("initial-base-addr", this, initial_base_addr, NUM_REGIONS),
 	param_address_space("address-space", this, address_space, NUM_REGIONS),

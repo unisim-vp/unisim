@@ -44,6 +44,29 @@
 
 op ldr_1(0b01101[5]:imm[5]:rn[3]:rd[3])
 
+ldr_1.disasm = {
+	buffer << "ldr r" << rd << ", [r" << rn << ", #" << dec << (imm * 4) << "]";
+}
+
+ldr_1.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rn_value, value;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	addr = rn_value + (imm * 4);
+	value = 0;
+	if((addr & (typename CONFIG::address_t)0x03) == 0) {
+		if(!cpu.Read32(addr, value)) { // address must be aligned 
+			cerr << "ERROR(load_store.isa::ldr_imm_post): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+	}
+	cpu.SetGPR(rd, value);
+}
+
 /* 
  * end of ldr(1) (load word immediate offset) instruction
  *******************************************************************/
@@ -53,6 +76,30 @@ op ldr_1(0b01101[5]:imm[5]:rn[3]:rd[3])
  */
 
 op ldr_2(0b0101100[7]:rm[3]:rn[3]:rd[3])
+
+ldr_2.disasm = {
+	buffer << "ldr r" << rd << ", [r" << rn << ", r" << rm << "]";
+}
+
+ldr_2.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rn_value, rm_value, value;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	rm_value = cpu.GetGPR(rm);
+	addr = rn_value + rm_value;
+	value = 0;
+	if((addr & (typename CONFIG::address_t)0x03) == 0) {
+		if(!cpu.Read32(addr, value)) { // address must be aligned 
+			cerr << "ERROR(load_store.isa::ldr_imm_post): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+	}
+	cpu.SetGPR(rd, value);
+}
 
 /* 
  * ldr(2) (load word register offset) instruction
@@ -64,6 +111,28 @@ op ldr_2(0b0101100[7]:rm[3]:rn[3]:rd[3])
 
 op ldr_3(0b01001[5]:rd[3]:imm[8])
 
+ldr_3.disasm = {
+	buffer << "ldr r" << rd << ", [pc, #" << dec << (imm * 4) << "]";
+}
+
+ldr_3.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t pc_value, value;
+	
+	pc_value = (cpu.GetGPR(cpu.PC_reg) + 4) & ~((typename CONFIG::reg_t)0x03);
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	addr = pc_value + (imm * 4);
+	value = 0;
+	if(!cpu.Read32(addr, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	cpu.SetGPR(rd, value);
+}
+
 /* 
  * ldr(3) (load word pc-relative) instruction
  *******************************************************************/
@@ -73,6 +142,29 @@ op ldr_3(0b01001[5]:rd[3]:imm[8])
  */
 
 op ldr_4(0b10011[5]:rd[3]:imm[8])
+
+ldr_4.disasm = {
+	buffer << "ldr r" << rd << ", [sp, #" << dec << (imm * 4) << "]";
+}
+
+ldr_4.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t sp_value, value;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	sp_value = cpu.GetGPR(cpu.SP_reg);
+	addr = sp_value + (imm * 4);
+	value = 0;
+	if((addr & (typename CONFIG::address_t)0x03) == 0) {
+		if(!cpu.Read32(addr, value)) { // address must be aligned 
+			cerr << "ERROR(load_store.isa::ldr_imm_post): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+	}
+	cpu.SetGPR(rd, value);
+}
 
 /* 
  * ldr(4) (load word sp-relative) instruction
@@ -84,6 +176,29 @@ op ldr_4(0b10011[5]:rd[3]:imm[8])
 
 op ldrb_1(0b01111[5]:imm[5]:rn[3]:rd[3])
 
+ldrb_1.disasm = {
+	buffer << "ldrb r" << rd << ", [r" << rn << ", #" << dec << imm << "]";
+}
+
+ldrb_1.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rn_value, value;
+	uint8_t val8;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	addr = rn_value + imm;
+	val8 = 0;
+	if(!cpu.Read8(addr, val8)) { // address must be aligned 
+		cerr << "ERROR(thumb/load_store_reg.isa::ldrb_1): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val8;
+	cpu.SetGPR(rd, value);
+}
+
 /* 
  * ldrb(1) (load unsigned byte immediate offset) instruction
  *******************************************************************/
@@ -93,6 +208,30 @@ op ldrb_1(0b01111[5]:imm[5]:rn[3]:rd[3])
  */
 
 op ldrb_2(0b0101110[7]:rm[3]:rn[3]:rd[3])
+
+ldrb_2.disasm = {
+	buffer << "ldrb r" << rd << ", [r" << rn << ", r" << rm << "]";
+}
+
+ldrb_2.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rn_value, rm_value, value;
+	uint8_t val8;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	rm_value = cpu.GetGPR(rm);
+	addr = rn_value + rm_value;
+	val8 = 8;
+	if(!cpu.Read8(addr, val8)) { // address must be aligned 
+		cerr << "ERROR(thumb/load_store_reg.isa::ldrb_2): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = val8;
+	cpu.SetGPR(rd, value);
+}
 
 /* 
  * ldrb(2) (load unsigned byte register offset) instruction
@@ -104,6 +243,31 @@ op ldrb_2(0b0101110[7]:rm[3]:rn[3]:rd[3])
 
 op ldrh_1(0b10001[5]:imm[5]:rn[3]:rd[3])
 
+ldrh_1.disasm = {
+	buffer << "ldrh r" << rd << ", [r" << rn << ", #" << dec << (imm * 2) << "]";
+}
+
+ldrh_1.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rn_value, value;
+	uint16_t val16;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	addr = rn_value + (imm * 2);
+	val16 = 0;
+	if((addr & (typename CONFIG::address_t)0x01) == 0) {
+		if(!cpu.Read16(addr, val16)) { // address must be aligned 
+			cerr << "ERROR(thumb/load_store_reg.isa::ldrh_1): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+	}
+	value = val16;
+	cpu.SetGPR(rd, value);
+}
+
 /* 
  * ldrh(1) (load unsigned halfword immediate offset) instruction
  *******************************************************************/
@@ -113,6 +277,32 @@ op ldrh_1(0b10001[5]:imm[5]:rn[3]:rd[3])
  */
 
 op ldrh_2(0b0101101[7]:rm[3]:rn[3]:rd[3])
+
+ldrh_2.disasm = {
+	buffer << "ldrh r" << rd << ", [r" << rn << ", r" << rm << "]";
+}
+
+ldrh_2.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rn_value, rm_value, value;
+	uint16_t val16;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	rm_value = cpu.GetGPR(rm);
+	addr = rn_value + rm_value;
+	val16 = 0;
+	if((addr & (typename CONFIG::address_t)0x01) == 0) {
+		if(!cpu.Read16(addr, val16)) { // address must be aligned 
+			cerr << "ERROR(thumb/load_store_reg.isa::ldrh_2): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+	}
+	value = val16;
+	cpu.SetGPR(rd, value);
+}
 
 /* 
  * ldrh(2) (load unsigned halfword register offset) instruction
@@ -124,6 +314,30 @@ op ldrh_2(0b0101101[7]:rm[3]:rn[3]:rd[3])
 
 op ldrsb(0b0101011[7]:rm[3]:rn[3]:rd[3])
 
+ldrsb.disasm = {
+	buffer << "ldrsb r" << rd << ", [r" << rn << ", r" << rm << "]";
+}
+
+ldrsb.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rn_value, rm_value, value;
+	int8_t val8;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	rm_value = cpu.GetGPR(rm);
+	addr = rn_value + rm_value;
+	val8 = 0;
+	if(!cpu.Read8(addr, *(uint8_t *)&val8)) { // address must be aligned 
+		cerr << "ERROR(thumb/load_store_reg.isa::ldrsb): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	value = (typename CONFIG::sreg_t)val8;
+	cpu.SetGPR(rd, value);
+}
+
 /* 
  * ldrsb (load signed byte register offset) instruction
  *******************************************************************/
@@ -133,6 +347,32 @@ op ldrsb(0b0101011[7]:rm[3]:rn[3]:rd[3])
  */
 
 op ldrsh(0b0101111[7]:rm[3]:rn[3]:rd[3])
+
+ldrsh.disasm = {
+	buffer << "ldrsh r" << rd << ", [r" << rn << ", r" << rm << "]";
+}
+
+ldrsh.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rn_value, rm_value, value;
+	int16_t val16;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	rm_value = cpu.GetGPR(rm);
+	addr = rn_value + rm_value;
+	val16 = 0;
+	if((addr & (typename CONFIG::address_t)0x01) == 0) {
+		if(!cpu.Read16(addr, *(uint16_t *)&val16)) { // address must be aligned 
+			cerr << "ERROR(thumb/load_store_reg.isa::ldrsb): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+	}
+	value = (typename CONFIG::sreg_t)val16;
+	cpu.SetGPR(rd, value);
+}
 
 /* 
  * ldrsh (load signed halfword register offset) instruction
@@ -144,6 +384,28 @@ op ldrsh(0b0101111[7]:rm[3]:rn[3]:rd[3])
 
 op str_1(0b01100[5]:imm[5]:rn[3]:rd[3])
 
+str_1.disasm = {
+	buffer << "str r" << rd << ", [r" << rn << ", #" << (imm * 4) << "]";
+}
+
+str_1.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rd_value, rn_value;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	addr = rn_value + (imm * 4);
+	rd_value = cpu.GetGPR(rd);
+	if((addr & (typename CONFIG::address_t)0x03) == 0) {
+		if(!cpu.Write32(addr, rd_value)) { // address must be aligned 
+			cerr << "ERROR(load_store_reg.isa::str_1): "
+				<< "Couldn't write data" << endl;
+			exit(-1);
+		}
+	}
+}
+
 /* 
  * str(1) (store word immediate offset) instruction
  *******************************************************************/
@@ -153,6 +415,29 @@ op str_1(0b01100[5]:imm[5]:rn[3]:rd[3])
  */
 
 op str_2(0b0101000[7]:rm[3]:rn[3]:rd[3])
+
+str_2.disasm = {
+	buffer << "str r" << rd << ", [r" << rn << ", r" << rm << "]";
+}
+
+str_2.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rd_value, rn_value, rm_value;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	rm_value = cpu.GetGPR(rm);
+	addr = rn_value + rm_value;
+	rd_value = cpu.GetGPR(rd);
+	if((addr & (typename CONFIG::address_t)0x03) == 0) {
+		if(!cpu.Write32(addr, rd_value)) { // address must be aligned 
+			cerr << "ERROR(load_store_reg.isa::str_2): "
+				<< "Couldn't write data" << endl;
+			exit(-1);
+		}
+	}
+}
 
 /* 
  * str(2) (store word register offset) instruction
@@ -164,6 +449,28 @@ op str_2(0b0101000[7]:rm[3]:rn[3]:rd[3])
 
 op str_3(0b10010[5]:rd[3]:imm[8])
 
+str_3.disasm = {
+	buffer << "str r" << rd << ", [sp, #" << (imm * 4) << "]";
+}
+
+str_3.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rd_value, sp_value;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	sp_value = cpu.GetGPR(cpu.SP_reg);
+	addr = sp_value + (imm * 4);
+	rd_value = cpu.GetGPR(rd);
+	if((addr & (typename CONFIG::address_t)0x03) == 0) {
+		if(!cpu.Write32(addr, rd_value)) { // address must be aligned 
+			cerr << "ERROR(load_store_reg.isa::str_3): "
+				<< "Couldn't write data" << endl;
+			exit(-1);
+		}
+	}
+}
+
 /* 
  * str(3) (store word sp-relative) instruction
  *******************************************************************/
@@ -173,6 +480,28 @@ op str_3(0b10010[5]:rd[3]:imm[8])
  */
 
 op strb_1(0b01110[5]:imm[5]:rn[3]:rd[3])
+
+strb_1.disasm = {
+	buffer << "strb r" << rd << ", [r" << rn << ", #" << dec << imm << "]";
+}
+
+strb_1.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rd_value, rn_value;
+	uint8_t data;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	addr = rn_value + imm;
+	rd_value = cpu.GetGPR(rd);
+	data = rd_value & (typename CONFIG::reg_t)0x0ff;
+	if(!cpu.Write8(addr, data)) { // address must be aligned 
+		cerr << "ERROR(load_store_reg.isa::strb_1): "
+			<< "Couldn't write data" << endl;
+		exit(-1);
+	}
+}
 
 /* 
  * strb(1) (store byte immediate offset) instruction
@@ -184,6 +513,30 @@ op strb_1(0b01110[5]:imm[5]:rn[3]:rd[3])
 
 op strb_2(0b0101010[7]:rm[3]:rn[3]:rd[3])
 
+strb_2.disasm = {
+	buffer << "strb r" << rd << ", [r" << rn << ", r" << rm << "]";
+}
+
+strb_2.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rd_value, rn_value, rm_value;
+	uint8_t data;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	rm_value = cpu.GetGPR(rm);
+	addr = rn_value + rm_value;
+	rd_value = cpu.GetGPR(rd);
+	data = rd_value & (typename CONFIG::reg_t)0x0ff;
+	if(!cpu.Write8(addr, data)) { // address must be aligned 
+		cerr << "ERROR(load_store_reg.isa::strb_2): "
+			<< "Couldn't write data" << endl;
+		exit(-1);
+	}
+}
+
+/* 
 /* 
  * strb(2) (store byte register offset) instruction
  *******************************************************************/
@@ -193,6 +546,30 @@ op strb_2(0b0101010[7]:rm[3]:rn[3]:rd[3])
  */
 
 op strh_1(0b10000[5]:imm[5]:rn[3]:rd[3])
+
+strh_1.disasm = {
+	buffer << "strh r" << rd << ", [r" << rn << ", #" << dec << (imm * 2) << "]";
+}
+
+strh_1.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rd_value, rn_value;
+	uint16_t data;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	addr = rn_value + (imm * 2);
+	rd_value = cpu.GetGPR(rd);
+	data = rd_value & (typename CONFIG::reg_t)0x0ffff;
+	if((addr & (typename CONFIG::address_t)0x01) == 0) {
+		if(!cpu.Write16(addr, data)) { // address must be aligned 
+			cerr << "ERROR(load_store_reg.isa::strh_1): "
+				<< "Couldn't write data" << endl;
+			exit(-1);
+		}
+	}
+}
 
 /* 
  * strh(1) (store halfword immediate offset) instruction
@@ -204,6 +581,32 @@ op strh_1(0b10000[5]:imm[5]:rn[3]:rd[3])
 
 op strh_2(0b0101001[7]:rm[3]:rn[3]:rd[3])
 
+strh_2.disasm = {
+	buffer << "strh r" << rd << ", [r" << rn << ", r" << rm << "]";
+}
+
+strh_2.execute = {
+	typename CONFIG::address_t addr;
+	typename CONFIG::reg_t rd_value, rn_value, rm_value;
+	uint16_t data;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	rm_value = cpu.GetGPR(rm);
+	addr = rn_value + rm_value;
+	rd_value = cpu.GetGPR(rd);
+	data = rd_value & (typename CONFIG::reg_t)0x0ff;
+	if((addr & (typename CONFIG::address_t)0x01) == 0) {
+		if(!cpu.Write16(addr, data)) { // address must be aligned 
+			cerr << "ERROR(load_store_reg.isa::strb_2): "
+				<< "Couldn't write data" << endl;
+			exit(-1);
+		}
+	}
+}
+
 /* 
  * strh(2) (store halfword register offset) instruction
  *******************************************************************/
+

@@ -140,6 +140,9 @@ void help(char *prog_name)
 	cerr << "-m" << endl;
 	cerr << "--logger:messages" << endl;
 	cerr << "            create log from the messages sent through channels" << endl << endl;
+	cerr << "-u <pipe name>" << endl;
+	cerr << "--pci-stub-use-pipe <pipe name>" << endl;
+	cerr << "            use file system pipes for the pci-stub communications using <pipe name> (disables tcp-ip communication)" << endl << endl;
 	cerr << "-s <server name>" << endl;
 	cerr << "--pci-stub-server <server name>" << endl;
 	cerr << "            specify the server name for pci-stub" << endl << endl;
@@ -262,6 +265,7 @@ int sc_main(int argc, char *argv[])
 	{"pci-stub-server", required_argument, 0, 's'},
 	{"pci-stub-port", required_argument, 0, 'r'},
 	{"pci-stub-is-server", no_argument, 0, 'v'},
+	{"pci-stub-use-pipe", required_argument, 0, 'u'},
 	{"force-use-virtual-address", no_argument, 0, 'f'},
 	{"pci-stub-regions", required_argument, 0, 'n'},
 	{"pci-stub-irq", required_argument, 0, 'q'},
@@ -290,9 +294,11 @@ int sc_main(int argc, char *argv[])
 	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
 	const char *pci_stub_regions = "";
 	unsigned int pci_stub_irq = 0;
+	bool pci_stub_use_pipe = false;
 	unsigned int pci_stub_tcp_port = 12345;
 	const char *pci_stub_server_name = "localhost";
 	bool pci_stub_is_server = false;
+	const char *pci_stub_pipe_name = "pipe";
 	double cpu_ipc = 1.0; // in instructions per cycle
 	bool force_use_virtual_address = false;
 	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
@@ -301,7 +307,7 @@ int sc_main(int argc, char *argv[])
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:vfn:q:", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:u:vfn:q:", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -347,6 +353,10 @@ int sc_main(int argc, char *argv[])
 				break;
 			case 'v':
 				pci_stub_is_server = true;
+				break;
+			case 'u':
+				pci_stub_use_pipe = true;
+				pci_stub_pipe_name = optarg;
 				break;
 			case 'f':
 				force_use_virtual_address = true;
@@ -593,6 +603,8 @@ int sc_main(int argc, char *argv[])
 		(*pci_stub)["tcp-port"] = pci_stub_tcp_port;
 		(*pci_stub)["server-name"] = pci_stub_server_name;
 		(*pci_stub)["is-server"] = pci_stub_is_server;
+		(*pci_stub)["protocol"] = pci_stub_use_pipe ? 1 : 0;
+		(*pci_stub)["pipe-name"] = pci_stub_pipe_name;
 	}
 	
 	//=========================================================================

@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifndef __UNISIM_UTIL_DEBUG_NETSTUB_HH__
@@ -142,8 +143,14 @@ public:
 			SPACE space;
 		} watchpoint;
 	} TRAP;
+
+	static const unsigned int protocol_af_inet = 0;
+	static const unsigned int protocol_af_unix = 1;
 	
-	NetStub(const char *server_name, unsigned int tcp_port, bool is_server);
+	NetStub(bool is_server,
+		unsigned int protocol,
+		const char *server_name, unsigned int tcp_port,
+		const char *pipename);
 	virtual ~NetStub();
 
 	bool Initialize();
@@ -243,6 +250,8 @@ protected:
 	bool is_server;
 	string server_name;
 	unsigned int tcp_port;
+	unsigned int protocol;
+	string pipename;
 
 	uint32_t tag;
 	uint32_t device_id;

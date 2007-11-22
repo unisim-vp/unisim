@@ -175,7 +175,7 @@ bl.execute = {
 op bx(0b010001110[9]:h2[1]:rm[3]:sbz[3])
 
 bx.disasm = {
-		typedef Operation<CONFIG> inherited;
+	typedef Operation<CONFIG> inherited;
 
 	buffer << "bx "
 		<< "r" << inherited::rm_index << endl;
