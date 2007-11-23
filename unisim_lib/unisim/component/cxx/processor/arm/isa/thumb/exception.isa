@@ -44,6 +44,22 @@
 
 op bkpt(0b10111110[8]:imm[8])
 
+bkpt.disasm = {
+	buffer << "bkpt #" << dec << imm;
+}
+
+bkpt.execute = {
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(cpu.linux_os_import) {
+		// we are executing on linux emulation mode
+		// what should we do with this kind of call? ignore it
+	} else {
+		// we are executing on full system mode
+		throw PrefetchAbortException<CONFIG>();
+	}
+}
+
 /*
  * end of bkpt (breakpoint) instruction
  *******************************************************************/
@@ -54,6 +70,26 @@ op bkpt(0b10111110[8]:imm[8])
 
 op swi(0b11011111[8]:imm[8])
 
+swi.disasm = {
+	buffer << "swi #" << dec << imm;
+}
+
+swi.execute = {
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	if(cpu.linux_os_import) {
+		// we are executing on linux emulation mode
+		// use linux_os_import
+		try {
+			cpu.linux_os_import->ExecuteSystemCall(imm);
+		} catch(exception &e) {
+			cerr << e.what() << endl;
+		}
+	} else {
+		// we are executing on full system mode
+		throw SoftwareInterruptException<CONFIG>();
+	}
+}
 /*
  * end of swi (software interrupt) instruction
  *******************************************************************/

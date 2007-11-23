@@ -42,7 +42,55 @@
  * ldmia (load multiple) instruction
  */
 
-op ldmia(0b11001[5]:rn[3]:reg_list[8])
+op ldmia(0b11001[5]:rn[3]:<32> reg_list[8])
+
+ldmia.disasm = {
+	unsigned int mask = 1;
+	bool prev = false;
+	
+	buffer << "ldmia r" << rn << ", {";
+	for(unsigned int i = 0; i < 8; i++) {
+		if((reg_list & mask) == mask) {
+			if(prev) buffer << ", ";
+			else prev = true;
+			buffer << "r" << i;
+		}
+		mask = mask << 1;
+	}
+	buffer << "}";
+}
+
+ldmia.execute = {
+	typename CONFIG::reg_t rn_value, rn_new_val, value;
+	typename CONFIG::address_t start_address, end_address;
+	typename CONFIG::address_t cur_address;
+	uint32_t num_regs;
+	unsigned int mask = 1;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+	
+	num_regs = cpu.LSMia(rn_value, reg_list,
+						&start_address, &end_address,
+						&rn_new_val);
+
+	cpu.SetGPR(rn, rn_new_val);
+
+	cur_address = start_address;
+	for(unsigned int i = 0; i < 8; i++) {
+		if((reg_list & mask) == mask) {
+			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
+				cerr << "ERROR(load_store_multiple.isa::ldmia): "
+					<< "Couldn't read data" << endl;
+				exit(-1);
+			}
+			cpu.SetGPR(i, value);
+			cur_address += 4;
+		}
+		mask = mask << 1;
+	}
+}
 
 /*
  * end of ldmia (load multiple) instruction
@@ -52,7 +100,71 @@ op ldmia(0b11001[5]:rn[3]:reg_list[8])
 * pop (pop multiple) instruction
  */
 
-op pop(0b1011110[7]:r[1]:reg_list[8])
+op pop(0b1011110[7]:r[1]:<32> reg_list[8])
+
+pop.disasm = {
+	unsigned int mask = 1;
+	bool prev = false;
+	
+	buffer << "pop {";
+	for(unsigned int i = 0; i < 8; i++) {
+		if((reg_list & mask) == mask) {
+			if(prev) buffer << ", ";
+			else prev = true;
+			buffer << "r" << i;
+		}
+		mask = mask << 1;
+	}
+	buffer << "}";
+}
+
+pop.execute = {
+	typename CONFIG::reg_t sp_value, sp_new_val, value;
+	typename CONFIG::address_t start_address, end_address;
+	typename CONFIG::address_t cur_address;
+	uint32_t num_regs;
+	unsigned int mask = 1;
+	
+	if(r == 0)
+		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	sp_value = cpu.GetGPR(cpu.SP_reg);
+	
+	num_regs = cpu.LSMia(sp_value, reg_list,
+						&start_address, &end_address,
+						&sp_new_val);
+
+	cur_address = start_address;
+	for(unsigned int i = 0; i < 8; i++) {
+		if((reg_list & mask) == mask) {
+			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
+				cerr << "ERROR(load_store_multiple.isa::pop): "
+					<< "Couldn't read data" << endl;
+				exit(-1);
+			}
+			cpu.SetGPR(i, value);
+			cur_address += 4;
+		}
+		mask = mask << 1;
+	}
+	
+	if(r) {
+		if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
+			cerr << "ERROR(load_store_multiple.isa::pop): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+		if(CONFIG::ARCHITECTURE == ARMV5T ||
+			CONFIG::ARCHITECTURE == ARMV5TXM ||
+			CONFIG::ARCHITECTURE == ARMV5TE ||
+			CONFIG::ARCHITECTURE == ARMV5TEXP) {
+			cpu.SetCPSR_T((value & 0x01) != 0);
+		}
+		cur_address += 4;
+	}
+
+	cpu.SetGPR(cpu.SP_reg, cur_address);
+}
 
 /*
  * end of pop (pop multiple) instruction
@@ -64,6 +176,66 @@ op pop(0b1011110[7]:r[1]:reg_list[8])
 
 op push(0b1011010[7]:r[1]:reg_list[8])
 
+push.disasm = {
+	unsigned int mask = 1;
+	bool prev = false;
+		
+	buffer << "push {";
+	for(unsigned int i = 0; i < 8; i++) {
+		if((reg_list & mask) == mask) {
+			if(prev) buffer << ", ";
+			else prev = true;
+			buffer << "r" << i;
+		}
+		mask = mask << 1;
+	}
+	buffer << "}";
+}
+
+push.execute = {
+	typename CONFIG::reg_t sp_value, sp_new_val, value;
+	typename CONFIG::address_t start_address, end_address;
+	typename CONFIG::address_t cur_address;
+	uint32_t num_regs;
+	unsigned int mask = 1;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	sp_value = cpu.GetGPR(cpu.SP_reg);
+
+	num_regs = cpu.LSMdb(sp_value, reg_list,
+			&start_address, &end_address,
+			&sp_new_val);
+	if(r)
+		start_address -= 4;
+
+	cur_address = start_address;
+	for(unsigned int i = 0; i < 8; i++) {
+		if((reg_list & mask) == mask) {
+			value = cpu.GetGPR(i);
+			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
+				cerr << "ERROR(load_store_multiple.isa::push): "
+					<< "Couldn't write data" << endl;
+				exit(-1);
+			}
+			cur_address += 4;
+		}
+		mask = mask << 1;
+	}
+	
+	if(r) {
+		value = cpu.GetGPR(cpu.LR_reg);
+		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
+			cerr << "ERROR(load_store_multiple.isa::push): "
+				<< "Couldn't write data" << endl;
+			exit(-1);
+		}
+		cur_address += 4;
+	}
+
+	cpu.SetGPR(cpu.SP_reg, start_address);
+}
+
 /*
  * end of push (push multiple) instruction
  *******************************************************************/
@@ -73,6 +245,54 @@ op push(0b1011010[7]:r[1]:reg_list[8])
  */
 
 op stmia(0b11000[5]:rn[3]:reg_list[8])
+
+stmia.disasm = {
+	unsigned int mask = 1;
+	bool prev = false;
+			
+	buffer << "stmia r" << rn << "!, {";
+	for(unsigned int i = 0; i < 8; i++) {
+		if((reg_list & mask) == mask) {
+			if(prev) buffer << ", ";
+			else prev = true;
+			buffer << "r" << i;
+		}
+		mask = mask << 1;
+	}
+	buffer << "}";
+}
+
+stmia.execute = {
+	typename CONFIG::reg_t rn_value, rn_new_val, value;
+	typename CONFIG::address_t start_address, end_address;
+	typename CONFIG::address_t cur_address;
+	uint32_t num_regs;
+	unsigned int mask = 1;
+	
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+	
+	rn_value = cpu.GetGPR(rn);
+
+	num_regs = cpu.LSMia(rn_value, reg_list,
+			&start_address, &end_address,
+			&rn_new_val);
+
+	cur_address = start_address;
+	for(unsigned int i = 0; i < 8; i++) {
+		if((reg_list & mask) == mask) {
+			value = cpu.GetGPR(i);
+			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
+				cerr << "ERROR(load_store_multiple.isa::push): "
+					<< "Couldn't write data" << endl;
+				exit(-1);
+			}
+			cur_address += 4;
+		}
+		mask = mask << 1;
+	}
+		
+	cpu.SetGPR(rn, end_address + 4);
+}
 
 /*
  * end of stmia (store multiple) instruction
