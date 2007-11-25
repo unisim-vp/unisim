@@ -566,17 +566,20 @@ Step() {
 		//	}
 	
 
-	//		if(CONFIG::ENDIANESS == E_BIG_ENDIAN)
-		if(GetEndianess() == E_BIG_ENDIAN)
-			insn = BigEndian2Host(insn);
-		else
-			insn = LittleEndian2Host(insn);
+		/* arm instructions are big endian, so convert the instruction to 
+		 *   host format */
+		insn = BigEndian2Host(insn);
+//		if(GetEndianess() == E_BIG_ENDIAN)
+//			insn = BigEndian2Host(insn);
+//		else
+//			insn = LittleEndian2Host(insn);
 	
 		/* Decode current PC */
 		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Decoding instruction at 0x" 
 				<< Hex << current_pc << Dec 
+				<< " (0x" << Hex << insn << Dec << ")"
 				<< Endl << EndDebugInfo;
 		op = arm32_decoder.Decode(current_pc, insn);
 		/* Execute instruction */
@@ -2529,6 +2532,9 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read8(typename CONFIG::address_t address, uint8_t &val) {
+	if(GetEndianess() == E_BIG_ENDIAN)
+		address = address ^ (typename CONFIG::address_t)0x03;
+
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, &val, 1);
 	} else {
@@ -2550,6 +2556,9 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read16(typename CONFIG::address_t address, uint16_t &val) {
+	if(GetEndianess() == E_BIG_ENDIAN)
+		address = address ^ (typename CONFIG::address_t)0x02;
+
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, (uint8_t *)&val, 2);
 	} else {
@@ -2560,7 +2569,7 @@ Read16(typename CONFIG::address_t address, uint16_t &val) {
 	}
 		
 //	val = Host2Target(CONFIG::ENDIANESS, val);
-	val = Host2Target(GetEndianess(), val);
+//	val = Host2Target(GetEndianess(), val);
 	
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
@@ -2583,8 +2592,8 @@ Read32(typename CONFIG::address_t address, uint32_t &val) {
 			memory_interface->PrRead(address, (uint8_t *)&val, 4);
 	}
 	
-	// val = Target2Host(CONFIG::ENDIANESS, val);
-	val = Target2Host(GetEndianess(), val);
+//	// val = Target2Host(CONFIG::ENDIANESS, val);
+//	val = Target2Host(GetEndianess(), val);
 	
 	if(memory_access_reporting_import) 
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
@@ -2600,6 +2609,8 @@ CPU<CONFIG> ::
 Write8(typename CONFIG::address_t address, uint8_t &val) {
 	uint8_t value;
   
+	if(GetEndianess() == E_BIG_ENDIAN)
+		address = address ^ (typename CONFIG::address_t)0x03;
 	value = val;
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrWrite(address, &value, 1);
@@ -2622,17 +2633,15 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Write16(typename CONFIG::address_t address, uint16_t &val) {
-	uint16_t cp;
-//	cp = Host2Target(CONFIG::ENDIANESS, val);
-	cp = Host2Target(GetEndianess(), val);
-	
+	if(GetEndianess() == E_BIG_ENDIAN)
+		address = address ^ (typename CONFIG::address_t)0x02;
 	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrWrite(address, (uint8_t *)&cp, 2);
+		cp15_966es->PrWrite(address, (uint8_t *)&val, 2);
 	} else {
 		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrWrite(address, (uint8_t *)&cp, 2);
+			cache_l1->PrWrite(address, (uint8_t *)&val, 2);
 		} else
-			memory_interface->PrWrite(address, (uint8_t *)&cp, 2);
+			memory_interface->PrWrite(address, (uint8_t *)&val, 2);
 	}
 	
 	if(memory_access_reporting_import)
@@ -2646,18 +2655,18 @@ Write16(typename CONFIG::address_t address, uint16_t &val) {
 template<class CONFIG>
 bool CPU<CONFIG> ::
 Write32(typename CONFIG::address_t address, uint32_t &val) {
-	uint32_t cp;
-
-//	cp = Host2Target(CONFIG::ENDIANESS, val);
-	cp = Host2Target(GetEndianess(), val);
+//	uint32_t cp;
+//
+////	cp = Host2Target(CONFIG::ENDIANESS, val);
+//	cp = Host2Target(GetEndianess(), val);
 
 	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrWrite(address, (uint8_t *)&cp, 4);
+		cp15_966es->PrWrite(address, (uint8_t *)&val, 4);
 	} else {
 		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrWrite(address, (uint8_t *)&cp, 4);
+			cache_l1->PrWrite(address, (uint8_t *)&val, 4);
 		} else
-			memory_interface->PrWrite(address, (uint8_t *)&cp, 4);
+			memory_interface->PrWrite(address, (uint8_t *)&val, 4);
 	}
 	
 	if(memory_access_reporting_import) 
