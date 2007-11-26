@@ -73,7 +73,7 @@ using unisim::util::debug::Symbol;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
-using unisim::util::endian::LittleEndian2Host;
+using unisim::util::endian::Host2BigEndian;
 using unisim::util::arithmetic::RotateRight;
 
 using std::cout;
@@ -301,17 +301,30 @@ bool
 CPU<CONFIG> :: 
 InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
 	uint32_t index = 0;
+	typename CONFIG::address_t ef_address;
 
 	while(size != 0) {
-		if(CONFIG::HAS_DATA_CACHE_L1) {
-			cache_l1->PrRead(addr + index, &(((uint8_t *)buffer)[index]), 1);
+		ef_address = addr + index;
+//#if BYTE_ORDER == LITTLE_ENDIAN
+//		ef_address = ef_address ^ (typename CONFIG::address_t)0x03;
+//#endif
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
 		} else {
-			if(CONFIG::HAS_CACHE_L2) {
-				cache_l2->PrRead(addr + index, &(((uint8_t *)buffer)[index]), 1);
-			} else {
-				Read8(addr + index, ((uint8_t *)buffer)[index]);
-			}
+			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+				cache_l1->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
+			} else
+				memory_interface->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
 		}
+//		if(CONFIG::HAS_DATA_CACHE_L1) {
+//			cache_l1->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
+//		} else {
+//			if(CONFIG::HAS_CACHE_L2) {
+//				cache_l2->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
+//			} else {
+//				Read8(ef_address, ((uint8_t *)buffer)[index]);
+//			}
+//		}
 		index++;
 		size--;
 	}
@@ -323,17 +336,31 @@ bool
 CPU<CONFIG> ::
 InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size) {
 	uint32_t index = 0;
+	typename CONFIG::address_t ef_address;
 
 	while(size != 0) {
-		if(CONFIG::HAS_DATA_CACHE_L1) {
-			cache_l1->PrWrite(addr + index, &(((uint8_t *)buffer)[index]), 1);
+		ef_address = addr + index;
+//#if BYTE_ORDER == LITTLE_ENDIAN
+//		ef_address = ef_address ^ (typename CONFIG::address_t)0x03;
+//#endif
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
 		} else {
-			if(CONFIG::HAS_CACHE_L2) {
-				cache_l2->PrWrite(addr + index, &(((uint8_t *)buffer)[index]), 1);
-			} else {
-				Write8(addr + index, ((uint8_t *)buffer)[index]);
-			}
+			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+				cache_l1->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
+			} else
+				memory_interface->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
 		}
+		
+//		if(CONFIG::HAS_DATA_CACHE_L1) {
+//			cache_l1->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
+//		} else {
+//			if(CONFIG::HAS_CACHE_L2) {
+//				cache_l2->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
+//			} else {
+//				Write8(ef_address, ((uint8_t *)buffer)[index]);
+//			}
+//		}
 		index++;
 		size--;
 	}
@@ -625,7 +652,7 @@ Step() {
 			(*logger_import) << DebugError << LOCATION 
 				<< "uncaught processor reset exception :" << exc.what() 
 				<< Endl << EndDebugError;
-		Stop(1);
+		PerformResetException();
 	}
 	catch(UndefinedInstructionException<CONFIG> &exc) {
 		if(VerboseStep()) {
@@ -648,28 +675,28 @@ Step() {
 			(*logger_import) << DebugError << LOCATION 
 				<< "uncaught processor prefetch abort exception :" << exc.what() 
 				<< Endl << EndDebugError;
-		Stop(1);
+		PerformPrefetchAbortException();
 	}
 	catch(DataAbortException<CONFIG> &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
 				<< "uncaught processor data abort exception :" << exc.what() 
 				<< Endl << EndDebugError;
-		Stop(1);
+		PerformDataAbortException();
 	}
 	catch(IRQException<CONFIG> &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
 				<< "uncaught processor IRQ exception :" << exc.what() 
 				<< Endl << EndDebugError;
-		Stop(1);
+		PerformIRQException();
 	}
 	catch(FIQException<CONFIG> &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
 				<< "uncaught processor FIQ exception :" << exc.what() 
 				<< Endl << EndDebugError;
-		Stop(1);
+		PerformFIQException();
 	}
 	catch(Exception &exc) {
 		if(logger_import)
@@ -1220,7 +1247,7 @@ DisasmShiftOperand32Imm(const uint32_t rotate_imm,
   imm_r = imm >> (rotate_imm * 2);
   imm_l = imm << (32 - (rotate_imm * 2));
   
-  imm_f = imm_r + imm_l;
+  imm_f = imm_r | imm_l;
   buffer << "#" << dec << imm_f;
 }
 
@@ -2532,7 +2559,7 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read8(typename CONFIG::address_t address, uint8_t &val) {
-	if(GetEndianess() == E_BIG_ENDIAN)
+	if(GetEndianess() == E_LITTLE_ENDIAN)
 		address = address ^ (typename CONFIG::address_t)0x03;
 
 	if(CONFIG::MODEL == ARM966E_S) {
@@ -2556,7 +2583,7 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read16(typename CONFIG::address_t address, uint16_t &val) {
-	if(GetEndianess() == E_BIG_ENDIAN)
+	if(GetEndianess() == E_LITTLE_ENDIAN)
 		address = address ^ (typename CONFIG::address_t)0x02;
 
 	if(CONFIG::MODEL == ARM966E_S) {
@@ -2567,7 +2594,8 @@ Read16(typename CONFIG::address_t address, uint16_t &val) {
 		} else 
 			memory_interface->PrRead(address, (uint8_t *)&val, 2);
 	}
-		
+	
+	val = BigEndian2Host(val);
 //	val = Host2Target(CONFIG::ENDIANESS, val);
 //	val = Host2Target(GetEndianess(), val);
 	
@@ -2592,6 +2620,7 @@ Read32(typename CONFIG::address_t address, uint32_t &val) {
 			memory_interface->PrRead(address, (uint8_t *)&val, 4);
 	}
 	
+	val = BigEndian2Host(val);
 //	// val = Target2Host(CONFIG::ENDIANESS, val);
 //	val = Target2Host(GetEndianess(), val);
 	
@@ -2609,8 +2638,9 @@ CPU<CONFIG> ::
 Write8(typename CONFIG::address_t address, uint8_t &val) {
 	uint8_t value;
   
-	if(GetEndianess() == E_BIG_ENDIAN)
+	if(GetEndianess() == E_LITTLE_ENDIAN)
 		address = address ^ (typename CONFIG::address_t)0x03;
+
 	value = val;
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrWrite(address, &value, 1);
@@ -2633,15 +2663,20 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Write16(typename CONFIG::address_t address, uint16_t &val) {
-	if(GetEndianess() == E_BIG_ENDIAN)
+	uint16_t val16;
+	
+	if(GetEndianess() == E_LITTLE_ENDIAN)
 		address = address ^ (typename CONFIG::address_t)0x02;
+
+	val16 = Host2BigEndian(val);
+	
 	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrWrite(address, (uint8_t *)&val, 2);
+		cp15_966es->PrWrite(address, (uint8_t *)&val16, 2);
 	} else {
 		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrWrite(address, (uint8_t *)&val, 2);
+			cache_l1->PrWrite(address, (uint8_t *)&val16, 2);
 		} else
-			memory_interface->PrWrite(address, (uint8_t *)&val, 2);
+			memory_interface->PrWrite(address, (uint8_t *)&val16, 2);
 	}
 	
 	if(memory_access_reporting_import)
@@ -2655,18 +2690,20 @@ Write16(typename CONFIG::address_t address, uint16_t &val) {
 template<class CONFIG>
 bool CPU<CONFIG> ::
 Write32(typename CONFIG::address_t address, uint32_t &val) {
-//	uint32_t cp;
+	uint32_t val32;
 //
 ////	cp = Host2Target(CONFIG::ENDIANESS, val);
 //	cp = Host2Target(GetEndianess(), val);
+	
+	val32 = Host2BigEndian(val);
 
 	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrWrite(address, (uint8_t *)&val, 4);
+		cp15_966es->PrWrite(address, (uint8_t *)&val32, 4);
 	} else {
 		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrWrite(address, (uint8_t *)&val, 4);
+			cache_l1->PrWrite(address, (uint8_t *)&val32, 4);
 		} else
-			memory_interface->PrWrite(address, (uint8_t *)&val, 4);
+			memory_interface->PrWrite(address, (uint8_t *)&val32, 4);
 	}
 	
 	if(memory_access_reporting_import) 

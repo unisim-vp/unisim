@@ -330,17 +330,17 @@ int main(int argc, char *argv[], char **envp) {
 	}
 
 	// setting verbose parameters
-	// (*cpu)["verbose-all"] = true;
-	// (*cpu)["verbose-setup"] = true;
+//	(*cpu)["verbose-all"] = true;
+//	(*cpu)["verbose-setup"] = true;
 	(*cpu)["verbose-step"] = false;
-	(*cpu)["verbose-step-insn"] = false;
+	(*cpu)["verbose-step-insn"] = true;
 	(*cpu)["verbose-dump-regs-start"] = false;
-	(*cpu)["verbose-dump-regs-end"] = false;
+	(*cpu)["verbose-dump-regs-end"] = true;
 	(*cpu)["cache_dl1.verbose-all"] = false;
 	(*cpu)["cache_dl1.verbose-pr-read"] = false;
 	(*cpu)["cache_dl1.verbose-pr-write"] = false;
-	(*cpu)["cache_dl1.verbose-read-memory"] = true;
-	(*cpu)["cache_dl1.verbose-write-memory"] = true;
+	(*cpu)["cache_dl1.verbose-read-memory"] = false;
+	(*cpu)["cache_dl1.verbose-write-memory"] = false;
 	(*cpu)["cache_il1.verbose-all"] = false;
 	(*cpu)["cache_il1.verbose-pr-read"] = false;
 	(*cpu)["cache_il1.verbose-pr-write"] = false;
@@ -349,8 +349,8 @@ int main(int argc, char *argv[], char **envp) {
 	(*cpu)["cache_l2.verbose-all"] = false;
 	(*cpu)["cache_l2.verbose-pr-read"] = false;
 	(*cpu)["cache_l2.verbose-pr-write"] = false;
-	(*cpu)["cache_l2.verbose-read-memory"] = true;
-	(*cpu)["cache_l2.verbose-write-memory"] = true;
+	(*cpu)["cache_l2.verbose-read-memory"] = false;
+	(*cpu)["cache_l2.verbose-write-memory"] = false;
 	// (*cpu)["verbose-tlm-bus-synchronize"] = true;
 	// (*cpu)["verbose-tlm-run-thread"] = true;
 	// (*cpu)["verbose-tlm-commands"] = true;
