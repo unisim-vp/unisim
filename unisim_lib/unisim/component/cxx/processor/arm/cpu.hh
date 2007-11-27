@@ -737,6 +737,24 @@ private:
 	typename isa::arm32::Decoder<CONFIG> arm32_decoder;
 	typename isa::thumb::Decoder<CONFIG> thumb_decoder;
 
+	/*
+	 * Memory access variables
+	 */
+	/**
+	 * this variable is used to compute the effective address of a 1 byte memory access
+	 * using the arm endianess mapping (only if os support is not connected to the simulator.
+	 * this variable is set during the setup face or later when the endianess of the processor
+	 * is changed
+	 */
+	typename CONFIG::address_t munged_address_mask8;
+	/**
+	 * this variable is used to compute the effective address of a 2 byte memory access
+	 * using the arm endianess mapping (only if os support is not connected to the simulator.
+	 * this variable is set during the setup face or later when the endianess of the processor
+	 * is changed
+	 */
+	typename CONFIG::address_t munged_address_mask16;
+	
 	/** 
 	 * the copy of the last cache line accessed by the cpu and its address, 
 	 *   this speed ups execution, because the memory is not accessed */

@@ -237,6 +237,10 @@ Setup() {
 		if(cache_l1 != 0) cache_l1->Enable();
 		if(cache_il1 != 0) cache_il1->Enable();
 		if(cache_l2 != 0) cache_l2->Enable();
+		
+		// initialize the variables to compute the final address on memory accesses
+		munged_address_mask8 = 0;
+		munged_address_mask16 = 0;
 	} else {
 		/* we are running in system mode */
 		/* currently supported: arm966e_s
@@ -262,6 +266,15 @@ Setup() {
 			/* disable normal and fast interruptions */
 			SetCPSR_F();
 			SetCPSR_I();
+		}
+
+		// initialize the variables to compute the final address on memory accesses
+		if(GetEndianess() == E_BIG_ENDIAN) {
+			munged_address_mask8 = (typename CONFIG::address_t)0x03;;
+			munged_address_mask16 = (typename CONFIG::address_t)0x02;
+		} else {
+			munged_address_mask8 = 0;
+			munged_address_mask16 = 0;
 		}
 	}
 
@@ -2559,8 +2572,9 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read8(typename CONFIG::address_t address, uint8_t &val) {
-	if(GetEndianess() == E_LITTLE_ENDIAN)
-		address = address ^ (typename CONFIG::address_t)0x03;
+	address = address ^ munged_address_mask8;
+//	if(GetEndianess() == E_LITTLE_ENDIAN)
+//		address = address ^ (typename CONFIG::address_t)0x03;
 
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, &val, 1);
@@ -2583,8 +2597,9 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 Read16(typename CONFIG::address_t address, uint16_t &val) {
-	if(GetEndianess() == E_LITTLE_ENDIAN)
-		address = address ^ (typename CONFIG::address_t)0x02;
+	address = address ^ munged_address_mask16;
+//	if(GetEndianess() == E_LITTLE_ENDIAN)
+//		address = address ^ (typename CONFIG::address_t)0x02;
 
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, (uint8_t *)&val, 2);
@@ -2638,8 +2653,9 @@ CPU<CONFIG> ::
 Write8(typename CONFIG::address_t address, uint8_t &val) {
 	uint8_t value;
   
-	if(GetEndianess() == E_LITTLE_ENDIAN)
-		address = address ^ (typename CONFIG::address_t)0x03;
+	address = address ^ munged_address_mask8;
+//	if(GetEndianess() == E_LITTLE_ENDIAN)
+//		address = address ^ (typename CONFIG::address_t)0x03;
 
 	value = val;
 	if(CONFIG::MODEL == ARM966E_S) {
@@ -2665,8 +2681,9 @@ CPU<CONFIG> ::
 Write16(typename CONFIG::address_t address, uint16_t &val) {
 	uint16_t val16;
 	
-	if(GetEndianess() == E_LITTLE_ENDIAN)
-		address = address ^ (typename CONFIG::address_t)0x02;
+	address = address ^ munged_address_mask16;
+//	if(GetEndianess() == E_LITTLE_ENDIAN)
+//		address = address ^ (typename CONFIG::address_t)0x02;
 
 	val16 = Host2BigEndian(val);
 	
