@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 #ifndef __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_TCC__
@@ -79,7 +80,8 @@ bool BreakpointMapPage<ADDRESS>::HasBreakpoint(uint32_t offset)
 
 
 template <class ADDRESS>
-BreakpointRegistry<ADDRESS>::BreakpointRegistry()
+BreakpointRegistry<ADDRESS>::BreakpointRegistry() :
+	has_breakpoints(false)
 {
 	memset(hash_table, 0, sizeof(hash_table));
 }
@@ -120,6 +122,7 @@ bool BreakpointRegistry<ADDRESS>::SetBreakpoint(ADDRESS addr)
 		}
 		page->SetBreakpoint(addr & (BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE - 1));
 		breakpoints.push_back(Breakpoint<ADDRESS>(addr));
+		has_breakpoints = true;
 		return true;
 	}
 	return false;
@@ -139,6 +142,8 @@ bool BreakpointRegistry<ADDRESS>::RemoveBreakpoint(ADDRESS addr)
 		if(breakpoint->GetAddress() == addr)
 		{
 			breakpoints.erase(breakpoint);
+			if(breakpoints.empty())
+				has_breakpoints = false;
 			return true;
 		}
 	}
@@ -164,9 +169,10 @@ const Breakpoint<ADDRESS> *BreakpointRegistry<ADDRESS>::FindBreakpoint(ADDRESS a
 template <class ADDRESS>
 bool BreakpointRegistry<ADDRESS>::HasBreakpoint(ADDRESS addr)
 {
-  BreakpointMapPage<ADDRESS> *page = GetPage(addr);
-  if(!page) return false;
-  return page->HasBreakpoint(addr & (BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE - 1));
+	if(!has_breakpoints) return false;
+	BreakpointMapPage<ADDRESS> *page = GetPage(addr);
+	if(!page) return false;
+	return page->HasBreakpoint(addr & (BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE - 1));
 }
 
 template <class ADDRESS>

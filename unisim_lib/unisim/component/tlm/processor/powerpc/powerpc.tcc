@@ -103,7 +103,7 @@ void PowerPC<CONFIG>::Synchronize()
 	sc_time time_spent = cpu_sctime - last_cpu_sctime;
 	last_cpu_sctime = cpu_sctime;
 	wait(time_spent);
-	next_nice_sctime = sc_time_stamp();
+	next_nice_sctime = sc_time_stamp() + nice_sctime;
 }
 
 	
@@ -176,8 +176,9 @@ void PowerPC<CONFIG>::Run()
 			CPU<CONFIG>::OnBusCycle();
 			if(cpu_sctime >= next_nice_sctime)
 			{
-				next_nice_sctime += nice_sctime;
-				wait(SC_ZERO_TIME); // be nice with other threads: leave host execution resources
+				Synchronize();
+				//next_nice_sctime += nice_sctime;
+				//wait(SC_ZERO_TIME); // be nice with other threads: leave host execution resources
 			}
 		}
 		CPU<CONFIG>::Step();

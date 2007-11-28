@@ -223,6 +223,16 @@ BusSynchronize() {
 	
 template<class CONFIG>
 void 
+ARM<CONFIG>::Synchronize()
+{
+//	sc_time time_spent = cpu_sctime - last_cpu_sctime;
+//	last_cpu_sctime = cpu_sctime;
+//	wait(time_spent);
+//	next_nice_sctime = sc_time_stamp() + nice_sctime;
+}
+
+template<class CONFIG>
+void 
 ARM<CONFIG> :: 
 Run() {
 	sc_time time_per_instruction = cpu_cycle_time * ipc;
@@ -236,16 +246,25 @@ Run() {
 					<< Endl << EndDebugInfo;
 			CPU<CONFIG>::OnBusCycle();
 			if(cpu_time >= next_nice_time) {
-				next_nice_time += nice_time;
 				if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
 					(*inherited::logger_import) << DebugInfo << LOCATION
 						<< "Nicing START"
 						<< Endl << EndDebugInfo;
-				wait(SC_ZERO_TIME); // be nice with other threads: leave host execution resources
+				Synchronize();
 				if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
 					(*inherited::logger_import) << DebugInfo << LOCATION
 						<< "Nicing STOP"
 						<< Endl << EndDebugInfo;
+//				next_nice_time += nice_time;
+//				if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
+//					(*inherited::logger_import) << DebugInfo << LOCATION
+//						<< "Nicing START"
+//						<< Endl << EndDebugInfo;
+//				wait(SC_ZERO_TIME); // be nice with other threads: leave host execution resources
+//				if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
+//					(*inherited::logger_import) << DebugInfo << LOCATION
+//						<< "Nicing STOP"
+//						<< Endl << EndDebugInfo;
 			}
 		}
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)

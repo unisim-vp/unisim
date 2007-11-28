@@ -94,6 +94,18 @@ const char *ParameterBase::GetType() const
 	return type.c_str();
 }
 
+bool ParameterBase::HasEnumeratedValues() const {
+	return !enumerated_values.empty();
+}
+
+void ParameterBase::GetEnumeratedValues(vector<string> &values) const {
+
+}
+
+void ParameterBase::AddEnumeratedValue(const char *value) {
+
+}
+
 ParameterBase::operator bool () const { return false; }
 ParameterBase::operator char () const { return (long long) *this; }
 ParameterBase::operator short () const { return (long long) *this; }

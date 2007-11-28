@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 #ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_HH__
@@ -80,6 +81,7 @@ public:
 	const list<Watchpoint<ADDRESS> >& GetWatchpoints();
 
 private:
+	bool has_watchpoints;
 	list<Watchpoint<ADDRESS> > watchpoints;
 	WatchpointMapPage<ADDRESS> *hash_table[2][NUM_HASH_TABLE_ENTRIES];
 

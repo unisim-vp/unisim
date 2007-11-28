@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 #ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_TCC__
@@ -147,7 +148,8 @@ bool WatchpointMapPage<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<AD
 
 
 template <class ADDRESS>
-WatchpointRegistry<ADDRESS>::WatchpointRegistry()
+WatchpointRegistry<ADDRESS>::WatchpointRegistry() :
+	has_watchpoints(false)
 {
 	memset(hash_table, 0, sizeof(hash_table));
 }
@@ -205,6 +207,7 @@ bool WatchpointRegistry<ADDRESS>::SetWatchpoint(typename MemoryAccessReporting<A
 	}
 	watchpoints.push_back(Watchpoint<ADDRESS>(mat, mt, addr, size));
 	page->SetWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), size);
+	has_watchpoints = true;
 // 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 // 	     << ": TRUE mat = " << mat 
 // 	     << " mt = " << mt
@@ -227,6 +230,8 @@ bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReportin
 		{
 			watchpoints.erase(watchpoint);
 			page->RemoveWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), size);
+			if(watchpoints.empty())
+				has_watchpoints = false;
 			return true;
 		}
 	}
@@ -255,23 +260,24 @@ const Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS>::FindWatchpoint(typename 
 template <class ADDRESS>
 bool WatchpointRegistry<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-  WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
-  if(!page) {
+	if(!has_watchpoints) return false;
+	WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
+	if(!page) {
 //     cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": " 
 // 	 << "FALSE " 
 //  	 << "addr = 0x" << hex << addr << dec << " size = " << size 
 //  	 << " mat = " << mat << " mt = " << mt << endl;
-    return false;
-  }
-  if(page->HasWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), size)) {
-    return true;
-  } else {
+		return false;
+	}
+	if(page->HasWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), size)) {
+		return true;
+	} else {
 //     cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": " 
 // 	 << "FALSE "
 // 	 << "addr = 0x" << hex << addr << dec << " size = " << size 
 // 	 << " mat = " << mat << " mt = " << mt << endl;
-    return false;
-  }
+		return false;
+	}
 }
 
 template <class ADDRESS>

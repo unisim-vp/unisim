@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifndef __STDC_FORMAT_MACROS
@@ -479,7 +480,9 @@ int sc_main(int argc, char *argv[])
 		new unisim::service::debug::symbol_table::SymbolTable<CPU_ADDRESS_TYPE>("symbol-table");
 	//  - Tee Memory Access Reporting
 	unisim::service::tee::memory_access_reporting::Tee<PCI_ADDRESS_TYPE> * tee_memory_access_reporting = 
-		new unisim::service::tee::memory_access_reporting::Tee<PCI_ADDRESS_TYPE>("tee-memory-access-reporting");
+		(use_gdb_server || use_inline_debugger) ?
+			new unisim::service::tee::memory_access_reporting::Tee<PCI_ADDRESS_TYPE>("tee-memory-access-reporting") :
+			0;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -847,7 +850,8 @@ int sc_main(int argc, char *argv[])
 
 	cpu->memory_import >> bus->memory_export;
 	
-	cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+	if(use_inline_debugger || use_gdb_server)
+		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
 
 	if(inline_debugger)
 	{
@@ -900,7 +904,10 @@ int sc_main(int argc, char *argv[])
 	mpc107->pci_import >> *pci_bus->memory_export[PCI_MPC107_MASTER_PORT];
 
 	*pci_bus->memory_import[PCI_STUB_TARGET_PORT] >> pci_stub->memory_export; 
-	*tee_memory_access_reporting->out[0] >> pci_stub->memory_access_reporting_export;
+	if(use_inline_debugger || use_gdb_server)
+		*tee_memory_access_reporting->out[0] >> pci_stub->memory_access_reporting_export;
+	else
+		cpu->memory_access_reporting_import >> pci_stub->memory_access_reporting_export;
 	pci_stub->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	pci_stub->synchronizable_import >> cpu->synchronizable_export;
 	pci_stub->memory_import >> cpu->memory_export;

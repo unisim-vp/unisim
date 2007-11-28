@@ -108,6 +108,7 @@ public:
 	virtual void PrZeroBlock(address_t addr);
 
 private:
+	void Synchronize();
 	bool DebugEnable();
 	
 	sc_time cpu_cycle_time;

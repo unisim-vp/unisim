@@ -41,6 +41,7 @@
 #include <list>
 #include <queue>
 #include <map>
+#include <vector>
 #include <sstream>
 
 namespace unisim {
@@ -152,6 +153,9 @@ public:
 	const char *GetName() const;
 	const char *GetDescription() const;
 	const char *GetType() const;
+	bool HasEnumeratedValues() const;
+	void GetEnumeratedValues(vector<string> &values) const;
+	void AddEnumeratedValue(const char *value);
 
 	virtual operator bool () const;
 	operator char () const;
@@ -188,6 +192,7 @@ private:
 	Object *owner;
 	string description;
 	string type;
+	vector<string> enumerated_values;
 };
 
 //=============================================================================

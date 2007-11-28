@@ -137,7 +137,7 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeRun(uint64_t duration, typename 
 			case inherited::inherited::TU_MS: sc_tu = SC_MS; break;
 			case inherited::inherited::TU_S: sc_tu = SC_SEC; break;
 		}
-		
+		inherited::synchronizable_import->Synchronize();
 		wait(sc_time((double) duration, sc_tu), trap);
 	}
 	else

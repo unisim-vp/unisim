@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 #ifndef __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_HH__
@@ -77,6 +78,7 @@ public:
 	const list<Breakpoint<ADDRESS> >& GetBreakpoints();
 
 private:
+	bool has_breakpoints;
 	list<Breakpoint<ADDRESS> > breakpoints;
 	BreakpointMapPage<ADDRESS> *hash_table[NUM_HASH_TABLE_ENTRIES];
 
