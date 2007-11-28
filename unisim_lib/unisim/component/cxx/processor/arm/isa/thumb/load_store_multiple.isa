@@ -189,6 +189,10 @@ push.disasm = {
 		}
 		mask = mask << 1;
 	}
+	if(r) {
+		if(prev) buffer << ", lr";
+		else buffer << "lr";
+	}
 	buffer << "}";
 }
 

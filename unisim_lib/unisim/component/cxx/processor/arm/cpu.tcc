@@ -509,7 +509,6 @@ Step() {
 	reg_t current_pc;
 	reg_t next_pc;
 
-	typename isa::arm32::Operation<CONFIG> *op = NULL;
 	current_pc = GetGPR(PC_reg);
 
 	VerboseDumpRegsStart();
@@ -574,88 +573,100 @@ Step() {
 				<< "Reporting memory acces for fetch at address 0x"
 				<< Hex << current_pc << Dec
 				<< Endl << EndDebugInfo;
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, current_pc, 4);
+		uint32_t insn_size;
+		if(GetCPSR_T())
+			insn_size = 2;
+		else
+			insn_size = 4;
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, 
+				MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, 
+				current_pc, insn_size);
 	}
 	
 	try {
-		insn_t insn;
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Fetching (reading) instruction at address 0x"
-				<< Hex << current_pc << Dec
-				<< Endl << EndDebugInfo;
-		
-//		ReadInsn(current_pc, insn);
-		if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
-			insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
-			ReadInsnLine(insn_cache_line_address, (uint8_t *)&insn_cache_line, 4 *8);
-		} 
-		insn = insn_cache_line[(current_pc & (typename CONFIG::address_t)0x1F) >> 2];
-		//	insn_t insn_check;
-		//	memory_interface->PrRead(current_pc, &insn_check, 4, CC_NONE);
-		//	if(insn != insn_check) {
-		//		cerr << "error at pc address = 0x" << hex << current_pc << dec << endl;
-		//		cerr << "insn = 0x" << hex << insn << dec 
-		//			<< ", insn_check = 0x" << hex << insn_check << dec << endl;
-		//		cerr << "align = " << ((current_pc & (typename CONFIG::address_t)0x1F) >> 2) << endl;
-		//		cerr << "insn_cache_line =";
-		//		for(unsigned int i = 0; i < 8; i++)
-		//			cerr << " 0x" << hex << insn_cache_line[i] << dec;
-		//		cerr << endl;
-		//		exit(-1);
-		//	}
-	
+		if(GetCPSR_T()) {
+			/* THUMB state */
+			typename isa::thumb::Operation<CONFIG> *op = NULL;
+			thumb_insn_t insn;
+			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Fetching (reading) instruction at address 0x"
+					<< Hex << current_pc << Dec
+					<< Endl << EndDebugInfo;
 
-		/* arm instructions are big endian, so convert the instruction to 
-		 *   host format */
-		insn = BigEndian2Host(insn);
-//		if(GetEndianess() == E_BIG_ENDIAN)
-//			insn = BigEndian2Host(insn);
-//		else
-//			insn = LittleEndian2Host(insn);
-	
-		/* Decode current PC */
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Decoding instruction at 0x" 
-				<< Hex << current_pc << Dec 
-				<< " (0x" << Hex << insn << Dec << ")"
-				<< Endl << EndDebugInfo;
-		op = arm32_decoder.Decode(current_pc, insn);
-		/* Execute instruction */
-		if(CONFIG::DEBUG_ENABLE && (verbose_step || verbose_step_insn) && logger_import) {
-			stringstream disasm_str;
-			op->disasm(*this, disasm_str);
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Executing instruction "
-				<< disasm_str.str()
-				<< " at 0x" << Hex << current_pc << Dec 
-				<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
-				<< Endl << EndDebugInfo;
+			//		ReadInsn(current_pc, insn);
+			if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
+				insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
+				ReadInsnLine(insn_cache_line_address, (uint8_t *)&insn_cache_line, 4 *8);
+			}
+			insn = ((uint16_t *)insn_cache_line)[(current_pc & (typename CONFIG::address_t)0x1F) >> 1];
+
+			/* arm instructions are big endian, so convert the instruction to 
+			 *   host format */
+			insn = BigEndian2Host(insn);
+			
+			/* Decode current PC */
+			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Decoding instruction at 0x"
+					<< Hex << current_pc << Dec
+					<< " (0x" << Hex << insn << Dec << ")"
+					<< Endl << EndDebugInfo;
+			op = thumb_decoder.Decode(current_pc, insn);
+			/* Execute instruction */
+			if(CONFIG::DEBUG_ENABLE && (verbose_step || verbose_step_insn) && logger_import) {
+				stringstream disasm_str;
+				op->disasm(*this, disasm_str);
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Executing instruction "
+					<< disasm_str.str()
+					<< " at 0x" << Hex << current_pc << Dec
+					<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
+					<< Endl << EndDebugInfo;
+			}
+			op->execute(*this);
+		} else {
+			/* ARM state */
+			typename isa::arm32::Operation<CONFIG> *op = NULL;
+			insn_t insn;
+			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Fetching (reading) instruction at address 0x"
+					<< Hex << current_pc << Dec
+					<< Endl << EndDebugInfo;
+
+			//		ReadInsn(current_pc, insn);
+			if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
+				insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
+				ReadInsnLine(insn_cache_line_address, (uint8_t *)&insn_cache_line, 4 *8);
+			}
+			insn = insn_cache_line[(current_pc & (typename CONFIG::address_t)0x1F) >> 2];
+
+			/* arm instructions are big endian, so convert the instruction to 
+			 *   host format */
+			insn = BigEndian2Host(insn);
+			
+			/* Decode current PC */
+			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Decoding instruction at 0x"
+					<< Hex << current_pc << Dec
+					<< " (0x" << Hex << insn << Dec << ")"
+					<< Endl << EndDebugInfo;
+			op = arm32_decoder.Decode(current_pc, insn);
+			/* Execute instruction */
+			if(CONFIG::DEBUG_ENABLE && (verbose_step || verbose_step_insn) && logger_import) {
+				stringstream disasm_str;
+				op->disasm(*this, disasm_str);
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Executing instruction "
+					<< disasm_str.str()
+					<< " at 0x" << Hex << current_pc << Dec
+					<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
+					<< Endl << EndDebugInfo;
+			}
+			op->execute(*this);
 		}
-		op->execute(*this);
-		
-//		{
-//			pid_t pidlist[2];
-//			PROCTAB *PT;
-//			proc_t proc;
-//			pidlist[0] = getpid();
-//			pidlist[1] = 0;
-//			PT = openproc(PROC_FILLSTAT|PROC_FILLARG|PROC_PID, pidlist);
-//			while(readproc(PT, &proc)) {
-//				get_proc_stats(proc.tid, &proc);
-//				if(prev_vm_size != proc.vm_size) {
-//					prev_vm_size = proc.vm_size;
-//					stringstream disasm_str;
-//					op->disasm(*this, disasm_str);
-//					cerr << "vmsize: 0x" << hex << current_pc << dec << ": "
-//						<< proc.vm_size 
-//						<< ":\t" << disasm_str.str() << endl;
-//				}
-//				if(proc.cmdline) free((void *)*proc.cmdline);
-//			}
-//			closeproc(PT);
-//		}
 		VerboseDumpRegsEnd();
 
 		instruction_counter++;

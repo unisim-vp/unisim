@@ -143,6 +143,7 @@ private:
 	typedef typename CONFIG::reg_t reg_t;
 	typedef typename CONFIG::sreg_t sreg_t;
 	typedef typename CONFIG::insn_t insn_t;
+	typedef typename CONFIG::thumb_insn_t thumb_insn_t;
 	
 	typedef 
 		unisim::component::cxx::processor::arm::coprocessor::arm966e_s::CP15<CONFIG> 

@@ -276,7 +276,7 @@ blx_2.execute = {
 		return;
 	}
 
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 8 + cpu.InstructionByteSize());
+	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + cpu.InstructionByteSize());
 	cpu.SetCPSR_T((rm_value & 0x01) == 1);
 	new_PC = rm_value & 0xFFFFFFFE;
 	cpu.SetGPR(cpu.PC_reg, new_PC);

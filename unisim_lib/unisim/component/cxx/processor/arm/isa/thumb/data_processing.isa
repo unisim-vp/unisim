@@ -542,7 +542,7 @@ cmp_3.initialize_rm_index = {
 cmp_3.initialize_rn_index = {
 	typedef Operation<CONFIG> inherited;
 
-	inherited::rn_index = (h2 << 3) + rn;
+	inherited::rn_index = (h1 << 3) + rn;
 }
 
 cmp_3.initialize_rm_init = {
@@ -557,7 +557,7 @@ cmp_3.initialize_rm_init = {
 cmp_3.initialize_rn_init = {
 	typedef Operation<CONFIG> inherited;
 
-	if((h2 << 3) + rn == CPU<CONFIG>::PC_reg)
+	if((h1 << 3) + rn == CPU<CONFIG>::PC_reg)
 		inherited::rn_init = 4;
 	else
 		inherited::rn_init = 0;
@@ -799,19 +799,19 @@ op mov_3(0b01000110[8]:h1[1]:h2[1]:rm[3]:rd[3])
 mov_3.initialize_rm_index = {
 	typedef Operation<CONFIG> inherited;
 
-	inherited::rm_index = (h2 >> 3) + rm;
+	inherited::rm_index = (h2 << 3) + rm;
 }
 
 mov_3.initialize_rd_index = {
 	typedef Operation<CONFIG> inherited;
 	
-	inherited::rd_index = (h1 >> 3) + rd;
+	inherited::rd_index = (h1 << 3) + rd;
 }
 
 mov_3.initialize_rm_init = {
 	typedef Operation<CONFIG> inherited;
 	
-	if((h2 >> 3) + rm == CPU<CONFIG>::PC_reg)
+	if((h2 << 3) + rm == CPU<CONFIG>::PC_reg)
 		inherited::rm_init = 4;
 	else
 		inherited::rm_init = 0;
@@ -1123,7 +1123,7 @@ sub_4.execute = {
 	  
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
-	s1 = cpu.GetGPR(cpu.GetGPR(cpu.SP_reg));
+	s1 = cpu.GetGPR(cpu.SP_reg);
 	s2 = imm * 4;
 	res = s1 - s2;
 	cpu.SetGPR(cpu.SP_reg, res);

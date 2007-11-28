@@ -190,6 +190,7 @@ public:
 	typedef uint32_t reg_t;                 // register type
 	typedef int32_t sreg_t;                 // signed register type   
 	typedef uint32_t insn_t;                // instruction type
+	typedef uint16_t thumb_insn_t;          // thumb instruction type
 
 	static const Model MODEL = ARM9TDMI; // !< the model definition
 	static const uint32_t PROCESSOR_VERSION = 0; // !< the processor id
@@ -287,6 +288,7 @@ public:
 	typedef uint32_t reg_t;
 	typedef int32_t sreg_t;
 	typedef uint32_t insn_t;                // instruction type
+	typedef uint16_t thumb_insn_t;          // thumb instruction type
 	
 	static const Model MODEL = ARM966E_S;
 	static const uint32_t PROCESSOR_VERSION = 0;
