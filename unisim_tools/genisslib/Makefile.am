@@ -38,6 +38,8 @@ genisslib_SOURCES = parser.yy scanner.ll action.cc bitfield.cc cli.cc \
 
 dist_share_DATA = COPYING
 
+parser.o: CXXFLAGS=-g3 -Wall
+
 dist-hook:
 	rm -f $(distdir)/scanner.cc $(distdir)/parser.cc $(distdir)/parser.h
 
