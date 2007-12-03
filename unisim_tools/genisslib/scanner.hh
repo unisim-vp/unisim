@@ -21,12 +21,12 @@
 #include <fwd.hh>
 #include <conststr.hh>
 #include <referencecounting.hh>
+#include <errtools.hh>
 #include <vect.hh>
 
 struct Scanner {
-  static ConstStr_t               filename;       ///< Name of scanned file
-  static int                      lineno;         ///< Line number of scanned file
-  static int                      initial_lineno; ///< Starting line number of multi-line tokens
+  static FileLoc_t                fileloc;        ///< file location in scanned file
+  static FileLoc_t                fileloc_mlt;    ///< Starting line number of multi-line tokens
   static int                      bracecount;     ///< Global opened braces count
   static std::vector<int>         scs;
   static ConstStr_t::Set          symbols;        ///< The symbol database
@@ -37,11 +37,10 @@ struct Scanner {
 
   struct Include_t {
     uint8_t*                      m_state_backup;
-    ConstStr_t                    m_filename;
-    int                           m_lineno;
+    FileLoc_t                     m_fileloc;
     Include_t*                    m_next;
     
-    Include_t( void const* _state, intptr_t _size, ConstStr_t _filename, int _lineno, Include_t* _next );
+    Include_t( void const* _state, intptr_t _size, FileLoc_t const& _fileloc, Include_t* _next );
     ~Include_t();
     void                          restore( void* _state, intptr_t _size );
   };
@@ -75,9 +74,8 @@ struct Scanner {
 };
 
 
-int yyerrorf( char const *_filename, int _lineno, char const* _format, ... );
-int yyerror( char const* _s );
-int yypanicf( char const *_filename, int _lineno, char const* _format, ... );
+// int yyerror( char const* _s );
+// int yypanicf( char const *_filename, int _lineno, char const* _format, ... );
 int yyparse();
 
 #endif // __SCANNER_HH__

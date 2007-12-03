@@ -27,9 +27,11 @@ SourceCode_t const* SourceCode_t::s_last_srccode = 0;
     @param lineno a line number where was found the C source code
     @return a C source code object
 */
-SourceCode_t::SourceCode_t( ConstStr_t _content, ConstStr_t _filename, int _lineno )
-  : m_content( _content ), m_filename( _filename ), m_lineno( _lineno )
-{ s_last_srccode = this; }
+SourceCode_t::SourceCode_t( ConstStr_t _content, FileLoc_t const& _fileloc )
+  : m_content( _content ), m_fileloc( _fileloc )
+{
+  s_last_srccode = this;
+}
 
 /** Dump a C source code object into a stream
     @param source_code a C source code object to dump

@@ -24,22 +24,24 @@
 #include <conststr.hh>
 #include <referencecounting.hh>
 
-// /** bitfield base object, either an opcode bitfield, an operand or a unused bitfield */
+/** bitfield base object, either an opcode bitfield, an operand or a unused bitfield */
 struct BitField_t : virtual ReferenceCounter {
   unsigned int          m_size;
   
   enum Exception_t { InternalError, };
+  enum Type_t { Opcode, Operand, Unused, Separator, SubOp };
+  
   BitField_t( unsigned int _size ) : m_size( _size ) {}
   virtual ~BitField_t() {}
+  virtual Type_t        type() const = 0;
   virtual BitField_t*   clone() const = 0;
   virtual void          fills( std::ostream& _sink ) const = 0;
   virtual ConstStr_t    symbol() const { return 0; }
   virtual bool          hasopcode() const { return false; }
   virtual uint64_t      bits() const { throw InternalError; return 0; }
-  uint64_t              mask() const { return (uint64_t( 1 ) << m_size)-1; }
-  virtual unsigned int  operand_size() const { return 0; }
-  virtual char const*   ctype( unsigned int _minsize ) const { return 0; }
-  virtual ConstStr_t    cexpr_opaccess( unsigned int _minsize, unsigned int _shift, char const* _codename ) const { return 0; }
+  uint64_t              mask() const { return (0xffffffffffffffffULL >> (64-m_size)); }
+  virtual unsigned int  minsize() const { return m_size; }
+  virtual unsigned int  maxsize() const { return m_size; }
 };
 
 std::ostream&
@@ -51,6 +53,7 @@ struct OpcodeBitField_t : public BitField_t {
   OpcodeBitField_t( unsigned int _size, unsigned int _value );
   OpcodeBitField_t( OpcodeBitField_t const& _src );
   
+  Type_t                type() const { return Opcode; };
   OpcodeBitField_t*     clone() const { return new OpcodeBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
   uint64_t              bits() const { return m_value; };
@@ -65,21 +68,58 @@ struct OperandBitField_t : public BitField_t {
   
   OperandBitField_t( unsigned int _size, ConstStr_t _symbol, int _shift, unsigned int _size_modifier, bool _sext );
   OperandBitField_t( OperandBitField_t const& _src );
+
+  int                   wordsize() const;
   
+  Type_t                type() const { return Operand; };
   OperandBitField_t*    clone() const { return new OperandBitField_t( *this ); }
   ConstStr_t            symbol() const { return m_symbol; };
   void                  fills( std::ostream& _sink ) const;
-  unsigned int          operand_size() const { return m_size_modifier > m_size ? m_size_modifier : m_size; }
-  char const*           ctype( unsigned int _minsize ) const;
-  ConstStr_t            cexpr_opaccess( unsigned int _minsize, unsigned int _shift, char const* _codename ) const;
 };
 
 struct UnusedBitField_t : public BitField_t {
   UnusedBitField_t( unsigned int _size );
   UnusedBitField_t( UnusedBitField_t const& _src );
   
+  Type_t                type() const { return Unused; };
   UnusedBitField_t*     clone() const { return new UnusedBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
 };
+
+/**
+ *  @brief  A separator bitfield (useful only for CISC)
+ *  
+ *  A separator bitfield used to separate word in byte decoding of
+ *  CISC decoders. An optional rewind properties allow to rewind in
+ *  bytes of the previous word.
+ *  
+ */
+
+struct SeparatorBitField_t : public BitField_t {
+  unsigned int          m_rewind;
+  
+  SeparatorBitField_t( unsigned int m_rewind );
+  SeparatorBitField_t( SeparatorBitField_t const& _src );
+  
+  Type_t                type() const { return Separator; };
+  SeparatorBitField_t*  clone() const { return new SeparatorBitField_t( *this ); }
+  void                  fills( std::ostream& _sink ) const;
+};
+
+struct SubOpBitField_t : public BitField_t {
+  ConstStr_t            m_symbol;
+  SubDecoder_t const*   m_subdecoder;
+  
+  SubOpBitField_t( ConstStr_t _symbol, SubDecoder_t const* _subdecoder );
+  SubOpBitField_t( SubOpBitField_t const& _src );
+
+  Type_t                type() const { return SubOp; };
+  ConstStr_t            symbol() const { return m_symbol; };
+  SubOpBitField_t*      clone() const { return new SubOpBitField_t( *this ); }
+  void                  fills( std::ostream& _sink ) const;
+  unsigned int          minsize() const;
+  unsigned int          maxsize() const;
+};
+
 
 #endif // __BITFIELD_HH__

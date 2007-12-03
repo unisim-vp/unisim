@@ -22,6 +22,7 @@
 #include <main.hh>
 #include <cli.hh>
 #include <isa.hh>
+#include <generator.hh>
 #include <scanner.hh>
 #include <product.hh>
 #include <strtools.hh>
@@ -47,13 +48,19 @@ struct GIL : public CLI {
   char const* outputprefix;
   char const* expandname;
   char const* inputname;
+  char const* depfilename;
   int         minwordsize;
+  bool        subdecoder;
+  bool        sourcelines;
   
-  GIL() : outputprefix( DEFAULT_OUTPUT ), expandname( 0 ), inputname( 0 ), minwordsize( -1 ) {}
+  GIL()
+    : outputprefix( DEFAULT_OUTPUT ), expandname( 0 ), inputname( 0 ), depfilename( 0 ),
+      minwordsize( -1 ), subdecoder( false ), sourcelines( true )
+  {}
   
   void parse( CLI::Args_t& _args ) {
     if( _args.match( CLI::Unlimited, "-I", 0,
-                     "<directory>", "include a directory into the search path for includes.\n" ) )
+                     "<directory>", "include a directory into the search path for includes." ) )
       {
         char const* arg;
         if( not (arg = _args.pop()) ) {
@@ -65,7 +72,7 @@ struct GIL : public CLI {
       }
     else if( _args.match( CLI::AtMostOnce, "-o", "--output", 0,
                           "<output>", "Outputs the instruction set simulator source code into "
-                          "<output>.hh and <output>.cc/<output>.tcc (default is <output>=\"" DEFAULT_OUTPUT "\").\n" ) )
+                          "<output>.hh and <output>.cc/<output>.tcc (default is <output>=\"" DEFAULT_OUTPUT "\")." ) )
       {
         if( not (outputprefix = _args.pop()) ) { 
           cerr << GENISSLIB ": '-o' must be followed by an output name.\n";
@@ -74,7 +81,7 @@ struct GIL : public CLI {
         }
       }
     else if( _args.match( CLI::AtMostOnce, "-w", "--word-size", 0,
-                          "<size>", "Uses <size> as the minimum bit size for holding an operand bit field.\n" ) )
+                          "<size>", "Uses <size> as the minimum bit size for holding an operand bit field." ) )
       {
         char const* arg;
         if( not (arg = _args.pop()) ) {
@@ -84,11 +91,37 @@ struct GIL : public CLI {
         }
         minwordsize = strtoul( arg, 0, 0 );
       }
+    else if( _args.match( CLI::AtMostOnce, "--source-lines", 0,
+                          "yes/no", "Adds (or not) references to source lines in generated files (default: yes)." ) )
+      {
+        char const* arg;
+        if( not (arg = _args.pop()) ) {
+          cerr << GENISSLIB ": '-w' must be followed by a size.\n";
+          help();
+          throw CLI::Exit_t( 1 );
+        }
+        sourcelines = ( strcmp( arg, "yes" ) == 0 );
+      }
     else if( _args.match( CLI::AtMostOnce, "-v", "--version", 0,
-                          "", "Displays " GENISSLIB " version and exits.\n" ) )
+                          "", "Displays " GENISSLIB " version and exits." ) )
       {
         version();
         throw CLI::Exit_t( 0 );
+      }
+    else if( _args.match( CLI::AtMostOnce, "-S", "--subdecoder", 0,
+                          "", "Generate a subdecoder instead fo a full ISS." ) )
+      {
+        subdecoder = true;
+      }
+    else if( _args.match( CLI::AtMostOnce, "-M", 0, "<filename>",
+                          "Output a rule file (<filename>) suitable for make describing the "
+                          "dependencies of the main source file." ) )
+      {
+        if( not (depfilename = _args.pop()) ) {
+          cerr << GENISSLIB ": '-M' must be followed by a file name.\n";
+          help();
+          throw CLI::Exit_t( 1 );
+        }
       }
     else if( _args.match( CLI::AtMostOnce, "-E", "--expand", 0,
                           "<filename>", "Expands the preprocessed input file to <filename>." ) )
@@ -131,17 +164,31 @@ main( int argc, char** argv, char** envp ) {
         cerr << GENISSLIB ": can't open output file `" << gil.expandname << "'" << endl;
         throw CLI::Exit_t( 1 );
       }
-
+      
       isa.expand( expandfile );
     }
     
-    Product_t product( gil.outputprefix );
+    if( gil.depfilename ) {
+      ofstream depfile( gil.depfilename );
+      isa.deps( depfile, gil.outputprefix );
+    }
     
-    if( not isa.compile( product, gil.minwordsize ) ) {
+    Product_t product( gil.outputprefix, gil.sourcelines );
+    
+    if( not isa.sanity_checks() ) throw CLI::Exit_t( 1 );
+    auto_ptr<Generator> generator = isa.generator();
+    
+    generator->init( isa, gil.minwordsize, gil.subdecoder );
+    
+    try {
+      // Back-end specific preprocess
+      generator->finalize();
+      // ISS Generation
+      generator->iss( product );
+    } catch( Generator::Exception_t ) {
       cerr << GENISSLIB ": compilation aborted.\n";
       throw CLI::Exit_t( 1 );
     }
-    
   } catch( CLI::Exit_t _code ) {
     return _code.m_value;
   }

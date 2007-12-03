@@ -1,5 +1,5 @@
 /***************************************************************************
-                                    fw.hh
+                                 strtools.cc
                              -------------------
     begin                : Thu May 25 2003
     copyright            : (C) 2003-2007 CEA and Universite Paris Sud
@@ -15,27 +15,27 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef __FWD_HH__
-#define __FWD_HH__
+#include <errtools.hh>
+#include <cstdarg>
+#include <cstring>
+#include <cassert>
+#include <iostream>
 
-struct SourceCode_t;
-struct Operation_t;
-struct ActionProto_t;
-struct Comment_t;
-struct CodePair_t;
-struct Action_t;
-struct Group_t;
-struct Variable_t;
-struct BitField_t;
-struct Isa;
-struct Product_t;
-struct ConstStr_t;
-struct Generator;
-struct Product_t;
-struct SubDecoder_t;
-
-template <class Type_t> struct Vect_t;
-
-namespace Str { struct Buf; }
-
-#endif // __FWD_HH__
+void
+FileLoc_t::err( char const* _fmt, ... ) const {
+  va_list args;
+  for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
+    /* stack allocation */
+    char storage[capacity];
+    /* Try to print in the allocated space. */
+    va_start( args, _fmt );
+    size = vsnprintf( storage, capacity, _fmt, args );
+    va_end( args );
+    /* If it didn't work, retry */
+    if( size < 0 or size >= capacity ) continue;
+    
+    /* Now storage is ok... */
+    std::cerr << m_name << ':' << m_line << ": " << storage << std::endl;
+    break;
+  }
+}

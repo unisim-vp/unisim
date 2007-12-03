@@ -23,6 +23,7 @@
 #include <action.hh>
 #include <comment.hh>
 #include <operation.hh>
+#include <subdecoder.hh>
 #include <variable.hh>
 #include <bitfield.hh>
 #include <scanner.hh>
@@ -32,7 +33,8 @@
 #include <cstring>
 #include <vector>
   
-extern int yylex();
+int yylex();
+int yyerror( char const* _err );
 
 static
 void
@@ -41,21 +43,22 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
 
   if( prev_action ) {
     // FIXME: this was downgraded from warning to error
-    yyerrorf( Scanner::filename, Scanner::lineno, "error: action `%s.%s' redefined",
-              _operation->m_symbol.str(), _actionproto->m_symbol.str() );
-    yyerrorf( prev_action->m_filename, prev_action->m_lineno, "action `%s.%s' previously defined here",
-              _operation->m_symbol.str(), _actionproto->m_symbol.str() );
+    Scanner::fileloc.err( "error: action `%s.%s' redefined",
+                          _operation->m_symbol.str(), _actionproto->m_symbol.str() );
     
+    prev_action->m_fileloc.err( "action `%s.%s' previously defined here",
+                                _operation->m_symbol.str(), _actionproto->m_symbol.str() );
     exit( -1 );
   }
   
-  _operation->add( new Action_t( _actionproto, _actioncode, Scanner::comments, Scanner::filename, Scanner::lineno ) );
+  _operation->add( new Action_t( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
 }
 
 %}
 
 %token TOK_NAMESPACE
 %token TOK_ADDRESS
+%token TOK_SUBDECODER
 %token TOK_DECL
 %token TOK_IMPL
 %token TOK_GROUP
@@ -68,9 +71,11 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
 %token '('
 %token ')'
 %token ':'
+%token ';'
 %token ','
 %token TOK_ACTION
 %token '='
+%token '-'
 %token TOK_IDENT
 %token TOK_INTEGER
 %token TOK_ENDL
@@ -90,6 +95,9 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
 %token TOK_BIG_ENDIAN
 %token TOK_LITTLE_ENDIAN
 %token TOK_TEMPLATE
+%token TOK_RISC_DECODER
+%token TOK_CISC_DECODER
+%token TOK_VLIW_DECODER
 %type<sourcecode> address_declaration
 %type<sourcecode> sourcecode_decl_declaration
 %type<sourcecode> sourcecode_impl_declaration
@@ -139,6 +147,35 @@ namespace_list:
 }
 ;
 
+subdecoder:
+    TOK_SUBDECODER TOK_IDENT TOK_SOURCE_CODE '[' TOK_INTEGER ';' TOK_INTEGER ']'
+{
+  ConstStr_t symbol = ConstStr_t( $2, Scanner::symbols );
+  SourceCode_t* nmspace = $3;
+  unsigned int minsize = $5, maxsize = $7;
+  
+  if( minsize >= maxsize ) {
+    Scanner::fileloc.err( "error: subdecoder operation range is reversed" );
+    YYABORT;
+  }
+  SubDecoder_t* subdecoder = new SubDecoder_t( symbol, nmspace, minsize, maxsize, Scanner::fileloc );
+  Scanner::isa().m_subdecoders.append( subdecoder );
+}
+
+decoder:
+    TOK_RISC_DECODER
+{
+  Scanner::isa().m_decoder = Isa::RiscDecoder;
+}
+  | TOK_CISC_DECODER
+{
+  Scanner::isa().m_decoder = Isa::CiscDecoder;
+}
+  | TOK_VLIW_DECODER
+{
+  Scanner::isa().m_decoder = Isa::VliwDecoder;
+}
+
 endian: TOK_LITTLE_ENDIAN
 {
   Scanner::isa().m_little_endian = true;
@@ -157,7 +194,9 @@ template_declaration: TOK_TEMPLATE '<' param_list '>'
 
 declaration:
              TOK_ENDL {}
+           | decoder TOK_ENDL
            | endian TOK_ENDL
+           | subdecoder TOK_ENDL
            | operation_declaration TOK_ENDL
 {
   Scanner::isa().m_operations.append( $1 );
@@ -202,7 +241,7 @@ declaration:
   | template_declaration
 {
   if( not Scanner::isa().m_tparams.empty() ) {
-    yyerrorf( Scanner::filename, Scanner::lineno, "error: template parameters defined more than once" );
+    Scanner::fileloc.err( "error: template parameters defined more than once" );
     YYABORT;
   }
   Scanner::isa().m_tparams = *$1;
@@ -270,13 +309,13 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl var_lis
     Operation_t const* prev_op = Scanner::isa().operation( symbol );
     if( prev_op ) {
       // FIXME: warning downgraded to error
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: operation `%s' redefined", prev_op->m_symbol.str() );
-      yyerrorf( prev_op->m_filename, prev_op->m_lineno, "operation `%s' previously defined here", prev_op->m_symbol.str() );
+      Scanner::fileloc.err( "error: operation `%s' redefined", prev_op->m_symbol.str() );
+      prev_op->m_fileloc.err( "operation `%s' previously defined here", prev_op->m_symbol.str() );
       YYABORT;
     }
   }
 
-  Operation_t* operation = new Operation_t( symbol, *bitfields, Scanner::comments, *vars, op_cond, Scanner::filename, Scanner::lineno );
+  Operation_t* operation = new Operation_t( symbol, *bitfields, Scanner::comments, *vars, op_cond, Scanner::fileloc );
   delete bitfields;
   delete vars;
   Scanner::comments.clear();
@@ -306,6 +345,26 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
   | '?' '[' TOK_INTEGER ']'
 {
   $$ = new UnusedBitField_t( $3 );
+}
+  | '*' TOK_IDENT '[' TOK_IDENT ']'
+{
+  ConstStr_t symbol = ConstStr_t( $2, Scanner::symbols );
+  ConstStr_t subdecoder_symbol = ConstStr_t( $4, Scanner::symbols );
+  SubDecoder_t const* subdecoder = Scanner::isa().subdecoder( subdecoder_symbol );
+  if( not subdecoder ) {
+    Scanner::fileloc.err( "error: subdecoder `%s' not declared", subdecoder_symbol.str() );
+    YYABORT;
+  }
+  
+  $$ = new SubOpBitField_t( symbol, subdecoder );
+}
+  | '>' '<'
+{
+  $$ = new SeparatorBitField_t( 0 );
+}
+  | '>' '-' TOK_INTEGER '<'
+{
+  $$ = new SeparatorBitField_t( $3 );
 }
 ;
 
@@ -404,8 +463,8 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
     ActionProto_t const*  prev_proto = Scanner::isa().actionproto( symbol );
     if( prev_proto ) {
       // FIXME: downgraded warning to error
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: action prototype `%s' redefined", prev_proto->m_symbol.str() );
-      yyerrorf( prev_proto->m_filename, prev_proto->m_lineno, "action prototype `%s' previously defined here", prev_proto->m_symbol.str() );
+      Scanner::fileloc.err( "error: action prototype `%s' redefined", prev_proto->m_symbol.str() );
+      prev_proto->m_fileloc.err( "action prototype `%s' previously defined here", prev_proto->m_symbol.str() );
       YYABORT;
     }
   }
@@ -413,12 +472,12 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   if( returns ) {
     switch( action_proto_type ) {
     case ActionProto_t::Constructor:
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: constructor action prototype `%s' must not have a return type (%s)",
+      Scanner::fileloc.err( "error: constructor action prototype `%s' must not have a return type (%s)",
                 symbol.str(), returns->m_content.str() );
       YYABORT;
       break;
     case ActionProto_t::Destructor:
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: destructor action prototype `%s' must not have a return type (%s)",
+      Scanner::fileloc.err( "error: destructor action prototype `%s' must not have a return type (%s)",
                 symbol.str(), returns->m_content.str() );
       YYABORT;
       break;
@@ -430,15 +489,15 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   {
     switch( action_proto_type ) {
     case ActionProto_t::Constructor:
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: constructor action prototype `%s' must not take any arguments", symbol.str() );
+      Scanner::fileloc.err( "error: constructor action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
     case ActionProto_t::Static:
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: static action prototype `%s' must not take any arguments", symbol.str() );
+      Scanner::fileloc.err( "error: static action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
     case ActionProto_t::Destructor:
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: destructor action prototype `%s' must not take any arguments", symbol.str() );
+      Scanner::fileloc.err( "error: destructor action prototype `%s' must not take any arguments", symbol.str() );
       YYABORT;
       break;
     default: break;
@@ -446,7 +505,7 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   }
   
   ActionProto_t* actionproto =
-    new ActionProto_t( action_proto_type, symbol, returns, *param_list, default_sourcecode, Scanner::comments, Scanner::filename, Scanner::lineno );
+    new ActionProto_t( action_proto_type, symbol, returns, *param_list, default_sourcecode, Scanner::comments, Scanner::fileloc );
   Scanner::comments.clear();
   delete param_list;
   $$ = actionproto;
@@ -513,7 +572,7 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
   ActionProto_t const* actionproto = Scanner::isa().actionproto( action_proto_symbol );
 
   if( not actionproto ) {
-    yyerrorf( Scanner::filename, Scanner::lineno, "error: undefined action prototype `%s'", action_proto_symbol.str() );
+    Scanner::fileloc.err( "error: undefined action prototype `%s'", action_proto_symbol.str() );
     YYABORT;
   }
 
@@ -522,11 +581,11 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
   Group_t *group = operation ? 0 : Scanner::isa().group( target_symbol );
 
   if( not operation and not group ) {
-    yyerrorf( Scanner::filename, Scanner::lineno, "error: undefined operation or group `%s'", target_symbol.str() );
+    Scanner::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
     YYABORT;
   }
   else if( operation and group ) {
-    yyerrorf( Scanner::filename, Scanner::lineno, "internal error: operation and group `%s' are both defined", target_symbol.str() );
+    Scanner::fileloc.err( "internal error: operation and group `%s' are both defined", target_symbol.str() );
     YYABORT;
   }
   else if( group ) {
@@ -556,20 +615,20 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
   { /* Actions and group name should not conflict */
     Operation_t* prev_op = Scanner::isa().operation( group_symbol );
     if( prev_op ) {
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: group name conflicts with operation `%s'", group_symbol.str() );
-      yyerrorf( prev_op->m_filename, prev_op->m_lineno, "operation `%s' previously defined here", group_symbol.str() );
+      Scanner::fileloc.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
+      prev_op->m_fileloc.err( "operation `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
     
     Group_t* prev_grp = Scanner::isa().group( group_symbol );
     if( prev_grp ) {
-      yyerrorf( Scanner::filename, Scanner::lineno, "error: group `%s' redefined", group_symbol.str() );
-      yyerrorf( prev_grp->m_filename, prev_grp->m_lineno, "group `%s' previously defined here", group_symbol.str() );
+      Scanner::fileloc.err( "error: group `%s' redefined", group_symbol.str() );
+      prev_grp->m_fileloc.err( "group `%s' previously defined here", group_symbol.str() );
       YYABORT;
     }
   }
   
-  $$ = new Group_t( group_symbol, *operation_list, Scanner::filename, Scanner::lineno );
+  $$ = new Group_t( group_symbol, *operation_list, Scanner::fileloc );
   delete operation_list;
 }
 ;
@@ -590,7 +649,7 @@ operation_list:
     if( (*node)->m_symbol == opitem->m_symbol ) break;
   
   if( node < oplist->end() ) { // found one
-    yyerrorf( Scanner::filename, Scanner::lineno, "warning: duplicated operation `%s' in list", opitem->m_symbol.str() );
+    Scanner::fileloc.err( "warning: duplicated operation `%s' in list", opitem->m_symbol.str() );
     $$ = oplist;
   }
   else {
@@ -607,7 +666,7 @@ operation:
   Operation_t *operation = Scanner::isa().operation( op_symbol );
 
   if( not operation ) {
-    yyerrorf( Scanner::filename, Scanner::lineno, "error: undefined operation `%s'", op_symbol.str() );
+    Scanner::fileloc.err( "error: undefined operation `%s'", op_symbol.str() );
     YYABORT;
   }
   
@@ -618,66 +677,4 @@ operation:
 
 %%
 
-int
-yypanicf( char const* filename, int lineno, char const* format, ... ) {
-  char s[1024];
-  va_list args;
-
-  va_start( args, format );
-  vsprintf( s, format, args );
-  if( Scanner::filename and filename )
-    fprintf( stderr, "%s:%d: %s\n", filename, Scanner::lineno, s );
-  else
-    fprintf( stderr, "%s\n", s );
-  if( not Scanner::isa().m_actionprotos.empty() ) {
-    ActionProto_t const* last = Scanner::isa().m_actionprotos.back();
-    fprintf( stderr, "%s:%d: last action prototype `%s' was declared here\n",
-             last->m_filename.str(), last->m_lineno,
-             last->m_symbol.str() );
-  }
-  if( not Scanner::isa().m_operations.empty() ) {
-    Operation_t const* last = Scanner::isa().m_operations.back();
-    fprintf( stderr, "%s:%d: last action `%s' was declared here\n",
-             last->m_filename.str(), last->m_lineno,
-             last->m_symbol.str() );
-  }
-  if( SourceCode_t::s_last_srccode ) {
-    SourceCode_t const* last = SourceCode_t::s_last_srccode;
-    fprintf( stderr, "%s:%d: last source code was declared here\n", last->m_filename.str(), last->m_lineno );
-  }
-  
-  va_end( args );
-  return 0;
-}
-
-
-int
-yyerrorf( char const* _filename, int _lineno, char const* _fmt, ... ) {
-  va_list args;
-  for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
-    /* stack allocation */
-    char storage[capacity];
-    /* Try to print in the allocated space. */
-    va_start( args, _fmt );
-    size = vsnprintf( storage, capacity, _fmt, args );
-    va_end( args );
-    /* If it didn't work, retry */
-    if( size < 0 or size >= capacity ) continue;
-    
-    /* Now storage is ok... */
-    if( _filename )   fprintf( stderr, "%s:%d: %s\n", _filename, _lineno, storage );
-    else              fprintf( stderr, "%s\n", storage );
-    break;
-  }
-  
-  return 0;
-}
-
-int
-yyerror( char const* s ) {
-  if( Scanner::filename )
-    fprintf( stderr, "%s:%d: %s! unexpected %s\n", Scanner::filename.str(), Scanner::lineno, s, Scanner::tokenname( yychar ).str() );
-  else
-    fprintf( stderr, "%s! unexpected %s\n", s, Scanner::tokenname( yychar ).str() );
-  return 1;
-}
+int yyerror( char const* _err ) { Scanner::fileloc.err( "%s! unexpected %s\n", _err, Scanner::tokenname( yychar ).str() ); return 1; }

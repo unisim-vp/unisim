@@ -22,27 +22,15 @@
 #include <sourcecode.hh>
 #include <strtools.hh>
 #include <fstream>
+#include <iostream>
 
 using namespace std;
-
-/** Counts the number of \n characters into a string
-    @param s a C string
-    @return the number of \n characters
-*/
-static
-unsigned int
-count_end_of_line( char const* _str ) {
-  unsigned int count = 0;
-  for( char const* ptr = _str; *ptr; ptr++ )
-    if( *ptr == '\n' ) count += 1;
-  return count;
-}
 
 /** Constructor: Create a Product object
     @param _prefix the prefix of output files
 */
-Product_t::Product_t( ConstStr_t _prefix )
-  : m_prefix( _prefix ), m_stream( 0 ), m_lineno( 1 )
+Product_t::Product_t( ConstStr_t _prefix, bool _sourcelines )
+  : m_prefix( _prefix ), m_stream( 0 ), m_line( Str::Buf::Recycle ), m_lineno( 1 ), m_sourcelines( _sourcelines )
 {}
 
 /** Open a file and redirects all output to this file
@@ -50,10 +38,13 @@ Product_t::Product_t( ConstStr_t _prefix )
 */
 bool
 Product_t::open( char const* _suffix ) {
-  delete m_stream;
+  close();
   m_filename = Str::fmt( "%s.%s", m_prefix.str(), _suffix );
+  m_line.clear();
   m_lineno = 1;
   m_stream = new ofstream( m_filename );
+  m_indentations.clear();
+  m_indentations.push_back( 0 );
   return m_stream->good();
 }
 
@@ -61,14 +52,15 @@ Product_t::open( char const* _suffix ) {
  */
 void
 Product_t::close() {
+  if( not m_line.empty() and sink().good() )
+    sink() << m_line.m_storage;
   delete m_stream;
   m_stream = 0;
-  m_filename = 0;
 }
 
 /** Destructor: Close the Product object */
 Product_t::~Product_t() {
-  delete m_stream;
+  close();
 }
 
 /** Output source code into the output file
@@ -78,9 +70,11 @@ Product_t::~Product_t() {
     @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
 */
 void
-Product_t::usercode( ConstStr_t _filename, unsigned int _lineno, char const* _fmt, ... ) {
-  code( "\n#line %u \"%s\"\n", _lineno, _filename.str() );
-  
+Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
+  if( m_sourcelines ) {
+    require_newline();
+    code( "#line %u \"%s\"\n", _fileloc.m_line, _fileloc.m_name.str() );
+  }
   va_list args;
   for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
     /* stack allocation */
@@ -93,13 +87,16 @@ Product_t::usercode( ConstStr_t _filename, unsigned int _lineno, char const* _fm
     if( size < 0 or size >= capacity ) continue;
     
     /* Now storage is ok... */
-    sink() << storage;
-    m_lineno += count_end_of_line( storage );
-    
+//     sink() << storage;
+//     m_lineno += count_end_of_line( storage );
+    write( storage );
     break;
   }
   
-  code( "\n#line %u \"%s\"\n", m_lineno + 2, m_filename.str() );
+  if( m_sourcelines ) {
+    require_newline();
+    code( "#line %u \"%s\"\n", m_lineno + 1, m_filename.str() );
+  }
 }
 
 /** Output a string into the output file
@@ -120,37 +117,18 @@ Product_t::code( char const* _fmt, ... ) {
     if( size < 0 or size >= capacity ) continue;
     
     /* Now storage is ok... */
-    sink() << storage;
-    m_lineno += count_end_of_line( storage );
+//     sink() << storage;
+//     m_lineno += count_end_of_line( storage );
+    write( storage );
     break;
   }
 }
 
-/** Output a C string into the output file
-    @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
-*/
 void
-Product_t::cstring( char const* _string ) {
-  sink() << std::flush << '"';
-
-  int length = strlen( _string );
-  char emit_buffer[length + 1];
-  strcpy( emit_buffer, _string );
-  
-  char const* start = emit_buffer;
-  
-  for( char* current = emit_buffer; ; ++current ) {
-    switch( *current ) {
-    case '\n': *current = 0; sink() << start << "\\n"; break;
-    case '\"': *current = 0; sink() << start << "\\\""; break;
-    case '\\': *current = 0; sink() << start << "\\\\"; break;
-    case '\t': *current = 0; sink() << start << "\\t"; break;
-    case '\0': *current = 0; sink() << start << '\"'; return;
-    start = current + 1;
-    }
-  }
+Product_t::require_newline() {
+  if( m_line.empty() ) return;
+  write( "\n" );
 }
-
 
 void
 Product_t::ns_leave( std::vector<ConstStr_t> const& _namespace ) {
@@ -166,6 +144,7 @@ Product_t::ns_enter( std::vector<ConstStr_t> const& _namespace ) {
     code( "%snamespace %s {", sep, (*ns).str() );
   }
   code( "\n" );
+  flatten_indentation();
 }
 
 void
@@ -175,13 +154,10 @@ Product_t::template_signature( Vect_t<CodePair_t> const& _tparams ) {
   code( "template <" );
   
   bool intra = false;
-  for( Vect_t<CodePair_t>::const_iterator iter = _tparams.begin(); iter < _tparams.end(); ++ iter ) {
+  for( Vect_t<CodePair_t>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
     if( intra ) code( "," ); else intra = true;
-    usercode( (*iter)->m_ctype->m_filename.str(), (*iter)->m_ctype->m_lineno,
-              "\t%s", (*iter)->m_ctype->m_content.str() );
-    
-    usercode( (*iter)->m_csymbol->m_filename.str(), (*iter)->m_csymbol->m_lineno,
-              "\t%s", (*iter)->m_csymbol->m_content.str() );
+    usercode( (**tp).m_ctype->m_fileloc, "\t%s", (**tp).m_ctype->m_content.str() );
+    usercode( (**tp).m_csymbol->m_fileloc, "\t%s", (**tp).m_csymbol->m_content.str() );
   }
   
   code( ">\n" );
@@ -189,18 +165,80 @@ Product_t::template_signature( Vect_t<CodePair_t> const& _tparams ) {
 
 
 void
-Product_t::template_abrev( Vect_t<CodePair_t> const& _tparams ) {
+Product_t::template_abbrev( Vect_t<CodePair_t> const& _tparams ) {
   if( _tparams.empty() ) return;
 
   code( "<" );
 
   bool intra = false;
-  for( Vect_t<CodePair_t>::const_iterator iter = _tparams.begin(); iter < _tparams.end(); ++ iter ) {
+  for( Vect_t<CodePair_t>::const_iterator tp = _tparams.begin(); tp < _tparams.end(); ++ tp ) {
     if( intra ) code( "," ); else intra = true;
-    usercode( (*iter)->m_csymbol->m_filename.str(), (*iter)->m_csymbol->m_lineno,
-              "\t%s", (*iter)->m_csymbol->m_content.str() );
+    usercode( (**tp).m_csymbol->m_fileloc, "\t%s", (**tp).m_csymbol->m_content.str() );
   }
   
   code( ">" );
 }
 
+void
+Product_t::flatten_indentation() {
+  if( m_indentations.empty() ) return;
+  int indentation = m_indentations.back();
+  vector<int>::reverse_iterator prev = m_indentations.rbegin();
+  for( vector<int>::reverse_iterator ind = m_indentations.rbegin(); ind < m_indentations.rend(); ++ind ) {
+    if( *ind == indentation ) continue;
+    prev = ind;
+    break;
+  }
+  indentation = *prev;
+  for( vector<int>::reverse_iterator ind = m_indentations.rbegin(); ind < prev; ++ind )
+    *ind = indentation;
+}
+
+
+void
+Product_t::write( char const* _ptr ) {
+  if( not _ptr ) return;
+  for( char chr = *_ptr; chr; chr = *++_ptr ) {
+    if( chr == '\n' ) {
+      int current_indentation = m_indentations.back();
+      int braces = 0;
+      // Computing brace depth and right stripping blank characters.
+      char const* rstrip = m_line.m_storage;
+      for( char const* pchr = rstrip; *pchr; ++pchr ) {
+        if( *pchr <= ' ' ) continue;
+        rstrip = pchr + 1;
+        if(      *pchr == '{' ) ++braces;
+        else if( *pchr == '}' ) --braces;
+      }
+      m_line.truncate( rstrip-m_line.m_storage );
+      if( m_line.empty() ) { sink() << '\n'; m_lineno += 1; continue; }
+      
+      if( braces > 0 ) {
+        while( (--braces) > 0) m_indentations.push_back( current_indentation );
+        m_indentations.push_back( current_indentation + 1 );
+      } else if( braces < 0 ) {
+        int nlength = m_indentations.size() + braces;
+        if( nlength > 0 ) {
+          m_indentations.resize( nlength );
+        } else {
+          cerr << "Indentation error (line " << m_lineno << ").\n";
+          m_indentations.clear();
+          m_indentations.push_back( 0 );
+        }
+      }
+      
+      char first_char = m_line.m_storage[0], last_char = m_line.m_storage[m_line.m_index-1];
+      if( first_char == '#' ) current_indentation = 0;
+      else if( /*'{'*/ first_char == '}' ) current_indentation = m_indentations.back();
+      else if( last_char == ':' ) --current_indentation;
+      
+      while( (--current_indentation) >= 0 ) sink() << '\t';
+      sink() << m_line.m_storage << '\n';
+      m_line.clear();
+      m_lineno += 1;
+      continue;
+    }
+    if( m_line.empty() and chr <= ' ' ) continue;
+    m_line.write( chr );
+  }
+}

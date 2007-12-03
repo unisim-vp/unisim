@@ -30,6 +30,8 @@ struct Vect_t : std::vector<Ptr_t<Type_t> > {
     if( not &_src ) return;
     *this = _src;
   }
+  Vect_t( uintptr_t _size ) : std::vector<Ptr_t<Type_t> >( _size, 0 ) {}
+  
   Vect_t<Type_t>& operator=( Vect_t<Type_t>& _src ) {
     if( not &_src ) return *this;
     this->std::vector<Ptr_t<Type_t> >::operator=( _src );

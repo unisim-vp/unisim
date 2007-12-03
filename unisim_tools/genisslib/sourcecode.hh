@@ -21,14 +21,14 @@
 #include <fwd.hh>
 #include <conststr.hh>
 #include <referencecounting.hh>
+#include <errtools.hh>
 
 /** A C source code object */
 struct SourceCode_t : virtual ReferenceCounter {
   ConstStr_t                  m_content;    /**< the string containing the C source code */
-  ConstStr_t                  m_filename;   /**< the filename object where was found the C source code */
-  int                         m_lineno;     /**< the line number where was found the C source code */
+  FileLoc_t                   m_fileloc;    /**< the file location where was found the C source code */
   
-  SourceCode_t( ConstStr_t _content, ConstStr_t _filename, int _lineno );
+  SourceCode_t( ConstStr_t _content, FileLoc_t const& _fileloc );
   
   static SourceCode_t const*  s_last_srccode;
 };

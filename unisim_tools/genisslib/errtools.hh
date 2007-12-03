@@ -1,5 +1,5 @@
 /***************************************************************************
-                                    fw.hh
+                                 errtools.hh
                              -------------------
     begin                : Thu May 25 2003
     copyright            : (C) 2003-2007 CEA and Universite Paris Sud
@@ -15,27 +15,27 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef __FWD_HH__
-#define __FWD_HH__
+#ifndef __ERRTOOLS_HH__
+#define __ERRTOOLS_HH__
 
-struct SourceCode_t;
-struct Operation_t;
-struct ActionProto_t;
-struct Comment_t;
-struct CodePair_t;
-struct Action_t;
-struct Group_t;
-struct Variable_t;
-struct BitField_t;
-struct Isa;
-struct Product_t;
-struct ConstStr_t;
-struct Generator;
-struct Product_t;
-struct SubDecoder_t;
+/*** Classes an method for handling error log, file locations...
+ ***/
+#include <inttypes.h>
+#include <conststr.hh>
 
-template <class Type_t> struct Vect_t;
+struct FileLoc_t {
+  ConstStr_t m_name;
+  intptr_t   m_line;
+  
+  FileLoc_t() : m_line( 0 ) {}
+  FileLoc_t( ConstStr_t _name, intptr_t _line ) : m_name( _name ), m_line( _line ) {}
+  FileLoc_t( FileLoc_t const& _fl ) : m_name( _fl.m_name ), m_line( _fl.m_line ) {}
+  
+  FileLoc_t& operator=( FileLoc_t const& _fl ) { m_name = _fl.m_name; m_line = _fl.m_line; return *this; }
+  FileLoc_t& assign( ConstStr_t _name, intptr_t _line ) { m_name = _name; m_line = _line; return *this; }
+  
+  void       err( char const* _fmt, ... ) const;
+};
 
-namespace Str { struct Buf; }
 
-#endif // __FWD_HH__
+#endif // __ERRTOOLS_HH__

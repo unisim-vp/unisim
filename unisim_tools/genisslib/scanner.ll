@@ -27,9 +27,8 @@
 
 using namespace std;
 
-ConstStr_t               Scanner::filename = 0;
-int                      Scanner::lineno = 1;
-int                      Scanner::initial_lineno;
+FileLoc_t                Scanner::fileloc;
+FileLoc_t                Scanner::fileloc_mlt;
 int                      Scanner::bracecount = 0;
 std::vector<int>         Scanner::scs;
 Vect_t<Comment_t>        Scanner::comments;
@@ -57,7 +56,7 @@ decimal_number [0-9]+
 
 \" { Scanner::sc_enter( string_context ); }
 <string_context>[^\"\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<string_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::lineno++; }
+<string_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
 <string_context>\\\" { Scanner::strbuf().write( yyleng, yytext ); }
 <string_context>\" { if( Scanner::sc_leave() ) { yylval.volatile_string = Scanner::strbuf().m_storage; return TOK_STRING; }
 }
@@ -68,28 +67,28 @@ decimal_number [0-9]+
 <source_code_context>\' { Scanner::sc_enter( char_context ); Scanner::strbuf().write( yyleng, yytext ); }
 <source_code_context>\{ { Scanner::bracecount++; Scanner::strbuf().write( yyleng, yytext ); }
 <source_code_context>\" { Scanner::sc_enter( string_context ); Scanner::strbuf().write( yyleng, yytext ); }
-<source_code_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::lineno++; }
+<source_code_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
 <source_code_context>\} {
   if( Scanner::sc_leave() ) {
-    yylval.sourcecode = new SourceCode_t( Scanner::strbuf().m_storage, Scanner::filename, Scanner::initial_lineno );
+    yylval.sourcecode = new SourceCode_t( Scanner::strbuf().m_storage, Scanner::fileloc_mlt );
     return TOK_SOURCE_CODE;
   }
 }
 
 <char_context>[^\'\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<char_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::lineno++; }
+<char_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
 <char_context>\\\' { Scanner::strbuf().write( yyleng, yytext ); }
 <char_context>\' { Scanner::sc_leave(); }
 
 <INITIAL,source_code_context>"/*" { Scanner::sc_enter( c_like_comment_context ); Scanner::strbuf().write( yyleng, yytext ); }
 <c_like_comment_context>[^*\n] { Scanner::strbuf().write( yyleng, yytext ); }
 <c_like_comment_context>"*"+[^/\n] { Scanner::strbuf().write( yyleng, yytext ); }
-<c_like_comment_context>"*"+\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::lineno++; }
-<c_like_comment_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::lineno++; }
+<c_like_comment_context>"*"+\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
+<c_like_comment_context>\n { Scanner::strbuf().write( yyleng, yytext ); Scanner::fileloc.m_line++; }
 <c_like_comment_context>"*"+"/" {
   if( Scanner::sc_leave() ) {
     Scanner::strbuf().write( yyleng, yytext );
-    Scanner::comments.append( new Comment_t( Scanner::strbuf().m_storage, Scanner::filename, Scanner::initial_lineno ) );
+    Scanner::comments.append( new Comment_t( Scanner::strbuf().m_storage, Scanner::fileloc_mlt ) );
   }
 }
 
@@ -97,9 +96,9 @@ decimal_number [0-9]+
 <cpp_like_comment_context>[^\n] { Scanner::strbuf().write( yyleng, yytext ); }
 <cpp_like_comment_context>\n {
   if( Scanner::sc_leave() ) {
-    Scanner::comments.append( new Comment_t( Scanner::strbuf().m_storage, Scanner::filename, Scanner::initial_lineno ) );
+    Scanner::comments.append( new Comment_t( Scanner::strbuf().m_storage, Scanner::fileloc_mlt ) );
   }
-  Scanner::lineno++;
+  Scanner::fileloc.m_line++;
 }
 
 {binary_number} { parse_binary_number( yytext, yyleng, &yylval.uinteger ); return TOK_INTEGER; }
@@ -111,8 +110,8 @@ decimal_number [0-9]+
     yylval.persistent_string = ConstStr_t( yytext, Scanner::symbols );
   return token;
 }
-\\\n { Scanner::lineno++; }
-\n { Scanner::lineno++; return TOK_ENDL; }
+\\\n { Scanner::fileloc.m_line++; }
+\n { Scanner::fileloc.m_line++; return TOK_ENDL; }
 "*" { return '*'; }
 "." { return '.'; }
 "[" { return '['; }
@@ -123,19 +122,21 @@ decimal_number [0-9]+
 ">"  { return '>'; }
 "," { return ','; }
 ":" { return ':'; }
+";" { return ';'; }
 "=" { return '='; }
+"-" { return '-'; }
 "?" { return '?'; }
 "::" { return TOK_QUAD_DOT; }
 " " { }
 \t { }
 <INITIAL><<EOF>> { if( not Scanner::pop() ) yyterminate(); }
 <string_context,char_context,c_like_comment_context,cpp_like_comment_context,source_code_context><<EOF>> {
-  yypanicf( Scanner::filename, Scanner::lineno, "error: unexpected end of file" );
+  Scanner::fileloc.err( "error: unexpected end of file" );
   yyterminate();
   return 0;
 }
 <INITIAL,string_context,char_context,c_like_comment_context,cpp_like_comment_context,source_code_context>. {
-  yyerrorf( Scanner::filename, Scanner::lineno, "error: unexpected %s", Scanner::charname( yytext[0] ).str() );
+  Scanner::fileloc.err( "error: unexpected %s", Scanner::charname( yytext[0] ).str() );
   yyterminate();
   return 0;
 }
@@ -146,6 +147,7 @@ decimal_number [0-9]+
 #include <cstring>
 
 #include <cassert>
+#include <isa.hh>
 
 Scanner::Include_t* Scanner::include_stack = 0;
 
@@ -153,7 +155,7 @@ void
 Scanner::push() {
   YY_BUFFER_STATE state = YY_CURRENT_BUFFER;
   
-  include_stack = new Include_t( &state, sizeof( YY_BUFFER_STATE ), filename, lineno, include_stack );
+  include_stack = new Include_t( &state, sizeof( YY_BUFFER_STATE ), fileloc, include_stack );
 }
 
 bool
@@ -167,8 +169,7 @@ Scanner::pop() {
   if( yyin ) fclose( yyin );
   yy_switch_to_buffer( state );
   
-  filename = tail->m_filename;
-  lineno = tail->m_lineno;
+  fileloc = tail->m_fileloc;
   
   include_stack = tail->m_next;
   tail->m_next = 0;
@@ -177,8 +178,8 @@ Scanner::pop() {
   return true;
 }
 
-Scanner::Include_t::Include_t( void const* _state, intptr_t _size, ConstStr_t _filename, int _lineno, Include_t* _next )
-  : m_state_backup( 0 ), m_filename( _filename ), m_lineno( _lineno ), m_next( _next )
+Scanner::Include_t::Include_t( void const* _state, intptr_t _size, FileLoc_t const& _fileloc, Include_t* _next )
+  : m_state_backup( 0 ), m_fileloc( _fileloc ), m_next( _next )
 {
   m_state_backup = new uint8_t[_size];
   memcpy( m_state_backup, _state, _size );
@@ -195,13 +196,13 @@ Scanner::Include_t::restore( void* _state, intptr_t _size ) {
 
 bool
 Scanner::parse( char const* _filename, Isa& _isa ) {
+  s_isa = &_isa;
   if( not Scanner::open( ConstStr_t( _filename ) ) )
     return false;
   bracecount = 0;
   scs.clear();
   Str::Buf buffer( Str::Buf::Recycle );
   s_stringbuffer = &buffer;
-  s_isa = &_isa;
   
 #if 0
   // This code is only for testing the lexical analyzer
@@ -229,12 +230,12 @@ Scanner::open( ConstStr_t _filename ) {
   yyin = fopen( _filename, "r" );
 
   if( not yyin ) {
-    yyerrorf( Scanner::filename, Scanner::lineno, "error: can't open file `%s'", _filename.str() );
+    fileloc.err( "error: can't open file `%s'", _filename.str() );
     return false;
   }
-
-  Scanner::filename = _filename;
-  Scanner::lineno = 1;
+  
+  isa().m_includes.push_back( _filename );
+  fileloc.assign( _filename, 1 );
   return true;
 }
 
@@ -266,6 +267,7 @@ parse_binary_number( char const* binstr, int length, unsigned int *value ) {
 Scanner::Token_t Scanner::s_tokens[] = {
   {"namespace", TOK_NAMESPACE},
   {"address", TOK_ADDRESS},
+  {"subdecoder", TOK_SUBDECODER},
   {"decl", TOK_DECL},
   {"impl", TOK_IMPL},
   {"op", TOK_OP},
@@ -282,6 +284,9 @@ Scanner::Token_t Scanner::s_tokens[] = {
   {"little_endian", TOK_LITTLE_ENDIAN},
   {"big_endian", TOK_BIG_ENDIAN},
   {"template", TOK_TEMPLATE},
+  {"risc_decoder", TOK_RISC_DECODER},
+  {"cisc_decoder", TOK_CISC_DECODER},
+  {"vliw_decoder", TOK_VLIW_DECODER},
   {0,0}
 };
 
@@ -392,7 +397,7 @@ void
 Scanner::sc_enter( int _condition ) {
   int sc = YY_START;
   if( sc == INITIAL ) {
-    initial_lineno = lineno;
+    fileloc_mlt = fileloc;
     strbuf().clear();
   }
   if( _condition == source_code_context ) {

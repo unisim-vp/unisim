@@ -85,6 +85,16 @@ namespace Str {
   }
 
   Buf&
+  Buf::write( char _ch ) {
+    intptr_t needed_capacity = m_index + 2; //< (char) + (trailing '\0')
+    if( m_capacity < needed_capacity )
+      capacity( needed_capacity );
+    m_storage[m_index] = _ch;
+    m_storage[++m_index] = '\0';
+    return *this;
+  }
+
+  Buf&
   Buf::capacity( intptr_t _capacity ) {
     intptr_t ncapacity = (_capacity + s_chunksize - 1) & ~(s_chunksize - 1);
     if( ncapacity <= m_capacity ) return *this;

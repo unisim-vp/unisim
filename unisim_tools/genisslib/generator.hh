@@ -19,18 +19,52 @@
 #define __GENERATOR_HH__
 
 #include <fwd.hh>
+#include <conststr.hh>
 
 struct Generator {
-  Isa const*                          m_isa;
+  Isa*                                m_isa;
+  int                                 m_minwordsize;
+  bool                                m_is_subdecoder;
   
-  Generator( Isa const* _isa );
+  enum Exception_t { GenerationError };
+  Generator();
   virtual ~Generator() {};
   
-  virtual bool                  finalize() = 0;
-  virtual bool                  sanity_checks() const = 0;
-  virtual bool                  generate_iss( Product_t& _product, unsigned int word_size ) const = 0;
+  Generator&                          init( Isa& _isa, unsigned int _minwordsize, bool _is_subdecoder );
+
+  virtual void                        finalize() = 0;
   
-  Isa const&                    isa() const { return *m_isa; }
+  void                                iss( Product_t& _product ) const;
+  /* header file */
+  void                                decoder_decl( Product_t& _product ) const;
+  void                                operation_decl( Product_t& _product ) const;
+  /* source file */
+  void                                decoder_impl( Product_t& _product ) const;
+  void                                operation_impl( Product_t& _product ) const;
+  void                                isa_operations_decl( Product_t& _product ) const;
+  void                                isa_operations_ctors( Product_t& _product ) const;
+  void                                isa_operations_methods( Product_t& _product ) const;
+  
+  Isa const&                          isa() const { return *m_isa; }
+  Isa&                                isa() { return *m_isa; }
+  
+  virtual void                        codetype_decl( Product_t& _product ) const = 0;
+  virtual void                        codetype_impl( Product_t& _product ) const = 0;
+  virtual ConstStr_t                  codetype_name() const = 0;
+  virtual ConstStr_t                  codetype_ref() const = 0;
+  virtual ConstStr_t                  codetype_constref() const = 0;
+  virtual void                        insn_bits_code( Product_t& _product, Operation_t const& _op ) const = 0;
+  virtual void                        insn_mask_code( Product_t& _product, Operation_t const& _op ) const = 0;
+  virtual void                        insn_fetch_impl( Product_t& _product, char const* _codename ) const = 0;
+  virtual void                        insn_fetch_protoargs( Product_t& _product ) const = 0;
+  virtual ConstStr_t                  insn_id_expr( char const* _addrname ) const = 0;
+  virtual void                        insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const = 0;
+  virtual void                        insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const = 0;
+  virtual void                        insn_decode_impl( Product_t& _product, Operation_t const& _op,
+                                                        char const* _codename, char const* _addrname,
+                                                        Vect_t<CodePair_t> const& _tparams ) const = 0;
+  virtual void                        additional_impl_includes( Product_t& _product ) const = 0;
+  virtual void                        additional_decl_includes( Product_t& _product ) const = 0;
 };
 
 #endif // __GENERATOR_HH__

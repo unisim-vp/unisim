@@ -18,6 +18,7 @@
 #include <isa.hh>
 #include <main.hh>
 #include <operation.hh>
+#include <subdecoder.hh>
 #include <strtools.hh>
 #include <action.hh>
 #include <comment.hh>
@@ -31,13 +32,14 @@
 #include <cerrno>
 #include <iostream>
 #include <riscgenerator.hh>
+#include <ciscgenerator.hh>
 
 using namespace std;
 
 /** Constructor of Isa instance 
  */
 Isa::Isa()
-  : m_little_endian( 0 )
+  : m_decoder( RiscDecoder ), m_little_endian( 0 )
 {}
 
 
@@ -161,16 +163,86 @@ Isa::expand( ostream& _sink ) const {
     _sink << *(*op) << '\n';
 }
 
-
-bool
-Isa::compile( Product_t& _product, unsigned int _wordsize ) const {
-  auto_ptr<Generator> generator;
-  
-  generator = auto_ptr<Generator>( new RiscGenerator( this ) );
-  
-  return
-    generator->finalize() and
-    generator->sanity_checks() and
-    generator->generate_iss( _product, _wordsize );
+auto_ptr<Generator>
+Isa::generator() const {
+  switch( m_decoder ) {
+  case RiscDecoder: return auto_ptr<Generator>( new RiscGenerator() );
+  case CiscDecoder: return auto_ptr<Generator>( new CiscGenerator() );
+    // case VliwDecoder: return new VliwGenerator( this ); break;
+  default: break;
+  }
+  assert( false );
+  return auto_ptr<Generator>( 0 );
 }
 
+bool
+Isa::sanity_checks() const {
+  if( not m_addrtype ) {
+    // FIXME: Downgraded warning to error (default pointer size for
+    // target architecture is nonsense)
+    cerr << "error: no architecture address type found." << endl;
+    return false;
+  }
+  
+  // Checking operations
+  for( Vect_t<Operation_t>::const_iterator op = m_operations.begin(); op < m_operations.end(); ++ op ) {
+    // Looking for bitfield conflicts
+    for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
+      ConstStr_t bf_symbol = (**bf).symbol();
+      if( not bf_symbol ) continue;
+      for( Vect_t<BitField_t>::const_iterator pbf = (**op).m_bitfields.begin(); pbf < bf; ++ pbf ) {
+        ConstStr_t pbf_symbol = (**pbf).symbol();
+        if( pbf_symbol != bf_symbol ) continue;
+        (**op).m_fileloc.err( "error: duplicated bit field `%s' in operation `%s'", bf_symbol.str(), (**op).m_symbol.str() );
+        return false;
+      }
+    }
+    // Looking for variable conflicts
+    if( not (**op).m_variables.empty() ) {
+      for( Vect_t<Variable_t>::const_iterator checked = (**op).m_variables.begin(); checked < (**op).m_variables.end(); ++ checked ) {
+        Vect_t<Variable_t>::const_iterator found;
+        for( found = m_vars.begin(); found < m_vars.end(); ++ found )
+          if( (**found).m_symbol == (**checked).m_symbol ) break;
+        
+        if( (found < m_vars.end()) ) {
+          (**checked).m_ctype->m_fileloc.err( "error: in operation `%s', variable `%s' is already defined as global",
+                                              (**op).m_symbol.str(), (**checked).m_symbol.str() );
+          (**found).m_ctype->m_fileloc.err( "variable `%s' previously defined here", (**found).m_symbol.str() );
+          return false;
+        }
+        
+        for( found = (**op).m_variables.begin(); found < checked; ++ found )
+          if( (**found).m_symbol == (**checked).m_symbol ) break;
+
+        if( found < checked ) {
+          (**checked).m_ctype->m_fileloc.err( "error: in operation `%s', variable `%s' is defined several times", (**op).m_symbol.str(), (**checked).m_symbol.str() );
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+SubDecoder_t const*
+Isa::subdecoder( ConstStr_t _symbol ) const {
+  for( Vect_t<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd )
+    if( (**sd).m_symbol == _symbol ) return *sd;
+  return 0;
+}
+
+
+/** Output a rule file (<filename>) suitable for make describing the dependencies of the main source file.
+    @param _sink a stream
+*/
+void
+Isa::deps( ostream& _sink, char const* _prefix ) const {
+  if( m_tparams.empty() ) {
+    _sink << _prefix << ".tcc " << _prefix << ".hh:";
+  } else {
+    _sink << _prefix << ".tcc " << _prefix << ".hh:";
+  }
+  for( std::vector<ConstStr_t>::const_iterator inc = m_includes.begin(); inc < m_includes.end(); ++ inc )
+    _sink << " \\\n " << *inc;
+  _sink << "\n\n";
+}

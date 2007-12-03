@@ -15,8 +15,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef __STRMUTABLE_HH__
-#define __STRMUTABLE_HH__
+#ifndef __STRTOOLS_HH__
+#define __STRTOOLS_HH__
 
 /*** Classes an method for handling strings. Here, string refer to the
  *** C-fashioned strings: null-terminated arrays of char.
@@ -42,8 +42,11 @@ namespace Str {
     Buf&                          capacity( intptr_t _capacity );
     Buf&                          write( char const* _str );
     Buf&                          write( intptr_t _length, char const* _str );
+    Buf&                          write( char _ch );
     Buf&                          clear() { m_storage[0] = '\0'; m_index = 0; return *this; }
-    
+    Buf&                          truncate( intptr_t _size )
+    { if( _size < m_index ) { m_storage[_size] = '\0'; m_index = _size; } return *this; }
+    bool                          empty() const { return m_index <= 0; }
     // Recycle tools
     struct RecycleChunk {
       RecycleChunk*               m_next;
@@ -62,4 +65,4 @@ namespace Str {
   ConstStr_t                      tokenize( char const* _str );
 };
 
-#endif // __STRMUTABLE_HH__
+#endif // __STRTOOLS_HH__

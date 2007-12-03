@@ -32,11 +32,10 @@ using namespace std;
     @param filename a filename object where the action was found
     @param lineno a line number where the action was found
 */
-Action_t::Action_t( ActionProto_t const* _actionproto,
-                    SourceCode_t* _source_code,
-                    Vect_t<Comment_t>& _comments, ConstStr_t _filename, int _lineno )
+Action_t::Action_t( ActionProto_t const* _actionproto, SourceCode_t* _source_code,
+                    Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc )
   : m_operation( 0 ), m_actionproto( _actionproto ), m_source_code( _source_code ),
-    m_comments( _comments ), m_filename( _filename ), m_lineno( _lineno )
+    m_comments( _comments ), m_fileloc( _fileloc )
 {}
 
 /** Destructor
@@ -63,11 +62,12 @@ operator<<( std::ostream& _sink, Action_t const& _act ) {
     @param filename a filename object where the action prototype was found
     @param lineno a line number where the action prototype was found
 */
-ActionProto_t::ActionProto_t( ActionProto_t::type_t _type, ConstStr_t _symbol, SourceCode_t* _returns, Vect_t<CodePair_t>& _params,
-                              SourceCode_t* _default_source_code, Vect_t<Comment_t>& _comments, ConstStr_t _filename, int _lineno )
+ActionProto_t::ActionProto_t( ActionProto_t::type_t _type, ConstStr_t _symbol, SourceCode_t* _returns,
+                              Vect_t<CodePair_t>& _params, SourceCode_t* _defaultcode,
+                              Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc )
   : m_type( _type ), m_symbol( _symbol ), m_returns( _returns ),
-    m_params( _params ), m_default_source_code( _default_source_code ),
-    m_comments( _comments ), m_filename( _filename ), m_lineno( _lineno )
+    m_params( _params ), m_defaultcode( _defaultcode ),
+    m_comments( _comments ), m_fileloc( _fileloc )
 {}
 
 /** Dump an action prototype object into a stream
@@ -91,7 +91,7 @@ operator<<( std::ostream& _sink, ActionProto_t const& _ap ) {
   for( Vect_t<CodePair_t>::const_iterator codepair = _ap.m_params.begin(); codepair < _ap.m_params.end(); sep = ", ", ++ codepair )
     _sink << sep << *(*codepair);
   
-  _sink << ") " << (*_ap.m_default_source_code) << '\n';
+  _sink << ") " << (*_ap.m_defaultcode) << '\n';
   return _sink;
 }
 

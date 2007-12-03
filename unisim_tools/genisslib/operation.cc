@@ -39,10 +39,9 @@ using namespace std;
     @return an operation object
 */
 Operation_t::Operation_t( ConstStr_t _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
-                          Vect_t<Variable_t>& _vars, SourceCode_t* _op_condition, ConstStr_t _filename, int _lineno )
-  : m_symbol( _symbol ), m_bitfields( _bitfields ),
-    m_filename( _filename ), m_lineno( _lineno ),
-    m_comments( _comments ), m_variables( _vars ), m_condition( _op_condition )
+                          Vect_t<Variable_t>& _vars, SourceCode_t* _op_condition, FileLoc_t const& _fileloc )
+  : m_symbol( _symbol ), m_bitfields( _bitfields ), m_comments( _comments ),
+    m_variables( _vars ), m_condition( _op_condition ), m_fileloc( _fileloc )
 {
 }
 
@@ -55,9 +54,8 @@ Operation_t::~Operation_t() {}
     @param operation_list the list of the operation of the group
     @returns a group list object
 */
-Group_t::Group_t( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist, ConstStr_t _filename, int _lineno )
-  : m_symbol( _symbol ), m_operations( _oplist ),
-    m_filename( _filename ), m_lineno( _lineno ), m_next( 0 )
+Group_t::Group_t( ConstStr_t _symbol, Vect_t<Operation_t>& _oplist, FileLoc_t const& _fileloc )
+  : m_symbol( _symbol ), m_operations( _oplist ), m_fileloc( _fileloc )
 {}
 
 /** Search the operation for an action implementing an action prototype
@@ -86,12 +84,11 @@ Operation_t::add( Action_t* _action ) {
 
 ostream&
 operator<<( ostream& _sink, Operation_t const& _op ) {
-  char const* sep;
   _sink << "op " << _op.m_symbol << '(';
   
-  sep = "";
-  for( Vect_t<BitField_t>::const_iterator iter = _op.m_bitfields.begin(); iter < _op.m_bitfields.end(); sep = ":", ++ iter )
-    _sink << sep << *(*iter);
+  char const* sep = "";
+  for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf, sep = ":" )
+    _sink << sep << (**bf);
   
   _sink << ')';
   

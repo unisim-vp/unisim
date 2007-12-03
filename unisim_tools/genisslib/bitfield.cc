@@ -18,6 +18,8 @@
 #include <bitfield.hh>
 #include <ostream>
 #include <strtools.hh>
+#include <subdecoder.hh>
+#include <cmath>
 
 using namespace std;
 
@@ -79,54 +81,12 @@ OperandBitField_t::fills( ostream& _sink ) const {
   _sink << Str::fmt( "%s[%u]", m_symbol.str(), m_size );
 }
 
-/** Returns the type name of the bitfield operand storage
-    @param _minsize minimum size for an operand storage
+/** Return the size (in bytes) of the smallest containing word
+    @return the smallest power of two, greater than the bitfield size (in bytes);
 */
-char const*
-OperandBitField_t::ctype( unsigned int _minsize ) const {
-  unsigned int size = std::max( _minsize, std::max( m_size, m_size_modifier ) );
-  
-  if( m_sext ) {
-    if( size <= 8 ) return "int8_t";
-    if( size <= 16 ) return "int16_t";
-    if( size <= 32 ) return "int32_t";
-    if( size <= 64 ) return "int64_t";
-  }
-  else {
-    if( size <= 8 ) return "uint8_t";
-    if( size <= 16 ) return "uint16_t";
-    if( size <= 32 ) return "uint32_t";
-    if( size <= 64 ) return "uint64_t";
-  }
-  return "bigint_t";
-}
-
-/** Computes the code requiered to extract the data from operand source
-    @param _minsize the minimum size used for operand storage
-    @param _shift the shift of the current bitfield
-    @param _codename the name of the code C variable used by the generator
-    @return the C code
-*/
-ConstStr_t
-OperandBitField_t::cexpr_opaccess( unsigned int _minsize, unsigned int _shift, char const* _codename ) const {
-  ConstStr_t begin;
-  
-  if( m_sext ) {
-    unsigned int type_size = operand_size();
-    type_size = _minsize > type_size ? _minsize : type_size;
-    unsigned int sign_shift = type_size - m_size;
-    // FIXME: the first cast should apply to the shifted instruction (not to the instruction itself)
-    begin = Str::fmt( "(((((%s)(%s >> %u)) & 0x%llx) << %u) >> %u)",
-                      ctype( _minsize ), _codename, _shift, mask(), sign_shift, sign_shift );
-  } else {
-    begin = Str::fmt( "((%s >> %u) & 0x%llx)", _codename, _shift, mask() );
-  }
-  
-  if( m_shift > 0 )
-    return Str::fmt( "%s >> %u", begin.str(), m_shift  );
-  if( m_shift < 0 )
-    return Str::fmt( "%s << %u", begin.str(), -m_shift );
-  return begin;
+int
+OperandBitField_t::wordsize() const {
+  return (1 << std::max( 0, int( ceil( log2( std::max( m_size, m_size_modifier ) / 8 ) ) ) ) );
 }
 
 /** Create an unused bitfield object
@@ -151,6 +111,22 @@ UnusedBitField_t::fills( ostream& _sink ) const {
   _sink << "?[" << m_size << "]";
 }
 
+SeparatorBitField_t::SeparatorBitField_t( unsigned int _rewind )
+  : BitField_t( 0 ), m_rewind( _rewind )
+{}
+
+SeparatorBitField_t::SeparatorBitField_t( SeparatorBitField_t const& _src )
+  : BitField_t( 0 )
+{}
+
+void
+SeparatorBitField_t::fills( std::ostream& _sink ) const {
+  if( m_rewind > 0 )
+    _sink << ">-" << m_rewind << "<";
+  else
+    _sink << "><";
+}
+
 /** Dump an bitfield object into a stream
     @param _sink a stream
 */
@@ -159,3 +135,22 @@ operator<<( std::ostream& _sink, BitField_t const& _bf ) {
   _bf.fills( _sink );
   return _sink;
 }
+
+SubOpBitField_t::SubOpBitField_t( ConstStr_t _symbol, SubDecoder_t const* _subdecoder )
+  : BitField_t( _subdecoder->m_maxsize ), m_symbol( _symbol ), m_subdecoder( _subdecoder )
+{}
+
+SubOpBitField_t::SubOpBitField_t( SubOpBitField_t const& _src )
+  : BitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_subdecoder( _src.m_subdecoder )
+{}
+
+/** Dump an subop bitfield object into a stream
+    @param _sink a stream
+*/
+void
+SubOpBitField_t::fills( std::ostream& _sink ) const {
+  _sink << m_symbol << '[' << m_subdecoder->m_symbol << ']';
+}
+
+unsigned int SubOpBitField_t::minsize() const { return m_subdecoder->m_minsize; }
+unsigned int SubOpBitField_t::maxsize() const { return m_subdecoder->m_maxsize; }
