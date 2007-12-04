@@ -62,6 +62,7 @@ using std::vector;
 
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
@@ -107,6 +108,7 @@ template <class ADDRESS>
 class GDBServer :
 	public Service<DebugControl<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Client<MemoryAccessReportingControl>,
 	public Client<Memory<ADDRESS> >,
 	public Client<Registers>,
 	public Client<Logger>
@@ -115,6 +117,7 @@ public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 
+	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Logger> logger_import;

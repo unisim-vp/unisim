@@ -52,12 +52,14 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Object(_name, _parent),
 	Service<DebugControl<ADDRESS> >(_name, _parent),
 	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
+	Client<MemoryAccessReportingControl>(_name, _parent),
 	Client<Disassembly<ADDRESS> >(_name, _parent),
 	Client<Memory<ADDRESS> >(_name, _parent),
 	Client<Registers>(_name, _parent),
 	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
+	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
 	disasm_import("disasm-import", this),
 	memory_import("memory-import", this),
 	registers_import("registers-import", this),
@@ -70,11 +72,22 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	disasm_addr = 0;
 	dump_addr = 0;
 	prompt = string(_name) + "> ";
+	Object::SetupDependsOn(memory_access_reporting_control_import);
 }
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::~InlineDebugger()
 {
+}
+
+template<class ADDRESS>
+bool InlineDebugger<ADDRESS>::Setup() {
+	if(memory_access_reporting_control_import) {
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				false);
+	}
 }
 
 template <class ADDRESS>
@@ -473,6 +486,11 @@ void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 	{
 		cout << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
 	}
+	
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				breakpoint_registry.HasBreakpoints());
+	
 }
 
 template <class ADDRESS>
@@ -482,6 +500,10 @@ void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 	{
 		cout << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
+
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				watchpoint_registry.HasWatchpoints());
 }
 
 template <class ADDRESS>
@@ -491,6 +513,10 @@ void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 	{
 		cout << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
+
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				watchpoint_registry.HasWatchpoints());
 }
 
 template <class ADDRESS>
@@ -500,6 +526,10 @@ void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 	{
 		cout << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
 	}
+
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				breakpoint_registry.HasBreakpoints());
 }
 
 template <class ADDRESS>
@@ -509,6 +539,10 @@ void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 	{
 		cout << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
+
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				watchpoint_registry.HasWatchpoints());
 }
 
 template <class ADDRESS>
@@ -518,6 +552,10 @@ void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 	{
 		cout << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
+
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				watchpoint_registry.HasWatchpoints());
 }
 
 template <class ADDRESS>

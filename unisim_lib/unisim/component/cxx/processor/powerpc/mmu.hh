@@ -48,6 +48,7 @@
 #include <unisim/service/interfaces/logger.hh>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <map>
 
 namespace unisim {
@@ -56,6 +57,8 @@ namespace cxx {
 namespace processor {
 namespace powerpc {
 
+using std::string;
+using std::ostream;
 using unisim::component::cxx::tlb::TLB;
 using unisim::component::cxx::cache::CacheInterface;
 using unisim::component::cxx::cache::BusInterface;

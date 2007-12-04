@@ -66,6 +66,7 @@ using namespace unisim::util::endian;
 using unisim::service::interfaces::Memory;
 using unisim::util::device::Register;
 using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Symbol;
@@ -88,6 +89,7 @@ class PCIStub :
 	public NetStub<ADDRESS>,
 	public Service<Memory<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Client<MemoryAccessReportingControl>,
 	public Client<Logger>,
 	public Client<SymbolTableLookup<ADDRESS> >,
 	public Client<Synchronizable>,
@@ -105,6 +107,7 @@ public:
 	
 	ServiceExport<Memory<ADDRESS> > memory_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
+	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Logger> logger_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	ServiceImport<Synchronizable> synchronizable_import;

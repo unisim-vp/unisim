@@ -93,6 +93,7 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	Service<CPULinuxOS>(name, parent),
 	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
 	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
+	Service<MemoryAccessReportingControl>(name, parent),
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
@@ -102,6 +103,7 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_injection_export("memory_injection_export", this),
+	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
 	memory_export("memory_export", this),
 	cpu_linux_os_export("cpu_linux_os_export", this),
 	debug_control_import("debug_control_import", this),
@@ -116,6 +118,8 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	cp15_logger_import("cp15_logger_import", this),
 	itcm_logger_import("itcm_logger_import", this),
 	dtcm_logger_import("dtcm_logger_import", this),
+	requires_memory_access_reporting(true),
+	requires_finished_instruction_reporting(true),
 	default_endianess(E_BIG_ENDIAN),
 	param_default_endianess("default-endianess", this, default_endianess),
 	verbose_all(false),
@@ -293,6 +297,11 @@ Setup() {
 	registers_registry["pc"] = new SimpleRegister<reg_t>("pc", &gpr[15]);
 	registers_registry["cpsr"] = new SimpleRegister<reg_t>("cpsr", &cpsr);
 
+	if(!memory_access_reporting_import) {
+		requires_memory_access_reporting = false;
+		requires_finished_instruction_reporting = false;
+	}
+	
 	return true;
 }
 
@@ -382,6 +391,26 @@ InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t 
 
 //=====================================================================
 //=             memory injection interface methods              END   =
+//=====================================================================
+
+//=====================================================================
+//=         memory access reporting control interface methods   START =
+//=====================================================================
+
+template<class CONFIG>
+void 
+CPU<CONFIG>::RequiresMemoryAccessReporting(bool report) {
+	requires_memory_access_reporting = report;
+}
+
+template<class CONFIG>
+void 
+CPU<CONFIG>::RequiresFinishedInstructionReporting(bool report) {
+	requires_finished_instruction_reporting = report;
+}
+
+//=====================================================================
+//=         memory access reporting control interface methods   END   =
 //=====================================================================
 
 //=====================================================================
@@ -567,20 +596,22 @@ Step() {
 		} while(1);
 	}
 
-	if(memory_access_reporting_import) {
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Reporting memory acces for fetch at address 0x"
-				<< Hex << current_pc << Dec
-				<< Endl << EndDebugInfo;
-		uint32_t insn_size;
-		if(GetCPSR_T())
-			insn_size = 2;
-		else
-			insn_size = 4;
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, 
-				MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, 
-				current_pc, insn_size);
+	if(requires_memory_access_reporting) {
+		if(memory_access_reporting_import) {
+			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Reporting memory acces for fetch at address 0x"
+					<< Hex << current_pc << Dec
+					<< Endl << EndDebugInfo;
+			uint32_t insn_size;
+			if(GetCPSR_T())
+				insn_size = 2;
+			else
+				insn_size = 4;
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, 
+					MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, 
+					current_pc, insn_size);
+		}
 	}
 	
 	try {
@@ -730,8 +761,9 @@ Step() {
 		Stop(1);
 	}
 	
-	if(memory_access_reporting_import)
-		memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
+	if(requires_finished_instruction_reporting)
+		if(memory_access_reporting_import)
+			memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
 }
 
 template<class CONFIG>
@@ -2596,8 +2628,9 @@ Read8(typename CONFIG::address_t address, uint8_t &val) {
 			memory_interface->PrRead(address, &val, 1);
 	}
 	
-	if(memory_access_reporting_import)
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import)
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 				 	address, 1);
 
@@ -2625,10 +2658,11 @@ Read16(typename CONFIG::address_t address, uint16_t &val) {
 //	val = Host2Target(CONFIG::ENDIANESS, val);
 //	val = Host2Target(GetEndianess(), val);
 	
-	if(memory_access_reporting_import) 
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
- 				   	address, 2);
+					address, 2);
   
 	return true;
 }
@@ -2650,10 +2684,11 @@ Read32(typename CONFIG::address_t address, uint32_t &val) {
 //	// val = Target2Host(CONFIG::ENDIANESS, val);
 //	val = Target2Host(GetEndianess(), val);
 	
-	if(memory_access_reporting_import) 
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-				MemoryAccessReporting<address_t>::MT_DATA,
-				address, 4);
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 4);
 
 	return true;
 }
@@ -2678,10 +2713,11 @@ Write8(typename CONFIG::address_t address, uint8_t &val) {
 			memory_interface->PrWrite(address, &value, 1);
 	}
 	
-	if(memory_access_reporting_import) 
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-				MemoryAccessReporting<address_t>::MT_DATA,
- 				   	address, 1);
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 1);
 
 	return true;
 }
@@ -2707,10 +2743,11 @@ Write16(typename CONFIG::address_t address, uint16_t &val) {
 			memory_interface->PrWrite(address, (uint8_t *)&val16, 2);
 	}
 	
-	if(memory_access_reporting_import)
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-				MemoryAccessReporting<address_t>::MT_DATA,
-				 	address, 2);
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import)
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 2);
 
 	return true;
 }
@@ -2734,10 +2771,11 @@ Write32(typename CONFIG::address_t address, uint32_t &val) {
 			memory_interface->PrWrite(address, (uint8_t *)&val32, 4);
 	}
 	
-	if(memory_access_reporting_import) 
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-				MemoryAccessReporting<address_t>::MT_DATA,
-				 address, 4);
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 4);
 
 	return true;
 }

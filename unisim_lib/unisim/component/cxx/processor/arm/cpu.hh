@@ -94,6 +94,7 @@ using unisim::service::interfaces::LinuxOS;
 using unisim::service::interfaces::CPULinuxOS;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Memory;
@@ -133,6 +134,7 @@ class CPU :
     public Service<MemoryInjection<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
+	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<typename CONFIG::address_t> >,
     public Service<Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
@@ -165,6 +167,7 @@ public:
 	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
+	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
 	ServiceImport<DebugControl<address_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<address_t> > memory_access_reporting_import;
@@ -214,6 +217,13 @@ public:
 	//=====================================================================
 	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
+
+	//=====================================================================
+	//=             memory access reporting control interface methods     =
+	//=====================================================================
+
+	virtual void RequiresMemoryAccessReporting(bool report);
+	virtual void RequiresFinishedInstructionReporting(bool report) ;
 
 	//=====================================================================
 	//=             memory interface methods                              =
@@ -861,6 +871,11 @@ private:
      * This method needs to be called before CreateMemorySystem 
      * and CreateCpSystem */
     void CreateTCMSystem();
+    
+    /** indicates if the memory accesses require to be reported */
+    bool requires_memory_access_reporting;
+    /** indicates if the finished instructions require to be reported */
+    bool requires_finished_instruction_reporting;
     
 protected:
 	// endianess parameter

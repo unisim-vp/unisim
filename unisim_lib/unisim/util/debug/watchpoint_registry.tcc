@@ -146,7 +146,6 @@ bool WatchpointMapPage<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<AD
 	return false;
 }
 
-
 template <class ADDRESS>
 WatchpointRegistry<ADDRESS>::WatchpointRegistry() :
 	has_watchpoints(false)
@@ -278,6 +277,11 @@ bool WatchpointRegistry<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<A
 // 	 << " mat = " << mat << " mt = " << mt << endl;
 		return false;
 	}
+}
+
+template <class ADDRESS>
+bool WatchpointRegistry<ADDRESS>::HasWatchpoints() const {
+	return has_watchpoints;
 }
 
 template <class ADDRESS>

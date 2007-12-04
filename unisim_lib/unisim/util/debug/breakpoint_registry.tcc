@@ -176,6 +176,12 @@ bool BreakpointRegistry<ADDRESS>::HasBreakpoint(ADDRESS addr)
 }
 
 template <class ADDRESS>
+bool BreakpointRegistry<ADDRESS>::HasBreakpoints() const
+{
+	return has_breakpoints;
+}
+
+template <class ADDRESS>
 const list<Breakpoint<ADDRESS> >& BreakpointRegistry<ADDRESS>::GetBreakpoints()
 {
 	return breakpoints;

@@ -45,14 +45,21 @@ template <{class} {CONFIG}>
 
 decl {
 #include <sstream>
-	
-using std::stringstream;
+#include <iostream>
+#include <stdexcept>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
+
+using std::stringstream;
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
+using std::exception;
 
 template<class CONFIG>
 class CPU;

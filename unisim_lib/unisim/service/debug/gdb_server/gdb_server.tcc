@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 #ifndef __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
@@ -110,11 +111,13 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
 	Object(_name, _parent),
 	Service<DebugControl<ADDRESS> >(_name, _parent),
 	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
+	Client<MemoryAccessReportingControl>(_name, _parent),
 	Client<Memory<ADDRESS> >(_name, _parent),
 	Client<Registers>(_name, _parent),
 	Client<Logger>(_name, _parent),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
+	memory_access_reporting_control_import("memory_access_reporting_control_import", this),
 	memory_import("memory-import", this),
 	registers_import("cpu-registers-import", this),
 	logger_import("logger-import", this),
@@ -139,7 +142,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
 	param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename)
 {
 	Object::SetupDependsOn(registers_import);
-
+	Object::SetupDependsOn(memory_access_reporting_control_import);
 	counter = period;
 }
 
@@ -169,6 +172,14 @@ bool GDBServer<ADDRESS>::Setup()
 
 	delete parser;
 
+	if(memory_access_reporting_control_import) 
+	{
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				false);
+	}
+	
 	if(root_node)
 	{
 		if(root_node->Name() == string("architecture"))
@@ -1338,18 +1349,49 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			{
 				if(!breakpoint_registry.SetBreakpoint(addr + i)) return false;
 			}
+			if(memory_access_reporting_control_import)
+				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+						breakpoint_registry.HasBreakpoints());
 			return true;
-
 		case 2:
-			return watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
-
+			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			{
+				if(memory_access_reporting_control_import)
+					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+							watchpoint_registry.HasWatchpoints());
+				return true;
+			}
+			else
+				return false;
 		case 3:
-			return watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			{
+				if(memory_access_reporting_control_import)
+					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+							watchpoint_registry.HasWatchpoints());
+				return true;
+			}
+			else
+				return false;
 
 		case 4:
-			if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)) return false;
-			if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)) return false;
-			return true;
+			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			{
+				if(memory_access_reporting_control_import)
+					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+							watchpoint_registry.HasWatchpoints());
+			} 
+			else
+				return false;
+			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			{
+				if(memory_access_reporting_control_import)
+					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+							watchpoint_registry.HasWatchpoints());
+				return true;
+			} 
+			else
+				return false;
 	}
 	return false;
 }
@@ -1372,18 +1414,49 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			{
 				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return false;
 			}
+			if(memory_access_reporting_control_import)
+				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+						breakpoint_registry.HasBreakpoints());
 			return true;
 
 		case 2:
-			return watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
-
+			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			{
+				if(memory_access_reporting_control_import)
+					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+							breakpoint_registry.HasBreakpoints());
+				return true;
+			} 
+			else
+				return false;
 		case 3:
-			return watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
-
+			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			{
+				if(memory_access_reporting_control_import)
+					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+							breakpoint_registry.HasBreakpoints());
+				return true;
+			} 
+			else
+				return false;
 		case 4:
-			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)) return false;
-			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)) return false;
-			return true;
+			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			{
+				if(memory_access_reporting_control_import)
+					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+							breakpoint_registry.HasBreakpoints());
+			}
+			else
+				return false;
+			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			{
+				if(memory_access_reporting_control_import)
+					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+							breakpoint_registry.HasBreakpoints());
+				return true;
+			}
+			else
+				return false;
 	}
 	return false;
 }

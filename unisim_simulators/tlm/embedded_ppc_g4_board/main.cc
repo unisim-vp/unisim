@@ -850,14 +850,19 @@ int sc_main(int argc, char *argv[])
 
 	cpu->memory_import >> bus->memory_export;
 	
-	if(use_inline_debugger || use_gdb_server)
+	if(use_inline_debugger || use_gdb_server) 
+	{
 		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+		tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+	}
 
 	if(inline_debugger)
 	{
 		// Connect inline-debugger to CPU
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		*tee_memory_access_reporting->out[1] >> inline_debugger->memory_access_reporting_export;
+		inline_debugger->memory_access_reporting_control_import >>
+			*tee_memory_access_reporting->in_control[1];
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
@@ -867,6 +872,8 @@ int sc_main(int argc, char *argv[])
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		*tee_memory_access_reporting->out[1] >> gdb_server->memory_access_reporting_export;
+		gdb_server->memory_access_reporting_control_import >>
+			*tee_memory_access_reporting->in_control[1];
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
 	}
@@ -892,7 +899,8 @@ int sc_main(int argc, char *argv[])
 		dtlb_power_estimator->time_import >> time->time_export;
 	}
 
-    for(unsigned int i = 0; i < elf32_loader.size(); i++) {
+    for(unsigned int i = 0; i < elf32_loader.size(); i++) 
+    {
 	    elf32_loader[i]->memory_import >> mpc107->memory_export;
 	    elf32_loader[i]->symbol_table_build_import >> symbol_table->symbol_table_build_export;
     }
@@ -904,10 +912,18 @@ int sc_main(int argc, char *argv[])
 	mpc107->pci_import >> *pci_bus->memory_export[PCI_MPC107_MASTER_PORT];
 
 	*pci_bus->memory_import[PCI_STUB_TARGET_PORT] >> pci_stub->memory_export; 
-	if(use_inline_debugger || use_gdb_server)
+	if(use_inline_debugger || use_gdb_server) 
+	{
 		*tee_memory_access_reporting->out[0] >> pci_stub->memory_access_reporting_export;
+		pci_stub->memory_access_reporting_control_import >> 
+			*tee_memory_access_reporting->in_control[0];
+	}
 	else
+	{
 		cpu->memory_access_reporting_import >> pci_stub->memory_access_reporting_export;
+		pci_stub->memory_access_reporting_control_import >>
+			cpu->memory_access_reporting_control_export;
+	}
 	pci_stub->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	pci_stub->synchronizable_import >> cpu->synchronizable_export;
 	pci_stub->memory_import >> cpu->memory_export;

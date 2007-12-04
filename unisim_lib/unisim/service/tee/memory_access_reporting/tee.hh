@@ -30,7 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr),
- * 		Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifndef __UNISIM_SERVICE_TEE_MEMORY_ACCESS_REPORTING_TEE_HH__
@@ -51,6 +51,10 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::service::interfaces::MemoryAccessReportingControl;
+
+template <unsigned int MAX_IMPORTS>
+class ControlSelector;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS = 16>
 class Tee :
@@ -60,13 +64,46 @@ class Tee :
 public:
 	ServiceExport<MemoryAccessReporting<ADDRESS> > in;
 	ServiceImport<MemoryAccessReporting<ADDRESS> > *out[MAX_IMPORTS];
-
+	ServiceImport<MemoryAccessReportingControl> out_control;
+	ServiceExport<MemoryAccessReportingControl> *in_control[MAX_IMPORTS];
+	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, 
 			typename MemoryAccessReporting<ADDRESS>::MemoryType mt, 
 			ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	
+//	virtual void RequiresMemoryAccessReporting(bool report);
+//	virtual void RequiresFinishedInstructionReporting(bool report);
+
+private:
+	ControlSelector<MAX_IMPORTS> *control_selector[MAX_IMPORTS];
+	bool requires_memory_access_reporting[MAX_IMPORTS];
+	bool requires_finished_instruction_reporting[MAX_IMPORTS];
+};
+
+template <unsigned int MAX_IMPORTS>
+class ControlSelector :
+	public Client<MemoryAccessReportingControl>,
+	public Service<MemoryAccessReportingControl> 
+{
+public:
+	ServiceExport<MemoryAccessReportingControl> in;
+	ServiceImport<MemoryAccessReportingControl> out;
+
+	ControlSelector(unsigned int index,
+			bool *requires_memory_access_reporting,
+			bool *requires_finished_instruction_reporting,
+			const char *name, Object *parent = 0);
+	~ControlSelector();
+	
+	virtual void RequiresMemoryAccessReporting(bool report);
+	virtual void RequiresFinishedInstructionReporting(bool report);
+private:
+	unsigned int index;
+	bool *requires_memory_access_reporting;
+	bool *requires_finished_instruction_reporting;
 };
 
 } // end of namespace memory_access_reporting

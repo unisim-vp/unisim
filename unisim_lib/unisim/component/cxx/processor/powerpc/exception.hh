@@ -38,12 +38,15 @@
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
+
+using std::string;
 
 class Exception : public std::exception {};
 

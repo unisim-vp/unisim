@@ -63,6 +63,7 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	Object(name, parent),
 	Service<Memory<ADDRESS> >(name, parent),
 	Service<MemoryAccessReporting<ADDRESS> >(name, parent),
+	Client<MemoryAccessReportingControl>(name, parent),
 	Client<Logger>(name, parent),
 	Client<SymbolTableLookup<ADDRESS> >(name, parent),
 	Client<Synchronizable>(name, parent),
@@ -72,6 +73,7 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	logger_import("logger-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
+	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
 	synchronizable_import("synchronizable-import", this),
 	memory_import("memory-import", this),
 	registers_import("registers-import", this),
@@ -111,7 +113,8 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	param_bus_frequency("bus-frequency", this, bus_frequency)
 {
 	Object::SetupDependsOn(logger_import);
-
+	Object::SetupDependsOn(memory_access_reporting_control_import);
+	
 	unsigned num_region;
 	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
 	{
@@ -124,6 +127,13 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::Setup()
 {
+	if(memory_access_reporting_control_import) {
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				false);
+	}
+	
 	if(!memory_import)
 	{
 		if(logger_import)
@@ -523,6 +533,7 @@ bool PCIStub<ADDRESS>::ServeWriteRegister(const char *name, uint32_t value)
 template <class ADDRESS>
 void PCIStub<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
+	if(!watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints()) return;
 	if(watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoint(mat, mt, addr, size))
 	{
 		synchronizable_import->Synchronize();
@@ -550,6 +561,7 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS
 template <class ADDRESS>
 void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 {
+	if(!breakpoint_registry.HasBreakpoints()) return;
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
 		synchronizable_import->Synchronize();
@@ -566,7 +578,11 @@ void PCIStub<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeSetBreakpoint(ADDRESS addr)
 {
-	return breakpoint_registry.SetBreakpoint(addr);
+	bool ret = breakpoint_registry.SetBreakpoint(addr);
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				breakpoint_registry.HasBreakpoints());
+	return ret;
 }
 
 template <class ADDRESS>
@@ -595,26 +611,45 @@ bool PCIStub<ADDRESS>::ServeSetBreakpoint(const char *symbol_name)
 		}
 		return false;
 	}
-	return breakpoint_registry.SetBreakpoint(symbol->GetAddress());
+	bool ret = breakpoint_registry.SetBreakpoint(symbol->GetAddress());
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				breakpoint_registry.HasBreakpoints());
+	return ret;
 }
 
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeSetReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	return watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	bool ret = watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
+				watchpoint_registry[inherited::SP_DEV_MEM].HasWatchpoints() ||
+				watchpoint_registry[inherited::SP_DEV_IO].HasWatchpoints());
+	return ret;
 }
 
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeSetWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	return watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	bool ret = watchpoint_registry[space].SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
+				watchpoint_registry[inherited::SP_DEV_MEM].HasWatchpoints() ||
+				watchpoint_registry[inherited::SP_DEV_IO].HasWatchpoints());
+	return ret;
 }
-
 
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(ADDRESS addr)
 {
-	return breakpoint_registry.RemoveBreakpoint(addr);
+	bool ret = breakpoint_registry.RemoveBreakpoint(addr);
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				breakpoint_registry.HasBreakpoints());
+	return ret;
 }
 
 template <class ADDRESS>
@@ -644,19 +679,35 @@ bool PCIStub<ADDRESS>::ServeRemoveBreakpoint(const char *symbol_name)
 		return false;
 	}
 
-	return breakpoint_registry.RemoveBreakpoint(symbol->GetAddress());
+	bool ret = breakpoint_registry.RemoveBreakpoint(symbol->GetAddress());
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				breakpoint_registry.HasBreakpoints());
+	return ret;
 }
 
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeRemoveReadWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	return watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	bool ret = watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
+				watchpoint_registry[inherited::SP_DEV_MEM].HasWatchpoints() ||
+				watchpoint_registry[inherited::SP_DEV_IO].HasWatchpoints());
+	return ret;
 }
 
 template <class ADDRESS>
 bool PCIStub<ADDRESS>::ServeRemoveWriteWatchpoint(ADDRESS addr, uint32_t size, typename inherited::SPACE space)
 {
-	return watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	bool ret = watchpoint_registry[space].RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size);
+	if(memory_access_reporting_control_import)
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				watchpoint_registry[inherited::SP_CPU_MEM].HasWatchpoints() || 
+				watchpoint_registry[inherited::SP_DEV_MEM].HasWatchpoints() ||
+				watchpoint_registry[inherited::SP_DEV_IO].HasWatchpoints());
+	return ret;
 }
 
 

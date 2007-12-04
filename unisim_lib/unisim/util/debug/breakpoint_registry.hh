@@ -74,6 +74,7 @@ public:
 	bool SetBreakpoint(ADDRESS addr);
 	bool RemoveBreakpoint(ADDRESS addr);
 	bool HasBreakpoint(ADDRESS addr);
+	bool HasBreakpoints() const;
 	const Breakpoint<ADDRESS> *FindBreakpoint(ADDRESS addr);
 	const list<Breakpoint<ADDRESS> >& GetBreakpoints();
 

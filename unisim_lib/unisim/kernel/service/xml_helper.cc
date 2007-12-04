@@ -185,6 +185,53 @@ XmlfyParameters(const char *filename) {
 				<< "could not close the parameter description element" << endl;
 			return false;
 		}
+
+		// if the parameter has enumerated values then create an entry with the 
+		//   possible values
+		cerr << "checking for enumerated values " << (*param_iter).second->GetName() 
+			<< " (" << (*param_iter).second->HasEnumeratedValues() << ")" << endl;
+		if((*param_iter).second->HasEnumeratedValues()) {
+			rc = xmlTextWriterStartElement(writer, BAD_CAST "enumeration");
+			if(rc < 0) {
+				cerr << "Error(ServiceManager::XmlfyParameters): "
+					<< "error writing parameter enumeration values" << endl;
+				return false;
+			}
+			vector<string> values;
+			(*param_iter).second->GetEnumeratedValues(values);
+			if(values.empty()) {
+				cerr << "Error(ServiceManager::XmlfyParameters): "
+					<< "could not get the parameter enumeration values" << endl;
+				return false;
+			}
+			vector<string>::iterator it;
+			for(it = values.begin(); it != values.end(); it++) {
+				rc = xmlTextWriterStartElement(writer, BAD_CAST "item");
+				if(rc < 0) {
+					cerr << "Error(ServiceManager::XmlfyParameters): "
+						<< "could not write parameter enumeration value entry" << endl;
+					return false;
+				}
+				rc = xmlTextWriterWriteFormatString(writer, "%s", 
+						(*it).c_str());
+				if(rc < 0) {
+					cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter description" << endl;
+					return false;
+				}
+				rc = xmlTextWriterEndElement(writer);
+				if(rc < 0) {
+					cerr << "Error(ServiceManager::XmlfyParameters): "
+						<< "could not close parameter enumeration value entry" << endl;
+					return false;
+				}
+			}
+			rc = xmlTextWriterEndElement(writer);
+			if(rc < 0) {
+				cerr << "Error(ServiceManager::XmlfyParameters): "
+					<< " could not close the parameter enumeration values" << endl;
+				return false;
+			}
+		}
 		
 		// closing parameter element
 		rc = xmlTextWriterEndElement(writer);

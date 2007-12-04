@@ -324,9 +324,10 @@ int main(int argc, char *argv[], char **envp) {
 	// setting verbose parameters
 	// (*cpu)["verbose-all"] = true;
 	// (*cpu)["verbose-setup"] = true;
-	(*cpu)["verbose-step"] = true;
+	(*cpu)["verbose-step"] = false;
+	(*cpu)["verbose-step-insn"] = true;
 	(*cpu)["verbose-dump-regs-start"] = false;
-	(*cpu)["verbose-dump-regs-end"] = true;
+	(*cpu)["verbose-dump-regs-end"] = false;
 //	(*cpu)["cache_dl1.verbose-all"] = true;
 //	(*cpu)["cache_dl1.verbose-pr-read"] = true;
 //	(*cpu)["cache_dl1.verbose-pr-write"] = true;
@@ -336,10 +337,10 @@ int main(int argc, char *argv[], char **envp) {
 //	(*cpu)["cache_l2.verbose-all"] = true;
 //	(*cpu)["cache_l2.verbose-pr-read"] = true;
 //	(*cpu)["cache_l2.verbose-pr-write"] = true;
-	(*cpu)["cp15.verbose-pr-read"] = true;
-	(*cpu)["cp15.verbose-pr-write"] = true;
-	(*cpu)["cp15.verbose-read-reg"] = true;
-	(*cpu)["cp15.verbose-write-reg"] = true;
+	(*cpu)["cp15.verbose-pr-read"] = false;
+	(*cpu)["cp15.verbose-pr-write"] = false;
+	(*cpu)["cp15.verbose-read-reg"] = false;
+	(*cpu)["cp15.verbose-write-reg"] = false;
 	(*cpu)["cp15.verbose-debug-read"] = false;
 	(*cpu)["cp15.verbose-debug-write"] = false;
 	(*cpu)["cp15.verbose-all"] = false;
@@ -416,6 +417,7 @@ int main(int argc, char *argv[], char **envp) {
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
+		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
 
 	// logger parameters

@@ -154,8 +154,10 @@ public:
 	const char *GetDescription() const;
 	const char *GetType() const;
 	bool HasEnumeratedValues() const;
+	bool HasEnumeratedValue(const char *value) const;
 	void GetEnumeratedValues(vector<string> &values) const;
-	void AddEnumeratedValue(const char *value);
+	bool AddEnumeratedValue(const char *value);
+	bool RemoveEnumeratedValue(const char *value);
 
 	virtual operator bool () const;
 	operator char () const;

@@ -52,7 +52,8 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 	Object(name, parent),
 	Client<MemoryAccessReporting<ADDRESS> >(name, parent),
 	Service<MemoryAccessReporting<ADDRESS> >(name, parent),
-	in("in", this)
+	in("in", this),
+	out_control("out_control", this)
 {
 	unsigned int i;
 	for(i = 0; i < MAX_IMPORTS; i++)
@@ -61,6 +62,22 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 		sstr << "out[" << i << "]";
 		string import_name = sstr.str();
 		out[i] = new ServiceImport<MemoryAccessReporting<ADDRESS> >(import_name.c_str(), this);
+		stringstream sstr_control;
+		sstr_control << "in_control[" << i << "]";
+		string export_name = sstr_control.str();
+		in_control[i] = new ServiceExport<MemoryAccessReportingControl>(export_name.c_str(), this);
+		requires_memory_access_reporting[i] = true;
+		requires_finished_instruction_reporting[i] = true;
+		stringstream sstr_module;
+		sstr_module << name << ".control_selector[" << i << "]";
+		string module_name = sstr_module.str();
+		control_selector[i] = 
+			new ControlSelector<MAX_IMPORTS>(i,
+					requires_memory_access_reporting,
+					requires_finished_instruction_reporting,
+					module_name.c_str(), this);
+		*in_control[i] >> control_selector[i]->in;
+		control_selector[i]->out >> out_control;
 	}
 }
 
@@ -90,6 +107,65 @@ void Tee<ADDRESS, MAX_IMPORTS>::ReportFinishedInstruction(ADDRESS next_addr)
 	{
 		if(out[i])
 			if(*out[i]) (*out[i])->ReportFinishedInstruction(next_addr);
+	}
+}
+
+//template <class ADDRESS, unsigned int MAX_IMPORTS>
+//void Tee<ADDRESS, MAX_IMPORT>::RequiresMemoryAccessReporting(bool report) {
+//	
+//}
+//
+//template <class ADDRESS, unsigned int MAX_IMPORTS>
+//void Tee<ADDRESS, MAX_IMPORT>::RequiresFinishedInstructionReporting(bool report) {
+//}
+
+template <unsigned int MAX_IMPORTS>
+ControlSelector<MAX_IMPORTS>::ControlSelector(
+		unsigned int index,
+		bool *requires_memory_access_reporting,
+		bool *requires_finished_instruction_reporting,
+		const char *name, Object *parent) :
+	Object(name, parent),
+	Client<MemoryAccessReportingControl>(name, parent),
+	Service<MemoryAccessReportingControl>(name, parent),
+	in("in", this),
+	out("out_control", this)
+{
+	Object::SetupDependsOn(out);
+	this->index = index;
+	this->requires_memory_access_reporting = requires_memory_access_reporting;
+	this->requires_finished_instruction_reporting = requires_finished_instruction_reporting;
+}
+
+template <unsigned int MAX_IMPORTS>
+ControlSelector<MAX_IMPORTS>::~ControlSelector() {
+}
+
+template <unsigned int MAX_IMPORTS>
+void
+ControlSelector<MAX_IMPORTS>::RequiresMemoryAccessReporting(bool report) {
+	bool needs_report = false;
+	requires_memory_access_reporting[index] = report;
+	
+	for(unsigned int i = 0; !needs_report && i < MAX_IMPORTS; i++) {
+		needs_report = requires_memory_access_reporting[i];
+	}
+	if(out) {
+		out->RequiresMemoryAccessReporting(needs_report);
+	}
+}
+
+template <unsigned int MAX_IMPORTS>
+void
+ControlSelector<MAX_IMPORTS>::RequiresFinishedInstructionReporting(bool report) {
+	bool needs_report = false;
+	requires_finished_instruction_reporting[index] = report;
+	
+	for(unsigned int i = 0; !needs_report && i << MAX_IMPORTS; i++) {
+		needs_report = requires_finished_instruction_reporting[i];
+	}
+	if(out) {
+		out->RequiresFinishedInstructionReporting(needs_report);
 	}
 }
 

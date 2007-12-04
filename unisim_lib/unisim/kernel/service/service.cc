@@ -64,7 +64,8 @@ ParameterBase::ParameterBase(const char *_name, Object *_owner, const char *_typ
 	name(_owner ? _owner->GetName() + string(".") + string(_name) : _name), 
 	description(_description ? _description : ""),
 	type(_type ? _type : ""),
-	owner(_owner)
+	owner(_owner),
+	enumerated_values()
 {
 	ServiceManager::Register(this);
 }
@@ -98,12 +99,39 @@ bool ParameterBase::HasEnumeratedValues() const {
 	return !enumerated_values.empty();
 }
 
-void ParameterBase::GetEnumeratedValues(vector<string> &values) const {
+bool ParameterBase::HasEnumeratedValue(const char * value) const {
+	vector<string>::const_iterator iter;
 
+	for(iter = enumerated_values.begin(); iter != enumerated_values.end(); iter++) {
+		if(iter->compare(value) == 0) {
+			return true;
+		}
+	}
+	return false;
 }
 
-void ParameterBase::AddEnumeratedValue(const char *value) {
+void ParameterBase::GetEnumeratedValues(vector<string> &values) const {
+	if(!HasEnumeratedValues()) return;
+	for(int i = 0; i < enumerated_values.size(); i++) {
+		values.push_back(enumerated_values[i]);
+	}
+}
 
+bool ParameterBase::AddEnumeratedValue(const char *value) {
+	if(HasEnumeratedValue(value)) return false;
+	enumerated_values.push_back(string(value));
+	return true;
+}
+
+bool ParameterBase::RemoveEnumeratedValue(const char *value) {
+	vector<string>::iterator it;
+	for(it = enumerated_values.begin(); it != enumerated_values.end(); it++) {
+		if(it->compare(value) == 0) {
+			enumerated_values.erase(it);
+			return true;
+		}
+	}
+	return false;
 }
 
 ParameterBase::operator bool () const { return false; }

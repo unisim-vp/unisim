@@ -49,6 +49,9 @@ using namespace unisim::component::cxx::pci;
 template <> Parameter<PCISpace>::Parameter(const char *_name, Object *_object, PCISpace& _storage, const char *_description) :
 	ParameterBase(_name, _object, "pci space", _description), storage(&_storage)
 {
+	AddEnumeratedValue("mem");
+	AddEnumeratedValue("i/o");
+	AddEnumeratedValue("cfg");
 }
 
 template <> Parameter<PCISpace>::operator bool () const {

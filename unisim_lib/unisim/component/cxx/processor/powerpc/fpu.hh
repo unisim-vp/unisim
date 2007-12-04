@@ -41,6 +41,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/kernel/service/service.hh>
 #include <map>
+#include <string>
 
 namespace unisim {
 namespace component {
@@ -49,6 +50,7 @@ namespace processor {
 namespace powerpc {
 
 using std::map;
+using std::string;
 using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::Registers;
 using unisim::util::debug::Register;

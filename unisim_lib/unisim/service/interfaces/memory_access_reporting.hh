@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
 #ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
@@ -50,6 +51,13 @@ public:
 
 	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
 	virtual void ReportFinishedInstruction(ADDRESS next_addr) = 0;
+};
+
+class MemoryAccessReportingControl
+{
+public:
+	virtual void RequiresMemoryAccessReporting(bool report) = 0;
+	virtual void RequiresFinishedInstructionReporting(bool report) = 0;
 };
 
 } // end of namespace interfaces

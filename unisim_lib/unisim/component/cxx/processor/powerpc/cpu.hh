@@ -77,6 +77,7 @@ using unisim::util::arithmetic::RotateLeft;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::component::cxx::cache::BusInterface;
@@ -149,6 +150,7 @@ class CPU :
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
+	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<typename CONFIG::address_t> >,
 	public Service<unisim::service::interfaces::Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
@@ -310,6 +312,7 @@ public:
 	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 	ServiceExport<Synchronizable> synchronizable_export;
+	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
 	ServiceImport<Loader<physical_address_t> > kernel_loader_import;
 	ServiceImport<DebugControl<address_t> > debug_control_import;
@@ -360,6 +363,13 @@ public:
 	//=====================================================================
 	
 	virtual void Fetch(void *buffer, address_t addr, uint32_t size); // called by inherited class Decoder
+
+	//=====================================================================
+	//=             memory access reporting control interface methods     =
+	//=====================================================================
+
+	virtual void RequiresMemoryAccessReporting(bool report);
+	virtual void RequiresFinishedInstructionReporting(bool report) ;
 
 	//=====================================================================
 	//=                        Interface with outside                     =
@@ -1404,6 +1414,11 @@ private:
 	inline bool IsMPC74X() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745; }
 	inline bool IsMPC75X() { return CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
 	inline bool IsMPC7X5() { return CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC755; }
+
+    /** indicates if the memory accesses require to be reported */
+    bool requires_memory_access_reporting;
+    /** indicates if the finished instructions require to be reported */
+    bool requires_finished_instruction_reporting;
 
 protected:
 	//=====================================================================

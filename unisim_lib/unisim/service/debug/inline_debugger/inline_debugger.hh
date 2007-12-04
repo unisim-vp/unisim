@@ -60,6 +60,7 @@ namespace inline_debugger {
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
@@ -107,6 +108,7 @@ template <class ADDRESS>
 class InlineDebugger :
 	public Service<DebugControl<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Client<MemoryAccessReportingControl>,
 	public Client<Disassembly<ADDRESS> >,
 	public Client<Memory<ADDRESS> >,
 	public Client<Registers>,
@@ -118,6 +120,7 @@ public:
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
+	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 	
@@ -132,6 +135,7 @@ public:
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 
 	virtual void Trap();
+	virtual bool Setup();
 	virtual void OnDisconnect();
 private:
 	BreakpointRegistry<ADDRESS> breakpoint_registry;

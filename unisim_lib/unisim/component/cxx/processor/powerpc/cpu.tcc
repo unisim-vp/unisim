@@ -68,6 +68,7 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
 	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
 	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
+	Service<MemoryAccessReportingControl>(name, parent),
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<unisim::service::interfaces::Registers>(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
@@ -84,6 +85,7 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	memory_export("memory-export", this),
 	memory_injection_export("memory-injection-export", this),
 	cpu_linux_os_export("cpu-linux-os-export", this),
+	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
 	kernel_loader_import("kernel-loader-import", this),
 	debug_control_import("debug-control-import", this),
 	memory_access_reporting_import("memory-access-reporting-import", this),
@@ -109,6 +111,8 @@ CPU<CONFIG>::CPU(const char *name, BusInterface<physical_address_t> *bus_interfa
 	internal_itlb_power_mode_import("internal-itlb-power-mode-import", this),
 	internal_dtlb_power_mode_import("internal-dtlb-power-mode-import", this),
 	synchronizable_export("synchronizable-export", this),
+	requires_memory_access_reporting(true),
+	requires_finished_instruction_reporting(true),
 	dl1("dl1", CONFIG::L2_ENABLE ? &l2 : 0, bus_interface, this),
 	il1("il1", CONFIG::L2_ENABLE ? &l2 : 0, bus_interface, this),
 	l2("l2", 0, bus_interface, this),
@@ -428,8 +432,34 @@ bool CPU<CONFIG>::Setup()
 
 		if(CONFIG::HAS_L2CR_L2E) SetL2CR_L2E(); // enable L2 cache
 	}
+
+	if(!memory_access_reporting_import) {
+		requires_memory_access_reporting = false;
+		requires_finished_instruction_reporting = false;
+	}
+	
 	return true;
 }
+
+//=====================================================================
+//=         memory access reporting control interface methods   START =
+//=====================================================================
+
+template<class CONFIG>
+void 
+CPU<CONFIG>::RequiresMemoryAccessReporting(bool report) {
+	requires_memory_access_reporting = report;
+}
+
+template<class CONFIG>
+void 
+CPU<CONFIG>::RequiresFinishedInstructionReporting(bool report) {
+	requires_finished_instruction_reporting = report;
+}
+
+//=====================================================================
+//=         memory access reporting control interface methods   END   =
+//=====================================================================
 
 template <class CONFIG>
 void CPU<CONFIG>::OnDisconnect()
@@ -1893,11 +1923,14 @@ void CPU<CONFIG>::Step()
 			insn = mmu.ReadInsnMemory(addr, GetPrivilegeLevel(), physical_addr);
 		}
 
-		if(memory_access_reporting_import)
+		if(requires_memory_access_reporting) 
 		{
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_INSN, addr, 4);
+			if(memory_access_reporting_import)
+			{
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_INSN, addr, 4);
+			}
 		}
-
+		
 		if(CONFIG::IABR_ENABLE && CONFIG::HAS_IABR)
 		{
 			/* Check for instruction address breakpoint */
@@ -1980,9 +2013,12 @@ void CPU<CONFIG>::Step()
 	/* update the instruction counter */
 	instruction_counter++;
 	
-	if(memory_access_reporting_import)
+	if(requires_finished_instruction_reporting)
 	{
-		memory_access_reporting_import->ReportFinishedInstruction(GetNIA());
+		if(memory_access_reporting_import)
+		{
+			memory_access_reporting_import->ReportFinishedInstruction(GetNIA());
+		}
 	}
 
 	if(instruction_counter >= max_inst) Stop(0);
@@ -2444,11 +2480,14 @@ void CPU<CONFIG>::ReadMemoryBuffer(address_t addr, void *buffer, uint32_t size)
 {
 	mmu.ReadDataMemory(addr, buffer, size, GetPrivilegeLevel());
 
-	if(memory_access_reporting_import)
+	if(requires_memory_access_reporting) 
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_DATA, addr, size);
+		if(memory_access_reporting_import)
+		{
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_DATA, addr, size);
+		}
 	}
-
+	
 	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
 	{
 		if(GetDABR_DR() && ((addr >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT())
@@ -2463,11 +2502,14 @@ void CPU<CONFIG>::WriteMemoryBuffer(address_t addr, const void *buffer, uint32_t
 {
 	mmu.WriteDataMemory(addr, buffer, size, GetPrivilegeLevel());
 
-	if(memory_access_reporting_import)
+	if(requires_memory_access_reporting) 
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE, MemoryAccessReporting<address_t>::MT_DATA, addr, size);
+		if(memory_access_reporting_import)
+		{
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE, MemoryAccessReporting<address_t>::MT_DATA, addr, size);
+		}
 	}
-
+	
 	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
 	{
 		if(GetDABR_DW() && ((addr >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT())

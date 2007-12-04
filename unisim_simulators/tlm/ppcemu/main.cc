@@ -557,6 +557,8 @@ int sc_main(int argc, char *argv[])
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
+		inline_debugger->memory_access_reporting_control_import >>
+			cpu->memory_access_reporting_control_export;
 	}
 	else if(gdb_server)
 	{
@@ -565,6 +567,8 @@ int sc_main(int argc, char *argv[])
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
+		gdb_server->memory_access_reporting_control_import >>
+			cpu->memory_access_reporting_control_export;
 	}
 
 	if(estimate_power)
