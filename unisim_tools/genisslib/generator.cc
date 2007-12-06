@@ -338,8 +338,10 @@ Generator::isa_operations_decl( Product_t& _product ) const {
       } else if( bftype == BitField_t::SubOp ) {
         SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
         SourceCode_t const* nmspace =  sobf.m_subdecoder->m_namespace;
+        SourceCode_t const* tpscheme =  sobf.m_subdecoder->m_template_scheme;
         _product.usercode( nmspace->m_fileloc, " %s::Operation", nmspace->m_content.str() );
-        _product.template_abbrev( isa().m_tparams );
+        if( tpscheme )
+          _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
         _product.code( "* %s;\n", sobf.m_symbol.str() );
       }
     }
@@ -528,7 +530,7 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
       }
     }
     
-    insn_decode_impl( _product, **op, "code", "addr", isa().m_tparams );
+    insn_decode_impl( _product, **op, "code", "addr" );
     _product.code( "}\n\n" );
   }
 }

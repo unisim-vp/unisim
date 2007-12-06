@@ -29,13 +29,13 @@
 struct SubDecoder_t : virtual ReferenceCounter {
   ConstStr_t                    m_symbol;            /**< The associated symbol */
   Ptr_t<SourceCode_t>           m_namespace;         /**< The namespace in which the decoder is defined */
+  Ptr_t<SourceCode_t>           m_template_scheme;   /**< The template scheme of the decoder */
   unsigned int                  m_minsize;           /**< The minimum size (in bytes) of the decoder's operations */
   unsigned int                  m_maxsize;           /**< The maximum size (in bytes) of the decoder's operations */
   FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was declared */
   
-  SubDecoder_t( ConstStr_t _symbol, SourceCode_t* _namespace,
-                unsigned int _minsize, unsigned int _maxsize,
-                FileLoc_t const& _fileloc );
+  SubDecoder_t( ConstStr_t _symbol, SourceCode_t* _namespace, SourceCode_t* _template_scheme,
+                unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc );
   ~SubDecoder_t();
   
 };

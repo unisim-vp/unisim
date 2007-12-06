@@ -38,12 +38,10 @@ using namespace std;
     @param lineno a line number where the subdecoder was found
     @return an subdecoder object
 */
-SubDecoder_t::SubDecoder_t( ConstStr_t _symbol, SourceCode_t* _namespace,
-                            unsigned int _minsize, unsigned int _maxsize,
-                            FileLoc_t const& _fileloc )
-  : m_symbol( _symbol ), m_namespace( _namespace ),
-    m_minsize( _minsize ), m_maxsize( _maxsize ),
-    m_fileloc( _fileloc )
+SubDecoder_t::SubDecoder_t( ConstStr_t _symbol, SourceCode_t* _namespace, SourceCode_t* _template_scheme,
+                            unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc )
+  : m_symbol( _symbol ), m_namespace( _namespace ), m_template_scheme( _template_scheme ),
+    m_minsize( _minsize ), m_maxsize( _maxsize ), m_fileloc( _fileloc )
 {
   assert( m_minsize <= m_maxsize  );
 }

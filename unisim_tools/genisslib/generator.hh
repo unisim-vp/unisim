@@ -60,9 +60,7 @@ struct Generator {
   virtual ConstStr_t                  insn_id_expr( char const* _addrname ) const = 0;
   virtual void                        insn_match_ifexpr( Product_t& _product, char const* _code, char const* _mask, char const* _bits ) const = 0;
   virtual void                        insn_unchanged_expr( Product_t& _product, char const* _old, char const* _new ) const = 0;
-  virtual void                        insn_decode_impl( Product_t& _product, Operation_t const& _op,
-                                                        char const* _codename, char const* _addrname,
-                                                        Vect_t<CodePair_t> const& _tparams ) const = 0;
+  virtual void                        insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const = 0;
   virtual void                        additional_impl_includes( Product_t& _product ) const = 0;
   virtual void                        additional_decl_includes( Product_t& _product ) const = 0;
 };

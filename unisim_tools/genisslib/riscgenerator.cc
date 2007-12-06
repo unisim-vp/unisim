@@ -213,9 +213,7 @@ RiscGenerator::codetype_decl( Product_t& _product ) const {
 }
 
 void
-RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op,
-                                 char const* _codename, char const* _addrname,
-                                 Vect_t<CodePair_t> const& _tparams ) const
+RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
   unsigned int shift = opcode( &_op ).m_size;
   for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf ) {

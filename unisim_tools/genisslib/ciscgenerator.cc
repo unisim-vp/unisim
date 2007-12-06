@@ -433,17 +433,17 @@ CiscGenerator::insn_match_ifexpr( Product_t& _product, char const* _code, char c
 }
 
 void
-CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op,
-                                 char const* _codename, char const* _addrname,
-                                 Vect_t<CodePair_t> const& _tparams ) const
+CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const
 {
   _product.code( "CodeType _code_( %s );\n", _codename );
   for( BFWordIterator bfword( _op.m_bitfields ); bfword.next(); ) {
     if( (**bfword.m_left).type() == BitField_t::SubOp ) {
       SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bfword.m_left );
       ConstStr_t nmspace = sobf.m_subdecoder->m_namespace->m_content;
+      SourceCode_t const* template_scheme = sobf.m_subdecoder->m_template_scheme;
       _product.code( "%s = %s::sub", sobf.m_symbol.str(), nmspace.str() );
-      _product.template_abbrev( _tparams );
+      if( template_scheme )
+        _product.usercode( template_scheme->m_fileloc, "< %s >", template_scheme->m_content.str() );
       _product.code( "::decoder.NCDecode( %s, %s::CodeType( _code_.str, _code_.size ) );\n", _addrname, nmspace.str() );
       if( bfword.m_rewind == 0 )
         _product.code( "_code_.pop( %s->GetEncoding().size );\n", sobf.m_symbol.str() );

@@ -128,6 +128,7 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
 %type<operation> operation
 %type<sourcecode> var_init
 %type<param_list> template_declaration
+%type<sourcecode> template_scheme
 
 %%
 
@@ -148,18 +149,28 @@ namespace_list:
 ;
 
 subdecoder:
-    TOK_SUBDECODER TOK_IDENT TOK_SOURCE_CODE '[' TOK_INTEGER ';' TOK_INTEGER ']'
+    TOK_SUBDECODER TOK_IDENT TOK_SOURCE_CODE template_scheme '[' TOK_INTEGER ';' TOK_INTEGER ']'
 {
   ConstStr_t symbol = ConstStr_t( $2, Scanner::symbols );
   SourceCode_t* nmspace = $3;
-  unsigned int minsize = $5, maxsize = $7;
+  SourceCode_t* template_scheme = $4;
+  unsigned int minsize = $6, maxsize = $8;
   
   if( minsize >= maxsize ) {
     Scanner::fileloc.err( "error: subdecoder operation range is reversed" );
     YYABORT;
   }
-  SubDecoder_t* subdecoder = new SubDecoder_t( symbol, nmspace, minsize, maxsize, Scanner::fileloc );
+  SubDecoder_t* subdecoder = new SubDecoder_t( symbol, nmspace, template_scheme, minsize, maxsize, Scanner::fileloc );
   Scanner::isa().m_subdecoders.append( subdecoder );
+}
+
+template_scheme:
+{
+  $$ = 0;
+}
+  | '<' TOK_SOURCE_CODE '>'
+{
+  $$ = $2;
 }
 
 decoder:
