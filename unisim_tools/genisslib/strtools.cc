@@ -126,7 +126,7 @@ namespace Str {
       char storage[capacity];
       /* Try to print in the allocated space. */
       va_start( ap, _fmt );
-      intptr_t size = vsnprintf( storage, capacity, _fmt, ap );
+      size = vsnprintf( storage, capacity, _fmt, ap );
       va_end( ap );
       /* If it worked, return */
       if( size >= 0 and size < capacity )
