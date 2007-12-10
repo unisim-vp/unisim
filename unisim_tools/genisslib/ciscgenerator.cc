@@ -77,18 +77,17 @@ CiscGenerator::OpCode_t::optimize() {
 CiscGenerator::OpCode_t::Location_t
 CiscGenerator::OpCode_t::locate( CiscGenerator::OpCode_t const& _that ) const {
   /* this is named A and _that is named B */
-  unsigned int minsize = std::min( m_size, _that.m_size );
+  unsigned int asize = m_size, bsize = _that.m_size, maxsize = std::max( asize, bsize );
   bool some_a_outside_B = false, some_b_outside_A = false;
 
-  for( unsigned int idx = 0; idx < minsize; ++ idx ) {
-    if( (((this->m_mask[idx]) & (_that.m_mask[idx])) & ((this->m_bits[idx]) ^ (_that.m_bits[idx]))) != 0 )
-      return Outside;
+  for( unsigned int idx = 0; idx < maxsize; ++ idx ) {
+    uint8_t amask, abits, bmask, bbits;
+    if( idx < asize ) { amask = this->m_mask[idx]; abits = this->m_bits[idx]; } else { amask = 0; abits = 0; }
+    if( idx < bsize ) { bmask = _that.m_mask[idx]; bbits = _that.m_bits[idx]; } else { bmask = 0; bbits = 0; }
     
-    if( ~(this->m_mask[idx]) & (_that.m_mask[idx]) )
-      some_a_outside_B = true;
-
-    if( (this->m_mask[idx]) & ~(_that.m_mask[idx]) )
-      some_b_outside_A = true;
+    if( (((amask) & (bmask)) & ((abits) ^ (bbits))) != 0 ) return Outside;
+    if( ~(amask) & (bmask) ) some_a_outside_B = true;
+    if( (amask) & ~(bmask) ) some_b_outside_A = true;
   }
   
   Location_t table[] = {Equal, Inside, Contains, Overlaps};
