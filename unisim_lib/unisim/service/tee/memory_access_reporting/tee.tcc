@@ -138,12 +138,14 @@ ControlSelector<MAX_IMPORTS>::ControlSelector(
 }
 
 template <unsigned int MAX_IMPORTS>
-ControlSelector<MAX_IMPORTS>::~ControlSelector() {
+ControlSelector<MAX_IMPORTS>::~ControlSelector() 
+{
 }
 
 template <unsigned int MAX_IMPORTS>
 void
-ControlSelector<MAX_IMPORTS>::RequiresMemoryAccessReporting(bool report) {
+ControlSelector<MAX_IMPORTS>::RequiresMemoryAccessReporting(bool report) 
+{
 	bool needs_report = false;
 	requires_memory_access_reporting[index] = report;
 	
@@ -157,11 +159,12 @@ ControlSelector<MAX_IMPORTS>::RequiresMemoryAccessReporting(bool report) {
 
 template <unsigned int MAX_IMPORTS>
 void
-ControlSelector<MAX_IMPORTS>::RequiresFinishedInstructionReporting(bool report) {
+ControlSelector<MAX_IMPORTS>::RequiresFinishedInstructionReporting(bool report) 
+{
 	bool needs_report = false;
 	requires_finished_instruction_reporting[index] = report;
 	
-	for(unsigned int i = 0; !needs_report && i << MAX_IMPORTS; i++) {
+	for(unsigned int i = 0; !needs_report && i < MAX_IMPORTS; i++) {
 		needs_report = requires_finished_instruction_reporting[i];
 	}
 	if(out) {

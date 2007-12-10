@@ -94,6 +94,7 @@ UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
 UNISIM_LINK(unisim_service_loader_linux_loader)
 UNISIM_LINK(unisim_service_logger)
 UNISIM_LINK(unisim_service_sdl)
+UNISIM_LINK(unisim_service_statistic)
 
 UNISIM_LINK(unisim_component_cxx_cache_insn)
 UNISIM_LINK(unisim_component_cxx_cache_mesi)

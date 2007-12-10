@@ -48,6 +48,7 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/logger.hh"
+//#include "unisim/service/interfaces/statistic_reporting.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
@@ -101,6 +102,8 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
+//using unisim::service::interfaces::StatisticReporting;
+//using unisim::service::interfaces::StatisticReportingControl;
 //using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
@@ -139,6 +142,8 @@ class CPU :
     public Service<Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Client<Memory<typename CONFIG::address_t> >,
+//	public Client<StatisticReporting>,
+//	public Service<StatisticReportingControl>,
 	public Client<Logger> {
 private:
 	typedef typename CONFIG::address_t address_t;
@@ -174,6 +179,7 @@ public:
 	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<address_t> > memory_import;
 	ServiceImport<LinuxOS> linux_os_import;
+//	ServiceImport<Statistics> statistics_import;
 	ServiceImport<Logger> logger_import;
 	
 	ServiceImport<Logger> cache_l1_logger_import;
@@ -784,100 +790,107 @@ private:
 	/** itcm for the arm966e_s */
 	itcm_t *itcm;
 	
-	/** the instruction counter */
-	uint64_t instruction_counter;
+//	/** the instruction counter */
+//	uint64_t instruction_counter;
 	
 	/** The registers interface for debugging purpose */
 	map<string, Register *> registers_registry;       
 
     /* gpr organization per running mode:
-     * - user:           0-14 (R0-R14),                  15 (PC)
-     * - system:         0-14 (R0-R14),                  15 (PC)
-     * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
-     * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
-     * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
-     * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
-     * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
-    */
-    /* The arm has only 31 registers, but we are using an 
-     *   additional one to store the NextPC, which does not really
-     *   exist */
-    const static uint32_t num_phys_gprs = 32;
-    const static uint32_t num_log_gprs = 16;
-    reg_t phys_gpr[num_phys_gprs]; /* the physical registers */
-    reg_t gpr[num_log_gprs];
-    /* all the running modes share the same CPSR register
-     * CPSR organization:
-     * - bit 31: N
-     * - bit 30: Z
-     * - bit 29: C
-     * - bit 28: V
-     * - bit 27: Q
-     * - bits 26-8: DNM(RAZ) not used in current arm versions
-     * - bit 7: I
-     * - bit 6: F
-     * - bit 5: T
-     * - bits 4-0: M bits, running mode, see bellow
-     * Bits 4 to 0 indicate the processor current running mode.
-     *   Accepted running modes are:
-     * - 0b10000: User
-     * - 0b10001: FIQ (Fast Interrupt)
-     * - 0b10010: IRQ (Interrupt) 
-     * - 0b10011: Supervisor
-     * - 0b10111: Abort
-     * - 0b11011: Undefined
-     * - 0b11111: System
-     */
-    uint32_t cpsr;
-    /* SPSR organization per running mode:
-       - user:           --
-       - system:         --
-       - supervisor:     0
-       - abort:          1
-       - undefined:      2
-       - interrupt:      3
-       - fast interrupt: 4
-    */
-    uint32_t spsr[5];
-    const static uint32_t num_phys_spsrs = 5;
-    /* fake floating point register */
-    uint64_t fake_fpr[8];
-    uint32_t fake_fps;
+	 * - user:           0-14 (R0-R14),                  15 (PC)
+	 * - system:         0-14 (R0-R14),                  15 (PC)
+	 * - supervisor:     0-12 (R0-R12), 16-17 (R13-R14), 15 (PC)
+	 * - abort:          0-12 (R0-R12), 18-19 (R13-R14), 15 (PC)
+	 * - undefined:      0-12 (R0-R12), 20-21 (R13-R14), 15 (PC)
+	 * - interrupt:      0-12 (R0-R12), 22-23 (R13-R14), 15 (PC)
+	 * - fast interrupt: 0-7 (R0-R7),   24-30 (R8-R14),  15 (PC)
+	 */
+	/* The arm has only 31 registers, but we are using an 
+	 *   additional one to store the NextPC, which does not really
+	 *   exist */
+	const static uint32_t num_phys_gprs = 32;
+	const static uint32_t num_log_gprs = 16;
+	reg_t phys_gpr[num_phys_gprs]; /* the physical registers */
+	reg_t gpr[num_log_gprs];
+	/* all the running modes share the same CPSR register
+	 * CPSR organization:
+	 * - bit 31: N
+	 * - bit 30: Z
+	 * - bit 29: C
+	 * - bit 28: V
+	 * - bit 27: Q
+	 * - bits 26-8: DNM(RAZ) not used in current arm versions
+	 * - bit 7: I
+	 * - bit 6: F
+	 * - bit 5: T
+	 * - bits 4-0: M bits, running mode, see bellow
+	 * Bits 4 to 0 indicate the processor current running mode.
+	 *   Accepted running modes are:
+	 * - 0b10000: User
+	 * - 0b10001: FIQ (Fast Interrupt)
+	 * - 0b10010: IRQ (Interrupt) 
+	 * - 0b10011: Supervisor
+	 * - 0b10111: Abort
+	 * - 0b11011: Undefined
+	 * - 0b11111: System
+	 */
+	uint32_t cpsr;
+	/* SPSR organization per running mode:
+	 - user:           --
+	 - system:         --
+	 - supervisor:     0
+	 - abort:          1
+	 - undefined:      2
+	 - interrupt:      3
+	 - fast interrupt: 4
+	 */
+	uint32_t spsr[5];
+	const static uint32_t num_phys_spsrs = 5;
+	/* fake floating point register */
+	uint64_t fake_fpr[8];
+	uint32_t fake_fps;
 
-    /** the condition table used to check condition in the instructions */
-    uint16_t check_condition_table[16];
-    bool CheckCondition(unsigned int cond, unsigned int cpsr_val);
-    void InitializeCheckConditionTable();
+	/** the condition table used to check condition in the instructions */
+	uint16_t check_condition_table[16];
+	bool CheckCondition(unsigned int cond, unsigned int cpsr_val);
+	void InitializeCheckConditionTable();
 
-    /** variable signaling if the machine is running */
-    bool running;
-    
-    /** the cache level 1 if data and instruction caches are unified
-     *  and data cache level 1 if not */
-    CacheInterfaceWithMemoryService<typename CONFIG::cache_l1_t::address_t> *cache_l1;
-    /** the instruction cache level 1 if instruction and data cache are not unified */
-    CacheInterfaceWithMemoryService<typename CONFIG::insn_cache_l1_t::address_t> *cache_il1;
-    /** the unified cache level 2 */
-    CacheInterfaceWithMemoryService<typename CONFIG::cache_l2_t::address_t> *cache_l2;
-    
-    /** this method initialize the cache/mmu/cp15 memory system */
-    void CreateMemorySystem();
+	/** variable signaling if the machine is running */
+	bool running;
 
-    /** this method creates the different coprocessors.
-     * This method needs to be called before CreateMemorySystem */
-    void CreateCpSystem();
-    
-    /** this method creates the different TCM components.
-     * This method needs to be called before CreateMemorySystem 
-     * and CreateCpSystem */
-    void CreateTCMSystem();
-    
-    /** indicates if the memory accesses require to be reported */
-    bool requires_memory_access_reporting;
-    /** indicates if the finished instructions require to be reported */
-    bool requires_finished_instruction_reporting;
-    
+	/** the cache level 1 if data and instruction caches are unified
+	 *  and data cache level 1 if not */
+	CacheInterfaceWithMemoryService<typename CONFIG::cache_l1_t::address_t>
+			*cache_l1;
+	/** the instruction cache level 1 if instruction and data cache are not unified */
+	CacheInterfaceWithMemoryService<typename CONFIG::insn_cache_l1_t::address_t>
+			*cache_il1;
+	/** the unified cache level 2 */
+	CacheInterfaceWithMemoryService<typename CONFIG::cache_l2_t::address_t>
+			*cache_l2;
+
+	/** this method initialize the cache/mmu/cp15 memory system */
+	void CreateMemorySystem();
+
+	/** this method creates the different coprocessors.
+	 * This method needs to be called before CreateMemorySystem */
+	void CreateCpSystem();
+
+	/** this method creates the different TCM components.
+	 * This method needs to be called before CreateMemorySystem 
+	 * and CreateCpSystem */
+	void CreateTCMSystem();
+
+	/** indicates if the memory accesses require to be reported */
+	bool requires_memory_access_reporting;
+	/** indicates if the finished instructions require to be reported */
+	bool requires_finished_instruction_reporting;
+
 protected:
+	/** the instruction counter */
+	uint64_t instruction_counter;
+	
+	uint32_t statistics_id;
 	// endianess parameter
 	endian_type default_endianess;
 	Parameter<endian_type> param_default_endianess;

@@ -71,6 +71,7 @@ UNISIM_RELEASE
 UNISIM_CHECK_READLINE
 UNISIM_CHECK_LIBXML2
 UNISIM_CHECK_SYSTEMC
+UNISIM_CHECK_BOOST_THREAD
 
 UNISIM_CHECK_UNISIM_LIB
 
@@ -92,6 +93,7 @@ UNISIM_LINK(unisim_service_loader_pmac_bootx)
 UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
 UNISIM_LINK(unisim_service_loader_linux_loader)
 UNISIM_LINK(unisim_service_logger)
+UNISIM_LINK(unisim_service_statistic)
 UNISIM_LINK(unisim_service_sdl)
 
 UNISIM_LINK(unisim_component_cxx_cache_insn)

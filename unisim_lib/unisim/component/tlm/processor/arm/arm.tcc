@@ -74,6 +74,10 @@ template<class CONFIG>
 ARM<CONFIG> :: 
 ARM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
+	Client<StatisticReporting>(name, parent),
+	Service<StatisticReportingControl>(name, parent),
+	statistic_reporting_import("statistic_reporting_import", this),
+	statistic_reporting_control_export("statistic_reporting_control_export", this),
 	sc_module(name),
 	CPU<CONFIG>(name, this, parent),
 	master_port("master-port"),
@@ -88,6 +92,9 @@ ARM(const sc_module_name& name, Object *parent) :
 	ipc(1.0),
 	cpu_cycle_time_int(0),
 	bus_cycle_time_int(0),
+	stat_reporting_period(),
+	last_stat_reporting_time(),
+	last_instruction_counter(0),
 	param_nice_time("nice-time", this, nice_time_int),
 	param_ipc("ipc", this, ipc),
 	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),
@@ -97,7 +104,13 @@ ARM(const sc_module_name& name, Object *parent) :
 	verbose_tlm_run_thread(false),
 	param_verbose_tlm_run_thread("verbose-tlm-run-thread", this, verbose_tlm_run_thread),
 	verbose_tlm_commands(false),
-	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands) {
+	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands),
+	stat_name_instruction_counter("instruction-counter"),
+	stat_requires_instruction_counter(true),
+	stat_name_diff_instruction_counter("diff-instruction-counter"),
+	stat_requires_diff_instruction_counter(true),
+	stat_name_ipc("ipc"),
+	stat_requires_ipc(true) {
 	SC_HAS_PROCESS(ARM);
 	
 	SC_THREAD(Run);
@@ -163,6 +176,8 @@ Setup() {
 	
 	cpu_cycle_time = sc_time((double)cpu_cycle_time_int, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+	if(stat_reporting_period.value() == 0) 
+		stat_reporting_period = sc_time((double)nice_time_int, SC_PS);
 	nice_time = sc_time((double)nice_time_int, SC_PS);
 	if(CONFIG::DEBUG_ENABLE && inherited::verbose_setup && inherited::logger_import) {
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -172,7 +187,42 @@ Setup() {
 			<< "Setting IPC to " << ipc << Endl
 			<< EndDebugInfo;
 	}
+	
+	/* setup statistic reporting */
+	if(statistic_reporting_import) {
+		stat_handler_instruction_counter = 
+			statistic_reporting_import->RegisterStat(stat_name_instruction_counter.c_str());
+		stat_handler_diff_instruction_counter =
+			statistic_reporting_import->RegisterStat(stat_name_diff_instruction_counter.c_str());
+		stat_handler_ipc =
+			statistic_reporting_import->RegisterStat(stat_name_ipc.c_str());
+	}
 	return true;
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG> ::
+SetPreferredStatReportingPeriod(uint64_t time_hint) {
+	stat_reporting_period = sc_time((double)time_hint, SC_PS);
+}
+
+template<class CONFIG>
+void 
+ARM<CONFIG> ::
+RequiresStatReporting(const char *name, bool required) {
+	if(stat_name_instruction_counter.compare(name) == 0) {
+		stat_requires_instruction_counter = required;
+		return;
+	}
+	if(stat_name_diff_instruction_counter.compare(name) == 0) {
+		stat_requires_diff_instruction_counter = required;
+		return;
+	}
+	if(stat_name_ipc.compare(name) == 0) {
+		stat_requires_ipc = required;
+		return;
+	}
 }
 
 template<class CONFIG>
@@ -225,9 +275,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::Synchronize()
 {
-//	sc_time time_spent = cpu_sctime - last_cpu_sctime;
-//	last_cpu_sctime = cpu_sctime;
-//	wait(time_spent);
+	sc_time time_spent = cpu_time - last_cpu_time;
+	last_cpu_time = cpu_time;
+	wait(time_spent);
 //	next_nice_sctime = sc_time_stamp() + nice_sctime;
 }
 
@@ -236,35 +286,20 @@ void
 ARM<CONFIG> :: 
 Run() {
 	sc_time time_per_instruction = cpu_cycle_time * ipc;
-		
+	sc_time stat_refresh_time = stat_reporting_period;
+//	sc_time stats_refresh_time_step = stats_refresh_time;
+	
 	while(1) {
+		if(sc_time_stamp() > stat_refresh_time) {
+			stat_refresh_time = sc_time_stamp() + stat_reporting_period;
+			SendStats();
+		}
 		if(cpu_time >= bus_time) {
 			bus_time += bus_cycle_time;
-			if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
-				(*inherited::logger_import) << DebugInfo << LOCATION
-					<< "Crossing bus cycle"
-					<< Endl << EndDebugInfo;
 			CPU<CONFIG>::OnBusCycle();
 			if(cpu_time >= next_nice_time) {
-				if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
-					(*inherited::logger_import) << DebugInfo << LOCATION
-						<< "Nicing START"
-						<< Endl << EndDebugInfo;
+				next_nice_time = cpu_time + nice_time;
 				Synchronize();
-				if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
-					(*inherited::logger_import) << DebugInfo << LOCATION
-						<< "Nicing STOP"
-						<< Endl << EndDebugInfo;
-//				next_nice_time += nice_time;
-//				if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
-//					(*inherited::logger_import) << DebugInfo << LOCATION
-//						<< "Nicing START"
-//						<< Endl << EndDebugInfo;
-//				wait(SC_ZERO_TIME); // be nice with other threads: leave host execution resources
-//				if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
-//					(*inherited::logger_import) << DebugInfo << LOCATION
-//						<< "Nicing STOP"
-//						<< Endl << EndDebugInfo;
 			}
 		}
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
@@ -630,6 +665,36 @@ PrZeroBlock(address_t addr) {
 			<< Endl << EndDebugError;
 	sc_stop();
 	wait();
+}
+
+template<class CONFIG>
+void
+ARM<CONFIG>::
+SendStats() {
+	sc_time cur_sc_time = sc_time_stamp();
+	uint64_t cur_time = cur_sc_time.value();
+	if(statistic_reporting_import) {
+		uint64_t diff_instruction_counter =
+			inherited::instruction_counter - last_instruction_counter;
+		sc_time diff_stat_reporting_time =
+			cur_sc_time - last_stat_reporting_time;
+		last_stat_reporting_time = cur_sc_time;
+		double cycle_count = diff_stat_reporting_time/cpu_cycle_time;
+		last_instruction_counter = inherited::instruction_counter;
+		double ipc = (double)diff_instruction_counter/cycle_count;
+		if(stat_requires_instruction_counter)
+			statistic_reporting_import->ReportStat(stat_handler_instruction_counter,
+					cur_time,
+					inherited::instruction_counter);
+		if(stat_requires_ipc)
+			statistic_reporting_import->ReportStat(stat_handler_ipc,
+					cur_time,
+					ipc);
+		if(stat_requires_diff_instruction_counter)
+			statistic_reporting_import->ReportStat(stat_handler_diff_instruction_counter,
+					cur_time,
+					diff_instruction_counter);
+	}
 }
 
 } // end of namespace arm

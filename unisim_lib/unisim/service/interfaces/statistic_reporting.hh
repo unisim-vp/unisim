@@ -29,67 +29,52 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_HH__
-#define __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_HH__
 
-#include <unisim/util/debug/breakpoint.hh>
-#include <list>
+#ifndef __UNISIM_SERVICE_INTERFACES_STATISTIC_REPORTING_HH__
+#define __UNISIM_SERVICE_INTERFACES_STATISTIC_REPORTING_HH__
+
+#include <inttypes.h>
 
 namespace unisim {
-namespace util {
-namespace debug {
+namespace service {
+namespace interfaces {
 
-using std::list;
-	
-template <class ADDRESS>
-class BreakpointMapPage
-{
+class StatisticReporting {
 public:
-	BreakpointMapPage(ADDRESS addr);
-	~BreakpointMapPage();
-
-	void SetBreakpoint(uint32_t offset);
-	void RemoveBreakpoint(uint32_t offset);
-	bool HasBreakpoint(uint32_t offset);
-
-	static const uint32_t NUM_BREAKPOINTS_PER_PAGE = 16 * 8;
-	ADDRESS base_addr;			/*< base effective address */
-	uint32_t *map;			/*< an array of breakpoint masks for 32 consecutive effective addresses */
-	BreakpointMapPage *next;	/*< next breakpoint map page with the same hash index */
+	typedef uint32_t stat_handle_t;
+	virtual stat_handle_t RegisterStat(const char *name) = 0;
+	virtual void ReportStat(stat_handle_t handle,
+			uint64_t time,
+			uint64_t value) = 0;
+	virtual void ReportStat(stat_handle_t handle,
+			uint64_t time,
+			int64_t value) = 0;
+	virtual void ReportStat(stat_handle_t handle,
+			uint64_t time,
+			double value) = 0;
 };
 
-template <class ADDRESS>
-class BreakpointRegistry
-{
+class StatisticReportingControl {
 public:
-	static const uint32_t NUM_HASH_TABLE_ENTRIES = 16;
-
-	BreakpointRegistry();
-	virtual ~BreakpointRegistry();
-
-	bool SetBreakpoint(ADDRESS addr);
-	bool RemoveBreakpoint(ADDRESS addr);
-	bool HasBreakpoint(ADDRESS addr);
-	bool HasBreakpoints() const;
-	const Breakpoint<ADDRESS> *FindBreakpoint(ADDRESS addr);
-	const list<Breakpoint<ADDRESS> >& GetBreakpoints();
-
-private:
-	bool has_breakpoints;
-	list<Breakpoint<ADDRESS> > breakpoints;
-	BreakpointMapPage<ADDRESS> *hash_table[NUM_HASH_TABLE_ENTRIES];
-
-	void AllocatePage(ADDRESS addr);
-	BreakpointMapPage<ADDRESS> *GetPage(ADDRESS addr);
-	
+	virtual void SetPreferredStatReportingPeriod(uint64_t time_hint) = 0;
+	virtual void RequiresStatReporting(const char *name, bool required) = 0;
 };
 
-} // end of namespace debug
-} // end of namespace util
+//class Statistics {
+//public:
+//	virtual bool AddSource(const char *name, uint32_t &id) = 0;
+//	virtual bool AddStatistic(uint32_t source_id, const char *name, uint32_t *stat, const char *description = 0) = 0;
+//	virtual bool AddStatistic(uint32_t source_id, const char *name, uint64_t *stat, const char *description = 0) = 0;
+//	virtual bool AddStatistic(uint32_t source_id, const char *name, double *stat, const char *description = 0) = 0;
+//	virtual bool AddStatistic(uint32_t source_id, const char *name, float *stat, const char *description = 0) = 0;
+//	virtual bool Update(uint32_t id, double time) = 0; // time in seconds
+//};
+
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
 
-#endif
+#endif // __UNSIIM_SERVICE_INTERFACES_STATISTIC_REPORTING_HH__

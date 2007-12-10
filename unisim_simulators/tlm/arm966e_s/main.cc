@@ -55,6 +55,7 @@
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/logger/logger_server.hh"
+#include "unisim/service/statistic/statistic_server.hh"
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
@@ -99,6 +100,7 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::logger::LoggerServer;
+using unisim::service::statistic::StatisticServer;
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
 using unisim::kernel::service::ServiceManager;
@@ -263,6 +265,10 @@ int main(int argc, char *argv[], char **envp) {
 		(*logger)["show-line"] = true;
 	}
 	
+	// Statistics
+	StatisticServer *statistic_server = 0;
+	statistic_server = new StatisticServer("statistic-server");
+	
 	// Time
 	ScTime *time = new ScTime("time");
 	HostTime *host_time = new HostTime("host-time");
@@ -325,7 +331,7 @@ int main(int argc, char *argv[], char **envp) {
 	// (*cpu)["verbose-all"] = true;
 	// (*cpu)["verbose-setup"] = true;
 	(*cpu)["verbose-step"] = false;
-	(*cpu)["verbose-step-insn"] = true;
+	(*cpu)["verbose-step-insn"] = false;
 	(*cpu)["verbose-dump-regs-start"] = false;
 	(*cpu)["verbose-dump-regs-end"] = false;
 //	(*cpu)["cache_dl1.verbose-all"] = true;
@@ -397,6 +403,10 @@ int main(int argc, char *argv[], char **envp) {
 			mem_msg_spy->logger_import >> *logger->logger_export[logger_index++];
 		}
 	}
+	
+	// statistics connections
+	cpu->statistic_reporting_import >> *statistic_server->statistic_reporting_export[0];
+	*statistic_server->statistic_reporting_control_import[0] >> cpu->statistic_reporting_control_export;
 	
 	if(inline_debugger)
 	{

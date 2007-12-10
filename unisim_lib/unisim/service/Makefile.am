@@ -49,6 +49,11 @@ SUBDIRS += tee
 INCLUDE_SUBDIRS += tee
 endif
 
+if COND_statistic
+SUBDIRS += statistic
+INCLUDE_SUBDIRS += statistic
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

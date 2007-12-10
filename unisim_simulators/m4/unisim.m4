@@ -1,10 +1,19 @@
 ## UNISIM_CHECK_LIBSTDCXX
-## Checks if the winsock2 library is available
+## Checks if the stdc++ library is available
 ## Does not take parameters
 #####################################################
 AC_DEFUN([UNISIM_CHECK_LIBSTDCXX], [
 	# Note: we can't check libstdc++ functions from libstdc++ because it's a library of C++ classes with no C functions.
 	LIBS+=" -lstdc++"
+])
+
+## UNISIM_CHECK_BOOST_THREAD
+## Checks if the boost_thread library is available
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_BOOST_THREAD], [
+	# Note: we can't check libboost_thread functions from libboost_thread because it's a library of C++ classes with no C functions.
+	LIBS+=" -lboost_thread"
 ])
 
 ## UNISIM_CHECK_WINSOCK2

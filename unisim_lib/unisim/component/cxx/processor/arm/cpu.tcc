@@ -150,6 +150,7 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	{
 	/* setting setup dependencies */
 	Object::SetupDependsOn(logger_import);
+//	Object::SetupDependsOn(statistics_import);
 //	Object::SetupDependsOn(linux_os_import);
 	
 	/* Reset all the registers */
@@ -301,6 +302,12 @@ Setup() {
 		requires_memory_access_reporting = false;
 		requires_finished_instruction_reporting = false;
 	}
+	
+//	if(statistics_import) {
+//		statistics_import->AddSource(Object::GetName(), statistics_id);
+//		statistics_import->AddStatistic(statistics_id, "instruction-counter", 
+//				&instruction_counter);
+//	}
 	
 	return true;
 }
@@ -3272,10 +3279,10 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 CheckAlignmentExcep(typename CONFIG::address_t addr) {
-	if(CONFIG::DEBUG_ENABLE && logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
+//	if(CONFIG::DEBUG_ENABLE && logger_import)
+//		(*logger_import) << DebugError << LOCATION
+//			<< "TODO"
+//			<< Endl << EndDebugError;
 }
 
 /**************************************************************/

@@ -21,7 +21,8 @@ include_HEADERS = \
 	power_mode.hh \
 	resetable.hh \
 	symbol_table_lookup.hh \
-	time.hh
+	time.hh \
+	statistic_reporting.hh
 
 dist_share_DATA = COPYING
 
