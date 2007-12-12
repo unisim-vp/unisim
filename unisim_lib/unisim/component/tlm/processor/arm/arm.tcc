@@ -204,7 +204,7 @@ template<class CONFIG>
 void 
 ARM<CONFIG> ::
 SetPreferredStatReportingPeriod(uint64_t time_hint) {
-	stat_reporting_period = sc_time((double)time_hint, SC_PS);
+	stat_reporting_period = sc_time(time_hint, false);
 }
 
 template<class CONFIG>
@@ -264,6 +264,8 @@ BusSynchronize() {
 				<< "delay_tu = " << delay_tu
 				<< Endl << EndDebugInfo;
 		wait(sc_time(delay_tu, false));
+		cpu_time = sc_time_stamp();
+		bus_time = cpu_time + bus_cycle_time;
 	}
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -278,6 +280,8 @@ ARM<CONFIG>::Synchronize()
 	sc_time time_spent = cpu_time - last_cpu_time;
 	last_cpu_time = cpu_time;
 	wait(time_spent);
+	cpu_time = sc_time_stamp();
+	SendStats();
 //	next_nice_sctime = sc_time_stamp() + nice_sctime;
 }
 
@@ -286,14 +290,14 @@ void
 ARM<CONFIG> :: 
 Run() {
 	sc_time time_per_instruction = cpu_cycle_time * ipc;
-	sc_time stat_refresh_time = stat_reporting_period;
+//	sc_time stat_refresh_time = stat_reporting_period;
 //	sc_time stats_refresh_time_step = stats_refresh_time;
 	
 	while(1) {
-		if(sc_time_stamp() > stat_refresh_time) {
-			stat_refresh_time = sc_time_stamp() + stat_reporting_period;
-			SendStats();
-		}
+//		if(sc_time_stamp() > stat_refresh_time) {
+//			stat_refresh_time = sc_time_stamp() + stat_reporting_period;
+//			SendStats();
+//		}
 		if(cpu_time >= bus_time) {
 			bus_time += bus_cycle_time;
 			CPU<CONFIG>::OnBusCycle();
@@ -366,6 +370,9 @@ PrRead(address_t addr,
 				<< "PrRead: retry transaction request"
 				<< Endl << EndDebugInfo;
 		wait(bus_cycle_time);
+		cpu_time += bus_cycle_time;
+		bus_time += bus_cycle_time;
+		inherited::OnBusCycle();
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "PrRead: retrying transaction request"
@@ -380,6 +387,11 @@ PrRead(address_t addr,
 	
 	// wait for the bus transaction response
 	wait(rsp_ev);
+	cpu_time = sc_time_stamp();
+	while(bus_time < cpu_time) {
+		inherited::OnBusCycle();
+		bus_time += bus_cycle_time;
+	}
 	rsp = msg->GetResponse();
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -430,7 +442,7 @@ PrWrite(address_t addr,
 	req->size = size;
 	// copy the data to the message
 	memcpy(req->write_data, buffer, size);
-			
+
 	// loop until the request succeeds
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -443,6 +455,9 @@ PrWrite(address_t addr,
 				<< "PrWrite: retry transaction request"
 				<< Endl << EndDebugInfo;
 		wait(bus_cycle_time);
+		cpu_time += bus_cycle_time;
+		bus_time += bus_cycle_time;
+		inherited::OnBusCycle();
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "PrWrite: retrying transaction request"
@@ -671,30 +686,33 @@ template<class CONFIG>
 void
 ARM<CONFIG>::
 SendStats() {
+	if(!statistic_reporting_import) return;
+	if(sc_time_stamp() <= stat_refresh_time) return;
+
+	stat_refresh_time = sc_time_stamp() + stat_reporting_period;
+
 	sc_time cur_sc_time = sc_time_stamp();
 	uint64_t cur_time = cur_sc_time.value();
-	if(statistic_reporting_import) {
-		uint64_t diff_instruction_counter =
-			inherited::instruction_counter - last_instruction_counter;
-		sc_time diff_stat_reporting_time =
-			cur_sc_time - last_stat_reporting_time;
-		last_stat_reporting_time = cur_sc_time;
-		double cycle_count = diff_stat_reporting_time/cpu_cycle_time;
-		last_instruction_counter = inherited::instruction_counter;
-		double ipc = (double)diff_instruction_counter/cycle_count;
-		if(stat_requires_instruction_counter)
-			statistic_reporting_import->ReportStat(stat_handler_instruction_counter,
-					cur_time,
-					inherited::instruction_counter);
-		if(stat_requires_ipc)
-			statistic_reporting_import->ReportStat(stat_handler_ipc,
-					cur_time,
-					ipc);
-		if(stat_requires_diff_instruction_counter)
-			statistic_reporting_import->ReportStat(stat_handler_diff_instruction_counter,
-					cur_time,
-					diff_instruction_counter);
-	}
+	uint64_t diff_instruction_counter =
+		inherited::instruction_counter - last_instruction_counter;
+	sc_time diff_stat_reporting_time =
+		cur_sc_time - last_stat_reporting_time;
+	last_stat_reporting_time = cur_sc_time;
+	double cycle_count = diff_stat_reporting_time/cpu_cycle_time;
+	last_instruction_counter = inherited::instruction_counter;
+	double ipc = (double)diff_instruction_counter/cycle_count;
+	if(stat_requires_instruction_counter)
+		statistic_reporting_import->ReportStat(stat_handler_instruction_counter,
+				cur_time,
+				inherited::instruction_counter);
+	if(stat_requires_ipc)
+		statistic_reporting_import->ReportStat(stat_handler_ipc,
+				cur_time,
+				ipc);
+	if(stat_requires_diff_instruction_counter)
+		statistic_reporting_import->ReportStat(stat_handler_diff_instruction_counter,
+				cur_time,
+				diff_instruction_counter);
 }
 
 } // end of namespace arm

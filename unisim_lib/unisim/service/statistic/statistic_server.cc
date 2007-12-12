@@ -62,7 +62,7 @@ using std::stringstream;
 StatisticServer::
 StatisticServer(const char *name, Object *parent) :
 	Object(name, parent),
-	refresh_time(10),
+	refresh_time(1),
 	param_refresh_time("refresh-time", this, refresh_time, "host time statistics refreshing period"),
 	statistic() {
 	for(unsigned int i = 0; i < MAX_SOURCES; i++) {

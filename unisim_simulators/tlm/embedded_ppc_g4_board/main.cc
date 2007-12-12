@@ -73,7 +73,11 @@
 #endif
 
 
-static const bool DEBUG_INFORMATION = false;
+#ifdef EMBEDDED_PPC_G4_BOARD_DEBUG
+	static const bool DEBUG_INFORMATION = true;
+#else
+	static const bool DEBUG_INFORMATION = false;
+#endif
 
 bool debug_enabled;
 
@@ -173,7 +177,6 @@ void help(char *prog_name)
 
 // CPU parameters
 typedef unisim::component::cxx::processor::powerpc::MPC755Config CPU_CONFIG;
-
 // Front Side Bus template parameters
 typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
@@ -217,7 +220,7 @@ typedef unisim::component::cxx::memory::flash::am29lv::AM29LV800BConfig FLASH_CO
 typedef unisim::component::tlm::memory::flash::am29lv::AM29LV<FLASH_CONFIG, FLASH_BYTESIZE, FLASH_IO_WIDTH, FSB_MAX_DATA_SIZE> FLASH;
 typedef unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION> MPC107;
 typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
-typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1> FRONT_SIDE_BUS;
+typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, FSB_NUM_PROCS> FRONT_SIDE_BUS;
 typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> PCI_BUS;
 typedef unisim::component::tlm::pci::debug::PCIStub<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_STUB;
 typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
@@ -226,8 +229,8 @@ typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
 //===               Aliases for transaction Spies classes               ===
 //=========================================================================
 
-typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::ReqType BusMsgReqType;
-typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, 1>::RspType BusMsgRspType;
+typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, FSB_NUM_PROCS>::ReqType BusMsgReqType;
+typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, FSB_NUM_PROCS>::RspType BusMsgRspType;
 typedef unisim::component::tlm::debug::TransactionSpy<BusMsgReqType, BusMsgRspType> BusMsgSpyType;
 typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MemMsgReqType;
 typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;

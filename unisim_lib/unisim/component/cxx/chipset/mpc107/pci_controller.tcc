@@ -537,7 +537,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 						uint8_t req_data[SYSTEM_MAX_TRANSACTION_DATA_SIZE],
 						uint32_t req_size) {
 
-	int reg = (config_addr & 0xFF); // does not need to be 4 byte aligned (maybe it should be aligned to the size)
+	int reg = (config_addr & 0xFF) + (req_addr & 0x3); // does not need to be 4 byte aligned (maybe it should be aligned to the size)
 	ConfigurationRegister *config_reg = config_regs->GetRegister(reg);
 	if(config_reg == NULL) {
 		if(logger_import)
@@ -563,11 +563,14 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	if (req_size != config_reg->byte_size)	{
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
-				<< "Not the right size, expected: " 
-				<< config_reg->byte_size 
-				<< ", received: " 
-				<< req_size 
-				<< Endl << EndDebugError;
+				<< "Not the right size:" << Endl
+				<< " - expected: " << config_reg->byte_size << Endl
+				<< " - received: " << req_size << Endl
+				<< " - config_addr = 0x" << Hex << config_addr << Dec << Endl
+				<< " - req_addr = 0x" << Hex << req_addr << Dec << Endl
+				<< " - reg = 0x" << Hex << reg << Dec << Endl
+				<< " - reg_name = " << config_reg->name << Endl
+				<< EndDebugError;
 		return false;
 	}
 	

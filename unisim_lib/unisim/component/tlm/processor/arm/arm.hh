@@ -159,6 +159,8 @@ private:
 	
 	// statistic handlers and variables
 	sc_time stat_reporting_period;
+	sc_time stat_reporting_time;
+	sc_time stat_refresh_time;
 	sc_time last_stat_reporting_time;
 	string stat_name_instruction_counter;
 	stat_handle_t stat_handler_instruction_counter;
