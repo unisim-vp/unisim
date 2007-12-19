@@ -19,6 +19,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <cassert>
+#include <cctype>
 //#include <iostream>
 
 namespace Str {
