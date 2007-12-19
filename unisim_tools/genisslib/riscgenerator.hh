@@ -56,8 +56,8 @@ struct RiscGenerator : public Generator {
   
   /* Risc specific Utilities */
   void                          bitsize( unsigned int _bitsize );
-  OpCode_t const&               opcode( Operation_t const* _op ) const { return m_opcodes.at( _op ); }
-  OpCode_t&                     opcode( Operation_t const* _op ) { return m_opcodes.at( _op ); }
+  OpCode_t const&               opcode( Operation_t const* _op ) const;
+  OpCode_t&                     opcode( Operation_t const* _op );
   
   void                          finalize();
   void                          codetype_decl( Product_t& _product ) const;

@@ -58,8 +58,8 @@ struct CiscGenerator : public Generator {
   ~CiscGenerator() {};
   
   /* Cisc specific instructions */
-  OpCode_t const&               opcode( Operation_t const* _op ) const { return m_opcodes.at( _op ); }
-  OpCode_t&                     opcode( Operation_t const* _op ) { return m_opcodes.at( _op ); }
+  OpCode_t const&               opcode( Operation_t const* _op ) const;
+  OpCode_t&                     opcode( Operation_t const* _op );
   void                          bitsize( unsigned int _min_bitsize, unsigned int _max_bitsize );
   
   void                          finalize();

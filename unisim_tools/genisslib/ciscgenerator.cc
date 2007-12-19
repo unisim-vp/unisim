@@ -500,3 +500,17 @@ void
 CiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _ref, char const* _bytes ) const {
   _product.code( "%s.match( %s )", _bytes, _ref );
 }
+
+CiscGenerator::OpCode_t const&
+CiscGenerator::opcode( Operation_t const* _op ) const {
+  OpCodes_t::const_iterator res = m_opcodes.find( _op );
+  assert( res != m_opcodes.end() );
+  return res->second;
+}
+
+CiscGenerator::OpCode_t&
+CiscGenerator::opcode( Operation_t const* _op ) {
+  OpCodes_t::iterator res = m_opcodes.find( _op );
+  assert( res != m_opcodes.end() );
+  return res->second;
+}
