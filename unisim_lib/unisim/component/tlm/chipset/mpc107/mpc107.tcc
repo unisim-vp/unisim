@@ -76,6 +76,7 @@ MPC107(const sc_module_name &name, Object *parent) :
 	Client<Logger>(name, parent),
 	dma(this, "DMA", this),
 	epic("epic", this),
+	atu("atu", this),
 	slave_port("slave_port"),
 	master_port("master_port"),
 	pci_slave_port("pci_slave_port"),
@@ -98,6 +99,7 @@ MPC107(const sc_module_name &name, Object *parent) :
 	pci_logger_import("pci_logger_import", this),
 	addr_map_logger_import("addr_map_logger_import", this),
 	epic_logger_import("epic_logger_import", this),
+	atu_logger_import("atu_logger_import", this),
 	a_address_map(false),
 	host_mode(true),
 	memory_32bit_data_bus_size(true),
@@ -115,7 +117,7 @@ MPC107(const sc_module_name &name, Object *parent) :
 	config_addr(0),
 	config_regs(),
 	pci_controller(0, config_regs, addr_map, "pci_controller", this),
-	addr_map(config_regs, "address_mapper", this) {
+	addr_map(config_regs, atu, "address_mapper", this) {
 	Object::SetupDependsOn(logger_import);
 	slave_port(*this);
 	pci_slave_port(*this);
@@ -146,6 +148,7 @@ MPC107(const sc_module_name &name, Object *parent) :
 	pci_controller.logger_import >> pci_logger_import;
 	addr_map.logger_import >> addr_map_logger_import;
 	epic.logger_import >> epic_logger_import;
+	atu.logger_import >> atu_logger_import;
 	
 	epic_memory_import >> epic.memory_export;
 	
@@ -875,9 +878,11 @@ Send(const PMsgType &message) {
 	case AddressMapEntry::EUMB_EPIC_SPACE:
 		return SendFSBtoMemory(message, epic_master_port);
 		break;
+	case AddressMapEntry::EUMB_ATU_SPACE:
+		return SendFSBtoATU(message);
+		break;
 	case AddressMapEntry::EUMB_MSG_UNIT_SPACE:
 	case AddressMapEntry::EUMB_DMA_SPACE:
-	case AddressMapEntry::EUMB_ATU_SPACE:
 	case AddressMapEntry::EUMB_I2C_SPACE:
 	case AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE:
 		if(logger_import) {
@@ -1048,9 +1053,19 @@ ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
 				<< EndDebugInfo;
 		return rom_import->ReadMemory(addr, buffer, size);
 		break;
+	case AddressMapEntry::EUMB_EPIC_SPACE:
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo
+				<< LOCATION
+				<< "ReadMemory() to EPIC (address = " << Hex << addr << Dec << ")" << Endl
+				<< EndDebugInfo;
+		return epic_memory_import->ReadMemory(addr, buffer, size);
+		break;
+	case AddressMapEntry::EUMB_ATU_SPACE:
+		return ReadMemorytoATU(addr, buffer, size);
+		break;
 	case AddressMapEntry::EUMB_MSG_UNIT_SPACE:
 	case AddressMapEntry::EUMB_DMA_SPACE:
-	case AddressMapEntry::EUMB_ATU_SPACE:
 	case AddressMapEntry::EUMB_I2C_SPACE:
 	case AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE:
 		if(DEBUG && logger_import)
@@ -1059,14 +1074,6 @@ ReadMemory(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
 				<< " Embedded utilities block mapping not fully implemented" << Endl
 				<< EndDebugWarning;
 		return false;
-		break;
-	case AddressMapEntry::EUMB_EPIC_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo
-				<< LOCATION
-				<< "ReadMemory() to EPIC (address = " << Hex << addr << Dec << ")" << Endl
-				<< EndDebugInfo;
-		return epic_memory_import->ReadMemory(addr, buffer, size);
 		break;
 	default:
 		if(DEBUG && logger_import)
@@ -1201,9 +1208,18 @@ WriteMemory(PHYSICAL_ADDR addr, const void *buffer, uint32_t size) {
 				<< EndDebugInfo;
 		return rom_import->WriteMemory(addr, buffer, size);
 		break;
+	case AddressMapEntry::EUMB_EPIC_SPACE:
+		if(DEBUG && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "WriteMemory() to EPIC (address = 0x" << Hex << addr << Dec << ")"
+				<< Endl << EndDebugInfo;
+		return epic_memory_import->WriteMemory(addr, buffer, size);
+		break;
+	case AddressMapEntry::EUMB_ATU_SPACE:
+		return WriteMemorytoATU(addr, buffer, size);
+		break;
 	case AddressMapEntry::EUMB_MSG_UNIT_SPACE:
 	case AddressMapEntry::EUMB_DMA_SPACE:
-	case AddressMapEntry::EUMB_ATU_SPACE:
 	case AddressMapEntry::EUMB_I2C_SPACE:
 	case AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE:
 		if(logger_import)
@@ -1211,13 +1227,6 @@ WriteMemory(PHYSICAL_ADDR addr, const void *buffer, uint32_t size) {
 				<< "Embedded utilities block mapping not fully implemented" << Endl
 				<< EndDebugWarning;
 		return false;
-		break;
-	case AddressMapEntry::EUMB_EPIC_SPACE:
-		if(DEBUG && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "WriteMemory() to EPIC (address = 0x" << Hex << addr << Dec << ")"
-				<< Endl << EndDebugInfo;
-		return epic_memory_import->WriteMemory(addr, buffer, size);
 		break;
 	default:
 		(*logger_import) << DebugError
@@ -1934,6 +1943,77 @@ DispatchDMAPCIAccess() {
 		if(dma_req_list.size() != 0)
 			dispatchDMALocalMemoryAccessEvent.notify_delayed();
 	}
+}
+
+template <class PHYSICAL_ADDR, 
+		uint32_t MAX_TRANSACTION_DATA_SIZE,
+		class PCI_ADDR,
+		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
+bool 
+MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
+	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
+SendFSBtoATU(const PMsgType &message) {
+	const PReqType& req = message->GetRequest();
+	bool read = false;
+	
+	switch(req->type) {
+	case ReqType::READ:
+	case ReqType::READX:
+		read = true;
+		break;
+	case ReqType::WRITE:
+		read = false;
+		break;
+	case ReqType::INV_BLOCK:
+	case ReqType::FLUSH_BLOCK:
+	case ReqType::ZERO_BLOCK:
+	case ReqType::INV_TLB:
+		if(logger_import) {
+			(*logger_import) << DebugError << LOCATION 
+				<< "Invalid request type to send to the ATU controller"
+				<< Endl << EndDebugError;
+		}
+		return true;
+		break;
+	}
+	
+	bool ret = false;;
+	// handle write requests
+	if(!read) {
+		ret = atu.MemWrite(req->addr, req->write_data, req->size);
+		if(ret) ret = addr_map.Reset();
+		return ret;
+	}
+	// handle read requests
+	PRspType rsp = new(rsp) RspType();
+	ret = atu.MemRead(req->addr, rsp->read_data, req->size);
+	rsp->read_status = RspType::RS_SHARED;
+	return ret;
+}
+
+template <class PHYSICAL_ADDR, 
+		uint32_t MAX_TRANSACTION_DATA_SIZE,
+		class PCI_ADDR,
+		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
+bool 
+MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
+	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
+ReadMemorytoATU(PHYSICAL_ADDR addr, void *buffer, uint32_t size) {
+	return atu.MemRead(addr, (uint8_t *)buffer, size);
+}
+
+template <class PHYSICAL_ADDR, 
+		uint32_t MAX_TRANSACTION_DATA_SIZE,
+		class PCI_ADDR,
+		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
+bool
+MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
+	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
+WriteMemorytoATU(PHYSICAL_ADDR addr, const void *buffer, uint32_t size) {
+	bool ret = false;
+	ret = atu.MemWrite(addr, (uint8_t *)buffer, size);
+	if(ret) ret = addr_map.Reset();
+	return ret;
 }
 
 #undef LOCATION

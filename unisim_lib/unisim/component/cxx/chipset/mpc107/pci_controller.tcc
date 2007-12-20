@@ -70,7 +70,7 @@ PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 	DEBUG>
 ::PCIController(int _deviceNumber, 
 	ConfigurationRegisters &_config_regs, 
-	AddressMap<DEBUG> &_addr_map, 
+	AddressMap<SYSTEM_BUS_PHYSICAL_ADDR, PCI_BUS_PHYSICAL_ADDR, DEBUG> &_addr_map, 
 	const char *name, 
 	Object *parent):
 	Object(name, parent),
@@ -354,6 +354,17 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 			if ((req_addr & 0x03) == 0) {
 				config_addr = *(uint32_t *)req_data;
 				config_addr = LittleEndian2Host(config_addr);
+				// mask the two low bits of config_addr
+				if(config_addr & 0x03) {
+					if(logger_import)
+						(*logger_import) << DebugWarning << LOCATION
+							<< "address written in the configuration address register is not 32bit aligned (0x"
+							<< Hex << config_addr << Dec
+							<< "), aligning it (0x" << Hex 
+							<< (config_addr & ~((PCI_BUS_PHYSICAL_ADDR)0x03)) << Dec << ")"
+							<< Endl << EndDebugWarning;
+					config_addr = config_addr & ~((PCI_BUS_PHYSICAL_ADDR)0x03);
+				}
 			}
 		}
 	} else {
@@ -475,7 +486,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		case 4: {
 			if(logger_import)
 				(*logger_import) << DebugError << LOCATION
-					<< "accessing a register of size 4 with size 2" 
+					<< "accessing a register of size 4 with size 2"
 					<< Endl << EndDebugError;
 			return false;
 			break;}
@@ -560,7 +571,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		return true;
 	}
 	//Check the size
-	if (req_size != config_reg->byte_size)	{
+	if (!config_reg->AllowedSize(req_size)) { // != config_reg->byte_size)	{
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Not the right size:" << Endl
@@ -584,27 +595,24 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		uint32_t data;
 		memcpy(&data, req_data, 4);
 
-      	uint32_t bar_mask;
+		uint32_t bar_mask;
 
-	    if (config_regs->GetRegister(reg)->value & 0x1)
-		{
+		if (config_regs->GetRegister(reg)->value & 0x1) {
 		  bar_mask = BAR_IO_MASK;
-		}
-	      else
-		{
+		} else {
 		  bar_mask = BAR_MEM_MASK;
 		}
 		
 		if (data==0xffffffffUL) { //Say we need 0 size to allocate
-	      //writing bar address
+		//writing bar address
 		//We check the bit that indicates if it's for io or mem
 		// we write 0 to indicate we have nothing to map here
-	      	config_regs->GetRegister(reg)->value =
-				   	(config_regs->GetRegister(reg)->value & bar_mask);
+			config_regs->GetRegister(reg)->value =
+				(config_regs->GetRegister(reg)->value & bar_mask);
 			
 		} else {
 			config_regs->GetRegister(reg)->value = (LittleEndian2Host(data) & ~bar_mask) |
-				   	(config_regs->GetRegister(reg)->value & bar_mask);
+				(config_regs->GetRegister(reg)->value & bar_mask);
 		} 
 		
 		return true;

@@ -31,27 +31,30 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-#include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
-#include "unisim/component/cxx/chipset/mpc107/address_maps.tcc"
+
+#include "unisim/component/cxx/chipset/mpc107/atu/atu.hh"
+#include "unisim/component/cxx/chipset/mpc107/atu/atu.tcc"
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace chipset {
 namespace mpc107 {
+namespace atu {
 
 template
-class AddressMap<uint32_t, uint32_t, true>;
+class ATU<uint32_t, uint32_t, true>;
 template
-class AddressMap<uint32_t, uint64_t, true>;
+class ATU<uint32_t, uint64_t, true>;
 template
-class AddressMap<uint64_t, uint32_t, true>;
+class ATU<uint64_t, uint32_t, true>;
 template
-class AddressMap<uint64_t, uint64_t, true>;
+class ATU<uint64_t, uint64_t, true>;
 
+} // end of namespace atu
 } // end of namespace mpc107
 } // end of namespace chipset
 } // end of namespace cxx
 } // end of namespace component
-} // end of namespace unisim
+} // end of namespace dma

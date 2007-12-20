@@ -32,26 +32,65 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
-#include "unisim/component/cxx/chipset/mpc107/address_maps.tcc"
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_ATU_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_ATU_HH__
+
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/logger.hh"
+#include "unisim/component/cxx/chipset/mpc107/atu/register.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace chipset {
 namespace mpc107 {
+namespace atu {
 
-template
-class AddressMap<uint32_t, uint32_t, true>;
-template
-class AddressMap<uint32_t, uint64_t, true>;
-template
-class AddressMap<uint64_t, uint32_t, true>;
-template
-class AddressMap<uint64_t, uint64_t, true>;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::Logger;
+using unisim::component::cxx::chipset::mpc107::atu::Registers;
 
-} // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
+template<class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG = false>
+class ATU :
+	Client<Logger> {
+public:
+	ServiceImport<Logger> logger_import;
+	
+	ATU(const char *name, Object *parent = 0);
+
+	bool MemWrite(ADDRESS_TYPE addr, uint8_t *write_data, unsigned int size);
+	bool MemRead(ADDRESS_TYPE addr, uint8_t *read_data, unsigned int size);
+	bool PCIWrite(PCI_ADDRESS_TYPE addr, uint8_t *write_data, unsigned int size);
+	bool PCIRead(PCI_ADDRESS_TYPE addr, uint8_t *read_data, unsigned int size);
+
+	uint32_t GetITWR();
+	uint32_t GetOMBAR();
+	uint32_t GetOTWR();
+	
+	bool InboundAddressTranslationEnabled();
+	bool OutboundAddressTranslationEnabled();
+	uint32_t InboundTranslationWindowSize();
+	uint32_t OutboundTranslationWindowSize();
+	uint32_t InboundTranslationBaseAddress();
+	uint32_t OutboundTranslationBaseAddress();
+	uint32_t OutboundMemoryBaseAddress();
+	// note: the inbound memory base address can not be found in the ATU, but
+	//   in the LMBAR register of the MPC107
+
+private:
+	Registers regs;
+	
+	bool SetITWR(uint32_t data);
+	bool SetOMBAR(uint32_t data);
+	bool SetOTWR(uint32_t data);
+};
+
+} // end of namespace atu
 } // end of namespace unisim
+} // end of namespace component
+} // end of namespace cxx
+} // end of namespace chipset
+} // end of namespace mpc107
+
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_ATU_HH__

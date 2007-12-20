@@ -59,36 +59,38 @@ using unisim::service::interfaces::Line;
 
 #define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__ 
 
-template <bool DEBUG>
-AddressMap<DEBUG>::AddressMap(ConfigurationRegisters &_config_regs,
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::AddressMap(ConfigurationRegisters &_config_regs,
+	ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> &_atu,
 	const char *name, Object *parent) :
 	Object(name, parent),
 	Client<Logger>(name, parent),
 	logger_import("logger_import", this), 
 	proc_list(NULL), pci_list(NULL),
-	config_regs(&_config_regs) {
+	config_regs(&_config_regs),
+	atu(&_atu) {
 }
 
-template <bool DEBUG>
-AddressMap<DEBUG>::~AddressMap() {
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::~AddressMap() {
 	DeleteEntryList(&proc_list);
 	DeleteEntryList(&pci_list);
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool
-AddressMap<DEBUG>::Setup() {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::Setup() {
 	return true;
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 void
-AddressMap<DEBUG>::OnDisconnect() {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::OnDisconnect() {
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 void 
-AddressMap<DEBUG>::AddEntryNode(AddressMapEntryNode **list, AddressMapEntryNode *node) {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::AddEntryNode(AddressMapEntryNode **list, AddressMapEntryNode *node) {
 	if(*list == NULL) {
 		*list = node;
 		node->prev = NULL;
@@ -101,9 +103,9 @@ AddressMap<DEBUG>::AddEntryNode(AddressMapEntryNode **list, AddressMapEntryNode 
 	}
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 void
-AddressMap<DEBUG>::CreateAddressMapEntry(AddressMapEntryNode **list,
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::CreateAddressMapEntry(AddressMapEntryNode **list,
 								const char *name,
 								address_t orig,
 								address_t end,
@@ -119,9 +121,360 @@ AddressMap<DEBUG>::CreateAddressMapEntry(AddressMapEntryNode **list,
 	AddEntryNode(list, node);
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
+void
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::
+CreateProcessorPCIView() {
+	uint32_t val;
+	uint32_t eu_addr = 0;
+	bool host_mode;
+
+	/* checking the host mode */	
+	host_mode = ((config_regs->pci_command_reg.value >> 2) & (uint32_t)1) == (uint32_t)1;
+	/* checking if the embedded utilities are activated */
+	val = config_regs->eumbbar.value;
+	if((val >= 0x80000000) && (val <= 0xfdf00000))
+		eu_addr = val;
+
+	if(eu_addr == 0) {
+		/* the embedded utilities are not activated */
+		CreateAddressMapEntry(&proc_list,
+			"PCI memory space",
+			0x80000000,
+			0xfdffffff,
+			AddressMapEntry::PCI_MEMORY_SPACE);
+		CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (8 Mbytes) [1]",
+							0xfe000000,
+							0xfe7fffff,
+							AddressMapEntry::PCI_IO_SPACE_1);
+		CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (4 Mbytes) [2]",
+							0xfe800000,
+							0xfebfffff,
+							AddressMapEntry::PCI_IO_SPACE_2);
+	} else {
+		if(host_mode == true || !atu->OutboundAddressTranslationEnabled()) {
+			CreateAddressMapEntry(&proc_list,
+					"PCI memory space",
+					(uint32_t)0x80000000,
+					eu_addr - 1,
+					AddressMapEntry::PCI_MEMORY_SPACE);
+			CreateAddressMapEntry(&proc_list,
+					"PCI memory space",
+					eu_addr + (uint32_t)0x00100000,
+					0xfdffffff,
+					AddressMapEntry::PCI_MEMORY_SPACE);
+			CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (8 Mbytes) [1]",
+								0xfe000000,
+								0xfe7fffff,
+								AddressMapEntry::PCI_IO_SPACE_1);
+			CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (4 Mbytes) [2]",
+								0xfe800000,
+								0xfebfffff,
+								AddressMapEntry::PCI_IO_SPACE_2);
+		} else {
+			uint32_t outbound_memory_base_address = 0;
+			uint32_t outbound_memory_end_address = 0;
+			
+			outbound_memory_base_address = atu->OutboundMemoryBaseAddress();
+			if(outbound_memory_base_address >= eu_addr &&
+					outbound_memory_base_address < eu_addr + (uint32_t)0x00100000)
+				outbound_memory_base_address = eu_addr + (uint32_t)0x00100000;
+			outbound_memory_end_address = outbound_memory_base_address +
+				atu->OutboundTranslationWindowSize() - 1;
+			if(outbound_memory_end_address > (uint32_t)0xfebfffff)
+				outbound_memory_end_address = (uint32_t)0xfebfffff;
+			
+			if(outbound_memory_base_address >= (uint32_t)0x80000000 &&
+					outbound_memory_base_address < eu_addr) {
+				if(outbound_memory_base_address > (uint32_t)0x80000000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI Memory space",
+							(uint32_t)0x80000000,
+							outbound_memory_base_address - 1,
+							AddressMapEntry::PCI_MEMORY_SPACE);
+				}
+				if(outbound_memory_end_address >= (uint32_t)0xfe800000 &&
+						outbound_memory_end_address <= (uint32_t)0xfebfffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							eu_addr - 1,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							eu_addr + (uint32_t)0x00100000,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfe7fffff)
+						CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (4 Mbytes) [2]",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfebfffff,
+								AddressMapEntry::PCI_IO_SPACE_2);
+				}
+				if(outbound_memory_end_address < (uint32_t)0xfe800000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (4 Mbytes) [2]",
+							(uint32_t)0xfe800000,
+							(uint32_t)0xfebfffff,
+							AddressMapEntry::PCI_IO_SPACE_2);
+				}
+				if(outbound_memory_end_address >= (uint32_t)0xfe000000 &&
+						outbound_memory_end_address <= (uint32_t)0xfe7fffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							eu_addr - 1,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							eu_addr + (uint32_t)0x00100000,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfe7fffff) {
+						CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (8 Mbytes) [1]",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfe7fffff,
+								AddressMapEntry::PCI_IO_SPACE_1);
+					}
+				}
+				if(outbound_memory_end_address < (uint32_t)0xfe000000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (8 Mbytes) [1]",
+							(uint32_t)0xfe000000,
+							(uint32_t)0xfe7fffff,
+							AddressMapEntry::PCI_IO_SPACE_1);
+				}
+				if(outbound_memory_end_address >= (eu_addr + (uint32_t)0x00100000) &&
+						outbound_memory_end_address  <= (uint32_t)0xfdffffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							eu_addr - 1,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							eu_addr + (uint32_t)0x00100000,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfdffffff) {
+						CreateAddressMapEntry(&proc_list,
+								"PCI memory space",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfdffffff,
+								AddressMapEntry::PCI_MEMORY_SPACE);
+					}
+				}
+				if(outbound_memory_end_address >= eu_addr &&
+						outbound_memory_end_address < (eu_addr + (uint32_t)0x00100000)) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI memory space",
+							eu_addr + (uint32_t)0x00100000,
+							(uint32_t)0xfdffffff,
+							AddressMapEntry::PCI_MEMORY_SPACE);
+				}
+				if(outbound_memory_end_address <= eu_addr - 1) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < eu_addr - 1) {
+						CreateAddressMapEntry(&proc_list,
+								"PCI memory space",
+								outbound_memory_end_address + 1,
+								eu_addr - 1,
+								AddressMapEntry::PCI_MEMORY_SPACE);
+					}
+				}
+			}
+			if(outbound_memory_base_address >= eu_addr) {
+				CreateAddressMapEntry(&proc_list,
+						"PCI Memory space",
+						(uint32_t)0x80000000,
+						eu_addr - 1,
+						AddressMapEntry::PCI_MEMORY_SPACE);
+			}
+			if(outbound_memory_base_address >= eu_addr + 0x00100000 &&
+					outbound_memory_base_address <= (uint32_t)0xfdffffff) {
+				if(outbound_memory_base_address > eu_addr + (uint32_t)0x00100000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI Memory space",
+							eu_addr + (uint32_t)0x00100000,
+							outbound_memory_base_address - 1,
+							AddressMapEntry::PCI_MEMORY_SPACE);
+				}
+				if(outbound_memory_end_address >= (uint32_t)0xfe800000 &&
+						outbound_memory_end_address <= (uint32_t)0xfebfffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfe7fffff)
+						CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (4 Mbytes) [2]",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfebfffff,
+								AddressMapEntry::PCI_IO_SPACE_2);
+				}
+				if(outbound_memory_end_address < (uint32_t)0xfe800000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (4 Mbytes) [2]",
+							(uint32_t)0xfe800000,
+							(uint32_t)0xfebfffff,
+							AddressMapEntry::PCI_IO_SPACE_2);
+				}
+				if(outbound_memory_end_address >= (uint32_t)0xfe000000 &&
+						outbound_memory_end_address <= (uint32_t)0xfe7fffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfe7fffff) {
+						CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (8 Mbytes) [1]",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfe7fffff,
+								AddressMapEntry::PCI_IO_SPACE_1);
+					}
+				}
+				if(outbound_memory_end_address < (uint32_t)0xfe000000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (8 Mbytes) [1]",
+							(uint32_t)0xfe000000,
+							(uint32_t)0xfe7fffff,
+							AddressMapEntry::PCI_IO_SPACE_1);
+				}
+				if(outbound_memory_end_address >= (eu_addr + (uint32_t)0x00100000) &&
+						outbound_memory_end_address  <= (uint32_t)0xfdffffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfdffffff) {
+						CreateAddressMapEntry(&proc_list,
+								"PCI memory space",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfdffffff,
+								AddressMapEntry::PCI_MEMORY_SPACE);
+					}
+				}
+			}
+			if(outbound_memory_base_address >= (uint32_t)0xfe00000) {
+				CreateAddressMapEntry(&proc_list,
+						"PCI Memory space",
+						eu_addr + (uint32_t)0x00100000,
+						(uint32_t)0xfdffffff,
+						AddressMapEntry::PCI_MEMORY_SPACE);
+			}
+			if(outbound_memory_base_address >= (uint32_t)0xfe000000 &&
+					outbound_memory_base_address <= (uint32_t)0xfe7fffff) {
+				if(outbound_memory_base_address > (uint32_t)0xfe000000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (8 Mbytes) [1]",
+							(uint32_t)0xfe000000,
+							outbound_memory_base_address - 1,
+							AddressMapEntry::PCI_IO_SPACE_1);
+				}
+				if(outbound_memory_end_address >= (uint32_t)0xfe800000 &&
+						outbound_memory_end_address <= (uint32_t)0xfebfffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfe7fffff)
+						CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (4 Mbytes) [2]",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfebfffff,
+								AddressMapEntry::PCI_IO_SPACE_2);
+				}
+				if(outbound_memory_end_address < (uint32_t)0xfe800000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (4 Mbytes) [2]",
+							(uint32_t)0xfe800000,
+							(uint32_t)0xfebfffff,
+							AddressMapEntry::PCI_IO_SPACE_2);
+				}
+				if(outbound_memory_end_address >= (uint32_t)0xfe000000 &&
+						outbound_memory_end_address <= (uint32_t)0xfe7fffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfe7fffff) {
+						CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (8 Mbytes) [1]",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfe7fffff,
+								AddressMapEntry::PCI_IO_SPACE_1);
+					}
+				}
+			}
+			if(outbound_memory_base_address >= (uint32_t)0xfe80000) {
+				CreateAddressMapEntry(&proc_list,
+						"PCI I/O space (8 Mbytes) [1]",
+						(uint32_t)0xfe800000,
+						(uint32_t)0xfdffffff,
+						AddressMapEntry::PCI_IO_SPACE_1);
+			}
+			if(outbound_memory_base_address >= (uint32_t)0xfe800000 &&
+					outbound_memory_base_address <= (uint32_t)0xfebfffff) {
+				if(outbound_memory_base_address > (uint32_t)0xfe800000) {
+					CreateAddressMapEntry(&proc_list,
+							"PCI I/O space (4 Mbytes) [2]",
+							(uint32_t)0xfe800000,
+							outbound_memory_base_address - 1,
+							AddressMapEntry::PCI_IO_SPACE_2);
+				}
+				if(outbound_memory_end_address >= (uint32_t)0xfe800000 &&
+						outbound_memory_end_address <= (uint32_t)0xfebfffff) {
+					CreateAddressMapEntry(&proc_list,
+							"Outbound Memory Window",
+							outbound_memory_base_address,
+							outbound_memory_end_address,
+							AddressMapEntry::OUTBOUND_MEMORY_WINDOW);
+					if(outbound_memory_end_address < (uint32_t)0xfe7fffff)
+						CreateAddressMapEntry(&proc_list,
+								"PCI I/O space (4 Mbytes) [2]",
+								outbound_memory_end_address + 1,
+								(uint32_t)0xfebfffff,
+								AddressMapEntry::PCI_IO_SPACE_2);
+				}
+			}
+
+		}
+	}
+	CreateAddressMapEntry(&proc_list,
+						"PCI configuration address register",
+						0xfec00000,
+						0xfedfffff,
+						AddressMapEntry::PCI_CONFIG_ADDRESS_REG);
+	CreateAddressMapEntry(&proc_list,
+						"PCI configuration data register",
+						0xfee00000,
+						0xfeefffff,
+						AddressMapEntry::PCI_CONFIG_DATA_REG);
+	CreateAddressMapEntry(&proc_list,
+						"PCI interrupt acknowledge",
+						0xfef00000,
+						0xfeffffff,
+						AddressMapEntry::PCI_INT_ACK);
+}
+
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool
-AddressMap<DEBUG>::SetEmbeddedUtilities() {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetEmbeddedUtilities() {
 	uint32_t eu_addr = 0;
 
 	/* getting base address */
@@ -230,9 +583,9 @@ AddressMap<DEBUG>::SetEmbeddedUtilities() {
 	return true;
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool 
-AddressMap<DEBUG>::SetAddressMapA() {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetAddressMapA() {
 	if(logger_import) {
 		(*logger_import) << DebugError
 			<< LOCATION
@@ -243,9 +596,9 @@ AddressMap<DEBUG>::SetAddressMapA() {
 	return false;
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool 
-AddressMap<DEBUG>::SetAddressMapB() {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetAddressMapB() {
 	uint32_t val;
 	uint32_t eu_addr = 0;
 	bool host_mode;
@@ -256,17 +609,17 @@ AddressMap<DEBUG>::SetAddressMapB() {
 	val = config_regs->eumbbar.value;
 	if((val >= 0x80000000) && (val <= 0xfdf00000))
 		eu_addr = val;
-		
-	if(!host_mode) {
-		if(logger_import) {
-			(*logger_import) << DebugError
-				<< LOCATION
-				<< "Address map B only supported in host mode" 
-				<< Endl
-				<< EndDebugError;
-		}
-		return false;
-	}
+	
+//	if(!host_mode) {
+//		if(logger_import) {
+//			(*logger_import) << DebugError
+//				<< LOCATION
+//				<< "Address map B only supported in host mode" 
+//				<< Endl
+//				<< EndDebugError;
+//		}
+//		return false;
+//	}
 	
 	if(DEBUG && logger_import) 
 		(*logger_import) << DebugInfo
@@ -296,53 +649,8 @@ AddressMap<DEBUG>::SetAddressMapB() {
 						0x7c000000,
 						0x7fffffff,
 						AddressMapEntry::EXTENDED_ROM_2);
-	if(eu_addr == 0)
-		/* the embedded utilities are not activated */
-		CreateAddressMapEntry(&proc_list,
-			"PCI memory space",
-			0x80000000,
-			0xfdffffff,
-			AddressMapEntry::PCI_MEMORY_SPACE);
-	else {
-		/* the embedded utilities are activated */
-		if(eu_addr > (uint32_t)0x80000000)
-			CreateAddressMapEntry(&proc_list,
-				"PCI memory space",
-				(uint32_t)0x80000000,
-				eu_addr - 1,
-				AddressMapEntry::PCI_MEMORY_SPACE);
-		if(eu_addr < (uint32_t)0xfdf00000)
-			CreateAddressMapEntry(&proc_list,
-				"PCI memory space",
-				eu_addr + (uint32_t)0x00100000,
-				0xfdffffff,
-				AddressMapEntry::PCI_MEMORY_SPACE);
-	}
-	CreateAddressMapEntry(&proc_list,
-						"PCI I/O space (8 Mbytes) [1]",
-						0xfe000000,
-						0xfe7fffff,
-						AddressMapEntry::PCI_IO_SPACE_1);
-	CreateAddressMapEntry(&proc_list,
-						"PCI I/O space (4 Mbytes) [2]",
-						0xfe800000,
-						0xfebfffff,
-						AddressMapEntry::PCI_IO_SPACE_2);
-	CreateAddressMapEntry(&proc_list,
-						"PCI configuration address register",
-						0xfec00000,
-						0xfedfffff,
-						AddressMapEntry::PCI_CONFIG_ADDRESS_REG);
-	CreateAddressMapEntry(&proc_list,
-						"PCI configuration data register",
-						0xfee00000,
-						0xfeefffff,
-						AddressMapEntry::PCI_CONFIG_DATA_REG);
-	CreateAddressMapEntry(&proc_list,
-						"PCI interrupt acknowledge",
-						0xfef00000,
-						0xfeffffff,
-						AddressMapEntry::PCI_INT_ACK);
+	
+	CreateProcessorPCIView();
 	CreateAddressMapEntry(&proc_list,
 						"8-, 32- or 64-bit Flash/ROM space (8 Mbytes) [1]",
 						0xff000000,
@@ -419,9 +727,9 @@ AddressMap<DEBUG>::SetAddressMapB() {
 	return true;
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 AddressMapEntry *
-AddressMap<DEBUG>::GetEntry(AddressMapEntryNode *list, address_t addr, const char *list_name) {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::GetEntry(AddressMapEntryNode *list, address_t addr, const char *list_name) {
 	/* this condition is only needed for debugging,
 	 *   it should be removed later */
 	if(list == NULL) {
@@ -470,21 +778,21 @@ AddressMap<DEBUG>::GetEntry(AddressMapEntryNode *list, address_t addr, const cha
 	return entry->entry;
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 AddressMapEntry *
-AddressMap<DEBUG>::GetEntryProc(address_t addr) {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::GetEntryProc(address_t addr) {
 	return GetEntry(proc_list, addr, "processor");
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 AddressMapEntry *
-AddressMap<DEBUG>::GetEntryPCI(address_t addr) {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::GetEntryPCI(address_t addr) {
 	return GetEntry(pci_list, addr, "pci");
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool
-AddressMap<DEBUG>::DeleteEntryList(AddressMapEntryNode **list) {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::DeleteEntryList(AddressMapEntryNode **list) {
 	while(*list) {
 		AddressMapEntryNode *node = *list;
 		AddressMapEntry *entry = node->entry;
@@ -495,9 +803,9 @@ AddressMap<DEBUG>::DeleteEntryList(AddressMapEntryNode **list) {
 	*list = NULL;
 }
 
-template <bool DEBUG>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool
-AddressMap<DEBUG>::Reset() {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::Reset() {
 	/* first the proc and pci list must be resetted */
 	DeleteEntryList(&proc_list);
 	DeleteEntryList(&pci_list);

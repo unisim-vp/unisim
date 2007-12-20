@@ -2,8 +2,8 @@ INCLUDES=-I$(top_srcdir)/../../../../..
 includedir = $(prefix)/include/unisim/component/cxx/chipset/mpc107
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/chipset/mpc107
 
-SUBDIRS=dma epic
-INCLUDE_SUBDIRS=dma epic
+SUBDIRS=dma epic atu
+INCLUDE_SUBDIRS=dma epic atu
 
 lib_LIBRARIES = libunisim_component_cxx_chipset_mpc107.a
 libunisim_component_cxx_chipset_mpc107_a_SOURCES = \

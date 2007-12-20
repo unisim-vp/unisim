@@ -159,7 +159,7 @@ template <> ParameterBase& Parameter<PCISpace>::operator = (const char *value) {
   
 template <>
 ParameterArray<PCISpace>::ParameterArray(const char *_name, Object *_owner, PCISpace *_params, unsigned int dim, const char *_description) :
-	ParameterBase(_name, _owner, "pci space", _description),
+	ParameterBase(_name, _owner, "", _description),
 	params()
 {
 	unsigned int i;

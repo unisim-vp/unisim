@@ -83,6 +83,9 @@ XmlfyParameters(const char *filename) {
 	map<const char *, ParameterBase *, ServiceManager::ltstr>::iterator param_iter;
 
 	for(param_iter = ServiceManager::params.begin(); param_iter != ServiceManager::params.end(); param_iter++) {
+		//.parameter arrays containers have a special type (an empty string "") and they should not appear
+		//   in the parameter xml configuration file, so just ignore them
+		if(strcmp("", (*param_iter).second->GetType()) == 0) continue;
 		// opening parameter element
 		rc = xmlTextWriterStartElement(writer, BAD_CAST "parameter");
 		if(rc < 0) {

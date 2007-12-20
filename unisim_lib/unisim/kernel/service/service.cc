@@ -200,7 +200,7 @@ template <class TYPE> ParameterBase& Parameter<TYPE>::operator = (double value) 
 
 template <class TYPE>
 ParameterArray<TYPE>::ParameterArray(const char *_name, Object *_owner, TYPE *_params, unsigned int dim, const char *_description) :
-	ParameterBase(_name, _owner, "string", _description),
+	ParameterBase(_name, _owner, "", _description),
 	params()
 {
 	unsigned int i;

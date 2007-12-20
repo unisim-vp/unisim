@@ -41,6 +41,7 @@
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_map_entry.hh"
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
+#include "unisim/component/cxx/chipset/mpc107/atu/atu.hh"
 
 namespace unisim {
 namespace component {
@@ -53,8 +54,9 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::service::interfaces::Logger;
 using unisim::component::cxx::chipset::mpc107::ConfigurationRegisters;
+using unisim::component::cxx::chipset::mpc107::atu::ATU;
 
-template <bool DEBUG = false>
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG = false>
 class AddressMap :
 	public Client<Logger> {
 private:
@@ -89,9 +91,11 @@ private:
 		address_t addr, const char *list_name);
 	bool SetAddressMapA();
 	bool SetAddressMapB();
+	void CreateProcessorPCIView();
 	bool SetEmbeddedUtilities();
 							
 	ConfigurationRegisters *config_regs;
+	ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> *atu;
 							
 public:
 	ServiceImport<Logger> logger_import;
@@ -99,7 +103,8 @@ public:
 	virtual bool Setup();
 	virtual void OnDisconnect();
 	
-	AddressMap(ConfigurationRegisters &_config_regs, 
+	AddressMap(ConfigurationRegisters &_config_regs,
+		ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> &_atu,
 		const char *name, Object *parent = NULL);
 	~AddressMap();
 

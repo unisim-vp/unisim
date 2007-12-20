@@ -58,6 +58,11 @@ swp.disasm = {
   << "[r" << rn << "]";
 }
 
+swp.execute = {
+	/* if r15 is used the result is impredictable, so just ignore the case of using r15 */
+	if(!cpu.CheckCondition(cond)) return;
+}
+
 /*
  * end of swp instruction
  *******************************************************************/
@@ -74,6 +79,10 @@ swpb.disasm = {
   buffer << "b r" << rd << ", "
   << "r" << rm << ", "
   << "[r" << rn << "]";
+}
+
+swpb.execute = {
+	if(!cpu.CheckCondition(cond)) return;
 }
 
 /*

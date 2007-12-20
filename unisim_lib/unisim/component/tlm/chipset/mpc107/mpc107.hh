@@ -88,6 +88,7 @@
 #include "unisim/component/cxx/chipset/mpc107/pci_controller.hh"
 #include "unisim/component/cxx/chipset/mpc107/dma/dma.hh"
 #include "unisim/component/cxx/chipset/mpc107/dma/dma_client_interface.hh"
+#include "unisim/component/cxx/chipset/mpc107/atu/atu.hh"
 #include "unisim/component/tlm/chipset/mpc107/epic/epic.hh"
 #include <list>
 
@@ -122,6 +123,7 @@ using unisim::component::cxx::chipset::mpc107::AddressMapEntry;
 using unisim::component::cxx::chipset::mpc107::PCIController;
 using unisim::component::cxx::chipset::mpc107::ConfigurationRegister;
 using unisim::component::cxx::chipset::mpc107::ConfigurationRegisters;
+using unisim::component::cxx::chipset::mpc107::atu::ATU;
 using unisim::component::cxx::chipset::mpc107::dma::DMA;
 using unisim::component::cxx::chipset::mpc107::dma::DMAClientInterface;
 using unisim::component::tlm::chipset::mpc107::epic::EPIC;
@@ -213,6 +215,7 @@ public:
 	ServiceImport<Logger> pci_logger_import;
 	ServiceImport<Logger> addr_map_logger_import;
 	ServiceImport<Logger> epic_logger_import;
+	ServiceImport<Logger> atu_logger_import;
 		
 	MPC107(const sc_module_name &name, Object *parent = 0);
 	virtual ~MPC107();
@@ -303,6 +306,10 @@ private:
 	sc_event dispatchDMAPCIAccessEvent;
 	
 	/**
+	 * ATU controller */
+	ATU<PHYSICAL_ADDR, PCI_ADDR, DEBUG> atu;
+	
+	/**
 	 * EPIC Interrupt controller */
 	EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> epic;
 	/** 
@@ -343,7 +350,7 @@ private:
 	uint32_t config_addr;
 
 	static const PHYSICAL_ADDR local_memory_orig = 0x0; // local memory base address
-	AddressMap<DEBUG> addr_map;
+	AddressMap<PHYSICAL_ADDR, PCI_ADDR, DEBUG> addr_map;
 	/* Reset values */
 	/** Indicates if the mpc107 is running in host mode (true) or agent mode (false) */
 	bool host_mode;
@@ -414,10 +421,42 @@ private:
 	 * @param fsb_msg   the pci message to send
 	 * @param out_port  the memory port that should be used
 	 * 
-	 * @return true on succes, false otherwise
+	 * @return true on success, false otherwise
 	 */
 	bool SendFSBtoMemory(const PMsgType &fsb_msg, sc_port<TlmSendIf<MemReqType, MemRspType> > &out_port);
 
+	/**
+	 * This method transform a request received in the FSB to a ATU request and updates
+	 *   the address mapping if necessary. Returns true if suceeds.
+	 * 
+	 * @param fsb_msg   the message received from the FSB
+	 * 
+	 * @return true on success, false otherwise
+	 */
+	bool SendFSBtoATU(const PMsgType &fsb_msg);
+	
+	/**
+	 * This method performs a read memory on the ATU registers. Returns true if succeeds.
+	 * 
+	 * @param addr   the address of the requested register
+	 * @param buffer the buffer with the register data
+	 * @param size   the size of the request
+	 * 
+	 * @return true on success, false otherwise
+	 */
+	bool ReadMemorytoATU(PHYSICAL_ADDR addr, void *buffer, uint32_t size);
+	
+	/**
+	 * This method performs a write memory on the ATU registers. Returns true if succeeds.
+	 * 
+	 * @param addr   the address of the targeted register
+	 * @param buffer the buffer containing the data to write into the register
+	 * @param size   the size of the request
+	 * 
+	 * @return true on success, false otherwise
+	 */
+	bool WriteMemorytoATU(PHYSICAL_ADDR addr, const void *buffer, uint32_t size);
+	
 	class PCItoMemoryReqType {
 	public:
 		PPCIMsgType pci_msg;

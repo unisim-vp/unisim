@@ -166,6 +166,9 @@ void help(char *prog_name)
 	cerr << "-q <irq number>" << endl;
 	cerr << "--pci-stub-irq <irq number>" << endl;
 	cerr << "            specify the pci-stub IRQ number" << endl << endl;
+	cerr << "-b <ram memory size in MB>" << endl;
+	cerr << "--ram-size <ram memory size in MB>" << endl;
+	cerr << "            specify the ram memory size (default = 256MB)" << endl << endl;
 	cerr << "--help" << endl;
 	cerr << "-h" << endl;
 	cerr << "            displays this help" << endl;
@@ -273,6 +276,7 @@ int sc_main(int argc, char *argv[])
 	{"force-use-virtual-address", no_argument, 0, 'f'},
 	{"pci-stub-regions", required_argument, 0, 'n'},
 	{"pci-stub-irq", required_argument, 0, 'q'},
+	{"ram-size", required_argument, 0, 'b'},
 	{0, 0, 0, 0}
 	};
 
@@ -311,7 +315,7 @@ int sc_main(int argc, char *argv[])
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:u:vfn:q:", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:u:vfn:q:b:", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -370,6 +374,9 @@ int sc_main(int argc, char *argv[])
 				break;
 			case 'q':
 				pci_stub_irq = atoi(optarg);
+				break;
+			case 'b':
+				memory_size = atoi(optarg) * 1024 * 1024;
 				break;
 		}
 	}
@@ -951,6 +958,7 @@ int sc_main(int argc, char *argv[])
 		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
+		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
 		flash->logger_import >> *logger->logger_export[logger_index++];
 		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
@@ -971,6 +979,11 @@ int sc_main(int argc, char *argv[])
 	ServiceManager::Dump(cerr);
 #endif
 
+//	ServiceManager::XmlfyParameters("parameters.xml");
+//	ServiceManager::LoadXmlParameters("parameters.xml");
+//	ServiceManager::XmlfyParameters("parameters.copy.xml");
+//	exit(-1);
+	
 	if(ServiceManager::Setup())
 	{
 		cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;

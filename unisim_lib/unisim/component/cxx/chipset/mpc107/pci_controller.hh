@@ -104,12 +104,12 @@ private:
 	PCI_BUS_PHYSICAL_ADDR HostToPci(SYSTEM_BUS_PHYSICAL_ADDR original);
 	SYSTEM_BUS_PHYSICAL_ADDR PciToHost(PCI_BUS_PHYSICAL_ADDR original);
 	/* Address map */
-	AddressMap<DEBUG> *addr_map;
+	AddressMap<SYSTEM_BUS_PHYSICAL_ADDR, PCI_BUS_PHYSICAL_ADDR, DEBUG> *addr_map;
 
 public:
 	PCIController(int _deviceNumber, 
 		ConfigurationRegisters &_config_regs, 
-		AddressMap<DEBUG> &_addr_map, 
+		AddressMap<SYSTEM_BUS_PHYSICAL_ADDR, PCI_BUS_PHYSICAL_ADDR, DEBUG> &_addr_map, 
 		const char *name, 
 		Object *parent = NULL);
 	virtual bool Setup();

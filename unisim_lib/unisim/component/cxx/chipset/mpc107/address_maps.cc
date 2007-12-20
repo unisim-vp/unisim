@@ -35,6 +35,8 @@
 #include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
 #include "unisim/component/cxx/chipset/mpc107/address_maps.tcc"
 
+#include <inttypes.h>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -42,7 +44,13 @@ namespace chipset {
 namespace mpc107 {
 
 template
-class AddressMap<false>;
+class AddressMap<uint32_t, uint32_t, false>;
+template
+class AddressMap<uint32_t, uint64_t, false>;
+template
+class AddressMap<uint64_t, uint32_t, false>;
+template
+class AddressMap<uint64_t, uint64_t, false>;
 
 } // end of namespace mpc107
 } // end of namespace chipset

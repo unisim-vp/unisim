@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM C++ MPC107 Chipset Library], [1.0])
+AC_INIT([UNISIM C++ ATU MPC107 Chipset Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 
@@ -58,8 +58,6 @@ AC_CHECK_HEADERS([string],,\
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
-
-AC_CONFIG_SUBDIRS([dma epic atu])
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

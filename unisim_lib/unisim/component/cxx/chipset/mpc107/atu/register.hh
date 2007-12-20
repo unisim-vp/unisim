@@ -32,26 +32,56 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
-#include "unisim/component/cxx/chipset/mpc107/address_maps.tcc"
+#ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_REGISTER_HH__
+#define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_REGISTER_HH__
+
+#include <inttypes.h>
+#include <string>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace chipset {
 namespace mpc107 {
+namespace atu {
 
-template
-class AddressMap<uint32_t, uint32_t, true>;
-template
-class AddressMap<uint32_t, uint64_t, true>;
-template
-class AddressMap<uint64_t, uint32_t, true>;
-template
-class AddressMap<uint64_t, uint64_t, true>;
+using std::string;
 
-} // end of namespace mpc107
-} // end of namespace chipset
-} // end of namespace cxx
-} // end of namespace component
+class Registers {
+public:
+	Registers();
+	~Registers();
+	
+	/** inbound translation window register */
+	uint32_t itwr;
+	/** outbound memory base address register */
+	uint32_t ombar;
+	/** outbound translation window register */
+	uint32_t otwr;
+
+	/** registers addresses from system bus view */
+	static const uint32_t ITWR = (uint32_t)0x2310,
+		OMBAR = (uint32_t)0x2300,
+		OTWR = (uint32_t)0x2308;
+	/** registers addresses from pci view */
+	static const uint32_t PCI_ITWR = (uint32_t)0x310,
+		PCI_OMBAR = (uint32_t)0x300,
+		PCI_OTWR = (uint32_t)0x308;
+
+	/* registers names */
+	static const string
+		ITWR_NAME,
+		OMBAR_NAME,
+		OTWR_NAME;
+		
+private:
+};
+
+} // end of namespace atu
 } // end of namespace unisim
+} // end of namespace component
+} // end of namespace cxx
+} // end of namespace chipset
+} // end of namespace mpc107
+
+#endif // __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_REGISTER_HH__

@@ -32,24 +32,33 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/cxx/chipset/mpc107/address_maps.hh"
-#include "unisim/component/cxx/chipset/mpc107/address_maps.tcc"
+#include "unisim/component/cxx/chipset/mpc107/atu/register.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace chipset {
 namespace mpc107 {
+namespace atu {
 
-template
-class AddressMap<uint32_t, uint32_t, true>;
-template
-class AddressMap<uint32_t, uint64_t, true>;
-template
-class AddressMap<uint64_t, uint32_t, true>;
-template
-class AddressMap<uint64_t, uint64_t, true>;
+const string Registers :: ITWR_NAME = "ITWR";
+const string Registers :: OMBAR_NAME = "OMBAR";
+const string Registers :: OTWR_NAME = "OTWR";
+Registers :: 
+Registers() {
+	/* registers initialization */
+	itwr = (uint32_t)0x0;
+	ombar = (uint32_t)0x80000000;
+	otwr = (uint32_t)0x0; // note that in the specification 
+						  // some bits are undefined during the initialisation
+						  // we set them arbitrarily to 0
+}
 
+Registers ::
+~Registers() {
+}
+
+} // end of namespace epic
 } // end of namespace mpc107
 } // end of namespace chipset
 } // end of namespace cxx
