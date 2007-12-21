@@ -205,11 +205,25 @@ bool PowerPC<CONFIG>::Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message)
 				Pointer<FSBRsp> rsp = new(rsp) FSBRsp();
 				message->SetResponse(rsp);
 				sc_event *rsp_ev = message->GetResponseEvent();
-				rsp->read_status = FSBRsp::RS_MISS;
-				if(rsp_ev) rsp_ev->notify(bus_cycle_sctime);
+				//We search for the data
+                MMUControl prev_mmc = CPU<CONFIG>::mmu.GetControl();
+                CacheStatus cs = CPU<CONFIG>::dl1.PrTest(req->addr, &(rsp->read_data), req->size, CC_NONE);
+                //we set shared but we should set the right value
+                rsp->read_status = (cs == CS_MISS)? FSBRsp::RS_MISS:FSBRsp::RS_MODIFIED;
+				if(rsp_ev) { 
+					// fprintf(stderr, "notifying event %i", &rsp_ev);
+					rsp_ev->notify(SC_ZERO_TIME);					
+				}
 			}
 			break;
 		case FSBReq::WRITE:
+         {  // We just invalidate the cache block
+            MMUControl prev_mmc = CPU<CONFIG>::mmu.GetControl();
+            CPU<CONFIG>::mmu.DisableDMMU();
+            CPU<CONFIG>::mmu.InvalidateDataCacheBlock(req->addr, CPU<CONFIG>::GetPrivilegeLevel());
+            CPU<CONFIG>::mmu.SetControl(prev_mmc);
+         }
+		
 			break;
 		default:
 			cerr << sc_time_stamp() << " " << name() << "::Send: receiving an unhandled request" << endl;

@@ -401,7 +401,7 @@ IdeDisk<ADDRESS_TYPE>::doDmaRead()
             diskDelay, totalDiskDelay);
         // schedule dmaReadEvent with sectorDelay (dmaReadDone)
      //   dmaReadEvent.schedule(curTick + totalDiskDelay);
-     ctrl->event_stack.push_front(&dmaReadEvent);
+     ctrl->eventManager->schedule(&dmaReadEvent);
      return true;
      //return dmaReadDone();
 }
@@ -474,7 +474,7 @@ IdeDisk<ADDRESS_TYPE>::doDmaWrite()
 
         // schedule event with disk delay (dmaWriteDone)
        // dmaWriteEvent.schedule(curTick + totalDiskDelay);
-       ctrl->event_stack.push_front(&dmaWriteEvent);
+       ctrl->eventManager->schedule(&dmaWriteEvent);
        return true;
     //return dmaWriteDone();
        
@@ -544,42 +544,15 @@ IdeDisk<ADDRESS_TYPE>::dmaWriteDone()
 
 template <class ADDRESS_TYPE>
 void IdeDisk<ADDRESS_TYPE>::dma_read(ADDRESS_TYPE addr, int size, uint8_t* data) {
-/* 	PciTransaction *request = new PciTransaction(full_system::pci::TT_READ, 
-				addr, full_system::pci::TT_MEM, size, NULL);
 
-	tlm_message<PciTransaction, PciTransaction> message = tlm_message<PciTransaction, PciTransaction>(request);
-
-	simple_event event;
-	message.PushResponseEvent(&event);
-
-	masterPort->send(message);
-	simple_event::wait(event);
-
-	PciTransaction *response = message.GetResponseBuffer();
-	*/
-	if (pciMaster) {
-		pciMaster->dmaRead(addr, size, data);
-	} else {
-		soft_panic("PCIMaster not set, not using dma");
-	}
+	ctrl->dmaRead(addr, size, data);
 	
 }
 
 template <class ADDRESS_TYPE>
 void IdeDisk<ADDRESS_TYPE>::dma_write(ADDRESS_TYPE addr, int size, uint8_t* data) {
-/* 	PciTransaction *request = new PciTransaction(full_system::pci::TT_WRITE, 
-				addr, full_system::pci::TT_MEM, size, data);
 
-	tlm_message<PciTransaction, PciTransaction> message = tlm_message<PciTransaction, PciTransaction>(request);
-
-	masterPort->send(message);
-	*/
-	if (pciMaster) {
-		pciMaster->dmaWrite(addr, size, data);
-	} else {
-		soft_panic("PCIMaster not set, not using dma");
-	}
-	
+	ctrl->dmaWrite(addr, size, data);
 
 }
 
@@ -640,7 +613,7 @@ IdeDisk<ADDRESS_TYPE>::startDma(const uint32_t &prdTableBase)
 
     // schedule dma transfer (doDmaTransfer)
     //dmaTransferEvent.schedule(curTick + 1);
-    ctrl->event_stack.push_front(&dmaTransferEvent);
+    ctrl->eventManager->schedule(&dmaTransferEvent);
     return true;
     //doDmaTransfer();
 }

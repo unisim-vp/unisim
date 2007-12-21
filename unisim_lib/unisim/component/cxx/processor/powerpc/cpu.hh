@@ -1236,17 +1236,6 @@ private:
 	
 
 	//=====================================================================
-	//=                         L1 Data Cache                             =
-	//=====================================================================
-	
-	unisim::component::cxx::cache::mesi::Cache<
-		physical_address_t,
-		CONFIG::L1_DATA_CACHE_SIZE,
-		CONFIG::L1_DATA_CACHE_BLOCK_SIZE,
-		CONFIG::L1_DATA_CACHE_ASSOCIATIVITY,
-		CONFIG::L1_DATA_CACHE_REPLACEMENT_POLICY> dl1;
-		
-	//=====================================================================
 	//=                     L1 Instruction Cache                          =
 	//=====================================================================
 	
@@ -1268,11 +1257,6 @@ private:
 		CONFIG::L2_CACHE_ASSOCIATIVITY,
 		CONFIG::L2_CACHE_REPLACEMENT_POLICY> l2;
 	
-	//=====================================================================
-	//=                 Memory Management Unit (MMU)                      =
-	//=====================================================================
-		
-	MMU<CONFIG> mmu;
 	
 	//=====================================================================
 	//=                  Floating point Unit (MMU)                        =
@@ -1429,6 +1413,25 @@ protected:
 	uint64_t voltage;        //!< CPU voltage in mV
 	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
+	
+	//=====================================================================
+	//=                 Memory Management Unit (MMU)                      =
+	//=====================================================================
+		
+	MMU<CONFIG> mmu;
+
+	//=====================================================================
+	//=                         L1 Data Cache                             =
+	//=====================================================================
+	
+	unisim::component::cxx::cache::mesi::Cache<
+		physical_address_t,
+		CONFIG::L1_DATA_CACHE_SIZE,
+		CONFIG::L1_DATA_CACHE_BLOCK_SIZE,
+		CONFIG::L1_DATA_CACHE_ASSOCIATIVITY,
+		CONFIG::L1_DATA_CACHE_REPLACEMENT_POLICY> dl1;
+		
+	
 };
 
 } // end of namespace powerpc

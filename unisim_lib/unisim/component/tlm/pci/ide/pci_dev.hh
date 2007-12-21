@@ -81,7 +81,8 @@ template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 class PCIDev: public sc_module,
   		public TlmSendIf<PCIRequest<ADDRESS_TYPE, MAX_DATA_SIZE>, PCIResponse<MAX_DATA_SIZE> >,
   		public Client<Logger>,
-  		public virtual unisim::component::cxx::pci::ide::PCIMaster<ADDRESS_TYPE>//,
+  		public virtual unisim::component::cxx::pci::ide::PCIMaster<ADDRESS_TYPE>,
+  		public virtual unisim::component::cxx::pci::ide::EventManager
   		//public Service<PCIInterface<ADDRESS_TYPE> >,
   		//public Client<PCIInterface<ADDRESS_TYPE> >
 {
@@ -113,6 +114,7 @@ private:
 	sc_event dispatch_event;
 	sc_event intr_dispatch_event;
 	DeviceRequest intr_device_request;
+	list<unisim::component::cxx::pci::ide::Event *> event_stack;
 protected:
 	// Pci device implementation
 	unisim::component::cxx::pci::ide::PciDev<ADDRESS_TYPE> *pciDev;
@@ -138,6 +140,7 @@ public:
 	void postInt(int irqId);
 	void clearInt(int irqId);
 	void notify();
+	void schedule(unisim::component::cxx::pci::ide::Event *ev);
 	void EventDispatch();
 	void IntrDispatch();
 };

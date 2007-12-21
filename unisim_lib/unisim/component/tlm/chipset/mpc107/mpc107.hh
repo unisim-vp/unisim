@@ -385,7 +385,7 @@ private:
 	 * 
 	 * @return the translated fsb message.
 	 */ 
-	PMsgType ConverttoFSBMsg(const PPCIMsgType &pci_msg);
+	PMsgType ConverttoFSBMsg(const PPCIMsgType &pci_msg, int size_done, int size);
 	/**
 	 * Translates a pci message to a memory message.
 	 * 
@@ -393,7 +393,7 @@ private:
 	 * 
 	 * @return the translated memory message.
 	 */ 
-	PMemMsgType ConverttoMemMsg(const PPCIMsgType &pci_msg);
+	PMemMsgType ConverttoMemMsg(const PPCIMsgType &pci_msg, int size_done, int size);
 	/**
 	 * Translates a fsb message to a memory message.
 	 * 

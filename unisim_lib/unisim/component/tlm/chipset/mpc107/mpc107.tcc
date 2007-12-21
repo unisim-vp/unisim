@@ -370,7 +370,7 @@ Send(const PPCIMsgType &pci_message) {
 	const PPCIReqType& pci_req = pci_message->GetRequest();
 
 	/* check if the chipset can response to pci memory space requests */
-	if((config_regs.pci_command_reg.value & (1 << 1)) == 0) {
+	/*if((config_regs.pci_command_reg.value & (1 << 1)) == 0) {
 		if(DEBUG && logger_import) {
 			(*logger_import) << DebugWarning
 				<< LOCATION
@@ -379,8 +379,7 @@ Send(const PPCIMsgType &pci_message) {
 			(*logger_import) << "THE REQUEST IS ACCEPTED BUT A REPLY WILL NOT BE SENT" << Endl << EndDebugWarning;
 		}
 		return true;
-	}
-	
+	}*/
 	
 	AddressMapEntry *entry = addr_map.GetEntryProc(pci_req->addr);
 	if(entry == NULL) {
@@ -1385,20 +1384,20 @@ template <class PHYSICAL_ADDR,
 Pointer<TlmMessage<SnoopingFSBRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, SnoopingFSBResponse<MAX_TRANSACTION_DATA_SIZE> > >
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
-ConverttoFSBMsg(const PPCIMsgType &pci_msg) {
+ConverttoFSBMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 	PReqType fsb_req = new(fsb_req) ReqType();
 	PMsgType fsb_msg = new(fsb_msg) MsgType(fsb_req);
 	PPCIReqType pci_req = pci_msg->req;
 
 	fsb_req->global = true;
-	fsb_req->addr = pci_req->addr;
-	fsb_req->size = pci_req->size;
+	fsb_req->addr = pci_req->addr + size_done;
+	fsb_req->size = (size < MAX_TRANSACTION_DATA_SIZE)?size:MAX_TRANSACTION_DATA_SIZE;
 	switch(pci_req->type) {
 	case unisim::component::cxx::pci::TT_READ:
 		fsb_req->type = ReqType::READ;
 		break;
 	case unisim::component::cxx::pci::TT_WRITE:
-		memcpy(fsb_req->write_data, pci_req->write_data, pci_req->size);
+		memcpy(fsb_req->write_data, pci_req->write_data + size_done, fsb_req->size);
 		fsb_req->type = ReqType::WRITE;
 		break;
 	default:
@@ -1421,19 +1420,19 @@ template <class PHYSICAL_ADDR,
 Pointer<TlmMessage<MemoryRequest<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > >
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
-ConverttoMemMsg(const PPCIMsgType &pci_msg) {
+ConverttoMemMsg(const PPCIMsgType &pci_msg, int size_done, int size) {
 	PMemReqType mem_req = new(mem_req) MemReqType();
 	PMemMsgType mem_msg = new(mem_msg) MemMsgType(mem_req);
 	PPCIReqType pci_req = pci_msg->req;
 
-	mem_req->addr = pci_req->addr;
-	mem_req->size = pci_req->size;
+	mem_req->addr = pci_req->addr + size_done;
+	mem_req->size = (size < MAX_TRANSACTION_DATA_SIZE)?size:MAX_TRANSACTION_DATA_SIZE;
 	switch(pci_req->type) {
 	case unisim::component::cxx::pci::TT_READ:
 		mem_req->type = MemReqType::READ;
 		break;
 	case unisim::component::cxx::pci::TT_WRITE:
-		memcpy(mem_req->write_data, pci_req->write_data, pci_req->size);
+		memcpy(mem_req->write_data, pci_req->write_data + size_done, mem_req->size);
 		mem_req->type = MemReqType::WRITE;
 		break;
 	default:
@@ -1576,67 +1575,72 @@ DispatchPCIReq() {
 		/* get the first element in the list of pci request for the
 		 *   memory system */
 		item = pci_req_list.front();
-	
-		/* prepare a request (and message) for the system bus */
-		PMsgType fsb_msg = ConverttoFSBMsg(item->pci_msg);
-		sc_event fsb_msg_ev;
-		if(item->pci_msg->HasResponseEvent())
-			fsb_msg->PushResponseEvent(fsb_msg_ev);
-
-		/* send the message to the system bus */
-		while(!master_port->Send(fsb_msg)) {
-			if(logger_import)
-				(*logger_import) << DebugError
-					<< "Message was not accepted by the system bus" << Endl
-					<< EndDebugError;
-			sc_stop();
-			wait();
-		}
+		// We have to take into account that the width of the pci bus may be greater than the one of the system bus [paula]
+        int size_done = 0;
+		PPCIRspType pci_rsp = new(pci_rsp) PCIRspType();
+		while (size_done< item->pci_msg->req->size) {
 		
-		/* wait for the message response if the request was
-		 *   a read message,
-		 *   if the request was a hit, then send the response
-		 *   to the pci bus, otherwise it will have to be sent to
-		 *   the memory system */
-		if(fsb_msg->req->type == ReqType::READ) {
-			wait(fsb_msg_ev);
-			const PRspType &fsb_rsp = fsb_msg->GetResponse();
-			if(!(fsb_rsp->read_status == RspType::RS_SHARED ||
-				fsb_rsp->read_status == RspType::RS_MODIFIED)) {
-				// the response was not received from the system bus,
-				//   it needs to be sent to the memory system
-				PMemMsgType mem_msg = ConverttoMemMsg(item->pci_msg); 
-				for(bool finished = false; !finished;) {
-					finished = AdvancedResponseListener<
-						MemReqType,
-						MemRspType,
-						PCIReqType,
-						PCIRspType 
-						>::Send(mem_msg, *(item->out_port), item->pci_msg, pci_slave_port);
-					if(!finished)
+            			
+			/* prepare a request (and message) for the system bus */
+			PMsgType fsb_msg = ConverttoFSBMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done);
+			sc_event fsb_msg_ev;
+			
+			if(item->pci_msg->HasResponseEvent())
+				fsb_msg->PushResponseEvent(fsb_msg_ev);
+
+				/* send the message to the system bus */
+			while(!master_port->Send(fsb_msg)) {
+				if(logger_import)
+					(*logger_import) << DebugError
+					<< "Message was not accepted by the system bus, retrying" << Endl
+					<< EndDebugError;
+				wait(cycle_time);
+			}
+		
+			/* wait for the message response if the request was
+		 	*   a read message,
+		 	*   if the request was a hit, then send the response
+		 	*   to the pci bus, otherwise it will have to be sent to
+		 	*   the memory system */
+			if(fsb_msg->req->type == ReqType::READ) {
+		
+				wait(fsb_msg_ev);
+				const PRspType &fsb_rsp = fsb_msg->GetResponse();
+				if(!(fsb_rsp->read_status == RspType::RS_SHARED ||
+					fsb_rsp->read_status == RspType::RS_MODIFIED)) {
+					// the response was not received from the system bus,
+					//   it needs to be sent to the memory system
+					PMemMsgType mem_msg = ConverttoMemMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done); 
+					while(!(*(item->out_port))->Send(mem_msg))
 						wait(cycle_time);
-				}
-			} else {
-				PPCIRspType pci_rsp = new(pci_rsp) PCIRspType();
+					size_done += mem_msg->req->size;
+				} else {					
 				
-				if(DEBUG && logger_import)
-					(*logger_import) << DebugInfo
+					if(DEBUG && logger_import)
+						(*logger_import) << DebugInfo
 						<< sc_time_stamp().to_string()
 						<< " received response to a pci request from the memory system, "
 						<< " forwarding response to the PCI bus" << Endl
 						<< EndDebugInfo;
 				
-				memcpy(pci_rsp->read_data, fsb_rsp->read_data,  item->pci_msg->req->size);
-				item->pci_msg->SetResponse(pci_rsp);
-				item->pci_msg->GetResponseEvent()->notify(SC_ZERO_TIME);
+					memcpy(pci_rsp->read_data + size_done, fsb_rsp->read_data + size_done,  fsb_msg->req->size);
+					size_done += fsb_msg->req->size;
+				}
+			} else { /* the request is a write request, no reply expected */
+				/* if the request was a write then the request needs to be sent also to the
+			 	*   memory system */
+				PMemMsgType mem_msg = ConverttoMemMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done);
+				while(!(*(item->out_port))->Send(mem_msg))
+					wait(cycle_time);
+				size_done += mem_msg->req->size;
 			}
-		} else { /* the request is a write request, no reply expected */
-			/* if the request was a write then the request needs to be sent also to the
-			 *   memory system */
-			PMemMsgType mem_msg = ConverttoMemMsg(item->pci_msg);
-			while(!(*(item->out_port))->Send(mem_msg))
-				wait(cycle_time);
+			
 		}
+		
+		if (item->pci_msg->req->type == unisim::component::cxx::pci::TT_READ) {
+            item->pci_msg->SetResponse(pci_rsp);
+            item->pci_msg->GetResponseEvent()->notify(SC_ZERO_TIME);
+        }
 		
 		pci_req_list.pop_front();
 	    free_pci_req_list.push_back(item);

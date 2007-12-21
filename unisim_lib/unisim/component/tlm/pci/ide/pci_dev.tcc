@@ -78,6 +78,7 @@ PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::~PCIDev() {
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
 	pciDev->SetPCIMaster(this);
+	pciDev->SetEventManager(this);
 	Reset ();
 	return true;
 }
@@ -211,37 +212,55 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Reset() {
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaRead(ADDRESS_TYPE addr, int size, uint8_t *data) {
-	PReqType req = new(req) ReqType();
-	PMsgType message = new(message) MsgType(req);
-	sc_event pci_event;
-	message->PushResponseEvent(pci_event);
-	req->addr = addr;
-	req->type = unisim::component::cxx::pci::TT_READ;
-	req->space = unisim::component::cxx::pci::SP_MEM;
-	req->size = size;
-	//todo: implement resend?
-	output_port->Send(message);
-	wait(pci_event);
 	
-	PRspType rsp = message->rsp;
-	memcpy(data, rsp->read_data, size);
+	int size_done = 0;
 	
+	while (size_done < size) {
+	
+		PReqType req = new(req) ReqType();
+		PMsgType message = new(message) MsgType(req);
+		sc_event pci_event;
+		message->PushResponseEvent(pci_event);
+		req->addr = addr + size_done;
+		req->type = unisim::component::cxx::pci::TT_READ;
+		req->space = unisim::component::cxx::pci::SP_MEM;
+		req->size = (size - size_done) < MAX_DATA_SIZE?(size - size_done):MAX_DATA_SIZE;
+		//todo: implement resend?
+		output_port->Send(message);
+		wait(pci_event);
+	
+		PRspType rsp = message->rsp;
+		memcpy(data + size_done, rsp->read_data, req->size);
+		size_done += req->size;
+	}
 	return true;		
 }
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::dmaWrite(ADDRESS_TYPE addr, int size, const uint8_t *data) {
 	if(logger_import)
-		(*logger_import) << DebugInfo << "doing dma writeeee" << Endl << EndDebugInfo;
-	PReqType req = new(req) ReqType();
-	PMsgType pci_msg = new(pci_msg) MsgType(req);
-	req->addr = addr;
-	req->type = unisim::component::cxx::pci::TT_WRITE;
-	req->space = unisim::component::cxx::pci::SP_MEM;
-	req->size =  size;
-	memcpy(req->write_data, data, size);
-	//todo: implement resend?
-	output_port->Send(pci_msg);
+		(*logger_import) << DebugInfo << "Doing dma write" << Endl << EndDebugInfo;
+		
+	int size_done = 0;
+	
+	while (size_done < size) {
+	
+		PReqType req = new(req) ReqType();
+		PMsgType pci_msg = new(pci_msg) MsgType(req);
+		req->addr = addr + size_done;
+		req->type = unisim::component::cxx::pci::TT_WRITE;
+		req->space = unisim::component::cxx::pci::SP_MEM;
+		req->size = (size - size_done) <= MAX_DATA_SIZE?(size - size_done):MAX_DATA_SIZE;
+		memcpy(req->write_data, data + size_done, req->size);
+		//todo: implement resend?		
+		output_port->Send(pci_msg);
+		
+		/* fprintf(stderr, "Writing: ");
+		for (int i=0; i < (req->size/8); i++) {
+			fprintf(stderr, " %x ", req->write_data[i]);
+		}*/		
+		size_done += req->size;
+	}
 	return true;	
 }
 
@@ -285,14 +304,21 @@ void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::notify() {
 }
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
+void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::schedule(unisim::component::cxx::pci::ide::Event *ev) {
+		event_stack.push_back(ev);
+		dispatch_event.notify(SC_ZERO_TIME);
+}
+
+template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 void PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::EventDispatch() {
 	while(1) {
-		if (pciDev->event_stack.empty()) {
+		if (event_stack.empty()) {
 			wait(dispatch_event);
 				//wait(1.0, SC_FS);
 		} else {
-			unisim::component::cxx::pci::ide::Event * ev = pciDev->event_stack.front();
-			pciDev->event_stack.pop_front();
+			//TODO PC: Event and PCIDev should be one level up in the hierarchy
+			unisim::component::cxx::pci::ide::Event * ev = event_stack.front();
+			event_stack.pop_front();
 			ev->process();
 			
 		}

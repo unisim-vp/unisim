@@ -1257,6 +1257,128 @@ inline void Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, C
 	offset = physical_addr & (CACHE_BLOCK_SIZE - 1);
 }
 
+template <class CACHE_BLOCK, class PHYSICAL_ADDRESS, uint32_t CACHE_SIZE, uint32_t CACHE_BLOCK_SIZE, uint32_t CACHE_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
+CacheStatus Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIATIVITY, REPLACEMENT_POLICY>::PrTest(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, CacheControl cc)
+{
+	uint32_t offset = physical_addr & (CACHE_BLOCK_SIZE - 1);
+	uint32_t size_to_block_boundary = CACHE_BLOCK_SIZE - offset;
+	if(size_to_block_boundary >= size)
+	{
+		// Memory access does not cross a cache block boundary
+		return PrTestBlockAligned(physical_addr, buffer, size, cc);
+	}
+	else
+	{
+		// Memory access crosses a cache block boundary
+		CacheStatus cs = PrTestBlockAligned(physical_addr, buffer, size_to_block_boundary, cc);
+		CacheStatus cs1 = PrTestBlockAligned((physical_addr + CACHE_BLOCK_SIZE) & ~(CACHE_BLOCK_SIZE - 1), (uint8_t *) buffer + size_to_block_boundary, size - size_to_block_boundary, cc);
+		//todo, see what to do if they differ
+		return cs;
+	}
+}
+
+template <class CACHE_BLOCK, class PHYSICAL_ADDRESS, uint32_t CACHE_SIZE, uint32_t CACHE_BLOCK_SIZE, uint32_t CACHE_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
+CacheStatus Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIATIVITY, REPLACEMENT_POLICY>::PrTestBlockAligned(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size, CacheControl cc)
+{
+	PHYSICAL_ADDRESS base_physical_addr;
+	uint32_t index, offset;
+	CACHE_BLOCK *block;
+	
+	// Is the cache enabled ?
+	if(enabled)
+	{
+		// Decode the physical address
+		DecodeAddress(physical_addr, base_physical_addr, index, offset);
+	
+		// search for the block in the set
+		block = SearchBlock(index, base_physical_addr);
+
+		if(block)
+		{
+			// Local cache Read Hit
+			block->UpdateState(EvPrRd, false);
+			// read data from the block
+			block->Read(offset, buffer, size);
+
+			// Update the replacement policy
+			UpdateReplacementPolicy(block, index);
+			//todo: put here the right value
+			return CS_SHARED;
+		}
+
+		// report a read access to power estimator
+//		if(power_estimator_import.IsConnected()) power_estimator_import->ReportReadAccess();
+//	return
+		}
+	
+	// Cache is disabled
+
+	if(next_level_cache)
+	{
+		// Read the cache block from the next level cache
+		return next_level_cache->PrTest(physical_addr, buffer, size, cc);
+	}
+				
+	// Local cache Read Miss
+	return CS_MISS;
+}
+
+template <class CACHE_BLOCK, class PHYSICAL_ADDRESS, uint32_t CACHE_SIZE, uint32_t CACHE_BLOCK_SIZE, uint32_t CACHE_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
+CacheStatus Cache<CACHE_BLOCK, PHYSICAL_ADDRESS, CACHE_SIZE, CACHE_BLOCK_SIZE, CACHE_ASSOCIATIVITY, REPLACEMENT_POLICY>::BusTest(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size)
+{
+	PHYSICAL_ADDRESS base_physical_addr;
+	uint32_t index, offset;
+	CACHE_BLOCK *block;
+
+	// Is the cache enabled ?	
+	if(enabled)
+	{
+		// Decode the physical address
+		DecodeAddress(physical_addr, base_physical_addr, index, offset);
+	
+		// search for the block in the set
+		block = SearchBlock(index, base_physical_addr);
+
+		// report a read access to power estimator
+		if(power_estimator_import) power_estimator_import->ReportReadAccess();
+
+		// Hit or Miss ?
+		if(block)
+		{
+			// Snoop Hit
+			CacheStatus block_cs = (CacheStatus)(CS_HIT | (block->IsModified() ? CS_MODIFIED : CS_MISS));
+
+			// Read the data from the block
+			block->Read(offset, buffer, size);
+
+			// Do an action on the bus (according to the coherency protocol), and report an error to processor if the action has generated a bus error
+//			CacheStatus cs;
+//			DoAction(block, EvBusRd, CC_NONE, cs);
+
+			// Update the block state
+			block->UpdateState(EvBusRd, block_cs & CS_SHARED);
+			
+			// report the block status to the bus before block state update
+			bus_interface->BusSetCacheStatus(block_cs);
+			return block_cs;
+		}
+
+		// Snoop Miss
+		// report a cache miss to the bus before block state update
+		bus_interface->BusSetCacheStatus(CS_MISS);
+		//return CS_MISS;
+	}
+	
+	// Cache is disabled
+
+/*	if(previous_level_cache)
+	{
+		CacheStatus cs;
+		// the Read command just pass through the cache
+		return previous_level_cache->BusTest(physical_addr, buffer, size);
+	} */
+}
+
 } // end of namespace cache
 } // end of namespace cxx
 } // end of namespace component

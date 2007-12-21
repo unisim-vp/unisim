@@ -51,6 +51,7 @@ retaining the original license:
 #include "unisim/component/cxx/pci/ide/event.hh"
 #include <unisim/util/endian/endian.hh>
 #include "unisim/component/cxx/pci/ide/pci_master.hh"
+#include "unisim/component/cxx/pci/ide/event_manager.hh"
 //#include "dev/pcidev_abstract.hh"
 //#include "comm/tlm_message.hh"
 //#include "comm/masterPortAbstract.hh"
@@ -143,10 +144,13 @@ class PciDev
     /* Interface for dma and interrupts */
     protected:
     PCIMaster<ADDRESS_TYPE> *pciMaster;
+    public:
+    EventManager *eventManager;
     
 	//MasterPortAbstract<tlm_message<IntrRequest, IntrRequest> > *intrPort;
 
   public:
+  	virtual void SetEventManager(EventManager *em);
   	virtual void SetPCIMaster(PCIMaster<ADDRESS_TYPE> *p);
 
     void
@@ -176,6 +180,10 @@ class PciDev
 
     virtual bool writeIO(ADDRESS_TYPE addr, int size, const uint8_t *data);
 
+	virtual bool dmaWrite(ADDRESS_TYPE addr, int len, const uint8_t *data);
+	
+	virtual bool dmaRead(ADDRESS_TYPE addr, int len, uint8_t *data);
+	
     //virtual bool read(ReqData &reqData, uint8_t *data) = 0;
     //virtual bool write(ReqData &reqData, const uint8_t *data) = 0;
 

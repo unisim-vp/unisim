@@ -333,7 +333,10 @@ BusSynchronize() {
 				<< ((cycle_time * (cur_cycle + 1)) - cur_time).to_string() 
 				<< Endl
 				<< EndDebugInfo;
+		//fprintf(stderr, "sending message in more time ");
+		//fprintf(stderr, ((cycle_time * (cur_cycle + 1)) - cur_time).to_string().c_str());
 		bus_synchro_event.notify((cycle_time * (cur_cycle + 1)) - cur_time);
+		//bus_synchro_event.notify_delayed();
 	}
 }
 	
@@ -502,7 +505,7 @@ DispatchChipsetMessage() {
 			<< EndDebugInfo;
 	/* only two possible requests can arrive from the chipset for the moment,
 	 *   a write command, and a read with intent to modify command */
-	if(!(msg->req->type == ReqType::READX || msg->req->type == ReqType::WRITE)) {
+	if(!(msg->req->type == ReqType::READ || msg->req->type == ReqType::READX || msg->req->type == ReqType::WRITE)) {
 		if(logger_import) {
 			(*logger_import) << DebugError << LOCATION
 				<< "The bus received a request from the chipset that is not "
@@ -518,35 +521,36 @@ DispatchChipsetMessage() {
 			if(!(*outport[i])->Send(msg))
 				wait(cycle_time);
 		/* the task is done */
-	}
+	} else {
 	/* the message is a read with intent to modify (READX), this is harder to handle.
 	 * First send the message to all the cpus, then wait for all their answers,
 	 *   and once they have been received send the reply to the chipset */
-	PTransactionMsgType msg_copies[NUM_PROCS];
-	sc_event ev;
-	for(unsigned int i = 0; i < NUM_PROCS; i++)
-		msg_copies[i] = new (msg_copies[i]) TransactionMsgType(msg->GetRequest(), ev);
+		PTransactionMsgType msg_copies[NUM_PROCS];
+		sc_event ev;
+		for(unsigned int i = 0; i < NUM_PROCS; i++)
+			msg_copies[i] = new (msg_copies[i]) TransactionMsgType(msg->GetRequest(), ev);
 	/* TODO: snoop should be tested for debugging */
-	snoop_counter = 0;
-	cpu_snoop = false;
-	chipset_snoop = true;
-	for(unsigned int i = 0; i < NUM_PROCS; i++)
-		if(!inheritedRspListener::Send(msg, *outport[i]))
-			wait(cycle_time);
-	wait(snoop_event);
-	chipset_snoop = false;
-	cpu_snoop = false;
-	wait(cycle_time);
+		snoop_counter = 0;
+		cpu_snoop = false;
+		chipset_snoop = true;
+		for(unsigned int i = 0; i < NUM_PROCS; i++)
+			if(!inheritedRspListener::Send(msg_copies[i], *outport[i]))
+				wait(cycle_time);
+		wait(snoop_event);
+		chipset_snoop = false;
+		cpu_snoop = false;
+		wait(cycle_time);
 	/* all the replies have been received, check if there is any hit, if so send it as
 	 *   answer, otherwise, send a miss response */
-	msg->rsp = new(msg->rsp) RspType();
-	msg->rsp->read_status = RspType::RS_MISS;
-	for(unsigned int i = 0; i < NUM_PROCS; i++) {
-		if(msg_copies[i]->rsp->read_status == RspType::RS_MODIFIED) {
-			msg->rsp = msg_copies[i]->rsp;
+		msg->rsp = new(msg->rsp) RspType();
+		msg->rsp->read_status = RspType::RS_MISS;
+		for(unsigned int i = 0; i < NUM_PROCS; i++) { //What about SHARED???
+			if(msg_copies[i]->rsp->read_status == RspType::RS_MODIFIED) {
+				msg->rsp = msg_copies[i]->rsp;
+			}
 		}
+		msg->GetResponseEvent()->notify();
 	}
-	msg->GetResponseEvent()->notify();
 }
 
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
@@ -672,7 +676,7 @@ ProcessSnoopingResponse(const PTransactionMsgType &msg) {
 		wait();
 	}
 	snoop_counter++;
-	if(chipset_snoop && snoop_counter == (NUM_PROCS + 1))
+	if(chipset_snoop && snoop_counter == NUM_PROCS)
 		snoop_event.notify(SC_ZERO_TIME);
 	if(cpu_snoop && snoop_counter == (NUM_PROCS - 1))
 		snoop_event.notify(SC_ZERO_TIME);

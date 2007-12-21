@@ -64,6 +64,11 @@ void PciDev<ADDRESS_TYPE>::SetPCIMaster(PCIMaster<ADDRESS_TYPE> *p) {
 }
 
 template<class ADDRESS_TYPE>
+void PciDev<ADDRESS_TYPE>::SetEventManager(EventManager *em) {
+  		eventManager = em;
+}
+
+template<class ADDRESS_TYPE>
 void
 PciDev<ADDRESS_TYPE>::intrPost()
 {   //TODO find out if we can eliminate intrline param and use the port position if possible. doesnt fit. intr ctrl has 5 ports, and we have 256 possible intr lines?
@@ -87,6 +92,26 @@ PciDev<ADDRESS_TYPE>::intrClear()
 
 	intrPort->send(message);
 	*/ 
+}
+
+template<class ADDRESS_TYPE>
+bool PciDev<ADDRESS_TYPE>::dmaRead(ADDRESS_TYPE addr, int len, uint8_t *data) {
+	if (pciMaster) {
+		pciMaster->dmaRead(addr, len, data);
+	} else {
+		soft_panic("PCIMaster not set, not using dma");
+		return false;
+	}
+}
+
+template<class ADDRESS_TYPE>
+bool PciDev<ADDRESS_TYPE>::dmaWrite(ADDRESS_TYPE addr, int len, const uint8_t *data) {
+	if (pciMaster) {
+		pciMaster->dmaWrite(addr, len, data);
+	} else {
+		soft_panic("PCIMaster not set, not using dma");
+		return false;
+	}
 }
 
 template<class ADDRESS_TYPE>
@@ -131,9 +156,7 @@ bool PciDev<ADDRESS_TYPE>::writeIO(ADDRESS_TYPE addr, int size, const uint8_t *d
 template<class ADDRESS_TYPE>
 PciDev<ADDRESS_TYPE>::PciDev(PciDev<ADDRESS_TYPE>::Params *p)
 	: _params(p),
-      configData(p->configData),
-      event_stack()//,
-		//intrPort(p->intrPort)
+      configData(p->configData)
 {
     // copy the config data from the PciConfigData object
     if (configData) {
@@ -175,26 +198,26 @@ bool PciDev<ADDRESS_TYPE>::readConfig(ADDRESS_TYPE offset, int size, uint8_t *da
 			
 		*(uint8_t*)data = *(uint8_t*)&config.data[offset];
         	
-/*    	fprintf(stderr, 
+    	/* fprintf(stderr, 
             "read device: %#x function: %#x register: %#x %d bytes: data: %#x\n",
             _params->deviceNum, _params->functionNum, offset, size,
-            *(uint8_t*)data);*/
-			break;
+            *(uint8_t*)data);
+			break; */
 		}
       case sizeof(uint16_t): {
         *(uint16_t*)data = *(uint16_t*)&config.data[offset];
-/*		    fprintf(stderr, 
+		   /* fprintf(stderr, 
             "read device: %#x function: %#x register: %#x %d bytes: data: %#x\n",
             _params->deviceNum, _params->functionNum, offset, size,
-            *(uint16_t*)data);*/
+            *(uint16_t*)data); */
 		}
         break;
       case sizeof(uint32_t): {
         *(uint32_t*)data = *(uint32_t*)&config.data[offset];
-/*		    fprintf(stderr, 
+		   /*  fprintf(stderr, 
             "read device: %#x function: %#x register: %#x %d bytes: data: %#x\n",
             _params->deviceNum, _params->functionNum, offset, size,
-            *(uint32_t*)data);*/
+            *(uint32_t*)data); */
 		}
         break;
       default: {
@@ -226,9 +249,9 @@ bool PciDev<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const uint
     switch (size) {
       case sizeof(uint8_t): // 1-byte access
 		{ 
-// 		    fprintf(stderr,  
-//             "write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
-//             _params->deviceNum, _params->functionNum, offset, size, data8);
+ 		   /* fprintf(stderr,  
+             "write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
+             _params->deviceNum, _params->functionNum, offset, size, data8); */
 
 			switch (offset) {
 	  		case PCI0_INTERRUPT_LINE:
@@ -261,9 +284,9 @@ bool PciDev<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const uint
 		break;
       case sizeof(uint16_t): // 2-byte access
 		{ 
-// 		    fprintf(stderr,  
-//             "write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
-//             _params->deviceNum, _params->functionNum, offset, size, data16);
+ 		    /* fprintf(stderr,  
+            	"write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
+             	_params->deviceNum, _params->functionNum, offset, size, data16); */
 
 			switch (offset) {
 	  		case PCI_COMMAND:
@@ -287,9 +310,9 @@ bool PciDev<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const uint
 		break;
       case sizeof(uint32_t): // 4-byte access
 		{
-// 			fprintf(stderr,  
-//     	       	"write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
-//         	   	_params->deviceNum, _params->functionNum, offset, size, data32);
+ 			/* fprintf(stderr,  
+	   	       	"write device: %#x function: %#x reg: %#x size: %d data: %#x\n",
+    	   	   	_params->deviceNum, _params->functionNum, offset, size, data32); */
 
 			switch (offset) {
 	  		case PCI0_BASE_ADDR0:

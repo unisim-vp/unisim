@@ -59,6 +59,8 @@ typedef enum {
 	CC_MEMORY_COHERENCY_ENFORCED = 2,  // Memory coherency enforced (i.e. snooping enabled in other processors)
 } CacheControl;
 
+typedef enum { CS_MISS = 0, CS_HIT = 1, CS_SHARED = 2, CS_MODIFIED = 4, CS_BUSY = 8 } CacheStatus;
+
 template <class PHYSICAL_ADDR>
 class CacheInterface
 {
@@ -68,17 +70,17 @@ public:
 	virtual void PrZeroBlock(PHYSICAL_ADDR physical_addr, CacheControl cc) = 0;
 	virtual void PrWrite(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size, CacheControl cc) = 0;
 	virtual void PrRead(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size, CacheControl cc) = 0;
+	virtual CacheStatus PrTest(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size, CacheControl cc) = 0;
 	virtual void PrReadX(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size, CacheControl cc) = 0;
 	virtual void BusInvalidateBlock(PHYSICAL_ADDR physical_addr) = 0;
 	virtual void BusFlushBlock(PHYSICAL_ADDR physical_addr) = 0;
 	virtual void BusRead(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size) = 0;
+	virtual CacheStatus BusTest(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size) = 0;
 	virtual void BusReadX(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size) = 0;
 };
 
 typedef enum { BC_NONE = 0, BC_GLOBAL = 1 } BusControl;
 typedef enum { BS_OK = 0, BS_ERROR = 1 } BusStatus;
-typedef enum { CS_MISS = 0, CS_HIT = 1, CS_SHARED = 2, CS_MODIFIED = 4, CS_BUSY = 8 } CacheStatus;
-
 
 template <class PHYSICAL_ADDR>
 class BusInterface

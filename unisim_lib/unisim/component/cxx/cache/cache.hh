@@ -118,6 +118,10 @@ public:
 	virtual void BusFlushBlock(PHYSICAL_ADDRESS physical_addr);
 	virtual void BusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size);
 	virtual void BusReadX(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size);
+	
+	//This methods are only used for cache coherency
+	virtual CacheStatus BusTest(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size);
+	virtual CacheStatus PrTest(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc);
 
 private:
 	bool enabled;
@@ -185,6 +189,12 @@ private:
 	inline void PrReadBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc)
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 	__attribute__((always_inline))
+#endif
+	;
+		/* Read from cache */
+	CacheStatus PrTestBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc)
+#if defined(__GNUC__) && (__GNUC__ >= 3)
+__attribute__((always_inline))
 #endif
 	;
 	
