@@ -352,9 +352,11 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( " unsigned int              size;\n" );
   _product.code( " uint8_t                   str[maxsize];\n" );
   _product.code( " enum Exception_t { NotEnoughBytes };\n" );
-  _product.code( " CodeType();\n" );
-  _product.code( " CodeType( uint8_t* _src, unsigned int _size );\n" );
-  _product.code( " CodeType( CodeType const& _ct );\n" );
+  _product.code( " CodeType() : size( 0 ) {};\n" );
+  _product.code( " CodeType( uint8_t* _src, unsigned int _size )\n" );
+  _product.code( " : size( std::min( _size, maxsize ) ) { memcpy( str, _src, size ); }\n" );
+  _product.code( " CodeType( CodeType const& _ct )\n" );
+  _product.code( " : size( _ct.size ) { memcpy( str, _ct.str, _ct.size ); }\n" );
   _product.code( " bool match( CodeType const& _bits, CodeType const& _mask ) const {\n" );
   _product.code( "  for( unsigned int idx = 0; idx < _mask.size; ++idx ) {\n" );
   _product.code( "   if( idx >= size ) throw NotEnoughBytes;\n" );
@@ -362,8 +364,15 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( "  };\n" );
   _product.code( "  return true;\n" );
   _product.code( " };\n" );
-  _product.code( " bool match( CodeType const& _bits ) const;\n" );
-  _product.code( " void pop( unsigned int _bytes );\n" );
+  _product.code( " bool match( CodeType const& _bits ) const {\n" );
+  _product.code( "  if( size < _bits.size ) throw NotEnoughBytes;\n" );
+  _product.code( "  return memcmp( str, _bits.str, _bits.size );\n" );
+  _product.code( " }\n" );
+  _product.code( " void pop( unsigned int _bytes ) {\n" );
+  _product.code( "  if( size < _bytes ) throw NotEnoughBytes;\n" );
+  _product.code( "  size -= _bytes;\n" );
+  _product.code( "  memmove( str, str + _bytes, size );\n" );
+  _product.code( " }\n" );
   _product.code( " friend std::ostream& operator << ( std::ostream& _sink, CodeType const& _ct );\n" );
   _product.code( "};\n" );
 }
@@ -371,19 +380,6 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
 void
 CiscGenerator::codetype_impl( Product_t& _product ) const {
   _product.code( "unsigned int const CodeType::maxsize;\n" );
-  _product.code( "CodeType::CodeType() : size( 0 ) {}\n" );
-  _product.code( "CodeType::CodeType( uint8_t* _src, unsigned int _size )\n" );
-  _product.code( "  : size( std::min( _size, maxsize ) ) { memcpy( str, _src, size ); }\n" );
-  _product.code( "CodeType::CodeType( CodeType const& _ct ) : size( _ct.size ) { memcpy( str, _ct.str, _ct.size ); }\n" );
-  _product.code( "bool CodeType::match( CodeType const& _bits ) const {\n" );
-  _product.code( " if( size < _bits.size ) throw NotEnoughBytes;\n" );
-  _product.code( " return memcmp( str, _bits.str, _bits.size );\n" );
-  _product.code( "}\n" );
-  _product.code( "void CodeType::pop( unsigned int _bytes ) {\n" );
-  _product.code( " if( size < _bytes ) throw NotEnoughBytes;\n" );
-  _product.code( " size -= _bytes;\n" );
-  _product.code( " memmove( str, str + _bytes, size );\n" );
-  _product.code( "}\n" );
   _product.code( "std::ostream& operator << ( std::ostream& _sink, CodeType const& _ct ) {\n" );
   _product.code( " char const* xrepr = \"0123456789abcdef\";\n" );
   _product.code( " char const* sep = \"\";\n" );
