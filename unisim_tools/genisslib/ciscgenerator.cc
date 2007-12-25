@@ -366,7 +366,7 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( " };\n" );
   _product.code( " bool match( CodeType const& _bits ) const {\n" );
   _product.code( "  if( size < _bits.size ) throw NotEnoughBytes;\n" );
-  _product.code( "  return memcmp( str, _bits.str, _bits.size );\n" );
+  _product.code( "  return memcmp( str, _bits.str, _bits.size ) == 0;\n" );
   _product.code( " }\n" );
   _product.code( " void pop( unsigned int _bytes ) {\n" );
   _product.code( "  if( size < _bytes ) throw NotEnoughBytes;\n" );
