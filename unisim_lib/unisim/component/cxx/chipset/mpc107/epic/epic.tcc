@@ -2175,6 +2175,7 @@ WriteSVR(uint32_t data) {
 			<< "Setting Spurious Vector Register (SVR) to 0x"
 			<< Hex << data << Dec
 			<< Endl << EndDebugInfo;
+	regs.svr = data;
 }
 
 template <class PHYSICAL_ADDR, 
