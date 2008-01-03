@@ -39,6 +39,16 @@ std::vector<ConstStr_t>  Scanner::s_lookupdirs;
 
 void parse_binary_number( char const* s, int length, unsigned int *value );
 
+/* This is for Flex < 2.5.9 (where yylex_destroy is not defined) */
+#if !defined(YY_FLEX_MAJOR_VERSION) || YY_FLEX_MAJOR_VERSION < 2 \
+    || (YY_FLEX_MAJOR_VERSION == 2 \
+        && (!defined(YY_FLEX_MINOR_VERSION) || YY_FLEX_MINOR_VERSION < 5 \
+            || (YY_FLEX_MINOR_VERSION == 5 \
+                && (!defined(YY_FLEX_SUBMINOR_VERSION) \
+                    || YY_FLEX_SUBMINOR_VERSION < 9))))
+# define yylex_destroy() yy_delete_buffer (YY_CURRENT_BUFFER)
+#endif
+
 %}
 
 identifier [a-zA-Z_][a-zA-Z0-9_]*
