@@ -24,6 +24,7 @@
 #include <sourcecode.hh>
 #include <comment.hh>
 #include <iostream>
+#include <cerrno>
 
 using namespace std;
 
