@@ -472,116 +472,116 @@ CreateProcessorPCIView() {
 						AddressMapEntry::PCI_INT_ACK);
 }
 
-template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
-bool
-AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetEmbeddedUtilities() {
-	uint32_t eu_addr = 0;
-
-	/* getting base address */
-	eu_addr = config_regs->eumbbar.value;
-
-	if(DEBUG && logger_import) 
-		(*logger_import) << DebugInfo
-			<< LOCATION
-			<< "Setting the embedded utilities at address 0x"
-			<< Hex << eu_addr << Dec 
-			<< Endl
-			<< EndDebugInfo;
-
-	CreateAddressMapEntry(&proc_list,
-		"EUMB message unit space",
-		eu_addr,
-		eu_addr + (uint32_t)0x0fff,
-		AddressMapEntry::EUMB_MSG_UNIT_SPACE);
-	CreateAddressMapEntry(&proc_list,
-		"EUMB DMA space",
-		eu_addr + (uint32_t)0x01000,
-		eu_addr + (uint32_t)0x01fff,
-		AddressMapEntry::EUMB_DMA_SPACE);
-	CreateAddressMapEntry(&proc_list,
-		"EUMB ATU space",
-		eu_addr + (uint32_t)0x02000,
-		eu_addr + (uint32_t)0x02fff,
-		AddressMapEntry::EUMB_ATU_SPACE);
-	CreateAddressMapEntry(&proc_list,
-		"EUMB I2C space",
-		eu_addr + (uint32_t)0x03000,
-		eu_addr + (uint32_t)0x03fff,
-		AddressMapEntry::EUMB_I2C_SPACE);
-	CreateAddressMapEntry(&proc_list,
-		"Reserved",
-		eu_addr + (uint32_t)0x04000,
-		eu_addr + (uint32_t)0x03ffff,
-		AddressMapEntry::RESERVED);
-	CreateAddressMapEntry(&proc_list,
-		"EUMB EPIC space",
-		eu_addr + (uint32_t)0x040000,
-		eu_addr + (uint32_t)0x07ffff,
-		AddressMapEntry::EUMB_EPIC_SPACE);
-	CreateAddressMapEntry(&proc_list,
-		"Reserved",
-		eu_addr + (uint32_t)0x080000,
-		eu_addr + (uint32_t)0x0fefff,
-		AddressMapEntry::RESERVED);
-	CreateAddressMapEntry(&proc_list,
-		"EUMB data path diagnostics space",
-		eu_addr + (uint32_t)0x0ff000,
-		eu_addr + (uint32_t)0x0ff047,
-		AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE);
-	CreateAddressMapEntry(&proc_list,
-		"Reserved",
-		eu_addr + (uint32_t)0x0ff048,
-		eu_addr + (uint32_t)0x0fffff,
-		AddressMapEntry::RESERVED);
-	
-	CreateAddressMapEntry(&pci_list,
-		"EUMB message unit space",
-		eu_addr,
-		eu_addr + (uint32_t)0x0fff,
-		AddressMapEntry::EUMB_MSG_UNIT_SPACE);
-	CreateAddressMapEntry(&pci_list,
-		"EUMB DMA space",
-		eu_addr + (uint32_t)0x01000,
-		eu_addr + (uint32_t)0x01fff,
-		AddressMapEntry::EUMB_DMA_SPACE);
-	CreateAddressMapEntry(&pci_list,
-		"EUMB ATU space",
-		eu_addr + (uint32_t)0x02000,
-		eu_addr + (uint32_t)0x02fff,
-		AddressMapEntry::EUMB_ATU_SPACE);
-	CreateAddressMapEntry(&pci_list,
-		"EUMB I2C space",
-		eu_addr + (uint32_t)0x03000,
-		eu_addr + (uint32_t)0x03fff,
-		AddressMapEntry::EUMB_I2C_SPACE);
-	CreateAddressMapEntry(&pci_list,
-		"Reserved",
-		eu_addr + (uint32_t)0x04000,
-		eu_addr + (uint32_t)0x03ffff,
-		AddressMapEntry::RESERVED);
-	CreateAddressMapEntry(&pci_list,
-		"EUMB EPIC space",
-		eu_addr + (uint32_t)0x040000,
-		eu_addr + (uint32_t)0x07ffff,
-		AddressMapEntry::EUMB_EPIC_SPACE);
-	CreateAddressMapEntry(&pci_list,
-		"Reserved",
-		eu_addr + (uint32_t)0x080000,
-		eu_addr + (uint32_t)0x0fefff,
-		AddressMapEntry::RESERVED);
-	CreateAddressMapEntry(&pci_list,
-		"EUMB data path diagnostics space",
-		eu_addr + (uint32_t)0x0ff000,
-		eu_addr + (uint32_t)0x0ff047,
-		AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE);
-	CreateAddressMapEntry(&pci_list,
-		"Reserved",
-		eu_addr + (uint32_t)0x0ff048,
-		eu_addr + (uint32_t)0x0fffff,
-		AddressMapEntry::RESERVED);
-
-	return true;
-}
+//template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
+//bool
+//AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetEmbeddedUtilities() {
+//	uint32_t eu_addr = 0;
+//
+//	/* getting base address */
+//	eu_addr = config_regs->eumbbar.value;
+//
+//	if(DEBUG && logger_import) 
+//		(*logger_import) << DebugInfo
+//			<< LOCATION
+//			<< "Setting the embedded utilities at address 0x"
+//			<< Hex << eu_addr << Dec 
+//			<< Endl
+//			<< EndDebugInfo;
+//
+//	CreateAddressMapEntry(&proc_list,
+//		"EUMB message unit space",
+//		eu_addr,
+//		eu_addr + (uint32_t)0x0fff,
+//		AddressMapEntry::EUMB_MSG_UNIT_SPACE);
+//	CreateAddressMapEntry(&proc_list,
+//		"EUMB DMA space",
+//		eu_addr + (uint32_t)0x01000,
+//		eu_addr + (uint32_t)0x01fff,
+//		AddressMapEntry::EUMB_DMA_SPACE);
+//	CreateAddressMapEntry(&proc_list,
+//		"EUMB ATU space",
+//		eu_addr + (uint32_t)0x02000,
+//		eu_addr + (uint32_t)0x02fff,
+//		AddressMapEntry::EUMB_ATU_SPACE);
+//	CreateAddressMapEntry(&proc_list,
+//		"EUMB I2C space",
+//		eu_addr + (uint32_t)0x03000,
+//		eu_addr + (uint32_t)0x03fff,
+//		AddressMapEntry::EUMB_I2C_SPACE);
+//	CreateAddressMapEntry(&proc_list,
+//		"Reserved",
+//		eu_addr + (uint32_t)0x04000,
+//		eu_addr + (uint32_t)0x03ffff,
+//		AddressMapEntry::RESERVED);
+//	CreateAddressMapEntry(&proc_list,
+//		"EUMB EPIC space",
+//		eu_addr + (uint32_t)0x040000,
+//		eu_addr + (uint32_t)0x07ffff,
+//		AddressMapEntry::EUMB_EPIC_SPACE);
+//	CreateAddressMapEntry(&proc_list,
+//		"Reserved",
+//		eu_addr + (uint32_t)0x080000,
+//		eu_addr + (uint32_t)0x0fefff,
+//		AddressMapEntry::RESERVED);
+//	CreateAddressMapEntry(&proc_list,
+//		"EUMB data path diagnostics space",
+//		eu_addr + (uint32_t)0x0ff000,
+//		eu_addr + (uint32_t)0x0ff047,
+//		AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE);
+//	CreateAddressMapEntry(&proc_list,
+//		"Reserved",
+//		eu_addr + (uint32_t)0x0ff048,
+//		eu_addr + (uint32_t)0x0fffff,
+//		AddressMapEntry::RESERVED);
+//	
+//	CreateAddressMapEntry(&pci_list,
+//		"EUMB message unit space",
+//		eu_addr,
+//		eu_addr + (uint32_t)0x0fff,
+//		AddressMapEntry::EUMB_MSG_UNIT_SPACE);
+//	CreateAddressMapEntry(&pci_list,
+//		"EUMB DMA space",
+//		eu_addr + (uint32_t)0x01000,
+//		eu_addr + (uint32_t)0x01fff,
+//		AddressMapEntry::EUMB_DMA_SPACE);
+//	CreateAddressMapEntry(&pci_list,
+//		"EUMB ATU space",
+//		eu_addr + (uint32_t)0x02000,
+//		eu_addr + (uint32_t)0x02fff,
+//		AddressMapEntry::EUMB_ATU_SPACE);
+//	CreateAddressMapEntry(&pci_list,
+//		"EUMB I2C space",
+//		eu_addr + (uint32_t)0x03000,
+//		eu_addr + (uint32_t)0x03fff,
+//		AddressMapEntry::EUMB_I2C_SPACE);
+//	CreateAddressMapEntry(&pci_list,
+//		"Reserved",
+//		eu_addr + (uint32_t)0x04000,
+//		eu_addr + (uint32_t)0x03ffff,
+//		AddressMapEntry::RESERVED);
+//	CreateAddressMapEntry(&pci_list,
+//		"EUMB EPIC space",
+//		eu_addr + (uint32_t)0x040000,
+//		eu_addr + (uint32_t)0x07ffff,
+//		AddressMapEntry::EUMB_EPIC_SPACE);
+//	CreateAddressMapEntry(&pci_list,
+//		"Reserved",
+//		eu_addr + (uint32_t)0x080000,
+//		eu_addr + (uint32_t)0x0fefff,
+//		AddressMapEntry::RESERVED);
+//	CreateAddressMapEntry(&pci_list,
+//		"EUMB data path diagnostics space",
+//		eu_addr + (uint32_t)0x0ff000,
+//		eu_addr + (uint32_t)0x0ff047,
+//		AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE);
+//	CreateAddressMapEntry(&pci_list,
+//		"Reserved",
+//		eu_addr + (uint32_t)0x0ff048,
+//		eu_addr + (uint32_t)0x0fffff,
+//		AddressMapEntry::RESERVED);
+//
+//	return true;
+//}
 
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool 
@@ -594,6 +594,213 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetAddressMapA() {
 			<< EndDebugError;
 	}
 	return false;
+}
+
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
+void
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::
+CreateMapBPCIViewHostMode() {
+	uint32_t val = 0;
+	uint32_t eu_addr = 0;
+	uint32_t pcsr_addr = 0;
+
+	/* checking if the embedded utilities are activated */
+	val = config_regs->eumbbar.value;
+	if((val >= 0x80000000) && (val <= 0xfdf00000)) {
+		eu_addr = val;
+		val = config_regs->pcsrbar.value;
+		pcsr_addr = val;
+	}
+
+	CreateAddressMapEntry(&pci_list,
+						"Local memory space",
+						0x00000000,
+						0x3fffffff,
+						AddressMapEntry::LOCAL_MEMORY_SPACE);
+	CreateAddressMapEntry(&pci_list,
+						"Reserved",
+						0x40000000,
+						0x77ffffff,
+						AddressMapEntry::RESERVED);
+	CreateAddressMapEntry(&pci_list,
+						"64-bit extended ROM/Flash (64 Mbytes) [1]",
+						0x78000000,
+						0x7bffffff,
+						AddressMapEntry::EXTENDED_ROM_1);
+	CreateAddressMapEntry(&pci_list,
+						"64-bit extended ROM/Flash (64 Mbytes) [2]",
+						0x7c000000,
+						0x7fffffff,
+						AddressMapEntry::EXTENDED_ROM_2);
+	if(eu_addr == 0)
+		/* the embedded utilities are not activated */
+		CreateAddressMapEntry(&pci_list,
+			"PCI memory space",
+			0x80000000,
+			0xfdffffff,
+			AddressMapEntry::PCI_MEMORY_SPACE);
+	else {
+		/* the embedded utilities are activated */
+		/* set the embedded utilities mapping using the pcsrbar */
+		CreateAddressMapEntry(&pci_list,
+			"EUMB message unit space",
+			pcsr_addr,
+			pcsr_addr + (uint32_t)0x0ff,
+			AddressMapEntry::EUMB_MSG_UNIT_SPACE);
+		CreateAddressMapEntry(&pci_list,
+			"EUMB DMA space",
+			eu_addr + (uint32_t)0x0100,
+			eu_addr + (uint32_t)0x02ff,
+			AddressMapEntry::EUMB_DMA_SPACE);
+		CreateAddressMapEntry(&pci_list,
+			"EUMB ATU space",
+			eu_addr + (uint32_t)0x0300,
+			eu_addr + (uint32_t)0x03ff,
+			AddressMapEntry::EUMB_ATU_SPACE);
+		CreateAddressMapEntry(&pci_list,
+			"Reserved",
+			eu_addr + (uint32_t)0x0400,
+			eu_addr + (uint32_t)0x0eff,
+			AddressMapEntry::RESERVED);
+		CreateAddressMapEntry(&pci_list,
+			"EUMB data path diagnostics space",
+			eu_addr + (uint32_t)0x0f00,
+			eu_addr + (uint32_t)0x0f47,
+			AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE);
+		CreateAddressMapEntry(&pci_list,
+			"Reserved",
+			eu_addr + (uint32_t)0x0f48,
+			eu_addr + (uint32_t)0x0fff,
+			AddressMapEntry::RESERVED);
+		/* set the pci memory space mapping that doesn't overlap the 
+		 *   embedded utilities */
+		if(eu_addr > (uint32_t)0x80000000)
+			CreateAddressMapEntry(&pci_list,
+				"PCI memory space",
+				(uint32_t)0x80000000,
+				pcsr_addr - 1,
+				AddressMapEntry::PCI_MEMORY_SPACE);
+		if(eu_addr < (uint32_t)0xfdf00000)
+			CreateAddressMapEntry(&pci_list,
+					"PCI memory space",
+					pcsr_addr + (uint32_t)0x001000,
+					0xfdffffff,
+					AddressMapEntry::PCI_MEMORY_SPACE);
+	}
+	CreateAddressMapEntry(&pci_list,
+						"Reserved",
+						0xfe000000,
+						0xfeffffff,
+						AddressMapEntry::RESERVED);
+	CreateAddressMapEntry(&pci_list,
+						"8-, 32- or 64-bit Flash/ROM space (8 Mbytes), read-only area (writes causes Flash write error) [1]",
+						0xff000000,
+						0xff7fffff,
+						AddressMapEntry::ROM_SPACE_1);
+	CreateAddressMapEntry(&pci_list,
+						"8-, 32- or 64-bit Flash/ROM space (8 Mbytes), read-only area (writes causes Flash write error) [2]",
+						0xff800000,
+						0xffffffff,
+						AddressMapEntry::ROM_SPACE_1);
+}
+
+template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
+void
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::
+CreateMapBPCIViewAgentMode() {
+	uint32_t val = 0;
+	uint32_t eu_addr = 0;
+	uint32_t pcsr_addr = 0;
+
+	/* checking if the embedded utilities are activated */
+	val = config_regs->eumbbar.value;
+	if((val >= 0x80000000) && (val <= 0xfdf00000)) {
+		eu_addr = val;
+		val = config_regs->pcsrbar.value;
+		pcsr_addr = val;
+	}
+	
+	if(eu_addr == 0) {
+		/* the embedded utilities are not activated */
+		/* nothing to do, nothing mapped in the pci space */
+	} else {
+		/* the embedded utilities are activated */
+		/* set the embedded utilities mapping using the pcsrbar */
+		CreateAddressMapEntry(&pci_list,
+			"EUMB message unit space",
+			pcsr_addr,
+			pcsr_addr + (uint32_t)0x0ff,
+			AddressMapEntry::EUMB_MSG_UNIT_SPACE);
+		CreateAddressMapEntry(&pci_list,
+			"EUMB DMA space",
+			eu_addr + (uint32_t)0x0100,
+			eu_addr + (uint32_t)0x02ff,
+			AddressMapEntry::EUMB_DMA_SPACE);
+		CreateAddressMapEntry(&pci_list,
+			"EUMB ATU space",
+			eu_addr + (uint32_t)0x0300,
+			eu_addr + (uint32_t)0x03ff,
+			AddressMapEntry::EUMB_ATU_SPACE);
+		CreateAddressMapEntry(&pci_list,
+			"Reserved",
+			eu_addr + (uint32_t)0x0400,
+			eu_addr + (uint32_t)0x0eff,
+			AddressMapEntry::RESERVED);
+		CreateAddressMapEntry(&pci_list,
+			"EUMB data path diagnostics space",
+			eu_addr + (uint32_t)0x0f00,
+			eu_addr + (uint32_t)0x0f47,
+			AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE);
+		CreateAddressMapEntry(&pci_list,
+			"Reserved",
+			eu_addr + (uint32_t)0x0f48,
+			eu_addr + (uint32_t)0x0fff,
+			AddressMapEntry::RESERVED);
+		/* set the inbound pci address translation if activated */
+		/* the address translation unit is activated for the inbound window, add the window space
+		 * to the pci view
+		 * check possible collisions between the embedded utilities and the inbound window */
+		uint32_t local_memory_base_address = config_regs->lmbar.value;
+		uint32_t local_memory_end_address = local_memory_base_address + atu->InboundTranslationWindowSize() - 1;
+		uint32_t eu_end_address = eu_addr + (uint32_t)0x001000 - 1;
+		if((eu_addr <= local_memory_base_address && local_memory_end_address <= eu_end_address) ||
+				(eu_addr >= local_memory_base_address && local_memory_end_address <= eu_end_address) ||
+				(eu_addr <= local_memory_base_address && local_memory_end_address >= eu_end_address) ||
+				(eu_addr >= local_memory_base_address && local_memory_end_address >= eu_end_address)) {
+			/* there are collisions between the embedded utilities and the inbound window, the embedded utilities
+			 *   have preference over the inbound window */
+			if(local_memory_base_address < eu_addr) {
+				CreateAddressMapEntry(&pci_list,
+						"Inbound memory window",
+						local_memory_base_address,
+						eu_addr - 1,
+						AddressMapEntry::INBOUND_MEMORY_WINDOW);
+				if(local_memory_end_address > eu_end_address) {
+					CreateAddressMapEntry(&pci_list,
+							"Inbound memory window",
+							eu_end_address + 1,
+							local_memory_end_address,
+							AddressMapEntry::INBOUND_MEMORY_WINDOW);
+				}
+			} else {
+				if(local_memory_end_address > eu_end_address) {
+					CreateAddressMapEntry(&pci_list,
+							"Inbound memory window",
+							eu_end_address + 1,
+							local_memory_end_address,
+							AddressMapEntry::INBOUND_MEMORY_WINDOW);
+				}
+			}
+		} else {
+			/* no collisions found */
+			CreateAddressMapEntry(&pci_list,
+					"Inbound memory window",
+					local_memory_base_address,
+					local_memory_end_address,
+					AddressMapEntry::INBOUND_MEMORY_WINDOW);
+		}
+	}
+
 }
 
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
@@ -610,17 +817,6 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetAddressMapB() {
 	if((val >= 0x80000000) && (val <= 0xfdf00000))
 		eu_addr = val;
 	
-//	if(!host_mode) {
-//		if(logger_import) {
-//			(*logger_import) << DebugError
-//				<< LOCATION
-//				<< "Address map B only supported in host mode" 
-//				<< Endl
-//				<< EndDebugError;
-//		}
-//		return false;
-//	}
-	
 	if(DEBUG && logger_import) 
 		(*logger_import) << DebugInfo
 			<< LOCATION
@@ -628,7 +824,7 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetAddressMapB() {
 			<< Endl
 			<< EndDebugInfo;
 
-	/* Create the processor view in host mode */
+	/* Create the processor view */
 	CreateAddressMapEntry(&proc_list,
 						"Local memory space",
 						0,
@@ -661,69 +857,63 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::SetAddressMapB() {
 						0xff800000,
 						0xffffffff,
 						AddressMapEntry::ROM_SPACE_2);
-												
-	/* Create the PCI view in host mode */
-	CreateAddressMapEntry(&pci_list,
-						"Local memory space",
-						0x00000000,
-						0x3fffffff,
-						AddressMapEntry::LOCAL_MEMORY_SPACE);
-	CreateAddressMapEntry(&pci_list,
-						"Reserved",
-						0x40000000,
-						0x77ffffff,
-						AddressMapEntry::RESERVED);
-	CreateAddressMapEntry(&pci_list,
-						"64-bit extended ROM/Flash (64 Mbytes) [1]",
-						0x78000000,
-						0x7bffffff,
-						AddressMapEntry::EXTENDED_ROM_1);
-	CreateAddressMapEntry(&pci_list,
-						"64-bit extended ROM/Flash (64 Mbytes) [2]",
-						0x7c000000,
-						0x7fffffff,
-						AddressMapEntry::EXTENDED_ROM_2);
-	if(eu_addr == 0)
-		/* the embedded utilities are not activated */
-		CreateAddressMapEntry(&pci_list,
-			"PCI memory space",
-			0x80000000,
-			0xfdffffff,
-			AddressMapEntry::PCI_MEMORY_SPACE);
-	else {
-		/* the embedded utilities are activated */
-		if(eu_addr > (uint32_t)0x80000000)
-			CreateAddressMapEntry(&pci_list,
-				"PCI memory space",
-				(uint32_t)0x80000000,
-				eu_addr - 1,
-				AddressMapEntry::PCI_MEMORY_SPACE);
-		if(eu_addr < (uint32_t)0xfdf00000)
-			CreateAddressMapEntry(&pci_list,
-				"PCI memory space",
-				eu_addr + (uint32_t)0x00100000,
-				0xfdffffff,
-				AddressMapEntry::PCI_MEMORY_SPACE);
-	}
-	CreateAddressMapEntry(&pci_list,
-						"Reserved",
-						0xfe000000,
-						0xfeffffff,
-						AddressMapEntry::RESERVED);
-	CreateAddressMapEntry(&pci_list,
-						"8-, 32- or 64-bit Flash/ROM space (8 Mbytes), read-only area (writes causes Flash write error) [1]",
-						0xff000000,
-						0xff7fffff,
-						AddressMapEntry::ROM_SPACE_1);
-	CreateAddressMapEntry(&pci_list,
-						"8-, 32- or 64-bit Flash/ROM space (8 Mbytes), read-only area (writes causes Flash write error) [2]",
-						0xff800000,
-						0xffffffff,
-						AddressMapEntry::ROM_SPACE_1);
 
-	if(eu_addr != 0)
-		SetEmbeddedUtilities();
+	/* set the processor embedded utilities memory mapping if activated */
+	if(eu_addr != 0) {
+		CreateAddressMapEntry(&proc_list,
+			"EUMB message unit space",
+			eu_addr,
+			eu_addr + (uint32_t)0x0fff,
+			AddressMapEntry::EUMB_MSG_UNIT_SPACE);
+		CreateAddressMapEntry(&proc_list,
+			"EUMB DMA space",
+			eu_addr + (uint32_t)0x01000,
+			eu_addr + (uint32_t)0x01fff,
+			AddressMapEntry::EUMB_DMA_SPACE);
+		CreateAddressMapEntry(&proc_list,
+			"EUMB ATU space",
+			eu_addr + (uint32_t)0x02000,
+			eu_addr + (uint32_t)0x02fff,
+			AddressMapEntry::EUMB_ATU_SPACE);
+		CreateAddressMapEntry(&proc_list,
+			"EUMB I2C space",
+			eu_addr + (uint32_t)0x03000,
+			eu_addr + (uint32_t)0x03fff,
+			AddressMapEntry::EUMB_I2C_SPACE);
+		CreateAddressMapEntry(&proc_list,
+			"Reserved",
+			eu_addr + (uint32_t)0x04000,
+			eu_addr + (uint32_t)0x03ffff,
+			AddressMapEntry::RESERVED);
+		CreateAddressMapEntry(&proc_list,
+			"EUMB EPIC space",
+			eu_addr + (uint32_t)0x040000,
+			eu_addr + (uint32_t)0x07ffff,
+			AddressMapEntry::EUMB_EPIC_SPACE);
+		CreateAddressMapEntry(&proc_list,
+			"Reserved",
+			eu_addr + (uint32_t)0x080000,
+			eu_addr + (uint32_t)0x0fefff,
+			AddressMapEntry::RESERVED);
+		CreateAddressMapEntry(&proc_list,
+			"EUMB data path diagnostics space",
+			eu_addr + (uint32_t)0x0ff000,
+			eu_addr + (uint32_t)0x0ff047,
+			AddressMapEntry::EUMB_DATA_PATH_DIAGNOSTICS_SPACE);
+		CreateAddressMapEntry(&proc_list,
+			"Reserved",
+			eu_addr + (uint32_t)0x0ff048,
+			eu_addr + (uint32_t)0x0fffff,
+			AddressMapEntry::RESERVED);
+	}
 						
+	/* Create the PCI view */
+	if(host_mode) {
+		CreateMapBPCIViewHostMode();
+	} else {
+		CreateMapBPCIViewAgentMode();
+	}
+
 	return true;
 }
 

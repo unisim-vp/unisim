@@ -92,7 +92,9 @@ private:
 	bool SetAddressMapA();
 	bool SetAddressMapB();
 	void CreateProcessorPCIView();
-	bool SetEmbeddedUtilities();
+	void CreateMapBPCIViewHostMode();
+	void CreateMapBPCIViewAgentMode();
+//	bool SetEmbeddedUtilities();
 							
 	ConfigurationRegisters *config_regs;
 	ATU<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG> *atu;
