@@ -395,12 +395,20 @@ Generator::operation_impl( Product_t& _product ) const {
   _product.template_signature( isa().m_tparams );
   _product.code( "Operation" );
   _product.template_abbrev( isa().m_tparams );
-  _product.code( "::Operation(%s code, %s addr, const char *name)\n", codetype_constref().str(), isa().m_addrtype.str() );
+  _product.code( "::Operation(%s _code, %s _addr, const char *_name)\n", codetype_constref().str(), isa().m_addrtype.str() );
+  _product.code( ": \n");
 
+  for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
+    if( not (**var).m_cinit ) continue;
+    _product.code( " %s(", (**var).m_symbol.str() );
+    _product.usercode( (**var).m_cinit->m_fileloc, "%s", (**var).m_cinit->m_content.str() );
+    _product.code( "),\n" );
+  }
+
+  _product.code( " encoding(_code),\n" );
+  _product.code( " addr(_addr),\n" );
+  _product.code( " name(_name)\n" );
   _product.code( "{\n" );
-  _product.code( " this->encoding = code;\n" );
-  _product.code( " this->addr = addr;\n" );
-  _product.code( " this->name = name;\n" );
   _product.code( "}\n\n" );
   _product.template_signature( isa().m_tparams );
   _product.code( "Operation" );
@@ -513,22 +521,17 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
     _product.template_abbrev( isa().m_tparams );
     _product.code( "(code, addr, \"%s\")\n",
                    (**op).m_symbol.str() );
-    _product.code( "{\n" );
-    
-    for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
-      if( not (**var).m_cinit ) continue;
-      _product.code( " %s = ", (**var).m_symbol.str() );
-      _product.usercode( (**var).m_cinit->m_fileloc, "%s;\n", (**var).m_cinit->m_content.str() );
-    }
 
     if( not (**op).m_variables.empty() ) {
       for( Vect_t<Variable_t>::const_iterator var = (**op).m_variables.begin(); var < (**op).m_variables.end(); ++ var ) {
         if( (**var).m_cinit ) {
-          _product.code( " %s = ", (**var).m_symbol.str() );
-          _product.usercode( (**var).m_cinit->m_fileloc, "%s;\n", (**var).m_cinit->m_content.str() );
+          _product.code( ",%s(", (**var).m_symbol.str() );
+          _product.usercode( (**var).m_cinit->m_fileloc, "%s)\n", (**var).m_cinit->m_content.str() );
         }
       }
     }
+
+    _product.code( "{\n" );
     
     insn_decode_impl( _product, **op, "code", "addr" );
     _product.code( "}\n\n" );
