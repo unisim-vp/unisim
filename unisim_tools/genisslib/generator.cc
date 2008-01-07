@@ -86,6 +86,10 @@ Generator::iss( Product_t& _product ) const {
   
   _product.code( "#include <vector>\n" );
   _product.code( "#include <inttypes.h>\n" );
+  
+//   _product.code( "#ifndef GCC_VERSION\n" );
+//   _product.code( "#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)\n" );
+//   _product.code( "#endif\n" );
 
   additional_decl_includes( _product );
   
@@ -247,7 +251,7 @@ Generator::decoder_decl( Product_t& _product ) const {
     _product.code( " DecodeMapPage" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( " *FindPage(%s page_key)\n", isa().m_addrtype.str() );
-    _product.code( "#if defined(__GNUC__) && (__GNUC__ >= 3)\n" );
+    _product.code( "#if defined(__GNUC__) && (__GNUC__ >= 3 && (__GNUC__ != 3 || __GNUC_MINOR__ != 4 || __GNUC_PATCHLEVEL__ != 6))\n" );
     _product.code( " __attribute__((always_inline))\n" );
     _product.code( "#endif\n" );
     _product.code( " ;\n" );
