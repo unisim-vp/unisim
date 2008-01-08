@@ -78,6 +78,7 @@ UNISIM_LINK(unisim_util_xml)
 UNISIM_LINK(unisim_util_debug)
 UNISIM_LINK(unisim_util_endian)
 UNISIM_LINK(unisim_util_garbage_collector)
+UNISIM_LINK(unisim_util_queue)
 
 UNISIM_LINK(unisim_service_time_sc_time)
 UNISIM_LINK(unisim_service_time_host_time)
