@@ -238,7 +238,7 @@ Isa::subdecoder( ConstStr_t _symbol ) const {
 void
 Isa::deps( ostream& _sink, char const* _prefix ) const {
   if( m_tparams.empty() ) {
-    _sink << _prefix << ".tcc " << _prefix << ".hh:";
+    _sink << _prefix << ".cc " << _prefix << ".hh:";
   } else {
     _sink << _prefix << ".tcc " << _prefix << ".hh:";
   }
