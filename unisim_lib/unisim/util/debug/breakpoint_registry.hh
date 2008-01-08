@@ -56,7 +56,7 @@ public:
 	void RemoveBreakpoint(uint32_t offset);
 	bool HasBreakpoint(uint32_t offset);
 
-	static const uint32_t NUM_BREAKPOINTS_PER_PAGE = 16 * 8;
+	static const uint32_t NUM_BREAKPOINTS_PER_PAGE = 256;// MUST BE a power of two !
 	ADDRESS base_addr;			/*< base effective address */
 	uint32_t *map;			/*< an array of breakpoint masks for 32 consecutive effective addresses */
 	BreakpointMapPage *next;	/*< next breakpoint map page with the same hash index */
@@ -66,7 +66,7 @@ template <class ADDRESS>
 class BreakpointRegistry
 {
 public:
-	static const uint32_t NUM_HASH_TABLE_ENTRIES = 16;
+	static const uint32_t NUM_HASH_TABLE_ENTRIES = 32; // MUST BE a power of two !
 
 	BreakpointRegistry();
 	virtual ~BreakpointRegistry();

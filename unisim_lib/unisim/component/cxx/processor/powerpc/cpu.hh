@@ -61,6 +61,7 @@
 #include <unisim/service/interfaces/power_mode.hh>
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/service/interfaces/logger.hh>
+#include <unisim/util/queue/queue.hh>
 #include <map>
 #include <iostream>
 #include <stdio.h>
@@ -107,6 +108,7 @@ using unisim::service::interfaces::EndDebugInfo;
 using unisim::service::interfaces::EndDebugWarning;
 using unisim::service::interfaces::EndDebugError;
 using namespace std;
+using unisim::util::queue::Queue;
 
 typedef enum {
 	// G1 processors
@@ -143,6 +145,30 @@ typedef union
 	uint32_t w[4];
 } vr_t;
 
+template <class T>
+class Register
+{
+public:
+	bool valid;
+	T value;
+};
+
+template <class CONFIG>
+class Instruction
+{
+public:
+	Operation<CONFIG> *operation;
+	Register<uint32_t> *gpr[32];
+	Register<SoftDouble> *fpr[32];
+	Register<uint32_t> *cr;
+	Register<uint32_t> *ctr;
+	Register<uint32_t> *lr;
+	
+	Instruction();
+	~Instruction();
+	
+};
+
 template <class CONFIG>
 class CPU :
 	public Decoder<CONFIG>,
@@ -164,6 +190,20 @@ class CPU :
 	public Service<Synchronizable>
 {
 public:
+	static inline bool IsMPC7XX() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
+	static inline bool IsMPC74X() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745; }
+	static inline bool IsMPC75X() { return CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
+	static inline bool IsMPC7X5() { return CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC755; }
+	static inline bool IsMPC7XXX()
+	{
+		return CONFIG::MODEL == MPC7400 || CONFIG::MODEL == MPC7410 || CONFIG::MODEL == MPC7441 || CONFIG::MODEL == MPC7445 ||
+		       CONFIG::MODEL == MPC7447 || CONFIG::MODEL == MPC7447A || CONFIG::MODEL == MPC7448 || CONFIG::MODEL == MPC7450 ||
+		       CONFIG::MODEL == MPC7451 || CONFIG::MODEL == MPC7455 || CONFIG::MODEL == MPC7457;
+	}
+
+	static inline bool IsG3() { return IsMPC7XX(); }
+	static inline bool IsG4() { return IsMPC7XXX(); }
+
 	typedef typename CONFIG::address_t address_t;
 	typedef typename CONFIG::virtual_address_t virtual_address_t;
 	typedef typename CONFIG::physical_address_t physical_address_t;
@@ -1394,11 +1434,6 @@ private:
 	// TLB exception
 	void HandleException(const TLBMissException<CONFIG>& exc);
 
-	inline bool IsMPC7XX() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
-	inline bool IsMPC74X() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745; }
-	inline bool IsMPC75X() { return CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
-	inline bool IsMPC7X5() { return CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC755; }
-
     /** indicates if the memory accesses require to be reported */
     bool requires_memory_access_reporting;
     /** indicates if the finished instructions require to be reported */
@@ -1413,6 +1448,176 @@ protected:
 	uint64_t voltage;        //!< CPU voltage in mV
 	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
+
+	//=====================================================================
+	//=                       Performance model                           =
+	//=====================================================================
+
+	static const uint32_t FETCH_WIDTH = 4;
+	static const uint32_t DECODE_WIDTH = 3;
+	static const uint32_t VR_ISSUE_WIDTH = 2;
+	static const uint32_t GPR_ISSUE_WIDTH = 3;
+	static const uint32_t FPR_ISSUE_WIDTH = 2;
+	static const uint32_t NUM_IU1 = 3;
+	static const uint32_t NUM_IU2 = 1;
+	static const uint32_t NUM_FPU = 1;
+
+	class InstructionWindowConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> ELEMENT;
+		static const unsigned int SIZE = 256;
+		static const unsigned int BUFFER_SIZE = 256; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+
+	class InstructionQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 12;
+		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class VRIssueQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 4;
+		static const unsigned int BUFFER_SIZE = 4; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class GPRIssueQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 6;
+		static const unsigned int BUFFER_SIZE = 8; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class FPRIssueQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 2;
+		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class CompletionQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 16;
+		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+
+	class GPRRenameBuffersConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Register<uint32_t> *ELEMENT;
+		static const unsigned int SIZE = 16;
+		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class FPRRenameBuffersConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Register<SoftDouble> *ELEMENT;
+		static const unsigned int SIZE = 16;
+		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class CRRenameBuffersConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Register<uint32_t> *ELEMENT;
+		static const unsigned int SIZE = 1;
+		static const unsigned int BUFFER_SIZE = 1; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class LRRenameBuffersConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Register<uint32_t> *ELEMENT;
+		static const unsigned int SIZE = 1;
+		static const unsigned int BUFFER_SIZE = 1; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class CTRRenameBuffersConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Register<uint32_t> *ELEMENT;
+		static const unsigned int SIZE = 1;
+		static const unsigned int BUFFER_SIZE = 1; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+
+	class IU1ReservationStationConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 1;
+		static const unsigned int BUFFER_SIZE = 1; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+
+	class IU2ReservationStationConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 2;
+		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+
+	class FPRReservationStationConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 2;
+		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+
+	class LSReservationStationConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 2;
+		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+
+	Queue<InstructionWindowConfig> iw;
+	Queue<InstructionQueueConfig> iq;
+	Queue<VRIssueQueueConfig> viq;
+	Queue<GPRIssueQueueConfig> giq;
+	Queue<FPRIssueQueueConfig> fiq;
+	Queue<CompletionQueueConfig> cq;
+	Queue<GPRRenameBuffersConfig> gpr_rename_buffers;
+	Queue<FPRRenameBuffersConfig> fpr_rename_buffers;
+	Queue<LRRenameBuffersConfig> lr_rename_buffers;
+	Queue<CTRRenameBuffersConfig> ctr_rename_buffers;
+	Queue<CRRenameBuffersConfig> cr_rename_buffers;
+	Queue<IU1ReservationStationConfig> iu1_reservation_station[NUM_IU1];
+	Queue<IU2ReservationStationConfig> iu2_reservation_station[NUM_IU2];
+	Queue<FPRReservationStationConfig> fpr_reservation_station[NUM_FPU];
+	Queue<LSReservationStationConfig> ls_reservation_station;
+
+	void Fetch();
+	void DecodeDispatch();
+	void GPRIssue();
+	void FPRIssue();
+	void VRIssue();
 	
 	//=====================================================================
 	//=                 Memory Management Unit (MMU)                      =
@@ -1431,7 +1636,7 @@ protected:
 		CONFIG::L1_DATA_CACHE_ASSOCIATIVITY,
 		CONFIG::L1_DATA_CACHE_REPLACEMENT_POLICY> dl1;
 		
-	
+
 };
 
 } // end of namespace powerpc

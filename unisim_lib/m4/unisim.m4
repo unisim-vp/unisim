@@ -23,6 +23,9 @@ AC_DEFUN([UNISIM_CHECK_BOOST], [
     # Check for some boost graph headers
     AC_CHECK_HEADERS([boost/graph/adjacency_list.hpp boost/graph/topological_sort.hpp boost/graph/visitors.hpp],,\
 	AC_MSG_ERROR([boost graph headers not found. Please install the boost graph development library. Use --with-boost=<path> to overload default includes search path.]))
+    # Check for some boost thread headers
+    AC_CHECK_HEADERS([boost/thread/mutex.hpp],,\
+	AC_MSG_ERROR([boost thread headers not found. Please install the boost thread development library. Use --with-boost=<path> to overload default includes search path.]))
 ])
 
 ## UNISIM_CHECK_UNISIM_TOOLS

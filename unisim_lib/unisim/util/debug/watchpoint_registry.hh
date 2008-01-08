@@ -59,7 +59,7 @@ public:
 	void RemoveWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size);
 	bool HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size);
 
-	static const uint32_t NUM_WATCHPOINTS_PER_PAGE = 16 * 8;
+	static const uint32_t NUM_WATCHPOINTS_PER_PAGE = 128;//32768; // MUST BE a power of two !
 	ADDRESS base_addr;			/*< base effective address */
 	uint32_t *map;			/*< an array of watchpoint masks for 16 consecutive effective addresses */
 	WatchpointMapPage *next;	/*< next watchpoint map page with the same hash index */
@@ -69,7 +69,7 @@ template <class ADDRESS>
 class WatchpointRegistry
 {
 public:
-	static const uint32_t NUM_HASH_TABLE_ENTRIES = 16;
+	static const uint32_t NUM_HASH_TABLE_ENTRIES = 32;//4096; // MUST BE a power of two !
 
 	WatchpointRegistry();
 	virtual ~WatchpointRegistry();

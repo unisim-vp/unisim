@@ -60,6 +60,16 @@ typename CONFIG::ELEMENT& Queue<CONFIG>::operator [] (unsigned int idx)
 }
 
 template <class CONFIG>
+typename CONFIG::ELEMENT *Queue<CONFIG>::Allocate()
+{
+	if(CONFIG::DEBUG && size >= CONFIG::SIZE) throw QueueException("overflow", __FILE__, __FUNCTION__, __LINE__);
+	typename CONFIG::ELEMENT *elt = &buffer[back_idx];
+	back_idx = (back_idx + 1) & (CONFIG::BUFFER_SIZE - 1);
+	size++;
+	return elt;
+}
+
+template <class CONFIG>
 void Queue<CONFIG>::Push(typename CONFIG::ELEMENT& elt)
 {
 	if(CONFIG::DEBUG && size >= CONFIG::SIZE) throw QueueException("overflow", __FILE__, __FUNCTION__, __LINE__);
@@ -123,7 +133,7 @@ std::ostream& operator << (std::ostream& os, Queue<CONFIG>& q)
 	{
 		os << q.buffer[idx] << " ";
 	}
-	os << endl;
+	os << std::endl;
 	return os;
 }
 

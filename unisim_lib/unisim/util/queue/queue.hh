@@ -77,6 +77,7 @@ public:
 	~Queue();
 
 	typename CONFIG::ELEMENT& operator [] (unsigned int idx);
+	typename CONFIG::ELEMENT *Allocate();
 	void Push(typename CONFIG::ELEMENT& elt);
 	typename CONFIG::ELEMENT& Front();
 	void Pop();

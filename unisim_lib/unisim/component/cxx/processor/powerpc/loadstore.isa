@@ -1523,23 +1523,16 @@ LOOKASIDE BUFFER MANAGEMENT INSTRUCTIONS
 
 op tlbia(31[6]:?[5]:?[5]:?[5]:370[10]:?[1])
 tlbia.execute = {
-	switch(CONFIG::MODEL)
+	if(CPU<CONFIG>::IsMPC7X5() || CPU<CONFIG>::IsMPC7XXX())
 	{
-		case MPC740:
-		case MPC745:
-		case MPC750:
-		case MPC755:
-			throw IllegalInstructionException<CONFIG>();
-			break;
-			
-		default:
-			if(cpu->GetMSR_PR())
-			{
-				throw PrivilegeViolationException<CONFIG>();
-			}
-			
-			cpu->Tlbia();
+		throw IllegalInstructionException<CONFIG>();
 	}
+	if(cpu->GetMSR_PR())
+	{
+		throw PrivilegeViolationException<CONFIG>();
+	}
+	
+	cpu->Tlbia();
 }
 tlbia.disasm = { os << "tlbia"; }
 
@@ -1563,7 +1556,7 @@ tlbsync.disasm = { os << "tlbsync"; }
 
 op tlbld(31[6]:0[5]:0[5]:rb[5]:978[10]:0[1])
 tlbld.execute = {
-	if(CONFIG::MODEL != MPC745 && CONFIG::MODEL != MPC755)
+	if(!CPU<CONFIG>::IsMPC7X5() && !CPU<CONFIG>::IsMPC7XXX())
 	{
 		throw IllegalInstructionException<CONFIG>();
 	}
@@ -1582,7 +1575,7 @@ tlbld.disasm = {
 
 op tlbli(31[6]:0[5]:0[5]:rb[5]:1010[10]:0[1])
 tlbli.execute = {
-	if(CONFIG::MODEL != MPC745 && CONFIG::MODEL != MPC755)
+	if(!CPU<CONFIG>::IsMPC7X5() && !CPU<CONFIG>::IsMPC7XXX())
 	{
 		throw IllegalInstructionException<CONFIG>();
 	}

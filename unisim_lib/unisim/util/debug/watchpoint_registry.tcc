@@ -49,8 +49,8 @@ template <class ADDRESS>
 WatchpointMapPage<ADDRESS>::WatchpointMapPage(ADDRESS addr)
 {
 	this->base_addr = addr & ~(NUM_WATCHPOINTS_PER_PAGE - 1);
-	map = new uint32_t[NUM_WATCHPOINTS_PER_PAGE / 16];
-	memset(map, 0, NUM_WATCHPOINTS_PER_PAGE / 4);
+	map = new uint32_t[(NUM_WATCHPOINTS_PER_PAGE + 15)/ 16];
+	memset(map, 0, ((NUM_WATCHPOINTS_PER_PAGE + 15)/ 16) * sizeof(uint32_t));
 	next = 0;
 }
 

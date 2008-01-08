@@ -38,6 +38,7 @@
 #include <unisim/component/cxx/processor/powerpc/exception.tcc>
 #include <unisim/component/cxx/cache/mesi/cache.tcc>
 #include <unisim/component/cxx/cache/insn/cache.tcc>
+#include <unisim/util/queue/queue.tcc>
 
 #include <sstream>
 #include <stdexcept>
@@ -2288,6 +2289,12 @@ void CPU<CONFIG>::SetL2CR(uint32_t value)
 	{
 		if(GetL2CR_L2I())
 		{
+			if(old_l2cr_l2e)
+			{
+				if(logger_import)
+					(*logger_import) << DebugWarning << "L2 Cache should be disabled prior a flash invalidation" << Endl << EndDebugWarning;
+			}
+			
 			if(logger_import)
 				(*logger_import) << DebugInfo << "Flash Invalidating L2 Cache" << Endl << EndDebugInfo;
 			Decoder<CONFIG>::InvalidateDecodingCache();
@@ -2295,7 +2302,14 @@ void CPU<CONFIG>::SetL2CR(uint32_t value)
 			{
 				l2.Invalidate();
 			}
-			ResetL2CR_L2IP();
+			if(CONFIG::HAS_L2CR_L2IP)
+			{
+				ResetL2CR_L2IP();
+			}
+			if(IsMPC7XXX())
+			{
+				ResetL2CR_L2I();
+			}
 		}
 	}
 }
@@ -2940,7 +2954,7 @@ void CPU<CONFIG>::Icbi(address_t addr)
 template <class CONFIG>
 void CPU<CONFIG>::Tlbia()
 {
-	if(CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755)
+	if(IsMPC7XX() || IsMPC7XXX())
 	{
 		throw IllegalInstructionException<CONFIG>();
 	}
@@ -2959,18 +2973,26 @@ void CPU<CONFIG>::Tlbie(address_t addr)
 template <class CONFIG>
 void CPU<CONFIG>::Tlbld(address_t addr)
 {
-	if(CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC755)
+	if(IsMPC7XXX())
 	{
 		mmu.LoadDTLBEntry(addr, GetSRR1_WAY(), GetDCMP(), GetRPA());
+	}
+	else if(IsMPC7XXX())
+	{
+		mmu.LoadDTLBEntry(addr, addr & 1, GetPTEHI(), GetPTEHI());
 	}
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Tlbli(address_t addr)
 {
-	if(CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC755)
+	if(IsMPC7X5())
 	{
 		mmu.LoadITLBEntry(addr, GetSRR1_WAY(), GetICMP(), GetRPA());
+	}
+	else if(IsMPC7XXX())
+	{
+		mmu.LoadITLBEntry(addr, addr & 1, GetPTEHI(), GetPTEHI());
 	}
 }
 
@@ -3168,6 +3190,117 @@ void CPU<CONFIG>::AckPerformanceMonitorInterrupt()
 	performance_monitor_interrupt = false;
 	AckAsynchronousInterrupt();
 }
+
+template <class CONFIG>
+Instruction<CONFIG>::Instruction()
+{
+}
+
+template <class CONFIG>
+Instruction<CONFIG>::~Instruction()
+{
+}
+
+inline uint32_t Max(uint32_t a, uint32_t b)
+{
+	return a > b ? a : b;
+}
+
+inline uint32_t Min(uint32_t a, uint32_t b)
+{
+	return a < b ? a : b;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Fetch()
+{
+	// Stall if IQ is full
+	if(iq.Full()) return;
+	// Send a request to IMMU
+	uint32_t size_to_block_boundary = CONFIG::L1_INSN_CACHE_BLOCK_SIZE - (cia & (CONFIG::L1_INSN_CACHE_BLOCK_SIZE - 1));
+	uint32_t fetch_width = Max(iq.Size(), FETCH_WIDTH);
+	uint32_t fetch_size = Max(fetch_width * sizeof(uint32_t), size_to_block_boundary);
+	uint8_t prefetch_buffer[fetch_size];
+	uint32_t read_size = 0; //ReadInsnMemory(cia, prefetch_buffer, sizeof(prefetch_buffer) > size_to_block_boundary ? size_to_block_boundary : sizeof(prefetch_buffer));
+	uint32_t offset;
+	for(offset = 0; offset < read_size; offset += sizeof(uint32_t), cia += sizeof(uint32_t))
+	{
+		uint32_t insn = prefetch_buffer[offset];
+		Operation<CONFIG> *operation = Decoder<CONFIG>::Decode(cia, insn);
+		Instruction<CONFIG> *instruction = iw.Allocate();
+		instruction->operation = operation;
+		iq.Push(instruction);
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DecodeDispatch()
+{
+	unsigned int i;
+	for(i = 0; i < DECODE_WIDTH; i++)
+	{
+		if(cq.Full()) return;
+
+		Instruction<CONFIG> *instruction = iq.Front();
+
+/*
+		InsnType insn_type = operation->GetType();
+		switch(insn_type)
+		{
+			case VEC_INSN:
+				if(viq.Full()) return;
+
+				
+				viq.Push(operation);
+				break;
+			case GP_INSN:
+				if(giq.Full()) return;
+				giq.Push(operation);
+				break;
+			case FP_INSN:
+				if(fiq.Full()) return;
+				fiq.Push(operation);
+				break;
+		}
+*/
+		cq.Push(instruction);
+		iq.Pop();
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::GPRIssue()
+{
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::FPRIssue()
+{
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::VRIssue()
+{
+/*
+	unsigned int i;
+	for(i = 0; i < CONFIG::VR_ISSUE_WIDTH; i++)
+	{
+		Operation *operation = viq.Front();
+		
+		VecInsnType vec_insn_type = operation->GetVecInsnType();
+		switch(vec_insn_type)
+		{
+			case VEC_PERM_INSN:
+				break;
+			case VEC_INT_INSN:
+				break;
+			case VEC_FP_INSN:
+				break;
+		}
+	}
+*/
+}
+
 
 } // end of namespace powerpc
 } // end of namespace processor

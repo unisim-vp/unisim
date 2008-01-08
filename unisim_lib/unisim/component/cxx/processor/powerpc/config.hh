@@ -310,6 +310,9 @@ public:
 	typedef uint32_t physical_address_t;    // 32-bit physical address
 	typedef uint32_t reg_t;                 // register type
 
+	// performance model
+	static const bool PERF_MODEL_ENABLE = false;
+
 	// start address
 	static const uint32_t START_ADDR = 0xfff00100UL; // processor starts at system reset interrupt handler
 
@@ -1191,7 +1194,7 @@ class MPC7447AConfig : public BaseConfig, public MSRLayout, public MPC74XXHID0La
 {
 public:
 	//typedef uint64_t physical_address_t;	// only 36 bits are used, all remaining bits *must* be set to zero
-	
+
 	static const Model MODEL = MPC7447A;
 	
 	static const uint32_t PROCESSOR_VERSION = 0x80030100UL;
@@ -1389,6 +1392,74 @@ public:
 	static const bool HAS_ICTRL_ICWL = true;
 };
 
+/*
+class MPC7447APerfModelConfig
+{
+public:
+	// Fetch
+	static const uint32_t FETCH_WIDTH = 4;
+
+	// Decode/Issue
+	static const uint32_t DECODE_WIDTH = 3;
+	static const uint32_t VR_ISSUE_WIDTH = 2;
+	static const uint32_t GPR_ISSUE_WIDTH = 3;
+	static const uint32_t FPR_ISSUE_WIDTH = 2;
+
+	class InstructionWindowConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Operation ELEMENT;
+		static const unsigned int SIZE = 256;
+		static const unsigned int BUFFER_SIZE = 256; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class InstructionQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef uint32_t ELEMENT;
+		static const unsigned int SIZE = 12;
+		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class VRIssueQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Operation *ELEMENT;
+		static const unsigned int SIZE = 4;
+		static const unsigned int BUFFER_SIZE = 4; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class GPRIssueQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Operation *ELEMENT;
+		static const unsigned int SIZE = 6;
+		static const unsigned int BUFFER_SIZE = 8; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class FPRIssueQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Operation *ELEMENT;
+		static const unsigned int SIZE = 2;
+		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+	
+	class CompletionQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Operation *ELEMENT;
+		static const unsigned int SIZE = 16;
+		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
+	};
+};
+*/
 
 } // end of namespace powerpc
 } // end of namespace processor

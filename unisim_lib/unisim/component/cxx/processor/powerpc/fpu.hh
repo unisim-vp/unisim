@@ -53,7 +53,6 @@ using std::map;
 using std::string;
 using unisim::service::interfaces::Logger;
 using unisim::service::interfaces::Registers;
-using unisim::util::debug::Register;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;

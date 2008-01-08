@@ -49,8 +49,8 @@ template <class ADDRESS>
 BreakpointMapPage<ADDRESS>::BreakpointMapPage(ADDRESS addr)
 {
 	this->base_addr = addr & ~(NUM_BREAKPOINTS_PER_PAGE - 1);
-	map = new uint32_t[NUM_BREAKPOINTS_PER_PAGE / 32];
-	memset(map, 0, NUM_BREAKPOINTS_PER_PAGE / 8);
+	map = new uint32_t[(NUM_BREAKPOINTS_PER_PAGE + 31)/ 32];
+	memset(map, 0, ((NUM_BREAKPOINTS_PER_PAGE + 31)/ 32) * sizeof(uint32_t));
 	next = 0;
 }
 
