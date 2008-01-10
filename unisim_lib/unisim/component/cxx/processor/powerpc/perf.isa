@@ -1,0 +1,273 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+{
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+typedef enum operand_type_t { GPR_T, FPR_T, CR_T, CRF_T, CRB_T, CRM_T, FPSCR_T, XER_T, LR_T, CTR_T } operand_type_t;
+typedef enum operand_direction_t { INPUT_T, OUTPUT_T } operand_direction_t;
+typedef enum unit_type_t { NO_UNIT_T, LSU_T, IU1_T, IU2_T, FPU_T, BPU_T, VFPU_T, VPU_T, VIU1_T, VIU2_T } unit_type_t;
+typedef enum xer_field_t { XER_ALL_T = 0, XER_CA_T = 1, XER_OV_T = 2, XER_SO_T = 4, XER_BYTE_COUNT_T = 5 } xer_field_t;
+
+typedef struct operand_t
+{
+	operand_type_t type;
+	operand_direction_t dir;
+	int value;
+} operand_t;
+
+#define INPUT(_type, _value) \
+(\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].type = _type,\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].dir = INPUT_T,\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands++].value = _value\
+)
+
+#define OUTPUT(_type, _value) \
+(\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].type = _type,\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].dir = OUTPUT_T,\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands++].value = _value\
+)
+
+typedef operand_t operands_t[8];
+
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+}
+
+var noperands : {int} = {0}
+var operands : {operands_t}
+var unit : {unit_type_t} = {NO_UNIT_T}
+
+constructor action initialize_unit() {}
+
+constructor action initialize_read_ra() {}
+
+constructor action initialize_read_rb() {}
+
+constructor action initialize_read_rs() {}
+
+constructor action initialize_read_fa() {}
+
+constructor action initialize_read_fb() {}
+
+constructor action initialize_read_fc() {}
+
+constructor action initialize_read_fs() {}
+
+constructor action initialize_read_lr() {}
+
+constructor action initialize_read_ctr() {}
+
+constructor action initialize_write_fd() {}
+
+constructor action initialize_write_rd() {}
+
+constructor action initialize_write_ra() {}
+
+constructor action initialize_write_lr() {}
+
+constructor action initialize_write_ctr() {}
+
+constructor action initialize_read_cr() {}
+
+constructor action initialize_read_crba() {}
+
+constructor action initialize_read_crbb() {}
+
+constructor action initialize_write_cr() {}
+
+constructor action initialize_write_crbd() {}
+
+constructor action initialize_write_xer() {}
+
+constructor action initialize_read_xer() {}
+
+constructor action initialize_write_fpscr() {}
+
+group group_read_ra(add, addc, adde, addi, addic, addic_, addis, addme, addze, divw, divwu, mulhw, mulhwu, mulli, mullw, neg, subf, subfc, subfe, subfic, subfme, subfze, cmp, cmpi, cmpl, cmpli, rlwimi, lbz, lbzu, lbzux, lbzx, lha, lhau, lhaux, lhax, lhz, lhzu, lhzux, lhzx, lwz, lwzu, lwzux, lwzx, stb, stbu, stbux, stbx, sth, sthu, sthux, sthx, stw, stwu, stwux, stwx, lhbrx, lwbrx, sthbrx, stwbrx, lswi, lswx, stswi, stswx, lmw, stmw, lfd, lfdu, lfdux, lfdx, lfs, lfsu, lfsux, lfsx, stfd, stfdu, stfdux, stfdx, stfiwx, stfs, stfsu, stfsux, stfsx, dcba, dcbf, dcbi, dcbst, dcbt, dcbtst, dcbz, icbi, eciwx, ecowx, lwarx, stwcx_)
+
+group group_read_rb(add, addc, adde, divw, divwu, mulhw, mulhwu, mullw, cmp, cmpl, and, andc, eqv, nand, nor, or, orc, xor, rlwnm, slw, sraw, srw, lbzux, lbzx, lhaux, lhax, lhzux, lhzx, lwzux, lwzx, stbux, stbx, sthux, sthx, stwux, stwx, lhbrx, lwbrx, sthbrx, stwbrx, lswx, stswx, lfdux, lfdx, lfsux, lfsx, stfdux, stfdx, stfiwx, stfsux, stfsx, dcba, dcbf, dcbi, dcbst, dcbz, icbi, tlbie, tlbld, tlbli, lwarx, stwcx_)
+
+group group_read_rs(and, andc, andi_, andis_, cntlzw, eqv, extsb, extsh, nand, nor, or, orc, ori, oris, xor, xori, xoris, rlwimi, rlwinm, rlwnm, slw, sraw, srawi, srw, stb, stbu, stbux, stbx, sth, sthu, sthux, sthx, stw, stwu, stwux, stwx, sthbrx, stwbrx, stwcx_)
+
+group group_read_fa(fadd, fadds, fdiv, fdivs, fmul, fmuls, fsub, fsubs, fsel, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fcmpo, fcmpu)
+
+group group_read_fb(fadd, fadds, fdiv, fdivs, fres, frsqrte, fsub, fsubs, fsel, fsqrt, fsqrts, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fcmpo, fcmpu, fctiw, fctiwz, frsp, fabs, fmr, fnabs, fneg, mtfsf)
+
+group group_read_fc(fmul, fmuls, fsel, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs)
+
+group group_read_fs(stfd, stfdu, stfdux, stfdx, stfiwx, stfs, stfsu, stfsux, stfsx)
+
+group group_read_lr(bclr)
+
+group group_read_ctr(bcctr)
+
+group group_read_ctr_if_not_bo4(bc, bclr)
+
+group group_read_cr_bi_if_not_bo16(bc, bcctr, bclr)
+
+group group_read_crba(crand, crandc, creqv, crnand, crnor, cror, crorc, crxor)
+
+group group_read_crbb(crand, crandc, creqv, crnand, crnor, cror, crorc, crxor)
+
+group group_read_xer_ca(adde, addme, addze, subfe, subfme, subfze)
+
+group group_read_crfs(mcrf)
+
+group group_write_ctr_if_not_bo4(bc, bclr)
+
+group group_write_lr_if_lk(b, bc, bcctr, bclr)
+
+group group_write_rd(add, addc, adde, addi, addic, addic_, addis, addme, addze, divw, divwu, mulhw, mulhwu, mulli, mullw, neg, subf, subfc, subfe, subfic, subfme, subfze)
+
+group group_write_ra(lbzu, lbzux, lhau, lhaux, lhzu, lhzux, lwzu, lwzux, stbu, stbux, sthu, sthux, stwu, stwux, lfdu, lfdux, lfsu, lfsux, stfdu, stfdux, stfsu, stfsux)
+
+group group_write_fd(fadd, fadds, fdiv, fdivs, fmul, fmuls, fres, frsqrte, fsub, fsubs, fsel, fsqrt, fsqrts, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fctiw, fctiwz, frsp, fabs, fmr, fnabs, fneg, mffs, lfd, lfdu, lfdux, lfdx, lfs, lfsu, lfsux, lfsx)
+
+group group_write_fpscr(fadd, fadds, fdiv, fdivs, fmul, fmuls, fres, frsqrte, fsub, fsubs, fsel, fsqrt, fsqrts, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fctiw, fctiwz, frsp, fabs, fmr, fnabs, fneg, fcmpo, fcmpu, mffs, lfd, lfdu, lfdux, lfdx, lfs, lfsu, lfsux, lfsx)
+
+group group_write_cr0_if_rc(add, addc, adde, addze, divw, divwu, mulhw, mulhwu, mullw)
+
+group group_write_cr1_if_rc(fadd, fadds, fdiv, fdivs, fmul, fmuls, fres, frsqrte, fsub, fsubs, fsel, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fctiw, fctiwz, frsp, fabs, fmr, fnabs, fneg, mffs, mtfsb0, mtfsb1, mtfsfi)
+
+group group_write_crfd(cmp, fcmpo, fcmpu, mcrf)
+
+group group_write_crbd(crand, crandc, creqv, crnand, crnor, cror, crorc, crxor)
+
+group group_write_xer_ov_so_if_oe(add, divw, divwu, mullw, neg, subf)
+
+group group_write_xer_ca_and_ov_so_if_oe(addc, adde, addme, addze, subfc, subfe, subfme, subfze)
+
+group group_write_xer_ca(addic, addic_, subfic, sraw)
+
+group group_iu1(add, addc, adde, addi, addic, addic_, addis, addme, addze, neg, subf, subfc, subfe, subfic, subfme, subfze, cmp, cmpi, cmpl, cmpli, and, andc, andi_, andis_, cntlzw, eqv, extsb, extsh, nand, nor, or, orc, ori, oris, xor, xori, xoris, rlwimi, rlwinm, rlwnm, slw, sraw, srawi, srw, tw, twi)
+
+group group_iu2(divw, divwu, mulhw, mulhwu, mulli, mullw, crand, crandc, creqv, crnand, crnor, cror, crorc, crxor, mcrf, mcrxr, mfcr, mfmsr, mfspr, mtspr, mftb, mtcrf, mtmsr, mfsr, mfsrin, mtsr, mtsrin)
+
+group group_fpu(fadd, fadds, fdiv, fmul, fmuls, fres, frsqrte, fsub, fsubs, fsel, fsqrt, fsqrts, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fcmpo, fcmpu, fctiw, fctiwz, frsp, fabs, fmr, fnabs, fneg, mcrfs, mffs, mtfsb0, mtfsb1, mtfsf, mtfsfi)
+
+group group_bpu(b, bc, bcctr, bclr)
+
+group group_lsu(lbz, lbzu, lbzux, lbzx, lha, lhau, lhaux, lhax, lhz, lhzu, lhzux, lhzx, lwz, lwzu, lwzux, lwzx, stb, stbu, stbux, stbx, sth, sthu, sthux, sthx, stw, stwu, stwux, stwx, lhbrx, lwbrx, sthbrx, stwbrx, lswi, lswx, stswi, stswx, lmw, stmw, lfd, lfdu, lfdux, lfdx, lfs, lfsu, lfsux, lfsx, stfd, stfdu, stfdux, stfdx, stfiwx, stfs, stfsu, stfsux, stfsx, dcba, dcbf, dcbi, dcbst, dcbt, dcbtst, dcbz, icbi, tlbia, tlbie, tlbsync, tlbld, tlbli, eciwx, ecowx, eieio, lwarx, stwcx_, sync, dss, dssall, dst, dstst, dststt, dstt, lvebx, lvehx, lvewx, lvsl, lvsr, lvx, lvxl, stvebx, stvehx, stvewx, stvx, stvxl)
+
+group group_vfpu(mfvscr, mtvscr, vaddfp, vcfsx, vcfux, vcmpbfp, vcmpeqfp, vcmpgefp, vcmpgtfp, vctsxs, vctuxs, vexptefp, vlogefp, vmaddfp, vmaxfp, vminfp, vnmsubfp, vrefp, vrfim, vrfin, vrfip, vrfiz, vrsqrtefp, vsubfp)
+
+group group_vpu(vmrghb, vmrghh, vmrghw, vmrglb, vmrglh, vmrglw, vperm, vpkpx, vpkshss, vpkshus, vpkswss, vpkswus, vpkuhum, vpkuhus, vpkuwum, vpkuwus, vsl, vsldoi, vslo, vspltb, vsplth, vspltisb, vspltish, vspltisw, vspltw, vsr, vsro, vupkhpx, vupkhsb, vupkhsh, vupklpx, vupklsb, vupklsh)
+
+group group_viu1(vaddcuw, vaddsbs, vaddshs, vaddsws, vaddubm, vaddubs, vadduhm, vadduhs, vadduwm, vadduws, vand, vandc, vavgsb, vavgsh, vavgsw, vavgub, vavguh, vavguw, vcmpequb, vcmpequh, vcmpequw, vcmpgtsb, vcmpgtsh, vcmpgtsw, vcmpgtub, vcmpgtuh, vcmpgtuw, vmaxsb, vmaxsh, vmaxsw, vmaxub, vmaxuh, vmaxuw, vminsb, vminsh, vminsw, vminub, vminuh, vminuw, vnor, vor, vrlb, vrlh, vrlw, vsel, vslb, vslh, vslw, vsrab, vsrah, vsraw, vsrb, vsrh, vsrw, vsubcuw, vsubsbs, vsubshs, vsubsws, vsububm, vsububs, vsubuhm, vsubuhs, vsubuwm, vsubuws, vxor)
+
+group group_viu2(vmhaddshs, vmhraddshs, vmladduhm, vmsummbm, vmsumshm, vmsumshs, vmsumubm, vmsumuhm, vmsumuhs, vmulesb, vmulesh, vmuleub, vmuleuh, vmulosb, vmulosh, vmuloub, vmulouh, vsumsws, vsum2sws, vsum4sbs, vsum4shs, vsum4ubs)
+
+group_iu1.initialize_unit = { Operation<CONFIG>::unit = IU1_T; }
+
+group_iu2.initialize_unit = { Operation<CONFIG>::unit = IU2_T; }
+
+group_fpu.initialize_unit = { Operation<CONFIG>::unit = FPU_T; }
+
+group_bpu.initialize_unit = { Operation<CONFIG>::unit = BPU_T; }
+
+group_lsu.initialize_unit = { Operation<CONFIG>::unit = LSU_T; }
+
+group_vfpu.initialize_unit = { Operation<CONFIG>::unit = VFPU_T; }
+
+group_vpu.initialize_unit = { Operation<CONFIG>::unit = VPU_T; }
+
+group_viu1.initialize_unit = { Operation<CONFIG>::unit = VIU1_T; }
+
+group_viu2.initialize_unit = { Operation<CONFIG>::unit = VIU2_T; }
+
+group_read_ra.initialize_read_ra = { INPUT(GPR_T, ra); }
+
+group_read_rb.initialize_read_rb = { INPUT(GPR_T, rb); }
+
+group_read_rs.initialize_read_rs = { INPUT(GPR_T, rs); }
+
+group_read_fa.initialize_read_fa = { INPUT(FPR_T, fa); }
+
+group_read_fb.initialize_read_fb = { INPUT(FPR_T, fb); }
+
+group_read_fc.initialize_read_fc = { INPUT(FPR_T, fc); }
+
+group_read_fs.initialize_read_fs = { INPUT(FPR_T, fs); }
+
+group_read_xer_ca.initialize_read_xer = { INPUT(XER_T, XER_CA_T); }
+
+group_read_lr.initialize_read_lr = { INPUT(LR_T, 0); }
+
+group_read_ctr.initialize_read_ctr = { INPUT(CTR_T, 0); }
+
+group_read_ctr_if_not_bo4.initialize_read_ctr = { if((bo & 4) == 0) INPUT(CTR_T, 0); }
+
+group_read_cr_bi_if_not_bo16.initialize_read_cr = { if((bo & 16) == 0) INPUT(CRB_T, bi); }
+
+group_read_crba.initialize_read_crba = { INPUT(CRB_T, crbA); }
+
+group_read_crbb.initialize_read_crbb = { INPUT(CRB_T, crbB); }
+
+group_read_crfs.initialize_read_cr = { INPUT(CRF_T, crfS); }
+
+group_write_rd.initialize_write_rd = { OUTPUT(GPR_T, rd); }
+
+group_write_ra.initialize_write_ra = { OUTPUT(GPR_T, ra); }
+
+group_write_fd.initialize_write_fd = { OUTPUT(FPR_T, fd); }
+
+group_write_fpscr.initialize_write_fpscr = { OUTPUT(FPSCR_T, 0); }
+
+group_write_lr_if_lk.initialize_write_lr = { if(lk) OUTPUT(LR_T, 0); }
+
+group_write_ctr_if_not_bo4.initialize_write_ctr = { if((bo & 4) == 0) OUTPUT(CTR_T, 0); }
+
+group_write_crbd.initialize_write_crbd = { OUTPUT(CRB_T, crbD); }
+
+group_write_xer_ca.initialize_write_xer = { OUTPUT(XER_T, XER_CA_T); }
+
+group_write_cr0_if_rc.initialize_write_cr = { if(rc) { INPUT(XER_T, XER_SO_T); OUTPUT(CRF_T, 0); } }
+
+group_write_xer_ca_and_ov_so_if_oe.initialize_write_xer = { if(oe) OUTPUT(XER_T, XER_OV_T | XER_SO_T | XER_CA_T); else OUTPUT(XER_T, XER_CA_T); }
+
+group_write_cr1_if_rc.initialize_write_cr = { if(rc) OUTPUT(CRF_T, 1); }
+
+group_write_crfd.initialize_write_cr = { OUTPUT(CRF_T, crfD); }
