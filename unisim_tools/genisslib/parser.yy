@@ -586,7 +586,7 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
     Scanner::fileloc.err( "error: undefined action prototype `%s'", action_proto_symbol.str() );
     YYABORT;
   }
-
+  
   /* target symbol is either an operation or a group */
   Operation_t *operation = Scanner::isa().operation( target_symbol );
   Group_t *group = operation ? 0 : Scanner::isa().group( target_symbol );

@@ -34,7 +34,7 @@ struct Scanner {
   static Str::Buf*                s_stringbuffer;
   static Isa*                     s_isa;
   static std::vector<ConstStr_t>  s_lookupdirs;   ///< Directory searched when opening files
-
+  
   struct Include_t {
     uint8_t*                      m_state_backup;
     FileLoc_t                     m_fileloc;
@@ -58,7 +58,7 @@ struct Scanner {
   
   static void                     push();
   static bool                     pop();
-
+  
   static bool                     include( char const* _filename );
   static bool                     open( ConstStr_t _filename );
   static bool                     parse( char const* _filename, Isa& _isa );
@@ -71,6 +71,9 @@ struct Scanner {
   static void                     add_lookupdir( char const* _dir );
   static void                     sc_enter( int _condition );
   static bool                     sc_leave();
+  
+  /* Special symbols */
+  ConstStr_t                      all_operations();
 };
 
 

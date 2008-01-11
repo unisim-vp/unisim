@@ -437,5 +437,15 @@ Scanner::sc_leave() {
   return false;
 }
 
+ConstStr_t
+Scanner::all_operations() {
+  static ConstStr_t all_ops;
+  
+  if( not all_ops ) {
+    all_ops = ConstStr_t( "all_operations", Scanner::symbols );
+  }
+  return all_ops;
+}
+
 int yywrap() { return 1; }
 
