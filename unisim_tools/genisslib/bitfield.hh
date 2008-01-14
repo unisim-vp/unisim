@@ -24,12 +24,19 @@
 #include <conststr.hh>
 #include <referencecounting.hh>
 
-/** bitfield base object, either an opcode bitfield, an operand or a unused bitfield */
+/**
+ * @brief A base bitfield Object
+ * 
+ * Base bitfield objects are inherited by various bitfield object
+ * acting differently according to opcode decoding and data
+ * extraction.
+ *
+ */
 struct BitField_t : virtual ReferenceCounter {
   unsigned int          m_size;
   
   enum Exception_t { InternalError, };
-  enum Type_t { Opcode, Operand, Unused, Separator, SubOp };
+  enum Type_t { Opcode, Operand, Unused, Separator, SubOp, SpecializedOperand };
   
   BitField_t( unsigned int _size ) : m_size( _size ) {}
   virtual ~BitField_t() {}
@@ -47,6 +54,13 @@ struct BitField_t : virtual ReferenceCounter {
 std::ostream&
 operator<<( std::ostream& _sink, BitField_t const& _bf );
 
+/**
+ *  @brief  An opcode bitfield 
+ *  
+ *  An opcode bitfield takes a mandatory value in opcode decoding. 
+ *
+ */
+
 struct OpcodeBitField_t : public BitField_t {
   unsigned int          m_value;
   
@@ -56,9 +70,17 @@ struct OpcodeBitField_t : public BitField_t {
   Type_t                type() const { return Opcode; };
   OpcodeBitField_t*     clone() const { return new OpcodeBitField_t( *this ); }
   void                  fills( std::ostream& _sink ) const;
-  uint64_t              bits() const { return m_value; };
   bool                  hasopcode() const { return true; }
+  uint64_t              bits() const { return m_value; };
 };
+
+/**
+ *  @brief  An operand bitfield 
+ *  
+ *  An operand bitfield may take any value in opcode decoding. The
+ *  value is extracted to a operation member variable.
+ *
+ */
 
 struct OperandBitField_t : public BitField_t {
   ConstStr_t            m_symbol;
@@ -73,9 +95,17 @@ struct OperandBitField_t : public BitField_t {
   
   Type_t                type() const { return Operand; };
   OperandBitField_t*    clone() const { return new OperandBitField_t( *this ); }
-  ConstStr_t            symbol() const { return m_symbol; };
   void                  fills( std::ostream& _sink ) const;
+  ConstStr_t            symbol() const { return m_symbol; };
 };
+
+/**
+ *  @brief  A significant-less bitfield
+ *  
+ *  A unused bitfield may take any value in opcode decoding. No value
+ *  is extracted from this field.
+ *  
+ */
 
 struct UnusedBitField_t : public BitField_t {
   UnusedBitField_t( unsigned int _size );
@@ -106,6 +136,16 @@ struct SeparatorBitField_t : public BitField_t {
   void                  fills( std::ostream& _sink ) const;
 };
 
+/**
+ *  @brief  A sub operation bitfield (useful only for CISC)
+ *  
+ *  A suboperation bitfield may take any value in opcode decoding. The
+ *  content of the field is passed to a subdecoder for further
+ *  process. The returned operation (from the sub decoder) is stored
+ *  in an operation member.
+ *  
+ */
+
 struct SubOpBitField_t : public BitField_t {
   ConstStr_t            m_symbol;
   SubDecoder_t const*   m_subdecoder;
@@ -121,5 +161,38 @@ struct SubOpBitField_t : public BitField_t {
   unsigned int          maxsize() const;
 };
 
+/**
+ *  @brief  A specialized operand bitfield 
+ *  
+ *  A specialized operand bitfield takes a mandatory value in opcode
+ *  decoding. Though the value is constant, it is extracted to a
+ *  operation member variable.
+ *
+ *  This special kind of bitfield may not be directly emited by the
+ *  user. This field is generated at compile-time whenever the user
+ *  instanciates a particular operation for specific values of the
+ *  field.
+ *
+ */
+
+struct SpOperandBitField_t : public BitField_t {
+  ConstStr_t            m_symbol;
+  int                   m_shift;
+  unsigned int          m_size_modifier;
+  bool                  m_sext;
+  unsigned int          m_value;
+  
+  SpOperandBitField_t( OperandBitField_t const& _src, unsigned int _value );
+  SpOperandBitField_t( SpOperandBitField_t const& _src );
+
+  int                   wordsize() const;
+  
+  Type_t                type() const { return SpecializedOperand; };
+  SpOperandBitField_t*  clone() const { return new SpOperandBitField_t( *this ); }
+  void                  fills( std::ostream& _sink ) const { throw InternalError; }
+  ConstStr_t            symbol() const { return m_symbol; };
+  bool                  hasopcode() const { return true; }
+  uint64_t              bits() const { return m_value; };
+};
 
 #endif // __BITFIELD_HH__
