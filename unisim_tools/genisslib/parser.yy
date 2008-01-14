@@ -54,6 +54,39 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
   _operation->add( new Action_t( _actionproto, _actioncode, Scanner::comments, Scanner::fileloc ) );
 }
 
+static void
+extend_oplist( Vect_t<Operation_t>* _oplist, Operation_t* _op ) {
+  // Suppress duplicated entries
+  for( Vect_t<Operation_t>::const_iterator node = _oplist->begin(); node < _oplist->end(); ++ node ) {
+    if( (*node)->m_symbol != _op->m_symbol ) continue;
+    Scanner::fileloc.err( "warning: duplicated operation `%s' in list", _op->m_symbol.str() );
+    return;
+  }
+  
+  _oplist->append( _op );
+}
+
+static bool
+extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
+  /* Symbol points to either an operation or a group */
+  Operation_t* operation = Scanner::isa().operation( _symbol );
+  if( operation ) {
+    /* Symbol points to an operation */
+    extend_oplist( _oplist, operation );
+  } else {
+    Group_t* group = Scanner::isa().group( _symbol );
+    if( group ) {
+      /* Symbol points to a group */
+      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+        extend_oplist( _oplist, *gop );
+    } else {
+      Scanner::fileloc.err( "error: undefined operation `%s'", _symbol.str() );
+      return false;
+    }
+  }
+  return true;
+}
+
 %}
 
 %token TOK_NAMESPACE
@@ -125,7 +158,6 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
 %type<variable_list> global_var_list_declaration
 %type<group> group_declaration
 %type<operation_list> operation_list
-%type<operation> operation
 %type<sourcecode> var_init
 %type<param_list> template_declaration
 %type<sourcecode> template_scheme
@@ -319,10 +351,15 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl var_lis
   {
     Operation_t const* prev_op = Scanner::isa().operation( symbol );
     if( prev_op ) {
-      // FIXME: warning downgraded to error
-      Scanner::fileloc.err( "error: operation `%s' redefined", prev_op->m_symbol.str() );
-      prev_op->m_fileloc.err( "operation `%s' previously defined here", prev_op->m_symbol.str() );
+      Scanner::fileloc.err( "error: operation `%s' redefined", symbol.str() );
+      prev_op->m_fileloc.err( "operation `%s' previously defined here", symbol.str() );
       YYABORT;
+    }
+    
+    Group_t const* prev_grp = Scanner::isa().group( symbol );
+    if( prev_grp ) {
+      Scanner::fileloc.err( "error: operation `%s' redefined", symbol.str() );
+      prev_grp->m_fileloc.err( "group `%s' previously defined here", symbol.str() );
     }
   }
 
@@ -587,24 +624,22 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
     YYABORT;
   }
   
-  /* target symbol is either an operation or a group */
-  Operation_t *operation = Scanner::isa().operation( target_symbol );
-  Group_t *group = operation ? 0 : Scanner::isa().group( target_symbol );
-
-  if( not operation and not group ) {
-    Scanner::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
-    YYABORT;
-  }
-  else if( operation and group ) {
-    Scanner::fileloc.err( "internal error: operation and group `%s' are both defined", target_symbol.str() );
-    YYABORT;
-  }
-  else if( group ) {
-    for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
-      create_action( *gop, actionproto, actioncode );
-  }
-  else /* operation */ {
+  /* Target symbol points to either an operation or a group */
+  Operation_t* operation = Scanner::isa().operation( target_symbol );
+  if( operation ) {
+    /* Target symbol points to an operation */
     create_action( operation, actionproto, actioncode );
+  } else {
+    Group_t* group = Scanner::isa().group( target_symbol );
+    if( group ) {
+      /* Target symbol points to a group */
+      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+        create_action( *gop, actionproto, actioncode );
+    } else {
+      /* Target symbol doesn't point to anything */
+      Scanner::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
+      YYABORT;
+    }
   }
   
   Scanner::comments.clear();
@@ -623,7 +658,7 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
   ConstStr_t           group_symbol = ConstStr_t( $2, Scanner::symbols );
   Vect_t<Operation_t>* operation_list = $4;
   
-  { /* Actions and group name should not conflict */
+  { /* Operations and groups name should not conflict */
     Operation_t* prev_op = Scanner::isa().operation( group_symbol );
     if( prev_op ) {
       Scanner::fileloc.err( "error: group name conflicts with operation `%s'", group_symbol.str() );
@@ -645,46 +680,21 @@ group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'
 ;
 
 operation_list:
-  operation
-{
-  $$ = new Vect_t<Operation_t>( $1 );
-}
-  | operation_list ',' operation
-{
-  Vect_t<Operation_t>* oplist = $1;
-  Operation_t*         opitem = $3;
-  
-  // Suppressing duplications
-  Vect_t<Operation_t>::const_iterator node;
-  for( node = oplist->begin(); node < oplist->end(); ++ node )
-    if( (*node)->m_symbol == opitem->m_symbol ) break;
-  
-  if( node < oplist->end() ) { // found one
-    Scanner::fileloc.err( "warning: duplicated operation `%s' in list", opitem->m_symbol.str() );
-    $$ = oplist;
-  }
-  else {
-    $$ = oplist->append( opitem );
-  }
-}
-;
-
-operation:
   TOK_IDENT
 {
-  ConstStr_t op_symbol = ConstStr_t( $1, Scanner::symbols );
-  
-  Operation_t *operation = Scanner::isa().operation( op_symbol );
-
-  if( not operation ) {
-    Scanner::fileloc.err( "error: undefined operation `%s'", op_symbol.str() );
-    YYABORT;
-  }
-  
-  $$ = operation;
+  ConstStr_t symbol = ConstStr_t( $1, Scanner::symbols );
+  Vect_t<Operation_t>* oplist = new Vect_t<Operation_t>;
+  if( not extend_oplist( oplist, symbol ) ) { YYABORT; }
+  $$ = oplist;
+}
+  | operation_list ',' TOK_IDENT
+{
+  Vect_t<Operation_t>* oplist = $1;
+  ConstStr_t symbol = ConstStr_t( $3, Scanner::symbols );
+  if( not extend_oplist( oplist, symbol ) ) { YYABORT; }
+  $$ = oplist;
 }
 ;
-
 
 %%
 
