@@ -100,6 +100,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %token TOK_DESTRUCTOR
 %token TOK_OP
 %token TOK_SOURCE_CODE
+%token TOK_SPECIALIZED
 %token '*'
 %token '('
 %token ')'

@@ -298,6 +298,7 @@ Scanner::Token_t Scanner::s_tokens[] = {
   {"risc_decoder", TOK_RISC_DECODER},
   {"cisc_decoder", TOK_CISC_DECODER},
   {"vliw_decoder", TOK_VLIW_DECODER},
+  {"specialized", TOK_SPECIALIZED},
   {0,0}
 };
 
