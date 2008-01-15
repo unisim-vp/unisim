@@ -32,7 +32,16 @@ using namespace std;
 
 #define DEFAULT_OUTPUT "iss"
 
-struct GIL : public CLI {
+Opts::Opts()
+  : outputprefix( DEFAULT_OUTPUT ), expandname( 0 ), inputname( 0 ), depfilename( 0 ),
+    minwordsize( -1 ), subdecoder( false ), sourcelines( true ), specialization( true ),
+    actiontext( false )
+{ s_shared = this; }
+
+Opts* Opts::s_shared = 0;
+Opts& Opts::shared() { return *s_shared; }
+
+struct GIL : public CLI, public Opts {
   void description() {
     cerr << "Generator of instruction set simulators." << endl;
   }
@@ -45,19 +54,7 @@ struct GIL : public CLI {
          << "emails     : " EMAILS << endl;
   }
   
-  char const* outputprefix;
-  char const* expandname;
-  char const* inputname;
-  char const* depfilename;
-  int         minwordsize;
-  bool        subdecoder;
-  bool        sourcelines;
-  bool        specialization;
-  
-  GIL()
-    : outputprefix( DEFAULT_OUTPUT ), expandname( 0 ), inputname( 0 ), depfilename( 0 ),
-      minwordsize( -1 ), subdecoder( false ), sourcelines( true ), specialization( true )
-  {}
+  GIL() {}
   
   void parse( CLI::Args_t& _args ) {
     if( _args.match( CLI::Unlimited, "-I", 0,
@@ -113,6 +110,17 @@ struct GIL : public CLI {
           throw CLI::Exit_t( 1 );
         }
         sourcelines = ( strcmp( arg, "on" ) == 0 );
+      }
+    else if( _args.match( CLI::AtMostOnce, "--action-text", 0,
+                          "on/off", "Toggles on/off action code text availablility (default: off)." ) )
+      {
+        char const* arg;
+        if( not (arg = _args.pop()) ) {
+          cerr << GENISSLIB ": '--action-text' must be followed by 'on' or 'off'.\n";
+          help();
+          throw CLI::Exit_t( 1 );
+        }
+        actiontext = ( strcmp( arg, "on" ) == 0 );
       }
     else if( _args.match( CLI::AtMostOnce, "-v", "--version", 0,
                           "", "Displays " GENISSLIB " version and exits." ) )
@@ -194,7 +202,7 @@ main( int argc, char** argv, char** envp ) {
 
     auto_ptr<Generator> generator = isa.generator();
     
-    generator->init( isa, gil.minwordsize, gil.subdecoder );
+    generator->init( isa );
     
     try {
       // Back-end specific preprocess

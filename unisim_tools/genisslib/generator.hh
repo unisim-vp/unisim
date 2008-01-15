@@ -24,13 +24,12 @@
 struct Generator {
   Isa*                                m_isa;
   int                                 m_minwordsize;
-  bool                                m_is_subdecoder;
   
   enum Exception_t { GenerationError };
   Generator();
   virtual ~Generator() {};
   
-  Generator&                          init( Isa& _isa, unsigned int _minwordsize, bool _is_subdecoder );
+  Generator&                          init( Isa& _isa );
 
   virtual void                        finalize() = 0;
 

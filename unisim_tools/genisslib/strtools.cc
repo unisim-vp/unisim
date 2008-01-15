@@ -173,4 +173,37 @@ namespace Str {
 
     return ConstStr_t( buffer.m_storage );
   }
+
+  ConstStr_t
+  dqcstring( char const* _str ) {
+    Buf buffer( Buf::Recycle );
+    buffer.write( '"' );
+    
+    static char const* hextab = "0123456789abcdef";
+    
+    for( char const* ptr = _str; *ptr; ++ ptr ) {
+      char ch = *ptr;
+      switch( ch ) {
+      case '\n': buffer.write( "\\n" ); break;
+      case '\r': buffer.write( "\\r" ); break;
+      case  '"': buffer.write( "\\\"" ); break;
+      case '\\': buffer.write( "\\\\" ); break;
+      default:
+        {
+          if( ch >= 127 or ch < 32 ) {
+            buffer.write( "\\x" );
+            buffer.write( hextab[unsigned( ch ) / 256] );
+            buffer.write( hextab[unsigned( ch ) % 256] );
+          } else {
+            buffer.write( ch );
+          }
+        }
+        break;
+      }
+    }
+    buffer.write( '"' );
+    
+    return ConstStr_t( buffer.m_storage );
+  }
+
 } // end of namespace Str

@@ -24,4 +24,22 @@
 #define EMAILS "gilles.mouchard@cea.fr, yves.lhuillier@cea.fr"
 #define COPYRIGHT "Copyright (c) 2003-2007 CEA and Universite Paris Sud"
 
+struct Opts {
+  Opts();
+  
+  char const*      outputprefix;
+  char const*      expandname;
+  char const*      inputname;
+  char const*      depfilename;
+  int              minwordsize;
+  bool             subdecoder;
+  bool             sourcelines;
+  bool             specialization;
+  bool             actiontext;
+
+  static Opts&     shared();
+  
+  static Opts*     s_shared;
+};
+
 #endif // __MAIN_HH__

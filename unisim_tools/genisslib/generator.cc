@@ -34,14 +34,13 @@
 using namespace std;
 
 Generator::Generator()
-  : m_isa( 0 ), m_minwordsize( 0 ), m_is_subdecoder( false )
+  : m_isa( 0 ), m_minwordsize( 0 )
 {}
 
 Generator&
-Generator::init( Isa& _isa, unsigned int _minwordsize, bool _is_subdecoder ) {
+Generator::init( Isa& _isa ) {
   m_isa = &_isa;
-  m_minwordsize = (1 << std::max( 0, int( ceil( log2( _minwordsize / 8 ) ) ) ) );
-  m_is_subdecoder = _is_subdecoder;
+  m_minwordsize = (1 << std::max( 0, int( ceil( log2( Opts::shared().minwordsize / 8 ) ) ) ) );
   return *this;
 }
 
@@ -174,7 +173,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.template_signature( isa().m_tparams );
   _product.code( "class Operation;\n" );
   
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     _product.code( "const unsigned int NUM_OPERATIONS_PER_PAGE = 4096;\n" );
     _product.template_signature( isa().m_tparams );
     _product.code( "class DecodeMapPage\n" );
@@ -213,7 +212,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " Decoder();\n" );
   _product.code( " virtual ~Decoder();\n" );
   _product.code( "\n" );
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     _product.code( " Operation" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( "*NCDecode(%s addr);\n", isa().m_addrtype.str() );
@@ -221,7 +220,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " Operation" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( " *NCDecode(%s addr, %s code);\n", isa().m_addrtype.str(), codetype_constref().str() );
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     _product.code( " Operation" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( " *Decode(%s addr);\n", isa().m_addrtype.str() );
@@ -241,7 +240,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " std::vector<DecodeTableEntry" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( " > decode_table;\n" );
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     _product.code( " DecodeMapPage" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( " *mru_page;\n" );
@@ -257,7 +256,7 @@ Generator::decoder_decl( Product_t& _product ) const {
     _product.code( " ;\n" );
   }
   _product.code( "};\n\n" );
-  if( m_is_subdecoder ) {
+  if( Opts::shared().subdecoder ) {
     _product.template_signature( isa().m_tparams );
     _product.code( "struct sub { static Decoder" );
     _product.template_abbrev( isa().m_tparams );
@@ -288,6 +287,10 @@ Generator::operation_decl( Product_t& _product ) const {
   }
 
   for( intptr_t idx = isa().m_actionprotos.size(); (--idx) >= 0; ) {
+    if( Opts::shared().actiontext ) {
+      // for cstring version of the action
+      _product.code( " virtual char const* %s_text();\n", isa().m_actionprotos[idx]->m_symbol.str() );
+    }
     _product.code( " virtual " );
     if( isa().m_actionprotos[idx]->m_returns ) {
       _product.usercode( isa().m_actionprotos[idx]->m_returns->m_fileloc, "%s", isa().m_actionprotos[idx]->m_returns->m_content.str() );
@@ -298,14 +301,14 @@ Generator::operation_decl( Product_t& _product ) const {
     _product.code( " %s(", isa().m_actionprotos[idx]->m_symbol.str() );
 
     if( not isa().m_actionprotos[idx]->m_params.empty() ) {
-      bool intra = false;
+      char const* sep = "";
       for( Vect_t<CodePair_t>::const_iterator param = isa().m_actionprotos[idx]->m_params.begin();
-           param < isa().m_actionprotos[idx]->m_params.end(); ++ param ) {
-        if( intra ) _product.code( ",\n" ); else intra = true;
-        _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
-          
-        _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
-      }
+           param < isa().m_actionprotos[idx]->m_params.end(); ++ param, sep = ",\n" )
+        {
+          _product.code( sep );
+          _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
+          _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
+        }
     }
 
     _product.code( " );\n" );
@@ -369,22 +372,26 @@ Generator::isa_operations_decl( Product_t& _product ) const {
         for( Vect_t<Comment_t>::const_iterator comm = actionproto->m_comments.begin(); comm < actionproto->m_comments.end(); ++ comm )
           _product.code( " %s\n", (**comm).m_content.str() );
       }
-          
+      
+      if( Opts::shared().actiontext ) {
+        // for cstring version of the action
+        _product.code( " virtual char const* %s_text();\n", actionproto->m_symbol.str() );
+      }
+
       _product.code( " virtual\n" );
 
-      if(actionproto->m_returns) {
+      if( actionproto->m_returns ) {
         _product.usercode( actionproto->m_returns->m_fileloc, " %s", actionproto->m_returns->m_content.str() );
-      }
-      else {
+      } else {
         _product.code( " void\n" );
       }
 
       _product.code( " %s(", actionproto->m_symbol.str() );
 
       if( not actionproto->m_params.empty() ) {
-        bool intra = false;
-        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param ) {
-          if( intra ) _product.code( ",\n" ); else intra = true;
+        char const* sep = "";
+        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param, sep = ",\n" ) {
+          _product.code( sep );
           _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
           _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
         }
@@ -433,6 +440,15 @@ Generator::operation_impl( Product_t& _product ) const {
   _product.code( "}\n\n" );
   
   for( intptr_t idx = isa().m_actionprotos.size(); (--idx) >= 0; ) {
+    if( Opts::shared().actiontext ) {
+      // for cstring version of the method
+      _product.template_signature( isa().m_tparams );
+      _product.code( " char const* Operation" );
+      _product.template_abbrev( isa().m_tparams );
+      _product.code( "::%s_text()\n", isa().m_actionprotos[idx]->m_symbol.str() );
+      _product.code( " { return %s; }", Str::dqcstring( isa().m_actionprotos[idx]->m_defaultcode->m_content ).str() );
+    }
+    
     _product.template_signature( isa().m_tparams );
 
     if(isa().m_actionprotos[idx]->m_returns) {
@@ -447,13 +463,14 @@ Generator::operation_impl( Product_t& _product ) const {
     _product.code( "::%s(", isa().m_actionprotos[idx]->m_symbol.str() );
 
     if( not isa().m_actionprotos[idx]->m_params.empty() ) {
-      bool intra = false;
+      char const* sep = "";
       for( Vect_t<CodePair_t>::const_iterator param = isa().m_actionprotos[idx]->m_params.begin();
-           param < isa().m_actionprotos[idx]->m_params.end(); ++ param ) {
-        if( intra ) _product.code( ",\n" ); else intra = true;
-        _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
-        _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
-      }
+           param < isa().m_actionprotos[idx]->m_params.end(); ++ param, sep = ",\n" )
+        {
+          _product.code( sep );
+          _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
+          _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
+        }
     }
 
     _product.code( ")\n{\n" );
@@ -478,6 +495,15 @@ Generator::isa_operations_methods( Product_t& _product ) const {
           _product.code( "%s\n", (**comm).m_content.str() );
       }
 
+      if( Opts::shared().actiontext ) {
+        // for cstring version of the method
+        _product.template_signature( isa().m_tparams );
+        _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol ).str() );
+        _product.template_abbrev( isa().m_tparams );
+        _product.code( "::%s_text()\n", actionproto->m_symbol.str() );
+        _product.code( " { return %s; }", Str::dqcstring( (**action).m_source_code->m_content.str() ).str() );
+      }
+
       _product.template_signature( isa().m_tparams );
 
       if( actionproto->m_returns ) {
@@ -492,9 +518,9 @@ Generator::isa_operations_methods( Product_t& _product ) const {
       _product.code( "::%s(", actionproto->m_symbol.str() );
 
       if( not actionproto->m_params.empty() ) {
-        bool intra = false;            
-        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param ) {
-          if( intra ) _product.code( ",\n" ); else intra = true;
+        char const* sep = "";
+        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param, sep = ",\n" ) {
+          _product.code( sep );
           _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
           _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
         }
@@ -550,7 +576,7 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
 
 void
 Generator::decoder_impl( Product_t& _product ) const {
-  if( m_is_subdecoder ) {
+  if( Opts::shared().subdecoder ) {
     _product.template_signature( isa().m_tparams );
     _product.code( "Decoder" );
     _product.template_abbrev( isa().m_tparams );
@@ -559,7 +585,7 @@ Generator::decoder_impl( Product_t& _product ) const {
     _product.code( "::decoder;\n" );
   }
 
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     _product.template_signature( isa().m_tparams );
     _product.code( "DecodeMapPage" );
     _product.template_abbrev( isa().m_tparams );
@@ -599,7 +625,7 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.code( "::Decoder()\n" );
   _product.code( "{\n" );
   _product.code( " little_endian = %s;\n", isa().m_little_endian ? "true" : "false" );
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     _product.code( " mru_page = 0;\n" );
     _product.code( " memset(decode_hash_table, 0, sizeof(decode_hash_table));\n" );
   }
@@ -627,12 +653,12 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.template_abbrev( isa().m_tparams );
   _product.code( "::~Decoder()\n" );
   _product.code( "{\n" );
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     _product.code( " InvalidateDecodingCache();\n" );
   }
   _product.code( "}\n\n" );
   
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     _product.template_signature( isa().m_tparams );
     _product.code( "void Decoder" );
     _product.template_abbrev( isa().m_tparams );
@@ -646,7 +672,7 @@ Generator::decoder_impl( Product_t& _product ) const {
   
   for( int withcode = 0; withcode < 2; ++withcode ) {
     /*** NCDecode( Address_t addr[, CodeType_t code] ) ***/
-    if( m_is_subdecoder and not withcode ) continue;
+    if( Opts::shared().subdecoder and not withcode ) continue;
     _product.template_signature( isa().m_tparams );
     _product.code( "Operation" );
     _product.template_abbrev( isa().m_tparams );
@@ -720,7 +746,7 @@ Generator::decoder_impl( Product_t& _product ) const {
     _product.code( "}\n\n" );
   }
   
-  if( not m_is_subdecoder ) {
+  if( not Opts::shared().subdecoder ) {
     /*** InvalidateDecodingCache() ***/
     _product.template_signature( isa().m_tparams );
     _product.code( "void Decoder" );
