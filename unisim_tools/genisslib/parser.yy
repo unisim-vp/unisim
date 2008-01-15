@@ -26,6 +26,7 @@
 #include <subdecoder.hh>
 #include <variable.hh>
 #include <bitfield.hh>
+#include <specialization.hh>
 #include <scanner.hh>
 #include <conststr.hh>
 #include <cstdarg>
@@ -100,7 +101,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %token TOK_DESTRUCTOR
 %token TOK_OP
 %token TOK_SOURCE_CODE
-%token TOK_SPECIALIZED
+%token TOK_SPECIALIZE
 %token '*'
 %token '('
 %token ')'
@@ -162,7 +163,9 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<sourcecode> var_init
 %type<param_list> template_declaration
 %type<sourcecode> template_scheme
-
+%type<constraint> constraint
+%type<constraint_list> constraint_list
+%type<specialization> specialization
 %%
 
 input: declaration_list { }
@@ -290,6 +293,10 @@ declaration:
   }
   Scanner::isa().m_tparams = *$1;
   delete $1;
+}
+  | specialization TOK_ENDL
+{
+  Scanner::isa().m_specializations.push_back( $1 );
 }
 ;
 
@@ -647,11 +654,43 @@ action_declaration: TOK_IDENT '.' TOK_IDENT '=' TOK_SOURCE_CODE
 }
 ;
 
-include : TOK_INCLUDE TOK_STRING
-  {
-    if( not Scanner::include( $2 ) )
-      YYABORT;
+specialization: TOK_SPECIALIZE TOK_IDENT '(' constraint_list ')'
+{
+  ConstStr_t            symbol = ConstStr_t( $2, Scanner::symbols );
+  Vect_t<Constraint_t>* constraint_list = $4;
+  Operation_t*          operation = Scanner::isa().operation( symbol );
+  if( not operation ) {
+    Scanner::fileloc.err( "error: operation `%s' not defined", symbol.str() );
+    YYABORT;
   }
+  
+  $$ = new Specialization_t( operation, *constraint_list );
+  delete constraint_list;
+}
+;
+
+constraint_list:
+  constraint
+{
+  $$ = new Vect_t<Constraint_t>( $1 );
+}
+  | constraint_list ',' constraint
+{
+  $$ = $1->append( $3 );
+}
+;
+
+constraint: TOK_IDENT '=' TOK_INTEGER
+{
+  $$ = new Constraint_t( ConstStr_t( $1, Scanner::symbols ), $3 );
+}
+;
+
+include : TOK_INCLUDE TOK_STRING
+{
+  if( not Scanner::include( $2 ) )
+    YYABORT;
+}
 ;
 
 group_declaration: TOK_GROUP TOK_IDENT '(' operation_list ')'

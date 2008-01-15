@@ -25,6 +25,7 @@
 #include <sourcecode.hh>
 #include <bitfield.hh>
 #include <variable.hh>
+#include <specialization.hh>
 #include <scanner.hh>
 #include <product.hh>
 #include <unistd.h>
@@ -245,4 +246,11 @@ Isa::deps( ostream& _sink, char const* _prefix ) const {
   for( std::vector<ConstStr_t>::const_iterator inc = m_includes.begin(); inc < m_includes.end(); ++ inc )
     _sink << " \\\n " << *inc;
   _sink << "\n\n";
+}
+
+void
+Isa::specialize() {
+  for( Vect_t<Specialization_t>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec ) {
+    m_operations.push_back( (**spec).newop() );
+  }
 }

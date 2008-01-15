@@ -33,6 +33,8 @@ struct ConstStr_t;
 struct Generator;
 struct Product_t;
 struct SubDecoder_t;
+struct Specialization_t;
+struct Constraint_t;
 
 template <class Type_t> struct Vect_t;
 

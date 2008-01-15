@@ -20,6 +20,7 @@
 #include <strtools.hh>
 #include <subdecoder.hh>
 #include <cmath>
+#include <cassert>
 
 using namespace std;
 
@@ -155,30 +156,48 @@ SubOpBitField_t::fills( std::ostream& _sink ) const {
 unsigned int SubOpBitField_t::minsize() const { return m_subdecoder->m_minsize; }
 unsigned int SubOpBitField_t::maxsize() const { return m_subdecoder->m_maxsize; }
 
-/** Create a specialized operand bitfield object
-    @param _src the operand bitfield object to be specialized.
-    @param _value
-    @param _shift a shift amount to do on the bitfield
-    @param _size_modifier minimum bit size for holding the operand bitfield
-    @param _sext true if a sign extension is required
-*/
+/**
+ *  Create a specialized operand bitfield object
+ *  @param _src the operand bitfield object to be specialized.
+ *  @param _value
+ *  @param _shift a shift amount to do on the bitfield
+ *  @param _size_modifier minimum bit size for holding the operand bitfield
+ *  @param _sext true if a sign extension is required
+ */
 SpOperandBitField_t::SpOperandBitField_t( OperandBitField_t const& _src, unsigned int _value )
   : BitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_shift( _src.m_shift ),
     m_size_modifier( _src.m_size_modifier ), m_sext( _src.m_sext ), m_value( _value )
 {}
 
 /** Create an operand bitfield object (copy constructor)
-    @param _src the source bitfield object to copy
-*/
+ *  @param _src the source bitfield object to copy
+ */
 SpOperandBitField_t::SpOperandBitField_t( SpOperandBitField_t const& _src )
   : BitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_shift( _src.m_shift ),
     m_size_modifier( _src.m_size_modifier ), m_sext( _src.m_sext ), m_value( _src.m_value )
 {}
 
-/** Return the size (in bytes) of the smallest containing word
-    @return the smallest power of two, greater than the bitfield size (in bytes);
-*/
+/**
+ *  Return the size (in bytes) of the smallest containing word.
+ *  @return the smallest power of two, greater than the bitfield size (in bytes);
+ */
 int
 SpOperandBitField_t::wordsize() const {
   return (1 << std::max( 0, int( ceil( log2( std::max( m_size, m_size_modifier ) / 8 ) ) ) ) );
+}
+
+/**
+ *  Return the c constant string corresponding to the value encoded.
+ */
+ConstStr_t
+SpOperandBitField_t::constval() const {
+  if( not m_sext )
+    return Str::fmt( "%#x", m_value );
+  
+  assert( m_size <= 32 );
+  int32_t val = (int32_t( m_value ) << (32-m_size)) >> (32-m_size);
+  if( val < 0 )
+    return Str::fmt( "-%#x", uint32_t( -m_value ) );
+  
+  return Str::fmt( "%#x", uint32_t( m_value ) );
 }

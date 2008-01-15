@@ -339,6 +339,12 @@ Generator::isa_operations_decl( Product_t& _product ) const {
       if( bftype == BitField_t::Operand ) {
         OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
         _product.code( "%sint%d_t %s;\n", (opbf.m_sext ? "" : "u"), 8*std::max( m_minwordsize, opbf.wordsize() ), opbf.m_symbol.str() );
+      } else if( bftype == BitField_t::SpecializedOperand ) {
+        SpOperandBitField_t const& sopbf = dynamic_cast<SpOperandBitField_t const&>( **bf );
+        ConstStr_t constval = sopbf.constval();
+        _product.code( "static %sint%d_t const %s = %s;\n",
+                       (sopbf.m_sext ? "" : "u"), 8*std::max( m_minwordsize, sopbf.wordsize() ),
+                       sopbf.m_symbol.str(), sopbf.constval().str() );
       } else if( bftype == BitField_t::SubOp ) {
         SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
         SourceCode_t const* nmspace =  sobf.m_subdecoder->m_namespace;

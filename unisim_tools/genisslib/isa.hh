@@ -26,19 +26,20 @@
 
 struct Isa {
   enum DecoderType_t { RiscDecoder = 0, CiscDecoder, VliwDecoder };
-  DecoderType_t                 m_decoder;        /**< Decoder Type */
-  bool                          m_little_endian;  /**< Endianness of isa */
-  std::vector<ConstStr_t>       m_namespace;      /**< Encapsulating namespace of the iss */
-  Vect_t<CodePair_t>            m_tparams;        /**< Template parameters of the iss */
-  Vect_t<Variable_t>            m_vars;           /**< Global variables used by the iss */
-  Vect_t<ActionProto_t>         m_actionprotos;   /**< Action prototypes of operations */
-  Vect_t<Operation_t>           m_operations;     /**< Defined instructions */
-  Vect_t<Group_t>               m_groups;         /**< Defined groups */
-  Vect_t<SubDecoder_t>          m_subdecoders;    /**< Defined subdecoders */
-  Vect_t<SourceCode_t>          m_decl_srccodes;  /**< Code to insert in header file */
-  Vect_t<SourceCode_t>          m_impl_srccodes;  /**< Code to insert in source file */
-  ConstStr_t                    m_addrtype;       /**< C type for instructions addresses */
-  std::vector<ConstStr_t>       m_includes;       /**< files included by the isa main file */
+  DecoderType_t                 m_decoder;         /**< Decoder Type */
+  bool                          m_little_endian;   /**< Endianness of isa */
+  std::vector<ConstStr_t>       m_namespace;       /**< Encapsulating namespace of the iss */
+  Vect_t<CodePair_t>            m_tparams;         /**< Template parameters of the iss */
+  Vect_t<Variable_t>            m_vars;            /**< Global variables used by the iss */
+  Vect_t<ActionProto_t>         m_actionprotos;    /**< Action prototypes of operations */
+  Vect_t<Operation_t>           m_operations;      /**< Defined instructions */
+  Vect_t<Group_t>               m_groups;          /**< Defined groups */
+  Vect_t<SubDecoder_t>          m_subdecoders;     /**< Defined subdecoders */
+  Vect_t<SourceCode_t>          m_decl_srccodes;   /**< Code to insert in header file */
+  Vect_t<SourceCode_t>          m_impl_srccodes;   /**< Code to insert in source file */
+  ConstStr_t                    m_addrtype;        /**< C type for instructions addresses */
+  std::vector<ConstStr_t>       m_includes;        /**< files included by the isa main file */
+  Vect_t<Specialization_t>      m_specializations; /**< Requested specializations */
 
   Isa();
   ~Isa();
@@ -55,6 +56,7 @@ struct Isa {
   void                          expand( std::ostream& _sink ) const;
   void                          deps( std::ostream& _sink, char const* _prefix ) const;
   bool                          sanity_checks() const;
+  void                          specialize();
 };
 
 #endif // __ISA_HH__

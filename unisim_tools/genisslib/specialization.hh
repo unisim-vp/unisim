@@ -25,22 +25,27 @@
 #include <referencecounting.hh>
 #include <vect.hh>
 
-struct Assignment_t : virtual ReferenceCounter {
+struct Constraint_t : virtual ReferenceCounter {
   ConstStr_t             m_symbol; /**< The specialization symbol */
   unsigned int           m_value;  /**< The specialization value */
   
-  Assignment_t( ConstStr_t _symbol, unsigned int _value );
+  Constraint_t( ConstStr_t _symbol, unsigned int _value );
+  ~Constraint_t();
 };
 
-std::ostream& operator<<( std::ostream& _sink, Assignment_t const& _var );
+std::ostream& operator<<( std::ostream& _sink, Constraint_t const& _var );
 
 /** A specialization object */
 struct Specialization_t : virtual ReferenceCounter {
   Ptr_t<Operation_t>     m_operation; /**< The operation wich is specialized */
-  Vect_t<Assignment_t>   m_assignments; /**< The list of variables associated with the specialization */
+  Vect_t<Constraint_t>   m_constraints; /**< The list of variables associated with the specialization */
 
-  Specialization_t( Operation_t* _operation, Vect_t<Assignment_t>& _variables );
+  Specialization_t( Operation_t* _operation, Vect_t<Constraint_t>& _variables );
   ~Specialization_t();
+  
+  Operation_t*           newop();
+  
+  Constraint_t*          constraint( ConstStr_t _symbol );
 };
 
 std::ostream& operator<<( std::ostream& _sink, Specialization_t const& _var );

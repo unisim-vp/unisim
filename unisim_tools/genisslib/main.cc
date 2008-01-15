@@ -52,10 +52,11 @@ struct GIL : public CLI {
   int         minwordsize;
   bool        subdecoder;
   bool        sourcelines;
+  bool        specialization;
   
   GIL()
     : outputprefix( DEFAULT_OUTPUT ), expandname( 0 ), inputname( 0 ), depfilename( 0 ),
-      minwordsize( -1 ), subdecoder( false ), sourcelines( true )
+      minwordsize( -1 ), subdecoder( false ), sourcelines( true ), specialization( true )
   {}
   
   void parse( CLI::Args_t& _args ) {
@@ -91,16 +92,27 @@ struct GIL : public CLI {
         }
         minwordsize = strtoul( arg, 0, 0 );
       }
-    else if( _args.match( CLI::AtMostOnce, "--source-lines", 0,
-                          "yes/no", "Adds (or not) references to source lines in generated files (default: yes)." ) )
+    else if( _args.match( CLI::AtMostOnce, "--specialization", 0,
+                          "on/off", "Toggles specialized operation generation (default: on)." ) )
       {
         char const* arg;
         if( not (arg = _args.pop()) ) {
-          cerr << GENISSLIB ": '-w' must be followed by a size.\n";
+          cerr << GENISSLIB ": '--specialization' must be followed by 'on' or 'off'.\n";
           help();
           throw CLI::Exit_t( 1 );
         }
-        sourcelines = ( strcmp( arg, "yes" ) == 0 );
+        specialization = ( strcmp( arg, "on" ) == 0 );
+      }
+    else if( _args.match( CLI::AtMostOnce, "--source-lines", 0,
+                          "on/off", "Toggles on/off source line reference in generated files (default: on)." ) )
+      {
+        char const* arg;
+        if( not (arg = _args.pop()) ) {
+          cerr << GENISSLIB ": '--source-lines' must be followed by 'on' or 'off'.\n";
+          help();
+          throw CLI::Exit_t( 1 );
+        }
+        sourcelines = ( strcmp( arg, "on" ) == 0 );
       }
     else if( _args.match( CLI::AtMostOnce, "-v", "--version", 0,
                           "", "Displays " GENISSLIB " version and exits." ) )
@@ -176,6 +188,10 @@ main( int argc, char** argv, char** envp ) {
     Product_t product( gil.outputprefix, gil.sourcelines );
     
     if( not isa.sanity_checks() ) throw CLI::Exit_t( 1 );
+
+    // Specialization
+    if( gil.specialization ) isa.specialize();
+
     auto_ptr<Generator> generator = isa.generator();
     
     generator->init( isa, gil.minwordsize, gil.subdecoder );

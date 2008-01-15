@@ -33,7 +33,7 @@ struct Generator {
   Generator&                          init( Isa& _isa, unsigned int _minwordsize, bool _is_subdecoder );
 
   virtual void                        finalize() = 0;
-  
+
   void                                iss( Product_t& _product ) const;
   /* header file */
   void                                decoder_decl( Product_t& _product ) const;

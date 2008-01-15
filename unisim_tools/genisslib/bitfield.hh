@@ -186,6 +186,7 @@ struct SpOperandBitField_t : public BitField_t {
   SpOperandBitField_t( SpOperandBitField_t const& _src );
 
   int                   wordsize() const;
+  ConstStr_t            constval() const;
   
   Type_t                type() const { return SpecializedOperand; };
   SpOperandBitField_t*  clone() const { return new SpOperandBitField_t( *this ); }

@@ -39,6 +39,9 @@ union  yylval_t {
   Vect_t<BitField_t>*          bitfield_list;          /**< A bit field list */
   Variable_t*                  variable;               /**< A variable object */
   Vect_t<Variable_t>*          variable_list;          /**< A variable list object */
+  Constraint_t*                constraint;             /**< A constraint object */
+  Vect_t<Constraint_t>*        constraint_list;        /**< A constraint list object */
+  Specialization_t*            specialization;         /**< A specialization object */
 };
 
 /* define the type of yylval */
