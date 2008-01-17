@@ -52,6 +52,9 @@ inline uint16_t RotateRight(uint16_t v, unsigned int n) __attribute__((always_in
 inline uint32_t RotateRight(uint32_t v, unsigned int n) __attribute__((always_inline));
 inline uint64_t RotateRight(uint64_t v, unsigned int n) __attribute__((always_inline));
 
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, bool bitin, bool& bitout) __attribute__((always_inline));
+inline uint32_t RotateRight(uint32_t v, unsigned int n, bool bitin, bool& bitout) __attribute__((always_inline));
+
 inline int8_t RotateLeft(int8_t v, unsigned int n) __attribute__((always_inline));
 inline int16_t RotateLeft(int16_t v, unsigned int n) __attribute__((always_inline));
 inline int32_t RotateLeft(int32_t v, unsigned int n) __attribute__((always_inline));
@@ -60,6 +63,16 @@ inline int8_t RotateRight(int8_t v, unsigned int n) __attribute__((always_inline
 inline int16_t RotateRight(int16_t v, unsigned int n) __attribute__((always_inline));
 inline int32_t RotateRight(int32_t v, unsigned int n) __attribute__((always_inline));
 inline int64_t RotateRight(int64_t v, unsigned int n) __attribute__((always_inline));
+
+inline uint32_t ShiftLeft(uint32_t v, unsigned int n) __attribute__((always_inline));
+inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t ShiftRight(uint32_t v, unsigned int n) __attribute__((always_inline));
+inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n) __attribute__((always_inline));
+inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
 
 #endif
 
@@ -165,6 +178,100 @@ inline int8_t RotateRight(int8_t v, unsigned int n) { return RotateRight((uint8_
 inline int16_t RotateRight(int16_t v, unsigned int n) { return RotateRight((uint16_t) v, n); }
 inline int32_t RotateRight(int32_t v, unsigned int n) { return RotateRight((uint32_t) v, n); }
 inline int64_t RotateRight(int64_t v, unsigned int n) { return RotateRight((uint64_t) v, n); }
+
+inline uint32_t ShiftLeft(uint32_t v, unsigned int n)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ ("shl %%cl, %0" : "=r" (v), "c" (n) : "cc");	
+	return v;
+#else
+	n &= 31;
+	return v << n;
+#endif
+}
+
+inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ ("shl %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bitout), "c" (n) : "cc");	
+	return v;
+#else
+	n &= 31;
+	bit_out = (v >> (31 - n)) & 1;
+	return v << n;
+#endif
+}
+
+inline uint32_t ShiftRight(uint32_t v, unsigned int n)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ ("shr %%cl, %0" : "=r" (v), "c" (n) : "cc");	
+	return v;
+#else
+	n &= 31;
+	return v >> n;
+#endif
+}
+
+inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bitout), "c" (n) : "cc");	
+	return v;
+#else
+	n &= 31;
+	bit_out = (v >> (n - 1)) & 1;
+	return v >> n;
+#endif
+}
+
+inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ ("sar %%cl, %0" : "=r" (v), "c" (n) : "cc");	
+	return v;
+#else
+	n &= 31;
+	return (uint32_t)((signed) v >> n);
+#endif
+}
+
+inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ ("sar %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bitout), "c" (n) : "cc");	
+	return v;
+#else
+	n &= 31;
+	bit_out = (v >> (n - 1)) & 1;
+	return (uint32_t)((signed) v >> n);
+#endif
+}
+
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ ("rol %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bitout), "c" (n) : "cc");	
+	return v;
+#else
+	n &= 31;
+	bit_out = (v >> (31 - n)) & 1;
+	return (v << n) | (v >> (32 - n));
+#endif
+}
+
+inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bitout), "c" (n) : "cc");	
+	return v;
+#else
+	n &= 31;
+	bit_out = (v >> (n - 1)) & 1;
+	return (v >> n) | (v << (32 - n));
+#endif
+}
+
 
 } // end of namespace arithmetic
 } // end of namespace util
