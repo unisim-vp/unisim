@@ -37,6 +37,7 @@
 #define __UNISIM_SERVICE_INTERFACES_STATISTIC_REPORTING_HH__
 
 #include <inttypes.h>
+#include "unisim/util/time/time.hh"
 
 namespace unisim {
 namespace service {
@@ -59,7 +60,7 @@ public:
 
 class StatisticReportingControl {
 public:
-	virtual void SetPreferredStatReportingPeriod(uint64_t time_hint) = 0;
+	virtual void SetPreferredStatReportingPeriod(double time_hint, unisim::util::time::time_unit_type time_unit) = 0;
 	virtual void RequiresStatReporting(const char *name, bool required) = 0;
 };
 
