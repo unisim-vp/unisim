@@ -30,26 +30,26 @@
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
-#          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Utility classes], [1.0])
+AC_INIT([UNISIM Time Utilities Library], [1.0],
+	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
+	[Time Utilities])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
 
-UNISIM_CONFIG_SUBDIR(unisim-util-xml, xml)
-UNISIM_CONFIG_SUBDIR(unisim-util-arithmetic, arithmetic)
-UNISIM_CONFIG_SUBDIR(unisim-util-endian, endian)
-UNISIM_CONFIG_SUBDIR(unisim-util-garbage_collector, garbage_collector)
-UNISIM_CONFIG_SUBDIR(unisim-util-hash_table, hash_table)
-UNISIM_CONFIG_SUBDIR(unisim-util-debug, debug)
-UNISIM_CONFIG_SUBDIR(unisim-util-simfloat, simfloat)
-UNISIM_CONFIG_SUBDIR(unisim-util-device, device)
-UNISIM_CONFIG_SUBDIR(unisim-util-queue, queue)
-UNISIM_CONFIG_SUBDIR(unisim-util-time, time)
+AC_LANG([C++])
 
 # files to generate
 #   this should include all the makefiles to generate

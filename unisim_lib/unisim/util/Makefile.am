@@ -49,6 +49,11 @@ SUBDIRS += queue
 INCLUDE_SUBDIRS += queue
 endif
 
+if COND_time
+SUBDIRS += time
+INCLUDE_SUBDIRS += time
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:
