@@ -69,6 +69,13 @@ using unisim::service::interfaces::EndDebugError;
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Line;
+using unisim::util::time::TU_FS;
+using unisim::util::time::TU_PS;
+using unisim::util::time::TU_NS;
+using unisim::util::time::TU_US;
+using unisim::util::time::TU_MS;
+using unisim::util::time::TU_SEC;
+
 
 template<class CONFIG>
 ARM<CONFIG> :: 
@@ -203,8 +210,28 @@ Setup() {
 template<class CONFIG>
 void 
 ARM<CONFIG> ::
-SetPreferredStatReportingPeriod(uint64_t time_hint) {
-	stat_reporting_period = sc_time(time_hint, false);
+SetPreferredStatReportingPeriod(double time_hint, time_unit_type time_unit) {
+	switch(time_unit) {
+	case TU_PS:
+		stat_reporting_period = sc_time(time_hint, SC_PS);
+		break;
+	case TU_NS:
+		stat_reporting_period = sc_time(time_hint, SC_NS);
+		break;
+	case TU_US:
+		stat_reporting_period = sc_time(time_hint, SC_US);
+		break;
+	case TU_MS:
+		stat_reporting_period = sc_time(time_hint, SC_MS);
+		break;
+	case TU_SEC:
+		stat_reporting_period = sc_time(time_hint, SC_SEC);
+		break;
+	case TU_FS:
+	default:
+		stat_reporting_period = sc_time(time_hint, SC_SEC);
+		break;
+	}
 }
 
 template<class CONFIG>
@@ -229,9 +256,27 @@ template<class CONFIG>
 void 
 ARM<CONFIG> :: 
 BusSynchronize() {
+//	if(cpu_time < sc_time_stamp()) {
+//		cerr << "sc_time_stamp bigger than cpu_time" << endl;
+//		cerr << "sc_time_stamp = " << sc_time_stamp() << endl;
+//		cerr << "cpu_time = " << cpu_time << endl;
+//		sc_stop();
+//		wait();
+//	}
+	
 	sc_time time_spent = cpu_time - last_cpu_time;
 	last_cpu_time = cpu_time;
-	
+
+	while(cpu_time >= bus_time) {
+		bus_time += bus_cycle_time;
+	}
+	sc_time sleep_time = bus_time - sc_time_stamp();
+	wait(sleep_time);
+	cpu_time = sc_time_stamp();
+	last_cpu_time = sc_time_stamp();
+	bus_time = sc_time_stamp();
+	return;
+
 	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "Bus synchro START" 
@@ -386,8 +431,13 @@ PrRead(address_t addr,
 			<< Endl << EndDebugInfo;
 	
 	// wait for the bus transaction response
+	sc_time prev_cpu_time = cpu_time;
 	wait(rsp_ev);
 	cpu_time = sc_time_stamp();
+	if(cpu_time == prev_cpu_time) {
+	  cerr << "Warning: cpu_time = " << cpu_time
+	       << " prev_cpu_time = " << prev_cpu_time << endl;
+	}
 	while(bus_time < cpu_time) {
 		inherited::OnBusCycle();
 		bus_time += bus_cycle_time;

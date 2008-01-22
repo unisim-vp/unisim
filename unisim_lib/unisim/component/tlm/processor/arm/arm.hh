@@ -66,6 +66,7 @@ using unisim::component::tlm::message::SimpleFSBResponse;
 using unisim::component::cxx::processor::arm::CacheInterface;
 using unisim::service::interfaces::StatisticReporting;
 using unisim::service::interfaces::StatisticReportingControl;
+using unisim::util::time::time_unit_type;
 
 using std::string;
 
@@ -86,7 +87,7 @@ public:
 	ServiceImport<StatisticReporting> statistic_reporting_import;
 	ServiceExport<StatisticReportingControl> statistic_reporting_control_export;
 	// StatisticReportingControl service
-	virtual void SetPreferredStatReportingPeriod(uint64_t time_hint);
+	virtual void SetPreferredStatReportingPeriod(double time_hint, time_unit_type time_unit);
 	virtual void RequiresStatReporting(const char *name, bool required);
 	
 	// Bus port
