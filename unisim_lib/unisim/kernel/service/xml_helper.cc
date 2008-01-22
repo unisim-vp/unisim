@@ -139,7 +139,12 @@ XmlfyParameters(const char *filename) {
 				<< "error writing parameter default value element" << endl;
 			return false;
 		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*param_iter).second).c_str());
+		if(string("double").compare((*param_iter).second->GetType()) == 0 ||
+				string("float").compare((*param_iter).second->GetType()) == 0) {
+			rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *(*param_iter).second);
+		} else {
+			rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*param_iter).second).c_str());
+		}
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter default value" << endl;
 			return false;
@@ -158,7 +163,12 @@ XmlfyParameters(const char *filename) {
 				<< "error writing parameter value element" << endl;
 			return false;
 		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*param_iter).second).c_str());
+		if(string("double").compare((*param_iter).second->GetType()) == 0 ||
+				string("float").compare((*param_iter).second->GetType()) == 0) {
+			rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *(*param_iter).second);
+		} else {
+			rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*param_iter).second).c_str());
+		}
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter value" << endl;
 			return false;
