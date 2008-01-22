@@ -106,39 +106,65 @@ using unisim::service::time::host_time::HostTime;
 using unisim::kernel::service::ServiceManager;
 
 void help(char *prog_name) {
-	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
-	cerr << "       'program' is an ELF32 statically linked Linux binary" << endl;
+	cerr << "Usage: " << prog_name << " [<options>]" << endl << endl;
 	cerr << "Options:" << endl;
-	cerr << "--inline-debugger" << endl;
-	cerr << "-d" << endl;
-	cerr << "            starts the inline debugger" << endl;
-	cerr << "--gdb-server <TCP port>" << endl;
-	cerr << "-g <TCP port>" << endl;
-	cerr << "            starts a gdb server" << endl << endl;
-	cerr << "--gdb-server-arch-file <arch file>" << endl;
-	cerr << "-a  <arch file>" << endl;
-	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
-	cerr << "-i <count>" << endl;
-	cerr << "--max:inst <count>" << endl;
-	cerr << "            execute <count> instructions then exit" << endl << endl;
-	cerr << "-z" << endl;
-	cerr << "--logger:zip" << endl;
-	cerr << "            zip log file" << endl << endl;
-	cerr << "-e" << endl;
-	cerr << "--logger:error" << endl;
-	cerr << "            pipe the log into the standard error" << endl << endl;
-	cerr << "-o" << endl;
-	cerr << "--logger:out" << endl;
-	cerr << "            pipe the log into the standard output" << endl << endl;
-	cerr << "-m" << endl;
-	cerr << "--logger:message_spy" << endl;
-	cerr << "            create message spies (requires one log to work)" << endl << endl;
-	cerr << "-l <file>" << endl;
-	cerr << "--logger:file <file>" << endl;
-	cerr << "            store log file in <file>" << endl << endl;
-	cerr << "--help" << endl;
-	cerr << "-h" << endl;
-	cerr << "            displays this help" << endl;
+	cerr << " --help" << endl;
+	cerr << " -h" << endl;
+	cerr << "            displays this help" << endl << endl;
+	cerr << " --config <xml file>" << endl;
+	cerr << " -c <xml file>" << endl;
+	cerr << "            configures the simulator with the given xml configuration file" << endl << endl;
+	cerr << " --get-config <xml file>" << endl;
+	cerr << " -g <xml file>" << endl;
+	cerr << "            get the simulator default configuration xml file (you can use it to create your own configuration)" << endl << endl;
+	cerr << " --logger" << endl;
+	cerr << " -l" << endl;
+	cerr << "            activate the logger" << endl << endl;
+	cerr << " --statistics" << endl;
+	cerr << " -s" << endl;
+	cerr << "            activate statistics service" << endl << endl;
+	cerr << " --gdb-server" << endl;
+	cerr << " -d" << endl;
+	cerr << "            activate the gdb server" << endl << endl;
+	cerr << " --inline-debugger" << endl;
+	cerr << " -i" << endl;
+	cerr << "            activate the inline debugger (only active if logger option used)" << endl << endl;
+	cerr << " --message-spy" << endl;
+	cerr << " -m" << endl;
+	cerr << "            activate message spies" << endl << endl;
+//	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
+//	cerr << "       'program' is an ELF32 statically linked Linux binary" << endl;
+//	cerr << "Options:" << endl;
+//	cerr << "--inline-debugger" << endl;
+//	cerr << "-d" << endl;
+//	cerr << "            starts the inline debugger" << endl;
+//	cerr << "--gdb-server <TCP port>" << endl;
+//	cerr << "-g <TCP port>" << endl;
+//	cerr << "            starts a gdb server" << endl << endl;
+//	cerr << "--gdb-server-arch-file <arch file>" << endl;
+//	cerr << "-a  <arch file>" << endl;
+//	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
+//	cerr << "-i <count>" << endl;
+//	cerr << "--max:inst <count>" << endl;
+//	cerr << "            execute <count> instructions then exit" << endl << endl;
+//	cerr << "-z" << endl;
+//	cerr << "--logger:zip" << endl;
+//	cerr << "            zip log file" << endl << endl;
+//	cerr << "-e" << endl;
+//	cerr << "--logger:error" << endl;
+//	cerr << "            pipe the log into the standard error" << endl << endl;
+//	cerr << "-o" << endl;
+//	cerr << "--logger:out" << endl;
+//	cerr << "            pipe the log into the standard output" << endl << endl;
+//	cerr << "-m" << endl;
+//	cerr << "--logger:message_spy" << endl;
+//	cerr << "            create message spies (requires one log to work)" << endl << endl;
+//	cerr << "-l <file>" << endl;
+//	cerr << "--logger:file <file>" << endl;
+//	cerr << "            store log file in <file>" << endl << endl;
+//	cerr << "--help" << endl;
+//	cerr << "-h" << endl;
+//	cerr << "            displays this help" << endl;
 }
 
 // Front Side Bus template parameters
@@ -169,111 +195,169 @@ int main(int argc, char *argv[], char **envp) {
 #endif
 
 	static struct option long_options[] = {
-		{"inline-debugger", no_argument, 0, 'd'},
-		{"gdb-server", required_argument, 0, 'g'},
-		{"gdb-server-arch-file", required_argument, 0, 'a'},
 		{"help", no_argument, 0, 'h'},
-		{"max:inst", required_argument, 0, 'i'},
-		{"logger:file", required_argument, 0, 'l'},
-		{"logger:zip", no_argument, 0, 'z'},
-		{"logger:error", no_argument, 0, 'e'},
-		{"logger:out", no_argument, 0, 'o'},
-		{"logger:message_spy", no_argument, 0, 'm'},
+		{"get-config", required_argument, 0, 'g'},
+		{"config", required_argument, 0, 'c'},
+		{"logger", no_argument, 0, 'l'},
+		{"statistics", no_argument, 0, 's'},
+		{"gdb-server", no_argument, 0, 'd'},
+		{"inline-debugger", no_argument, 0, 'i'},
+		{"message-spy", no_argument, 0, 'm'},
 		{0, 0, 0, 0}
 	};
+//		{"inline-debugger", no_argument, 0, 'd'},
+//		{"gdb-server", required_argument, 0, 'g'},
+//		{"gdb-server-arch-file", required_argument, 0, 'a'},
+//		{"help", no_argument, 0, 'h'},
+//		{"max:inst", required_argument, 0, 'i'},
+//		{"logger:file", required_argument, 0, 'l'},
+//		{"logger:zip", no_argument, 0, 'z'},
+//		{"logger:error", no_argument, 0, 'e'},
+//		{"logger:out", no_argument, 0, 'o'},
+//		{"logger:message_spy", no_argument, 0, 'm'},
+//		{0, 0, 0, 0}
+//	};
 
-	int c;
+//	int c;
+//	bool use_gdb_server = false;
+//	bool use_inline_debugger = false;
+//	int gdb_server_tcp_port = 0;
+//	const char *device_tree_filename = "device_tree.xml"; // FIXME: is this variable really useful ?
+//	const char *gdb_server_arch_filename = "gdb_powerpc.xml"; // FIXME: should be "gdb_armv5b" ?
+//	uint64_t maxinst = 0; // maximum number of instruction to simulate
+//	char *logger_filename = 0;
+//	bool logger_zip = false;
+//	bool logger_error = false;
+//	bool logger_out = false;
+//	bool logger_on = false;
+//	bool logger_messages = false;
+//	const double cpu_frequency = 300.0; // in Mhz
+//	uint32_t cpu_clock_multiplier = 4;
+//	double cpu_ipc = 1.0; // in instructions per cycle
+//	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+//	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+//	uint32_t mem_cycle_time = fsb_cycle_time;
+	char const *set_config_name = "default_parameters.xml";
+	char const *get_config_name = "default_parameters.xml";
+	bool get_config = false;
+	bool set_config = false;
+	bool use_logger = false;
+	bool use_statistics = false;
 	bool use_gdb_server = false;
 	bool use_inline_debugger = false;
-	int gdb_server_tcp_port = 0;
-	const char *device_tree_filename = "device_tree.xml"; // FIXME: is this variable really useful ?
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml"; // FIXME: should be "gdb_armv5b" ?
-	uint64_t maxinst = 0; // maximum number of instruction to simulate
-	char *logger_filename = 0;
-	bool logger_zip = false;
-	bool logger_error = false;
-	bool logger_out = false;
-	bool logger_on = false;
-	bool logger_messages = false;
-	const double cpu_frequency = 300.0; // in Mhz
-	uint32_t cpu_clock_multiplier = 4;
-	double cpu_ipc = 1.0; // in instructions per cycle
-	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
-	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-	uint32_t mem_cycle_time = fsb_cycle_time;
+	bool use_message_spy = false;
+	
 
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:zeoml:", long_options, 0)) != -1) {
+//	while((c = getopt_long (argc, argv, "dg:a:hi:zeoml:", long_options, 0)) != -1) {
+	int c;
+	while((c = getopt_long (argc, argv, "hg:c:lsdim", long_options, 0)) != -1) {
 		switch(c) {
-		case 'd':
-			use_inline_debugger = true;
-			break;
-		case 'g':
-			use_gdb_server = true;
-			gdb_server_tcp_port = atoi(optarg);
-			break;
-		case 'a':
-			gdb_server_arch_filename = optarg;
-			break;
 		case 'h':
 			help(argv[0]);
 			return 0;
-		case 'i':
-			maxinst = strtoull(optarg, 0, 0);
+			break;
+		case 'g':
+			get_config_name = optarg;
+			get_config = true;
+			break;
+		case 'c':
+			set_config_name = optarg;
+			set_config = true;
 			break;
 		case 'l':
-			logger_filename = optarg;
+			use_logger = true;
 			break;
-		case 'z':
-			logger_zip = true;
+		case 's':
+			use_statistics = true;
 			break;
-		case 'e':
-			logger_error = true;
+		case 'd':
+			use_gdb_server = true;
 			break;
-		case 'o':
-			logger_out = true;
+		case 'i':
+			use_inline_debugger = true;
 			break;
 		case 'm':
-			logger_messages = true;
+			use_message_spy = true;
 			break;
 		}
+//		switch(c) {
+//		case 'd':
+//			use_inline_debugger = true;
+//			break;
+//		case 'g':
+//			use_gdb_server = true;
+//			gdb_server_tcp_port = atoi(optarg);
+//			break;
+//		case 'a':
+//			gdb_server_arch_filename = optarg;
+//			break;
+//		case 'h':
+//			help(argv[0]);
+//			return 0;
+//		case 'i':
+//			maxinst = strtoull(optarg, 0, 0);
+//			break;
+//		case 'l':
+//			logger_filename = optarg;
+//			break;
+//		case 'z':
+//			logger_zip = true;
+//			break;
+//		case 'e':
+//			logger_error = true;
+//			break;
+//		case 'o':
+//			logger_out = true;
+//			break;
+//		case 'm':
+//			logger_messages = true;
+//			break;
+//		}
 	}
-	logger_on = logger_error || logger_out || (logger_filename != 0);
+//	logger_on = logger_error || logger_out || (logger_filename != 0);
 
-	if(optind >= argc) {
-		help(argv[0]);
-		return 0;
+	if(!use_logger) {
+		use_message_spy = false;
 	}
+	
+//	if(optind >= argc) {
+//		help(argv[0]);
+//		return 0;
+//	}
 
-	char *filename = argv[optind];
-	int sim_argc = argc - optind;
-	char **sim_argv = argv + optind;
-	char **sim_envp = envp;
-
-	if(!filename) {
-		help(argv[0]);
-		return 0;
-	}
+//	char *filename = argv[optind];
+//	int sim_argc = argc - optind;
+//	char **sim_argv = argv + optind;
+//	char **sim_envp = envp;
+//
+//	if(!filename) {
+//		help(argv[0]);
+//		return 0;
+//	}
 
 	// Logger
 	LoggerServer *logger = 0;
-	if(logger_on) {
+//	if(logger_on) {
+	if(use_logger)
 		logger = new LoggerServer("logger");
-		(*logger)["show-file"] = false; //true;
-		(*logger)["show-function"] = true;
-		(*logger)["show-line"] = true;
-	}
+//		(*logger)["show-file"] = false; //true;
+//		(*logger)["show-function"] = true;
+//		(*logger)["show-line"] = true;
+//	}
 	
 	// Statistics
 	StatisticServer *statistic_server = 0;
-	statistic_server = new StatisticServer("statistic-server");
+	if(use_statistics)
+		statistic_server = new StatisticServer("statistic-server");
 	
 	// Time
 	ScTime *time = new ScTime("time");
 	HostTime *host_time = new HostTime("host-time");
 	
-	if(logger_on)
+//	if(logger_on)
+	if(use_logger)
 		logger->time_import >> time->time_export;
 
 	Elf32Loader *elf32_loader = 0;
@@ -291,7 +375,8 @@ int main(int argc, char *argv[], char **envp) {
 
 	BusMsgSpyType *bus_msg_spy = NULL;
 	MemMsgSpyType *mem_msg_spy = NULL;
-	if(logger_on && logger_messages) {
+//	if(logger_on && logger_messages) {
+	if(use_message_spy) {
 		bus_msg_spy = new BusMsgSpyType("bus-msg-spy");
 		mem_msg_spy = new MemMsgSpyType("mem-msg-spy");
 	}
@@ -305,79 +390,69 @@ int main(int argc, char *argv[], char **envp) {
 	// Instanciate a symbol table to be filled-in by the ELF32 loader
 	symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol_table");
 
-	// define the initial signals of the cpu
-	(*cpu)["arm966es-vinithi"] = true; // defines initial pc (true = 0xffff0000, false = 0x00000000)
-	(*cpu)["arm966es-initram"] = false; // defines if the tcm memory is enabled at boot
-	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
-	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
-//	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
-	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
-//	(*cpu)["bus-frequency"] = fsb_frequency;
-	(*cpu)["nice-time"] = 1000000000ULL; // 1 ms
-//	(*cpu)["voltage"] = 1.3 * 1e3; // mV
-	(*cpu)["ipc"] = cpu_ipc;
-
-	(*bridge)["fsb-cycle-time"] = fsb_cycle_time;
-	(*bridge)["mem-cycle-time"] = mem_cycle_time;
-
-	(*memory)["cycle-time"] = mem_cycle_time;
-
-	if(maxinst)
-	{
-		(*cpu)["max-inst"] = maxinst;
-	}
-
-	// setting verbose parameters
-	// (*cpu)["verbose-all"] = true;
-	// (*cpu)["verbose-setup"] = true;
-	(*cpu)["verbose-step"] = false;
-	(*cpu)["verbose-step-insn"] = false;
-	(*cpu)["verbose-dump-regs-start"] = false;
-	(*cpu)["verbose-dump-regs-end"] = false;
-//	(*cpu)["cache_dl1.verbose-all"] = true;
-//	(*cpu)["cache_dl1.verbose-pr-read"] = true;
-//	(*cpu)["cache_dl1.verbose-pr-write"] = true;
-//	(*cpu)["cache_il1.verbose-all"] = true;
-//	(*cpu)["cache_il1.verbose-pr-read"] = true;
-//	(*cpu)["cache_il1.verbose-pr-write"] = true;
-//	(*cpu)["cache_l2.verbose-all"] = true;
-//	(*cpu)["cache_l2.verbose-pr-read"] = true;
-//	(*cpu)["cache_l2.verbose-pr-write"] = true;
-	(*cpu)["cp15.verbose-pr-read"] = false;
-	(*cpu)["cp15.verbose-pr-write"] = false;
-	(*cpu)["cp15.verbose-read-reg"] = false;
-	(*cpu)["cp15.verbose-write-reg"] = false;
-	(*cpu)["cp15.verbose-debug-read"] = false;
-	(*cpu)["cp15.verbose-debug-write"] = false;
-	(*cpu)["cp15.verbose-all"] = false;
-	(*cpu)["dtcm.verbose-pr-read"] = false;
-	(*cpu)["dtcm.verbose-pr-write"] = false;
-	(*cpu)["dtcm.verbose-debug-read"] = false;
-	(*cpu)["dtcm.verbose-debug-write"] = false;
-	(*cpu)["dtcm.verbose-all"] = false;
-	(*cpu)["itcm.verbose-pr-read"] = false;
-	(*cpu)["itcm.verbose-pr-write"] = false;
-	(*cpu)["itcm.verbose-debug-read"] = false;
-	(*cpu)["itcm.verbose-debug-write"] = false;
-	(*cpu)["itcm.verbose-all"] = false;
-	// (*cpu)["verbose-tlm-bus-synchronize"] = true;
-	// (*cpu)["verbose-tlm-run-thread"] = true;
-	// (*cpu)["verbose-tlm-commands"] = true;
+//	// define the initial signals of the cpu
+//	(*cpu)["arm966es-vinithi"] = true; // defines initial pc (true = 0xffff0000, false = 0x00000000)
+//	(*cpu)["arm966es-initram"] = false; // defines if the tcm memory is enabled at boot
+//	// if the following line ("cpu-frequency") is commented, the cpu will use the power estimators to find max cpu frequency
+//	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
+////	(*cpu)["cpu-frequency"] = cpu_clock_multiplier * fsb_frequency; // Mhz
+//	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
+////	(*cpu)["bus-frequency"] = fsb_frequency;
+//	(*cpu)["nice-time"] = 1000000000ULL; // 1 ms
+////	(*cpu)["voltage"] = 1.3 * 1e3; // mV
+//	(*cpu)["ipc"] = cpu_ipc;
+//
+//	(*bridge)["fsb-cycle-time"] = fsb_cycle_time;
+//	(*bridge)["mem-cycle-time"] = mem_cycle_time;
+//
+//	(*memory)["cycle-time"] = mem_cycle_time;
+//
+//	if(maxinst)
+//	{
+//		(*cpu)["max-inst"] = maxinst;
+//	}
+//
+//	// setting verbose parameters
+//	// (*cpu)["verbose-all"] = true;
+//	// (*cpu)["verbose-setup"] = true;
+//	(*cpu)["verbose-step"] = false;
+//	(*cpu)["verbose-step-insn"] = false;
+//	(*cpu)["verbose-dump-regs-start"] = false;
+//	(*cpu)["verbose-dump-regs-end"] = false;
+////	(*cpu)["cache_dl1.verbose-all"] = true;
+////	(*cpu)["cache_dl1.verbose-pr-read"] = true;
+////	(*cpu)["cache_dl1.verbose-pr-write"] = true;
+////	(*cpu)["cache_il1.verbose-all"] = true;
+////	(*cpu)["cache_il1.verbose-pr-read"] = true;
+////	(*cpu)["cache_il1.verbose-pr-write"] = true;
+////	(*cpu)["cache_l2.verbose-all"] = true;
+////	(*cpu)["cache_l2.verbose-pr-read"] = true;
+////	(*cpu)["cache_l2.verbose-pr-write"] = true;
+//	(*cpu)["cp15.verbose-pr-read"] = false;
+//	(*cpu)["cp15.verbose-pr-write"] = false;
+//	(*cpu)["cp15.verbose-read-reg"] = false;
+//	(*cpu)["cp15.verbose-write-reg"] = false;
+//	(*cpu)["cp15.verbose-debug-read"] = false;
+//	(*cpu)["cp15.verbose-debug-write"] = false;
+//	(*cpu)["cp15.verbose-all"] = false;
+//	(*cpu)["dtcm.verbose-pr-read"] = false;
+//	(*cpu)["dtcm.verbose-pr-write"] = false;
+//	(*cpu)["dtcm.verbose-debug-read"] = false;
+//	(*cpu)["dtcm.verbose-debug-write"] = false;
+//	(*cpu)["dtcm.verbose-all"] = false;
+//	(*cpu)["itcm.verbose-pr-read"] = false;
+//	(*cpu)["itcm.verbose-pr-write"] = false;
+//	(*cpu)["itcm.verbose-debug-read"] = false;
+//	(*cpu)["itcm.verbose-debug-write"] = false;
+//	(*cpu)["itcm.verbose-all"] = false;
+//	// (*cpu)["verbose-tlm-bus-synchronize"] = true;
+//	// (*cpu)["verbose-tlm-run-thread"] = true;
+//	// (*cpu)["verbose-tlm-commands"] = true;
 	
 
-	if(logger_on && logger_messages) {
-		(*bus_msg_spy)["source_module_name"] = cpu->name();
-		(*bus_msg_spy)["source_port_name"] = cpu->master_port.name();
-		(*bus_msg_spy)["target_module_name"] = bridge->name();
-		(*bus_msg_spy)["target_port_name"] = bridge->slave_port.name();
-		(*mem_msg_spy)["source_module_name"] = bridge->name();
-		(*mem_msg_spy)["source_port_name"] = bridge->master_port.name();
-		(*mem_msg_spy)["target_module_name"] = memory->name();
-		(*mem_msg_spy)["target_port_name"] = memory->slave_port.name();
-	}
-	
-	// Connect the CPU to the Front Side Bus
-	if(logger_on && logger_messages) {
+//	// Connect the CPU to the Front Side Bus
+	if(use_message_spy) {
+//	if(logger_on && logger_messages) {
 		cpu->master_port(bus_msg_spy->slave_port);
 		bus_msg_spy->master_port(bridge->slave_port);
 		bridge->master_port(mem_msg_spy->slave_port);
@@ -387,8 +462,9 @@ int main(int argc, char *argv[], char **envp) {
 		bridge->master_port(memory->slave_port);
 	}
 	cpu->memory_import >> bridge->memory_export;
-	
-	if(logger_on) {
+
+	if(use_logger) {
+//	if(logger_on) {
 		unsigned int logger_index = 0;
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->cache_l1_logger_import >> *logger->logger_export[logger_index++];
@@ -398,30 +474,34 @@ int main(int argc, char *argv[], char **envp) {
 		cpu->itcm_logger_import >> *logger->logger_export[logger_index++];
 		cpu->dtcm_logger_import >> *logger->logger_export[logger_index++];
 		bridge->logger_import >> *logger->logger_export[logger_index++];
-		if(logger_messages) {
+		if(use_message_spy) {
+//		if(logger_messages) {
 			bus_msg_spy->logger_import >> *logger->logger_export[logger_index++];
 			mem_msg_spy->logger_import >> *logger->logger_export[logger_index++];
 		}
 	}
 	
 	// statistics connections
-	cpu->statistic_reporting_import >> *statistic_server->statistic_reporting_export[0];
-	*statistic_server->statistic_reporting_control_import[0] >> cpu->statistic_reporting_control_export;
-	
-	if(inline_debugger)
-	{
+	if(use_statistics) {
+		cpu->statistic_reporting_import >> *statistic_server->statistic_reporting_export[0];
+		*statistic_server->statistic_reporting_control_import[0] >> cpu->statistic_reporting_control_export;
+	}
+
+	if(use_inline_debugger) {
+//	if(inline_debugger)
+//	{
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
-	}
-	else if(gdb_server)
-	{
-		// GDB Server run-time configuration
-		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
-		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
-		
+	} else if(use_gdb_server) {
+//	else if(gdb_server)
+//	{
+//		// GDB Server run-time configuration
+//		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
+//		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
+//		
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
@@ -431,22 +511,22 @@ int main(int argc, char *argv[], char **envp) {
 	}
 
 	// logger parameters
-	if(logger_on) {
-		if(logger_filename) {
-			(*logger)["filename"] = logger_filename;
-			(*logger)["zip"] = logger_zip;
-		}
-		(*logger)["std_out"] = logger_out;
-		(*logger)["std_err"] = logger_error;
-	}
-
-	// Memory run-time configuration
-	(*memory)["org"] = 0x00000000UL;
-	(*memory)["bytesize"] = 0xFFFFFFFFUL;
-
-	// ELF32 Loader run-time configuration
-	(*elf32_loader)["filename"] = filename;
-	// (*elf32_loader)["force-use-virtual-address"] = true;
+//	if(logger_on) {
+//		if(logger_filename) {
+//			(*logger)["filename"] = logger_filename;
+//			(*logger)["zip"] = logger_zip;
+//		}
+//		(*logger)["std_out"] = logger_out;
+//		(*logger)["std_err"] = logger_error;
+//	}
+//
+//	// Memory run-time configuration
+//	(*memory)["org"] = 0x00000000UL;
+//	(*memory)["bytesize"] = 0xFFFFFFFFUL;
+//
+//	// ELF32 Loader run-time configuration
+//	(*elf32_loader)["filename"] = filename;
+//	// (*elf32_loader)["force-use-virtual-address"] = true;
 
 	// Connect everything
 	elf32_loader->memory_import >> memory->memory_export;
@@ -455,15 +535,36 @@ int main(int argc, char *argv[], char **envp) {
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	bridge->memory_import >> memory->memory_export;
 
-	if(use_inline_debugger)
-	{
+	if(use_inline_debugger) {
 		inline_debugger->symbol_table_lookup_import >> 
 			symbol_table->symbol_table_lookup_export;
 	}
 	
+	/* set the default names for the different message spies */
+	if(use_message_spy) {
+		(*bus_msg_spy)["source_module_name"] = cpu->name();
+		(*bus_msg_spy)["source_port_name"] = cpu->master_port.name();
+		(*bus_msg_spy)["target_module_name"] = bridge->name();
+		(*bus_msg_spy)["target_port_name"] = bridge->slave_port.name();
+		(*mem_msg_spy)["source_module_name"] = bridge->name();
+		(*mem_msg_spy)["source_port_name"] = bridge->master_port.name();
+		(*mem_msg_spy)["target_module_name"] = memory->name();
+		(*mem_msg_spy)["target_port_name"] = memory->slave_port.name();
+	}
+
 #ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
 #endif
+
+	if(get_config) {
+		ServiceManager::XmlfyParameters(get_config_name);
+	}
+	if(!set_config) {
+		if(!get_config) help(argv[0]);
+		return 0;
+	}
+
+	ServiceManager::LoadXmlParameters(set_config_name);
 
 //	ServiceManager::XmlfyParameters("parameters.xml");
 //	ServiceManager::LoadXmlParameters("parameters.xml");
@@ -479,10 +580,8 @@ int main(int argc, char *argv[], char **envp) {
 		EnableDebug();
 		void (*prev_sig_int_handler)(int);
 
-		if(!inline_debugger)
-		{
+		if(!use_inline_debugger)
 			prev_sig_int_handler = signal(SIGINT, SigIntHandler);
-		}
 
 		try
 		{
@@ -494,10 +593,8 @@ int main(int argc, char *argv[], char **envp) {
 			cerr << e.what() << endl;
 		}
 
-		if(!inline_debugger)
-		{
+		if(!use_inline_debugger)
 			signal(SIGINT, prev_sig_int_handler);
-		}
 
 		cerr << "Simulation finished" << endl;
 		cerr << "Simulation statistics:" << endl;
@@ -528,6 +625,7 @@ int main(int argc, char *argv[], char **envp) {
 	if(logger) delete logger;
 	if(bus_msg_spy) delete bus_msg_spy;
 	if(mem_msg_spy) delete mem_msg_spy;
+	if(statistic_server) delete statistic_server;
 
 #ifdef WIN32
 	// releases the winsock2 resources
