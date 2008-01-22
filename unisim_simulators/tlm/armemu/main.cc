@@ -96,8 +96,11 @@ void DisableDebug() {
 	debug_enabled = false;
 }
 
+bool stop_program = false;
+
 void SigIntHandler(int signum) {
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	cerr << "Interrupted by Ctrl-C or SIGINT signal (" << signum << ")" << endl;
+//	stop_program = true;
 	sc_stop();
 }
 
@@ -332,8 +335,8 @@ int main(int argc, char *argv[], char **envp) {
 	// setting verbose parameters
 //	(*cpu)["verbose-all"] = true;
 //	(*cpu)["verbose-setup"] = true;
-	(*cpu)["verbose-step"] = false;
-	(*cpu)["verbose-step-insn"] = true;
+	(*cpu)["verbose-step"] = true;
+	(*cpu)["verbose-step-insn"] = false;
 	(*cpu)["verbose-dump-regs-start"] = false;
 	(*cpu)["verbose-dump-regs-end"] = true;
 	(*cpu)["cache_dl1.verbose-all"] = false;
@@ -506,7 +509,11 @@ int main(int argc, char *argv[], char **envp) {
 
 		try
 		{
+			sc_set_stop_mode(SC_STOP_IMMEDIATE);
 			sc_start();
+//			while(!stop_program) {
+//				sc_start(0.10, SC_SEC);
+//			}
 		}
 		catch(std::runtime_error& e)
 		{
@@ -536,7 +543,46 @@ int main(int argc, char *argv[], char **envp) {
 		cerr << "Can't start simulation because of previous errors" << endl;
 	}
 
-
+//	cerr << "Profile" << endl;
+//	class item {
+//		uint64_t opcode;
+//		uint32_t profile;
+//	};
+//	
+//	vector<uint64_t> opcode;
+//	vector<uint32_t> counter;
+//	for(map<uint64_t, uint32_t>::iterator it = cpu->profile.begin();
+//		it != cpu->profile.end();
+//		it++) {
+//		bool done = false;
+//		vector<uint64_t>::iterator oit = opcode.begin();
+//		for(vector<uint32_t>::iterator cit = counter.begin();
+//			!done && cit != counter.end();
+//			cit++, oit++) {
+//			if(it->second > *cit) {
+//				counter.insert(cit, it->second);
+//				opcode.insert(oit, it->first);
+//				done = true;
+//			}
+//		}
+//		if(!done) {
+//			counter.push_back(it->second);
+//			opcode.push_back(it->first);
+//		}
+//	}
+//	uint32_t index = 0;
+//	vector<uint32_t>::iterator cit = counter.begin();
+//	for(vector<uint64_t>::iterator oit = opcode.begin();
+//		oit != opcode.end();
+//		oit++, cit++) {
+//		cerr << "0x" << hex << (*oit) << dec << "\t " << (*cit) << endl;
+//		index++;
+//	}
+	
+	stringstream profile_filename;
+	profile_filename << filename << "-profile.txt";
+	cpu->DumpInstructionProfile(new fstream(profile_filename.str().c_str(),ios::out));
+	
 	if(elf32_loader) delete elf32_loader;
 	if(linux_loader) delete linux_loader;
 	if(linux_os) delete linux_os;
