@@ -37,6 +37,7 @@
 
 #include "unisim/service/interfaces/statistic_reporting.hh"
 #include "unisim/kernel/service/service.hh"
+#include "unisim/util/time/time.hh"
 #include <boost/thread/mutex.hpp>
 #include <vector>
 #include <queue>
@@ -56,6 +57,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::StatisticReporting;
 using unisim::service::interfaces::StatisticReportingControl;
+using unisim::util::time::time_unit_type;
 
 class StatisticClientIdentifier;
 class Statistic;
@@ -94,6 +96,14 @@ private:
 	
 	Parameter<uint32_t> param_refresh_time;
 	uint32_t refresh_time;
+	Parameter<double> param_report_frequency;
+	double report_frequency;
+	Parameter<time_unit_type> param_report_frequency_time_unit;
+	time_unit_type report_frequency_time_unit;
+	Parameter<string> param_server_name;
+	string server_name;
+	Parameter<uint32_t> param_server_port;
+	uint32_t server_port;
 	
 	StatisticClientIdentifier *identifier[MAX_SOURCES];
 	vector<Statistic> statistic;

@@ -44,8 +44,10 @@ namespace service {
 namespace statistic {
 
 using std::cout;
+using std::cerr;
 using std::endl;
 using std::stringstream;
+using unisim::util::time::TU_FS;
 
 //class StatisticServer :
 //	public Client<StatisticControlReporting> {
@@ -63,7 +65,15 @@ StatisticServer::
 StatisticServer(const char *name, Object *parent) :
 	Object(name, parent),
 	refresh_time(1),
-	param_refresh_time("refresh-time", this, refresh_time, "host time statistics refreshing period"),
+	param_refresh_time("refresh-time", this, refresh_time, "statistics display refresh period (in seconds)"),
+	report_frequency((double)0),
+	param_report_frequency("report-frequency", this, report_frequency, "statistics preferred reporting time period"),
+	report_frequency_time_unit(TU_FS),
+	param_report_frequency_time_unit("report-frequency-time-unit", this, report_frequency_time_unit, "statistics preferred reporting time time unit"),
+	server_name(),
+	param_server_name("server-name", this, server_name, "server name"),
+	server_port(0),
+	param_server_port("server-port", this, server_port, "server port number"),
 	statistic() {
 	for(unsigned int i = 0; i < MAX_SOURCES; i++) {
 		stringstream ss;
@@ -92,15 +102,23 @@ StatisticServer::
 bool 
 StatisticServer::
 Setup() {
-	uint64_t time = refresh_time;
-	for(unsigned int i = 0; i < 5; i++) time = time * 1000;
-	time = time / 2;
+	if(report_frequency == (double)0) {
+		cerr << "ERROR(StatisticServer): Report frequency was not set (or set to 0). It should be bigger than 0" << endl;
+		return false;
+	}
+	if(refresh_time == 0) {
+		cerr << "ERROR(StatisticServer): Display refresh time was set to 0. It should be bigger than 0" << endl;
+		return false;
+	}
+//	uint64_t time = refresh_time;
+//	for(unsigned int i = 0; i < 5; i++) time = time * 1000;
+//	time = time / 2;
 	boost::thread thrd(boost::bind(StatisticServer::Display, this));
-	cout << "Preferred Stat Reporting Period = " << time 
-		<< " (" << ((double)time) << ")" << endl;
+//	cout << "Preferred Stat Reporting Period = " << time 
+//		<< " (" << ((double)time) << ")" << endl;
 	for(unsigned int i = 0; i < MAX_SOURCES; i++) {
 		if(*statistic_reporting_control_import[i]) {
-			(*statistic_reporting_control_import[i])->SetPreferredStatReportingPeriod(time);
+			(*statistic_reporting_control_import[i])->SetPreferredStatReportingPeriod(report_frequency, report_frequency_time_unit);
 		}
 	}
 	return true;
