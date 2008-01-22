@@ -612,6 +612,128 @@ ldrb_reg_pre.execute = {
  *******************************************************************/
 
 /*******************************************************************
+ * ldrb_rd15 instruction
+ * this is the specialization of the instruction ldrb when rd = 15
+ * for most of the arm architectures this is an undefined behavior instruction (do nothing is our action)
+ * however for the armv5e architectures some of the combinations correspond to a pld instruction if
+ * it is a imm_offset or reg_offset type and cond == 0b1111
+ */
+
+op ldrb_rd15_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b1111[4]:offset[12])
+op ldrb_rd15_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b1111[4]:offset[12])
+op ldrb_rd15_imm_pre(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:0b1111[4]:offset[12])
+op ldrb_rd15_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b1111[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op ldrb_rd15_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b1111[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+op ldrb_rd15_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:0b1111[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
+
+ldrb_rd15_imm_post.disasm = {
+	buffer << "unpredictable instruction (ldrb)";
+}
+
+ldrb_rd15_imm_offset.disasm = {
+	if(CONFIG::HAS_LOAD_STORE_V5E) {
+		buffer << "pld";
+		cpu.DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
+	} else
+		buffer << "unpredictable instruction (ldrb)";
+}
+
+ldrb_rd15_imm_pre.disasm = {
+	buffer << "unpredictable instruction (ldrb)";
+}
+
+ldrb_rd15_reg_post.disasm = {
+	buffer << "unpredictable instruction (ldrb)";
+}
+
+ldrb_rd15_reg_offset.disasm = {
+	if(CONFIG::HAS_LOAD_STORE_V5E) {
+		buffer << "pld ";
+		cpu.DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
+	} else
+		buffer << "unpredictable instruction (ldrb)";
+}
+
+ldrb_rd15_reg_pre.disasm = {
+	buffer << "unpredictable instruction (ldrb)";
+}
+
+ldrb_rd15_imm_post.execute = {
+	/* unpredictable */
+	cpu.Unpredictable();
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+}
+
+ldrb_rd15_imm_offset.execute = {
+	if(CONFIG::HAS_LOAD_STORE_V5E && cond == 15) {
+		typedef Operation<CONFIG> inherited;
+
+		typename CONFIG::address_t address;
+		uint32_t val32;
+		typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+		address = cpu.LSWUBImmOffset(u, rn_value, offset); 
+		if(!cpu.Read32(address, val32)) {
+			cerr << "ERROR(load_store_base.isa::ldrb_imm_offset/pld_imm_offset): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+	} else {
+		/* unpredictable */
+		cpu.Unpredictable();
+		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	}
+}
+
+ldrb_rd15_imm_pre.execute = {
+	/* unpredictable */
+	cpu.Unpredictable();
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+}
+
+ldrb_rd15_reg_post.execute = {
+	/* unpredictable */
+	cpu.Unpredictable();
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+}
+
+ldrb_rd15_reg_offset.execute = {
+	if(CONFIG::HAS_LOAD_STORE_V5E && cond == 15) {
+		typedef Operation<CONFIG> inherited;
+
+		typename CONFIG::address_t address;
+		uint32_t val32;
+		typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+		typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+
+		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+		address = cpu.LSWUBReg(u, rn_value, 15, shift_imm, shift, rm_value);
+		if(!cpu.Read32(address, val32)) {
+			cerr << "ERROR(load_store_base.isa::ldrb_reg_offset/pld_reg_offset): "
+				<< "Couldn't read data" << endl;
+			exit(-1);
+		}
+	} else {
+		/* unpredictable */
+		cpu.Unpredictable();
+		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	}
+}
+
+ldrb_rd15_reg_pre.execute = {
+	/* unpredictable */
+	cpu.Unpredictable();
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+}
+
+/*
+ * end of ldrb instruction
+ *******************************************************************/
+
+/*******************************************************************
  * ldrt instruction
  * TODO: check running mode
  */
@@ -1331,17 +1453,18 @@ strbt_reg.execute = {
  *******************************************************************/
 
 group load_store_rn_init(ldr_imm_post, ldr_imm_offset, ldr_imm_pre,\
-                         ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
-                         ldrb_imm_post, ldrb_imm_offset, ldrb_imm_pre, \
-                         ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
-                         ldrt_imm, ldrt_reg, \
-                         ldrbt_imm, ldrbt_reg, \
-                         str_imm_post, str_imm_offset, str_imm_pre, \
-                         str_reg_post, str_reg_offset, str_reg_pre, \
-                         strb_imm_post, strb_imm_offset, strb_imm_pre, \
-                         strb_reg_post, strb_reg_offset, strb_reg_pre, \
-                         strt_imm, strt_reg, \
-                         strbt_imm, strbt_reg)
+						ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
+						ldrb_imm_post, ldrb_imm_offset, ldrb_imm_pre, \
+						ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+						ldrb_rd15_imm_offset, ldrb_rd15_reg_offset, \
+						ldrt_imm, ldrt_reg, \
+						ldrbt_imm, ldrbt_reg, \
+						str_imm_post, str_imm_offset, str_imm_pre, \
+						str_reg_post, str_reg_offset, str_reg_pre, \
+						strb_imm_post, strb_imm_offset, strb_imm_pre, \
+						strb_reg_post, strb_reg_offset, strb_reg_pre, \
+						strt_imm, strt_reg, \
+						strbt_imm, strbt_reg)
 load_store_rn_init.initialize_rn_init = {
 	typedef Operation<CONFIG> inherited;
 
@@ -1350,13 +1473,14 @@ load_store_rn_init.initialize_rn_init = {
 }
 
 group load_store_rm_init(ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
-                         ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
-                         ldrt_reg, \
-                         ldrbt_reg, \
-                         str_reg_post, str_reg_offset, str_reg_pre, \
-                         strb_reg_post, strb_reg_offset, strb_reg_pre, \
-                         strt_reg, \
-                         strbt_reg)
+						ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+						ldrb_rd15_reg_offset, \
+						ldrt_reg, \
+						ldrbt_reg, \
+						str_reg_post, str_reg_offset, str_reg_pre, \
+						strb_reg_post, strb_reg_offset, strb_reg_pre, \
+						strt_reg, \
+						strbt_reg)
 load_store_rm_init.initialize_rm_init = {
 	typedef Operation<CONFIG> inherited;
 
@@ -1365,15 +1489,15 @@ load_store_rm_init.initialize_rm_init = {
 }
 
 group load_store_rd_init(ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
-                         ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
-                         ldrt_reg, \
-                         ldrbt_reg, \
-                         str_imm_post, str_imm_offset, str_imm_pre, \
-                         str_reg_post, str_reg_offset, str_reg_pre, \
-                         strb_imm_post, strb_imm_offset, strb_imm_pre, \
-                         strb_reg_post, strb_reg_offset, strb_reg_pre, \
-                         strt_imm, strt_reg, \
-                         strbt_imm, strbt_reg)
+						ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+						ldrt_reg, \
+						ldrbt_reg, \
+						str_imm_post, str_imm_offset, str_imm_pre, \
+						str_reg_post, str_reg_offset, str_reg_pre, \
+						strb_imm_post, strb_imm_offset, strb_imm_pre, \
+						strb_reg_post, strb_reg_offset, strb_reg_pre, \
+						strt_imm, strt_reg, \
+						strbt_imm, strbt_reg)
 load_store_rd_init.initialize_rd_init = {
 	typedef Operation<CONFIG> inherited;
 

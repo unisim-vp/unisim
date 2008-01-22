@@ -663,6 +663,7 @@ Step() {
 					<< Endl << EndDebugInfo;
 			}
 			op->execute(*this);
+			//op->profile(profile);
 		} else {
 			/* ARM state */
 			typename isa::arm32::Operation<CONFIG> *op = NULL;
@@ -704,6 +705,7 @@ Step() {
 					<< Endl << EndDebugInfo;
 			}
 			op->execute(*this);
+			//op->profile(profile);
 		}
 		VerboseDumpRegsEnd();
 
@@ -818,6 +820,24 @@ CoprocessorGetEndianess() {
 
 /* Data processing operand decoding */
 template<class CONFIG>
+inline 
+typename CONFIG::reg_t 
+CPU<CONFIG> ::
+ShiftOperand32imm(const uint32_t rotate_imm, 
+		const uint32_t imm) {
+	reg_t shifter_operand = 0;
+  
+//	if(rotate_imm == 0) {
+//		shifter_operand = imm;
+//	} else {
+		shifter_operand = RotateRight(imm, rotate_imm * 2);
+//	}
+
+	return shifter_operand;
+}
+
+template<class CONFIG>
+inline
 typename CONFIG::reg_t 
 CPU<CONFIG> ::
 ShiftOperand32imm(const uint32_t rotate_imm, 
@@ -825,20 +845,81 @@ ShiftOperand32imm(const uint32_t rotate_imm,
 		bool *shift_carry_out) {
 	reg_t shifter_operand = 0;
   
+	shifter_operand = RotateRight(imm, rotate_imm * 2);
 	if(rotate_imm == 0) {
-		shifter_operand = imm;
-		if(shift_carry_out != NULL)
-			*shift_carry_out = GetCPSR_C();
+		*shift_carry_out = GetCPSR_C();
 	} else {
-		shifter_operand = RotateRight(imm, rotate_imm * 2);
-		if(shift_carry_out != NULL)
-			*shift_carry_out = ((((typename CONFIG::reg_t)(-1)) & ~(((typename CONFIG::reg_t)(-1)) >> 1)) & shifter_operand) != 0;
+//		*shift_carry_out = ((((typename CONFIG::reg_t)(-1)) & ~(((typename CONFIG::reg_t)(-1)) >> 1)) & shifter_operand) != 0;
+		*shift_carry_out = (((typename CONFIG::reg_t)1) << 31) & shifter_operand;
 	}
 
 	return shifter_operand;
 }
 
 template<class CONFIG>
+inline
+typename CONFIG::reg_t 
+CPU<CONFIG> ::
+ShiftOperandImmShift(const uint32_t shift_imm, 
+		const uint32_t shift, 
+		const typename CONFIG::reg_t val_reg) {
+	typename CONFIG::reg_t shifter_operand = 0;
+	uint32_t mask = 1;
+      
+	if((shift_imm == 0) && (shift == 0)) {
+		shifter_operand = val_reg;
+		return shifter_operand;
+	} else {
+    
+		if(shift == 0) {
+			shifter_operand = val_reg << shift_imm;
+			return shifter_operand;
+		} else {
+      
+			if(shift == 0x01) {
+				if(shift_imm == 0) {
+					shifter_operand = 0;
+				} else {
+					shifter_operand = val_reg >> shift_imm;
+				}
+				return shifter_operand;
+			} else {
+				if(shift == 0x02) {
+					if(shift_imm == 0) {
+						if(((typename CONFIG::sreg_t)val_reg) > 0) {
+							shifter_operand = 0;
+						} else {
+							shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
+						}
+					} else {
+						shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> shift_imm;
+					}
+					return shifter_operand;
+				} else {
+					
+					if(shift == 0x03) { /* ROR */
+						if(shift_imm == 0) {
+							shifter_operand = 0;
+//							if(GetCPSR_C()) {
+//								shifter_operand = ((typename CONFIG::reg_t)1) << 31;
+//							}
+//							shifter_operand |= (val_reg >> 1);
+							shifter_operand = ((GetCPSR_C()?1:0) << 31) | (val_reg >> 1);
+						} else {
+							shifter_operand = RotateRight(val_reg, shift_imm);
+						}
+						return shifter_operand;
+					}
+				}
+			}
+		}
+	}
+	
+	return 0;
+}
+
+template<class CONFIG>
+inline
 typename CONFIG::reg_t 
 CPU<CONFIG> ::
 ShiftOperandImmShift(const uint32_t shift_imm, 
@@ -850,42 +931,27 @@ ShiftOperandImmShift(const uint32_t shift_imm,
       
 	if((shift_imm == 0) && (shift == 0)) {
 		shifter_operand = val_reg;
-		if(shift_carry_out != NULL)
-			*shift_carry_out = GetCPSR_C();
+		*shift_carry_out = GetCPSR_C();
 		return shifter_operand;
 	} else {
     
 		if(shift == 0) {
 			shifter_operand = val_reg << shift_imm;
 			//     shifter_operand |= val_reg >> (32 - shift_imm);
-			if(shift_carry_out != NULL) {
-				mask = mask << (32 - shift_imm);
-				*shift_carry_out = ((mask & val_reg) != 0);
-			}
+			mask = mask << (32 - shift_imm);
+			*shift_carry_out = ((mask & val_reg) != 0);
 			return shifter_operand;
 		} else {
-      
 			if(shift == 0x01) {
-#ifndef ARM_OPTIMIZATION
 				if(shift_imm == 0) {
 					shifter_operand = 0;
-					if(shift_carry_out != NULL) {
-						mask = mask << 31;
-						*shift_carry_out = ((mask & val_reg) != 0);
-					}
+					mask = mask << 31;
+					*shift_carry_out = ((mask & val_reg) != 0);
 				} else {
 					shifter_operand = val_reg >> shift_imm;
-					if(shift_carry_out != NULL) {
-						mask = mask << (shift_imm - 1);
-						*shift_carry_out = ((mask & val_reg) != 0);
-					}
+					mask = mask << (shift_imm - 1);
+					*shift_carry_out = ((mask & val_reg) != 0);
 				}
-#else
-				shifter_operand = (val_reg & 
-						(uint32_t)(((int32_t)((int32_t)0x7fffffff << shift_imm)) >> 31)) >> shift_imm;
-				if(shift_carry_out != NULL) 
-					*shift_carry_out = (val_reg >> ((shift_imm - 1) & 0x01F)) & 0x01;
-#endif
 				return shifter_operand;
 			} else {
 				
@@ -893,17 +959,15 @@ ShiftOperandImmShift(const uint32_t shift_imm,
 					if(shift_imm == 0) {
 						if(((typename CONFIG::sreg_t)val_reg) > 0) {
 							shifter_operand = 0;
-							if(shift_carry_out != NULL) *shift_carry_out = false;
+							*shift_carry_out = false;
 						} else {
 							shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-							if(shift_carry_out != NULL) *shift_carry_out = true;
+							*shift_carry_out = true;
 						}
 					} else {
 						shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> shift_imm;
-						if(shift_carry_out != NULL) {
-							mask = mask << (shift_imm - 1);
-							*shift_carry_out = ((mask & val_reg) != 0);
-						}
+						mask = mask << (shift_imm - 1);
+						*shift_carry_out = ((mask & val_reg) != 0);
 					}
 					return shifter_operand;
 				} else {
@@ -911,22 +975,14 @@ ShiftOperandImmShift(const uint32_t shift_imm,
 					if(shift == 0x03) { /* ROR */
 						if(shift_imm == 0) {
 							shifter_operand = 0;
-#ifndef ARM_OPTIMIZATION
 							if(GetCPSR_C()) {
 								shifter_operand = ((typename CONFIG::reg_t)1) << 31;
 							}
 							shifter_operand |= (val_reg >> 1);
-#else
-							shifter_operand = (val_reg >> 1) + ((((typename CONFIG::reg_t)1) << 31) * GetCPSR_C());
-#endif
-							if(shift_carry_out != NULL) {
-								*shift_carry_out = ((0x01 & val_reg) != 0);
-							}
+							*shift_carry_out = ((0x01 & val_reg) != 0);
 						} else {
 							shifter_operand = RotateRight(val_reg, shift_imm);
-							if(shift_carry_out != NULL) {
-								*shift_carry_out = (val_reg >> (shift_imm - 1)) & 0x1;
-							}
+							*shift_carry_out = (val_reg >> (shift_imm - 1)) & 0x1;
 						}
 						return shifter_operand;
 					}
@@ -935,15 +991,72 @@ ShiftOperandImmShift(const uint32_t shift_imm,
 		}
 	}
 	
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "Could not compute shifter operand (shift_imm = " << shift_imm << ", shift = " << shift << ")" 
-			<< Endl << EndDebugError;
-	exit(-1);
 	return 0;
 }
 
 template<class CONFIG>
+inline
+typename CONFIG::reg_t
+CPU<CONFIG> ::
+ShiftOperandRegShift(const uint32_t shift_reg, 
+		const uint32_t shift, 
+		const typename CONFIG::reg_t val_reg) {
+	typename CONFIG::reg_t shifter_operand = 0;
+	typename CONFIG::reg_t sr8 = (shift_reg & 0x0FF);
+	typename CONFIG::reg_t sr5 = (shift_reg & 0x01F);
+  
+	if(shift == 0x0) {
+		if(sr8 == 0) {
+			shifter_operand = val_reg;
+		} else if(sr8 < 32) {
+			shifter_operand = val_reg << sr8;
+		} else if(sr8 == 32) {
+			shifter_operand = 0;
+		} else {
+			shifter_operand = 0;
+		}
+		return shifter_operand;
+	} else {
+
+		if(shift == 0x01) {
+			if(sr8 == 0) {
+				shifter_operand = val_reg;
+			} else if(sr8 < 32) {
+				shifter_operand = val_reg >> sr8;
+			} else if(sr8 == 32) {
+				shifter_operand = 0;
+			} else {
+				shifter_operand = 0;
+			}
+			return shifter_operand;
+		} else {
+			
+			if(shift == 0x02) {
+				if(sr8 == 0) {
+					shifter_operand = val_reg;
+				} else if(sr8 < 32) {
+					shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> sr8;
+				} else {
+					if((val_reg & ((typename CONFIG::reg_t)1 << 31)) == 0) {
+						shifter_operand = 0;
+					} else {
+						shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
+					}
+				}
+				return shifter_operand;
+			} else {
+				
+				if(shift == 0x03) {
+					shifter_operand = RotateRight(val_reg, sr5);
+					return shifter_operand;
+				}
+			}
+		}
+	}
+}
+
+template<class CONFIG>
+inline
 typename CONFIG::reg_t
 CPU<CONFIG> ::
 ShiftOperandRegShift(const uint32_t shift_reg, 
@@ -957,33 +1070,32 @@ ShiftOperandRegShift(const uint32_t shift_reg,
 	if(shift == 0x0) {
 		if(sr8 == 0) {
 			shifter_operand = val_reg;
-			if(shift_carry_out != NULL) *shift_carry_out = GetCPSR_C();
+			*shift_carry_out = GetCPSR_C();
 		} else if(sr8 < 32) {
 			shifter_operand = val_reg << sr8;
-			if(shift_carry_out != NULL) *shift_carry_out = ((val_reg & (1 << (32 - sr8))) != 0);
+			*shift_carry_out = ((val_reg & (1 << (32 - sr8))) != 0);
 		} else if(sr8 == 32) {
 			shifter_operand = 0;
-			if(shift_carry_out != NULL) *shift_carry_out = ((val_reg & 0x01) != 0);
+			*shift_carry_out = ((val_reg & 0x01) != 0);
 		} else {
 			shifter_operand = 0;
-			if(shift_carry_out) *shift_carry_out = false;
+			*shift_carry_out = false;
 		}
 		return shifter_operand;
 	} else {
-
 		if(shift == 0x01) {
 			if(sr8 == 0) {
 				shifter_operand = val_reg;
-				if(shift_carry_out != NULL) *shift_carry_out = GetCPSR_C();
+				*shift_carry_out = GetCPSR_C();
 			} else if(sr8 < 32) {
 				shifter_operand = val_reg >> sr8;
-				if(shift_carry_out != NULL) *shift_carry_out = ((val_reg & (1 << (sr8 - 1))) != 0);
+				*shift_carry_out = ((val_reg & (1 << (sr8 - 1))) != 0);
 			} else if(sr8 == 32) {
 				shifter_operand = 0;
-				if(shift_carry_out != NULL) *shift_carry_out = ((val_reg & (1 << 31)) != 0);
+				*shift_carry_out = ((val_reg & (1 << 31)) != 0);
 			} else {
 				shifter_operand = 0;
-				if(shift_carry_out) *shift_carry_out = false;
+				*shift_carry_out = false;
 			}
 			return shifter_operand;
 		} else {
@@ -991,17 +1103,17 @@ ShiftOperandRegShift(const uint32_t shift_reg,
 			if(shift == 0x02) {
 				if(sr8 == 0) {
 					shifter_operand = val_reg;
-					if(shift_carry_out != NULL) *shift_carry_out = GetCPSR_C();
+					*shift_carry_out = GetCPSR_C();
 				} else if(sr8 < 32) {
 					shifter_operand = ((typename CONFIG::sreg_t)val_reg) >> sr8;
-					if(shift_carry_out != NULL) *shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << (sr8 - 1))) != 0);
+					*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << (sr8 - 1))) != 0);
 				} else {
 					if((val_reg & ((typename CONFIG::reg_t)1 << 31)) == 0) {
 						shifter_operand = 0;
-						if(shift_carry_out != NULL) *shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
+						*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
 					} else {
 						shifter_operand = (typename CONFIG::reg_t)((typename CONFIG::sreg_t)-1);
-						if(shift_carry_out != NULL) *shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
+						*shift_carry_out = ((val_reg & ((typename CONFIG::reg_t)1 << 31)) != 0);
 					}
 				}
 				return shifter_operand;
@@ -1009,24 +1121,16 @@ ShiftOperandRegShift(const uint32_t shift_reg,
 				
 				if(shift == 0x03) {
 					shifter_operand = RotateRight(val_reg, sr5);
-					if(shift_carry_out != NULL) {
-						if(sr8 == 0) {
-							*shift_carry_out = GetCPSR_C();
-						} else {
-							*shift_carry_out = (val_reg & (1 << ((sr5 - 1) & 0x01F)));
-						}
+					if(sr8 == 0) {
+						*shift_carry_out = GetCPSR_C();
+					} else {
+						*shift_carry_out = (val_reg & (1 << ((sr5 - 1) & 0x01F)));
 					}
 					return shifter_operand;
 				}
 			}
 		}
 	}
-
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "Could not compute shifter operand (shift_reg = " << shift_reg << ", shift = " << shift << ")"
-			<< Endl << EndDebugError;
-	exit(-1);
 	return 0;
 }
 
@@ -3443,6 +3547,26 @@ CreateMemorySystem() {
 /**************************************************************/
 
 /**************************************************************/
+/* Unpredictable instruction behavior (private)         START */
+/**************************************************************/
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+Unpredictable() {
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "Trying to execute unpredictable behavior instruction"
+			<< Endl
+			<< EndDebugError;
+	}
+}
+/**************************************************************/
+/* Unpredictable instruction behavior (private)           END */
+/**************************************************************/
+
+/**************************************************************/
 /* Verbose methods (protected)                          START */
 /**************************************************************/
 
@@ -3506,6 +3630,71 @@ VerboseDumpRegsEnd() {
 			<< "Register dump at the end of instruction execution: " << Endl;
 		VerboseDumpRegs();
 		(*logger_import) << EndDebugInfo;
+	}
+}
+
+/**************************************************************/
+/* Verbose methods (protected)                            END */
+/**************************************************************/
+
+/**************************************************************/
+/* Verbose methods (protected)                          START */
+/**************************************************************/
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+DumpInstructionProfile(ostream *output) {
+	(*output) << "Profile" << endl;
+	class item {
+		uint64_t opcode;
+		uint32_t profile;
+	};
+	
+	vector<uint64_t> opcode;
+	vector<uint32_t> counter;
+	for(map<uint64_t, uint32_t>::iterator it = profile.begin();
+		it != profile.end();
+		it++) {
+		bool done = false;
+		vector<uint64_t>::iterator oit = opcode.begin();
+		for(vector<uint32_t>::iterator cit = counter.begin();
+			!done && cit != counter.end();
+			cit++, oit++) {
+			if(it->second > *cit) {
+				counter.insert(cit, it->second);
+				opcode.insert(oit, it->first);
+				done = true;
+			}
+		}
+		if(!done) {
+			counter.push_back(it->second);
+			opcode.push_back(it->first);
+		}
+	}
+
+
+	uint32_t index = 0;
+	vector<uint32_t>::iterator cit = counter.begin();
+	for(vector<uint64_t>::iterator oit = opcode.begin();
+		oit != opcode.end();
+		oit++, cit++) {
+		typename isa::arm32::Operation<CONFIG> *op = NULL;
+		typename isa::thumb::Operation<CONFIG> *top = NULL;
+		uint32_t opcode = (uint32_t)(*oit & (uint64_t)0x0ffffffffULL);
+		bool thumb = *oit != opcode;
+		stringstream s;
+		if(thumb) {
+			top = thumb_decoder.Decode(0, opcode);
+			top->disasm(*this, s);
+		} else {
+			op = arm32_decoder.Decode(0, opcode);
+			op->disasm(*this, s);
+		}
+		
+
+		(*output) << "0x" << hex << (*oit) << dec << "\t " << (*cit) << "\t " << s.str() << endl;
+		index++;
 	}
 }
 

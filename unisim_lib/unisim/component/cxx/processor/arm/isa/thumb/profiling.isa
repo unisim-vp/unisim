@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2008,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,59 +31,32 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
-/**********************************************
 
-     MISCELLANEOUS ARITHMETIC INSTRUCTIONS
+decl {
+#include <map>
 
-**********************************************/
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
 
-/*******************************************************************
- * clz instruction
- */
+using std::map;
 
-{ CONFIG::HAS_INSN_ARITH_CLZ
-}:op clz(cond[4]:0b00010110[8]:sbo1[4]:rd[4]:sbo2[4]:0b0001[4]:rm[4])
-
-clz.disasm = {
-	buffer << "clz";
-	cpu.DisasmCondition(cond, buffer);
-	buffer << " r" << rd << ", r" << rm;
+} // end of namespace arm 
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 }
 
-clz.execute = {
-	typedef Operation<CONFIG> inherited;
-	
-	typename CONFIG::reg_t src;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	src = rm_value;
-	if(src == 0) {
-		res = 32;
+action {void} profile({map<uint64_t, uint32_t> &} {prof}) {
+	uint64_t val = GetEncoding();
+	val += (uint64_t)0x0100000000ULL;
+	map<uint64_t, uint32_t>::iterator it = prof.find(val);
+	if(it != prof.end()) {
+		it->second = it->second + 1;
 	} else {
-		res = 0;
-		while((src & 0x80000000) == 0) {
-			res++;
-			src = src << 1;
-		}
-		//    res = 31 - res;
+		prof[val] = 1;
 	}
-  
-	cpu.SetGPR(rd, res);
 }
-
-/*
- * end of clz instruction
- *******************************************************************/
-
-group misc_arithmetic_rm_init(clz)
-misc_arithmetic_rm_init.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
-
-	if(rm == CPU<CONFIG>::PC_reg) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
-

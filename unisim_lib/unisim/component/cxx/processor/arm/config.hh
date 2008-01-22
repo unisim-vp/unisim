@@ -153,7 +153,12 @@ public:
 	static const bool HAS_INSN_COPROCESSOR_ALTER_LOADS = false;
 	static const bool HAS_INSN_COPROCESSOR_ALTER_STORES = false;
 	static const bool HAS_INSN_COPROCESSOR_ALTER_OPS = false;
+	static const bool HAS_COPROCESSOR_V5E = false;
 	static const bool HAS_INSN_ARITH_CLZ = false;
+	static const bool HAS_INSN_ARITH_QADD = false;
+	static const bool HAS_INSN_ARITH_QDADD = false;
+	static const bool HAS_INSN_ARITH_QSUB = false;
+	static const bool HAS_INSN_ARITH_QDSUB = false;
 	static const bool HAS_INSN_ARITH_MULT_UMULL = false;
 	static const bool HAS_INSN_ARITH_MULT_UMLAL = false;
 	static const bool HAS_INSN_ARITH_MULT_SMULL = false;
@@ -210,15 +215,19 @@ public:
 	static const bool HAS_INSN_COPROCESSOR_ALTER_STORES = true;
 	static const bool HAS_INSN_COPROCESSOR_ALTER_OPS = true;
 	static const bool HAS_INSN_ARITH_CLZ = true;
+	static const bool HAS_INSN_ARITH_QADD = false;
+	static const bool HAS_INSN_ARITH_QDADD = false;
+	static const bool HAS_INSN_ARITH_QSUB = false;
+	static const bool HAS_INSN_ARITH_QDSUB = false;
 	static const bool HAS_INSN_ARITH_MULT_UMULL = true;
 	static const bool HAS_INSN_ARITH_MULT_UMLAL = true;
 	static const bool HAS_INSN_ARITH_MULT_SMULL = true;
 	static const bool HAS_INSN_ARITH_MULT_SMLAL = true;
-	static const bool HAS_INSN_ARITH_MULT_SMULXY = true;
-	static const bool HAS_INSN_ARITH_MULT_SMULWY = true;
-	static const bool HAS_INSN_ARITH_MULT_SMLAXY = true;
-	static const bool HAS_INSN_ARITH_MULT_SMLAWY = true;
-	static const bool HAS_INSN_ARITH_MULT_SMLALWY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULXY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMULWY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAXY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAWY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLALXY = false;
 	
 	static const bool HAS_INSN_CACHE_L1 = true;
 	static const bool HAS_DATA_CACHE_L1 = true;
@@ -250,33 +259,6 @@ public:
 	static const bool DEBUG_ENABLE = true;
 };
 
-//class ARM9TDMI_BigEndian_Config : public ARM9TDMIConfig {};
-//
-//class ARM9TDMI_BigEndian_NoCache_Config : public ARM9TDMI_BigEndian_Config {
-//public:
-//	static const bool HAS_INSN_CACHE_L1 = false;
-//	static const bool HAS_DATA_CACHE_L1 = false;
-//	static const bool HAS_CACHE_L2 = false;
-//};
-//
-//class ARM9TDMI_BigEndian_DebugConfig : public ARM9TDMIDebugConfig {};
-//
-//class ARM9TDMI_BigEndian_NoCache_DebugConfig : public ARM9TDMIDebugConfig {
-//public:
-//	static const bool HAS_INSN_CACHE_L1 = false;
-//	static const bool HAS_DATA_CACHE_L1 = false;
-//	static const bool HAS_CACHE_L2 = false;
-//};
-
-//class ARM9TDMI_LittleEndian_Config : public ARM9TDMIConfig {
-//public:
-////	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-//};
-
-//class ARM9TDMI_LittleEndian_DebugConfig : public ARM9TDMIDebugConfig {
-//public:
-////	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-//};
 
 /**
  * Describes the configuration of the ARM966E-S processor
@@ -307,7 +289,12 @@ public:
 	static const bool HAS_INSN_COPROCESSOR_ALTER_LOADS = true;
 	static const bool HAS_INSN_COPROCESSOR_ALTER_STORES = true;
 	static const bool HAS_INSN_COPROCESSOR_ALTER_OPS = true;
+	static const bool HAS_COPROCESSOR_V5E = true;
 	static const bool HAS_INSN_ARITH_CLZ = true;
+	static const bool HAS_INSN_ARITH_QADD = true;
+	static const bool HAS_INSN_ARITH_QDADD = true;
+	static const bool HAS_INSN_ARITH_QSUB = true;
+	static const bool HAS_INSN_ARITH_QDSUB = true;
 	static const bool HAS_INSN_ARITH_MULT_UMULL = true;
 	static const bool HAS_INSN_ARITH_MULT_UMLAL = true;
 	static const bool HAS_INSN_ARITH_MULT_SMULL = true;
@@ -316,7 +303,7 @@ public:
 	static const bool HAS_INSN_ARITH_MULT_SMULWY = true;
 	static const bool HAS_INSN_ARITH_MULT_SMLAXY = true;
 	static const bool HAS_INSN_ARITH_MULT_SMLAWY = true;
-	static const bool HAS_INSN_ARITH_MULT_SMLALWY = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLALXY = true;
 	
 	static const bool HAS_ITCM = true;
 	static const bool HAS_DTCM = true;
@@ -330,20 +317,6 @@ class ARM966E_S_DebugConfig :
 public:
 	static const bool DEBUG_ENABLE = true;
 };
-
-//class ARM966E_S_BigEndian_Config : public ARM966E_SConfig {};
-//
-//class ARM966E_S_BigEndian_DebugConfig : public ARM966E_SDebugConfig {};
-//
-//class ARM966E_S_LittleEndian_Config : public ARM966E_SConfig {
-//public:
-////	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-//};
-//
-//class ARM966E_S_LittleEndian_DebugConfig : public ARM966E_SDebugConfig {
-//public:
-////	static const endian_type ENDIANESS = E_LITTLE_ENDIAN;
-//};
 
 } // end of namespace arm
 } // end of namespace processor

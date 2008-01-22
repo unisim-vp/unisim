@@ -33,7 +33,7 @@ include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \
 	cache_interface.hh \
 	coprocessor_interface.hh
-	
+
 nobase_include_HEADERS = \
 	cache/cache.hh cache/cache.tcc \
 	cache/set.hh cache/set.tcc \
@@ -44,22 +44,29 @@ nobase_include_HEADERS = \
 	coprocessor/arm966e_s/cp15.tcc \
 	tcm/tcm.hh tcm/tcm.tcc \
 	isa/arm32/arm32.isa isa/arm32/constructors_dec.isa isa/arm32/actions_dec.isa \
-	isa/arm32/branch.isa isa/arm32/coprocessor.isa isa/arm32/data_processing.isa isa/arm32/exception.isa \
+	isa/arm32/branch.isa isa/arm32/coprocessor.isa isa/arm32/coprocessor_v5e.isa \
+	isa/arm32/data_processing.isa isa/arm32/data_processing_v5e.isa \
+	isa/arm32/exception.isa \
 	isa/arm32/load_store.isa isa/arm32/load_store_base.isa isa/arm32/load_store_multiple.isa \
-	isa/arm32/load_store_v4.isa isa/arm32/load_store_v5e.isa isa/arm32/misc_arithmetic.isa isa/arm32/multiply.isa \
+	isa/arm32/load_store_v4.isa isa/arm32/load_store_v5e.isa isa/arm32/misc_arithmetic.isa\
+	isa/arm32/multiply.isa isa/arm32/multiply_v5e.isa \
 	isa/arm32/semaphore.isa isa/arm32/status_register_access.isa \
+	isa/arm32/dependency.isa \
+	isa/arm32/profiling.isa \
+	isa/arm32/specialization.isa \
 	isa/thumb/thumb.isa isa/thumb/constructors_dec.isa \
 	isa/thumb/actions_dec.isa \
 	isa/thumb/branch.isa \
 	isa/thumb/data_processing.isa \
 	isa/thumb/exception.isa \
 	isa/thumb/load_store_reg.isa \
-	isa/thumb/load_store_multiple.isa
-	
+	isa/thumb/load_store_multiple.isa \
+	isa/thumb/profiling.isa
+
 nodist_include_HEADERS = \
 	isa_arm32.tcc isa_arm32.hh \
 	isa_thumb.tcc isa_thumb.hh
-	
+
 BUILT_SOURCES = isa_arm32.tcc isa_arm32.hh \
 	isa_thumb.tcc isa_thumb.hh
 CLEANFILES = isa_arm32.tcc isa_arm32.hh \
@@ -68,13 +75,18 @@ CLEANFILES = isa_arm32.tcc isa_arm32.hh \
 isa_arm32.tcc: isa_arm32.hh 
 isa_arm32.hh: $(srcdir)/isa/arm32/arm32.isa $(srcdir)/isa/arm32/constructors_dec.isa \
 	$(srcdir)/isa/arm32/actions_dec.isa $(srcdir)/isa/arm32/branch.isa \
-	$(srcdir)/isa/arm32/coprocessor.isa $(srcdir)/isa/arm32/data_processing.isa \
+	$(srcdir)/isa/arm32/coprocessor.isa $(srcdir)/isa/arm32/coprocessor_v5e.isa \
+	$(srcdir)/isa/arm32/data_processing.isa $(srcdir)/isa/arm32/data_processing_v5e.isa \
 	$(srcdir)/isa/arm32/exception.isa \
 	$(srcdir)/isa/arm32/load_store.isa $(srcdir)/isa/arm32/load_store_base.isa \
 	$(srcdir)/isa/arm32/load_store_multiple.isa \
 	$(srcdir)/isa/arm32/load_store_v4.isa $(srcdir)/isa/arm32/load_store_v5e.isa \
-	$(srcdir)/isa/arm32/misc_arithmetic.isa $(srcdir)/isa/arm32/multiply.isa \
-	$(srcdir)/isa/arm32/semaphore.isa $(srcdir)/isa/arm32/status_register_access.isa
+	$(srcdir)/isa/arm32/misc_arithmetic.isa \
+	$(srcdir)/isa/arm32/multiply.isa $(srcdir)/isa/arm32/multiply_v5e.isa \
+	$(srcdir)/isa/arm32/semaphore.isa $(srcdir)/isa/arm32/status_register_access.isa \
+	$(srcdir)/isa/arm32/dependency.isa \
+	$(srcdir)/isa/arm32/profiling.isa \
+	$(srcdir)/isa/arm32/specialization.isa
 	$(GENISSLIB_PATH) -o isa_arm32 -w 32 -I $(srcdir)/isa/arm32 $(srcdir)/isa/arm32/arm32.isa
 
 isa_thumb.tcc: isa_thumb.hh 
@@ -84,7 +96,8 @@ isa_thumb.hh: $(srcdir)/isa/thumb/thumb.isa $(srcdir)/isa/thumb/constructors_dec
 	$(srcdir)/isa/thumb/data_processing.isa \
 	$(srcdir)/isa/thumb/exception.isa \
 	$(srcdir)/isa/thumb/load_store_reg.isa \
-	$(srcdir)/isa/thumb/load_store_multiple.isa
+	$(srcdir)/isa/thumb/load_store_multiple.isa \
+	$(srcdir)/isa/thumb/profiling.isa
 	$(GENISSLIB_PATH) -o isa_thumb -w 32 -I $(srcdir)/isa/thumb $(srcdir)/isa/thumb/thumb.isa
 
 dist_share_DATA = COPYING

@@ -614,9 +614,17 @@ strd_reg_pre.execute = {
  * end of strd instruction
  *******************************************************************/
 
-/* TODO: Missing instruction:
- *  - pld
+/*******************************************************************
+ * pld instruction
+ * 
+ * this instruction conflicts with a case of ldrb (with rd = 15) which is an invalid
+ *   instruciton.
+ * you will find the implementation of pld in load_store.isa under the implementation of ldrb_rd15
  */
+
+/*
+ * end of pld instruction
+ *******************************************************************/
 
 group load_store_5e_rn_init(ldrd_imm_post, ldrd_imm_offset, ldrd_imm_pre, \
                             ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \

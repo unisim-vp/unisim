@@ -96,11 +96,20 @@ include "actions_dec.isa"
 
 include "branch.isa"
 include "data_processing.isa"
+include "data_processing_v5e.isa"
 include "multiply.isa"
+include "multiply_v5e.isa"
 include "status_register_access.isa"
 include "load_store.isa"
 include "load_store_multiple.isa"
 include "semaphore.isa"
 include "exception.isa"
 include "coprocessor.isa"
+include "coprocessor_v5e.isa"
 include "misc_arithmetic.isa"
+
+include "dependency.isa"
+
+//include "specialization.isa"
+
+include "profiling.isa"

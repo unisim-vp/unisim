@@ -232,7 +232,7 @@ ldm_1_ib.execute = {
 				<< "Couldn't read data" << endl;
 			exit(-1);
 		}
-		cpu.SetGPR(15, value & 0xFFFFFFFC);
+		cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
 	}
 
 	/* TODO:
@@ -283,7 +283,7 @@ ldm_1_da.execute = {
 				<< "Couldn't read data" << endl;
 			exit(-1);
 		}
-		cpu.SetGPR(15, value & 0xFFFFFFFC);
+		cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
 	}
 
 	/* TODO:
@@ -334,7 +334,7 @@ ldm_1_db.execute = {
 			<< "Couldn't read data" << endl;
 			exit(-1);
 		}
-		cpu.SetGPR(15, value & 0xFFFFFFFC);
+		cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
 	}
 
 	/* TODO:
@@ -365,6 +365,8 @@ op ldm_2_ia(cond[4]:0b100[3]:0b0[1]:0b1[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b0[1]:reg
 op ldm_2_ib(cond[4]:0b100[3]:0b1[1]:0b1[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b0[1]:reg_list[15])
 op ldm_2_da(cond[4]:0b100[3]:0b0[1]:0b0[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b0[1]:reg_list[15])
 op ldm_2_db(cond[4]:0b100[3]:0b1[1]:0b0[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b0[1]:reg_list[15])
+
+group ldm_2(ldm_2_ia, ldm_2_ib, ldm_2_da, ldm_2_db)
 
 ldm_2_ia.disasm = {
   unsigned int mask = 1;
@@ -758,7 +760,7 @@ ldm_3_ia.execute = {
 			<< "Couldn't read data" << endl;
 		exit(-1);
 	}
-	cpu.SetGPR(15, value & 0xFFFFFFFC);
+	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -809,7 +811,7 @@ ldm_3_ib.execute = {
   			<< "Couldn't read data" << endl;
   		exit(-1);
   	}
-  	cpu.SetGPR(15, value & 0xFFFFFFFC);
+  	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
 
   	/* TODO:
   	 * cur_address should be checked to be the same as end_address + 4 */
@@ -860,7 +862,7 @@ ldm_3_da.execute = {
 			<< "Couldn't read data" << endl;
 		exit(-1);
 	}
-	cpu.SetGPR(15, value & 0xFFFFFFFC);
+	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -911,7 +913,7 @@ ldm_3_db.execute = {
 			<< "Couldn't read data" << endl;
 		exit(-1);
 	}
-	cpu.SetGPR(15, value & 0xFFFFFFFC);
+	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -941,6 +943,8 @@ op stm_1_ia(cond[4]:0b100[3]:0b0[1]:0b1[1]:0b0[1]:w[1]:0b0[1]:rn[4]:reg_list[16]
 op stm_1_ib(cond[4]:0b100[3]:0b1[1]:0b1[1]:0b0[1]:w[1]:0b0[1]:rn[4]:reg_list[16])
 op stm_1_da(cond[4]:0b100[3]:0b0[1]:0b0[1]:0b0[1]:w[1]:0b0[1]:rn[4]:reg_list[16])
 op stm_1_db(cond[4]:0b100[3]:0b1[1]:0b0[1]:0b0[1]:w[1]:0b0[1]:rn[4]:reg_list[16])
+
+group stm_1(stm_1_ia, stm_1_ib, stm_1_da, stm_1_db)
 
 stm_1_ia.disasm = {
   unsigned int mask = 1;
@@ -1064,7 +1068,7 @@ stm_1_ia.execute = {
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR(15) + 8;
+		value = cpu.GetGPR(cpu.PC_reg) + 8;
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 				<< "Couldn't store data" << endl;
@@ -1114,7 +1118,7 @@ stm_1_ib.execute = {
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR(15) + 8;
+		value = cpu.GetGPR(cpu.PC_reg) + 8;
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 				<< "Couldn't store data" << endl;
@@ -1164,7 +1168,7 @@ stm_1_da.execute = {
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR(15) + 8;
+		value = cpu.GetGPR(cpu.PC_reg) + 8;
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 				<< "Couldn't store data" << endl;
@@ -1214,7 +1218,7 @@ stm_1_db.execute = {
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR(15) + 8;
+		value = cpu.GetGPR(cpu.PC_reg) + 8;
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 				<< "Couldn't store data" << endl;
@@ -1242,6 +1246,8 @@ op stm_2_ia(cond[4]:0b100[3]:0b0[1]:0b1[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:reg_list[1
 op stm_2_ib(cond[4]:0b100[3]:0b1[1]:0b1[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:reg_list[16])
 op stm_2_da(cond[4]:0b100[3]:0b0[1]:0b0[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:reg_list[16])
 op stm_2_db(cond[4]:0b100[3]:0b1[1]:0b0[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:reg_list[16])
+
+group stm_2(stm_2_ia, stm_2_ib, stm_2_da, stm_2_db)
 
 stm_2_ia.disasm = {
   unsigned int mask = 1;
@@ -1365,7 +1371,7 @@ stm_2_ia.execute = {
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR_usr(15) + 8;
+		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_2_ia): "
 				<< "Couldn't store data" << endl;
@@ -1411,7 +1417,7 @@ stm_2_ib.execute = {
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR_usr(15) + 8;
+		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 				<< "Couldn't store data" << endl;
@@ -1457,7 +1463,7 @@ stm_2_da.execute = {
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR_usr(15) + 8;
+		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 				<< "Couldn't store data" << endl;
@@ -1503,7 +1509,7 @@ stm_2_db.execute = {
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR_usr(15) + 8;
+		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 				<< "Couldn't store data" << endl;
@@ -1527,6 +1533,6 @@ group load_store_multiple_rn_init(ldm_1_ia, ldm_1_ib, ldm_1_da, ldm_1_db, \
 load_store_multiple_rn_init.initialize_rn_init = {
 	typedef Operation<CONFIG> inherited;
 
-	if(rn == 15) inherited::rn_init = 8;
+	if(rn == CPU<CONFIG>::PC_reg) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
 }

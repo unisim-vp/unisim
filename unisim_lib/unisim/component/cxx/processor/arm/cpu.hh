@@ -63,6 +63,9 @@
 #include "unisim/util/endian/endian.hh"
 #include <string>
 #include <sstream>
+#include <iostream>
+#include <vector>
+#include <map>
 #include <inttypes.h>
 //#include "unisim/component/cxx/processor/arm/config.hh"
 //#include "memories/endian_interface.hh"
@@ -127,6 +130,8 @@ using unisim::util::endian::endian_type;
 using std::string;
 using std::stringstream;
 using std::map;
+using std::ostream;
+using std::vector;
 
 template<class CONFIG>
 class CPU :
@@ -145,6 +150,14 @@ class CPU :
 //	public Client<StatisticReporting>,
 //	public Service<StatisticReportingControl>,
 	public Client<Logger> {
+
+/* profiling methods          START */
+private:
+	map<uint64_t, uint32_t> profile;
+public:
+	void DumpInstructionProfile(ostream *output);
+/* profiling methods          END */
+	
 private:
 	typedef typename CONFIG::address_t address_t;
 	typedef typename CONFIG::reg_t reg_t;
@@ -272,21 +285,29 @@ public:
 	string GetObjectFriendlyName(address_t addr);
 	string GetFunctionFriendlyName(address_t addr);
   
-    /**************************************************************/
-    /* Operand decoding methods     START                         */
-    /**************************************************************/
-    /* Data processing operand decoding */
-    inline reg_t ShiftOperand32imm(const uint32_t rotate_imm, 
-			    const uint32_t imm, 
-			    bool *shift_carry_out = NULL) GCC_INLINE;
-    inline reg_t ShiftOperandImmShift(const uint32_t shift_imm, 
-			       const uint32_t shift, 
-			       const reg_t val_reg, 
-			       bool *shift_carry_out = NULL) GCC_INLINE;
-    inline reg_t ShiftOperandRegShift(const uint32_t shift_reg, 
-			       const uint32_t shift, 
-			       const reg_t val_reg,
-			       bool *shift_carry_out = NULL) GCC_INLINE;
+	/**************************************************************/
+	/* Operand decoding methods     START                         */
+	/**************************************************************/
+	/* Data processing operand decoding */
+	static inline reg_t ShiftOperand32imm(const uint32_t rotate_imm, 
+			const uint32_t imm) GCC_INLINE;
+	inline reg_t ShiftOperand32imm(const uint32_t rotate_imm, 
+			const uint32_t imm, 
+			bool *shift_carry_out) GCC_INLINE;
+	inline reg_t ShiftOperandImmShift(const uint32_t shift_imm, 
+			const uint32_t shift, 
+			const reg_t val_reg) GCC_INLINE;
+	inline reg_t ShiftOperandImmShift(const uint32_t shift_imm, 
+			const uint32_t shift, 
+			const reg_t val_reg, 
+			bool *shift_carry_out) GCC_INLINE;
+	static inline reg_t ShiftOperandRegShift(const uint32_t shift_reg, 
+			const uint32_t shift, 
+			const reg_t val_reg) GCC_INLINE;
+	inline reg_t ShiftOperandRegShift(const uint32_t shift_reg, 
+			const uint32_t shift, 
+			const reg_t val_reg,
+			bool *shift_carry_out) GCC_INLINE;
 
     /* Load/store operand decoding */
     inline address_t LSWUBImmOffset(const uint32_t u, 
@@ -885,6 +906,11 @@ private:
 	bool requires_memory_access_reporting;
 	/** indicates if the finished instructions require to be reported */
 	bool requires_finished_instruction_reporting;
+	
+public:
+	/** action to perform (execute) when an unpredictable behavior instruction
+	 *  is found */
+	inline void Unpredictable() GCC_INLINE;
 
 protected:
 	/** the instruction counter */
@@ -914,11 +940,11 @@ protected:
 	Parameter<bool> param_verbose_dump_regs_end;
 	
 	// verbose methods
-	bool VerboseSetup();
-	bool VerboseStep();
-	void VerboseDumpRegs();
-	void VerboseDumpRegsStart();
-	void VerboseDumpRegsEnd();
+	inline bool VerboseSetup() GCC_INLINE;
+	inline bool VerboseStep() GCC_INLINE;
+	inline void VerboseDumpRegs() GCC_INLINE;
+	inline void VerboseDumpRegsStart() GCC_INLINE;
+	inline void VerboseDumpRegsEnd() GCC_INLINE;
 };
 
 } // end of namespace arm

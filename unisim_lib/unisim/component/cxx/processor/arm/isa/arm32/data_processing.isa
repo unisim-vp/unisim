@@ -37,13 +37,6 @@
         DATA PROCESSING INSTRUCTIONS
 
 **********************************************/
-
-/* TODO: implement missing instructions for ARMV5TE and ARMV5TEXP:
- *  - qadd
- *  - qdadd
- *  - qsub
- *  - qdsub
- */
  
 /*******************************************************************
  * and instruction
@@ -2491,7 +2484,6 @@ orrs_reg_shift.execute = {
 
 op mov_32imm(cond[4]:0b00[2]:0b1[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:rotate_imm[4]:imm[8])
 op mov_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-  //                 1110      00      0      1101      0    0000   0010  00000        00       0      1101
 op mov_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
 op movs_32imm(cond[4]:0b00[2]:0b1[1]:0b1101[4]:0b1[1]:sbz[4]:rd[4]:rotate_imm[4]:imm[8])
 op movs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b1[1]:sbz[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])

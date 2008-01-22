@@ -1033,6 +1033,6 @@ group coprocessor_v5_rn_init(ldc2_offset, ldc2_unindexed, stc2_offset, stc2_unin
 coprocessor_v5_rn_init.initialize_rn_init = {
 	typedef Operation<CONFIG> inherited;
 
-	if(rn == 15) inherited::rn_init = 8;
+	if(rn == CPU<CONFIG>::PC_reg) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
 }
