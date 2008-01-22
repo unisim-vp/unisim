@@ -54,7 +54,6 @@ template <> Parameter<endian_type>::Parameter(const char *_name, Object *_object
 {
 	AddEnumeratedValue("little-endian");
 	AddEnumeratedValue("big-endian");
-	std::cerr << "after adding values = " << HasEnumeratedValues() << std::endl;
 }
 
 template <> Parameter<endian_type>::operator bool () const { return *storage == E_LITTLE_ENDIAN; }
