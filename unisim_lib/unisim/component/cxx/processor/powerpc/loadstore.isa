@@ -1058,7 +1058,7 @@ lfs.disasm = {
 op lfsu(49[6]:fd[5]:ra[5]:sext<32>d[16])
 lfsu.execute = {
 	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(cpu->GetMSR_FP())
+	if(!cpu->GetMSR_FP())
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}
@@ -1092,7 +1092,7 @@ lfsu.disasm = {
 op lfsux(31[6]:fd[5]:ra[5]:rb[5]:567[10]:?[1])
 lfsux.execute = {
 	if(ra == 0) throw IllegalInstructionException<CONFIG>();
-	if(cpu->GetMSR_FP())
+	if(!cpu->GetMSR_FP())
 	{
 		throw FloatingPointUnavailableException<CONFIG>();
 	}

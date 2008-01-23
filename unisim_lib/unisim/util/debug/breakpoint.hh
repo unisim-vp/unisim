@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_BREAKPOINT_HH__
 
 #include <inttypes.h>
+#include <ostream>
 
 namespace unisim {
 namespace util {
@@ -51,6 +52,12 @@ public:
 	}
 
 	inline ADDRESS GetAddress() const { return addr; }
+	
+	friend std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brk)
+	{
+		os << "breakpoint(0x" << std::hex << brk.addr << std::dec << ")";
+		return os;
+	}
 private:
 	ADDRESS addr;
 };
