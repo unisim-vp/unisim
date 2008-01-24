@@ -579,9 +579,9 @@ int main(int argc, char *argv[], char **envp) {
 //		index++;
 //	}
 	
-	stringstream profile_filename;
-	profile_filename << filename << "-profile.txt";
-	cpu->DumpInstructionProfile(new fstream(profile_filename.str().c_str(),ios::out));
+//	stringstream profile_filename;
+//	profile_filename << filename << "-profile.txt";
+//	cpu->DumpInstructionProfile(new fstream(profile_filename.str().c_str(),ios::out));
 	
 	if(elf32_loader) delete elf32_loader;
 	if(linux_loader) delete linux_loader;
