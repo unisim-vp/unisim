@@ -2592,6 +2592,7 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 CheckCondition(uint32_t cond) { // check condition type
+//	return CheckCondition(cond, GetCPSR());
 	return (cond == 0xe) || ((check_condition_table[cond] >> (cpsr >> 28)) & 1);
 }
 

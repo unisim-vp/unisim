@@ -150,7 +150,7 @@ msr_imm.execute = {
 	} else {
 		/* check current running mode, if in user mode then the behaviour is 
 		 *   unpredictable, so we will do a return */
-		if(run_mode == cpu.USER_MODE) {
+		if(mask != 0x08 && run_mode == cpu.USER_MODE) {
 			if(cpu.logger_import) {
 				(*cpu.logger_import) << DebugWarning
 					<< Function << __FUNCTION__
@@ -243,7 +243,7 @@ msr_reg.execute = {
 	} else {
 		/* check current running mode, if in user mode then the behaviour is 
 		 * 	 unpredictable, so we will do a return */
-		if(run_mode == cpu.USER_MODE) {
+		if(mask != 0x08 && run_mode == cpu.USER_MODE) {
 			if(cpu.logger_import) {
 				(*cpu.logger_import) << DebugWarning
 					<< Function << __FUNCTION__
