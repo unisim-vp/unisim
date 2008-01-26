@@ -1613,6 +1613,7 @@ DispatchPCIReq() {
 					PMemMsgType mem_msg = ConverttoMemMsg(item->pci_msg, size_done, item->pci_msg->req->size - size_done); 
 					while(!(*(item->out_port))->Send(mem_msg))
 						wait(cycle_time);
+					memcpy(pci_rsp->read_data + size_done, mem_msg->rsp->read_data + size_done,  mem_msg->req->size);	
 					size_done += mem_msg->req->size;
 				} else {					
 				
@@ -1622,7 +1623,6 @@ DispatchPCIReq() {
 						<< " received response to a pci request from the memory system, "
 						<< " forwarding response to the PCI bus" << Endl
 						<< EndDebugInfo;
-				
 					memcpy(pci_rsp->read_data + size_done, fsb_rsp->read_data + size_done,  fsb_msg->req->size);
 					size_done += fsb_msg->req->size;
 				}
