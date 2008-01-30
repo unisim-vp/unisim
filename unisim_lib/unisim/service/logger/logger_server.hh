@@ -105,6 +105,12 @@ private:
     bool show_line;
     Parameter<bool> param_show_file;
     bool show_file;
+    Parameter<bool> param_network_enable;
+    bool network_enable;
+    Parameter<string> param_network_hostname;
+    string network_hostname;
+    Parameter<uint32_t> param_network_port;
+    uint32_t network_port;
     PtrList<Node> *node_list;
 
     void FlushMessage(Node &node);

@@ -85,6 +85,12 @@ LoggerServer::LoggerServer(const char *name, Object *parent) :
 	param_show_file("show-file", this, show_file),
 	show_line(false),
 	param_show_line("show-line", this, show_line),
+	network_enable(false),
+	param_network_enable("network-enable", this, network_enable),
+	network_hostname("localhost"),
+	param_network_hostname("network-hostname", this, network_hostname),
+	network_port(0),
+	param_network_port("network-port", this, network_port),
 	node_list(),
 	writer(NULL) {
 	/* create the individual loggers */
