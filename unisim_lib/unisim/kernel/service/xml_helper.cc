@@ -276,6 +276,8 @@ LoadXmlParameters(const char *filename) {
 	xmlTextReaderPtr reader;
 	int ret;
 
+	cerr << "Loading xml parameters from: " << filename << endl;
+	
 	/*
 	 * Pass some special parsing options to activate DTD attribute defaulting,
 	 * entities substitution and DTD validation
@@ -324,8 +326,8 @@ ProcessXmlParamNode(xmlTextReaderPtr reader) {
 	}
 
 	if(xmlStrEqual(name, xmlCharStrdup("PARAMETERS"))) {
-//		if(xmlTextReaderNodeType(reader) == 1)
-//			cerr << "PARAMETERS" << endl;
+		if(xmlTextReaderNodeType(reader) == 1)
+			cerr << "PARAMETERS" << endl;
 		return true;
 	}
 	
@@ -334,10 +336,10 @@ ProcessXmlParamNode(xmlTextReaderPtr reader) {
 			cur_param = new CurParameter();
 		}
 		if(xmlTextReaderNodeType(reader) == 15) {
-//			cerr << "  parameter" << endl;
-//			cerr << "    name = " << cur_param->name.str() << endl;
-//			cerr << "    value = " << cur_param->value.str() << endl;
-//			cerr << "    description = " << cur_param->description.str() << endl;
+			cerr << "  parameter" << endl;
+			cerr << "    name = " << cur_param->name.str() << endl;
+			cerr << "    value = " << cur_param->value.str() << endl;
+			cerr << "    description = " << cur_param->description.str() << endl;
 			ParameterBase *param = ServiceManager::GetParameter(cur_param->name.str().c_str());
 			if(param == NULL) {
 				cerr << "  !! could not get parameter '" << cur_param->name.str() << "'" << endl;

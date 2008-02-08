@@ -39,9 +39,33 @@
 #include "unisim/service/logger/logger.hh"
 #include "unisim/util/xml/xml.hh"
 #include "unisim/kernel/service/service.hh"
-#include <sstream>
 #include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
+
+#include <iostream>
+#include <sstream>
+#include <sys/types.h>
+
+
+#ifdef WIN32
+
+#include <winsock2.h>
+
+#else
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <linux/un.h>
+#include <arpa/inet.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+#include <sys/times.h>
+#include <fcntl.h>
+
+#endif
+
+#include <unistd.h>
+#include <errno.h>
 
 namespace unisim {
 namespace service {
@@ -92,7 +116,8 @@ LoggerServer::LoggerServer(const char *name, Object *parent) :
 	network_port(0),
 	param_network_port("network-port", this, network_port),
 	node_list(),
-	writer(NULL) {
+	writer(NULL),
+	network_connected(false) {
 	/* create the individual loggers */
 	for(unsigned int i = 0; i < MAX_LOGGERS; i++) {
 		stringstream s;
@@ -148,7 +173,7 @@ Setup() {
 	 *   no file will be used.
 	 * If the file opening fails, return false,
 	 *   otherwise return true. */
-	cerr << "INFO(LoggerServer::ClientIndependentSetup): "
+	cerr << "INFO(LoggerServer::Setup): "
 		<< " filename name = " << filename << endl;
 	if(filename != "") {
 		stringstream filename_str;
@@ -177,8 +202,70 @@ Setup() {
 			return false;
 		}
 	}
+	/* Setup the network if necessary */
+	if(network_enable) {
+		cerr << "INFO(LoggerServer::Setup): "
+			<< "trying to set the network support" << endl;
+		return SetupNetwork();
+	}
 	
 	return true;
+}
+
+bool
+LoggerServer::
+SetupNetwork() {
+	struct sockaddr_in sonadr;
+	struct sockaddr_un sonadr_un;
+
+	network_socket = socket(PF_INET, SOCK_STREAM, 0);
+	if(network_socket < 0)
+	{
+		cerr << "ERROR(LoggerServer::SetupNetwork): Can't create socket for connection to " << network_hostname
+			<< ":" << network_port << endl;
+		network_connected = false;
+		return network_connected;
+	}
+	memset((char *) &sonadr, 0, sizeof(sonadr));
+	memset((char *) &sonadr_un, 0, sizeof(sonadr_un));
+	sonadr.sin_family = AF_INET;
+	sonadr.sin_port = htons(network_port);
+	sonadr.sin_addr.s_addr = inet_addr(network_hostname.c_str());
+	
+	cerr << "INFO(LoggerServer::SetupNetwork): Trying to connect to " << network_hostname << endl;
+
+	if(sonadr.sin_addr.s_addr != -1) {
+		//host format is xxx.yyy.zzz.ttt
+		network_connected = connect(network_socket, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
+	} else {
+		//host format is www.whereitis.gnu need to ask dns
+		struct hostent *hp;
+		int i = 0;
+		hp = gethostbyname(network_hostname.c_str());
+		if(!hp) {
+			cerr << "INFO(LoggerServer::SetupNetwork): Was not able to determine IP address from host name for" << network_hostname << ":" << network_port << endl;
+		} else {
+			while(!network_connected && hp->h_addr_list[i] != NULL) {
+				memcpy((char *) &sonadr.sin_addr,
+				(char *) hp->h_addr_list[i],
+				sizeof(sonadr.sin_addr));
+				network_connected = connect(network_socket, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;
+				i++;
+			}
+		}
+	}
+	if(!network_connected) {
+#ifdef WIN32
+		closesocket(network_socket);
+#else
+		close(network_socket);
+#endif
+		network_socket = -1;
+		cerr << "INFO(LoggerServer::SetupNetwork): Can't connect to " << network_hostname << ":" << network_port << endl;
+		return false;
+	}
+
+	return network_connected;
 }
 
 void
@@ -246,6 +333,9 @@ FlushMessage(Node &node) {
 
 	if(std_err)
 		FlushMessage(node, cerr);
+	
+	if(network_connected)
+		FlushMessageOverNetwork(node);
 }
 
 void
@@ -336,9 +426,71 @@ FlushMessage(Node &node, xmlTextWriterPtr &out) {
 			FlushDebugErrorNode(**it, out);
 		}
 	}
-	xmlTextWriterEndElement(out);
+	rc = xmlTextWriterEndElement(out);
 	if(rc < 0) {
 		cerr << "Error(LoggerServer::FlushMessage): couldn't not close element" << endl;
+	}
+}
+
+void 
+LoggerServer::
+FlushMessageOverNetwork(Node &node) {
+	list<Node *> *nodes;
+	int rc;
+	const Property *object_property = node.GetProperty(Logger::string_source);
+	const Property *time_property = node.GetProperty(Logger::string_time);
+	stringstream buffer;
+	buffer << NETWORK_MESSAGE_START << ";";
+	if(object_property) { 
+		buffer << NETWORK_MESSAGE_SOURCE << ":" 
+			<< object_property->Value().length() << ":"
+			<< object_property->Value() << ";";
+	} else 
+		cerr << "Error(LoggerServer::FlushMessage): couldn't not find source attribute" << endl;
+		
+	if(time_property) {
+		buffer << NETWORK_MESSAGE_TIME << ":"
+			<< time_property->Value().length() << ":"
+			<< time_property->Value() << ";";
+	}
+		
+	
+	nodes = node.Childs();
+	list<Node *>::iterator it;
+	for(it = nodes->begin();it != nodes->end(); it++) {
+		FlushLocationOverNetwork(**it, buffer);
+		if((**it).Name() == Logger::string_debug_info) {
+			FlushDebugInfoNodeOverNetwork(**it, buffer);
+		}
+		if((**it).Name() == Logger::string_debug_warning) {
+			FlushDebugWarningNodeOverNetwork(**it, buffer);
+		}
+		if((**it).Name() == Logger::string_debug_error) {
+			FlushDebugErrorNodeOverNetwork(**it, buffer);
+		}
+	}
+	buffer << NETWORK_MESSAGE_END << ";" << endl;
+	const char *msg = buffer.str().c_str();
+	unsigned int msg_size = buffer.str().length();
+	if(msg_size > 0) {
+		unsigned int index = 0;
+		do
+		{
+#ifdef WIN32
+			int r = send(network_socket, msg + index, msg_size, 0);
+			if(r == 0 || r == SOCKET_ERROR)
+#else
+			ssize_t r = write(network_socket, msg + index, msg_size);
+			if(r <= 0)
+#endif
+			{
+				cerr << "NETSTUB: can't write into socket" << endl;
+			}
+
+			index += r;
+			msg_size -= r;
+		}
+		while(msg_size > 0);
 	}
 }
 
@@ -431,6 +583,44 @@ FlushLocation(Node &node, xmlTextWriterPtr &out) {
 
 void
 LoggerServer::
+FlushLocationOverNetwork(Node &node, stringstream &buffer) {
+	list<Node *> *nodes;
+	const Property *file = NULL;
+	const Property *function = NULL;
+	const Property *line = NULL;
+	int rc;
+	
+	nodes = node.Childs();
+	list<Node *>::iterator it;
+	for(it = nodes->begin();it != nodes->end(); it++) {
+		if((**it).Name() == Logger::string_file) {
+			file = (**it).GetProperty(Logger::string_value);
+		}
+		if((**it).Name() == Logger::string_function) {
+			function = (**it).GetProperty(Logger::string_value);
+		}
+		if((**it).Name() == Logger::string_line) {
+			line = (**it).GetProperty(Logger::string_value);
+		}
+	}
+	if(file != NULL ||
+		function != NULL ||
+		line != NULL) {
+		if(file != NULL) {
+			buffer << NETWORK_LOCATION_FILE << ":" << file->Value().length() << ":" << file->Value() << ";";
+		}
+		if(function != NULL) {
+			buffer << NETWORK_LOCATION_FUNCTION << ":" << function->Value().length() << ":" << function->Value() << ";";
+		}
+		if(line != NULL) {
+			buffer << NETWORK_LOCATION_LINE << ":" << line->Value() << ";";
+		}
+	}
+	
+}
+
+void
+LoggerServer::
 FlushDebugInfoNode(Node &node, ostream &os, string &object_name) {
 	os << "INFO(" << object_name;
 	FlushLocation(node, os);
@@ -473,6 +663,18 @@ FlushDebugInfoNode(Node &node, xmlTextWriterPtr &out) {
 	}
 }
 
+void
+LoggerServer::
+FlushDebugInfoNodeOverNetwork(Node &node, stringstream &buffer) {
+	// steps:
+	// - set the start debug info tag for debug node into the buffer
+	// - fill the buffer with the node information
+	// - set the end debug info tag for debug node into the buffer
+	buffer << NETWORK_DEBUG_INFO_START << ";";
+	FlushDebugNodeOverNetwork(node, buffer);
+	buffer << NETWORK_DEBUG_INFO_END << ";";
+}
+
 void 
 LoggerServer::
 FlushDebugWarningNode(Node &node, xmlTextWriterPtr &out) {
@@ -490,6 +692,18 @@ FlushDebugWarningNode(Node &node, xmlTextWriterPtr &out) {
 	}
 }
 
+void
+LoggerServer::
+FlushDebugWarningNodeOverNetwork(Node &node, stringstream &buffer) {
+	// steps:
+	// - set the start debug info tag for debug node into the buffer
+	// - fill the buffer with the node information
+	// - set the end debug info tag for debug node into the buffer
+	buffer << NETWORK_DEBUG_WARNING_START << ";";
+	FlushDebugNodeOverNetwork(node, buffer);
+	buffer << NETWORK_DEBUG_WARNING_END << ";";
+}
+
 void 
 LoggerServer::
 FlushDebugErrorNode(Node &node, xmlTextWriterPtr &out) {
@@ -505,6 +719,18 @@ FlushDebugErrorNode(Node &node, xmlTextWriterPtr &out) {
 	if(rc < 0) {
 		cerr << "Error(LoggerServer::FlushMessage): couldn't close debug error element" << endl;
 	}
+}
+
+void
+LoggerServer::
+FlushDebugErrorNodeOverNetwork(Node &node, stringstream &buffer) {
+	// steps:
+	// - set the start debug info tag for debug node into the buffer
+	// - fill the buffer with the node information
+	// - set the end debug info tag for debug node into the buffer
+	buffer << NETWORK_DEBUG_ERROR_START << ";";
+	FlushDebugNodeOverNetwork(node, buffer);
+	buffer << NETWORK_DEBUG_ERROR_END << ";";
 }
 
 void
@@ -651,6 +877,77 @@ FlushDebugNode(Node &node, xmlTextWriterPtr &out) {
 
 void
 LoggerServer::
+FlushDebugNodeOverNetwork(Node &node, stringstream &buffer) {
+	list<Node *> *nodes;
+	
+	nodes = node.Childs();
+	list<Node *>::iterator it;
+	for(it = nodes->begin();it != nodes->end(); it++) {
+		if((**it).Name() == Logger::string_bool) {
+			FlushBoolNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_string) {
+			FlushStringNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_char) {
+			FlushCharNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_int) {
+			FlushIntNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_short_int) {
+			FlushShortIntNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_long_int) {
+			FlushLongIntNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_long_long_int) {
+			FlushLongLongIntNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_unsigned_char) {
+			FlushUnsignedCharNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_unsigned_int) {
+			FlushUnsignedIntNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_unsigned_short_int) {
+			FlushUnsignedShortIntNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_unsigned_long_int) {
+			FlushUnsignedLongIntNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_unsigned_long_long_int) {
+			FlushUnsignedLongLongIntNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_float) {
+			FlushFloatNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_double) {
+			FlushDoubleNodeOverNetwork(**it, buffer);
+			continue;
+		}
+		if((**it).Name() == Logger::string_endl) {
+			FlushEndlNodeOverNetwork(**it, buffer);
+			continue;
+		}
+	}
+}
+
+void
+LoggerServer::
 FlushBoolNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_bool.c_str());
@@ -671,6 +968,13 @@ FlushBoolNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushBoolNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	buffer << NETWORK_BOOL << ":" << value->Value() << ";";
+}
+
+void
+LoggerServer::
 FlushStringNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	int rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
@@ -687,6 +991,13 @@ FlushStringNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushStringNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	buffer << NETWORK_STRING << ":" << value->Value().length() << ":" << value->Value() << ";";
+}
+
+void
+LoggerServer::
 FlushCharNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	int rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
@@ -698,13 +1009,25 @@ void
 LoggerServer::
 FlushCharNode(Node &node, ostream &os) {
 	const Property *value = node.GetProperty(Logger::string_value);
-	const Property *mode = node.GetProperty(Logger::string_mode);
+//	const Property *mode = node.GetProperty(Logger::string_mode);
 	stringstream str;
 	char ch;
 	
 	str << value->Value();
 	str >> ch;
 	os << (char)ch;
+}
+
+void
+LoggerServer::
+FlushCharNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	stringstream str;
+	char ch;
+	
+	str << value->Value();
+	str >> ch;
+	buffer << NETWORK_CHAR << ":" << (char)ch << ";";
 }
 
 void
@@ -744,6 +1067,20 @@ FlushIntNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushIntNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	
+	buffer << NETWORK_INT << ":"; 
+	if(mode->Value() == Logger::string_hex)
+		buffer << NETWORK_NUMMODE_HEX;
+	else
+		buffer << NETWORK_NUMMODE_DEC;
+	buffer << ":" << value->Value() << ";";
+}
+
+void
+LoggerServer::
 FlushShortIntNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	const Property *mode = node.GetProperty(Logger::string_mode);
@@ -775,6 +1112,20 @@ FlushShortIntNode(Node &node, ostream &os) {
 		os << hex;
 	os << si;
 	os << dec;
+}
+
+void
+LoggerServer::
+FlushShortIntNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	
+	buffer << NETWORK_SHORTINT << ":"; 
+	if(mode->Value() == Logger::string_hex)
+		buffer << NETWORK_NUMMODE_HEX;
+	else
+		buffer << NETWORK_NUMMODE_DEC;
+	buffer << ":" << value->Value() << ";";
 }
 
 void
@@ -814,6 +1165,20 @@ FlushLongIntNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushLongIntNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	
+	buffer << NETWORK_LONGINT << ":"; 
+	if(mode->Value() == Logger::string_hex)
+		buffer << NETWORK_NUMMODE_HEX;
+	else
+		buffer << NETWORK_NUMMODE_DEC;
+	buffer << ":" << value->Value() << ";";
+}
+
+void
+LoggerServer::
 FlushLongLongIntNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	const Property *mode = node.GetProperty(Logger::string_mode);
@@ -849,6 +1214,20 @@ FlushLongLongIntNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushLongLongIntNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	
+	buffer << NETWORK_LONGLONGINT << ":"; 
+	if(mode->Value() == Logger::string_hex)
+		buffer << NETWORK_NUMMODE_HEX;
+	else
+		buffer << NETWORK_NUMMODE_DEC;
+	buffer << ":" << value->Value() << ";";
+}
+
+void
+LoggerServer::
 FlushUnsignedCharNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	int rc = xmlTextWriterWriteFormatString(out, "%s", value->Value().c_str());
@@ -866,6 +1245,18 @@ FlushUnsignedCharNode(Node &node, ostream &os) {
 	str << value->Value();
 	str >> uc;
 	os << (unsigned char)uc;
+}
+
+void
+LoggerServer::
+FlushUnsignedCharNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	stringstream str;
+	char ch;
+	
+	str << value->Value();
+	str >> ch;
+	buffer << NETWORK_UNSIGNEDCHAR << ":" << (unsigned char)ch << ";";
 }
 
 void
@@ -905,6 +1296,20 @@ FlushUnsignedIntNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushUnsignedIntNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	
+	buffer << NETWORK_UNSIGNEDINT << ":"; 
+	if(mode->Value() == Logger::string_hex)
+		buffer << NETWORK_NUMMODE_HEX;
+	else
+		buffer << NETWORK_NUMMODE_DEC;
+	buffer << ":" << value->Value() << ";";
+}
+
+void
+LoggerServer::
 FlushUnsignedShortIntNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	const Property *mode = node.GetProperty(Logger::string_mode);
@@ -936,6 +1341,20 @@ FlushUnsignedShortIntNode(Node &node, ostream &os) {
 		os << hex;
 	os << usi;
 	os << dec;
+}
+
+void
+LoggerServer::
+FlushUnsignedShortIntNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	
+	buffer << NETWORK_UNSIGNEDSHORTINT << ":"; 
+	if(mode->Value() == Logger::string_hex)
+		buffer << NETWORK_NUMMODE_HEX;
+	else
+		buffer << NETWORK_NUMMODE_DEC;
+	buffer << ":" << value->Value() << ";";
 }
 
 void
@@ -975,6 +1394,20 @@ FlushUnsignedLongIntNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushUnsignedLongIntNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	const Property *mode = node.GetProperty(Logger::string_mode);
+	
+	buffer << NETWORK_UNSIGNEDLONGINT << ":"; 
+	if(mode->Value() == Logger::string_hex)
+		buffer << NETWORK_NUMMODE_HEX;
+	else
+		buffer << NETWORK_NUMMODE_DEC;
+	buffer << ":" << value->Value() << ";";
+}
+
+void
+LoggerServer::
 FlushUnsignedLongLongIntNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	const Property *mode = node.GetProperty(Logger::string_mode);
@@ -1010,9 +1443,22 @@ FlushUnsignedLongLongIntNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
-FlushFloatNode(Node &node, xmlTextWriterPtr &out) {
+FlushUnsignedLongLongIntNodeOverNetwork(Node &node, stringstream &buffer) {
 	const Property *value = node.GetProperty(Logger::string_value);
 	const Property *mode = node.GetProperty(Logger::string_mode);
+	
+	buffer << NETWORK_UNSIGNEDLONGLONGINT << ":"; 
+	if(mode->Value() == Logger::string_hex)
+		buffer << NETWORK_NUMMODE_HEX;
+	else
+		buffer << NETWORK_NUMMODE_DEC;
+	buffer << ":" << value->Value() << ";";
+}
+
+void
+LoggerServer::
+FlushFloatNode(Node &node, xmlTextWriterPtr &out) {
+	const Property *value = node.GetProperty(Logger::string_value);
 	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_float.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushFloatNode): error" << endl;
@@ -1036,9 +1482,16 @@ FlushFloatNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushFloatNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	
+	buffer << NETWORK_FLOAT << ":" << value->Value() << ";"; 
+}
+
+void
+LoggerServer::
 FlushDoubleNode(Node &node, xmlTextWriterPtr &out) {
 	const Property *value = node.GetProperty(Logger::string_value);
-	const Property *mode = node.GetProperty(Logger::string_mode);
 	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_double.c_str());
 	if(rc < 0)
 		cerr << "Error(LoggerServer::FlushDoubleNode): error" << endl;
@@ -1062,6 +1515,14 @@ FlushDoubleNode(Node &node, ostream &os) {
 
 void
 LoggerServer::
+FlushDoubleNodeOverNetwork(Node &node, stringstream &buffer) {
+	const Property *value = node.GetProperty(Logger::string_value);
+	
+	buffer << NETWORK_DOUBLE << ":" << value->Value() << ";"; 
+}
+
+void
+LoggerServer::
 FlushEndlNode(Node &node, xmlTextWriterPtr &out) {
 	int rc = xmlTextWriterStartElement(out, BAD_CAST Logger::string_endl.c_str());
 	if(rc < 0)
@@ -1073,6 +1534,12 @@ void
 LoggerServer::
 FlushEndlNode(Node &node, ostream &os) {
 	os << endl;	
+}
+
+void
+LoggerServer::
+FlushEndlNodeOverNetwork(Node &node, stringstream &buffer) {
+	buffer << NETWORK_ENDL << ";";
 }
 
 } // end of logger namespace

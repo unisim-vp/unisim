@@ -160,6 +160,8 @@ smlal.execute = {
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
+	if(!cpu.CheckCondition(cond)) return;
+
 	res = rdlo_value + (((uint64_t)rdhi_value) << 32);
 	res += ((int64_t)rm_value) * ((int64_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
@@ -207,6 +209,8 @@ smull.execute = {
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
 
 	res = ((int64_t)(int32_t)rm_value) * ((int64_t)(int32_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
@@ -257,6 +261,8 @@ umlal.execute = {
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
+	if(!cpu.CheckCondition(cond)) return;
+
 	res = rdlo_value + (((uint64_t)rdhi_value) << 32);
 	res += ((int64_t)rm_value) * ((int64_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
@@ -304,6 +310,8 @@ umull.execute = {
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+	if(!cpu.CheckCondition(cond)) return;
 
 	res = ((int64_t)rm_value) * ((int64_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
