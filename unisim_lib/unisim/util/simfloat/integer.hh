@@ -2,8 +2,8 @@
                 Integer.h  -  Template for various types of integer
                              -------------------
     first release        : 15 Jul 2005
-    copyright ï¿½          : (C) 2004-2005 CEA
-    authors              : Franck Vï¿½drine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ©          : (C) 2004-2005 CEA
+    authors              : Franck Védrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -1313,7 +1313,7 @@ class TBigInt : public Details::Access, protected IntegerTraits {
             };
 
             crResult.carry() <<= (8*sizeof(unsigned int) - inherited::lastCellSize());
-            if (inherited::lastCellSize() < 8*sizeof(unsigned int))
+            if (inherited::lastCellSize() < (int) (8*sizeof(unsigned int)))
                crResult.carry() |= (cells()[inherited::lastCellIndex()] >> inherited::lastCellSize());
             inherited::normalize();
          };
@@ -1323,7 +1323,8 @@ class TBigInt : public Details::Access, protected IntegerTraits {
    void mult(const thisType& biSource, MultResult& mrResult) const
       {  typename IntegerTraits::CellTraits::MultResult cmrLocalResult;
          cells().mult(biSource.cells(), cmrLocalResult);
-         for (register int uIndex = 0; uIndex < cmrLocalResult.querySize(); ++uIndex)
+         int uLast = mrResult.lastCellIndex();
+         for (register int uIndex = 0; uIndex <= uLast; ++uIndex)
             mrResult[uIndex] = cmrLocalResult[uIndex];
       }
    thisType& operator*=(const thisType& biSource)

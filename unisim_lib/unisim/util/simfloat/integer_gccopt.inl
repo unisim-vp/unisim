@@ -1,0 +1,2332 @@
+/***************************************************************************
+                Integer_gccopt.inline  -  inline definitions for various types of integer
+                             -------------------
+    first release        : 15 Jul 2005
+    copyright ©          : (C) 2004-2005 CEA
+    authors              : Franck Védrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    email                : Franck.Vedrine@cea.fr
+ ***************************************************************************/
+
+/***************************************************************************
+ *                                                                         *
+ * This program is free software; you can redistribute it and/or           *
+ * modify it under the terms of the GNU Lesser General Public License      *
+ * as published by the Free Software Foundation; either version 2.1        *
+ * of the License, or (at your option) any later version.                  *
+ *                                                                         *
+ * This program is distributed in the hope that it will be useful,         *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of          *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           *
+ * GNU Lesser General Public License for more details.                     *
+ *                                                                         *
+ ***************************************************************************/
+
+/*******************************************************/
+/* Déclaration de la classe CellIntegerTraitsContract */ 
+/*******************************************************/
+
+#ifdef DefineGCC_Inline_Integer_Details_CellIntegerTraitsContract
+inline CellIntegerTraitsContract::CellIntegerTraitsContract() {}
+#endif
+
+/*************************************************/
+/* Déclaration du patron TBasicCellIntegerTraits */
+/*************************************************/
+
+#ifdef DefineGCC_Inline_Integer_Details_TBasicCellIntegerTraits
+template <int uSize>
+inline unsigned int*
+TBasicCellIntegerTraits<uSize>::_array() { return auArray; }
+
+template <int uSize>
+inline const unsigned int*
+TBasicCellIntegerTraits<uSize>::_array() const { return auArray; }
+
+template <int uSize>
+inline
+TBasicCellIntegerTraits<uSize>::TBasicCellIntegerTraits()
+{ memset(auArray, 0, uSize*sizeof(unsigned int)); }
+
+template <int uSize>
+inline
+TBasicCellIntegerTraits<uSize>::TBasicCellIntegerTraits(const thisType& biSource)
+{  memcpy(auArray, biSource.auArray, uSize*sizeof(unsigned int)); }
+
+template <int uSize>
+inline TBasicCellIntegerTraits<uSize>&
+TBasicCellIntegerTraits<uSize>::operator=(const thisType& itSource)
+{  memcpy(auArray, itSource.auArray, uSize*sizeof(unsigned int));
+   return *this;
+}
+
+template <int uSize>
+inline TBasicCellIntegerTraits<uSize>&
+TBasicCellIntegerTraits<uSize>::operator=(unsigned int uSource)
+{  if (uSize > 1)
+      memset(auArray, 0, uSize*sizeof(unsigned int));
+   auArray[0] = uSource;
+   return *this;
+}
+
+template <int uSize>
+inline typename TBasicCellIntegerTraits<uSize>::ArrayProperty
+TBasicCellIntegerTraits<uSize>::array(int uIndex)
+{  assert(uIndex >= 0 && (uIndex < uSize));
+   return auArray[uIndex];
+}
+
+template <int uSize>
+inline unsigned int
+TBasicCellIntegerTraits<uSize>::array(int uIndex) const
+{  assert(uIndex >= 0);
+   return (uIndex < uSize) ? auArray[uIndex] : 0U;
+}
+
+template <int uSize>
+inline unsigned int
+TBasicCellIntegerTraits<uSize>::carray(int uIndex) const
+{ return array(uIndex); }
+
+template <int uSize>
+inline typename TBasicCellIntegerTraits<uSize>::ArrayProperty
+TBasicCellIntegerTraits<uSize>::operator[](int uIndex)
+{  assert(uIndex >= 0 && (uIndex < uSize));
+   return auArray[uIndex];
+}
+
+template <int uSize>
+inline unsigned int
+TBasicCellIntegerTraits<uSize>::operator[](int uIndex) const
+{  assert(uIndex >= 0);
+   return (uIndex < uSize) ? auArray[uIndex] : 0U;
+}
+
+template <int uSize>
+inline int
+TBasicCellIntegerTraits<uSize>::querySize()
+{ return uSize; }
+
+template <int uSize>
+inline void
+TBasicCellIntegerTraits<uSize>::normalize()
+{}
+
+template <int uSize>
+inline void
+TBasicCellIntegerTraits<uSize>::adjustSize(int uNewSize)
+{ assert(false); }
+
+template <int uSize>
+inline void
+TBasicCellIntegerTraits<uSize>::assertSize(int uNewSize)
+{ assert(uNewSize <= uSize); }
+
+template <int uSize>
+inline void
+TBasicCellIntegerTraits<uSize>::setSize(int uExactSize)
+{ assert(uExactSize == uSize); }
+
+template <int uSize>
+inline void
+TBasicCellIntegerTraits<uSize>::clear()
+{ memset(auArray, 0, uSize*sizeof(unsigned int)); }
+
+template <int uSize>
+inline void
+TBasicCellIntegerTraits<uSize>::swap(thisType& biSource)
+{  unsigned int auTemp[uSize];
+   memcpy(auTemp, auArray, uSize*sizeof(unsigned int));
+   memcpy(auArray, biSource.auArray, uSize*sizeof(unsigned int));
+   memcpy(biSource.auArray, auTemp, uSize*sizeof(unsigned int));
+}
+
+#endif
+
+/********************************************/
+/* Déclaration du patron TCellIntegerTraits */
+/********************************************/
+
+#ifdef DefineGCC_Inline_Integer_Details_TCellIntegerTraits
+template <int uSize>
+inline
+TCellIntegerTraits<uSize>::TCellIntegerTraits()
+   : inherited() {}
+
+template <int uSize>
+inline
+TCellIntegerTraits<uSize>::TCellIntegerTraits(const thisType& biSource)
+ : inherited(biSource) {}
+
+template <int uSize>
+inline TCellIntegerTraits<uSize>&
+TCellIntegerTraits<uSize>::operator=(const thisType& itSource)
+{  return (thisType&) inherited::operator=(itSource); }
+
+template <int uSize>
+inline TCellIntegerTraits<uSize>&
+TCellIntegerTraits<uSize>::operator=(unsigned int uSource)
+{  return (thisType&) inherited::operator=(uSource); }
+
+template <int uSize>
+inline
+TCellIntegerTraits<uSize>::MultResult::MultResult()
+{}
+
+template <int uSize>
+inline
+TCellIntegerTraits<uSize>::MultResult::MultResult(const MultResult& mrSource)
+ : inherited(mrSource) {}
+ 
+template <int uSize>
+inline
+TCellIntegerTraits<uSize>::MultResult::MultResult(const TBasicCellIntegerTraits<uSize>& itSource)
+{  memcpy(inherited::_array(), itSource._array(), uSize*sizeof(unsigned int)); }
+
+template <int uSize>
+inline TCellIntegerTraits<uSize>&
+TCellIntegerTraits<uSize>::operator=(const MultResult& mrSource)
+{  memcpy(inherited::_array(), mrSource._array(), uSize*sizeof(unsigned int)); return *this; }
+
+template <int uSize>
+inline void
+TCellIntegerTraits<uSize>::copyLow(const MultResult& mrResult)
+{  memcpy(inherited::_array(), mrResult._array(), uSize*sizeof(unsigned int)); }
+#endif
+
+/*************************************/
+/* Déclaration du patron TBigCellInt */
+/*************************************/
+
+#ifdef DefineGCC_Inline_Integer_Details_TBigCellInt
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::FormatParameters::FormatParameters()
+   : tType(TIntern), uLength(0) {}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::FormatParameters::FormatParameters(const FormatParameters& pSource)
+   : tType(pSource.tType), uLength(pSource.uLength) {}
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::FormatParameters::isBinary() const
+{ return (tType == TFullBinary) || (tType == TBinary); }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::FormatParameters::isFullBinary() const
+{ return tType == TFullBinary; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::FormatParameters::isLightBinary() const
+{ return tType == TBinary; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::FormatParameters::isFullHexaDecimal() const
+{ return tType == TFullHexaDecimal; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::FormatParameters::isIntern() const
+{ return tType == TIntern; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::FormatParameters::isIntegerCell() const
+{ return tType == TIntegerCell; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::FormatParameters::isDecimal() const
+{ return tType == TDecimal; }
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::FormatParameters&
+TBigCellInt<IntegerTraits>::FormatParameters::setIntern()
+{ tType = TIntern; return *this; }
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::FormatParameters&
+TBigCellInt<IntegerTraits>::FormatParameters::setFullBinary(int uLengthSource)
+{  tType = TFullBinary;
+   uLength = uLengthSource;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::FormatParameters&
+TBigCellInt<IntegerTraits>::FormatParameters::setFullHexaDecimal(int uLengthSource)
+{  tType = TFullHexaDecimal;
+   uLength = uLengthSource;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::FormatParameters&
+TBigCellInt<IntegerTraits>::FormatParameters::setBinary()
+{ tType = TBinary; return *this; }
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::FormatParameters&
+TBigCellInt<IntegerTraits>::FormatParameters::setIntegerCell()
+{ tType = TIntegerCell; return *this; }
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::FormatParameters&
+TBigCellInt<IntegerTraits>::FormatParameters::setDecimal()
+{ tType = TDecimal; return *this; }
+
+template <class IntegerTraits>
+inline const int&
+TBigCellInt<IntegerTraits>::FormatParameters::queryLength() const
+{  assert((tType == TFullBinary) || (tType == TFullHexaDecimal));
+   return uLength;
+}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::HexaChars::HexaChars()
+{}
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::HexaChars::acceptChar(char chChar) const
+{  return ((chChar >= '0') && (chChar <= '9'))
+       || ((chChar >= 'a') && (chChar <= 'f')) || ((chChar >= 'A') && (chChar <= 'F'));
+}
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::HexaChars::queryValue(char cChar) const
+{  return ((cChar >= '0') && (cChar <= '9')) ? (cChar-'0')
+      : (((cChar >= 'a') && (cChar <= 'f')) ? (cChar-'a'+10)
+      : (((cChar >= 'A') && (cChar <= 'F')) ? (cChar-'A'+10)
+      : -1));
+}
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::add(unsigned int& uCell, unsigned int uValue)
+{  register unsigned int uTemp = uCell;
+   uCell += uValue;
+   return (uCell < uTemp) ? 1U : 0U;
+}
+
+template <class IntegerTraits>
+inline int
+TBigCellInt<IntegerTraits>::log_base_2(unsigned int uValue)
+{  return Details::Access::log_base_2(uValue); }
+   
+template <class IntegerTraits>
+inline typename IntegerTraits::ArrayProperty
+TBigCellInt<IntegerTraits>::array(int uIndex)
+{ return inherited::array(uIndex); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::array(int uIndex) const
+{ return inherited::array(uIndex); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::carray(int uIndex) const
+{ return array(uIndex); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::sub(unsigned int& uCell, unsigned int uValue)
+{  register unsigned int uTemp = uCell;
+   uCell -= uValue;
+   return (uCell > uTemp) ? 1U : 0U;
+}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::MidArray::MidArray(TBigCellInt<IntegerTraits>& biSource, int uIndexSource)
+   : pitArray(&biSource), uIndex(uIndexSource) {}   
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::MidArray&
+TBigCellInt<IntegerTraits>::MidArray::operator=(unsigned int uValue)
+{  register unsigned int uStore = pitArray->array(uIndex >> 1);
+   pitArray->array(uIndex >> 1) = (uIndex & 1U)
+      ? ((uValue << (4*sizeof(unsigned int)))
+         | (uStore & ~(~0U << 4*sizeof(unsigned int))))
+      : ((uStore & (~0U << 4*sizeof(unsigned int))) | uValue);
+   return *this;
+}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::MidArray::operator unsigned int() const
+{  return (uIndex & 1U) ? (pitArray->array(uIndex >> 1) >> 4*sizeof(unsigned int))
+      :  (pitArray->array(uIndex >> 1) & ~(~0U << 4*sizeof(unsigned int)));
+}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::MidArray
+TBigCellInt<IntegerTraits>::midArray(int uIndex)
+{  return MidArray(*this, uIndex); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::midArray(int uIndex) const
+{  return (uIndex & 1U) ? (array(uIndex >> 1) >> 4*sizeof(unsigned int))
+      :  (array(uIndex >> 1) & ~(~0U << 4*sizeof(unsigned int)));
+}
+   
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::cmidArray(int uIndex) const
+   { return midArray(uIndex); }
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::setMidArray(int uIndex, unsigned int uValue)
+{  register unsigned int uStore = array(uIndex >> 1);
+   array(uIndex >> 1) = (uIndex & 1U)
+      ? ((uValue << (4*sizeof(unsigned int)))
+         | (uStore & ~(~0U << 4*sizeof(unsigned int))))
+      : ((uStore & (~0U << 4*sizeof(unsigned int))) | uValue);
+}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::BitArray::BitArray(TBigCellInt<IntegerTraits>& biSource, int uIndexSource)
+   : pitArray(&biSource), uIndex(uIndexSource) {}   
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::BitArray::BitArray(const BitArray& baSource)
+   : pitArray(baSource.pitArray), uIndex(baSource.uIndex) {}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::BitArray&
+TBigCellInt<IntegerTraits>::BitArray::operator=(const BitArray& baSource)
+{  pitArray = baSource.pitArray;
+   uIndex = baSource.uIndex;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::BitArray&
+TBigCellInt<IntegerTraits>::BitArray::operator=(bool fValue)
+{  if (fValue)
+      pitArray->array(uIndex/(sizeof(unsigned int)*8)) 
+         |= (1U << (uIndex%(sizeof(unsigned int)*8)));
+   else
+      pitArray->array(uIndex/(sizeof(unsigned int)*8))
+         &= ~(1U << (uIndex%(sizeof(unsigned int)*8)));
+   return *this;
+}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::BitArray::operator bool() const
+{  return (pitArray->array(uIndex/(sizeof(unsigned int)*8))
+         & (1U << (uIndex%(sizeof(unsigned int)*8))))
+      ? true : false;
+}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::BitArray
+TBigCellInt<IntegerTraits>::bitArray(int uIndex)
+{  return BitArray(*this, uIndex); }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::bitArray(int uIndex) const
+{  return (array(uIndex/(sizeof(unsigned int)*8)) & (1U << (uIndex%(sizeof(unsigned int)*8))))
+      ? true : false;
+}
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::setBitArray(int uIndex, bool fValue)
+{  if (fValue)
+      array(uIndex/(sizeof(unsigned int)*8)) |= (1U << (uIndex%(sizeof(unsigned int)*8)));
+   else
+      array(uIndex/(sizeof(unsigned int)*8)) &= ~(1U << (uIndex%(sizeof(unsigned int)*8)));
+}
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::setTrueBitArray(int uIndex)
+{  array(uIndex/(sizeof(unsigned int)*8)) |= (1U << (uIndex%(sizeof(unsigned int)*8))); }
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::setFalseBitArray(int uIndex)
+{  array(uIndex/(sizeof(unsigned int)*8)) &= ~(1U << (uIndex%(sizeof(unsigned int)*8))); }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::cbitArray(int uIndex) const
+{ return bitArray(uIndex); }
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::TBigCellInt() : inherited() {}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::TBigCellInt(unsigned int uInt) : inherited() { array(0) = uInt; }
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::TBigCellInt(const thisType& biSource) : inherited(biSource) {}
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator=(const thisType& biSource)
+{  return (thisType&) inherited::operator=(biSource); }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator=(unsigned int uInt)
+{  inherited::clear();
+   array(0) = uInt;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::operator[](int uIndex) const
+{ return inherited::array(uIndex); }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::ArrayProperty
+TBigCellInt<IntegerTraits>::operator[](int uIndex)
+{ return inherited::array(uIndex); }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::operator<(const thisType& biSource) const
+{  return compare(biSource) == CRLess; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::operator>(const thisType& biSource) const
+{  return compare(biSource) == CRGreater; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::operator<=(const thisType& biSource) const
+{  return compare(biSource) <= CREqual; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::operator>=(const thisType& biSource) const
+{  return compare(biSource) >= CREqual; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::operator==(const thisType& biSource) const
+{  return compare(biSource) == CREqual; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::operator!=(const thisType& biSource) const
+{  return compare(biSource) != CREqual; }
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::Carry::Carry(unsigned int uCarrySource) : uCarry(uCarrySource) {}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::Carry::Carry(const Carry& cSource) : uCarry(cSource.uCarry) {}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::Carry&
+TBigCellInt<IntegerTraits>::Carry::operator=(const Carry& cSource)
+{ uCarry = cSource.uCarry; return *this; }
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::Carry::setCarry(bool fCarrySource)
+{ uCarry = fCarrySource ? 1U : 0U; }
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::Carry::hasCarry() const
+{ return uCarry != 0U; }
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::Carry::setIntCarry(unsigned int uCarrySource)
+{ uCarry = uCarrySource; }
+
+template <class IntegerTraits>
+inline const unsigned int&
+TBigCellInt<IntegerTraits>::Carry::carry() const
+{ return uCarry; }
+
+template <class IntegerTraits>
+inline unsigned int&
+TBigCellInt<IntegerTraits>::Carry::carry()
+{ return uCarry; }
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::Carry
+TBigCellInt<IntegerTraits>::plusAssign(const thisType& biSource)
+{ return add(biSource); }
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::Carry
+TBigCellInt<IntegerTraits>::minusAssign(const thisType& biSource)
+{ return sub(biSource); }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator+=(const thisType& biSource)
+{ add(biSource); return *this; }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>
+TBigCellInt<IntegerTraits>::operator+(const thisType& biSource) const
+{  thisType biResult = *this; biResult += biSource; return biResult; }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator-=(const thisType& biSource)
+{ sub(biSource); return *this; }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>
+TBigCellInt<IntegerTraits>::operator-(const thisType& biSource) const
+{  thisType biResult = *this; biResult -= biSource; return biResult; }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator--()
+{ dec(); return *this; }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator++()
+{ inc(); return *this; }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator*=(const thisType& biSource)
+{  MultResult mrResult;
+   mult(biSource, mrResult);
+   inherited::copyLow(mrResult);
+   return *this;
+}
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator*=(unsigned int uSource)
+{  Carry crCarry = multAssign(uSource); assert(!crCarry.hasCarry()); return *this; }
+
+template <class IntegerTraits>
+inline int
+TBigCellInt<IntegerTraits>::querySize() const
+{ return inherited::querySize(); }
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::assertSize(int uNewSize)
+{ inherited::assertSize(uNewSize); }
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::DivisionResult::DivisionResult() : qrQuotient(), rrRemainder(), uComma(0) {}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::DivisionResult::DivisionResult(const DivisionResult& drSource)
+   : qrQuotient(drSource.qrQuotient), rrRemainder(drSource.rrRemainder), uComma(drSource.uComma) {}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::DivisionResult&
+TBigCellInt<IntegerTraits>::DivisionResult::operator=(const DivisionResult& drSource)
+{  qrQuotient = drSource.qrQuotient;
+   rrRemainder = drSource.rrRemainder;
+   uComma = drSource.uComma;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline const typename IntegerTraits::QuotientResult&
+TBigCellInt<IntegerTraits>::DivisionResult::quotient() const
+{ return qrQuotient; }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::QuotientResult&
+TBigCellInt<IntegerTraits>::DivisionResult::quotient()
+{ return qrQuotient; }
+
+template <class IntegerTraits>
+inline const typename IntegerTraits::RemainderResult&
+TBigCellInt<IntegerTraits>::DivisionResult::remainder() const
+{ return rrRemainder; }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::RemainderResult&
+TBigCellInt<IntegerTraits>::DivisionResult::remainder()
+{ return rrRemainder; }
+
+template <class IntegerTraits>
+inline const int&
+TBigCellInt<IntegerTraits>::DivisionResult::comma() const
+{ return uComma; }
+
+template <class IntegerTraits>
+inline int&
+TBigCellInt<IntegerTraits>::DivisionResult::comma()
+{ return uComma; }
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::NormalizedDivisionResult()
+ : qrQuotient(), rrRemainder(), uComma(0) {}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::NormalizedDivisionResult(const NormalizedDivisionResult& drSource)
+   : qrQuotient(drSource.qrQuotient), rrRemainder(drSource.rrRemainder), uComma(drSource.uComma) {}
+
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::NormalizedDivisionResult&
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::operator=(const NormalizedDivisionResult& drSource)
+{  qrQuotient = drSource.qrQuotient;
+   rrRemainder = drSource.rrRemainder;
+   uComma = drSource.uComma;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline const typename IntegerTraits::QuotientResult&
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::quotient() const
+{ return qrQuotient; }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::QuotientResult&
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::quotient()
+{ return qrQuotient; }
+
+template <class IntegerTraits>
+inline const typename IntegerTraits::NormalizedRemainderResult&
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::remainder() const
+{ return rrRemainder; }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::NormalizedRemainderResult&
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::remainder()
+{ return rrRemainder; }
+
+template <class IntegerTraits>
+inline const int&
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::comma() const
+{ return uComma; }
+
+template <class IntegerTraits>
+inline int&
+TBigCellInt<IntegerTraits>::NormalizedDivisionResult::comma() 
+{ return uComma; }
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::AtomicDivisionResult::AtomicDivisionResult(unsigned int uRemainderSource)
+ : uRemainder(uRemainderSource) {}
+
+template <class IntegerTraits>
+inline
+TBigCellInt<IntegerTraits>::AtomicDivisionResult::AtomicDivisionResult(const AtomicDivisionResult& adrSource)
+ : uRemainder(adrSource.uRemainder) {}
+ 
+template <class IntegerTraits>
+inline typename TBigCellInt<IntegerTraits>::AtomicDivisionResult&
+TBigCellInt<IntegerTraits>::AtomicDivisionResult::operator=(const AtomicDivisionResult& adrSource)
+{  uRemainder = adrSource.uRemainder;
+   return *this;
+}
+   
+template <class IntegerTraits>
+inline const unsigned int&
+TBigCellInt<IntegerTraits>::AtomicDivisionResult::modulo() const
+{ return uRemainder; }
+
+template <class IntegerTraits>
+inline const unsigned int&
+TBigCellInt<IntegerTraits>::AtomicDivisionResult::remainder() const
+{ return uRemainder; }
+
+template <class IntegerTraits>
+inline unsigned int&
+TBigCellInt<IntegerTraits>::AtomicDivisionResult::modulo()
+{ return uRemainder; }
+
+template <class IntegerTraits>
+inline unsigned int&
+TBigCellInt<IntegerTraits>::AtomicDivisionResult::remainder()
+{ return uRemainder; }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator/=(unsigned int uSource)
+{  divAssign(uSource);
+   return *this;
+}
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::operator%(unsigned int uSource) const
+{  thisType bciCopy(*this);
+   return bciCopy.divAssign(uSource).remainder();
+}
+
+template <class IntegerTraits>
+inline unsigned int
+TBigCellInt<IntegerTraits>::queryValue() const
+{  assert(verifyAtomicity());
+   return array(0);
+}
+
+template <class IntegerTraits>
+inline bool
+TBigCellInt<IntegerTraits>::isAtomic() const
+{ return verifyAtomicity(); }
+
+template <class IntegerTraits>
+inline const IntegerTraits&
+TBigCellInt<IntegerTraits>::implantation() const
+{ return (inherited&) *this; }
+
+template <class IntegerTraits>
+inline IntegerTraits&
+TBigCellInt<IntegerTraits>::implantation()
+{ return (inherited&) *this; }
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::swap(thisType& biSource)
+{ inherited::swap(biSource); }
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::clear()
+{ inherited::clear(); }
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator/=(const thisType& biSource) {
+   DivisionResult drResult;
+   div(biSource, drResult);
+   if (drResult.comma() > 0) {
+      inherited::operator=(drResult.quotient());
+      operator>>=(inherited::querySize()*sizeof(unsigned int)*8-drResult.comma());
+      setTrueBitArray(drResult.comma());
+   }
+   else if (drResult.comma() == 0)
+      *this = 1U;
+   else
+      *this = 0U;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline typename IntegerTraits::QuotientResult
+TBigCellInt<IntegerTraits>::operator/(const thisType& biSource) const {
+   DivisionResult drResult;
+   div(biSource, drResult);
+   if (drResult.comma() > 0) {
+      TBigCellInt<typename inherited::QuotientResult>& pqrPromotedResult = (TBigCellInt<typename inherited::QuotientResult>&) drResult.quotient();
+      int uShift = drResult.quotient().querySize()*sizeof(unsigned int)*8-drResult.comma();
+      pqrPromotedResult >>= uShift;
+      pqrPromotedResult.setTrueBitArray(drResult.comma());
+   }
+   else {
+      drResult.quotient().clear();
+      drResult.quotient()[0] = (drResult.comma() == 0) ? 1U : 0U;
+   };
+   return drResult.quotient();
+}
+
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>&
+TBigCellInt<IntegerTraits>::operator%=(const thisType& biSource) {
+   DivisionResult drResult;
+   div(biSource, drResult);
+   if (drResult.comma() > 0) {
+      TBigCellInt<typename inherited::QuotientResult>& pqrPromotedResult = (TBigCellInt<typename inherited::QuotientResult>&) drResult.quotient();
+      pqrPromotedResult >>= (inherited::querySize()*sizeof(unsigned int)*8-drResult.comma());
+      drResult.quotient()[drResult.comma()/sizeof(unsigned int)*8]
+            |= (1U << (drResult.comma() % sizeof(unsigned int)*8));
+      pqrPromotedResult *= biSource;
+      *this -= pqrPromotedResult;
+   }
+   else if (drResult.comma() == 0)
+      *this -= biSource;
+
+   return *this;
+}
+
+template <class IntegerTraits>
+inline std::ostream&
+operator<<(std::ostream& osOut, const TBigCellInt<IntegerTraits>& bciInt) {
+   bciInt.write(osOut, TBigCellInt<IntegerTraits>::FormatParameters());
+   return osOut;
+}
+
+template <class IntegerTraits>
+inline std::istream&
+operator<<(std::istream& isIn, TBigCellInt<IntegerTraits>& bciInt) {
+   bciInt.read(isIn, TBigCellInt<IntegerTraits>::FormatParameters());
+   return isIn;
+}
+
+template <class IntegerTraits>
+inline void
+TBigCellInt<IntegerTraits>::write(std::ostream& osOut, const FormatParameters& pParams) const {
+   if (pParams.isFullBinary())
+      writeFullBinary(osOut, pParams);
+   else if (pParams.isFullHexaDecimal())
+      writeFullHexaDecimal(osOut, pParams);
+   else if (!pParams.isDecimal())
+      writeCells(osOut, pParams);
+   else // pParams.isDecimal()
+      writeDecimal(osOut, pParams);
+}
+#endif
+
+#ifdef DefineGCC_Inline_Integer_TBigCellInt
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>::TBigCellInt() : inherited() {}
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>::TBigCellInt(unsigned int uInt) : inherited(uInt) {}
+
+template <class IntegerTraits>
+inline TBigCellInt<IntegerTraits>::TBigCellInt(const thisType& biSource) : inherited(biSource) {}
+#endif
+
+#ifdef DefineGCC_Inline_Integer_TBigCellInt_One
+inline unsigned int&
+TBigCellInt<Details::TCellIntegerTraits<1> >::value()
+{ return _array()[0]; }
+
+inline const unsigned int&
+TBigCellInt<Details::TCellIntegerTraits<1> >::value() const
+{ return _array()[0]; }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::add(unsigned int& uCell, unsigned int uValue)
+{  register unsigned int uTemp = uCell;
+   uCell += uValue;
+   return (uCell < uTemp) ? 1U : 0U;
+}
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::sub(unsigned int& uCell, unsigned int uValue)
+{  register unsigned int uTemp = uCell;
+   uCell -= uValue;
+   return (uCell > uTemp) ? 1U : 0U;
+}
+
+inline int
+TBigCellInt<Details::TCellIntegerTraits<1> >::log_base_2(unsigned int uValue)
+{  return Details::Access::log_base_2(uValue); }
+
+inline unsigned int&
+TBigCellInt<Details::TCellIntegerTraits<1> >::array(int uIndex)
+{ return value(); }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::array(int uIndex) const
+{ return value(); }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::carray(int uIndex) const
+{ return value(); }
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<1> >::MidArray::MidArray(thisType& biSource, int uIndexSource)
+   : uArrayValue(biSource.value()), uIndex(uIndexSource) {}
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::MidArray&
+TBigCellInt<Details::TCellIntegerTraits<1> >::MidArray::operator=(unsigned int uValue)
+{  uArrayValue = (uIndex > 0)
+      ? ((uValue << (4*sizeof(unsigned int)))
+         | (uArrayValue & ~(~0U << 4*sizeof(unsigned int))))
+      : ((uArrayValue & (~0U << 4*sizeof(unsigned int))) | uValue);
+   return *this;
+}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<1> >::MidArray::operator unsigned int() const
+{  return (uIndex > 0) ? (uArrayValue >> 4*sizeof(unsigned int))
+      :  (uArrayValue & ~(~0U << 4*sizeof(unsigned int)));
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::MidArray
+TBigCellInt<Details::TCellIntegerTraits<1> >::midArray(int uIndex)
+{  return MidArray(*this, uIndex); }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::midArray(int uIndex) const
+{  return (uIndex > 0) ? (value() >> 4*sizeof(unsigned int))
+      :  (value() & ~(~0U << 4*sizeof(unsigned int)));
+}
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::cmidArray(int uIndex) const
+{ return midArray(uIndex); }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<1> >::setMidArray(int uIndex, unsigned int uValue)
+{  value() = (uIndex > 0)
+      ? ((uValue << (4*sizeof(unsigned int)))
+         | (value() & ~(~0U << 4*sizeof(unsigned int))))
+      : ((value() & (~0U << 4*sizeof(unsigned int))) | uValue);
+}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<1> >::BitArray::BitArray(thisType& biSource, int uIndexSource)
+   : uArrayValue(biSource.value()), uIndex(uIndexSource) {}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<1> >::BitArray::BitArray(const BitArray& baSource)
+   : uArrayValue(baSource.uArrayValue), uIndex(baSource.uIndex) {}
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::BitArray&
+TBigCellInt<Details::TCellIntegerTraits<1> >::BitArray::operator=(const BitArray& baSource)
+{  uArrayValue = baSource.uArrayValue;
+   uIndex = baSource.uIndex;
+   return *this;
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::BitArray&
+TBigCellInt<Details::TCellIntegerTraits<1> >::BitArray::operator=(bool fValue)
+{  if (fValue)
+      uArrayValue |= (1U << uIndex);
+   else
+      uArrayValue &= ~(1U << uIndex);
+   return *this;
+}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<1> >::BitArray::operator bool() const
+{  return (uArrayValue & (1U << uIndex)) ? true : false; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::BitArray
+TBigCellInt<Details::TCellIntegerTraits<1> >::bitArray(int uIndex)
+{  return BitArray(*this, uIndex); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::bitArray(int uIndex) const
+{  return (value() & (1U << uIndex)) ? true : false; }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::cbitArray(int uIndex) const
+{ return bitArray(uIndex); }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<1> >::setBitArray(int uIndex, bool fValue)
+{  if (fValue)
+      value() |= (1U << uIndex);
+   else
+      value() &= ~(1U << uIndex);
+}
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<1> >::setTrueBitArray(int uIndex)
+{ value() |= (1U << uIndex); }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<1> >::setFalseBitArray(int uIndex)
+{ value() &= ~(1U << uIndex); }
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<1> >::TBigCellInt() : inherited() {}
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::TBigCellInt(unsigned int uInt) : inherited(uInt) {}
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::TBigCellInt(const thisType& biSource)
+: inherited(biSource) {}
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator=(const thisType& biSource)
+{  return (thisType&) inherited::operator=(biSource); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator=(unsigned int uInt)
+{  value() = uInt; return *this; }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator[](int uIndex) const
+{ return value(); }
+
+inline unsigned int&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator[](int uIndex)
+{ return value(); }
+
+inline Details::Access::ComparisonResult
+TBigCellInt<Details::TCellIntegerTraits<1> >::compare(const thisType& biSource) const
+{  return (value() < biSource.value()) ? CRLess
+      : ((value() > biSource.value()) ? CRGreater : CREqual);
+}
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator<(const thisType& biSource) const
+{ return value() < biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator>(const thisType& biSource) const
+{ return value() > biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator<=(const thisType& biSource) const
+{ return value() <= biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator>=(const thisType& biSource) const
+{ return value() >= biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator==(const thisType& biSource) const
+{ return value() == biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator!=(const thisType& biSource) const
+{ return value() != biSource.value(); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator<<=(int uShift)
+{ value() <<= uShift; return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator>>=(int uShift)
+{ value() >>= uShift; return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator|=(const thisType& biSource)
+{ value() |= biSource.value(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator^=(const thisType& biSource)
+{ value() ^= biSource.value(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator&=(const thisType& biSource)
+{ value() &= biSource.value(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::neg()
+{ value() = ~value(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::neg(int uShift)
+{  if (uShift > 0)
+      value() = (~value() & ~(~0U << uShift));
+   return *this;
+}
+
+inline bool TBigCellInt<Details::TCellIntegerTraits<1> >::isZero() const
+{ return value() == 0U; }
+
+inline bool TBigCellInt<Details::TCellIntegerTraits<1> >::hasZero(int uShift) const
+{  assert(uShift <= (int)(8*sizeof(unsigned int)));
+         return (uShift <= 0)
+            || ((value() << (8*sizeof(unsigned int)-uShift)) == 0U);
+      }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<1> >::add(const thisType& biSource)
+{  value() += biSource.value();
+         return Carry((value() < biSource.value()) ? 1U : 0U);
+      }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<1> >::sub(const thisType& biSource)
+{  register Carry cCarry((value() < biSource.value()) ? 1U : 0U);
+         value() -= biSource.value();
+         return cCarry;
+      }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<1> >::plusAssign(const thisType& biSource)
+{ return add(biSource); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<1> >::minusAssign(const thisType& biSource)
+{ return sub(biSource); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<1> >::inc()
+{ return Carry(++value() == 0U ? 1U : 0U); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<1> >::dec()
+{ return Carry(value()-- == 0U ? 1U : 0U); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator+=(const thisType& biSource)
+{ add(biSource); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator+(const thisType& biSource) const
+{  thisType biResult = *this; biResult += biSource; return biResult; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator-=(const thisType& biSource)
+{ sub(biSource); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator-(const thisType& biSource) const
+{  thisType biResult = *this; biResult -= biSource; return biResult; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator--()
+{ dec(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator++()
+{ inc(); return *this; }
+
+inline int TBigCellInt<Details::TCellIntegerTraits<1> >::querySize() const
+{ return 1; }
+
+inline void TBigCellInt<Details::TCellIntegerTraits<1> >::assertSize(int uNewSize)
+{ assert(uNewSize <= 1); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator/=(const thisType& biSource)
+{  assert(biSource.value() != 0U);
+   value() /= biSource.value();
+   return *this;
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator/=(unsigned int uSource)
+{  assert(uSource != 0U);
+   value() /= uSource;
+   return *this;
+}
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator%(unsigned int uSource) const
+{  return value() % uSource; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<1> >&
+TBigCellInt<Details::TCellIntegerTraits<1> >::operator%=(const thisType& biSource)
+{  value() %= biSource.value(); return *this; }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::log_base_2() const
+{ return log_base_2(value()); }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<1> >::queryValue() const
+{ return value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<1> >::isAtomic() const
+{ return true; }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<1> >::swap(thisType& biSource)
+{ inherited::swap(biSource); }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<1> >::clear()
+{ value() = 0U; }
+#endif
+
+#ifdef DefineGCC_Inline_Integer_Details_TBasicCellIntegerTraits_Two
+inline unsigned int*
+TBasicCellIntegerTraits<2>::_array()
+{ return (unsigned int*) &ulValue; }
+
+inline const unsigned int*
+TBasicCellIntegerTraits<2>::_array() const
+{ return (const unsigned int*) &ulValue; }
+
+inline unsigned long long int&
+TBasicCellIntegerTraits<2>::value()
+{ return ulValue; }
+
+inline const unsigned long long int&
+TBasicCellIntegerTraits<2>::value() const
+{ return ulValue; }
+
+inline
+TBasicCellIntegerTraits<2>::TBasicCellIntegerTraits() : ulValue(0) {}
+
+inline
+TBasicCellIntegerTraits<2>::TBasicCellIntegerTraits(unsigned int uValue) : ulValue(uValue) {}
+
+inline
+TBasicCellIntegerTraits<2>::TBasicCellIntegerTraits(const thisType& biSource) : ulValue(biSource.ulValue) {}
+
+inline TBasicCellIntegerTraits<2>&
+TBasicCellIntegerTraits<2>::operator=(const thisType& itSource)
+{  ulValue = itSource.ulValue;
+   return *this;
+}
+
+inline TBasicCellIntegerTraits<2>&
+TBasicCellIntegerTraits<2>::operator=(unsigned int uSource)
+{  ulValue = uSource;
+   return *this;
+}
+
+inline TBasicCellIntegerTraits<2>::ArrayProperty
+TBasicCellIntegerTraits<2>::array(int uIndex)
+{  assert(!(uIndex & ~1U));
+   return _array()[uIndex];
+}
+
+inline unsigned int
+TBasicCellIntegerTraits<2>::array(int uIndex) const
+{  assert(uIndex >= 0);
+   return (uIndex < 2) ? _array()[uIndex] : 0U;
+}
+
+inline unsigned int
+TBasicCellIntegerTraits<2>::carray(int uIndex) const 
+{ return array(uIndex); }
+
+inline TBasicCellIntegerTraits<2>::ArrayProperty
+TBasicCellIntegerTraits<2>::operator[](int uIndex)
+{  assert(!(uIndex & ~1U));
+   return _array()[uIndex];
+}
+
+inline unsigned int
+TBasicCellIntegerTraits<2>::operator[](int uIndex) const
+{  assert(uIndex >= 0);
+   return (uIndex < 2) ? _array()[uIndex] : 0U;
+}
+
+inline int
+TBasicCellIntegerTraits<2>::querySize()
+{ return 2; }
+
+inline void
+TBasicCellIntegerTraits<2>::normalize()
+{}
+
+inline void
+TBasicCellIntegerTraits<2>::adjustSize(int uNewSize)
+{ assert(false); }
+
+inline void
+TBasicCellIntegerTraits<2>::assertSize(int uNewSize)
+{ assert(uNewSize <= 2); }
+
+inline void
+TBasicCellIntegerTraits<2>::setSize(int uExactSize)
+{ assert(uExactSize == 2); }
+
+inline void
+TBasicCellIntegerTraits<2>::clear()
+{ ulValue = 0; }
+
+inline void
+TBasicCellIntegerTraits<2>::swap(thisType& biSource)
+{  unsigned long long int ulTemp = ulValue;
+   ulValue = biSource.ulValue;
+   biSource.ulValue = ulTemp;
+}
+#endif
+
+#ifdef DefineGCC_Inline_Integer_TBigCellInt_Two
+inline unsigned long long int&
+TBigCellInt<Details::TCellIntegerTraits<2> >::value()
+{ return inherited::value(); }  // { return *((unsigned long long int*) _array()); }
+
+inline const unsigned long long int&
+TBigCellInt<Details::TCellIntegerTraits<2> >::value() const
+{ return inherited::value(); }  // { return *((unsigned long long int*) _array()); }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<2> >::add(unsigned int& uCell, unsigned int uValue)
+{  register unsigned int uTemp = uCell;
+         uCell += uValue;
+         return (uCell < uTemp) ? 1U : 0U;
+      }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<2> >::sub(unsigned int& uCell, unsigned int uValue)
+{  register unsigned int uTemp = uCell;
+         uCell -= uValue;
+         return (uCell > uTemp) ? 1U : 0U;
+      }
+
+inline int
+TBigCellInt<Details::TCellIntegerTraits<2> >::log_base_2(unsigned long long int uValue)
+{  register int uResult = 1;
+         while ((uValue >>= 1) != 0)
+            ++uResult;
+         return uResult;
+      }
+
+inline int
+TBigCellInt<Details::TCellIntegerTraits<2> >::log_base_2(unsigned int uValue)
+{  return Details::Access::log_base_2(uValue); }
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<2> >::MidArray::MidArray(thisType& biSource, int uIndexSource)
+   : plluValue(&biSource.value()), uIndex(uIndexSource) { assert(uIndex < 4); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::MidArray&
+TBigCellInt<Details::TCellIntegerTraits<2> >::MidArray::operator=(unsigned int uValue)
+{  *plluValue &= (~(~0ULL << 4*sizeof(unsigned int)) << (uIndex*4*sizeof(unsigned int)));
+   *plluValue |= (((unsigned long long int) uValue) << (uIndex*4*sizeof(unsigned int)));
+   return *this;
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::MidArray::operator unsigned int() const
+{  return (*plluValue >> (uIndex*4*sizeof(unsigned int)))
+      & ~(~0ULL << 4*sizeof(unsigned int));
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::MidArray
+TBigCellInt<Details::TCellIntegerTraits<2> >::midArray(int uIndex)
+{  return MidArray(*this, uIndex); }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<2> >::midArray(int uIndex) const
+{  assert(uIndex < 4);
+   return (value() >> (uIndex*4*sizeof(unsigned int)))
+         & ~(~0ULL << 4*sizeof(unsigned int));
+}
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<2> >::cmidArray(int uIndex) const
+{ return midArray(uIndex); }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<2> >::setMidArray(int uIndex, unsigned int uValue)
+{  assert(uIndex < 4);
+   value() &= (~(~0ULL << 4*sizeof(unsigned int)) << (uIndex*4*sizeof(unsigned int)));
+   value() |= (((unsigned long long int) uValue) << (uIndex*4*sizeof(unsigned int)));
+}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<2> >::BitArray::BitArray(thisType& biSource, int uIndexSource)
+   : plluValue(&biSource.value()), uIndex(uIndexSource) { assert(uIndex < 2*8*sizeof(unsigned int)); }
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<2> >::BitArray::BitArray(const BitArray& baSource)
+   : plluValue(baSource.plluValue), uIndex(baSource.uIndex) {}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::BitArray&
+TBigCellInt<Details::TCellIntegerTraits<2> >::BitArray::operator=(const BitArray& baSource)
+{  plluValue = baSource.plluValue;
+   uIndex = baSource.uIndex;
+   return *this;
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::BitArray&
+TBigCellInt<Details::TCellIntegerTraits<2> >::BitArray::operator=(bool fValue)
+{  if (fValue)
+      *plluValue |= (1ULL << uIndex);
+   else
+      *plluValue &= ~(1ULL << uIndex);
+   return *this;
+}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<2> >::BitArray::operator bool() const
+{  return (*plluValue & (1ULL << uIndex)) != 0ULL; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::BitArray
+TBigCellInt<Details::TCellIntegerTraits<2> >::bitArray(int uIndex)
+{  return BitArray(*this, uIndex); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::bitArray(int uIndex) const
+{  assert(uIndex < 2*8*sizeof(unsigned int));
+   return (value() & (1ULL << uIndex)) != 0ULL;
+}
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::cbitArray(int uIndex) const
+{ return bitArray(uIndex); }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<2> >::setBitArray(int uIndex, bool fValue)
+{  assert(uIndex < 2*8*sizeof(unsigned int));
+   if (fValue)
+      value() |= (1ULL << uIndex);
+   else
+      value() &= ~(1ULL << uIndex);
+}
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<2> >::setFalseBitArray(int uIndex)
+{  assert(uIndex < 2*8*sizeof(unsigned int));
+   value() &= ~(1ULL << uIndex);
+}
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<2> >::setTrueBitArray(int uIndex)
+{  assert(uIndex < 2*8*sizeof(unsigned int));
+   value() |= (1ULL << uIndex);
+}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<2> >::TBigCellInt() : inherited() {}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<2> >::TBigCellInt(unsigned int uInt) : inherited(uInt) {}
+
+inline
+TBigCellInt<Details::TCellIntegerTraits<2> >::TBigCellInt(const thisType& biSource) : inherited(biSource) {}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator=(const thisType& biSource)
+{  return (thisType&) inherited::operator=(biSource); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator=(unsigned int uInt)
+{  value() = uInt; return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::ComparisonResult
+TBigCellInt<Details::TCellIntegerTraits<2> >::compare(const thisType& biSource) const
+{  return (value() < biSource.value()) ? CRLess
+      : ((value() > biSource.value()) ? CRGreater : CREqual);
+}
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator<(const thisType& biSource) const
+{ return value() < biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator>(const thisType& biSource) const
+{ return value() > biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator<=(const thisType& biSource) const
+{ return value() <= biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator>=(const thisType& biSource) const
+{ return value() >= biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator==(const thisType& biSource) const
+{ return value() == biSource.value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator!=(const thisType& biSource) const
+{ return value() != biSource.value(); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator<<=(int uShift)
+{ value() <<= uShift; return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator>>=(int uShift)
+{ value() >>= uShift; return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator|=(const thisType& biSource)
+{ value() |= biSource.value(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator^=(const thisType& biSource)
+{ value() ^= biSource.value(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator&=(const thisType& biSource)
+{ value() &= biSource.value(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::neg()
+{  value() = ~value();
+   return *this;
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::neg(int uShift)
+{  if (uShift > 0)
+      value() = (~value() & ~(~0ULL << uShift));
+   return *this;
+}
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::isZero() const
+{ return value() == 0U; }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::hasZero(int uShift) const
+{  assert(uShift <= 8*sizeof(unsigned long long int));
+   return (uShift <= 0)
+      || ((value() << (8*sizeof(unsigned long long int)-uShift)) == 0ULL);
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<2> >::add(const thisType& biSource)
+{  value() += biSource.value();
+   return Carry((value() < biSource.value()) ? 1U : 0U);
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<2> >::sub(const thisType& biSource)
+{  register Carry cCarry((value() < biSource.value()) ? 1U : 0U);
+   value() -= biSource.value();
+   return cCarry;
+}
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<2> >::plusAssign(const thisType& biSource)
+{ return add(biSource); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<2> >::minusAssign(const thisType& biSource)
+{ return sub(biSource); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<2> >::inc()
+{ return Carry(++value() == 0U ? 1U : 0U); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >::Carry
+TBigCellInt<Details::TCellIntegerTraits<2> >::dec()
+{ return Carry(value()-- == 0U ? 1U : 0U); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator+=(const thisType& biSource)
+{ add(biSource); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator+(const thisType& biSource) const
+{  thisType biResult = *this; biResult += biSource; return biResult; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator-=(const thisType& biSource)
+{ sub(biSource); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator-(const thisType& biSource) const
+{  thisType biResult = *this; biResult -= biSource; return biResult; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator--()
+{ dec(); return *this; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator++()
+{ inc(); return *this; }
+
+inline int
+TBigCellInt<Details::TCellIntegerTraits<2> >::querySize() const
+{ return 2; }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<2> >::assertSize(int uNewSize)
+{ assert(uNewSize <= 2); }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator/=(const thisType& biSource)
+{  assert(biSource.value() != 0U);
+   value() /= biSource.value();
+   return *this;
+}
+
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator/=(unsigned int uSource)
+{  assert(uSource != 0U);
+   value() /= uSource;
+   return *this;
+}
+
+inline unsigned long long int
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator%(unsigned int uSource) const
+{  return value() % uSource; }
+
+inline TBigCellInt<Details::TCellIntegerTraits<2> >&
+TBigCellInt<Details::TCellIntegerTraits<2> >::operator%=(const thisType& biSource)
+{  value() %= biSource.value(); return *this; }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<2> >::log_base_2() const
+{ return log_base_2(value()); }
+
+inline unsigned int
+TBigCellInt<Details::TCellIntegerTraits<2> >::queryValue() const
+{ return value(); }
+
+inline bool
+TBigCellInt<Details::TCellIntegerTraits<2> >::isAtomic() const
+{ return !_array()[1]; }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<2> >::swap(thisType& biSource)
+{ inherited::swap(biSource); }
+
+inline void
+TBigCellInt<Details::TCellIntegerTraits<2> >::clear()
+{ value() = 0U; }
+#endif
+
+#ifdef DefineGCC_Inline_Integer_Details_TIntegerTraits
+template <int uSize>
+inline void
+TIntegerTraits<uSize>::assertSize(int uNewSize)
+{ assert(uSize >= uNewSize); }
+
+template <int uSize>
+inline typename TIntegerTraits<uSize>::CellTraits& TIntegerTraits<uSize>::cellTraits()
+{ return ctTraits; }
+
+template <int uSize>
+inline const typename TIntegerTraits<uSize>::CellTraits& TIntegerTraits<uSize>::cellTraits() const
+{ return ctTraits; }
+
+template <int uSize>
+inline TIntegerTraits<uSize>::TIntegerTraits() : ctTraits() {}
+
+template <int uSize>
+inline TIntegerTraits<uSize>::TIntegerTraits(const thisType& itSource) : ctTraits(itSource.ctTraits) {}
+
+template <int uSize>
+inline TIntegerTraits<uSize>& TIntegerTraits<uSize>::operator=(const thisType& itSource)
+{  ctTraits = itSource.ctTraits;
+   return *this;
+}
+
+template <int uSize>
+inline TIntegerTraits<uSize>& TIntegerTraits<uSize>::operator=(unsigned int uSource)
+{  ctTraits = uSource;
+   return *this;
+}
+
+template <int uSize>
+inline int TIntegerTraits<uSize>::lastCellIndex()
+{ return (uSize-1)/(8*sizeof(unsigned int)); }
+
+template <int uSize>
+inline int TIntegerTraits<uSize>::lastCellSize()
+{ return ((uSize-1) % (8*sizeof(unsigned int)) +1); }
+
+template <int uSize>
+inline bool TIntegerTraits<uSize>::isComplete()
+{ return ((uSize % (8*sizeof(unsigned int))) == 0); }
+
+template <int uSize>
+inline void TIntegerTraits<uSize>::normalizeLastCell()
+{  if (lastCellSize() < (int)(8*sizeof(unsigned int)))
+      ctTraits[lastCellIndex()] &= ~(~0U << lastCellSize());
+}
+
+template <int uSize>
+inline void TIntegerTraits<uSize>::normalize()
+{  if (lastCellSize() < (int) (8*sizeof(unsigned int)))
+      ctTraits[lastCellIndex()] &= ~(~0U << lastCellSize());
+   // for (register int uIndex = lastCellIndex()+1; uIndex < ctTraits.querySize(); ++uIndex)
+   //   ctTraits[uIndex] = 0U;
+}
+
+template <int uSize>
+inline typename TIntegerTraits<uSize>::ArrayProperty
+TIntegerTraits<uSize>::array(int uIndex)
+{ return ctTraits.array(uIndex); }
+
+template <int uSize>
+inline unsigned int
+TIntegerTraits<uSize>::array(int uIndex) const
+{ return ctTraits.array(uIndex); }
+
+template <int uSize>
+inline unsigned int
+TIntegerTraits<uSize>::carray(int uIndex) const
+{ return array(uIndex); }
+
+template <int uSize>
+inline typename TIntegerTraits<uSize>::ArrayProperty
+TIntegerTraits<uSize>::operator[](int uIndex)
+{ return ctTraits[uIndex]; }
+
+template <int uSize>
+inline unsigned int
+TIntegerTraits<uSize>::operator[](int uIndex) const
+{ return ctTraits[uIndex]; }
+
+template <int uSize>
+inline int
+TIntegerTraits<uSize>::querySize()
+{ return uSize; }
+#endif
+
+#ifdef DefineGCC_Inline_Integer_TBigInt
+template <class IntegerTraits>
+inline int TBigInt<IntegerTraits>::log_base_2(unsigned int uValue)
+{  return Details::Access::log_base_2(uValue); }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::ArrayCells&
+TBigInt<IntegerTraits>::cells()
+{ return (ArrayCells&) inherited::cellTraits(); }
+
+template <class IntegerTraits>
+inline const typename TBigInt<IntegerTraits>::ArrayCells&
+TBigInt<IntegerTraits>::cells() const
+{ return (ArrayCells&) inherited::cellTraits(); }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::MidArray
+TBigInt<IntegerTraits>::midArray(int uIndex)
+{ return cells().midArray(uIndex); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigInt<IntegerTraits>::midArray(int uIndex) const
+{ return cells().midArray(uIndex); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigInt<IntegerTraits>::cmidArray(int uIndex) const
+{ return midArray(uIndex); }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::BitArray
+TBigInt<IntegerTraits>::bitArray(int uIndex)
+{ return cells().bitArray(uIndex); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::bitArray(int uIndex) const
+{ return cells().bitArray(uIndex); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::cbitArray(int uIndex) const
+{ return bitArray(uIndex); }
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::setBitArray(int uIndex, bool fValue)
+{ cells().setBitArray(uIndex, fValue); }
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::setTrueBitArray(int uIndex)
+{ cells().setTrueBitArray(uIndex); }
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::setFalseBitArray(int uIndex)
+{ cells().setFalseBitArray(uIndex); }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>::TBigInt()
+{}
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>::TBigInt(unsigned int uInt)
+{ cells() = uInt; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>::TBigInt(const thisType& biSource) : inherited(biSource) {}
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator=(const thisType& biSource)
+{  return (thisType&) inherited::operator=(biSource); }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator=(unsigned int uValue)
+{  return (thisType&) inherited::operator=(uValue); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigInt<IntegerTraits>::operator[](int uIndex) const
+{ return inherited::operator[](uIndex); }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::ArrayProperty
+TBigInt<IntegerTraits>::operator[](int uIndex)
+{ return inherited::operator[](uIndex); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigInt<IntegerTraits>::array(int uIndex) const
+{ return inherited::array(uIndex); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigInt<IntegerTraits>::carray(int uIndex) const
+{ return array(uIndex); }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::ArrayProperty
+TBigInt<IntegerTraits>::array(int uIndex)
+{ return inherited::array(uIndex); }
+
+template <class IntegerTraits>
+inline Details::Access::ComparisonResult
+TBigInt<IntegerTraits>::compare(const thisType& biSource) const
+{ return cells().compare(biSource.cells()); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::operator<(const thisType& biSource) const
+{ return cells() < biSource.cells(); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::operator>(const thisType& biSource) const
+{ return cells() > biSource.cells(); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::operator<=(const thisType& biSource) const
+{ return cells() <= biSource.cells(); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::operator>=(const thisType& biSource) const
+{ return cells() >= biSource.cells(); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::operator==(const thisType& biSource) const
+{ return cells() == biSource.cells(); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::operator!=(const thisType& biSource) const
+{ return cells() != biSource.cells(); }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator<<=(int uShift)
+{  cells() <<= uShift;
+   inherited::normalize();
+   return *this;
+}
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator>>=(int uShift)
+{  cells() >>= uShift; return *this; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator|=(const thisType& biSource)
+{ cells() |= biSource.cells(); return *this; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator^=(const thisType& biSource)
+{ cells() ^= biSource.cells(); return *this; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator&=(const thisType& biSource)
+{ cells() &= biSource.cells(); return *this; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::neg()
+{  cells().neg();
+   inherited::normalize();
+   return *this;
+}
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::neg(int uShift)
+{  assert(uShift <= inherited::querySize());
+   cells().neg(uShift);
+   return *this;
+}
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>
+TBigInt<IntegerTraits>::operator&(const thisType& biSource) const
+{ thisType biResult(*this); biResult &= biSource; return biResult; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>
+TBigInt<IntegerTraits>::operator|(const thisType& biSource) const
+{ thisType biResult(*this); biResult |= biSource; return biResult; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>
+TBigInt<IntegerTraits>::operator<<(int uShift) const
+{ thisType biResult(*this); biResult <<= uShift; return biResult; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>
+TBigInt<IntegerTraits>::operator>>(int uShift) const
+{ thisType biResult(*this); biResult >>= uShift; return biResult; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>
+TBigInt<IntegerTraits>::operator~() const
+{ thisType biResult(*this); biResult.neg(); return biResult; }
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::normalize()
+{ inherited::normalize(); }
+
+template <class IntegerTraits>
+inline int
+TBigInt<IntegerTraits>::lastCellIndex() const
+{ return inherited::lastCellIndex(); }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::Carry
+TBigInt<IntegerTraits>::add(const thisType& biSource)
+{  Carry cResult = cells().add(biSource.cells());
+   if (!inherited::isComplete()) {
+      cResult = Carry((cells().cbitArray(inherited::querySize())));
+      cells().setFalseBitArray(inherited::querySize());
+   };
+   return cResult;
+}
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::Carry
+TBigInt<IntegerTraits>::sub(const thisType& biSource)
+{  Carry cResult = cells().sub(biSource.cells());
+   if (cResult.hasCarry() && !inherited::isComplete())
+      inherited::normalize();
+   return cResult;
+}
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::Carry
+TBigInt<IntegerTraits>::plusAssign(const thisType& biSource)
+{ return add(biSource); }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::Carry
+TBigInt<IntegerTraits>::minusAssign(const thisType& biSource)
+{ return sub(biSource); }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::Carry
+TBigInt<IntegerTraits>::inc()
+{  Carry cResult = cells().inc();
+   if (!inherited::isComplete()) {
+      cResult = Carry((cells().cbitArray(inherited::querySize())));
+      cells().setFalseBitArray(inherited::querySize());
+   };
+   return cResult;
+}
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::Carry
+TBigInt<IntegerTraits>::dec()
+{  Carry cResult = cells().dec();
+   if (cResult.hasCarry() && !inherited::isComplete())
+      inherited::normalize();
+   return cResult;
+}
+
+template <class IntegerTraits>
+inline int TBigInt<IntegerTraits>::querySize() const
+{ return inherited::querySize(); }
+
+template <class IntegerTraits>
+inline int TBigInt<IntegerTraits>::queryCellSize() const
+{ return cells().querySize(); }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator+=(const thisType& biSource)
+{ add(biSource); return *this; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>
+TBigInt<IntegerTraits>::operator+(const thisType& biSource) const
+{  thisType biResult = *this; biResult += biSource; return biResult; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator-=(const thisType& biSource)
+{ sub(biSource); return *this; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>
+TBigInt<IntegerTraits>::operator-(const thisType& biSource) const
+{  thisType biResult = *this; biResult -= biSource; return biResult; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator--()
+{ dec(); return *this; }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator++()
+{ inc(); return *this; }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::Carry
+TBigInt<IntegerTraits>::multAssign(unsigned int uSource)
+{  Carry crResult = cells().multAssign(uSource);
+   if (!inherited::isComplete()) {
+      if (inherited::lastCellIndex() < cells().querySize()-1) {
+         assert(!crResult.hasCarry());
+         crResult.carry() = cells()[inherited::lastCellIndex()+1];
+      };
+
+      crResult.carry() <<= (8*sizeof(unsigned int) - inherited::lastCellSize());
+      if (inherited::lastCellSize() < 8*sizeof(unsigned int))
+         crResult.carry() |= (cells()[inherited::lastCellIndex()] >> inherited::lastCellSize());
+      inherited::normalize();
+   };
+   return crResult;    
+}
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::mult(const thisType& biSource, MultResult& mrResult) const
+{  typename IntegerTraits::CellTraits::MultResult cmrLocalResult;
+   cells().mult(biSource.cells(), cmrLocalResult);
+   int uLast = mrResult.lastCellIndex();
+   for (register int uIndex = 0; uIndex <= uLast; ++uIndex)
+      mrResult[uIndex] = cmrLocalResult[uIndex];
+}
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator*=(const thisType& biSource)
+{  cells() *= biSource.cells();
+   inherited::normalize();
+   return *this;
+}
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator*=(unsigned int uSource)
+{  multAssign(uSource); return *this; }
+
+template <class IntegerTraits>
+inline
+TBigInt<IntegerTraits>::DivisionResult::DivisionResult() : qrQuotient(), rrRemainder(), uComma(0) {}
+
+template <class IntegerTraits>
+inline
+TBigInt<IntegerTraits>::DivisionResult::DivisionResult(const DivisionResult& drSource)
+   : qrQuotient(drSource.qrQuotient), rrRemainder(drSource.rrRemainder), uComma(drSource.uComma) {}
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::DivisionResult&
+TBigInt<IntegerTraits>::DivisionResult::operator=(const DivisionResult& drSource)
+{  qrQuotient = drSource.qrQuotient;
+   rrRemainder = drSource.rrRemainder;
+   uComma = drSource.uComma;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline const typename IntegerTraits::QuotientResult&
+TBigInt<IntegerTraits>::DivisionResult::quotient() const
+{ return qrQuotient; }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::QuotientResult&
+TBigInt<IntegerTraits>::DivisionResult::quotient()
+{ return qrQuotient; }
+
+template <class IntegerTraits>
+inline const typename IntegerTraits::RemainderResult&
+TBigInt<IntegerTraits>::DivisionResult::remainder() const
+{ return rrRemainder; }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::RemainderResult&
+TBigInt<IntegerTraits>::DivisionResult::remainder()
+{ return rrRemainder; }
+
+template <class IntegerTraits>
+inline const int&
+TBigInt<IntegerTraits>::DivisionResult::comma() const
+{ return uComma; }
+
+template <class IntegerTraits>
+inline int&
+TBigInt<IntegerTraits>::DivisionResult::comma()
+{ return uComma; }
+
+template <class IntegerTraits>
+inline
+TBigInt<IntegerTraits>::NormalizedDivisionResult::NormalizedDivisionResult() : qrQuotient(), rrRemainder(), uComma(0) {}
+
+template <class IntegerTraits>
+inline
+TBigInt<IntegerTraits>::NormalizedDivisionResult::NormalizedDivisionResult(const NormalizedDivisionResult& drSource)
+   : qrQuotient(drSource.qrQuotient), rrRemainder(drSource.rrRemainder), uComma(drSource.uComma) {}
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::NormalizedDivisionResult::NormalizedDivisionResult&
+TBigInt<IntegerTraits>::NormalizedDivisionResult::operator=(const NormalizedDivisionResult& drSource)
+{  qrQuotient = drSource.qrQuotient;
+            rrRemainder = drSource.rrRemainder;
+            uComma = drSource.uComma;
+            return *this;
+         }
+
+template <class IntegerTraits>
+inline const typename IntegerTraits::QuotientResult&
+TBigInt<IntegerTraits>::NormalizedDivisionResult::quotient() const
+{ return qrQuotient; }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::QuotientResult&
+TBigInt<IntegerTraits>::NormalizedDivisionResult::quotient()
+{ return qrQuotient; }
+
+template <class IntegerTraits>
+inline const typename IntegerTraits::NormalizedRemainderResult&
+TBigInt<IntegerTraits>::NormalizedDivisionResult::remainder() const
+{ return rrRemainder; }
+
+template <class IntegerTraits>
+inline typename IntegerTraits::NormalizedRemainderResult&
+TBigInt<IntegerTraits>::NormalizedDivisionResult::remainder()
+{ return rrRemainder; }
+
+template <class IntegerTraits>
+inline const int&
+TBigInt<IntegerTraits>::NormalizedDivisionResult::comma() const
+{ return uComma; }
+
+template <class IntegerTraits>
+inline int&
+TBigInt<IntegerTraits>::NormalizedDivisionResult::comma()
+{ return uComma; }
+
+template <class IntegerTraits>
+inline typename TBigInt<IntegerTraits>::AtomicDivisionResult
+TBigInt<IntegerTraits>::divAssign(unsigned int uSource);
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator/=(unsigned int uSource)
+{  divAssign(uSource);
+         return *this;
+      }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigInt<IntegerTraits>::operator%(unsigned int uSource) const
+{  return ArrayCells(cells()).divAssign(uSource).remainder(); }
+      
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator%=(const thisType& biSource)
+{ cells() %= biSource.cells(); return *this; }
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::write(std::ostream& osOut, const FormatParameters& pParams) const
+{  cells().write(osOut, pParams); }
+   
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::read(std::istream& isIn, const FormatParameters& pParams)
+{  cells().read(isIn, pParams); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigInt<IntegerTraits>::log_base_2() const
+{ return cells().log_base_2(); }
+
+template <class IntegerTraits>
+inline unsigned int
+TBigInt<IntegerTraits>::queryValue() const
+{ return cells().queryValue(); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::isAtomic() const
+{ return cells().isAtomic(); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::isZero() const
+{ return cells().isZero(); }
+
+template <class IntegerTraits>
+inline bool
+TBigInt<IntegerTraits>::hasZero(int uShift) const
+{ return cells().hasZero(uShift); }
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::assertSize(int uNewSize)
+{ inherited::assertSize(uNewSize); }
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::clear()
+{ cells().clear(); }
+
+template <class IntegerTraits>
+inline void
+TBigInt<IntegerTraits>::swap(thisType& biSource)
+{  cells().swap(biSource.cells()); }
+
+template <class IntegerTraits>
+inline TBigInt<IntegerTraits>&
+TBigInt<IntegerTraits>::operator/=(const thisType& biSource) {
+   DivisionResult drResult;
+   div(biSource, drResult);
+   if (drResult.comma() > 0) {
+      inherited::operator=(drResult.quotient());
+      operator>>=(inherited::querySize()-drResult.comma());
+      setTrueBitArray(drResult.comma());
+   }
+   else if (drResult.comma() == 0)
+      *this = 1U;
+   else
+      *this = 0U;
+   return *this;
+}
+
+template <class IntegerTraits>
+inline typename IntegerTraits::QuotientResult
+TBigInt<IntegerTraits>::operator/(const thisType& biSource) const {
+   DivisionResult drResult;
+   div(biSource, drResult);
+   if (drResult.comma() > 0) {
+      TBigInt<typename IntegerTraits::QuotientResult>& pqrPromotedResult
+		  = (TBigInt<typename IntegerTraits::QuotientResult>&) drResult.quotient();
+      pqrPromotedResult >>= (inherited::querySize()-drResult.comma());
+      pqrPromotedResult.setTrueBitArray(drResult.comma());
+   }
+   else if (drResult.comma() == 0)
+      drResult.quotient()[0] = 1U;
+   return drResult.quotient();
+}
+
+template <class IntegerTraits>
+inline std::ostream&
+operator<<(std::ostream& osOut, const TBigInt<IntegerTraits>& biInt) {
+#ifndef __BORLANDC__
+   biInt.write(osOut, typename TBigInt<IntegerTraits>::FormatParameters());
+#else
+   biInt.write(osOut, TBigInt<IntegerTraits>::FormatParameters());
+#endif
+   return osOut;
+}
+
+template <class IntegerTraits>
+inline std::istream&
+operator<<(std::istream& isIn, TBigInt<IntegerTraits>& biInt) {
+   biInt.read(isIn, typename TBigInt<IntegerTraits>::FormatParameters());
+   return isIn;
+}
+
+#endif
+

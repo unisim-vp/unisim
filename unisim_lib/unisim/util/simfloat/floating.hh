@@ -2,8 +2,8 @@
                 Floating.h  -  Template for various types of floating point computations
                              -------------------
     first release        : 15 Jul 2005
-    copyright ï¿½          : (C) 2004-2005 CEA
-    authors              : Franck Vï¿½drine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ©          : (C) 2004-2005 CEA
+    authors              : Franck Védrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -62,6 +62,7 @@ class Access : public Integer::Details::Access {
             QNNRInftyMultZero
          };
       enum FlowException { FENoException, FEOverflow, FEUnderflow, FEEnd };
+      enum Context { CMinDown, CMaxDown, CMinUp, CMaxUp };
       
      private:
       bool fAvoidInfty;
@@ -74,6 +75,8 @@ class Access : public Integer::Details::Access {
       bool fChooseNaNAddBeforeMult;
       bool fConvertNaNNegative;
       bool fRefuseMinusZero;
+      Context cContext;
+      bool fInverseContext;
 
       RoundMode rmRound;
       bool fKeepSignalingConversion;
@@ -91,16 +94,18 @@ class Access : public Integer::Details::Access {
          :  fAvoidInfty(false), fKeepNaNSign(false), fProduceDivNaNPositive(false),
             fRoundToEven(false), fPositiveZeroMAdd(false), fUpApproximateInfty(false),
             fUpApproximateInversionForNear(false), fChooseNaNAddBeforeMult(false),
-            fConvertNaNNegative(false), fRefuseMinusZero(false), rmRound(RMNearest),
-            fKeepSignalingConversion(false), aApproximation(AExact), rrReadResult(RRTotal),
-            fEffectiveRoundToEven(false), fSNaNOperand(false), qnrQNaNResult(QNNRUndefined),
-            feExcept(FENoException), fDivisionByZero(false) {}
+            fConvertNaNNegative(false), fRefuseMinusZero(false), cContext(CMinDown),
+            fInverseContext(false), rmRound(RMNearest), fKeepSignalingConversion(false),
+            aApproximation(AExact), rrReadResult(RRTotal), fEffectiveRoundToEven(false),
+            fSNaNOperand(false), qnrQNaNResult(QNNRUndefined), feExcept(FENoException),
+            fDivisionByZero(false) {}
       StatusAndControlFlags(const StatusAndControlFlags& rpSource)
          :  fAvoidInfty(rpSource.fAvoidInfty), fKeepNaNSign(rpSource.fKeepNaNSign), fProduceDivNaNPositive(rpSource.fProduceDivNaNPositive),
             fRoundToEven(rpSource.fRoundToEven), fPositiveZeroMAdd(rpSource.fPositiveZeroMAdd),
             fUpApproximateInfty(rpSource.fUpApproximateInfty), fUpApproximateInversionForNear(rpSource.fUpApproximateInversionForNear),
             fChooseNaNAddBeforeMult(rpSource.fChooseNaNAddBeforeMult), fConvertNaNNegative(rpSource.fConvertNaNNegative),
-            fRefuseMinusZero(rpSource.fRefuseMinusZero), rmRound(rpSource.rmRound),
+            fRefuseMinusZero(rpSource.fRefuseMinusZero), cContext(rpSource.cContext),
+            fInverseContext(rpSource.fInverseContext), rmRound(rpSource.rmRound),
             fKeepSignalingConversion(rpSource.fKeepSignalingConversion),
             aApproximation(rpSource.aApproximation), rrReadResult(rpSource.rrReadResult),
             fEffectiveRoundToEven(rpSource.fEffectiveRoundToEven), fSNaNOperand(rpSource.fSNaNOperand), qnrQNaNResult(rpSource.qnrQNaNResult),
@@ -122,8 +127,9 @@ class Access : public Integer::Details::Access {
          {  rmRound = RMNearest; fRoundToEven = true; return *this; }
       StatusAndControlFlags& clearRoundToEven() { fRoundToEven = false; return *this; }
       StatusAndControlFlags& setPositiveZeroMAdd() { fPositiveZeroMAdd = true; return *this; }
-      StatusAndControlFlags& avoidInfty()     { fAvoidInfty = true; return *this; }
-      StatusAndControlFlags& setKeepNaNSign() { fKeepNaNSign = true; return *this; }
+      StatusAndControlFlags& avoidInfty()      { fAvoidInfty = true; return *this; }
+      StatusAndControlFlags& clearAvoidInfty() { fAvoidInfty = false; return *this; }
+      StatusAndControlFlags& setKeepNaNSign()  { fKeepNaNSign = true; return *this; }
       StatusAndControlFlags& setProduceDivNaNPositive() { fProduceDivNaNPositive = true; return *this; }
       StatusAndControlFlags& setUpApproximateInfty() { fUpApproximateInfty = true; return *this; }
       StatusAndControlFlags& setUpApproximateInversionForNear() { fUpApproximateInversionForNear = true; return *this; }
@@ -131,6 +137,12 @@ class Access : public Integer::Details::Access {
       StatusAndControlFlags& setConvertNaNNegative() { fConvertNaNNegative= true; return *this; }
       StatusAndControlFlags& setAcceptMinusZero() { fRefuseMinusZero = false; return *this; }
       StatusAndControlFlags& setRefuseMinusZero() { fRefuseMinusZero = true; return *this; }
+      StatusAndControlFlags& setMinDown() { cContext = CMinDown; return *this; }
+      StatusAndControlFlags& setMinUp() { cContext = CMinUp; return *this; }
+      StatusAndControlFlags& setMaxDown() { cContext = CMaxDown; return *this; }
+      StatusAndControlFlags& setMaxUp() { cContext = CMaxUp; return *this; }
+      StatusAndControlFlags& setInverseContext() { fInverseContext = true; return *this; }
+      StatusAndControlFlags& clearInverseContext() { fInverseContext = false; return *this; }
 
       bool isRoundToEven() const { return fRoundToEven && isNearestRound(); }
       bool isPositiveZeroMAdd() { return fPositiveZeroMAdd; }
@@ -146,6 +158,9 @@ class Access : public Integer::Details::Access {
       bool chooseNaNAddBeforeMult() const { return fChooseNaNAddBeforeMult; }
       bool isConvertNaNNegative() const { return fConvertNaNNegative; }
       bool acceptMinusZero() const { return !fRefuseMinusZero; }
+      bool isContextUp() const { return cContext & CMinUp; }
+      bool isContextMax() const { return cContext & CMaxDown; }
+      bool doesInverseContext() const { return fInverseContext; }
 
       // dynamic read parameters
       StatusAndControlFlags& setNearestRound()   { rmRound = RMNearest; return *this; }
@@ -252,6 +267,22 @@ class Access : public Integer::Details::Access {
    template <class TypeMantissa, class TypeStatusAndControlFlags>
    static Carry trightShift(TypeMantissa& mMantissa, int uShift,
          unsigned int uValue, TypeStatusAndControlFlags& scfFlags, bool fNegative, int uBitSizeMantissa);
+   
+   static bool isBigEndian()
+      {
+#if defined(__GNUC__) && defined(__LINUX__)
+#if BYTE_ORDER == BIG_ENDIAN
+         return true;
+#else
+         return false;
+#endif
+#else
+         int dummy = 0x1234;
+         unsigned char chDummy[4];
+         memcpy((unsigned char*) chDummy, &dummy, 4);
+         return *chDummy == 0x12;
+#endif
+      }
 };
 
 } // end of namespace DTDoubleElement
@@ -313,8 +344,20 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
   public:
    static const int UBitSizeMantissa = BitSizeMantissa;
    static const int UBitSizeExponent = BitSizeExponent;
-   static int bitSizeMantissa() { return BitSizeMantissa; }
-   static int bitSizeExponent() { return BitSizeExponent; }
+   typedef unsigned char CharChunk[BitSizeMantissa+BitSizeExponent+1];
+   void setChunkSize(int uChunkSize) { assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8); }
+   void copyChunk(CharChunk& ccChunk, void* pChunk, int uChunkSize)
+      {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
+         memcpy((unsigned char*) ccChunk, pChunk, uChunkSize);
+      }
+   void retrieveChunk(void* pChunk, const CharChunk& ccChunk, int uChunkSize)
+      {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
+         memcpy(pChunk, (unsigned char*) ccChunk, uChunkSize);
+      }
+   void clearChunk(CharChunk& ccChunk, int uChunkSize)
+      {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
+         memset((unsigned char*) ccChunk, 0, uChunkSize);
+      }
 
    class ExtendedMantissa;
    class Mantissa : public Integer::TBigInt<Integer::Details::TIntegerTraits<BitSizeMantissa> > {
@@ -323,7 +366,6 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
 
      public:
       Mantissa() {}
-      Mantissa(unsigned int uValue) : inherited(uValue) {}
       Mantissa(const Mantissa& mSource) : inherited(mSource) {}
       Mantissa(const ExtendedMantissa& emSource)
          {  for (register int uIndex = 0; uIndex < inherited::uCellSizeMantissa; ++uIndex)
@@ -354,6 +396,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       class Max { public : Max() {} };
       class Basic { public : Basic() {} };
       
+      Exponent() {}
       Exponent(Basic, unsigned int uBasicValue) : inherited(uBasicValue) {}
       Exponent(Min)  {}
       Exponent(Max)  { inherited::neg(); }
@@ -373,7 +416,26 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       Exponent& operator--() { return (Exponent&) inherited::operator--(); }
       Exponent& operator++() { return (Exponent&) inherited::operator++(); }
    };
+   static int bitSizeMantissa(const Mantissa&) { return BitSizeMantissa; }
+   static int bitSizeExponent(const Exponent&) { return BitSizeExponent; }
+
+   static Exponent eZeroExponent;
+   static Exponent eOneExponent;
+   static Exponent eMinusOneExponent;
+   static Exponent eInftyExponent;
    
+   static const Exponent& getZeroExponent(const Exponent&) { return eZeroExponent; }
+   Exponent getBasicExponent(const Exponent&, unsigned int uExponent) const
+#ifndef __BORLANDC__
+      {  return Exponent(typename Exponent::Basic(), uExponent); }
+#else
+      {  return Exponent(Exponent::Basic(), uExponent); }
+#endif
+   static const Exponent& getOneExponent(const Exponent&) { return eOneExponent; }
+   static const Exponent& getMinusOneExponent(const Exponent&) { return eMinusOneExponent; }
+   static const Exponent& getInftyExponent(const Exponent&) { return eInftyExponent; }
+   static const Exponent& getMaxExponent(const Exponent&) { return eZeroExponent; }
+
    class ExtendedMantissa : public Integer::TBigInt<Integer::Details::TIntegerTraits<BitSizeMantissa+1> > {
      private:
       typedef Integer::TBigInt<Integer::Details::TIntegerTraits<BitSizeMantissa+1> > inherited;
@@ -386,6 +448,10 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
                inherited::array(uIndex) = mSource[uIndex];
             inherited::bitArray(UBitSizeMantissa) = true;
          }
+      typedef Integer::TBigInt<typename inherited::MultResult> EnhancedMultResult;
+      typedef Integer::TBigInt<typename inherited::RemainderResult> EnhancedRemainderResult;
+      int queryMultResultCellSize(const EnhancedMultResult& emrResult) const
+         {  return emrResult.queryCellSize(); }
    };
    
    class IntConversion {
@@ -492,25 +558,26 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
 };
 
 template <class TypeTraits>
-class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTraits {
+class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeTraits {
   private:
    typedef TBuiltDouble<TypeTraits> thisType;
 
   public:
+   typedef thisType BuiltDouble;
    typedef typename TypeTraits::StatusAndControlFlags StatusAndControlFlags;
    typedef typename TypeTraits::WriteParameters WriteParameters;
    class MultParameters {
      private:
       enum Operation { OPlusPlus=0, OPlusMinus=1, OMinusPlus=2, OMinusMinus=3 };
-      Operation oOperation;
       StatusAndControlFlags& scfFlags;
       const thisType* pbdAdd;
+      Operation oOperation;
 
      public:
       MultParameters(StatusAndControlFlags& scfFlagsSource)
-         :  oOperation(OPlusPlus), scfFlags(scfFlagsSource), pbdAdd(NULL) {}
+         :  scfFlags(scfFlagsSource), pbdAdd(NULL), oOperation(OPlusPlus) {}
       MultParameters(const MultParameters& mpSource)
-         :  oOperation(mpSource.oOperation), scfFlags(mpSource.scfFlags), pbdAdd(mpSource.pbdAdd) {}
+         :  scfFlags(mpSource.scfFlags), pbdAdd(mpSource.pbdAdd), oOperation(mpSource.oOperation) {}
 
       MultParameters& setAdd(const thisType& bdAdd) { pbdAdd = &bdAdd; return *this; }
       void clear() { pbdAdd = NULL; oOperation = OPlusPlus; }
@@ -535,17 +602,19 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
             return ((oOperation == OPlusPlus) || (oOperation == OMinusMinus)) ? fResult : !fResult;
          }
    };
+   friend class MultParameters;
    
-  private:
-   int bitSizeMantissa() const { return TypeTraits::bitSizeMantissa(); }
-   int bitSizeExponent() const { return TypeTraits::bitSizeExponent(); }
+  public:
+   int bitSizeMantissa() const { return TypeTraits::bitSizeMantissa(biMantissa); }
+   int bitSizeExponent() const { return TypeTraits::bitSizeExponent(biExponent); }
 
+  private:
    typename TypeTraits::Mantissa biMantissa;
    typename TypeTraits::Exponent biExponent;
    bool fNegative;
 
    void addExtension(const thisType& bdSource,
-         typename Integer::TBigInt<typename TypeTraits::ExtendedMantissa::MultResult>& mprResult,
+         typename TypeTraits::ExtendedMantissa::EnhancedMultResult& mprResult,
          StatusAndControlFlags& scfFlags, bool fPositiveAdd, int& uLogResult,
          bool& fExponentHasCarry, bool& fResultPositiveExponent, bool& fAddExponent);
 
@@ -557,26 +626,26 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
    thisType& minusAssignSureNN(const thisType& bdSource, StatusAndControlFlags& scfFlags);
    thisType& minusAssignSureND(const thisType& bdSource, StatusAndControlFlags& scfFlags);
    thisType& minusAssignSureDD(const thisType& bdSource, StatusAndControlFlags& scfFlags);
-   thisType& multAssignNN(const thisType& bdSource, const MultParameters& mpParams);
-   thisType& multAssignND(const thisType& bdSource, const MultParameters& mpParams);
-   thisType& multAssignDN(const thisType& bdSource, const MultParameters& mpParams);
-   thisType& multAssignDD(const thisType& bdSource, const MultParameters& mpParams);
+   thisType& multAssignNN(const thisType& bdSource, const MultParameters& mpFlags);
+   thisType& multAssignND(const thisType& bdSource, const MultParameters& mpFlags);
+   thisType& multAssignDN(const thisType& bdSource, const MultParameters& mpFlags);
+   thisType& multAssignDD(const thisType& bdSource, const MultParameters& mpFlags);
    thisType& divAssignNN(const thisType& bdSource, StatusAndControlFlags& scfFlags);
    thisType& divAssignND(const thisType& bdSource, StatusAndControlFlags& scfFlags);
    thisType& divAssignDN(const thisType& bdSource, StatusAndControlFlags& scfFlags);
    thisType& divAssignDD(const thisType& bdSource, StatusAndControlFlags& scfFlags);
 
   public:
-#ifndef __BORLANDC__
-   TBuiltDouble() : biMantissa(), biExponent(typename TypeTraits::Exponent::Min()), fNegative(false) {}
-#else
-   TBuiltDouble() : biMantissa(), biExponent(TypeTraits::Exponent::Min()), fNegative(false) {}
-#endif
+   TBuiltDouble() : biMantissa(), biExponent(), fNegative(false) {}
    TBuiltDouble(unsigned int uValue);
    typedef typename TypeTraits::IntConversion IntConversion;
    typedef typename TypeTraits::FloatConversion FloatConversion;
-   TBuiltDouble(const IntConversion& icValue, StatusAndControlFlags& scfFlags);
-   TBuiltDouble(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags);
+   TBuiltDouble(const IntConversion& icValue, StatusAndControlFlags& scfFlags)
+      :  biMantissa(), biExponent(), fNegative(false)
+      {  setInteger(icValue, scfFlags); }
+   TBuiltDouble(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags)
+      :  biMantissa(), biExponent(), fNegative(false)
+      {  setFloat(fcValue, scfFlags); }
    TBuiltDouble(const thisType& bdSource)
       :  biMantissa(bdSource.biMantissa), biExponent(bdSource.biExponent),
          fNegative(bdSource.fNegative) {}
@@ -587,6 +656,13 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
          return *this;
       }
 
+   void setChunk(void* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
+   void fillChunk(void* pChunk) { fillChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
+   void setChunk(void* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
+   void fillChunk(void* pChunk, bool fLittleEndian);
+
+   void setFloat(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags);
+   void setInteger(const IntConversion& icValue, StatusAndControlFlags& scfFlags);
    void retrieveInteger(IntConversion& icResult, StatusAndControlFlags& scfFlags) const;
    enum ComparisonResult { CRNaN=0, CRLess=1, CREqual=2, CRGreater=3 };
    ComparisonResult compare(const thisType& bdSource) const
@@ -608,6 +684,24 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
          };
          return crResult;
       }
+   ComparisonResult compareValue(const thisType& bdSource) const
+      {  register ComparisonResult crResult;
+         if (fNegative != bdSource.fNegative) {
+            if (!isZero() || !bdSource.isZero())
+               crResult = fNegative ? CRLess : CRGreater;
+            else
+               crResult = CREqual;
+         }
+         else {
+            register typename Exponent::ComparisonResult crExponentResult = biExponent.compare(bdSource.biExponent);
+            crResult = (crExponentResult != Exponent::CREqual)
+               ? ((ComparisonResult) (1+crExponentResult))
+               : ((ComparisonResult) (1+biMantissa.compare(bdSource.biMantissa)));
+               if (fNegative)
+                  crResult = (ComparisonResult) (CRGreater+1-crResult);
+         };
+         return crResult;
+      }
    bool operator==(const thisType& bdSource) const { return compare(bdSource) == CREqual; }
    bool operator!=(const thisType& bdSource) const
       {  register ComparisonResult crResult = compare(bdSource);
@@ -624,46 +718,43 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
          return (crResult == CRGreater) || (crResult == CREqual);
       }
 
-   static typename TypeTraits::Exponent eZeroExponent;
-   static typename TypeTraits::Exponent eOneExponent;
-   static typename TypeTraits::Exponent eMinusOneExponent;
-   static typename TypeTraits::Exponent eInftyExponent;
-   
-   static const typename TypeTraits::Exponent& getZeroExponent() { return eZeroExponent; }
-   static const typename TypeTraits::Exponent& getOneExponent() { return eOneExponent; }
-   static const typename TypeTraits::Exponent& getMinusOneExponent() { return eMinusOneExponent; }
-   static const typename TypeTraits::Exponent& getInftyExponent() { return eInftyExponent; }
-   static const typename TypeTraits::Exponent& getMaxExponent() { return eZeroExponent; }
+   typename TypeTraits::Exponent getZeroExponent() const { return TypeTraits::getZeroExponent(biExponent); }
+   typename TypeTraits::Exponent getBasicExponent(unsigned int uExponent) const
+      {  return TypeTraits::getBasicExponent(biExponent, uExponent); }
+   typename TypeTraits::Exponent getOneExponent() const { return TypeTraits::getOneExponent(biExponent); }
+   typename TypeTraits::Exponent getMinusOneExponent() const { return TypeTraits::getMinusOneExponent(biExponent); }
+   typename TypeTraits::Exponent getInftyExponent() const { return TypeTraits::getInftyExponent(biExponent); }
+   typename TypeTraits::Exponent getMaxExponent() const { return TypeTraits::getMaxExponent(biExponent); }
 
    const typename TypeTraits::Exponent& queryBasicExponent() const { return biExponent; }
    typename TypeTraits::Exponent& querySBasicExponent() { return biExponent; }
-   bool hasPositiveExponent() const { return biExponent > getZeroExponent(); }
-   bool hasPositiveOrNullExponent() const { return biExponent >= getZeroExponent(); }
-   bool hasNullExponent() const { return biExponent == getZeroExponent(); }
-   bool hasNegativeExponent() const { return biExponent < getZeroExponent(); }
-   bool hasNegativeOrNullExponent() const { return biExponent < getZeroExponent(); }
+   bool hasPositiveExponent() const { return biExponent > TypeTraits::getZeroExponent(biExponent); }
+   bool hasPositiveOrNullExponent() const { return biExponent >= TypeTraits::getZeroExponent(biExponent); }
+   bool hasNullExponent() const { return biExponent == TypeTraits::getZeroExponent(biExponent); }
+   bool hasNegativeExponent() const { return biExponent < TypeTraits::getZeroExponent(biExponent); }
+   bool hasNegativeOrNullExponent() const { return biExponent < TypeTraits::getZeroExponent(biExponent); }
    
    typename TypeTraits::Exponent queryExponent() const
-      {  typename TypeTraits::Exponent biResult = getZeroExponent();
+      {  typename TypeTraits::Exponent biResult = TypeTraits::getZeroExponent(biExponent);
          if (biExponent >= biResult) {
             biResult = biExponent;
-            biResult -= getZeroExponent();
+            biResult -= TypeTraits::getZeroExponent(biExponent);
          }
          else
             biResult -= biExponent;
          return biResult;
       }
    void setBasicExponent(const typename TypeTraits::Exponent& biExponentSource) { biExponent = biExponentSource; }
-   void setInfty() { fNegative = false; biExponent = getInftyExponent(); biMantissa = 0U; }
+   void setInfty() { fNegative = false; biExponent = TypeTraits::getInftyExponent(biExponent); biMantissa = 0U; }
    void setZero() { fNegative = false; biExponent = 0U; biMantissa = 0U; }
-   void setOne() { fNegative = false; biExponent = getZeroExponent(); biMantissa = 0U; }
+   void setOne() { fNegative = false; biExponent = TypeTraits::getZeroExponent(biExponent); biMantissa = 0U; }
    void setExponent(const typename TypeTraits::Exponent& biExponentSource, bool fNegative = false)
       {  if (!fNegative) {
             biExponent = biExponentSource;
-            biExponent += getZeroExponent();
+            biExponent += TypeTraits::getZeroExponent(biExponent);
          }
          else {
-            biExponent = getZeroExponent();
+            biExponent = TypeTraits::getZeroExponent(biExponent);
             biExponent -= biExponentSource;
          };
       }
@@ -672,38 +763,44 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
    void setSign(bool fPositive) {  fNegative = !fPositive; }
    thisType& opposite() { fNegative = !fNegative; return *this; }
    void setPositive() { fNegative = false; }
-   void setNegative() { fNegative = true; }
+   void setNegative(bool fNegativeSource=true) { fNegative = fNegativeSource; }
 
    bool isInfty() const
-      {  return (biExponent == getInftyExponent()) && biMantissa.isZero(); }
+      {  return (biExponent == TypeTraits::getInftyExponent(biExponent)) && biMantissa.isZero(); }
    bool isNaN() const
-      {  return (biExponent == getInftyExponent()) && !biMantissa.isZero(); }
+      {  return (biExponent == TypeTraits::getInftyExponent(biExponent)) && !biMantissa.isZero(); }
    bool isSNaN() const
-      {  return (biExponent == getInftyExponent()) && !biMantissa.isZero()
+      {  return (biExponent == TypeTraits::getInftyExponent(biExponent)) && !biMantissa.isZero()
             && !biMantissa.cbitArray(bitSizeMantissa()-1);
       }
    bool isQNaN() const
-      {  return (biExponent == getInftyExponent())
+      {  return (biExponent == TypeTraits::getInftyExponent(biExponent))
             && biMantissa.cbitArray(bitSizeMantissa()-1);
       }
    bool isNormalized() const
-      {  return (!biExponent.isZero()) && (biExponent != getInftyExponent()); }
+      {  return (!biExponent.isZero()) && (biExponent != TypeTraits::getInftyExponent(biExponent)); }
    bool isDenormalized() const { return biExponent.isZero() && !biMantissa.isZero(); }
    bool isZero() const { return biExponent.isZero() && biMantissa.isZero(); }
 
+   void setToEpsilon()
+      {  if (biExponent > bitSizeMantissa()) {
+            Exponent biSub(biExponent);
+            biSub.clear();
+            biSub[0] = bitSizeMantissa();
+            biExponent.sub(biSub);
+            biMantissa = 0U;
+         }
+         else if (biExponent.isZero())
+            biMantissa = 1U;
+         else {
+            biMantissa = 0U;
+            biMantissa.bitArray(biExponent.queryValue()-1) = true;
+            biExponent = 0U;
+         };
+      }
    thisType queryEpsilon() const
       {  thisType dResult = *this;
-         if (dResult.biExponent > bitSizeMantissa()) {
-            dResult.biExponent.sub(bitSizeMantissa());
-            dResult.biMantissa = 0U;
-         }
-         else if (dResult.biExponent.isZero())
-            dResult.biMantissa = 1U;
-         else {
-            dResult.biMantissa = 0U;
-            dResult.biMantissa.bitArray(dResult.biExponent.queryValue()-1) = true;
-            dResult.biExponent = 0U;
-         };
+         dResult.setToEpsilon();
          return dResult;
       }
 
@@ -724,30 +821,10 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
       }
 #endif
 
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
    thisType queryNthSuccessor(const DiffDouble& biIntSource) const;
+   bool setToNext();
    thisType queryNthPredecessor(const DiffDouble& biIntSource) const;
-#else
-  private:
-   void retrieveNthSuccessor(thisType& bdResult, void* pvDiff) const;
-
-  public:
-   thisType queryNthSuccessor(const DiffDouble& ddDiff) const
-      {  thisType bdResult;
-         retrieveNthSuccessor(bdResult, const_cast<DiffDouble*>(&ddDiff));
-         return bdResult;
-      }
-     
-  private:
-   void retrieveNthPredecessor(thisType& bdResult, void* pvDiff) const;
-
-  public:
-   thisType queryNthPredecessor(const DiffDouble& ddDiff) const
-      {  thisType bdResult;
-         retrieveNthPredecessor(bdResult, const_cast<DiffDouble*>(&ddDiff));
-         return bdResult;
-      }
-#endif
+   bool setToPrevious();
 
    thisType& plusAssign(const thisType& bdSource, StatusAndControlFlags& scfFlags);
    thisType& minusAssign(const thisType& bdSource, StatusAndControlFlags& scfFlags);
@@ -762,7 +839,7 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
       {  return multAssign(bdMult, MultParameters(scfFlags).setAdd(bdAdd).setNegativeMult()); }
    thisType& multNegativeAndSubAssign(const thisType& bdMult, const thisType& bdAdd, StatusAndControlFlags& scfFlags)
       {  return multAssign(bdMult, MultParameters(scfFlags).setAdd(bdAdd).setNegativeMult().setNegativeAdditive()); }
-   thisType& multAssign(const thisType& bdSource, const MultParameters& mpParams);
+   thisType& multAssign(const thisType& bdSource, const MultParameters& mpFlags);
    thisType& divAssign(unsigned int uValue, StatusAndControlFlags& scfFlags);
    thisType& divAssign(const thisType& bdSource, StatusAndControlFlags& scfFlags);
 
@@ -810,6 +887,17 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, private TypeTra
          fNegative = bdSource.fNegative;
          bdSource.fNegative = fTemp;
       }
+
+   thisType& sqrtAssign(); // u_{n+1} = (u_n + this/u_n)/2
+   thisType& squareAssign(StatusAndControlFlags& scfFlags) { return multAssign(*this, scfFlags); }
+   thisType& inverseAssign(StatusAndControlFlags& scfFlags)
+      {  thisType bdResult;
+         bdResult.biExponent = Exponent(typename Exponent::Zero());
+         bdResult.divAssign(*this, scfFlags);
+         return operator=(bdResult);
+      }
+   thisType& nthRootAssign(int n); // u_{p+1} = 1/n*[(n-1)*u_p + this/(u_p)^(n-1))]
+   thisType& nthExponentAssign(int n);
 };
 
 template <class TypeTraits>
@@ -865,809 +953,6 @@ class Errors {
    DefineSetError(NegativeUnderflow)
 #undef DefineSetError
 };
-
-/***************************************/
-/* Definition - template TFloatingBase */
-/***************************************/
-
-class DoubleTraits {
-  public:
-   typedef double TypeFloat;
-   static double max()              { return DBL_MAX; }
-   static double normalizedMin()    { return DBL_MIN; }
-   static double denormalizedMin()  { return DBL_MIN*DBL_EPSILON; }
-   static bool isBigEndian()
-      {
-#if defined(__GNUC__)
-#if BYTE_ORDER == BIG_ENDIAN
-         return true;
-#else
-         return false;
-#endif
-#else
-         int dummy = 0x1234;
-         return *((unsigned char*) &dummy) == 0x12;
-#endif
-      }
-   static bool isLittleEndian() { return !isBigEndian(); }
-
-   static const int UBitSizeMantissa = DBL_MANT_DIG-1;
-   static const int UByteSizeImplantation = sizeof(TypeFloat);
-   static const int UBitSizeExponent = UByteSizeImplantation*8-DBL_MANT_DIG;
-   static unsigned int getMaxExponent() { return DBL_MAX_EXP-1; }
-   static unsigned int getZeroExponent() { return DBL_MAX_EXP-1; }
-   static double epsilon() { return DBL_EPSILON; }
-   static bool isValid() { return (UBitSizeExponent <= (int) sizeof(int)*8); }
-};
-
-class FloatTraits {
-  public:
-   typedef float TypeFloat;
-   static float max()              { return FLT_MAX; }
-   static float normalizedMin()    { return FLT_MIN; }
-   static float denormalizedMin()  { return FLT_MIN*FLT_EPSILON; }
-   static bool isBigEndian()
-      {
-#if defined(__GNUC__)
-#if BYTE_ORDER == BIG_ENDIAN
-         return true;
-#else
-         return false;
-#endif
-#else
-         int dummy = 0x1234;
-         return *((unsigned char*) &dummy) == 0x12;
-#endif
-      }
-
-   inline static bool isLittleEndian() { return !isBigEndian(); }
-
-   static const int UBitSizeMantissa = FLT_MANT_DIG-1;
-   static const int UByteSizeImplantation = sizeof(TypeFloat);
-   static const int UBitSizeExponent = UByteSizeImplantation*8-FLT_MANT_DIG;
-   inline static unsigned int getMaxExponent() { return FLT_MAX_EXP-1; }
-   inline static unsigned int getZeroExponent() { return FLT_MAX_EXP-1; }
-   inline static float epsilon() { return FLT_EPSILON; }
-   inline static bool isValid() { return (UBitSizeExponent <= (int) sizeof(int)*8); }
-};
-
-template <class TypeTraits>
-class TFloatingBase {
-  public:
-   typedef TBuiltDouble<BuiltDoubleTraits<TypeTraits::UBitSizeMantissa, TypeTraits::UBitSizeExponent> >
-      BuiltDouble;
-
-  protected:
-   typedef typename TypeTraits::TypeFloat Implantation;
-   typedef TFloatingBase<TypeTraits> thisType;
-
-  private:
-   Implantation dDouble;
-
-   static void test_double(double dDouble);
-   static void test_int(unsigned int uInt);
-   static void test_char(char cChar);
-   static void copy_mem(void* pvDestination, void* pvSource, int uBytes);
-
-  public:
-   TFloatingBase() : dDouble(0.0) {}
-   TFloatingBase(const Implantation& dDoubleSource) : dDouble(dDoubleSource) {}
-   TFloatingBase(const BuiltDouble& bdDouble) : dDouble(0.0) { operator=(bdDouble); }
-   TFloatingBase(const thisType& sSource) : dDouble(sSource.dDouble) {}
-   thisType& operator=(const thisType& dsSource)
-      {  dDouble = dsSource.dDouble; return *this; }
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
-   thisType& operator=(const BuiltDouble& bdDouble);
-#else
-  private:
-   void assign(void* pvBuiltDouble);
-
-  public:
-   thisType& operator=(const BuiltDouble& bdSource)
-      {  assign(const_cast<BuiltDouble*>(&bdSource));
-         return *this;
-      }
-#endif
-
-   operator BuiltDouble() const
-      {  BuiltDouble bdResult;
-         fillMantissa(bdResult.querySMantissa());
-#ifndef __BORLANDC__
-         bdResult.setBasicExponent(typename BuiltDouble::Exponent(typename BuiltDouble::Exponent::Basic(), queryBasicExponent()));
-#else
-         bdResult.setBasicExponent(BuiltDouble::Exponent(BuiltDouble::Exponent::Basic(), queryBasicExponent()));
-#endif
-         bdResult.setSign(isPositive());
-         return bdResult;
-	  }
-   
-   Implantation& implantation() { return dDouble; } 
-   const Implantation& implantation() const { return dDouble; } 
-   thisType queryEpsilon() const
-      {  Implantation dtiResult = implantation()*TypeTraits::epsilon();
-         if ((dtiResult == 0.0) && (implantation() != 0.0))
-            return thisType(TypeTraits::denormalizedMin());
-         return thisType((dtiResult >= 0.0) ? dtiResult : -dtiResult);
-      }
-   
-   bool isZero() const { return (dDouble == 0.0) || (-dDouble == 0.0); }
-   
-   typedef Details::DTDoubleElement::Access::StatusAndControlFlags StatusAndControlFlags;
-   thisType& plusAssign(const thisType& ttSource, const StatusAndControlFlags& scfFlags);
-   thisType& minusAssign(const thisType& ttSource, const StatusAndControlFlags& scfFlags);
-   thisType& multAssign(const thisType& ttSource, const StatusAndControlFlags& scfFlags);
-   thisType& divAssign(const thisType& ttSource, const StatusAndControlFlags& scfFlags);
-
-   thisType& operator-=(const thisType& ttSource)
-      {  dDouble -= ttSource.dDouble; return *this; }
-   thisType& operator*=(const thisType& ttSource)
-      {  dDouble *= ttSource.dDouble; return *this; }
-   thisType& operator+=(const thisType& ttSource)
-      {  dDouble += ttSource.dDouble; return *this; }
-   thisType& operator/=(const thisType& ttSource)
-      {  dDouble /= ttSource.dDouble; return *this; }
-
-   static const int UByteSizeImplantation = TypeTraits::UByteSizeImplantation;
-   static const int UBitSizeMantissa = TypeTraits::UBitSizeMantissa;
-   static const int UBitSizeExponent = TypeTraits::UBitSizeExponent;
-   typedef typename BuiltDouble::Mantissa Mantissa;
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
-   void fillMantissa(Mantissa& mMantissa) const;
-   void setMantissa(const Mantissa& mMantissa);
-#else
-  private:
-   void fillMantissa(void* pvMantissa) const;
-   void setMantissa(void* pvMantissa);
-
-  public:
-   void fillMantissa(Mantissa& mMantissa) const { fillMantissa((void*) &mMantissa); }
-   void setMantissa(const Mantissa& mMantissa)
-      {  setMantissa((void*) const_cast<Mantissa*>(&mMantissa)); }
-#endif
-
-   static unsigned int getMaxExponent() { return TypeTraits::getMaxExponent(); }
-   static unsigned int getZeroExponent() { return TypeTraits::getZeroExponent(); }
-   thisType& opposite() { dDouble = -dDouble; return *this; }
- 
-   unsigned int queryBasicExponent() const;
-   int queryExponent() const
-      {  return ((int) queryBasicExponent()) - getZeroExponent(); }
-   void setBasicExponent(unsigned int uExponent);
-   void setExponent(int uExponent)
-      {  setBasicExponent(uExponent+getZeroExponent()); }
-   bool isPositive() const
-      {  unsigned char auDouble[UByteSizeImplantation];
-         memcpy(auDouble, &dDouble, UByteSizeImplantation);
-         unsigned char* pcMask = (unsigned char*) auDouble;
-         if (TypeTraits::isLittleEndian())
-            pcMask += UByteSizeImplantation-1;
-         return !((*pcMask) & 0x80);
-      }
-   bool isNegative() const { return !isPositive(); }
-   void setSign(bool fPositive)
-      {  unsigned char auDouble[UByteSizeImplantation];
-         memcpy(auDouble, &dDouble, UByteSizeImplantation);
-         unsigned char* pcMask = (unsigned char*) auDouble;
-         if (TypeTraits::isLittleEndian())
-            pcMask += UByteSizeImplantation-1;
-         if (fPositive)
-            *pcMask &= 0x7f;
-         else
-            *pcMask |= 0x80;
-         memcpy(&dDouble, auDouble, UByteSizeImplantation);
-      }
-   void setPositive() { setSign(true); }
-   void setNegative() { setSign(false); }
-   bool isNormalised() const
-      {  return ((TypeTraits::normalizedMin() <= dDouble) && (dDouble <= TypeTraits::max()))
-            || ((-TypeTraits::normalizedMin() >= dDouble) && (dDouble >= -TypeTraits::max()));
-      }
-   bool isRanged() const
-      {  return ((TypeTraits::denormalizedMin() <= dDouble) && (dDouble <= TypeTraits::max()))
-            || ((-TypeTraits::denormalizedMin() >= dDouble) && (dDouble >= -TypeTraits::max()));
-      }
-   void clear() { dDouble = 0.0; }
-   void swap(thisType& dSource)
-      {  Implantation dTemp = dDouble;
-         dDouble = dSource.dDouble;
-         dSource.dDouble = dTemp;
-      }
-};
-
-template <class TypeTraits>
-inline TFloatingBase<TypeTraits>&
-TFloatingBase<TypeTraits>::plusAssign(const thisType& ttSource, const StatusAndControlFlags& scfFlags) {  
-#ifdef DefineComputeParameters
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-   int uOldState = _controlfp(0, _MCW_RC);
-   _controlfp(_RC_DOWN, _MCW_RC);
-   double dMin = dDouble+ttSource.dDouble;
-   _controlfp(_RC_UP, _MCW_RC);
-   double dMax = dDouble+ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      _controlfp(_RC_DOWN, _MCW_RC);
-   else if (scfFlags.isHighestRound())
-      _controlfp(_RC_UP, _MCW_RC);
-   else if (scfFlags.isNearestRound())
-      _controlfp(_RC_NEAR, _MCW_RC);
-   else // (scfFlags.isZeroRound())
-      _controlfp(_RC_CHOP, _MCW_RC);
-   dDouble += ttSource.dDouble;
-   _controlfp(uOldState, _MCW_RC);
-#else
-#ifdef __SUN__
-   fpsetround(FP_RM);
-   double dMin = dDouble+ttSource.dDouble;
-   fpsetround(FP_RP);
-   double dMax = dDouble+ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      fpsetround(FP_RM);
-   else if (scfFlags.isHighestRound())
-      fpsetround(FP_RP);
-   else if (scfFlags.isNearestRound())
-      fpsetround(FP_RN);
-   else // (scfFlags.isZeroRound())
-      fpsetround(FP_RZ);
-   dDouble += ttSource.dDouble;
-   fpsetround(FP_RN);
-#else
-#ifndef __CYGWIN__
-   fesetround(FE_DOWNWARD);
-   double dMin = dDouble+ttSource.dDouble;
-   fesetround(FE_UPWARD);
-   double dMax = dDouble+ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      fesetround(FE_DOWNWARD);
-   else if (scfFlags.isHighestRound())
-      fesetround(FE_UPWARD);
-   else if (scfFlags.isNearestRound())
-      fesetround(FE_TONEAREST);
-   else // (scfFlags.isZeroRound())
-      fesetround(FE_TOWARDZERO);
-#endif
-   dDouble += ttSource.dDouble;
-#ifndef __CYGWIN__
-   fesetround(FE_TONEAREST);
-#endif
-#endif
-#endif
-   if (dMin != dMax) {
-      if (dDouble == dMin)
-         scfFlags.setDownApproximate();
-      else {
-         assert(dDouble == dMax);
-         scfFlags.setUpApproximate();
-      };
-   };
-#else
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-   int uOldState = _controlfp(0, _MCW_RC);
-   if (scfFlags.isLowestRound())
-      _controlfp(_RC_DOWN, _MCW_RC);
-   else if (scfFlags.isHighestRound())
-      _controlfp(_RC_UP, _MCW_RC);
-   else if (scfFlags.isNearestRound())
-      _controlfp(_RC_NEAR, _MCW_RC);
-   else // (scfFlags.isZeroRound())
-      _controlfp(_RC_CHOP, _MCW_RC);
-   dDouble += ttSource.dDouble;
-   _controlfp(uOldState, _MCW_RC);
-#else
-#ifdef __SUN__
-   if (scfFlags.isLowestRound())
-      fpsetround(FP_RM);
-   else if (scfFlags.isHighestRound())
-      fpsetround(FP_RP);
-   else if (scfFlags.isNearestRound())
-      fpsetround(FP_RN);
-   else // (scfFlags.isZeroRound())
-      fpsetround(FP_RZ);
-   dDouble += ttSource.dDouble;
-   fpsetround(FP_RN);
-#else
-#ifndef __CYGWIN__
-   if (scfFlags.isLowestRound())
-      fesetround(FE_DOWNWARD);
-   else if (scfFlags.isHighestRound())
-      fesetround(FE_UPWARD);
-   else if (scfFlags.isNearestRound())
-      fesetround(FE_TONEAREST);
-   else // (scfFlags.isZeroRound())
-      fesetround(FE_TOWARDZERO);
-#endif
-   dDouble += ttSource.dDouble;
-#ifndef __CYGWIN__
-   fesetround(FE_TONEAREST);
-#endif
-#endif
-#endif
-#endif // DefineComputeParameters
-   return *this;
-}
-
-template <class TypeTraits>
-inline TFloatingBase<TypeTraits>&
-TFloatingBase<TypeTraits>::minusAssign(const thisType& ttSource, const StatusAndControlFlags& scfFlags) {  
-#ifdef DefineComputeParameters
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-   int uOldState = _controlfp(0, _MCW_RC);
-   _controlfp(_RC_DOWN, _MCW_RC);
-   double dMin = dDouble-ttSource.dDouble;
-   _controlfp(_RC_UP, _MCW_RC);
-   double dMax = dDouble-ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      _controlfp(_RC_DOWN, _MCW_RC);
-   else if (scfFlags.isHighestRound())
-      _controlfp(_RC_UP, _MCW_RC);
-   else if (scfFlags.isNearestRound())
-      _controlfp(_RC_NEAR, _MCW_RC);
-   else // (scfFlags.isZeroRound())
-      _controlfp(_RC_CHOP, _MCW_RC);
-   dDouble -= ttSource.dDouble;
-   _controlfp(uOldState, _MCW_RC);
-#else
-#ifdef __SUN__
-   fpsetround(FP_RM);
-   double dMin = dDouble-ttSource.dDouble;
-   fpsetround(FP_RP);
-   double dMax = dDouble-ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      fpsetround(FP_RM);
-   else if (scfFlags.isHighestRound())
-      fpsetround(FP_RP);
-   else if (scfFlags.isNearestRound())
-      fpsetround(FP_RN);
-   else // (scfFlags.isZeroRound())
-      fpsetround(FP_RZ);
-   dDouble -= ttSource.dDouble;
-   fpsetround(FP_RN);
-#else
-#ifndef __CYGWIN__
-   fesetround(FE_DOWNWARD);
-   double dMin = dDouble-ttSource.dDouble;
-   fesetround(FE_UPWARD);
-   double dMax = dDouble-ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      fesetround(FE_DOWNWARD);
-   else if (scfFlags.isHighestRound())
-      fesetround(FE_UPWARD);
-   else if (scfFlags.isNearestRound())
-      fesetround(FE_TONEAREST);
-   else // (scfFlags.isZeroRound())
-      fesetround(FE_TOWARDZERO);
-#endif
-   dDouble -= ttSource.dDouble;
-#ifndef __CYGWIN__
-   fesetround(FE_TONEAREST);
-#endif
-#endif
-#endif
-   if (dMin != dMax) {
-      if (dDouble == dMin)
-         scfFlags.setDownApproximate();
-      else {
-         assert(dDouble == dMax);
-         scfFlags.setUpApproximate();
-      };
-   };
-#else
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-   int uOldState = _controlfp(0, _MCW_RC);
-   if (scfFlags.isLowestRound())
-      _controlfp(_RC_DOWN, _MCW_RC);
-   else if (scfFlags.isHighestRound())
-      _controlfp(_RC_UP, _MCW_RC);
-   else if (scfFlags.isNearestRound())
-      _controlfp(_RC_NEAR, _MCW_RC);
-   else // (scfFlags.isZeroRound())
-      _controlfp(_RC_CHOP, _MCW_RC);
-   dDouble -= ttSource.dDouble;
-   _controlfp(uOldState, _MCW_RC);
-#else
-#ifdef __SUN__
-   if (scfFlags.isLowestRound())
-      fpsetround(FP_RM);
-   else if (scfFlags.isHighestRound())
-      fpsetround(FP_RP);
-   else if (scfFlags.isNearestRound())
-      fpsetround(FP_RN);
-   else // (scfFlags.isZeroRound())
-      fpsetround(FP_RZ);
-   dDouble -= ttSource.dDouble;
-   fpsetround(FP_RN);
-#else
-#ifndef __CYGWIN__
-   if (scfFlags.isLowestRound())
-      fesetround(FE_DOWNWARD);
-   else if (scfFlags.isHighestRound())
-      fesetround(FE_UPWARD);
-   else if (scfFlags.isNearestRound())
-      fesetround(FE_TONEAREST);
-   else // (scfFlags.isZeroRound())
-      fesetround(FE_TOWARDZERO);
-#endif
-   dDouble -= ttSource.dDouble;
-#ifndef __CYGWIN__
-   fesetround(FE_TONEAREST);
-#endif
-#endif
-#endif
-#endif
-   return *this;
-}
-
-template <class TypeTraits>
-inline TFloatingBase<TypeTraits>&
-TFloatingBase<TypeTraits>::multAssign(const thisType& ttSource, const StatusAndControlFlags& scfFlags) {  
-#ifdef DefineComputeParameters
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-   int uOldState = _controlfp(0, _MCW_RC);
-   _controlfp(_RC_DOWN, _MCW_RC);
-   double dMin = dDouble*ttSource.dDouble;
-   _controlfp(_RC_UP, _MCW_RC);
-   double dMax = dDouble*ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      _controlfp(_RC_DOWN, _MCW_RC);
-   else if (scfFlags.isHighestRound())
-      _controlfp(_RC_UP, _MCW_RC);
-   else if (scfFlags.isNearestRound())
-      _controlfp(_RC_NEAR, _MCW_RC);
-   else // (scfFlags.isZeroRound())
-      _controlfp(_RC_CHOP, _MCW_RC);
-   dDouble *= ttSource.dDouble;
-   _controlfp(uOldState, _MCW_RC);
-#else
-#ifdef __SUN__
-   fpsetround(FP_RM);
-   double dMin = dDouble*ttSource.dDouble;
-   fpsetround(FP_RP);
-   double dMax = dDouble*ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      fpsetround(FP_RM);
-   else if (scfFlags.isHighestRound())
-      fpsetround(FP_RP);
-   else if (scfFlags.isNearestRound())
-      fpsetround(FP_RN);
-   else // (scfFlags.isZeroRound())
-      fpsetround(FP_RZ);
-   dDouble *= ttSource.dDouble;
-   fpsetround(FP_RN);
-#else
-#ifndef __CYGWIN__
-   fesetround(FE_DOWNWARD);
-   double dMin = dDouble*ttSource.dDouble;
-   fesetround(FE_UPWARD);
-   double dMax = dDouble*ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      fesetround(FE_DOWNWARD);
-   else if (scfFlags.isHighestRound())
-      fesetround(FE_UPWARD);
-   else if (scfFlags.isNearestRound())
-      fesetround(FE_TONEAREST);
-   else // (scfFlags.isZeroRound())
-      fesetround(FE_TOWARDZERO);
-#endif
-   dDouble *= ttSource.dDouble;
-#ifndef __CYGWIN__
-   fesetround(FE_TONEAREST);
-#endif
-#endif
-#endif
-   if (dMin != dMax) {
-      if (dDouble == dMin)
-         scfFlags.setDownApproximate();
-      else {
-         assert(dDouble == dMax);
-         scfFlags.setUpApproximate();
-      };
-   };
-#else
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-   int uOldState = _controlfp(0, _MCW_RC);
-   if (scfFlags.isLowestRound())
-      _controlfp(_RC_DOWN, _MCW_RC);
-   else if (scfFlags.isHighestRound())
-      _controlfp(_RC_UP, _MCW_RC);
-   else if (scfFlags.isNearestRound())
-      _controlfp(_RC_NEAR, _MCW_RC);
-   else // (scfFlags.isZeroRound())
-      _controlfp(_RC_CHOP, _MCW_RC);
-   dDouble *= ttSource.dDouble;
-   _controlfp(uOldState, _MCW_RC);
-#else
-#ifdef __SUN__
-   if (scfFlags.isLowestRound())
-      fpsetround(FP_RM);
-   else if (scfFlags.isHighestRound())
-      fpsetround(FP_RP);
-   else if (scfFlags.isNearestRound())
-      fpsetround(FP_RN);
-   else // (scfFlags.isZeroRound())
-      fpsetround(FP_RZ);
-   dDouble *= ttSource.dDouble;
-   fpsetround(FP_RN);
-#else
-#ifndef __CYGWIN__
-   if (scfFlags.isLowestRound())
-      fesetround(FE_DOWNWARD);
-   else if (scfFlags.isHighestRound())
-      fesetround(FE_UPWARD);
-   else if (scfFlags.isNearestRound())
-      fesetround(FE_TONEAREST);
-   else // (scfFlags.isZeroRound())
-      fesetround(FE_TOWARDZERO);
-#endif
-   dDouble *= ttSource.dDouble;
-#ifndef __CYGWIN__
-   fesetround(FE_TONEAREST);
-#endif
-#endif
-#endif
-#endif
-   return *this;
-}
-
-template <class TypeTraits>
-inline TFloatingBase<TypeTraits>&
-TFloatingBase<TypeTraits>::divAssign(const thisType& ttSource, const StatusAndControlFlags& scfFlags) {  
-#ifdef DefineComputeParameters
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-   int uOldState = _controlfp(0, _MCW_RC);
-   _controlfp(_RC_DOWN, _MCW_RC);
-   double dMin = dDouble/ttSource.dDouble;
-   _controlfp(_RC_UP, _MCW_RC);
-   double dMax = dDouble/ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      _controlfp(_RC_DOWN, _MCW_RC);
-   else if (scfFlags.isHighestRound())
-      _controlfp(_RC_UP, _MCW_RC);
-   else if (scfFlags.isNearestRound())
-      _controlfp(_RC_NEAR, _MCW_RC);
-   else // (scfFlags.isZeroRound())
-      _controlfp(_RC_CHOP, _MCW_RC);
-   dDouble /= ttSource.dDouble;
-   _controlfp(uOldState, _MCW_RC);
-#else
-#ifdef __SUN__
-   fpsetround(FP_RM);
-   double dMin = dDouble/ttSource.dDouble;
-   fpsetround(FP_RP);
-   double dMax = dDouble/ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      fpsetround(FP_RM);
-   else if (scfFlags.isHighestRound())
-      fpsetround(FP_RP);
-   else if (scfFlags.isNearestRound())
-      fpsetround(FP_RN);
-   else // (scfFlags.isZeroRound())
-      fpsetround(FP_RZ);
-   dDouble /= ttSource.dDouble;
-   fpsetround(FP_RN);
-#else
-#ifndef __CYGWIN__
-   fesetround(FE_DOWNWARD);
-   double dMin = dDouble/ttSource.dDouble;
-   fesetround(FE_UPWARD);
-   double dMax = dDouble/ttSource.dDouble;
-   if (scfFlags.isLowestRound())
-      fesetround(FE_DOWNWARD);
-   else if (scfFlags.isHighestRound())
-      fesetround(FE_UPWARD);
-   else if (scfFlags.isNearestRound())
-      fesetround(FE_TONEAREST);
-   else // (scfFlags.isZeroRound())
-      fesetround(FE_TOWARDZERO);
-#endif
-   dDouble /= ttSource.dDouble;
-#ifndef __CYGWIN__
-   fesetround(FE_TONEAREST);
-#endif
-#endif
-#endif
-   if (dMin != dMax) {
-      if (dDouble == dMin)
-         scfFlags.setDownApproximate();
-      else {
-         assert(dDouble == dMax);
-         scfFlags.setUpApproximate();
-      };
-   };
-#else
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-   int uOldState = _controlfp(0, _MCW_RC);
-   if (scfFlags.isLowestRound())
-      _controlfp(_RC_DOWN, _MCW_RC);
-   else if (scfFlags.isHighestRound())
-      _controlfp(_RC_UP, _MCW_RC);
-   else if (scfFlags.isNearestRound())
-      _controlfp(_RC_NEAR, _MCW_RC);
-   else // (scfFlags.isZeroRound())
-      _controlfp(_RC_CHOP, _MCW_RC);
-   dDouble /= ttSource.dDouble;
-   _controlfp(uOldState, _MCW_RC);
-#else
-#ifdef __SUN__
-   if (scfFlags.isLowestRound())
-      fpsetround(FP_RM);
-   else if (scfFlags.isHighestRound())
-      fpsetround(FP_RP);
-   else if (scfFlags.isNearestRound())
-      fpsetround(FP_RN);
-   else // (scfFlags.isZeroRound())
-      fpsetround(FP_RZ);
-   dDouble /= ttSource.dDouble;
-   fpsetround(FP_RN);
-#else
-#ifndef __CYGWIN__
-   if (scfFlags.isLowestRound())
-      fesetround(FE_DOWNWARD);
-   else if (scfFlags.isHighestRound())
-      fesetround(FE_UPWARD);
-   else if (scfFlags.isNearestRound())
-      fesetround(FE_TONEAREST);
-   else // (scfFlags.isZeroRound())
-      fesetround(FE_TOWARDZERO);
-#endif
-   dDouble /= ttSource.dDouble;
-#ifndef __CYGWIN__
-   fesetround(FE_TONEAREST);
-#endif
-#endif
-#endif
-#endif
-   return *this;
-}
-
-template <class FloatingBaseTraits>
-class TDoubleElement : public FloatingBaseTraits, public Details::DTDoubleElement::Access {
-  private:
-   typedef FloatingBaseTraits inherited;
-   typedef TDoubleElement<FloatingBaseTraits> thisType;
-
-   typedef typename FloatingBaseTraits::Mantissa Mantissa;
-
-  public:
-   typedef typename inherited::BuiltDouble BuiltDouble;
-   typedef Details::DTDoubleElement::Access::StatusAndControlFlags StatusAndControlFlags;
-   TDoubleElement() : inherited() {}
-   TDoubleElement(int iValue, StatusAndControlFlags& scfFlags)
-      {  typename BuiltDouble::IntConversion icValue;
-         icValue.setSigned().assign(iValue);
-         BuiltDouble bdDouble(icValue, scfFlags);
-         operator=(bdDouble);
-      }
-   TDoubleElement(typename FloatingBaseTraits::Implantation fbtSource) : inherited(fbtSource) {}
-   TDoubleElement(const BuiltDouble& bdDouble) : inherited(bdDouble) {}
-   TDoubleElement(const thisType& dSource) : inherited(dSource) {}
-
-   int queryInteger(StatusAndControlFlags& scfFlags) const
-      {  typename BuiltDouble::IntConversion icResult;
-         BuiltDouble(*this).retrieveInteger(icResult.setSigned(), scfFlags);
-         return icResult.queryInt();
-      }
-   unsigned int queryUnsignedInteger(StatusAndControlFlags& scfFlags) const
-      {  typename BuiltDouble::IntConversion icResult;
-         BuiltDouble(*this).retrieveInteger(icResult.setUnsigned(), scfFlags);
-         return icResult.queryUnsignedInt();
-      }
-
-   bool isInternZero() const;
-   bool isZero() const { return inherited::isZero(); }
-   bool isNaN() const;
-   bool isQNaN() const;
-   bool isSNaN() const;
-   bool isInfty() const;
-   bool hasInftyExponent() const
-      {  return inherited::queryBasicExponent() == inherited::getMaxExponent()+inherited::getZeroExponent()+1; }
-
-   enum ComparisonResult { CRNaN, CRLess, CREqual, CRGreater };
-   ComparisonResult compare(const thisType& bdSource) const
-      {  ComparisonResult crResult = CRNaN;
-         if (!isNaN() && !bdSource.isNaN())
-            crResult = (inherited::implantation() < bdSource.inherited::implantation()) ? CRLess
-               : ((inherited::implantation() > bdSource.inherited::implantation()) ? CRGreater : CREqual);
-         return crResult;
-      }
-   bool operator==(const thisType& bdSource) const { return compare(bdSource) == CREqual; }
-   bool operator!=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
-         return (crResult == CRLess) || (crResult == CRGreater);
-      }
-   bool operator<(const thisType& bdSource) const { return compare(bdSource) == CRLess; }
-   bool operator>(const thisType& bdSource) const { return compare(bdSource) == CRGreater; }
-   bool operator<=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
-         return (crResult == CRLess) || (crResult == CREqual);
-      }
-   bool operator>=(const thisType& bdSource) const
-      {  register ComparisonResult crResult = compare(bdSource);
-         return (crResult == CRGreater) || (crResult == CREqual);
-      }
-
-   static const int UByteSizeImplantation = inherited::UByteSizeImplantation;
-   static const int UBitSizeMantissa = inherited::UBitSizeMantissa;
-   static const int UBitSizeExponent = inherited::UBitSizeExponent;
-
-   typedef typename BuiltDouble::DiffDouble DiffDouble;
-   DiffDouble queryNumberOfFloatsBetween(const thisType& deElement) const
-      {  BuiltDouble bdThis = *this, bdElement = deElement;
-         return bdThis.queryNumberOfFloatsBetween(bdElement);
-      }
-   thisType queryNthSuccessor(const DiffDouble& biIntSource) const
-      {  BuiltDouble bdThis = *this;
-         return thisType(bdThis.queryNthSuccessor(biIntSource));
-      }
-   thisType queryNthPredecessor(const DiffDouble& biIntSource) const
-      {  BuiltDouble bdThis = *this;
-         return thisType(bdThis.queryNthPredecessor(biIntSource));
-      }
-   bool isPuiss2() const;
-   Errors queryErrors() const;
-
-   thisType& opposite() { return (thisType&) inherited::opposite(); }
-   thisType& plusAssign(const thisType& ttSource, StatusAndControlFlags& scfFlags)
-      {  return (thisType&) inherited::plusAssign(ttSource, scfFlags); }
-   thisType& minusAssign(const thisType& ttSource, StatusAndControlFlags& scfFlags)
-      {  return (thisType&) inherited::minusAssign(ttSource, scfFlags); }
-   thisType& multAssign(const thisType& ttSource, StatusAndControlFlags& scfFlags)
-      {  return (thisType&) inherited::multAssign(ttSource, scfFlags); }
-   thisType& divAssign(const thisType& ttSource, StatusAndControlFlags& scfFlags)
-      {  return (thisType&) inherited::divAssign(ttSource, scfFlags); }
-
-   thisType& operator-=(const thisType& ttSource)
-      {  return (thisType&) inherited::operator-=(ttSource); }
-   thisType& operator*=(const thisType& ttSource)
-      {  return (thisType&) inherited::operator*=(ttSource); }
-   thisType& operator+=(const thisType& ttSource)
-      {  return (thisType&) inherited::operator+=(ttSource); }
-   thisType& operator/=(const thisType& ttSource)
-      {  return (thisType&) inherited::operator/=(ttSource); }
-
-   thisType operator-(const thisType& ttSource) const
-      {  thisType ttResult(*this);
-         return (ttResult -= ttSource);
-      }
-   thisType operator+(const thisType& ttSource) const
-      {  thisType ttResult(*this);
-         return (ttResult += ttSource);
-      }
-   thisType operator*(const thisType& ttSource) const
-      {  thisType ttResult(*this);
-         return (ttResult *= ttSource);
-      }
-   thisType operator/(const thisType& ttSource) const
-      {  thisType ttResult(*this);
-         return (ttResult /= ttSource);
-      }
-
-   thisType& setOpposite()
-      {  inherited::setSign(!inherited::isPositive());
-         return *this;
-      }
-   thisType& setInftyExponent()
-      {  inherited::setBasicExponent(-1);
-         return *this;
-      }
-
-   void write(std::ostream& osOut, const WriteParameters& wpParams) const;
-   void read(std::istream& isIn, StatusAndControlFlags& scfFlags);
-};
-
-template <class FloatingBaseTraits>
-inline std::ostream&
-operator<<(std::ostream& osOut, const TDoubleElement<FloatingBaseTraits>& deDouble) {
-   typename TDoubleElement<FloatingBaseTraits>::WriteParameters wpParams;
-   deDouble.write(osOut, wpParams);
-   return osOut;
-}
-
-template <class FloatingBaseTraits>
-inline std::istream&
-operator<<(std::istream& isIn, TDoubleElement<FloatingBaseTraits>& deDouble) {
-   typename TDoubleElement<FloatingBaseTraits>::StatusAndControlFlags scfFlags;
-   deDouble.read(isIn, scfFlags);
-   return isIn;
-}
 
 }} // end of namespace Numerics::Double
 

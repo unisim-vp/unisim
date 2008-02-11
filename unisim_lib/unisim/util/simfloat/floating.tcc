@@ -2,8 +2,8 @@
                 Floating.template  -  Template for various types of floating point computations
                              -------------------
     first release        : 15 Jul 2005
-    copyright ÔøΩ          : (C) 2004-2005 CEA
-    authors              : Franck VÔøΩdrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ©          : (C) 2004-2005 CEA
+    authors              : Franck VÅÈdrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -23,10 +23,10 @@
 
 #ifndef Numerics_Double_FloatingTemplate
 #define Numerics_Double_FloatingTemplate
-#ifndef __GNUC__
-#include "unisim/util/simfloat/floating.hh"
+#if !defined(__GNUC__) || !defined(__OPTIMIZE__) || (__OPTIMIZE__ < 1)
+#include <unisim/util/simfloat/floating.hh>
 #else
-#include "unisim/util/simfloat/floating_gccopt.hh"
+#include <unisim/util/simfloat/floating_gccopt.hh>
 #endif
 
 namespace unisim {
@@ -44,6 +44,7 @@ namespace Numerics {} // for precompiled headers
 #include <ctype.h>
 #endif
 #include <vector>
+#include <unisim/util/simfloat/integer.tcc>
 
 namespace unisim {
 namespace util {
@@ -57,7 +58,7 @@ template <class TypeMantissa, class TypeStatusAndControlFlags>
 Access::Carry
 Access::trightShift(TypeMantissa& mMantissa, int uShift,
       unsigned int uValue, TypeStatusAndControlFlags& scfFlags, bool fNegative, int uBitSizeMantissa) {
-   assert(uShift >= 0);
+   assert((uShift >= 0) && (uBitSizeMantissa >= uShift));
    bool fAdd = false;
    bool fRoundToEven = false;
    bool fApproximate = false;
@@ -81,7 +82,9 @@ Access::trightShift(TypeMantissa& mMantissa, int uShift,
       fApproximate = true;
    };
    mMantissa >>= uShift;
-   if (fAdd && ((fAdd = (!fRoundToEven || mMantissa.cbitArray(0))) != false)) {
+   bool fOddValue = (uBitSizeMantissa == uShift) && (uValue & 1U);
+   if (fAdd && ((fAdd = (!fRoundToEven
+         || (!fOddValue ? mMantissa.cbitArray(0): !mMantissa.cbitArray(0)))) != false)) {
       mMantissa.inc();
       if (mMantissa.cbitArray(uBitSizeMantissa-uShift)) {
          cResult.carry() = true;
@@ -119,62 +122,231 @@ Access::trightShift(TypeMantissa& mMantissa, int uShift,
 /* Implementation - template TBuiltDouble */
 /******************************************/
 
-template <class TypeTraits>
-typename TypeTraits::Exponent
 #ifndef __BORLANDC__
-TBuiltDouble<TypeTraits>::eZeroExponent = typename TypeTraits::Exponent(typename TypeTraits::Exponent::Zero());
+#define Typename typename
 #else
-TBuiltDouble<TypeTraits>::eZeroExponent = TypeTraits::Exponent(Exponent::Zero());
+#define Typename
 #endif
 
-template <class TypeTraits>
-typename TypeTraits::Exponent
-#ifndef __BORLANDC__
-TBuiltDouble<TypeTraits>::eOneExponent = typename TypeTraits::Exponent(typename TypeTraits::Exponent::One());
-#else
-TBuiltDouble<TypeTraits>::eOneExponent = TypeTraits::Exponent(Exponent::One());
-#endif
+template <int BitSizeMantissa, int BitSizeExponent>
+typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent
+BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::eZeroExponent
+   = Typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent(
+      Typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent::Zero());
 
-template <class TypeTraits>
-typename TypeTraits::Exponent
-#ifndef __BORLANDC__
-TBuiltDouble<TypeTraits>::eMinusOneExponent = typename TypeTraits::Exponent(typename TypeTraits::Exponent::MinusOne());
-#else
-TBuiltDouble<TypeTraits>::eMinusOneExponent = TypeTraits::Exponent(Exponent::MinusOne());
-#endif
+template <int BitSizeMantissa, int BitSizeExponent>
+typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent
+BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::eOneExponent
+   = Typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent(
+      Typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent::One());
 
-template <class TypeTraits>
-typename TypeTraits::Exponent
-#ifndef __BORLANDC__
-TBuiltDouble<TypeTraits>::eInftyExponent = typename TypeTraits::Exponent(typename TypeTraits::Exponent::Max());
-#else
-TBuiltDouble<TypeTraits>::eInftyExponent = TypeTraits::Exponent(Exponent::Max());
-#endif
+template <int BitSizeMantissa, int BitSizeExponent>
+typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent
+BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::eMinusOneExponent
+   = Typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent(
+      Typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent::MinusOne());
+
+template <int BitSizeMantissa, int BitSizeExponent>
+typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent
+BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::eInftyExponent
+   = Typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent(
+      Typename BuiltDoubleTraits<BitSizeMantissa, BitSizeExponent>::Exponent::Max());
 
 template <class TypeTraits>
 TBuiltDouble<TypeTraits>::TBuiltDouble(unsigned int uValue)
-#ifndef __BORLANDC__
-   :  biMantissa(), biExponent(typename Exponent::Min()), fNegative(false) {
-#else
-   :  biMantissa(), biExponent(Exponent::Min()), fNegative(false) {
-#endif
+   :  biMantissa(), biExponent(), fNegative(false) {
    if (uValue != 0U) {
       int uLogResult = log_base_2(uValue);
       assert(uLogResult <= bitSizeMantissa());
       biMantissa = uValue;
       biMantissa <<= (bitSizeMantissa()-uLogResult+1);
-      biExponent = getZeroExponent();
+      biExponent = TypeTraits::getZeroExponent(biExponent);
       biExponent.add(uLogResult-1);
    };
 }
 
 template <class TypeTraits>
-TBuiltDouble<TypeTraits>::TBuiltDouble(const IntConversion& icValueSource, StatusAndControlFlags& scfFlags)
-#ifndef __BORLANDC__
-   :  biMantissa(), biExponent(typename Exponent::Min()), fNegative(icValueSource.isNegative()) {
-#else
-   :  biMantissa(), biExponent(Exponent::Min()), fNegative(icValueSource.isNegative()) {
-#endif
+void
+TBuiltDouble<TypeTraits>::setChunk(void* pChunk, bool fChunkLittleEndian) {
+   biMantissa = 0U;
+   biExponent = 0U;
+   int uSizeMantissa = bitSizeMantissa(), uSizeExponent = bitSizeExponent();
+   int uByteSizeImplantation = (uSizeMantissa + uSizeExponent + 1 + 7)/8;
+   typename TypeTraits::CharChunk ccChunk;
+   TypeTraits::setChunkSize(uByteSizeImplantation);
+   TypeTraits::copyChunk(ccChunk, pChunk, uByteSizeImplantation);
+   bool fBigEndian = Details::DTDoubleElement::Access::isBigEndian();
+
+   unsigned char* pcMask = &ccChunk[0];
+   int uMantissaIndex = 0, uLastMantissaIndex = (uSizeMantissa + 8*sizeof(unsigned int) - 1) / (8*sizeof(unsigned int)) - 1;
+   int uCharInMantissa = 0;
+   if (fBigEndian)
+      uCharInMantissa = (sizeof(unsigned int) - 1);
+   if (!fChunkLittleEndian)
+      pcMask += uByteSizeImplantation-1;
+
+   int uMantissaChar = (uSizeMantissa + 7) / 8;
+   for (; uMantissaIndex <= uLastMantissaIndex; ++uMantissaIndex) {
+      for (int uLocal = 0; uLocal < (int) sizeof(unsigned int); ++uLocal) {
+         if (uMantissaChar == 0)
+            goto LExponent;
+         biMantissa[uMantissaIndex] |= ((unsigned int) *pcMask << (uCharInMantissa*8));
+         if (fBigEndian)
+            --uCharInMantissa;
+         else
+            ++uCharInMantissa;
+         if (fChunkLittleEndian)
+            ++pcMask;
+         else
+            --pcMask;
+         --uMantissaChar;
+      };
+      uCharInMantissa = 0;
+      if (fBigEndian)
+         uCharInMantissa = (sizeof(unsigned int) - 1);
+   };
+LExponent:
+   biMantissa.normalize();
+
+   pcMask = &ccChunk[0];
+   int uExponentIndex = 0, uLastExponentIndex = (uSizeExponent + 8*sizeof(unsigned int) - 1) / (8*sizeof(unsigned int)) - 1;
+   int uCharInExponent = 0;
+   if (!fBigEndian)
+      uCharInExponent = (sizeof(unsigned int) - 1);
+   if (fChunkLittleEndian)
+      pcMask += uByteSizeImplantation-1;
+   fNegative = *pcMask & 0x80;
+
+   int uExponentChar = (uSizeExponent + 7) / 8;
+   for (uExponentIndex = uLastExponentIndex; uExponentIndex >= 0; --uExponentIndex) {
+      for (int uLocal = 0; uLocal < (int) sizeof(unsigned int); ++uLocal) {
+         if (uExponentChar == 0)
+            goto LEnd;
+         biExponent[uExponentIndex] |= ((unsigned int) *pcMask << (uCharInExponent*8));
+         if (fBigEndian)
+            ++uCharInExponent;
+         else
+            --uCharInExponent;
+         if (fChunkLittleEndian)
+            --pcMask;
+         else
+            ++pcMask;
+         --uExponentChar;
+      };
+      uCharInExponent = 0;
+      if (!fBigEndian)
+         uCharInExponent = (sizeof(unsigned int) - 1);
+   };
+
+LEnd:
+   if ((uSizeExponent % 8) == 0) {
+      if (uSizeExponent % (8*sizeof(unsigned int)) == 0)
+         biExponent <<= 1;
+      else
+         biExponent >>= ((uLastExponentIndex + 1)*8*sizeof(unsigned int) - uSizeExponent - 1);
+      if (*pcMask & 0x80)
+         biExponent.setTrueBitArray(0);
+   }
+   else
+      biExponent >>= ((uLastExponentIndex + 1)*8*sizeof(unsigned int) - uSizeExponent - 1);
+   
+   biExponent.normalize();
+}
+
+template <class TypeTraits>
+void
+TBuiltDouble<TypeTraits>::fillChunk(void* pChunk, bool fChunkLittleEndian) { // uByteSize = UByteSizeImplantation/sizeof(unsigned int)+1
+   int uSizeMantissa = bitSizeMantissa(), uSizeExponent = bitSizeExponent();
+   int uByteSizeImplantation = (uSizeMantissa + uSizeExponent + 1 + 7)/8;
+   typename TypeTraits::CharChunk ccChunk;
+   TypeTraits::setChunkSize(uByteSizeImplantation);
+   TypeTraits::clearChunk(ccChunk, uByteSizeImplantation);
+   bool fBigEndian = Details::DTDoubleElement::Access::isBigEndian();
+
+   unsigned char* pcMask = &ccChunk[0];
+   int uMantissaIndex = 0, uLastMantissaIndex = (uSizeMantissa + 8*sizeof(unsigned int) - 1) / (8*sizeof(unsigned int)) - 1;
+   int uCharInMantissa = 0;
+   if (fBigEndian)
+      uCharInMantissa = (sizeof(unsigned int) - 1);
+   if (!fChunkLittleEndian)
+      pcMask += uByteSizeImplantation-1;
+
+   int uMantissaChar = (uSizeMantissa + 7) / 8;
+   for (; uMantissaIndex <= uLastMantissaIndex; ++uMantissaIndex) {
+      for (int uLocal = 0; uLocal < (int) sizeof(unsigned int); ++uLocal) {
+         if (uMantissaChar == 0)
+            goto LExponent;
+         *pcMask = (unsigned char) (biMantissa[uMantissaIndex] >> (uCharInMantissa*8));
+         if (fBigEndian)
+            --uCharInMantissa;
+         else
+            ++uCharInMantissa;
+         if (fChunkLittleEndian)
+            ++pcMask;
+         else
+            --pcMask;
+         --uMantissaChar;
+      };
+      uCharInMantissa = 0;
+      if (fBigEndian)
+         uCharInMantissa = (sizeof(unsigned int) - 1);
+   };
+LExponent:
+   pcMask = &ccChunk[0];
+   int uExponentIndex = 0, uLastExponentIndex = (uSizeExponent + 8*sizeof(unsigned int) - 1) / (8*sizeof(unsigned int)) - 1;
+   int uCharInExponent = 0;
+   if (!fBigEndian)
+      uCharInExponent = (sizeof(unsigned int) - 1);
+   if (fChunkLittleEndian)
+      pcMask += uByteSizeImplantation-1;
+   if (fNegative)
+      *pcMask |= 0x80;
+
+   typename TypeTraits::Exponent biCopyExponent = biExponent;
+   bool fMinor = false;
+   if (uSizeExponent % 8 == 0) {
+      fMinor = biExponent.cbitArray(0);
+      if (uSizeExponent % (8*sizeof(unsigned int)) == 0)
+         biCopyExponent >>= 1;
+      else
+         biCopyExponent.leftShiftAssign((uLastExponentIndex + 1)*(8*sizeof(unsigned int)) - uSizeExponent - 1);
+   }
+   else
+      biCopyExponent.leftShiftAssign((uLastExponentIndex + 1)*(8*sizeof(unsigned int)) - uSizeExponent - 1);
+
+   int uExponentChar = (uSizeExponent + 7) / 8;
+   for (uExponentIndex = uLastExponentIndex; uExponentIndex >= 0; --uExponentIndex) {
+      for (int uLocal = 0; uLocal < (int) sizeof(unsigned int); ++uLocal) {
+         if (uExponentChar == 0)
+            goto LEnd;
+         *pcMask |= (unsigned char) (biCopyExponent[uExponentIndex] >> (uCharInExponent*8));
+         if (fBigEndian)
+            ++uCharInExponent;
+         else
+            --uCharInExponent;
+         if (fChunkLittleEndian)
+            --pcMask;
+         else
+            ++pcMask;
+         --uExponentChar;
+      };
+      uCharInExponent = 0;
+      if (!fBigEndian)
+         uCharInExponent = (sizeof(unsigned int) - 1);
+   };
+LEnd:
+   if (((uSizeExponent % 8) == 0) && fMinor)
+      *pcMask |= 0x80;
+
+   TypeTraits::retrieveChunk(pChunk, ccChunk, uByteSizeImplantation);
+}
+
+template <class TypeTraits>
+void
+TBuiltDouble<TypeTraits>::setInteger(const IntConversion& icValueSource, StatusAndControlFlags& scfFlags) {
+   biMantissa = 0U;
+   biExponent = 0U;
+   fNegative = icValueSource.isNegative();
    IntConversion icValue(icValueSource);
    if (fNegative)
       icValue.opposite();
@@ -187,7 +359,7 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const IntConversion& icValueSource, Statu
                ++uIndex)
             biMantissa[uIndex] = icValue[uIndex];
          biMantissa.normalize();
-         biExponent = getZeroExponent();
+         biExponent = TypeTraits::getZeroExponent(biExponent);
          biExponent.add(uLogResult-1);
       }
       else if (uLogResult <= bitSizeMantissa()) {
@@ -196,7 +368,7 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const IntConversion& icValueSource, Statu
             biMantissa[uIndex] = icValue[uIndex];
          biMantissa.normalize();
          biMantissa <<= (bitSizeMantissa()-uLogResult+1);
-         biExponent = getZeroExponent();
+         biExponent = TypeTraits::getZeroExponent(biExponent);
          biExponent.add(uLogResult-1);
       }
       else if (icValue.querySize() > bitSizeMantissa()) { // uLogResult == bitSizeMantissa()+1
@@ -205,23 +377,22 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const IntConversion& icValueSource, Statu
                ++uIndex)
             biMantissa[uIndex] = icValue[uIndex];
          biMantissa.normalize();
-         biExponent = getZeroExponent();
+         biExponent = TypeTraits::getZeroExponent(biExponent);
          biExponent.add(bitSizeMantissa());
       };
    };
 }
 
 template <class TypeTraits>
-TBuiltDouble<TypeTraits>::TBuiltDouble(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags)
-#ifndef __BORLANDC__
-   :  biMantissa(), biExponent(typename Exponent::Min()), fNegative(fcValue.isNegative()) {
-#else
-   :  biMantissa(), biExponent(Exponent::Min()), fNegative(fcValue.isNegative()) {
-#endif
+void
+TBuiltDouble<TypeTraits>::setFloat(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags) {
+   fNegative = fcValue.isNegative();
+   biExponent = 0U;
+   biMantissa = 0U;
    if (fcValue.isZeroExponent() && fcValue.isZeroMantissa())
       return;
    if (fcValue.isInftyExponent()) {
-      biExponent = getInftyExponent();
+      biExponent = TypeTraits::getInftyExponent(biExponent);
       if (fcValue.isZeroMantissa()) {
          scfFlags.setOverflow();
          return;
@@ -261,8 +432,9 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const FloatConversion& fcValue, StatusAnd
             uIndex >= 0; --uIndex)
          biExponent[uIndex] = fcValue.exponent()[uIndex];
       biExponent.normalize();
-      biExponent.add(Exponent(typename Exponent::Min()).neg(bitSizeExponent()-fcValue.querySizeExponent())
-         <<= (fcValue.querySizeExponent()-1));
+      typename TypeTraits::Exponent eAdd;
+      biExponent.add(eAdd.neg(bitSizeExponent()-fcValue.querySizeExponent())
+            <<= (fcValue.querySizeExponent()-1));
          
       if (fcValue.isZeroExponent()) 
          biExponent.sub(fcValue.querySizeMantissa() - uLogMantissa);
@@ -282,9 +454,9 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const FloatConversion& fcValue, StatusAnd
          <<= (bitSizeExponent()-1);
       typename FloatConversion::Exponent fceNewExponent = fcValue.exponent();
       if (!fceNewExponent.sub(fceSubExponent).hasCarry() && !fceNewExponent.isZero()) {
-         if (fceNewExponent >= typename FloatConversion::Exponent().neg(bitSizeExponent())) {
+         if (fceNewExponent >= Typename FloatConversion::Exponent().neg(bitSizeExponent())) {
             scfFlags.setOverflow();
-            biExponent = getInftyExponent();
+            biExponent = TypeTraits::getInftyExponent(biExponent);
             biMantissa = 0U;
             if (scfFlags.upApproximateInfty()) {
                if (scfFlags.upApproximateInversionForNear() && scfFlags.isNearestRound()) {
@@ -315,7 +487,7 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const FloatConversion& fcValue, StatusAnd
             if (fcmMantissa.cbitArray(bitSizeMantissa())) {
                ++biExponent;
                fcmMantissa.setFalseBitArray(bitSizeMantissa());
-               if (biExponent == getInftyExponent()) {
+               if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
                   scfFlags.setOverflow();
                   if (!biMantissa.isZero()) {
                      biMantissa = 0U;
@@ -348,12 +520,14 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const FloatConversion& fcValue, StatusAnd
             int uShift = (fcValue.querySizeMantissa() - bitSizeMantissa())
                + fceNewExponent.queryValue() + 1;
             if (uShift > 0) {
-               trightShift(fcmMantissa, uShift, 1U, scfFlags, fNegative, fcValue.querySizeMantissa());
+               if (trightShift(fcmMantissa, uShift, 1U, scfFlags,
+                     fNegative, fcValue.querySizeMantissa()).hasCarry())
+                  biExponent.inc();
                if (fcmMantissa.cbitArray(bitSizeMantissa())) {
-                  ++biExponent;
+                  biExponent.inc();
                   fcmMantissa.setFalseBitArray(bitSizeMantissa());
-               }
-               else
+               };
+               if (!biExponent.isZero())
                   scfFlags.setUnderflow();
             }
             else
@@ -378,6 +552,8 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const FloatConversion& fcValue, StatusAnd
             else
                scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
             biMantissa = fAdd ? 1U : 0U;
+            if (!fAdd && fNegative && !scfFlags.acceptMinusZero())
+               fNegative = false;
          };
       };
    }
@@ -400,7 +576,7 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const FloatConversion& fcValue, StatusAnd
          if (fcmSourceMantissa.cbitArray(bitSizeMantissa())) {
             ++biExponent;
             fcmSourceMantissa.setFalseBitArray(bitSizeMantissa());
-            if (biExponent == getInftyExponent()) {
+            if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
                scfFlags.setOverflow();
                biMantissa = 0U;
                if (!biMantissa.isZero()) {
@@ -428,6 +604,8 @@ TBuiltDouble<TypeTraits>::TBuiltDouble(const FloatConversion& fcValue, StatusAnd
    };
 }
 
+#undef Typename
+
 template <class TypeTraits>
 void
 TBuiltDouble<TypeTraits>::retrieveInteger(IntConversion& icResult, StatusAndControlFlags& scfFlags) const {
@@ -439,14 +617,14 @@ TBuiltDouble<TypeTraits>::retrieveInteger(IntConversion& icResult, StatusAndCont
    };
    if (fNegative && icResult.isUnsigned()) {
       scfFlags.setUpApproximate();
-      icResult = 0;
+      icResult.assign((unsigned int) 0);
       return;
    };
-   if (biExponent < getZeroExponent()) {
+   if (biExponent < TypeTraits::getZeroExponent(biExponent)) {
       bool fAdd = false;
       if (!isZero()) {
          if (scfFlags.isNearestRound()) {
-            if ((fAdd = (biExponent == getMinusOneExponent())) != false)
+            if ((fAdd = (biExponent == TypeTraits::getMinusOneExponent(biExponent))) != false)
                fAdd = !biMantissa.isZero();
          }
          else if (scfFlags.isHighestRound())
@@ -458,12 +636,14 @@ TBuiltDouble<TypeTraits>::retrieveInteger(IntConversion& icResult, StatusAndCont
          else
             scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
       };
-      icResult = icResult.isUnsigned() ? (fAdd ? 1 : 0)
-                                       : (fAdd ? (fNegative ? -1 : 1) : 0);
+      if (icResult.isUnsigned())
+         icResult.assign(fAdd ? (unsigned int) 1 : (unsigned int) 0);
+      else
+         icResult.assign(fAdd ? (fNegative ? -1 : 1) : 0);
       return;
    };
    Exponent biDigits = biExponent;
-   biDigits.sub(getZeroExponent());
+   biDigits.sub(TypeTraits::getZeroExponent(biExponent));
    if (biDigits >= (icResult.queryMaxDigits())) {
       if (!fNegative || (biDigits > (icResult.queryMaxDigits())) || !biMantissa.isZero()) {
          scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
@@ -510,9 +690,10 @@ TBuiltDouble<TypeTraits>::plusAssignSureNN(const thisType& bdSource, StatusAndCo
    assert(isNormalized() && bdSource.isNormalized());
    if (biExponent == bdSource.biExponent) {
       typename Mantissa::Carry cCarry = biMantissa.add(bdSource.biMantissa);
-      trightShift(biMantissa, 1, cCarry.carry(), scfFlags, fNegative, bitSizeMantissa());
+      if (trightShift(biMantissa, 1, cCarry.carry(), scfFlags, fNegative, bitSizeMantissa()).hasCarry())
+         biExponent.inc();
       biExponent.inc();
-      if (biExponent == getInftyExponent()) {
+      if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
          scfFlags.setOverflow();
          if (!biMantissa.isZero()) {
             biMantissa = 0U;
@@ -551,7 +732,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureNN(const thisType& bdSource, StatusAndCo
          if (fAdd && ((fAdd = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
                && biMantissa.inc().hasCarry()) {
             biExponent.inc();
-            if (biExponent == getInftyExponent()) {
+            if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
                scfFlags.setOverflow();
                if (scfFlags.isInftyAvoided() && scfFlags.doesAvoidInfty(fNegative)) {
                   biMantissa.neg();
@@ -578,7 +759,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureNN(const thisType& bdSource, StatusAndCo
       if (biMantissa.add(bdSource.biMantissa).hasCarry() || fOverflow) {
          trightShift(biMantissa, 1, 0, scfFlags, fNegative, bitSizeMantissa());
          biExponent.inc();
-         if (biExponent == getInftyExponent()) {
+         if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
             scfFlags.setOverflow();
             if (!biMantissa.isZero()) {
                biMantissa = 0U;
@@ -600,7 +781,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureNN(const thisType& bdSource, StatusAndCo
                scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
                if (biMantissa.inc().hasCarry()) {
                   ++biExponent;
-                  if (biExponent == getInftyExponent()) {
+                  if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
                      scfFlags.setOverflow();
                      if (!biMantissa.isZero()) {
                         biMantissa = 0U;
@@ -646,7 +827,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureNN(const thisType& bdSource, StatusAndCo
       if (fAdd && ((fAdd = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
             && biMantissa.inc().hasCarry()) {
          ++biExponent;
-         if (biExponent == getInftyExponent()) {
+         if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
             scfFlags.setOverflow();
             if (scfFlags.isInftyAvoided() && scfFlags.doesAvoidInfty(fNegative)) {
                biMantissa.neg();
@@ -672,7 +853,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureNN(const thisType& bdSource, StatusAndCo
          || biMantissa.add(biSourceMantissa).hasCarry()) {
       trightShift(biMantissa, 1, 0, scfFlags, fNegative, bitSizeMantissa());
       biExponent.inc();
-      if (biExponent == getInftyExponent()) {
+      if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
          scfFlags.setOverflow();
          if (!biMantissa.isZero()) {
             biMantissa = 0U;
@@ -694,7 +875,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureNN(const thisType& bdSource, StatusAndCo
             scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
             if (biMantissa.inc().hasCarry()) {
                ++biExponent;
-               if (biExponent == getInftyExponent()) {
+               if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
                   scfFlags.setOverflow();
                   if (!biMantissa.isZero()) {
                      biMantissa = 0U;
@@ -733,7 +914,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureND(const thisType& bdSource, StatusAndCo
       if (scfFlags.isNearestRound()) {
          fAdd = biExponent == uMaxShift+1;
          if (fAdd && scfFlags.isRoundToEven()) {
-            fRoundToEven = bdSource.biMantissa.isZero();
+            fRoundToEven = bdSource.biMantissa.hasZero(uMaxShift-1);
             if (fRoundToEven)
                scfFlags.setEffectiveRoundToEven();
          };
@@ -757,7 +938,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureND(const thisType& bdSource, StatusAndCo
          || biMantissa.add(biSourceMantissa).hasCarry()) {
       trightShift(biMantissa, 1, 0, scfFlags, fNegative, bitSizeMantissa());
       biExponent.inc();
-      if (biExponent == getInftyExponent()) {
+      if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
          scfFlags.setOverflow();
          if (!biMantissa.isZero()) {
             biMantissa = 0U;
@@ -779,7 +960,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureND(const thisType& bdSource, StatusAndCo
             scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
             if (biMantissa.inc().hasCarry()) {
                ++biExponent;
-               if (biExponent == getInftyExponent()) {
+               if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
                   scfFlags.setOverflow();
                   if (!biMantissa.isZero()) {
                      biMantissa = 0U;
@@ -821,7 +1002,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureDN(const thisType& bdSource, StatusAndCo
       if (scfFlags.isNearestRound()) {
          fAdd = (bdSource.biExponent == uMaxShift+1);
          if (fAdd && scfFlags.isRoundToEven()) {
-            fRoundToEven = biMantissa.isZero();
+            fRoundToEven = biMantissa.hasZero(uMaxShift-1);
             if (fRoundToEven)
                scfFlags.setEffectiveRoundToEven();
          };
@@ -835,7 +1016,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureDN(const thisType& bdSource, StatusAndCo
       if (fAdd && ((fAdd = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
             && biMantissa.inc().hasCarry()) {
          biExponent.inc();
-         if (biExponent == getInftyExponent()) {
+         if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
             if (scfFlags.upApproximateInfty())
                scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
             scfFlags.setOverflow();
@@ -859,7 +1040,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureDN(const thisType& bdSource, StatusAndCo
    if (biMantissa.add(bdSource.biMantissa).hasCarry() || fOverflow) {
       trightShift(biMantissa, 1, 0, scfFlags, fNegative, bitSizeMantissa());
       biExponent.inc();
-      if (biExponent == getInftyExponent()) {
+      if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
          scfFlags.setOverflow();
          if (!biMantissa.isZero()) {
             biMantissa = 0U;
@@ -881,7 +1062,7 @@ TBuiltDouble<TypeTraits>::plusAssignSureDN(const thisType& bdSource, StatusAndCo
             scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
             if (biMantissa.inc().hasCarry()) {
                biExponent.inc();
-               if (biExponent == getInftyExponent()) {
+               if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
                   scfFlags.setOverflow();
                   if (scfFlags.upApproximateInfty())
                      scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
@@ -908,7 +1089,8 @@ TBuiltDouble<TypeTraits>::plusAssignSureDD(const thisType& bdSource, StatusAndCo
    assert(biExponent.isZero() && bdSource.biExponent.isZero());
    if (biMantissa.add(bdSource.biMantissa).hasCarry())
       biExponent.inc();
-   scfFlags.setUnderflow();
+   else
+      scfFlags.setUnderflow();
    return *this;
 }
 
@@ -934,41 +1116,69 @@ TBuiltDouble<TypeTraits>::minusAssignSureNN(const thisType& bdSource, StatusAndC
             scfFlags.setUnderflow();
          }
          else
-#ifndef __BORLANDC__
-            biExponent -= Exponent(typename Exponent::Basic(), uShift);
-#else
-            biExponent -= Exponent(Exponent::Basic(), uShift);
-#endif
+            biExponent -= getBasicExponent(uShift);
       };
       return *this;
    };
 
    assert(biExponent > bdSource.biExponent);
    if ((biExponent - bdSource.biExponent) > bitSizeMantissa()) {
+      bool fShouldDecFirst = ((biExponent - bdSource.biExponent) <= bitSizeMantissa()+2)
+         && biMantissa.isZero();
       bool fSub = false;
-      bool fRoundToEven = false;
+      bool fDoubleSub = false, fActiveDouble = false;
       if (scfFlags.isNearestRound()) {
-         fSub = ((biExponent - bdSource.biExponent) == bitSizeMantissa()+1);
-         if (fSub && scfFlags.isRoundToEven()) {
-            fRoundToEven = bdSource.biMantissa.isZero();
-            if (fRoundToEven)
-               scfFlags.setEffectiveRoundToEven();
+         if (!fShouldDecFirst) {
+            fSub = ((biExponent - bdSource.biExponent) == bitSizeMantissa()+1);
+            if (fSub && scfFlags.isRoundToEven()) {
+               if (bdSource.biMantissa.isZero()) {
+                  scfFlags.setEffectiveRoundToEven();
+                  if (!biMantissa.cbitArray(0))
+                     fSub = false;
+               };
+            };
+         }
+         else if ((biExponent - bdSource.biExponent) == bitSizeMantissa()+1) {
+            // biMantissa.isZero()
+            fSub = true;
+            fDoubleSub = bdSource.biMantissa.cbitArray(bitSizeMantissa()-1);
+            fActiveDouble = true;
+            if (fDoubleSub && scfFlags.isRoundToEven()) {
+               if (bdSource.biMantissa.hasZero(bitSizeMantissa()-1))
+                  scfFlags.setEffectiveRoundToEven();
+            };
+         }
+         else { // handle with the case fRoundToEven
+            // biMantissa.isZero() && (biExponent - bdSource.biExponent) == bitSizeMantissa()+2
+            fSub = !bdSource.biMantissa.isZero();
+            fShouldDecFirst = false;
          };
       }
-      else if (scfFlags.isHighestRound())
-         fSub = fNegative;
-      else if (scfFlags.isLowestRound())
-         fSub = !fNegative;
-      else // scfFlags.isZeroRound()
-         fSub = true;
-      if (fSub && ((fSub = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
-            && biMantissa.dec().hasCarry()) {
-         --biExponent;
-         if ((biExponent - bdSource.biExponent) == bitSizeMantissa()+1) {
-            biMantissa.setFalseBitArray(0);
-            if (bdSource.biMantissa.isZero()) // no approximation
-               return *this;
+      else {
+         if (scfFlags.isHighestRound())
+            fSub = fNegative;
+         else if (scfFlags.isLowestRound())
+            fSub = !fNegative;
+         else // scfFlags.isZeroRound()
+            fSub = true;
+         if (fShouldDecFirst) {
+            if ((biExponent - bdSource.biExponent) == bitSizeMantissa()+1) {
+               fDoubleSub = fSub;
+               fActiveDouble = true;
+               fSub = true;
+            }
+            else
+               fShouldDecFirst = false;
          };
+      }
+      if (fSub && biMantissa.dec().hasCarry()) {
+         --biExponent;
+         if (((biExponent - bdSource.biExponent) == bitSizeMantissa()) && bdSource.biMantissa.isZero())
+            return *this; // no approximation
+         if (fDoubleSub)
+            biMantissa.setFalseBitArray(0);
+         if (fActiveDouble)
+            fSub = fDoubleSub;
       };
       if (fNegative)
          scfFlags.setApproximate(fSub ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
@@ -1005,11 +1215,7 @@ TBuiltDouble<TypeTraits>::minusAssignSureNN(const thisType& bdSource, StatusAndC
             scfFlags.setUnderflow();
          }
          else
-#ifndef __BORLANDC__
-            biExponent -= Exponent(typename Exponent::Basic(), uNewShift);
-#else
-            biExponent -= Exponent(Exponent::Basic(), uNewShift);
-#endif
+            biExponent -= getBasicExponent(uNewShift);
       }
       else if (fMinor) {
          bool fSub = false;
@@ -1019,8 +1225,10 @@ TBuiltDouble<TypeTraits>::minusAssignSureNN(const thisType& bdSource, StatusAndC
             fSub = !fNegative;
          else // scfFlags.isZeroRound()
             fSub = true;
-         if ((biMantissa.isZero() && !scfFlags.isApproximate() && biMantissa.dec().hasCarry())
-               || (fSub && ((fSub = (!scfFlags.isRoundToEven() || biMantissa.cbitArray(0))) != false)
+         register bool fDec = false;
+         if ((biMantissa.isZero() && !scfFlags.isApproximate() && ((fDec = true) != false)
+                  && biMantissa.dec().hasCarry())
+               || (!fDec && fSub && ((fSub = (!scfFlags.isRoundToEven() || biMantissa.cbitArray(0))) != false)
                      && biMantissa.dec().hasCarry())) {
             --biExponent;
             return *this; // no precision loss
@@ -1062,14 +1270,20 @@ TBuiltDouble<TypeTraits>::minusAssignSureNN(const thisType& bdSource, StatusAndC
             fSub = !fNegative;
          else // scfFlags.isZeroRound()
             fSub = true;
-         if ((biMantissa.isZero() && !fMinorOne && !fSureApproximate
-                  && !scfFlags.isApproximate() && biMantissa.dec().hasCarry())
-            || (fSub && ((fSub = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
-                  && biMantissa.dec().hasCarry())) {
+
+         register bool fDec = false;
+         if ((biMantissa.isZero()
+                  && (fMinorTwo || (scfFlags.isNearestRound()
+                        && fMinorOne && (!scfFlags.isRoundToEven() || fSureApproximate)))
+                  && ((fDec = true) != false) && biMantissa.dec().hasCarry())
+            || (!fDec && fSub && ((fSub = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
+                  && biMantissa.dec().hasCarry())) { // if fDec, case fRoundToEven is naturally correct
             biExponent.dec();
-            biMantissa.setBitArray(0, fMinorTwo ? !fMinorOne : fMinorOne);
             if (scfFlags.isNearestRound())
-               fSub = fMinorOne;
+               fSub = fMinorTwo ? fMinorOne : true;
+            else if (fSub)
+               fSub = fMinorOne || fSureApproximate;
+            biMantissa.setBitArray(0, fMinorTwo ? !fSub : true);
             if (!fMinorOne && !fSureApproximate)
                return *this;
          };
@@ -1112,31 +1326,63 @@ TBuiltDouble<TypeTraits>::minusAssignSureND(const thisType& bdSource, StatusAndC
       return *this;
 
    int uNbSourceDigits = bdSource.biMantissa.log_base_2();
-   if (biExponent > uNbSourceDigits+1) {
+   if (biExponent > uNbSourceDigits) {
+      bool fShouldDecFirst = (biExponent <= uNbSourceDigits+2) && biMantissa.isZero();
       bool fSub = false;
-      bool fRoundToEven = false;
+      bool fDoubleSub = false, fActiveDouble = false;
       if (scfFlags.isNearestRound()) {
-         fSub = (biExponent == uNbSourceDigits);
-         if (fSub && scfFlags.isRoundToEven()) {
-            fRoundToEven = bdSource.biMantissa.isZero();
-            if (fRoundToEven)
-               scfFlags.setEffectiveRoundToEven();
+         if (!fShouldDecFirst) {
+            fSub = (biExponent == uNbSourceDigits+1);
+            if (fSub && scfFlags.isRoundToEven()) {
+               if (bdSource.biMantissa.hasZero(uNbSourceDigits-1)) {
+                  scfFlags.setEffectiveRoundToEven();
+                  if (!biMantissa.cbitArray(0))
+                     fSub = false;
+               };
+            };
+         }
+         else if (biExponent == uNbSourceDigits+1) {
+            // biMantissa.isZero()
+            fSub = true;
+            fDoubleSub = bdSource.biMantissa.cbitArray(uNbSourceDigits-2);
+            fActiveDouble = true;
+            if (scfFlags.isRoundToEven()) {
+               if ((uNbSourceDigits <= 2) && bdSource.biMantissa.hasZero(uNbSourceDigits-2))
+                  scfFlags.setEffectiveRoundToEven();
+            };
+         }
+         else { // handle with the case fRoundToEven
+            fSub = (uNbSourceDigits > 1) && !bdSource.biMantissa.hasZero(uNbSourceDigits-1);
+            fShouldDecFirst = false;
+            // if (!fSub) scfFlags.setEffectiveRoundToEven();
          };
       }
-      else if (scfFlags.isHighestRound())
-         fSub = fNegative;
-      else if (scfFlags.isLowestRound())
-         fSub = !fNegative;
-      else // scfFlags.isZeroRound()
-         fSub = true;
-      if (fSub && ((fSub = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
-            && biMantissa.dec().hasCarry()) {
-         biExponent.dec();
-         if (biExponent == uNbSourceDigits) {
-            biMantissa.setFalseBitArray(0);
-            if (bdSource.biMantissa.hasZero(uNbSourceDigits-1)) // no approximation
-               return *this;
+      else {
+         if (scfFlags.isHighestRound())
+            fSub = fNegative;
+         else if (scfFlags.isLowestRound())
+            fSub = !fNegative;
+         else // scfFlags.isZeroRound()
+            fSub = true;
+         if (fShouldDecFirst) {
+            if (biExponent == uNbSourceDigits+1) {
+               fDoubleSub = fSub;
+               fActiveDouble = true;
+               fSub = true;
+            }
+            else
+               fShouldDecFirst = false;
          };
+      };
+      if (fSub && biMantissa.dec().hasCarry()) {
+         biExponent.dec();
+         if ((biExponent == uNbSourceDigits)
+               && ((uNbSourceDigits <= 1) || bdSource.biMantissa.hasZero(uNbSourceDigits-1)))
+            return *this; // no approximation
+         if (fDoubleSub)
+            biMantissa.setFalseBitArray(0);
+         if (fActiveDouble)
+            fSub = fDoubleSub;
       };
       if (fNegative)
          scfFlags.setApproximate(fSub ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
@@ -1159,7 +1405,12 @@ TBuiltDouble<TypeTraits>::minusAssignSureND(const thisType& bdSource, StatusAndC
         fMinorOne = (uSourceShift > 1) ? biSourceMantissa.cbitArray(uSourceShift-2) : 0;
    bool fSureApproximate = (uSourceShift > 1) ? !biSourceMantissa.hasZero(uSourceShift-2) : false;
    biSourceMantissa >>= uSourceShift;
-   if (!biMantissa.sub(biSourceMantissa).hasCarry()) {
+   bool fHasDigits = !biMantissa.sub(biSourceMantissa).hasCarry();
+   if (!fHasDigits) {
+      biExponent.dec();
+      fHasDigits = biExponent.isZero();
+   };
+   if (fHasDigits) {
       if (fMinorOne || fMinorTwo || fSureApproximate) {
          bool fSub = false;
          bool fRoundToEven = false;
@@ -1177,12 +1428,19 @@ TBuiltDouble<TypeTraits>::minusAssignSureND(const thisType& bdSource, StatusAndC
             fSub = !fNegative;
          else // scfFlags.isZeroRound()
             fSub = true;
-         if (fSub && ((fSub = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
-               && biMantissa.dec().hasCarry()) {
+         register bool fDec = false;
+         if ((biMantissa.isZero()
+                  && (fMinorTwo || (scfFlags.isNearestRound()
+                        && fMinorOne && (!scfFlags.isRoundToEven() || fSureApproximate)))
+                  && ((fDec = true) != false) && biMantissa.dec().hasCarry())
+            || (!fDec && fSub && ((fSub = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
+                  && biMantissa.dec().hasCarry())) { // if fDec, case fRoundToEven is naturally correct
             biExponent.dec();
-            biMantissa.setBitArray(0, fMinorTwo ? !fMinorOne : fMinorOne);
             if (scfFlags.isNearestRound())
-               fSub = fMinorOne;
+               fSub = fMinorTwo ? fMinorOne : true;
+            else if (fSub)
+               fSub = fMinorOne || fSureApproximate;
+            biMantissa.setBitArray(0, fMinorTwo ? !fSub : true);
             if (!fMinorOne && !fSureApproximate)
                return *this;
          };
@@ -1194,12 +1452,9 @@ TBuiltDouble<TypeTraits>::minusAssignSureND(const thisType& bdSource, StatusAndC
       return *this;
    };
 
-   biExponent.dec();
    biMantissa <<= 1;
-   if (fMinorTwo) {
-      if (biMantissa.dec().hasCarry())
-         biExponent.dec();
-   };
+   if (fMinorTwo)
+      biMantissa.dec();
    if (fMinorOne || fSureApproximate) {
       bool fSub = false;
       if (scfFlags.isNearestRound())
@@ -1210,10 +1465,8 @@ TBuiltDouble<TypeTraits>::minusAssignSureND(const thisType& bdSource, StatusAndC
          fSub = !fNegative;
       else // scfFlags.isZeroRound()
          fSub = true;
-      if (fSub) {
-         if (biMantissa.dec().hasCarry())
-            biExponent.dec();
-      };
+      if (fSub)
+         biMantissa.dec();
       if (fNegative)
          scfFlags.setApproximate(fSub ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
       else
@@ -1238,9 +1491,9 @@ template <class TypeTraits>
 TBuiltDouble<TypeTraits>&
 TBuiltDouble<TypeTraits>::plusAssign(const thisType& bdSource, StatusAndControlFlags& scfFlags) {
    if (!biExponent.isZero()) {
-      if (biExponent != getInftyExponent()) {
+      if (biExponent != TypeTraits::getInftyExponent(biExponent)) {
          if (!bdSource.biExponent.isZero()) {
-            if (bdSource.biExponent != getInftyExponent()) {
+            if (bdSource.biExponent != TypeTraits::getInftyExponent(biExponent)) {
                if (fNegative == bdSource.fNegative)
                   return plusAssignSureNN(bdSource, scfFlags);
                typename Exponent::ComparisonResult crCompareExponent = biExponent.compare(bdSource.biExponent);
@@ -1252,7 +1505,7 @@ TBuiltDouble<TypeTraits>::plusAssign(const thisType& bdSource, StatusAndControlF
                minusAssignSureNN(ttThisCopy, scfFlags);
                return *this;
             };
-            // bdSource.biExponent == getInftyExponent()
+            // bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)
             fNegative = bdSource.fNegative;
             biMantissa = bdSource.biMantissa;
             if (!biMantissa.isZero()) {
@@ -1261,7 +1514,7 @@ TBuiltDouble<TypeTraits>::plusAssign(const thisType& bdSource, StatusAndControlF
                   biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                };
             };
-            biExponent = getInftyExponent();
+            biExponent = TypeTraits::getInftyExponent(biExponent);
             return *this;
          };
 
@@ -1270,9 +1523,9 @@ TBuiltDouble<TypeTraits>::plusAssign(const thisType& bdSource, StatusAndControlF
          return minusAssignSureND(bdSource, scfFlags);
       };
 
-      // biExponent == getInftyExponent()
+      // biExponent == TypeTraits::getInftyExponent(biExponent)
       if (biMantissa.isZero()) {
-         if (bdSource.biExponent == getInftyExponent()) {
+         if (bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)) {
             if (!bdSource.biMantissa.isZero()) {
                biMantissa = bdSource.biMantissa;
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
@@ -1315,7 +1568,7 @@ TBuiltDouble<TypeTraits>::plusAssign(const thisType& bdSource, StatusAndControlF
    };
       
    // biExponent == 0 && bdSource.biExponent != 0
-   if (bdSource.biExponent == getInftyExponent()) {
+   if (bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)) {
       fNegative = bdSource.fNegative;
       biExponent = bdSource.biExponent;
       biMantissa = bdSource.biMantissa;
@@ -1328,7 +1581,7 @@ TBuiltDouble<TypeTraits>::plusAssign(const thisType& bdSource, StatusAndControlF
       return *this;
    };
    
-   // biExponent == 0 && bdSource.biExponent != 0 && bdSource.biExponent != getInftyExponent()
+   // biExponent == 0 && bdSource.biExponent != 0 && bdSource.biExponent != TypeTraits::getInftyExponent(biExponent)
    if (fNegative == bdSource.fNegative)
       return plusAssignSureDN(bdSource, scfFlags);
    thisType ttThisCopy = *this;
@@ -1341,9 +1594,9 @@ template <class TypeTraits>
 TBuiltDouble<TypeTraits>&
 TBuiltDouble<TypeTraits>::minusAssign(const thisType& bdSource, StatusAndControlFlags& scfFlags) {
    if (!biExponent.isZero()) {
-      if (biExponent != getInftyExponent()) {
+      if (biExponent != TypeTraits::getInftyExponent(biExponent)) {
          if (!bdSource.biExponent.isZero()) {
-            if (bdSource.biExponent != getInftyExponent()) {
+            if (bdSource.biExponent != TypeTraits::getInftyExponent(biExponent)) {
                if (fNegative != bdSource.fNegative)
                   return plusAssignSureNN(bdSource, scfFlags);
                typename Mantissa::ComparisonResult crCompareExponent = biExponent.compare(bdSource.biExponent);
@@ -1357,15 +1610,16 @@ TBuiltDouble<TypeTraits>::minusAssign(const thisType& bdSource, StatusAndControl
                return *this;
             };
             
-            // bdSource.biExponent == getInftyExponent()
-            if (scfFlags.keepNaNSign())
-               fNegative = bdSource.fNegative;
+            // bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)
+            fNegative = !bdSource.fNegative;
             biMantissa = bdSource.biMantissa;
             if (!biMantissa.isZero()) {
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                   scfFlags.setSNaNOperand();
                   biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                };
+               if (scfFlags.keepNaNSign())
+                  fNegative = !fNegative;
             };
             biExponent = bdSource.biExponent;
             return *this;
@@ -1378,9 +1632,9 @@ TBuiltDouble<TypeTraits>::minusAssign(const thisType& bdSource, StatusAndControl
          return *this;
       };
 
-      // biExponent == getInftyExponent()
+      // biExponent == TypeTraits::getInftyExponent(biExponent)
       if (biMantissa.isZero()) {
-         if (bdSource.biExponent == getInftyExponent()) {
+         if (bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)) {
             if (!bdSource.biMantissa.isZero()) {
                biMantissa = bdSource.biMantissa;
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
@@ -1425,9 +1679,9 @@ TBuiltDouble<TypeTraits>::minusAssign(const thisType& bdSource, StatusAndControl
    };
 
    // biExponent == 0 && bdSource.biExponent != 0
-   if (bdSource.biExponent == getInftyExponent()) {
+   if (bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)) {
       fNegative = !bdSource.fNegative;
-      biExponent = getInftyExponent();
+      biExponent = TypeTraits::getInftyExponent(biExponent);
       biMantissa = bdSource.biMantissa;
       if (!biMantissa.isZero()) {
          if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
@@ -1440,7 +1694,7 @@ TBuiltDouble<TypeTraits>::minusAssign(const thisType& bdSource, StatusAndControl
       return *this;
    };
    
-   // biExponent == 0 && bdSource.biExponent != 0 && bdSource.biExponent != getInftyExponent()
+   // biExponent == 0 && bdSource.biExponent != 0 && bdSource.biExponent != TypeTraits::getInftyExponent(biExponent)
    if (fNegative != bdSource.fNegative)
       return plusAssignSureDN(bdSource, scfFlags);
    thisType ttThisCopy = *this;
@@ -1465,16 +1719,17 @@ TBuiltDouble<TypeTraits>::multAssign(unsigned int uValue, StatusAndControlFlags&
                --uValueDigits;
                assert((cCarry.carry() & (1U << (uValueDigits-1))) != 0);
             };
-            trightShift(emMantissa, uValueDigits, cCarry.carry() & ~(~0U << (uValueDigits-1)),
-               scfFlags, fNegative, bitSizeMantissa()+1);
+            if (trightShift(emMantissa, uValueDigits, cCarry.carry() & ~(~0U << (uValueDigits-1)),
+                  scfFlags, fNegative, bitSizeMantissa()+1).hasCarry())
+               ++uValueDigits;
             biMantissa = emMantissa;
             register bool fOverflowExponent = emMantissa.cbitArray(bitSizeMantissa())
                 ? biExponent.plusAssign(uValueDigits + 1).hasCarry()
                 : biExponent.plusAssign(uValueDigits).hasCarry();
-            if (fOverflowExponent || (biExponent >= getInftyExponent())) {
+            if (fOverflowExponent || (biExponent >= TypeTraits::getInftyExponent(biExponent))) {
                scfFlags.setOverflow();
-               if (fOverflowExponent || (biExponent > getInftyExponent()) || !biMantissa.isZero()) {
-                  biExponent = getInftyExponent();
+               if (fOverflowExponent || (biExponent > TypeTraits::getInftyExponent(biExponent)) || !biMantissa.isZero()) {
+                  biExponent = TypeTraits::getInftyExponent(biExponent);
                   biMantissa = 0U;
                   if (!scfFlags.isApproximate())
                      scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
@@ -1494,7 +1749,9 @@ TBuiltDouble<TypeTraits>::multAssign(unsigned int uValue, StatusAndControlFlags&
          if (cCarry.hasCarry()) {
             int uShift = log_base_2(cCarry.carry())-1;
             if (uShift > 0) {
-               trightShift(biMantissa, uShift, cCarry.carry(), scfFlags, fNegative, bitSizeMantissa());
+               if (trightShift(biMantissa, uShift, cCarry.carry(), scfFlags, fNegative, bitSizeMantissa()).hasCarry())
+                  ++uShift;
+               biMantissa.normalize();
                biExponent = uShift+1;
             }
             else
@@ -1503,17 +1760,17 @@ TBuiltDouble<TypeTraits>::multAssign(unsigned int uValue, StatusAndControlFlags&
          else
             scfFlags.setUnderflow();
       }
-      else { // biExponent == getInftyExponent();
+      else { // biExponent == TypeTraits::getInftyExponent(biExponent);
          if (!queryMantissa().isZero())
             biMantissa.setTrueBitArray(bitSizeMantissa()-1);
       };
    }
-   else if (biExponent != getInftyExponent()) { // uValue == 0
+   else if (biExponent != TypeTraits::getInftyExponent(biExponent)) { // uValue == 0
       biMantissa = 0U;
       biExponent = 0U;
       scfFlags.setUnderflow();
    }
-   else { // biExponent == getInftyExponent()) -> NaN
+   else { // biExponent == TypeTraits::getInftyExponent(biExponent)) -> NaN
       if (biMantissa.isZero()) {
          biMantissa = 0U;
          biMantissa.neg();
@@ -1528,14 +1785,15 @@ TBuiltDouble<TypeTraits>::multAssign(unsigned int uValue, StatusAndControlFlags&
 template <class TypeTraits>
 void
 TBuiltDouble<TypeTraits>::addExtension(const thisType& bdSource,
-      typename Integer::TBigInt<typename TypeTraits::ExtendedMantissa::MultResult>& mprResult,
+      typename TypeTraits::ExtendedMantissa::EnhancedMultResult& mprResult,
       StatusAndControlFlags& scfFlags, bool fPositiveAdd, int& uLogResult, bool& fExponentHasCarry,
       bool& fResultPositiveExponent, bool& fAddExponent) {
    TBuiltDouble<typename TypeTraits::MultExtension> bdMult, bdAdd;
    bdMult.setSign(!fNegative);
    for (register int uIndex = 0; uIndex < biExponent.queryCellSize(); ++uIndex)
       bdMult.querySBasicExponent()[uIndex] = biExponent[uIndex];
-   for (register int uIndex = 0; uIndex < mprResult.queryCellSize(); ++uIndex)
+   int uMultSize = ((const typename TypeTraits::ExtendedMantissa&) biMantissa).queryMultResultCellSize(mprResult);
+   for (register int uIndex = 0; uIndex < uMultSize; ++uIndex)
       bdMult.querySMantissa()[uIndex] = mprResult[uIndex];
    bdMult.querySMantissa().normalize();
    if (uLogResult < 2*bitSizeMantissa()+1)
@@ -1612,7 +1870,7 @@ LSetResult:
    for (register int uIndex = 0; uIndex < biExponent.queryCellSize(); ++uIndex)
       biExponent[uIndex] = bdMult.querySBasicExponent()[uIndex];
    biExponent.normalize();
-   for (register int uIndex = 0; uIndex < mprResult.queryCellSize(); ++uIndex)
+   for (register int uIndex = 0; uIndex < uMultSize; ++uIndex)
       mprResult[uIndex] = bdMult.querySMantissa()[uIndex];
    mprResult.setTrueBitArray(2*bitSizeMantissa()+1);
    if (bdMult.querySBasicExponent().cbitArray(bitSizeExponent())) {
@@ -1640,12 +1898,12 @@ LSetResult:
 
 template <class TypeTraits>
 TBuiltDouble<TypeTraits>&
-TBuiltDouble<TypeTraits>::multAssignNN(const thisType& bdSource, const MultParameters& mpParams) {
+TBuiltDouble<TypeTraits>::multAssignNN(const thisType& bdSource, const MultParameters& mpFlags) {
    assert(isNormalized() && bdSource.isNormalized());
-   StatusAndControlFlags& scfFlags = mpParams.readParams();
+   StatusAndControlFlags& scfFlags = mpFlags.readParams();
    typename TypeTraits::ExtendedMantissa::MultResult mrResult;
-   typename Integer::TBigInt<typename TypeTraits::ExtendedMantissa::MultResult>&
-      mprResult = (typename Integer::TBigInt<typename TypeTraits::ExtendedMantissa::MultResult>&) mrResult;
+   typename TypeTraits::ExtendedMantissa::EnhancedMultResult&
+      mprResult = (typename TypeTraits::ExtendedMantissa::EnhancedMultResult&) mrResult;
 
    typename TypeTraits::ExtendedMantissa emMantissa(biMantissa);
    typename TypeTraits::ExtendedMantissa emSourceMantissa(bdSource.biMantissa);
@@ -1664,19 +1922,20 @@ TBuiltDouble<TypeTraits>::multAssignNN(const thisType& bdSource, const MultParam
    bool fExponentHasCarry = false;
    bool fResultPositiveExponent = !bdSource.hasNegativeExponent();
    if (fResultPositiveExponent)
-      fExponentHasCarry = biExponent.plusAssign(bdSource.biExponent-getZeroExponent()).hasCarry();
+      fExponentHasCarry = biExponent.plusAssign(bdSource.biExponent
+         -TypeTraits::getZeroExponent(biExponent)).hasCarry();
    else {
-      Exponent biSubExponent = getZeroExponent();
+      Exponent biSubExponent = TypeTraits::getZeroExponent(biExponent);
       biSubExponent -= bdSource.biExponent;
       fExponentHasCarry = biExponent.sub(biSubExponent).hasCarry();
-      fResultPositiveExponent = !fExponentHasCarry && (biExponent >= getZeroExponent());
+      fResultPositiveExponent = !fExponentHasCarry && (biExponent >= TypeTraits::getZeroExponent(biExponent));
    };
 
    bool fAddExtension = false;
-   if (mpParams.hasAdd()) {
-      fAddExtension = mpParams.hasSameSign(fNegative);
-      addExtension(mpParams.queryAddSource(), mprResult, scfFlags,
-         mpParams.isPositiveAdditive(), uLogResult, fExponentHasCarry, fResultPositiveExponent,
+   if (mpFlags.hasAdd()) {
+      fAddExtension = mpFlags.hasSameSign(fNegative);
+      addExtension(mpFlags.queryAddSource(), mprResult, scfFlags,
+         mpFlags.isPositiveAdditive(), uLogResult, fExponentHasCarry, fResultPositiveExponent,
          fAddExponent);
    };
 
@@ -1691,9 +1950,9 @@ TBuiltDouble<TypeTraits>::multAssignNN(const thisType& bdSource, const MultParam
          };
       }
       else if (scfFlags.isHighestRound())
-         fAdd = (fApproximate || !mpParams.hasAdd()) ? !fNegative : (!fNegative && fAddExtension);
+         fAdd = (fApproximate || !mpFlags.hasAdd()) ? !fNegative : (!fNegative && fAddExtension);
       else if (scfFlags.isLowestRound())
-         fAdd = (fApproximate || !mpParams.hasAdd()) ? fNegative : (fNegative && fAddExtension);
+         fAdd = (fApproximate || !mpFlags.hasAdd()) ? fNegative : (fNegative && fAddExtension);
    };
    mprResult >>= uShift;
    assert(mprResult.cbitArray(bitSizeMantissa()));
@@ -1717,10 +1976,10 @@ TBuiltDouble<TypeTraits>::multAssignNN(const thisType& bdSource, const MultParam
 
    if (fResultPositiveExponent) {
       if (fExponentHasCarry || (fAddExponent && biExponent.inc().hasCarry())) {
-         biExponent = getInftyExponent();
+         biExponent = TypeTraits::getInftyExponent(biExponent);
          biMantissa = 0U;
       }
-      else if (biExponent == getInftyExponent()) {
+      else if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
          if (!biMantissa.isZero()) {
             biMantissa = 0U;
             if (!scfFlags.isApproximate())
@@ -1748,14 +2007,29 @@ TBuiltDouble<TypeTraits>::multAssignNN(const thisType& bdSource, const MultParam
       Exponent biSubExponent = biExponent;
       biExponent = 0U;
       scfFlags.setUnderflow();
-      if (biSubExponent < bitSizeMantissa()) // denormalized
-         trightShift(biMantissa, biSubExponent.queryValue()+1, 1, scfFlags, fNegative, bitSizeMantissa());
+      if (biSubExponent < bitSizeMantissa()) { // denormalized
+         if (trightShift(biMantissa, biSubExponent.queryValue()+1, 1, scfFlags,
+               fNegative, bitSizeMantissa()).hasCarry()) {
+            biExponent.inc();
+            scfFlags.clearUnderflow();
+         };
+      }
       else {
          bool fAdd = false;
          if (scfFlags.isNearestRound()) {
             fAdd = (biSubExponent == bitSizeMantissa());
-            if (fAdd && scfFlags.isRoundToEven())
-               fAdd = !biMantissa.isZero() || scfFlags.isApproximate();
+            if (fAdd && biMantissa.isZero()) {
+               if (!fNegative) {
+                  if (scfFlags.isUpApproximate()
+                        || (!scfFlags.isApproximate() && scfFlags.isRoundToEven()))
+                     fAdd = false;
+               }
+               else {
+                  if (scfFlags.isDownApproximate()
+                        || (!scfFlags.isApproximate() && scfFlags.isRoundToEven()))
+                     fAdd = false;
+               };
+            };
          }
          else if (scfFlags.isHighestRound())
             fAdd = !fNegative;
@@ -1766,6 +2040,8 @@ TBuiltDouble<TypeTraits>::multAssignNN(const thisType& bdSource, const MultParam
             scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
          else
             scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
+         if (!fAdd && fNegative && !scfFlags.acceptMinusZero())
+            fNegative = false;
       };
    }
    else if ((biExponent == 1U) && biMantissa.isZero()
@@ -1776,12 +2052,12 @@ TBuiltDouble<TypeTraits>::multAssignNN(const thisType& bdSource, const MultParam
 
 template <class TypeTraits>
 TBuiltDouble<TypeTraits>&
-TBuiltDouble<TypeTraits>::multAssignND(const thisType& bdSource, const MultParameters& mpParams) {
+TBuiltDouble<TypeTraits>::multAssignND(const thisType& bdSource, const MultParameters& mpFlags) {
    assert(isNormalized() && bdSource.isDenormalized());
-   StatusAndControlFlags& scfFlags = mpParams.readParams();
+   StatusAndControlFlags& scfFlags = mpFlags.readParams();
    typename TypeTraits::ExtendedMantissa::MultResult mrResult;
-   typename Integer::TBigInt<typename TypeTraits::ExtendedMantissa::MultResult>&
-      mprResult = (typename Integer::TBigInt<typename TypeTraits::ExtendedMantissa::MultResult>&) mrResult;
+   typename TypeTraits::ExtendedMantissa::EnhancedMultResult&
+      mprResult = (typename TypeTraits::ExtendedMantissa::EnhancedMultResult&) mrResult;
 
    typename TypeTraits::ExtendedMantissa emMantissa(biMantissa);
    typename TypeTraits::ExtendedMantissa emSourceMantissa(bdSource.biMantissa);
@@ -1793,7 +2069,7 @@ TBuiltDouble<TypeTraits>::multAssignND(const thisType& bdSource, const MultParam
    bool fAdd = false;
    bool fRoundToEven = false;
    bool fApproximate = false;
-   Exponent biSubExponent = getZeroExponent();
+   Exponent biSubExponent = TypeTraits::getZeroExponent(biExponent);
    int uAdd = 2*bitSizeMantissa()-uLogResult -1;
    if (uAdd > 0)
       biSubExponent.add(uAdd);
@@ -1803,11 +2079,11 @@ TBuiltDouble<TypeTraits>::multAssignND(const thisType& bdSource, const MultParam
    bool fExponentHasCarry = biExponent.sub(biSubExponent).hasCarry();
 
    bool fAddExtension = false;
-   if (mpParams.hasAdd()) {
+   if (mpFlags.hasAdd()) {
       bool fAddExponent = false;
-      fAddExtension = mpParams.hasSameSign(fNegative);
-      addExtension(mpParams.queryAddSource(), mprResult, scfFlags,
-         mpParams.isPositiveAdditive(), uLogResult, fExponentHasCarry, fResultPositiveExponent,
+      fAddExtension = mpFlags.hasSameSign(fNegative);
+      addExtension(mpFlags.queryAddSource(), mprResult, scfFlags,
+         mpFlags.isPositiveAdditive(), uLogResult, fExponentHasCarry, fResultPositiveExponent,
          fAddExponent);
    };
 
@@ -1823,9 +2099,9 @@ TBuiltDouble<TypeTraits>::multAssignND(const thisType& bdSource, const MultParam
          };
       }
       else if (scfFlags.isHighestRound())
-         fAdd = (fApproximate || !mpParams.hasAdd()) ? !fNegative : (!fNegative && fAddExtension);
+         fAdd = (fApproximate || !mpFlags.hasAdd()) ? !fNegative : (!fNegative && fAddExtension);
       else if (scfFlags.isLowestRound())
-         fAdd = (fApproximate || !mpParams.hasAdd()) ? fNegative : (fNegative && fAddExtension);
+         fAdd = (fApproximate || !mpFlags.hasAdd()) ? fNegative : (fNegative && fAddExtension);
    };
    mprResult >>= uShift;
    assert(mprResult.cbitArray(bitSizeMantissa()));
@@ -1851,14 +2127,30 @@ TBuiltDouble<TypeTraits>::multAssignND(const thisType& bdSource, const MultParam
    if (fExponentHasCarry || biExponent.isZero()) {
       scfFlags.setUnderflow();
       biExponent.neg().inc();
-      if (biExponent < bitSizeMantissa()) // denormalized
-         trightShift(biMantissa, biExponent.queryValue()+1, 1, scfFlags, fNegative, bitSizeMantissa());
+      if (biExponent < bitSizeMantissa()) { // denormalized
+         if (trightShift(biMantissa, biExponent.queryValue()+1, 1, scfFlags,
+               fNegative, bitSizeMantissa()).hasCarry()) {
+            biExponent = 1U;
+            scfFlags.clearUnderflow();
+            return *this;
+         };
+      }
       else {
          bool fAdd = false;
          if (scfFlags.isNearestRound()) {
             fAdd = biExponent == bitSizeMantissa();
-            if (fAdd && scfFlags.isRoundToEven())
-               fAdd = !biMantissa.isZero() || scfFlags.isApproximate();
+            if (fAdd && biMantissa.isZero()) {
+               if (!fNegative) {
+                  if (scfFlags.isUpApproximate()
+                        || (!scfFlags.isApproximate() && scfFlags.isRoundToEven()))
+                     fAdd = false;
+               }
+               else {
+                  if (scfFlags.isDownApproximate()
+                        || (!scfFlags.isApproximate() && scfFlags.isRoundToEven()))
+                     fAdd = false;
+               };
+            };
          }
          else if (scfFlags.isHighestRound())
             fAdd = !fNegative;
@@ -1869,6 +2161,8 @@ TBuiltDouble<TypeTraits>::multAssignND(const thisType& bdSource, const MultParam
          else
             scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
          biMantissa = fAdd ? 1U : 0U;
+         if (!fAdd && fNegative && !scfFlags.acceptMinusZero())
+            fNegative = false;
       };
       biExponent = 0U;
    }
@@ -1880,12 +2174,12 @@ TBuiltDouble<TypeTraits>::multAssignND(const thisType& bdSource, const MultParam
 
 template <class TypeTraits>
 TBuiltDouble<TypeTraits>&
-TBuiltDouble<TypeTraits>::multAssignDN(const thisType& bdSource, const MultParameters& mpParams) {
+TBuiltDouble<TypeTraits>::multAssignDN(const thisType& bdSource, const MultParameters& mpFlags) {
    assert(isDenormalized() && bdSource.isNormalized());
-   StatusAndControlFlags& scfFlags = mpParams.readParams();
+   StatusAndControlFlags& scfFlags = mpFlags.readParams();
    typename TypeTraits::ExtendedMantissa::MultResult mrResult;
-   typename Integer::TBigInt<typename TypeTraits::ExtendedMantissa::MultResult>&
-      mprResult = (typename Integer::TBigInt<typename TypeTraits::ExtendedMantissa::MultResult>&) mrResult;
+   typename TypeTraits::ExtendedMantissa::EnhancedMultResult&
+      mprResult = (typename TypeTraits::ExtendedMantissa::EnhancedMultResult&) mrResult;
 
    typename TypeTraits::ExtendedMantissa emMantissa(biMantissa);
    typename TypeTraits::ExtendedMantissa emSourceMantissa(bdSource.biMantissa);
@@ -1897,7 +2191,7 @@ TBuiltDouble<TypeTraits>::multAssignDN(const thisType& bdSource, const MultParam
    bool fAdd = false;
    bool fRoundToEven = false;
    bool fApproximate = false;
-   Exponent biSubExponent = getZeroExponent();
+   Exponent biSubExponent = TypeTraits::getZeroExponent(biExponent);
    int uAdd = 2*bitSizeMantissa()-uLogResult -1;
    if (uAdd > 0)
       biSubExponent.add(uAdd);
@@ -1908,11 +2202,11 @@ TBuiltDouble<TypeTraits>::multAssignDN(const thisType& bdSource, const MultParam
    bool fExponentHasCarry = biExponent.sub(biSubExponent).hasCarry();
 
    bool fAddExtension = false;
-   if (mpParams.hasAdd()) {
+   if (mpFlags.hasAdd()) {
       bool fAddExponent = false;
-      fAddExtension = mpParams.hasSameSign(fNegative);
-      addExtension(mpParams.queryAddSource(), mprResult, scfFlags,
-         mpParams.isPositiveAdditive(), uLogResult, fExponentHasCarry, fResultPositiveExponent,
+      fAddExtension = mpFlags.hasSameSign(fNegative);
+      addExtension(mpFlags.queryAddSource(), mprResult, scfFlags,
+         mpFlags.isPositiveAdditive(), uLogResult, fExponentHasCarry, fResultPositiveExponent,
          fAddExponent);
    };
    
@@ -1928,17 +2222,18 @@ TBuiltDouble<TypeTraits>::multAssignDN(const thisType& bdSource, const MultParam
          };
       }
       else if (scfFlags.isHighestRound())
-         fAdd = (fApproximate || !mpParams.hasAdd()) ? !fNegative : (!fNegative && fAddExtension);
+         fAdd = (fApproximate || !mpFlags.hasAdd()) ? !fNegative : (!fNegative && fAddExtension);
       else if (scfFlags.isLowestRound())
-         fAdd = (fApproximate || !mpParams.hasAdd()) ? fNegative : (fNegative && fAddExtension);
+         fAdd = (fApproximate || !mpFlags.hasAdd()) ? fNegative : (fNegative && fAddExtension);
    };
    mprResult >>= uShift;
    assert(mprResult.cbitArray(bitSizeMantissa()));
+   bool fAddExponent = false;
    if (fAdd && ((fAdd = (!fRoundToEven || mprResult.cbitArray(0))) != false)) {
       mprResult.inc();
       if (!mprResult.cbitArray(bitSizeMantissa())) {
          mprResult >>= 1;
-         ++uLogResult;
+         fAddExponent = true;
       };
    };
    if (fApproximate) {
@@ -1951,17 +2246,35 @@ TBuiltDouble<TypeTraits>::multAssignDN(const thisType& bdSource, const MultParam
       biMantissa[uIndex] = mrResult[uIndex];
    biMantissa.normalizeLastCell();
 
+   if (fAddExponent && biExponent.inc().hasCarry())
+      fExponentHasCarry = false;
    if (fExponentHasCarry || biExponent.isZero()) {
       scfFlags.setUnderflow();
       biExponent.neg().inc();
-      if (biExponent < bitSizeMantissa()) // denormalized
-         trightShift(biMantissa, biExponent.queryValue()+1, 1, scfFlags, fNegative, bitSizeMantissa());
+      if (biExponent < bitSizeMantissa()) { // denormalized
+         if (trightShift(biMantissa, biExponent.queryValue()+1, 1, scfFlags, fNegative,
+               bitSizeMantissa()).hasCarry()) {
+            scfFlags.clearUnderflow();
+            biExponent = 1U;
+            return *this;
+         };
+      }
       else {
          bool fAdd = false;
          if (scfFlags.isNearestRound()) {
             fAdd = biExponent == bitSizeMantissa();
-            if (fAdd && scfFlags.isRoundToEven())
-               fAdd = !biMantissa.isZero() || scfFlags.isApproximate();
+            if (fAdd && biMantissa.isZero()) {
+               if (!fNegative) {
+                  if (scfFlags.isUpApproximate()
+                        || (!scfFlags.isApproximate() && scfFlags.isRoundToEven()))
+                     fAdd = false;
+               }
+               else {
+                  if (scfFlags.isDownApproximate()
+                        || (!scfFlags.isApproximate() && scfFlags.isRoundToEven()))
+                     fAdd = false;
+               };
+            };
          }
          else if (scfFlags.isHighestRound())
             fAdd = !fNegative;
@@ -1972,6 +2285,8 @@ TBuiltDouble<TypeTraits>::multAssignDN(const thisType& bdSource, const MultParam
          else
             scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
          biMantissa = fAdd ? 1U : 0U;
+         if (!fAdd && fNegative && !scfFlags.acceptMinusZero())
+            fNegative = false;
       };
       biExponent = 0U;
    }
@@ -1983,9 +2298,9 @@ TBuiltDouble<TypeTraits>::multAssignDN(const thisType& bdSource, const MultParam
 
 template <class TypeTraits>
 TBuiltDouble<TypeTraits>&
-TBuiltDouble<TypeTraits>::multAssignDD(const thisType& bdSource, const MultParameters& mpParams) {
+TBuiltDouble<TypeTraits>::multAssignDD(const thisType& bdSource, const MultParameters& mpFlags) {
    assert(isDenormalized() && bdSource.isDenormalized());
-   StatusAndControlFlags& scfFlags = mpParams.readParams();
+   StatusAndControlFlags& scfFlags = mpFlags.readParams();
    scfFlags.setUnderflow();
    bool fAdd = false;
    if (scfFlags.isHighestRound())
@@ -1996,31 +2311,31 @@ TBuiltDouble<TypeTraits>::multAssignDD(const thisType& bdSource, const MultParam
       scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
    else
       scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
-   if (mpParams.hasAdd() && !mpParams.queryAddSource().isZero()) {
+   if (mpFlags.hasAdd() && !mpFlags.queryAddSource().isZero()) {
       scfFlags.clearFlowException();
-      const thisType& bdAddSource = mpParams.queryAddSource();
-      if (bdAddSource.biExponent == getInftyExponent()) {
+      const thisType& bdAddSource = mpFlags.queryAddSource();
+      if (bdAddSource.biExponent == TypeTraits::getInftyExponent(biExponent)) {
          scfFlags.clearApproximate();
-         fNegative = mpParams.isPositiveAdditive() ? bdAddSource.fNegative
+         fNegative = mpFlags.isPositiveAdditive() ? bdAddSource.fNegative
             : !bdAddSource.fNegative;
          biMantissa = bdAddSource.biMantissa;
          if (!biMantissa.isZero()) {
-            fNegative = (scfFlags.keepNaNSign() || mpParams.isPositiveAdditive())
+            fNegative = (scfFlags.keepNaNSign() || mpFlags.isPositiveAdditive())
                ? bdAddSource.fNegative : !bdAddSource.fNegative;
             if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                scfFlags.setSNaNOperand();
                biMantissa.setTrueBitArray(bitSizeMantissa()-1);
             };
          };
-         biExponent = getInftyExponent();
+         biExponent = TypeTraits::getInftyExponent(biExponent);
          return *this;
       };
       biMantissa = bdAddSource.queryMantissa();
       biExponent = bdAddSource.queryBasicExponent();
-      register bool fSub =  mpParams.isPositiveAdditive()
+      register bool fSub =  mpFlags.isPositiveAdditive()
          ? (fNegative != bdAddSource.fNegative) : (fNegative == bdAddSource.fNegative);
       if (fSub) {
-         fNegative = mpParams.isPositiveAdditive() ? bdAddSource.fNegative : !bdAddSource.fNegative;
+         fNegative = mpFlags.isPositiveAdditive() ? bdAddSource.fNegative : !bdAddSource.fNegative;
          if (scfFlags.isHighestRound() || scfFlags.isLowestRound())
             fSub = fAdd;
          else if (scfFlags.isNearestRound())
@@ -2029,7 +2344,7 @@ TBuiltDouble<TypeTraits>::multAssignDD(const thisType& bdSource, const MultParam
       };
       if (fAdd && biMantissa.inc().hasCarry()) {
          biExponent.inc();
-         if (biExponent == getInftyExponent()) {
+         if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
             if (scfFlags.isInftyAvoided() && scfFlags.doesAvoidInfty(fNegative)) {
                biMantissa.neg();
                biExponent.dec();
@@ -2050,32 +2365,35 @@ TBuiltDouble<TypeTraits>::multAssignDD(const thisType& bdSource, const MultParam
       else if (isInfty())
          scfFlags.setOverflow();
    }
-   else
+   else {
       biMantissa = fAdd ? 1U : 0U;
+      if (!fAdd && fNegative && !scfFlags.acceptMinusZero())
+         fNegative = false;
+   };
    return *this;
 }
 
 template <class TypeTraits>
 TBuiltDouble<TypeTraits>&
-TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParameters& mpParams) {
-   StatusAndControlFlags& scfFlags = mpParams.readParams();
+TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParameters& mpFlags) {
+   StatusAndControlFlags& scfFlags = mpFlags.readParams();
    bool fOldNegative = fNegative;
    fNegative = fNegative ? !bdSource.fNegative : bdSource.fNegative;
-   if (mpParams.hasAdd() && mpParams.isNegativeMult())
+   if (mpFlags.hasAdd() && mpFlags.isNegativeMult())
       fNegative = !fNegative;
    if (!biExponent.isZero()) {
-      if (biExponent != getInftyExponent()) {
+      if (biExponent != TypeTraits::getInftyExponent(biExponent)) {
          if (!bdSource.biExponent.isZero()) {
-            if (bdSource.biExponent != getInftyExponent()) {
-               if (mpParams.hasAdd() && (mpParams.queryAddSource().biExponent == getInftyExponent())) {
-                  biExponent = mpParams.queryAddSource().biExponent;
-                  fNegative = mpParams.queryAddSource().fNegative;
-                  if (mpParams.isNegativeAdditive())
+            if (bdSource.biExponent != TypeTraits::getInftyExponent(biExponent)) {
+               if (mpFlags.hasAdd() && (mpFlags.queryAddSource().biExponent == TypeTraits::getInftyExponent(biExponent))) {
+                  biExponent = mpFlags.queryAddSource().biExponent;
+                  fNegative = mpFlags.queryAddSource().fNegative;
+                  if (mpFlags.isNegativeAdditive())
                      fNegative = !fNegative;
-                  biMantissa = mpParams.queryAddSource().biMantissa;
+                  biMantissa = mpFlags.queryAddSource().biMantissa;
                   if (!biMantissa.isZero()) {
                      if (scfFlags.keepNaNSign())
-                        fNegative = mpParams.queryAddSource().fNegative;
+                        fNegative = mpFlags.queryAddSource().fNegative;
                      if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                         scfFlags.setSNaNOperand();
                         biMantissa.setTrueBitArray(bitSizeMantissa()-1);
@@ -2083,11 +2401,11 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
                   };
                   return *this;
                };
-               return multAssignNN(bdSource, mpParams);
+               return multAssignNN(bdSource, mpFlags);
             };
-            // bdSource.biExponent == getInftyExponent()
+            // bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)
             biMantissa = bdSource.biMantissa;
-            biExponent = getInftyExponent();
+            biExponent = TypeTraits::getInftyExponent(biExponent);
             if (!biMantissa.isZero()) {
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                   scfFlags.setSNaNOperand();
@@ -2096,15 +2414,15 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
             };
             if (scfFlags.keepNaNSign())
                fNegative = bdSource.fNegative;
-            if (mpParams.hasAdd()) {
-               if (scfFlags.chooseNaNAddBeforeMult() && mpParams.queryAddSource().isNaN()) {
-                  biExponent = mpParams.queryAddSource().biExponent;
-                  fNegative = mpParams.isPositiveAdditive()
-                     ? mpParams.queryAddSource().fNegative : !mpParams.queryAddSource().fNegative;
-                  biMantissa = mpParams.queryAddSource().biMantissa;
+            if (mpFlags.hasAdd()) {
+               if (scfFlags.chooseNaNAddBeforeMult() && mpFlags.queryAddSource().isNaN()) {
+                  biExponent = mpFlags.queryAddSource().biExponent;
+                  fNegative = mpFlags.isPositiveAdditive()
+                     ? mpFlags.queryAddSource().fNegative : !mpFlags.queryAddSource().fNegative;
+                  biMantissa = mpFlags.queryAddSource().biMantissa;
                   if (!biMantissa.isZero()) {
                      if (scfFlags.keepNaNSign())
-                        fNegative = mpParams.queryAddSource().fNegative;
+                        fNegative = mpFlags.queryAddSource().fNegative;
                      if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                         scfFlags.setSNaNOperand();
                         biMantissa.setTrueBitArray(bitSizeMantissa()-1);
@@ -2112,23 +2430,23 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
                   };
                   return *this;
                };
-               if (mpParams.isPositiveAdditive())
-                  plusAssign(mpParams.queryAddSource(), scfFlags);
+               if (mpFlags.isPositiveAdditive())
+                  plusAssign(mpFlags.queryAddSource(), scfFlags);
                else
-                  minusAssign(mpParams.queryAddSource(), scfFlags);
+                  minusAssign(mpFlags.queryAddSource(), scfFlags);
             };
             return *this;
          };
          
          // bdSource.biExponent == 0
-         if (mpParams.hasAdd() && (mpParams.queryAddSource().biExponent == getInftyExponent())) {
-            biExponent = mpParams.queryAddSource().biExponent;
-            fNegative = mpParams.isPositiveAdditive()
-               ? mpParams.queryAddSource().fNegative : !mpParams.queryAddSource().fNegative;
-            biMantissa = mpParams.queryAddSource().biMantissa;
+         if (mpFlags.hasAdd() && (mpFlags.queryAddSource().biExponent == TypeTraits::getInftyExponent(biExponent))) {
+            biExponent = mpFlags.queryAddSource().biExponent;
+            fNegative = mpFlags.isPositiveAdditive()
+               ? mpFlags.queryAddSource().fNegative : !mpFlags.queryAddSource().fNegative;
+            biMantissa = mpFlags.queryAddSource().biMantissa;
             if (!biMantissa.isZero()) {
                if (scfFlags.keepNaNSign())
-                  fNegative = mpParams.queryAddSource().fNegative;
+                  fNegative = mpFlags.queryAddSource().fNegative;
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                   scfFlags.setSNaNOperand();
                   biMantissa.setTrueBitArray(bitSizeMantissa()-1);
@@ -2139,33 +2457,35 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
          if (bdSource.biMantissa.isZero()) {
             biMantissa = 0U;
             biExponent = 0U;
-            if (mpParams.hasAdd()) {
-               if (!mpParams.queryAddSource().isZero()) {
-                  biExponent = mpParams.queryAddSource().biExponent;
-                  fNegative = mpParams.isPositiveAdditive()
-                     ? mpParams.queryAddSource().fNegative : !mpParams.queryAddSource().fNegative;
-                  biMantissa = mpParams.queryAddSource().biMantissa;
-                  if (mpParams.queryAddSource().isNaN()) {
+            if (!scfFlags.acceptMinusZero())
+               fNegative = false;
+            if (mpFlags.hasAdd()) {
+               if (!mpFlags.queryAddSource().isZero()) {
+                  biExponent = mpFlags.queryAddSource().biExponent;
+                  fNegative = mpFlags.isPositiveAdditive()
+                     ? mpFlags.queryAddSource().fNegative : !mpFlags.queryAddSource().fNegative;
+                  biMantissa = mpFlags.queryAddSource().biMantissa;
+                  if (mpFlags.queryAddSource().isNaN()) {
                      if (scfFlags.keepNaNSign())
-                        fNegative = mpParams.queryAddSource().fNegative;
+                        fNegative = mpFlags.queryAddSource().fNegative;
                      if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                         scfFlags.setSNaNOperand();
                         biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                      };
                   };
                }
-               else if ((mpParams.isPositiveAdditive()
-                        ? (fNegative != mpParams.queryAddSource().fNegative)
-                        : (fNegative == mpParams.queryAddSource().fNegative))
+               else if ((mpFlags.isPositiveAdditive()
+                        ? (fNegative != mpFlags.queryAddSource().fNegative)
+                        : (fNegative == mpFlags.queryAddSource().fNegative))
                      && scfFlags.isPositiveZeroMAdd())
-                  fNegative = !scfFlags.isLowestRound() ? mpParams.isNegativeMult() : !mpParams.isNegativeMult();
+                  fNegative = !scfFlags.isLowestRound() ? mpFlags.isNegativeMult() : !mpFlags.isNegativeMult();
             };
             return *this;
          };
-         return multAssignND(bdSource, mpParams);
+         return multAssignND(bdSource, mpFlags);
       };
 
-      // biExponent == getInftyExponent()
+      // biExponent == TypeTraits::getInftyExponent(biExponent)
       if (!biMantissa.isZero()) {
          if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
             scfFlags.setSNaNOperand();
@@ -2193,11 +2513,11 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
          if (scfFlags.keepNaNSign())
             fNegative = fOldNegative;
       };
-      if (mpParams.hasAdd()) {
-         if (mpParams.isPositiveAdditive())
-            plusAssign(mpParams.queryAddSource(), scfFlags);
+      if (mpFlags.hasAdd()) {
+         if (mpFlags.isPositiveAdditive())
+            plusAssign(mpFlags.queryAddSource(), scfFlags);
          else
-            minusAssign(mpParams.queryAddSource(), scfFlags);
+            minusAssign(mpFlags.queryAddSource(), scfFlags);
       };
       return *this;
    };
@@ -2205,35 +2525,37 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
    // biExponent == 0
    if (bdSource.biExponent.isZero()) {
       if (!biMantissa.isZero() && !bdSource.biMantissa.isZero())
-         return multAssignDD(bdSource, mpParams);
+         return multAssignDD(bdSource, mpFlags);
       biMantissa = 0U;
-      if (mpParams.hasAdd()) {
-         if (!mpParams.queryAddSource().isZero()) {
-            biExponent = mpParams.queryAddSource().biExponent;
-            fNegative = mpParams.isPositiveAdditive()
-               ? mpParams.queryAddSource().fNegative : !mpParams.queryAddSource().fNegative;
-            biMantissa = mpParams.queryAddSource().biMantissa;
-            if (mpParams.queryAddSource().isNaN()) {
+      if (!scfFlags.acceptMinusZero())
+         fNegative = false;
+      if (mpFlags.hasAdd()) {
+         if (!mpFlags.queryAddSource().isZero()) {
+            biExponent = mpFlags.queryAddSource().biExponent;
+            fNegative = mpFlags.isPositiveAdditive()
+               ? mpFlags.queryAddSource().fNegative : !mpFlags.queryAddSource().fNegative;
+            biMantissa = mpFlags.queryAddSource().biMantissa;
+            if (mpFlags.queryAddSource().isNaN()) {
                if (scfFlags.keepNaNSign())
-                  fNegative = mpParams.queryAddSource().fNegative;
+                  fNegative = mpFlags.queryAddSource().fNegative;
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                   scfFlags.setSNaNOperand();
                   biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                };
             };
          }
-         else if ((mpParams.isPositiveAdditive()
-                  ? (fNegative != mpParams.queryAddSource().fNegative) 
-                  : (fNegative == mpParams.queryAddSource().fNegative))
+         else if ((mpFlags.isPositiveAdditive()
+                  ? (fNegative != mpFlags.queryAddSource().fNegative) 
+                  : (fNegative == mpFlags.queryAddSource().fNegative))
                && scfFlags.isPositiveZeroMAdd())
-            fNegative = !scfFlags.isLowestRound() ? mpParams.isNegativeMult() : !mpParams.isNegativeMult();
+            fNegative = !scfFlags.isLowestRound() ? mpFlags.isNegativeMult() : !mpFlags.isNegativeMult();
       };
       return *this;
    };
 
    // biExponent == 0 && bdSource.biExponent != 0
-   if (bdSource.biExponent == getInftyExponent()) {
-      biExponent = getInftyExponent();
+   if (bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)) {
+      biExponent = TypeTraits::getInftyExponent(biExponent);
       if (!bdSource.biMantissa.isZero() || biMantissa.isZero()) {
          if (bdSource.biMantissa.isZero()) {
             scfFlags.setInftyMultZero();
@@ -2250,71 +2572,73 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
             if (scfFlags.keepNaNSign())
                fNegative = bdSource.fNegative;
          };
-         if (mpParams.hasAdd()) {
-            if (scfFlags.chooseNaNAddBeforeMult() && mpParams.queryAddSource().isNaN()) {
-               biExponent = mpParams.queryAddSource().biExponent;
-               fNegative = (scfFlags.keepNaNSign() || mpParams.isPositiveAdditive())
-                  ? mpParams.queryAddSource().fNegative : !mpParams.queryAddSource().fNegative;
-               biMantissa = mpParams.queryAddSource().biMantissa;
+         if (mpFlags.hasAdd()) {
+            if (scfFlags.chooseNaNAddBeforeMult() && mpFlags.queryAddSource().isNaN()) {
+               biExponent = mpFlags.queryAddSource().biExponent;
+               fNegative = (scfFlags.keepNaNSign() || mpFlags.isPositiveAdditive())
+                  ? mpFlags.queryAddSource().fNegative : !mpFlags.queryAddSource().fNegative;
+               biMantissa = mpFlags.queryAddSource().biMantissa;
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                   scfFlags.setSNaNOperand();
                   biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                };
                return *this;
             };
-            if (mpParams.isPositiveAdditive())
-               plusAssign(mpParams.queryAddSource(), scfFlags);
+            if (mpFlags.isPositiveAdditive())
+               plusAssign(mpFlags.queryAddSource(), scfFlags);
             else
-               minusAssign(mpParams.queryAddSource(), scfFlags);
+               minusAssign(mpFlags.queryAddSource(), scfFlags);
          };
          return *this;
       };
       
-      // bdSource.biMantissa == 0 && bdSource.biExponent == getInftyExponent()
+      // bdSource.biMantissa == 0 && bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)
       // && biExponent == 0 && biMantissa != 0
       biMantissa = 0U;
-      if (mpParams.hasAdd()) {
-         if (mpParams.isPositiveAdditive())
-            plusAssign(mpParams.queryAddSource(), scfFlags);
+      if (mpFlags.hasAdd()) {
+         if (mpFlags.isPositiveAdditive())
+            plusAssign(mpFlags.queryAddSource(), scfFlags);
          else
-            minusAssign(mpParams.queryAddSource(), scfFlags);
+            minusAssign(mpFlags.queryAddSource(), scfFlags);
       };
       return *this;
    };
    
-   // biExponent == 0 && bdSource.biExponent != 0 && bdSource.biExponent != getInftyExponent()
+   // biExponent == 0 && bdSource.biExponent != 0 && bdSource.biExponent != TypeTraits::getInftyExponent(biExponent)
    if (biMantissa.isZero()) {
-      if (mpParams.hasAdd()) {
-         if (!mpParams.queryAddSource().isZero()) {
-            biExponent = mpParams.queryAddSource().biExponent;
-            fNegative = mpParams.isPositiveAdditive()
-               ? mpParams.queryAddSource().fNegative : !mpParams.queryAddSource().fNegative;
-            biMantissa = mpParams.queryAddSource().biMantissa;
-            if (mpParams.queryAddSource().isNaN()) {
+      if (!scfFlags.acceptMinusZero())
+         fNegative = false;
+      if (mpFlags.hasAdd()) {
+         if (!mpFlags.queryAddSource().isZero()) {
+            biExponent = mpFlags.queryAddSource().biExponent;
+            fNegative = mpFlags.isPositiveAdditive()
+               ? mpFlags.queryAddSource().fNegative : !mpFlags.queryAddSource().fNegative;
+            biMantissa = mpFlags.queryAddSource().biMantissa;
+            if (mpFlags.queryAddSource().isNaN()) {
                if (scfFlags.keepNaNSign())
-                  fNegative = mpParams.queryAddSource().fNegative;
+                  fNegative = mpFlags.queryAddSource().fNegative;
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                   scfFlags.setSNaNOperand();
                   biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                };
             };
          }
-         else if ((mpParams.isPositiveAdditive()
-                  ? (fNegative != mpParams.queryAddSource().fNegative)
-                  : (fNegative == mpParams.queryAddSource().fNegative))
+         else if ((mpFlags.isPositiveAdditive()
+                  ? (fNegative != mpFlags.queryAddSource().fNegative)
+                  : (fNegative == mpFlags.queryAddSource().fNegative))
                && scfFlags.isPositiveZeroMAdd())
-            fNegative = !scfFlags.isLowestRound() ? mpParams.isNegativeMult() : !mpParams.isNegativeMult();
+            fNegative = !scfFlags.isLowestRound() ? mpFlags.isNegativeMult() : !mpFlags.isNegativeMult();
       };
       return *this;
    };
-   if (mpParams.hasAdd() && (mpParams.queryAddSource().biExponent == getInftyExponent())) {
-      biExponent = mpParams.queryAddSource().biExponent;
-      fNegative = mpParams.isPositiveAdditive()
-         ? mpParams.queryAddSource().fNegative : !mpParams.queryAddSource().fNegative;
-      biMantissa = mpParams.queryAddSource().biMantissa;
+   if (mpFlags.hasAdd() && (mpFlags.queryAddSource().biExponent == TypeTraits::getInftyExponent(biExponent))) {
+      biExponent = mpFlags.queryAddSource().biExponent;
+      fNegative = mpFlags.isPositiveAdditive()
+         ? mpFlags.queryAddSource().fNegative : !mpFlags.queryAddSource().fNegative;
+      biMantissa = mpFlags.queryAddSource().biMantissa;
       if (!biMantissa.isZero()) {
          if (scfFlags.keepNaNSign())
-            fNegative = mpParams.queryAddSource().fNegative;
+            fNegative = mpFlags.queryAddSource().fNegative;
          if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
             scfFlags.setSNaNOperand();
             biMantissa.setTrueBitArray(bitSizeMantissa()-1);
@@ -2322,7 +2646,7 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
       };
       return *this;
    };
-   return multAssignDN(bdSource, mpParams);
+   return multAssignDN(bdSource, mpFlags);
 }
 
 template <class TypeTraits>
@@ -2333,7 +2657,7 @@ TBuiltDouble<TypeTraits>::divAssign(unsigned int uValue, StatusAndControlFlags& 
       typename TypeTraits::ExtendedMantissa emMantissa(biMantissa);
       typename TypeTraits::ExtendedMantissa::AtomicDivisionResult adrResult = emMantissa.divAssign(uValue);
       unsigned int uShift = (bitSizeMantissa()+1 - emMantissa.log_base_2());
-      assert((log_base_2(uValue) == (int) uShift) || (log_base_2(uValue) == (int) (uShift-1)));
+      assert((log_base_2(uValue) == (int) uShift) || (log_base_2(uValue) == (int) (uShift+1)));
       unsigned int uLeftQuotient = 0U;
       if ((uShift == (4*sizeof(unsigned int)+1))
             && ((adrResult.remainder() & (1U << 4*sizeof(unsigned int))) != 0U)) {
@@ -2434,7 +2758,7 @@ TBuiltDouble<TypeTraits>::divAssign(unsigned int uValue, StatusAndControlFlags& 
             scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
       };
    };
-   // else { // biExponent == getInftyExponent(); };
+   // else { // biExponent == TypeTraits::getInftyExponent(biExponent); };
    return *this;
 }
 
@@ -2449,7 +2773,7 @@ TBuiltDouble<TypeTraits>::divAssignNN(const thisType& bdSource, StatusAndControl
    bool fAdd = false;
    bool fRoundToEven = false;
    bool fApproximate = false;
-   if (!((const Integer::TBigInt<typename Mantissa::RemainderResult>&) drResult.remainder()).isZero()) {
+   if (!((const typename TypeTraits::ExtendedMantissa::EnhancedRemainderResult&) drResult.remainder()).isZero()) {
       if (scfFlags.isNearestRound()) {
          fAdd = ((const typename TypeTraits::ExtendedMantissa&) drResult.remainder()).cbitArray(bitSizeMantissa());
          if (!fAdd && ((const typename TypeTraits::ExtendedMantissa&) drResult.remainder()).cbitArray(bitSizeMantissa()-1)) {
@@ -2471,9 +2795,9 @@ TBuiltDouble<TypeTraits>::divAssignNN(const thisType& bdSource, StatusAndControl
          fAdd = fNegative;
       fApproximate = true;
    };
-   if (bdSource.biExponent >= getZeroExponent()) {
+   if (bdSource.biExponent >= TypeTraits::getZeroExponent(biExponent)) {
       Exponent biSubExponent = bdSource.biExponent;
-      biSubExponent -= getZeroExponent();
+      biSubExponent -= TypeTraits::getZeroExponent(biExponent);
       biSubExponent.add(-drResult.comma()); // 0 or -1
       if (biExponent <= biSubExponent) {
          biSubExponent -= biExponent;
@@ -2481,11 +2805,14 @@ TBuiltDouble<TypeTraits>::divAssignNN(const thisType& bdSource, StatusAndControl
          scfFlags.setUnderflow();
          if (biSubExponent < bitSizeMantissa()) {
             int uShift = biSubExponent.queryValue()+1;
-            StatusAndControlFlags rpNewParams(scfFlags);
+            StatusAndControlFlags scfNewFlags(scfFlags);
             if (fApproximate)
-               rpNewParams.clearRoundToEven();
-            trightShift(biMantissa, uShift, 1, rpNewParams, fNegative, bitSizeMantissa());
-            if (!rpNewParams.isApproximate() && fAdd
+               scfNewFlags.clearRoundToEven();
+            if (trightShift(biMantissa, uShift, 1, scfNewFlags, fNegative, bitSizeMantissa()).hasCarry()) {
+               biExponent.inc();
+               scfFlags.clearUnderflow();
+            };
+            if (!scfNewFlags.isApproximate() && fAdd
                   && ((fAdd = !scfFlags.isNearestRound()) != false)) {
                if (biMantissa.inc().hasCarry()) {
                   biExponent.inc();
@@ -2494,8 +2821,8 @@ TBuiltDouble<TypeTraits>::divAssignNN(const thisType& bdSource, StatusAndControl
                scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
                return *this;
             }
-            else if (rpNewParams.isApproximate()) {
-               scfFlags = rpNewParams;
+            else if (scfNewFlags.isApproximate()) {
+               scfFlags = scfNewFlags;
                return *this;
             };
          }
@@ -2504,7 +2831,7 @@ TBuiltDouble<TypeTraits>::divAssignNN(const thisType& bdSource, StatusAndControl
             if (scfFlags.isNearestRound()) {
                fAdd = (biSubExponent == bitSizeMantissa());
                if (fAdd && scfFlags.isRoundToEven())
-                  fAdd = !biMantissa.isZero() && !((const Integer::TBigInt<typename Mantissa::RemainderResult>&)
+                  fAdd = !biMantissa.isZero() || !((const typename TypeTraits::ExtendedMantissa::EnhancedRemainderResult&)
                      drResult.remainder()).isZero();
             }
             else if (scfFlags.isHighestRound())
@@ -2516,6 +2843,8 @@ TBuiltDouble<TypeTraits>::divAssignNN(const thisType& bdSource, StatusAndControl
             else
                scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
             biMantissa = fAdd ? 1U : 0U;
+            if (!fAdd && fNegative && !scfFlags.acceptMinusZero())
+               fNegative = false;
             return *this;
          };
       }
@@ -2525,13 +2854,13 @@ TBuiltDouble<TypeTraits>::divAssignNN(const thisType& bdSource, StatusAndControl
             && biMantissa.inc().hasCarry())
          biExponent.inc();
    }
-   else { // bdSource.biExponent < getZeroExponent()
-      Exponent biSubExponent = getZeroExponent();
+   else { // bdSource.biExponent < TypeTraits::getZeroExponent(biExponent)
+      Exponent biSubExponent = TypeTraits::getZeroExponent(biExponent);
       biSubExponent -= bdSource.biExponent;
       biSubExponent.sub(-drResult.comma()); // 0 or -1
       if (biExponent.add(biSubExponent).hasCarry()
-            || (biExponent == getInftyExponent())) {
-         biExponent = getInftyExponent();
+            || (biExponent == TypeTraits::getInftyExponent(biExponent))) {
+         biExponent = TypeTraits::getInftyExponent(biExponent);
          biMantissa = 0U;
          scfFlags.setOverflow();
          scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
@@ -2545,7 +2874,7 @@ TBuiltDouble<TypeTraits>::divAssignNN(const thisType& bdSource, StatusAndControl
       else if (fAdd && ((fAdd = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
             && biMantissa.inc().hasCarry()) {
          biExponent.inc();
-         if (biExponent == getInftyExponent()) {
+         if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
             scfFlags.setOverflow();
             if (scfFlags.isInftyAvoided() && scfFlags.doesAvoidInfty(fNegative)) {
                fApproximate = false;
@@ -2602,9 +2931,10 @@ TBuiltDouble<TypeTraits>::divAssignND(const thisType& bdSource, StatusAndControl
       biMantissa[uIndex] = drResult.quotient()[uIndex];
    biMantissa.normalizeLastCell();
 
-   if (biExponent.add(getZeroExponent()).hasCarry() || biExponent.add(drResult.comma()-1).hasCarry()
-         || (biExponent == getInftyExponent())) {
-      biExponent = getInftyExponent();
+   if (biExponent.add(TypeTraits::getZeroExponent(biExponent)).hasCarry()
+         || biExponent.add(drResult.comma()-1).hasCarry()
+         || (biExponent == TypeTraits::getInftyExponent(biExponent))) {
+      biExponent = TypeTraits::getInftyExponent(biExponent);
       biMantissa = 0;
       scfFlags.setOverflow();
       scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
@@ -2618,7 +2948,7 @@ TBuiltDouble<TypeTraits>::divAssignND(const thisType& bdSource, StatusAndControl
    else if (fAdd && ((fAdd = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
          && biMantissa.inc().hasCarry()) {
       biExponent.inc();
-      if (biExponent == getInftyExponent()) {
+      if (biExponent == TypeTraits::getInftyExponent(biExponent)) {
          scfFlags.setOverflow();
          if (scfFlags.isInftyAvoided() && scfFlags.doesAvoidInfty(fNegative)) {
             fApproximate = false;
@@ -2674,17 +3004,22 @@ TBuiltDouble<TypeTraits>::divAssignDN(const thisType& bdSource, StatusAndControl
       biMantissa[uIndex] = drResult.quotient()[uIndex];
    biMantissa.normalizeLastCell();
 
-   if (bdSource.biExponent >= getZeroExponent()) {
+   bool fNeg = fNegative;
+   if (bdSource.biExponent >= TypeTraits::getZeroExponent(biExponent)) {
       scfFlags.setUnderflow();
       Exponent biSubExponent = bdSource.biExponent;
-      biSubExponent -= getZeroExponent();
+      biSubExponent -= TypeTraits::getZeroExponent(biExponent);
       biSubExponent.add(-drResult.comma());
       if (biSubExponent <= bitSizeMantissa()) {
-         StatusAndControlFlags rpNewParams(scfFlags);
+         StatusAndControlFlags scfNewFlags(scfFlags);
          if (fApproximate)
-            rpNewParams.clearRoundToEven();
-         trightShift(biMantissa, biSubExponent.queryValue(), 1, rpNewParams, fNegative, bitSizeMantissa());
-         if (!rpNewParams.isApproximate() && fAdd
+            scfNewFlags.clearRoundToEven();
+         if (trightShift(biMantissa, biSubExponent.queryValue(), 1, scfNewFlags,
+               fNegative, bitSizeMantissa()).hasCarry()) {
+            biExponent.inc();
+            scfFlags.clearUnderflow();
+         };
+         if (!scfNewFlags.isApproximate() && fAdd
                && ((fAdd = !scfFlags.isNearestRound()) != false)) {
             if (biMantissa.inc().hasCarry()) {
                biExponent.inc();
@@ -2693,8 +3028,8 @@ TBuiltDouble<TypeTraits>::divAssignDN(const thisType& bdSource, StatusAndControl
             scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
             return *this;
          }
-         else if (rpNewParams.isApproximate()) {
-            scfFlags = rpNewParams;
+         else if (scfNewFlags.isApproximate()) {
+            scfFlags = scfNewFlags;
             return *this;
          };
       }
@@ -2711,42 +3046,47 @@ TBuiltDouble<TypeTraits>::divAssignDN(const thisType& bdSource, StatusAndControl
             fAdd = fNegative;
          fApproximate = true;
          biMantissa = fAdd ? 1U : 0U;
+         if (!fAdd && fNegative && !scfFlags.acceptMinusZero())
+            fNegative = false;
       };
    }
-   else { // bdSource.biExponent < getZeroExponent()
-      Exponent biSubExponent = getZeroExponent();
+   else { // bdSource.biExponent < TypeTraits::getZeroExponent(biExponent)
+      Exponent biSubExponent = TypeTraits::getZeroExponent(biExponent);
       biSubExponent -= bdSource.biExponent;
       if (biSubExponent >= -drResult.comma()) {
          biSubExponent.sub(-drResult.comma()-1);
          biExponent = biSubExponent;
       }
       else {
-         scfFlags.setUnderflow();
-         StatusAndControlFlags rpNewParams(scfFlags);
+         StatusAndControlFlags scfNewFlags(scfFlags);
          if (fApproximate)
-            rpNewParams.clearRoundToEven();
-         trightShift(biMantissa, -drResult.comma() - biSubExponent.queryValue(), 1, rpNewParams,
-            fNegative, bitSizeMantissa());
-         if (!rpNewParams.isApproximate() && fAdd
+            scfNewFlags.clearRoundToEven();
+         if (trightShift(biMantissa, -drResult.comma() - biSubExponent.queryValue(), 1, scfNewFlags,
+               fNegative, bitSizeMantissa()).hasCarry())
+            biExponent.inc();
+         if (!scfNewFlags.isApproximate() && fAdd
                && ((fAdd = !scfFlags.isNearestRound()) != false)) {
-            biMantissa.inc();
+            if (biMantissa.inc().hasCarry())
+               biExponent.inc();
             scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
          }
-         else if (rpNewParams.isApproximate())
-            scfFlags = rpNewParams;
+         else if (scfNewFlags.isApproximate())
+            scfFlags = scfNewFlags;
          else if (fApproximate)
             scfFlags.setApproximate(fNegative ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
+         if (biExponent.isZero())
+            scfFlags.setUnderflow();
          return *this;
       };
          
       if (fAdd && ((fAdd = (!fRoundToEven || biMantissa.cbitArray(0))) != false)
             && biMantissa.inc().hasCarry()) {
          scfFlags.clearUnderflow();
-         ++biExponent;
+         biExponent.inc();
       };
    };
    if (fApproximate) {
-      if (fNegative)
+      if (fNeg)
          scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Down : StatusAndControlFlags::Up);
       else
          scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
@@ -2763,7 +3103,7 @@ TBuiltDouble<TypeTraits>::divAssignDD(const thisType& bdSource, StatusAndControl
 
    for (register int uIndex = 0; uIndex <= biMantissa.lastCellIndex(); ++uIndex)
       biMantissa[uIndex] = drResult.quotient()[uIndex];
-   biExponent = getZeroExponent();
+   biExponent = TypeTraits::getZeroExponent(biExponent);
    if (drResult.comma() > 0)
       biExponent.add(drResult.comma());
    else if (drResult.comma() < 0)
@@ -2800,24 +3140,26 @@ TBuiltDouble<TypeTraits>::divAssign(const thisType& bdSource, StatusAndControlFl
    bool fOldNegative = fNegative;
    fNegative = fNegative ? !bdSource.fNegative : bdSource.fNegative;
    if (!biExponent.isZero()) {
-      if (biExponent != getInftyExponent()) {
+      if (biExponent != TypeTraits::getInftyExponent(biExponent)) {
          if (!bdSource.biExponent.isZero()) {
-            if (bdSource.biExponent != getInftyExponent())
+            if (bdSource.biExponent != TypeTraits::getInftyExponent(biExponent))
                return divAssignNN(bdSource, scfFlags);
-            // bdSource.biExponent == getInftyExponent()
+            // bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)
             if (!bdSource.biMantissa.isZero()) {
                biMantissa = bdSource.biMantissa;
                if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
                   scfFlags.setSNaNOperand();
                   biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                };
-               biExponent = getInftyExponent();
+               biExponent = TypeTraits::getInftyExponent(biExponent);
                if (scfFlags.keepNaNSign())
                   fNegative = bdSource.fNegative;
             }
             else {
                biMantissa = 0U;
                biExponent = 0U;
+               if (!scfFlags.acceptMinusZero())
+                  fNegative = false;
             };
             return *this;
          };
@@ -2826,13 +3168,13 @@ TBuiltDouble<TypeTraits>::divAssign(const thisType& bdSource, StatusAndControlFl
          if (bdSource.biMantissa.isZero()) {
             scfFlags.setDivisionByZero();
             biMantissa = 0U;
-            biExponent = getInftyExponent();
+            biExponent = TypeTraits::getInftyExponent(biExponent);
             return *this;
          };
          return divAssignND(bdSource, scfFlags);
       };
 
-      // biExponent == getInftyExponent()
+      // biExponent == TypeTraits::getInftyExponent(biExponent)
       if (!biMantissa.isZero()) {
          if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
             scfFlags.setSNaNOperand();
@@ -2843,7 +3185,7 @@ TBuiltDouble<TypeTraits>::divAssign(const thisType& bdSource, StatusAndControlFl
          if (scfFlags.keepNaNSign())
             fNegative = fOldNegative;
       }
-      else if (bdSource.biExponent == getInftyExponent()) {
+      else if (bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)) {
          if (bdSource.biMantissa.isZero()) { // produces a qNaN
             scfFlags.setInftyOnInfty();
             biMantissa.setTrueBitArray(bitSizeMantissa()-1);
@@ -2871,7 +3213,7 @@ TBuiltDouble<TypeTraits>::divAssign(const thisType& bdSource, StatusAndControlFl
       if (!biMantissa.isZero() && !bdSource.biMantissa.isZero())
          return divAssignDD(bdSource, scfFlags);
       if (bdSource.biMantissa.isZero()) {
-         biExponent = getInftyExponent();
+         biExponent = TypeTraits::getInftyExponent(biExponent);
          if (biMantissa.isZero()) { // produces a qNaN
             scfFlags.setZeroOnZero();
             biMantissa.setTrueBitArray(bitSizeMantissa()-1);
@@ -2882,14 +3224,17 @@ TBuiltDouble<TypeTraits>::divAssign(const thisType& bdSource, StatusAndControlFl
             biMantissa = 0U;
             scfFlags.setDivisionByZero();
          };
-      };
+      }
+      else if (!scfFlags.acceptMinusZero())
+         fNegative = false;
+
       return *this;
    };
 
    // biExponent == 0 && bdSource.biExponent != 0
-   if (bdSource.biExponent == getInftyExponent()) {
+   if (bdSource.biExponent == TypeTraits::getInftyExponent(biExponent)) {
       if (!bdSource.biMantissa.isZero()) {
-         biExponent = getInftyExponent();
+         biExponent = TypeTraits::getInftyExponent(biExponent);
          biMantissa = bdSource.biMantissa;
          if (!biMantissa.cbitArray(bitSizeMantissa()-1)) {
             scfFlags.setSNaNOperand();
@@ -2900,14 +3245,17 @@ TBuiltDouble<TypeTraits>::divAssign(const thisType& bdSource, StatusAndControlFl
          return *this;
       };
       
-      // bdSource.biMantissa == 0 && bdSource.biExponent == getInftyExponent() && biExponent == 0
+      // bdSource.biMantissa == 0 && bdSource.biExponent == TypeTraits::getInftyExponent(biExponent) && biExponent == 0
       biMantissa = 0U;
       return *this;
    };
    
-   // biExponent == 0 && bdSource.biExponent != 0 && bdSource.biExponent != getInftyExponent()
-   if (biMantissa.isZero())
+   // biExponent == 0 && bdSource.biExponent != 0 && bdSource.biExponent != TypeTraits::getInftyExponent(biExponent)
+   if (biMantissa.isZero()) {
+      if (!scfFlags.acceptMinusZero())
+         fNegative = false;
       return *this;
+   };
    return divAssignDN(bdSource, scfFlags);
 }
 
@@ -3036,9 +3384,9 @@ TBuiltDouble<TypeTraits>::read(std::istream& isIn, StatusAndControlFlags& scfFla
          if (uDecimalExponent & uBitIndex)
             dExponent.multAssign(10U, scfFlags);
          if (fNegativeExponent && !uSubExponent && (dExponent.biExponent > biExponent)) {
-            dExponent.biExponent -= getZeroExponent();
+            dExponent.biExponent -= TypeTraits::getZeroExponent(biExponent);
             uSubExponent += dExponent.biExponent.queryValue();
-            dExponent.biExponent = getZeroExponent();
+            dExponent.biExponent = TypeTraits::getZeroExponent(biExponent);
          };
       };
       if (!fNegativeExponent) {
@@ -3053,15 +3401,12 @@ TBuiltDouble<TypeTraits>::read(std::istream& isIn, StatusAndControlFlags& scfFla
 
       divAssign(dExponent, scfFlags);
 
-#ifndef __BORLANDC__
-      Exponent biSubExponent = Exponent(typename Exponent::Basic(), uSubExponent);
-#else
-      Exponent biSubExponent = Exponent(Exponent::Basic(), uSubExponent);
-#endif
+      Exponent biSubExponent = getBasicExponent(uSubExponent);
       if (biExponent > biSubExponent)
          biExponent.minusAssign(biSubExponent);
       else {
          biSubExponent.minusAssign(biExponent);
+         biExponent = 0U;
          if (biSubExponent >= bitSizeMantissa()) {
             register bool fAdd = false;
             if (scfFlags.isNearestRound())
@@ -3075,10 +3420,14 @@ TBuiltDouble<TypeTraits>::read(std::istream& isIn, StatusAndControlFlags& scfFla
             else
                scfFlags.setApproximate(fAdd ? StatusAndControlFlags::Up : StatusAndControlFlags::Down);
             biMantissa = fAdd ? 1U : 0U;
+            if (!fAdd && fNegative && !scfFlags.acceptMinusZero())
+               fNegative = false;
          }
-         else
-            trightShift(biMantissa, biSubExponent.queryValue()+1, 1, scfFlags, fNegative, bitSizeMantissa());
-         biExponent = 0U;
+         else if (trightShift(biMantissa, biSubExponent.queryValue()+1, 1, scfFlags,
+               fNegative, bitSizeMantissa()).hasCarry())
+            biExponent.inc();
+         if (biExponent.isZero())
+            scfFlags.setUnderflow();
       };
       return;
    };
@@ -3108,8 +3457,8 @@ TBuiltDouble<TypeTraits>::read(std::istream& isIn, StatusAndControlFlags& scfFla
 
 template <class TypeTraits>
 void
-TBuiltDouble<TypeTraits>::write(std::ostream& osOut, const WriteParameters& wpParams) const {
-   if (wpParams.isBinary()) {
+TBuiltDouble<TypeTraits>::write(std::ostream& osOut, const WriteParameters& wpFlags) const {
+   if (wpFlags.isBinary()) {
       osOut.put(isPositive() ? '+' : '-').put(' ');
       if (isDenormalized())
          osOut << "0.";
@@ -3148,7 +3497,7 @@ TBuiltDouble<TypeTraits>::writeDecimal(std::ostream& osOut) const {
    };
    StatusAndControlFlags scfFlags;
    scfFlags.setNearestRound();
-   bool fNegativeExponent = biExponent < getZeroExponent();
+   bool fNegativeExponent = biExponent < TypeTraits::getZeroExponent(biExponent);
 
    thisType dSource = *this;
    if (fNegative)
@@ -3159,7 +3508,8 @@ TBuiltDouble<TypeTraits>::writeDecimal(std::ostream& osOut) const {
    if (fNegativeExponent) {
       dExponent = thisType(10U);
       uAddNegativeDecimalExponent = 1;
-      while (thisType(dExponent).multAssign(dSource, scfFlags).queryBasicExponent() < getZeroExponent()) {
+      while (thisType(dExponent).multAssign(dSource, scfFlags).queryBasicExponent()
+            < TypeTraits::getZeroExponent(biExponent)) {
          vSuccessiveExponents.push_back(dExponent);
          dExponent.multAssign(dExponent, scfFlags);
          uAddNegativeDecimalExponent *= 2;
@@ -3185,7 +3535,7 @@ TBuiltDouble<TypeTraits>::writeDecimal(std::ostream& osOut) const {
          int uExponentAdditional = 1;
          register int uIndexExponent = 0;
          while (thisType(dSource).multAssign(vSuccessiveExponents[uIndexExponent], scfFlags)
-               .queryBasicExponent() < getZeroExponent()) {
+               .queryBasicExponent() < TypeTraits::getZeroExponent(biExponent)) {
             if (uIndexExponent < vSuccessiveExponents.size() - 1) {
                uExponentAdditional *= 2;
                ++uIndexExponent;
@@ -3201,7 +3551,7 @@ TBuiltDouble<TypeTraits>::writeDecimal(std::ostream& osOut) const {
 
          dSource.multAssign(vSuccessiveExponents.back(), scfFlags);
          uAddNegativeDecimalExponent += uExponentAdditional;
-         assert(dSource.queryBasicExponent() >= getZeroExponent());
+         assert(dSource.queryBasicExponent() >= TypeTraits::getZeroExponent(biExponent));
          vSuccessiveExponents.pop_back();
       };
    };
@@ -3268,11 +3618,7 @@ TBuiltDouble<TypeTraits>::retrieveNumberOfFloatsBetween(const thisType& bdSource
 
    if (fNegative == bdSource.fNegative) {
       Mantissa biDiffMantissa;
-#ifndef __BORLANDC__
-      Exponent biDiffExponent = Exponent(typename Exponent::Min());
-#else
-      Exponent biDiffExponent = Exponent(Exponent::Min());
-#endif
+      Exponent biDiffExponent = getZeroExponent();
       bool fIncrementThis = false;
       if (fNegative && bdSource.fNegative) {
          biDiffMantissa = biMantissa;
@@ -3321,32 +3667,20 @@ TBuiltDouble<TypeTraits>::retrieveNumberOfFloatsBetween(const thisType& bdSource
         ddResult.setTrueBitArray(bitSizeMantissa()+bitSizeExponent());
    };
 
+#ifndef __BORLANDC__
    return ddResult;
+#endif
 }
 
 template <class TypeTraits>
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
 TBuiltDouble<TypeTraits>
 #ifndef __GNUC__
 TBuiltDouble<TypeTraits>::queryNthSuccessor(const DiffDouble& ddDiff) const {
 #else
 TBuiltDouble<TypeTraits>::queryNthSuccessor(const TBuiltDouble<TypeTraits>::DiffDouble& ddDiff) const {
 #endif
-#else
-void
-TBuiltDouble<TypeTraits>::retrieveNthSuccessor(thisType& bdResult, void* pvDiff) const {
-   const DiffDouble& ddDiff = *((const DiffDouble*) pvDiff);
-#endif
-
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
-   if ((biExponent == getInftyExponent()) && (!biMantissa.isZero() || !fNegative))
+   if ((biExponent == TypeTraits::getInftyExponent(biExponent)) && (!biMantissa.isZero() || !fNegative))
       return *this;
-#else
-   if ((biExponent == getInftyExponent()) && (!biMantissa.isZero() || !fNegative)) {
-      bdResult = *this;
-      return;
-   };
-#endif
 
    DiffDouble ddThis, ddThisExponent;
    for (register int uIndex = 0; uIndex <= biMantissa.lastCellIndex(); ++uIndex)
@@ -3354,30 +3688,19 @@ TBuiltDouble<TypeTraits>::retrieveNthSuccessor(thisType& bdResult, void* pvDiff)
    for (register int uIndex = 0; uIndex <= biExponent.lastCellIndex(); ++uIndex)
       ddThisExponent[uIndex] = biExponent[uIndex];
    ddThis |= (ddThisExponent <<= bitSizeMantissa());
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
    thisType bdResult;
-#endif
-
    if (!fNegative) {
       if (ddThis.add(ddDiff).hasCarry() || ddThis.cbitArray(bitSizeMantissa()+bitSizeExponent())) {
-         bdResult.biExponent = getInftyExponent();
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
+         bdResult.biExponent = TypeTraits::getInftyExponent(biExponent);
          return bdResult;
-#else
-         return;
-#endif
       };
    }
    else {
       if (ddThis.sub(ddDiff).hasCarry()) {
          ddThis.neg();
          if (ddThis.cbitArray(bitSizeMantissa()+bitSizeExponent())) {
-            bdResult.biExponent = getInftyExponent();
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
+            bdResult.biExponent = TypeTraits::getInftyExponent(biExponent);
             return bdResult;
-#else
-            return;
-#endif
          };
       }
       else
@@ -3389,32 +3712,41 @@ TBuiltDouble<TypeTraits>::retrieveNthSuccessor(thisType& bdResult, void* pvDiff)
    ddThis >>= bitSizeMantissa();
    for (register int uIndex = 0; uIndex <= bdResult.biExponent.lastCellIndex(); ++uIndex)
       bdResult.biExponent[uIndex] = ddThis[uIndex];
-   if (bdResult.biExponent == getInftyExponent())
+   if (bdResult.biExponent == TypeTraits::getInftyExponent(biExponent))
       bdResult.biMantissa = 0U;
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
    return bdResult;
-#endif
 }
 
 template <class TypeTraits>
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
+bool
+TBuiltDouble<TypeTraits>::setToNext() {
+   if ((biExponent == TypeTraits::getInftyExponent(biExponent)) && (!biMantissa.isZero() || !fNegative))
+      return false;
+
+   if (!fNegative) {
+      if (biMantissa.inc().hasCarry())
+         biExponent.inc();
+   }
+   else {
+      if (biMantissa.dec().hasCarry()) {
+         if (biExponent.isZero()) {
+            biMantissa = 1U;
+            fNegative = false;
+         }
+         else
+            biExponent.dec();
+      }
+      else if (biMantissa.isZero() && biExponent.isZero())
+         fNegative = false;
+   };
+   return true;
+}
+
+template <class TypeTraits>
 TBuiltDouble<TypeTraits>
 TBuiltDouble<TypeTraits>::queryNthPredecessor(const DiffDouble& ddDiff) const {
-#else
-void
-TBuiltDouble<TypeTraits>::retrieveNthPredecessor(thisType& bdResult, void* pvDiff) const {
-   const DiffDouble& ddDiff = *((const DiffDouble*) pvDiff);
-#endif
-
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
-   if ((biExponent == getInftyExponent()) && (!biMantissa.isZero() || fNegative))
+   if ((biExponent == TypeTraits::getInftyExponent(biExponent)) && (!biMantissa.isZero() || fNegative))
       return *this;
-#else
-   if ((biExponent == getInftyExponent()) && (!biMantissa.isZero() || fNegative)) {
-      bdResult = *this;
-      return;
-   };
-#endif
 
    DiffDouble ddThis, ddThisExponent;
    for (register int uIndex = 0; uIndex <= biMantissa.lastCellIndex(); ++uIndex)
@@ -3422,32 +3754,20 @@ TBuiltDouble<TypeTraits>::retrieveNthPredecessor(thisType& bdResult, void* pvDif
    for (register int uIndex = 0; uIndex <= biExponent.lastCellIndex(); ++uIndex)
       ddThisExponent[uIndex] = biExponent[uIndex];
    ddThis |= (ddThisExponent <<= bitSizeMantissa());
-
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
    thisType bdResult;
-#endif
-
    bdResult.fNegative = true;
    if (fNegative) {
       if (ddThis.add(ddDiff).hasCarry() || ddThis.cbitArray(bitSizeMantissa()+bitSizeExponent())) {
-         bdResult.biExponent = getInftyExponent();
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
+         bdResult.biExponent = TypeTraits::getInftyExponent(biExponent);
          return bdResult;
-#else
-         return;
-#endif
       };
    }
    else {
       if (ddThis.sub(ddDiff).hasCarry()) {
          ddThis.neg();
          if (ddThis.cbitArray(bitSizeMantissa()+bitSizeExponent())) {
-            bdResult.biExponent = getInftyExponent();
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
+            bdResult.biExponent = TypeTraits::getInftyExponent(biExponent);
             return bdResult;
-#else
-            return;
-#endif
          };
       }
       else
@@ -3459,264 +3779,170 @@ TBuiltDouble<TypeTraits>::retrieveNthPredecessor(thisType& bdResult, void* pvDif
    ddThis >>= bitSizeMantissa();
    for (register int uIndex = 0; uIndex <= bdResult.biExponent.lastCellIndex(); ++uIndex)
       bdResult.biExponent[uIndex] = ddThis[uIndex];
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
    return bdResult;
-#endif
-}
-
-/*******************************************/
-/* Implementation - template TFloatingBase */
-/*******************************************/
-
-template <class TypeTraits>
-void
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
-TFloatingBase<TypeTraits>::fillMantissa(Mantissa& mMantissa) const {
-#else
-TFloatingBase<TypeTraits>::fillMantissa(void* pvMantissa) const {
-   Mantissa& mMantissa = *((Mantissa*) pvMantissa);
-#endif
-   unsigned int auDouble[UByteSizeImplantation/sizeof(unsigned int)+1];
-   memcpy((void*) auDouble, (void*) &dDouble, UByteSizeImplantation);
-   unsigned int* puMask = (unsigned int*) auDouble;
-   if (TypeTraits::isBigEndian())
-      puMask += (UByteSizeImplantation/sizeof(unsigned int)-1);
-   for (register int uMantissaIndex = 0;
-         uMantissaIndex < mMantissa.lastCellIndex(); ++uMantissaIndex) {
-      mMantissa[uMantissaIndex] = *puMask;
-      if (TypeTraits::isBigEndian())
-         --puMask;
-      else
-         ++puMask;
-   };
-   int uShift = TypeTraits::UBitSizeMantissa % (sizeof(unsigned int)*8);
-   mMantissa[mMantissa.lastCellIndex()] = (uShift == 0) ? *puMask
-      : ((*puMask) & ~((~0U) << uShift));
 }
 
 template <class TypeTraits>
-void
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
-TFloatingBase<TypeTraits>::setMantissa(const Mantissa& mMantissa) {
-#else
-TFloatingBase<TypeTraits>::setMantissa(void* pvMantissa) {
-   const Mantissa& mMantissa = *((const Mantissa*) pvMantissa);
-#endif
-   unsigned int auDouble[UByteSizeImplantation/sizeof(unsigned int)+1];
-   memcpy((void*) auDouble, (void*) &dDouble, UByteSizeImplantation);
-   unsigned int* puMask = (unsigned int*) auDouble;
-   if (TypeTraits::isBigEndian())
-      puMask += (UByteSizeImplantation/sizeof(unsigned int)-1);
-   for (register int uMantissaIndex = 0;
-         uMantissaIndex < mMantissa.lastCellIndex(); ++uMantissaIndex) {
-      *puMask = mMantissa[uMantissaIndex];
-      if (TypeTraits::isBigEndian())
-         --puMask;
-      else
-         ++puMask;
-   };
-   int uShift = TypeTraits::UBitSizeMantissa % (sizeof(unsigned int)*8);
-   if (uShift == 0)
-      *puMask = mMantissa[mMantissa.lastCellIndex()];
-   else
-      *puMask |= (mMantissa[mMantissa.lastCellIndex()] & ~((~0U) << uShift));
-   memcpy((void*) &dDouble, (void*) auDouble, UByteSizeImplantation);
-}
-
-template <class TypeTraits>
-void
-TFloatingBase<TypeTraits>::test_double(double dDouble) { std::cout << dDouble << '\n'; }
-
-template <class TypeTraits>
-void
-TFloatingBase<TypeTraits>::test_int(unsigned int uInt) { std::cout << uInt << '\n'; }
-
-template <class TypeTraits>
-void
-TFloatingBase<TypeTraits>::test_char(char cChar) { std::cout << cChar << '\n'; }
-
-template <class TypeTraits>
-void
-TFloatingBase<TypeTraits>::copy_mem(void* pvDestination, void* pvSource, int uBytes)
-   {  memcpy(pvDestination, pvSource, uBytes); }
-
-template <class TypeTraits>
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
-TFloatingBase<TypeTraits>&
-TFloatingBase<TypeTraits>::operator=(const BuiltDouble& bdSource) {
-#else
-void
-TFloatingBase<TypeTraits>::assign(void* pvSource) {
-   const BuiltDouble& bdSource = *((const BuiltDouble*) pvSource);
-#endif
-
-   setMantissa(bdSource.queryMantissa());
-   setBasicExponent(bdSource.queryBasicExponent().queryValue());
-   setSign(bdSource.isPositive());
-#if !defined(__GNUC__) || (GCC_VERSION >= 30000)
-   return *this;
-#endif
-}
-
-template <class TypeTraits>
-unsigned int
-TFloatingBase<TypeTraits>::queryBasicExponent() const {
-   unsigned char auDouble[UByteSizeImplantation];
-   memcpy((void*) auDouble, (void*) &dDouble, UByteSizeImplantation);
-   unsigned char* pcMask = (unsigned char*) auDouble;
-   if (TypeTraits::isLittleEndian())
-      pcMask += UByteSizeImplantation-1;
-   unsigned int uResult = 0;
-   int uShift = TypeTraits::UBitSizeExponent-7;
-   uResult |= (*pcMask & 0x7f) << uShift;
-   while ((uShift -= 8) >= 0) {
-      if (TypeTraits::isLittleEndian())
-         --pcMask;
-      else
-         ++pcMask;
-      uResult |= *pcMask << uShift;
-   };
-   if (TypeTraits::isLittleEndian())
-      --pcMask;
-   else
-      ++pcMask;
-   if (uShift > -8)
-      uResult |= *pcMask >> (-uShift);
-   return uResult;
-}
-
-template <class TypeTraits>
-void
-TFloatingBase<TypeTraits>::setBasicExponent(unsigned int uExponent) {
-   unsigned char auDouble[UByteSizeImplantation];
-   memcpy((void*) auDouble, (void*) &dDouble, UByteSizeImplantation);
-   unsigned char* pcMask = (unsigned char*) auDouble;
-   if (TypeTraits::isLittleEndian())
-      pcMask += UByteSizeImplantation-1;
-   int uShift = TypeTraits::UBitSizeExponent-7;
-   assert((TypeTraits::UBitSizeExponent == sizeof(unsigned int))
-         || (((~0U << TypeTraits::UBitSizeExponent) & uExponent) == 0));
-   *pcMask |= uExponent >> uShift;
-   while ((uShift -= 8) >= 0) {
-      if (TypeTraits::isLittleEndian())
-         --pcMask;
-      else
-         ++pcMask;
-      *pcMask |= uExponent >> uShift;
-   };
-   if (TypeTraits::isLittleEndian())
-      --pcMask;
-   else
-      ++pcMask;
-   if (uShift > -8)
-      *pcMask |= uExponent << (-uShift);
-   memcpy((void*) &dDouble, (void*) auDouble, UByteSizeImplantation);
-}
-
-/********************************************/
-/* Implementation - template TDoubleElement */
-/********************************************/
-
-template <class FloatingBaseTraits>
 bool
-TDoubleElement<FloatingBaseTraits>::isNaN() const {
-   if (!hasInftyExponent())
+TBuiltDouble<TypeTraits>::setToPrevious() {
+   if ((biExponent == TypeTraits::getInftyExponent(biExponent)) && (!biMantissa.isZero() || fNegative))
       return false;
-   Mantissa mMantissa;
-   fillMantissa(mMantissa);
-   return !mMantissa.isZero();
-}
 
-template <class FloatingBaseTraits>
-bool
-TDoubleElement<FloatingBaseTraits>::isInternZero() const {
-   if (inherited::queryBasicExponent() != 0)
-      return false;
-   Mantissa mMantissa;
-   fillMantissa(mMantissa);
-   return mMantissa.isZero();
-}
-
-template <class FloatingBaseTraits>
-bool
-TDoubleElement<FloatingBaseTraits>::isSNaN() const {
-   if (!hasInftyExponent())
-      return false;
-   Mantissa mMantissa;
-   fillMantissa(mMantissa);
-   return !mMantissa.isZero() && !mMantissa.cbitArray(UBitSizeMantissa-1);
-}
-
-template <class FloatingBaseTraits>
-bool
-TDoubleElement<FloatingBaseTraits>::isQNaN() const {
-   if (!hasInftyExponent())
-      return false;
-   Mantissa mMantissa;
-   fillMantissa(mMantissa);
-   return mMantissa.cbitArray(UBitSizeMantissa-1);
-}
-
-template <class FloatingBaseTraits>
-bool
-TDoubleElement<FloatingBaseTraits>::isInfty() const {
-   if (!hasInftyExponent())
-      return false;
-   Mantissa mMantissa;
-   fillMantissa(mMantissa);
-   return mMantissa.isZero();
-}
-
-template <class FloatingBaseTraits>
-void
-TDoubleElement<FloatingBaseTraits>::write(std::ostream& osOut, const WriteParameters& wpParams) const {
-   if (wpParams.isDecimal())
-      osOut << inherited::implantation();
-   else {
-      Mantissa mMantissa;
-      fillMantissa(mMantissa);
-      osOut.put(inherited::isPositive() ? '+' : '-').put(' ');
-#ifndef __BORLANDC__
-      mMantissa.write(osOut, typename Mantissa::FormatParameters().setFullBinary(mMantissa.querySize()));
-#else
-      mMantissa.write(osOut, Mantissa::FormatParameters().setFullBinary(mMantissa.querySize()));
-#endif
-      osOut << " 2^ " << inherited::queryExponent();
-   };
-}
-
-
-template <class FloatingBaseTraits>
-bool
-TDoubleElement<FloatingBaseTraits>::isPuiss2() const {
-   Mantissa mMantissa;
-   fillMantissa(mMantissa);
-   return mMantissa.isZero();
-}
-
-template <class FloatingBaseTraits>
-Errors
-TDoubleElement<FloatingBaseTraits>::queryErrors() const {
-   unsigned int uBasicExponent = inherited::queryBasicExponent();
-   if (uBasicExponent == 0) {
-      if (inherited::isZero())
-         return Errors();
-      return inherited::isPositive() ? Errors().setPositiveUnderflow() : Errors().setNegativeUnderflow();
+   if (fNegative) {
+      if (biMantissa.inc().hasCarry())
+         biExponent.inc();
    }
-   else if (uBasicExponent == inherited::getMaxExponent()+inherited::getZeroExponent()+1) {
-      if (isInfty())
-         return inherited::isPositive() ? Errors().setPositiveOverflow() : Errors().setNegativeOverflow();
-      return isQNaN() ? Errors().setQNaN() : Errors().setSNaN();
+   else {
+      if (biMantissa.dec().hasCarry()) {
+         if (biExponent.isZero()) {
+            biMantissa = 1U;
+            fNegative = true;
+         }
+         else
+            biExponent.dec();
+      };
    };
-   return Errors();
+   return true;
 }
 
-template <class FloatingBaseTraits>
-void
-TDoubleElement<FloatingBaseTraits>::read(std::istream& isIn, StatusAndControlFlags& scfFlags) {
-   BuiltDouble bdDouble;
-   bdDouble.read(isIn, scfFlags);
-   operator=(bdDouble);
+template <class TypeTraits>
+TBuiltDouble<TypeTraits>&
+TBuiltDouble<TypeTraits>::sqrtAssign() { // u_{n+1} = (u_n + this/u_n)/2
+   assert(!fNegative);
+   if (isZero() || isInfty())
+      return *this;
+   thisType bdResult;
+   bdResult.biExponent = biExponent;
+   (bdResult.biExponent >>= 1).plusAssign((getZeroExponent() >>= 1));
+   thisType bdNext;
+   bool fContinue = false;
+   StatusAndControlFlags scfFlags;
+   scfFlags.setNearestRound().setRoundToEven();
+   do {
+      bdNext = *this;
+      scfFlags.clear();
+      bdNext.divAssign(bdResult, scfFlags); // bdNext = this/u_n
+      scfFlags.clear();
+      bdNext.plusAssign(bdResult, scfFlags); // bdNext = this/u_n + u_n
+      bdNext.biExponent.dec(); // bdNext = (this/u_n + u_n)/2
+      ComparisonResult crCompare = bdNext.compare(bdResult);
+      if (crCompare == CRGreater) {
+         if (bdNext.biExponent > bdResult.biExponent) {
+            bdResult.biExponent.inc();
+            fContinue = (bdNext.biExponent > bdResult.biExponent)
+               || (bdResult.biMantissa.neg() != 0U) || (bdNext.biMantissa != 0U);
+         }
+         else
+            fContinue = bdResult.biMantissa.inc().hasCarry()
+               || (bdNext.biMantissa != bdResult.biMantissa);
+      }
+      else if (crCompare == CRLess) {
+         if (bdNext.biExponent < bdResult.biExponent) {
+            bdResult.biExponent.dec();
+            fContinue = (bdNext.biExponent < bdResult.biExponent)
+               || (Mantissa(bdNext.biMantissa).neg() != 0U) || (bdResult.biMantissa != 0U);
+         }
+         else
+            fContinue = bdResult.biMantissa.dec().hasCarry()
+               || (bdNext.biMantissa != bdResult.biMantissa);
+      }
+      else
+         fContinue = false;
+      bdResult = bdNext;
+   } while (fContinue);
+   // Continue with a better precision on the mantissa and with testing the both float around
+   return operator=(bdResult);   
+}
+
+template <class TypeTraits>
+TBuiltDouble<TypeTraits>&
+TBuiltDouble<TypeTraits>::nthRootAssign(int n) {
+   assert((n > 0) && (!fNegative || (n & 1)));
+   if (n == 1)
+      return *this;
+   else if (n == 2)
+      return sqrtAssign();
+   
+   StatusAndControlFlags scfFlags;
+   scfFlags.setNearestRound().setRoundToEven();
+   // u_{p+1} = 1/n*[(n-1)*u_p + this/(u_p)^(n-1))]
+   thisType bdResult;
+   bdResult.biExponent = getZeroExponent();
+   if (biExponent >= getZeroExponent())
+      bdResult.biExponent.plusAssign((Exponent(biExponent) -= getZeroExponent()) /= n);
+   else
+      bdResult.biExponent.minusAssign((getZeroExponent() -= biExponent) /= n);
+   thisType bdNext;
+   bool fContinue = false;
+   do {
+      bdNext = *this;
+      scfFlags.clear();
+      bdNext.divAssign(thisType(bdResult).nthExponentAssign(n-1), scfFlags);
+      scfFlags.clear();
+      bdNext.plusAssign(thisType(bdResult).multAssign(n-1, StatusAndControlFlags(scfFlags)), scfFlags);
+      scfFlags.clear();
+      bdNext.divAssign(n, scfFlags);
+      ComparisonResult crCompare = bdNext.compare(bdResult);
+      if (crCompare == CRGreater) {
+         if (bdNext.biExponent > bdResult.biExponent) {
+            bdResult.biExponent.inc();
+            fContinue = (bdNext.biExponent > bdResult.biExponent)
+               || (++((bdResult.biMantissa.neg() += bdNext.biMantissa).neg()) >= n-1);
+         }
+         else
+            fContinue = (++((bdResult.biMantissa -= bdNext.biMantissa).neg()) >= n-1);
+      }
+      else if (crCompare == CRLess) {
+         if (bdNext.biExponent < bdResult.biExponent) {
+            bdResult.biExponent.dec();
+            fContinue = (bdNext.biExponent < bdResult.biExponent)
+               || (++((bdResult.biMantissa += Mantissa(bdNext.biMantissa)).neg()) >= n-1);
+         }
+         else
+            fContinue = ((bdResult.biMantissa -= bdNext.biMantissa) >= n-1);
+      }
+      else
+         fContinue = false;
+      bdResult = bdNext;
+   } while (fContinue);
+   // Continue with a better precision on the mantissa and with testing the 2(n-1) float around
+   return operator=(bdResult);   
+}
+
+template <class TypeTraits>
+TBuiltDouble<TypeTraits>&
+TBuiltDouble<TypeTraits>::nthExponentAssign(int n) {
+   if (n == 0) {
+      biMantissa = 0U;
+      biExponent = getZeroExponent();
+      fNegative = false;
+      return *this;
+   };
+   StatusAndControlFlags scfFlags;
+   scfFlags.setNearestRound().setRoundToEven();
+   unsigned int uExponent = (n < 0) ? -n : n;
+   if (uExponent == 1)
+      return (n < 0) ? inverseAssign(scfFlags) : *this;
+   thisType bdResult = *this;
+   int uIndexBitExponent = Integer::Details::Access::log_base_2(uExponent)-2;
+   while (uIndexBitExponent >= 0) {
+      scfFlags.clear();
+      bdResult.multAssign(bdResult, scfFlags);
+      if (uExponent & (1U << uIndexBitExponent)) {
+         scfFlags.clear();
+         bdResult.multAssign(*this, scfFlags);
+      };
+      --uIndexBitExponent;
+   };
+   if (n < 0) {
+      biExponent = getZeroExponent();
+      biMantissa = 0U;
+      fNegative = false;
+      scfFlags.clear();
+      return divAssign(bdResult, scfFlags);
+   }
+   else
+      return operator=(bdResult);
 }
 
 }} // end of namespace Numerics::Double
@@ -3724,7 +3950,5 @@ TDoubleElement<FloatingBaseTraits>::read(std::istream& isIn, StatusAndControlFla
 } // end of namespace simfloat
 } // end of namespace util
 } // end of namespace unisim
-
-#include "unisim/util/simfloat/integer.tcc"
 
 #endif // Numerics_Double_FloatingTemplate
