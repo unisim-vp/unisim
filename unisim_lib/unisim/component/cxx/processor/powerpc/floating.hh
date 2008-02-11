@@ -35,11 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 
-#ifndef __GNUC__
 #include <unisim/util/simfloat/floating.hh>
-#else
-#include <unisim/util/simfloat/floating_gccopt.hh>
-#endif
 
 #include <inttypes.h>
 
@@ -215,15 +211,15 @@ namespace powerpc {
 
 class SoftFloat;
 class SoftDouble : public unisim::util::simfloat::Numerics::Double
-                     ::TBuiltDouble<Numerics::Double::BuiltDoubleTraits<52, 11> > {
+                     ::TBuiltDouble<unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> > {
   private:
    typedef unisim::util::simfloat::Numerics::Double
-      ::TBuiltDouble<Numerics::Double::BuiltDoubleTraits<52, 11> > inherited;
+      ::TBuiltDouble<unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> > inherited;
 
   public:
    SoftDouble() : inherited() {}
    SoftDouble(const SoftFloat& sfFloat, Flags& rpParams);
-   SoftDouble(const uint64_t& uDouble) { setChunk(&uDouble, true /* little endian */); }
+   SoftDouble(const uint64_t& uDouble) { setChunk((void *) &uDouble, true /* little endian */); }
    SoftDouble& operator=(const SoftDouble& sdSource)
       {  return (SoftDouble&) inherited::operator=(sdSource); }
    SoftDouble& assign(const SoftDouble& sdSource)
@@ -235,15 +231,15 @@ class SoftDouble : public unisim::util::simfloat::Numerics::Double
 };
 
 class SoftFloat : public unisim::util::simfloat::Numerics::Double
-                     ::TBuiltDouble<Numerics::Double::BuiltDoubleTraits<23, 8> > {
+                     ::TBuiltDouble<unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> > {
   private:
    typedef unisim::util::simfloat::Numerics::Double
-      ::TBuiltDouble<Numerics::Double::BuiltDoubleTraits<23, 8> > inherited;
+      ::TBuiltDouble<unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> > inherited;
 
   public:
    SoftFloat() : inherited() {}
    SoftFloat(const SoftDouble& sdDouble, Flags& rpParams);
-   SoftFloat(const uint32_t& uFloat) { setChunk(&uFloat, true /* little endian */); }
+   SoftFloat(const uint32_t& uFloat) { setChunk((void *) &uFloat, true /* little endian */); }
 
    SoftFloat& operator=(const SoftFloat& sfSource)
       {  return (SoftFloat&) inherited::operator=(sfSource); }
@@ -261,7 +257,8 @@ SoftDouble::assign(const SoftFloat& sfFloat, Flags& rpParams) {
    fcConversion.setNegative(sfFloat.isNegative());
    fcConversion.exponent()[0] = sfFloat.queryBasicExponent()[0];
    fcConversion.mantissa()[0] = sfFloat.queryMantissa()[0];
-   return (SoftDouble&) inherited::operator=(inherited(fcConversion, rpParams));
+   inherited source(fcConversion, rpParams);
+   return (SoftDouble&) inherited::operator=(source);
 }
 
 inline
