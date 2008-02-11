@@ -345,16 +345,16 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
    static const int UBitSizeMantissa = BitSizeMantissa;
    static const int UBitSizeExponent = BitSizeExponent;
    typedef unsigned char CharChunk[BitSizeMantissa+BitSizeExponent+1];
-   void setChunkSize(int uChunkSize) { assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8); }
-   void copyChunk(CharChunk& ccChunk, void* pChunk, int uChunkSize)
+   void setChunkSize(int uChunkSize) const { assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8); }
+   void copyChunk(CharChunk& ccChunk, void* pChunk, int uChunkSize) const
       {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
          memcpy((unsigned char*) ccChunk, pChunk, uChunkSize);
       }
-   void retrieveChunk(void* pChunk, const CharChunk& ccChunk, int uChunkSize)
+   void retrieveChunk(void* pChunk, const CharChunk& ccChunk, int uChunkSize) const
       {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
          memcpy(pChunk, (unsigned char*) ccChunk, uChunkSize);
       }
-   void clearChunk(CharChunk& ccChunk, int uChunkSize)
+   void clearChunk(CharChunk& ccChunk, int uChunkSize) const
       {  assert(uChunkSize == (BitSizeMantissa+BitSizeExponent+1+7)/8);
          memset((unsigned char*) ccChunk, 0, uChunkSize);
       }
