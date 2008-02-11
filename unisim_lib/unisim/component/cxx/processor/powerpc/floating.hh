@@ -209,12 +209,15 @@ namespace powerpc {
          }
    };
 
+class BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> {
+  public:
+   typedef Flags StatusAndControlFlags;
+};
+
 class SoftFloat;
-class SoftDouble : public unisim::util::simfloat::Numerics::Double
-                     ::TBuiltDouble<unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> > {
+class SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> {
   private:
-   typedef unisim::util::simfloat::Numerics::Double
-      ::TBuiltDouble<unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> > inherited;
+   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltDoubleTraits> inherited;
 
   public:
    SoftDouble() : inherited() {}
@@ -230,11 +233,14 @@ class SoftDouble : public unisim::util::simfloat::Numerics::Double
       {  uint64_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
 };
 
-class SoftFloat : public unisim::util::simfloat::Numerics::Double
-                     ::TBuiltDouble<unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> > {
+class BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltFloatTraits<23, 8> {
+  public:
+   typedef Flags StatusAndControlFlags;
+};
+
+class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> {
   private:
-   typedef unisim::util::simfloat::Numerics::Double
-      ::TBuiltDouble<unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> > inherited;
+   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> inherited;
 
   public:
    SoftFloat() : inherited() {}
