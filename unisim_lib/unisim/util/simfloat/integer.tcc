@@ -2,8 +2,8 @@
                 Integer_gccopt.template  -  Template for various types of integer
                              -------------------
     first release        : 15 Jul 2005
-    copyright ©          : (C) 2004-2005 CEA
-    authors              : Franck Védrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ï¿½          : (C) 2004-2005 CEA
+    authors              : Franck Vï¿½drine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -23,11 +23,7 @@
 
 #ifndef Numerics_Integer_IntegerTemplate
 #define Numerics_Integer_IntegerTemplate
-#if !defined(__GNUC__) || !defined(__OPTIMIZE__) || (__OPTIMIZE__ < 1)
 #include <unisim/util/simfloat/integer.hh>
-#else
-#include <unisim/util/simfloat/integer_gccopt.hh>
-#endif
 
 namespace unisim {
 namespace util {

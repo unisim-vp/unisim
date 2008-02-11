@@ -2,8 +2,8 @@
                 Floating.template  -  Template for various types of floating point computations
                              -------------------
     first release        : 15 Jul 2005
-    copyright ©          : (C) 2004-2005 CEA
-    authors              : Franck VÅÈdrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ÔøΩ          : (C) 2004-2005 CEA
+    authors              : Franck VÔøΩÔøΩdrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -23,11 +23,7 @@
 
 #ifndef Numerics_Double_FloatingTemplate
 #define Numerics_Double_FloatingTemplate
-#if !defined(__GNUC__) || !defined(__OPTIMIZE__) || (__OPTIMIZE__ < 1)
 #include <unisim/util/simfloat/floating.hh>
-#else
-#include <unisim/util/simfloat/floating_gccopt.hh>
-#endif
 
 namespace unisim {
 namespace util {
@@ -255,7 +251,7 @@ LEnd:
 
 template <class TypeTraits>
 void
-TBuiltDouble<TypeTraits>::fillChunk(void* pChunk, bool fChunkLittleEndian) { // uByteSize = UByteSizeImplantation/sizeof(unsigned int)+1
+TBuiltDouble<TypeTraits>::fillChunk(void* pChunk, bool fChunkLittleEndian) const { // uByteSize = UByteSizeImplantation/sizeof(unsigned int)+1
    int uSizeMantissa = bitSizeMantissa(), uSizeExponent = bitSizeExponent();
    int uByteSizeImplantation = (uSizeMantissa + uSizeExponent + 1 + 7)/8;
    typename TypeTraits::CharChunk ccChunk;

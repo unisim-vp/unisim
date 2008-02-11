@@ -2,8 +2,8 @@
                 Floating.h  -  Template for various types of floating point computations
                              -------------------
     first release        : 15 Jul 2005
-    copyright ©          : (C) 2004-2005 CEA
-    authors              : Franck Védrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ï¿½          : (C) 2004-2005 CEA
+    authors              : Franck Vï¿½drine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -40,7 +40,7 @@
 #endif
 #endif
 #endif
-#include <unisim/lib/simfloat/integer.hh>
+#include <unisim/util/simfloat/integer.hh>
 
 namespace unisim {
 namespace util {
@@ -657,9 +657,9 @@ class TBuiltDouble : protected Details::DTDoubleElement::Access, protected TypeT
       }
 
    void setChunk(void* pChunk) { setChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
-   void fillChunk(void* pChunk) { fillChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
+   void fillChunk(void* pChunk) const { fillChunk(pChunk, !Details::DTDoubleElement::Access::isBigEndian()); }
    void setChunk(void* pChunk, bool fLittleEndian); // size(pChunk) = UByteSizeImplantation
-   void fillChunk(void* pChunk, bool fLittleEndian);
+   void fillChunk(void* pChunk, bool fLittleEndian) const;
 
    void setFloat(const FloatConversion& fcValue, StatusAndControlFlags& scfFlags);
    void setInteger(const IntConversion& icValue, StatusAndControlFlags& scfFlags);

@@ -1,6 +1,6 @@
 includedir = $(prefix)/include/unisim/util/simfloat
 sharedir = $(prefix)/share/unisim_lib/unisim/util/simfloat
-include_HEADERS = floating_gccopt.hh floating.hh integer_gccopt.hh integer.hh floating.tcc integer.tcc
+include_HEADERS = floating.hh integer.hh floating.tcc integer.tcc
 
 dist_share_DATA = COPYING
 
