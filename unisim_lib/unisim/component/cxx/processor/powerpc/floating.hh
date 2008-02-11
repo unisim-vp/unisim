@@ -213,105 +213,45 @@ namespace powerpc {
          }
    };
 
-template <class TypeTraits>
-class TBuiltDoubleTraits : public TypeTraits {
-  public:
-   typedef Flags StatusAndControlFlags;
-   class MultExtension : public TypeTraits::MultExtension {
-     public:
-      typedef Flags StatusAndControlFlags;
-   };
-};
-
-template <class TypeTraits>
-class TDoubleTraits : public TypeTraits {
-  public:
-   typedef Flags StatusAndControlFlags;
-   typedef unisim::util::simfloat::Numerics::Double::TBuiltDouble<TBuiltDoubleTraits<
-      unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<TypeTraits::UBitSizeMantissa, TypeTraits::UBitSizeExponent> > >
-      BuiltDouble;
-   TDoubleTraits() {}
-   TDoubleTraits(const typename TypeTraits::Implantation& dDouble) : TypeTraits(dDouble) {}
-   TDoubleTraits(const BuiltDouble& bdSource)
-      {  TypeTraits::setMantissa(bdSource.queryMantissa());
-         TypeTraits::setBasicExponent(bdSource.queryBasicExponent().queryValue());
-         TypeTraits::setSign(bdSource.isPositive());
-      }
-   TDoubleTraits(const TDoubleTraits<TypeTraits>& sSource) : TypeTraits(sSource) {}
-};
-
-template <class TypeTraits>
-class TDouble : public TypeTraits {
-  public:
-   TDouble() : TypeTraits() {}
-   TDouble(int iValue, typename TypeTraits::StatusAndControlFlags& rpParams)
-      : TypeTraits(iValue, rpParams) {}
-   TDouble(typename TypeTraits::Implantation fbtSource) : TypeTraits(fbtSource) {}
-   TDouble(const typename TypeTraits::BuiltDouble& bdDouble) : TypeTraits(bdDouble) {}
-   TDouble(const TypeTraits& dSource) : TypeTraits(dSource) {}
-   
-   operator typename TypeTraits::BuiltDouble() const
-      {  typename TypeTraits::BuiltDouble bdResult;
-         TypeTraits::fillMantissa(bdResult.querySMantissa());
-#ifndef __BORLANDC__
-         bdResult.setBasicExponent(typename TypeTraits::BuiltDouble::Exponent
-               (typename TypeTraits::BuiltDouble::Exponent::Basic(),
-                TypeTraits::queryBasicExponent()));
-#else
-         bdResult.setBasicExponent(TypeTraits::BuiltDouble::Exponent(TypeTraits::BuiltDouble::Exponent::Basic(), TypeTraits::queryBasicExponent()));
-#endif
-         bdResult.setSign(TypeTraits::isPositive());
-         return bdResult;
-	  }
-};
-
-typedef TDouble<unisim::util::simfloat::Numerics::Double::TDoubleElement<TDoubleTraits<unisim::util::simfloat::Numerics::Double::TFloatingBase<
-   unisim::util::simfloat::Numerics::Double::DoubleTraits> > > > HostDouble;
-
 class SoftFloat;
-class SoftDouble : public HostDouble::BuiltDouble {
+class SoftDouble : public unisim::util::simfloat::Numerics::Double
+                     ::TBuiltDouble<Numerics::Double::BuiltDoubleTraits<52, 11> > {
   private:
-   typedef HostDouble::BuiltDouble inherited;
+   typedef unisim::util::simfloat::Numerics::Double
+      ::TBuiltDouble<Numerics::Double::BuiltDoubleTraits<52, 11> > inherited;
 
-   static double getFromInt(uint64_t uDouble)
-      {  double result; memcpy(&result, &uDouble, 8); return result; }
-   static uint64_t getFromDouble(double arg)
-      {  uint64_t result; memcpy(&result, &arg, 8); return result; }
   public:
    SoftDouble() : inherited() {}
    SoftDouble(const SoftFloat& sfFloat, Flags& rpParams);
-   SoftDouble(const uint64_t& uDouble) : inherited(HostDouble(getFromInt(uDouble))) {}
-
+   SoftDouble(const uint64_t& uDouble) { setChunk(&uDouble, true /* little endian */); }
    SoftDouble& operator=(const SoftDouble& sdSource)
       {  return (SoftDouble&) inherited::operator=(sdSource); }
    SoftDouble& assign(const SoftDouble& sdSource)
       {  return (SoftDouble&) inherited::operator=(sdSource); }
    SoftDouble& assign(const SoftFloat& sfFloat, Flags& rpParams);
 
-   uint64_t queryValue() const { return getFromDouble(HostDouble(*this).implantation()); }
+   uint64_t queryValue() const
+      {  uint64_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
 };
 
-typedef TDouble<unisim::util::simfloat::Numerics::Double::TDoubleElement<TDoubleTraits<unisim::util::simfloat::Numerics::Double::TFloatingBase<
-   unisim::util::simfloat::Numerics::Double::FloatTraits> > > > HostFloat;
-class SoftFloat : public HostFloat::BuiltDouble {
+class SoftFloat : public unisim::util::simfloat::Numerics::Double
+                     ::TBuiltDouble<Numerics::Double::BuiltDoubleTraits<23, 8> > {
   private:
-   typedef HostFloat::BuiltDouble inherited;
+   typedef unisim::util::simfloat::Numerics::Double
+      ::TBuiltDouble<Numerics::Double::BuiltDoubleTraits<23, 8> > inherited;
 
-   static float getFromInt(uint32_t uFloat)
-      {  float result; memcpy(&result, &uFloat, 4); return result; }
-   static uint32_t getFromDouble(float arg)
-      {  uint32_t result; memcpy(&result, &arg, 4); return result; }
   public:
    SoftFloat() : inherited() {}
    SoftFloat(const SoftDouble& sdDouble, Flags& rpParams);
-   SoftFloat(const uint32_t& uFloat) : inherited(HostFloat(getFromInt(uFloat))) {}
+   SoftFloat(const uint32_t& uFloat) { setChunk(&uFloat, true /* little endian */); }
 
    SoftFloat& operator=(const SoftFloat& sfSource)
       {  return (SoftFloat&) inherited::operator=(sfSource); }
    SoftFloat& assign(const SoftFloat& sfSource)
       {  return (SoftFloat&) inherited::operator=(sfSource); }
    SoftFloat& assign(const SoftDouble& sdDouble, Flags& rpParams);
-   uint32_t queryValue() const { return getFromDouble(HostFloat(*this).implantation()); }
+   uint32_t queryValue() const
+      {  uint32_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
 };
 
 inline SoftDouble&
