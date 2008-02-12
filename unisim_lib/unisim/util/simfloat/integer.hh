@@ -2,8 +2,8 @@
                 Integer.h  -  Template for various types of integer
                              -------------------
     first release        : 15 Jul 2005
-    copyright ©          : (C) 2004-2005 CEA
-    authors              : Franck Védrine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
+    copyright ï¿½          : (C) 2004-2005 CEA
+    authors              : Franck Vï¿½drine, Bruno Marre, Benjamin Blanc, Gilles Mouchard
     email                : Franck.Vedrine@cea.fr
  ***************************************************************************/
 
@@ -1237,6 +1237,10 @@ class TBigInt : public Details::Access, protected IntegerTraits {
    thisType& operator<<=(int uShift)
       {  cells() <<= uShift;
          inherited::normalize();
+         return *this;
+      }
+   thisType& leftShiftAssign(int uShift)
+      {  cells() <<= uShift;
          return *this;
       }
    thisType& operator>>=(int uShift) {  cells() >>= uShift; return *this; }

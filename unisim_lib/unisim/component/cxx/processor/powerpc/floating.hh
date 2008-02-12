@@ -212,6 +212,10 @@ namespace powerpc {
 class BuiltDoubleTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11> {
   public:
    typedef Flags StatusAndControlFlags;
+   class MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<52, 11>::MultExtension {
+     public:
+      typedef Flags StatusAndControlFlags;
+   };
 };
 
 class SoftFloat;
@@ -233,9 +237,13 @@ class SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble
       {  uint64_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
 };
 
-class BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltFloatTraits<23, 8> {
+class BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> {
   public:
    typedef Flags StatusAndControlFlags;
+   class MultExtension : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8>::MultExtension {
+     public:
+      typedef Flags StatusAndControlFlags;
+   };
 };
 
 class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<BuiltFloatTraits> {
