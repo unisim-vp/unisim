@@ -19,6 +19,8 @@
 #include <ostream>
 #include <strtools.hh>
 #include <subdecoder.hh>
+#include <scanner.hh>
+#include <parser.hh>
 #include <cmath>
 #include <cassert>
 
@@ -112,7 +114,7 @@ UnusedBitField_t::fills( ostream& _sink ) const {
   _sink << "?[" << m_size << "]";
 }
 
-SeparatorBitField_t::SeparatorBitField_t( unsigned int _rewind )
+SeparatorBitField_t::SeparatorBitField_t( bool _rewind )
   : BitField_t( 0 ), m_rewind( _rewind )
 {}
 
@@ -122,10 +124,8 @@ SeparatorBitField_t::SeparatorBitField_t( SeparatorBitField_t const& _src )
 
 void
 SeparatorBitField_t::fills( std::ostream& _sink ) const {
-  if( m_rewind > 0 )
-    _sink << ">-" << m_rewind << "<";
-  else
-    _sink << "><";
+  if( m_rewind ) _sink << "> " << Scanner::tokenname( TOK_REWIND ) << " <";
+  else           _sink << "> <";
 }
 
 /** Dump an bitfield object into a stream

@@ -111,7 +111,7 @@ RiscGenerator::finalize() {
       throw GenerationError;
     }
     if( size % 8 ) {
-      (**op).m_fileloc.err( "warning: operation `%s` has un aligned opcode (%d).", size );
+      (**op).m_fileloc.err( "warning: operation `%s` has un aligned opcode (%d).", (**op).m_symbol.str(), size );
     }
     if( size > insn_bitsize ) insn_bitsize = size;
     unsigned int shift = size;

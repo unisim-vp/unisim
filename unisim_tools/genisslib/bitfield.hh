@@ -126,9 +126,9 @@ struct UnusedBitField_t : public BitField_t {
  */
 
 struct SeparatorBitField_t : public BitField_t {
-  unsigned int          m_rewind;
+  bool                  m_rewind;
   
-  SeparatorBitField_t( unsigned int m_rewind );
+  SeparatorBitField_t( bool _rewind );
   SeparatorBitField_t( SeparatorBitField_t const& _src );
   
   Type_t                type() const { return Separator; };

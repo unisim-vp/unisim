@@ -291,6 +291,7 @@ Scanner::Token_t Scanner::s_tokens[] = {
   {"sext", TOK_SEXT},
   {"shr", TOK_SHR},
   {"shl", TOK_SHL},
+  {"rewind", TOK_REWIND},
   {"var", TOK_VAR},
   {"little_endian", TOK_LITTLE_ENDIAN},
   {"big_endian", TOK_BIG_ENDIAN},

@@ -126,6 +126,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %token TOK_SEXT
 %token TOK_SHL
 %token TOK_SHR
+%token TOK_REWIND
 %token TOK_VAR
 %token TOK_BIG_ENDIAN
 %token TOK_LITTLE_ENDIAN
@@ -416,11 +417,11 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
 }
   | '>' '<'
 {
-  $$ = new SeparatorBitField_t( 0 );
+  $$ = new SeparatorBitField_t( false );
 }
-  | '>' '-' TOK_INTEGER '<'
+  | '>' TOK_REWIND '<'
 {
-  $$ = new SeparatorBitField_t( $3 );
+  $$ = new SeparatorBitField_t( true );
 }
 ;
 

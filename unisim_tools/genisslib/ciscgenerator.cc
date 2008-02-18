@@ -179,11 +179,12 @@ operator<<( std::ostream& _sink, CiscGenerator::OpCode_t const& _oc ) {
 
 struct BFWordIterator {
   Vect_t<BitField_t>::const_iterator m_left, m_right, m_end;
-  unsigned int                       m_count, m_minsize, m_maxsize, m_rewind;
+  unsigned int                       m_count, m_minsize, m_maxsize;
+  bool m_rewind;
   
   BFWordIterator( Vect_t<BitField_t> const& _bitfields )
     : m_right( _bitfields.begin() - 1 ), m_end( _bitfields.end() ),
-      m_count( 0 ), m_minsize( 0 ), m_maxsize( 0 ), m_rewind( 0 )
+      m_count( 0 ), m_minsize( 0 ), m_maxsize( 0 ), m_rewind( false )
   {}
   
   bool
@@ -200,7 +201,7 @@ struct BFWordIterator {
       SeparatorBitField_t const& sepbf = dynamic_cast<SeparatorBitField_t const&>( **m_right );
       m_rewind = sepbf.m_rewind;
     } else
-      m_rewind = 0;
+      m_rewind = false;
         
     return true;
   }
@@ -439,10 +440,8 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       if( template_scheme )
         _product.usercode( template_scheme->m_fileloc, "< %s >", template_scheme->m_content.str() );
       _product.code( "::decoder.NCDecode( %s, %s::CodeType( _code_.str, _code_.size ) );\n", _addrname, nmspace.str() );
-      if( bfword.m_rewind == 0 )
+      if( not bfword.m_rewind )
         _product.code( "_code_.pop( %s->GetEncoding().size );\n", sobf.m_symbol.str() );
-      else
-        _product.code( "_code_.pop( %s->GetEncoding().size - %u );\n", sobf.m_symbol.str(), bfword.m_rewind );
       continue;
     }
     bool used = false;
@@ -486,7 +485,8 @@ CiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
       }
     }
     if( used )_product.code( "}\n" );
-    _product.code( "_code_.pop( %u );\n", bytesize - bfword.m_rewind );
+    if( not bfword.m_rewind )
+      _product.code( "_code_.pop( %u );\n", bytesize );
   }
   _product.code( "this->encoding.size -= _code_.size;\n" );
 }
