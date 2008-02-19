@@ -57,14 +57,16 @@ ldr_1.execute = {
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 4);
 	value = 0;
-	if((addr & (typename CONFIG::address_t)0x03) == 0) {
-		if(!cpu.Read32(addr, value)) { // address must be aligned 
-			cerr << "ERROR(load_store.isa::ldr_imm_post): "
-				<< "Couldn't read data" << endl;
-			exit(-1);
-		}
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(addr, rd);
+#else
+	if(!cpu.Read32(addr, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
 	}
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -91,14 +93,16 @@ ldr_2.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	value = 0;
-	if((addr & (typename CONFIG::address_t)0x03) == 0) {
-		if(!cpu.Read32(addr, value)) { // address must be aligned 
-			cerr << "ERROR(load_store.isa::ldr_imm_post): "
-				<< "Couldn't read data" << endl;
-			exit(-1);
-		}
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(addr, rd);
+#else
+	if(!cpu.Read32(addr, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
 	}
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -125,12 +129,16 @@ ldr_3.execute = {
 	
 	addr = pc_value + (imm * 4);
 	value = 0;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(addr, rd);
+#else
 	if(!cpu.Read32(addr, value)) { // address must be aligned 
 		cerr << "ERROR(load_store.isa::ldr_imm_post): "
 			<< "Couldn't read data" << endl;
 		exit(-1);
 	}
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -156,14 +164,16 @@ ldr_4.execute = {
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 	addr = sp_value + (imm * 4);
 	value = 0;
-	if((addr & (typename CONFIG::address_t)0x03) == 0) {
-		if(!cpu.Read32(addr, value)) { // address must be aligned 
-			cerr << "ERROR(load_store.isa::ldr_imm_post): "
-				<< "Couldn't read data" << endl;
-			exit(-1);
-		}
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(addr, rd);
+#else
+	if(!cpu.Read32(addr, value)) { // address must be aligned 
+		cerr << "ERROR(load_store.isa::ldr_imm_post): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
 	}
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -190,6 +200,9 @@ ldrb_1.execute = {
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + imm;
 	val8 = 0;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read8toGPR(addr, rd);
+#else
 	if(!cpu.Read8(addr, val8)) { // address must be aligned 
 		cerr << "ERROR(thumb/load_store_reg.isa::ldrb_1): "
 			<< "Couldn't read data" << endl;
@@ -197,6 +210,7 @@ ldrb_1.execute = {
 	}
 	value = val8;
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -223,7 +237,10 @@ ldrb_2.execute = {
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val8 = 8;
+	val8 = 0;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read8toGPR(addr, rd);
+#else
 	if(!cpu.Read8(addr, val8)) { // address must be aligned 
 		cerr << "ERROR(thumb/load_store_reg.isa::ldrb_2): "
 			<< "Couldn't read data" << endl;
@@ -231,6 +248,7 @@ ldrb_2.execute = {
 	}
 	value = val8;
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -257,6 +275,9 @@ ldrh_1.execute = {
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 2);
 	val16 = 0;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read16toGPRAligned(addr, rd);
+#else
 	if((addr & (typename CONFIG::address_t)0x01) == 0) {
 		if(!cpu.Read16(addr, val16)) { // address must be aligned 
 			cerr << "ERROR(thumb/load_store_reg.isa::ldrh_1): "
@@ -266,6 +287,7 @@ ldrh_1.execute = {
 	}
 	value = val16;
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -293,6 +315,9 @@ ldrh_2.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	val16 = 0;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read16toGPRAligned(addr, rd);
+#else
 	if((addr & (typename CONFIG::address_t)0x01) == 0) {
 		if(!cpu.Read16(addr, val16)) { // address must be aligned 
 			cerr << "ERROR(thumb/load_store_reg.isa::ldrh_2): "
@@ -302,6 +327,7 @@ ldrh_2.execute = {
 	}
 	value = val16;
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -329,6 +355,9 @@ ldrsb.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	val8 = 0;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.ReadS8toGPR(addr, rd);
+#else
 	if(!cpu.Read8(addr, *(uint8_t *)&val8)) { // address must be aligned 
 		cerr << "ERROR(thumb/load_store_reg.isa::ldrsb): "
 			<< "Couldn't read data" << endl;
@@ -336,6 +365,7 @@ ldrsb.execute = {
 	}
 	value = (typename CONFIG::sreg_t)val8;
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -363,6 +393,9 @@ ldrsh.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	val16 = 0;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.ReadS16toGPRAligned(addr, rd);
+#else
 	if((addr & (typename CONFIG::address_t)0x01) == 0) {
 		if(!cpu.Read16(addr, *(uint16_t *)&val16)) { // address must be aligned 
 			cerr << "ERROR(thumb/load_store_reg.isa::ldrsb): "
@@ -372,6 +405,7 @@ ldrsh.execute = {
 	}
 	value = (typename CONFIG::sreg_t)val16;
 	cpu.SetGPR(rd, value);
+#endif
 }
 
 /* 
@@ -397,6 +431,9 @@ str_1.execute = {
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 4);
 	rd_value = cpu.GetGPR(rd);
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(addr, rd_value);
+#else
 	if((addr & (typename CONFIG::address_t)0x03) == 0) {
 		if(!cpu.Write32(addr, rd_value)) { // address must be aligned 
 			cerr << "ERROR(load_store_reg.isa::str_1): "
@@ -404,6 +441,7 @@ str_1.execute = {
 			exit(-1);
 		}
 	}
+#endif
 }
 
 /* 
@@ -430,6 +468,9 @@ str_2.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	rd_value = cpu.GetGPR(rd);
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(addr, rd_value);
+#else
 	if((addr & (typename CONFIG::address_t)0x03) == 0) {
 		if(!cpu.Write32(addr, rd_value)) { // address must be aligned 
 			cerr << "ERROR(load_store_reg.isa::str_2): "
@@ -437,6 +478,7 @@ str_2.execute = {
 			exit(-1);
 		}
 	}
+#endif
 }
 
 /* 
@@ -462,6 +504,9 @@ str_3.execute = {
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 	addr = sp_value + (imm * 4);
 	rd_value = cpu.GetGPR(rd);
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(addr, rd_value);
+#else
 	if((addr & (typename CONFIG::address_t)0x03) == 0) {
 		if(!cpu.Write32(addr, rd_value)) { // address must be aligned 
 			cerr << "ERROR(load_store_reg.isa::str_3): "
@@ -469,6 +514,7 @@ str_3.execute = {
 			exit(-1);
 		}
 	}
+#endif
 }
 
 /* 
@@ -496,11 +542,15 @@ strb_1.execute = {
 	addr = rn_value + imm;
 	rd_value = cpu.GetGPR(rd);
 	data = rd_value & (typename CONFIG::reg_t)0x0ff;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write8(addr, data);
+#else
 	if(!cpu.Write8(addr, data)) { // address must be aligned 
 		cerr << "ERROR(load_store_reg.isa::strb_1): "
 			<< "Couldn't write data" << endl;
 		exit(-1);
 	}
+#endif
 }
 
 /* 
@@ -529,14 +579,17 @@ strb_2.execute = {
 	addr = rn_value + rm_value;
 	rd_value = cpu.GetGPR(rd);
 	data = rd_value & (typename CONFIG::reg_t)0x0ff;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write8(addr, data);
+#else
 	if(!cpu.Write8(addr, data)) { // address must be aligned 
 		cerr << "ERROR(load_store_reg.isa::strb_2): "
 			<< "Couldn't write data" << endl;
 		exit(-1);
 	}
+#endif
 }
 
-/* 
 /* 
  * strb(2) (store byte register offset) instruction
  *******************************************************************/
@@ -562,6 +615,9 @@ strh_1.execute = {
 	addr = rn_value + (imm * 2);
 	rd_value = cpu.GetGPR(rd);
 	data = rd_value & (typename CONFIG::reg_t)0x0ffff;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write16(addr, data);
+#else
 	if((addr & (typename CONFIG::address_t)0x01) == 0) {
 		if(!cpu.Write16(addr, data)) { // address must be aligned 
 			cerr << "ERROR(load_store_reg.isa::strh_1): "
@@ -569,6 +625,7 @@ strh_1.execute = {
 			exit(-1);
 		}
 	}
+#endif
 }
 
 /* 
@@ -597,6 +654,9 @@ strh_2.execute = {
 	addr = rn_value + rm_value;
 	rd_value = cpu.GetGPR(rd);
 	data = rd_value & (typename CONFIG::reg_t)0x0ff;
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write16(addr, data);
+#else
 	if((addr & (typename CONFIG::address_t)0x01) == 0) {
 		if(!cpu.Write16(addr, data)) { // address must be aligned 
 			cerr << "ERROR(load_store_reg.isa::strb_2): "
@@ -604,6 +664,7 @@ strh_2.execute = {
 			exit(-1);
 		}
 	}
+#endif
 }
 
 /* 

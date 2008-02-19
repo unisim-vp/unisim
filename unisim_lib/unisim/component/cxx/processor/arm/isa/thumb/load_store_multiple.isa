@@ -80,12 +80,16 @@ ldmia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldmia): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -137,18 +141,25 @@ pop.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::pop): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	
 	if(r) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toPCUpdateT(cur_address);
+#else
 		if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::pop): "
 				<< "Couldn't read data" << endl;
@@ -160,6 +171,7 @@ pop.execute = {
 			CONFIG::ARCHITECTURE == ARMV5TEXP) {
 			cpu.SetCPSR_T((value & 0x01) != 0);
 		}
+#endif
 		cur_address += 4;
 	}
 
@@ -217,11 +229,15 @@ push.execute = {
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::push): "
 					<< "Couldn't write data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -229,11 +245,15 @@ push.execute = {
 	
 	if(r) {
 		value = cpu.GetGPR(cpu.LR_reg);
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::push): "
 				<< "Couldn't write data" << endl;
 			exit(-1);
 		}
+#endif
 		cur_address += 4;
 	}
 
@@ -285,11 +305,15 @@ stmia.execute = {
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::push): "
 					<< "Couldn't write data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;

@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
+#define DELAYED_MEM_ACCESS 
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/linux_os.hh"
@@ -261,13 +263,13 @@ public:
 	 * @param name The name of the requested register.
 	 * @return A pointer to the RegisterInterface corresponding to name.
 	 */
-    virtual Register *GetRegister(const char *name);
+	virtual Register *GetRegister(const char *name);
 
 	//=====================================================================
 	//=                   DebugDisasmInterface methods                    =
 	//=====================================================================
 
-    /**
+	/**
 	 * Returns a string with the disassembling of the instruction found 
 	 *   at address addr.
 	 * 
@@ -275,16 +277,16 @@ public:
 	 * @param next_addr The address following the requested instruction.
 	 * @return The disassembling of the requested instruction address.
 	 */
-    virtual string Disasm(address_t addr, address_t &next_addr);
+	virtual string Disasm(address_t addr, address_t &next_addr);
 
 	//=====================================================================
 	//=                   Debugging methods                               =
 	//=====================================================================
 
-    inline uint64_t GetInstructionCounter() const { return instruction_counter; }
+	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	string GetObjectFriendlyName(address_t addr);
 	string GetFunctionFriendlyName(address_t addr);
-  
+
 	/**************************************************************/
 	/* Operand decoding methods     START                         */
 	/**************************************************************/
@@ -309,290 +311,406 @@ public:
 			const reg_t val_reg,
 			bool *shift_carry_out) GCC_INLINE;
 
-    /* Load/store operand decoding */
-    inline address_t LSWUBImmOffset(const uint32_t u, 
+	/* Load/store operand decoding */
+	inline address_t LSWUBImmOffset(const uint32_t u, 
 			const reg_t val_reg, 
 			const uint32_t offset) GCC_INLINE;
-    inline address_t LSWUBReg(const uint32_t u, 
-		       const reg_t val_rn, 
-		       const reg_t val_rd, 
-		       const uint32_t shift_imm, 
-		       const uint32_t shift, 
-		       const reg_t val_rm) GCC_INLINE;
+	inline address_t LSWUBReg(const uint32_t u, 
+			const reg_t val_rn, 
+			const reg_t val_rd, 
+			const uint32_t shift_imm, 
+			const uint32_t shift, 
+			const reg_t val_rm) GCC_INLINE;
 
-    /* Miscellaneous load/store operand decoding */
-    inline address_t MLSImmOffset(const uint32_t u, 
-			   const reg_t val_reg, 
-			   const uint32_t immedH,
-			   const uint32_t immedL) GCC_INLINE;
-    inline address_t MLSReg(const uint32_t u, 
-		     const reg_t val_rn, 
-		     const reg_t val_rd, 
-		     const reg_t val_rm) GCC_INLINE;
+	/* Miscellaneous load/store operand decoding */
+	inline address_t MLSImmOffset(const uint32_t u, 
+			const reg_t val_reg, 
+			const uint32_t immedH,
+			const uint32_t immedL) GCC_INLINE;
+	inline address_t MLSReg(const uint32_t u, 
+			const reg_t val_rn, 
+			const reg_t val_rd, 
+			const reg_t val_rm) GCC_INLINE;
 
-    /* Load/sotre multiple operand decoding */
-    inline uint32_t LSMia(const reg_t val_reg,
-		   const uint32_t reg_list,
-		   address_t *start_address,
-		   address_t *end_address,
-		   reg_t *new_val_reg) GCC_INLINE;
-    inline uint32_t LSMib(const reg_t val_reg,
-		   const uint32_t reg_list,
-		   address_t *start_address,
-		   address_t *end_address,
-		   reg_t *new_val_reg) GCC_INLINE;
-    inline uint32_t LSMda(const reg_t val_reg,
-		   const uint32_t reg_list,
-		   address_t *start_address,
-		   address_t *end_address,
-		   reg_t *new_val_reg) GCC_INLINE;
-    inline uint32_t LSMdb(const reg_t val_reg,
-		   const uint32_t reg_list,
-		   address_t *start_address,
-		   address_t *end_address,
-		   reg_t *new_val_reg) GCC_INLINE;
+	/* Load/sotre multiple operand decoding */
+	inline uint32_t LSMia(const reg_t val_reg,
+			const uint32_t reg_list,
+			address_t *start_address,
+			address_t *end_address,
+			reg_t *new_val_reg) GCC_INLINE;
+	inline uint32_t LSMib(const reg_t val_reg,
+			const uint32_t reg_list,
+			address_t *start_address,
+			address_t *end_address,
+			reg_t *new_val_reg) GCC_INLINE;
+	inline uint32_t LSMda(const reg_t val_reg,
+			const uint32_t reg_list,
+			address_t *start_address,
+			address_t *end_address,
+			reg_t *new_val_reg) GCC_INLINE;
+	inline uint32_t LSMdb(const reg_t val_reg,
+			const uint32_t reg_list,
+			address_t *start_address,
+			address_t *end_address,
+			reg_t *new_val_reg) GCC_INLINE;
 
-    /* Coprocessor load/store operand decoding */
-    inline address_t CLSOpDec(const uint32_t u,
-		     const uint32_t val_reg,
-		     const uint32_t offset) GCC_INLINE;
+	/* Coprocessor load/store operand decoding */
+	inline address_t CLSOpDec(const uint32_t u,
+			const uint32_t val_reg,
+			const uint32_t offset) GCC_INLINE;
 
-    /**************************************************************/
-    /* Operand decoding methods     END                           */
-    /**************************************************************/
+	/**************************************************************/
+	/* Operand decoding methods     END                           */
+	/**************************************************************/
 
-    /**************************************************************/
-    /* Disassembling methods     START                            */
-    /**************************************************************/
-    /* Condition opcode bytes disassembling method */
-    void DisasmCondition(const uint32_t cond, stringstream &buffer);
-    void DisasmConditionFieldsMask(const uint32_t mask,
-				   stringstream &buffer);
-    /* Data processing operand disassembling methods */
-    void DisasmShiftOperand32Imm(const uint32_t rotate_imm, 
-				 const uint32_t imm, 
-				 stringstream &buffer);
-    void DisasmShiftOperandImmShift(const uint32_t shift_imm, 
-				    const uint32_t shift, 
-				    const uint32_t rm, 
-				    stringstream &buffer);
-    void DisasmShiftOperandRegShift(const uint32_t rs, 
-				    const uint32_t shift, 
-				    const uint32_t rm, 
-				    stringstream &buffer);
-    /* Load/store operand disassembling methods */
-    void DisasmLSWUBImmOffset_post(const uint32_t u, 
-				   const uint32_t rn, 
-				   const uint32_t offset,
-				   stringstream &buffer);
-    void DisasmLSWUBImmOffset_offset(const uint32_t u, 
-				     const uint32_t rn, 
-				     const uint32_t offset,
-				     stringstream &buffer);
-    void DisasmLSWUBImmOffset_pre(const uint32_t u, 
-				  const uint32_t rn, 
-				  const uint32_t offset,
-				  stringstream &buffer);
-    void DisasmLSWUBReg_post(const uint32_t u, 
-			     const uint32_t rn, 
-			     const uint32_t shift_imm, 
-			     const uint32_t shift, 
-			     const uint32_t rm,
-			     stringstream &buffer);
-    void DisasmLSWUBReg_offset(const uint32_t u, 
-			       const uint32_t rn, 
-			       const uint32_t shift_imm, 
-			       const uint32_t shift, 
-			       const uint32_t rm,
-			       stringstream &buffer);
-    void DisasmLSWUBReg_pre(const uint32_t u, 
-			    const uint32_t rn, 
-			    const uint32_t shift_imm, 
-			    const uint32_t shift, 
-			    const uint32_t rm,
-			    stringstream &buffer);
-    /* Miscellaneous load/store operand disassembling methods */
-    void DisasmMLSImmOffset_post(const uint32_t u, 
-				 const uint32_t rn,
-				 const uint32_t immedH,
-				 const uint32_t immedL,
-				 stringstream &buffer);
-    void DisasmMLSImmOffset_offset(const uint32_t u, 
-				   const uint32_t rn, 
-				   const uint32_t immedH,
-				   const uint32_t immedL,
-				     stringstream &buffer);
-    void DisasmMLSImmOffset_pre(const uint32_t u, 
-				const uint32_t rn, 
-				const uint32_t immedH,
-				const uint32_t immedL,
-				stringstream &buffer);
-    void DisasmMLSReg_post(const uint32_t u, 
-			   const uint32_t rn, 
-			   const uint32_t rm,
-			   stringstream &buffer);
-    void DisasmMLSReg_offset(const uint32_t u, 
-			     const uint32_t rn, 
-			     const uint32_t rm,
-			     stringstream &buffer);
-    void DisasmMLSReg_pre(const uint32_t u, 
-			  const uint32_t rn, 
-			  const uint32_t rm,
-			  stringstream &buffer);
-    /* Coprocessor load/store operand disassembling methods */
-    void DisasmCLSImm_post(const uint32_t u,
-			   const uint32_t rn,
-			   const uint32_t offset,
-			   stringstream &buffer);
-    void DisasmCLSImm_offset(const uint32_t u,
-			     const uint32_t rn,
-			     const uint32_t offset,
-			     stringstream &buffer);
-    void DisasmCLSImm_pre(const uint32_t u,
-			  const uint32_t rn,
-			  const uint32_t offset,
-			  stringstream &buffer);
-    void DisasmCLSUnindexed(const uint32_t rn,
-			    const uint32_t option,
-			    stringstream &buffer);
-			   
-    /**************************************************************/
-    /* Disassembling methods     END                              */
-    /**************************************************************/
+	/**************************************************************/
+	/* Disassembling methods     START                            */
+	/**************************************************************/
+	/* Condition opcode bytes disassembling method */
+	void DisasmCondition(const uint32_t cond, stringstream &buffer);
+	void DisasmConditionFieldsMask(const uint32_t mask,
+			stringstream &buffer);
+	/* Data processing operand disassembling methods */
+	void DisasmShiftOperand32Imm(const uint32_t rotate_imm, 
+			const uint32_t imm, 
+			stringstream &buffer);
+	void DisasmShiftOperandImmShift(const uint32_t shift_imm, 
+			const uint32_t shift, 
+			const uint32_t rm, 
+			stringstream &buffer);
+	void DisasmShiftOperandRegShift(const uint32_t rs, 
+			const uint32_t shift, 
+			const uint32_t rm, 
+			stringstream &buffer);
+	/* Load/store operand disassembling methods */
+	void DisasmLSWUBImmOffset_post(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t offset,
+			stringstream &buffer);
+	void DisasmLSWUBImmOffset_offset(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t offset,
+			stringstream &buffer);
+	void DisasmLSWUBImmOffset_pre(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t offset,
+			stringstream &buffer);
+	void DisasmLSWUBReg_post(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t shift_imm, 
+			const uint32_t shift, 
+			const uint32_t rm,
+			stringstream &buffer);
+	void DisasmLSWUBReg_offset(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t shift_imm, 
+			const uint32_t shift, 
+			const uint32_t rm,
+			stringstream &buffer);
+	void DisasmLSWUBReg_pre(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t shift_imm, 
+			const uint32_t shift, 
+			const uint32_t rm,
+			stringstream &buffer);
+	/* Miscellaneous load/store operand disassembling methods */
+	void DisasmMLSImmOffset_post(const uint32_t u, 
+			const uint32_t rn,
+			const uint32_t immedH,
+			const uint32_t immedL,
+			stringstream &buffer);
+	void DisasmMLSImmOffset_offset(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t immedH,
+			const uint32_t immedL,
+			stringstream &buffer);
+	void DisasmMLSImmOffset_pre(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t immedH,
+			const uint32_t immedL,
+			stringstream &buffer);
+	void DisasmMLSReg_post(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t rm,
+			stringstream &buffer);
+	void DisasmMLSReg_offset(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t rm,
+			stringstream &buffer);
+	void DisasmMLSReg_pre(const uint32_t u, 
+			const uint32_t rn, 
+			const uint32_t rm,
+			stringstream &buffer);
+	/* Coprocessor load/store operand disassembling methods */
+	void DisasmCLSImm_post(const uint32_t u,
+			const uint32_t rn,
+			const uint32_t offset,
+			stringstream &buffer);
+	void DisasmCLSImm_offset(const uint32_t u,
+			const uint32_t rn,
+			const uint32_t offset,
+			stringstream &buffer);
+	void DisasmCLSImm_pre(const uint32_t u,
+			const uint32_t rn,
+			const uint32_t offset,
+			stringstream &buffer);
+	void DisasmCLSUnindexed(const uint32_t rn,
+			const uint32_t option,
+			stringstream &buffer);
+	
+	/**************************************************************/
+	/* Disassembling methods     END                              */
+	/**************************************************************/
 
-    // Linux OS Interface
+	// Linux OS Interface
 	virtual void PerformExit(int ret);
 
 	// Endian interface
-    virtual endian_type GetEndianess();
+	virtual endian_type GetEndianess();
 
-    /**************************************************************/
-    /* Registers access methods    START                          */
-    /**************************************************************/
+	/**************************************************************/
+	/* Registers access methods    START                          */
+	/**************************************************************/
 
-    /* definition of the type of the registers */
-    const static unsigned int nextPC_reg = 16;
-    const static unsigned int PC_reg = 15;
-    const static unsigned int LR_reg = 14;
-    const static unsigned int SP_reg = 13;
-    
-    /* GPR access functions */
-    void InitGPR();
-    void SetGPRMapping(uint32_t src_mode, uint32_t tar_mode);
-    inline reg_t GetGPR(uint32_t id) const GCC_INLINE;
-    inline void SetGPR(uint32_t id, reg_t val) GCC_INLINE;
-    reg_t GetGPR_usr(uint32_t id) const;
-    void SetGPR_usr(uint32_t id, reg_t val);
-    const string DumpRegs() const;
+	/* definition of the type of the registers */
+	const static unsigned int nextPC_reg = 16;
+	const static unsigned int PC_reg = 15;
+	const static unsigned int LR_reg = 14;
+	const static unsigned int SP_reg = 13;
 
-    /* CPSR access functions */
-    inline uint32_t GetCPSR() const GCC_INLINE;
-    inline void SetCPSR(uint32_t val) GCC_INLINE;
-    inline void SetCPSR_NZCV(bool n,
-		      bool z,
-		      bool c,
-		      bool v) GCC_INLINE;
-    inline void SetCPSR_N(const bool val = true) GCC_INLINE;
-    inline void UnsetCPSR_N() GCC_INLINE;
-    inline bool GetCPSR_N() GCC_INLINE;
-    inline void SetCPSR_Z(const bool val = true) GCC_INLINE;
-    inline void UnsetCPSR_Z() GCC_INLINE;
-    inline bool GetCPSR_Z() GCC_INLINE;
-    inline void SetCPSR_C(const bool val = true) GCC_INLINE;
-    inline void UnsetCPSR_C() GCC_INLINE;
-    inline bool GetCPSR_C() GCC_INLINE;
-    inline void SetCPSR_V(const bool val = true) GCC_INLINE;
-    inline void UnsetCPSR_V() GCC_INLINE;
-    inline bool GetCPSR_V() GCC_INLINE;
-    inline void SetCPSR_Q(const bool val = true) GCC_INLINE;
-    inline void UnsetCPSR_Q() GCC_INLINE;
-    inline bool GetCPSR_Q() GCC_INLINE;
-    inline void SetCPSR_I(const bool val = true) GCC_INLINE;
-    inline void UnsetCPSR_I() GCC_INLINE;
-    inline bool GetCPSR_I() GCC_INLINE;
-    inline void SetCPSR_F(const bool val = true) GCC_INLINE;
-    inline void UnsetCPSR_F() GCC_INLINE;
-    inline bool GetCPSR_F() GCC_INLINE;
-    inline void SetCPSR_T(const bool val = true) GCC_INLINE;
-    inline void UnsetCPSR_T() GCC_INLINE;
-    inline bool GetCPSR_T() GCC_INLINE;
-    inline void SetCPSR_Mode(uint32_t mode) GCC_INLINE;
-    inline uint32_t GetCPSR_Mode() GCC_INLINE;
-    
-    /* SPSR access functions */
-    inline void SetSPSR(uint32_t val) GCC_INLINE;
-    inline uint32_t GetSPSR() GCC_INLINE;
-    inline void SetSPSR_NZCV(bool n,
-		      bool z,
-		      bool c,
-		      bool v) GCC_INLINE;
-    inline void SetSPSR_N(const bool val = true) GCC_INLINE;
-    inline void UnsetSPSR_N() GCC_INLINE;
-    inline bool GetSPSR_N() GCC_INLINE;
-    inline void SetSPSR_Z(const bool val = true) GCC_INLINE;
-    inline void UnsetSPSR_Z() GCC_INLINE;
-    inline bool GetSPSR_Z() GCC_INLINE;
-    inline void SetSPSR_C(const bool val = true) GCC_INLINE;
-    inline void UnsetSPSR_C() GCC_INLINE;
-    inline bool GetSPSR_C() GCC_INLINE;
-    inline void SetSPSR_V(const bool val = true) GCC_INLINE;
-    inline void UnsetSPSR_V() GCC_INLINE;
-    inline bool GetSPSR_V() GCC_INLINE;
-    inline void SetSPSR_Q(const bool val = true) GCC_INLINE;
-    inline void UnsetSPSR_Q() GCC_INLINE;
-    inline bool GetSPSR_Q() GCC_INLINE;
-    inline void SetSPSR_I(const bool val = true) GCC_INLINE;
-    inline void UnsetSPSR_I() GCC_INLINE;
-    inline bool GetSPSR_I() GCC_INLINE;
-    inline void SetSPSR_F(const bool val = true) GCC_INLINE;
-    inline void UnsetSPSR_F() GCC_INLINE;
-    inline bool GetSPSR_F() GCC_INLINE;
-    inline void SetSPSR_T(const bool val = true) GCC_INLINE;
-    inline void UnsetSPSR_T() GCC_INLINE;
-    inline bool GetSPSR_T() GCC_INLINE;
-    inline void SetSPSR_Mode(uint32_t mode) GCC_INLINE;
-    inline uint32_t GetSPSR_Mode() GCC_INLINE;
+	/* GPR access functions */
+	void InitGPR();
+	void SetGPRMapping(uint32_t src_mode, uint32_t tar_mode);
+	inline reg_t GetGPR(uint32_t id) const GCC_INLINE;
+	inline void SetGPR(uint32_t id, reg_t val) GCC_INLINE;
+	reg_t GetGPR_usr(uint32_t id) const;
+	void SetGPR_usr(uint32_t id, reg_t val);
+	const string DumpRegs() const;
 
-    /* gets spsr index from current running mode */
-    inline uint32_t GetSPSRIndex() GCC_INLINE;
+	/* CPSR access functions */
+	inline uint32_t GetCPSR() const GCC_INLINE;
+	inline void SetCPSR(uint32_t val) GCC_INLINE;
+	inline void SetCPSR_NZCV(bool n,
+			bool z,
+			bool c,
+			bool v) GCC_INLINE;
+	inline void SetCPSR_N(const bool val = true) GCC_INLINE;
+	inline void UnsetCPSR_N() GCC_INLINE;
+	inline bool GetCPSR_N() GCC_INLINE;
+	inline void SetCPSR_Z(const bool val = true) GCC_INLINE;
+	inline void UnsetCPSR_Z() GCC_INLINE;
+	inline bool GetCPSR_Z() GCC_INLINE;
+	inline void SetCPSR_C(const bool val = true) GCC_INLINE;
+	inline void UnsetCPSR_C() GCC_INLINE;
+	inline bool GetCPSR_C() GCC_INLINE;
+	inline void SetCPSR_V(const bool val = true) GCC_INLINE;
+	inline void UnsetCPSR_V() GCC_INLINE;
+	inline bool GetCPSR_V() GCC_INLINE;
+	inline void SetCPSR_Q(const bool val = true) GCC_INLINE;
+	inline void UnsetCPSR_Q() GCC_INLINE;
+	inline bool GetCPSR_Q() GCC_INLINE;
+	inline void SetCPSR_I(const bool val = true) GCC_INLINE;
+	inline void UnsetCPSR_I() GCC_INLINE;
+	inline bool GetCPSR_I() GCC_INLINE;
+	inline void SetCPSR_F(const bool val = true) GCC_INLINE;
+	inline void UnsetCPSR_F() GCC_INLINE;
+	inline bool GetCPSR_F() GCC_INLINE;
+	inline void SetCPSR_T(const bool val = true) GCC_INLINE;
+	inline void UnsetCPSR_T() GCC_INLINE;
+	inline bool GetCPSR_T() GCC_INLINE;
+	inline void SetCPSR_Mode(uint32_t mode) GCC_INLINE;
+	inline uint32_t GetCPSR_Mode() GCC_INLINE;
+	
+	/* SPSR access functions */
+	inline void SetSPSR(uint32_t val) GCC_INLINE;
+	inline uint32_t GetSPSR() GCC_INLINE;
+	inline void SetSPSR_NZCV(bool n,
+			bool z,
+			bool c,
+			bool v) GCC_INLINE;
+	inline void SetSPSR_N(const bool val = true) GCC_INLINE;
+	inline void UnsetSPSR_N() GCC_INLINE;
+	inline bool GetSPSR_N() GCC_INLINE;
+	inline void SetSPSR_Z(const bool val = true) GCC_INLINE;
+	inline void UnsetSPSR_Z() GCC_INLINE;
+	inline bool GetSPSR_Z() GCC_INLINE;
+	inline void SetSPSR_C(const bool val = true) GCC_INLINE;
+	inline void UnsetSPSR_C() GCC_INLINE;
+	inline bool GetSPSR_C() GCC_INLINE;
+	inline void SetSPSR_V(const bool val = true) GCC_INLINE;
+	inline void UnsetSPSR_V() GCC_INLINE;
+	inline bool GetSPSR_V() GCC_INLINE;
+	inline void SetSPSR_Q(const bool val = true) GCC_INLINE;
+	inline void UnsetSPSR_Q() GCC_INLINE;
+	inline bool GetSPSR_Q() GCC_INLINE;
+	inline void SetSPSR_I(const bool val = true) GCC_INLINE;
+	inline void UnsetSPSR_I() GCC_INLINE;
+	inline bool GetSPSR_I() GCC_INLINE;
+	inline void SetSPSR_F(const bool val = true) GCC_INLINE;
+	inline void UnsetSPSR_F() GCC_INLINE;
+	inline bool GetSPSR_F() GCC_INLINE;
+	inline void SetSPSR_T(const bool val = true) GCC_INLINE;
+	inline void UnsetSPSR_T() GCC_INLINE;
+	inline bool GetSPSR_T() GCC_INLINE;
+	inline void SetSPSR_Mode(uint32_t mode) GCC_INLINE;
+	inline uint32_t GetSPSR_Mode() GCC_INLINE;
 
-    /* other CPSR/SPSR methods */
-    inline void MoveSPSRtoCPSR() GCC_INLINE;
-    
-    /* Instruction condition checking method */
-    inline bool CheckCondition(uint32_t cond) GCC_INLINE; // check condition type
-    /* Condition codes update method */
-    inline void UpdateConditionCodes() GCC_INLINE;
-    /* Result condition computation methods */
-    inline bool CarryFrom(const reg_t res, const reg_t s1, const reg_t s2,
-		   const reg_t carry_in = 0) GCC_INLINE;
-    inline bool BorrowFrom(const reg_t res, const reg_t s1, const reg_t s2,
-		    const reg_t carry_in = 0) GCC_INLINE;
-    inline bool AdditionOverflowFrom(const reg_t res, const reg_t s1, const reg_t s2,
+	/* gets spsr index from current running mode */
+	inline uint32_t GetSPSRIndex() GCC_INLINE;
+
+	/* other CPSR/SPSR methods */
+	inline void MoveSPSRtoCPSR() GCC_INLINE;
+
+	/* Instruction condition checking method */
+	inline bool CheckCondition(uint32_t cond) GCC_INLINE; // check condition type
+	/* Condition codes update method */
+	inline void UpdateConditionCodes() GCC_INLINE;
+	/* Result condition computation methods */
+	inline bool CarryFrom(const reg_t res, const reg_t s1, const reg_t s2,
+			const reg_t carry_in = 0) GCC_INLINE;
+	inline bool BorrowFrom(const reg_t res, const reg_t s1, const reg_t s2,
+			const reg_t carry_in = 0) GCC_INLINE;
+	inline bool AdditionOverflowFrom(const reg_t res, const reg_t s1, const reg_t s2,
+			const reg_t carry_in = 0) GCC_INLINE;
+	inline bool SubtractionOverflowFrom(const reg_t res, const reg_t s1, const reg_t s2,
 			 const reg_t carry_in = 0) GCC_INLINE;
-    inline bool SubtractionOverflowFrom(const reg_t res, const reg_t s1, const reg_t s2,
-			 const reg_t carry_in = 0) GCC_INLINE;
 
-    /**************************************************************/
-    /* Registers access methods    END                            */
-    /**************************************************************/
+	/**************************************************************/
+	/* Registers access methods    END                            */
+	/**************************************************************/
 
-    /**************************************************************/
-    /* Memory access methods       START                          */
-    /**************************************************************/
-    
-    inline bool ReadInsn(address_t address, uint32_t &val) GCC_INLINE;
-    inline bool ReadInsnLine(address_t address, uint8_t *val, uint32_t size);
-    inline bool Read8(address_t address, uint8_t &val) GCC_INLINE;
-    inline bool Read16(address_t address, uint16_t &val) GCC_INLINE;
-    inline bool Read32(address_t address, uint32_t &val) GCC_INLINE;
-    inline bool Write8(address_t address, uint8_t &val) GCC_INLINE;
-    inline bool Write16(address_t address, uint16_t &val) GCC_INLINE;
-    inline bool Write32(address_t address, uint32_t &val) GCC_INLINE;
-    
-    /**************************************************************/
-    /* Memory access methods       END                            */
-    /**************************************************************/
+	/**************************************************************/
+	/* Memory access methods       START                          */
+	/**************************************************************/
+
+#ifdef DELAYED_MEM_ACCESS
+	/** reads 32bits from the memory system
+	 * This method allows the user to read instructions from the memory system,
+	 *   that is, it tries to read from the pertinent caches and if failed from
+	 *   the external memory system.
+	 * 
+	 * @param address the address to read data from
+	 * @param val the buffer to fill with the read data
+	 */
+	inline void ReadInsn(address_t address, uint32_t *val) GCC_INLINE;
+	/** reads a complete cache line from the memory system
+	 * This method reads a full cache line of processor instructions from the
+	 *   memory system (accessing the pertinent cache levels as necessary)
+	 * 
+	 * @param address the base address to read the data from
+	 * @param val an array of bytes containing the instructions
+	 * @param size the number of bytes to read
+	 */
+	inline void ReadInsnLine(address_t address, uint8_t *val, uint32_t size) GCC_INLINE;
+	/** Memory prefetch instruction.
+	 * This method is used to make memory prefetches into the caches (if available),
+	 *   that is it sends a memory read that doesn't keep the request result.
+	 * 
+	 * @param address the address of the prefetch
+	 */
+	inline void ReadPrefetch(address_t address) GCC_INLINE;
+	/** 32bits memory read that stores result into the PC
+	 * This methods reads 32bits from memory and stores the result into
+	 *   the pc register of the CPU.
+	 * 
+	 * @param address the base address of the 32bits read
+	 */
+	inline void Read32toPCUpdateT(address_t address) GCC_INLINE;
+	/** 32bits memory read that stores result into the PC and updates thumb state
+	 * This methods reads 32bits from memory and stores the result into
+	 *   the pc register of the CPU and updates thumb state if necessary
+	 * 
+	 * @param address the base address of the 32bits read
+	 */
+	inline void Read32toPC(address_t address) GCC_INLINE;
+	/** 32bits memory read that stores result into one of the general purpose registers
+	 * This method reads 32bits from memory and stores the result into
+	 *   the general purpose register indicated by the input reg
+	 * 
+	 * @param address the base address of the 32bits read
+	 * @param reg the register to store the resulting read
+	 */
+	inline void Read32toGPR(address_t address, uint32_t reg) GCC_INLINE;
+	/** 32bits aligned memory read that stores result into one of the general purpose registers
+	 * This method reads 32bits from memory and stores the result into
+	 *   the general purpose register indicated by the input reg. Note that this
+	 *   read methods supposes that the address is 32bits aligned.
+	 * 
+	 * @param address the base address of the 32bits read
+	 * @param reg the register to store the resulting read
+	 */
+	inline void Read32toGPRAligned(address_t address, uint32_t reg) GCC_INLINE;
+	/** 16bits aligned memory read that stores result into one of the general purpose registers
+	 * This method reads 16bits from memory and stores the result into
+	 *   the general purpose register indicated by the input reg. Note that this
+	 *   read methods supposes that the address is 16bits aligned.
+	 * 
+	 * @param address the base address of the 16bits read
+	 * @param reg the register to store the resulting read
+	 */
+	inline void Read16toGPRAligned(address_t address, uint32_t reg) GCC_INLINE;
+	/** signed 16bits aligned memory read that stores result into one of the general purpose registers
+	 * This method reads 16bits from memory and stores the result into
+	 *   the general purpose register indicated by the input reg. Note that this
+	 *   read methods supposes that the address is 16bits aligned. The 16bits value
+	 *   is considered signed and sign extended to the register size 
+	 * 
+	 * @param address the base address of the 16bits read
+	 * @param reg the register to store the resulting read
+	 */
+	inline void ReadS16toGPRAligned(address_t address, uint32_t reg) GCC_INLINE;
+	/** 8bits memory read that stores result into one of the general purpose registers
+	 * This method reads 8bits from memory and stores the result into
+	 *   the general purpose register indicated by the input reg
+	 * 
+	 * @param address the base address of the 8bits read
+	 * @param reg the register to store the resulting read
+	 */
+	inline void ReadS8toGPR(address_t address, uint32_t reg) GCC_INLINE;
+	/** signed 8bits memory read that stores result into one of the general purpose registers
+	 * This method reads 8bits from memory and stores the result into
+	 *   the general purpose register indicated by the input reg. The 8bits value
+	 *   is considered signed and sign extended to the register size
+	 * 
+	 * @param address the base address of the 8bits read
+	 * @param reg the register to store the resulting read
+	 */
+	inline void Read8toGPR(address_t address, uint32_t reg) GCC_INLINE;
+	/** 32bits memory write.
+	 * This method write the giving 32bits value into the memory system.
+	 * 
+	 * @param address the base address of the 32bits write
+	 * @param value the value to write into memory
+	 */
+	inline void Write32(address_t address, uint32_t value) GCC_INLINE;
+	/** 16bits memory write.
+	 * This method write the giving 16bits value into the memory system.
+	 * 
+	 * @param address the base address of the 16bits write
+	 * @param value the value to write into memory
+	 */
+	inline void Write16(address_t address, uint16_t value) GCC_INLINE;
+	/** 8bits memory write.
+	 * This method write the giving 8bits value into the memory system.
+	 * 
+	 * @param address the base address of the 8bits write
+	 * @param value the value to write into memory
+	 */
+	inline void Write8(address_t address, uint8_t value) GCC_INLINE;
+#else
+	inline bool ReadInsn(address_t address, uint32_t &val) GCC_INLINE;
+	inline bool ReadInsnLine(address_t address, uint8_t *val, uint32_t size) GCC_INLINE;
+	inline bool Read8(address_t address, uint8_t &val) GCC_INLINE;
+	inline bool Read16(address_t address, uint16_t &val) GCC_INLINE;
+	inline bool Read32(address_t address, uint32_t &val) GCC_INLINE;
+	inline bool Write8(address_t address, uint8_t &val) GCC_INLINE;
+	inline bool Write16(address_t address, uint16_t &val) GCC_INLINE;
+	inline bool Write32(address_t address, uint32_t &val) GCC_INLINE;
+#endif
+
+	/**************************************************************/
+	/* Memory access methods       END                            */
+	/**************************************************************/
 
     /**************************************************************/
     /* Coprocessor methods          START                         */

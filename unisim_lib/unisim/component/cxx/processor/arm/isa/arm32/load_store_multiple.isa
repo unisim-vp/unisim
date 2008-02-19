@@ -164,24 +164,32 @@ ldm_1_ia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_1_ia): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Read32toPC(cur_address);
+#else
 		if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::ldm_1_ia): "
 				<< "Couldn't read data" << endl;
 			exit(-1);
 		}
 		cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+#endif
 	}
 
 	/* TODO:
@@ -215,24 +223,32 @@ ldm_1_ib.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_1_ib): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Read32toPC(cur_address);
+#else
 		if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::ldm_1_ib): "
 				<< "Couldn't read data" << endl;
 			exit(-1);
 		}
 		cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+#endif
 	}
 
 	/* TODO:
@@ -266,24 +282,32 @@ ldm_1_da.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_1_da): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Read32toPC(cur_address);
+#else
 		if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::ldm_1_da): " 
 				<< "Couldn't read data" << endl;
 			exit(-1);
 		}
 		cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+#endif
 	}
 
 	/* TODO:
@@ -317,24 +341,32 @@ ldm_1_db.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_1_db): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Read32toPC(cur_address);
+#else
 		if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::ldm_1_db): "
 			<< "Couldn't read data" << endl;
 			exit(-1);
 		}
 		cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+#endif
 	}
 
 	/* TODO:
@@ -344,14 +376,6 @@ ldm_1_db.execute = {
 	if(w)
 		cpu.SetGPR(rn, rn_new_val);
 }
-
-// ldm_1.nextpc = {
-//   if(cond_res && ((reg_list & 0x08000) == 0x08000)) {
-//     /* nothing to do */
-//   } else {
-//     cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-//   }
-// }
 
 /*
  * end of ldm_1 instruction
@@ -483,12 +507,16 @@ ldm_2_ia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPR(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_2_ia): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR_usr(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -521,12 +549,16 @@ ldm_2_ib.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_2_ib): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR_usr(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -559,12 +591,16 @@ ldm_2_da.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_2_da): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR_usr(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -597,12 +633,16 @@ ldm_2_db.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_2_db): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR_usr(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -742,25 +782,33 @@ ldm_3_ia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_3_ia): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
   
 	cpu.MoveSPSRtoCPSR();
-  
+
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toPC(cur_address);
+#else
 	if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_multiple.isa::ldm_3_ia): "
 			<< "Couldn't read data" << endl;
 		exit(-1);
 	}
 	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+#endif
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -775,50 +823,58 @@ ldm_3_ib.execute = {
 
 	typename CONFIG::address_t cur_address;
 	typename CONFIG::address_t start_address;
-  	typename CONFIG::address_t end_address;
-  	uint32_t num_regs = 0;
-  	typename CONFIG::reg_t rn_new_val = 0;
-  	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-  	typename CONFIG::reg_t value = 0;
-  	unsigned int mask = 1;
+	typename CONFIG::address_t end_address;
+	uint32_t num_regs = 0;
+	typename CONFIG::reg_t rn_new_val = 0;
+	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	typename CONFIG::reg_t value = 0;
+	unsigned int mask = 1;
 
-  	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-  	if(!cpu.CheckCondition(cond)) return;
+	if(!cpu.CheckCondition(cond)) return;
 
-  	num_regs = cpu.LSMib(rn_value, reg_list,
-  						&start_address, &end_address,
-  						&rn_new_val);
-  
-  	cur_address = start_address;
-  	for(unsigned int i = 0; i < 15; i++) {
-  		if((reg_list & mask) == mask) {
-  			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
-  				cerr << "ERROR(load_store_multiple.isa::ldm_3_ib): "
-  					<< "Couldn't read data" << endl;
-  				exit(-1);
-  			}
-  			cpu.SetGPR(i, value);
-  			cur_address += 4;
-  		}
-  		mask = mask << 1;
-  	}
-  
-  	cpu.MoveSPSRtoCPSR();
-  
-  	if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
-  		cerr << "ERROR(load_store_multiple.isa::ldm_3_ib): "
-  			<< "Couldn't read data" << endl;
-  		exit(-1);
-  	}
-  	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+	num_regs = cpu.LSMib(rn_value, reg_list,
+			&start_address, &end_address,
+			&rn_new_val);
 
-  	/* TODO:
-  	 * cur_address should be checked to be the same as end_address + 4 */
-  
-  	/* update rn */
-  	if(w)
-  		cpu.SetGPR(rn, rn_new_val);
+	cur_address = start_address;
+	for(unsigned int i = 0; i < 15; i++) {
+		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
+			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
+				cerr << "ERROR(load_store_multiple.isa::ldm_3_ib): "
+					<< "Couldn't read data" << endl;
+				exit(-1);
+			}
+			cpu.SetGPR(i, value);
+#endif
+			cur_address += 4;
+		}
+		mask = mask << 1;
+	}
+
+	cpu.MoveSPSRtoCPSR();
+
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toPC(cur_address);
+#else
+	if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
+		cerr << "ERROR(load_store_multiple.isa::ldm_3_ib): "
+			<< "Couldn't read data" << endl;
+		exit(-1);
+	}
+	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+#endif
+
+	/* TODO:
+	 * cur_address should be checked to be the same as end_address + 4 */
+
+	/* update rn */
+	if(w)
+		cpu.SetGPR(rn, rn_new_val);
 }
 
 ldm_3_da.execute = {
@@ -844,25 +900,33 @@ ldm_3_da.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_3_da): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
-  
+
 	cpu.MoveSPSRtoCPSR();
-  
+
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toPC(cur_address);
+#else
 	if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_multiple.isa::ldm_3_da): "
 			<< "Couldn't read data" << endl;
 		exit(-1);
 	}
 	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+#endif
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -895,25 +959,33 @@ ldm_3_db.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Read32toGPRAligned(cur_address, i);
+#else
 			if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::ldm_3_db): "
 					<< "Couldn't read data" << endl;
 				exit(-1);
 			}
 			cpu.SetGPR(i, value);
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
-  
+
 	cpu.MoveSPSRtoCPSR();
-  
+
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toPC(cur_address);
+#else
 	if(!cpu.Read32(cur_address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_multiple.isa::ldm_3_db): "
 			<< "Couldn't read data" << endl;
 		exit(-1);
 	}
 	cpu.SetGPR(cpu.PC_reg, value & 0xFFFFFFFC);
+#endif
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -1058,22 +1130,30 @@ stm_1_ia.execute = {
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 					<< "Couldn't store data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 				<< "Couldn't store data" << endl;
 			exit(-1);
 		}
+#endif
 	}
 
 	/* TODO:
@@ -1108,22 +1188,30 @@ stm_1_ib.execute = {
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 					<< "Couldn't store data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 				<< "Couldn't store data" << endl;
 			exit(-1);
 		}
+#endif
 	}
 
 	/* TODO:
@@ -1158,22 +1246,30 @@ stm_1_da.execute = {
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 					<< "Couldn't store data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 				<< "Couldn't store data" << endl;
 			exit(-1);
 		}
+#endif
 	}
 
 	/* TODO:
@@ -1208,22 +1304,30 @@ stm_1_db.execute = {
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 					<< "Couldn't store data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR(cpu.PC_reg) + 8;
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_1_ia): "
 				<< "Couldn't store data" << endl;
 			exit(-1);
 		}
+#endif
 	}
 
 	/* TODO:
@@ -1361,22 +1465,30 @@ stm_2_ia.execute = {
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR_usr(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::stm_2_ia): "
 					<< "Couldn't store data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_2_ia): "
 				<< "Couldn't store data" << endl;
 			exit(-1);
 		}
+#endif
 	}
 
 	/* TODO:
@@ -1407,22 +1519,30 @@ stm_2_ib.execute = {
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR_usr(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 					<< "Couldn't store data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 				<< "Couldn't store data" << endl;
 			exit(-1);
 		}
+#endif
 	}
 
 	/* TODO:
@@ -1453,22 +1573,30 @@ stm_2_da.execute = {
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR_usr(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 					<< "Couldn't store data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 				<< "Couldn't store data" << endl;
 			exit(-1);
 		}
+#endif
 	}
 
 	/* TODO:
@@ -1499,22 +1627,30 @@ stm_2_db.execute = {
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR_usr(i);
+#ifdef DELAYED_MEM_ACCESS
+			cpu.Write32(cur_address, value);
+#else
 			if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 				cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 					<< "Couldn't store data" << endl;
 				exit(-1);
 			}
+#endif
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
 		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
+#ifdef DELAYED_MEM_ACCESS
+		cpu.Write32(cur_address, value);
+#else
 		if(!cpu.Write32(cur_address & ~(0x3), value)) { // address must be aligned 
 			cerr << "ERROR(load_store_multiple.isa::stm_2_ib): "
 				<< "Couldn't store data" << endl;
 			exit(-1);
 		}
+#endif
 	}
 
 	/* TODO:

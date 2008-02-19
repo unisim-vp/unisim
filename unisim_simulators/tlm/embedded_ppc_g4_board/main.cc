@@ -947,32 +947,32 @@ int sc_main(int argc, char *argv[])
 	/* logger connections */
 	if(logger_on) {
 		unsigned int logger_index = 0;
-		logger->time_import >> time->time_export;
+//		logger->time_import >> time->time_export;
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
 		//bus->logger_import >> *logger->logger_export[logger_index++];
-		mpc107->logger_import >> *logger->logger_export[logger_index++];
-		pci_bus->logger_import >> *logger->logger_export[logger_index++];
-		pci_stub->logger_import >> *logger->logger_export[logger_index++];
-		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
-		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
+//		mpc107->logger_import >> *logger->logger_export[logger_index++];
+//		pci_bus->logger_import >> *logger->logger_export[logger_index++];
+//		pci_stub->logger_import >> *logger->logger_export[logger_index++];
+//		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
+//		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
-		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
-		flash->logger_import >> *logger->logger_export[logger_index++];
-		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-			if(bus_msg_spy[i] != NULL)
-				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-			if(mem_msg_spy[i] != NULL)
-				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++)
-			if(pci_msg_spy[i] != NULL)
-				pci_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
-			if(irq_msg_spy[i] != NULL)
-				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+//		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
+//		flash->logger_import >> *logger->logger_export[logger_index++];
+//		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+//		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
+//			if(bus_msg_spy[i] != NULL)
+//				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+//		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
+//			if(mem_msg_spy[i] != NULL)
+//				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+//		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++)
+//			if(pci_msg_spy[i] != NULL)
+//				pci_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+//		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
+//			if(irq_msg_spy[i] != NULL)
+//				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
 	}
 
 #ifdef DEBUG_SERVICE

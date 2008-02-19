@@ -125,6 +125,10 @@ ldrd_imm_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, cpu.MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(address, rd);
+	cpu.Read32toGPRAligned(address + 4, rd + 1);
+#else
 	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::ldrd_imm_post): "
 			<< "Couldn't read data" << endl;
@@ -137,6 +141,7 @@ ldrd_imm_post.execute = {
 		exit(-1);
 	}
 	cpu.SetGPR(rd + 1, value);
+#endif
 }
 
 ldrd_imm_offset.execute = {
@@ -159,6 +164,10 @@ ldrd_imm_offset.execute = {
 			(rd == 14)) // undefined behavior
 		return;
 
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(address, rd);
+	cpu.Read32toGPRAligned(address + 4, rd + 1);
+#else
 	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::ldrd_imm_offset): "
 			<< "Couldn't read data" << endl;
@@ -171,6 +180,7 @@ ldrd_imm_offset.execute = {
 		exit(-1);
 	}
 	cpu.SetGPR(rd + 1, value);
+#endif
 }
 
 ldrd_imm_pre.execute = {
@@ -194,6 +204,10 @@ ldrd_imm_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address); // update rn with the address
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(address, rd);
+	cpu.Read32toGPRAligned(address + 4, rd + 1);
+#else
 	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::ldrd_imm_pre): "
 			<< "Couldn't read data" << endl;
@@ -206,6 +220,7 @@ ldrd_imm_pre.execute = {
 		exit(-1);
 	}
 	cpu.SetGPR(rd + 1, value);
+#endif
 }
 
 ldrd_reg_post.execute = {
@@ -231,6 +246,10 @@ ldrd_reg_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, cpu.MLSReg(u, rn_value, rd_value, rm_value));
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(address, rd);
+	cpu.Read32toGPRAligned(address + 4, rd + 1);
+#else
 	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::ldrd_reg_post: "
 			<< "Couldn't read data" << endl;
@@ -243,6 +262,7 @@ ldrd_reg_post.execute = {
 		exit(-1);
 	}
 	cpu.SetGPR(rd + 1, value);
+#endif
 }
 
 ldrd_reg_offset.execute = {
@@ -267,6 +287,10 @@ ldrd_reg_offset.execute = {
 			(rd == 14)) // undefined behavior
 		return;
 
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(address, rd);
+	cpu.Read32toGPRAligned(address + 4, rd + 1);
+#else
 	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::ldrd_reg_offset: "
 			<< "Couldn't read data" << endl;
@@ -279,6 +303,7 @@ ldrd_reg_offset.execute = {
 		exit(-1);
 	}
 	cpu.SetGPR(rd + 1, value);
+#endif
 }
 
 ldrd_reg_pre.execute = {
@@ -304,6 +329,10 @@ ldrd_reg_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address);
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Read32toGPRAligned(address, rd);
+	cpu.Read32toGPRAligned(address + 4, rd + 1);
+#else
 	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::ldrd_reg_pre: "
 			<< "Couldn't read data" << endl;
@@ -316,6 +345,7 @@ ldrd_reg_pre.execute = {
 		exit(-1);
 	}
 	cpu.SetGPR(rd + 1, value);
+#endif
 }
 
 /*
@@ -410,6 +440,10 @@ strd_imm_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, cpu.MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(address, rd_value);
+	cpu.Write32(address + 4, rdp1_value);
+#else
 	value = rd_value;
 	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::strd_imm_post): "
@@ -422,6 +456,7 @@ strd_imm_post.execute = {
 			<< "Couldn't store data" << endl;
 		exit(-1);
 	}
+#endif
 }
 
 strd_imm_offset.execute = {
@@ -446,6 +481,10 @@ strd_imm_offset.execute = {
 		(rd == 14)) // undefined behavior
 		return;
 
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(address, rd_value);
+	cpu.Write32(address + 4, rdp1_value);
+#else
 	value = rd_value;
 	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::strd_imm_offset): "
@@ -458,6 +497,7 @@ strd_imm_offset.execute = {
 			<< "Couldn't store data" << endl;
 		exit(-1);
 	}
+#endif
 }
 
 strd_imm_pre.execute = {
@@ -483,6 +523,10 @@ strd_imm_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address); // update rn with the address
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(address, rd_value);
+	cpu.Write32(address + 4, rdp1_value);
+#else
 	value = rd_value;
 	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::strd_imm_pre): "
@@ -495,6 +539,7 @@ strd_imm_pre.execute = {
 			<< "Couldn't store data" << endl;
 		exit(-1);
 	}
+#endif
 }
 
 strd_reg_post.execute = {
@@ -521,6 +566,10 @@ strd_reg_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, cpu.MLSReg(u, rn_value, rd_value, rm_value));
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(address, rd_value);
+	cpu.Write32(address + 4, rdp1_value);
+#else
 	value = rd_value;
 	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::strd_reg_post): "
@@ -533,6 +582,7 @@ strd_reg_post.execute = {
 			<< "Couldn't store data" << endl;
 		exit(-1);
 	}
+#endif
 }
 
 strd_reg_offset.execute = {
@@ -558,6 +608,10 @@ strd_reg_offset.execute = {
 		(rd == 14)) // undefined behavior
 		return;
 
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(address, rd_value);
+	cpu.Write32(address + 4, rdp1_value);
+#else
 	value = rd_value;
 	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::strd_reg_offset): "
@@ -570,6 +624,7 @@ strd_reg_offset.execute = {
 			<< "Couldn't store data" << endl;
 		exit(-1);
 	}
+#endif
 }
 
 strd_reg_pre.execute = {
@@ -596,6 +651,10 @@ strd_reg_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address);
+#ifdef DELAYED_MEM_ACCESS
+	cpu.Write32(address, rd_value);
+	cpu.Write32(address + 4, rdp1_value);
+#else
 	value = rd_value;
 	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
 		cerr << "ERROR(load_store_5e.isa::strd_reg_pre): "
@@ -608,6 +667,7 @@ strd_reg_pre.execute = {
 			<< "Couldn't store data" << endl;
 		exit(-1);
 	}
+#endif
 }
 
 /*
