@@ -35,8 +35,6 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 
-#define DELAYED_MEM_ACCESS 
-
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/linux_os.hh"
@@ -53,6 +51,7 @@
 //#include "unisim/service/interfaces/statistic_reporting.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/component/cxx/processor/arm/cache/cache.hh"
@@ -67,6 +66,7 @@
 #include <sstream>
 #include <iostream>
 #include <vector>
+#include <queue>
 #include <map>
 #include <inttypes.h>
 //#include "unisim/component/cxx/processor/arm/config.hh"
@@ -134,6 +134,7 @@ using std::stringstream;
 using std::map;
 using std::ostream;
 using std::vector;
+using std::queue;
 
 template<class CONFIG>
 class CPU :
@@ -583,7 +584,6 @@ public:
 	/* Memory access methods       START                          */
 	/**************************************************************/
 
-#ifdef DELAYED_MEM_ACCESS
 	/** reads 32bits from the memory system
 	 * This method allows the user to read instructions from the memory system,
 	 *   that is, it tries to read from the pertinent caches and if failed from
@@ -697,16 +697,6 @@ public:
 	 * @param value the value to write into memory
 	 */
 	inline void Write8(address_t address, uint8_t value) GCC_INLINE;
-#else
-	inline bool ReadInsn(address_t address, uint32_t &val) GCC_INLINE;
-	inline bool ReadInsnLine(address_t address, uint8_t *val, uint32_t size) GCC_INLINE;
-	inline bool Read8(address_t address, uint8_t &val) GCC_INLINE;
-	inline bool Read16(address_t address, uint16_t &val) GCC_INLINE;
-	inline bool Read32(address_t address, uint32_t &val) GCC_INLINE;
-	inline bool Write8(address_t address, uint8_t &val) GCC_INLINE;
-	inline bool Write16(address_t address, uint16_t &val) GCC_INLINE;
-	inline bool Write32(address_t address, uint32_t &val) GCC_INLINE;
-#endif
 
 	/**************************************************************/
 	/* Memory access methods       END                            */
@@ -1025,6 +1015,45 @@ private:
 	/** indicates if the finished instructions require to be reported */
 	bool requires_finished_instruction_reporting;
 	
+	/** queue of memory operations
+	 * Load and store instructions do not directly access the memory system. This is called
+	 *   memory decoupling. Load/stores are kept in the load/store queue and performed once
+	 *   the instruction has been executed (you can think of it as a writeback face).
+	 *   To perform the memory accesses at the end of the execution the method 
+	 *   PerformLoadStoreAccesses must be called 
+	 * */
+	queue<MemoryOp<CONFIG> *> lsQueue;
+	/** queue of free entries of memory operations
+	 * Used memory operations are not removed from the system but kept in a free list for their
+	 *   reuse
+	 * */
+	queue<MemoryOp<CONFIG> *> freeLSQueue;
+	/** performs the load/stores present in the queue of memory operations
+	 * */
+	void PerformLoadStoreAccesses();
+	/** performs a prefetch access
+	 * @param memop the memory operation containing the prefetch access
+	 * */
+	void PerformPrefetchAccess(MemoryOp<CONFIG> *memop);
+	/** performs a write access
+	 * @param memop the memory operation containing the write access
+	 * */
+	void PerformWriteAccess(MemoryOp<CONFIG> *memop);
+	/** performs a read access
+	 * @param memop the memory operation containing the read access
+	 * */
+	void PerformReadAccess(MemoryOp<CONFIG> *memop);
+	/** performs a read access and puts result in the PC register
+	 * @param memop the memory operation containing the read access
+	 * */
+	void PerformReadToPCAccess(MemoryOp<CONFIG> *memop);
+	/** performs a read access and puts result in the PC register
+	 * Performs a read access and puts result in the PC register and updates the
+	 * thumb status if necessary
+	 * 
+	 * @param memop the memory operation containing the read access
+	 * */
+	void PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop);
 public:
 	/** action to perform (execute) when an unpredictable behavior instruction
 	 *  is found */

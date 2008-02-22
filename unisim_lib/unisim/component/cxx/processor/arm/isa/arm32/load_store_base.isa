@@ -118,49 +118,11 @@ ldr_imm_post.execute = {
 	new_rn_value = cpu.LSWUBImmOffset(u, rn_value, offset);
 	cpu.SetGPR(rn, new_rn_value); // update rn
 
-#ifdef DELAYED_MEM_ACCESS
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
 		cpu.Read32toGPR(address, rd);
 	}
-#else
-	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::ldr_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	//   cout << "+++++ ldr_imm_post (address = 0x" << hex << address << dec
-	//   << "; value = 0x" << hex << value << dec << ")" << endl;
-	switch(address & 0x03) {
-	case 0x00:
-		// nothing to do
-		break;
-	case 0x01:
-		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-		value = value_l + value_r;
-		break;
-	case 0x02:
-		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-		value = value_l + value_r;
-		break;
-	case 0x03:
-		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-		value = value_l + value_r;
-		break;
-	}
-  
-	if(rd == cpu.PC_reg) {
-		// code valid for version 5 and above
-		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-		cpu.SetCPSR_T((value & 0x01) == 1);
-	} else {
-		cpu.SetGPR(rd, value);
-	}
-#endif
 }
 
 ldr_imm_offset.execute = {
@@ -176,48 +138,11 @@ ldr_imm_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
-#ifdef DELAYED_MEM_ACCESS
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
 		cpu.Read32toGPR(address, rd);
 	}
-#else
-	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::ldr_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	//   cout << "+++++ ldr_imm_offset" << endl;
-	switch(address & 0x3) {
-	case 0x000:
-		// nothing to do
-		break;
-	case 0x01:
-		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-		value = value_l + value_r;
-		break;
-	case 0x02:
-		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-		value = value_l + value_r;
-		break;
-	case 0x03:
-		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-		value = value_l + value_r;
-		break;
-	}
-  
-	if(rd == cpu.PC_reg) {
-		// code valid for version 5 and above
-		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-		cpu.SetCPSR_T((value & 0x01) == 1);
-	} else {
-		cpu.SetGPR(rd, value);
-	}
-#endif
 }
 
 ldr_imm_pre.execute = {
@@ -234,48 +159,11 @@ ldr_imm_pre.execute = {
   
 	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
-#ifdef DELAYED_MEM_ACCESS
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
 		cpu.Read32toGPR(address, rd);
 	}
-#else
-	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::ldr_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	//   cout << "+++++ ldr_imm_pre" << endl;
-	switch(address & 0x03) {
-	case 0x00:
-		// nothing to do
-		break;
-	case 0x01:
-		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-		value = value_l + value_r;
-		break;
-	case 0x02:
-		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-		value = value_l + value_r;
-		break;
-	case 0x03:
-		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-		value = value_l + value_r;
-		break;
-	}
-  
-	if(rd == cpu.PC_reg) {
-		// code valid for version 5 and above
-		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-		cpu.SetCPSR_T((value & 0x01) == 1);
-	} else {
-		cpu.SetGPR(rd, value);
-	}
-#endif
 }
 
 ldr_reg_post.execute = {
@@ -294,47 +182,11 @@ ldr_reg_post.execute = {
 
 	address = rn_value;
 	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
-#ifdef DELAYED_MEM_ACCESS
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
 		cpu.Read32toGPR(address, rd);
 	}
-#else
-	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::ldr_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	switch(address & 0x03) {
-	case 0x00:
-		// nothing to do
-		break;
-	case 0x01:
-		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-		value = value_l + value_r;
-		break;
-	case 0x02:
-		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-		value = value_l + value_r;
-		break;
-	case 0x03:
-		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-		value = value_l + value_r;
-		break;
-	}
-  
-	if(rd == cpu.PC_reg) {
-		// code valid for version 5 and above
-		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-		cpu.SetCPSR_T((value & 0x01) == 1);
-	} else {
-		cpu.SetGPR(rd, value);
-	}
-#endif
 }
 
 ldr_reg_offset.execute = {
@@ -352,47 +204,11 @@ ldr_reg_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
-#ifdef DELAYED_MEM_ACCESS
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
 		cpu.Read32toGPR(address, rd);
 	}
-#else
-	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::ldr_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	switch(address & 0x03) {
-	case 0x00:
-		// nothing to do
-		break;
-	case 0x01:
-		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-		value = value_l + value_r;
-		break;
-	case 0x02:
-		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-		value = value_l + value_r;
-		break;
-	case 0x03:
-		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-		value = value_l + value_r;
-		break;
-	}
-  
-	if(rd == cpu.PC_reg) {
-		// code valid for version 5 and above
-		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-		cpu.SetCPSR_T((value & 0x01) == 1);
-	} else {
-		cpu.SetGPR(rd, value);
-	}
-#endif
 }
 
 ldr_reg_pre.execute = {
@@ -411,47 +227,11 @@ ldr_reg_pre.execute = {
 
 	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
 	cpu.SetGPR(rn, address);
-#ifdef DELAYED_MEM_ACCESS
 	if(rd == cpu.PC_reg) {
 		cpu.Read32toPCUpdateT(address);
 	} else {
 		cpu.Read32toGPR(address, rd);
 	}
-#else
-	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::ldr_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	switch(address & 0x03) {
-	case 0x00:
-		// nothing to do
-		break;
-	case 0x01:
-		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-		value = value_l + value_r;
-		break;
-	case 0x02:
-		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-		value = value_l + value_r;
-		break;
-	case 0x03:
-		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-		value = value_l + value_r;
-		break;
-	}
-  
-	if(rd == cpu.PC_reg) {
-		// code valid for version 5 and above
-		cpu.SetGPR(cpu.PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
-		cpu.SetCPSR_T((value & 0x01) == 1);
-	} else {
-		cpu.SetGPR(rd, value);
-	}
-#endif
 }
 
 /*
@@ -528,17 +308,7 @@ ldrb_imm_post.execute = {
   
 	address = cpu.GetGPR(rn); // address used is the contents of rn
 	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read8toGPR(address, rd);
-#else
-	if(!cpu.Read8(address, val8)) {
-		cerr << "ERROR(load_store.isa::ldrb_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	value = val8;
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 ldrb_imm_offset.execute = {
@@ -554,17 +324,7 @@ ldrb_imm_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read8toGPR(address, rd);
-#else
-	if(!cpu.Read8(address, val8)) {
-		cerr << "ERROR(load_store.isa::ldrb_imm_offset): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	value = val8;
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 ldrb_imm_pre.execute = {
@@ -581,17 +341,7 @@ ldrb_imm_pre.execute = {
   
 	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read8toGPR(address, rd);
-#else
-	if(!cpu.Read8(address, val8)) {
-		cerr << "ERROR(load_store.isa::ldrb_imm_pre): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	value = val8;
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 ldrb_reg_post.execute = {
@@ -610,17 +360,7 @@ ldrb_reg_post.execute = {
   
 	address = cpu.GetGPR(rn);
 	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read8toGPR(address, rd);
-#else
-	if(!cpu.Read8(address, val8)) {
-		cerr << "ERROR(load_store.isa::ldrb_reg_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	value = val8;
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 ldrb_reg_offset.execute = {
@@ -638,17 +378,7 @@ ldrb_reg_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 	
 	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read8toGPR(address, rd);
-#else
-	if(!cpu.Read8(address, val8)) {
-		cerr << "ERROR(load_store.isa::ldrb_reg_offset): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	value = val8;
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 ldrb_reg_pre.execute = {
@@ -667,17 +397,7 @@ ldrb_reg_pre.execute = {
   
 	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
 	cpu.SetGPR(rn, address);
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read8toGPR(address, rd);
-#else
-	if(!cpu.Read8(address, val8)) {
-		cerr << "ERROR(load_store.isa::ldrb_reg_pre): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	value = val8;
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 /*
@@ -748,15 +468,7 @@ ldrb_rd15_imm_offset.execute = {
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 		address = cpu.LSWUBImmOffset(u, rn_value, offset);
-#ifdef DELAYED_MEM_ACCESS
 		cpu.ReadPrefetch(address);
-#else
-		if(!cpu.Read32(address, val32)) {
-			cerr << "ERROR(load_store_base.isa::ldrb_imm_offset/pld_imm_offset): "
-				<< "Couldn't read data" << endl;
-			cpu.Stop(-1);
-		}
-#endif
 	} else {
 		/* unpredictable */
 		cpu.Unpredictable();
@@ -788,15 +500,7 @@ ldrb_rd15_reg_offset.execute = {
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 		address = cpu.LSWUBReg(u, rn_value, 15, shift_imm, shift, rm_value);
-#ifdef DELAYED_MEM_ACCESS
 		cpu.ReadPrefetch(address);
-#else
-		if(!cpu.Read32(address, val32)) {
-			cerr << "ERROR(load_store_base.isa::ldrb_reg_offset/pld_reg_offset): "
-				<< "Couldn't read data" << endl;
-			cpu.Stop(-1);
-		}
-#endif
 	} else {
 		/* unpredictable */
 		cpu.Unpredictable();
@@ -849,35 +553,7 @@ ldrt_imm.execute = {
 
 	address = rn_value;
 	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset));
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read32toGPR(address, rd);
-#else
-	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::ldr_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	switch(address & 0x03) {
-	case 0x00:
-		// nothing to do
-		break;
-	case 0x01:
-		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-		value = value_l + value_r;
-		break;
-	case 0x02:
-		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-		value = value_l + value_r;
-		break;
-	case 0x03:
-		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-		break;
-	}
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 ldrt_reg.execute = {
@@ -894,36 +570,7 @@ ldrt_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = rn_value;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read32toGPR(address, rd);
-#else
-	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
-	if(!cpu.Read32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::ldr_imm_post): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	switch(address & 0x03) {
-	case 0x00:
-		// nothing to do
-		break;
-	case 0x01:
-		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
-		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
-		value = value_l + value_r;
-		break;
-	case 0x02:
-		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
-		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
-		value = value_l + value_r;
-		break;
-	case 0x03:
-		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
-		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
-		break;
-	}
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 /*
@@ -966,17 +613,7 @@ ldrbt_imm.execute = {
 
 	address = rn_value;
 	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset));
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read8toGPR(address, rd);
-#else
-	if(!cpu.Read8(address, val)) {
-		cerr << "ERROR(load_store.isa::ldrb_reg_pre): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	value = val;
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 ldrbt_reg.execute = {
@@ -995,17 +632,7 @@ ldrbt_reg.execute = {
 
 	address = rn_value;
 	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Read8toGPR(address, rd);
-#else
-	if(!cpu.Read8(address, val)) {
-		cerr << "ERROR(load_store.isa::ldrb_reg_pre): "
-			<< "Couldn't read data" << endl;
-		cpu.Stop(-1);
-	}
-	value = val;
-	cpu.SetGPR(rd, value);
-#endif
 }
 
 /*
@@ -1081,18 +708,7 @@ str_imm_post.execute = {
 	cpu.CheckAlignmentExcep(address); // TODO
 	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
 	value = rd_value;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write32(address, value);
-#else
-	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa:" << __FUNCTION__ << "): "
-			<< "Couldn't store data " 
-			<< "(address = " << hex << (address & ~(0x3)) << dec
-			<< ", value = " << hex << value << dec 
-			<< ", size = " << 4 << ")"<< endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 str_imm_offset.execute = {
@@ -1111,15 +727,7 @@ str_imm_offset.execute = {
 	cpu.CheckAlignmentExcep(address); // TODO
 	value = rd_value;
 
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write32(address, value);
-#else
-	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::str_imm_offset): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 str_imm_pre.execute = {
@@ -1138,18 +746,7 @@ str_imm_pre.execute = {
 	cpu.CheckAlignmentExcep(address); // TODO
 	cpu.SetGPR(rn, address); // update rn with the address
 	value = rd_value;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write32(address, value);
-#else
-	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::str_imm_pre): "
-			<< "Couldn't store data"
-			<< "(address = " << hex << (address & ~(0x3)) << dec
-			<< ", value = " << hex << value << dec 
-			<< ", size = " << 4 << ")"<< endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 str_reg_post.execute = {
@@ -1169,15 +766,7 @@ str_reg_post.execute = {
 	cpu.CheckAlignmentExcep(address); // TODO
 	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
 	value = rd_value;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write32(address, value);
-#else
-	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::str_reg_post): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 str_reg_offset.execute = {
@@ -1196,15 +785,7 @@ str_reg_offset.execute = {
 	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
 	cpu.CheckAlignmentExcep(address); // TODO
 	value = rd_value;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write32(address, value);
-#else
-	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::str_reg_offset): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 str_reg_pre.execute = {
@@ -1224,15 +805,7 @@ str_reg_pre.execute = {
 	cpu.CheckAlignmentExcep(address); // TODO
 	cpu.SetGPR(rn, address);
 	value = rd_value;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write32(address, value);
-#else
-	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::str_reg_pre): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 /*
@@ -1310,15 +883,7 @@ strb_imm_post.execute = {
 	address = rn_value; // address used is the contents of rn
 	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
 	value = rd_value & 0x0FF;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write8(address, value);
-#else
-	if(!cpu.Write8(address, value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strb_imm_post): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 strb_imm_offset.execute = {
@@ -1335,15 +900,7 @@ strb_imm_offset.execute = {
   
 	address = cpu.LSWUBImmOffset(u, rn_value, offset); 
 	value = rd_value & 0x0FF;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write8(address, value);
-#else
-	if(!cpu.Write8(address, value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strb_imm_offset): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 strb_imm_pre.execute = {
@@ -1361,15 +918,7 @@ strb_imm_pre.execute = {
 	address = cpu.LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
 	value = rd_value & 0x0FF;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write8(address, value);
-#else
-	if(!cpu.Write8(address, value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strb_imm_pre): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 strb_reg_post.execute = {
@@ -1388,15 +937,7 @@ strb_reg_post.execute = {
 	address = cpu.GetGPR(rn);
 	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
 	value = rd_value & 0x0FF;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write8(address, value);
-#else
-	if(!cpu.Write8(address, value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strb_reg_post): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 strb_reg_offset.execute = {
@@ -1414,15 +955,7 @@ strb_reg_offset.execute = {
 	
 	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
 	value = rd_value & 0x0FF;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write8(address, value);
-#else
-	if(!cpu.Write8(address, value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strb_reg_offset): "
-		<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 strb_reg_pre.execute = {
@@ -1441,15 +974,7 @@ strb_reg_pre.execute = {
 	address = cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value);
 	cpu.SetGPR(rn, address);
 	value = rd_value & 0x0FF;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write8(address, value);
-#else
-	if(!cpu.Write8(address, value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strb_reg_pre): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 /*
@@ -1494,15 +1019,7 @@ strt_imm.execute = {
 	cpu.CheckAlignmentExcep(address); // TODO
 	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, rn_value, offset)); // update rn
 	value = rd_value;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write32(address, value);
-#else
-	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strt_imm): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 strt_reg.execute = {
@@ -1522,15 +1039,7 @@ strt_reg.execute = {
 	cpu.CheckAlignmentExcep(address); // TODO
 	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
 	value = rd_value;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write32(address, value);
-#else
-	if(!cpu.Write32(address & ~(0x3), value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strt_reg): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 /*
@@ -1571,15 +1080,7 @@ strbt_imm.execute = {
 	address = cpu.GetGPR(rn); // address used is the contents of rn
 	cpu.SetGPR(rn, cpu.LSWUBImmOffset(u, cpu.GetGPR(rn), offset)); // update rn
 	value = cpu.GetGPR(rd) & 0x0FF;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write8(address, value);
-#else
-	if(!cpu.Write8(address, value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strbt_imm): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 strbt_reg.execute = {
@@ -1598,15 +1099,7 @@ strbt_reg.execute = {
 	address = rn_value;
 	cpu.SetGPR(rn, cpu.LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value));
 	value = rd_value & 0x0FF;
-#ifdef DELAYED_MEM_ACCESS
 	cpu.Write8(address, value);
-#else
-	if(!cpu.Write8(address, value)) { // address must be aligned 
-		cerr << "ERROR(load_store.isa::strbt_reg): "
-			<< "Couldn't store data" << endl;
-		cpu.Stop(-1);
-	}
-#endif
 }
 
 /*

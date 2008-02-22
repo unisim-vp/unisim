@@ -3,31 +3,32 @@
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, this
- *     list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific prior
- *     written permission.
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
+ *  SERVICES;LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ *  SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
@@ -131,9 +132,11 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	verbose_step_insn(false),
 	param_verbose_step_insn("verbose-step-insn", this, verbose_step_insn),
 	verbose_dump_regs_start(false),
-	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
+	param_verbose_dump_regs_start("verbose-dump-regs-start",
+		this, verbose_dump_regs_start),
 	verbose_dump_regs_end(false),
-	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
+	param_verbose_dump_regs_end("verbose-dump-regs-end", this, 
+		verbose_dump_regs_end),
 	memory_interface(_memory_interface),
 	instruction_counter(0),
 	insn_cache_line_address(0),
@@ -150,8 +153,8 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	{
 	/* setting setup dependencies */
 	Object::SetupDependsOn(logger_import);
-//	Object::SetupDependsOn(statistics_import);
-//	Object::SetupDependsOn(linux_os_import);
+	//	Object::SetupDependsOn(statistics_import);
+	//	Object::SetupDependsOn(linux_os_import);
 	
 	/* Reset all the registers */
 	InitGPR();
@@ -707,6 +710,8 @@ Step() {
 			op->execute(*this);
 			//op->profile(profile);
 		}
+		/* perform the memory load/store operations */
+		PerformLoadStoreAccesses();
 		VerboseDumpRegsEnd();
 
 		instruction_counter++;
@@ -2672,8 +2677,6 @@ SubtractionOverflowFrom(const typename CONFIG::reg_t res, const typename CONFIG:
 /* Memory access methods       START                          */
 /**************************************************************/
 
-#ifdef DELAYED_MEM_ACCESS
-
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
@@ -2722,10 +2725,19 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 ReadPrefetch(address_t address) {
-	typename CONFIG::reg_t value;
-	typename CONFIG::reg_t value_l, value_r;
-	address_t read_address = address & ~(0x3);
+	address = address & ~(0x3);
+	MemoryOp<CONFIG> *memop;
 	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetPrefetch(address);
+	lsQueue.push(memop);
+
+#if 0
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
 	} else {
@@ -2743,12 +2755,32 @@ ReadPrefetch(address_t address) {
 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					read_address, 4);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Read32toPCUpdateT(address_t address) {
+	MemoryOp<CONFIG> *memop;
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetReadToPCUpdateT(address);
+	lsQueue.push(memop);
+	
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address & ~((address_t)0x3), 4);
+
+#if 0
 	typename CONFIG::reg_t value;
 	typename CONFIG::reg_t value_l, value_r;
 	address_t read_address = address & ~(0x3);
@@ -2799,12 +2831,32 @@ Read32toPCUpdateT(address_t address) {
 		CONFIG::ARCHITECTURE == ARMV5TEXP) {
 		SetCPSR_T((value & 0x01) == 1);
 	}
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Read32toPC(address_t address) {
+	MemoryOp<CONFIG> *memop;
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetReadToPC(address);
+	lsQueue.push(memop);
+	
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address & ~((address_t)0x3), 4);
+
+#if 0
 	typename CONFIG::reg_t value;
 	typename CONFIG::reg_t value_l, value_r;
 	address_t read_address = address & ~(0x3);
@@ -2848,12 +2900,32 @@ Read32toPC(address_t address) {
 	}
 
 	SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Read32toGPR(address_t address, uint32_t reg) {
+	MemoryOp<CONFIG> *memop;
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetRead(address, 4, reg, false, false);
+	lsQueue.push(memop);
+	
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address & ~((address_t)0x3), 4);
+
+#if 0
 	typename CONFIG::reg_t value;
 	typename CONFIG::reg_t value_l, value_r;
 	address_t read_address = address & ~(0x3);
@@ -2897,12 +2969,34 @@ Read32toGPR(address_t address, uint32_t reg) {
 	}
 
 	SetGPR(reg, value);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Read32toGPRAligned(address_t address, uint32_t reg) {
+	MemoryOp<CONFIG> *memop;
+	
+	address = address & ~((address_t)0x3);
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetRead(address, 4, reg, true, false);
+	lsQueue.push(memop);
+	
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 4);
+
+#if 0
 	typename CONFIG::reg_t value;
 	address_t read_address = address & ~(0x3);
 	
@@ -2924,12 +3018,34 @@ Read32toGPRAligned(address_t address, uint32_t reg) {
 					read_address, 4);
 
 	SetGPR(reg, value);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Read16toGPRAligned(address_t address, uint32_t reg) {
+	MemoryOp<CONFIG> *memop;
+	
+	address = address & ~((address_t)0x1);
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetRead(address, 2, reg, true, false);
+	lsQueue.push(memop);
+
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 2);
+
+#if 0
 	uint16_t val16;
 	typename CONFIG::reg_t value;
 	address_t read_address = address & ~(0x1);
@@ -2956,12 +3072,33 @@ Read16toGPRAligned(address_t address, uint32_t reg) {
 	value = val16;
 	
 	SetGPR(reg, value);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 ReadS16toGPRAligned(address_t address, uint32_t reg) {
+	MemoryOp<CONFIG> *memop;
+
+	address = address & ~((address_t)0x1);
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetRead(address, 2, reg, /* aligned */true, /* signed */true);
+	lsQueue.push(memop);
+
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 2);
+
+#if 0
 	int16_t val16;
 	typename CONFIG::reg_t value;
 	address_t read_address = address & ~(0x1);
@@ -2988,12 +3125,32 @@ ReadS16toGPRAligned(address_t address, uint32_t reg) {
 	value = (typename CONFIG::sreg_t)val16;
 	
 	SetGPR(reg, value);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 ReadS8toGPR(address_t address, uint32_t reg) {
+	MemoryOp<CONFIG> *memop;
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */true);
+	lsQueue.push(memop);
+
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import)
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+				 	address, 1);
+
+	#if 0
 	typename CONFIG::reg_t value;
 	int8_t val8;
 	address_t read_address;
@@ -3017,12 +3174,33 @@ ReadS8toGPR(address_t address, uint32_t reg) {
 
 	value = (typename CONFIG::sreg_t)val8;
 	SetGPR(reg, value);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Read8toGPR(address_t address, uint32_t reg) {
+	MemoryOp<CONFIG> *memop;
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */false);
+	lsQueue.push(memop);
+
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import)
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+				 	address, 1);
+
+
+	#if 0
 	typename CONFIG::reg_t value;
 	uint8_t val8;
 	address_t read_address;
@@ -3046,12 +3224,33 @@ Read8toGPR(address_t address, uint32_t reg) {
 
 	value = val8;
 	SetGPR(reg, value);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Write32(address_t address, uint32_t value) {
+	MemoryOp<CONFIG> *memop;
+	
+	address = address & ~((address_t)0x3);
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetWrite(address, 4, value);
+	lsQueue.push(memop);
+
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_WRITE,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 4);
+
+	#if 0
 	uint32_t val32;
 	address_t write_address = address & ~((address_t)0x3);
 	
@@ -3071,12 +3270,33 @@ Write32(address_t address, uint32_t value) {
 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 4);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Write16(address_t address, uint16_t value) {
+	address = address & ~((address_t)0x1);
+	MemoryOp<CONFIG> *memop;
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetWrite(address, 2, value);
+	lsQueue.push(memop);
+	
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_WRITE,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 2);
+
+#if 0
 	uint16_t val16;
 	address_t write_address = address & ~((address_t)0x1);
 	
@@ -3096,12 +3316,32 @@ Write16(address_t address, uint16_t value) {
 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 2);
+#endif
 }
 
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
 Write8(address_t address, uint8_t value) {
+	MemoryOp<CONFIG> *memop;
+	
+	if(freeLSQueue.empty())
+		memop = new MemoryOp<CONFIG>();
+	else {
+		memop = freeLSQueue.front();
+		freeLSQueue.pop();
+	}
+	memop->SetWrite(address, 1, value);
+	lsQueue.push(memop);
+
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import) 
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<address_t>::MAT_WRITE,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					address, 1);
+
+#if 0
 	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrWrite(address, &value, 1);
 	} else {
@@ -3116,231 +3356,9 @@ Write8(address_t address, uint8_t value) {
 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 1);
-}
-
-#else
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-ReadInsn(typename CONFIG::address_t address, uint32_t &val) {
-	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrRead(address, (uint8_t *)&val, 4);
-		return true;
-	}
-	
-	if(CONFIG::HAS_INSN_CACHE_L1) {
-		cache_il1->PrRead(address, (uint8_t *)&val, 4);
-		return true;
-	}
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-		cache_l1->PrRead(address, (uint8_t *)&val, 4);
-		return true;
-	}
-	
-	memory_interface->PrRead(address, (uint8_t *)&val, 4);
-	return true;
-}
-
-template<class CONFIG>
-bool
-CPU<CONFIG> ::
-ReadInsnLine(typename CONFIG::address_t address, uint8_t *val, uint32_t size) {
-	if(CONFIG::HAS_INSN_CACHE_L1) {
-		cache_il1->PrRead(address, val, size);
-	} else {
-		if(CONFIG::HAS_DATA_CACHE_L1) {
-			cache_l1->PrRead(address, val, size);
-		} else {
-			if(CONFIG::HAS_CACHE_L2) {
-				cache_l2->PrRead(address, val, size);
-			} else {
-				if(CONFIG::MODEL == ARM966E_S) {
-					cp15_966es->PrRead(address, val, size);
-				} else {
-					for(uint32_t i = 0; i < size; i += CONFIG::FSB_BURST_SIZE) {
-						if((i - size) < CONFIG::FSB_BURST_SIZE) 
-							memory_interface->PrRead(address, val, size);
-						else
-							memory_interface->PrRead(address, val, size);
-					}
-				}
-			}
-		}
-	}
-	return true;
-}
-
-template<class CONFIG>
-bool 
-CPU<CONFIG> ::
-Read8(typename CONFIG::address_t address, uint8_t &val) {
-	address = address ^ munged_address_mask8;
-//	if(GetEndianess() == E_LITTLE_ENDIAN)
-//		address = address ^ (typename CONFIG::address_t)0x03;
-
-	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrRead(address, &val, 1);
-	} else {
-		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrRead(address, &val, 1);
-		} else
-			memory_interface->PrRead(address, &val, 1);
-	}
-	
-	if(requires_memory_access_reporting)
-		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
-				 	address, 1);
-
-	return true;
-}
-
-template<class CONFIG>
-bool 
-CPU<CONFIG> ::
-Read16(typename CONFIG::address_t address, uint16_t &val) {
-	address = address ^ munged_address_mask16;
-//	if(GetEndianess() == E_LITTLE_ENDIAN)
-//		address = address ^ (typename CONFIG::address_t)0x02;
-
-	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrRead(address, (uint8_t *)&val, 2);
-	} else {
-		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrRead(address, (uint8_t *)&val, 2);
-		} else 
-			memory_interface->PrRead(address, (uint8_t *)&val, 2);
-	}
-	
-	val = BigEndian2Host(val);
-//	val = Host2Target(CONFIG::ENDIANESS, val);
-//	val = Host2Target(GetEndianess(), val);
-	
-	if(requires_memory_access_reporting)
-		if(memory_access_reporting_import) 
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
-					address, 2);
-  
-	return true;
-}
-
-template<class CONFIG>
-bool 
-CPU<CONFIG> ::
-Read32(typename CONFIG::address_t address, uint32_t &val) {
-	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrRead(address, (uint8_t *)&val, 4);
-	} else {
-		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrRead(address, (uint8_t *)&val, 4);
-		} else
-			memory_interface->PrRead(address, (uint8_t *)&val, 4);
-	}
-	
-	val = BigEndian2Host(val);
-//	// val = Target2Host(CONFIG::ENDIANESS, val);
-//	val = Target2Host(GetEndianess(), val);
-	
-	if(requires_memory_access_reporting)
-		if(memory_access_reporting_import) 
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
-					address, 4);
-
-	return true;
-}
-
-template<class CONFIG>
-bool 
-CPU<CONFIG> ::
-Write8(typename CONFIG::address_t address, uint8_t &val) {
-	uint8_t value;
-  
-	address = address ^ munged_address_mask8;
-//	if(GetEndianess() == E_LITTLE_ENDIAN)
-//		address = address ^ (typename CONFIG::address_t)0x03;
-
-	value = val;
-	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrWrite(address, &value, 1);
-	} else {
-		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrWrite(address, &value, 1);
-		} else
-			memory_interface->PrWrite(address, &value, 1);
-	}
-	
-	if(requires_memory_access_reporting)
-		if(memory_access_reporting_import) 
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-					MemoryAccessReporting<address_t>::MT_DATA,
-					address, 1);
-
-	return true;
-}
-
-template<class CONFIG>
-bool 
-CPU<CONFIG> ::
-Write16(typename CONFIG::address_t address, uint16_t &val) {
-	uint16_t val16;
-	
-	address = address ^ munged_address_mask16;
-//	if(GetEndianess() == E_LITTLE_ENDIAN)
-//		address = address ^ (typename CONFIG::address_t)0x02;
-
-	val16 = Host2BigEndian(val);
-	
-	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrWrite(address, (uint8_t *)&val16, 2);
-	} else {
-		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrWrite(address, (uint8_t *)&val16, 2);
-		} else
-			memory_interface->PrWrite(address, (uint8_t *)&val16, 2);
-	}
-	
-	if(requires_memory_access_reporting)
-		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-					MemoryAccessReporting<address_t>::MT_DATA,
-					address, 2);
-
-	return true;
-}
-
-template<class CONFIG>
-bool CPU<CONFIG> ::
-Write32(typename CONFIG::address_t address, uint32_t &val) {
-	uint32_t val32;
-//
-////	cp = Host2Target(CONFIG::ENDIANESS, val);
-//	cp = Host2Target(GetEndianess(), val);
-	
-	val32 = Host2BigEndian(val);
-
-	if(CONFIG::MODEL == ARM966E_S) {
-		cp15_966es->PrWrite(address, (uint8_t *)&val32, 4);
-	} else {
-		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
-			cache_l1->PrWrite(address, (uint8_t *)&val32, 4);
-		} else
-			memory_interface->PrWrite(address, (uint8_t *)&val32, 4);
-	}
-	
-	if(requires_memory_access_reporting)
-		if(memory_access_reporting_import) 
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE,
-					MemoryAccessReporting<address_t>::MT_DATA,
-					address, 4);
-
-	return true;
-}
-
 #endif
+}
+
 /**************************************************************/
 /* Memory access methods       END                            */
 /**************************************************************/
@@ -3994,6 +4012,305 @@ CreateMemorySystem() {
 
 /**************************************************************/
 /* Memory system creation methods (private)               END */
+/**************************************************************/
+
+/**************************************************************/
+/* Memory system methods (private)                      START */
+/**************************************************************/
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+PerformLoadStoreAccesses() {
+	// while the lsQueue is not empty process entries
+	while(!lsQueue.empty()) {
+		MemoryOp<CONFIG> *memop = lsQueue.front();
+		lsQueue.pop();
+		switch(memop->GetType()) {
+		case MemoryOp<CONFIG>::PREFETCH:
+			PerformPrefetchAccess(memop);
+			break;
+		case MemoryOp<CONFIG>::WRITE:
+			PerformWriteAccess(memop);
+			break;
+		case MemoryOp<CONFIG>::READ:
+			PerformReadAccess(memop);
+			break;
+		case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
+			PerformReadToPCUpdateTAccess(memop);
+			break;
+		case MemoryOp<CONFIG>::READ_TO_PC:
+			PerformReadToPCAccess(memop);
+			break;
+		}
+		freeLSQueue.push(memop);
+	}
+}
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+PerformPrefetchAccess(MemoryOp<CONFIG> *memop) {
+	address_t read_address = memop->GetAddress();
+	uint32_t value;
+	
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
+		} else
+			memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
+	}
+	
+	/* should we report a memory access for a prefetch???? */
+	if(requires_memory_access_reporting)
+		if(memory_access_reporting_import)
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
+					MemoryAccessReporting<address_t>::MT_DATA,
+					read_address, 4);
+}
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+PerformWriteAccess(MemoryOp<CONFIG> *memop) {
+	address_t address = memop->GetAddress();
+	uint8_t val8;
+	uint16_t val16;
+	uint32_t val32;
+	
+	switch(memop->GetSize()) {
+	case 1:
+		val8 = (uint8_t)memop->GetWriteValue();
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrWrite(address, &val8, 1);
+		} else {
+			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+				cache_l1->PrWrite(address, &val8, 1);
+			} else
+				memory_interface->PrWrite(address, &val8, 1);
+		}
+		break;
+	case 2:
+		val16 = (uint16_t)memop->GetWriteValue();
+		val16 = Host2BigEndian(val16);
+
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrWrite(address, (uint8_t *)&val16, 2);
+		} else {
+			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+				cache_l1->PrWrite(address, (uint8_t *)&val16, 2);
+			} else
+				memory_interface->PrWrite(address, (uint8_t *)&val16, 2);
+		}
+		break;
+	case 4:
+		val32 = memop->GetWriteValue();
+		val32 = Host2BigEndian(val32);
+
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrWrite(address, (uint8_t *)&val32, 4);
+		} else {
+			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+				cache_l1->PrWrite(address, (uint8_t *)&val32, 4);
+			} else
+				memory_interface->PrWrite(address, (uint8_t *)&val32, 4);
+		}
+		break;
+	}
+}
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+PerformReadAccess(MemoryOp<CONFIG> *memop) {
+	typename CONFIG::reg_t val32, val32_l, val32_r;
+	uint16_t val16, val16_l, val16_r;
+	uint8_t val8;
+	typename CONFIG::reg_t value;
+	address_t address = memop->GetAddress();
+	uint32_t size = memop->GetSize();
+	address_t read_address = address & ~(address_t)(size - 1); 
+	
+	switch(size) {
+	case 1:
+		read_address = read_address ^ munged_address_mask8;
+
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrRead(read_address, &val8, 1);
+		} else {
+			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+				cache_l1->PrRead(read_address, &val8, 1);
+			} else
+				memory_interface->PrRead(read_address, &val8, 1);
+		}
+		if(memop->IsSigned()) {
+			value = (typename CONFIG::sreg_t)(int8_t)val8;
+		} else
+			value = val8;
+		break;
+	case 2:
+		/* NOTE: 16bits reads are always aligned */
+		read_address = read_address ^ munged_address_mask16;
+
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrRead(read_address, (uint8_t *)&val16, 2);
+		} else {
+			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+				cache_l1->PrRead(read_address, (uint8_t *)&val16, 2);
+			} else 
+				memory_interface->PrRead(read_address, (uint8_t *)&val16, 2);
+		}
+		
+		val16 = BigEndian2Host(val16);
+		
+		if(memop->IsSigned()) {
+			value = (typename CONFIG::sreg_t)(int16_t)val16;
+		} else
+			value = val16;
+		break;
+	case 4:
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrRead(read_address, (uint8_t *)&val32, 4);
+		} else {
+			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+				cache_l1->PrRead(read_address, (uint8_t *)&val32, 4);
+			} else
+				memory_interface->PrRead(read_address, (uint8_t *)&val32, 4);
+		}
+		
+		val32 = BigEndian2Host(val32);
+		
+		switch(address & 0x03) {
+		case 0x00:
+			// nothing to do
+			break;
+		case 0x01:
+			val32_l = (val32 << 8) & ~((typename CONFIG::reg_t)0x0FF);
+			val32_r = (val32 >> 24) & ((typename CONFIG::reg_t)0x0FF);
+			val32 = val32_l + val32_r;
+			break;
+		case 0x02:
+			val32_l = (val32 << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+			val32_r = (val32 >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+			val32 = val32_l + val32_r;
+			break;
+		case 0x03:
+			val32_l = (val32 << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+			val32_r = (val32 >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+			val32 = val32_l + val32_r;
+			break;
+		}
+		value = val32;
+		break;
+	}
+	SetGPR(memop->GetTargetReg(), value);
+}
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	address_t address = memop->GetAddress();
+	address_t read_address = address & ~(0x3);
+	
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
+		} else
+			memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
+	}
+	
+	value = BigEndian2Host(value);
+	
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+
+	SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+}
+
+template<class CONFIG>
+inline INLINE
+void
+CPU<CONFIG> ::
+PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	address_t address = memop->GetAddress();
+	address_t read_address = address & ~(0x3);
+	
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
+	} else {
+		if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
+			cache_l1->PrRead(read_address, (uint8_t *)&value, 4);
+		} else
+			memory_interface->PrRead(read_address, (uint8_t *)&value, 4);
+	}
+	
+	value = BigEndian2Host(value);
+	
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+
+	SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+	// code valid for version 5 and above
+	if(CONFIG::ARCHITECTURE == ARMV5T ||
+		CONFIG::ARCHITECTURE == ARMV5TXM ||
+		CONFIG::ARCHITECTURE == ARMV5TE ||
+		CONFIG::ARCHITECTURE == ARMV5TEXP) {
+		SetCPSR_T((value & 0x01) == 1);
+	}
+}
+
+/**************************************************************/
+/* Memory system methods (private)                        END */
 /**************************************************************/
 
 /**************************************************************/

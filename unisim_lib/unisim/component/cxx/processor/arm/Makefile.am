@@ -32,7 +32,8 @@ endif
 include_HEADERS = config.hh cpu.hh cpu.tcc \
 	exception.hh exception.tcc \
 	cache_interface.hh \
-	coprocessor_interface.hh
+	coprocessor_interface.hh \
+	memory_op.hh
 
 nobase_include_HEADERS = \
 	cache/cache.hh cache/cache.tcc \
