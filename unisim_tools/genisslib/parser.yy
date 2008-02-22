@@ -193,7 +193,7 @@ subdecoder:
   SourceCode_t* template_scheme = $4;
   unsigned int minsize = $6, maxsize = $8;
   
-  if( minsize >= maxsize ) {
+  if( minsize > maxsize ) {
     Scanner::fileloc.err( "error: subdecoder operation range is reversed" );
     YYABORT;
   }

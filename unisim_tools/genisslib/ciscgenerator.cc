@@ -320,6 +320,8 @@ CiscGenerator::finalize() {
     while( dopidx > 0 ) {
       sopidx = (sopidx + opcount - 1) % opcount;
       Operation_t* op = isa().m_operations[sopidx];
+      if( not op ) continue;
+      
       OpCode_t& oc = opcode( op );
       if( oc.m_lowercount > 0 ) {
         // There is some operations to be placed before this one 
@@ -329,6 +331,7 @@ CiscGenerator::finalize() {
       }
       inf_loop_tracker = opcount;
       operations[--dopidx] = op;
+      isa().m_operations[sopidx] = 0;
       oc.unsetupper();
     }
     isa().m_operations = operations;
