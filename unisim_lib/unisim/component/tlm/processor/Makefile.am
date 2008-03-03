@@ -14,6 +14,11 @@ SUBDIRS += powerpc
 INCLUDE_SUBDIRS += powerpc
 endif
 
+if COND_hcs12x
+SUBDIRS += hcs12x
+INCLUDE_SUBDIRS += hcs12x
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

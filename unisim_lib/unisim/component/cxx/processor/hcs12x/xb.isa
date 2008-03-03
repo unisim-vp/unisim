@@ -1,0 +1,146 @@
+// -*- C++ -*-
+
+namespace unisim::component::cxx::processor::hcs12x::XB
+
+big_endian
+cisc_decoder
+
+address {uint16_t}
+
+decl {
+
+#include <iosfwd>
+#include <iostream>
+
+#include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
+
+}
+
+impl {
+using namespace std;
+}
+
+action {void} disasm({ostream&} {sink}) {
+	sink << "?";
+}
+
+action {uint16_t} getEAddr ( {CPU *} {cpu} ) { assert( false ); return 0; }
+
+op xb_5bit_cst (rr[2]:0b0[1]:sext<16> nnnnn[5])
+
+xb_5bit_cst.getEAddr = {
+    return cpu->xb_getAddrRegValue(rr) + nnnnn;
+}
+
+xb_5bit_cst.disasm = {
+	sink << nnnnn << "," << CPU::xb_getAddrRegLabel(rr);
+}
+
+op xb_9_cst_z0 (0b111[3]:rr[2]:0b00[2]:s[1]:> <:n8[8])
+
+xb_9_cst_z0.getEAddr = {
+   	if (s==0) {
+   		return cpu->xb_getAddrRegValue(rr) + n8;
+   	} else {
+   		return cpu->xb_getAddrRegValue(rr) + n8 - 256;
+   	}
+}
+
+xb_9_cst_z0.disasm = {
+	if (s==0) {
+		sink << n8 << "," << CPU::xb_getAddrRegLabel(rr);
+	} else {
+		sink << -1*n8 << "," << CPU::xb_getAddrRegLabel(rr);
+	}
+}
+
+op xb_16bit_cst_z1 (0b111[3]:rr[2]:0b0[1]:0b1[1]:s[1]:> <:n16[16])
+
+xb_16bit_cst_z1.getEAddr = {
+   	if (s==0) {
+   		// Constant offset 16-bit signed
+   		return cpu->xb_getAddrRegValue(rr) + n16;
+   	} else {
+   		// 16-bit offset indexed-indirect
+		return cpu->mmc->memRead16(cpu->xb_getAddrRegValue(rr) + n16);
+   	}
+}
+
+xb_16bit_cst_z1.disasm = {
+	if (s==0) {
+		// constant offset 16-bit signed
+		sink << n16 << "," << CPU::xb_getAddrRegLabel(rr);
+	} else {
+		// 16-bit offset index-indirect
+		sink << "[" << n16 << "," << CPU::xb_getAddrRegLabel(rr) << "]";
+	}
+}
+
+
+op xb_auto(rr[2]:0b1[1]:p[1]:sext<8> nnnn[4])
+
+xb_auto.getEAddr = {
+
+	uint16_t regOldVal = cpu->xb_getAddrRegValue(rr);
+	uint16_t regNewVal;
+
+	// if (nnnn > 7) then decrement else increment
+	if (nnnn < 8) // increment index register
+	{
+		regNewVal = regOldVal + nnnn + 1;
+	} else { // decrement index register
+		regNewVal = regNewVal + nnnn - 16;
+	}
+
+	cpu->xb_setAddrRegValue(rr,regNewVal);	
+	if (p == 0) {
+		// Auto pre-
+		return regNewVal;
+	} else {
+		// Auto post-
+		return regOldVal;
+	}
+}
+
+xb_auto.disasm = {
+
+	char*	regLabel = CPU::xb_getAddrRegLabel(rr);
+	char	sign;
+	if (nnnn > 7) {
+		sign = '-';
+	} else {
+		sign = '+';
+	}
+	sink << nnnn << ",";
+	if (p == 0) {
+		sink << sign << regLabel;
+	} else {
+		sink << regLabel << sign;
+	}
+}
+
+
+op xb_acc_offset (0b111[3]:rr[2]:0b1[1]:aa[2])
+
+xb_acc_offset.getEAddr = {
+	uint16_t addrRegVal = cpu->xb_getAddrRegValue(rr);
+	uint16_t accRegVal = cpu->xb_getAccRegValue(aa);
+	
+	return addrRegVal + accRegVal; 
+}
+
+xb_acc_offset.disasm = {
+	sink << CPU::xb_getAccRegLabel(aa) << "," << CPU::xb_getAddrRegLabel(rr);
+}
+
+
+op xb_accD_offset_idx_ind (0b111[3]:rr[2]:0b111[3])
+
+xb_accD_offset_idx_ind.getEAddr = {
+	return cpu->mmc->memRead16(cpu->getRegD() + cpu->xb_getAddrRegValue(rr));
+}
+
+xb_accD_offset_idx_ind.disasm = {
+	sink << "[D," << CPU::xb_getAddrRegLabel(rr) << "]";
+}
+

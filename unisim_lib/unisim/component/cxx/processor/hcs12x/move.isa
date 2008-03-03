@@ -1,0 +1,168 @@
+// -*- C++ -*-
+
+op movb_0B(0x18[8]:0x0B[8]:> <:ii[8]:> <:opr16a[16])
+
+movb_0B.disasm = { 
+	sink << "MOVB #$" << std::hex << ii << ",$" << std::hex << opr16a;
+}
+
+movb_0B.execute = {
+	cpu->mmc->memWrite8(opr16a,ii);
+}
+
+/* ??? A voir avec Yves/Gilles/Daniel
+ * Movb_18_08 IDX IDX1 IDX2 [D,IDX] [IDX2]
+ * */
+op movb_08(0x18[8]:0x08[8]:> <:*xb[XB]:> <:ii[8])
+
+movb_08.disasm = {
+	
+	sink << "MOVB #$" << std::hex << ii << ",";
+	xb->disasm(sink);
+}
+
+movb_08.execute = {
+	cpu->mmc->memWrite8(xb->getEAddr(cpu),ii);
+}
+
+
+op movb_0C(0x18[8]:0x0C[8]:> <:opr16asrc[16]:opr16adst[16])
+
+movb_0C.disasm = {
+	sink << "MOVB $" << std::hex << opr16asrc << ",$" << opr16adst;
+}
+
+movb_0C.execute = {
+	uint8_t tmp = cpu->mmc->memRead8(opr16asrc);
+	cpu->mmc->memWrite8(opr16adst, tmp);
+}
+
+/* ??? A voir avec Yves/Gilles/Daniel
+ * Movb_18_09 IDX IDX1 IDX2 [D,IDX] [IDX2]
+ * */
+op movb_09(0x18[8]:0x09[8]:> <:*xb[XB]:> <:opr16asrc[8])
+
+movb_09.disasm = {
+	sink << "MOVB $" <<  std::hex << opr16asrc << ",";
+	xb->disasm(sink);
+}
+
+movb_09.execute = {
+	uint16_t addr = xb->getEAddr(cpu);
+	uint8_t tmp = cpu->mmc->memRead8(opr16asrc);
+	cpu->mmc->memWrite8(addr, tmp);
+}
+
+op movb_0D(0x18[8]:0x0D[8]:> <:*xb[XB]:> <:opr16a[8])
+
+movb_0D.disasm = {
+	sink << "MOVB ";
+	xb->disasm(sink);
+	sink << ",#" << std::hex << opr16a;
+}
+
+movb_0D.execute = {
+	uint8_t tmp = cpu->mmc->memRead8(xb->getEAddr(cpu));
+	cpu->mmc->memWrite8(opr16a, tmp);
+}
+
+op movb_0A(0x18[8]:0x0A[8]:> <:*xbsrc[XB]:> <:*xbdst[XB])
+
+movb_0A.disasm = {
+	sink << "MOVB ";
+	xbsrc->disasm(sink);
+	sink << ",";
+	xbdst->disasm(sink);
+}
+
+movb_0A.execute = {
+	uint16_t addrsrc = xbsrc->getEAddr(cpu);
+	uint16_t addrdst = xbdst->getEAddr(cpu);
+	uint8_t  tmp = cpu->mmc->memRead8(addrsrc);
+	cpu->mmc->memWrite8(addrdst, tmp);
+}
+
+// ---------
+
+op movw_03(0x18[8]:0x03[8]:> <:jjkk[16]:> <:opr16a[16])
+
+movw_03.disasm = { 
+	sink << "MOVW #$" << std::hex << jjkk << ",$" << std::hex << opr16a;
+}
+
+movw_03.execute = {
+	cpu->mmc->memWrite16(opr16a,jjkk);
+}
+
+/* ??? A voir avec Yves/Gilles/Daniel
+ * Movw_18_00 IDX IDX1 IDX2 [D,IDX] [IDX2]
+ * */
+op movw_00(0x18[8]:0x00[8]:> <:*xb[XB]:> <:jjkk[16])
+
+movw_00.disasm = {
+	
+	sink << "MOVW #$" << std::hex << jjkk << ",";
+	xb->disasm(sink);
+}
+
+movw_00.execute = {
+	cpu->mmc->memWrite16(xb->getEAddr(cpu),jjkk);
+}
+
+
+op movw_04(0x18[8]:0x04[8]:> <:opr16asrc[16]:opr16adst[16])
+
+movw_04.disasm = {
+	sink << "MOVW $" << std::hex << opr16asrc << ",$" << opr16adst;
+}
+
+movw_04.execute = {
+	uint16_t tmp = cpu->mmc->memRead16(opr16asrc);
+	cpu->mmc->memWrite16(opr16adst, tmp);
+}
+
+/* ??? A voir avec Yves/Gilles/Daniel
+ * Movbw_18_01 IDX IDX1 IDX2 [D,IDX] [IDX2]
+ * */
+op movw_01(0x18[8]:0x01[8]:> <:*xb[XB]:> <:opr16asrc[8])
+
+movw_01.disasm = {
+	sink << "MOVW $" <<  std::hex << opr16asrc << ",";
+	xb->disasm(sink);
+}
+
+movw_01.execute = {
+	uint16_t addr = xb->getEAddr(cpu);
+	uint16_t tmp = cpu->mmc->memRead16(opr16asrc);
+	cpu->mmc->memWrite16(addr, tmp);
+}
+
+
+op movw_05(0x18[8]:0x05[8]:> <:*xb[XB]:> <:opr16a[8])
+
+movw_05.disasm = {
+	sink << "MOVW ";
+	xb->disasm(sink);
+	sink << ",#" << std::hex << opr16a;
+}
+
+movw_05.execute = {
+	uint16_t tmp = cpu->mmc->memRead16(xb->getEAddr(cpu));
+	cpu->mmc->memWrite16(opr16a, tmp);
+}
+
+op movw_02(0x18[8]:0x02[8]:> <:*xbsrc[XB]:> <:*xbdst[XB])
+
+movw_02.disasm = {
+	sink << "MOVW ";
+	xbsrc->disasm(sink);
+	sink << ",";
+	xbdst->disasm(sink);
+}
+
+movw_02.execute = {
+	uint16_t addrsrc = xbsrc->getEAddr(cpu);
+	uint16_t addrdst = xbdst->getEAddr(cpu);
+	uint16_t  tmp = cpu->mmc->memRead16(addrsrc);
+	cpu->mmc->memWrite16(addrdst, tmp);
+}

@@ -1,0 +1,34 @@
+// -*- C++ -*-
+
+namespace unisim::component::cxx::processor::hcs12x
+
+big_endian	/* instruction endian */
+
+cisc_decoder
+address {uint16_t}
+subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+
+decl {
+#include <unisim/component/cxx/processor/hcs12x/cpu.hh>
+#include <iostream>
+#include <iosfwd>
+}
+
+impl {
+#include <unisim/component/cxx/processor/hcs12x/xb.hh>
+}
+
+action {void} execute({CPU *} {cpu}) {
+	printf("Unknown instruction\n");
+	exit(-1);
+}
+
+action {void} disasm({ostream&} {sink}) {
+	sink << "?";
+}
+
+include "load_store.isa"
+include "transfer_exchange.isa"
+include "move.isa"
+
+

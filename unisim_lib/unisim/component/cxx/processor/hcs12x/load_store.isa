@@ -1,0 +1,474 @@
+// -*- C++ -*-
+
+
+// LDAA or LDAB #opr8i
+op ldaab_imm(0b1[1]:b[1]:0x6[6]:opr8i[8])
+
+ldaab_imm.disasm = {
+    if (b==0) {
+	    sink << "LDAA #$";
+    } else {
+	    sink << "LDAB #$";
+    }
+    sink  << std::hex << opr8i;    
+}
+
+ldaab_imm.execute = {
+	if (b==0) {
+	    cpu->setRegA(opr8i); // ldaa #<opr8i>
+	} else {
+	    cpu->setRegB(opr8i); // ldab #<opr8i>	
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (opr8i == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (opr8i < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+}
+
+// LDAA or LDAB opr8a
+op ldaab_dir( 0b1[1]:b[1]:0x16[6]:opr8a[8] )
+
+ldaab_dir.disasm = {
+	if (b==0) {
+	    sink << "LDAA $";
+	} else {
+	    sink << "LDAB $";
+	}
+	sink << std::hex << opr8a;
+}
+
+ldaab_dir.execute = {
+	int8_t val = cpu->mmc->memDirectRead8((uint16_t) opr8a);
+	if (b==0) {
+	    cpu->setRegA(val);
+	} else {
+	    cpu->setRegB(val);	
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+}
+
+// LDAA or LDAB opr16a
+op ldaab_ext(0b1[1]:b[1]:0x36[6]:> <:opr16a[16] )
+
+ldaab_ext.disasm = {
+	if (b==0) {
+	    sink << "LDAA $";
+	} else {
+	    sink << "LDAB $";	
+	}
+	sink << std::hex << opr16a; 
+}
+
+ldaab_ext.execute = {
+	int8_t val = cpu->mmc->memRead8(opr16a); 
+	if (b==0) {
+	    cpu->setRegA(val);
+	} else {
+	    cpu->setRegB(val);
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	
+}
+
+// LDAA or LDAB oprx0_xysp
+// LDAA or LDAB oprx9,xysp
+// LDAA or LDAB oprx16,xysp
+// LDAA or LDAB [D,xysp]
+// LDAA or LDAB [oprx16,xysp]
+op ldaab_idx(0b1[1]:b[1]:0x26[6]:> <:*xb[XB]) 
+
+ldaab_idx.disasm = {
+	if (b==0) {
+	    sink << "LDAA ";
+	} else {
+	    sink << "LDAB ";	
+	}
+    xb->disasm(sink);
+}
+
+ldaab_idx.execute = {
+    
+    address_t	addr = xb->getEAddr(cpu);
+	int8_t		val = cpu->mmc->memRead8(addr);     
+	
+	if (b==0) {
+	    cpu->setRegA(val);
+	} else {
+	    cpu->setRegB(val);	
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// LDD or LDY or LDX or LDS #opr16i
+op ld_dyxs_imm(0x33[6]:dyxs[2]:> <:jj[8]:> <:kk[8])
+
+ld_dyxs_imm.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "LDD #$"; break;
+	case 1: sink << "LDY #$"; break;
+	case 2: sink << "LDX #$"; break;
+	case 3: sink << "LDS #$"; break;
+	}
+	sink << std::hex << jj << kk;
+}
+
+ld_dyxs_imm.execute = {
+
+	int16_t val = (uint16_t) (jj << 8) | kk;
+	switch (dyxs) {
+	case 0: cpu->setRegD(val); break;
+	case 1: cpu->setRegY(val); break;
+	case 2: cpu->setRegX(val); break;
+	case 3: cpu->setSP(val); break;
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// LDD or LDY or LDX or LDS opr8a
+op ld_dyxs_dir(0x37[6]:dyxs[2]:dd[8])
+
+ld_dyxs_dir.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "LDD $"; break;
+	case 1: sink << "LDY $"; break;
+	case 2: sink << "LDX $"; break;
+	case 3: sink << "LDS $"; break;
+	}
+	sink << std::hex << dd;
+}
+
+ld_dyxs_dir.execute = {
+
+	int16_t val = cpu->mmc->memDirectRead16((uint16_t) dd);
+	switch (dyxs) {
+	case 0: cpu->setRegD(val); break;
+	case 1: cpu->setRegY(val); break;
+	case 2: cpu->setRegX(val); break;
+	case 3: cpu->setSP(val); break;
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// LDD or LDY or LDX or LDS opr16a
+op ld_dyxs_ext(0x3F[6]:dyxs[2]:> <:hh[8]:> <:ll[8])
+
+ld_dyxs_ext.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "LDD $"; break;
+	case 1: sink << "LDY $"; break;
+	case 2: sink << "LDX $"; break;
+	case 3: sink << "LDS $"; break;
+	}
+
+	sink << std::hex << hh << std::hex << ll;
+}
+
+ld_dyxs_ext.execute = {
+	
+	uint16_t addr = (uint16_t (hh << 8)) | ll;
+	int16_t val = cpu->mmc->memRead16(addr);
+	
+	switch (dyxs) {
+	case 0: cpu->setRegD(val); break;
+	case 1: cpu->setRegY(val); break;
+	case 2: cpu->setRegX(val); break;
+	case 3: cpu->setSP(val); break;
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// LDD or LDY or LDX or LDS oprx0_xysp
+// LDD or LDY or LDX or LDS oprx9,xysp
+// LDD or LDY or LDX or LDS oprx16,xysp
+// LDD or LDY or LDX or LDS [D,xysp]
+// LDD or LDY or LDX or LDS [oprx16,xysp]
+op ld_dyxs_idx(0x3B[6]:dyxs[2]:> <:*xb[XB]) 
+
+ld_dyxs_idx.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "LDD "; break;
+	case 1: sink << "LDY "; break;
+	case 2: sink << "LDX "; break;
+	case 3: sink << "LDS "; break;
+	}
+
+    xb->disasm(sink);
+}
+
+ld_dyxs_idx.execute = {
+    
+    address_t	addr = xb->getEAddr(cpu);
+	int16_t	val = cpu->mmc->memRead16(addr);     
+
+	switch (dyxs) {
+	case 0: cpu->setRegD(val); break;
+	case 1: cpu->setRegY(val); break;
+	case 2: cpu->setRegX(val); break;
+	case 3: cpu->setSP(val); break;
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// LEAY or LEAX or LEAS  oprx0_xysp
+// LEAY or LEAX or LEAS  oprx9,xysp
+// LEAY or LEAX or LEAS  oprx16,xysp
+op lea_yxs(0x06[6]:yxs[2]:> <:*xb[XB])
+
+lea_yxs.disasm = {
+
+	switch (yxs) {
+	case 0: sink << "???? "; break;
+	case 1: sink << "LEAY "; break;
+	case 2: sink << "LEAX "; break;
+	case 3: sink << "LEAS ";
+	}
+	
+	xb->disasm(sink);
+}
+
+lea_yxs.execute = {
+
+    address_t	addr = xb->getEAddr(cpu);
+    
+	switch (yxs) {
+	case 0: /* throw an exception unknown instruction */; break;
+	case 1: cpu->setRegY(addr); break;
+	case 2: cpu->setRegX(addr); break;
+	case 3: cpu->setSP(addr);
+	}
+	
+}
+
+// STAA or STAB opr8a
+op staab_dir(0x2D[7]:b[1]:opr8a[8])
+
+staab_dir.disasm = {
+
+	if (b==0) {
+	    sink << "STAA $";
+	} else {
+	    sink << "STAB $";
+	}
+	sink << std::hex << opr8a;
+
+}
+
+staab_dir.execute = {
+
+	int8_t val;
+
+	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
+    cpu->mmc->memDirectWrite8((uint16_t) opr8a, val);	
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// STAA or STAB opr16a
+op staab_ext(0x3D[7]:b[1]:> <:hh[8]:ll[8])
+
+staab_ext.disasm = {
+
+	uint16_t addr = ((uint16_t) hh << 8) | ll;
+
+	if (b==0) {
+	    sink << "STAA $";
+	} else {
+	    sink << "STAB $";
+	}
+	sink << std::hex << addr;
+
+}
+
+staab_ext.execute = {
+
+	uint16_t addr = ((uint16_t) hh << 8) | ll;
+	int8_t	val;
+	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
+    cpu->mmc->memDirectWrite8((uint16_t) addr, val);
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// STAA or STAB oprx0_xysp
+// STAA or STAB oprx9,xysp
+// STAA or STAB oprx16,xysp
+// STAA or STAB [D,xysp]
+// STAA or STAB [oprx16,xysp]
+
+op staab_idx(0x35[7]:b[1]:> <:*xb[XB])
+
+staab_idx.disasm = {
+
+	if (b==0) {
+	    sink << "STAA ";
+	} else {
+	    sink << "STAB ";	
+	}
+    xb->disasm(sink);
+
+}
+
+staab_idx.execute = {
+
+    address_t	addr = xb->getEAddr(cpu);
+	int8_t val;
+	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
+    cpu->mmc->memWrite8(addr,val);	
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// STD or STY or STX or STS opr8a
+op st_dyxs_dir(0x17[6]:dyxs[2]:opr8a[8])
+
+st_dyxs_dir.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "STD $"; break;
+	case 1: sink << "STY $"; break;
+	case 2: sink << "STX $"; break;
+	case 3: sink << "STS $"; break;
+	}
+	
+	sink << std::hex << opr8a;
+}
+
+st_dyxs_dir.execute = {
+
+	int16_t val;
+	
+	switch (dyxs) {
+	case 0: val = cpu->getRegD(); break;
+	case 1: val = cpu->getRegY(); break;
+	case 2: val = cpu->getRegX(); break;
+	case 3: val = cpu->getSP(); break;
+	}
+	
+	cpu->mmc->memDirectWrite16((uint16_t) opr8a, val);
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// STD or STY or STX or STS opr16a
+op st_dyxs_ext(0x1F[6]:dyxs[2]:> <:hh[8]:ll[8])
+
+st_dyxs_ext.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "STD $"; break;
+	case 1: sink << "STY $"; break;
+	case 2: sink << "STX $"; break;
+	case 3: sink << "STS $"; break;
+	}
+	
+	sink << std::hex << hh << std::hex << ll;
+
+}
+
+st_dyxs_ext.execute = {
+
+	int16_t val = 0;
+	uint16_t addr = (uint16_t) (hh << 8) | ll;
+		
+	switch (dyxs) {
+	case 0: val = cpu->getRegD(); break;
+	case 1: val = cpu->getRegY(); break;
+	case 2: val = cpu->getRegX(); break;
+	case 3: val = cpu->getSP(); break;
+	}
+	
+	cpu->mmc->memWrite16(addr, val);
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
+
+// STD or STY or STX or STS oprx0_xysp
+// STD or STY or STX or STS oprx9,xysp
+// STD or STY or STX or STS oprx16,xysp
+// STD or STY or STX or STS [D,xysp]
+// STD or STY or STX or STS [oprx16,xysp]
+
+op st_dyxs_idx(0x1B[6]:dyxs[2]:> <:*xb[XB])
+
+st_dyxs_idx.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "STD "; break;
+	case 1: sink << "STY "; break;
+	case 2: sink << "STX "; break;
+	case 3: sink << "STS "; break;
+	}
+
+    xb->disasm(sink);
+
+}
+
+st_dyxs_idx.execute = {
+
+    address_t	addr = xb->getEAddr(cpu);
+	int16_t val = 0;
+	
+	switch (dyxs) {
+	case 0: val = cpu->getRegD(); break;
+	case 1: val = cpu->getRegY(); break;
+	case 2: val = cpu->getRegX(); break;
+	case 3: val = cpu->getSP(); break;
+	}
+	cpu->mmc->memWrite16(addr,val);
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->setV(0);
+	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+
+}
