@@ -499,6 +499,11 @@ CiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _ref, char 
   _product.code( "%s.match( %s )", _bytes, _ref );
 }
 
+void
+CiscGenerator::subdecoder_bounds( Product_t& _product ) const {
+  _product.code( "[%d;%d]", m_insn_min_bitsize, m_insn_max_bitsize );
+}
+
 CiscGenerator::OpCode_t const&
 CiscGenerator::opcode( Operation_t const* _op ) const {
   OpCodes_t::const_iterator res = m_opcodes.find( _op );

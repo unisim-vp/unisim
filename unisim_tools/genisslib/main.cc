@@ -34,7 +34,7 @@ using namespace std;
 
 Opts::Opts()
   : outputprefix( DEFAULT_OUTPUT ), expandname( 0 ), inputname( 0 ), depfilename( 0 ),
-    minwordsize( -1 ), subdecoder( false ), sourcelines( true ), specialization( true ),
+    minwordsize( -1 ), subdecoder( 0 ), sourcelines( true ), specialization( true ),
     actiontext( false )
 { s_shared = this; }
 
@@ -131,7 +131,11 @@ struct GIL : public CLI, public Opts {
     else if( _args.match( CLI::AtMostOnce, "-S", "--subdecoder", 0,
                           "", "Generate a subdecoder instead fo a full ISS." ) )
       {
-        subdecoder = true;
+        if( not (subdecoder = _args.pop()) ) {
+          cerr << GENISSLIB ": '-E' must be followed by a file name.\n";
+          help();
+          throw CLI::Exit_t( 1 );
+        }
       }
     else if( _args.match( CLI::AtMostOnce, "-M", 0, "<filename>",
                           "Output a rule file (<filename>) suitable for make describing the "

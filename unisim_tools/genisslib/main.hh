@@ -32,7 +32,7 @@ struct Opts {
   char const*      inputname;
   char const*      depfilename;
   int              minwordsize;
-  bool             subdecoder;
+  char const*      subdecoder;
   bool             sourcelines;
   bool             specialization;
   bool             actiontext;

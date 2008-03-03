@@ -144,6 +144,25 @@ Generator::iss( Product_t& _product ) const {
   
   _product.ns_leave( isa().m_namespace );
   _product.close();
+  
+  /******************************/
+  /*** Subdecoder header file ***/
+  /******************************/
+  if( Opts::shared().subdecoder ) {
+    if( not _product.open( "sdh" ) ) {
+      cerr << GENISSLIB << ": can't open header file '" << _product.m_filename << "'.\n";
+      throw GenerationError;
+    }
+    _product.code( "subdecoder %s {", Opts::shared().subdecoder );
+    std::vector<ConstStr_t> const& nmspc = isa().m_namespace;
+    char const* sep = "";
+    for( std::vector<ConstStr_t>::const_iterator ns = nmspc.begin(); ns < nmspc.end(); sep = "::", ++ ns )
+      _product.code( "%s%s", sep, (*ns).str() );
+    _product.code( "} " );
+    subdecoder_bounds( _product );
+    _product.code( "\n" );
+    _product.close();
+  }
 }
 
 /** Returns a type format of the good bit size

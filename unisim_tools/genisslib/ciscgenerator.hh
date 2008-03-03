@@ -78,6 +78,8 @@ struct CiscGenerator : public Generator {
   void                          insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const;
   void                          additional_decl_includes( Product_t& _product ) const;
   void                          additional_impl_includes( Product_t& _product ) const;
+  void                          subdecoder_bounds( Product_t& _product ) const;
+
 };
 
 #endif // __CISCGENERATOR_HH__

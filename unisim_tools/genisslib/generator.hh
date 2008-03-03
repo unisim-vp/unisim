@@ -62,6 +62,8 @@ struct Generator {
   virtual void                        insn_decode_impl( Product_t& _product, Operation_t const& _op, char const* _codename, char const* _addrname ) const = 0;
   virtual void                        additional_impl_includes( Product_t& _product ) const = 0;
   virtual void                        additional_decl_includes( Product_t& _product ) const = 0;
+  
+  virtual void                        subdecoder_bounds( Product_t& _product ) const = 0;
 };
 
 #endif // __GENERATOR_HH__

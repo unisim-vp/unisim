@@ -306,6 +306,11 @@ RiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _old, char 
   _product.code( "%s == %s", _old, _new );
 }
 
+void
+RiscGenerator::subdecoder_bounds( Product_t& _product ) const {
+  assert( false );
+}
+
 RiscGenerator::OpCode_t const&
 RiscGenerator::opcode( Operation_t const* _op ) const {
   OpCodes_t::const_iterator res = m_opcodes.find( _op );
