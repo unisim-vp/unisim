@@ -41,7 +41,11 @@ namespace util {
 namespace arithmetic {
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
+inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
 inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Sub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in) __attribute__((always_inline));
+inline void Sub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in) __attribute__((always_inline));
 inline void Sub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in) __attribute__((always_inline));
 inline void SignedSatAdd32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 inline void SignedSatSub32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
@@ -79,6 +83,62 @@ inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attr
 
 #endif
 
+inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	if(carry_in)
+	{
+		__asm__ ("stc\nadc %4, %0\nsetc %1\nseto %2" : "=Q" (result), "=Q" (carry_out), "=Q" (overflow) : "0" (x), "rm" (y) : "cc");	
+	}
+	else
+	{
+		__asm__ ("add %4, %0\nsetc %1\nseto %2" : "=Q" (result), "=Q" (carry_out), "=Q" (overflow) : "0" (x), "rm" (y) : "cc");
+	}
+#else
+	uint8_t result_tmp = x + y + carry_in;
+	uint8_t carry = 0;
+	if(((~((uint8_t) carry_in << 7))) | ((~(x ^ y)) & ((result_tmp !=0 ) << 7)))
+	{
+		carry = ((x & y) | (x & (result_tmp ^ x ^y)) | (y & (result_tmp ^ x ^y)));
+	}
+	else
+	{
+		carry = 0xff;
+	}
+	overflow = (((result_tmp ^ x ^ y) ^ carry) >> 7) & 1;
+	carry_out = (carry >> 7) & 1;
+	result = result_tmp;
+#endif
+}
+
+inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	if(carry_in)
+	{
+		__asm__ ("stc\nadc %4, %0\nsetc %1\nseto %2" : "=Q" (result), "=Q" (carry_out), "=Q" (overflow) : "0" (x), "rm" (y) : "cc");	
+	}
+	else
+	{
+		__asm__ ("add %4, %0\nsetc %1\nseto %2" : "=Q" (result), "=Q" (carry_out), "=Q" (overflow) : "0" (x), "rm" (y) : "cc");
+	}
+#else
+	uint16_t result_tmp = x + y + carry_in;
+	uint16_t carry = 0;
+	if(((~((uint16_t) carry_in << 15))) | ((~(x ^ y)) & ((result_tmp !=0 ) << 15)))
+	{
+		carry = ((x & y) | (x & (result_tmp ^ x ^y)) | (y & (result_tmp ^ x ^y)));
+	}
+	else
+	{
+		carry = 0xffff;
+	}
+	overflow = (((result_tmp ^ x ^ y) ^ carry) >> 15) & 1;
+	carry_out = (carry >> 15) & 1;
+	result = result_tmp;
+#endif
+}
+
 inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
@@ -105,6 +165,20 @@ inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint3
 	carry_out = (carry >> 31) & 1;
 	result = result_tmp;
 #endif
+}
+
+inline void Sub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in) {
+  Add8(result, carry_out, overflow,
+	x,
+	-y,
+	carry_in);
+}
+
+inline void Sub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in) {
+  Add16(result, carry_out, overflow,
+	x,
+	-y,
+	carry_in);
 }
 
 inline void Sub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in) {
@@ -239,7 +313,7 @@ inline int64_t RotateRight(int64_t v, unsigned int n) { return RotateRight((uint
 inline uint32_t ShiftLeft(uint32_t v, unsigned int n)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("shl %%cl, %0" : "=r" (v) : "0"(v), "c" (n) : "cc");	
+	__asm__ ("shl %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
 	n &= 31;
@@ -250,7 +324,7 @@ inline uint32_t ShiftLeft(uint32_t v, unsigned int n)
 inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("shl %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0"(v), "c" (n) : "cc");	
+	__asm__ ("shl %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out): "0" (v), "c" (n) : "cc");	
 	return v;
 #else
 	n &= 31;
@@ -262,7 +336,7 @@ inline uint32_t ShiftLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 inline uint32_t ShiftRight(uint32_t v, unsigned int n)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("shr %%cl, %0" : "=r" (v) : "0"(v), "c" (n) : "cc");	
+	__asm__ ("shr %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");
 	return v;
 #else
 	n &= 31;
@@ -273,7 +347,7 @@ inline uint32_t ShiftRight(uint32_t v, unsigned int n)
 inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0"(v), "c" (n) : "cc");	
+	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
 	n &= 31;
@@ -285,7 +359,7 @@ inline uint32_t ShiftRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("sar %%cl, %0" : "=r" (v) : "0"(v), "c" (n) : "cc");	
+	__asm__ ("sar %%cl, %0" : "=r" (v) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
 	n &= 31;
@@ -296,7 +370,7 @@ inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n)
 inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("sar %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0"(v), "c" (n) : "cc");	
+	__asm__ ("sar %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
 	n &= 31;
@@ -308,7 +382,7 @@ inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_ou
 inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("rol %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0"(v), "c" (n) : "cc");	
+	__asm__ ("rol %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
 	n &= 31;
@@ -320,7 +394,7 @@ inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0"(v), "c" (n) : "cc");	
+	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=Q" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
 	n &= 31;
