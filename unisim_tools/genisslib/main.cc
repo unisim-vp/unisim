@@ -128,8 +128,9 @@ struct GIL : public CLI, public Opts {
         version();
         throw CLI::Exit_t( 0 );
       }
-    else if( _args.match( CLI::AtMostOnce, "-S", "--subdecoder", 0,
-                          "", "Generate a subdecoder instead fo a full ISS." ) )
+    else if( _args.match( CLI::AtMostOnce, "-S", "--subdecoder", 0, "<subdecoder name>",
+                          "Generate a subdecoder instead of a full ISS (create a <output>.sdh "
+                          "header file to be included in the main decoder)." ) )
       {
         if( not (subdecoder = _args.pop()) ) {
           cerr << GENISSLIB ": '-E' must be followed by a file name.\n";
