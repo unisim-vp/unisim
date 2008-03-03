@@ -88,11 +88,11 @@ inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
 	if(carry_in)
 	{
-		__asm__ ("stc\nadc %4, %0\nsetc %1\nseto %2" : "=Q" (result), "=Q" (carry_out), "=Q" (overflow) : "0" (x), "rm" (y) : "cc");	
+		__asm__ ("stc\nadcb %b4, %b0\nsetc %1\nseto %2" : "=q" (result), "=q" (carry_out), "=q" (overflow) : "0" (x), "q" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("add %4, %0\nsetc %1\nseto %2" : "=Q" (result), "=Q" (carry_out), "=Q" (overflow) : "0" (x), "rm" (y) : "cc");
+		__asm__ ("addb %b4, %b0\nsetc %1\nseto %2" : "=q" (result), "=q" (carry_out), "=q" (overflow) : "0" (x), "q" (y) : "cc");
 	}
 #else
 	uint8_t result_tmp = x + y + carry_in;
@@ -116,11 +116,11 @@ inline void Add16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint1
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
 	if(carry_in)
 	{
-		__asm__ ("stc\nadc %4, %0\nsetc %1\nseto %2" : "=Q" (result), "=Q" (carry_out), "=Q" (overflow) : "0" (x), "rm" (y) : "cc");	
+		__asm__ ("stc\nadcw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=q" (carry_out), "=q" (overflow) : "0" (x), "rm" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("add %4, %0\nsetc %1\nseto %2" : "=Q" (result), "=Q" (carry_out), "=Q" (overflow) : "0" (x), "rm" (y) : "cc");
+		__asm__ ("addw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=q" (carry_out), "=q" (overflow) : "0" (x), "rm" (y) : "cc");
 	}
 #else
 	uint16_t result_tmp = x + y + carry_in;
