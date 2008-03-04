@@ -6,7 +6,14 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace hcs12x {
-	
+
+template void EB::setter<uint8_t>(uint8_t rr, uint8_t val);
+template void EB::setter<uint16_t>(uint8_t rr, uint16_t val);
+template uint8_t EB::getter<uint8_t>(uint8_t rr);
+template uint16_t EB::getter<uint16_t>(uint8_t rr);
+template void EB::exchange<uint8_t>(uint8_t rrSrc, uint8_t rrDst);
+template void EB::exchange<uint16_t>(uint8_t rrSrc, uint8_t rrDst);
+
 CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
 	Client<DebugControl<physical_address_t> >(name, parent),
