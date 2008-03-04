@@ -32,4 +32,5 @@ include "load_store.isa"
 include "transfer_exchange.isa"
 include "move.isa"
 include "addition_substraction.isa"
+include "decrement_increment.isa"
 
