@@ -44,7 +44,7 @@ uint8_t MMC::memDirectRead8(uint16_t addr) {
     
     uint32_t address;
     
-    address = direct & addr;
+    address = direct + addr;
     
     return mem[address];
 }
@@ -58,7 +58,7 @@ void MMC::memDirectWrite8(uint16_t addr, uint8_t val) {
 
 	uint32_t address;
     
-    address = direct & addr;
+    address = direct + addr;
     
     mem[address] = val;
 }
@@ -67,7 +67,7 @@ uint16_t MMC::memDirectRead16(uint16_t addr) {
     
     uint32_t address;
     
-    address = direct & addr;
+    address = direct + addr;
     
     return (mem[address] << 8) | mem[address+1];
 }
@@ -80,7 +80,7 @@ void MMC::memDirectWrite16(uint16_t addr, uint16_t val) {
 
     uint32_t address;
     
-    address = direct & addr;
+    address = direct + addr;
 
 	mem[address] = (uint8_t) val >> 8;
 	mem[address+1] = (uint8_t) (val & 0x00FF);    
