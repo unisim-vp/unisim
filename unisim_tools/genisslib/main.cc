@@ -133,7 +133,7 @@ struct GIL : public CLI, public Opts {
                           "header file to be included in the main decoder)." ) )
       {
         if( not (subdecoder = _args.pop()) ) {
-          cerr << GENISSLIB ": '-E' must be followed by a file name.\n";
+          cerr << GENISSLIB ": '-S' must be followed by a subdecoder name.\n";
           help();
           throw CLI::Exit_t( 1 );
         }
