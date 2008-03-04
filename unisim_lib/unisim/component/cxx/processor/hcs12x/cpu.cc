@@ -1,5 +1,5 @@
 
-#include <hcs12x.hh>
+#include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 
 namespace unisim {
 namespace component {

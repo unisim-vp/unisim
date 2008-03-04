@@ -6,7 +6,8 @@ big_endian	/* instruction endian */
 
 cisc_decoder
 address {uint16_t}
-subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+include "xb.sdh"
 
 decl {
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>

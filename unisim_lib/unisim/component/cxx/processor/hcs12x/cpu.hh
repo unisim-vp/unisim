@@ -1,5 +1,5 @@
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_CPU_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_CPU_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CPU_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CPU_HH__
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/debug_control.hh"
@@ -401,11 +401,11 @@ private:
 
 
 
-} // end namespace
-}
-}
-}
-} // end namespace hcs12x
+} // end of namespace hcs12x
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 #endif
 
