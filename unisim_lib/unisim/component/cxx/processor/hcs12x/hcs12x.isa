@@ -33,4 +33,5 @@ include "transfer_exchange.isa"
 include "move.isa"
 include "addition_substraction.isa"
 include "decrement_increment.isa"
+include "compare_test.isa"
 

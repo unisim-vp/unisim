@@ -2,6 +2,7 @@
 
 /* ***** Addition Instructions ****** */
 
+// ABA ( A+B => A)
 op aba(0x18[8]:0x06[8])
 
 aba.disasm = {
@@ -27,6 +28,7 @@ aba.execute = {
 	if (((aVal & 0x0F)+(bVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);	
 }
 
+// ABX  (X+B => X) 
 op abx(0x1A[8]:0xE5[8])
 
 abx.disasm = {
@@ -48,6 +50,7 @@ abx.execute = {
 	
 }
 
+// ABY (Y+B=>Y)
 op aby(0x19[8]:0xED[8])
 
 aby.disasm = {
@@ -67,6 +70,7 @@ aby.execute = {
 	
 }
 
+// ADCab IMM  (regAB + ii + carry => regAB) 
 op adc_ab_imm(0b1[1]:b[1]:0x09[6]:opr8i[8])
 
 adc_ab_imm.disasm = {
@@ -106,6 +110,7 @@ adc_ab_imm.execute = {
 	
 }
 
+// ADCab DIR  (regAB + mem[regDirect:opr8a] + carry => regAB)
 op adc_ab_dir(0b1[1]:b[1]:0x19[6]:opr8a[8])
 
 adc_ab_dir.disasm = {
@@ -146,6 +151,7 @@ adc_ab_dir.execute = {
 	if (((regVal & 0x0F)+(opr8aVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);		
 }
 
+// ADCab EXT (regAB + mem[opr16a] + carry => regAB)
 op adca_ext(0b1[1]:b[1]:0x39[6]:> <:opr16a[16])
 
 adca_ext.disasm = {
@@ -188,6 +194,7 @@ adca_ext.execute = {
 	
 }
 
+// ADCab IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB + mem[xb->addrE] + carry => regAB)
 op adc_ab_idx(0b1[1]:b[1]:0x29[6]:> <:*xb[XB])
 
 adc_ab_idx.disasm = {
@@ -231,7 +238,7 @@ adc_ab_idx.execute = {
 	if (((regVal & 0x0F)+(xbVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);		
 }
 
-
+// ADDab IMM (regAB + ii => regAB)
 op add_ab_imm(0b1[1]:b[1]:0x0B[6]:opr8i[8])
 
 add_ab_imm.disasm = {
@@ -271,6 +278,7 @@ add_ab_imm.execute = {
 	
 }
 
+// ADDab DIR  (regAB + mem[regDirect:opr8a] => regAB)
 op add_ab_dir(0b1[1]:b[1]:0x1B[6]:opr8a[8])
 
 add_ab_dir.disasm = {
@@ -311,6 +319,7 @@ add_ab_dir.execute = {
 	if (((regVal & 0x0F)+(opr8aVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);	
 }
 
+// ADDab EXT  (regAB + mem[opr16a] => regAB)
 op add_ab_ext(0b1[1]:b[1]:0x3B[6]:> <:opr16a[16])
 
 add_ab_ext.disasm = {
@@ -353,7 +362,7 @@ add_ab_ext.execute = {
 	
 }
 
-
+// ADDab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB + mem[xb->addrE] => regAB)
 op add_ab_idx(0b1[1]:b[1]:0x2B[6]:> <:*xb[XB])
 
 add_ab_idx.disasm = {
@@ -397,7 +406,7 @@ add_ab_idx.execute = {
 	if (((regVal & 0x0F)+(xbVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);	
 }
 
-
+// SUBD IMM or ADDD IMM (regD -+ ii => regD)
 op add_sub_d_imm(0b1[1]:b[1]:0x03[6]:> <:opr16i[16])
 
 add_sub_d_imm.disasm = {
@@ -431,6 +440,7 @@ add_sub_d_imm.execute = {
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
+// SUBD DIR or ADDD DIR  (regD -+ mem[regDirect+opr8a]) 
 op add_sub_d_dir(0b1[1]:b[1]:0x13[6]:opr8a[8])
 
 add_sub_d_dir.disasm = {
@@ -466,6 +476,7 @@ add_sub_d_dir.execute = {
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
+// SUBD EXT or ADDD EXT (regD -+ mem[opr16a]) => regD)
 op add_sub_d_ext(0b1[1]:b[1]:0x33[6]:> <:opr16a[16])
 
 add_sub_d_ext.disasm = {
@@ -504,6 +515,7 @@ add_sub_d_ext.execute = {
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
+// SUBD/ADDD  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD -+ mem[xb->addrE] => regD) 
 op add_sub_d_idx(0b1[1]:b[1]:0x23[6]:> <:*xb[XB])
 
 add_sub_d_idx.disasm = {
@@ -543,6 +555,7 @@ add_sub_d_idx.execute = {
 
 /* ****** Substraction Instructions **** */
 
+// SBA  (regA - regB => regA)
 op sba(0x18[8]:0x16[8])
 
 sba.disasm = {
@@ -567,6 +580,7 @@ sba.execute = {
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
+// SBCA/SBCB  IMM (regAB - ii - carry => regAB)
 op sbc_ab_imm(0b1[1]:b[1]:0x02[6]:opr8i[8])
 
 sbc_ab_imm.disasm = {
@@ -604,6 +618,7 @@ sbc_ab_imm.execute = {
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
+// SBCA/SBCB  DIR  (regAB - mem[regDirect:opr8a] - carry => regAB)
 op sbc_ab_dir(0b1[1]:b[1]:0x12[6]:opr8a[8])
 
 sbc_ab_dir.disasm = {
@@ -642,6 +657,7 @@ sbc_ab_dir.execute = {
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
+// SBCA/SBCB  EXT (regAB - mem[opr16a] - carry => regAB)
 op sbca_ext(0b1[1]:b[1]:0x32[6]:> <:opr16a[16])
 
 sbca_ext.disasm = {
@@ -682,6 +698,7 @@ sbca_ext.execute = {
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
+// SBCA/ABCB IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] - carry => regAB)
 op sbc_ab_idx(0b1[1]:b[1]:0x22[6]:> <:*xb[XB])
 
 sbc_ab_idx.disasm = {
@@ -724,7 +741,7 @@ sbc_ab_idx.execute = {
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
-
+// SUBA/SUBB  IMM (regAB - ii => regAB)
 op sub_ab_imm(0b1[1]:b[1]:0x00[6]:opr8i[8])
 
 sub_ab_imm.disasm = {
@@ -763,6 +780,7 @@ sub_ab_imm.execute = {
 	
 }
 
+// SUBA/SUBB  DIR  (regAB - mem[regDirect:opr8a] => regAB)
 op sub_ab_dir(0b1[1]:b[1]:0x10[6]:opr8a[8])
 
 sub_ab_dir.disasm = {
@@ -802,6 +820,7 @@ sub_ab_dir.execute = {
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
+// SUBA/SUBB  EXT (regAB - mem[opr16a] => regAB)
 op sub_ab_ext(0b1[1]:b[1]:0x30[6]:> <:opr16a[16])
 
 sub_ab_ext.disasm = {
@@ -843,7 +862,7 @@ sub_ab_ext.execute = {
 	
 }
 
-
+// SUBA/SUBB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] => regAB)
 op sub_ab_idx(0b1[1]:b[1]:0x20[6]:> <:*xb[XB])
 
 sub_ab_idx.disasm = {
@@ -888,6 +907,7 @@ sub_ab_idx.execute = {
 
 /* ***** Binary-Coded Decimal Instructions ****** */
 
+// DAA (if (ccr.H) then regA + 0x6 => regA)
 op daa(0x18[8]:0x07[8])
 
 daa.disasm = {
@@ -898,20 +918,19 @@ daa.execute = {
 	uint8_t hBit =cpu->ccr->getH();
 
 	if (hBit == 1) {
-		uint8_t result1, result2, carry_out, overflow;
+		uint8_t result, carry_out, overflow;
 
 		uint8_t aVal = cpu->getRegA();
 
-		Sub8(result1, carry_out, overflow, aVal, 0x0A, 0);
-		Add8(result2, carry_out, overflow, result1, 0x10, 0);
+		Add8(result, carry_out, overflow, aVal, 0x6, 0);
 		
-		cpu->setRegA(result2);
+		cpu->setRegA(result);
 		
 		cpu->ccr->setC(carry_out);
 		cpu->ccr->setV(overflow);
 	
-		if (result2 == 0) cpu->ccr->setZ(1);
-		if ((result2 & 0x80) == 0x80) cpu->ccr->setN(1);
+		if (result == 0) cpu->ccr->setZ(1);
+		if ((result & 0x80) == 0x80) cpu->ccr->setN(1);
 	}
 }
 

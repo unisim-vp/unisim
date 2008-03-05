@@ -4,7 +4,8 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/hcs12x
 lib_LIBRARIES = libunisim_component_cxx_processor_hcs12x.a
 libunisim_component_cxx_processor_hcs12x_a_SOURCES = cpu.cc mmc.cc hcs12x.cc xb.cc
 include_HEADERS = cpu.hh mmc.hh hcs12x.isa xb.isa \
-	load_store.isa transfer_exchange.isa move.isa addition_substraction.isa decrement_increment.isa
+	load_store.isa transfer_exchange.isa move.isa addition_substraction.isa decrement_increment.isa \
+	compare_test.isa
 	
 nodist_include_HEADERS = hcs12x.hh xb.hh xb.sdh
 BUILT_SOURCES = hcs12x.hh hcs12x.cc xb.cc xb.hh xb.sdh

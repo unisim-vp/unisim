@@ -1,0 +1,440 @@
+// -*- C++ -*-
+
+// CBA
+op cba(0x18[8]:0x17[8])
+
+cba.disasm = {
+	sink << "CBA";
+}
+
+cba.execute = {
+	uint8_t result, carry_out, overflow, carry_in;
+	
+	carry_in = 0;
+	Sub8(result, carry_out, overflow, cpu->getRegA(), cpu->getRegB(), carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+
+//  CMPab  IMM
+op cmp_ab_imm(0b1[1]:b[1]:0x01[6]:opr8i[8])
+
+cmp_ab_imm.disasm = {
+	if (b==0) {
+		sink << "CMPA #$";
+	} else {
+		sink << "CMPB #$";
+	}
+	sink << std::hex << opr8i;
+}
+
+cmp_ab_imm.execute = {
+	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t regVal;
+	
+	carry_in = 0;
+	if (b==0) {
+		regVal = cpu->getRegA();
+	} else {
+		regVal = cpu->getRegB();
+	}
+	
+	Sub8(result, carry_out, overflow, regVal, opr8i, carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+// CMPab  DIR
+op cmp_ab_dir(0b1[1]:b[1]:0x11[6]:opr8a[8])
+
+cmp_ab_dir.disasm = {
+	if (b==0) {
+		sink << "CMPA $";
+	} else {
+		sink << "CMPB $";
+	}
+	sink << std::hex << opr8a;
+}
+
+cmp_ab_dir.execute = {
+	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t regVal;
+	uint8_t opr8aVal = cpu->mmc->memDirectRead8(opr8a);
+	
+	carry_in = 0;
+	if (b==0) {
+		regVal = cpu->getRegA();
+	} else {
+		regVal = cpu->getRegB();
+	}
+	
+	Sub8(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+// CMPab  EXT
+op cmp_ab_ext(0b1[1]:b[1]:0x31[6]:opr16a[8])
+
+cmp_ab_ext.disasm = {
+	if (b==0) {
+		sink << "CMPA $";
+	} else {
+		sink << "CMPB $";
+	}
+	sink << std::hex << opr16a;
+}
+
+cmp_ab_ext.execute = {
+	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t regVal;
+	uint8_t opr16aVal = cpu->mmc->memRead8(opr16a);
+	
+	carry_in = 0;
+	if (b==0) {
+		regVal = cpu->getRegA();
+	} else {
+		regVal = cpu->getRegB();
+	}
+	
+	Sub8(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+// CMPab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] 
+op cmp_ab_idx(0b1[1]:b[1]:0x21[6]:> <:*xb[XB])
+
+cmp_ab_idx.disasm = {
+	if (b==0) {
+		sink << "CMPA ";
+	} else {
+		sink << "CMPB ";
+	}
+	xb->disasm(sink);
+}
+
+cmp_ab_idx.execute = {
+	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t regVal;
+	uint8_t xbVal = cpu->mmc->memRead8(xb->getEAddr(cpu));
+	
+	carry_in = 0;
+	if (b==0) {
+		regVal = cpu->getRegA();
+	} else {
+		regVal = cpu->getRegB();
+	}
+	
+	Sub8(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+// CPdyxs  IMM
+op cp_dyxs_imm(0x23[6]:dyxs[2]:> <:opr16i[16])
+
+cp_dyxs_imm.disasm = {
+	switch (dyxs) {
+		case 0: sink << "CPD #$"; break;
+		case 1: sink << "CPY #$"; break;
+		case 2: sink << "CPX #$"; break;
+		case 3: sink << "CPS #$";  
+	}
+	sink << std::hex << opr16i;
+}
+
+cp_dyxs_imm.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	
+	carry_in = 0;
+	switch (dyxs) {
+		case 0: regVal = cpu->getRegD(); break;
+		case 1: regVal = cpu->getRegY();; break;
+		case 2: regVal = cpu->getRegX();; break;
+		case 3: regVal = cpu->getSP();;  
+	}
+
+	Sub16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+
+}
+
+// CPdyxs DIR
+op cp_dyxs_dir(0x27[6]:dyxs[2]:opr8a[8])
+
+cp_dyxs_dir.disasm = {
+	switch (dyxs) {
+		case 0: sink << "CPD $"; break;
+		case 1: sink << "CPY $"; break;
+		case 2: sink << "CPX $"; break;
+		case 3: sink << "CPS $";  
+	}
+	sink << std::hex << opr8a;
+}
+
+cp_dyxs_dir.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	uint16_t opr8aVal = cpu->mmc->memDirectRead16(opr8a);
+	
+	carry_in = 0;
+	switch (dyxs) {
+		case 0: regVal = cpu->getRegD(); break;
+		case 1: regVal = cpu->getRegY();; break;
+		case 2: regVal = cpu->getRegX();; break;
+		case 3: regVal = cpu->getSP();;  
+	}
+	
+	Sub16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	
+}
+
+// CPdyxs EXT
+op cp_dyxs_ext(0x2F[6]:dyxs[2]:> <:opr16a[16])
+
+cp_dyxs_ext.disasm = {
+	switch (dyxs) {
+		case 0: sink << "CPD $"; break;
+		case 1: sink << "CPY $"; break;
+		case 2: sink << "CPX $"; break;
+		case 3: sink << "CPS $";  
+	}
+	sink << std::hex << opr16a;
+}
+
+cp_dyxs_ext.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	uint16_t opr16aVal = cpu->mmc->memRead16(opr16a);
+	
+	carry_in = 0;
+	switch (dyxs) {
+		case 0: regVal = cpu->getRegD(); break;
+		case 1: regVal = cpu->getRegY();; break;
+		case 2: regVal = cpu->getRegX();; break;
+		case 3: regVal = cpu->getSP();;  
+	}
+	
+	Sub16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+
+}
+
+// CPdyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+op cp_dyxs_idx(0x2B[6]:dyxs[2]:> <:*xb[XB])
+
+cp_dyxs_idx.disasm = {
+	switch (dyxs) {
+		case 0: sink << "CPD "; break;
+		case 1: sink << "CPY "; break;
+		case 2: sink << "CPX "; break;
+		case 3: sink << "CPS ";  
+	}
+	xb->disasm(sink);
+}
+
+cp_dyxs_idx.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	uint16_t xbVal = cpu->mmc->memRead16(xb->getEAddr(cpu));
+	
+	carry_in = 0;
+	switch (dyxs) {
+		case 0: regVal = cpu->getRegD(); break;
+		case 1: regVal = cpu->getRegY();; break;
+		case 2: regVal = cpu->getRegX();; break;
+		case 3: regVal = cpu->getSP();  
+	}
+	
+	Sub16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+/* ************ Test Instructions **************** */
+
+// TST EXT
+op tst_ext(0xF7[8]:> <:opr16a[16])
+
+tst_ext.disasm = {
+	sink << "TST $" << std::hex << opr16a;
+}
+
+tst_ext.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint8_t result;
+	
+	uint8_t opr16aVal = cpu->mmc->memRead8(opr16a);
+	carry_in = 0;
+	
+	Sub8(result, carry_out, overflow, opr16aVal, 0, carry_in);
+	
+	cpu->ccr->setC(0);
+	cpu->ccr->setV(0);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+
+}
+
+// TST IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+op tst_idx(0xE7[8]:> <:*xb[XB])
+
+tst_idx.disasm = {
+	sink << "TST ";
+	xb->disasm(sink);
+}
+
+tst_idx.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint8_t result;
+	
+	uint8_t xbVal = cpu->mmc->memRead8(xb->getEAddr(cpu));
+	
+	carry_in = 0;
+	
+	Sub8(result, carry_out, overflow, xbVal, 0, carry_in);
+	
+	cpu->ccr->setC(0);
+	cpu->ccr->setV(0);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+// TSTA or TSTB
+op tst_ab(0b1[1]:b[1]:0x17[6])
+
+tst_ab.disasm = {
+	if (b==0) {
+		sink << "TSTA ";
+	} else {
+		sink << "TSTB ";
+	}
+}
+
+tst_ab.execute = {
+	uint8_t result, carry_out, overflow, carry_in;
+	uint8_t regVal;
+	
+	carry_in = 0;
+	if (b==0) {
+		regVal = cpu->getRegA();
+	} else {
+		regVal = cpu->getRegB();
+	}
+	
+	Sub8(result, carry_out, overflow, regVal, 0, carry_in);
+	
+	cpu->ccr->setC(0);
+	cpu->ccr->setV(0);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+// TSTW EXT
+op tstw_ext(0x18[8]:0xF7[8]:opr16a[16])
+
+tstw_ext.disasm = {
+	sink << "TSTW $" << std::hex << opr16a;
+}
+
+tstw_ext.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result;
+	uint16_t opr16aVal = cpu->mmc->memRead16(opr16a);
+	
+	carry_in = 0;
+	
+	Sub16(result, carry_out, overflow, opr16aVal, 0, carry_in);
+	
+	cpu->ccr->setC(0);
+	cpu->ccr->setV(0);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+
+}
+
+// TSTW IDX or IDX1 or IDX2 or [D, IDX] or [IDX2]
+op tstw_idx(0x18[8]:0xE7[8]:> <:*xb[XB])
+
+tstw_idx.disasm = {
+	sink << "TSTW ";
+	xb->disasm(sink);
+}
+
+tstw_idx.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result;
+	uint16_t xbVal = cpu->mmc->memRead16(xb->getEAddr(cpu));
+	
+	carry_in = 0;
+	
+	Sub16(result, carry_out, overflow, xbVal, 0, carry_in);
+	
+	cpu->ccr->setC(0);
+	cpu->ccr->setV(0);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
+// TSTX or TSTY
+op tst_xy(0x18[8]:0b1[1]:b[1]:0x17[6])
+
+tst_xy.disasm = {
+	switch (b) {
+		case 0: sink << "TSTX "; break;
+		case 1: sink << "TSTY "; break;
+	}
+}
+
+tst_xy.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	
+	carry_in = 0;
+	switch (b) {
+		case 0: regVal = cpu->getRegY(); break;
+		case 1: regVal = cpu->getRegY();; break;
+	}
+	
+	Sub16(result, carry_out, overflow, regVal, 0, carry_in);
+	
+	cpu->ccr->setC(0);
+	cpu->ccr->setV(0);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+}
+
