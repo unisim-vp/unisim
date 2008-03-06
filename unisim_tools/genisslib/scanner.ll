@@ -296,9 +296,7 @@ Scanner::Token_t Scanner::s_tokens[] = {
   {"little_endian", TOK_LITTLE_ENDIAN},
   {"big_endian", TOK_BIG_ENDIAN},
   {"template", TOK_TEMPLATE},
-  {"risc_decoder", TOK_RISC_DECODER},
-  {"cisc_decoder", TOK_CISC_DECODER},
-  {"vliw_decoder", TOK_VLIW_DECODER},
+  {"decoder", TOK_DECODER},
   {"specialize", TOK_SPECIALIZE},
   {0,0}
 };

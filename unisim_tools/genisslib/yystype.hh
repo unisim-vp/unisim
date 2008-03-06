@@ -24,6 +24,7 @@
 union  yylval_t {
   char const*                  volatile_string;        /**< a volatile C-String */
   char const*                  persistent_string;      /**< a persistent C-String */
+  StringVect_t*                string_list;            /**< a C-String list */
   signed int                   sinteger;               /**< A signed integer value */
   unsigned int                 uinteger;               /**< An unsigned integer value */
   bool                         boolean;                /**< A boolean value */

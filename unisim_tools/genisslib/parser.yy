@@ -131,9 +131,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %token TOK_BIG_ENDIAN
 %token TOK_LITTLE_ENDIAN
 %token TOK_TEMPLATE
-%token TOK_RISC_DECODER
-%token TOK_CISC_DECODER
-%token TOK_VLIW_DECODER
+%token TOK_DECODER
 %type<sourcecode> address_declaration
 %type<sourcecode> sourcecode_decl_declaration
 %type<sourcecode> sourcecode_impl_declaration
@@ -167,6 +165,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<constraint> constraint
 %type<constraint_list> constraint_list
 %type<specialization> specialization
+%type<string_list> namespace_list
 %%
 
 input: declaration_list { }
@@ -177,29 +176,42 @@ declaration_list: | declaration_list declaration {}
 namespace_list:
       TOK_IDENT
 {
-  Scanner::isa().m_namespace.push_back( ConstStr_t( $1, Scanner::symbols ) );
+  $$ = new StringVect_t( $1 );
 }
   | namespace_list TOK_QUAD_DOT TOK_IDENT
 {
-  Scanner::isa().m_namespace.push_back( ConstStr_t( $3, Scanner::symbols ) );
+  $$ = $1->append( $3 );
 }
 ;
 
-subdecoder:
-    TOK_SUBDECODER TOK_IDENT TOK_SOURCE_CODE template_scheme '[' TOK_INTEGER ';' TOK_INTEGER ']'
+subdecoder_instance:
+  TOK_SUBDECODER namespace_list TOK_IDENT template_scheme
 {
-  ConstStr_t symbol = ConstStr_t( $2, Scanner::symbols );
-  SourceCode_t* nmspace = $3;
+  StringVect_t* nmspc_in = $2;
+  ConstStr_t symbol = ConstStr_t( $3, Scanner::symbols );
   SourceCode_t* template_scheme = $4;
-  unsigned int minsize = $6, maxsize = $8;
   
-  if( minsize > maxsize ) {
-    Scanner::fileloc.err( "error: subdecoder operation range is reversed" );
+  std::vector<ConstStr_t> nmspc( nmspc_in->size(), ConstStr_t() );
+  for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
+    nmspc[idx] = ConstStr_t( (*nmspc_in)[idx], Scanner::symbols );
+  delete nmspc_in;
+  
+  SDClass_t const* sdclass = Scanner::isa().sdclass( nmspc );
+  if( not sdclass ) {
+    Scanner::fileloc.err( "error: subdecoder has not been declared" );
     YYABORT;
   }
-  SubDecoder_t* subdecoder = new SubDecoder_t( symbol, nmspace, template_scheme, minsize, maxsize, Scanner::fileloc );
-  Scanner::isa().m_subdecoders.append( subdecoder );
+  
+  SDInstance_t const* sdinstance = Scanner::isa().sdinstance( symbol );
+  if( sdinstance ) {
+    Scanner::fileloc.err( "error: subdecoder instance `%s' redefined", symbol.str() );
+    sdinstance->m_fileloc.err( "subdecoder instance `%s' previously defined here", symbol.str() );
+    YYABORT;
+  }
+  
+  Scanner::isa().m_sdinstances.append( new SDInstance_t( symbol, template_scheme, sdclass, Scanner::fileloc ) );
 }
+;
 
 template_scheme:
 {
@@ -209,20 +221,48 @@ template_scheme:
 {
   $$ = $2;
 }
+;
 
-decoder:
-    TOK_RISC_DECODER
+subdecoder_class:
+  TOK_SUBDECODER namespace_list '[' TOK_INTEGER ';' TOK_INTEGER ']'
 {
-  Scanner::isa().m_decoder = Isa::RiscDecoder;
+  StringVect_t* nmspc_in = $2;
+  unsigned int minsize = $4, maxsize = $6;
+
+  if( minsize > maxsize ) {
+    Scanner::fileloc.err( "error: subdecoder operation range is reversed" );
+    YYABORT;
+  }
+  
+  std::vector<ConstStr_t> nmspc( nmspc_in->size(), ConstStr_t() );
+  for( intptr_t idx = nmspc_in->size(); (--idx) >= 0; )
+    nmspc[idx] = ConstStr_t( (*nmspc_in)[idx], Scanner::symbols );
+  delete nmspc_in;
+  
+  SDClass_t const* sdclass = Scanner::isa().sdclass( nmspc );
+  
+  if( sdclass ) {
+    Scanner::fileloc.err( "error: subdecoder class redeclared." );
+    sdclass->m_fileloc.err( "subdecoder class previously declared here." );
+    YYABORT;
+  }
+  
+  Scanner::isa().m_sdclasses.append( new SDClass_t( nmspc, minsize, maxsize, Scanner::fileloc ) );
 }
-  | TOK_CISC_DECODER
+;
+
+decoder_parameterization: TOK_DECODER '(' decoder_param_list ')' {};
+
+decoder_param_list:
+  | TOK_IDENT
 {
-  Scanner::isa().m_decoder = Isa::CiscDecoder;
+  Scanner::isa().setparam( ConstStr_t( $1, Scanner::symbols ) );
 }
-  | TOK_VLIW_DECODER
+  | decoder_param_list ',' TOK_IDENT
 {
-  Scanner::isa().m_decoder = Isa::VliwDecoder;
+  Scanner::isa().setparam( ConstStr_t( $3, Scanner::symbols ) );
 }
+;
 
 endian: TOK_LITTLE_ENDIAN
 {
@@ -242,9 +282,10 @@ template_declaration: TOK_TEMPLATE '<' param_list '>'
 
 declaration:
              TOK_ENDL {}
-           | decoder TOK_ENDL
+           | decoder_parameterization TOK_ENDL
            | endian TOK_ENDL
-           | subdecoder TOK_ENDL
+           | subdecoder_class TOK_ENDL
+           | subdecoder_instance TOK_ENDL
            | operation_declaration TOK_ENDL
 {
   Scanner::isa().m_operations.append( $1 );
@@ -303,6 +344,13 @@ declaration:
 
 namespace_declaration: TOK_NAMESPACE namespace_list
 {
+  StringVect_t* nmspc = $2;
+  
+  for( StringVect_t::const_iterator ident = nmspc->begin(); ident != nmspc->end(); ++ident ) {
+    Scanner::isa().m_namespace.push_back( ConstStr_t( *ident, Scanner::symbols ) );
+  }
+  
+  delete nmspc;
 }
 ;
 
@@ -406,14 +454,15 @@ bitfield: TOK_INTEGER '[' TOK_INTEGER ']'
   | '*' TOK_IDENT '[' TOK_IDENT ']'
 {
   ConstStr_t symbol = ConstStr_t( $2, Scanner::symbols );
-  ConstStr_t subdecoder_symbol = ConstStr_t( $4, Scanner::symbols );
-  SubDecoder_t const* subdecoder = Scanner::isa().subdecoder( subdecoder_symbol );
-  if( not subdecoder ) {
-    Scanner::fileloc.err( "error: subdecoder `%s' not declared", subdecoder_symbol.str() );
+  ConstStr_t sdinstance_symbol = ConstStr_t( $4, Scanner::symbols );
+  SDInstance_t const* sdinstance = Scanner::isa().sdinstance( sdinstance_symbol );
+  
+  if( not sdinstance ) {
+    Scanner::fileloc.err( "error: subdecoder instance `%s' not declared", sdinstance_symbol.str() );
     YYABORT;
   }
   
-  $$ = new SubOpBitField_t( symbol, subdecoder );
+  $$ = new SubOpBitField_t( symbol, sdinstance );
 }
   | '>' '<'
 {

@@ -40,9 +40,9 @@ using namespace std;
 /** Constructor of Isa instance 
  */
 Isa::Isa()
-  : m_decoder( RiscDecoder ), m_little_endian( 0 )
+  : m_decoder( RiscDecoder ), m_is_subdecoder( false ), m_withsource( false ),
+    m_little_endian( 0 )
 {}
-
 
 /** Destructor for isa instance
  *  Where most of the allocated stuff will be released
@@ -225,12 +225,12 @@ Isa::sanity_checks() const {
   return true;
 }
 
-SubDecoder_t const*
-Isa::subdecoder( ConstStr_t _symbol ) const {
-  for( Vect_t<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd )
-    if( (**sd).m_symbol == _symbol ) return *sd;
-  return 0;
-}
+// SubDecoder_t const*
+// Isa::subdecoder( ConstStr_t _symbol ) const {
+//   for( Vect_t<SubDecoder_t>::const_iterator sd = m_subdecoders.begin(); sd < m_subdecoders.end(); ++ sd )
+//     if( (**sd).m_symbol == _symbol ) return *sd;
+//   return 0;
+// }
 
 
 /** Output a rule file (<filename>) suitable for make describing the dependencies of the main source file.
@@ -253,4 +253,41 @@ Isa::specialize() {
   for( Vect_t<Specialization_t>::iterator spec = m_specializations.begin(); spec < m_specializations.end(); ++ spec ) {
     m_operations.push_back( (**spec).newop() );
   }
+}
+
+void
+Isa::setparam( ConstStr_t _param ) {
+  static ConstStr_t       risc( "risc",       Scanner::symbols );
+  static ConstStr_t       cisc( "cisc",       Scanner::symbols );
+  static ConstStr_t       vliw( "vliw",       Scanner::symbols );
+  static ConstStr_t        sub( "sub",        Scanner::symbols );
+  static ConstStr_t withsource( "withsource", Scanner::symbols );
+  
+  if(        _param == risc ) {
+    m_decoder = RiscDecoder;
+  } else if( _param == cisc ) {
+    m_decoder = CiscDecoder;
+  } else if( _param == vliw ) {
+    m_decoder = VliwDecoder;
+  } else if( _param == sub ) {
+    m_is_subdecoder = true;
+  } else if( _param == withsource ) {
+    m_withsource = true;
+  }
+}
+
+SDClass_t const*
+Isa::sdclass( std::vector<ConstStr_t>& _namespace ) const {
+  for( Vect_t<SDClass_t>::const_iterator sdc = m_sdclasses.begin(); sdc != m_sdclasses.end(); ++ sdc ) {
+    if( (**sdc).m_namespace == _namespace ) return *sdc;
+  }
+  return 0;
+}
+
+SDInstance_t const*
+Isa::sdinstance( ConstStr_t _symbol ) const {
+  for( Vect_t<SDInstance_t>::const_iterator sdi = m_sdinstances.begin(); sdi != m_sdinstances.end(); ++ sdi ) {
+    if( (**sdi).m_symbol == _symbol ) return *sdi;
+  }
+  return 0;
 }

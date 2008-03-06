@@ -47,4 +47,29 @@ struct Vect_t : std::vector<Ptr_t<Type_t> > {
   Vect_t<Type_t>* append( Type_t* _item ) { this->push_back( _item ); return this; }
 };
 
+struct StringVect_t : std::vector<char const*> {
+  StringVect_t() {}
+  StringVect_t( char const* _item ) : std::vector<char const*>( 1,_item ) {}
+  StringVect_t( StringVect_t& _src ) {
+    if( not &_src ) return;
+    *this = _src;
+  }
+  StringVect_t( uintptr_t _size ) : std::vector<char const*>( _size, 0 ) {}
+  
+  StringVect_t& operator=( StringVect_t& _src ) {
+    if( not &_src ) return *this;
+    this->std::vector<char const*>::operator=( _src );
+    return *this;
+  }
+  StringVect_t& append( StringVect_t& _src ) {
+    if( not &_src ) return *this;
+    reserve( this->size() + _src.size() );
+    typedef StringVect_t::const_iterator iter_t;
+    for( iter_t iter = _src.begin(); iter < _src.end(); ++ iter ) push_back( *iter );
+    return *this;
+  }
+  StringVect_t* append( char const* _item ) { this->push_back( _item ); return this; }
+
+};
+
 #endif // __VECT_HH__

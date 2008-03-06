@@ -34,8 +34,8 @@ using namespace std;
 
 Opts::Opts()
   : outputprefix( DEFAULT_OUTPUT ), expandname( 0 ), inputname( 0 ), depfilename( 0 ),
-    minwordsize( -1 ), subdecoder( 0 ), sourcelines( true ), specialization( true ),
-    actiontext( false )
+    minwordsize( -1 ), sourcelines( true ), specialization( true )
+    
 { s_shared = this; }
 
 Opts* Opts::s_shared = 0;
@@ -111,32 +111,11 @@ struct GIL : public CLI, public Opts {
         }
         sourcelines = ( strcmp( arg, "on" ) == 0 );
       }
-    else if( _args.match( CLI::AtMostOnce, "--action-text", 0,
-                          "on/off", "Toggles on/off action code text availablility (default: off)." ) )
-      {
-        char const* arg;
-        if( not (arg = _args.pop()) ) {
-          cerr << GENISSLIB ": '--action-text' must be followed by 'on' or 'off'.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
-        actiontext = ( strcmp( arg, "on" ) == 0 );
-      }
     else if( _args.match( CLI::AtMostOnce, "-v", "--version", 0,
                           "", "Displays " GENISSLIB " version and exits." ) )
       {
         version();
         throw CLI::Exit_t( 0 );
-      }
-    else if( _args.match( CLI::AtMostOnce, "-S", "--subdecoder", 0, "<subdecoder name>",
-                          "Generate a subdecoder instead of a full ISS (create a <output>.sdh "
-                          "header file to be included in the main decoder)." ) )
-      {
-        if( not (subdecoder = _args.pop()) ) {
-          cerr << GENISSLIB ": '-S' must be followed by a subdecoder name.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
       }
     else if( _args.match( CLI::AtMostOnce, "-M", 0, "<filename>",
                           "Output a rule file (<filename>) suitable for make describing the "

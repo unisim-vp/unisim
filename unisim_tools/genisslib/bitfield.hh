@@ -148,9 +148,9 @@ struct SeparatorBitField_t : public BitField_t {
 
 struct SubOpBitField_t : public BitField_t {
   ConstStr_t            m_symbol;
-  SubDecoder_t const*   m_subdecoder;
+  SDInstance_t const*   m_sdinstance;
   
-  SubOpBitField_t( ConstStr_t _symbol, SubDecoder_t const* _subdecoder );
+  SubOpBitField_t( ConstStr_t _symbol, SDInstance_t const* _sdinstance );
   SubOpBitField_t( SubOpBitField_t const& _src );
 
   Type_t                type() const { return SubOp; };

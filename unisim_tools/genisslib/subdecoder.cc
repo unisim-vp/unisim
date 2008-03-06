@@ -24,47 +24,59 @@
 #include <bitfield.hh>
 #include <action.hh>
 #include <isa.hh>
+#include <strtools.hh>
 #include <cassert>
 #include <ostream>
 
 using namespace std;
 
-/** Create a subdecoder object
-    @param symbol a symbol object representing the subdecoder
-    @param bitfield_list a bit field list object containing the bit fields of the subdecoder
-    @param comment_list a C/C++ comment list object containing C/C++ comments relative to the subdecoder
-    @param variable_list a variable list object
-    @param filename a filename object where the subdecoder was found
-    @param lineno a line number where the subdecoder was found
-    @return an subdecoder object
+/** Create a subdecoder class object
+    @param _namespace a namespace in which the decoder is defined
+    @param _minsize a minimum bit size for the decoder operations
+    @param _maxsize a maximum bit size for the decoder operations
+    @param _fileloc a fileloc pointing at the subdecoder declaration
 */
-SubDecoder_t::SubDecoder_t( ConstStr_t _symbol, SourceCode_t* _namespace, SourceCode_t* _template_scheme,
-                            unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc )
-  : m_symbol( _symbol ), m_namespace( _namespace ), m_template_scheme( _template_scheme ),
-    m_minsize( _minsize ), m_maxsize( _maxsize ), m_fileloc( _fileloc )
+SDClass_t::SDClass_t( std::vector<ConstStr_t>& _namespace, unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc )
+  : m_namespace( _namespace ), m_minsize( _minsize ), m_maxsize( _maxsize ), m_fileloc( _fileloc )
 {
   assert( m_minsize <= m_maxsize  );
 }
 
 /** Delete a subdecoder object
-    @param subdecoder an subdecoder object to delete
 */
-SubDecoder_t::~SubDecoder_t() {}
+SDClass_t::~SDClass_t() {}
 
-/** Dump an subdecoder object into a stream
-    @param subdecoder an subdecoder object to dump
-    @param _sink a stream
-*/
+ConstStr_t
+SDClass_t::qd_namespace() const {
+  Str::Buf buffer( Str::Buf::Recycle );
+  char const* sep = "";
 
-ostream&
-operator<<( ostream& _sink, SubDecoder_t const& _sd ) {
-  _sink << "subdecoder " << _sd.m_symbol << '{' << (*_sd.m_namespace) << '}' << ' ';
-  if( _sd.m_minsize == _sd.m_maxsize )
-    _sink << '[' << _sd.m_maxsize << ']';
-  else
-    _sink << '[' << _sd.m_minsize << ';' << _sd.m_maxsize << ']';
-  _sink << '\n';
-
-  return _sink;
+  for( std::vector<ConstStr_t>::const_iterator node = m_namespace.begin(); node != m_namespace.end(); ++ node, sep = "::" )
+    buffer.write( sep ).write( *node );
+  
+  return ConstStr_t( buffer.m_storage );
 }
+
+SDInstance_t::SDInstance_t( ConstStr_t _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc )
+  : m_symbol( _symbol ), m_template_scheme( _template_scheme ), m_sdclass( _sdclass ), m_fileloc( _fileloc )
+{}
+
+SDInstance_t::~SDInstance_t() {}
+
+// /** Dump an subdecoder object into a stream
+//     @param subdecoder an subdecoder object to dump
+//     @param _sink a stream
+// */
+
+// ostream&
+// operator<<( ostream& _sink, SubDecoder_t const& _sd ) {
+//   _sink << "subdecoder " << _sd.m_symbol << '{' << (*_sd.m_namespace) << '}' << ' ';
+//   if( _sd.m_minsize == _sd.m_maxsize )
+//     _sink << '[' << _sd.m_maxsize << ']';
+//   else
+//     _sink << '[' << _sd.m_minsize << ';' << _sd.m_maxsize << ']';
+//   _sink << '\n';
+
+//   return _sink;
+// }
 

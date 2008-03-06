@@ -57,7 +57,7 @@ Generator::iss( Product_t& _product ) const {
   /*******************/
   /*** Header file ***/
   /*******************/
-  if( not _product.open( "hh" ) ) {
+  if( not _product.open( ".hh" ) ) {
     cerr << GENISSLIB << ": can't open header file '" << _product.m_filename << "'.\n";
     throw GenerationError;
   }
@@ -114,7 +114,7 @@ Generator::iss( Product_t& _product ) const {
   /*******************/
   /*** Source file ***/
   /*******************/
-  if( not _product.open( isa().m_tparams.empty() ? "cc" : "tcc" ) ) {
+  if( not _product.open( isa().m_tparams.empty() ? ".cc" : ".tcc" ) ) {
     cerr << GENISSLIB << ": can't open header file '" << _product.m_filename << "'.\n";
     throw GenerationError;
   }
@@ -148,20 +148,19 @@ Generator::iss( Product_t& _product ) const {
   /******************************/
   /*** Subdecoder header file ***/
   /******************************/
-  if( Opts::shared().subdecoder ) {
-    if( not _product.open( "sdh" ) ) {
+  if( isa().m_is_subdecoder ) {
+    if( not _product.open( "_sub.isa" ) ) {
       cerr << GENISSLIB << ": can't open header file '" << _product.m_filename << "'.\n";
       throw GenerationError;
     }
-    _product.code( "subdecoder %s {", Opts::shared().subdecoder );
+    _product.code( "subdecoder" );
     std::vector<ConstStr_t> const& nmspc = isa().m_namespace;
-    char const* sep = "";
+    char const* sep = " ";
     for( std::vector<ConstStr_t>::const_iterator ns = nmspc.begin(); ns < nmspc.end(); sep = "::", ++ ns )
       _product.code( "%s%s", sep, (*ns).str() );
-    _product.code( "} " );
+    _product.code( " " );
     subdecoder_bounds( _product );
     _product.code( "\n" );
-    _product.close();
   }
 }
 
@@ -192,7 +191,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.template_signature( isa().m_tparams );
   _product.code( "class Operation;\n" );
   
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     _product.code( "const unsigned int NUM_OPERATIONS_PER_PAGE = 4096;\n" );
     _product.template_signature( isa().m_tparams );
     _product.code( "class DecodeMapPage\n" );
@@ -231,7 +230,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " Decoder();\n" );
   _product.code( " virtual ~Decoder();\n" );
   _product.code( "\n" );
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     _product.code( " Operation" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( "*NCDecode(%s addr);\n", isa().m_addrtype.str() );
@@ -239,7 +238,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " Operation" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( " *NCDecode(%s addr, %s code);\n", isa().m_addrtype.str(), codetype_constref().str() );
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     _product.code( " Operation" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( " *Decode(%s addr);\n", isa().m_addrtype.str() );
@@ -259,7 +258,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " std::vector<DecodeTableEntry" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( " > decode_table;\n" );
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     _product.code( " DecodeMapPage" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( " *mru_page;\n" );
@@ -275,11 +274,18 @@ Generator::decoder_decl( Product_t& _product ) const {
     _product.code( " ;\n" );
   }
   _product.code( "};\n\n" );
-  if( Opts::shared().subdecoder ) {
-    _product.template_signature( isa().m_tparams );
-    _product.code( "struct sub { static Decoder" );
+  if( isa().m_is_subdecoder ) {
+    if( not isa().m_tparams.empty() ) {
+      _product.template_signature( isa().m_tparams );
+    } else {
+      _product.code( "inline\n" );
+    }
+    _product.code( "Operation *sub_decode(%s addr, %s code) {\n", isa().m_addrtype.str(), codetype_constref().str() );
+    _product.code( " static Decoder" );
     _product.template_abbrev( isa().m_tparams );
-    _product.code( " decoder; };\n" );
+    _product.code(" decoder;\n" );
+    _product.code( " return decoder.NCDecode( addr, code );\n" );
+    _product.code( "}\n" );
   }
 }
 
@@ -306,7 +312,7 @@ Generator::operation_decl( Product_t& _product ) const {
   }
 
   for( intptr_t idx = isa().m_actionprotos.size(); (--idx) >= 0; ) {
-    if( Opts::shared().actiontext ) {
+    if( isa().m_withsource ) {
       // for cstring version of the action
       _product.code( " virtual char const* %s_text();\n", isa().m_actionprotos[idx]->m_symbol.str() );
     }
@@ -369,9 +375,11 @@ Generator::isa_operations_decl( Product_t& _product ) const {
                        sopbf.m_symbol.str(), sopbf.constval().str() );
       } else if( bftype == BitField_t::SubOp ) {
         SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
-        SourceCode_t const* nmspace =  sobf.m_subdecoder->m_namespace;
-        SourceCode_t const* tpscheme =  sobf.m_subdecoder->m_template_scheme;
-        _product.usercode( nmspace->m_fileloc, " %s::Operation", nmspace->m_content.str() );
+        SDInstance_t const* sdinstance = sobf.m_sdinstance;
+        SDClass_t const* sdclass = sdinstance->m_sdclass;
+        SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
+        
+        _product.usercode( sdclass->m_fileloc, " %s::Operation", sdclass->qd_namespace().str() );
         if( tpscheme )
           _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
         _product.code( "* %s;\n", sobf.m_symbol.str() );
@@ -392,7 +400,7 @@ Generator::isa_operations_decl( Product_t& _product ) const {
           _product.code( " %s\n", (**comm).m_content.str() );
       }
       
-      if( Opts::shared().actiontext ) {
+      if( isa().m_withsource ) {
         // for cstring version of the action
         _product.code( " virtual char const* %s_text();\n", actionproto->m_symbol.str() );
       }
@@ -459,7 +467,7 @@ Generator::operation_impl( Product_t& _product ) const {
   _product.code( "}\n\n" );
   
   for( intptr_t idx = isa().m_actionprotos.size(); (--idx) >= 0; ) {
-    if( Opts::shared().actiontext ) {
+    if( isa().m_withsource ) {
       // for cstring version of the method
       _product.template_signature( isa().m_tparams );
       _product.code( " char const* Operation" );
@@ -514,7 +522,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
           _product.code( "%s\n", (**comm).m_content.str() );
       }
 
-      if( Opts::shared().actiontext ) {
+      if( isa().m_withsource ) {
         // for cstring version of the method
         _product.template_signature( isa().m_tparams );
         _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol ).str() );
@@ -595,16 +603,7 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
 
 void
 Generator::decoder_impl( Product_t& _product ) const {
-  if( Opts::shared().subdecoder ) {
-    _product.template_signature( isa().m_tparams );
-    _product.code( "Decoder" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( " sub" );
-    _product.template_abbrev( isa().m_tparams );
-    _product.code( "::decoder;\n" );
-  }
-
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     _product.template_signature( isa().m_tparams );
     _product.code( "DecodeMapPage" );
     _product.template_abbrev( isa().m_tparams );
@@ -644,7 +643,7 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.code( "::Decoder()\n" );
   _product.code( "{\n" );
   _product.code( " little_endian = %s;\n", isa().m_little_endian ? "true" : "false" );
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     _product.code( " mru_page = 0;\n" );
     _product.code( " memset(decode_hash_table, 0, sizeof(decode_hash_table));\n" );
   }
@@ -672,12 +671,12 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.template_abbrev( isa().m_tparams );
   _product.code( "::~Decoder()\n" );
   _product.code( "{\n" );
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     _product.code( " InvalidateDecodingCache();\n" );
   }
   _product.code( "}\n\n" );
   
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     _product.template_signature( isa().m_tparams );
     _product.code( "void Decoder" );
     _product.template_abbrev( isa().m_tparams );
@@ -691,7 +690,7 @@ Generator::decoder_impl( Product_t& _product ) const {
   
   for( int withcode = 0; withcode < 2; ++withcode ) {
     /*** NCDecode( Address_t addr[, CodeType_t code] ) ***/
-    if( Opts::shared().subdecoder and not withcode ) continue;
+    if( isa().m_is_subdecoder and not withcode ) continue;
     _product.template_signature( isa().m_tparams );
     _product.code( "Operation" );
     _product.template_abbrev( isa().m_tparams );
@@ -765,7 +764,7 @@ Generator::decoder_impl( Product_t& _product ) const {
     _product.code( "}\n\n" );
   }
   
-  if( not Opts::shared().subdecoder ) {
+  if( not isa().m_is_subdecoder ) {
     /*** InvalidateDecodingCache() ***/
     _product.template_signature( isa().m_tparams );
     _product.code( "void Decoder" );

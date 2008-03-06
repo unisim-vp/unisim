@@ -39,7 +39,7 @@ Product_t::Product_t( ConstStr_t _prefix, bool _sourcelines )
 bool
 Product_t::open( char const* _suffix ) {
   close();
-  m_filename = Str::fmt( "%s.%s", m_prefix.str(), _suffix );
+  m_filename = Str::fmt( "%s%s", m_prefix.str(), _suffix );
   m_line.clear();
   m_lineno = 1;
   m_stream = new ofstream( m_filename );

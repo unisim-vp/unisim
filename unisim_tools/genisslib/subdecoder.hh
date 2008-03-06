@@ -25,21 +25,31 @@
 #include <referencecounting.hh>
 #include <vect.hh>
 
-/** An SubDecoder object */
-struct SubDecoder_t : virtual ReferenceCounter {
-  ConstStr_t                    m_symbol;            /**< The associated symbol */
-  Ptr_t<SourceCode_t>           m_namespace;         /**< The namespace in which the decoder is defined */
-  Ptr_t<SourceCode_t>           m_template_scheme;   /**< The template scheme of the decoder */
+/** A SubDecoder class object */
+struct SDClass_t :  virtual ReferenceCounter {
+  std::vector<ConstStr_t>       m_namespace;         /**< The namespace in which the decoder is defined */
   unsigned int                  m_minsize;           /**< The minimum size (in bytes) of the decoder's operations */
   unsigned int                  m_maxsize;           /**< The maximum size (in bytes) of the decoder's operations */
   FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was declared */
+
+  SDClass_t( std::vector<ConstStr_t>& _namespace, unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc );
+  ~SDClass_t();
+
+  ConstStr_t                    qd_namespace() const;
+};
+
+/** A SubDecoder instance object */
+struct SDInstance_t : virtual ReferenceCounter {
+  ConstStr_t                    m_symbol;            /**< The name of the subdecoder instance */
+  ConstPtr_t<SourceCode_t>      m_template_scheme;   /**< The template scheme associated with the instance */
+  ConstPtr_t<SDClass_t>         m_sdclass;           /**< The subdecoder class associated of the instance */
+  FileLoc_t                     m_fileloc;           /**< The file location where subdecoder was instanciated */
   
-  SubDecoder_t( ConstStr_t _symbol, SourceCode_t* _namespace, SourceCode_t* _template_scheme,
-                unsigned int _minsize, unsigned int _maxsize, FileLoc_t const& _fileloc );
-  ~SubDecoder_t();
+  SDInstance_t( ConstStr_t _symbol, SourceCode_t const* _template_scheme, SDClass_t const* _sdclass, FileLoc_t const& _fileloc );
+  ~SDInstance_t();
   
 };
 
-std::ostream& operator<<( std::ostream& _sink, SubDecoder_t const& _op );
+// std::ostream& operator<<( std::ostream& _sink, SubDecoder_t const& _op );
 
 #endif // __SUBDECODER_HH__

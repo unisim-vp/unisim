@@ -32,12 +32,12 @@ struct Product_t;
 struct ConstStr_t;
 struct Generator;
 struct Product_t;
-struct SubDecoder_t;
+struct SDClass_t;
+struct SDInstance_t;
 struct Specialization_t;
 struct Constraint_t;
-
 template <class Type_t> struct Vect_t;
-
+struct StringVect_t;
 namespace Str { struct Buf; }
 
 #endif // __FWD_HH__

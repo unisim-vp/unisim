@@ -32,10 +32,8 @@ struct Opts {
   char const*      inputname;
   char const*      depfilename;
   int              minwordsize;
-  char const*      subdecoder;
   bool             sourcelines;
   bool             specialization;
-  bool             actiontext;
 
   static Opts&     shared();
   

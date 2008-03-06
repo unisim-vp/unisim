@@ -137,12 +137,12 @@ operator<<( std::ostream& _sink, BitField_t const& _bf ) {
   return _sink;
 }
 
-SubOpBitField_t::SubOpBitField_t( ConstStr_t _symbol, SubDecoder_t const* _subdecoder )
-  : BitField_t( _subdecoder->m_maxsize ), m_symbol( _symbol ), m_subdecoder( _subdecoder )
+SubOpBitField_t::SubOpBitField_t( ConstStr_t _symbol, SDInstance_t const* _sdinstance )
+  : BitField_t( _sdinstance->m_sdclass->m_maxsize ), m_symbol( _symbol ), m_sdinstance( _sdinstance )
 {}
 
 SubOpBitField_t::SubOpBitField_t( SubOpBitField_t const& _src )
-  : BitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_subdecoder( _src.m_subdecoder )
+  : BitField_t( _src.m_size ), m_symbol( _src.m_symbol ), m_sdinstance( _src.m_sdinstance )
 {}
 
 /** Dump an subop bitfield object into a stream
@@ -150,11 +150,11 @@ SubOpBitField_t::SubOpBitField_t( SubOpBitField_t const& _src )
 */
 void
 SubOpBitField_t::fills( std::ostream& _sink ) const {
-  _sink << m_symbol << '[' << m_subdecoder->m_symbol << ']';
+  _sink << m_symbol << '[' << m_sdinstance->m_symbol << ']';
 }
 
-unsigned int SubOpBitField_t::minsize() const { return m_subdecoder->m_minsize; }
-unsigned int SubOpBitField_t::maxsize() const { return m_subdecoder->m_maxsize; }
+unsigned int SubOpBitField_t::minsize() const { return m_sdinstance->m_sdclass->m_minsize; }
+unsigned int SubOpBitField_t::maxsize() const { return m_sdinstance->m_sdclass->m_maxsize; }
 
 /**
  *  Create a specialized operand bitfield object
