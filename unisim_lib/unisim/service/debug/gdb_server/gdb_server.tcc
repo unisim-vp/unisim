@@ -944,6 +944,73 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					synched = false;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
+				else if(packet.substr(0, 6) == "qRcmd,")
+				{
+					pos += 5;
+					if(pos < len)
+					{
+						char ch[2];
+						string parameter_name;
+						string parameter_value;
+						ch[1] = 0;
+						// skip white characters
+						do
+						{
+							ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
+							if(ch[0] != ' ') break;
+							pos += 2;
+						} while(pos < len);
+
+						if(pos < len)
+						{
+							unisim::kernel::service::ParameterBase *param = 0;
+
+							// fill-in parameter name
+							do
+							{
+								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
+								pos += 2;
+								if(ch[0] == '=') break;
+								parameter_name += ch;
+							} while(pos < len);
+
+							param = unisim::kernel::service::ServiceManager::GetParameter(parameter_name.c_str());
+							if(param == &unisim::kernel::service::ServiceManager::void_param)
+							{
+								string msg("unknown parameter\n");
+								OutputText(msg.c_str(), msg.length());
+								PutPacket("OK");
+								break;
+							}
+
+							if(pos >= len)
+							{
+								// it's a get!
+								string msg(parameter_name + "=" + ((string) *param) + "\n");
+								OutputText(msg.c_str(), msg.length());
+								PutPacket("OK");
+								break;
+							}
+
+							// fill-in parameter value and remove trailing space
+							while(pos < len)
+							{
+								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
+								if(ch[0] == ' ') break;
+								pos += 2;
+								parameter_value += ch;
+							}
+
+							string msg(parameter_name + "<-" + parameter_value + "\n");
+							OutputText(msg.c_str(), msg.length());
+							*param = parameter_value.c_str();
+							PutPacket("OK");
+							break;
+						}
+					}
+
+					PutPacket("E00");
+				}
 				else
 				{
 					if(logger_import)
@@ -1180,7 +1247,7 @@ bool GDBServer<ADDRESS>::OutputText(const char *s, int count)
 
 	*p = 'O';
 	p++;
-	for(i = 0; i < count; i++, s++, p += 2)
+	for(i = 0; i < count; i++, p += 2)
 	{
 		p[0] = Nibble2HexChar((uint8_t) s[i] >> 4);
 		p[1] = Nibble2HexChar((uint8_t) s[i] & 0xf);

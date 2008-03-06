@@ -88,6 +88,7 @@ bool InlineDebugger<ADDRESS>::Setup() {
 		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 				false);
 	}
+	return true;
 }
 
 template <class ADDRESS>
