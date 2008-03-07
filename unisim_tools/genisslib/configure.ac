@@ -37,6 +37,10 @@ AC_INIT([UNISIM GenISSLib (ISS library Generator) building tool], [1.0],
 	[Gilles Mouchard <gilles.mouchard@cea.fr>],
 	[genisslib])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
     
 AM_INIT_AUTOMAKE
 
