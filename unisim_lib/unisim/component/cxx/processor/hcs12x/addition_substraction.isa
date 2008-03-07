@@ -104,7 +104,7 @@ adc_ab_imm.execute = {
 	cpu->ccr->setC(carry_out);
 	cpu->ccr->setV(overflow);
 	
-	if (result == 0) cpu->ccr->setZ(1);
+	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 	if (((regVal & 0x0F)+(opr8i & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);		
 	
@@ -132,7 +132,7 @@ adc_ab_dir.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	uint8_t opr8aVal = cpu->mmc->memDirectRead8(opr8a);
+	uint8_t opr8aVal = cpu->memRead8(opr8a, MEMORY::DIRECT);
 
 	Add8(result, carry_out, overflow, regVal, opr8aVal, carry_in);
 	
@@ -152,9 +152,9 @@ adc_ab_dir.execute = {
 }
 
 // ADCab EXT (regAB + mem[opr16a] + carry => regAB)
-op adca_ext(0b1[1]:b[1]:0x39[6]:> <:opr16a[16])
+op adc_ab_ext(0b1[1]:b[1]:0x39[6]:> <:opr16a[16])
 
-adca_ext.disasm = {
+adc_ab_ext.disasm = {
 	if (b==0) {
 		sink << "ADCA $";
 	} else {
@@ -163,7 +163,7 @@ adca_ext.disasm = {
 	sink << std::hex << opr16a;
 }
 
-adca_ext.execute = {
+adc_ab_ext.execute = {
 	uint8_t result, carry_out, overflow;
 	
 	uint8_t carry_in = cpu->ccr->getC();
@@ -175,7 +175,7 @@ adca_ext.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	uint8_t opr16aVal = cpu->mmc->memRead8(opr16a);
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
 
 	Add8(result, carry_out, overflow, regVal, opr16aVal, carry_in);
 	
@@ -220,7 +220,7 @@ adc_ab_idx.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	uint8_t xbVal = cpu->mmc->memRead8(xb->getEAddr(cpu));
+	uint8_t xbVal = cpu->memRead8(xb->getEAddr(cpu));
 
 	Add8(result, carry_out, overflow, regVal, xbVal, carry_in);
 	
@@ -300,7 +300,7 @@ add_ab_dir.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	uint8_t opr8aVal = cpu->mmc->memDirectRead8(opr8a);
+	uint8_t opr8aVal = cpu->memRead8(opr8a, MEMORY::DIRECT);
 
 	Add8(result, carry_out, overflow, regVal, opr8aVal, carry_in);
 	
@@ -343,7 +343,7 @@ add_ab_ext.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	uint8_t opr16aVal = cpu->mmc->memRead8(opr16a);
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
 
 	Add8(result, carry_out, overflow, regVal, opr16aVal, carry_in);
 	
@@ -388,7 +388,7 @@ add_ab_idx.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	uint8_t xbVal = cpu->mmc->memRead8(xb->getEAddr(cpu));
+	uint8_t xbVal = cpu->memRead8(xb->getEAddr(cpu));
 
 	Add8(result, carry_out, overflow, regVal, xbVal, carry_in);
 	
@@ -459,7 +459,7 @@ add_sub_d_dir.execute = {
 	uint8_t carry_in = 0;
 	uint16_t regVal = cpu->getRegD();
 
-	uint16_t opr8aVal = cpu->mmc->memDirectRead16(opr8a);
+	uint16_t opr8aVal = cpu->memRead16(opr8a, MEMORY::DIRECT);
 
 	if (b==0) {
 		Sub16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
@@ -498,7 +498,7 @@ add_sub_d_ext.execute = {
 	
 	uint16_t regVal = cpu->getRegD();
 	
-	uint16_t opr16aVal = cpu->mmc->memRead16(opr16a);
+	uint16_t opr16aVal = cpu->memRead16(opr16a);
 
 	if (b==0) {
 		Sub16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
@@ -536,7 +536,7 @@ add_sub_d_idx.execute = {
 	
 	uint16_t regVal = cpu->getRegD();
 	
-	uint16_t xbVal = cpu->mmc->memRead16(xb->getEAddr(cpu));
+	uint16_t xbVal = cpu->memRead16(xb->getEAddr(cpu));
 
 	if (b==0) {
 		Sub16(result, carry_out, overflow, regVal, xbVal, carry_in);
@@ -553,7 +553,7 @@ add_sub_d_idx.execute = {
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
 }
 
-/* ****** Substraction Instructions **** */
+/* ****** Subtraction Instructions **** */
 
 // SBA  (regA - regB => regA)
 op sba(0x18[8]:0x16[8])
@@ -640,7 +640,7 @@ sbc_ab_dir.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	uint8_t opr8aVal = cpu->mmc->memDirectRead8(opr8a);
+	uint8_t opr8aVal = cpu->memRead8(opr8a, MEMORY::DIRECT);
 
 	Sub8(result, carry_out, overflow, regVal, opr8aVal, carry_in);
 	
@@ -681,7 +681,7 @@ sbca_ext.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	uint8_t opr16aVal = cpu->mmc->memRead8(opr16a);
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
 
 	Sub8(result, carry_out, overflow, regVal, opr16aVal, carry_in);
 	
@@ -724,7 +724,7 @@ sbc_ab_idx.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	uint8_t xbVal = cpu->mmc->memRead8(xb->getEAddr(cpu));
+	uint8_t xbVal = cpu->memRead8(xb->getEAddr(cpu));
 
 	Sub8(result, carry_out, overflow, regVal, xbVal, carry_in);
 	
@@ -802,7 +802,7 @@ sub_ab_dir.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	uint8_t opr8aVal = cpu->mmc->memDirectRead8(opr8a);
+	uint8_t opr8aVal = cpu->memRead8(opr8a, MEMORY::DIRECT);
 
 	Sub8(result, carry_out, overflow, regVal, opr8aVal, carry_in);
 	
@@ -844,7 +844,7 @@ sub_ab_ext.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	uint8_t opr16aVal = cpu->mmc->memRead8(opr16a);
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
 
 	Sub8(result, carry_out, overflow, regVal, opr16aVal, carry_in);
 	
@@ -888,7 +888,7 @@ sub_ab_idx.execute = {
 		regVal = cpu->getRegB();
 	}
 	
-	uint8_t xbVal = cpu->mmc->memRead8(xb->getEAddr(cpu));
+	uint8_t xbVal = cpu->memRead8(xb->getEAddr(cpu));
 
 	Sub8(result, carry_out, overflow, regVal, xbVal, carry_in);
 	
@@ -915,14 +915,18 @@ daa.disasm = {
 }
 
 daa.execute = {
-	uint8_t hBit =cpu->ccr->getH();
+	uint8_t hBit = cpu->ccr->getH();
+	uint8_t cBit = cpu->ccr->getC();
 
 	if (hBit == 1) {
-		uint8_t result, carry_out, overflow;
+		uint8_t result, result0, carry_out0, carry_out, overflow;
 
 		uint8_t aVal = cpu->getRegA();
-
-		Add8(result, carry_out, overflow, aVal, 0x6, 0);
+		
+		if (hBit == 1) {
+			Add8(result0, carry_out0, overflow, aVal, 0x06, 0x0);
+			Add8(result, carry_out, overflow, result0, carry_out0 << 4, 0x0); 
+		}
 		
 		cpu->setRegA(result);
 		

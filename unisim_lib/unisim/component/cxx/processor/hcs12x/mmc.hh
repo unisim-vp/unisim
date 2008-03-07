@@ -12,18 +12,32 @@ namespace hcs12x {
 	
 //using namespace std;
 
-#define MAX_ADDRESS     0x007FFFFF // 8 MByte
-#define MEMORY_SIZE     (MAX_ADDRESS + 1)    
-
+class MEMORY {
+public:
+	/*
+	 * GPAGE -> GLOBAL
+	 * RPAGE -> RAM
+	 * EPAGE -> EEPROM
+	 * PPAGE -> FLASH
+	 * DIRECt -> Direct page
+	 */
+	enum MAP {EXTENDED=0, GLOBAL=1, RAM=2, EEPROM=3, FLASH=4, DIRECT=5};
+};
 
 class MMC 
 {
 public:
-    
-    MMC();
 
+
+    MMC(uint8_t gpage, uint8_t rpage, uint8_t epage, uint8_t ppage, uint8_t direct=0x00);
+       
+	uint32_t getPhysicalAddress(uint16_t logicalAddress, MEMORY::MAP type);
+	
     void    setGpage (uint8_t val);
     uint8_t getGpage ();
+
+    void    setDirect (uint8_t val);
+    uint8_t getDirect ();
 
     void    setRpage (uint8_t val);
     uint8_t getRpage ();
@@ -34,31 +48,18 @@ public:
     void    setPpage (uint8_t val);
     uint8_t getPpage ();
 
-    void    setDirect (uint8_t val);
-    uint8_t getDirect ();
-
-	uint8_t memDirectRead8(uint16_t addr);
-	uint8_t memRead8(uint16_t addr);
-	void memWrite8(uint16_t addr,uint8_t val);
-	void memDirectWrite8(uint16_t addr, uint8_t val);
-	
-	uint16_t memDirectRead16(uint16_t addr);
-	uint16_t memRead16(uint16_t addr);
-	void memWrite16(uint16_t addr,uint16_t val);
-	void memDirectWrite16(uint16_t addr, uint16_t val);
 
 private:
 	// The truth size of {GPage, RPage, EPage, PPage, Direct} is 0x07bits. 
-	// They are declared as uint32 to optimise simulation time
 	
-    uint32_t     gpage;      // MAX_VAL(gpage) == 0x7F
-    uint32_t     rpage;      
-    uint32_t     epage;      
-    uint32_t     ppage;      
-    uint32_t     direct;     
+    uint8_t     _gpage;      // MAX_VAL(gpage) == 0x7F
+    uint8_t     _direct;
+
     bool        _isDirectSet;
 
-	uint8_t     mem[MEMORY_SIZE];
+    uint8_t     _rpage;      
+    uint8_t     _epage;      
+    uint8_t     _ppage;      
 
 };
 

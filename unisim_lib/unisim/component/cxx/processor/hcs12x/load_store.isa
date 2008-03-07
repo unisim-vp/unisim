@@ -38,7 +38,7 @@ ldaab_dir.disasm = {
 }
 
 ldaab_dir.execute = {
-	int8_t val = cpu->mmc->memDirectRead8((uint16_t) opr8a);
+	int8_t val = cpu->memRead8((uint16_t) opr8a, MEMORY::DIRECT);
 	if (b==0) {
 	    cpu->setRegA(val);
 	} else {
@@ -63,7 +63,7 @@ ldaab_ext.disasm = {
 }
 
 ldaab_ext.execute = {
-	int8_t val = cpu->mmc->memRead8(opr16a); 
+	int8_t val = cpu->memRead8(opr16a); 
 	if (b==0) {
 	    cpu->setRegA(val);
 	} else {
@@ -95,7 +95,7 @@ ldaab_idx.disasm = {
 ldaab_idx.execute = {
     
     address_t	addr = xb->getEAddr(cpu);
-	int8_t		val = cpu->mmc->memRead8(addr);     
+	int8_t		val = cpu->memRead8(addr);     
 	
 	if (b==0) {
 	    cpu->setRegA(val);
@@ -130,7 +130,7 @@ ld_dyxs_imm.execute = {
 	case 0: cpu->setRegD(val); break;
 	case 1: cpu->setRegY(val); break;
 	case 2: cpu->setRegX(val); break;
-	case 3: cpu->setSP(val); break;
+	case 3: cpu->setRegSP(val); break;
 	}
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -155,12 +155,12 @@ ld_dyxs_dir.disasm = {
 
 ld_dyxs_dir.execute = {
 
-	int16_t val = cpu->mmc->memDirectRead16((uint16_t) dd);
+	int16_t val = cpu->memRead16((uint16_t) dd, MEMORY::DIRECT);
 	switch (dyxs) {
 	case 0: cpu->setRegD(val); break;
 	case 1: cpu->setRegY(val); break;
 	case 2: cpu->setRegX(val); break;
-	case 3: cpu->setSP(val); break;
+	case 3: cpu->setRegSP(val); break;
 	}
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -187,13 +187,13 @@ ld_dyxs_ext.disasm = {
 ld_dyxs_ext.execute = {
 	
 	uint16_t addr = (uint16_t (hh << 8)) | ll;
-	int16_t val = cpu->mmc->memRead16(addr);
+	int16_t val = cpu->memRead16(addr);
 	
 	switch (dyxs) {
 	case 0: cpu->setRegD(val); break;
 	case 1: cpu->setRegY(val); break;
 	case 2: cpu->setRegX(val); break;
-	case 3: cpu->setSP(val); break;
+	case 3: cpu->setRegSP(val); break;
 	}
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -224,13 +224,13 @@ ld_dyxs_idx.disasm = {
 ld_dyxs_idx.execute = {
     
     address_t	addr = xb->getEAddr(cpu);
-	int16_t	val = cpu->mmc->memRead16(addr);     
+	int16_t	val = cpu->memRead16(addr);     
 
 	switch (dyxs) {
 	case 0: cpu->setRegD(val); break;
 	case 1: cpu->setRegY(val); break;
 	case 2: cpu->setRegX(val); break;
-	case 3: cpu->setSP(val); break;
+	case 3: cpu->setRegSP(val); break;
 	}
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -264,7 +264,7 @@ lea_yxs.execute = {
 	case 0: /* throw an exception unknown instruction */; break;
 	case 1: cpu->setRegY(addr); break;
 	case 2: cpu->setRegX(addr); break;
-	case 3: cpu->setSP(addr);
+	case 3: cpu->setRegSP(addr);
 	}
 	
 }
@@ -288,7 +288,7 @@ staab_dir.execute = {
 	int8_t val;
 
 	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
-    cpu->mmc->memDirectWrite8((uint16_t) opr8a, val);	
+    cpu->memWrite8((uint16_t) opr8a, val, MEMORY::DIRECT);	
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -318,7 +318,7 @@ staab_ext.execute = {
 	uint16_t addr = ((uint16_t) hh << 8) | ll;
 	int8_t	val;
 	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
-    cpu->mmc->memDirectWrite8((uint16_t) addr, val);
+    cpu->memWrite8((uint16_t) addr, val, MEMORY::DIRECT);
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -351,7 +351,7 @@ staab_idx.execute = {
     address_t	addr = xb->getEAddr(cpu);
 	int8_t val;
 	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
-    cpu->mmc->memWrite8(addr,val);	
+    cpu->memWrite8(addr,val);	
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -383,10 +383,10 @@ st_dyxs_dir.execute = {
 	case 0: val = cpu->getRegD(); break;
 	case 1: val = cpu->getRegY(); break;
 	case 2: val = cpu->getRegX(); break;
-	case 3: val = cpu->getSP(); break;
+	case 3: val = cpu->getRegSP(); break;
 	}
 	
-	cpu->mmc->memDirectWrite16((uint16_t) opr8a, val);
+	cpu->memWrite16((uint16_t) opr8a, val, MEMORY::DIRECT);
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -420,10 +420,10 @@ st_dyxs_ext.execute = {
 	case 0: val = cpu->getRegD(); break;
 	case 1: val = cpu->getRegY(); break;
 	case 2: val = cpu->getRegX(); break;
-	case 3: val = cpu->getSP(); break;
+	case 3: val = cpu->getRegSP(); break;
 	}
 	
-	cpu->mmc->memWrite16(addr, val);
+	cpu->memWrite16(addr, val);
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);
@@ -462,9 +462,9 @@ st_dyxs_idx.execute = {
 	case 0: val = cpu->getRegD(); break;
 	case 1: val = cpu->getRegY(); break;
 	case 2: val = cpu->getRegX(); break;
-	case 3: val = cpu->getSP(); break;
+	case 3: val = cpu->getRegSP(); break;
 	}
-	cpu->mmc->memWrite16(addr,val);
+	cpu->memWrite16(addr,val);
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->setV(0);

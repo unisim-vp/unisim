@@ -3,7 +3,7 @@
 namespace unisim::component::cxx::processor::hcs12x::XB
 
 big_endian
-cisc_decoder
+decoder( cisc, sub )
 
 address {uint16_t}
 
@@ -62,7 +62,7 @@ xb_16bit_cst_z1.getEAddr = {
    		return cpu->xb_getAddrRegValue(rr) + n16;
    	} else {
    		// 16-bit offset indexed-indirect
-		return cpu->mmc->memRead16(cpu->xb_getAddrRegValue(rr) + n16);
+		return cpu->memRead16(cpu->xb_getAddrRegValue(rr) + n16);
    	}
 }
 
@@ -137,7 +137,7 @@ xb_acc_offset.disasm = {
 op xb_accD_offset_idx_ind (0b111[3]:rr[2]:0b111[3])
 
 xb_accD_offset_idx_ind.getEAddr = {
-	return cpu->mmc->memRead16(cpu->getRegD() + cpu->xb_getAddrRegValue(rr));
+	return cpu->memRead16(cpu->getRegD() + cpu->xb_getAddrRegValue(rr));
 }
 
 xb_accD_offset_idx_ind.disasm = {

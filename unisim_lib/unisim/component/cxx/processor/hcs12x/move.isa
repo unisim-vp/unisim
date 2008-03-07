@@ -7,7 +7,7 @@ movb_0B.disasm = {
 }
 
 movb_0B.execute = {
-	cpu->mmc->memWrite8(opr16a,ii);
+	cpu->memWrite8(opr16a,ii);
 }
 
 /* ??? A voir avec Yves/Gilles/Daniel
@@ -22,7 +22,7 @@ movb_08.disasm = {
 }
 
 movb_08.execute = {
-	cpu->mmc->memWrite8(xb->getEAddr(cpu),ii);
+	cpu->memWrite8(xb->getEAddr(cpu),ii);
 }
 
 
@@ -33,8 +33,8 @@ movb_0C.disasm = {
 }
 
 movb_0C.execute = {
-	uint8_t tmp = cpu->mmc->memRead8(opr16asrc);
-	cpu->mmc->memWrite8(opr16adst, tmp);
+	uint8_t tmp = cpu->memRead8(opr16asrc);
+	cpu->memWrite8(opr16adst, tmp);
 }
 
 /* ??? A voir avec Yves/Gilles/Daniel
@@ -49,8 +49,8 @@ movb_09.disasm = {
 
 movb_09.execute = {
 	uint16_t addr = xb->getEAddr(cpu);
-	uint8_t tmp = cpu->mmc->memRead8(opr16asrc);
-	cpu->mmc->memWrite8(addr, tmp);
+	uint8_t tmp = cpu->memRead8(opr16asrc);
+	cpu->memWrite8(addr, tmp);
 }
 
 op movb_0D(0x18[8]:0x0D[8]:> <:*xb[XB]:> <:opr16a[8])
@@ -62,8 +62,8 @@ movb_0D.disasm = {
 }
 
 movb_0D.execute = {
-	uint8_t tmp = cpu->mmc->memRead8(xb->getEAddr(cpu));
-	cpu->mmc->memWrite8(opr16a, tmp);
+	uint8_t tmp = cpu->memRead8(xb->getEAddr(cpu));
+	cpu->memWrite8(opr16a, tmp);
 }
 
 op movb_0A(0x18[8]:0x0A[8]:> <:*xbsrc[XB]:> <:*xbdst[XB])
@@ -78,8 +78,8 @@ movb_0A.disasm = {
 movb_0A.execute = {
 	uint16_t addrsrc = xbsrc->getEAddr(cpu);
 	uint16_t addrdst = xbdst->getEAddr(cpu);
-	uint8_t  tmp = cpu->mmc->memRead8(addrsrc);
-	cpu->mmc->memWrite8(addrdst, tmp);
+	uint8_t  tmp = cpu->memRead8(addrsrc);
+	cpu->memWrite8(addrdst, tmp);
 }
 
 // ---------
@@ -91,7 +91,7 @@ movw_03.disasm = {
 }
 
 movw_03.execute = {
-	cpu->mmc->memWrite16(opr16a,jjkk);
+	cpu->memWrite16(opr16a,jjkk);
 }
 
 /* ??? A voir avec Yves/Gilles/Daniel
@@ -106,7 +106,7 @@ movw_00.disasm = {
 }
 
 movw_00.execute = {
-	cpu->mmc->memWrite16(xb->getEAddr(cpu),jjkk);
+	cpu->memWrite16(xb->getEAddr(cpu),jjkk);
 }
 
 
@@ -117,8 +117,8 @@ movw_04.disasm = {
 }
 
 movw_04.execute = {
-	uint16_t tmp = cpu->mmc->memRead16(opr16asrc);
-	cpu->mmc->memWrite16(opr16adst, tmp);
+	uint16_t tmp = cpu->memRead16(opr16asrc);
+	cpu->memWrite16(opr16adst, tmp);
 }
 
 /* ??? A voir avec Yves/Gilles/Daniel
@@ -133,8 +133,8 @@ movw_01.disasm = {
 
 movw_01.execute = {
 	uint16_t addr = xb->getEAddr(cpu);
-	uint16_t tmp = cpu->mmc->memRead16(opr16asrc);
-	cpu->mmc->memWrite16(addr, tmp);
+	uint16_t tmp = cpu->memRead16(opr16asrc);
+	cpu->memWrite16(addr, tmp);
 }
 
 
@@ -147,8 +147,8 @@ movw_05.disasm = {
 }
 
 movw_05.execute = {
-	uint16_t tmp = cpu->mmc->memRead16(xb->getEAddr(cpu));
-	cpu->mmc->memWrite16(opr16a, tmp);
+	uint16_t tmp = cpu->memRead16(xb->getEAddr(cpu));
+	cpu->memWrite16(opr16a, tmp);
 }
 
 op movw_02(0x18[8]:0x02[8]:> <:*xbsrc[XB]:> <:*xbdst[XB])
@@ -163,6 +163,6 @@ movw_02.disasm = {
 movw_02.execute = {
 	uint16_t addrsrc = xbsrc->getEAddr(cpu);
 	uint16_t addrdst = xbdst->getEAddr(cpu);
-	uint16_t  tmp = cpu->mmc->memRead16(addrsrc);
-	cpu->mmc->memWrite16(addrdst, tmp);
+	uint16_t  tmp = cpu->memRead16(addrsrc);
+	cpu->memWrite16(addrdst, tmp);
 }

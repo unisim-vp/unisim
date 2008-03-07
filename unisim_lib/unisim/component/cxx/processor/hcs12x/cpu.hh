@@ -216,6 +216,11 @@ private:
 	
 };	/***********   END EB  **********/
 
+
+#define MAX_ADDRESS     0x007FFFFF // 8 MByte
+#define MEMORY_SIZE     (MAX_ADDRESS + 1)    
+
+
 class CPU : public Decoder,
 	public Client<DebugControl<physical_address_t> >,
 	public Client<MemoryAccessReporting<physical_address_t> >,
@@ -339,11 +344,11 @@ public:
     void    setRegY(uint16_t val);
     uint16_t getRegY();
 
-    void    setSP(uint16_t val);
-    uint16_t getSP();
+    void    setRegSP(uint16_t val);
+    uint16_t getRegSP();
 
-    void    setPC(uint16_t val);
-    uint16_t getPC();
+    void    setRegPC(uint16_t val);
+    uint16_t getRegPC();
 
     void    setRegTMP(uint8_t index, uint16_t val);
     uint16_t getRegTMP(uint8_t index);
@@ -382,7 +387,15 @@ public:
 
 	uint16_t xb_getAccRegValue(uint8_t rr);
 	/*************  END  XB  ***************/
-	 
+
+	/* ******** MMC::MEMORY ACCESS ROUTINES ******* */
+	uint8_t memRead8(uint16_t addr, MEMORY::MAP type=MEMORY::EXTENDED);
+	void memWrite8(uint16_t addr,uint8_t val, MEMORY::MAP type=MEMORY::EXTENDED);
+	uint16_t memRead16(uint16_t addr, MEMORY::MAP type=MEMORY::EXTENDED);
+	void memWrite16(uint16_t addr,uint16_t val, MEMORY::MAP type=MEMORY::EXTENDED);
+	
+	/* ******** END MEM ACCESS ROUTINES ****** */
+		 
     class CCR_t *ccr;   
     class MMC	*mmc;
 	class EB	*eb;
@@ -396,6 +409,9 @@ private:
 
 	/** the instruction counter */
 	uint64_t instruction_counter;
+
+	// tempory, has to be removed once simulation platform integrated to model
+	uint8_t     mem[MEMORY_SIZE];
 
 };
 

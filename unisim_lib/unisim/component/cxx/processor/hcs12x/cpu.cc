@@ -37,14 +37,20 @@ CPU::CPU(const char *name, Object *parent):
 	
 {
 
-	regA    = 0;
-    regB    = 0;
-    regX    = 0;
-    regY    = 0;
-    regSP   = 0;
-    regPC   = 0;
+	setRegA(0);
+    setRegB(0);
+    setRegX(0);
+    setRegY(0);
+    setRegSP(0);
+    setRegPC(0);
     
-    mmc = new MMC();
+    // temporary declaration. my be in a config file or defined as constants
+    uint8_t gpage=0, rpage=0, epage=0, ppage=0, direct=0;
+    
+    mmc = new MMC(gpage, rpage, epage, ppage, direct);
+    
+    memset(mem, 0, sizeof(mem));
+    
     ccr = new CCR_t();
     eb = new EB(this);
 
@@ -118,6 +124,37 @@ bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size
 	return false;
 }
 
+/* ********** MEMORY ACCESS ROUTINES ******* */
+
+uint8_t CPU::memRead8(uint16_t logicalAddress, MEMORY::MAP type) {
+	uint32_t address = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+	
+    return mem[address];
+}
+
+uint16_t CPU::memRead16(uint16_t logicalAddress, MEMORY::MAP type) {
+    
+    uint32_t address = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+
+    return (mem[address] << 8) | mem[address+1];
+}
+
+void CPU::memWrite8(uint16_t logicalAddress, uint8_t val, MEMORY::MAP type) {
+	uint32_t address = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+
+    mem[address] = val;
+}
+
+void CPU::memWrite16(uint16_t logicalAddress, uint16_t val, MEMORY::MAP type) {
+
+    uint32_t address = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+    
+	mem[address] = (uint8_t) val >> 8;
+	mem[address+1] = (uint8_t) (val & 0x00FF);    
+	
+}
+
+/* ********** END MEM ACCESS ROUTINES ****** */
 
 //=====================================================================
 //=             CPURegistersInterface interface methods               =
@@ -164,9 +201,9 @@ uint16_t CPU::xb_getAddrRegValue(uint8_t rr) {
 	case 1:
     	return getRegY();
 	case 2:
-    	return getSP();
+    	return getRegSP();
 	case 3:
-    	return getPC();    
+    	return getRegPC();    
 	}
 }
 
@@ -177,9 +214,9 @@ void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
 	case 1:
     	return setRegY(val);
 	case 2:
-    	return setSP(val);
+    	return setRegSP(val);
 	case 3:
-    	return setPC(val);    
+    	return setRegPC(val);    
 	}
 }
 
@@ -226,11 +263,11 @@ uint16_t CPU::getRegX() { return regX; }
 void CPU::setRegY(uint16_t val) { regY = val; }    
 uint16_t CPU::getRegY() { return regY; }
 
-void CPU::setSP(uint16_t val) { regSP = val; }    
-uint16_t CPU::getSP() { return regSP; }
+void CPU::setRegSP(uint16_t val) { regSP = val; }    
+uint16_t CPU::getRegSP() { return regSP; }
 
-void CPU::setPC(uint16_t val) { regPC = val; }    
-uint16_t CPU::getPC() { return regPC; }
+void CPU::setRegPC(uint16_t val) { regPC = val; }    
+uint16_t CPU::getRegPC() { return regPC; }
 
 void CPU::setRegTMP(uint8_t index, uint16_t val) { regTMP[index] = val; }
 uint16_t CPU::getRegTMP(uint8_t index) { return regTMP[index]; }
@@ -257,7 +294,7 @@ void EB::setter(uint8_t rr, T val) // setter function
 		case EBRegs::D: cpu->setRegD((uint16_t) val); break;
 		case EBRegs::X: cpu->setRegX((uint16_t) val); break;
 		case EBRegs::Y: cpu->setRegY((uint16_t) val); break;
-		case EBRegs::SP: cpu->setSP((uint16_t) val); break;
+		case EBRegs::SP: cpu->setRegSP((uint16_t) val); break;
 	}
 }
 
@@ -283,7 +320,7 @@ T EB::getter(uint8_t rr) // getter function
 		case EBRegs::D: return (uint16_t) cpu->getRegD(); break;
 		case EBRegs::X: return (uint16_t) cpu->getRegX(); break;
 		case EBRegs::Y: return (uint16_t) cpu->getRegY(); break;
-		case EBRegs::SP: return (uint16_t) cpu->getSP(); break;
+		case EBRegs::SP: return (uint16_t) cpu->getRegSP(); break;
 	}
 }
 

@@ -8,13 +8,13 @@ dec_ext.disasm = {
 }
 
 dec_ext.execute = {
-	uint8_t opr16aVal = cpu->mmc->memRead8(opr16a);
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
 	uint8_t result, carry_out, overflow, carry_in;
 	
 	carry_in = 0;
 	Sub8(result, carry_out, overflow, opr16aVal, 1, carry_in);
 
-	cpu->mmc->memWrite8(opr16a, result);
+	cpu->memWrite8(opr16a, result);
 		
 	cpu->ccr->setV(overflow);
 	
@@ -32,14 +32,14 @@ dec_idx.disasm = {
 
 dec_idx.execute = {
 	uint16_t addr = xb->getEAddr(cpu);
-	uint8_t val = cpu->mmc->memRead8(addr);
+	uint8_t val = cpu->memRead8(addr);
 
 	uint8_t result, carry_out, overflow, carry_in;
 	
 	carry_in = 0;
 	Sub8(result, carry_out, overflow, val, 1, carry_in);
 
-	cpu->mmc->memWrite8(addr, result);
+	cpu->memWrite8(addr, result);
 	
 	cpu->ccr->setV(overflow);
 	
@@ -93,14 +93,14 @@ decw_ext.disasm = {
 }
 
 decw_ext.execute = {
-	uint16_t opr16aVal = cpu->mmc->memRead16(opr16a);
+	uint16_t opr16aVal = cpu->memRead16(opr16a);
 	uint16_t result;
 	uint8_t carry_out, overflow, carry_in;
 	
 	carry_in = 0;
 	Sub16(result, carry_out, overflow, opr16aVal, 1, carry_in);
 
-	cpu->mmc->memWrite16(opr16a, result);
+	cpu->memWrite16(opr16a, result);
 		
 	cpu->ccr->setV(overflow);
 	
@@ -118,7 +118,7 @@ decw_idx.disasm = {
 
 decw_idx.execute = {
 	uint16_t addr = xb->getEAddr(cpu);
-	uint16_t val = cpu->mmc->memRead16(addr);
+	uint16_t val = cpu->memRead16(addr);
 
 	uint16_t result;
 	uint8_t carry_out, overflow, carry_in;
@@ -126,7 +126,7 @@ decw_idx.execute = {
 	carry_in = 0;
 	Sub16(result, carry_out, overflow, val, 1, carry_in);
 
-	cpu->mmc->memWrite16(addr, result);
+	cpu->memWrite16(addr, result);
 	
 	cpu->ccr->setV(overflow);
 	
@@ -181,7 +181,7 @@ des.disasm = {
 }
 
 des.execute = {
-	cpu->setSP(cpu->getSP() - 1);
+	cpu->setRegSP(cpu->getRegSP() - 1);
 }
 
 // DEX
@@ -222,13 +222,13 @@ inc_ext.disasm = {
 }
 
 inc_ext.execute = {
-	uint8_t opr16aVal = cpu->mmc->memRead8(opr16a);
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
 	uint8_t result, carry_out, overflow, carry_in;
 	
 	carry_in = 0;
 	Add8(result, carry_out, overflow, opr16aVal, 1, carry_in);
 
-	cpu->mmc->memWrite8(opr16a, result);
+	cpu->memWrite8(opr16a, result);
 		
 	cpu->ccr->setV(overflow);
 	
@@ -246,14 +246,14 @@ inc_idx.disasm = {
 
 inc_idx.execute = {
 	uint16_t addr = xb->getEAddr(cpu);
-	uint8_t val = cpu->mmc->memRead8(addr);
+	uint8_t val = cpu->memRead8(addr);
 
 	uint8_t result, carry_out, overflow, carry_in;
 	
 	carry_in = 0;
 	Add8(result, carry_out, overflow, val, 1, carry_in);
 
-	cpu->mmc->memWrite8(addr, result);
+	cpu->memWrite8(addr, result);
 	
 	cpu->ccr->setV(overflow);
 	
@@ -307,14 +307,14 @@ incw_ext.disasm = {
 }
 
 incw_ext.execute = {
-	uint16_t opr16aVal = cpu->mmc->memRead16(opr16a);
+	uint16_t opr16aVal = cpu->memRead16(opr16a);
 	uint16_t result;
 	uint8_t carry_out, overflow, carry_in;
 	
 	carry_in = 0;
 	Add16(result, carry_out, overflow, opr16aVal, 1, carry_in);
 
-	cpu->mmc->memWrite16(opr16a, result);
+	cpu->memWrite16(opr16a, result);
 		
 	cpu->ccr->setV(overflow);
 	
@@ -332,7 +332,7 @@ incw_idx.disasm = {
 
 incw_idx.execute = {
 	uint16_t addr = xb->getEAddr(cpu);
-	uint16_t val = cpu->mmc->memRead16(addr);
+	uint16_t val = cpu->memRead16(addr);
 
 	uint16_t result;
 	uint8_t carry_out, overflow, carry_in;
@@ -340,7 +340,7 @@ incw_idx.execute = {
 	carry_in = 0;
 	Add16(result, carry_out, overflow, val, 1, carry_in);
 
-	cpu->mmc->memWrite16(addr, result);
+	cpu->memWrite16(addr, result);
 	
 	cpu->ccr->setV(overflow);
 	
@@ -395,7 +395,7 @@ ins.disasm = {
 }
 
 ins.execute = {
-	cpu->setSP(cpu->getSP() + 1);
+	cpu->setRegSP(cpu->getRegSP() + 1);
 }
 
 // INX

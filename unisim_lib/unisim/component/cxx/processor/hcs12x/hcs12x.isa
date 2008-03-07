@@ -4,10 +4,14 @@ namespace unisim::component::cxx::processor::hcs12x
 
 big_endian	/* instruction endian */
 
-cisc_decoder
+decoder( cisc )
+
+// subdecoder XB
+include "xb_sub.isa"
+subdecoder unisim::component::cxx::processor::hcs12x::XB XB
+
 address {uint16_t}
 //subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-include "xb.sdh"
 
 decl {
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
@@ -34,4 +38,4 @@ include "move.isa"
 include "addition_substraction.isa"
 include "decrement_increment.isa"
 include "compare_test.isa"
-
+include "boolean-logic.isa"

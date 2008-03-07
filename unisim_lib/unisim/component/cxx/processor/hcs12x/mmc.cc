@@ -9,93 +9,56 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 	
-MMC::MMC() {
-    gpage   = 0;    
-    rpage   = 0;
-    epage   = 0;
-    ppage   = 0;
-    direct  = 0;
+MMC::MMC(uint8_t gpage, uint8_t rpage, uint8_t epage, uint8_t ppage, uint8_t direct) {
+    setGpage(gpage);    
+    setRpage(rpage);
+    setEpage(epage);
+    setPpage(ppage);
+    setDirect(direct);
     
-    memset(mem, 0, sizeof(mem));
 }
 
-void MMC::setGpage (uint8_t val) { gpage = (uint32_t) (val << 16);}
-uint8_t MMC::getGpage () { return gpage; }
+uint32_t MMC::getPhysicalAddress(uint16_t logicalAddress, MEMORY::MAP type) {
+	
+	uint32_t address;
+	
+	switch (type) {
+		case MEMORY::EXTENDED: { 
+			address = logicalAddress; 
+		} break;
+		case MEMORY::GLOBAL: {
+			address = _gpage + logicalAddress; 
+		} break;
+		case MEMORY::RAM: break;
+		case MEMORY::EEPROM: break;
+		case MEMORY::FLASH: break;
+		case MEMORY::DIRECT: {
+			address = _direct + logicalAddress;
+		} break;
+	}
+	return address;
+}
 
-void MMC::setRpage (uint8_t val) { rpage = (uint32_t) (val << 16);}
-uint8_t MMC::getRpage () { return rpage; }
-
-void MMC::setEpage (uint8_t val) { epage = (uint32_t) (val << 16);}
-uint8_t MMC::getEpage () { return epage; }
-
-void MMC::setPpage (uint8_t val) { ppage = (uint32_t) (val << 16);}
-uint8_t MMC::getPpage () { return ppage; }
+void MMC::setGpage (uint8_t val) { _gpage = (uint32_t) (val << 16);}
+uint8_t MMC::getGpage () { return _gpage >> 16; }
 
 void MMC::setDirect (uint8_t val) { 
  
 	if (!_isDirectSet) {
-    	direct = (uint32_t) (val << 16); 
+    	_direct = (uint32_t) (val << 16); 
     	_isDirectSet = true;
 	} 
 }
-uint8_t MMC::getDirect () { return direct; }
+uint8_t MMC::getDirect () { return _direct >> 16; }
 
-uint8_t MMC::memDirectRead8(uint16_t addr) {
-    
-    uint32_t address;
-    
-    address = direct + addr;
-    
-    return mem[address];
-}
+void MMC::setRpage (uint8_t val) { _rpage = (uint32_t) (val << 16);}
+uint8_t MMC::getRpage () { return _rpage >> 16; }
 
-uint8_t MMC::memRead8(uint16_t addr) {
+void MMC::setEpage (uint8_t val) { _epage = (uint32_t) (val << 16);}
+uint8_t MMC::getEpage () { return _epage >> 16; }
 
-    return mem[addr];
-}
-
-void MMC::memDirectWrite8(uint16_t addr, uint8_t val) {
-
-	uint32_t address;
-    
-    address = direct + addr;
-    
-    mem[address] = val;
-}
-	
-uint16_t MMC::memDirectRead16(uint16_t addr) {
-    
-    uint32_t address;
-    
-    address = direct + addr;
-    
-    return (mem[address] << 8) | mem[address+1];
-}
-
-uint16_t MMC::memRead16(uint16_t addr) {
-	return (mem[addr] << 8) + mem[addr+1];
-}
-
-void MMC::memDirectWrite16(uint16_t addr, uint16_t val) {
-
-    uint32_t address;
-    
-    address = direct + addr;
-
-	mem[address] = (uint8_t) val >> 8;
-	mem[address+1] = (uint8_t) (val & 0x00FF);    
-	
-}
-
-void MMC::memWrite8(uint16_t addr,uint8_t val) {
-	mem[addr] = val;
-}
-	
-void MMC::memWrite16(uint16_t addr,uint16_t val) {
-	
-	mem[addr] = (uint8_t) (val >> 8);
-	mem[addr] = (uint8_t) (val & 0x00FF);
-}
+void MMC::setPpage (uint8_t val) { _ppage = (uint32_t) (val << 16);}
+uint8_t MMC::getPpage () { return _ppage >> 16; }
 
 	
 }
