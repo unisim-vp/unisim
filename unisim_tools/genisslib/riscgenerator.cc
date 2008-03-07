@@ -20,6 +20,8 @@
 #include <isa.hh>
 #include <bitfield.hh>
 #include <scanner.hh>
+#include <subdecoder.hh>
+#include <sourcecode.hh>
 #include <strtools.hh>
 #include <cmath>
 #include <iostream>
@@ -221,7 +223,21 @@ RiscGenerator::insn_decode_impl( Product_t& _product, Operation_t const& _op, ch
   unsigned int shift = opcode( &_op ).m_size;
   for( Vect_t<BitField_t>::const_iterator bf = _op.m_bitfields.begin(); bf < _op.m_bitfields.end(); ++ bf ) {
     shift -= (**bf).m_size;
-    if( (**bf).type() == BitField_t::Operand ) {
+    if( (**bf).type() == BitField_t::SubOp ) {
+      
+      SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bf );
+      SDInstance_t const* sdinstance = sobf.m_sdinstance;
+      SDClass_t const* sdclass = sdinstance->m_sdclass;
+      SourceCode_t const* tpscheme =  sdinstance->m_template_scheme;
+      
+      _product.code( "%s = %s::sub_decode", sobf.m_symbol.str(), sdclass->qd_namespace().str() );
+      if( tpscheme )
+        _product.usercode( tpscheme->m_fileloc, "< %s >", tpscheme->m_content.str() );
+      _product.code( "( %s, ((%s >> %u) & 0x%llx) );\n", _addrname, _codename, shift, sobf.mask() );
+    }
+    
+    else if( (**bf).type() == BitField_t::Operand ) {
+      
       OperandBitField_t const& opbf = dynamic_cast<OperandBitField_t const&>( **bf );
       _product.code( "%s = ", opbf.m_symbol.str() );
       
@@ -308,7 +324,7 @@ RiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _old, char 
 
 void
 RiscGenerator::subdecoder_bounds( Product_t& _product ) const {
-  assert( false );
+  _product.code( "[%d;%d]", m_insn_bitsize, m_insn_bitsize );
 }
 
 RiscGenerator::OpCode_t const&

@@ -124,10 +124,10 @@ CiscGenerator::OpCode_t::unsetupper() {
 }
   
 /**
- *  @brief  Sets the %RiscGenerator instruction bit size to the specified bit size.
- *  @param  _bitsize  Bit size of %RiscGenerator instructions.
+ *  @brief  Sets the %CiscGenerator instruction bit size to the specified bit size.
+ *  @param  _bitsize  Bit size of %CiscGenerator instructions.
  *
- *  This function will sets the %RiscGenerator instruction bit size to
+ *  This function will sets the %CiscGenerator instruction bit size to
  *  the specified bit size.  Byte size, misalign, postfix and ctype
  *  are updated accordingly.
  */
@@ -414,6 +414,7 @@ CiscGenerator::insn_mask_code( Product_t& _product, Operation_t const& _op ) con
     _product.code( "\\x%c%c", hex[oc.m_mask[idx]/16], hex[oc.m_mask[idx]%16] );
   _product.code( "\" ), %u )", oc.m_size );
 }
+
 void
 CiscGenerator::insn_fetch_impl( Product_t& _product, char const* _codename ) const {
   _product.code( "CodeType %s;\n", _codename );
