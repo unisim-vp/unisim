@@ -18,9 +18,9 @@ MMC::MMC(uint8_t gpage, uint8_t rpage, uint8_t epage, uint8_t ppage, uint8_t dir
     
 }
 
-uint32_t MMC::getPhysicalAddress(uint16_t logicalAddress, MEMORY::MAP type) {
+physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type) {
 	
-	uint32_t address;
+	physical_address_t address;
 	
 	switch (type) {
 		case MEMORY::EXTENDED: { 

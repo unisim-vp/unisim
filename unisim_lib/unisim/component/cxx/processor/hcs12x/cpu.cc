@@ -1,5 +1,8 @@
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
+#include <iostream>
+
+#define LOCATION Function << __FUNCTION__ << File <<  __FILE__ << Line << __LINE__
 
 namespace unisim {
 namespace component {
@@ -36,13 +39,14 @@ CPU::CPU(const char *name, Object *parent):
 	logger_import("logger_import", this)
 	
 {
-
+	instruction_counter = 0;
+	
 	setRegA(0);
     setRegB(0);
     setRegX(0);
     setRegY(0);
-    setRegSP(0);
-    setRegPC(0);
+    setRegSP(0xFE00);
+    setRegPC(0x8000);
     
     // temporary declaration. my be in a config file or defined as constants
     uint8_t gpage=0, rpage=0, epage=0, ppage=0, direct=0;
@@ -68,6 +72,7 @@ CPU::~CPU()
 
 bool CPU::Setup()
 {
+	//TODO
 	return true;
 }
 
@@ -85,10 +90,49 @@ void CPU::OnBusCycle()
 
 void CPU::Step()
 {
+	uint16_t 	current_pc;
+
+	uint8_t 	buffer[CodeType::maxsize]; 
+	Operation 	*op;
+
+	while (true) {
+		current_pc = getRegPC();
+		
+		// ReadInsn(current_pc, insn);
+		ReadMemory(current_pc, buffer, CodeType::maxsize);
+		CodeType 	insn( buffer, CodeType::maxsize);
+		
+		/* Decode current PC */
+		op = this->Decode(current_pc, insn);
+		
+		/* Execute instruction */
+
+		if(logger_import) {
+			stringstream disasm_str;
+			stringstream ctstr;
+			
+			op->disasm(disasm_str);
+			
+			ctstr << insn;
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Executing instruction "
+				<< disasm_str.str()
+				<< " at 0x" << Hex << current_pc << Dec
+				<< " (0x" << Hex << ctstr.str() << Dec << ", " << instruction_counter << ")"
+				<< Endl << EndDebugInfo;
+		}
+
+		setRegPC(current_pc+op->GetEncoding().size);
+		op->execute(this);
+		
+		instruction_counter++;
+	}
+	
 }
 
 void CPU::Stop(int ret)
 {
+	exit(ret);
 }
 
 void CPU::Sync()
@@ -112,46 +156,72 @@ void CPU::RequiresFinishedInstructionReporting(bool report)
 //=====================================================================
 void CPU::Reset()
 {
+	//TODO
 }
 
 bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)
 {
-	return false;
+	BusRead(addr, (uint8_t *) buffer, size);
+	
+	return true;
 }
 
 bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size)
 {
-	return false;
+	BusWrite(addr, (uint8_t *) buffer, size);
+	
+	return true;
 }
 
 /* ********** MEMORY ACCESS ROUTINES ******* */
 
-uint8_t CPU::memRead8(uint16_t logicalAddress, MEMORY::MAP type) {
-	uint32_t address = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+uint8_t CPU::memRead8(address_t logicalAddress, MEMORY::MAP type) {
+
+	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+
+	uint8_t data;
+	bool status = ReadMemory(addr, &data, 1);
+	return data;
 	
-    return mem[address];
+/*	
+    return mem[addr];
+*/    
 }
 
-uint16_t CPU::memRead16(uint16_t logicalAddress, MEMORY::MAP type) {
-    
-    uint32_t address = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+uint16_t CPU::memRead16(address_t logicalAddress, MEMORY::MAP type) {
 
-    return (mem[address] << 8) | mem[address+1];
+    physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+
+	uint16_t data;
+	bool status = ReadMemory(addr, &data, 2);
+	return data;
+
+/*
+    return (mem[addr] << 8) | mem[addr+1];
+*/    
 }
 
-void CPU::memWrite8(uint16_t logicalAddress, uint8_t val, MEMORY::MAP type) {
-	uint32_t address = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+void CPU::memWrite8(address_t logicalAddress, uint8_t val, MEMORY::MAP type) {
 
-    mem[address] = val;
+	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+
+	bool status = WriteMemory( addr, &val, 1); 
+
+/*
+    mem[addr] = val;
+*/    
 }
 
-void CPU::memWrite16(uint16_t logicalAddress, uint16_t val, MEMORY::MAP type) {
+void CPU::memWrite16(address_t logicalAddress, uint16_t val, MEMORY::MAP type) {
 
-    uint32_t address = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
-    
-	mem[address] = (uint8_t) val >> 8;
-	mem[address+1] = (uint8_t) (val & 0x00FF);    
-	
+    physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+
+	bool status = WriteMemory(addr, &val, 2);
+
+/*    
+	mem[addr] = (uint8_t) val >> 8;
+	mem[addr+1] = (uint8_t) (val & 0x00FF);    
+*/	
 }
 
 /* ********** END MEM ACCESS ROUTINES ****** */

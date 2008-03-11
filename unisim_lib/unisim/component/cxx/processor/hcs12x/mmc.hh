@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <iostream>
+#include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 namespace unisim {
 namespace component {
@@ -31,7 +32,7 @@ public:
 
     MMC(uint8_t gpage, uint8_t rpage, uint8_t epage, uint8_t ppage, uint8_t direct=0x00);
        
-	uint32_t getPhysicalAddress(uint16_t logicalAddress, MEMORY::MAP type);
+	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type);
 	
     void    setGpage (uint8_t val);
     uint8_t getGpage ();

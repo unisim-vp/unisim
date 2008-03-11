@@ -24,7 +24,7 @@
 #include <inttypes.h>
 #include <iostream>
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
-
+#include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 
 namespace unisim {
@@ -39,6 +39,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
+
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -59,22 +60,23 @@ using unisim::service::interfaces::EndDebugError;
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Line;
+
 using unisim::util::debug::Register;
+
 using unisim::util::arithmetic::Add8;
 using unisim::util::arithmetic::Add16;
 using unisim::util::arithmetic::Sub8;
 using unisim::util::arithmetic::Sub16;
+
 using unisim::util::endian::endian_type;
+using unisim::util::endian::BigEndian2Host;
+
 using std::string;
 using std::stringstream;
 using std::map;
 using std::ostream;
 using std::vector;
 
-
-typedef uint16_t address_t;
-typedef uint32_t physical_address_t;
-typedef uint16_t reg_t;
 
 class CPU;
 
@@ -289,6 +291,14 @@ public:
 	virtual void Reset();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
+	
+	/* ******** MEMORY ACCESS ROUTINES ******* */
+	uint8_t memRead8(address_t addr, MEMORY::MAP type=MEMORY::EXTENDED);
+	void memWrite8(address_t addr,uint8_t val, MEMORY::MAP type=MEMORY::EXTENDED);
+	uint16_t memRead16(address_t addr, MEMORY::MAP type=MEMORY::EXTENDED);
+	void memWrite16(address_t addr,uint16_t val, MEMORY::MAP type=MEMORY::EXTENDED);
+	
+	/* ******** END MEM ACCESS ROUTINES ****** */
 
 	//=====================================================================
 	//=             CPURegistersInterface interface methods               =
@@ -387,17 +397,8 @@ public:
 
 	uint16_t xb_getAccRegValue(uint8_t rr);
 	/*************  END  XB  ***************/
-
-	/* ******** MMC::MEMORY ACCESS ROUTINES ******* */
-	uint8_t memRead8(uint16_t addr, MEMORY::MAP type=MEMORY::EXTENDED);
-	void memWrite8(uint16_t addr,uint8_t val, MEMORY::MAP type=MEMORY::EXTENDED);
-	uint16_t memRead16(uint16_t addr, MEMORY::MAP type=MEMORY::EXTENDED);
-	void memWrite16(uint16_t addr,uint16_t val, MEMORY::MAP type=MEMORY::EXTENDED);
-	
-	/* ******** END MEM ACCESS ROUTINES ****** */
 		 
     class CCR_t *ccr;   
-    class MMC	*mmc;
 	class EB	*eb;
 	
 private:
@@ -405,6 +406,9 @@ private:
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
 
+    class MMC	*mmc;
+
+	// Registers map
 	map<string, Register *> registers_registry;       
 
 	/** the instruction counter */

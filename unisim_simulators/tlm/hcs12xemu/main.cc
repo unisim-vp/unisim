@@ -105,7 +105,7 @@ using unisim::kernel::service::ServiceManager;
 void help(char *prog_name)
 {
 	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
-	cerr << "       'program' is statically linked ELF32 PowerPC Linux program" << endl << endl;
+	cerr << "       'program' is statically linked ELF32 HCS12X Linux program" << endl << endl;
 	cerr << "Options:" << endl;
 	cerr << "--inline-debugger" << endl;
 	cerr << "-d" << endl;
