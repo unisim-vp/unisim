@@ -1,14 +1,28 @@
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 #include <iostream>
+#include "unisim/util/debug/simple_register.hh"
 
 #define LOCATION Function << __FUNCTION__ << File <<  __FILE__ << Line << __LINE__
+
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace hcs12x {
+
+#if (defined(__GNUC__) && (__GNUC__ >= 3))
+#define INLINE __attribute__((always_inline))
+#else
+#define INLINE
+#endif
+
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Line;
+using unisim::util::debug::SimpleRegister;
+using unisim::util::debug::Symbol;
 
 template void EB::setter<uint8_t>(uint8_t rr, uint8_t val);
 template void EB::setter<uint16_t>(uint8_t rr, uint16_t val);
@@ -36,10 +50,30 @@ CPU::CPU(const char *name, Object *parent):
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
-	logger_import("logger_import", this)
+	logger_import("logger_import", this),
+//	itcm_logger_import("itcm_logger_import", this),
+//	dtcm_logger_import("dtcm_logger_import", this),
+	requires_memory_access_reporting(true),
+	requires_finished_instruction_reporting(true),
+//	default_endianess(E_BIG_ENDIAN),
+//	param_default_endianess("default-endianess", this, default_endianess),
+	verbose_all(false),
+//	param_verbose_all("verbose-all", this, verbose_all),
+	verbose_setup(false),
+//	param_verbose_setup("verbose-setup", this, verbose_setup),
+	verbose_step(false),
+//	param_verbose_step("verbose-step", this, verbose_step),
+//	verbose_step_insn(false),
+//	param_verbose_step_insn("verbose-step-insn", this, verbose_step_insn),
+	verbose_dump_regs_start(false),
+//	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
+	verbose_dump_regs_end(false),
+//	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
+//	memory_interface(_memory_interface),
+	instruction_counter(0)
+//	running(true)
 	
 {
-	instruction_counter = 0;
 	
 	setRegA(0);
     setRegB(0);
@@ -53,7 +87,9 @@ CPU::CPU(const char *name, Object *parent):
     
     mmc = new MMC(gpage, rpage, epage, ppage, direct);
     
+    /*
     memset(mem, 0, sizeof(mem));
+    */
     
     ccr = new CCR_t();
     eb = new EB(this);
@@ -64,6 +100,7 @@ CPU::~CPU()
 { 
 	delete mmc; mmc = NULL;
 	delete eb; eb = NULL;
+	delete ccr; ccr = NULL;
 }
 
 //=====================================================================
@@ -72,7 +109,65 @@ CPU::~CPU()
 
 bool CPU::Setup()
 {
-	//TODO
+	/* check verbose settings */
+	if(CONFIG::DEBUG_ENABLE && verbose_all) {
+		verbose_setup = true;
+		verbose_step = true;
+		verbose_dump_regs_start = true;
+		verbose_dump_regs_end = true;
+	}
+	if(CONFIG::DEBUG_ENABLE && verbose_all && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "verbose-all = true"
+			<< Endl << EndDebugInfo;
+	} else {
+		if(CONFIG::DEBUG_ENABLE && verbose_setup && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-setup = true"
+				<< Endl << EndDebugInfo;
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-step = true"
+				<< Endl << EndDebugInfo;
+		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-dump-regs-end = true"
+				<< Endl << EndDebugInfo;
+		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-dump-regs-start = true"
+				<< Endl << EndDebugInfo;
+	}
+	
+	/* setting debugging registers */
+	if(verbose_setup && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Initializing debugging registers"
+			<< Endl << EndDebugInfo;
+
+	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
+	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
+	
+	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
+	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);	
+	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
+	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
+	registers_registry["TMP1"] = new SimpleRegister<uint16_t>("TMP1", &regTMP[0]);
+	registers_registry["TMP2"] = new SimpleRegister<uint16_t>("TMP2", &regTMP[1]);
+	registers_registry["TMP3"] = new SimpleRegister<uint16_t>("TMP3", &regTMP[2]);
+		
+
+	if(!memory_access_reporting_import) {
+		requires_memory_access_reporting = false;
+		requires_finished_instruction_reporting = false;
+	}
+	
+//	if(statistics_import) {
+//		statistics_import->AddSource(Object::GetName(), statistics_id);
+//		statistics_import->AddStatistic(statistics_id, "instruction-counter", 
+//				&instruction_counter);
+//	}
+	
 	return true;
 }
 
@@ -95,14 +190,113 @@ void CPU::Step()
 	uint8_t 	buffer[CodeType::maxsize]; 
 	Operation 	*op;
 
-	while (true) {
+//	while (true) {
+	for (int i=0; i < 20; i++) {
 		current_pc = getRegPC();
 		
+
+		VerboseDumpRegsStart();
+		
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Starting step at PC = 0x"
+				<< Hex << current_pc << Dec
+				<< Endl << EndDebugInfo;
+		
+		if(debug_control_import) {
+			DebugControl<physical_address_t>::DebugCommand dbg_cmd;
+	
+			do {
+				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Fetching debug command (PC = 0x"
+						<< Hex << current_pc << Dec << ")"
+						<< Endl << EndDebugInfo;
+				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+		
+				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
+					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+						(*logger_import) << DebugInfo << LOCATION
+							<< "Received debug DBG_STEP command (PC = 0x"
+							<< Hex << current_pc << Dec << ")"
+							<< Endl << EndDebugInfo;
+					break;
+				}
+				if(dbg_cmd == DebugControl<physical_address_t>::DBG_SYNC) {
+					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+						(*logger_import) << DebugInfo << LOCATION
+							<< "Received debug DBG_SYNC command (PC = 0x"
+							<< Hex << current_pc << Dec << ")"
+							<< Endl << EndDebugInfo;
+					Sync();
+					continue;
+				}
+	
+				if(dbg_cmd == DebugControl<physical_address_t>::DBG_KILL) {
+					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+						(*logger_import) << DebugInfo << LOCATION
+							<< "Received debug DBG_KILL command (PC = 0x"
+							<< Hex << current_pc << Dec << ")"
+							<< Endl << EndDebugInfo;
+					Stop(0);
+				}
+				if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
+					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+						(*logger_import) << DebugInfo << LOCATION
+							<< "Received debug DBG_RESET command (PC = 0x"
+							<< Hex << current_pc << Dec << ")"
+							<< Endl << EndDebugInfo;
+					// TODO : memory_interface->Reset(); 
+				}
+			} while(1);
+		}
+	
+		if(requires_memory_access_reporting) {
+			if(memory_access_reporting_import) {
+				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Reporting memory acces for fetch at address 0x"
+						<< Hex << current_pc << Dec
+						<< Endl << EndDebugInfo;
+	/*
+				uint32_t insn_size;
+				if(GetCPSR_T())
+					insn_size = 2;
+				else
+					insn_size = 4;
+					
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, 
+						MemoryAccessReporting<address_t>::MT_INSN, 
+						current_pc, insn_size);
+	*/
+			}
+		}
+	
+	
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+		{
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Fetching (reading) instruction at address 0x"
+				<< Hex << current_pc << Dec
+				<< Endl << EndDebugInfo;
+		}
+
 		// ReadInsn(current_pc, insn);
 		ReadMemory(current_pc, buffer, CodeType::maxsize);
 		CodeType 	insn( buffer, CodeType::maxsize);
 		
 		/* Decode current PC */
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+		{
+			stringstream ctstr;
+			ctstr << insn;
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Decoding instruction at 0x"
+				<< Hex << current_pc << Dec
+				<< " (0x" << Hex << ctstr.str() << Dec << ")"
+				<< Endl << EndDebugInfo;
+		}
+
 		op = this->Decode(current_pc, insn);
 		
 		/* Execute instruction */
@@ -125,9 +319,19 @@ void CPU::Step()
 		setRegPC(current_pc+op->GetEncoding().size);
 		op->execute(this);
 		
+//		/* perform the memory load/store operations */
+//		PerformLoadStoreAccesses();
+		VerboseDumpRegsEnd();
+		
 		instruction_counter++;
+
+/*		
+		if(requires_finished_instruction_reporting)
+			if(memory_access_reporting_import)
+				memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
+*/		
 	}
-	
+	Stop(0);
 }
 
 void CPU::Stop(int ret)
@@ -145,10 +349,67 @@ void CPU::Sync()
 
 void CPU::RequiresMemoryAccessReporting(bool report)
 {
+	requires_memory_access_reporting = report;
 }
 
 void CPU::RequiresFinishedInstructionReporting(bool report)
 {
+	requires_finished_instruction_reporting = report;
+}
+
+/**************************************************************/
+/* Verbose methods (protected)                          START */
+/**************************************************************/
+
+inline INLINE 
+bool CPU::VerboseSetup() {
+	return CONFIG::DEBUG_ENABLE && verbose_setup && logger_import;
+}
+
+inline INLINE
+bool CPU::VerboseStep() {
+	return CONFIG::DEBUG_ENABLE && verbose_step && logger_import;
+}
+
+inline INLINE
+void CPU::VerboseDumpRegs() {
+/*	
+	for(unsigned int i = 0; i < 4; i++) {
+		for(unsigned int j = 0; j < 4; j++)
+			(*logger_import)
+				<< "\t- r" << ((i*4) + j) << " = 0x" << Hex << GetGPR((i*4) + j) << Dec;
+		(*logger_import) << Endl;
+	}
+	(*logger_import) << "\t- cpsr = (" << Hex << GetCPSR() << Dec << ") ";
+	typename CONFIG::reg_t mask;
+	for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
+		if((mask & GetCPSR()) != 0) (*logger_import) << "1";
+		else (*logger_import) << "0";
+	}
+	(*logger_import) << Endl;
+*/
+
+	// TODO	
+}
+
+inline INLINE
+void CPU::VerboseDumpRegsStart() {
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Register dump before starting instruction execution: " << Endl;
+		VerboseDumpRegs();
+		(*logger_import) << EndDebugInfo;
+	}
+}
+
+inline INLINE
+void CPU::VerboseDumpRegsEnd() {
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Register dump at the end of instruction execution: " << Endl;
+		VerboseDumpRegs();
+		(*logger_import) << EndDebugInfo;
+	}
 }
 
 //=====================================================================
@@ -236,9 +497,13 @@ void CPU::memWrite16(address_t logicalAddress, uint16_t val, MEMORY::MAP type) {
  * @param name The name of the requested register.
  * @return A pointer to the RegisterInterface corresponding to name.
  */
-Register *CPU::GetRegister(const char *name)
+Register* CPU::GetRegister(const char *name)
 {
-	return 0;
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else 
+		return NULL;
+
 }
 
 //=====================================================================
@@ -255,9 +520,13 @@ Register *CPU::GetRegister(const char *name)
  */
 string CPU::Disasm(physical_address_t addr, physical_address_t &next_addr)
 {
-	// TODO
-	next_addr = addr + 1;
-	return string("");
+	Operation *op = NULL;
+	
+	op = Decode(addr);
+	stringstream buffer;
+	op->disasm(buffer);
+
+	return buffer.str();
 }
 
 	//======================================================================
@@ -305,11 +574,11 @@ uint16_t CPU::xb_getAccRegValue(uint8_t rr) {
 }
 	
 
-void CPU::setRegA(int8_t val) { regA = val; }
-int8_t CPU::getRegA() { return regA; }
+void CPU::setRegA(uint8_t val) { regA = val; }
+uint8_t CPU::getRegA() { return regA; }
     
-void CPU::setRegB(int8_t val) { regB = val; }    
-int8_t CPU::getRegB() { return regB; }
+void CPU::setRegB(uint8_t val) { regB = val; }    
+uint8_t CPU::getRegB() { return regB; }
     
 void CPU::setRegD(uint16_t val) { 
     // regD == regA:regB

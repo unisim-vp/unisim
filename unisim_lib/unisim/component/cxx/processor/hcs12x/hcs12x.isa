@@ -25,7 +25,7 @@ impl {
 
 action {void} execute({CPU *} {cpu}) {
 	printf("Unknown instruction\n");
-	exit(-1);
+	//exit(-1);
 }
 
 action {void} disasm({ostream&} {sink}) {

@@ -1,6 +1,17 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CPU_HH__
 
+#ifdef GCC_INLINE
+#undef GCC_INLINE
+#endif
+
+#if defined(__GNUC__) && (__GNUC__ >= 3)
+#define GCC_INLINE __attribute__((always_inline))
+#else
+#define GCC_INLINE
+#endif
+
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
@@ -79,6 +90,14 @@ using std::vector;
 
 
 class CPU;
+
+struct CONFIG {
+	/*
+	 * static initialization may rise problems in SMP architectures !!!
+	 */
+	static const bool DEBUG_ENABLE = true;
+		
+};
 
 /* I think it's better to declare the CCR as uint16_t and then use mask to set/get each bit */
  
@@ -251,9 +270,6 @@ public:
 	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 	
-	//utils attributes
-	bool verbose_all;
-	bool verbose_setup;
 	
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
@@ -339,11 +355,11 @@ public:
 	//======================================================================
 	//=                  Registers Acces Routines                          =
 	//======================================================================
-    void    setRegA(int8_t val);
-    int8_t getRegA();
+    void    setRegA(uint8_t val);
+    uint8_t getRegA();
     
-    void    setRegB(int8_t val);
-    int8_t getRegB();
+    void    setRegB(uint8_t val);
+    uint8_t getRegB();
     
     void    setRegD(uint16_t val); // regD == regA:regB
     uint16_t getRegD();
@@ -400,9 +416,29 @@ public:
 		 
     class CCR_t *ccr;   
 	class EB	*eb;
+
+protected:
+	//utils attributes
+	bool verbose_all;
+	bool verbose_setup;
+	bool verbose_step;
+	bool verbose_dump_regs_start;
+	bool verbose_dump_regs_end;
+	
+		// verbose methods
+	inline bool VerboseSetup() GCC_INLINE;
+	inline bool VerboseStep() GCC_INLINE;
+	inline void VerboseDumpRegs() GCC_INLINE;
+	inline void VerboseDumpRegsStart() GCC_INLINE;
+	inline void VerboseDumpRegsEnd() GCC_INLINE;
+	
+	/** indicates if the memory accesses require to be reported */
+	bool requires_memory_access_reporting;
+	/** indicates if the finished instructions require to be reported */
+	bool requires_finished_instruction_reporting;
 	
 private:
-    int8_t      regA, regB;
+    uint8_t      regA, regB;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
 
@@ -413,10 +449,10 @@ private:
 
 	/** the instruction counter */
 	uint64_t instruction_counter;
-
+/*
 	// tempory, has to be removed once simulation platform integrated to model
 	uint8_t     mem[MEMORY_SIZE];
-
+*/
 };
 
 

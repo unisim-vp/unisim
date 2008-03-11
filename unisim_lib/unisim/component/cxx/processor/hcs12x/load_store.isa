@@ -239,33 +239,63 @@ ld_dyxs_idx.execute = {
 
 }
 
-// LEAY or LEAX or LEAS  oprx0_xysp
-// LEAY or LEAX or LEAS  oprx9,xysp
-// LEAY or LEAX or LEAS  oprx16,xysp
-op lea_yxs(0x06[6]:yxs[2]:> <:*xb[XB])
+  
+// LEAY oprx0_xysp
+// LEAY oprx9,xysp
+// LEAY oprx16,xysp
+op leay(0x19[8]:> <:*xb[XB])
 
-lea_yxs.disasm = {
+leay.disasm = {
 
-	switch (yxs) {
-	case 0: sink << "???? "; break;
-	case 1: sink << "LEAY "; break;
-	case 2: sink << "LEAX "; break;
-	case 3: sink << "LEAS ";
-	}
+	sink << "LEAY ";
+	xb->disasm(sink);
+}
+
+leay.execute = {
+
+    address_t	addr = xb->getEAddr(cpu);
+    
+	cpu->setRegY(addr);
+	
+}
+
+// LEAX oprx0_xysp
+// LEAX oprx9,xysp
+// LEAX oprx16,xysp
+op leax(0x1A[8]:> <:*xb[XB])
+
+leax.disasm = {
+
+	sink << "LEAX ";
 	
 	xb->disasm(sink);
 }
 
-lea_yxs.execute = {
+leax.execute = {
 
     address_t	addr = xb->getEAddr(cpu);
     
-	switch (yxs) {
-	case 0: /* throw an exception unknown instruction */; break;
-	case 1: cpu->setRegY(addr); break;
-	case 2: cpu->setRegX(addr); break;
-	case 3: cpu->setRegSP(addr);
-	}
+	cpu->setRegX(addr);
+	
+}
+
+// LEAS  oprx0_xysp
+// LEAS  oprx9,xysp
+// LEAS  oprx16,xysp
+op leas(0x1B[8]:> <:*xb[XB])
+
+leas.disasm = {
+
+	sink << "LEAS ";
+	
+	xb->disasm(sink);
+}
+
+leas.execute = {
+
+    address_t	addr = xb->getEAddr(cpu);
+    
+	cpu->setRegSP(addr);
 	
 }
 
