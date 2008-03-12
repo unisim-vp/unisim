@@ -90,8 +90,8 @@ public:
 	virtual void Reset();
 	
 	// cache interface implemented by the arm processor to get the request from the caches
-	virtual void BusWrite(physical_address_t addr, const uint8_t *buffer, uint32_t size);
-	virtual void BusRead(physical_address_t addr, uint8_t *buffer, uint32_t size);
+	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size);
+	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size);
 
 
 private:

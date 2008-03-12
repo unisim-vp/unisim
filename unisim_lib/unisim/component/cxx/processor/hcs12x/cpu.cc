@@ -57,6 +57,7 @@ CPU::CPU(const char *name, Object *parent):
 	requires_finished_instruction_reporting(true),
 //	default_endianess(E_BIG_ENDIAN),
 //	param_default_endianess("default-endianess", this, default_endianess),
+//	verbose_all(true),
 	verbose_all(false),
 //	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
@@ -74,7 +75,7 @@ CPU::CPU(const char *name, Object *parent):
 //	running(true)
 	
 {
-
+/*
 #if BYTE_ORDER == LITTLE_ENDIAN
 	regB = (uint8_t *) &regD;
 	regA = (uint8_t *) &regD+1;
@@ -83,8 +84,10 @@ CPU::CPU(const char *name, Object *parent):
 	regA = (uint8_t *) &regD;
 	regB = (uint8_t *) &regD+1;	
 #endif
-	
-    setRegD(0x0000);
+*/
+	setRegA(0x00);
+	setRegB(0x00);	
+//    setRegD(0x0000);
     setRegX(0x0000);
     setRegY(0x0000);
     setRegSP(0xFE00);
@@ -149,17 +152,14 @@ bool CPU::Setup()
 			<< "Initializing debugging registers"
 			<< Endl << EndDebugInfo;
 
-	registers_registry["A"] = new SimpleRegister<uint8_t>("A", regA);
-	registers_registry["B"] = new SimpleRegister<uint8_t>("B", regB);
-	registers_registry["D"] = new SimpleRegister<uint16_t>("D", &regD);	
+	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
+	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
+	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);	
 	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
 	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);	
 	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
 	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
-	registers_registry["TMP1"] = new SimpleRegister<uint16_t>("TMP1", &regTMP[0]);
-	registers_registry["TMP2"] = new SimpleRegister<uint16_t>("TMP2", &regTMP[1]);
-	registers_registry["TMP3"] = new SimpleRegister<uint16_t>("TMP3", &regTMP[2]);
-		
+	registers_registry["CCR"] = new SimpleRegister<CCR_t>("CCR", ccr);		// ici il faut une <class BitFieldRegister>
 
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
@@ -194,148 +194,146 @@ void CPU::Step()
 	uint8_t 	buffer[CodeType::maxsize]; 
 	Operation 	*op;
 
-//	while (true) {
-	for (int i=0; i < 20; i++) {
-		current_pc = getRegPC();
-		
 
-		VerboseDumpRegsStart();
-		
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Starting step at PC = 0x"
-				<< Hex << current_pc << Dec
-				<< Endl << EndDebugInfo;
-		
-		if(debug_control_import) {
-			DebugControl<physical_address_t>::DebugCommand dbg_cmd;
+	current_pc = getRegPC();
 	
-			do {
+
+	VerboseDumpRegsStart();
+	
+	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Starting step at PC = 0x"
+			<< Hex << current_pc << Dec
+			<< Endl << EndDebugInfo;
+	
+	if(debug_control_import) {
+		DebugControl<physical_address_t>::DebugCommand dbg_cmd;
+
+		do {
+			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Fetching debug command (PC = 0x"
+					<< Hex << current_pc << Dec << ")"
+					<< Endl << EndDebugInfo;
+			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+	
+			if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
-						<< "Fetching debug command (PC = 0x"
+						<< "Received debug DBG_STEP command (PC = 0x"
 						<< Hex << current_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
-				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
-		
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
-					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-						(*logger_import) << DebugInfo << LOCATION
-							<< "Received debug DBG_STEP command (PC = 0x"
-							<< Hex << current_pc << Dec << ")"
-							<< Endl << EndDebugInfo;
-					break;
-				}
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_SYNC) {
-					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-						(*logger_import) << DebugInfo << LOCATION
-							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< Hex << current_pc << Dec << ")"
-							<< Endl << EndDebugInfo;
-					Sync();
-					continue;
-				}
-	
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_KILL) {
-					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-						(*logger_import) << DebugInfo << LOCATION
-							<< "Received debug DBG_KILL command (PC = 0x"
-							<< Hex << current_pc << Dec << ")"
-							<< Endl << EndDebugInfo;
-					Stop(0);
-				}
-				if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
-					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-						(*logger_import) << DebugInfo << LOCATION
-							<< "Received debug DBG_RESET command (PC = 0x"
-							<< Hex << current_pc << Dec << ")"
-							<< Endl << EndDebugInfo;
-					// TODO : memory_interface->Reset(); 
-				}
-			} while(1);
-		}
-	
-		if(requires_memory_access_reporting) {
-			if(memory_access_reporting_import) {
+				break;
+			}
+			if(dbg_cmd == DebugControl<physical_address_t>::DBG_SYNC) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
-						<< "Reporting memory acces for fetch at address 0x"
-						<< Hex << current_pc << Dec
+						<< "Received debug DBG_SYNC command (PC = 0x"
+						<< Hex << current_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
-	/*
-				uint32_t insn_size;
-				if(GetCPSR_T())
-					insn_size = 2;
-				else
-					insn_size = 4;
-					
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, 
-						MemoryAccessReporting<address_t>::MT_INSN, 
-						current_pc, insn_size);
-	*/
+				Sync();
+				continue;
 			}
+
+			if(dbg_cmd == DebugControl<physical_address_t>::DBG_KILL) {
+				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Received debug DBG_KILL command (PC = 0x"
+						<< Hex << current_pc << Dec << ")"
+						<< Endl << EndDebugInfo;
+				Stop(0);
+			}
+			if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
+				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Received debug DBG_RESET command (PC = 0x"
+						<< Hex << current_pc << Dec << ")"
+						<< Endl << EndDebugInfo;
+				// TODO : memory_interface->Reset(); 
+			}
+		} while(1);
+	}
+
+	if(requires_memory_access_reporting) {
+		if(memory_access_reporting_import) {
+			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+				(*logger_import) << DebugInfo << LOCATION
+					<< "Reporting memory acces for fetch at address 0x"
+					<< Hex << current_pc << Dec
+					<< Endl << EndDebugInfo;
+/*
+			uint32_t insn_size;
+			if(GetCPSR_T())
+				insn_size = 2;
+			else
+				insn_size = 4;
+				
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, 
+					MemoryAccessReporting<address_t>::MT_INSN, 
+					current_pc, insn_size);
+*/
 		}
+	}
+
+
+	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+	{
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Fetching (reading) instruction at address 0x"
+			<< Hex << current_pc << Dec
+			<< Endl << EndDebugInfo;
+	}
+
+	// ReadInsn(current_pc, insn);
+	BusRead(current_pc, buffer, CodeType::maxsize);
+	CodeType 	insn( buffer, CodeType::maxsize);
 	
+	/* Decode current PC */
+	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+	{
+		stringstream ctstr;
+		ctstr << insn;
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Decoding instruction at 0x"
+			<< Hex << current_pc << Dec
+			<< " (0x" << Hex << ctstr.str() << Dec << ")"
+			<< Endl << EndDebugInfo;
+	}
+
+	op = this->Decode(current_pc, insn);
 	
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-		{
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Fetching (reading) instruction at address 0x"
-				<< Hex << current_pc << Dec
-				<< Endl << EndDebugInfo;
-		}
+	/* Execute instruction */
 
-		// ReadInsn(current_pc, insn);
-		ReadMemory(current_pc, buffer, CodeType::maxsize);
-		CodeType 	insn( buffer, CodeType::maxsize);
+	if(logger_import) {
+		stringstream disasm_str;
+		stringstream ctstr;
 		
-		/* Decode current PC */
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-		{
-			stringstream ctstr;
-			ctstr << insn;
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Decoding instruction at 0x"
-				<< Hex << current_pc << Dec
-				<< " (0x" << Hex << ctstr.str() << Dec << ")"
-				<< Endl << EndDebugInfo;
-		}
+		op->disasm(disasm_str);
+		
+		ctstr << insn;
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Executing instruction "
+			<< disasm_str.str()
+			<< " at 0x" << Hex << current_pc << Dec
+			<< " (0x" << Hex << ctstr.str() << Dec << ", " << instruction_counter << ")"
+			<< Endl << EndDebugInfo;
+	}
 
-		op = this->Decode(current_pc, insn);
+	setRegPC(current_pc+op->GetEncoding().size);
+	op->execute(this);
 		
-		/* Execute instruction */
-
-		if(logger_import) {
-			stringstream disasm_str;
-			stringstream ctstr;
-			
-			op->disasm(disasm_str);
-			
-			ctstr << insn;
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Executing instruction "
-				<< disasm_str.str()
-				<< " at 0x" << Hex << current_pc << Dec
-				<< " (0x" << Hex << ctstr.str() << Dec << ", " << instruction_counter << ")"
-				<< Endl << EndDebugInfo;
-		}
-
-		setRegPC(current_pc+op->GetEncoding().size);
-		op->execute(this);
-		
-//		/* perform the memory load/store operations */
-//		PerformLoadStoreAccesses();
-		VerboseDumpRegsEnd();
-		
-		instruction_counter++;
+//	/* perform the memory load/store operations */
+//	PerformLoadStoreAccesses();
+	VerboseDumpRegsEnd();
+	
+	instruction_counter++;
 
 /*		
-		if(requires_finished_instruction_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
-*/		
-	}
-	Stop(0);
+	if(requires_finished_instruction_reporting)
+		if(memory_access_reporting_import)
+			memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
+*/	
+	
 }
 
 void CPU::Stop(int ret)
@@ -421,67 +419,64 @@ void CPU::Reset()
 
 bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)
 {
-	BusRead(addr, (uint8_t *) buffer, size);
+	if (memory_import) {
+		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
+	}
+//	BusRead(addr, (uint8_t *) buffer, size);
 	
-	return true;
+	return false;
 }
 
 bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size)
 {
-	BusWrite(addr, (uint8_t *) buffer, size);
+	if (memory_import) {
+		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
+	}
+
+//	BusWrite(addr, (uint8_t *) buffer, size);
 	
-	return true;
+	return false;
 }
 
 /* ********** MEMORY ACCESS ROUTINES ******* */
 
 uint8_t CPU::memRead8(address_t logicalAddress, MEMORY::MAP type) {
 
-	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type);
 
 	uint8_t data;
-	bool status = ReadMemory(addr, &data, 1);
+	BusRead(addr, &data, 1);
 	return data;
 	
-/*	
-    return mem[addr];
-*/    
 }
 
 uint16_t CPU::memRead16(address_t logicalAddress, MEMORY::MAP type) {
 
-    physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+    physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type);
 
 	uint16_t data;
-	bool status = ReadMemory(addr, &data, 2);
-	return data;
+	BusRead(addr, &data, 2);
 
-/*
-    return (mem[addr] << 8) | mem[addr+1];
-*/    
+	return BigEndian2Host(data);
+
 }
 
 void CPU::memWrite8(address_t logicalAddress, uint8_t val, MEMORY::MAP type) {
 
-	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type);
 
-	bool status = WriteMemory( addr, &val, 1); 
+	BusWrite( addr, &val, 1); 
 
-/*
-    mem[addr] = val;
-*/    
 }
 
 void CPU::memWrite16(address_t logicalAddress, uint16_t val, MEMORY::MAP type) {
 
-    physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, MEMORY::DIRECT);
+    physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type);
 
-	bool status = WriteMemory(addr, &val, 2);
+	val = Host2BigEndian(val);
+	
+	BusWrite(addr, &val, 2);
 
-/*    
-	mem[addr] = (uint8_t) val >> 8;
-	mem[addr+1] = (uint8_t) (val & 0x00FF);    
-*/	
 }
 
 /* ********** END MEM ACCESS ROUTINES ****** */
@@ -520,12 +515,20 @@ Register* CPU::GetRegister(const char *name)
 string CPU::Disasm(physical_address_t addr, physical_address_t &next_addr)
 {
 	Operation *op = NULL;
+	uint8_t 	buffer[CodeType::maxsize];
+	 
+	ReadMemory(addr, buffer, CodeType::maxsize);
+	CodeType 	insn( buffer, CodeType::maxsize);
+	
+	op = this->Decode(addr, insn);
+	
 	
 	op = Decode(addr);
-	stringstream buffer;
-	op->disasm(buffer);
+	stringstream disasmBuffer;
+	op->disasm(disasmBuffer);
 
-	return buffer.str();
+	next_addr = addr + op->GetEncoding().size;
+	return disasmBuffer.str();
 }
 
 	//======================================================================
@@ -573,22 +576,26 @@ uint16_t CPU::xb_getAccRegValue(uint8_t rr) {
 }
 	
 
-void CPU::setRegA(uint8_t val) { *regA = val; }
-uint8_t CPU::getRegA() { return *regA; }
+void CPU::setRegA(uint8_t val) { regA = val; }
+uint8_t CPU::getRegA() { return regA; }
     
-void CPU::setRegB(uint8_t val) { *regB = val; }    
-uint8_t CPU::getRegB() { return *regB; }
+void CPU::setRegB(uint8_t val) { regB = val; }    
+uint8_t CPU::getRegB() { return regB; }
     
 void CPU::setRegD(uint16_t val) { 
     // regD == regA:regB
 
-    regD = val; 
+	uint16_t value = Host2BigEndian(val);
+	
+	setRegA((uint8_t) (value >> 8));
+	setRegB((uint8_t) (value & 0x00FF));
+
 }    
     
 uint16_t CPU::getRegD() { 
     // regD == regA:regB
-
-    return regD; 
+	uint16_t val = (((uint16_t) getRegA()) << 8) | getRegB();
+    return BigEndian2Host(val); 
 }
 
 void CPU::setRegX(uint16_t val) { regX = val; }    

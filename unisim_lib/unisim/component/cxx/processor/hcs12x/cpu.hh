@@ -81,6 +81,7 @@ using unisim::util::arithmetic::Sub16;
 
 using unisim::util::endian::endian_type;
 using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::Host2BigEndian;
 
 using std::string;
 using std::stringstream;
@@ -348,8 +349,8 @@ public:
 
     inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 
-	virtual void BusWrite(physical_address_t addr, const uint8_t *buffer, uint32_t size) = 0;
-	virtual void BusRead(physical_address_t addr, uint8_t *buffer, uint32_t size) = 0;
+	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size) = 0;
+	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size) = 0;
 
 
 	//======================================================================
@@ -438,8 +439,9 @@ protected:
 	bool requires_finished_instruction_reporting;
 	
 private:
-    uint8_t		*regA, *regB;
-    uint16_t	regD;
+	uint8_t		regA, regB;
+
+//    uint16_t	regD;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
 

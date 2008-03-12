@@ -284,7 +284,7 @@ Reset() {
 void 
 HCS12X :: 
 BusRead(physical_address_t addr, 
-	uint8_t *buffer, 
+	void *buffer, 
 	uint32_t size) {
 	if( verbose_tlm_commands && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -376,7 +376,7 @@ BusRead(physical_address_t addr,
 void 
 HCS12X :: 
 BusWrite(physical_address_t addr, 
-	const uint8_t *buffer, 
+	const void *buffer, 
 	uint32_t size) {
 	if( verbose_tlm_commands && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
