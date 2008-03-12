@@ -74,11 +74,19 @@ CPU::CPU(const char *name, Object *parent):
 //	running(true)
 	
 {
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+	regB = (uint8_t *) &regD;
+	regA = (uint8_t *) &regD+1;
+#endif
+#if BYTE_ORDER == BIG_ENDIAN
+	regA = (uint8_t *) &regD;
+	regB = (uint8_t *) &regD+1;	
+#endif
 	
-	setRegA(0);
-    setRegB(0);
-    setRegX(0);
-    setRegY(0);
+    setRegD(0x0000);
+    setRegX(0x0000);
+    setRegY(0x0000);
     setRegSP(0xFE00);
     setRegPC(0x8000);
     
@@ -86,11 +94,7 @@ CPU::CPU(const char *name, Object *parent):
     uint8_t gpage=0, rpage=0, epage=0, ppage=0, direct=0;
     
     mmc = new MMC(gpage, rpage, epage, ppage, direct);
-    
-    /*
-    memset(mem, 0, sizeof(mem));
-    */
-    
+  
     ccr = new CCR_t();
     eb = new EB(this);
 
@@ -145,9 +149,9 @@ bool CPU::Setup()
 			<< "Initializing debugging registers"
 			<< Endl << EndDebugInfo;
 
-	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
-	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
-	
+	registers_registry["A"] = new SimpleRegister<uint8_t>("A", regA);
+	registers_registry["B"] = new SimpleRegister<uint8_t>("B", regB);
+	registers_registry["D"] = new SimpleRegister<uint16_t>("D", &regD);	
 	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
 	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);	
 	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
@@ -373,23 +377,18 @@ bool CPU::VerboseStep() {
 
 inline INLINE
 void CPU::VerboseDumpRegs() {
-/*	
-	for(unsigned int i = 0; i < 4; i++) {
-		for(unsigned int j = 0; j < 4; j++)
-			(*logger_import)
-				<< "\t- r" << ((i*4) + j) << " = 0x" << Hex << GetGPR((i*4) + j) << Dec;
-		(*logger_import) << Endl;
-	}
-	(*logger_import) << "\t- cpsr = (" << Hex << GetCPSR() << Dec << ") ";
-	typename CONFIG::reg_t mask;
-	for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
-		if((mask & GetCPSR()) != 0) (*logger_import) << "1";
-		else (*logger_import) << "0";
-	}
-	(*logger_import) << Endl;
-*/
 
-	// TODO	
+	(*logger_import) << "\t- A" << " = 0x" << Hex << getRegA() << Dec;
+	(*logger_import) << "\t- B" << " = 0x" << Hex << getRegB() << Dec;
+	(*logger_import) << "\t- D" << " = 0x" << Hex << getRegD() << Dec;
+	(*logger_import) << Endl;
+	(*logger_import) << "\t- X" << " = 0x" << Hex << getRegX() << Dec;
+	(*logger_import) << "\t- Y" << " = 0x" << Hex << getRegY() << Dec;
+	(*logger_import) << Endl;
+	(*logger_import) << "\t- SP" << " = 0x" << Hex << getRegSP() << Dec;
+	(*logger_import) << "\t- PC" << " = 0x" << Hex << getRegPC() << Dec;
+	(*logger_import) << Endl;
+
 }
 
 inline INLINE
@@ -574,26 +573,22 @@ uint16_t CPU::xb_getAccRegValue(uint8_t rr) {
 }
 	
 
-void CPU::setRegA(uint8_t val) { regA = val; }
-uint8_t CPU::getRegA() { return regA; }
+void CPU::setRegA(uint8_t val) { *regA = val; }
+uint8_t CPU::getRegA() { return *regA; }
     
-void CPU::setRegB(uint8_t val) { regB = val; }    
-uint8_t CPU::getRegB() { return regB; }
+void CPU::setRegB(uint8_t val) { *regB = val; }    
+uint8_t CPU::getRegB() { return *regB; }
     
 void CPU::setRegD(uint16_t val) { 
     // regD == regA:regB
-    regA = (uint8_t) (val >> 8); 
-    regB = (uint8_t) (val & 0x00ff); 
+
+    regD = val; 
 }    
     
 uint16_t CPU::getRegD() { 
     // regD == regA:regB
-    uint16_t tmp;
-        
-    tmp = (uint16_t) regA;
-    tmp = (tmp << 8) | regB;
-        
-    return tmp; 
+
+    return regD; 
 }
 
 void CPU::setRegX(uint16_t val) { regX = val; }    

@@ -438,7 +438,8 @@ protected:
 	bool requires_finished_instruction_reporting;
 	
 private:
-    uint8_t      regA, regB;
+    uint8_t		*regA, *regB;
+    uint16_t	regD;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
 
@@ -449,10 +450,7 @@ private:
 
 	/** the instruction counter */
 	uint64_t instruction_counter;
-/*
-	// tempory, has to be removed once simulation platform integrated to model
-	uint8_t     mem[MEMORY_SIZE];
-*/
+
 };
 
 
