@@ -60,24 +60,30 @@ using unisim::component::cxx::memory::flash::am29lv::MODE;
 using unisim::component::cxx::memory::flash::am29lv::MODE_X8;
 using unisim::component::cxx::memory::flash::am29lv::MODE_X16;
 
-template <> Parameter<MODE>::Parameter(const char *_name, Object *_object, MODE& _storage, const char *_description) :
-	ParameterBase(_name, _object, "memory flash am29lv mode", _description), storage(&_storage)
+template <> Variable<MODE>::Variable(const char *_name, Object *_object, MODE& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
 }
 
-template <> Parameter<MODE>::operator bool () const { return *storage == MODE_X8; }
-template <> Parameter<MODE>::operator long long () const { return (*storage == MODE_X8) ? 1: 0; }
-template <> Parameter<MODE>::operator unsigned long long () const { return (*storage == MODE_X8) ? 1 : 0; }
-template <> Parameter<MODE>::operator double () const { return (double)(*storage == MODE_X8) ? 1 : 0; }
-template <> Parameter<MODE>::operator string () const { return (*storage == MODE_X8)?(string("x8")):(string("x16"));}
+template <>
+const char *Variable<MODE>::GetDataTypeName() const
+{
+	return "memory flash am29lv mode";
+}
 
-template <> ParameterBase& Parameter<MODE>::operator = (bool value) { *storage = (value ? MODE_X8 : MODE_X16); return *this;}
-template <> ParameterBase& Parameter<MODE>::operator = (long long value) { *storage = value? MODE_X8 : MODE_X16; return *this;}
-template <> ParameterBase& Parameter<MODE>::operator = (unsigned long long value) { *storage = value? MODE_X8 : MODE_X16; return *this;}
-template <> ParameterBase& Parameter<MODE>::operator = (double value) { *storage = value? MODE_X8 : MODE_X16; return *this;}
-template <> ParameterBase& Parameter<MODE>::operator = (const char *value) { *storage = (string(value) == string("x8")) ? MODE_X8 : MODE_X16; return *this; }
+template <> Variable<MODE>::operator bool () const { return *storage == MODE_X8; }
+template <> Variable<MODE>::operator long long () const { return (*storage == MODE_X8) ? 1: 0; }
+template <> Variable<MODE>::operator unsigned long long () const { return (*storage == MODE_X8) ? 1 : 0; }
+template <> Variable<MODE>::operator double () const { return (double)(*storage == MODE_X8) ? 1 : 0; }
+template <> Variable<MODE>::operator string () const { return (*storage == MODE_X8)?(string("x8")):(string("x16"));}
 
-template class Parameter<MODE>;
+template <> VariableBase& Variable<MODE>::operator = (bool value) { *storage = (value ? MODE_X8 : MODE_X16); return *this;}
+template <> VariableBase& Variable<MODE>::operator = (long long value) { *storage = value? MODE_X8 : MODE_X16; return *this;}
+template <> VariableBase& Variable<MODE>::operator = (unsigned long long value) { *storage = value? MODE_X8 : MODE_X16; return *this;}
+template <> VariableBase& Variable<MODE>::operator = (double value) { *storage = value? MODE_X8 : MODE_X16; return *this;}
+template <> VariableBase& Variable<MODE>::operator = (const char *value) { *storage = (string(value) == string("x8")) ? MODE_X8 : MODE_X16; return *this; }
+
+template class Variable<MODE>;
 
 } // end of namespace service
 } // end of namespace kernel

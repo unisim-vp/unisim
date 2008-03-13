@@ -34,16 +34,131 @@
  */
 
 #include "unisim/component/cxx/pci/types.hh"
-#include "unisim/component/cxx/pci/types.tcc"
 
 namespace unisim {
 namespace kernel {
 namespace service {
 
+using std::stringstream;
 using namespace unisim::component::cxx::pci;
 
-template class Parameter<PCISpace>;
+
+template <> Variable<PCISpace>::Variable(const char *_name, Object *_object, PCISpace& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
+{
+	AddEnumeratedValue("mem");
+	AddEnumeratedValue("i/o");
+	AddEnumeratedValue("cfg");
+}
+
+template <>
+const char *Variable<PCISpace>::GetDataTypeName() const
+{
+	return "pci space";
+}
+
+template <> Variable<PCISpace>::operator bool () const {
+	//this should't be implemented 
+	return false; 
+}
+
+template <> Variable<PCISpace>::operator long long () const {
+	switch(*storage) {
+	case SP_MEM:
+		return 1;
+	case SP_IO:
+		return 2;
+	case SP_CONFIG:
+		return 3;
+	} 
+}
+    
+template <> Variable<PCISpace>::operator unsigned long long () const {   	
+  	switch(*storage) {
+	case SP_MEM:
+		return 1;
+	case SP_IO:
+		return 2;
+	case SP_CONFIG:
+		return 3;
+	} 
+}
+
+template <> Variable<PCISpace>::operator double () const { 	
+  	switch(*storage) {
+  	case SP_MEM:
+		return (double)1;
+	case SP_IO:
+		return (double)2;
+	case SP_CONFIG:
+		return (double)3;
+	} 
+}
+
+template <> Variable<PCISpace>::operator string () const {
+	switch(*storage) {
+	case SP_MEM:
+		return "mem";
+	case SP_IO:
+		return "i/o";
+	case SP_CONFIG:
+		return "cfg";
+	} 
+}
   
+template <> VariableBase& Variable<PCISpace>::operator = (bool value) { return *this;}
+
+template <> VariableBase& Variable<PCISpace>::operator = (long long value) { 
+	switch(value) {
+	case 1:
+		*storage = SP_MEM;
+		break;
+	case 2:
+		*storage = SP_IO; 
+		break;
+	case 3:
+		*storage = SP_CONFIG;
+		break;
+	} 
+	return *this;
+}
+
+template <> VariableBase& Variable<PCISpace>::operator = (unsigned long long value) {   	
+  	switch(value) {
+	case 1:
+		*storage = SP_MEM;
+		break;
+	case 2:
+		*storage = SP_IO; 
+		break;
+	case 3:
+		*storage = SP_CONFIG;
+		break;
+	} 
+	return *this;
+}
+
+template <> VariableBase& Variable<PCISpace>::operator = (double value) {   	
+  	if (value==1) 
+		*storage = SP_MEM;
+	if (value==2) 
+		*storage = SP_IO; 
+	if (value==3) 
+		*storage = SP_CONFIG;
+ 	return *this;
+}
+
+template <> VariableBase& Variable<PCISpace>::operator = (const char *value) { 
+	if (string(value) == string("mem"))
+		*storage = SP_MEM;
+	if (string(value) == string("i/o"))
+		*storage = SP_IO; 
+	if (string(value) == string("cfg"))
+		*storage = SP_CONFIG;
+ 	return *this;
+}
+
+template class Parameter<PCISpace>;
 template class ParameterArray<PCISpace>;
   
 }

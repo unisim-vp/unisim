@@ -48,9 +48,9 @@ using unisim::util::time::TU_MS;
 using unisim::util::time::TU_SEC;
 
 template <> 
-Parameter<time_unit_type>::
-Parameter(const char *_name, Object *_object, time_unit_type& _storage, const char *_description) :
-	ParameterBase(_name, _object, "time-unit", _description), storage(&_storage) {
+Variable<time_unit_type>::
+Variable(const char *_name, Object *_object, time_unit_type& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage) {
 	AddEnumeratedValue("TU_FS");
 	AddEnumeratedValue("TU_PS");
 	AddEnumeratedValue("TU_NS");
@@ -59,14 +59,20 @@ Parameter(const char *_name, Object *_object, time_unit_type& _storage, const ch
 	AddEnumeratedValue("TU_SEC");
 }
 
+template <>
+const char *Variable<time_unit_type>::GetDataTypeName() const
+{
+	return "time-unit";
+}
+
 template <> 
-Parameter<time_unit_type>::
+Variable<time_unit_type>::
 operator bool () const { 
 	return *storage == TU_FS; 
 }
 
 template <> 
-Parameter<time_unit_type>::
+Variable<time_unit_type>::
 operator long long () const {
 	switch(*storage) {
 	case TU_FS: return 0;
@@ -79,7 +85,7 @@ operator long long () const {
 }
 
 template <> 
-Parameter<time_unit_type>::
+Variable<time_unit_type>::
 operator unsigned long long () const { 
 	switch(*storage) {
 	case TU_FS: return 0;
@@ -92,7 +98,7 @@ operator unsigned long long () const {
 }
 
 template <> 
-Parameter<time_unit_type>::
+Variable<time_unit_type>::
 operator double () const { 
 	switch(*storage) {
 	case TU_FS: return 0;
@@ -105,7 +111,7 @@ operator double () const {
 }
 
 template <> 
-Parameter<time_unit_type>::
+Variable<time_unit_type>::
 operator string () const { 
 	switch(*storage) {
 	case TU_FS: return string("TU_FS");
@@ -118,14 +124,14 @@ operator string () const {
 }
 
 template <> 
-ParameterBase& Parameter<time_unit_type>::
+VariableBase& Variable<time_unit_type>::
 operator = (bool value) { 
 	*storage = (value?TU_PS:TU_FS); 
 	return *this;
 }
 
 template <> 
-ParameterBase& Parameter<time_unit_type>::
+VariableBase& Variable<time_unit_type>::
 operator = (long long value) { 
 	switch(value) {
 	case 0:
@@ -154,7 +160,7 @@ operator = (long long value) {
 }
 
 template <> 
-ParameterBase& Parameter<time_unit_type>::
+VariableBase& Variable<time_unit_type>::
 operator = (unsigned long long value) { 
 	switch(value) {
 	case 0:
@@ -183,7 +189,7 @@ operator = (unsigned long long value) {
 }
 
 template <> 
-ParameterBase& Parameter<time_unit_type>::
+VariableBase& Variable<time_unit_type>::
 operator = (double value) {
 	unsigned long long int ivalue = (unsigned long long int)value;
 	switch(ivalue) {
@@ -213,7 +219,7 @@ operator = (double value) {
 }
 
 template <> 
-ParameterBase& Parameter<time_unit_type>::
+VariableBase& Variable<time_unit_type>::
 operator = (const char *value) {
 	if(string(value) == string("TU_FS")) {
 		*storage = TU_FS;
@@ -243,7 +249,7 @@ operator = (const char *value) {
 	return *this; 
 }
 
-template class Parameter<time_unit_type>;
+template class Variable<time_unit_type>;
 
 
 } // end of namespace service

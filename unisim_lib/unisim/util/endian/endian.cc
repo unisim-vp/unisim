@@ -44,31 +44,38 @@ using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::E_BIG_ENDIAN;
 //  namespace full_system::memories::endian_type;
 
-//   template <> Parameter<endian_type>::Parameter(const char *_name, Configurable *_configurable, endian_type& _storage) :
-//     ParameterBase(_name, _configurable), storage(&_storage)
+//   template <> Variable<endian_type>::Variable(const char *_name, Configurable *_configurable, endian_type& _storage) :
+//     VariableBase(_name, _configurable), storage(&_storage)
 //   {
 //   }
 
-template <> Parameter<endian_type>::Parameter(const char *_name, Object *_object, endian_type& _storage, const char *_description) :
-	ParameterBase(_name, _object, "endianess", _description), storage(&_storage)
+template <> Variable<endian_type>::Variable(const char *_name, Object *_object, endian_type& _storage, Type type, const char *_description) :
+	VariableBase(_name, _object, type, _description), storage(&_storage)
 {
 	AddEnumeratedValue("little-endian");
 	AddEnumeratedValue("big-endian");
 }
 
-template <> Parameter<endian_type>::operator bool () const { return *storage == E_LITTLE_ENDIAN; }
-template <> Parameter<endian_type>::operator long long () const { return (*storage == E_LITTLE_ENDIAN)?1:0; }
-template <> Parameter<endian_type>::operator unsigned long long () const { return (*storage == E_LITTLE_ENDIAN)?1:0; }
-template <> Parameter<endian_type>::operator double () const { return (double)(*storage == E_LITTLE_ENDIAN)?1:0; }
-template <> Parameter<endian_type>::operator string () const { return (*storage == E_LITTLE_ENDIAN)?(string("little-endian")):(string("big-endian"));}
+template <>
+const char *Variable<endian_type>::GetDataTypeName() const
+{
+	return "endianess";
+}
 
-template <> ParameterBase& Parameter<endian_type>::operator = (bool value) { *storage = (value?E_LITTLE_ENDIAN:E_BIG_ENDIAN); return *this;}
-template <> ParameterBase& Parameter<endian_type>::operator = (long long value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
-template <> ParameterBase& Parameter<endian_type>::operator = (unsigned long long value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
-template <> ParameterBase& Parameter<endian_type>::operator = (double value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
-template <> ParameterBase& Parameter<endian_type>::operator = (const char *value) { *storage = (string(value) == string("little-endian"))?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this; }
 
-template class Parameter<endian_type>;
+template <> Variable<endian_type>::operator bool () const { return *storage == E_LITTLE_ENDIAN; }
+template <> Variable<endian_type>::operator long long () const { return (*storage == E_LITTLE_ENDIAN)?1:0; }
+template <> Variable<endian_type>::operator unsigned long long () const { return (*storage == E_LITTLE_ENDIAN)?1:0; }
+template <> Variable<endian_type>::operator double () const { return (double)(*storage == E_LITTLE_ENDIAN)?1:0; }
+template <> Variable<endian_type>::operator string () const { return (*storage == E_LITTLE_ENDIAN)?(string("little-endian")):(string("big-endian"));}
+
+template <> VariableBase& Variable<endian_type>::operator = (bool value) { *storage = (value?E_LITTLE_ENDIAN:E_BIG_ENDIAN); return *this;}
+template <> VariableBase& Variable<endian_type>::operator = (long long value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
+template <> VariableBase& Variable<endian_type>::operator = (unsigned long long value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
+template <> VariableBase& Variable<endian_type>::operator = (double value) { *storage = value?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this;}
+template <> VariableBase& Variable<endian_type>::operator = (const char *value) { *storage = (string(value) == string("little-endian"))?E_LITTLE_ENDIAN:E_BIG_ENDIAN; return *this; }
+
+template class Variable<endian_type>;
 
 } // end of service namespace
 } // end of kernel namespace

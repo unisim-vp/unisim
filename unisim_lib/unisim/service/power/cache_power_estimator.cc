@@ -43,16 +43,22 @@ namespace unisim {
 namespace kernel {
 namespace service {
 
-template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::Parameter(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, const char *_description) :
-ParameterBase(_name, _object, "cache power estimator access mode", _description), storage(&_storage)
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::Variable(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, Type type, const char *_description) :
+VariableBase(_name, _object, type, _description), storage(&_storage)
 {
 }
 
-template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
-template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
-template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
-template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator double () const { return (double)(unsigned int)(*storage); }
-template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator string () const
+template <>
+const char *Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetDataTypeName() const
+{
+	return "cache power estimator access mode";
+}
+
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator double () const { return (double)(unsigned int)(*storage); }
+template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator string () const
 {
 	switch(*storage)
 	{
@@ -63,9 +69,9 @@ template <> Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::
 	return string("?");
 }
 
-template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (bool value) { return *this;}
+template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (bool value) { return *this;}
 
-template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (unsigned long long value)
+template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (unsigned long long value)
 {
 	switch(value)
 	{
@@ -83,17 +89,17 @@ template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator
 	return *this;
 }
 
-template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (long long value)
+template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (long long value)
 {
 	return (*this) = (unsigned long long) value;
 }
 
-template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (double value)
+template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (double value)
 {
 	return (*this) = (unsigned long long) value;
 }
 
-template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (const char *value)
+template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator = (const char *value)
 {
 	if(strcmp(value, "normal") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL; else
 	if(strcmp(value, "sequential") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL; else
@@ -102,7 +108,7 @@ template <> ParameterBase& Parameter<unisim::service::power::CachePowerEstimator
 	return *this;
 }
 
-template class Parameter<unisim::service::power::CachePowerEstimator::AccessMode>;
+template class Variable<unisim::service::power::CachePowerEstimator::AccessMode>;
 
 } // end of namespace service
 } // end of namespace kernel

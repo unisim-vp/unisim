@@ -950,8 +950,8 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					if(pos < len)
 					{
 						char ch[2];
-						string parameter_name;
-						string parameter_value;
+						string variable_name;
+						string variable_value;
 						ch[1] = 0;
 						// skip white characters
 						do
@@ -963,7 +963,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 
 						if(pos < len)
 						{
-							unisim::kernel::service::ParameterBase *param = 0;
+							unisim::kernel::service::VariableBase *variable = 0;
 
 							// fill-in parameter name
 							do
@@ -971,13 +971,13 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
 								pos += 2;
 								if(ch[0] == '=') break;
-								parameter_name += ch;
+								variable_name += ch;
 							} while(pos < len);
 
-							param = unisim::kernel::service::ServiceManager::GetParameter(parameter_name.c_str());
-							if(param == &unisim::kernel::service::ServiceManager::void_param)
+							variable = unisim::kernel::service::ServiceManager::GetVariable(variable_name.c_str());
+							if(variable == &unisim::kernel::service::ServiceManager::void_variable)
 							{
-								string msg("unknown parameter\n");
+								string msg("unknown variable\n");
 								OutputText(msg.c_str(), msg.length());
 								PutPacket("OK");
 								break;
@@ -986,7 +986,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 							if(pos >= len)
 							{
 								// it's a get!
-								string msg(parameter_name + "=" + ((string) *param) + "\n");
+								string msg(variable_name + "=" + ((string) *variable) + "\n");
 								OutputText(msg.c_str(), msg.length());
 								PutPacket("OK");
 								break;
@@ -998,12 +998,12 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
 								if(ch[0] == ' ') break;
 								pos += 2;
-								parameter_value += ch;
+								variable_value += ch;
 							}
 
-							string msg(parameter_name + "<-" + parameter_value + "\n");
+							string msg(variable_name + "<-" + variable_value + "\n");
 							OutputText(msg.c_str(), msg.length());
-							*param = parameter_value.c_str();
+							*variable = variable_value.c_str();
 							PutPacket("OK");
 							break;
 						}

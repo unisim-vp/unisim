@@ -80,12 +80,13 @@ XmlfyParameters(const char *filename) {
 		return false;
 	}
 
-	map<const char *, ParameterBase *, ServiceManager::ltstr>::iterator param_iter;
+	map<const char *, VariableBase *, ServiceManager::ltstr>::iterator variable_iter;
 
-	for(param_iter = ServiceManager::params.begin(); param_iter != ServiceManager::params.end(); param_iter++) {
+	for(variable_iter = ServiceManager::variables.begin(); variable_iter != ServiceManager::variables.end(); variable_iter++) {
 		//.parameter arrays containers have a special type (an empty string "") and they should not appear
 		//   in the parameter xml configuration file, so just ignore them
-		if(strcmp("", (*param_iter).second->GetType()) == 0) continue;
+		if((*variable_iter).second->GetType() != VariableBase::VAR_PARAMETER) continue;
+		if(strcmp("", (*variable_iter).second->GetDataTypeName()) == 0) continue;
 		// opening parameter element
 		rc = xmlTextWriterStartElement(writer, BAD_CAST "parameter");
 		if(rc < 0) {
@@ -101,7 +102,7 @@ XmlfyParameters(const char *filename) {
 				<< "error writing parameter name element" << endl;
 			return false;
 		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", (*param_iter).second->GetName());
+		rc = xmlTextWriterWriteFormatString(writer, "%s", (*variable_iter).second->GetName());
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter name value" << endl;
 			return false;
@@ -120,7 +121,7 @@ XmlfyParameters(const char *filename) {
 				<< "error writing parameter type element" << endl;
 			return false;
 		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", (*param_iter).second->GetType());
+		rc = xmlTextWriterWriteFormatString(writer, "%s", (*variable_iter).second->GetDataTypeName());
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter type value" << endl;
 			return false;
@@ -139,11 +140,11 @@ XmlfyParameters(const char *filename) {
 				<< "error writing parameter default value element" << endl;
 			return false;
 		}
-		if(string("double").compare((*param_iter).second->GetType()) == 0 ||
-				string("float").compare((*param_iter).second->GetType()) == 0) {
-			rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *(*param_iter).second);
+		if(string("double").compare((*variable_iter).second->GetDataTypeName()) == 0 ||
+				string("float").compare((*variable_iter).second->GetDataTypeName()) == 0) {
+			rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *(*variable_iter).second);
 		} else {
-			rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*param_iter).second).c_str());
+			rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*variable_iter).second).c_str());
 		}
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter default value" << endl;
@@ -163,11 +164,11 @@ XmlfyParameters(const char *filename) {
 				<< "error writing parameter value element" << endl;
 			return false;
 		}
-		if(string("double").compare((*param_iter).second->GetType()) == 0 ||
-				string("float").compare((*param_iter).second->GetType()) == 0) {
-			rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *(*param_iter).second);
+		if(string("double").compare((*variable_iter).second->GetDataTypeName()) == 0 ||
+				string("float").compare((*variable_iter).second->GetDataTypeName()) == 0) {
+			rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *(*variable_iter).second);
 		} else {
-			rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*param_iter).second).c_str());
+			rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*variable_iter).second).c_str());
 		}
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter value" << endl;
@@ -187,7 +188,7 @@ XmlfyParameters(const char *filename) {
 				<< "error writing parameter description element" << endl;
 			return false;
 		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", (*param_iter).second->GetDescription());
+		rc = xmlTextWriterWriteFormatString(writer, "%s", (*variable_iter).second->GetDescription());
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter description" << endl;
 			return false;
@@ -201,9 +202,9 @@ XmlfyParameters(const char *filename) {
 
 		// if the parameter has enumerated values then create an entry with the 
 		//   possible values
-		cerr << "checking for enumerated values " << (*param_iter).second->GetName() 
-			<< " (" << (*param_iter).second->HasEnumeratedValues() << ")" << endl;
-		if((*param_iter).second->HasEnumeratedValues()) {
+		cerr << "checking for enumerated values " << (*variable_iter).second->GetName() 
+			<< " (" << (*variable_iter).second->HasEnumeratedValues() << ")" << endl;
+		if((*variable_iter).second->HasEnumeratedValues()) {
 			rc = xmlTextWriterStartElement(writer, BAD_CAST "enumeration");
 			if(rc < 0) {
 				cerr << "Error(ServiceManager::XmlfyParameters): "
@@ -211,7 +212,7 @@ XmlfyParameters(const char *filename) {
 				return false;
 			}
 			vector<string> values;
-			(*param_iter).second->GetEnumeratedValues(values);
+			(*variable_iter).second->GetEnumeratedValues(values);
 			if(values.empty()) {
 				cerr << "Error(ServiceManager::XmlfyParameters): "
 					<< "could not get the parameter enumeration values" << endl;
@@ -340,12 +341,12 @@ ProcessXmlParamNode(xmlTextReaderPtr reader) {
 			cerr << "    name = " << cur_param->name.str() << endl;
 			cerr << "    value = " << cur_param->value.str() << endl;
 			cerr << "    description = " << cur_param->description.str() << endl;
-			ParameterBase *param = ServiceManager::GetParameter(cur_param->name.str().c_str());
-			if(param == NULL) {
-				cerr << "  !! could not get parameter '" << cur_param->name.str() << "'" << endl;
+			VariableBase *variable = ServiceManager::GetVariable(cur_param->name.str().c_str());
+			if(variable == NULL) {
+				cerr << "  !! could not get variable '" << cur_param->name.str() << "'" << endl;
 				return false;
 			}
-			*param = cur_param->value.str().c_str();
+			*variable = cur_param->value.str().c_str();
 			delete cur_param;
 		}
 		return true;

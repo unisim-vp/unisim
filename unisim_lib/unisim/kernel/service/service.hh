@@ -62,9 +62,9 @@ using std::vector;
 
 class EmptyClientInterface {};
 class Object;
-class ParameterBase;
-template <class TYPE> class Parameter;
-template <class TYPE> class ParameterArray;
+class VariableBase;
+template <class TYPE> class Variable;
+template <class TYPE> class VariableArray;
 template <class SERVICE_IF> class Client;
 template <class SERVICE_IF> class Service;
 class ServiceImportBase;
@@ -101,26 +101,26 @@ public:
 	static void Register(Object *object);
 	static void Register(ServiceImportBase *srv_import);
 	static void Register(ServiceExportBase *srv_export);
-	static void Register(ParameterBase *param);
+	static void Register(VariableBase *variable);
 
 	static void Unregister(Object *object);
 	static void Unregister(ServiceImportBase *srv_import);
 	static void Unregister(ServiceExportBase *srv_export);
-	static void Unregister(ParameterBase *param);
+	static void Unregister(VariableBase *variable);
 
 	static void Dump(ostream& os);
-	static void DumpParameters(ostream& os);
+	static void DumpVariables(ostream& os);
 	static bool XmlfyParameters(const char *filename);
 	static bool LoadXmlParameters(const char *filename);
 
 	static bool Setup();
 
-	static ParameterBase *GetParameter(const char *name);
+	static VariableBase *GetVariable(const char *name);
 
-	static ParameterBase void_param;
+	static VariableBase void_variable;
 private:
 	friend class Object;
-	friend class ParameterBase;
+	friend class VariableBase;
 	friend class XMLHelper;
 
 	struct ltstr
@@ -134,25 +134,28 @@ private:
 	static map<const char *, Object *, ltstr> objects;
 	static map<const char *, ServiceImportBase *, ltstr> imports;
 	static map<const char *, ServiceExportBase *, ltstr> exports;
-	static map<const char *, ParameterBase *, ltstr> params;
+	static map<const char *, VariableBase *, ltstr> variables;
 //
-//	static void ProcessXmlParameterNode(xmlTextReaderPtr reader);
+//	static void ProcessXmlVariableNode(xmlTextReaderPtr reader);
 };
 
 //=============================================================================
-//=                             ParameterBase                                 =
+//=                             VariableBase                                 =
 //=============================================================================
 
-class ParameterBase
+class VariableBase
 {
 public:
-	ParameterBase();
-	ParameterBase(const char *name, Object *owner, const char *type, const char *description);
-	virtual ~ParameterBase();
+	typedef enum { VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER } Type;
+
+	VariableBase();
+	VariableBase(const char *name, Object *owner, Type type, const char *description);
+	virtual ~VariableBase();
 
 	const char *GetName() const;
 	const char *GetDescription() const;
-	const char *GetType() const;
+	Type GetType() const;
+	virtual const char *GetDataTypeName() const;
 	bool HasEnumeratedValues() const;
 	bool HasEnumeratedValue(const char *value) const;
 	void GetEnumeratedValues(vector<string> &values) const;
@@ -173,68 +176,153 @@ public:
 	operator float () const;
 	virtual operator double () const;
 	virtual operator string () const;
-	virtual ParameterBase& operator = (bool value);
-	ParameterBase& operator = (char value);
-	ParameterBase& operator = (short value);
-	ParameterBase& operator = (int value);
-	ParameterBase& operator = (long value);
-	virtual ParameterBase& operator = (long long value);
-	ParameterBase& operator = (unsigned char value);
-	ParameterBase& operator = (unsigned short value);
-	ParameterBase& operator = (unsigned int value);
-	ParameterBase& operator = (unsigned long value);
-	virtual ParameterBase& operator = (unsigned long long value);
-	ParameterBase& operator = (float value);
-	virtual ParameterBase& operator = (double value);
-	virtual ParameterBase& operator = (const char * value);
+	virtual VariableBase& operator = (bool value);
+	VariableBase& operator = (char value);
+	VariableBase& operator = (short value);
+	VariableBase& operator = (int value);
+	VariableBase& operator = (long value);
+	virtual VariableBase& operator = (long long value);
+	VariableBase& operator = (unsigned char value);
+	VariableBase& operator = (unsigned short value);
+	VariableBase& operator = (unsigned int value);
+	VariableBase& operator = (unsigned long value);
+	virtual VariableBase& operator = (unsigned long long value);
+	VariableBase& operator = (float value);
+	virtual VariableBase& operator = (double value);
+	virtual VariableBase& operator = (const char * value);
 
-	virtual ParameterBase& operator [] (unsigned int index);
+	virtual VariableBase& operator [] (unsigned int index);
 private:
 	string name;
 	Object *owner;
 	string description;
-	string type;
 	vector<string> enumerated_values;
+	Type type;
 };
 
 //=============================================================================
-//=                            Parameter<TYPE>                                =
+//=                            Variable<TYPE>                                =
 //=============================================================================
 
 template <class TYPE>
-class Parameter : public ParameterBase
+class Variable : public VariableBase
 {
 public:
-	Parameter(const char *name, Object *_owner, TYPE& storage, const char *description = NULL);
+	typedef VariableBase::Type Type;
+	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
 
+	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;
 	virtual operator double () const;
 	virtual operator string () const;
-	virtual ParameterBase& operator = (bool value);
-	virtual ParameterBase& operator = (long long value);
-	virtual ParameterBase& operator = (unsigned long long value);
-	virtual ParameterBase& operator = (double value);
-	virtual ParameterBase& operator = (const char * value);
+	virtual VariableBase& operator = (bool value);
+	virtual VariableBase& operator = (long long value);
+	virtual VariableBase& operator = (unsigned long long value);
+	virtual VariableBase& operator = (double value);
+	virtual VariableBase& operator = (const char * value);
 private:
 	TYPE *storage;
 };
 
+template <class TYPE>
+class Parameter : public Variable<TYPE>
+{
+public:
+	Parameter(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_PARAMETER, description) {}
+};
+
+template <class TYPE>
+class Statistic : public Variable<TYPE>
+{
+public:
+	Statistic(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_STATISTIC, description) {}
+};
+
+template <class TYPE>
+class Register : public Register<TYPE>
+{
+public:
+	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+};
+
+
 //=============================================================================
-//=                           ParameterArray<TYPE>                            =
+//=                           VariableArray<TYPE>                            =
 //=============================================================================
 
 template <class TYPE>
-class ParameterArray : public ParameterBase
+class VariableArray : public VariableBase
 {
 public:
-	ParameterArray(const char *name, Object *_owner, TYPE *params, unsigned int dim, const char *description = NULL);
-	virtual ~ParameterArray();
+	typedef VariableBase::Type Type;
+	VariableArray(const char *name, Object *owner, TYPE *variables, unsigned int dim, Type type, const char *description = NULL);
+	virtual ~VariableArray();
 
-	virtual ParameterBase& operator [] (unsigned int index);
+	virtual VariableBase& operator [] (unsigned int index);
 private:
-	vector<ParameterBase *> params;
+	vector<VariableBase *> variables;
+};
+
+template <class TYPE>
+VariableArray<TYPE>::VariableArray(const char *_name, Object *_owner, TYPE *_variables, unsigned int dim, VariableBase::Type type, const char *_description) :
+	VariableBase(_name, _owner, VariableBase::VAR_ARRAY, _description),
+	variables()
+{
+	unsigned int i;
+	for(i = 0; i < dim; i++)
+	{
+		stringstream sstr;
+		
+		sstr << _name << "[" << i << "]";
+		variables.push_back(new Variable<TYPE>(sstr.str().c_str(), _owner, *(_variables + i), type, _description));
+	}
+}
+
+
+template <class TYPE>
+VariableArray<TYPE>::~VariableArray()
+{
+	typename vector<VariableBase *>::iterator variable_iter;
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		delete *variable_iter;
+	}
+}
+
+template <class TYPE>
+VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
+{
+	if(index >= variables.size())
+	{
+		cerr << "Subscript out of range" << endl;
+		return ServiceManager::void_variable;
+	}
+	return *variables[index];
+}
+
+
+template <class TYPE>
+class ParameterArray : public VariableArray<TYPE>
+{
+public:
+	ParameterArray(const char *name, Object *owner, TYPE *parameters, unsigned int dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_PARAMETER, description) {}
+};
+
+template <class TYPE>
+class StatisticArray : public VariableArray<TYPE>
+{
+public:
+	StatisticArray(const char *name, Object *owner, TYPE *parameters, unsigned int dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_STATISTIC, description) {}
+};
+
+template <class TYPE>
+class RegisterArray : public RegisterArray<TYPE>
+{
+public:
+	RegisterArray(const char *name, Object *owner, TYPE *parameters, unsigned int dim, const char *description = NULL) : VariableArray<TYPE>(name, owner, parameters, dim, VariableBase::VAR_REGISTER, description) {}
 };
 
 //=============================================================================
@@ -263,8 +351,8 @@ public:
 	const list<Object *>& GetLeafs() const;
 	Object *GetParent() const;
 	void Disconnect();
-	ParameterBase& operator [] (const char *name);
-	ParameterBase *GetParam(const char *name);
+	VariableBase& operator [] (const char *name);
+	VariableBase *GetParam(const char *name);
 	list<ServiceImportBase *>& GetSetupDependencies();
 	void SetupDependsOn(ServiceImportBase& srv_import);
 	unsigned int GetID() const;

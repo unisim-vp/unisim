@@ -57,49 +57,54 @@ using std::ofstream;
 using namespace boost;
 
 //=============================================================================
-//=                             ParameterBase                                 =
+//=                             VariableBase                                 =
 //=============================================================================
 	
-ParameterBase::ParameterBase(const char *_name, Object *_owner, const char *_type, const char *_description) :
+VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const char *_description) :
 	name(_owner ? _owner->GetName() + string(".") + string(_name) : _name), 
 	description(_description ? _description : ""),
-	type(_type ? _type : ""),
 	owner(_owner),
+	type(_type),
 	enumerated_values()
 {
 	ServiceManager::Register(this);
 }
 
-ParameterBase::ParameterBase() :
+VariableBase::VariableBase() :
 	name(), owner(0), description()
 {
 }
 
-ParameterBase::~ParameterBase()
+VariableBase::~VariableBase()
 {
 	if(owner) ServiceManager::Unregister(this);
 }
 
-const char *ParameterBase::GetName() const
+const char *VariableBase::GetName() const
 {
 	return name.c_str();
 }
 
-const char *ParameterBase::GetDescription() const
+const char *VariableBase::GetDescription() const
 {
 	return description.c_str();
 }
 
-const char *ParameterBase::GetType() const
+VariableBase::Type VariableBase::GetType() const
 {
-	return type.c_str();
+	return type;
 }
 
-bool ParameterBase::HasEnumeratedValues() const {
+const char *VariableBase::GetDataTypeName() const
+{
+	return "";
+}
+
+bool VariableBase::HasEnumeratedValues() const {
 	return !enumerated_values.empty();
 }
 
-bool ParameterBase::HasEnumeratedValue(const char * value) const {
+bool VariableBase::HasEnumeratedValue(const char * value) const {
 	vector<string>::const_iterator iter;
 
 	for(iter = enumerated_values.begin(); iter != enumerated_values.end(); iter++) {
@@ -110,20 +115,20 @@ bool ParameterBase::HasEnumeratedValue(const char * value) const {
 	return false;
 }
 
-void ParameterBase::GetEnumeratedValues(vector<string> &values) const {
+void VariableBase::GetEnumeratedValues(vector<string> &values) const {
 	if(!HasEnumeratedValues()) return;
 	for(int i = 0; i < enumerated_values.size(); i++) {
 		values.push_back(enumerated_values[i]);
 	}
 }
 
-bool ParameterBase::AddEnumeratedValue(const char *value) {
+bool VariableBase::AddEnumeratedValue(const char *value) {
 	if(HasEnumeratedValue(value)) return false;
 	enumerated_values.push_back(string(value));
 	return true;
 }
 
-bool ParameterBase::RemoveEnumeratedValue(const char *value) {
+bool VariableBase::RemoveEnumeratedValue(const char *value) {
 	vector<string>::iterator it;
 	for(it = enumerated_values.begin(); it != enumerated_values.end(); it++) {
 		if(it->compare(value) == 0) {
@@ -134,243 +139,291 @@ bool ParameterBase::RemoveEnumeratedValue(const char *value) {
 	return false;
 }
 
-ParameterBase::operator bool () const { return false; }
-ParameterBase::operator char () const { return (long long) *this; }
-ParameterBase::operator short () const { return (long long) *this; }
-ParameterBase::operator int () const { return (long long) *this; }
-ParameterBase::operator long () const { return (long long) *this; }
-ParameterBase::operator long long () const { return 0LL; }
-ParameterBase::operator unsigned char () const { return (unsigned long long) *this; }
-ParameterBase::operator unsigned short () const { return (unsigned long long) *this; }
-ParameterBase::operator unsigned int () const { return (unsigned long long) *this; }
-ParameterBase::operator unsigned long () const { return (unsigned long long) *this; }
-ParameterBase::operator unsigned long long () const { return 0ULL; }
-ParameterBase::operator float () const { return (double) *this; }
-ParameterBase::operator double () const { return 0.0; }
-ParameterBase::operator string () const { return string(); }
+VariableBase::operator bool () const { return false; }
+VariableBase::operator char () const { return (long long) *this; }
+VariableBase::operator short () const { return (long long) *this; }
+VariableBase::operator int () const { return (long long) *this; }
+VariableBase::operator long () const { return (long long) *this; }
+VariableBase::operator long long () const { return 0LL; }
+VariableBase::operator unsigned char () const { return (unsigned long long) *this; }
+VariableBase::operator unsigned short () const { return (unsigned long long) *this; }
+VariableBase::operator unsigned int () const { return (unsigned long long) *this; }
+VariableBase::operator unsigned long () const { return (unsigned long long) *this; }
+VariableBase::operator unsigned long long () const { return 0ULL; }
+VariableBase::operator float () const { return (double) *this; }
+VariableBase::operator double () const { return 0.0; }
+VariableBase::operator string () const { return string(); }
 
-ParameterBase& ParameterBase::operator = (bool value) { return *this; }
-ParameterBase& ParameterBase::operator = (char value) { *this = (long long) value; return *this; }
-ParameterBase& ParameterBase::operator = (short value) { *this = (long long) value; return *this; }
-ParameterBase& ParameterBase::operator = (int value) { *this = (long long) value; return *this; }
-ParameterBase& ParameterBase::operator = (long value) { *this = (long long) value; return *this; }
-ParameterBase& ParameterBase::operator = (long long value) { return *this; }
-ParameterBase& ParameterBase::operator = (unsigned char value) { *this = (unsigned long long) value; return *this; }
-ParameterBase& ParameterBase::operator = (unsigned short value) { *this = (unsigned long long) value; return *this; }
-ParameterBase& ParameterBase::operator = (unsigned int value) { *this = (unsigned long long) value; return *this; }
-ParameterBase& ParameterBase::operator = (unsigned long value) { *this = (unsigned long long) value; return *this; }
-ParameterBase& ParameterBase::operator = (unsigned long long value) { return *this; }
-ParameterBase& ParameterBase::operator = (float value) { *this = (double) value; return *this; }
-ParameterBase& ParameterBase::operator = (double value) { return *this; }
-ParameterBase& ParameterBase::operator = (const char *value) { return *this; }
+VariableBase& VariableBase::operator = (bool value) { return *this; }
+VariableBase& VariableBase::operator = (char value) { *this = (long long) value; return *this; }
+VariableBase& VariableBase::operator = (short value) { *this = (long long) value; return *this; }
+VariableBase& VariableBase::operator = (int value) { *this = (long long) value; return *this; }
+VariableBase& VariableBase::operator = (long value) { *this = (long long) value; return *this; }
+VariableBase& VariableBase::operator = (long long value) { return *this; }
+VariableBase& VariableBase::operator = (unsigned char value) { *this = (unsigned long long) value; return *this; }
+VariableBase& VariableBase::operator = (unsigned short value) { *this = (unsigned long long) value; return *this; }
+VariableBase& VariableBase::operator = (unsigned int value) { *this = (unsigned long long) value; return *this; }
+VariableBase& VariableBase::operator = (unsigned long value) { *this = (unsigned long long) value; return *this; }
+VariableBase& VariableBase::operator = (unsigned long long value) { return *this; }
+VariableBase& VariableBase::operator = (float value) { *this = (double) value; return *this; }
+VariableBase& VariableBase::operator = (double value) { return *this; }
+VariableBase& VariableBase::operator = (const char *value) { return *this; }
 
-ParameterBase& ParameterBase::operator [] (unsigned int index)
+VariableBase& VariableBase::operator [] (unsigned int index)
 {
 	if(index >= 0)
 	{
 		cerr << "Subscript out of range" << endl;
-		return ServiceManager::void_param;
+		return ServiceManager::void_variable;
 	}
 	return *this;
 }
 
 //=============================================================================
-//=                            Parameter<TYPE>                                =
+//=                            Variable<TYPE>                                =
 //=============================================================================
 
 template <class TYPE>
-Parameter<TYPE>::Parameter(const char *_name, Object *_owner, TYPE& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "string", _description), storage(&_storage)
+Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, "string", type, _description), storage(&_storage)
 {}
 
-template <class TYPE> Parameter<TYPE>::operator bool () const { return (*storage) ? true : false; }
-template <class TYPE> Parameter<TYPE>::operator long long () const { return (long long) *storage; }
-template <class TYPE> Parameter<TYPE>::operator unsigned long long () const { return (unsigned long long) *storage; }
-template <class TYPE> Parameter<TYPE>::operator double () const { return (double) *storage; }
-template <class TYPE> Parameter<TYPE>::operator string () const { stringstream sstr; sstr << "0x" << hex << *storage; return sstr.str(); }
+template <class TYPE> Variable<TYPE>::operator bool () const { return (*storage) ? true : false; }
+template <class TYPE> Variable<TYPE>::operator long long () const { return (long long) *storage; }
+template <class TYPE> Variable<TYPE>::operator unsigned long long () const { return (unsigned long long) *storage; }
+template <class TYPE> Variable<TYPE>::operator double () const { return (double) *storage; }
+template <class TYPE> Variable<TYPE>::operator string () const { stringstream sstr; sstr << "0x" << hex << *storage; return sstr.str(); }
 
-template <class TYPE> ParameterBase& Parameter<TYPE>::operator = (bool value) { *storage = value ? 1 : 0; return *this; }
-template <class TYPE> ParameterBase& Parameter<TYPE>::operator = (long long value) { *storage = value;	return *this; }
-template <class TYPE> ParameterBase& Parameter<TYPE>::operator = (unsigned long long value) { *storage = value;	return *this; }
-template <class TYPE> ParameterBase& Parameter<TYPE>::operator = (double value) { *storage = (TYPE) value; return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value) { *storage = value ? 1 : 0; return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value) { *storage = value;	return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value) { *storage = value;	return *this; }
+template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value) { *storage = (TYPE) value; return *this; }
 
 //=============================================================================
-//=                           ParameterArray<TYPE>                            =
+//=                           VariableArray<TYPE>                            =
 //=============================================================================
 
-template <class TYPE>
-ParameterArray<TYPE>::ParameterArray(const char *_name, Object *_owner, TYPE *_params, unsigned int dim, const char *_description) :
-	ParameterBase(_name, _owner, "", _description),
-	params()
+
+//=============================================================================
+//=                         specialized Variable<>                           =
+//=============================================================================
+
+template <>
+Variable<bool>::Variable(const char *_name, Object *_owner, bool& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type,  _description), storage(&_storage)
+{}
+
+template <>
+const char *Variable<bool>::GetDataTypeName() const
 {
-	unsigned int i;
-	for(i = 0; i < dim; i++)
-	{
-		stringstream sstr;
-		
-		sstr << _name << "[" << i << "]";
-		params.push_back(new Parameter<TYPE>(sstr.str().c_str(), _owner, *(_params + i), _description));
-	}
+	return "bool";
+}
+
+template <>
+Variable<char>::Variable(const char *_name, Object *_owner, char& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
+{}
+
+template <>
+const char *Variable<char>::GetDataTypeName() const
+{
+	return "char";
+}
+
+template <>
+Variable<short>::Variable(const char *_name, Object *_owner, short& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
+{}
+
+template <>
+const char *Variable<short>::GetDataTypeName() const
+{
+	return "short";
+}
+
+template <>
+Variable<int>::Variable(const char *_name, Object *_owner, int& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
+{}
+
+template <>
+const char *Variable<int>::GetDataTypeName() const
+{
+	return "int";
+}
+
+template <>
+Variable<long>::Variable(const char *_name, Object *_owner, long& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
+{}
+
+template <>
+const char *Variable<long>::GetDataTypeName() const
+{
+	return "long";
+}
+
+template <>
+Variable<long long>::Variable(const char *_name, Object *_owner, long long& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
+{}
+
+template <>
+const char *Variable<long long>::GetDataTypeName() const
+{
+	return "long long";
 }
 
 
-template <class TYPE>
-ParameterArray<TYPE>::~ParameterArray()
+template <>
+Variable<unsigned char>::Variable(const char *_name, Object *_owner, unsigned char& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
+{}
+
+template <>
+const char *Variable<unsigned char>::GetDataTypeName() const
 {
-	typename vector<ParameterBase *>::iterator param_iter;
-	
-	for(param_iter = params.begin(); param_iter != params.end(); param_iter++)
-	{
-		delete *param_iter;
-	}
+	return "unsigned char";
 }
 
-template <class TYPE>
-ParameterBase& ParameterArray<TYPE>::operator [] (unsigned int index)
+template <>
+Variable<unsigned short>::Variable(const char *_name, Object *_owner, unsigned short& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
+{}
+
+template <>
+const char *Variable<unsigned short>::GetDataTypeName() const
 {
-	if(index >= params.size())
-	{
-		cerr << "Subscript out of range" << endl;
-		return ServiceManager::void_param;
-	}
-	return *params[index];
+	return "unsigned short";
 }
 
-//=============================================================================
-//=                         specialized Parameter<>                           =
-//=============================================================================
-
 template <>
-Parameter<bool>::Parameter(const char *_name, Object *_owner, bool& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "bool", _description), storage(&_storage)
+Variable<unsigned int>::Variable(const char *_name, Object *_owner, unsigned int& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {}
 
 template <>
-Parameter<char>::Parameter(const char *_name, Object *_owner, char& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "char", _description), storage(&_storage)
+const char *Variable<unsigned int>::GetDataTypeName() const
+{
+	return "unsigned int";
+}
+
+template <>
+Variable<unsigned long>::Variable(const char *_name, Object *_owner, unsigned long& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {}
 
 template <>
-Parameter<short>::Parameter(const char *_name, Object *_owner, short& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "short", _description), storage(&_storage)
+const char *Variable<unsigned long>::GetDataTypeName() const
+{
+	return "unsigned long";
+}
+
+template <>
+Variable<unsigned long long>::Variable(const char *_name, Object *_owner, unsigned long long& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {}
 
 template <>
-Parameter<int>::Parameter(const char *_name, Object *_owner, int& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "int", _description), storage(&_storage)
-{}
-
-template <>
-Parameter<long>::Parameter(const char *_name, Object *_owner, long& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "long", _description), storage(&_storage)
-{}
-
-template <>
-Parameter<long long>::Parameter(const char *_name, Object *_owner, long long& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "long long", _description), storage(&_storage)
-{}
-
-template <>
-Parameter<unsigned char>::Parameter(const char *_name, Object *_owner, unsigned char& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "unsigned char", _description), storage(&_storage)
-{}
-
-template <>
-Parameter<unsigned short>::Parameter(const char *_name, Object *_owner, unsigned short& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "unsigned short", _description), storage(&_storage)
-{}
-
-template <>
-Parameter<unsigned int>::Parameter(const char *_name, Object *_owner, unsigned int& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "unsigned int", _description), storage(&_storage)
-{}
-
-template <>
-Parameter<unsigned long>::Parameter(const char *_name, Object *_owner, unsigned long& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "unsigned long", _description), storage(&_storage)
-{}
-
-template <>
-Parameter<unsigned long long>::Parameter(const char *_name, Object *_owner, unsigned long long& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "unsigned long long", _description), storage(&_storage)
-{}
+const char *Variable<unsigned long long>::GetDataTypeName() const
+{
+	return "unsigned long long";
+}
 
 template <> 
-Parameter<double>::Parameter(const char *_name, Object *_owner, double& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "double", _description), storage(&_storage)
+Variable<double>::Variable(const char *_name, Object *_owner, double& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {}
+
+template <>
+const char *Variable<double>::GetDataTypeName() const
+{
+	return "double";
+}
 
 template <> 
-Parameter<float>::Parameter(const char *_name, Object *_owner, float& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "float", _description), storage(&_storage)
+Variable<float>::Variable(const char *_name, Object *_owner, float& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {}
+
+template <>
+const char *Variable<float>::GetDataTypeName() const
+{
+	return "float";
+}
 
 template <> 
-Parameter<string>::Parameter(const char *_name, Object *_owner, string& _storage, const char *_description) :
-	ParameterBase(_name, _owner, "string", _description), storage(&_storage)
+Variable<string>::Variable(const char *_name, Object *_owner, string& _storage, Type type, const char *_description) :
+	VariableBase(_name, _owner, type, _description), storage(&_storage)
 {}
 
-template <> Parameter<bool>::operator string () const { stringstream sstr; sstr << (*storage?"true":"false"); return sstr.str(); }
+template <>
+const char *Variable<string>::GetDataTypeName() const
+{
+	return "string";
+}
 
-template <> ParameterBase& Parameter<bool>::operator = (const char *value) { *storage = strcmp(value, "true") == 0; return *this; }
-template <> ParameterBase& Parameter<char>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<short>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<int>::operator = (const char *value) {	*storage = strtoll(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<long>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<long long>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<unsigned char>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<unsigned short>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<unsigned int>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<unsigned long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<unsigned long long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
-template <> ParameterBase& Parameter<float>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
-template <> ParameterBase& Parameter<double>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
+template <> Variable<bool>::operator string () const { stringstream sstr; sstr << (*storage?"true":"false"); return sstr.str(); }
 
-template <> Parameter<string>::operator bool () const { return *storage == string("true"); }
-template <> Parameter<string>::operator long long () const { return strtoll(storage->c_str(), 0, 0); }
-template <> Parameter<string>::operator unsigned long long () const { return strtoull(storage->c_str(), 0, 0); }
-template <> Parameter<string>::operator double () const { return strtod(storage->c_str(), 0); }
-template <> Parameter<string>::operator string () const { return *storage; }
+template <> VariableBase& Variable<bool>::operator = (const char *value) { *storage = strcmp(value, "true") == 0; return *this; }
+template <> VariableBase& Variable<char>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<short>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<int>::operator = (const char *value) {	*storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<long>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<long long>::operator = (const char *value) { *storage = strtoll(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned char>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned short>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned int>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<unsigned long long>::operator = (const char *value) { *storage = strtoull(value, 0, 0); return *this; }
+template <> VariableBase& Variable<float>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
+template <> VariableBase& Variable<double>::operator = (const char *value) { *storage = strtod(value, 0); return *this; }
 
-template <> ParameterBase& Parameter<string>::operator = (bool value) { *storage = value ? "true" : "false"; return *this; }
-template <> ParameterBase& Parameter<string>::operator = (long long value) { stringstream sstr; sstr << "0x" << hex << value; *storage = sstr.str(); return *this; }
-template <> ParameterBase& Parameter<string>::operator = (unsigned long long value) { stringstream sstr; sstr << "0x" << hex << value; *storage = sstr.str(); return *this; }
-template <> ParameterBase& Parameter<string>::operator = (double value) { stringstream sstr; sstr << value; *storage = sstr.str(); return *this; }
-template <> ParameterBase& Parameter<string>::operator = (const char *value) { *storage = value; return *this; }
+template <> Variable<string>::operator bool () const { return *storage == string("true"); }
+template <> Variable<string>::operator long long () const { return strtoll(storage->c_str(), 0, 0); }
+template <> Variable<string>::operator unsigned long long () const { return strtoull(storage->c_str(), 0, 0); }
+template <> Variable<string>::operator double () const { return strtod(storage->c_str(), 0); }
+template <> Variable<string>::operator string () const { return *storage; }
+
+template <> VariableBase& Variable<string>::operator = (bool value) { *storage = value ? "true" : "false"; return *this; }
+template <> VariableBase& Variable<string>::operator = (long long value) { stringstream sstr; sstr << "0x" << hex << value; *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (unsigned long long value) { stringstream sstr; sstr << "0x" << hex << value; *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (double value) { stringstream sstr; sstr << value; *storage = sstr.str(); return *this; }
+template <> VariableBase& Variable<string>::operator = (const char *value) { *storage = value; return *this; }
 
 //=============================================================================
 //=                       template instanciations                             =
 //=============================================================================
 
-template class Parameter<bool>;
-template class Parameter<char>;
-template class Parameter<short>;
-template class Parameter<int>;
-template class Parameter<long>;
-template class Parameter<long long>;
-template class Parameter<unsigned char>;
-template class Parameter<unsigned short>;
-template class Parameter<unsigned int>;
-template class Parameter<unsigned long>;
-template class Parameter<unsigned long long>;
-template class Parameter<float>;
-template class Parameter<double>;
-template class Parameter<string>;
+template class Variable<bool>;
+template class Variable<char>;
+template class Variable<short>;
+template class Variable<int>;
+template class Variable<long>;
+template class Variable<long long>;
+template class Variable<unsigned char>;
+template class Variable<unsigned short>;
+template class Variable<unsigned int>;
+template class Variable<unsigned long>;
+template class Variable<unsigned long long>;
+template class Variable<float>;
+template class Variable<double>;
+template class Variable<string>;
 
-template class ParameterArray<bool>;
-template class ParameterArray<char>;
-template class ParameterArray<short>;
-template class ParameterArray<int>;
-template class ParameterArray<long>;
-template class ParameterArray<long long>;
-template class ParameterArray<unsigned char>;
-template class ParameterArray<unsigned short>;
-template class ParameterArray<unsigned int>;
-template class ParameterArray<unsigned long>;
-template class ParameterArray<unsigned long long>;
-template class ParameterArray<float>;
-template class ParameterArray<double>;
-template class ParameterArray<string>;
+template class VariableArray<bool>;
+template class VariableArray<char>;
+template class VariableArray<short>;
+template class VariableArray<int>;
+template class VariableArray<long>;
+template class VariableArray<long long>;
+template class VariableArray<unsigned char>;
+template class VariableArray<unsigned short>;
+template class VariableArray<unsigned int>;
+template class VariableArray<unsigned long>;
+template class VariableArray<unsigned long long>;
+template class VariableArray<float>;
+template class VariableArray<double>;
+template class VariableArray<string>;
 
 //=============================================================================
 //=                                 Object                                    =
@@ -507,11 +560,11 @@ void Object::OnDisconnect()
 //	cerr << "WARNING! Using default OnDisconnect for " << GetName() << endl;
 }
 
-ParameterBase& Object::operator [] (const char *name)
+VariableBase& Object::operator [] (const char *name)
 {
 	string fullname = GetName() + string(".") + string(name);
-	ParameterBase *param = ServiceManager::GetParameter(fullname.c_str());
-	return *param;
+	VariableBase *variable = ServiceManager::GetVariable(fullname.c_str());
+	return *variable;
 }
 
 void Object::SetupDependsOn(ServiceImportBase& srv_import)
@@ -582,8 +635,8 @@ const char *ServiceExportBase::GetName() const
 map<const char *, Object *, ServiceManager::ltstr> ServiceManager::objects;
 map<const char *, ServiceImportBase *, ServiceManager::ltstr> ServiceManager::imports;
 map<const char *, ServiceExportBase *, ServiceManager::ltstr> ServiceManager::exports;
-map<const char *, ParameterBase *, ServiceManager::ltstr> ServiceManager::params;
-ParameterBase ServiceManager::void_param;
+map<const char *, VariableBase *, ServiceManager::ltstr> ServiceManager::variables;
+VariableBase ServiceManager::void_variable;
 
 void ServiceManager::Register(Object *object)
 {
@@ -597,15 +650,15 @@ void ServiceManager::Register(Object *object)
 	objects[object->GetName()] = object;
 }
 
-void ServiceManager::Register(ParameterBase *param)
+void ServiceManager::Register(VariableBase *variable)
 {
-	if(params.find(param->GetName()) != params.end())
+	if(variables.find(variable->GetName()) != variables.end())
 	{
-		cerr << "ERROR! Parameter \"" << param->GetName() << "\" already exists" << endl;
+		cerr << "ERROR! Variable \"" << variable->GetName() << "\" already exists" << endl;
 		exit(1);
 	}
 
-	params[param->GetName()] = param;
+	variables[variable->GetName()] = variable;
 }
 
 void ServiceManager::Register(ServiceImportBase *srv_import)
@@ -640,11 +693,11 @@ void ServiceManager::Unregister(Object *object)
 	}
 }
 
-void ServiceManager::Unregister(ParameterBase *param)
+void ServiceManager::Unregister(VariableBase *variable)
 {
-	map<const char *, ParameterBase *, ltstr>::iterator param_iter;
-	param_iter = params.find(param->GetName());
-	if(param_iter != params.end()) params.erase(param_iter);
+	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
+	variable_iter = variables.find(variable->GetName());
+	if(variable_iter != variables.end()) variables.erase(variable_iter);
 }
 
 void ServiceManager::Unregister(ServiceImportBase *srv_import)
@@ -674,11 +727,11 @@ void ServiceManager::Dump(ostream& os)
 	os << endl;
 
 	os << "PARAMETERS:" << endl;
-	map<const char *, ParameterBase *, ltstr>::iterator param_iter;
+	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 	
-	for(param_iter = params.begin(); param_iter != params.end(); param_iter++)
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		os << (*param_iter).second->GetName() << " = \"" << ((string) *(*param_iter).second) << "\"" << endl;
+		os << (*variable_iter).second->GetName() << " = \"" << ((string) *(*variable_iter).second) << "\"" << endl;
 	}
 	os << endl;
 
@@ -719,13 +772,13 @@ void ServiceManager::Dump(ostream& os)
 	}
 }
 
-void ServiceManager::DumpParameters(ostream &os) {
+void ServiceManager::DumpVariables(ostream &os) {
 	os << "PARAMETERS:" << endl;
-	map<const char *, ParameterBase *, ltstr>::iterator param_iter;
+	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 
-	for(param_iter = params.begin(); param_iter != params.end(); param_iter++)
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		os << (*param_iter).second->GetName() << " = \"" << ((string) *(*param_iter).second) << "\"" << endl;
+		os << (*variable_iter).second->GetName() << " = \"" << ((string) *(*variable_iter).second) << "\"" << endl;
 	}
 	os << endl;
 }
@@ -825,16 +878,16 @@ bool ServiceManager::Setup()
 	return true;
 }
 
-ParameterBase *ServiceManager::GetParameter(const char *name)
+VariableBase *ServiceManager::GetVariable(const char *name)
 {
-	map<const char *, ParameterBase *, ltstr>::iterator param_iter;
+	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 	
-	param_iter = params.find(name);
+	variable_iter = variables.find(name);
 	
-	if(param_iter != params.end()) return (*param_iter).second;
+	if(variable_iter != variables.end()) return (*variable_iter).second;
 	
-	cerr << "ConfigManager: unknown parameter \"" << name << "\"" << endl;
-	return &void_param;
+	cerr << "ConfigManager: unknown variable \"" << name << "\"" << endl;
+	return &void_variable;
 }
 
 } // end of namespace service
