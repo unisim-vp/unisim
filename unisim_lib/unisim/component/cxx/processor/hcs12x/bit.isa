@@ -442,4 +442,319 @@ bset_idx.execute = {
 
 /* ********** Shift and Rotate instructions ********************** */
 
+// LSL: Logical Shift Left
+// ASL: Arithmetic Shift Left
+op lsl_ext(0x78[8]:> <:opr16a[16])
 
+lsl_ext.disasm = {
+	sink << "LSL $" << std::hex << opr16a;
+}
+
+lsl_ext.execute = {
+	uint8_t val = cpu->memRead8(opr16a);
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x80) == 0x80) { carry = 1; }	
+	val = val << 1;
+	cpu->memWrite8(opr16a, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op lsl_idx(0x68[8]:> <:*xb[XB])
+
+lsl_idx.disasm = {
+	sink << "LSL ";
+	xb->disasm(sink);
+}
+
+lsl_idx.execute = {
+	address_t addr = xb->getEAddr(cpu);
+	uint8_t val = cpu->memRead8(addr);
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x80) == 0x80) { carry = 1; }	
+	val = val << 1;
+	cpu->memWrite8(addr, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op lsla(0x48[8])
+
+lsla.disasm = {
+	sink << "LSLA";
+}
+
+lsla.execute = {
+	uint8_t val = cpu->getRegA();
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x80) == 0x80) { carry = 1; }	
+	val = val << 1;
+	cpu->setRegA(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op lslb(0x58[8])
+
+lslb.disasm = {
+	sink << "LSLB";
+}
+
+lslb.execute = {
+	uint8_t val = cpu->getRegB();
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x80) == 0x80) { carry = 1; }
+	val = val << 1;
+	cpu->setRegB(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op lsld(0x59[8])
+
+lsld.disasm = {
+	sink << "LSLD";
+}
+
+lsld.execute = {
+	uint16_t val = cpu->getRegD();
+	uint16_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x8000) == 0x8000) { carry = 1; }
+	val = val << 1;
+	cpu->setRegD(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+// LSR: Logical Shift Right
+op lsr_ext(0x74[8]:> <:opr16a[16])
+
+lsr_ext.disasm = {
+	sink << "LSR $" << std::hex << opr16a;
+}
+
+lsr_ext.execute = {
+	uint8_t val = cpu->memRead8(opr16a);
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
+	val = val >> 1;
+	cpu->memWrite8(opr16a, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+op lsr_idx(0x64[8]:> <:*xb[XB])
+
+lsr_idx.disasm = {
+	sink << "LSR ";
+	xb->disasm(sink);
+}
+
+lsr_idx.execute = {
+	address_t addr = xb->getEAddr(cpu);
+	uint8_t val = cpu->memRead8(addr);
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
+	val = val >> 1;
+	cpu->memWrite8(addr, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+op lsra(0x44[8])
+
+lsra.disasm = {
+	sink << "LSRA";
+}
+
+lsra.execute = {
+	uint8_t val = cpu->getRegA();
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
+	val = val >> 1;
+	cpu->setRegA(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+op lsrb(0x54[8])
+
+lsrb.disasm = {
+	sink << "LSRB";
+}
+
+lsrb.execute = {
+	uint8_t val = cpu->getRegB();
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }
+	val = val >> 1;
+	cpu->setRegB(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+op lsrd(0x49[8])
+
+lsrd.disasm = {
+	sink << "LSRD";
+}
+
+lsrd.execute = {
+	uint16_t val = cpu->getRegD();
+	uint16_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }
+	val = val >> 1;
+	cpu->setRegD(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+// ASR: Arithmetic Shift Right
+op asr_ext(0x77[8]:> <:opr16a[16])
+
+asr_ext.disasm = {
+	sink << "ASR $" << std::hex << opr16a;
+}
+
+asr_ext.execute = {
+	uint8_t val = cpu->memRead8(opr16a);
+	uint8_t c2val = ~val + 1;
+
+	uint8_t msb = val & 0x80;
+		
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }
+	
+	val = (val >> 1) | msb;
+	cpu->memWrite8(opr16a, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+
+}
+
+op asr_idx(0x67[8]:> <:*xb[XB])
+
+asr_idx.disasm = {
+	sink << "ASR ";
+	xb->disasm(sink);
+}
+
+asr_idx.execute = {
+	address_t addr = xb->getEAddr(cpu);
+	uint8_t val = cpu->memRead8(addr);
+	uint8_t c2val = ~val + 1;
+
+	uint8_t msb = val & 0x80;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
+
+	val = (val >> 1) | msb;
+	cpu->memWrite8(addr, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op asra(0x47[8])
+
+asra.disasm = {
+	sink << "ASRA";
+}
+
+asra.execute = {
+	uint8_t val = cpu->getRegA();
+	uint8_t c2val = ~val + 1;
+
+	uint8_t msb = val & 0x80;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
+
+	val = (val >> 1) | msb;
+	cpu->setRegA(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op asrb(0x57[8])
+
+asrb.disasm = {
+	sink << "ASRB";
+}
+
+asrb.execute = {
+	uint8_t val = cpu->getRegB();
+	uint8_t c2val = ~val + 1;
+
+	uint8_t msb = val & 0x80;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }
+
+	val = (val >> 1) | msb;
+	cpu->setRegB(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
