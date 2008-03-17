@@ -1,0 +1,445 @@
+// -*- C++ -*-
+
+/* ********** Clear, Complement, and Negate instructions ********* */
+
+// CLC: clear bit C
+op clc(0x10[8]:0xFE[8])
+
+clc.disasm = {
+	sink << "CLC";
+}
+
+clc.execute = {
+	cpu->ccr->setC(0);
+}
+
+// CLI: clear bit I
+op cli(0x10[8]:0xEF[8])
+
+cli.disasm = {
+	sink << "CLI";
+}
+
+cli.execute = {
+	cpu->ccr->setI(0);
+}
+
+// CLV: clear bit V
+op clv(0x10[8]:0xFD[8])
+
+clv.disasm = {
+	sink << "CLV";
+}
+
+clv.execute = {
+	cpu->ccr->setV(0);
+}
+
+// clear Memory
+op clr_ext(0x79[8]:> <:opr16a[16])
+
+clr_ext.disasm = {
+	sink << "CLR $" << std::hex << opr16a;
+}
+
+clr_ext.execute = {
+
+	cpu->memWrite8(opr16a, 0);
+	
+	cpu->ccr->setN(0);
+	cpu->ccr->setZ(1);
+	cpu->ccr->setV(0);
+	cpu->ccr->setC(0);
+}
+
+op clr_idx(0x69[8]:> <:*xb[XB])
+
+clr_idx.disasm = {
+	sink << "CLR ";
+	xb->disasm(sink);
+}
+
+clr_idx.execute = {
+
+	cpu->memWrite8(xb->getEAddr(cpu), 0);
+
+	cpu->ccr->setN(0);
+	cpu->ccr->setZ(1);
+	cpu->ccr->setV(0);
+	cpu->ccr->setC(0);
+}
+
+op clr_ab(0b1[1]:b[1]:0x07[6])
+
+clr_ab.disasm = {
+	if (b==0) {
+		sink << "CLRA";
+	} else {
+		sink << "CLRB";
+	}
+}
+
+clr_ab.execute = {
+
+	if (b==0) {
+		cpu->setRegA(0);
+	} else {
+		cpu->setRegB(0);
+	}
+	
+	cpu->ccr->setN(0);
+	cpu->ccr->setZ(1);
+	cpu->ccr->setV(0);
+	cpu->ccr->setC(0);
+}
+
+// COM: One's complement memory Location
+op com_ext(0x71[8]:> <:opr16a[16])
+
+com_ext.disasm = {
+	sink << "COM $" << std::hex << opr16a;
+}
+
+com_ext.execute = {
+
+	uint8_t val = ~cpu->memRead8(opr16a);
+	cpu->memWrite8(opr16a, val);
+	
+	cpu->ccr->setC(1);
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else {cpu->ccr->setN(0);}
+}
+
+op com_idx(0x61[8]:> <:*xb[XB])
+
+com_idx.disasm = {
+	sink << "COM ";
+	xb->disasm(sink);
+}
+
+com_idx.execute = {
+
+	address_t addr = xb->getEAddr(cpu);
+
+	uint8_t val = ~cpu->memRead8(addr);
+	cpu->memWrite8(addr, val);
+	
+	cpu->ccr->setC(1);
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else {cpu->ccr->setN(0);}
+}
+
+op com_ab(0b010[3]:b[1]:0x1[4])
+
+com_ab.disasm = {
+	if (b==0) {
+		sink << "COMA";
+	} else {
+		sink << "COMB";
+	}
+}
+
+com_ab.execute = {
+	
+	uint8_t val;
+	if (b==0) {
+		val = cpu->getRegA();
+	} else {
+		val = cpu->getRegB();
+	}
+	
+	val = ~val;
+	
+	if (b==0) {
+		cpu->setRegA(val);
+	} else {
+		cpu->setRegB(val);
+	}
+
+	cpu->ccr->setC(1);
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else {cpu->ccr->setN(0);}
+}
+
+// NEG: Two's Complement Negate
+op neg_ext(0x70[8]:> <:opr16a[16])
+
+neg_ext.disasm = {
+	sink << "NEG $" << std::hex << opr16a;
+}
+
+neg_ext.execute = {
+	uint8_t result, carry_out, overflow;
+	
+	Sub8(result, carry_out, overflow, 0, cpu->memRead8(opr16a), 0);
+	cpu->memWrite8(opr16a, result);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);}
+	if ((result & 0x80) == 0x80) {cpu->ccr->setN(1);} else { cpu->ccr->setN(0);} 
+}
+
+op neg_idx(0x60[8]:> <:*xb[XB])
+
+neg_idx.disasm = {
+	sink << "NEG $";
+	xb->disasm(sink);
+}
+
+neg_idx.execute = {
+	address_t addr = xb->getEAddr(cpu);
+	uint8_t result, carry_out, overflow;
+	
+	Sub8(result, carry_out, overflow, 0, cpu->memRead8(addr), 0);
+	cpu->memWrite8(addr, result);
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);}
+	if ((result & 0x80) == 0x80) {cpu->ccr->setN(1);} else { cpu->ccr->setN(0);} 
+	
+}
+
+op neg_ab(0b010[3]:b[1]:0x0[4])
+
+neg_ab.disasm = {
+	if (b==0) {
+		sink << "NEGA";
+	} else {
+		sink << "NEGB";
+	}
+}
+
+neg_ab.execute = {
+	uint8_t val, result, carry_out, overflow;
+	
+	if (b==0) {
+		val = cpu->getRegA();
+	} else {
+		val = cpu->getRegB();
+	}
+
+	Sub8(result, carry_out, overflow, 0, val, 0);
+
+	if (b==0) {
+		cpu->setRegA(result);
+	} else {
+		cpu->setRegB(result);
+	}
+	
+	cpu->ccr->setC(carry_out);
+	cpu->ccr->setV(overflow);
+	if (result == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);}
+	if ((result & 0x80) == 0x80) {cpu->ccr->setN(1);} else { cpu->ccr->setN(0);} 
+}
+
+
+/* ********** Bit Test and Manipulation Instructions ************* */
+
+// BCLR: Clear bit(s) in memory
+op bclr_dir(0x4D[8]:> <:dd[8]:mm[8])
+
+bclr_dir.disasm = {
+	sink << "BCLR $" << std::hex << dd << ", $" << std::hex << mm;
+}
+
+bclr_dir.execute = {
+	uint8_t ddVal = cpu->memRead8(dd,MEMORY::DIRECT);
+	uint8_t mmCom = ~mm;
+	
+	uint8_t val = ddVal & mmCom;
+	
+	cpu->memWrite8(dd, val, MEMORY::DIRECT);
+	
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+}
+
+op bclr_ext(0x1D[8]:> <:opr16a[16]:> <:mm[8])
+
+bclr_ext.disasm = {
+	sink << "BCLR $" << std::hex << opr16a << ", $" << std::hex << mm;
+}
+
+bclr_ext.execute = {
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
+	uint8_t mmCom = ~mm;
+	
+	uint8_t val = opr16aVal & mmCom;
+	
+	cpu->memWrite8(opr16a, val);
+	
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+}
+
+op bclr_idx(0x0D[8]:> <:*xb[XB]:> <:mm[8])
+
+bclr_idx.disasm = {
+	sink << "BCLR ";
+	xb->disasm(sink);
+	sink << ", $" << std::hex << mm;
+}
+
+bclr_idx.execute = {
+	address_t addr = xb->getEAddr(cpu);
+	uint8_t xbVal = cpu->memRead8(addr);
+	uint8_t mmCom = ~mm;
+	
+	uint8_t val = xbVal & mmCom;
+	
+	cpu->memWrite8(addr, val);
+	
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+}
+
+// BITA or BITB: bit test A/B (Logical 'AND' A/B with Memory
+op bit_ab_imm(0b1[1]:b[1]:0x05[6]:ii[8])
+
+bit_ab_imm.disasm = {
+	if (b==0) {
+		sink << "BITA #$";
+	} else {
+		sink << "BITB #$";
+	} 
+	sink << std::hex << ii;
+}
+
+bit_ab_imm.execute = {
+	uint8_t val = cpu->getRegA() & ii;
+	
+	cpu->ccr->setV(0);
+	
+	if (val == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);};
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0);};
+}
+
+op bit_ab_dir(0b1[1]:b[1]:0x15[6]:opr8a[8])
+
+bit_ab_dir.disasm = {
+	if (b==0) {
+		sink << "BITA $";
+	} else {
+		sink << "BITB $";
+	} 
+	sink << std::hex << opr8a;
+}
+
+bit_ab_dir.execute = {
+	uint8_t val = cpu->getRegA() & cpu->memRead8(opr8a, MEMORY::DIRECT);
+	
+	cpu->ccr->setV(0);
+	
+	if (val == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);};
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0);};
+}
+
+op bit_ab_ext(0b1[1]:b[1]:0x35[6]:> <:opr16a[16])
+
+bit_ab_ext.disasm = {
+	if (b==0) {
+		sink << "BITA $";
+	} else {
+		sink << "BITB $";
+	} 
+	sink << std::hex << opr16a;
+}
+
+bit_ab_ext.execute = {
+	uint8_t val = cpu->getRegA() & cpu->memRead8(opr16a);
+	
+	cpu->ccr->setV(0);
+	
+	if (val == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);};
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0);};
+}
+
+op bit_ab_idx(0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
+
+bit_ab_idx.disasm = {
+	if (b==0) {
+		sink << "BITA ";
+	} else {
+		sink << "BITB ";
+	} 
+	xb->disasm(sink);
+}
+
+bit_ab_idx.execute = {
+	uint8_t val = cpu->getRegA() & cpu->memRead8(xb->getEAddr(cpu));
+	
+	cpu->ccr->setV(0);
+	
+	if (val == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);};
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0);};
+}
+
+// BSET: Set bits in memory
+op bset_dir(0x4C[8]:> <:dd[8]:mm[8])
+
+bset_dir.disasm = {
+	sink << "BSET $" << std::hex << dd << ", $" << std::hex << mm;
+}
+
+bset_dir.execute = {
+	uint8_t ddVal = cpu->memRead8(dd,MEMORY::DIRECT);
+	
+	uint8_t val = ddVal | mm;
+	
+	cpu->memWrite8(dd, val, MEMORY::DIRECT);
+	
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+}
+
+op bset_ext(0x1C[8]:> <:opr16a[16]:> <:mm[8])
+
+bset_ext.disasm = {
+	sink << "BSET $" << std::hex << opr16a << ", $" << std::hex << mm;
+}
+
+bset_ext.execute = {
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
+	
+	uint8_t val = opr16aVal | mm;
+	
+	cpu->memWrite8(opr16a, val);
+	
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+}
+
+op bset_idx(0x0C[8]:> <:*xb[XB]:> <:mm[8])
+
+bset_idx.disasm = {
+	sink << "BSET ";
+	xb->disasm(sink);
+	sink << ", $" << std::hex << mm;
+}
+
+bset_idx.execute = {
+	address_t addr = xb->getEAddr(cpu);
+	uint8_t xbVal = cpu->memRead8(addr);
+	
+	uint8_t val = xbVal | mm;
+	
+	cpu->memWrite8(addr, val);
+	
+	cpu->ccr->setV(0);
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+}
+
+/* ********** Shift and Rotate instructions ********************** */
+
+

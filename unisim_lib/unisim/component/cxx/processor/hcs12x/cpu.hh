@@ -82,6 +82,7 @@ using unisim::util::arithmetic::Sub16;
 using unisim::util::endian::endian_type;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
+using unisim::util::endian::Host2LittleEndian;
 
 using std::string;
 using std::stringstream;
