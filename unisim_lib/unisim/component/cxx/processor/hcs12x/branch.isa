@@ -1,0 +1,170 @@
+// -*- C++ -*-
+
+/* ********* Short Branch Instructions ******** */
+
+op sbr(0x2[4]:sel[4]:sext<8> rr[8])
+
+sbr.disasm = {
+	
+	switch (sel) {
+		case 0x0: sink << "BRA ";break;
+		case 0x1: sink << "BRN ";break;
+		case 0x2: sink << "BHI ";break;
+		case 0x3: sink << "BLS ";break;
+		case 0x4: sink << "BCC "; /* same opcode for BHS */ break;
+		case 0x5: sink << "BCS "; /* same opcode for BLO */ break;
+		case 0x6: sink << "BNE ";break;
+		case 0x7: sink << "BEQ ";break;
+		case 0x8: sink << "BVC ";break;
+		case 0x9: sink << "BVS ";break;
+		case 0xA: sink << "BPL ";break;
+		case 0xB: sink << "BMI ";break;
+		case 0xC: sink << "BGE ";break;
+		case 0xD: sink << "BLT ";break;
+		case 0xE: sink << "BGT ";break;
+		case 0xF: sink << "BLE ";break;
+	}
+	sink << rr;
+}
+
+sbr.execute = {
+	bool branch = false;
+	
+	switch (sel) {
+		case 0x0: // BRA: branch always
+			branch = true;
+			break;
+		case 0x1: // BRN: branch never
+			// Nothing to do
+			break;
+		case 0x2: // BHI: branch if higher (C+Z=0)
+			if (cpu->ccr->getC()+cpu->ccr->getZ() == 0) branch = true; 
+			break;
+		case 0x3: // BLS: branch if lower or same 
+			if (cpu->ccr->getC()+cpu->ccr->getZ() == 1) branch = true;
+			break;
+		case 0x4: // BCC: branch if carry clear or BHS: branch if higher or same
+			if (cpu->ccr->getC() == 0) branch = true;
+			break;
+		case 0x5: // BCS: branch if carry set or BLO: branch if lower 
+			if (cpu->ccr->getC() == 1) branch = true;
+			break;
+		case 0x6: // BNE: branch if not equal
+			if (cpu->ccr->getZ() == 0) branch = true;
+			break;
+		case 0x7: // BEQ: branch if equal
+			if (cpu->ccr->getZ() == 1) branch = true; 
+			break;
+		case 0x8: // BVC: branch if overflow clear
+			if (cpu->ccr->getV() == 0) branch = true; 
+			break;
+		case 0x9: // BVS: branch if overflow set
+			if (cpu->ccr->getV() == 1) branch = true; 
+			break;
+		case 0xA: // BPL: branch if plus
+			if (cpu->ccr->getN() == 0) branch = true;
+			break;
+		case 0xB: // BMI: branch if minus
+			if (cpu->ccr->getN() == 1) branch = true; 
+			break;
+		case 0xC: // BGE: branch if greater than or equal
+			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 0) branch = true; 
+			break;
+		case 0xD: // BLT: branch if less than
+			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 1) branch = true; 
+			break;
+		case 0xE: // BGT: branch if greater than
+			if (cpu->ccr->getZ()+(cpu->ccr->getN() ^ cpu->ccr->getV()) == 0) branch = true; 
+			break;
+		case 0xF: // BLE: branch if less than or equal
+			if (cpu->ccr->getZ()+(cpu->ccr->getN() ^ cpu->ccr->getV()) == 1) branch = true; 
+			break;
+	}
+	
+	if (branch) cpu->setRegPC((int16_t) cpu->getRegPC() + rr);
+}
+
+/* ******** Long Branch Instructions ******* */
+
+op lbr(0x18[8]:0x2[4]:sel[4]:sext<16> qqrr[16])
+
+lbr.disasm = {
+	
+	switch (sel) {
+		case 0x0: sink << "LBRA ";break;
+		case 0x1: sink << "LBRN ";break;
+		case 0x2: sink << "LBHI ";break;
+		case 0x3: sink << "LBLS ";break;
+		case 0x4: sink << "LBCC "; /* same opcode for LBHS */ break;
+		case 0x5: sink << "LBCS "; /* same opcode for LBLO */ break;
+		case 0x6: sink << "LBNE ";break;
+		case 0x7: sink << "LBEQ ";break;
+		case 0x8: sink << "LBVC ";break;
+		case 0x9: sink << "LBVS ";break;
+		case 0xA: sink << "LBPL ";break;
+		case 0xB: sink << "LBMI ";break;
+		case 0xC: sink << "LBGE ";break;
+		case 0xD: sink << "LBLT ";break;
+		case 0xE: sink << "LBGT ";break;
+		case 0xF: sink << "LBLE ";break;
+	}
+	sink << qqrr;
+}
+
+lbr.execute = {
+	bool branch = false;
+	
+	switch (sel) {
+		case 0x0: // LBRA: branch always
+			branch = true;
+			break;
+		case 0x1: // LBRN: branch never
+			// Nothing to do
+			break;
+		case 0x2: // LBHI: branch if higher (C+Z=0)
+			if (cpu->ccr->getC()+cpu->ccr->getZ() == 0) branch = true; 
+			break;
+		case 0x3: // LBLS: branch if lower or same 
+			if (cpu->ccr->getC()+cpu->ccr->getZ() == 1) branch = true;
+			break;
+		case 0x4: // LBCC: branch if carry clear or LBHS: branch if higher or same
+			if (cpu->ccr->getC() == 0) branch = true;
+			break;
+		case 0x5: // LBCS: branch if carry set or LBLO: branch if lower 
+			if (cpu->ccr->getC() == 1) branch = true;
+			break;
+		case 0x6: // LBNE: branch if not equal
+			if (cpu->ccr->getZ() == 0) branch = true;
+			break;
+		case 0x7: // LBEQ: branch if equal
+			if (cpu->ccr->getZ() == 1) branch = true; 
+			break;
+		case 0x8: // LBVC: branch if overflow clear
+			if (cpu->ccr->getV() == 0) branch = true; 
+			break;
+		case 0x9: // LBVS: branch if overflow set
+			if (cpu->ccr->getV() == 1) branch = true; 
+			break;
+		case 0xA: // LBPL: branch if plus
+			if (cpu->ccr->getN() == 0) branch = true;
+			break;
+		case 0xB: // LBMI: branch if minus
+			if (cpu->ccr->getN() == 1) branch = true; 
+			break;
+		case 0xC: // LBGE: branch if greater than or equal
+			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 0) branch = true; 
+			break;
+		case 0xD: // LBLT: branch if less than
+			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 1) branch = true; 
+			break;
+		case 0xE: // LBGT: branch if greater than
+			if (cpu->ccr->getZ()+(cpu->ccr->getN() ^ cpu->ccr->getV()) == 0) branch = true; 
+			break;
+		case 0xF: // LBLE: branch if less than or equal
+			if (cpu->ccr->getZ()+(cpu->ccr->getN() ^ cpu->ccr->getV()) == 1) branch = true; 
+			break;
+	}
+	
+	if (branch) cpu->setRegPC((int16_t) cpu->getRegPC() + qqrr);
+}
+

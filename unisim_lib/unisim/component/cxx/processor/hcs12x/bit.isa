@@ -551,6 +551,94 @@ lsld.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
 }
 
+// ROL: Rotate Memory/Accumulator Left through carry
+op rol_ext(0x75[8]:> <:opr16a[16])
+
+rol_ext.disasm = {
+	sink << "ROL $" << std::hex << opr16a;
+}
+
+rol_ext.execute = {
+	uint8_t val = cpu->memRead8(opr16a);
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x80) == 0x80) { carry = 1; }	
+	val = (val << 1) | carry;
+	cpu->memWrite8(opr16a, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op rol_idx(0x65[8]:> <:*xb[XB])
+
+rol_idx.disasm = {
+	sink << "ROL ";
+	xb->disasm(sink);
+}
+
+rol_idx.execute = {
+	address_t addr = xb->getEAddr(cpu);
+	uint8_t val = cpu->memRead8(addr);
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x80) == 0x80) { carry = 1; }	
+	val = (val << 1) | carry;
+	cpu->memWrite8(addr, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op rola(0x45[8])
+
+rola.disasm = {
+	sink << "ROLA";
+}
+
+rola.execute = {
+	uint8_t val = cpu->getRegA();
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x80) == 0x80) { carry = 1; }	
+	val = (val << 1) | carry;
+	cpu->setRegA(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+op rolb(0x55[8])
+
+rolb.disasm = {
+	sink << "ROLB";
+}
+
+rolb.execute = {
+	uint8_t val = cpu->getRegB();
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x80) == 0x80) { carry = 1; }
+	val = (val << 1) | carry;
+	cpu->setRegB(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
+
+
 // LSR: Logical Shift Right
 op lsr_ext(0x74[8]:> <:opr16a[16])
 
@@ -652,6 +740,93 @@ lsrd.execute = {
 	if ((val & 0x0001) == 0x0001) { carry = 1; }
 	val = val >> 1;
 	cpu->setRegD(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+// ROR: Rotate Memory/Accumulator Right through Carry
+op ror_ext(0x76[8]:> <:opr16a[16])
+
+ror_ext.disasm = {
+	sink << "ROR $" << std::hex << opr16a;
+}
+
+ror_ext.execute = {
+	uint8_t val = cpu->memRead8(opr16a);
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
+	val = (carry << 7) | (val >> 1);
+	cpu->memWrite8(opr16a, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+op ror_idx(0x66[8]:> <:*xb[XB])
+
+ror_idx.disasm = {
+	sink << "ROR ";
+	xb->disasm(sink);
+}
+
+ror_idx.execute = {
+	address_t addr = xb->getEAddr(cpu);
+	uint8_t val = cpu->memRead8(addr);
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
+	val = (carry << 7) | (val >> 1);
+	cpu->memWrite8(addr, val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+op rora(0x46[8])
+
+rora.disasm = {
+	sink << "RORA";
+}
+
+rora.execute = {
+	uint8_t val = cpu->getRegA();
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
+	val = (carry << 7) | (val >> 1);
+	cpu->setRegA(val);
+
+	cpu->ccr->setC(carry);	
+	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	cpu->ccr->setN(0); 
+}
+
+op rorb(0x56[8])
+
+rorb.disasm = {
+	sink << "RORB";
+}
+
+rorb.execute = {
+	uint8_t val = cpu->getRegB();
+	uint8_t c2val = ~val + 1;
+	
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }
+	val = (carry << 7) | (val >> 1);
+	cpu->setRegB(val);
 
 	cpu->ccr->setC(carry);	
 	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }

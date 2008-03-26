@@ -41,3 +41,6 @@ include "decrement_increment.isa"
 include "compare_test.isa"
 include "boolean-logic.isa"
 include "bit.isa"
+include "multiplication_division.isa"
+include "branch.isa"
+

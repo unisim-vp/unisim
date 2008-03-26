@@ -1,0 +1,78 @@
+// -*- C++ -*-
+
+// EMUL: 16 by 16 Bit Multiply (unsigned) (D) x (Y) => Y:D
+op emul(0x13[8])
+
+emul.disasm = {
+	sink << "EMUL";
+}
+
+emul.execute = {
+	uint32_t result = cpu->getRegD() * cpu->getRegY();
+
+	cpu->setRegY(result >> 16);
+	cpu->setRegD((uint16_t) result);
+
+	if (result > 0xFFFF) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0); }	
+	if (result == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+}
+
+// EMULS: 16 by 16 Bit Multiply (signed) (D) x (Y) => Y:D
+op emuls(0x18[8]:0x13[8])
+
+emuls.disasm = {
+	sink << "EMULS";
+}
+
+emuls.execute = {
+	int32_t result = ((int16_t) cpu->getRegD()) * ((int16_t) cpu->getRegY());
+
+	cpu->setRegY((uint16_t) (result >> 16));
+	cpu->setRegD((uint16_t) result);
+
+// TOCHECK
+	if ((result & 0x7FFFFFFF) > 0xFFFF) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0); }	
+
+	if (result == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+}
+
+// MUL: 8 by 8 Bit Multiply (unsigned) (A) x (B) => A:B
+op mul(0x12[8])
+
+mul.disasm = {
+	sink << "MUL";
+}
+
+mul.execute = {
+	uint16_t result = cpu->getRegA() * cpu->getRegB();
+
+	cpu->setRegD(result);
+
+	if (result > 0xFF) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0); }	
+}
+
+// EDIV: 32 by 16 bit to 16 bit divide (unsigned) (Y:D) div (X) => Y remainder => D
+op ediv(0x11[8])
+
+ediv.disasm = {
+	sink << "EDIV";
+}
+
+ediv.execute = {
+	// TODO
+}
+
+// EDIVS: 32 by 16 bit to 16 bit divide (signed)  (Y:D) div (X) => Y remainder => D
+op edivs(0x18[8]:0x14[8])
+
+edivs.disasm = {
+	sink << "EDIVS";
+}
+
+edivs.execute = {
+	// TODO
+}
+
+
