@@ -168,3 +168,82 @@ lbr.execute = {
 	if (branch) cpu->setRegPC((int16_t) cpu->getRegPC() + qqrr);
 }
 
+/* ******** Bit Condition Branch instructions *********** */
+
+// if (b==1) BRCLR_instruction else BRSET_instruction;
+
+op br_clr_set_dir(0x27[7]:b[1]:opr8a[8]:mm[8]:sext<8> rr[8])
+
+br_clr_set_dir.disasm = {
+	if (b==1) {
+		sink << "BRCLR $"; 
+	} else {
+		sink << "BRSET $";
+	}
+	
+	sink << std::hex << opr8a << ", $" << std::hex << mm << ", " << rr;
+}
+
+br_clr_set_dir.execute = {
+	uint8_t opr8aVal = cpu->memRead8(opr8a,MEMORY::DIRECT);
+	
+	if (b==0) {
+		opr8aVal = ~opr8aVal;
+	}
+	
+	if (opr8aVal & mm == 0) {
+		cpu->setRegPC((int16_t) cpu->getRegPC() + rr);
+	}
+}
+
+op br_clr_set_ext(0xF[7]:b[1]:> <:opr16a[16]:mm[8]:sext<8> rr[8])
+
+br_clr_set_ext.disasm = {
+	if (b==1) {
+		sink << "BRCLR $"; 
+	} else {
+		sink << "BRSET $";
+	}
+	
+	sink << std::hex << opr16a << ", $" << std::hex << mm << ", " << rr;
+}
+
+br_clr_set_ext.execute = {
+	uint8_t opr16aVal = cpu->memRead8(opr16a);
+	
+	if (b==0) {
+		opr16aVal = ~opr16aVal;
+	}
+	
+	if (opr16aVal & mm == 0) {
+		cpu->setRegPC((int16_t) cpu->getRegPC() + rr);
+	}
+}
+
+op br_clr_set_idx(0x3[7]:b[1]:> <:*xb[XB]:> <:mm[8]:sext<8> rr[8])
+
+br_clr_set_idx.disasm = {
+	if (b==1) {
+		sink << "BRCLR $"; 
+	} else {
+		sink << "BRSET $";
+	}
+	
+	xb->disasm(sink);
+	sink << ", $" << std::hex << mm << ", " << rr;
+}
+
+br_clr_set_idx.execute = {
+	uint8_t xbVal = cpu->memRead8(xb->getEAddr(cpu));
+	
+	if (b==0) {
+		xbVal = ~xbVal;
+	}
+	
+	if (xbVal & mm == 0) {
+		cpu->setRegPC((int16_t) cpu->getRegPC() + rr);
+	}
+}
+
+
+
