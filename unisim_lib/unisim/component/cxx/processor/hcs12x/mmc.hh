@@ -39,6 +39,7 @@ public:
 
     void    setDirect (uint8_t val);
     uint8_t getDirect ();
+	address_t getDirectAddress(uint8_t lowByte);
 
     void    setRpage (uint8_t val);
     uint8_t getRpage ();

@@ -1,5 +1,9 @@
 // -*- C++ -*-
 
+// TODO: Very Important
+// relied to instruction Queue  
+// Do not forgot to perform three program word fetches to refill the queue after a branch or subroutine call
+
 /* ********* Short Branch Instructions ******** */
 
 op sbr(0x2[4]:sel[4]:sext<8> rel8[8])
@@ -262,7 +266,8 @@ bsr.execute = {
 	 */
 
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
+	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
+	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
 	cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
 }
 
@@ -284,12 +289,159 @@ call_ext.execute = {
 	 */
 	 
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
+	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
+	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+
 	cpu->setRegSP(cpu->getRegSP()-1);
 	cpu->memWrite8(cpu->getRegSP(), cpu->mmc->getPpage());
 	cpu->mmc->setPpage(page);
 	cpu->setRegPC(opr16a);
 }
+
+op call_idx(0x4B[8]:> <:*xb[XB]:> <:page[8])
+
+call_idx.disasm = {
+	sink << "CALL ";
+	xb->disasm(sink);
+	sink << ", $" << std::hex << page;
+}
+
+call_idx.execute = {
+	/*
+	 * (SP)-2 => SP
+	 * RTNh:RTNl => M[SP]:M[SP+1]
+	 * (SP)-1 => SP
+	 * (PPAGE) => M[SP]
+	 * page => PPAGE
+	 * Subroutine address => PC
+	 */
+	 
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
+	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
+	cpu->setRegSP(cpu->getRegSP()-1);
+	cpu->memWrite8(cpu->getRegSP(), cpu->mmc->getPpage());
+	cpu->mmc->setPpage(page);
+	cpu->setRegPC(xb->getEAddr(cpu));
+}
+
+// JMP: JUMP
+op jmp_ext(0x06[8]:> <:opr16a[16])
+
+jmp_ext.disasm = {
+	sink << "JMP $" << std::hex << opr16a;
+}
+
+jmp_ext.execute = {
+	cpu->setRegPC(opr16a);
+}
+
+op jmp_idx(0x05[8]:> <:*xb[XB])
+
+jmp_idx.disasm = {
+	sink << "JMP ";
+	xb->disasm(sink);
+}
+
+jmp_idx.execute = {
+	cpu->setRegPC(xb->getEAddr(cpu));
+}
+
+// JSR: Jump to subroutine
+op jsr_dir(0x17[8]:opr8a[8])
+
+jsr_dir.disasm = {
+	sink << "JSR $" << std::hex << opr8a;
+}
+
+jsr_dir.execute = {
+	/*
+	 * (SP)-2 => SP
+	 * RTNh:RTNl => M[SP]:M[SP+1]
+	 * subroutine address => PC
+	 */
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
+	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
+	cpu->setRegPC(cpu->mmc->getDirectAddress(opr8a));
+}
+
+op jsr_ext(0x16[8]:> <:opr16a[16])
+
+jsr_ext.disasm = {
+	sink << "JSR $" << std::hex << opr16a;
+}
+
+jsr_ext.execute = {
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
+	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
+	cpu->setRegPC(opr16a);
+}
+
+op jsr_idx(0x15[8]:> <:*xb[XB])
+
+jsr_idx.disasm = {
+	sink << "JSR ";
+	xb->disasm(sink);
+}
+
+jsr_idx.execute = {
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
+	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
+	cpu->setRegPC(xb->getEAddr(cpu));
+}
+
+// RTC: Return from call
+op rtc(0x0A[8])
+
+rtc.disasm = {
+	sink << "RTC";
+}
+
+rtc.execute = {
+	/*
+	 * (M[SP]) => PPage
+	 * (SP)+1 => SP
+	 * (M[SP]):(M[SP+1]) => PCh:PCl
+	 * (SP)+2 => SP
+	 */
+
+	 uint8_t hByte, lByte;
+	 
+	 cpu->mmc->setPpage(cpu->memRead8(cpu->getRegSP()));
+	 cpu->setRegSP(cpu->getRegSP() + 1);
+	 
+	 hByte = cpu->memRead8(cpu->getRegSP());
+	 lByte = cpu->memRead8(cpu->getRegSP()+1);
+	 cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
+	 
+	 cpu->setRegSP(cpu->getRegSP() + 2);
+}
+
+// RTS: Return from subroutine
+op rts(0x3D[8])
+
+rts.disasm = {
+	sink << "RTS";
+}
+
+rts.execute = {
+	 uint8_t hByte, lByte;
+
+	 hByte = cpu->memRead8(cpu->getRegSP());
+	 lByte = cpu->memRead8(cpu->getRegSP()+1);
+	 cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
+	 
+	 cpu->setRegSP(cpu->getRegSP() + 2);
+}
+
+
 
 
 
