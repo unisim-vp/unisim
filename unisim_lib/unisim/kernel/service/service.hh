@@ -177,9 +177,16 @@ public:
 	static bool Setup();
 
 	static VariableBase *GetVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
+	static VariableBase *GetArray(const char *name);
 	static VariableBase *GetParameter(const char *name);
 	static VariableBase *GetRegister(const char *name);
 	static VariableBase *GetStatistic(const char *name);
+
+	static void GetVariables(list<VariableBase *>& lst, VariableBase::Type type = VariableBase::VAR_VOID);
+	static void GetArrays(list<VariableBase *>& lst);
+	static void GetParameters(list<VariableBase *>& lst);
+	static void GetRegisters(list<VariableBase *>& lst);
+	static void GetStatistics(list<VariableBase *>& lst);
 
 	static VariableBase void_variable;
 private:

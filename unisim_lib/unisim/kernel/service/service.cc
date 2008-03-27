@@ -890,6 +890,11 @@ VariableBase *ServiceManager::GetVariable(const char *name, VariableBase::Type t
 	return &void_variable;
 }
 
+VariableBase *ServiceManager::GetArray(const char *name)
+{
+	return GetVariable(name, VariableBase::VAR_ARRAY);
+}
+
 VariableBase *ServiceManager::GetParameter(const char *name)
 {
 	return GetVariable(name, VariableBase::VAR_PARAMETER);
@@ -904,6 +909,42 @@ VariableBase *ServiceManager::GetStatistic(const char *name)
 {
 	return GetVariable(name, VariableBase::VAR_STATISTIC);
 }
+
+void ServiceManager::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
+{
+	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
+
+	lst.clear();
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		if(type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type)
+		{
+			lst.push_back((*variable_iter).second);
+		}
+	}
+}
+
+void ServiceManager::GetArrays(list<VariableBase *>& lst)
+{
+	GetVariables(lst, VariableBase::VAR_ARRAY);
+}
+
+void ServiceManager::GetParameters(list<VariableBase *>& lst)
+{
+	GetVariables(lst, VariableBase::VAR_PARAMETER);
+}
+
+void ServiceManager::GetRegisters(list<VariableBase *>& lst)
+{
+	GetVariables(lst, VariableBase::VAR_REGISTER);
+}
+
+void ServiceManager::GetStatistics(list<VariableBase *>& lst)
+{
+	GetVariables(lst, VariableBase::VAR_STATISTIC);
+}
+
 
 } // end of namespace service
 } // end of namespace kernel
