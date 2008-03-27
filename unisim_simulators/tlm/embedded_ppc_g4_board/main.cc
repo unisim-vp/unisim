@@ -50,7 +50,11 @@
 #include "unisim/component/tlm/fsb/snooping_bus/bus.hh"
 #include "unisim/component/tlm/chipset/mpc107/mpc107.hh"
 #include "unisim/component/tlm/pci/bus/bus.hh"
+
+#ifdef WITH_PCI_STUB
 #include "unisim/component/tlm/pci/debug/pci_stub.hh"
+#endif
+
 #include "unisim/component/cxx/pci/types.hh"
 #include "unisim/component/cxx/processor/powerpc/config.hh"
 #include "unisim/component/tlm/debug/transaction_spy.hh"
@@ -146,6 +150,7 @@ void help(char *prog_name)
 	cerr << "--logger:messages" << endl;
 	cerr << "            create log from the messages sent through channels" << endl << endl;
 	cerr << "-u <pipe name>" << endl;
+#ifdef WITH_PCI_STUB
 	cerr << "--pci-stub-use-pipe <pipe name>" << endl;
 	cerr << "            use file system pipes for the pci-stub communications using <pipe name> (disables tcp-ip communication)" << endl << endl;
 	cerr << "-s <server name>" << endl;
@@ -157,15 +162,16 @@ void help(char *prog_name)
 	cerr << "-v" << endl;
 	cerr << "--pci-stub-is-server" << endl;
 	cerr << "            make pci-stub act as a server instead of a client" << endl << endl;
-	cerr << "-f" << endl;
-	cerr << "--force-use-virtual-address" << endl;
-	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
 	cerr << "-n <base address>,<byte size>,<address space>[...]" << endl;
 	cerr << "--pci-stub-regions <base address>,<byte size>,<address space>[...]" << endl;
 	cerr << "            specify the pci-stub regions (up to 6 separated by one or more space characters). 'address space' is either 'mem' or 'i/o'" << endl << endl;
 	cerr << "-q <irq number>" << endl;
 	cerr << "--pci-stub-irq <irq number>" << endl;
 	cerr << "            specify the pci-stub IRQ number" << endl << endl;
+#endif
+	cerr << "-f" << endl;
+	cerr << "--force-use-virtual-address" << endl;
+	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
 	cerr << "-b <ram memory size in MB>" << endl;
 	cerr << "--ram-size <ram memory size in MB>" << endl;
 	cerr << "            specify the ram memory size (default = 256MB)" << endl << endl;
@@ -191,16 +197,24 @@ const uint32_t FSB_NUM_PROCS = 1;
 typedef pci32_address_t PCI_ADDRESS_TYPE;
 const uint32_t PCI_MAX_DATA_SIZE = 32;        // in bytes
 const unsigned int PCI_NUM_MASTERS = 1;
+#ifdef WITH_PCI_STUB
 const unsigned int PCI_NUM_TARGETS = 2;
+#else
+const unsigned int PCI_NUM_TARGETS = 1;
+#endif
 const unsigned int PCI_NUM_MAPPINGS = 7;
 
 // PCI device numbers
 const unsigned int PCI_MPC107_DEV_NUM = 0;
+#ifdef WITH_PCI_STUB
 const unsigned int PCI_STUB_DEV_NUM = 1;
+#endif
 
 // PCI target port numbers
 const unsigned int PCI_MPC107_TARGET_PORT = 0;
+#ifdef WITH_PCI_STUB
 const unsigned int PCI_STUB_TARGET_PORT = 1;
+#endif
 
 // PCI master port numbers
 const unsigned int PCI_MPC107_MASTER_PORT = 0;
@@ -225,7 +239,9 @@ typedef unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MA
 typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
 typedef unisim::component::tlm::fsb::snooping_bus::Bus<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, FSB_NUM_PROCS> FRONT_SIDE_BUS;
 typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> PCI_BUS;
+#ifdef WITH_PCI_STUB
 typedef unisim::component::tlm::pci::debug::PCIStub<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_STUB;
+#endif
 typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
 
 //=========================================================================
@@ -269,13 +285,15 @@ int sc_main(int argc, char *argv[])
 	{"logger:error", no_argument, 0, 'e'},
 	{"logger:out", no_argument, 0, 'o'},
 	{"logger:messages", no_argument, 0, 'm'},
+#ifdef WITH_PCI_STUB
 	{"pci-stub-server", required_argument, 0, 's'},
 	{"pci-stub-port", required_argument, 0, 'r'},
 	{"pci-stub-is-server", no_argument, 0, 'v'},
 	{"pci-stub-use-pipe", required_argument, 0, 'u'},
-	{"force-use-virtual-address", no_argument, 0, 'f'},
 	{"pci-stub-regions", required_argument, 0, 'n'},
 	{"pci-stub-irq", required_argument, 0, 'q'},
+#endif
+	{"force-use-virtual-address", no_argument, 0, 'f'},
 	{"ram-size", required_argument, 0, 'b'},
 	{0, 0, 0, 0}
 	};
@@ -300,6 +318,7 @@ int sc_main(int argc, char *argv[])
 	double fsb_frequency = cpu_frequency / cpu_clock_multiplier; // FIXME: to be removed
 	uint32_t tech_node = 130; // in nm
 	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
+#ifdef WITH_PCI_STUB
 	const char *pci_stub_regions = "";
 	unsigned int pci_stub_irq = 0;
 	bool pci_stub_use_pipe = false;
@@ -307,15 +326,28 @@ int sc_main(int argc, char *argv[])
 	const char *pci_stub_server_name = "localhost";
 	bool pci_stub_is_server = false;
 	const char *pci_stub_pipe_name = "pipe";
+#endif
 	double cpu_ipc = 1.0; // in instructions per cycle
 	bool force_use_virtual_address = false;
 	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
 
-	
+	// build the option string for getopt
+	char optstring[256];
+	struct option *long_opt;
+	char *optstring_p;
+	for(long_opt = long_options, optstring_p = optstring; long_opt->name; long_opt++)
+	{
+		*optstring_p++ = long_opt->val;
+		if(long_opt->has_arg == required_argument) *optstring_p++ = ':';
+		
+	}
+	*optstring_p = 0;
+	cerr << "optstring =\"" << optstring << "\"\n" << endl;
+
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:pl:zeoms:r:u:vfn:q:b:", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, optstring, long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -353,6 +385,7 @@ int sc_main(int argc, char *argv[])
 			case 'm':
 				logger_messages = true;
 				break;
+#ifdef WITH_PCI_STUB
 			case 's':
 				pci_stub_server_name = optarg;
 				break;
@@ -366,14 +399,15 @@ int sc_main(int argc, char *argv[])
 				pci_stub_use_pipe = true;
 				pci_stub_pipe_name = optarg;
 				break;
-			case 'f':
-				force_use_virtual_address = true;
-				break;
 			case 'n':
 				pci_stub_regions = strdup(optarg);
 				break;
 			case 'q':
 				pci_stub_irq = atoi(optarg);
+				break;
+#endif
+			case 'f':
+				force_use_virtual_address = true;
 				break;
 			case 'b':
 				memory_size = atoi(optarg) * 1024 * 1024;
@@ -419,7 +453,9 @@ int sc_main(int argc, char *argv[])
 	//  - PCI Bus
 	PCI_BUS *pci_bus = new PCI_BUS("pci-bus");
 	//  - PCI Stub
+#ifdef WITH_PCI_STUB
 	PCI_STUB *pci_stub = new PCI_STUB("pci-stub");
+#endif
 
 	//=========================================================================
 	//===            Debugging stuff: Transaction spy instantiations        ===
@@ -560,6 +596,7 @@ int sc_main(int argc, char *argv[])
     (*pci_bus)["addr-type"][mapping_index] = "mem";
 	(*pci_bus)["num-mappings"] = ++mapping_index; 
 
+#ifdef WITH_PCI_STUB
 	// PCI stub run-time configuration
 	{
 		uint32_t pci_stub_initial_base_addr[6];
@@ -619,6 +656,7 @@ int sc_main(int argc, char *argv[])
 		(*pci_stub)["protocol"] = pci_stub_use_pipe ? 1 : 0;
 		(*pci_stub)["pipe-name"] = pci_stub_pipe_name;
 	}
+#endif
 	
 	//=========================================================================
 	//===                      Service run-time configuration               ===
@@ -805,6 +843,7 @@ int sc_main(int argc, char *argv[])
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = mpc107->pci_slave_port.name();
 		pci_msg_spy_index++;
 
+#ifdef WITH_PCI_STUB
 		(*pci_bus->output_port[PCI_STUB_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
 		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_STUB_TARGET_PORT]->name();
@@ -812,6 +851,7 @@ int sc_main(int argc, char *argv[])
 		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_stub->name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_stub->bus_port.name();
 		pci_msg_spy_index++;
+#endif
 
 		mpc107->irq_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
 		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->name();
@@ -829,6 +869,7 @@ int sc_main(int argc, char *argv[])
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->soft_reset_port.name();
 		irq_msg_spy_index++;
 
+#ifdef WITH_PCI_STUB
 		pci_stub->cpu_irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
 		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_stub->name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = pci_stub->cpu_irq_port.name();
@@ -836,6 +877,7 @@ int sc_main(int argc, char *argv[])
 		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = mpc107->irq_slave_port[pci_stub_irq]->name();
 		irq_msg_spy_index++;
+#endif
 	}
 	else
 	{
@@ -848,10 +890,14 @@ int sc_main(int argc, char *argv[])
 		mpc107->erom_master_port(erom->slave_port);
 		mpc107->pci_master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
 		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(mpc107->pci_slave_port);
+#ifdef WITH_PCI_STUB
 		(*pci_bus->output_port[PCI_STUB_TARGET_PORT])(pci_stub->bus_port);
+#endif
 		mpc107->irq_master_port(cpu->external_interrupt_port);
 		mpc107->soft_reset_master_port(cpu->soft_reset_port);
+#ifdef WITH_PCI_STUB
 		pci_stub->cpu_irq_port(*mpc107->irq_slave_port[pci_stub_irq]);
+#endif
 	}
 
 	//=========================================================================
@@ -921,6 +967,7 @@ int sc_main(int argc, char *argv[])
 	mpc107->erom_import >> erom->memory_export;
 	mpc107->pci_import >> *pci_bus->memory_export[PCI_MPC107_MASTER_PORT];
 
+#ifdef WITH_PCI_STUB
 	*pci_bus->memory_import[PCI_STUB_TARGET_PORT] >> pci_stub->memory_export; 
 	if(use_inline_debugger || use_gdb_server) 
 	{
@@ -938,6 +985,7 @@ int sc_main(int argc, char *argv[])
 	pci_stub->synchronizable_import >> cpu->synchronizable_export;
 	pci_stub->memory_import >> cpu->memory_export;
 	pci_stub->registers_import >> cpu->registers_export;
+#endif
 
 	if(inline_debugger)
 	{
@@ -947,32 +995,34 @@ int sc_main(int argc, char *argv[])
 	/* logger connections */
 	if(logger_on) {
 		unsigned int logger_index = 0;
-//		logger->time_import >> time->time_export;
+		logger->time_import >> time->time_export;
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
-		//bus->logger_import >> *logger->logger_export[logger_index++];
-//		mpc107->logger_import >> *logger->logger_export[logger_index++];
-//		pci_bus->logger_import >> *logger->logger_export[logger_index++];
-//		pci_stub->logger_import >> *logger->logger_export[logger_index++];
-//		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
-//		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
+		bus->logger_import >> *logger->logger_export[logger_index++];
+		mpc107->logger_import >> *logger->logger_export[logger_index++];
+		pci_bus->logger_import >> *logger->logger_export[logger_index++];
+#ifdef WITH_PCI_STUB
+		pci_stub->logger_import >> *logger->logger_export[logger_index++];
+#endif
+		mpc107->pci_logger_import >> *logger->logger_export[logger_index++];
+		mpc107->addr_map_logger_import >> *logger->logger_export[logger_index++];
 		mpc107->epic_logger_import >> *logger->logger_export[logger_index++];
-//		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
-//		flash->logger_import >> *logger->logger_export[logger_index++];
-//		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
-//		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-//			if(bus_msg_spy[i] != NULL)
-//				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-//		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-//			if(mem_msg_spy[i] != NULL)
-//				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-//		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++)
-//			if(pci_msg_spy[i] != NULL)
-//				pci_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
-//		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
-//			if(irq_msg_spy[i] != NULL)
-//				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+		mpc107->atu_logger_import >> *logger->logger_export[logger_index++];
+		flash->logger_import >> *logger->logger_export[logger_index++];
+		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
+			if(bus_msg_spy[i] != NULL)
+				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
+			if(mem_msg_spy[i] != NULL)
+				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_PCI_TRANSACTION_SPY; i++)
+			if(pci_msg_spy[i] != NULL)
+				pci_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
+			if(irq_msg_spy[i] != NULL)
+				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
 	}
 
 #ifdef DEBUG_SERVICE
@@ -1098,7 +1148,9 @@ int sc_main(int argc, char *argv[])
 	if(erom) delete erom;
 	if(mpc107) delete mpc107;
 	if(pci_bus) delete pci_bus;
+#ifdef WITH_PCI_STUB
 	if(pci_stub) delete pci_stub;
+#endif
 
 #ifdef WIN32
 	// releases the winsock2 resources

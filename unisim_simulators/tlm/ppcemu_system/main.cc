@@ -530,7 +530,7 @@ int sc_main(int argc, char *argv[])
 	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
 	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
 	(*cpu)["voltage"] = 1.3 * 1e3; // mV
-	(*cpu)["nice-frequency"] = 1000;
+	(*cpu)["nice-time"] = 1000000000; // 1 ms
 	if(maxinst)
 	{
 		(*cpu)["max-inst"] = maxinst;
@@ -1086,7 +1086,7 @@ int sc_main(int argc, char *argv[])
 		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
-		bus->logger_import >> *logger->logger_export[logger_index++];
+/*		bus->logger_import >> *logger->logger_export[logger_index++];
 		mpc107->logger_import >> *logger->logger_export[logger_index++];
 		pci_bus->logger_import >> *logger->logger_export[logger_index++];
 		heathrow->logger_import >> *logger->logger_export[logger_index++];
@@ -1111,7 +1111,7 @@ int sc_main(int argc, char *argv[])
 				pci_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_IRQ_TRANSACTION_SPY; i++)
 			if(irq_msg_spy[i] != NULL)
-				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+				irq_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];*/
 	}
 
 #ifdef DEBUG_SERVICE
