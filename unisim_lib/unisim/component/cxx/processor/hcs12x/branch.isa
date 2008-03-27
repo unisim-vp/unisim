@@ -86,7 +86,7 @@ sbr.execute = {
 
 /* ******** Long Branch Instructions ******* */
 
-op lbr(0x18[8]:0x2[4]:sel[4]:sext<16> qqrel8[16])
+op lbr(0x18[8]:0x2[4]:sel[4]:sext<16> rel16[16])
 
 lbr.disasm = {
 	
@@ -108,7 +108,7 @@ lbr.disasm = {
 		case 0xE: sink << "LBGT ";break;
 		case 0xF: sink << "LBLE ";break;
 	}
-	sink << qqrel8;
+	sink << rel16;
 }
 
 lbr.execute = {
@@ -165,7 +165,7 @@ lbr.execute = {
 			break;
 	}
 	
-	if (branch) cpu->setRegPC((int16_t) cpu->getRegPC() + qqrel8);
+	if (branch) cpu->setRegPC((int16_t) cpu->getRegPC() + rel16);
 }
 
 /* ******** Bit Condition Branch instructions *********** */
@@ -248,6 +248,50 @@ br_clr_set_idx.execute = {
 /* ********** Jump and subroutine instructions ******** */
 
 // BSR: Branch to subroutine
-op bsr(0x07[8]:rel[8])
+op bsr(0x07[8]:rel8[8])
+
+bsr.disasm = {
+	sink << "BSR " << rel8;
+}
+
+bsr.execute = {
+	/*
+	 * (SP)-2 => SP
+	 * RTNh:RTNl => M[SP]:M[SP+1]
+	 * Subroutine address fi PC
+	 */
+
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
+	cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
+}
+
+// CALL: Call subroutine in Expanded Memory
+op call_ext(0x4A[8]:opr16a[16]:page[8])
+
+call_ext.disasm = {
+	sink << "CALL $" << std::hex << opr16a << ", $" << std::hex << page;
+}
+
+call_ext.execute = {
+	/*
+	 * (SP)-2 => SP
+	 * RTNh:RTNl => M[SP]:M[SP+1]
+	 * (SP)-1 => SP
+	 * (PPAGE) => M[SP]
+	 * page => PPAGE
+	 * Subroutine address => PC
+	 */
+	 
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
+	cpu->setRegSP(cpu->getRegSP()-1);
+	cpu->memWrite8(cpu->getRegSP(), cpu->mmc->getPpage());
+	cpu->mmc->setPpage(page);
+	cpu->setRegPC(opr16a);
+}
+
+
+
 
 

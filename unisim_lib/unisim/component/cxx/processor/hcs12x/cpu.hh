@@ -415,10 +415,12 @@ public:
 
 	uint16_t xb_getAccRegValue(uint8_t rr);
 	/*************  END  XB  ***************/
-		 
+
+//protected:
+    class MMC	*mmc;
     class CCR_t *ccr;   
 	class EB	*eb;
-
+		 
 protected:
 	//utils attributes
 	bool verbose_all;
@@ -438,15 +440,13 @@ protected:
 	bool requires_memory_access_reporting;
 	/** indicates if the finished instructions require to be reported */
 	bool requires_finished_instruction_reporting;
-	
+
 private:
 	uint8_t		regA, regB;
 
 //    uint16_t	regD;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
-
-    class MMC	*mmc;
 
 	// Registers map
 	map<string, Register *> registers_registry;       
