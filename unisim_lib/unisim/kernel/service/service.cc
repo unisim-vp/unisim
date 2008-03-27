@@ -71,7 +71,7 @@ VariableBase::VariableBase(const char *_name, Object *_owner, Type _type, const 
 }
 
 VariableBase::VariableBase() :
-	name(), owner(0), description()
+	name(), owner(0), description(), type(VAR_VOID)
 {
 }
 
@@ -878,16 +878,31 @@ bool ServiceManager::Setup()
 	return true;
 }
 
-VariableBase *ServiceManager::GetVariable(const char *name)
+VariableBase *ServiceManager::GetVariable(const char *name, VariableBase::Type type)
 {
 	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 	
 	variable_iter = variables.find(name);
 	
-	if(variable_iter != variables.end()) return (*variable_iter).second;
+	if(variable_iter != variables.end() && (type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type)) return (*variable_iter).second;
 	
 	cerr << "ConfigManager: unknown variable \"" << name << "\"" << endl;
 	return &void_variable;
+}
+
+VariableBase *ServiceManager::GetParameter(const char *name)
+{
+	return GetVariable(name, VariableBase::VAR_PARAMETER);
+}
+
+VariableBase *ServiceManager::GetRegister(const char *name)
+{
+	return GetVariable(name, VariableBase::VAR_REGISTER);
+}
+
+VariableBase *ServiceManager::GetStatistic(const char *name)
+{
+	return GetVariable(name, VariableBase::VAR_STATISTIC);
 }
 
 } // end of namespace service

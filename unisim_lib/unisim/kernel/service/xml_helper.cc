@@ -85,7 +85,6 @@ XmlfyParameters(const char *filename) {
 	for(variable_iter = ServiceManager::variables.begin(); variable_iter != ServiceManager::variables.end(); variable_iter++) {
 		//.parameter arrays containers have a special type (an empty string "") and they should not appear
 		//   in the parameter xml configuration file, so just ignore them
-		if((*variable_iter).second->GetType() != VariableBase::VAR_PARAMETER) continue;
 		if(strcmp("", (*variable_iter).second->GetDataTypeName()) == 0) continue;
 		// opening parameter element
 		rc = xmlTextWriterStartElement(writer, BAD_CAST "parameter");
@@ -341,7 +340,7 @@ ProcessXmlParamNode(xmlTextReaderPtr reader) {
 			cerr << "    name = " << cur_param->name.str() << endl;
 			cerr << "    value = " << cur_param->value.str() << endl;
 			cerr << "    description = " << cur_param->description.str() << endl;
-			VariableBase *variable = ServiceManager::GetVariable(cur_param->name.str().c_str());
+			VariableBase *variable = ServiceManager::GetParameter(cur_param->name.str().c_str());
 			if(variable == NULL) {
 				cerr << "  !! could not get variable '" << cur_param->name.str() << "'" << endl;
 				return false;

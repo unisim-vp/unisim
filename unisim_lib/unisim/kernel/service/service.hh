@@ -92,61 +92,13 @@ template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
 
 //=============================================================================
-//=                             ServiceManager                                =
-//=============================================================================
-
-class ServiceManager
-{
-public:
-	static void Register(Object *object);
-	static void Register(ServiceImportBase *srv_import);
-	static void Register(ServiceExportBase *srv_export);
-	static void Register(VariableBase *variable);
-
-	static void Unregister(Object *object);
-	static void Unregister(ServiceImportBase *srv_import);
-	static void Unregister(ServiceExportBase *srv_export);
-	static void Unregister(VariableBase *variable);
-
-	static void Dump(ostream& os);
-	static void DumpVariables(ostream& os);
-	static bool XmlfyParameters(const char *filename);
-	static bool LoadXmlParameters(const char *filename);
-
-	static bool Setup();
-
-	static VariableBase *GetVariable(const char *name);
-
-	static VariableBase void_variable;
-private:
-	friend class Object;
-	friend class VariableBase;
-	friend class XMLHelper;
-
-	struct ltstr
-	{
-		bool operator() (const char *s1, const char *s2) const
-		{
-			return strcmp(s1, s2) < 0;
-		}
-	};
-
-	static map<const char *, Object *, ltstr> objects;
-	static map<const char *, ServiceImportBase *, ltstr> imports;
-	static map<const char *, ServiceExportBase *, ltstr> exports;
-	static map<const char *, VariableBase *, ltstr> variables;
-//
-//	static void ProcessXmlVariableNode(xmlTextReaderPtr reader);
-};
-
-//=============================================================================
 //=                             VariableBase                                 =
 //=============================================================================
 
 class VariableBase
 {
 public:
-	typedef enum { VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER } Type;
+	typedef enum { VAR_VOID, VAR_ARRAY, VAR_PARAMETER, VAR_STATISTIC, VAR_REGISTER } Type;
 
 	VariableBase();
 	VariableBase(const char *name, Object *owner, Type type, const char *description);
@@ -198,6 +150,57 @@ private:
 	string description;
 	vector<string> enumerated_values;
 	Type type;
+};
+
+//=============================================================================
+//=                             ServiceManager                                =
+//=============================================================================
+
+class ServiceManager
+{
+public:
+	static void Register(Object *object);
+	static void Register(ServiceImportBase *srv_import);
+	static void Register(ServiceExportBase *srv_export);
+	static void Register(VariableBase *variable);
+
+	static void Unregister(Object *object);
+	static void Unregister(ServiceImportBase *srv_import);
+	static void Unregister(ServiceExportBase *srv_export);
+	static void Unregister(VariableBase *variable);
+
+	static void Dump(ostream& os);
+	static void DumpVariables(ostream& os);
+	static bool XmlfyParameters(const char *filename);
+	static bool LoadXmlParameters(const char *filename);
+
+	static bool Setup();
+
+	static VariableBase *GetVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
+	static VariableBase *GetParameter(const char *name);
+	static VariableBase *GetRegister(const char *name);
+	static VariableBase *GetStatistic(const char *name);
+
+	static VariableBase void_variable;
+private:
+	friend class Object;
+	friend class VariableBase;
+	friend class XMLHelper;
+
+	struct ltstr
+	{
+		bool operator() (const char *s1, const char *s2) const
+		{
+			return strcmp(s1, s2) < 0;
+		}
+	};
+
+	static map<const char *, Object *, ltstr> objects;
+	static map<const char *, ServiceImportBase *, ltstr> imports;
+	static map<const char *, ServiceExportBase *, ltstr> exports;
+	static map<const char *, VariableBase *, ltstr> variables;
+//
+//	static void ProcessXmlVariableNode(xmlTextReaderPtr reader);
 };
 
 //=============================================================================
