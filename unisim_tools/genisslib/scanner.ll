@@ -26,6 +26,12 @@
 #include <iostream>
 #include <cerrno>
 
+#ifdef WIN32
+#include <windows.h>
+
+#define YY_NEVER_INTERACTIVE 1
+#endif
+
 using namespace std;
 
 FileLoc_t                Scanner::fileloc;
@@ -379,7 +385,11 @@ Scanner::add_lookupdir( char const* _dir ) {
   Str::Buf buffer( Str::Buf::Recycle );
   for( intptr_t capacity = 128; true; capacity *= 2 ) {
     char storage[capacity];
+#ifdef WIN32
+  if( not ::GetCurrentDirectory(capacity - 1, storage) ) {
+#else
     if( not getcwd( storage, capacity ) ) {
+#endif
       if( errno != ERANGE ) throw CWDError;
       continue; 
     }
@@ -398,7 +408,11 @@ Scanner::locate( char const* _name ) {
   
   for( std::vector<ConstStr_t>::iterator iter = s_lookupdirs.begin(); iter != s_lookupdirs.end(); iter++ ) {
     buffer.clear().write( iter->str() ).write( "/" ).write( _name );
+#ifdef WIN32
+    if( GetFileAttributes( buffer.m_storage ) == INVALID_FILE_ATTRIBUTES) continue;
+#else
     if( access( buffer.m_storage, R_OK ) != 0 ) continue;
+#endif
     return buffer.m_storage;
   }
   return _name;
