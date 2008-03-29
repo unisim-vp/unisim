@@ -24,7 +24,7 @@
 #ifndef Numerics_Integer_IntegerH
 #define Numerics_Integer_IntegerH
 
-#include <endian.h>
+#include <unisim/util/endian/endian.hh>
 #include <iostream>
 #include <limits.h>
 #include <float.h>

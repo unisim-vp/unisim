@@ -192,11 +192,7 @@ private:
 #endif
 	;
 		/* Read from cache */
-	CacheStatus PrTestBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-__attribute__((always_inline))
-#endif
-	;
+	CacheStatus PrTestBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc);
 	
 	/* Read from cache */
 	inline void PrReadXBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc)

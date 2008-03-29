@@ -151,7 +151,9 @@ bool NetStub<ADDRESS>::Initialize()
 		cerr << "NETSTUB: Starting as server" << endl;
 #endif
 		struct sockaddr_in addr;
+#ifndef WIN32
 		struct sockaddr_un addr_un;
+#endif
 		int server_sock;
 	
 		if(protocol == protocol_af_inet) 
@@ -172,14 +174,17 @@ bool NetStub<ADDRESS>::Initialize()
 		}
 		
 		memset(&addr, 0, sizeof(addr));
+#ifndef WIN32
 		memset(&addr_un, 0, sizeof(addr_un));
 		if(protocol == protocol_af_inet)
 		{
+#endif
 			addr.sin_family = AF_INET;
 			addr.sin_port = htons(tcp_port);
 			addr.sin_addr.s_addr = INADDR_ANY;
 			bind_failed =
 				(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0);
+#ifndef WIN32
 		}
 		else
 		{
@@ -188,6 +193,7 @@ bool NetStub<ADDRESS>::Initialize()
 			bind_failed =
 				(bind(server_sock, (struct sockaddr *) &addr_un, sizeof(addr_un)) < 0);
 		}
+#endif
 		if(bind_failed)
 		{
 #ifdef DEBUG_NETSTUB
@@ -221,25 +227,34 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 
 #ifdef DEBUG_NETSTUB
+#ifndef WIN32
 		if(protocol == protocol_af_inet)
 		{
+#endif
 			cerr << "NETSTUB: Waiting for client connection on TCP port " << tcp_port << endl;
+#ifndef WIN32
 		}
 		else
 		{
 			cerr << "NETSTUB: Waiting for client connection of pipename " << pipename << endl;
 		}
 #endif
+#endif
+
+#ifndef WIN32
 		if(protocol == protocol_af_inet) 
 		{
+#endif
 			addr_len = sizeof(addr);
 			sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
+#ifndef WIN32
 		}
 		else
 		{
 			addr_len = sizeof(addr_un);
 			sock = accept(server_sock, (struct sockaddr *) &addr_un, &addr_len);
 		}
+#endif
 
 		if(sock < 0)
 		{
@@ -267,24 +282,31 @@ bool NetStub<ADDRESS>::Initialize()
 #endif
 		bool connected = false;
 		struct sockaddr_in sonadr;
+#ifndef WIN32
 		struct sockaddr_un sonadr_un;
 		
 		if(protocol == protocol_af_inet)
 		{
+#endif
 			sock = socket(PF_INET, SOCK_STREAM, 0);
+#ifndef WIN32
 		}
 		else
 		{
 			sock = socket(PF_UNIX, SOCK_STREAM, 0);
 		}
+#endif
 
 		if(sock < 0)
 		{
 #ifdef DEBUG_NETSTUB
+#ifndef WIN32
 			if(protocol == protocol_af_inet)
 			{
+#endif
 				cerr << "NETSTUB: Can't create socket for connection to " << server_name
 					<< ":" << tcp_port << endl;
+#ifndef WIN32
 			}
 			else
 			{
@@ -292,33 +314,46 @@ bool NetStub<ADDRESS>::Initialize()
 					<< pipename << endl;
 			}
 #endif
+#endif
 			return false;
 		}
 		memset((char *) &sonadr, 0, sizeof(sonadr));
+#ifndef WIN32
 		memset((char *) &sonadr_un, 0, sizeof(sonadr_un));
+
 		if(protocol == protocol_af_inet) {
+#endif
 			sonadr.sin_family = AF_INET;
 			sonadr.sin_port = htons(tcp_port);
 			sonadr.sin_addr.s_addr = inet_addr(server_name.c_str());
+#ifndef WIN32
 		}
 		else
 		{
 			sonadr_un.sun_family = AF_UNIX;
 			memcpy(sonadr_un.sun_path, pipename.c_str(), strlen(pipename.c_str()) + 1);
 		}
+#endif
 
 #ifdef DEBUG_NETSTUB
+#ifndef WIN32
 		if(protocol == protocol_af_inet)
 		{
+#endif
 			cerr << "NETSTUB: Trying to connect to " << server_name << endl;
+#ifndef WIN32
 		}
 		else
 		{
 			cerr << "NETSTUB: Trying to connect to pipename " << pipename << endl;
 		}
 #endif
+#endif
+
+#ifndef WIN32
 		if(protocol == protocol_af_inet)
 		{
+#endif
 			if(sonadr.sin_addr.s_addr != -1)
 			{
 				//host format is xxx.yyy.zzz.ttt
@@ -348,11 +383,13 @@ bool NetStub<ADDRESS>::Initialize()
 					}
 				}
 			}
+#ifndef WIN32
 		}
 		else
 		{
 			connected = connect(sock, (struct sockaddr *) &sonadr_un, sizeof(sonadr_un)) != -1;
 		}
+#endif
 		if(!connected)
 		{
 #ifdef WIN32

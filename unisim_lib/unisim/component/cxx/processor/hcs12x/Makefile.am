@@ -3,7 +3,7 @@ includedir = $(prefix)/include/unisim/component/cxx/processor/hcs12x
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/hcs12x
 lib_LIBRARIES = libunisim_component_cxx_processor_hcs12x.a
 libunisim_component_cxx_processor_hcs12x_a_SOURCES = cpu.cc mmc.cc hcs12x.cc xb.cc
-include_HEADERS = cpu.hh mmc.hh hcs12x.isa xb.isa \
+include_HEADERS = cpu.hh mmc.hh types.hh concatenated_register.hh hcs12x.isa xb.isa \
 	load_store.isa transfer_exchange.isa move.isa addition_substraction.isa decrement_increment.isa \
 	compare_test.isa boolean-logic.isa bit.isa multiplication_division.isa branch.isa
 	
@@ -14,8 +14,9 @@ CLEANFILES = hcs12x.cc hcs12x.hh xb.cc xb.hh xb_sub.isa
 xb.cc hcs12x.cc: %.cc: %.hh
 hcs12x.hh: xb.hh
 
+xb_sub.isa: xb.hh
 xb.hh hcs12x.hh: %.hh: %.isa
-	$(GENISSLIB_PATH) -I $(srcdir) -o $(basename $@) -w 32 $(srcdir)/$<
+	$(GENISSLIB_PATH) -I $(srcdir) -o $(basename $@) -w 32 $<
 
 dist_share_DATA = COPYING
 

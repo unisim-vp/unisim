@@ -216,7 +216,9 @@ bool
 LoggerServer::
 SetupNetwork() {
 	struct sockaddr_in sonadr;
+#ifndef WIN32
 	struct sockaddr_un sonadr_un;
+#endif
 
 	network_socket = socket(PF_INET, SOCK_STREAM, 0);
 	if(network_socket < 0)
@@ -227,7 +229,9 @@ SetupNetwork() {
 		return network_connected;
 	}
 	memset((char *) &sonadr, 0, sizeof(sonadr));
+#ifndef WIN32
 	memset((char *) &sonadr_un, 0, sizeof(sonadr_un));
+#endif
 	sonadr.sin_family = AF_INET;
 	sonadr.sin_port = htons(network_port);
 	sonadr.sin_addr.s_addr = inet_addr(network_hostname.c_str());

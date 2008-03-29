@@ -24,7 +24,7 @@
 #ifndef Numerics_Double_FloatingH
 #define Numerics_Double_FloatingH
 
-#include <endian.h>
+#include <unisim/util/endian/endian.hh>
 #include <iostream>
 #include <limits.h>
 #include <float.h>
