@@ -1,0 +1,219 @@
+// -*- C++ -*-
+
+/* ********** Stack Pointer instructions ******** */
+
+// CPS: Compare SP to memory
+// is emulated in compare_test.isa
+
+// DES: Decrement Sp
+// is emulated in decrement_increment.isa
+
+// INS: Increment SP
+// is emulated in decrement_increment.isa
+
+// LDS: load SP
+// is emulated in load_store.isa
+
+// LEAS: load effective address into SP
+// is emulated in load_store.isa
+
+// STS: store SP
+// is emulated in load_store.isa
+
+// TSX: transfer SP to X
+// is emulated in transfer_exchange.isa
+
+// TSY: transfer SP to Y
+// is emulated in transfer_exchange.isa
+
+// TXS: transfer X to SP
+// is emulated in transfer_exchange.isa
+
+// TYS: transfer Y to Sp
+// is emulated in transfer_exchange.isa
+
+
+/* ********** stack Operation instructions ********** */
+
+// PSHA: Push A
+
+op psha(0x36[8])
+
+psha.disasm = {
+	sink << "PSHA";
+}
+
+psha.execute = {
+	cpu->setRegSP(cpu->getRegSP()-1);
+	cpu->memWrite8(cpu->getRegSP(), cpu->getRegA());
+}
+
+// PSHB: Push B
+
+op pshb(0x37[8])
+
+pshb.disasm = {
+	sink << "PSHB";
+}
+
+pshb.execute = {
+	cpu->setRegSP(cpu->getRegSP()-1);
+	cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
+}
+
+// PSHC: Push CCR (8 lower bits)
+
+op pshc(0x39[8])
+
+pshc.disasm = {
+	sink << "PSHC";
+}
+
+pshc.execute = {
+	cpu->setRegSP(cpu->getRegSP()-1);
+	cpu->memWrite8(cpu->getRegSP(), cpu->ccr->getCCRLow());
+}
+
+// PSHCW: Push CCR word (16 bits)
+
+op pshcw(0x18[8]:0x39[8])
+
+pshcw.disasm = {
+	sink << "PSHCW";
+}
+
+pshcw.execute = {
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
+}
+
+// PSHD: Push D
+
+op pshd(0x3B[8])
+
+pshd.disasm = {
+	sink << "PSHD";
+}
+
+pshd.execute = {
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite16(cpu->getRegSP(), cpu->getRegD());
+}
+
+// PSHX: Push X
+
+op pshx(0x34[8])
+
+pshx.disasm = {
+	sink << "PSHX";
+}
+
+pshx.execute = {
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
+}
+
+// PSHY: Push Y
+
+op pshy(0x35[8])
+
+pshy.disasm = {
+	sink << "PSHY";
+}
+
+pshy.execute = {
+	cpu->setRegSP(cpu->getRegSP()-2);
+	cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
+}
+
+// PULA: Pull A
+
+op pula(0x32[8])
+
+pula.disasm = {
+	sink << "PULA";
+}
+
+pula.execute = {
+	cpu->setRegA(cpu->memRead8(cpu->getRegSP()));
+	cpu->setRegSP(cpu->getRegSP()+1);
+}
+
+// PULB: Pull B
+
+op pulb(0x33[8])
+
+pulb.disasm = {
+	sink << "PULB";
+}
+
+pulb.execute = {
+	cpu->setRegB(cpu->memRead8(cpu->getRegSP()));
+	cpu->setRegSP(cpu->getRegSP()+1);
+}
+
+// PULC: Pull CCR (16 lower bits)
+
+op pulc(0x38[8])
+
+pulc.disasm = {
+	sink << "PULC";
+}
+
+pulc.execute = {
+	cpu->ccr->setCCRLow(cpu->memRead8(cpu->getRegSP()));
+	cpu->setRegSP(cpu->getRegSP()+1);
+}
+
+// PULCW: Pull CCR word
+
+op pulcw(0x18[8]:0x38[8])
+
+pulcw.disasm = {
+	sink << "PULCW";
+}
+
+pulcw.execute = {
+	cpu->ccr->setCCR(cpu->memRead16(cpu->getRegSP()));
+	cpu->setRegSP(cpu->getRegSP()+2);
+}
+
+// PULD: Pull D
+
+op puld(0x3A[8])
+
+puld.disasm = {
+	sink << "PULD";
+}
+
+puld.execute = {
+	cpu->setRegD(cpu->memRead16(cpu->getRegSP()));
+	cpu->setRegSP(cpu->getRegSP()+2);
+}
+
+// PULX: Pull X
+
+op pulx(0x30[8])
+
+pulx.disasm = {
+	sink << "PULX";
+}
+
+pulx.execute = {
+	cpu->setRegX(cpu->memRead16(cpu->getRegSP()));
+	cpu->setRegSP(cpu->getRegSP()+2);
+}
+
+// PULY: Pull Y
+
+op puly(0x31[8])
+
+puly.disasm = {
+	sink << "PULY";
+}
+
+puly.execute = {
+	cpu->setRegY(cpu->memRead16(cpu->getRegSP()));
+	cpu->setRegSP(cpu->getRegSP()+2);
+}
+
