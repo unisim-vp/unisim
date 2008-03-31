@@ -26,16 +26,27 @@ emuls.disasm = {
 }
 
 emuls.execute = {
-	int32_t result = ((int16_t) cpu->getRegD()) * ((int16_t) cpu->getRegY());
+	uint32_t result = cpu->getRegD() * cpu->getRegY();
 
 	cpu->setRegY((uint16_t) (result >> 16));
 	cpu->setRegD((uint16_t) result);
 
-// TOCHECK
-	if ((result & 0x7FFFFFFF) > 0xFFFF) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0); }	
+/*
+ * C: Set if bit 15 of the result is set; cleared otherwise
+ */
+	if ((result & 0x8000) > 0x8000) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0); }	
 
+/*
+ * Z: Set if result is $00000000; cleared otherwise
+ */	
 	if (result == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+
+/*
+ * N: Set if the MSB of the result is set; cleared otherwise
+ */
 	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+
+	
 }
 
 // MUL: 8 by 8 Bit Multiply (unsigned) (A) x (B) => A:B
@@ -62,6 +73,43 @@ ediv.disasm = {
 
 ediv.execute = {
 	// TODO
+	/*
+	 * source_url: http://www.embeddedrelated.com/groups/68hc12/show/3775.php
+	 * 
+	 * U16 X, Y, Z;
+	 * X = (U16)(((U32)Y * 1000) / (U16)Z);
+	 * 
+	 * with an EMUL and an EDIV is that if the 32/16 bit EDIV division overflows, then the
+	 * HC12 does not generate a result at all (it just sets the V flag). 
+	 * Therefore using a simple EDIV does not generate the same result
+	 * for all possible Y and Z's as calculating it with longs.
+	 */
+	uint32_t dividend = ((uint32_t) cpu->getRegY() << 16) | (0x00FF & cpu->getRegD());
+	uint16_t divisor = cpu->getRegX();
+	uint32_t quotion = cpu->getRegY();
+	uint16_t remind = cpu->getRegD();
+	 
+	if (divisor == 0) {
+		// TODO: throw an exception "division by 0"
+		cpu->ccr->setC(1);
+	} else {
+		cpu->ccr->setC(0);
+		quotion = dividend / divisor;
+		remind = dividend % divisor;
+		
+		if (quotion > 0xFFFF) {
+			cpu->ccr->setV(1);
+		} else {
+			cpu->ccr->setV(0);
+	
+			cpu->setRegY((uint16_t) quotion);
+			cpu->setRegD(remind);
+			
+			if (quotion == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+			if (cpu->getRegY() & 0x8000 == 0x8000 ) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+		}  
+	}
+
 }
 
 // EDIVS: 32 by 16 bit to 16 bit divide (signed)  (Y:D) div (X) => Y remainder => D
@@ -72,7 +120,131 @@ edivs.disasm = {
 }
 
 edivs.execute = {
-	// TODO
+	
+	uint32_t dividend = ((uint32_t) cpu->getRegY() << 16) | (0x00FF & cpu->getRegD());
+	uint16_t divisor = cpu->getRegX();
+	uint32_t quotion = cpu->getRegY();
+	uint16_t remind = cpu->getRegD();
+	 
+	if (divisor == 0) {
+		// TODO: throw an exception "division by 0"
+		cpu->ccr->setC(1);
+	} else {
+		cpu->ccr->setC(0);
+		
+		quotion = dividend / divisor;
+		remind = dividend % divisor;
+
+		if ((uint16_t) quotion > 0x7FFF) {
+			cpu->ccr->setV(1);
+		} else {
+			cpu->ccr->setV(0);
+			
+			cpu->setRegY((uint16_t) quotion); // cpu->setRegY((uint16_t) quotion | ((quotion >> 16) & 0x8000));
+			cpu->setRegD(remind);
+			
+			if (quotion == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+
+			if (cpu->getRegY() & 0x8000 == 0x8000 ) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+		}  
+	}
 }
 
+// FDIV: 16 by 16 fractional divide
+op fdiv(0x18[8]:0x11[8])
 
+fdiv.disasm = {
+	sink << "FDIV";
+}
+
+fdiv.execute = {
+	/* FDIV is equivalent to multiplying the numerator by 2^16 and then performing 32 by 16-bit integer division. */
+	
+	uint32_t dividend = (uint32_t) cpu->getRegD() << 16;
+	uint16_t divisor = cpu->getRegX();
+	uint16_t quotion = 0xFFFF;
+	uint16_t remind = dividend;
+	
+	if (divisor == 0) { 
+		cpu->ccr->setC(1); 
+	} else { 
+		cpu->ccr->setC(0); 
+		if (dividend >= divisor) {
+			cpu->ccr->setV(1);
+		} else {
+			cpu->ccr->setV(0);
+			quotion = dividend / divisor;
+			remind = dividend % divisor;
+		} 
+	}
+	
+	cpu->setRegX(quotion);
+	cpu->setRegD(remind);
+	if (quotion == 0) { cpu->ccr->setZ(1); }  else { cpu->ccr->setZ(0); }
+}
+
+// IDIV: 16 by 16 integer divide (unsigned)
+op idiv(0x18[8]:0x10[8])
+
+idiv.disasm = {
+	sink << "IDIV";
+}
+
+idiv.execute = {
+/* In the case of division by zero, C is set, the quotient is set to $FFFF,
+and the remainder is indeterminate. */
+
+	uint16_t dividend = cpu->getRegD();
+	uint16_t divisor = cpu->getRegX();
+	uint16_t quotion = 0xFFFF;
+	uint16_t remind = dividend;
+
+	cpu->ccr->setV(0);	
+	if (divisor == 0) { 
+		cpu->ccr->setC(1); 
+	} else { 
+		cpu->ccr->setC(0); 
+		quotion = dividend / divisor;
+		remind = dividend % divisor;
+	}
+	
+	cpu->setRegX(quotion);
+	cpu->setRegD(remind);
+	if (quotion == 0) { cpu->ccr->setZ(1); }  else { cpu->ccr->setZ(0); }
+}
+
+// IDIVS: 16 by 16 integer divide (signed)
+op idivs(0x18[8]:0x15[8])
+
+idivs.disasm = {
+	sink << "IDIVS";
+}
+
+idivs.execute = {
+	/* In the case of division by zero, C is set, the quotient is set to $FFFF,
+and the remainder is indeterminate. */
+
+	uint16_t dividend = cpu->getRegD();
+	uint16_t divisor = cpu->getRegX();
+	uint16_t quotion = 0xFFFF;
+	uint16_t remind = dividend;
+
+	cpu->ccr->setV(0);	
+	if (divisor == 0) { 
+		cpu->ccr->setC(1); 
+	} else { 
+		cpu->ccr->setC(0); 
+		quotion = dividend / divisor;
+		remind = dividend % divisor;
+	}
+	
+	cpu->setRegX(quotion);
+	cpu->setRegD(remind);
+/*
+ * V: Set if the result was > $7FFF or < $8000; cleared otherwise
+ * Undefined after division by zero
+ */
+	if ((dividend == 0x8000) && (divisor == 0xFFFF)) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0);}
+	if (quotion == 0) { cpu->ccr->setZ(1); }  else { cpu->ccr->setZ(0); }
+	if ((quotion & 0x8000) == 0x8000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+}
