@@ -43,4 +43,5 @@ include "boolean-logic.isa"
 include "bit.isa"
 include "multiplication_division.isa"
 include "branch.isa"
+include "stacking.isa"
 

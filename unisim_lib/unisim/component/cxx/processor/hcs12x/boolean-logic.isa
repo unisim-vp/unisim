@@ -498,6 +498,20 @@ orcc_imm.execute = {
 	
 }
 
+// TODO: implement specialization ++++++++++++++
+
+// SEC: set carry 
+// use specialize orcc_imm with opr8i=0x01
+
+// SEI: set I (inhibit I interrupts)
+// use specialize orcc_imm with opr8i=0x10
+
+// SEV: set overflow
+// use specialize orcc_imm with opr8i=0x02 
+
+// end todo specialization ++++++++++++++++++++++
+
+
 // ORX/ORY IMM (regXY | opr16i => regXY)
 op or_xy_imm(0x18[8]:0b1[1]:b[1]:0x0A[6]:opr16i[16])
 
