@@ -12,6 +12,19 @@ AC_DEFUN([UNISIM_CHECK_LIBSTDCXX], [
 ## Does not take parameters
 #####################################################
 AC_DEFUN([UNISIM_CHECK_BOOST_THREAD], [
+    # Check if boost path has been overloaded
+    AC_ARG_WITH(boost,
+	AS_HELP_STRING([--with-boost=<path>], [boost library to use (will be completed with /include and /lib)]))
+    if test "x$with_boost" != "x"; then
+	AC_MSG_NOTICE([using boost at $with_boost])
+	CPPFLAGS+=" -I$with_boost"
+	LDFLAGS+=" -L$with_boost/lib"
+    fi
+	
+    # Check for some boost thread headers
+    AC_CHECK_HEADERS([boost/thread/mutex.hpp],,\
+	AC_MSG_ERROR([boost thread headers not found. Please install the boost thread development library. Use --with-boost=<path> to overload default includes search path.]))
+
 	# Note: we can't check libboost_thread functions from libboost_thread because it's a library of C++ classes with no C functions.
 	LIBS+=" -lboost_thread"
 ])
