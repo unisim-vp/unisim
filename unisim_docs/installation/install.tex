@@ -1,0 +1,89 @@
+\section{Getting UNISIM}
+\label{getting_unisim}
+
+\subsection{Distribution as source code}
+\label{distribution_as_source_code}
+
+\subsubsection{Tarball}
+\label{distribution_as_source_code_tarball}
+
+\subsubsection{Subversion}
+\label{distribution_as_source_code_subversion}
+
+\subsection{Distribution as binary package}
+\label{distribution_as_binary_package}
+
+\subsubsection{Ubuntu}
+\label{distribution_as_binary_package_ubuntu}
+
+\subsubsection{Windows}
+\label{distribution_as_binary_package_windows}
+
+\section{Compiling UNISIM for Linux}
+\label{compiling_unisim_for_linux}
+
+\subsection{Ubuntu}
+\label{compiling_unisim_for_ubuntu}
+
+\subsubsection{Preparing}
+
+\noindent \textbf{Installing some required packages}. The following packages are needed to compile UNISIM:
+\begin{itemize}
+\item bash
+\item make
+\item autoconf
+\item automake
+\item g++
+\item flex
+\item bison
+\item libreadline5-dev
+\item libxml2-dev
+\item libsdl1.2-dev
+\item libboost-graph-dev
+\item libboost-thread-dev
+\item zlib1g-dev
+\end{itemize}
+
+To install these packages, use apt-get or your usual package manager (synaptic, adept\ldots):
+\begin{verbatim}
+$ sudo apt-get bash make autoconf automake g++ flex bison libreadline5-dev
+$ sudo apt-get libxml2-dev libsdl1.2-dev libboost-graph-dev libboost-thread-dev
+\end{verbatim}
+
+\noindent \textbf{Compiling systemc 2.2.0}. First, get your own SystemC 2.2.0 tarball from http://www.systemc.org (registration is needed), then do the following:
+
+\begin{verbatim}
+$ tar zxvf systemc-2.2.0.tgz
+$ mkdir where-you-want-to-install-systemc
+$ cd systemc-2.2.0
+$ mkdir objdir
+$ cd objdir
+$ ../configure --prefix=where-you-want-to-install-systemc
+$ make
+$ make install
+\end{verbatim}
+
+\subsubsection{Compiling}
+
+\noindent \textbf{Compiling unisim\_tools}.
+
+\noindent \textbf{Compiling unisim\_lib}.
+
+\noindent \textbf{Compiling unisim\_simulators}.
+
+\section{UNISIM/Windows}
+\label{compiling_unisim_for_windows}
+
+\subsection{Cygwin}
+\label{compiling_unisim_for_cygwin}
+
+\subsubsection{Preparing}
+
+\subsubsection{Compiling}
+
+\subsection{Mingw32}
+\label{compiling_unisim_for_mingw32}
+
+\subsubsection{Preparing}
+
+\subsubsection{Compiling}
