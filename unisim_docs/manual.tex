@@ -1,0 +1,63 @@
+%\documentclass[11pt]{book}
+\documentclass[a4paper,11pt,onecolumn]{mathese}
+% \usepackage[frenchb]{babel}
+% \usepackage[latin1]{inputenc}
+% \usepackage[T1]{fontenc}
+% \usepackage[french]{varioref}
+%\usepackage{fullpage}
+% \usepackage{graphicx}
+% \usepackage{lgrind}
+%\usepackage{progSTF}
+% \usepackage{subfigure}
+% \usepackage{moreverb}
+\usepackage{ulem}
+% \usepackage{srctex}
+% \usepackage{geometry}
+\usepackage{pifont}
+
+%\geometry{hmargin=3.0cm,vmargin=2.5cm}
+
+\begin{document}
+\selectlanguage{english}
+\setlength{\parskip}{0.5em}%0.15cm}
+\baselineskip 14pt
+
+%\input{title}
+
+
+%\maketitle
+\frontmatter
+%\input{abstract}
+%\input{acknowledgements}
+%\tableofcontents
+
+%\addcontentsline{toc}{chapter}{Table des matières} 
+\tableofcontents \markboth{Table of content}{Table of content}
+\listoffigures
+
+\mainmatter
+
+\chapter{Services}
+\label{services}
+\input{services/services}
+
+\chapter{TLM/TTLM}
+\label{tlm_ttlm}
+\input{tlm/tlm}
+
+\begin{appendix}
+\chapter{TLM library}
+\label{tlm_appendix}
+\input{tlm/appendix}
+
+\end{appendix}
+
+% \input{filename}
+% \begin{appendix}
+% \input{filename} 
+% \end{appendix}
+\bibliographystyle{plain}
+\bibliography{biblio}
+
+
+\end{document}

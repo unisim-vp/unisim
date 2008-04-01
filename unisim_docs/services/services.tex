@@ -1,0 +1,161 @@
+Designing a new emulator, and particularly for a research purpose, means implementing an instruction set emulator but also involves several software components not directly related to pure instruction set execution.
+The most obvious needed software components are memories, debuggers, loaders, but components such as chipsets and peripherals are still mandatory to enable running real unmodified applications.
+Making all these components running together requires programming interfaces as much standard as possible.
+
+Usually the programmer faces to the problems of sharing source codes among several emulators, reusing existing source codes, and building a fully functional emulator from all these heterogeneous pieces of source codes.
+Most of the time, the software components are strongly dependent for each other: components are statically linked together through explicit function calls and adhoc interfaces.
+Replacing these adhoc interfaces with C++ pure interfaces (C++ classes with only unimplemented virtual methods, see your C++ manual for more details) and linking the components through pointers is a step toward avoiding such strong dependencies between the components. But still finding a standard manner to initialize those pointers is necessary. This can be done either by directly writting in those pointers or calling special functions to do the job.
+
+Another problem with heterogeneous software components is the manner to instantiate and parameterize those components in a standard way, so that it is easier for the component's user to use a new component.
+Usually, parameterizing a component means passing arguments to an initialization function or a class constructor. It implies that the programmers agree on using only one of these two solutions or both.
+Still the programmers must know the setup order of these components: it is an error prone process because determining a correct order from the components documentation will likely fail the first times.
+
+% problems:\\
+% - C++ class code sharing/reuse/composition\\
+% - direct call problem\\
+% - parameterization problem\\
+% - setup problem: dependencies, which setup order ?\\
+% \\
+
+In this section, we propose a standard way to share, reuse, link, parameterize and setup these software components.
+C++ object oriented programming and pure C++ interfaces enable sharing and reuse.
+Some special pointers (classes \texttt{ServiceImport} and \texttt{ServiceExport}) linking the software components (classes \texttt{Service} and \texttt{Client}) together with some base software component classes have been introduced, thus enabling easier component composition and connection.
+The parameterization have been standardized (class \texttt{Parameter}) and the framework (class \texttt{ServiceManager}) uses the call graph to provide the user with an automatic setup order.
+
+Section~\ref{services_library} documents the available services in the library. Section~\ref{building_a_service_graph} presents how to use services, link clients and services, and setup each components. Section~\ref{designing_clients_and_services} not only presents how to design a service, either a totally new service, or an assembly of existing services, but also how to design a client invoking a service.
+
+% solution:\\
+% sharing/reuse -> classes, abstract interfaces\\
+% composition -> service, client, import/export, call/use graph (connections)\\
+% parameterization -> generic parameters\\
+% setup problem -> call/use graph enables automatic setup order\\
+
+\section{Services library}
+\label{services_library}
+
+\subsection{ELF Loader}
+
+The ELF loader service (class \texttt{ElfLoader<T>}) allows to load a binary program (ELF32 for \texttt{ElfLoader<uint32\_t>}, ELF64 for \texttt{ElfLoader<uint64\_t>}) into a memory and fill a symbol table. The loader also provides information about the loaded file such as the code and data locations (base address and size). The ELF loader loads the program during setup.
+
+\noindent Parameters:
+\begin{itemize}
+\item "filename": the ELF file name to load into the connected memory.
+\end{itemize}
+
+\noindent Exports:
+\begin{itemize}
+\item member:~\texttt{exp}\\
+interface:~\texttt{full\_system::plugins::loader::LoaderInterface<T>}\\
+header:~\texttt{plugins/loader/loader\_interface.hh}\\
+description: the ELF loader provides information about the code and data location through this export.
+\end{itemize}
+
+\noindent Imports:
+\begin{itemize}
+\item member:~\texttt{memory}\\
+interface:~\texttt{full\_system::generic::memory::MemoryInterface<T>}\\
+header:~\texttt{generic/memory/memory\_interface.hh}\\
+description: the ELF loader accesses to the memory through this import.
+
+\item member:~\texttt{symbol\_table}\\
+interface:~\texttt{full\_system::utils::debug::SymbolTableBuildInterface<T>}\\
+header:~\texttt{utils/debug/symbol\_table\_interface.hh}
+description: the ELF loader fills the symbol table using this import.
+\end{itemize}
+
+\subsection{Linux OS}
+
+\subsection{Debuggers}
+
+The library provides two debuggers using the same interfaces, and naming convention for the imports and exports: an inline debugger (text base) and a GDB server communicating through TCP/IP with the standard GDB client supporting the target machine.
+
+%	ServiceImport<SymbolTableLookupInterface<ADDRESS> > symbol_table;
+
+\noindent Exports:
+\begin{itemize}
+\item member:~\texttt{exp}\\
+service interface:~{\scriptsize ~\texttt{full\_system::plugins::debug::InstructionLevelDebuggerInterface<ADDRESS>}}\\
+client interface:~{\scriptsize \texttt{full\_system::plugins::debug::CPUInstructionLevelDebugInterface<ADDRESS>}}\\
+header:~{\scriptsize \texttt{plugins/debug/instruction\_level\_debug\_interface.hh}}\\
+description: the debugger provides debug facilities to the CPU client through this export.
+\end{itemize}
+
+\subsection{PowerMAC Linux Kernel Loader}
+
+\subsection{Symbol Table}
+
+\section{Building a service graph}
+\label{building_a_service_graph}
+
+Using services implies building a service graph.
+For instance, consider that the client is a loader, and the service is a memory.
+The programmer creates objects \texttt{loader} and \texttt{memory}, see Figure~\ref{fig:instanciation}.
+
+\begin{figure}[h]
+  \begin{center}
+    \input{services/instanciation}
+    \caption{\label{fig:instanciation} Client/Service instanciation.}
+  \end{center}
+\end{figure}
+
+Object \texttt{loader} is a client because it needs a service (reading/writing in memory) from object \texttt{memory} to load the program.
+\texttt{loader} has a member \texttt{import} named \texttt{memory\_import} whereas \texttt{memory} object has a member \texttt{export} named \texttt{memory\_export}.
+The programmer connects the loader to the memory using \texttt{loader.memory\_import} and \texttt{memory.memory\_export}, see Figure~\ref{fig:connection}.
+
+\begin{figure}[h]
+  \begin{center}
+    \input{services/connection}
+    \caption{\label{fig:connection} Import/Export connection.}
+  \end{center}
+\end{figure}
+
+Once \hfill the \hfill programmer \hfill has \hfill created \hfill a \hfill service \hfill graph, \hfill he \hfill must \hfill perform \hfill a \hfill call \hfill to \hfill \texttt{ServiceManager::Setup()}.
+\texttt{ServiceManager::Setup()} returns \texttt{true} if setup of each service and client in the graph has been successful, other it returns \texttt{false}.
+
+\section{Designing clients and services}
+\label{designing_clients_and_services}
+
+\subsection{Design a service by composing existing services}
+
+\subsection{Designing a service}
+
+A service is a C++ object inheriting from template class \texttt{Service<SERVICE\_INTERFACE>} \ding{202}, see Figure~\ref{fig:simple_service}.
+SERVICE\_INTERFACE is a C++ abstract class defining the virtual methods implemented by the service.
+To export its interface, a service must have a member of type \texttt{ServiceExport<SERVICE\_INTERFACE>} \ding{203}.
+For normalization purposes, the service constructor should take only two parameters \ding{204}: the service name and the pointer to the parent (a container service).
+The pointer to the parent is \texttt{null} if the service is a top level service (no parent).
+The base \texttt{Object} constructor \ding{205} and the base \texttt{Service} constructor \ding{206} must be called with the name and the pointer to the parent.
+\texttt{ServiceExport} member constructor must be called with the export name and a pointer to the owner, i.e. the service itself \ding{207}.
+
+\begin{figure}[h]
+  \begin{center}
+    \input{services/simple_service}
+    \caption{\label{fig:simple_service} Simple service.}
+  \end{center}
+\end{figure}
+
+
+\subsection{Designing a client}
+
+\subsection{Adding parameterization to a service}
+
+\subsection{Handling service setup}
+
+
+% \begin{figure}[h]
+%   \begin{center}
+%     \input{tlm/interface1}
+%     \caption{\label{fig:interface1} TLM interface (simplified).}
+%   \end{center}
+% \end{figure}
+
+% \subsection{Drawbacks \& Programming facilities: Pointer and event\_list}
+% \label{drawbacks_and_programming_facilities}
+
+% \begin{figure}[p]
+%   \begin{center}
+%     \input{tlm/ttlm_router_adv2}
+%     \caption{\label{fig:ttlm_router_adv2} Example of TTLM router
+%       module with requests and responses contention.}
+%   \end{center}
+% \end{figure}
