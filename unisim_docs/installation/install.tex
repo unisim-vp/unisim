@@ -7,8 +7,14 @@
 \subsubsection{Tarball}
 \label{distribution_as_source_code_tarball}
 
+Go to http://www.unisim.org/ \ldots
+
 \subsubsection{Subversion}
 \label{distribution_as_source_code_subversion}
+
+\begin{verbatim}
+$ svn checkout https://www.unisim.org/svn/devel
+\end{verbatim}
 
 \subsection{Distribution as binary package}
 \label{distribution_as_binary_package}
@@ -16,8 +22,21 @@
 \subsubsection{Ubuntu}
 \label{distribution_as_binary_package_ubuntu}
 
+Add the following line in your /etc/apt/source.list:
+\begin{verbatim}
+deb http://www.unisim.org/..... feisty contrib
+deb http://www.unisim.org/..... gutsy contrib
+\end{verbatim}
+
+Then do the following to update the package manager:
+\begin{verbatim}
+$ sudo apt-get update
+\end{verbatim}
+
 \subsubsection{Windows}
 \label{distribution_as_binary_package_windows}
+
+Go to http://www.unisim.org/ \ldots
 
 \section{Compiling UNISIM for Linux}
 \label{compiling_unisim_for_linux}
@@ -108,6 +127,115 @@ $ make install
 \subsection{Mingw32}
 \label{compiling_unisim_for_mingw32}
 
-\subsubsection{Preparing}
+To compile the unisim simulators for a Windows native environment, we rely on the ``autotools'' either on cygwin or Linux (Ubuntu).
+We advice you to use Linux because it's the fastest solution we found.
+Actually cygwin g++ compiler also includes gcc-mingw32 when invoked with option -mno-cygwin, and Ubuntu provides a MinGW32 cross-compiler (i586-mingw32msvc-g++).
 
-\subsubsection{Compiling}
+\subsubsection{Preparing}
+As UNISIM needs some third party libraries and MinGW32 only provides standard windows libraries, you will need to compile the following libraries for Windows:
+\begin{itemize}
+\item readline
+\item libxml2
+\item libsdl
+\item boost
+\item zlib
+\end{itemize}
+
+We greatly recommend to download the prebuilt libraries,  (we name this bootstrap-unisim-mingw32 for later reference) from: http://www.unisim.org/ \ldots
+
+\subsubsection{Cross-compiling from Cygwin}
+
+\noindent \textbf{Compiling unisim\_tools}.
+
+\begin{verbatim}
+$ cd unisim_tools
+$ ./configure --prefix=path-to-unisim-install-dir \
+    --host=i586-mingw32msvc \
+    CXXFLAGS="-mno-cygwin" \
+    LDFLAGS="-mno-cygwin"
+$ make
+$ make install
+\end{verbatim}
+
+\noindent \textbf{Compiling unisim\_lib}.
+
+\begin{verbatim}
+$ cd unisim_lib
+$ ./configure --prefix=path-to-unisim-install-dir \
+   --with-unisim-tools=path-to-unisim-install-dir \
+   --host=i586-mingw32msvc \
+    CXXFLAGS="-mno-cygwin" \
+    LDFLAGS="-mno-cygwin" \
+   --with-systemc=path-bootstrap-unisim-mingw32/systemc \
+   --with-unisim-tools=path-to-unisim-install-dir \
+   --with-sdl=path-bootstrap-unisim-mingw32/SDL \
+   --with-boost=path-bootstrap-unisim-mingw32/boost \
+   --with-readline=path-bootstrap-unisim-mingw32/readline \
+   --with-libxml2/opt/mingw32/boost --enable-release \
+   --with-zlib=path-bootstrap-unisim-mingw32/zlib \
+   --enable-release
+\end{verbatim}
+
+\noindent \textbf{Compiling unisim\_simulators}.
+
+\begin{verbatim}
+$ cd unisim_simulators
+$ ./configure --prefix=path-to-unisim-install-dir \
+   --with-unisim-lib=path-to-unisim-install-dir \
+   --host=i586-mingw32msvc \
+    CXXFLAGS="-mno-cygwin" \
+    LDFLAGS="-mno-cygwin" \
+   --with-systemc=path-bootstrap-unisim-mingw32/systemc \
+   --with-unisim-tools=path-to-unisim-install-dir \
+   --with-sdl=path-bootstrap-unisim-mingw32/SDL \
+   --with-boost=path-bootstrap-unisim-mingw32/boost \
+   --with-readline=path-bootstrap-unisim-mingw32/readline \
+   --with-libxml2/opt/mingw32/boost \
+   --with-zlib=path-bootstrap-unisim-mingw32/zlib \
+   --enable-release
+\end{verbatim}
+
+\subsubsection{Cross-compiling from Linux (Ubuntu)}
+
+\noindent \textbf{Compiling unisim\_tools}.
+
+\begin{verbatim}
+$ cd unisim_tools
+$ ./configure --prefix=path-to-unisim-install-dir --host=i586-mingw32msvc
+$ make
+$ make install
+\end{verbatim}
+
+\noindent \textbf{Compiling unisim\_lib}.
+
+\begin{verbatim}
+$ cd unisim_lib
+$ ./configure --prefix=path-to-unisim-install-dir \
+   --with-unisim-tools=path-to-unisim-install-dir \
+   --host=i586-mingw32msvc \
+   --with-systemc=path-bootstrap-unisim-mingw32/systemc \
+   --with-unisim-tools=path-to-unisim-install-dir \
+   --with-sdl=path-bootstrap-unisim-mingw32/SDL \
+   --with-boost=path-bootstrap-unisim-mingw32/boost \
+   --with-readline=path-bootstrap-unisim-mingw32/readline \
+   --with-libxml2/opt/mingw32/boost --enable-release \
+   --with-zlib=path-bootstrap-unisim-mingw32/zlib \
+   --enable-release
+\end{verbatim}
+
+\noindent \textbf{Compiling unisim\_simulators}.
+
+\begin{verbatim}
+$ cd unisim_simulators
+$ ./configure --prefix=path-to-unisim-install-dir \
+   --with-unisim-lib=path-to-unisim-install-dir \
+   --host=i586-mingw32msvc \
+   --with-systemc=path-bootstrap-unisim-mingw32/systemc \
+   --with-unisim-tools=path-to-unisim-install-dir \
+   --with-sdl=path-bootstrap-unisim-mingw32/SDL \
+   --with-boost=path-bootstrap-unisim-mingw32/boost \
+   --with-readline=path-bootstrap-unisim-mingw32/readline \
+   --with-libxml2/opt/mingw32/boost \
+   --with-zlib=path-bootstrap-unisim-mingw32/zlib \
+   --enable-release
+\end{verbatim}
