@@ -167,59 +167,61 @@ private:
 
 }; // end class CCR_t 
 
-	/********************************************************************
-	 *********  Used for Exchange/Transfer EB:  post-byte  **************
+	/* *******************************************************************
+	 * ********  Used for                                   **************
+	 * ********    Exchange/Transfer EB:  post-byte         **************
+	 * ********    Loop Primitive    LB:  post-byte         ************** 
 	 * ******************************************************************/
-class EB {
+class EBLB {
 public:
 
-	class EBMSLSRegs {
+	class EBLBMSLSRegs {
 		public:
 		enum { A=0x0, B=0x1, CCR=0x2, TMPx=0x3, D=0x4, X=0x5, Y=0x6, SP=0x7 };
 	};
 	
-	class EBRegs {
+	class EBLBRegs {
 		public:
 		enum {A=0x0, B=0x1, CCR=0x20, CCRL=0x21, CCRH=0x22, CCRW=0x23, TMP1=0x30, TMP2=0x31, TMP3=0x32, D=0x4, X=0x5, Y=0x6, SP=0x7};
 	};
 
-	EB(CPU *cpu) { this->cpu = cpu; }
-	~EB() { cpu = NULL; }
+	EBLB(CPU *cpu) { this->cpu = cpu; }
+	~EBLB() { cpu = NULL; }
 	 
 	static string getRegName(uint8_t num) {
 		switch (num) {
-			case EBRegs::A: return "A"; break;
-			case EBRegs::B: return "B"; break;
-			case EBRegs::CCR: return "CCR"; break;
-			case EBRegs::CCRL: return "CCRL"; break;
-			case EBRegs::CCRH: return "CCRH"; break;
-			case EBRegs::CCRW: return "CCRW"; break;
-			case EBRegs::TMP1: return "TMP1"; break;
-			case EBRegs::TMP2: return "TMP2"; break;
-			case EBRegs::TMP3: return "TMP3"; break;
-			case EBRegs::D: return "D"; break;
-			case EBRegs::X: return "X"; break;
-			case EBRegs::Y: return "Y"; break;
-			case EBRegs::SP: return "SP"; break;
+			case EBLBRegs::A: return "A"; break;
+			case EBLBRegs::B: return "B"; break;
+			case EBLBRegs::CCR: return "CCR"; break;
+			case EBLBRegs::CCRL: return "CCRL"; break;
+			case EBLBRegs::CCRH: return "CCRH"; break;
+			case EBLBRegs::CCRW: return "CCRW"; break;
+			case EBLBRegs::TMP1: return "TMP1"; break;
+			case EBLBRegs::TMP2: return "TMP2"; break;
+			case EBLBRegs::TMP3: return "TMP3"; break;
+			case EBLBRegs::D: return "D"; break;
+			case EBLBRegs::X: return "X"; break;
+			case EBLBRegs::Y: return "Y"; break;
+			case EBLBRegs::SP: return "SP"; break;
 			default: return "?";			
 		}
 	}
 	
 	static uint8_t getRegSize(uint8_t num) { 
 		switch (num) {
-			case EBRegs::A: return 8; break;
-			case EBRegs::B: return 8; break;
-			case EBRegs::CCR: return 8; break;
-			case EBRegs::CCRL: return 8; break;
-			case EBRegs::CCRH: return 8; break;
-			case EBRegs::CCRW: return 16; break;
-			case EBRegs::TMP1: return 16; break;
-			case EBRegs::TMP2: return 16; break;
-			case EBRegs::TMP3: return 16; break;
-			case EBRegs::D: return 16; break;
-			case EBRegs::X: return 16; break;
-			case EBRegs::Y: return 16; break;
-			case EBRegs::SP: return 16; break;
+			case EBLBRegs::A: return 8; break;
+			case EBLBRegs::B: return 8; break;
+			case EBLBRegs::CCR: return 8; break;
+			case EBLBRegs::CCRL: return 8; break;
+			case EBLBRegs::CCRH: return 8; break;
+			case EBLBRegs::CCRW: return 16; break;
+			case EBLBRegs::TMP1: return 16; break;
+			case EBLBRegs::TMP2: return 16; break;
+			case EBLBRegs::TMP3: return 16; break;
+			case EBLBRegs::D: return 16; break;
+			case EBLBRegs::X: return 16; break;
+			case EBLBRegs::Y: return 16; break;
+			case EBLBRegs::SP: return 16; break;
 			default: return 0;			
 		}
 	}
@@ -237,7 +239,7 @@ public:
 private:
 	CPU *cpu;
 	
-};	/***********   END EB  **********/
+};	/***********   END EBLB  **********/
 
 
 #define MAX_ADDRESS     0x007FFFFF // 8 MByte
@@ -419,7 +421,7 @@ public:
 //protected:
     class MMC	*mmc;
     class CCR_t *ccr;   
-	class EB	*eb;
+	class EBLB	*eblb;
 		 
 protected:
 	//utils attributes

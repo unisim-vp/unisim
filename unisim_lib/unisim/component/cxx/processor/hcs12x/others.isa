@@ -1,0 +1,115 @@
+// -*- C++ -*-
+
+// NOP:
+op nop(0xA7[8])
+
+nop.disasm = {
+	sink << "NOP";	
+}
+
+nop.execute = {
+	// This single-byte instruction increments the PC and does nothing else.
+}
+
+// STOP:
+op stop(0x18[8]:0x3E[8])
+
+stop.disasm = {
+	sink << "STOP";
+}
+
+stop.execute = {
+	
+	if (cpu->ccr->getS() == 1) {
+		/*
+		 * if S control bit = 1, the STOP instruction is disabled and acts like two-cycle NOP
+		 */
+		// TODO: consume two cycles	 
+	} else {
+		/*
+		 * (SP) – $0002 ⇒ SP; RTNH : RTNL ⇒ (M(SP) : M(SP+1))
+		 * (SP) – $0002 ⇒ SP; YH : YL ⇒ (M(SP) : M(SP+1))
+		 * (SP) – $0002 ⇒ SP; XH : XL ⇒ (M(SP) : M(SP+1))
+		 * (SP) – $0002 ⇒ SP; B : A ⇒ (M(SP) : M(SP+1))
+		 * (SP) – $0002 ⇒ SP; CCRH : CCRL ⇒ (M(SP) : M(SP+1))
+		 * Stop All Clocks and puts the device in standby mode
+		 */
+		 
+		 cpu->setRegSP(cpu->getRegSP()-2);
+		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
+		 
+		 cpu->setRegSP(cpu->getRegSP()-2);
+		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
+		 
+		 cpu->setRegSP(cpu->getRegSP()-2);
+		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
+		 
+		 cpu->setRegSP(cpu->getRegSP()-2);
+		 cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
+		 cpu->memWrite8(cpu->getRegSP()+1, cpu->getRegA());
+		 
+		 cpu->setRegSP(cpu->getRegSP()-2);
+		 cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
+		 
+		 // TODO: Stop All Clocks and puts the device in standby mode
+	}
+}
+
+// WAIT
+op wait(0x3E[8])
+
+wait.disasm = {
+	sink << "WAI";
+}
+
+wait.execute = {
+
+	/*
+	 * (SP) – $0002 ⇒ SP; RTNH : RTNL ⇒ (M(SP) : M(SP+1))
+	 * (SP) – $0002 ⇒ SP; YH : YL ⇒ (M(SP) : M(SP+1))
+	 * (SP) – $0002 ⇒ SP; XH : XL ⇒ (M(SP) : M(SP+1))
+	 * (SP) – $0002 ⇒ SP; B : A ⇒ (M(SP) : M(SP+1))
+	 * (SP) – $0002 ⇒ SP; CCRH : CCRL ⇒ (M(SP) : M(SP+1))
+	 * The CPU12 then enters a wait state for an integer number of bus clock cycles. 
+	 * During the wait state, CPU12 clocks are stopped, but otherMCUclocks can continue to run.
+	 * WAIT for not masked interrupt
+	 */
+	 
+	 cpu->setRegSP(cpu->getRegSP()-2);
+	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
+	 
+	 cpu->setRegSP(cpu->getRegSP()-2);
+	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
+	 
+	 cpu->setRegSP(cpu->getRegSP()-2);
+	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
+	 
+	 cpu->setRegSP(cpu->getRegSP()-2);
+	 cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
+	 cpu->memWrite8(cpu->getRegSP()+1, cpu->getRegA());
+	 
+	 cpu->setRegSP(cpu->getRegSP()-2);
+	 cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
+
+	/* TODO: 
+	 * Enter a wait state for an integer number of bus clock cycle
+	 * Only CPU12 clocks are stopped
+	 * Wait for not masked interrupt
+	 */
+}
+
+// BGND: Enter Background debug mode
+
+op bgnd(0x00[8])
+
+bgnd.disasm = {
+	sink << "BGND";
+}
+
+bgnd.execute = {
+	// TODO
+}
+
+/* ********** Interrupt instructions ******** */
+
+

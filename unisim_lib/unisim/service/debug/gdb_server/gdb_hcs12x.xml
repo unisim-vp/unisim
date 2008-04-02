@@ -1,0 +1,11 @@
+<architecture name="hcs12x" endian="big">
+	<program_counter name="PC"/>
+	<register name="X" size="2"/>
+	<register name="D" size="2"/>
+	<register name="Y" size="2"/>
+	<register name="SP" size="2"/>
+	<register name="PC" size="2"/>	
+	<register name="A" size="1"/>
+	<register name="B" size="1"/>
+	<register name="CCR" size="2"/>	
+</architecture>

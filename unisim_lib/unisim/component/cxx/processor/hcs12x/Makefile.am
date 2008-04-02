@@ -5,7 +5,8 @@ lib_LIBRARIES = libunisim_component_cxx_processor_hcs12x.a
 libunisim_component_cxx_processor_hcs12x_a_SOURCES = cpu.cc mmc.cc hcs12x.cc xb.cc
 include_HEADERS = cpu.hh mmc.hh types.hh concatenated_register.hh hcs12x.isa xb.isa \
 	load_store.isa transfer_exchange.isa move.isa addition_substraction.isa decrement_increment.isa \
-	compare_test.isa boolean-logic.isa bit.isa multiplication_division.isa branch.isa stacking.isa
+	compare_test.isa boolean-logic.isa bit.isa multiplication_division.isa branch.isa stacking.isa \
+	others.isa
 	
 nodist_include_HEADERS = hcs12x.hh xb.hh xb_sub.isa
 BUILT_SOURCES = hcs12x.hh hcs12x.cc xb.cc xb.hh xb_sub.isa

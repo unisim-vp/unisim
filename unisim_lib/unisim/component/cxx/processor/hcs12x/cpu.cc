@@ -24,12 +24,12 @@ using unisim::service::interfaces::Line;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 
-template void EB::setter<uint8_t>(uint8_t rr, uint8_t val);
-template void EB::setter<uint16_t>(uint8_t rr, uint16_t val);
-template uint8_t EB::getter<uint8_t>(uint8_t rr);
-template uint16_t EB::getter<uint16_t>(uint8_t rr);
-template void EB::exchange<uint8_t>(uint8_t rrSrc, uint8_t rrDst);
-template void EB::exchange<uint16_t>(uint8_t rrSrc, uint8_t rrDst);
+template void EBLB::setter<uint8_t>(uint8_t rr, uint8_t val);
+template void EBLB::setter<uint16_t>(uint8_t rr, uint16_t val);
+template uint8_t EBLB::getter<uint8_t>(uint8_t rr);
+template uint16_t EBLB::getter<uint16_t>(uint8_t rr);
+template void EBLB::exchange<uint8_t>(uint8_t rrSrc, uint8_t rrDst);
+template void EBLB::exchange<uint16_t>(uint8_t rrSrc, uint8_t rrDst);
 
 CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
@@ -99,14 +99,14 @@ CPU::CPU(const char *name, Object *parent):
     mmc = new MMC(gpage, rpage, epage, ppage, direct);
   
     ccr = new CCR_t();
-    eb = new EB(this);
+    eblb = new EBLB(this);
 
 }
 
 CPU::~CPU() 
 { 
 	delete mmc; mmc = NULL;
-	delete eb; eb = NULL;
+	delete eblb; eblb = NULL;
 	delete ccr; ccr = NULL;
 }
 
@@ -614,7 +614,7 @@ void CPU::setRegTMP(uint8_t index, uint16_t val) { regTMP[index] = val; }
 uint16_t CPU::getRegTMP(uint8_t index) { return regTMP[index]; }
 
 template <class T>
-void EB::setter(uint8_t rr, T val) // setter function
+void EBLB::setter(uint8_t rr, T val) // setter function
 	/* Legal "rr" value for setter and getter functions 
 	 * 0x00:A; 0x01:B; 
 	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
@@ -623,24 +623,24 @@ void EB::setter(uint8_t rr, T val) // setter function
 	 */
 {
 	switch (rr) {
-		case EBRegs::A: cpu->setRegA((uint8_t) val); break;
-		case EBRegs::B: cpu->setRegB((uint8_t) val); break;
-		case EBRegs::CCR: cpu->ccr->setCCRLow((uint8_t) val); break;
-		case EBRegs::CCRL: cpu->ccr->setCCRLow((uint8_t) val); break;
-		case EBRegs::CCRH: cpu->ccr->setCCRHigh((uint8_t) val); break;
-		case EBRegs::CCRW: cpu->ccr->setCCR((uint16_t) val); break;
-		case EBRegs::TMP1: cpu->setRegTMP(0, (uint16_t) val); break;
-		case EBRegs::TMP2: cpu->setRegTMP(1, (uint16_t) val); break;
-		case EBRegs::TMP3: cpu->setRegTMP(2, (uint16_t) val); break;
-		case EBRegs::D: cpu->setRegD((uint16_t) val); break;
-		case EBRegs::X: cpu->setRegX((uint16_t) val); break;
-		case EBRegs::Y: cpu->setRegY((uint16_t) val); break;
-		case EBRegs::SP: cpu->setRegSP((uint16_t) val); break;
+		case EBLBRegs::A: cpu->setRegA((uint8_t) val); break;
+		case EBLBRegs::B: cpu->setRegB((uint8_t) val); break;
+		case EBLBRegs::CCR: cpu->ccr->setCCRLow((uint8_t) val); break;
+		case EBLBRegs::CCRL: cpu->ccr->setCCRLow((uint8_t) val); break;
+		case EBLBRegs::CCRH: cpu->ccr->setCCRHigh((uint8_t) val); break;
+		case EBLBRegs::CCRW: cpu->ccr->setCCR((uint16_t) val); break;
+		case EBLBRegs::TMP1: cpu->setRegTMP(0, (uint16_t) val); break;
+		case EBLBRegs::TMP2: cpu->setRegTMP(1, (uint16_t) val); break;
+		case EBLBRegs::TMP3: cpu->setRegTMP(2, (uint16_t) val); break;
+		case EBLBRegs::D: cpu->setRegD((uint16_t) val); break;
+		case EBLBRegs::X: cpu->setRegX((uint16_t) val); break;
+		case EBLBRegs::Y: cpu->setRegY((uint16_t) val); break;
+		case EBLBRegs::SP: cpu->setRegSP((uint16_t) val); break;
 	}
 }
 
 template <class T>
-T EB::getter(uint8_t rr) // getter function
+T EBLB::getter(uint8_t rr) // getter function
 	/* Legal "rr" value for setter and getter functions 
 	 * 0x00:A; 0x01:B; 
 	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
@@ -649,24 +649,24 @@ T EB::getter(uint8_t rr) // getter function
 	 */
 {
 	switch (rr) {
-		case EBRegs::A: return (uint8_t) cpu->getRegA(); break;
-		case EBRegs::B: return (uint8_t) cpu->getRegB(); break;
-		case EBRegs::CCR: return (uint8_t) cpu->ccr->getCCRLow(); break;
-		case EBRegs::CCRL: return (uint8_t) cpu->ccr->getCCRLow(); break;
-		case EBRegs::CCRH: return (uint8_t) cpu->ccr->getCCRHigh(); break;
-		case EBRegs::CCRW: return (uint16_t) cpu->ccr->getCCR(); break;
-		case EBRegs::TMP1: return (uint16_t) cpu->getRegTMP(0); break;
-		case EBRegs::TMP2: return (uint16_t) cpu->getRegTMP(1); break;
-		case EBRegs::TMP3: return (uint16_t) cpu->getRegTMP(2); break;
-		case EBRegs::D: return (uint16_t) cpu->getRegD(); break;
-		case EBRegs::X: return (uint16_t) cpu->getRegX(); break;
-		case EBRegs::Y: return (uint16_t) cpu->getRegY(); break;
-		case EBRegs::SP: return (uint16_t) cpu->getRegSP(); break;
+		case EBLBRegs::A: return (uint8_t) cpu->getRegA(); break;
+		case EBLBRegs::B: return (uint8_t) cpu->getRegB(); break;
+		case EBLBRegs::CCR: return (uint8_t) cpu->ccr->getCCRLow(); break;
+		case EBLBRegs::CCRL: return (uint8_t) cpu->ccr->getCCRLow(); break;
+		case EBLBRegs::CCRH: return (uint8_t) cpu->ccr->getCCRHigh(); break;
+		case EBLBRegs::CCRW: return (uint16_t) cpu->ccr->getCCR(); break;
+		case EBLBRegs::TMP1: return (uint16_t) cpu->getRegTMP(0); break;
+		case EBLBRegs::TMP2: return (uint16_t) cpu->getRegTMP(1); break;
+		case EBLBRegs::TMP3: return (uint16_t) cpu->getRegTMP(2); break;
+		case EBLBRegs::D: return (uint16_t) cpu->getRegD(); break;
+		case EBLBRegs::X: return (uint16_t) cpu->getRegX(); break;
+		case EBLBRegs::Y: return (uint16_t) cpu->getRegY(); break;
+		case EBLBRegs::SP: return (uint16_t) cpu->getRegSP(); break;
 	}
 }
 
 template <class T> 
-void EB::exchange(uint8_t rrSrc, uint8_t rrDst) {
+void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
 	T tmp = getter<T>(rrSrc);
 	setter<T>(rrSrc, getter<T>(rrDst));
 	setter<T>(rrDst, tmp);

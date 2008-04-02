@@ -39,14 +39,14 @@ exg_hcs12.disasm = {
 
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
-		case EB::EBMSLSRegs::CCR: rrSrc = EB::EBRegs::CCRL; break; // src is 0x21 register
-		case EB::EBMSLSRegs::TMPx: rrSrc = EB::EBRegs::TMP3; break; // src is 0x32 register
+		case EBLB::EBLBMSLSRegs::CCR: rrSrc = EBLB::EBLBRegs::CCRL; break; // src is 0x21 register
+		case EBLB::EBLBMSLSRegs::TMPx: rrSrc = EBLB::EBLBRegs::TMP3; break; // src is 0x32 register
 		default: rrSrc = lms;  
 	}
 
 	switch (lls) {
-		case EB::EBMSLSRegs::CCR: rrDst = EB::EBRegs::CCRL; break; // dst is 0x21 register
-		case EB::EBMSLSRegs::TMPx: rrDst = EB::EBRegs::TMP2; break; // dst is 0x31 register
+		case EBLB::EBLBMSLSRegs::CCR: rrDst = EBLB::EBLBRegs::CCRL; break; // dst is 0x21 register
+		case EBLB::EBLBMSLSRegs::TMPx: rrDst = EBLB::EBLBRegs::TMP2; break; // dst is 0x31 register
 		default: rrDst = lls;    
 	}
 
@@ -60,12 +60,12 @@ exg_hcs12.disasm = {
 		default: sink << "EXG ";
 	}
 	
-	sink << EB::getRegName(rrSrc) << "," << EB::getRegName(rrDst); 
+	sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst); 
 
 }
 
 exg_hcs12.execute = {
-/* Legal "rr" value for EB::setter and EB::getter functions 
+/* Legal "rr" value for EBLB::setter and EBLB::getter functions 
  * 0x00:A; 0x01:B; 
  * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRW
  * 0x30:TMP1; 0x31:TMP2; 0x32:TMP3;
@@ -77,19 +77,19 @@ exg_hcs12.execute = {
 	
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
-		case EB::EBMSLSRegs::CCR: rrSrc = EB::EBRegs::CCRL; break; // src is 0x21 register
-		case EB::EBMSLSRegs::TMPx: rrSrc = EB::EBRegs::TMP3; break; // src is 0x32 register
+		case EBLB::EBLBMSLSRegs::CCR: rrSrc = EBLB::EBLBRegs::CCRL; break; // src is 0x21 register
+		case EBLB::EBLBMSLSRegs::TMPx: rrSrc = EBLB::EBLBRegs::TMP3; break; // src is 0x32 register
 		default: rrSrc = lms;  
 	}
 
 	switch (lls) {
-		case EB::EBMSLSRegs::CCR: rrDst = EB::EBRegs::CCRL; break; // dst is 0x21 register
-		case EB::EBMSLSRegs::TMPx: rrDst = EB::EBRegs::TMP2; break; // dst is 0x31 register
+		case EBLB::EBLBMSLSRegs::CCR: rrDst = EBLB::EBLBRegs::CCRL; break; // dst is 0x21 register
+		case EBLB::EBLBMSLSRegs::TMPx: rrDst = EBLB::EBLBRegs::TMP2; break; // dst is 0x31 register
 		default: rrDst = lls;    
 	}
 		
-	srcSize = EB::getRegSize(rrSrc);
-	dstSize = EB::getRegSize(rrDst);
+	srcSize = EBLB::getRegSize(rrSrc);
+	dstSize = EBLB::getRegSize(rrDst);
 	
 	// Exchange register Contents. EXG r1, r2 
 	// There is no sign extension
@@ -98,32 +98,32 @@ exg_hcs12.execute = {
 	if (srcSize == dstSize) {
 		// (r1) <=> (r2)
 		if (srcSize == 8) {
-			cpu->eb->exchange<uint8_t>(rrSrc, rrDst);
+			cpu->eblb->exchange<uint8_t>(rrSrc, rrDst);
 		} else {
-			cpu->eb->exchange<uint16_t>(rrSrc, rrDst);
+			cpu->eblb->exchange<uint16_t>(rrSrc, rrDst);
 		}
 	} 
 	else if (((srcSize == 8) || (lms == 2)) && (dstSize == 16)) {
 		// $00:(r1) => r2 
 		// if r2 isn't D then && (r2[7:0]) => r1
-		uint16_t r1Val = 0x00FF & cpu->eb->getter<uint8_t>(rrSrc);
-		uint8_t r2Val = (uint8_t) cpu->eb->getter<uint16_t>(rrDst); // only low 8 bits
-		cpu->eb->setter<uint16_t>(rrDst, r1Val);
+		uint16_t r1Val = 0x00FF & cpu->eblb->getter<uint8_t>(rrSrc);
+		uint8_t r2Val = (uint8_t) cpu->eblb->getter<uint16_t>(rrDst); // only low 8 bits
+		cpu->eblb->setter<uint16_t>(rrDst, r1Val);
 		if (rrDst != 4 /* reg D*/) {
-			cpu->eb->setter<uint16_t>(rrDst, r2Val);			
+			cpu->eblb->setter<uint16_t>(rrDst, r2Val);			
 		} 
 	}
 	else if ((srcSize == 16) && (dstSize == 8)) {
 		// (r1[7:0]) => (r2)
 		// if r2 is A then $00:(r2) => r1 else $FF:(r2) => r1
-		uint8_t r1Val = cpu->eb->getter<uint16_t>(rrSrc); // only low 8 bits
-		uint8_t r2Val = cpu->eb->getter<uint8_t>(rrDst);
+		uint8_t r1Val = cpu->eblb->getter<uint16_t>(rrSrc); // only low 8 bits
+		uint8_t r2Val = cpu->eblb->getter<uint8_t>(rrDst);
 		
-		cpu->eb->setter<uint8_t>(rrDst,r1Val);
+		cpu->eblb->setter<uint8_t>(rrDst,r1Val);
 		if (rrDst == 0 /*reg A*/) {
-			cpu->eb->setter<uint16_t>(rrSrc, 0x00FF & r2Val);
+			cpu->eblb->setter<uint16_t>(rrSrc, 0x00FF & r2Val);
 		} else {
-			cpu->eb->setter<uint16_t>(rrSrc, 0xFF00 | r2Val);
+			cpu->eblb->setter<uint16_t>(rrSrc, 0xFF00 | r2Val);
 		}
 	}
 	
@@ -143,14 +143,14 @@ tfr_hcs12.disasm = {
 
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
-		case EB::EBMSLSRegs::CCR: rrSrc = EB::EBRegs::CCRL; break; // src is 0x21 register
-		case EB::EBMSLSRegs::TMPx: rrSrc = EB::EBRegs::TMP3; break; // src is 0x32 register
+		case EBLB::EBLBMSLSRegs::CCR: rrSrc = EBLB::EBLBRegs::CCRL; break; // src is 0x21 register
+		case EBLB::EBLBMSLSRegs::TMPx: rrSrc = EBLB::EBLBRegs::TMP3; break; // src is 0x32 register
 		default: rrSrc = lms;  
 	}
 
 	switch (lls) {
-		case EB::EBMSLSRegs::CCR: rrDst = EB::EBRegs::CCRL; break; // dst is 0x21 register
-		case EB::EBMSLSRegs::TMPx: rrDst = EB::EBRegs::TMP2; break; // dst is 0x31 register
+		case EBLB::EBLBMSLSRegs::CCR: rrDst = EBLB::EBLBRegs::CCRL; break; // dst is 0x21 register
+		case EBLB::EBLBMSLSRegs::TMPx: rrDst = EBLB::EBLBRegs::TMP2; break; // dst is 0x31 register
 		default: rrDst = lls;    
 	}
 
@@ -168,13 +168,13 @@ tfr_hcs12.disasm = {
 		default: sink << "TFR ";
 	}
 	
-	sink << EB::getRegName(rrSrc) << "," << EB::getRegName(rrDst); 
+	sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst); 
 
 }
 
 
 tfr_hcs12.execute = {
-/* Legal "rr" value for EB::setter and EB::getter functions 
+/* Legal "rr" value for EBLB::setter and EBLB::getter functions 
  * 0x00:A; 0x01:B; 
  * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRW 
  * 0x30:TMP1; 0x31:TMP2; 0x32:TMP3;
@@ -186,19 +186,19 @@ tfr_hcs12.execute = {
 	
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
-		case EB::EBMSLSRegs::CCR: rrSrc = EB::EBRegs::CCRL; break; // src is 0x21 register
-		case EB::EBMSLSRegs::TMPx: rrSrc = EB::EBRegs::TMP3; break; // src is 0x32 register
+		case EBLB::EBLBMSLSRegs::CCR: rrSrc = EBLB::EBLBRegs::CCRL; break; // src is 0x21 register
+		case EBLB::EBLBMSLSRegs::TMPx: rrSrc = EBLB::EBLBRegs::TMP3; break; // src is 0x32 register
 		default: rrSrc = lms;  
 	}
 
 	switch (lls) {
-		case EB::EBMSLSRegs::CCR: rrDst = EB::EBRegs::CCRL; break; // dst is 0x21 register
-		case EB::EBMSLSRegs::TMPx: rrDst = EB::EBRegs::TMP2; break; // dst is 0x31 register
+		case EBLB::EBLBMSLSRegs::CCR: rrDst = EBLB::EBLBRegs::CCRL; break; // dst is 0x21 register
+		case EBLB::EBLBMSLSRegs::TMPx: rrDst = EBLB::EBLBRegs::TMP2; break; // dst is 0x31 register
 		default: rrDst = lls;    
 	}
 		
-	srcSize = EB::getRegSize(rrSrc);
-	dstSize = EB::getRegSize(rrDst);
+	srcSize = EBLB::getRegSize(rrSrc);
+	dstSize = EBLB::getRegSize(rrDst);
 
 	// Transfer Register Content to Another register
 	// Only CCR[7:0] is used for HCS12
@@ -212,25 +212,25 @@ tfr_hcs12.execute = {
 	if (srcSize == dstSize) {
 		// (r1) => (r2)
 		if (srcSize == 8) {
-			cpu->eb->setter<uint8_t>(rrDst, cpu->eb->getter<uint8_t>(rrSrc));
+			cpu->eblb->setter<uint8_t>(rrDst, cpu->eblb->getter<uint8_t>(rrSrc));
 		} else {
-			cpu->eb->setter<uint16_t>(rrDst, cpu->eb->getter<uint16_t>(rrSrc));
+			cpu->eblb->setter<uint16_t>(rrDst, cpu->eblb->getter<uint16_t>(rrSrc));
 		}
 	} 
 	else if (((srcSize == 8) || (lms == 2)) && (dstSize == 16)) {
 		// sex:r1 => r2
-		if ((cpu->eb->getter<uint8_t>(rrSrc) & 0x80) == 0x80)  
+		if ((cpu->eblb->getter<uint8_t>(rrSrc) & 0x80) == 0x80)  
 		{ // if r1 bit 7 = 1 then $FF:(r1) => r2
-			cpu->eb->setter<uint16_t>(rrDst, ((uint16_t) cpu->eb->getter<uint8_t>(rrSrc)) | 0xFF00);
+			cpu->eblb->setter<uint16_t>(rrDst, ((uint16_t) cpu->eblb->getter<uint8_t>(rrSrc)) | 0xFF00);
 		} else 
 		{ // if r1 bit 7 = 1 then $00:(r1) => r2
-			cpu->eb->setter<uint16_t>(rrDst, ((uint16_t) cpu->eb->getter<uint8_t>(rrSrc)) & 0x00FF);
+			cpu->eblb->setter<uint16_t>(rrDst, ((uint16_t) cpu->eblb->getter<uint8_t>(rrSrc)) & 0x00FF);
 		}  
 	}
 	else if ((srcSize == 16) && (dstSize == 8)) {
 		// (r1[7:0]) => (r2)
-		uint8_t tmp = cpu->eb->getter<uint16_t>(rrSrc) & 0x00FF;
-		cpu->eb->setter<uint8_t>(rrDst, tmp);
+		uint8_t tmp = cpu->eblb->getter<uint16_t>(rrSrc) & 0x00FF;
+		cpu->eblb->setter<uint8_t>(rrDst, tmp);
 	}
 	
 }
@@ -251,41 +251,41 @@ exg_hcs12x.disasm = {
 
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
-		case EB::EBMSLSRegs::CCR: // src is CCRW register
-			if (lls == EB::EBMSLSRegs::A) {
-				rrSrc = EB::EBRegs::CCRH; //0x22;
-			} else if (lls = EB::EBMSLSRegs::B) {
-				rrSrc = EB::EBRegs::CCRL; //0x21;
+		case EBLB::EBLBMSLSRegs::CCR: // src is CCRW register
+			if (lls == EBLB::EBLBMSLSRegs::A) {
+				rrSrc = EBLB::EBLBRegs::CCRH; //0x22;
+			} else if (lls = EBLB::EBLBMSLSRegs::B) {
+				rrSrc = EBLB::EBLBRegs::CCRL; //0x21;
 			} else {
-				rrSrc = EB::EBRegs::CCRW; //0x23;
+				rrSrc = EBLB::EBLBRegs::CCRW; //0x23;
 			}
 			break; 
-		case EB::EBMSLSRegs::TMPx: // src is TMP register
-			if (lls = EB::EBMSLSRegs::D) {
-				rrSrc = EB::EBRegs::TMP1; //0x30; // TMP1
+		case EBLB::EBLBMSLSRegs::TMPx: // src is TMP register
+			if (lls = EBLB::EBLBMSLSRegs::D) {
+				rrSrc = EBLB::EBLBRegs::TMP1; //0x30; // TMP1
 			} else {
-				rrSrc = EB::EBRegs::TMP3; //0x32; // TMP3
+				rrSrc = EBLB::EBLBRegs::TMP3; //0x32; // TMP3
 			}
 			break; 
 		default: rrSrc = lms;  
 	}
 
 	switch (lls) {
-		case EB::EBMSLSRegs::CCR: // dst is CCRW register
-			if (lms == EB::EBMSLSRegs::A) {
-				rrDst = EB::EBRegs::CCRH; //0x22;
-			} else if (lms == EB::EBMSLSRegs::B) {
-				rrDst = EB::EBRegs::CCRL; //0x21;
+		case EBLB::EBLBMSLSRegs::CCR: // dst is CCRW register
+			if (lms == EBLB::EBLBMSLSRegs::A) {
+				rrDst = EBLB::EBLBRegs::CCRH; //0x22;
+			} else if (lms == EBLB::EBLBMSLSRegs::B) {
+				rrDst = EBLB::EBLBRegs::CCRL; //0x21;
 			} else {
-				rrDst = EB::EBRegs::CCRW; //0x23;
+				rrDst = EBLB::EBLBRegs::CCRW; //0x23;
 			}
 
 			break; 
-		case EB::EBMSLSRegs::TMPx: // dst is TMP2 register
-			if (lms == EB::EBRegs::D ) {
-				rrDst = EB::EBRegs::TMP1; //0x30; // TMP1
+		case EBLB::EBLBMSLSRegs::TMPx: // dst is TMP2 register
+			if (lms == EBLB::EBLBRegs::D ) {
+				rrDst = EBLB::EBLBRegs::TMP1; //0x30; // TMP1
 			} else {
-				rrDst = EB::EBRegs::TMP2; //0x31; // TMP2
+				rrDst = EBLB::EBLBRegs::TMP2; //0x31; // TMP2
 			}
 			break; 
 		default: rrDst = lls;    
@@ -293,37 +293,37 @@ exg_hcs12x.disasm = {
 	
  	// Exchange register Contents. There is no sign extension
 	
-	string srcName = EB::getRegName(rrSrc);
-	string dstName = EB::getRegName(rrDst);
+	string srcName = EBLB::getRegName(rrSrc);
+	string dstName = EBLB::getRegName(rrDst);
 	
-	if (lls == EB::EBMSLSRegs::A ) {
-		if (lms == EB::EBMSLSRegs::CCR ) {
-			srcName = EB::getRegName(EB::EBRegs::CCRH);  
+	if (lls == EBLB::EBLBMSLSRegs::A ) {
+		if (lms == EBLB::EBLBMSLSRegs::CCR ) {
+			srcName = EBLB::getRegName(EBLB::EBLBRegs::CCRH);  
 		} 
-		else if ((lms != EB::EBMSLSRegs::B ) && (lms != EB::EBMSLSRegs::D)) {
+		else if ((lms != EBLB::EBLBMSLSRegs::B ) && (lms != EBLB::EBLBMSLSRegs::D)) {
 			srcName = srcName + "H";
 		} 
-	} if (lls == EB::EBMSLSRegs::B) {
-		if (lms == EB::EBMSLSRegs::CCR) {
-			srcName = EB::getRegName(EB::EBRegs::CCRL);  
+	} if (lls == EBLB::EBLBMSLSRegs::B) {
+		if (lms == EBLB::EBLBMSLSRegs::CCR) {
+			srcName = EBLB::getRegName(EBLB::EBLBRegs::CCRL);  
 		} 
-		else if ((lms != EB::EBMSLSRegs::A ) && (lms != EB::EBMSLSRegs::D)) {
+		else if ((lms != EBLB::EBLBMSLSRegs::A ) && (lms != EBLB::EBLBMSLSRegs::D)) {
 			srcName = srcName + "L";
 		} 
 	} 
 
-	if (lms == EB::EBMSLSRegs::A) {
-		if (lls == EB::EBMSLSRegs::CCR /* reg CCR */) {
-			dstName = EB::getRegName(EB::EBRegs::CCRH);  
+	if (lms == EBLB::EBLBMSLSRegs::A) {
+		if (lls == EBLB::EBLBMSLSRegs::CCR /* reg CCR */) {
+			dstName = EBLB::getRegName(EBLB::EBLBRegs::CCRH);  
 		} 
-		else if ((lls != EB::EBMSLSRegs::B) && (lls != EB::EBMSLSRegs::D)) {
+		else if ((lls != EBLB::EBLBMSLSRegs::B) && (lls != EBLB::EBLBMSLSRegs::D)) {
 			dstName = dstName + "H";
 		} 
-	} if (lms == EB::EBMSLSRegs::B) {
-		if (lls == EB::EBMSLSRegs::CCR) {
-			dstName = EB::getRegName(EB::EBRegs::CCRL);  
+	} if (lms == EBLB::EBLBMSLSRegs::B) {
+		if (lls == EBLB::EBLBMSLSRegs::CCR) {
+			dstName = EBLB::getRegName(EBLB::EBLBRegs::CCRL);  
 		} 
-		else if ((lls != EB::EBMSLSRegs::A) && (lls != EB::EBMSLSRegs::D)) {
+		else if ((lls != EBLB::EBLBMSLSRegs::A) && (lls != EBLB::EBLBMSLSRegs::D)) {
 			dstName = dstName + "L";
 		} 
 	} 
@@ -343,7 +343,7 @@ exg_hcs12x.disasm = {
 }
 
 exg_hcs12x.execute = {
-/* Legal "rr" value for EB::setter and EB::getter functions 
+/* Legal "rr" value for EBLB::setter and EBLB::getter functions 
  * 0x00:A; 0x01:B; 
  * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
  * 0x30:TMP1; 0x31:TMP2; 0x32:TMP3;
@@ -355,35 +355,35 @@ exg_hcs12x.execute = {
 	
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
-		case EB::EBMSLSRegs::CCR:
-			rrSrc = EB::EBRegs::CCRW;  // src is 0x23 register
+		case EBLB::EBLBMSLSRegs::CCR:
+			rrSrc = EBLB::EBLBRegs::CCRW;  // src is 0x23 register
 			break;
-		case EB::EBMSLSRegs::TMPx: 
-			if (lls == EB::EBMSLSRegs::D) {
-				rrSrc = EB::EBRegs::TMP1; /* src is 0x30 register*/
+		case EBLB::EBLBMSLSRegs::TMPx: 
+			if (lls == EBLB::EBLBMSLSRegs::D) {
+				rrSrc = EBLB::EBLBRegs::TMP1; /* src is 0x30 register*/
 			} else {
-				rrSrc = EB::EBRegs::TMP3; /* src is 0x32 register*/
+				rrSrc = EBLB::EBLBRegs::TMP3; /* src is 0x32 register*/
 			}
 			break; 
 		default: rrSrc = lms;  
 	}
 
 	switch (lls) {
-		case EB::EBMSLSRegs::CCR:
-			rrDst = EB::EBRegs::CCRW; // rrDst is 0x23 register
+		case EBLB::EBLBMSLSRegs::CCR:
+			rrDst = EBLB::EBLBRegs::CCRW; // rrDst is 0x23 register
 			break; 
-		case EB::EBMSLSRegs::TMPx: 
-			if (lms == EB::EBMSLSRegs::D) {
-				rrDst = EB::EBRegs::TMP1; /* src is 0x30 register*/
+		case EBLB::EBLBMSLSRegs::TMPx: 
+			if (lms == EBLB::EBLBMSLSRegs::D) {
+				rrDst = EBLB::EBLBRegs::TMP1; /* src is 0x30 register*/
 			} else {
-				rrDst = EB::EBRegs::TMP3; /* src is 0x32 register*/
+				rrDst = EBLB::EBLBRegs::TMP3; /* src is 0x32 register*/
 			}
 			break; 
 		default: rrDst = lls;    
 	}
 		
-	srcSize = EB::getRegSize(rrSrc);
-	dstSize = EB::getRegSize(rrDst);
+	srcSize = EBLB::getRegSize(rrSrc);
+	dstSize = EBLB::getRegSize(rrDst);
 	
 	// Exchange register Contents. There is no sign extension
 	/*
@@ -397,11 +397,11 @@ exg_hcs12x.execute = {
 		// (r1) <=> (r2)
 		if (srcSize == 8) 
 		{
-			cpu->eb->exchange<uint8_t>(rrSrc,rrDst);
+			cpu->eblb->exchange<uint8_t>(rrSrc,rrDst);
 		} 
 		else if (srcSize == 16) 
 		{
-			cpu->eb->exchange<uint16_t>(rrSrc,rrDst);
+			cpu->eblb->exchange<uint16_t>(rrSrc,rrDst);
 		}
 	} 
 	else if ((srcSize == 8) && (dstSize == 16)) 
@@ -412,21 +412,21 @@ exg_hcs12x.execute = {
 		 *  if (r1 is A) (r1) => r2H
 		 *  else if (r1 is B) (r1) => r2L
 		 */
-		 if (rrDst == EB::EBRegs::D /* reg D */)
+		 if (rrDst == EBLB::EBLBRegs::D /* reg D */)
 		 {
-		 	cpu->eb->setter<uint16_t>(rrDst, 0x00FF & cpu->eb->getter<uint8_t>(rrSrc));
+		 	cpu->eblb->setter<uint16_t>(rrDst, 0x00FF & cpu->eblb->getter<uint8_t>(rrSrc));
 		 }
-		 else if (rrSrc == EB::EBRegs::A)
+		 else if (rrSrc == EBLB::EBLBRegs::A)
 		 {
-		 	uint16_t tmp = cpu->eb->getter<uint16_t>(rrDst) & 0x00FF;  // get the lower bits
-		 	tmp = tmp | (((uint16_t) cpu->eb->getter<uint8_t>(rrSrc)) << 8);
-		 	cpu->eb->setter<uint16_t>(rrDst, tmp);
+		 	uint16_t tmp = cpu->eblb->getter<uint16_t>(rrDst) & 0x00FF;  // get the lower bits
+		 	tmp = tmp | (((uint16_t) cpu->eblb->getter<uint8_t>(rrSrc)) << 8);
+		 	cpu->eblb->setter<uint16_t>(rrDst, tmp);
 		 }
-		 else if (rrSrc == EB::EBRegs::B)
+		 else if (rrSrc == EBLB::EBLBRegs::B)
 		 {
-		 	uint16_t tmp = cpu->eb->getter<uint16_t>(rrDst) & 0xFF00; // get higher bits
-		 	tmp = tmp | ( 0x00FF & cpu->eb->getter<uint8_t>(rrSrc));
-		 	cpu->eb->setter<uint16_t>(rrDst, tmp);
+		 	uint16_t tmp = cpu->eblb->getter<uint16_t>(rrDst) & 0xFF00; // get higher bits
+		 	tmp = tmp | ( 0x00FF & cpu->eblb->getter<uint8_t>(rrSrc));
+		 	cpu->eblb->setter<uint16_t>(rrDst, tmp);
 		 } 
 	} 
 	else if ((srcSize == 16) && (dstSize == 8)) 
@@ -440,28 +440,28 @@ exg_hcs12x.execute = {
 		 * 	 if (r2 is A) (r1H) <=> A
 		 * 	 else (r1L) <=> B 
 		 */		
-		 if (rrSrc == EB::EBRegs::D) {
-		 	if (rrDst == EB::EBRegs::A) {
-		 		cpu->eb->exchange<uint8_t>(EB::EBRegs::B, EB::EBRegs::A);
-		 	} else if (rrDst == EB::EBRegs::B) {
-		 		cpu->eb->setter<uint8_t>(EB::EBRegs::A, 0xFF);
+		 if (rrSrc == EBLB::EBLBRegs::D) {
+		 	if (rrDst == EBLB::EBLBRegs::A) {
+		 		cpu->eblb->exchange<uint8_t>(EBLB::EBLBRegs::B, EBLB::EBLBRegs::A);
+		 	} else if (rrDst == EBLB::EBLBRegs::B) {
+		 		cpu->eblb->setter<uint8_t>(EBLB::EBLBRegs::A, 0xFF);
 		 	}
 		 } else {
-		 	if (rrDst == EB::EBRegs::A) {
-		 		uint16_t a16 = ((uint16_t) cpu->eb->getter<uint16_t>(EB::EBRegs::A)) << 8;
-		 		uint8_t r1h = cpu->eb->getter<uint16_t>(rrSrc) >> 8;
-		 		uint16_t r1l = cpu->eb->getter<uint16_t>(rrSrc) & 0x00FF;
+		 	if (rrDst == EBLB::EBLBRegs::A) {
+		 		uint16_t a16 = ((uint16_t) cpu->eblb->getter<uint16_t>(EBLB::EBLBRegs::A)) << 8;
+		 		uint8_t r1h = cpu->eblb->getter<uint16_t>(rrSrc) >> 8;
+		 		uint16_t r1l = cpu->eblb->getter<uint16_t>(rrSrc) & 0x00FF;
 		 		
-		 		cpu->eb->setter<uint16_t>(rrSrc, a16 | r1l);
-		 		cpu->eb->setter<uint8_t>(rrDst, r1h);
+		 		cpu->eblb->setter<uint16_t>(rrSrc, a16 | r1l);
+		 		cpu->eblb->setter<uint8_t>(rrDst, r1h);
 		 		
-		 	} else if (rrDst == EB::EBRegs::B) {
-		 		uint16_t r1h = cpu->eb->getter<uint16_t>(rrSrc) & 0xFF00;
-		 		uint8_t r1l = cpu->eb->getter<uint16_t>(rrSrc) & 0x00FF;
-		 		uint16_t b16 = 0x00FF & cpu->eb->getter<uint8_t>(rrDst);
+		 	} else if (rrDst == EBLB::EBLBRegs::B) {
+		 		uint16_t r1h = cpu->eblb->getter<uint16_t>(rrSrc) & 0xFF00;
+		 		uint8_t r1l = cpu->eblb->getter<uint16_t>(rrSrc) & 0x00FF;
+		 		uint16_t b16 = 0x00FF & cpu->eblb->getter<uint8_t>(rrDst);
 		 		 
-		 		cpu->eb->setter<uint16_t>(rrSrc, r1h | b16);
-		 		cpu->eb->setter<uint16_t>(rrDst, r1l);
+		 		cpu->eblb->setter<uint16_t>(rrSrc, r1h | b16);
+		 		cpu->eblb->setter<uint16_t>(rrDst, r1l);
 		 	}
 		 }
 	}	
@@ -481,41 +481,41 @@ tfr_hcs12x.disasm = {
 
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
-		case EB::EBMSLSRegs::CCR: // src is CCRW register
-			if (lls == EB::EBMSLSRegs::A) {
-				rrSrc = EB::EBRegs::CCRH; //0x22;
-			} else if (lls = EB::EBMSLSRegs::B) {
-				rrSrc = EB::EBRegs::CCRL; //0x21;
+		case EBLB::EBLBMSLSRegs::CCR: // src is CCRW register
+			if (lls == EBLB::EBLBMSLSRegs::A) {
+				rrSrc = EBLB::EBLBRegs::CCRH; //0x22;
+			} else if (lls = EBLB::EBLBMSLSRegs::B) {
+				rrSrc = EBLB::EBLBRegs::CCRL; //0x21;
 			} else {
-				rrSrc = EB::EBRegs::CCRW; //0x23;
+				rrSrc = EBLB::EBLBRegs::CCRW; //0x23;
 			}
 			break; 
-		case EB::EBMSLSRegs::TMPx: // src is TMP register
-			if (lls = EB::EBMSLSRegs::D) {
-				rrSrc = EB::EBRegs::TMP1; //0x30; // TMP1
+		case EBLB::EBLBMSLSRegs::TMPx: // src is TMP register
+			if (lls = EBLB::EBLBMSLSRegs::D) {
+				rrSrc = EBLB::EBLBRegs::TMP1; //0x30; // TMP1
 			} else {
-				rrSrc = EB::EBRegs::TMP3; //0x32; // TMP3
+				rrSrc = EBLB::EBLBRegs::TMP3; //0x32; // TMP3
 			}
 			break; 
 		default: rrSrc = lms;  
 	}
 
 	switch (lls) {
-		case EB::EBMSLSRegs::CCR: // dst is CCRW register
-			if (lms == EB::EBMSLSRegs::A) {
-				rrDst = EB::EBRegs::CCRH; //0x22;
-			} else if (lms == EB::EBMSLSRegs::B) {
-				rrDst = EB::EBRegs::CCRL; //0x21;
+		case EBLB::EBLBMSLSRegs::CCR: // dst is CCRW register
+			if (lms == EBLB::EBLBMSLSRegs::A) {
+				rrDst = EBLB::EBLBRegs::CCRH; //0x22;
+			} else if (lms == EBLB::EBLBMSLSRegs::B) {
+				rrDst = EBLB::EBLBRegs::CCRL; //0x21;
 			} else {
-				rrDst = EB::EBRegs::CCRW; //0x23;
+				rrDst = EBLB::EBLBRegs::CCRW; //0x23;
 			}
 
 			break; 
-		case EB::EBMSLSRegs::TMPx: // dst is TMP2 register
-			if (lms == EB::EBRegs::D ) {
-				rrDst = EB::EBRegs::TMP1; //0x30; // TMP1
+		case EBLB::EBLBMSLSRegs::TMPx: // dst is TMP2 register
+			if (lms == EBLB::EBLBRegs::D ) {
+				rrDst = EBLB::EBLBRegs::TMP1; //0x30; // TMP1
 			} else {
-				rrDst = EB::EBRegs::TMP2; //0x31; // TMP2
+				rrDst = EBLB::EBLBRegs::TMP2; //0x31; // TMP2
 			}
 			break; 
 		default: rrDst = lls;    
@@ -523,37 +523,37 @@ tfr_hcs12x.disasm = {
 	
  	// Transfer register Contents. TFR r1,r2
 	
-	string srcName = EB::getRegName(rrSrc);
-	string dstName = EB::getRegName(rrDst);
+	string srcName = EBLB::getRegName(rrSrc);
+	string dstName = EBLB::getRegName(rrDst);
 	
-	if (lls == EB::EBMSLSRegs::A ) {
-		if (lms == EB::EBMSLSRegs::CCR ) {
-			srcName = EB::getRegName(EB::EBRegs::CCRH);  
+	if (lls == EBLB::EBLBMSLSRegs::A ) {
+		if (lms == EBLB::EBLBMSLSRegs::CCR ) {
+			srcName = EBLB::getRegName(EBLB::EBLBRegs::CCRH);  
 		} 
-		else if ((lms != EB::EBMSLSRegs::B ) && (lms != EB::EBMSLSRegs::D)) {
+		else if ((lms != EBLB::EBLBMSLSRegs::B ) && (lms != EBLB::EBLBMSLSRegs::D)) {
 			srcName = srcName + "H";
 		} 
-	} if (lls == EB::EBMSLSRegs::B) {
-		if (lms == EB::EBMSLSRegs::CCR) {
-			srcName = EB::getRegName(EB::EBRegs::CCRL);  
+	} if (lls == EBLB::EBLBMSLSRegs::B) {
+		if (lms == EBLB::EBLBMSLSRegs::CCR) {
+			srcName = EBLB::getRegName(EBLB::EBLBRegs::CCRL);  
 		} 
-		else if ((lms != EB::EBMSLSRegs::A ) && (lms != EB::EBMSLSRegs::D)) {
+		else if ((lms != EBLB::EBLBMSLSRegs::A ) && (lms != EBLB::EBLBMSLSRegs::D)) {
 			srcName = srcName + "L";
 		} 
 	} 
 
-	if (lms == EB::EBMSLSRegs::A) {
-		if (lls == EB::EBMSLSRegs::CCR /* reg CCR */) {
-			dstName = EB::getRegName(EB::EBRegs::CCRH);  
+	if (lms == EBLB::EBLBMSLSRegs::A) {
+		if (lls == EBLB::EBLBMSLSRegs::CCR /* reg CCR */) {
+			dstName = EBLB::getRegName(EBLB::EBLBRegs::CCRH);  
 		} 
-		else if ((lls != EB::EBMSLSRegs::B) && (lls != EB::EBMSLSRegs::D)) {
+		else if ((lls != EBLB::EBLBMSLSRegs::B) && (lls != EBLB::EBLBMSLSRegs::D)) {
 			dstName = dstName + "H";
 		} 
-	} if (lms == EB::EBMSLSRegs::B) {
-		if (lls == EB::EBMSLSRegs::CCR) {
-			dstName = EB::getRegName(EB::EBRegs::CCRL);  
+	} if (lms == EBLB::EBLBMSLSRegs::B) {
+		if (lls == EBLB::EBLBMSLSRegs::CCR) {
+			dstName = EBLB::getRegName(EBLB::EBLBRegs::CCRL);  
 		} 
-		else if ((lls != EB::EBMSLSRegs::A) && (lls != EB::EBMSLSRegs::D)) {
+		else if ((lls != EBLB::EBLBMSLSRegs::A) && (lls != EBLB::EBLBMSLSRegs::D)) {
 			dstName = dstName + "L";
 		} 
 	} 
@@ -572,11 +572,11 @@ tfr_hcs12x.disasm = {
 		default: sink << "TFR ";
 	}
 	
-	sink << EB::getRegName(rrSrc) << "," << EB::getRegName(rrDst); 
+	sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst); 
 }
 
 tfr_hcs12x.execute = {
-/* Legal "rr" value for EB::setter and EB::getter functions 
+/* Legal "rr" value for EBLB::setter and EBLB::getter functions 
  * 0x00:A; 0x01:B; 
  * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRW 
  * 0x30:TMP1; 0x31:TMP2; 0x32:TMP3;
@@ -588,35 +588,35 @@ tfr_hcs12x.execute = {
 	
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
-		case EB::EBMSLSRegs::CCR:
-			rrSrc = EB::EBRegs::CCRW;  // src is 0x23 register
+		case EBLB::EBLBMSLSRegs::CCR:
+			rrSrc = EBLB::EBLBRegs::CCRW;  // src is 0x23 register
 			break;
-		case EB::EBMSLSRegs::TMPx: 
-			if (lls == EB::EBMSLSRegs::D) {
-				rrSrc = EB::EBRegs::TMP1; /* src is 0x30 register*/
+		case EBLB::EBLBMSLSRegs::TMPx: 
+			if (lls == EBLB::EBLBMSLSRegs::D) {
+				rrSrc = EBLB::EBLBRegs::TMP1; /* src is 0x30 register*/
 			} else {
-				rrSrc = EB::EBRegs::TMP3; /* src is 0x32 register*/
+				rrSrc = EBLB::EBLBRegs::TMP3; /* src is 0x32 register*/
 			}
 			break; 
 		default: rrSrc = lms;  
 	}
 
 	switch (lls) {
-		case EB::EBMSLSRegs::CCR:
-			rrDst = EB::EBRegs::CCRW; // rrDst is 0x23 register
+		case EBLB::EBLBMSLSRegs::CCR:
+			rrDst = EBLB::EBLBRegs::CCRW; // rrDst is 0x23 register
 			break; 
-		case EB::EBMSLSRegs::TMPx: 
-			if (lms == EB::EBMSLSRegs::D) {
-				rrDst = EB::EBRegs::TMP1; /* src is 0x30 register*/
+		case EBLB::EBLBMSLSRegs::TMPx: 
+			if (lms == EBLB::EBLBMSLSRegs::D) {
+				rrDst = EBLB::EBLBRegs::TMP1; /* src is 0x30 register*/
 			} else {
-				rrDst = EB::EBRegs::TMP3; /* src is 0x32 register*/
+				rrDst = EBLB::EBLBRegs::TMP3; /* src is 0x32 register*/
 			}
 			break; 
 		default: rrDst = lls;    
 	}
 		
-	srcSize = EB::getRegSize(rrSrc);
-	dstSize = EB::getRegSize(rrDst);
+	srcSize = EBLB::getRegSize(rrSrc);
+	dstSize = EBLB::getRegSize(rrDst);
 
 	// Transfer Register Content to Another register
 	/*
@@ -631,19 +631,19 @@ tfr_hcs12x.execute = {
 		 * if ((r1 is D) && ((r2 is X) || (r2 is Y))) then sex:D => r2
 		 * else (r1) => r2 
 		 */
-		 if ((rrSrc == EB::EBRegs::D) && ((rrDst == EB::EBRegs::X) || (rrDst == EB::EBRegs::Y))) 
+		 if ((rrSrc == EBLB::EBLBRegs::D) && ((rrDst == EBLB::EBLBRegs::X) || (rrDst == EBLB::EBLBRegs::Y))) 
 		 {
-		 	uint16_t tmp = cpu->eb->getter<uint16_t>(rrSrc);
+		 	uint16_t tmp = cpu->eblb->getter<uint16_t>(rrSrc);
 		 	if ((tmp & 0x8000) == 0x8000) {
-		 		cpu->eb->setter<uint16_t>(rrDst, 0xFFFF);
+		 		cpu->eblb->setter<uint16_t>(rrDst, 0xFFFF);
 		 	} else {
-		 		cpu->eb->setter<uint16_t>(rrDst, 0x0000);
+		 		cpu->eblb->setter<uint16_t>(rrDst, 0x0000);
 		 	}
 		 } else {
 		 	if (srcSize == 8) {
-		 		cpu->eb->setter<uint8_t>(rrDst, cpu->eb->getter<uint8_t>(rrSrc));
+		 		cpu->eblb->setter<uint8_t>(rrDst, cpu->eblb->getter<uint8_t>(rrSrc));
 		 	} else {
-		 		cpu->eb->setter<uint16_t>(rrDst, cpu->eb->getter<uint16_t>(rrSrc));
+		 		cpu->eblb->setter<uint16_t>(rrDst, cpu->eblb->getter<uint16_t>(rrSrc));
 		 	}
 		 } 
 		 
@@ -655,21 +655,21 @@ tfr_hcs12x.execute = {
 		 *    if (r1 is A) then (r1) => r2H
 		 *    else (r1) => r2L 
 		 * */
-		 if (rrDst == EB::EBRegs::D) {
-		 	uint8_t tmp = cpu->eb->getter<uint8_t>(rrSrc);
+		 if (rrDst == EBLB::EBLBRegs::D) {
+		 	uint8_t tmp = cpu->eblb->getter<uint8_t>(rrSrc);
 		 	if ((tmp & 0x80) == 0x80) {
-		 		cpu->eb->setter<uint16_t>(rrDst, ((uint16_t) tmp) | 0xFF00);
+		 		cpu->eblb->setter<uint16_t>(rrDst, ((uint16_t) tmp) | 0xFF00);
 		 	} else {
-		 		cpu->eb->setter<uint16_t>(rrDst, ((uint16_t) tmp) & 0x00FF);
+		 		cpu->eblb->setter<uint16_t>(rrDst, ((uint16_t) tmp) & 0x00FF);
 		 	}
 		 } else {
-		 	uint8_t r1 = cpu->eb->getter<uint8_t>(rrSrc);
-		 	if (rrSrc == EB::EBRegs::A) {
-		 		uint16_t r2l = cpu->eb->getter<uint16_t>(rrDst) & 0x00FF;
-		 		cpu->eb->setter<uint16_t>(rrDst, (((uint16_t) r1) << 8) | r2l); 
+		 	uint8_t r1 = cpu->eblb->getter<uint8_t>(rrSrc);
+		 	if (rrSrc == EBLB::EBLBRegs::A) {
+		 		uint16_t r2l = cpu->eblb->getter<uint16_t>(rrDst) & 0x00FF;
+		 		cpu->eblb->setter<uint16_t>(rrDst, (((uint16_t) r1) << 8) | r2l); 
 		 	} else {
-		 		uint16_t r2h = cpu->eb->getter<uint16_t>(rrDst) & 0xFF00;
-		 		cpu->eb->setter<uint16_t>(rrDst, r2h | r1);
+		 		uint16_t r2h = cpu->eblb->getter<uint16_t>(rrDst) & 0xFF00;
+		 		cpu->eblb->setter<uint16_t>(rrDst, r2h | r1);
 		 	}
 		 }
 	} else if ((srcSize == 16) && (dstSize == 8))
@@ -681,14 +681,14 @@ tfr_hcs12x.execute = {
 		 * else
 		 *   r1L => B
 		 */
-		 if (rrDst == EB::EBRegs::A) {
-		 	if (rrSrc == EB::EBRegs::D) {
-		 		cpu->eb->setter<uint8_t>(EB::EBRegs::A, cpu->eb->getter<uint8_t>(EB::EBRegs::B));
+		 if (rrDst == EBLB::EBLBRegs::A) {
+		 	if (rrSrc == EBLB::EBLBRegs::D) {
+		 		cpu->eblb->setter<uint8_t>(EBLB::EBLBRegs::A, cpu->eblb->getter<uint8_t>(EBLB::EBLBRegs::B));
 		 	} else {
-		 		cpu->eb->setter<uint8_t>(EB::EBRegs::A, (uint8_t) (cpu->eb->getter<uint8_t>(rrSrc) >> 8));
+		 		cpu->eblb->setter<uint8_t>(EBLB::EBLBRegs::A, (uint8_t) (cpu->eblb->getter<uint8_t>(rrSrc) >> 8));
 		 	}
 		 } else {
-		 	cpu->eb->setter<uint8_t>(EB::EBRegs::B, (uint8_t) (cpu->eb->getter<uint8_t>(rrSrc) & 0x00FF));
+		 	cpu->eblb->setter<uint8_t>(EBLB::EBLBRegs::B, (uint8_t) (cpu->eblb->getter<uint8_t>(rrSrc) & 0x00FF));
 		 }
 	} 
 }
