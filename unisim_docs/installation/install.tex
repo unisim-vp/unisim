@@ -67,9 +67,33 @@ $ make install
 
 \noindent \textbf{Compiling unisim\_tools}.
 
+\begin{verbatim}
+$ ./configure --prefix=path-to-unisim-install-dir
+$ make
+$ make install
+\end{verbatim}
+
 \noindent \textbf{Compiling unisim\_lib}.
 
+\begin{verbatim}
+$ ./configure \
+      --prefix=path-to-unisim-install-dir \
+      --with-unisim-tools=path-to-unisim-install-dir \
+      --with-systemc=path-to-systemc-install-dir
+$ make
+$ make install
+\end{verbatim}
+
 \noindent \textbf{Compiling unisim\_simulators}.
+
+\begin{verbatim}
+$ ./configure \
+      --prefix=path-to-unisim-install-dir \
+      --with-unisim-lib=path-to-unisim-install-dir \
+      --with-systemc=path-to-systemc-install-dir
+$ make
+$ make install
+\end{verbatim}
 
 \section{UNISIM/Windows}
 \label{compiling_unisim_for_windows}
