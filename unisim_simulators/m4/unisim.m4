@@ -202,7 +202,7 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
 		AC_MSG_ERROR([libxml2 includes not found (/libxml2/libxml/*.hh). Please use --with-libxml2=<path>])
     fi
 
-    # Check for SDL functions
+    # Check for libxml2 functions
     AC_CHECK_LIB(xml2, xmlNewTextWriterFilename,
     AC_CHECK_LIB(xml2, xmlTextWriterSetIndent,
     AC_CHECK_LIB(xml2, xmlTextWriterStartDocument,
