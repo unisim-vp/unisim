@@ -171,7 +171,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		{
 			case 1:
 				{
-					typename unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0]);
+					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0]);
 
 					if(reg)
 					{

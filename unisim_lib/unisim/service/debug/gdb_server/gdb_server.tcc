@@ -288,7 +288,7 @@ bool GDBServer<ADDRESS>::Setup()
 						bool cpu_has_reg = true;
 						bool cpu_has_right_reg_size = true;
 						
-						typename unisim::util::debug::Register *reg = registers_import->GetRegister(reg_name.c_str());
+						unisim::util::debug::Register *reg = registers_import->GetRegister(reg_name.c_str());
 						
 						if(!reg)
 						{

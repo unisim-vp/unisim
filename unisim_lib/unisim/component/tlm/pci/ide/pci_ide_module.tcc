@@ -65,7 +65,7 @@ PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::~PCIDevIde()
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 bool PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
 	std::vector<unisim::component::cxx::pci::ide::IdeDisk<ADDRESS_TYPE> *> disks;
-	typename unisim::component::cxx::pci::ide::PciConfigData *pci_config_data;
+	unisim::component::cxx::pci::ide::PciConfigData *pci_config_data;
 	typename unisim::component::cxx::pci::ide::IdeController<ADDRESS_TYPE>::Params *ide_ctrl_params;
 	
 	for(unsigned int i = 0; i < MAX_IMAGES; i++) {
@@ -81,7 +81,7 @@ bool PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
 		}
 	}
 
-	pci_config_data = new typename unisim::component::cxx::pci::ide::PciConfigData("pciConfigData");
+	pci_config_data = new unisim::component::cxx::pci::ide::PciConfigData("pciConfigData");
 
 	for(unsigned int i = 0; i < NUM_MAPPINGS; i++) {
 		pci_config_data->BARSize[i] = size[i];//BARSize;
