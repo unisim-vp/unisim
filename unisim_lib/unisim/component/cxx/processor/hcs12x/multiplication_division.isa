@@ -248,3 +248,57 @@ and the remainder is indeterminate. */
 	if (quotion == 0) { cpu->ccr->setZ(1); }  else { cpu->ccr->setZ(0); }
 	if ((quotion & 0x8000) == 0x8000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
 }
+
+
+/* ********* Multiply and Accumulate instruction ********* */
+
+// EMACS: Multiply an Accumulate Instruction
+op emacs(0x18[8]:0x12[8]:opr16a[16])
+
+emacs.disasm = {
+	sink << "EMACS $" << std::hex << opr16a;
+}
+
+emacs.execute = {
+	/* operation: (M(X) : M(X+1)) × (M(Y) : M(Y+1)) + (M ~ M+3) ⇒ M ~ M+3 */
+
+	uint16_t xOpr, yOpr;
+	uint32_t accOpr, result, inter;
+	
+	xOpr = cpu->memRead16(cpu->getRegX());
+	yOpr = cpu->memRead16(cpu->getRegY());
+	accOpr = cpu->memRead16(opr16a);
+	accOpr = (accOpr << 16) | cpu->memRead16(opr16a+2); 
+	
+	inter = (uint32_t) xOpr * yOpr;
+	result =  inter + accOpr;
+	
+	cpu->memWrite16(opr16a, (uint16_t) (accOpr >> 16));
+	cpu->memWrite16(opr16a+2, (uint16_t) accOpr);
+	
+	// N: Set if MSB of result is set; cleared otherwise
+	if (result & 0x80000000 == 0x80000000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	
+	// Z: Set if result is $00000000; cleared otherwise
+	if (result == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	 /*
+	  * I: Intermediate result
+	  * R: Result
+	  * M: 32 bit accumulator in memory (second operand in the addition)
+	  * */
+	  
+	/* V: M31 • I31 • !R31 + !M31 • !I31 • R31
+	 * Set if result > $7FFFFFFF (+ overflow) or < $80000000 (– underflow)
+	 * Indicates two’s complement overflow
+	 */
+	// if (result > 0x7FFFFFFF) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
+	cpu->ccr->setV(((accOpr & 0x80000000) & (inter & 0x80000000) & ~(result & 0x80000000) | ~(accOpr & 0x80000000) & ~(inter & 0x80000000) & (result & 0x80000000)) >> 31);
+
+	/* C: M15 • I15 + I15 • !R15 + !R15 • M15
+	 * Set if there was a carry from bit 15 of the result; cleared otherwise
+	 * Indicates a carry from low word to high word of the result occurred
+	 */
+	cpu->ccr->setC(((accOpr & 0x00008000) & (inter & 0x00008000) | (inter & 0x00008000) & ~(result & 0x00008000) | ~(result & 0x00008000) & (accOpr & 0x00008000)) >> 15);
+	 
+}
+
