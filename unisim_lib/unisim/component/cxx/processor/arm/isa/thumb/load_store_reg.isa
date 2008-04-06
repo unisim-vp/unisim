@@ -156,7 +156,7 @@ ldrb_1.disasm = {
 
 ldrb_1.execute = {
 	typename CONFIG::address_t addr;
-	typename CONFIG::reg_t rn_value, value;
+	typename CONFIG::reg_t rn_value;
 	uint8_t val8;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -183,7 +183,7 @@ ldrb_2.disasm = {
 
 ldrb_2.execute = {
 	typename CONFIG::address_t addr;
-	typename CONFIG::reg_t rn_value, rm_value, value;
+	typename CONFIG::reg_t rn_value, rm_value;
 	uint8_t val8;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -211,7 +211,7 @@ ldrh_1.disasm = {
 
 ldrh_1.execute = {
 	typename CONFIG::address_t addr;
-	typename CONFIG::reg_t rn_value, value;
+	typename CONFIG::reg_t rn_value;
 	uint16_t val16;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -238,7 +238,7 @@ ldrh_2.disasm = {
 
 ldrh_2.execute = {
 	typename CONFIG::address_t addr;
-	typename CONFIG::reg_t rn_value, rm_value, value;
+	typename CONFIG::reg_t rn_value, rm_value;
 	uint16_t val16;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -266,7 +266,7 @@ ldrsb.disasm = {
 
 ldrsb.execute = {
 	typename CONFIG::address_t addr;
-	typename CONFIG::reg_t rn_value, rm_value, value;
+	typename CONFIG::reg_t rn_value, rm_value;
 	int8_t val8;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -294,7 +294,7 @@ ldrsh.disasm = {
 
 ldrsh.execute = {
 	typename CONFIG::address_t addr;
-	typename CONFIG::reg_t rn_value, rm_value, value;
+	typename CONFIG::reg_t rn_value, rm_value;
 	int16_t val16;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);

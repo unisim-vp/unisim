@@ -199,7 +199,6 @@ bx.initialize_rm_index = {
 bx.execute = {
 	typedef Operation<CONFIG> inherited;
 	
-	typename CONFIG::reg_t new_PC;
 	typename CONFIG::reg_t rm_value;
 	
 	rm_value = inherited::rm_init + cpu.GetGPR(inherited::rm_index);

@@ -43,7 +43,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-	
+
 using std::string;
 
 class Exception : public std::exception {};

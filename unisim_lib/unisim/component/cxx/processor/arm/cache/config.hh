@@ -35,6 +35,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CONFIG_HH__
 
 #include <inttypes.h>
+
 #include "unisim/component/cxx/processor/arm/cache/types.hh"
 
 namespace unisim {
@@ -236,7 +237,6 @@ class ARMCache96KBDMWB32bls_DebugConfig :
 public:
 	static const bool DEBUG_ENABLE = true;
 };
-
 
 } // end of namespace cache
 } // end of namespace arm

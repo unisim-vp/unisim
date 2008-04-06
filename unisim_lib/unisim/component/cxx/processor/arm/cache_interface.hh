@@ -39,10 +39,13 @@
 
 #include <inttypes.h>
 
+#ifndef SOCLIB
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/memory.hh"
 
+#endif // SOCLIB
 
 // Physical addressed cache connection
 // +-------------+                             +----------+                             +---------+                       +---------+
@@ -75,8 +78,7 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
+#ifndef SOCLIB
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;
@@ -85,6 +87,8 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
+
+#endif // SOCLIB
 
 template <class address_t>
 class CacheInterface {
@@ -118,13 +122,31 @@ public:
 	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size) = 0;
 };
 
+#ifdef SOCLIB
+
+template <class address_t>
+class CacheInterfaceWithMemoryService :
+	public CacheInterface<address_t> {
+		
+#else // SOCLIB
+
 template <class address_t>
 class CacheInterfaceWithMemoryService :
 	public CacheInterface<address_t>,
 	public Service<Memory<address_t> >,
 	public Client<Memory<address_t> >,
 	public Client<Logger> {
+		
+#endif // SOCLIB
+		
 public:
+	
+#ifdef SOCLIB
+	
+	CacheInterfaceWithMemoryService() {}
+	
+#else // SOCLIB
+	
 	CacheInterfaceWithMemoryService(const char *name,
 			Object *parent) :
 		Object(name, parent),
@@ -134,6 +156,8 @@ public:
 		memory_export("memory_export", this),
 		memory_import("memory_import", this),
 		logger_import("logger_import", this) {}
+	
+#endif // SOCLIB
 
 	virtual ~CacheInterfaceWithMemoryService() {}
 	
@@ -147,10 +171,14 @@ public:
 	virtual void Disable()   = 0;
 	virtual bool IsEnabled() = 0;
 	
+#ifndef SOCLIB
+	
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceImport<Memory<address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 
+#endif // SOCLIB
+	
 //	virtual void Reset() = 0;
 //	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size) = 0;
 //	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size) = 0;

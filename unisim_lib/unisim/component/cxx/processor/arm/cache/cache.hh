@@ -43,13 +43,17 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_HH__
 
 #include <inttypes.h>
+#include "unisim/component/cxx/processor/arm/cache/types.hh"
+#include "unisim/component/cxx/processor/arm/cache_interface.hh"
+#include "unisim/component/cxx/processor/arm/cache/set.hh"
+
+#ifndef SOCLIB
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/memory.hh"
 
-#include "unisim/component/cxx/processor/arm/cache/types.hh"
-#include "unisim/component/cxx/processor/arm/cache_interface.hh"
-#include "unisim/component/cxx/processor/arm/cache/set.hh"
+#endif // SOCLIB
 
 namespace unisim {
 namespace component {
@@ -59,12 +63,17 @@ namespace arm {
 namespace cache {
 
 using namespace std;
+
+#ifndef SOCLIB
+
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Logger;
+
+#endif // SOCLIB
 
 template <class CONFIG>
 class Cache : 
@@ -73,9 +82,16 @@ public:
 	typedef typename CONFIG::address_t address_t;
 	typedef CacheInterfaceWithMemoryService<address_t> inherited;
 
+#ifdef SOCLIB
+	Cache(CacheInterface<address_t> *_next_mem_level);
+	
+#else // SOCLIB
+	
 	Cache(const char* name,
 			CacheInterface<address_t> *_next_mem_level,
 			Object* parent = 0);
+	
+#endif // SOCLIB
 
 	virtual ~Cache();
 
@@ -98,17 +114,15 @@ public:
 	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
 	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
 	
+#ifndef SOCLIB
+	
 	// Cache -> Memory Interface (debugg dervice)
 	virtual void Reset();
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	
-//	ServiceExport<Memory<address_t> > memory_export;
-//	ServiceImport<Memory<address_t> > memory_import;
-//	ServiceImport<Logger> logger_import;
-	//   ServiceImport<CachePowerEstimatorInterface> power_estimator_import;
-	//   ServiceImport<PowerModeInterface> power_mode_import;
-	//   ServiceExport<PowerModeInterface> power_mode_export;
+#endif // SOCLIB
+	
 
 private:
 	bool        enabled;
@@ -136,18 +150,24 @@ private:
 protected:
 	/* verbose options */
 	bool verbose_all;
-	Parameter<bool> param_verbose_all;
 	bool verbose_pr_read;
-	Parameter<bool> param_verbose_pr_read;
-	bool VerbosePrRead();
 	bool verbose_pr_write;
-	Parameter<bool> param_verbose_pr_write;
-	bool VerbosePrWrite();
 	bool verbose_read_memory;
-	Parameter<bool> param_verbose_read_memory;
-	bool VerboseReadMemory();
 	bool verbose_write_memory;
+	
+#ifndef SOCLIB
+	
+	Parameter<bool> param_verbose_all;
+	Parameter<bool> param_verbose_pr_read;
+	Parameter<bool> param_verbose_pr_write;
+	Parameter<bool> param_verbose_read_memory;
 	Parameter<bool> param_verbose_write_memory;
+	
+#endif // SOCLIB
+	
+	bool VerbosePrRead();
+	bool VerbosePrWrite();
+	bool VerboseReadMemory();
 	bool VerboseWriteMemory();
 	bool HasVerbose();
 };

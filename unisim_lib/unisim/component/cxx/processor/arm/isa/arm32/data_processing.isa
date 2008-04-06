@@ -174,7 +174,7 @@ ands_32imm.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -201,7 +201,7 @@ ands_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
@@ -229,7 +229,7 @@ ands_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
@@ -393,7 +393,7 @@ eors_32imm.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -420,7 +420,7 @@ eors_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
   
@@ -448,7 +448,7 @@ eors_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
@@ -1866,7 +1866,7 @@ tst_32imm.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -1888,7 +1888,7 @@ tst_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
@@ -1911,7 +1911,7 @@ tst_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
@@ -1974,7 +1974,7 @@ teq_32imm.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -1996,7 +1996,7 @@ teq_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
@@ -2019,7 +2019,7 @@ teq_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
@@ -2083,7 +2083,7 @@ cmp_32imm.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -2105,7 +2105,7 @@ cmp_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
@@ -2128,7 +2128,7 @@ cmp_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
@@ -2191,7 +2191,7 @@ cmn_32imm.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
   	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
   	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -2213,7 +2213,7 @@ cmn_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
@@ -2236,7 +2236,7 @@ cmn_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
@@ -2395,7 +2395,7 @@ orrs_32imm.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -2422,7 +2422,7 @@ orrs_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
@@ -2450,7 +2450,7 @@ orrs_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
@@ -2595,7 +2595,7 @@ mov_reg_shift.execute = {
 movs_32imm.execute = {
 	typename CONFIG::reg_t s1;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -2620,7 +2620,7 @@ movs_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -2646,7 +2646,7 @@ movs_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
@@ -2808,7 +2808,7 @@ bics_32imm.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -2835,7 +2835,7 @@ bics_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
@@ -2863,7 +2863,7 @@ bics_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1, s2;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
@@ -3005,7 +3005,7 @@ mvn_reg_shift.execute = {
 mvns_32imm.execute = {
 	typename CONFIG::reg_t s1;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -3030,7 +3030,7 @@ mvns_imm_shift.execute = {
 
 	typename CONFIG::reg_t s1;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -3056,7 +3056,7 @@ mvns_reg_shift.execute = {
 
 	typename CONFIG::reg_t s1;
 	typename CONFIG::reg_t res;
-	bool shift_carry_out;
+	bool shift_carry_out = false;
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
   

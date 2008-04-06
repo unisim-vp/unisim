@@ -105,8 +105,6 @@ ldr_imm_post.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	typename CONFIG::reg_t value_l, value_r;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t new_rn_value = 0;
 
@@ -129,8 +127,6 @@ ldr_imm_offset.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	typename CONFIG::reg_t value_l, value_r;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -149,8 +145,6 @@ ldr_imm_pre.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	typename CONFIG::reg_t value_l, value_r;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -170,8 +164,6 @@ ldr_reg_post.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	typename CONFIG::reg_t value_l, value_r;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
@@ -193,8 +185,6 @@ ldr_reg_offset.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	typename CONFIG::reg_t value_l, value_r;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
@@ -215,8 +205,6 @@ ldr_reg_pre.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	typename CONFIG::reg_t value_l, value_r;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
@@ -298,8 +286,6 @@ ldrb_imm_post.execute = {
 	typedef Operation<CONFIG> inherited;
 	
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	uint8_t val8;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -315,8 +301,6 @@ ldrb_imm_offset.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	uint8_t val8;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -331,8 +315,6 @@ ldrb_imm_pre.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	uint8_t val8;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -348,8 +330,6 @@ ldrb_reg_post.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	uint8_t val8;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
@@ -367,8 +347,6 @@ ldrb_reg_offset.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	uint8_t val8;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
@@ -385,8 +363,6 @@ ldrb_reg_pre.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	uint8_t val8;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
@@ -462,7 +438,6 @@ ldrb_rd15_imm_offset.execute = {
 		typedef Operation<CONFIG> inherited;
 
 		typename CONFIG::address_t address;
-		uint32_t val32;
 		typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -493,7 +468,6 @@ ldrb_rd15_reg_offset.execute = {
 		typedef Operation<CONFIG> inherited;
 
 		typename CONFIG::address_t address;
-		uint32_t val32;
 		typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 		typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 
@@ -544,7 +518,6 @@ ldrt_imm.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value, value_r, value_l;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -560,10 +533,7 @@ ldrt_reg.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value, value_r, value_l;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -603,8 +573,6 @@ ldrbt_imm.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	uint8_t val;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -620,8 +588,6 @@ ldrbt_reg.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::address_t address;
-	typename CONFIG::reg_t value;
-	uint8_t val;
 	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);

@@ -36,22 +36,35 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 
-#include "unisim/util/debug/simple_register.hh"
-#include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/component/cxx/processor/arm/cache_interface.hh"
-#include "unisim/util/debug/symbol.hh"
-#include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/component/cxx/processor/arm/config.hh"
 #include <sstream>
 #include <iostream>
+#include "unisim/component/cxx/processor/arm/cpu.hh"
+#include "unisim/component/cxx/processor/arm/config.hh"
 #include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
 #include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
+#include "unisim/component/cxx/processor/arm/instruction.tcc"
 
-//#include <sys/types.h>
-//#include <unistd.h>
-//#include <proc/readproc.h>
+#ifndef SOCLIB
 
-#define LOCATION Function << __FUNCTION__ << File <<  __FILE__ << Line << __LINE__
+#include "unisim/util/debug/simple_register.hh"
+#include "unisim/util/debug/symbol.hh"
+
+#endif // SOCLIB
+
+#ifndef SOCLIB
+
+#define LOCATION Function << __FUNCTION__ \
+                        << File <<  __FILE__ \
+                        << Line << __LINE__
+
+#endif // SOCLIB
+
+#if (defined(__GNUC__) && (__GNUC__ >= 3))
+#define INLINE __attribute__((always_inline))
+#else
+#define INLINE
+#endif
+
 // #define ARM_OPTIMIZATION
 
 namespace unisim {
@@ -60,23 +73,11 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-#if (defined(__GNUC__) && (__GNUC__ >= 3))
-#define INLINE __attribute__((always_inline))
-#else
-#define INLINE
-#endif
-
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
-using unisim::util::debug::SimpleRegister;
-using unisim::util::debug::Symbol;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
 using unisim::util::arithmetic::RotateRight;
-
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -84,10 +85,111 @@ using std::hex;
 using std::dec;
 using std::ostringstream;
 
+#ifndef SOCLIB
+
+using unisim::service::interfaces::Function;
+using unisim::service::interfaces::File;
+using unisim::service::interfaces::Line;
+using unisim::util::debug::SimpleRegister;
+using unisim::util::debug::Symbol;
+
+#endif // SOCLIB
+
+#ifdef SOCLIB
+
+template<class CONFIG>
+CPU<CONFIG> ::
+CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
+	insn_cache_line_address(0),
+	memory_interface(_memory_interface),
+	running(true),
+	cache_l1(0),
+	cache_il1(0),
+	cache_l2(0),
+	fetchQueue(),
+	decodeQueue(),
+	executeQueue(),
+	lsQueue(),
+	firstLS(0),
+	hasSentFirstLS(false),
+	freeLSQueue(),
+	instruction_counter(0),
+	default_endianess(E_BIG_ENDIAN),
+	/* initialization of parameters for the 966es  START*/
+	arm966es_initram(false),
+	arm966es_vinithi(false),
+	/* initialization of parameters for the 966es  END */
+	verbose_all(false),
+	verbose_setup(false),
+	verbose_step(false),
+	verbose_step_insn(false),
+	verbose_dump_regs_start(false),
+	verbose_dump_regs_end(false)
+	{
+	/* Reset all the registers */
+	InitGPR();
+
+	/* we are running in system mode */
+	/* currently supported: arm966e_s
+	 * if different report error */
+	if(CONFIG::MODEL != ARM966E_S) {
+		cerr << "Error(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+			<< "):" << endl
+			<< "Running arm in system mode"
+			<< ". Only arm966e_s can run under this mode"
+			<< endl;
+		exit(-1);
+	}
+	// set CPSR to system mode
+	cpsr = 0;
+	for(unsigned int i = 0; i < num_phys_spsrs; i++) {
+		spsr[i] = 0;
+	}
+	for(unsigned int i = 0; i < 8; i++) {
+		fake_fpr[i] = 0;
+	}
+	fake_fps = 0;
+	SetCPSR_Mode(SYSTEM_MODE);
+	// set initial pc
+	/* Depending on the configuration being used set the initial pc */
+	if(CONFIG::MODEL == ARM966E_S) {
+		if(arm966es_vinithi)
+			SetGPR(15, (address_t)0xffff0000);
+		else
+			SetGPR(15, (address_t)0x00000000);
+		/* disable normal and fast interruptions */
+		SetCPSR_F();
+		SetCPSR_I();
+	}
+
+	// initialize the variables to compute the final address on memory 
+    //   accesses
+	if(GetEndianess() == E_BIG_ENDIAN) {
+		munged_address_mask8 = (typename CONFIG::address_t)0x03;;
+		munged_address_mask16 = (typename CONFIG::address_t)0x02;
+	} else {
+		munged_address_mask8 = 0;
+		munged_address_mask16 = 0;
+	}
+
+	/* initialize the check condition table */
+	InitializeCheckConditionTable();
+	
+	CreateTCMSystem();
+
+	CreateCpSystem();
+	
+	CreateMemorySystem();
+}
+
+#else // SOCLIB
+
 // Constructor
 template<class CONFIG>
 CPU<CONFIG> ::
-CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interface, Object *parent) :
+CPU(const char *name, 
+		CacheInterface<typename CONFIG::address_t> *_memory_interface, 
+		Object *parent) :
 	Object(name, parent),
 	Client<Loader<typename CONFIG::address_t> >(name, parent),
 	Client<LinuxOS>(name, parent),
@@ -104,7 +206,9 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_injection_export("memory_injection_export", this),
-	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
+	memory_access_reporting_control_export(
+        "memory_access_reporting_control_export", 
+        this),
 	memory_export("memory_export", this),
 	cpu_linux_os_export("cpu_linux_os_export", this),
 	debug_control_import("debug_control_import", this),
@@ -144,6 +248,12 @@ CPU(const char *name, CacheInterface<typename CONFIG::address_t> *_memory_interf
 	cache_il1(0),
 	cache_l2(0),
 	running(true),
+	lsQueue(),
+	firstLS(0),
+	freeLSQueue(),
+	fetchQueue(),
+	decodeQueue(),
+	executeQueue(),
 	/* initialization of parameters for the 966es  START*/
 	arm966es_initram(false),
 	param_arm966es_initram("arm966es-initram", this, arm966es_initram),
@@ -184,6 +294,10 @@ template<class CONFIG>
 CPU<CONFIG> ::
 ~CPU() {
 }
+
+#endif // SOCLIB
+
+#ifndef SOCLIB
 
 //=====================================================================
 //=                  Client/Service setup methods               START =
@@ -246,7 +360,8 @@ Setup() {
 		if(cache_il1 != 0) cache_il1->Enable();
 		if(cache_l2 != 0) cache_l2->Enable();
 		
-		// initialize the variables to compute the final address on memory accesses
+		// initialize the variables to compute the final address on memory 
+        //   accesses
 		munged_address_mask8 = 0;
 		munged_address_mask16 = 0;
 	} else {
@@ -276,7 +391,8 @@ Setup() {
 			SetCPSR_I();
 		}
 
-		// initialize the variables to compute the final address on memory accesses
+		// initialize the variables to compute the final address on memory 
+        //   accesses
 		if(GetEndianess() == E_BIG_ENDIAN) {
 			munged_address_mask8 = (typename CONFIG::address_t)0x03;;
 			munged_address_mask16 = (typename CONFIG::address_t)0x02;
@@ -294,7 +410,8 @@ Setup() {
 	for(int i = 0; i < 13; i++) {
 		stringstream str;
 	    str << "r" << i;
-	    registers_registry[str.str()] = new SimpleRegister<reg_t>(str.str().c_str(), &gpr[i]);
+	    registers_registry[str.str()] = 
+	    	new SimpleRegister<reg_t>(str.str().c_str(), &gpr[i]);
 	}
 	registers_registry["sp"] = new SimpleRegister<reg_t>("sp", &gpr[13]);
 	registers_registry["lr"] = new SimpleRegister<reg_t>("lr", &gpr[14]);
@@ -305,12 +422,6 @@ Setup() {
 		requires_memory_access_reporting = false;
 		requires_finished_instruction_reporting = false;
 	}
-	
-//	if(statistics_import) {
-//		statistics_import->AddSource(Object::GetName(), statistics_id);
-//		statistics_import->AddStatistic(statistics_id, "instruction-counter", 
-//				&instruction_counter);
-//	}
 	
 	return true;
 }
@@ -325,6 +436,10 @@ OnDisconnect() {
 //=                  Client/Service setup methods               END   =
 //=====================================================================
 
+#endif // SOCLIB
+
+#ifndef SOCLIB
+
 //=====================================================================
 //=             memory injection interface methods              START =
 //=====================================================================
@@ -337,26 +452,16 @@ InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
 
 	while(size != 0) {
 		ef_address = addr + index;
-//#if BYTE_ORDER == LITTLE_ENDIAN
-//		ef_address = ef_address ^ (typename CONFIG::address_t)0x03;
-//#endif
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
 		} else {
 			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
 				cache_l1->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
 			} else
-				memory_interface->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
+				memory_interface->PrRead(ef_address, 
+                    &(((uint8_t *)buffer)[index]), 
+                    1);
 		}
-//		if(CONFIG::HAS_DATA_CACHE_L1) {
-//			cache_l1->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
-//		} else {
-//			if(CONFIG::HAS_CACHE_L2) {
-//				cache_l2->PrRead(ef_address, &(((uint8_t *)buffer)[index]), 1);
-//			} else {
-//				Read8(ef_address, ((uint8_t *)buffer)[index]);
-//			}
-//		}
 		index++;
 		size--;
 	}
@@ -366,33 +471,24 @@ InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
 template<class CONFIG>
 bool 
 CPU<CONFIG> ::
-InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size) {
+InjectWriteMemory(typename CONFIG::address_t addr, 
+                    const void *buffer, 
+                    uint32_t size) {
 	uint32_t index = 0;
 	typename CONFIG::address_t ef_address;
 
 	while(size != 0) {
 		ef_address = addr + index;
-//#if BYTE_ORDER == LITTLE_ENDIAN
-//		ef_address = ef_address ^ (typename CONFIG::address_t)0x03;
-//#endif
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
 		} else {
 			if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
 				cache_l1->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
 			} else
-				memory_interface->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
+				memory_interface->PrWrite(ef_address, 
+                    &(((uint8_t *)buffer)[index]), 1);
 		}
 		
-//		if(CONFIG::HAS_DATA_CACHE_L1) {
-//			cache_l1->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
-//		} else {
-//			if(CONFIG::HAS_CACHE_L2) {
-//				cache_l2->PrWrite(ef_address, &(((uint8_t *)buffer)[index]), 1);
-//			} else {
-//				Write8(ef_address, ((uint8_t *)buffer)[index]);
-//			}
-//		}
 		index++;
 		size--;
 	}
@@ -403,25 +499,35 @@ InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t 
 //=             memory injection interface methods              END   =
 //=====================================================================
 
+#endif // SOCLIB
+
+#ifndef SOCLIB
+
 //=====================================================================
 //=         memory access reporting control interface methods   START =
 //=====================================================================
 
 template<class CONFIG>
 void 
-CPU<CONFIG>::RequiresMemoryAccessReporting(bool report) {
+CPU<CONFIG>::
+RequiresMemoryAccessReporting(bool report) {
 	requires_memory_access_reporting = report;
 }
 
 template<class CONFIG>
 void 
-CPU<CONFIG>::RequiresFinishedInstructionReporting(bool report) {
+CPU<CONFIG>::
+RequiresFinishedInstructionReporting(bool report) {
 	requires_finished_instruction_reporting = report;
 }
 
 //=====================================================================
 //=         memory access reporting control interface methods   END   =
 //=====================================================================
+
+#endif // SOCLIB
+
+#ifndef SOCLIB
 
 //=====================================================================
 //=             memory interface methods                        START =
@@ -443,7 +549,8 @@ ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
 template<class CONFIG>
 bool 
 CPU<CONFIG> ::
-WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size) {
+WriteMemory(typename CONFIG::address_t addr, 
+		const void *buffer, uint32_t size) {
 	if(memory_import)
 		return memory_import->WriteMemory(addr, buffer, size);
 	return false;
@@ -453,8 +560,12 @@ WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size) 
 //=             memory interface methods                        END   =
 //=====================================================================
 
+#endif // SOCLIB
+
+#ifndef SOCLIB
+
 //=====================================================================
-//=             Registers interface methods        START  =
+//=             Registers interface methods                    START  =
 //=====================================================================
 
 template<class CONFIG>
@@ -471,6 +582,9 @@ GetRegister(const char *name) {
 //=             CPURegistersInterface interface methods         END  ==
 //=====================================================================
 
+#endif // SOCLIB
+
+#ifndef SOCLIB
 //=====================================================================
 //=                   Disassembly methods                      START  =
 //=====================================================================
@@ -479,16 +593,20 @@ template<class CONFIG>
 string
 CPU<CONFIG> ::
 Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr) {
-  typename isa::arm32::Operation<CONFIG> *op = NULL;
-  op = arm32_decoder.Decode(addr);
-  stringstream buffer;
-  op->disasm(*this, buffer);
-  return buffer.str();
+	typename isa::arm32::Operation<CONFIG> *op = NULL;
+	op = arm32_decoder.Decode(addr);
+	stringstream buffer;
+	op->disasm(*this, buffer);
+	return buffer.str();
 }
 
 //=====================================================================
 //=                   DebugDisasmInterface methods              END   =
 //=====================================================================
+
+#endif // SOCLIB
+
+#ifndef SOCLIB
 
 //=====================================================================
 //=                   Debugging methods                        START  =
@@ -501,7 +619,8 @@ GetObjectFriendlyName(typename CONFIG::address_t addr) {
 	stringstream sstr;
 	
 	const Symbol<typename CONFIG::address_t> *symbol = 
-		symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<typename CONFIG::address_t>::SYM_OBJECT);
+		symbol_table_lookup_import->FindSymbolByAddr(addr, 
+            Symbol<typename CONFIG::address_t>::SYM_OBJECT);
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -517,7 +636,8 @@ GetFunctionFriendlyName(typename CONFIG::address_t addr) {
 	stringstream sstr;
 	
 	const Symbol<typename CONFIG::address_t> *symbol = 
-		symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<typename CONFIG::address_t>::SYM_FUNC);
+		symbol_table_lookup_import->FindSymbolByAddr(addr, 
+            Symbol<typename CONFIG::address_t>::SYM_FUNC);
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -530,6 +650,8 @@ GetFunctionFriendlyName(typename CONFIG::address_t addr) {
 //=                   Debugging methods                         END   =
 //=====================================================================
 
+#endif // SOCLIB
+
 //=====================================================================
 //=                    execution handling methods              START  =
 //=====================================================================
@@ -537,247 +659,17 @@ GetFunctionFriendlyName(typename CONFIG::address_t addr) {
 template<class CONFIG>
 void
 CPU<CONFIG> ::
-OnBusCycle() {
-	
+Stop(int ret) {
+	exit(ret);
 }
+
+#ifndef SOCLIB
 
 template<class CONFIG>
 void
 CPU<CONFIG> ::
-Step() {
-	reg_t current_pc;
-	reg_t next_pc;
-
-	current_pc = GetGPR(PC_reg);
-
-	VerboseDumpRegsStart();
+OnBusCycle() {
 	
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Starting step at PC = 0x"
-			<< Hex << current_pc << Dec
-			<< Endl << EndDebugInfo;
-	
-	if(debug_control_import) {
-		typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
-
-		do {
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Fetching debug command (PC = 0x"
-					<< Hex << current_pc << Dec << ")"
-					<< Endl << EndDebugInfo;
-			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
-	
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Received debug DBG_STEP command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
-				break;
-			}
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Received debug DBG_SYNC command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
-				Sync();
-				continue;
-			}
-
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Received debug DBG_KILL command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
-				Stop(0);
-			}
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Received debug DBG_RESET command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
-				// TODO : memory_interface->Reset(); 
-			}
-		} while(1);
-	}
-
-	if(requires_memory_access_reporting) {
-		if(memory_access_reporting_import) {
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Reporting memory acces for fetch at address 0x"
-					<< Hex << current_pc << Dec
-					<< Endl << EndDebugInfo;
-			uint32_t insn_size;
-			if(GetCPSR_T())
-				insn_size = 2;
-			else
-				insn_size = 4;
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, 
-					MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, 
-					current_pc, insn_size);
-		}
-	}
-	
-	try {
-		if(GetCPSR_T()) {
-			/* THUMB state */
-			typename isa::thumb::Operation<CONFIG> *op = NULL;
-			thumb_insn_t insn;
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Fetching (reading) instruction at address 0x"
-					<< Hex << current_pc << Dec
-					<< Endl << EndDebugInfo;
-
-			//		ReadInsn(current_pc, insn);
-			if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
-				insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
-				ReadInsnLine(insn_cache_line_address, (uint8_t *)&insn_cache_line, 4 *8);
-			}
-			insn = ((uint16_t *)insn_cache_line)[(current_pc & (typename CONFIG::address_t)0x1F) >> 1];
-
-			/* arm instructions are big endian, so convert the instruction to 
-			 *   host format */
-			insn = BigEndian2Host(insn);
-			
-			/* Decode current PC */
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Decoding instruction at 0x"
-					<< Hex << current_pc << Dec
-					<< " (0x" << Hex << insn << Dec << ")"
-					<< Endl << EndDebugInfo;
-			op = thumb_decoder.Decode(current_pc, insn);
-			/* Execute instruction */
-			if(CONFIG::DEBUG_ENABLE && (verbose_step || verbose_step_insn) && logger_import) {
-				stringstream disasm_str;
-				op->disasm(*this, disasm_str);
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Executing instruction "
-					<< disasm_str.str()
-					<< " at 0x" << Hex << current_pc << Dec
-					<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
-					<< Endl << EndDebugInfo;
-			}
-			op->execute(*this);
-			//op->profile(profile);
-		} else {
-			/* ARM state */
-			typename isa::arm32::Operation<CONFIG> *op = NULL;
-			insn_t insn;
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Fetching (reading) instruction at address 0x"
-					<< Hex << current_pc << Dec
-					<< Endl << EndDebugInfo;
-
-			//		ReadInsn(current_pc, insn);
-			if(insn_cache_line_address != (current_pc & ~(typename CONFIG::address_t)0x1F)) {
-				insn_cache_line_address = (current_pc & ~(typename CONFIG::address_t)0x1F);
-				ReadInsnLine(insn_cache_line_address, (uint8_t *)&insn_cache_line, 4 *8);
-			}
-			insn = insn_cache_line[(current_pc & (typename CONFIG::address_t)0x1F) >> 2];
-
-			/* arm instructions are big endian, so convert the instruction to 
-			 *   host format */
-			insn = BigEndian2Host(insn);
-			
-			/* Decode current PC */
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Decoding instruction at 0x"
-					<< Hex << current_pc << Dec
-					<< " (0x" << Hex << insn << Dec << ")"
-					<< Endl << EndDebugInfo;
-			op = arm32_decoder.Decode(current_pc, insn);
-			/* Execute instruction */
-			if(CONFIG::DEBUG_ENABLE && (verbose_step || verbose_step_insn) && logger_import) {
-				stringstream disasm_str;
-				op->disasm(*this, disasm_str);
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Executing instruction "
-					<< disasm_str.str()
-					<< " at 0x" << Hex << current_pc << Dec
-					<< " (0x" << Hex << insn << Dec << ", " << instruction_counter << ")"
-					<< Endl << EndDebugInfo;
-			}
-			op->execute(*this);
-			//op->profile(profile);
-		}
-		/* perform the memory load/store operations */
-		PerformLoadStoreAccesses();
-		VerboseDumpRegsEnd();
-
-		instruction_counter++;
-	} 
-	catch(ResetException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor reset exception :" << exc.what() 
-				<< Endl << EndDebugError;
-		PerformResetException();
-	}
-	catch(UndefinedInstructionException<CONFIG> &exc) {
-		if(VerboseStep()) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Received undefined instruction exception: " << exc.what()
-				<< Endl << EndDebugInfo;
-		}
-		PerformUndefInsnException();
-	}
-	catch(SoftwareInterruptException<CONFIG> &exc) {
-		if(VerboseStep()) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Received software interrupt exception: " << exc.what()
-				<< Endl << EndDebugInfo;
-		}
-		PerformSWIException();
-	}
-	catch(PrefetchAbortException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor prefetch abort exception :" << exc.what() 
-				<< Endl << EndDebugError;
-		PerformPrefetchAbortException();
-	}
-	catch(DataAbortException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor data abort exception :" << exc.what() 
-				<< Endl << EndDebugError;
-		PerformDataAbortException();
-	}
-	catch(IRQException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor IRQ exception :" << exc.what() 
-				<< Endl << EndDebugError;
-		PerformIRQException();
-	}
-	catch(FIQException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor FIQ exception :" << exc.what() 
-				<< Endl << EndDebugError;
-		PerformFIQException();
-	}
-	catch(Exception &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor exception :" << exc.what() 
-				<< Endl << EndDebugError;
-		Stop(1);
-	}
-	
-	if(requires_finished_instruction_reporting)
-		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
 }
 
 template<class CONFIG>
@@ -790,16 +682,11 @@ Run() {
 template<class CONFIG>
 void
 CPU<CONFIG> ::
-Stop(int ret) {
-	exit(ret);
-}
-
-template<class CONFIG>
-void
-CPU<CONFIG> ::
 Sync() {
 	
 }
+
+#endif // SOCLIB
 
 template<class CONFIG>
 void
@@ -813,6 +700,20 @@ endian_type
 CPU<CONFIG> ::
 CoprocessorGetEndianess() {
 	return GetEndianess();
+}
+
+template<class CONFIG>
+bool 
+CPU<CONFIG> ::
+CoprocessorGetVinithi() {
+	return arm966es_vinithi;
+}
+
+template<class CONFIG>
+bool 
+CPU<CONFIG> ::
+CoprocessorGetInitram() {
+	return arm966es_initram;
 }
 
 //=====================================================================
@@ -869,7 +770,6 @@ ShiftOperandImmShift(const uint32_t shift_imm,
 		const uint32_t shift, 
 		const typename CONFIG::reg_t val_reg) {
 	typename CONFIG::reg_t shifter_operand = 0;
-	uint32_t mask = 1;
       
 	if((shift_imm == 0) && (shift == 0)) {
 		shifter_operand = val_reg;
@@ -1058,6 +958,8 @@ ShiftOperandRegShift(const uint32_t shift_reg,
 			}
 		}
 	}
+	
+	return shifter_operand;
 }
 
 template<class CONFIG>
@@ -1197,10 +1099,19 @@ LSWUBReg(const uint32_t u,
 		}
 		break;
 	default:
+#ifdef SOCLIB
+		
+		cerr << "Error(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+			<< "): unknow shift value (" << shift << ")" << endl;
+		
+#else // SOCLIB
+		
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "unknow shift value (" << shift << ")" 
 				<< Endl << EndDebugError;
+		
+#endif // SOCLIB
 		exit(-1);
 	}
 	return val_rn + (((u << 1) - 1) * index);
@@ -1413,7 +1324,6 @@ DisasmShiftOperand32Imm(const uint32_t rotate_imm,
 				     const uint32_t imm, 
 				     stringstream &buffer) {
   uint32_t imm_r, imm_l; // immediate right and left rotated
-  uint32_t imm_r_m, imm_l_m; // the masks
   uint32_t imm_f; // final immediate
   
   imm_r = imm >> (rotate_imm * 2);
@@ -2539,18 +2449,30 @@ GetSPSRIndex() {
 
 	switch(cpsr & CPSR_RUNNING_MODE_MASK) {
 	case USER_MODE:
+#ifdef SOCLIB
+		cerr << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+			<< "Trying to modify SPSR under USER_MODE" << endl;
+		exit(-1);
+#else // SOCLIB
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Trying to modify SPSR under USER_MODE" << Endl
 				<< EndDebugError;
 		Stop(-1);
+#endif // SOCLIB
 		break;
 	case SYSTEM_MODE:
+#ifdef SOCLIB
+		cerr << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+			<< "Trying to modify SPSR under SYSTEM_MODE" << endl;
+		exit(-1);
+#else // SOCLIB
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Trying to modify SPSR under SYSTEM_MODE" << Endl
 				<< EndDebugError;
 		Stop(-1);
+#endif // SOCLIB
 		break;
 	case SUPERVISOR_MODE:
 		rm = 0;
@@ -2568,9 +2490,17 @@ GetSPSRIndex() {
 		rm = 4;
 		break;
 	default:
+#ifdef SOCLIB
 		cerr << "ERROR(" << __FUNCTION__ << "): ";
 		cerr << "unknown running mode." << endl;
 		exit(-1);
+#else // SOCLIB
+		if(logger_import)
+			(*logger_import) << DebugError << LOCATION
+				<< "unkonwn running mode." << Endl
+				<< EndDebugError;
+		Stop(-1);
+#endif // SOCLIB
 		break;
 	}
 
@@ -2772,6 +2702,8 @@ Read32toPCUpdateT(address_t address) {
 	}
 	memop->SetReadToPCUpdateT(address);
 	lsQueue.push(memop);
+
+#ifndef SOCLIB
 	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
@@ -2779,6 +2711,8 @@ Read32toPCUpdateT(address_t address) {
 					MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address & ~((address_t)0x3), 4);
+	
+#endif // SOCLIB
 
 #if 0
 	typename CONFIG::reg_t value;
@@ -2849,12 +2783,16 @@ Read32toPC(address_t address) {
 	memop->SetReadToPC(address);
 	lsQueue.push(memop);
 	
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
 					MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address & ~((address_t)0x3), 4);
+	
+#endif // SOCLIB
 
 #if 0
 	typename CONFIG::reg_t value;
@@ -2917,6 +2855,8 @@ Read32toGPR(address_t address, uint32_t reg) {
 	}
 	memop->SetRead(address, 4, reg, false, false);
 	lsQueue.push(memop);
+
+#ifndef SOCLIB
 	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
@@ -2924,6 +2864,8 @@ Read32toGPR(address_t address, uint32_t reg) {
 					MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address & ~((address_t)0x3), 4);
+	
+#endif // SOCLIB
 
 #if 0
 	typename CONFIG::reg_t value;
@@ -2989,6 +2931,8 @@ Read32toGPRAligned(address_t address, uint32_t reg) {
 	memop->SetRead(address, 4, reg, true, false);
 	lsQueue.push(memop);
 	
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
@@ -2996,6 +2940,8 @@ Read32toGPRAligned(address_t address, uint32_t reg) {
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 4);
 
+#endif // SOCLIB
+	
 #if 0
 	typename CONFIG::reg_t value;
 	address_t read_address = address & ~(0x3);
@@ -3038,12 +2984,16 @@ Read16toGPRAligned(address_t address, uint32_t reg) {
 	memop->SetRead(address, 2, reg, true, false);
 	lsQueue.push(memop);
 
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
 					MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 2);
+	
+#endif // SOCLIB
 
 #if 0
 	uint16_t val16;
@@ -3091,12 +3041,16 @@ ReadS16toGPRAligned(address_t address, uint32_t reg) {
 	memop->SetRead(address, 2, reg, /* aligned */true, /* signed */true);
 	lsQueue.push(memop);
 
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
 					MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 2);
+	
+#endif // SOCLIB
 
 #if 0
 	int16_t val16;
@@ -3143,12 +3097,16 @@ ReadS8toGPR(address_t address, uint32_t reg) {
 	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */true);
 	lsQueue.push(memop);
 
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportMemoryAccess(
 					MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 				 	address, 1);
+	
+#endif // SOCLIB
 
 	#if 0
 	typename CONFIG::reg_t value;
@@ -3192,6 +3150,8 @@ Read8toGPR(address_t address, uint32_t reg) {
 	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */false);
 	lsQueue.push(memop);
 
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportMemoryAccess(
@@ -3199,8 +3159,9 @@ Read8toGPR(address_t address, uint32_t reg) {
 					MemoryAccessReporting<address_t>::MT_DATA,
 				 	address, 1);
 
+#endif // SOCLIB
 
-	#if 0
+#if 0
 	typename CONFIG::reg_t value;
 	uint8_t val8;
 	address_t read_address;
@@ -3243,14 +3204,18 @@ Write32(address_t address, uint32_t value) {
 	memop->SetWrite(address, 4, value);
 	lsQueue.push(memop);
 
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
 					MemoryAccessReporting<address_t>::MAT_WRITE,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 4);
+	
+#endif // SOCLIB
 
-	#if 0
+#if 0
 	uint32_t val32;
 	address_t write_address = address & ~((address_t)0x3);
 	
@@ -3288,6 +3253,8 @@ Write16(address_t address, uint16_t value) {
 	}
 	memop->SetWrite(address, 2, value);
 	lsQueue.push(memop);
+
+#ifndef SOCLIB
 	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
@@ -3295,6 +3262,8 @@ Write16(address_t address, uint16_t value) {
 					MemoryAccessReporting<address_t>::MAT_WRITE,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 2);
+	
+#endif // SOCLIB
 
 #if 0
 	uint16_t val16;
@@ -3334,12 +3303,16 @@ Write8(address_t address, uint8_t value) {
 	memop->SetWrite(address, 1, value);
 	lsQueue.push(memop);
 
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
 					MemoryAccessReporting<address_t>::MAT_WRITE,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					address, 1);
+	
+#endif // SOCLIB
 
 #if 0
 	if(CONFIG::MODEL == ARM966E_S) {
@@ -3371,44 +3344,76 @@ template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 CoprocessorLoad(uint32_t cp_num, address_t address) {
+	
+#ifndef SOCLIB
+	
 	if(logger_import)
 		(*logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
+	
+#endif // SOCLIB
+	
 	Stop(-1);
+	
+	return false;
 }
 
 template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 CoprocessorLoad(uint32_t cp_num, address_t address, uint32_t option) {
+	
+#ifndef SOCLIB
+	
 	if(logger_import)
 		(*logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
+	
+#endif // SOCLIB
+	
 	Stop(-1);
+	
+	return false;
 }
 
 template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 CoprocessorStore(uint32_t cp_num, address_t address) {
+	
+#ifndef SOCLIB
+	
 	if(logger_import)
 		(*logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
+	
+#endif // SOCLIB
+
 	Stop(-1);
+	
+	return false;
 }
 
 template<class CONFIG>
 bool 
 CPU<CONFIG> ::
 CoprocessorStore(uint32_t cp_num, address_t address, uint32_t option) {
+	
+#ifndef SOCLIB
+	
 	if(logger_import)
 		(*logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
+	
+#endif // SOCLIB
+	
 	Stop(-1);
+	
+	return false;
 }
 
 template<class CONFIG>
@@ -3416,10 +3421,16 @@ void
 CPU<CONFIG> ::
 CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		uint32_t crd, uint32_t crn, uint32_t crm) {
+	
+#ifndef SOCLIB
+	
 	if(logger_import)
 		(*logger_import) << DebugError << LOCATION
 			<< "TODO"
 			<< Endl << EndDebugError;
+	
+#endif // SOCLIB
+	
 	Stop(-1);
 }
 
@@ -3429,10 +3440,15 @@ CPU<CONFIG> ::
 MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm) {
 	if(cp[cp_num] == 0) {
+		
+#ifndef SOCLIB
+	
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "TODO"
 				<< Endl << EndDebugError;
+
+#endif // SOCLIB
 		Stop(-1);
 	}
 	cp[cp_num]->WriteRegister(op1, op2, crn, crm, GetGPR(rd));
@@ -3444,10 +3460,16 @@ CPU<CONFIG> ::
 MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm) {
 	if(cp[cp_num] == 0) {
+		
+#ifndef SOCLIB
+	
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "TODO"
 				<< Endl << EndDebugError;
+		
+#endif // SOCLIB
+		
 		Stop(-1);
 	}
 	cp[cp_num]->ReadRegister(op1, op2, crn, crm, gpr[rd]);
@@ -3474,7 +3496,7 @@ PerformResetException() {
 	// - disable normal interrupts
 	// - jump to interruption vector
 	uint32_t cur_mode = GetCPSR_Mode();
-	uint32_t cur_cpsr = GetCPSR();
+//	uint32_t cur_cpsr = GetCPSR();
 	SetCPSR_Mode(SUPERVISOR_MODE);
 	SetGPRMapping(cur_mode, SUPERVISOR_MODE);
 	SetGPR(14, 0);
@@ -3628,12 +3650,25 @@ GetExceptionVectorAddr() {
 		// the cp15 should be able to get us the right value
 		return cp15_966es->GetExceptionVectorAddr();
 	} else {
+		
+#ifdef SOCLIB
+		
+		cerr << "TODO(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+			<< "): " << endl
+		<< "exception vector address reporting is not implemented "
+		<< "for this architecture" << endl;
+		
+#else // SOCLIB
+		
 		if(logger_import) {
 			(*logger_import) << DebugError << LOCATION
 				<< "TODO: exception vector address reporting is not implemented "
 				<< "for this architecture" << Endl
 				<< EndDebugError;
 		}
+		
+#endif // SOCLIB
+		
 		Stop(-1);
 	}
 }
@@ -3827,6 +3862,7 @@ template<class CONFIG>
 uint32_t 
 CPU<CONFIG> ::
 InstructionByteSize() {
+	if(GetCPSR_T()) return 2; // we are running in thumb mode
 	return 4;
 }
 
@@ -3834,6 +3870,7 @@ template<class CONFIG>
 uint32_t 
 CPU<CONFIG> ::
 InstructionBitSize() {
+	if(GetCPSR_T()) return 16; // we are running in thumb mode
 	return 32;
 }
 
@@ -3861,6 +3898,8 @@ CheckAlignmentExcep(typename CONFIG::address_t addr) {
 /* Alignment checking methods  END                            */
 /**************************************************************/
 
+#ifndef SOCLIB
+
 /**************************************************************/
 /* CPUARMLinuxOSInterface methods                       START */
 /**************************************************************/
@@ -3876,6 +3915,8 @@ PerformExit(int ret) {
 /**************************************************************/
 /* CPUARMLinuxOSInterface methods                         END */
 /**************************************************************/
+
+#endif // SOCLIB
 
 /* endianess methods */
 template<class CONFIG>
@@ -3899,9 +3940,23 @@ CreateCpSystem() {
 		cp[i] = 0;
 	
 	if(CONFIG::MODEL == ARM966E_S) {
+#ifdef SOCLIB
+		
+		cp15_966es = new cp15_966es_t(15, this, dtcm, itcm, memory_interface);
+		
+#else // SOCLIB
+		
 		cp15_966es = new cp15_966es_t("cp15", 15, this, dtcm, itcm, memory_interface, this);
+
+#endif // SOCLIB
+		
 		cp[15] = cp15_966es;
+		
+#ifndef SOCLIB
+		
 		cp[15]->logger_import >> cp15_logger_import;
+		
+#endif // SOCLIB
 	}
 }
 
@@ -3922,13 +3977,32 @@ CreateTCMSystem() {
 	itcm = 0;
 	
 	if(CONFIG::HAS_DTCM) {
+
+#ifdef SOCLIB
+		
+		dtcm = new dtcm_t();
+		
+#else // SOCLIB
+		
 		dtcm = new dtcm_t("dtcm", this);
 		dtcm->logger_import >> dtcm_logger_import;
+		
+#endif // SOCLIB
+		
 	}
 	
 	if(CONFIG::HAS_ITCM) {
+#ifdef SOCLIB
+		
+		itcm = new itcm_t();
+		
+#else // SOCLIB
+
 		itcm = new itcm_t("itcm", this);
 		itcm->logger_import >> itcm_logger_import;
+		
+#endif // SOCLIB
+		
 	}
 }
 
@@ -3945,6 +4019,9 @@ inline INLINE
 void 
 CPU<CONFIG> ::
 CreateMemorySystem() {
+	
+#ifndef SOCLIB
+	
 	if(CONFIG::MODEL == ARM966E_S) {
 		memory_export >> cp15_966es->memory_export;
 		cp15_966es->memory_import >> memory_import;
@@ -4008,6 +4085,9 @@ CreateMemorySystem() {
 			}
 		}
 	}
+	
+#endif // SOCLIB
+	
 }
 
 /**************************************************************/
@@ -4066,11 +4146,17 @@ PerformPrefetchAccess(MemoryOp<CONFIG> *memop) {
 	}
 	
 	/* should we report a memory access for a prefetch???? */
+	
+#ifndef SOCLIB
+	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					read_address, 4);
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -4130,9 +4216,9 @@ void
 CPU<CONFIG> ::
 PerformReadAccess(MemoryOp<CONFIG> *memop) {
 	typename CONFIG::reg_t val32, val32_l, val32_r;
-	uint16_t val16, val16_l, val16_r;
+	uint16_t val16; // , val16_l, val16_r;
 	uint8_t val8;
-	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value = 0;
 	address_t address = memop->GetAddress();
 	uint32_t size = memop->GetSize();
 	address_t read_address = address & ~(address_t)(size - 1); 
@@ -4322,12 +4408,24 @@ inline INLINE
 void
 CPU<CONFIG> ::
 Unpredictable() {
+	
+#ifdef SOCLIB
+	
+	cerr << "Error(" << __FUNCTION__ << ":" << __FUNCTION__ << ":" << __LINE__
+		<< "):" << endl
+		<< "Trying to execute unpredictable behavior instruction"
+		<< endl;
+	
+#else // SOCLIB
+	
 	if(logger_import) {
 		(*logger_import) << DebugError << LOCATION
 			<< "Trying to execute unpredictable behavior instruction"
 			<< Endl
 			<< EndDebugError;
 	}
+	
+#endif // SOCLIB
 }
 /**************************************************************/
 /* Unpredictable instruction behavior (private)           END */
@@ -4342,7 +4440,17 @@ inline INLINE
 bool
 CPU<CONFIG> ::
 VerboseSetup() {
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_setup;
+	
+#else // SOCLIB
+	
 	return CONFIG::DEBUG_ENABLE && verbose_setup && logger_import;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -4350,7 +4458,17 @@ inline INLINE
 bool
 CPU<CONFIG> ::
 VerboseStep() {
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_step;
+	
+#else // SOCLIB
+	
 	return CONFIG::DEBUG_ENABLE && verbose_step && logger_import;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -4358,6 +4476,25 @@ inline INLINE
 void
 CPU<CONFIG> ::
 VerboseDumpRegs() {
+	
+#ifdef SOCLIB
+	
+	for(unsigned int i = 0; i < 4; i++) {
+		for(unsigned int j = 0; j < 4; j++)
+			cerr
+				<< "\t- r" << ((i*4) + j) << " = 0x" << hex << GetGPR((i*4) + j) << dec;
+		cerr << endl;
+	}
+	cerr << "\t- cpsr = (" << hex << GetCPSR() << dec << ") ";
+	typename CONFIG::reg_t mask;
+	for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
+		if((mask & GetCPSR()) != 0) cerr << "1";
+		else cerr << "0";
+	}
+	cerr << endl;
+
+#else // SOCLIB
+	
 	for(unsigned int i = 0; i < 4; i++) {
 		for(unsigned int j = 0; j < 4; j++)
 			(*logger_import)
@@ -4372,6 +4509,7 @@ VerboseDumpRegs() {
 	}
 	(*logger_import) << Endl;
 	
+#endif // SOCLIB
 }
 
 template<class CONFIG>
@@ -4379,12 +4517,26 @@ inline INLINE
 void
 CPU<CONFIG> ::
 VerboseDumpRegsStart() {
+	
+#ifdef SOCLIB
+	
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start) {
+		cerr << "Info(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ 
+			<< "):" << endl
+			<< "Register dump before starting instruction execution: " << endl;
+		VerboseDumpRegs();
+	}
+	
+#else // SOCLIB
+	
 	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import) {
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Register dump before starting instruction execution: " << Endl;
 		VerboseDumpRegs();
 		(*logger_import) << EndDebugInfo;
 	}
+	
+#endif // SOCLIB
 }
 
 template<class CONFIG>
@@ -4392,12 +4544,26 @@ inline INLINE
 void
 CPU<CONFIG> ::
 VerboseDumpRegsEnd() {
+	
+#ifdef SOCLIB
+	
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end) {
+		cerr << "Info(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ 
+			<< "):" << endl
+			<< "Register dump at the end of instruction execution: " << endl;
+		VerboseDumpRegs();
+	}
+	
+#else // SOCLIB
+	
 	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import) {
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Register dump at the end of instruction execution: " << Endl;
 		VerboseDumpRegs();
 		(*logger_import) << EndDebugInfo;
 	}
+	
+#endif // SOCLIB
 }
 
 /**************************************************************/
@@ -4407,6 +4573,8 @@ VerboseDumpRegsEnd() {
 /**************************************************************/
 /* Verbose methods (protected)                          START */
 /**************************************************************/
+
+#ifndef SOCLIB
 
 template<class CONFIG>
 void
@@ -4465,6 +4633,8 @@ DumpInstructionProfile(ostream *output) {
 	}
 }
 
+#endif // SOCLIB 
+
 /**************************************************************/
 /* Verbose methods (protected)                            END */
 /**************************************************************/
@@ -4475,9 +4645,17 @@ DumpInstructionProfile(ostream *output) {
 } // end of namespace component
 } // end of namespace unisim
 
+#ifndef SOCLIB
+
 #undef LOCATION
 
+#endif // SOCLIB  
+
 #undef INLINE
+
+#include "unisim/component/cxx/processor/arm/cpu.step_instruction.tcc"
+#include "unisim/component/cxx/processor/arm/cpu.step_cycle.tcc"
+#include "unisim/component/cxx/processor/arm/cpu.soclib_step_cycle.tcc"
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_TCC__
 

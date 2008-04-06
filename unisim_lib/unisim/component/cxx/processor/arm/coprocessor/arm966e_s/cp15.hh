@@ -35,13 +35,16 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_COPROCESSOR_ARM966E_S_CP15_HH__
 
-#include "unisim/kernel/service/service.hh"
-
-#include "unisim/service/interfaces/memory.hh"
-
 #include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
 #include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
+
+#ifndef SOCLIB
+
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/memory.hh"
+
+#endif // SOCLIB
 
 namespace unisim {
 namespace component {
@@ -51,6 +54,8 @@ namespace arm {
 namespace coprocessor {
 namespace arm966e_s {
 
+#ifndef SOCLIB
+
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Client;
@@ -59,10 +64,20 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
 
+#endif // SOCLIB
+
 using unisim::component::cxx::processor::arm::CacheInterface;
 using unisim::component::cxx::processor::arm::CPInterface;
 using unisim::component::cxx::processor::arm::tcm::DTCM;
 using unisim::component::cxx::processor::arm::tcm::ITCM;
+
+#ifdef SOCLIB
+
+template<class CONFIG>
+class CP15 :
+	public CPInterface<CONFIG::DEBUG_ENABLE> {
+
+#else // SOCLIB
 
 template<class CONFIG>
 class CP15 : 
@@ -70,25 +85,46 @@ class CP15 :
 	public CPInterface<CONFIG::DEBUG_ENABLE>,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Client<Memory<typename CONFIG::address_t> > {
+
+#endif // SOCLIB
+	
 private:
 	typedef uint32_t reg_t;
 	typedef CPInterface<CONFIG::DEBUG_ENABLE> inherited;
 	typedef typename CONFIG::address_t address_t;
 	
 public:
+	
+#ifndef SOCLIB
+	
 	ServiceImport<Memory<address_t> > itcm_memory_import;
 	ServiceImport<Memory<address_t> > dtcm_memory_import;
 	ServiceImport<Memory<address_t> > memory_import;
 	ServiceExport<Memory<address_t> > memory_export;
 
+#endif // SOCLIB
+	
+#ifdef SOCLIB
+
+	CP15(unsigned int _cp_id,
+			CPUCPInterface *_cpu,
+			DTCM<CONFIG> *_dtcm,
+			ITCM<CONFIG> *_itcm,
+			CacheInterface<address_t> *_memory_interface);
+	
+#else // SOCLIB
+	
 	CP15(const char *name,
 			unsigned int _cp_id,
 			CPUCPInterface *_cpu,
 			DTCM<CONFIG> *_dtcm,
 			ITCM<CONFIG> *_itcm,
 			CacheInterface<address_t> *_memory_interface,
-			Object *parent = 0);	
+			Object *parent = 0);
+	
 	virtual bool Setup();
+	
+#endif // SOCLIB
 	
 	/** Gives the name of the Coprocessor component.
 	 * @return The name of the componenet (constant character string pointer)
@@ -170,10 +206,14 @@ public:
 	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
 	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
     
-    // CP15 -> Memory Interface (debugg dervice)
+#ifndef SOCLIB
+	
+	// CP15 -> Memory Interface (debugg dervice)
 //	virtual void Reset();
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
+	
+#endif // SOCLIB
 
 private:
 	reg_t id_code_reg;
@@ -211,22 +251,27 @@ private:
 	
 	// Parameters
 	uint32_t silicon_revision_number;
-	Parameter<uint32_t> param_silicon_revision_number;
 	// Verbose parameters
 	bool verbose_all;
-	Parameter<bool> param_verbose_all;
 	bool verbose_read_reg;
-	Parameter<bool> param_verbose_read_reg;
 	bool verbose_write_reg;
-	Parameter<bool> param_verbose_write_reg;
 	bool verbose_pr_read;
-	Parameter<bool> param_verbose_pr_read;
 	bool verbose_pr_write;
-	Parameter<bool> param_verbose_pr_write;
 	bool verbose_debug_read;
-	Parameter<bool> param_verbose_debug_read;
 	bool verbose_debug_write;
+	
+#ifndef SOCLIB
+	
+	Parameter<uint32_t> param_silicon_revision_number;
+	Parameter<bool> param_verbose_all;
+	Parameter<bool> param_verbose_read_reg;
+	Parameter<bool> param_verbose_write_reg;
+	Parameter<bool> param_verbose_pr_read;
+	Parameter<bool> param_verbose_pr_write;
+	Parameter<bool> param_verbose_debug_read;
 	Parameter<bool> param_verbose_debug_write;
+	
+#endif // SOCLIB
 	
 	// verbose methods
 	bool VerboseAll();

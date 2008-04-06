@@ -37,6 +37,12 @@
 
 #include "unisim/util/endian/endian.hh"
 
+#ifdef SOCLIB
+
+#include <iostream>
+
+#endif // SOCLIB
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -45,7 +51,18 @@ namespace arm {
 namespace coprocessor {
 namespace arm966e_s {
 
+#ifdef SOCLIB
+
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
+
+#else // SOCLIB
+
 #define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+
+#endif // SOCLIB
 
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE inline __attribute__((always_inline))
@@ -54,6 +71,8 @@ namespace arm966e_s {
 #endif
 
 using unisim::util::endian::E_BIG_ENDIAN;
+
+#ifndef SOCLIB
 
 using unisim::service::interfaces::DebugInfo;
 using unisim::service::interfaces::DebugWarning;
@@ -67,6 +86,34 @@ using unisim::service::interfaces::Line;
 using unisim::service::interfaces::Endl;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
+
+#endif // SOCLIB
+
+#ifdef SOCLIB
+
+template<class CONFIG>
+CP15<CONFIG> ::
+CP15(unsigned int _cp_id,
+		CPUCPInterface *_cpu,
+		DTCM<CONFIG> *_dtcm,
+		ITCM<CONFIG> *_itcm,
+		CacheInterface<address_t> *_memory_interface) :
+	CPInterface<CONFIG::DEBUG_ENABLE>(_cp_id, _cpu),
+	dtcm(_dtcm),
+	itcm(_itcm),
+	memory_interface(_memory_interface),
+	silicon_revision_number(0),
+	verbose_all(false),
+	verbose_read_reg(false),
+	verbose_write_reg(false),
+	verbose_pr_read(false),
+	verbose_pr_write(false),
+	verbose_debug_read(false),
+	verbose_debug_write(false) {
+}	
+
+
+#else // SOCLIB
 
 template<class CONFIG>
 CP15<CONFIG> ::
@@ -133,6 +180,8 @@ Setup() {
 
 	return true;
 }
+
+#endif // SOCLIB
 
 template<class CONFIG>
 const char *
@@ -279,6 +328,22 @@ ReadRegister(uint8_t opcode1,
 	}
 	
 	if(!handled) {
+
+#ifdef SOCLIB
+		
+		cerr << "Error("
+			<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "):"
+			<< "Trying to read an inexistent register in :" << endl
+			<< hex
+			<< " - opcode1 = 0x" << opcode1
+			<< " - opcode2 = 0x" << opcode2
+			<< dec
+			<< " - crn = " << crn
+			<< " - crm = " << crm
+			<< endl;
+			
+#else // SOCLIB
+		
 		if(inherited::logger_import)
 			(*inherited::logger_import) << DebugWarning << LOCATION
 				<< "Trying to read an inexistent register in :" << Endl
@@ -289,11 +354,27 @@ ReadRegister(uint8_t opcode1,
 				<< " - crn = " << crn
 				<< " - crm = " << crm
 				<< Endl << EndDebugWarning;
+		
+#endif // SOCLIB
+		
 	} else {
 		if(VerboseReadReg()) {
+			
+#ifdef SOCLIB
+			
+			cerr << "Info("
+				<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "):"
+				<< "Reading '" << name << "' register (value = 0x"
+				<< hex << reg << dec << ")" << endl;
+			
+#else // SOCLIB
+			
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "Reading '" << name << "' register (value = 0x"
-				<< Hex << reg << Dec << ")" << Endl;
+				<< Hex << reg << Dec << ")" << Endl
+				<< EndDebugInfo;
+			
+#endif // SOCLIB
 		}
 	}
 }
@@ -321,6 +402,19 @@ Operation(uint8_t opcode1,
 		uint8_t crd,
 		uint8_t crn,
 		uint8_t crm) {
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Operations not supported on this coprocessor: "
+		<< " - opcode1 = 0x" << hex << opcode1 << endl
+		<< " - opcode2 = 0x" << opcode2 << dec << endl
+		<< " - crd = " << crd << endl
+		<< " - crn = " << crn << endl
+		<< " - crm = " << crm << endl;
+	
+#else // SOCLIB
+		
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Operations not supported on this coprocessor: "
@@ -330,6 +424,9 @@ Operation(uint8_t opcode1,
 			<< " - crn = " << crn << Endl
 			<< " - crm = " << crm << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -338,12 +435,26 @@ void
 CP15<CONFIG> :: 
 Load(uint8_t crd,
 		reg_t address) {
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Loads not supported on this coprocessor: "
+		<< " - crd = " << crd << endl
+		<< " - address = 0x" << hex << address << dec << endl;
+
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Loads not supported on this coprocessor: "
 			<< " - crd = " << crd << Endl
 			<< " - address = 0x" << Hex << address << Dec << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -352,12 +463,26 @@ void
 CP15<CONFIG> :: 
 Store(uint8_t crd,
 		reg_t address) {
+	
+#ifdef SOCLIB
+
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Stores not supported on this coprocessor: "
+		<< " - crd = " << crd << endl
+		<< " - address = 0x" << hex << address << dec << endl;
+	
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Stores not supported on this coprocessor: "
 			<< " - crd = " << crd << Endl
 			<< " - address = 0x" << Hex << address << Dec << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -391,12 +516,26 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrInvalidateBlock(uint32_t set, uint32_t way) {
+	
+#ifdef SOCLIB
+
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
+		<< " - set = " << set << endl
+		<< " - way = " << way << endl;
+	
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
 			<< " - set = " << set << Endl
 			<< " - way = " << way << Endl
 			<< EndDebugError;
+
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -404,12 +543,26 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrFlushBlock(uint32_t set, uint32_t way) {
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrFlushBlock) not supported on this coprocessor: "
+		<< " - set = " << set << endl
+		<< " - way = " << way << endl;
+
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Method (PrFlushBlock) not supported on this coprocessor: "
 			<< " - set = " << set << Endl
 			<< " - way = " << way << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -417,12 +570,26 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrCleanBlock(uint32_t set, uint32_t way){
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrCleanBlock) not supported on this coprocessor: "
+		<< " - set = " << set << endl
+		<< " - way = " << way << endl;
+	
+#else // SOCLIB
+
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Method (PrCleanBlock) not supported on this coprocessor: "
 			<< " - set = " << set << Endl
 			<< " - way = " << way << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -430,10 +597,22 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrReset(){
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrReset) not supported on this coprocessor" << endl;
+
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrReset) not supported on this coprocessor"
+			<< "Method (PrReset) not supported on this coprocessor" << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -441,10 +620,22 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrInvalidate() {
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrInvalidate) not supported on this coprocessor" << endl;
+	
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Method (PrInvalidate) not supported on this coprocessor"
+			<< "Method (PrInvalidate) not supported on this coprocessor" << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -452,11 +643,24 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrInvalidateSet(uint32_t set){
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrInvalidateSet) not supported on this coprocessor: "
+		<< endl << " - set = " << set << endl;
+	
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Method (PrInvalidateSet) not supported on this coprocessor: "
-			<< " - set = " << set << Endl
+			<< Endl << " - set = " << set << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -464,11 +668,24 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrInvalidateBlock(address_t addr) {
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
+		<< endl << " - addr = 0x" << hex << addr << dec << endl;
+	
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Method (PrInvalidateBlock) not supported on this coprocessor: "
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< Endl << " - addr = 0x" << Hex << addr << Dec << Endl
 			<< EndDebugError;
+	
+#endif
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -476,11 +693,24 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrFlushBlock(address_t addr) {
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrFlushBlock) not supported on this coprocessor: " << endl
+		<< " - addr = 0x" << hex << addr << dec << endl;
+	
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Method (PrFlushBlock) not supported on this coprocessor: "
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< Endl << " - addr = 0x" << Hex << addr << Dec << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -489,11 +719,24 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrCleanBlock(address_t addr) {
+	
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrFlushBlock) not supported on this coprocessor: " << endl
+		<< " - addr = 0x" << hex << addr << dec << endl;
+	
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Method (PrFlushBlock) not supported on this coprocessor: "
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< Endl << " - addr = 0x" << Hex << addr << Dec << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -501,11 +744,24 @@ template<class CONFIG>
 void 
 CP15<CONFIG> ::
 PrZeroBlock(address_t addr) {
+
+#ifdef SOCLIB
+	
+	cerr << "Error"
+		<< "(" << __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+		<< "Method (PrZeroBlock) not supported on this coprocessor: " << endl
+		<< " - addr = 0x" << hex << addr << dec << endl;
+	
+#else // SOCLIB
+	
 	if(inherited::logger_import)
 		(*inherited::logger_import) << DebugError << LOCATION
 			<< "Method (PrZeroBlock) not supported on this coprocessor: "
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
+			<< Endl << " - addr = 0x" << Hex << addr << Dec << Endl
 			<< EndDebugError;
+	
+#endif // SOCLIB
+	
 	inherited::cpu->CoprocessorStop(inherited::cp_id, -1);
 }
 
@@ -519,6 +775,21 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 	 * If it is not a TCM access then send it to the memory interface
 	 */
 	if(VerbosePrWrite()) {
+
+#ifdef SOCLIB
+		
+		cerr << "Info(" 
+			<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+			<< "Write received:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
+		for(unsigned int i = 0; i < size; i++)
+			cerr << " " << (unsigned int)buffer[i];
+		cerr << dec << endl;
+
+#else // SOCLIB
+		
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "Write received:" << Endl
 			<< " - address = 0x" << Hex << addr << Dec << Endl
@@ -527,6 +798,9 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 		for(unsigned int i = 0; i < size; i++)
 			(*inherited::logger_import) << " " << (unsigned int)buffer[i];
 		(*inherited::logger_import) << Dec << Endl;
+		
+#endif // SOCLIB
+		
 	}
 	if(IsTCMAddress(addr)) {
 		/* it is a TCM address */
@@ -534,38 +808,87 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 			/* it is a ITCM address, check that the ITCM is enabled */
 			if(ITCMEnabled()) {
 				if(VerbosePrWrite())
-					(*inherited::logger_import)
+					
+#ifdef SOCLIB					
+
+					cerr << " - sending to ITCM" << endl;
+				
+#else // SOCLIB
+				
+				(*inherited::logger_import)
 						<< " - sending to ITCM" << Endl
 						<< EndDebugInfo;
+				
+#endif // SOCLIB
+				
 				ITCMWrite(addr, buffer, size);
 			} else {
 				if(VerbosePrWrite())
+					
+#ifdef SOCLIB
+
+					cerr << " - sending to main memory (ITCM disabled)" << endl;
+					
+#else // SOCLIB
+						
 					(*inherited::logger_import)
 						<< " - sending to main memory (ITCM disabled)" << Endl
 						<< EndDebugInfo;
+				
+#endif // SOCLIB
+				
 				MemWrite(addr, buffer, size);
 			}
 		} else {
 			/* it is a DTCM address, check that the DTCM is enabled */
 			if(DTCMEnabled()) {
 				if(VerbosePrWrite())
+
+#ifdef SOCLIB
+
+					cerr << " - sending to DTCM" << endl;
+				
+#else // SOCLIB
+				
 					(*inherited::logger_import)
 						<< " - sending to DTCM" << Endl
 						<< EndDebugInfo;
+					
+#endif
 				DTCMWrite(addr, buffer, size);
 			} else {
 				if(VerbosePrWrite())
+
+#ifdef SOCLIB
+
+					cerr << " - sending to main memory (DTCM disabled)" << endl;
+				
+#else // SOCLIB
+				
 					(*inherited::logger_import)
 						<< " - sending to main memory (DTCM disabled)" << Endl
 						<< EndDebugInfo;
+					
+#endif // SOCLIB
+					
 				MemWrite(addr, buffer, size);
 			}
 		}
 	} else {
 		if(VerbosePrWrite())
+			
+#ifdef SOCLIB
+			
+			cerr << " - sending to main memory" << endl;
+		
+#else // SOCLIB
+		
 			(*inherited::logger_import)
 				<< " - sending to main memory" << Endl
 				<< EndDebugInfo;
+
+#endif // SOCLIB
+			
 		MemWrite(addr, buffer, size);
 	}
 }
@@ -580,10 +903,23 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 	 * If it is not a TCM access then send it to the memory interface
 	 */
 	if(VerbosePrRead()) {
+
+#ifdef SOCLIB
+		
+		cerr << "Info(" 
+			<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+			<< "Read received:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl;
+
+#else // SOCLIB
+		
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "Read received:" << Endl
 			<< " - address = 0x" << Hex << addr << Dec << Endl
 			<< " - size = " << size << Endl;
+		
+#endif
 	}
 	if(IsTCMAddress(addr)) {
 		/* it is a TCM address */
@@ -591,41 +927,106 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 			/* it is a ITCM address, check that the ITCM is enabled */
 			if(ITCMEnabled()) {
 				if(VerbosePrRead())
+					
+#ifdef SOCLIB
+					
+					cerr << " - sending to ITCM" << endl;
+				
+#else // SOCLIB
+				
 					(*inherited::logger_import)
 						<< " - sending to ITCM" << Endl
 						<< EndDebugInfo;
+					
+#endif // SOCLIB
+					
 				ITCMRead(addr, buffer, size);
 			} else {
 				if(VerbosePrRead())
+					
+#ifdef SOCLIB
+					
+					cerr << " - sending to main memory (ITCM disabled)" << endl;
+				
+#else // SOCLIB
+				
 					(*inherited::logger_import)
 						<< " - sending to main memory (ITCM disabled)" << Endl
 						<< EndDebugInfo;
+					
+#endif // SOCLIB
+					
 				MemRead(addr, buffer, size);
 			}
 		} else {
 			/* it is a DTCM address, check that the DTCM is enabled */
 			if(DTCMEnabled()) {
 				if(VerbosePrRead())
+					
+#ifdef SOCLIB
+					cerr << " - sending to DTCM" << endl;
+				
+#else // SOCLIB
+				
 					(*inherited::logger_import)
 						<< " - sending to DTCM" << Endl
 						<< EndDebugInfo;
+					
+#endif // SOCLIB
+					
 				DTCMRead(addr, buffer, size);
 			} else {
 				if(VerbosePrRead())
+					
+#ifdef SOCLIB
+					
+					cerr << " - sending to main memory (DTCM disabled)" << endl;
+				
+#else // SOCLIB
+				
 					(*inherited::logger_import)
 						<< " - sending to main memory (DTCM disabled)" << Endl
 						<< EndDebugInfo;
+					
+#endif // SOCLIB
+					
 				MemRead(addr, buffer, size);
 			}
 		}
 	} else {
 		if(VerbosePrRead())
+			
+#ifdef SOCLIB
+			
+			cerr << " - sending to main memory" << endl;
+		
+#else // SOCLIB
+		
 			(*inherited::logger_import)
 				<< " - sending to main memory" << Endl
 				<< EndDebugInfo;
+			
+#endif // SOCLIB
+			
 		MemRead(addr, buffer, size);
 	}
 	if(VerbosePrRead()) {
+		
+#ifdef SOCLIB
+		
+		cerr << "Info(" 
+			<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+			<< "Read done:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
+		for(unsigned int i = 0; i < size; i++) {
+			cerr << " " << (unsigned int)buffer[i];
+		}
+		cerr << endl;
+		
+#else // SOCLIB
+		
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "Read done:" << Endl
 			<< " - address = 0x" << Hex << addr << Dec << Endl
@@ -636,6 +1037,9 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 		}
 		(*inherited::logger_import) << Endl
 			<< EndDebugInfo;
+		
+#endif // SOCLIB
+		
 	}
 }
 
@@ -646,6 +1050,8 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 /************************************************************/
 /* Memory interface methods                           START */
 /************************************************************/
+
+#ifndef SOCLIB
 
 template<class CONFIG>
 bool 
@@ -884,6 +1290,8 @@ WriteMemory(address_t addr, const void *buffer, uint32_t size) {
 	return success;
 }
 
+#endif // SOCLIB
+
 /************************************************************/
 /* Memory interface methods                           END   */
 /************************************************************/
@@ -946,16 +1354,16 @@ InitRegs() {
 	// 1    : alignment fault check enable  0x0
 	// 0    : reserved 0x0
 	control_reg = 0;
-	if((*inherited::GetParent())["arm966es-vinithi"])
+	if(inherited::cpu->CoprocessorGetVinithi())
 		control_reg += ((reg_t)1) << 13;
-	if((*inherited::GetParent())["arm966es-initram"])
+	if(inherited::cpu->CoprocessorGetInitram())
 		control_reg += ((reg_t)1) << 12;
 	control_reg += ((reg_t)0x0f) << 8;
 	//if(CONFIG::ENDIANESS != E_BIG_ENDIAN)
 	if(inherited::cpu->CoprocessorGetEndianess() != E_BIG_ENDIAN)
 		control_reg += ((reg_t)1) << 7;
 	control_reg += ((reg_t)0x07) << 4;
-	if((*inherited::GetParent())["arm966es-initram"])
+	if(inherited::cpu->CoprocessorGetInitram())
 		control_reg += ((reg_t)1) << 2;
 	
 	// initializing core control register
@@ -1007,6 +1415,19 @@ WriteControlReg(reg_t value) {
 	if(zero_mask & value) {
 		orig_value = value;
 		final_value = value & ~zero_mask;
+
+#ifdef SOCLIB
+			
+		cerr << "Error(" 
+			<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+			<< "Trying to set to one reserved bits in the 'Control'"
+			<< " register that should be zero, resetting them:" << endl
+			<< " - original value = 0x" << hex << orig_value << dec << endl
+			<< " - modified value = 0x" << hex << final_value << dec 
+			<< endl;
+			
+#else // SOCLIB
+			
 		if(inherited::logger_import) {
 			(*inherited::logger_import) << DebugError << LOCATION
 				<< "Trying to set to one reserved bits in the 'Control' register"
@@ -1015,10 +1436,25 @@ WriteControlReg(reg_t value) {
 				<< " - modified value = 0x" << Hex << final_value << Dec << Endl
 				<< EndDebugError;
 		}
+
+#endif // SOCLIB
+		
 	}
 	if(one_mask & value != one_mask) {
 		orig_value = final_value;
 		final_value = final_value | one_mask;
+
+#ifdef SOCLIB
+			
+		cerr << "Error(" 
+			<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+			<< "Trying to set to zero reserved bits in the 'Control' register"
+			<< " that should be one, resetting them:" << endl
+			<< " - original value = 0x" << hex << orig_value << dec << endl
+			<< " - modified value = 0x" << hex << final_value << dec << endl;
+		
+#else // SOCLIB
+		
 		if(inherited::logger_import) {
 			(*inherited::logger_import) << DebugError << LOCATION
 				<< "Trying to set to zero reserved bits in the 'Control' register"
@@ -1027,6 +1463,9 @@ WriteControlReg(reg_t value) {
 				<< " - modified value = 0x" << Hex << final_value << Dec << Endl
 				<< EndDebugError;
 		}
+		
+#endif // SOCLIB
+		
 	}
 	
 	if(VerboseWriteReg()) {
@@ -1036,6 +1475,31 @@ WriteControlReg(reg_t value) {
 		} else {
 			endian = "little-endian";
 		}
+		
+#ifdef SOCLIB
+		
+		cerr << "Info(" 
+			<< __FILE__ << ":" << __FUNCTION__ << ":" << __LINE__ << "): "
+			<< "Writing 0x" << hex << final_value << dec << " into the"
+			<< " 'Control' register:" << endl
+			<< " - configure disable loading bit = "
+			<< ((final_value >> 15) & 1) << endl
+			<< " - alternate vector select = "
+			<< ((final_value >> 13) & 1) << endl
+			<< " - instruction TCM enable = "
+			<< ((final_value >> 12) & 1) << endl
+			<< " - endianness = "
+			<< ((final_value >> 7) & 1) 
+			<< "(" << endian << ")" << endl
+			<< " - BIU write buffer enable = "
+			<< ((final_value >> 3) & 1) << endl
+			<< " - data TCM enable = "
+			<< ((final_value >> 2) & 1) << endl
+			<< " - alignment fault check enable = "
+			<< ((final_value >> 1) & 1) << endl;
+
+#else // SOCLIB
+			
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "Writing 0x" << Hex << final_value << Dec << " into the"
 			<< " 'Control' register:" << Endl
@@ -1055,6 +1519,8 @@ WriteControlReg(reg_t value) {
 			<< " - alignment fault check enable = "
 			<< ((final_value >> 1) & 1) << Endl
 			<< EndDebugInfo;
+		
+#endif // SOCLIB
 	}
 	control_reg = final_value;
 }
@@ -1168,7 +1634,17 @@ INLINE
 bool
 CP15<CONFIG> ::
 VerboseAll() {
-	return CONFIG::DEBUG_ENABLE && verbose_all && inherited::logger_import; 
+
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_all;
+	
+#else // SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_all && inherited::logger_import;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -1176,7 +1652,17 @@ INLINE
 bool
 CP15<CONFIG> ::
 VerboseReadReg() {
-	return CONFIG::DEBUG_ENABLE && verbose_read_reg && inherited::logger_import; 
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_read_reg;
+	
+#else // SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_read_reg && inherited::logger_import;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -1184,7 +1670,17 @@ INLINE
 bool
 CP15<CONFIG> ::
 VerboseWriteReg() {
-	return CONFIG::DEBUG_ENABLE && verbose_write_reg && inherited::logger_import; 
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_write_reg;
+	
+#else // SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_write_reg && inherited::logger_import;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -1192,7 +1688,17 @@ INLINE
 bool
 CP15<CONFIG> ::
 VerbosePrRead() {
-	return CONFIG::DEBUG_ENABLE && verbose_pr_read && inherited::logger_import; 
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_pr_read;
+	
+#else // SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_pr_read && inherited::logger_import;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -1200,7 +1706,17 @@ INLINE
 bool
 CP15<CONFIG> ::
 VerbosePrWrite() {
-	return CONFIG::DEBUG_ENABLE && verbose_pr_write && inherited::logger_import; 
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_pr_write;
+	
+#else // SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_pr_write && inherited::logger_import;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -1208,7 +1724,17 @@ INLINE
 bool
 CP15<CONFIG> ::
 VerboseDebugRead() {
-	return CONFIG::DEBUG_ENABLE && verbose_debug_read && inherited::logger_import; 
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_debug_read;
+	
+#else // SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_debug_read && inherited::logger_import;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG>
@@ -1216,12 +1742,25 @@ INLINE
 bool
 CP15<CONFIG> ::
 VerboseDebugWrite() {
-	return CONFIG::DEBUG_ENABLE && verbose_debug_write && inherited::logger_import; 
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_debug_write;
+	
+#else // SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE && verbose_debug_write && inherited::logger_import;
+	
+#endif // SOCLIB
 }
 
 #undef INLINE
 
+#ifndef SOCLIB
+
 #undef LOCATION
+
+#endif // SOCLIB
 
 } // end of namespace arm966e_s
 } // end of namespace coprocessor

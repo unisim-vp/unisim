@@ -35,12 +35,27 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_TCM_TCM_TCC__
 
+#ifdef SOCLIB
+
+#include <iostream>
+
+#endif // SOCLIB
+
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
 namespace tcm {
+
+#ifdef SOCLIB
+
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
+
+#else // SOCLIB
 
 using unisim::service::interfaces::DebugInfo;
 using unisim::service::interfaces::DebugWarning;
@@ -57,11 +72,29 @@ using unisim::service::interfaces::Dec;
 
 #define LOCATION File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
 
+#endif // SOCLIB
+
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE inline __attribute__((always_inline))
 #else
 #define INLINE inline
 #endif
+
+#ifdef SOCLIB
+
+template<class CONFIG, bool DATA_TCM>
+TCM<CONFIG, DATA_TCM> ::
+TCM() :
+	verbose_all(false),
+	verbose_pr_read(false),
+	verbose_pr_write(false),
+	verbose_debug_read(false),
+	verbose_debug_write(false) {
+	/* initialize the memory to 0 */
+	memset(data, 0, SIZE);
+}
+
+#else // SOCLIB
 
 template<class CONFIG, bool DATA_TCM>
 TCM<CONFIG, DATA_TCM> ::
@@ -87,10 +120,14 @@ TCM(const char *name,
 	Object::SetupDependsOn(logger_import);
 }
 
+#endif // SOCLIB
+
 template<class CONFIG, bool DATA_TCM>
 TCM<CONFIG, DATA_TCM> ::
 ~TCM() {
 }
+
+#ifndef SOCLIB
 
 template<class CONFIG, bool DATA_TCM>
 bool
@@ -106,6 +143,8 @@ Setup() {
 	return true;
 }
 
+#endif // SOCLIB
+
 template<class CONFIG, bool DATA_TCM>
 INLINE void
 TCM<CONFIG, DATA_TCM> ::
@@ -115,6 +154,20 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 	
 	aligned_address = addr & (BYTE_SIZE - 1);
 	if(aligned_address + size > BYTE_SIZE) {
+		
+#ifdef SOCLIB
+		
+		cerr << "Error(" 
+			<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+			<< endl
+			<< "Out of bonds read:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - mem_size = " << BYTE_SIZE << endl;
+			
+#else // SOCLIB
+		
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Out of bonds read:" << Endl
@@ -123,9 +176,29 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 				<< " - size = " << size << Endl
 				<< " - mem_size = " << BYTE_SIZE << Endl
 				<< EndDebugError;
+		
+#endif
+		
 		exit(-1);
 	}
 	if(VerbosePrWrite()) {
+		
+#ifdef SOCLIB
+		
+		cerr << "Info(" 
+			<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+			<< endl
+			<< "Writing:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
+		for(unsigned int i = 0; i < size; i++)
+			cerr << " " << buffer[i];
+		cerr << dec << endl;
+
+#else // SOCLIB
+		
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Writing:" << Endl
 			<< " - address = 0x" << Hex << addr << Dec << Endl
@@ -135,6 +208,8 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 		for(unsigned int i = 0; i < size; i++)
 			(*logger_import) << " " << buffer[i];
 		(*logger_import) << Dec << Endl << EndDebugInfo;
+		
+#endif // SOCLIB
 	}
 	memcpy(&data[aligned_address], buffer, size);
 }
@@ -149,6 +224,20 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 	
 	aligned_address = addr & (BYTE_SIZE - 1);
 	if(aligned_address + size > BYTE_SIZE) {
+
+#ifdef SOCLIB
+
+		cerr << "Error(" 
+			<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+			<< endl
+			<< "Out of bonds read:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - mem_size = " << BYTE_SIZE << endl;
+			
+#else // SOCLIB
+			
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Out of bonds read:" << Endl
@@ -157,10 +246,30 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 				<< " - size = " << size << Endl
 				<< " - mem_size = " << BYTE_SIZE << Endl
 				<< EndDebugError;
+
+#endif // SOCLIB
+		
 		exit(-1);
 	}
 	memcpy(buffer, &data[aligned_address], size);
 	if(VerbosePrRead()) {
+		
+#ifdef SOCLIB
+
+		cerr << "Info(" 
+			<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+			<< endl
+			<< "Reading:" << endl
+			<< " - address = 0x" << hex << addr << dec << endl
+			<< " - aligned_address = 0x" << hex << aligned_address << dec << endl
+			<< " - size = " << size << endl
+			<< " - read data =" << hex;
+		for(unsigned int i = 0; i < size; i++)
+			cerr << " " << buffer[i];
+		cerr << dec << endl;
+			
+#else // SOCLIB
+			
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Reading:" << Endl
 			<< " - address = 0x" << Hex << addr << Dec << Endl
@@ -170,8 +279,13 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 		for(unsigned int i = 0; i < size; i++)
 			(*logger_import) << " " << buffer[i];
 		(*logger_import) << Dec << Endl << EndDebugInfo;
+
+#endif // SOCLIB
+		
 	}
 }
+
+#ifndef SOCLIB
 
 // Memory Interface (debugg dervice)
 template<class CONFIG, bool DATA_TCM>
@@ -240,12 +354,24 @@ WriteMemory(address_t addr, const void *buffer, uint32_t size) {
 	return true;
 }
 
+#endif // SOCLIB
+
 template<class CONFIG, bool DATA_TCM>
 INLINE
 bool
 TCM<CONFIG, DATA_TCM> ::
 VerbosePrWrite() {
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE;
+	
+#else // SOCLIB
+	
 	return CONFIG::DEBUG_ENABLE && logger_import && verbose_pr_write;
+
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG, bool DATA_TCM>
@@ -253,7 +379,17 @@ INLINE
 bool
 TCM<CONFIG, DATA_TCM> ::
 VerbosePrRead() {
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE;
+	
+#else // SOCLIB
+	
 	return CONFIG::DEBUG_ENABLE && logger_import && verbose_pr_read;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG, bool DATA_TCM>
@@ -261,7 +397,17 @@ INLINE
 bool
 TCM<CONFIG, DATA_TCM> ::
 VerboseDebugWrite() {
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE;
+	
+#else // SOCLIB
+	
 	return CONFIG::DEBUG_ENABLE && logger_import && verbose_debug_write;
+	
+#endif // SOCLIB
+	
 }
 
 template<class CONFIG, bool DATA_TCM>
@@ -269,8 +415,34 @@ INLINE
 bool
 TCM<CONFIG, DATA_TCM> ::
 VerboseDebugRead() {
+	
+#ifdef SOCLIB
+	
+	return CONFIG::DEBUG_ENABLE;
+	
+#else // SOCLIB
+	
 	return CONFIG::DEBUG_ENABLE && logger_import && verbose_debug_read;
+	
+#endif // SOCLIB
+	
 }
+
+#ifdef SOCLIB
+
+template<class CONFIG>
+DTCM<CONFIG> ::
+DTCM() :
+	TCM<CONFIG, true>() {
+}
+
+template<class CONFIG>
+ITCM<CONFIG> ::
+ITCM() :
+	TCM<CONFIG, false>() {
+}
+
+#else // SOCLIB
 
 template<class CONFIG>
 DTCM<CONFIG> ::
@@ -281,16 +453,18 @@ DTCM(const char *name,
 }
 
 template<class CONFIG>
-DTCM<CONFIG> ::
-~DTCM() {	
-}
-
-template<class CONFIG>
 ITCM<CONFIG> ::
 ITCM(const char *name,
 		Object *parent) :
 	Object(name, parent),
 	TCM<CONFIG, false>(name, parent) {
+}
+
+#endif // SOCLIB
+	
+template<class CONFIG>
+DTCM<CONFIG> ::
+~DTCM() {	
 }
 
 template<class CONFIG>
@@ -300,7 +474,11 @@ ITCM<CONFIG> ::
 
 #undef INLINE
 
+#ifndef SOCLIB
+
 #undef LOCATION
+
+#endif // SOCLIB
 
 } // end of namespace tcm
 } // end of namespace arm

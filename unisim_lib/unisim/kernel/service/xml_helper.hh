@@ -36,6 +36,7 @@
 #define __UNISIM_KERNEL_SERVICE_XML_HELPER_HH__
 
 #include <libxml/xmlreader.h>
+#include <libxml/xmlwriter.h>
 #include "unisim/kernel/service/service.hh"
 
 namespace unisim {
@@ -49,10 +50,15 @@ public:
 	
 	bool XmlfyParameters(const char *filename);
 	bool LoadXmlParameters(const char *filename);
+	bool XmlfyVariables(const char *filename);
+	bool LoadXmlVariables(const char *filename);
 	
 private:
 	static const char *XML_ENCODING; 
 
+	int XmlfyVariable(xmlTextWriterPtr writer, 
+			VariableBase *var);
+	
 	ServiceManager *manager;
 	
 	bool ProcessXmlParamNode(xmlTextReaderPtr reader);

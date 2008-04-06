@@ -51,6 +51,12 @@ bkpt.disasm = {
 bkpt.execute = {
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
+#ifdef SOCLIB
+	
+	throw PrefetchAbortException<CONFIG>();
+	
+#else // SOCLIB
+	
 	if(cpu.linux_os_import) {
 		// we are executing on linux emulation mode
 		// what should we do with this kind of call? ignore it
@@ -58,6 +64,9 @@ bkpt.execute = {
 		// we are executing on full system mode
 		throw PrefetchAbortException<CONFIG>();
 	}
+	
+#endif // SOCLIB
+	
 }
 
 /*
@@ -76,6 +85,12 @@ swi.disasm = {
 
 swi.execute = {
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+
+#ifdef SOCLIB
+	
+	throw SoftwareInterruptException<CONFIG>();
+	
+#else // SOCLIB
 	
 	if(cpu.linux_os_import) {
 		// we are executing on linux emulation mode
@@ -89,6 +104,9 @@ swi.execute = {
 		// we are executing on full system mode
 		throw SoftwareInterruptException<CONFIG>();
 	}
+	
+#endif // SOCLIB
+	
 }
 /*
  * end of swi (software interrupt) instruction

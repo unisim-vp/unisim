@@ -42,9 +42,14 @@
 
 #include <inttypes.h>
 
+#include "unisim/util/endian/endian.hh"
+
+#ifndef SOCLIB
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/logger.hh"
-#include "unisim/util/endian/endian.hh"
+
+#endif // SOCLIB
 
 namespace unisim {
 namespace component {
@@ -52,12 +57,15 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-using unisim::service::interfaces::Logger;
+#ifndef SOCLIB
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::Logger;
+
+#endif // SOCLIB
+
 using unisim::util::endian::endian_type;
 
 // opcode1 = should be 0b000 for mcr/mrc valid instructions
@@ -72,27 +80,52 @@ public:
 	virtual ~CPUCPInterface() {};
 	virtual endian_type CoprocessorGetEndianess() = 0;
 	virtual void CoprocessorStop(unsigned int cp_id, int ret) = 0;
+	virtual bool CoprocessorGetVinithi() = 0;
+	virtual bool CoprocessorGetInitram() = 0;
 };
 
 /// Arm Coprocessor generic interface.
 /** This class describes the communication interface between Arm CPU and a Coprocessor
  */
+
+#ifdef SOCLIB
+
+template<bool DEBUG_ENABLE>
+class CPInterface {
+
+#else // SOCLIB
+
 template<bool DEBUG_ENABLE>
 class CPInterface :
 	public Client<Logger> {
+
+#endif // SOCLIB
+		
 private:
 	typedef uint32_t reg_t;
 	
 public:
+
+#ifdef SOCLIB
+
+	CPInterface(unsigned int _cp_id,
+			CPUCPInterface *_cpu) :
+		cpu(_cpu),
+		cp_id(_cp_id) {}
+	
+#else // SOCLIB
+	
 	CPInterface(const char *name, 
 			unsigned int _cp_id,
 			CPUCPInterface *_cpu,
 			Object *parent = 0) :
-		cp_id(_cp_id),
 		cpu(_cpu),
+		cp_id(_cp_id),
 		Object(name, parent),
 		Client<Logger>(name, parent),
-		logger_import("logger_import", this) {}		
+		logger_import("logger_import", this) {}
+	
+#endif // SOCLIB
 	
 	/// Destructor.
 	virtual ~CPInterface(){};
@@ -104,7 +137,7 @@ public:
 
 	/* Gives the name of a specified register
 	 * @param[in] id : unsigned 32 bits integer for register id 
-	 *  @return The name of the componenet (constant character string pointer)
+	 * @return The name of the componenet (constant character string pointer)
 	 */
 	virtual const char* RegisterName(uint32_t id, uint32_t option = 0) = 0;
 
@@ -164,7 +197,11 @@ public:
     virtual void Store(uint8_t crd,
     		reg_t address) = 0;
     
+#ifndef SOCLIB
+    
 	ServiceImport<Logger> logger_import;
+	
+#endif // SOCLIB
 	
 protected:
 	CPUCPInterface *cpu;

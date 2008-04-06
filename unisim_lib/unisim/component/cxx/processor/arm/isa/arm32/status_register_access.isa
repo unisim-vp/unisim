@@ -70,6 +70,21 @@ mrs.execute = {
 		 *   unpredictable, so we will do a return */
 		if((run_mode == cpu.USER_MODE) ||
 				(run_mode == cpu.SYSTEM_MODE)) {
+			stringstream str;
+			this->disasm(cpu, str);
+
+#ifdef SOCLIB
+			
+			cerr << "Warning("
+				<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+				<< "trying to access SPSR while running in "
+				<< ((run_mode == cpu.USER_MODE)?"user":"system")
+				<< " mode with the following instruction: " 
+				<< endl;
+			cerr << str.str() << endl;
+
+#else // SOCLIB
+			
 			if(cpu.logger_import) {
 				(*cpu.logger_import) << DebugWarning
 					<< Function << __FUNCTION__
@@ -79,10 +94,11 @@ mrs.execute = {
 					<< ((run_mode == cpu.USER_MODE)?"user":"system")
 					<< " mode with the following instruction: " 
 					<< Endl;
-				stringstream str;
-				this->disasm(cpu, str);
 				(*cpu.logger_import) << str.str() << Endl << EndDebugWarning;
 			}
+				
+#endif // SOCLIB
+				
 			return;
 		}
 		cpu.SetGPR(rd, cpu.GetSPSR());
@@ -130,6 +146,23 @@ msr_imm.execute = {
 		 *   unpredictable, so we will do a return */
 		if((run_mode == cpu.USER_MODE) ||
 				(run_mode == cpu.SYSTEM_MODE)) {
+			stringstream str;
+			this->disasm(cpu, str);
+
+#ifdef SOCLIB
+			
+			cerr << "Warning(" << __FUNCTION__
+				<< ":" << __FILE__ << ":" << __LINE__
+				<< "):" << endl
+				<< "trying to access SPSR while running in "
+				<< ((run_mode == cpu.USER_MODE)?"user":"system")
+				<< " mode with the following instruction: " 
+				<< endl;
+			cerr << str.str() 
+				<< endl;
+
+#else // SOCLIB
+
 			if(cpu.logger_import) {
 				(*cpu.logger_import) << DebugWarning
 					<< Function << __FUNCTION__
@@ -139,11 +172,12 @@ msr_imm.execute = {
 					<< ((run_mode == cpu.USER_MODE)?"user":"system")
 					<< " mode with the following instruction: " 
 					<< Endl;
-				stringstream str;
-				this->disasm(cpu, str);
 				(*cpu.logger_import) << str.str() 
 					<< Endl << EndDebugWarning;
 			}
+			
+#endif // SOCLIB
+			
 			return;
 		}
 		reg = cpu.GetSPSR();
@@ -151,6 +185,22 @@ msr_imm.execute = {
 		/* check current running mode, if in user mode then the behaviour is 
 		 *   unpredictable, so we will do a return */
 		if(mask != 0x08 && run_mode == cpu.USER_MODE) {
+			stringstream str;
+			this->disasm(cpu, str);
+
+#ifdef SOCLIB
+			
+			cerr << "Warning(" << __FUNCTION__
+				<< ":" << __FILE__ << ":" << __LINE__
+				<< "):" << endl
+				<< "Warning: trying to execute msr instruction  while running in "
+				<< "user"
+				<< " mode: " << Endl;
+			cerr << str.str() 
+				<< endl;
+
+#else // SOCLIB
+			
 			if(cpu.logger_import) {
 				(*cpu.logger_import) << DebugWarning
 					<< Function << __FUNCTION__
@@ -159,11 +209,12 @@ msr_imm.execute = {
 					<< "Warning: trying to execute msr instruction  while running in "
 					<< "user"
 					<< " mode: " << Endl;
-				stringstream str;
-				this->disasm(cpu, str);
 				(*cpu.logger_import) << str.str() 
 					<< Endl << EndDebugWarning;
 			}
+			
+#endif // SOCLIB
+			
 			return;
 		}
 		reg = cpu.GetCPSR();
@@ -223,6 +274,23 @@ msr_reg.execute = {
 		 *   unpredictable, so we will do a return */
 		if((run_mode == cpu.USER_MODE) ||
 				(run_mode == cpu.SYSTEM_MODE)) {
+			stringstream str;
+			this->disasm(cpu, str);
+
+#ifdef SOCLIB
+			
+			cerr << "Warning(" << __FUNCTION__
+				<< ":" << __FILE__ << ":" << __LINE__
+				<< "):" << endl
+				<< "Warning: trying to access SPSR while running in "
+				<< ((run_mode == cpu.USER_MODE)?"user":"system")
+				<< " mode with the following instruction: " 
+				<< endl;
+			cerr << str.str() 
+				<< endl;
+
+#else // SOCLIB
+			
 			if(cpu.logger_import) {
 				(*cpu.logger_import) << DebugWarning 
 					<< Function << __FUNCTION__
@@ -232,11 +300,12 @@ msr_reg.execute = {
 					<< ((run_mode == cpu.USER_MODE)?"user":"system")
 					<< " mode with the following instruction: " 
 					<< Endl;
-				stringstream str;
-				this->disasm(cpu, str);
 				(*cpu.logger_import) << str.str() 
 					<< Endl << EndDebugWarning;
 			}
+			
+#endif // SOCLIB
+			
 			return;
 		}
 		reg = cpu.GetSPSR();
@@ -244,6 +313,22 @@ msr_reg.execute = {
 		/* check current running mode, if in user mode then the behaviour is 
 		 * 	 unpredictable, so we will do a return */
 		if(mask != 0x08 && run_mode == cpu.USER_MODE) {
+			stringstream str;
+			this->disasm(cpu, str);
+
+#ifdef SOCLIB
+			
+			cerr << "Warning(" << __FUNCTION__
+				<< ":" << __FILE__ << ":" << __LINE__
+				<< "):" << endl
+				<< "Warning: trying to execute msr instruction  while running in "
+				<< "user"
+				<< " mode: " << endl;
+			cerr << str.str() 
+				<< endl;
+			
+#else // SOCLIB
+			
 			if(cpu.logger_import) {
 				(*cpu.logger_import) << DebugWarning
 					<< Function << __FUNCTION__
@@ -252,11 +337,12 @@ msr_reg.execute = {
 					<< "Warning: trying to execute msr instruction  while running in "
 					<< "user"
 					<< " mode: " << Endl;
-				stringstream str;
-				this->disasm(cpu, str);
 				(*cpu.logger_import) << str.str() 
 					<< Endl << EndDebugWarning;
 			}
+			
+#endif // SOCLIB
+			
 			return;
 		}
 		reg = cpu.GetCPSR();

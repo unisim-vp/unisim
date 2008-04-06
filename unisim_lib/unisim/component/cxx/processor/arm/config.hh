@@ -35,6 +35,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CONFIG_HH__
 
 #include <inttypes.h>
+
 #include "unisim/util/endian/endian.hh"
 #include "unisim/component/cxx/processor/arm/cache/config.hh"
 

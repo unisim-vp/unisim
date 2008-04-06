@@ -355,7 +355,7 @@ Run() {
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "Executing step"
 				<< Endl << EndDebugInfo;
-		CPU<CONFIG>::Step();
+		CPU<CONFIG>::StepInstruction();
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "Finished executing step"

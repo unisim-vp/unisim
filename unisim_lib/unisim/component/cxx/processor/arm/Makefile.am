@@ -1,6 +1,7 @@
 # SUBDIRS = cache
 # INCLUDE_SUBDIRS = cache
 
+AM_CPPFLAGS=-D__STDC_CONSTANT_MACROS
 INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
 includedir = $(prefix)/include/unisim/component/cxx/processor/arm
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/arm
@@ -30,10 +31,13 @@ libunisim_component_cxx_processor_arm_a_SOURCES += \
 endif
 
 include_HEADERS = config.hh cpu.hh cpu.tcc \
+	cpu.step_instruction.tcc cpu.step_cycle.tcc \
+	cpu.soclib_step_cycle.tcc \
 	exception.hh exception.tcc \
 	cache_interface.hh \
 	coprocessor_interface.hh \
-	memory_op.hh
+	memory_op.hh \
+	instruction.hh instruction.tcc
 
 nobase_include_HEADERS = \
 	cache/cache.hh cache/cache.tcc \

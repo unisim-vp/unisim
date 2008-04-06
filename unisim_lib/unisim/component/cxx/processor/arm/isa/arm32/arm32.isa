@@ -73,6 +73,7 @@ class CPU;
 } // end of decl
 
 impl {
+#include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/service/interfaces/logger.hh"
 	
@@ -89,6 +90,7 @@ using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::Line;
+using unisim::util::arithmetic::Add32;
 }
 
 include "constructors_dec.isa"

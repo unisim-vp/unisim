@@ -51,7 +51,209 @@ XMLHelper() {}
 
 XMLHelper::
 ~XMLHelper() {}
+
+bool
+XMLHelper::
+XmlfyVariables(const char *filename) {
+	xmlTextWriterPtr writer;
+
+	writer = xmlNewTextWriterFilename(filename, 0);
+	if(writer == NULL) {
+		cerr << "Error(ServiceManager::XmlfyVariables): "
+			<< "could not open output file (" 
+			<< filename << ")" << endl;
+		return false;
+	}
+	int rc = xmlTextWriterSetIndent(writer, 2);
+	if(rc < 0) {
+		cerr << "Warning(ServiceManager::XmlfyVariables): "
+			<< "could not set indentation" << endl;
+	}
+	rc = xmlTextWriterStartDocument(writer, NULL,
+			XML_ENCODING, NULL);
+	if(rc < 0) {
+		cerr << "Error(ServiceManager::XmlfyVariables): "
+			<< "error starting the xml document" << endl;
+		return false;
+	}
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
+	if(rc < 0) {
+		cerr << "Error(ServiceManager::XmlfyVariables): "
+			<< "error starting the xml document" << endl;
+		return false;
+	}
+
 	
+	list<VariableBase *> param_list;
+	list<VariableBase *>::iterator param_iter;
+	ServiceManager::GetParameters(param_list);
+	for(param_iter = param_list.begin();
+			param_iter != param_list.end();
+			param_iter++) {
+		rc = XmlfyVariable(writer, *param_iter);
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyVariables): "
+				<< "error writing parameter variable"
+				<< endl;
+			return false;
+		}
+	}
+
+	list<VariableBase *> reg_list;
+	list<VariableBase *>::iterator reg_iter;
+	ServiceManager::GetRegisters(reg_list);
+	for(reg_iter = reg_list.begin();
+			reg_iter != reg_list.end();
+			reg_iter) {
+		rc = XmlfyVariable(writer, *reg_iter);
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyVariables): "
+				<< "error writing register variable"
+				<< endl;
+			return false;
+		}
+	}
+
+	list<VariableBase *> stat_list;
+	list<VariableBase *>::iterator stat_iter;
+	ServiceManager::GetStatistics(stat_list);
+	for(stat_iter = stat_list.begin();
+			stat_iter != stat_list.end();
+			stat_iter) {
+		rc = XmlfyVariable(writer, *stat_iter);
+		if(rc < 0) {
+			cerr << "Error(ServiceManager::XmlfyVariables): "
+				<< "error writing statistic variable"
+				<< endl;
+			return false;
+		}
+	}
+
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) {
+		cerr << "Error(ServiceManager::XmlfyVariables): "
+			<< "could not close the root element" << endl;
+		return false;
+	}
+	rc = xmlTextWriterEndDocument(writer);
+	if(rc < 0) {
+		cerr << "Warning(ServiceManager::XmlfyVariables): "
+			<< "could not correctly close the XMLWriter"
+			<< endl;
+	}
+	xmlFreeTextWriter(writer);
+
+	return true;
+}
+
+int
+XMLHelper::
+XmlfyVariable(xmlTextWriterPtr writer, 
+		VariableBase *var) {
+	int rc;
+
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "variable");
+	if(rc < 0) return rc;
+
+	// writing the variable type
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "type");
+	if(rc < 0) return rc;
+	switch(var->GetType()) {
+		case VariableBase::VAR_PARAMETER:
+			rc = xmlTextWriterWriteFormatString(writer, "parameter");
+			break;
+		case VariableBase::VAR_STATISTIC:
+			rc = xmlTextWriterWriteFormatString(writer, "statistic");
+			break;
+		case VariableBase::VAR_REGISTER:
+			rc = xmlTextWriterWriteFormatString(writer, "register");
+			break;
+	}
+	if(rc < 0) return rc;
+
+	// writing the variable name
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "name");
+	if(rc < 0) return rc;
+	rc = xmlTextWriterWriteFormatString(writer, "%s", var->GetName());
+	if(rc < 0) return rc;
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) return rc;
+
+	// writing the variable data type
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "data_type");
+	if(rc < 0) return rc;
+	rc = xmlTextWriterWriteFormatString(writer, "%s", var->GetDataTypeName());
+	if(rc < 0) return rc;
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) return rc;
+
+	// writing the variable default value
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "default_value");
+	if(rc < 0) return rc;
+	if(string("double").compare(var->GetDataTypeName()) == 0 ||
+		string("float").compare(var->GetDataTypeName()) == 0) {
+		rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *var);
+	} else {
+		rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *var).c_str());
+	}
+	if(rc < 0) return rc;
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) return rc;
+
+	// writing the variable value
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "value");
+	if(rc < 0) return rc;
+	if(string("double").compare(var->GetDataTypeName()) == 0 ||
+		string("float").compare(var->GetDataTypeName()) == 0) {
+		rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *var);
+	} else {
+		rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *var).c_str());
+	}
+	if(rc < 0) return rc;
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) return rc;
+
+	// writing variable description
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "description");
+	if(rc < 0) return rc;
+	rc = xmlTextWriterWriteFormatString(writer, "%s", var->GetDescription());
+	if(rc < 0) return rc;
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) return rc;
+
+	// if the variable has enumerated values then create
+	// an entry with the possible values
+	if(var->HasEnumeratedValues()) {
+		rc = xmlTextWriterStartElement(writer, BAD_CAST "enumeration");
+		if(rc < 0) return rc;
+		vector<string> values;
+		var->GetEnumeratedValues(values);
+		if(values.empty()) return -1;
+		vector<string>::iterator it;
+		for(it = values.begin(); it != values.end(); it++) {
+			rc = xmlTextWriterStartElement(writer, BAD_CAST "item");
+			if(rc < 0) return rc;
+			rc = xmlTextWriterWriteFormatString(writer, "%s", (*it).c_str());
+			if(rc < 0) return rc;
+			rc = xmlTextWriterEndElement(writer);
+			if(rc < 0) return rc;
+		}
+		rc = xmlTextWriterEndElement(writer);
+		if(rc < 0) return rc;
+	}
+
+	// closing variable element
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) return rc;
+
+	return 0;
+}
+
+bool
+XMLHelper::
+LoadXmlVariables(const char *filename) {
+}
+
 bool 
 XMLHelper::
 XmlfyParameters(const char *filename) {

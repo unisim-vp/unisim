@@ -61,7 +61,7 @@ ldmia.disasm = {
 }
 
 ldmia.execute = {
-	typename CONFIG::reg_t rn_value, rn_new_val, value;
+	typename CONFIG::reg_t rn_value, rn_new_val;
 	typename CONFIG::address_t start_address, end_address;
 	typename CONFIG::address_t cur_address;
 	uint32_t num_regs;
@@ -114,7 +114,7 @@ pop.disasm = {
 }
 
 pop.execute = {
-	typename CONFIG::reg_t sp_value, sp_new_val, value;
+	typename CONFIG::reg_t sp_value, sp_new_val;
 	typename CONFIG::address_t start_address, end_address;
 	typename CONFIG::address_t cur_address;
 	uint32_t num_regs;

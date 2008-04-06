@@ -36,6 +36,8 @@
 #ifndef __UNISIM_UTIL_ARITHMETIC_ARITHMETIC_HH__
 #define __UNISIM_UTIL_ARITHMETIC_ARITHMETIC_HH__
 
+#include <inttypes.h>
+
 namespace unisim {
 namespace util {
 namespace arithmetic {
@@ -398,7 +400,6 @@ inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 	return (v >> n) | (v << (32 - n));
 #endif
 }
-
 
 } // end of namespace arithmetic
 } // end of namespace util

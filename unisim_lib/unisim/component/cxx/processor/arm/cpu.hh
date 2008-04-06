@@ -3,37 +3,62 @@
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions are met:
  *
- *   - Redistributions of source code must retain the above copyright notice, this
- *     list of conditions and the following disclaimer.
+ *   - Redistributions of source code must retain the above copyright notice, 
+ *     this list of conditions and the following disclaimer.
  *
  *   - Redistributions in binary form must reproduce the above copyright notice,
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
  *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific prior
- *     written permission.
+ *     endorse or promote products derived from this software without specific 
+ *     prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ *  ARE DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY 
+ *  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND 
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+ *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CPU_HH__
+
+#ifdef SOCLIB
+
+#include "iss.h"
+#include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/memory_op.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/processor/arm/cache_interface.hh"
+#include "unisim/component/cxx/processor/arm/cache/cache.hh"
+#include "unisim/component/cxx/processor/arm/coprocessor_interface.hh"
+#include "unisim/component/cxx/processor/arm/coprocessor/arm966e_s/cp15.hh"
+#include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
+#include "unisim/component/cxx/processor/arm/isa_arm32.hh"
+#include "unisim/component/cxx/processor/arm/isa_thumb.hh"
+#include "unisim/component/cxx/processor/arm/instruction.hh"
+#include "unisim/util/endian/endian.hh"
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <map>
+#include <inttypes.h>
+
+#else // SOCLIB
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/loader.hh"
@@ -48,7 +73,6 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/logger.hh"
-//#include "unisim/service/interfaces/statistic_reporting.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
@@ -60,7 +84,7 @@
 #include "unisim/component/cxx/processor/arm/tcm/tcm.hh"
 #include "unisim/component/cxx/processor/arm/isa_arm32.hh"
 #include "unisim/component/cxx/processor/arm/isa_thumb.hh"
-// #include "unisim/component/cxx/cache/cache_interface.hh"
+#include "unisim/component/cxx/processor/arm/instruction.hh"
 #include "unisim/util/endian/endian.hh"
 #include <string>
 #include <sstream>
@@ -69,10 +93,9 @@
 #include <queue>
 #include <map>
 #include <inttypes.h>
-//#include "unisim/component/cxx/processor/arm/config.hh"
-//#include "memories/endian_interface.hh"
-//#include "generic/cache/cache_interface.hh"
-	
+
+#endif // SOCLIB
+
 #ifdef GCC_INLINE
 #undef GCC_INLINE
 #endif
@@ -88,7 +111,18 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-	
+
+#ifdef SOCLIB
+
+using std::string;
+using std::stringstream;
+using std::map;
+using std::ostream;
+using std::vector;
+using std::queue;
+
+#else
+
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
@@ -128,6 +162,7 @@ using unisim::util::arithmetic::Add32;
 using unisim::component::cxx::processor::arm::CacheInterface;
 using unisim::component::cxx::processor::arm::CacheInterfaceWithMemoryService;
 using unisim::component::cxx::processor::arm::cache::Cache;
+using unisim::component::cxx::processor::arm::Instruction;
 using unisim::util::endian::endian_type;
 using std::string;
 using std::stringstream;
@@ -136,8 +171,15 @@ using std::ostream;
 using std::vector;
 using std::queue;
 
+#endif // SOCLIB
 template<class CONFIG>
 class CPU :
+#ifdef SOCLIB
+
+	public CPUCPInterface
+	
+#else
+	
 	public CPUCPInterface,
 	public Client<Loader<typename CONFIG::address_t> >,
     public Client<LinuxOS>,
@@ -150,16 +192,22 @@ class CPU :
     public Service<Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Client<Memory<typename CONFIG::address_t> >,
-//	public Client<StatisticReporting>,
-//	public Service<StatisticReportingControl>,
-	public Client<Logger> {
+	public Client<Logger>
+	
+#endif // SOCLIB
 
+	{
+
+#ifndef SOCLIB
+		
 /* profiling methods          START */
 private:
 	map<uint64_t, uint32_t> profile;
 public:
 	void DumpInstructionProfile(ostream *output);
 /* profiling methods          END */
+
+#endif // SOCLIB
 	
 private:
 	typedef typename CONFIG::address_t address_t;
@@ -177,11 +225,13 @@ private:
 	typedef
 		unisim::component::cxx::processor::arm::tcm::ITCM<CONFIG>
 		itcm_t;
-	
+
 public:
 	//=====================================================================
 	//=                  public service imports/exports                   =
 	//=====================================================================
+	
+#ifndef SOCLIB
 	
 	ServiceExport<Disassembly<address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
@@ -207,32 +257,107 @@ public:
 	ServiceImport<Logger> itcm_logger_import;
 	ServiceImport<Logger> dtcm_logger_import;
 	
+#endif // SOCLIB
+	
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
 	//=====================================================================
 
+#ifdef SOCLIB
+	
+	CPU(CacheInterface<address_t> *memory_interface);
+	
+#else
+	
 	CPU(const char *name, CacheInterface<address_t> *memory_interface, Object *parent = 0);
 	virtual ~CPU();
+	
+#endif // SOCLIB
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
+
+#ifndef SOCLIB
 	
 	virtual bool Setup();
 	virtual void OnDisconnect();
+	
+#endif // SOCLIB
 	
 	//=====================================================================
 	//=                    execution handling methods                     =
 	//=====================================================================
 	
-	void OnBusCycle();
+#ifdef SOCLIB
+	
+	virtual void Stop(int ret);
+	
+	void Reset();
+
+	uint32_t IsBusy();
 	void Step();
+	void NullStep(uint32_t time_passed = 1);
+
+	void GetInstructionRequest(bool &req, uint32_t &addr) const;
+	void SetInstruction(bool error, uint32_t val);
+
+	void GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
+			uint32_t &data);
+	void SetDataResponse(bool error, uint32_t rdata);
+	void SetWriteBerr();
+
+	void SetIrq(uint32_t irq);
+		
+    // processor internal registers access API, used by
+    // debugger. Register numbering must match gdb packet order.
+
+    unsigned int GetDebugRegisterCount() const;
+    uint32_t GetDebugRegisterValue(unsigned int reg) const;
+    void SetDebugRegisterValue(unsigned int reg, uint32_t value);
+    size_t GetDebugRegisterSize(unsigned int reg) const;
+	
+    uint32_t GetDebugPC() const;
+    void SetDebugPC(uint32_t);
+
+	void SetICacheInfo( size_t line_size, size_t assoc, size_t n_lines );
+    void SetDCacheInfo( size_t line_size, size_t assoc, size_t n_lines );
+
+private:
+	void StepExecute();
+	void FlushPipeline();
+
+public:
+#else // SOCLIB
+	
+	void OnBusCycle();
+	/** Execute one complete instruction
+	 * */
+	void StepInstruction();
+	/** Execute one processor cycle 
+	 * */
+	void StepCycle();
+	/** Execute at most a given number of processor cycles
+	 * This method executes at most max_num_cycles processor cycles. Returns
+	 *   the number of processor cycles executed.
+	 *
+	 * @param max_num_cycles the maximum number of processor cycles
+	 * @return the number of processor cycles executed
+	 * */
+	uint32_t StepCycle(uint32_t max_num_cycles);
 	void Run();
 	virtual void Stop(int ret);
 	virtual void Sync();
+	
+#endif // SOCLIB
+	
 	// methods required by coprocessors
 	virtual void CoprocessorStop(unsigned int cp_id, int ret);
 	virtual endian_type CoprocessorGetEndianess();
+	virtual bool CoprocessorGetVinithi();
+	virtual bool CoprocessorGetInitram();
+	
+#ifndef SOCLIB
 	
 	//=====================================================================
 	//=             memory injection interface methods                    =
@@ -284,10 +409,13 @@ public:
 	//=                   Debugging methods                               =
 	//=====================================================================
 
-	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
+	inline uint64_t GetInstructionCounter() const 
+		{ return instruction_counter; }
 	string GetObjectFriendlyName(address_t addr);
 	string GetFunctionFriendlyName(address_t addr);
 
+#endif // SOCLIB
+	
 	/**************************************************************/
 	/* Operand decoding methods     START                         */
 	/**************************************************************/
@@ -463,9 +591,13 @@ public:
 	/* Disassembling methods     END                              */
 	/**************************************************************/
 
+#ifndef SOCLIB
+	
 	// Linux OS Interface
 	virtual void PerformExit(int ret);
 
+#endif // SOCLIB
+	
 	// Endian interface
 	virtual endian_type GetEndianess();
 
@@ -922,8 +1054,12 @@ private:
 //	/** the instruction counter */
 //	uint64_t instruction_counter;
 	
+#ifndef SOCLIB
+	
 	/** The registers interface for debugging purpose */
-	map<string, Register *> registers_registry;       
+	map<string, Register *> registers_registry;
+	
+#endif // SOCLIB
 
     /* gpr organization per running mode:
 	 * - user:           0-14 (R0-R14),                  15 (PC)
@@ -1015,6 +1151,18 @@ private:
 	/** indicates if the finished instructions require to be reported */
 	bool requires_finished_instruction_reporting;
 	
+	address_t fetch_pc;
+	Instruction<CONFIG> *fetchQueue;
+	Instruction<CONFIG> *decodeQueue;
+	Instruction<CONFIG> *executeQueue;
+	void StepCycleFetch();
+	void StepCycleDecode();
+	void StepCycleExecute();
+	void StepCycleExecuteInstruction();
+	void StepCycleExecuteThumbInstruction();
+	void StepCycleExecuteArm32Instruction();
+	void StepCycleExecuteFinishInstruction();
+	
 	/** queue of memory operations
 	 * Load and store instructions do not directly access the memory system. This is called
 	 *   memory decoupling. Load/stores are kept in the load/store queue and performed once
@@ -1023,6 +1171,13 @@ private:
 	 *   PerformLoadStoreAccesses must be called 
 	 * */
 	queue<MemoryOp<CONFIG> *> lsQueue;
+	/** current memory operation
+	 * First load/store operation pending to be sent to the memory system
+	 * */
+	MemoryOp<CONFIG> *firstLS;
+	/**
+	 */
+	bool hasSentFirstLS;
 	/** queue of free entries of memory operations
 	 * Used memory operations are not removed from the system but kept in a free list for their
 	 *   reuse
@@ -1066,25 +1221,30 @@ protected:
 	uint32_t statistics_id;
 	// endianess parameter
 	endian_type default_endianess;
-	Parameter<endian_type> param_default_endianess;
 	// parameters for the 966E_S configuration
 	bool arm966es_initram;
-	Parameter<bool> param_arm966es_initram;
 	bool arm966es_vinithi;
-	Parameter<bool> param_arm966es_vinithi;
 	// verbose parameters
 	bool verbose_all;
-	Parameter<bool> param_verbose_all;
 	bool verbose_setup;
-	Parameter<bool> param_verbose_setup;
 	bool verbose_step;
-	Parameter<bool> param_verbose_step;
 	bool verbose_step_insn;
-	Parameter<bool> param_verbose_step_insn;
 	bool verbose_dump_regs_start;
-	Parameter<bool> param_verbose_dump_regs_start;
 	bool verbose_dump_regs_end;
+
+#ifndef SOCLIB
+	
+	Parameter<endian_type> param_default_endianess;
+	Parameter<bool> param_arm966es_initram;
+	Parameter<bool> param_arm966es_vinithi;
+	Parameter<bool> param_verbose_all;
+	Parameter<bool> param_verbose_setup;
+	Parameter<bool> param_verbose_step;
+	Parameter<bool> param_verbose_step_insn;
+	Parameter<bool> param_verbose_dump_regs_start;
 	Parameter<bool> param_verbose_dump_regs_end;
+
+#endif // SOCLIB
 	
 	// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;
