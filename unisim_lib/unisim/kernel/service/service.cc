@@ -783,6 +783,18 @@ void ServiceManager::DumpVariables(ostream &os) {
 	os << endl;
 }
 
+bool ServiceManager::XmlfyVariables(const char *filename) {
+	XMLHelper xml_helper;
+	
+	return xml_helper.XmlfyVariables(filename);
+}
+
+bool ServiceManager::LoadXmlVariables(const char *filename) {
+	XMLHelper xml_helper;
+	
+	return xml_helper.LoadXmlVariables(filename);
+}
+
 bool ServiceManager::XmlfyParameters(const char *filename) {
 	XMLHelper xml_helper;
 	

@@ -170,6 +170,8 @@ XmlfyVariable(xmlTextWriterPtr writer,
 			break;
 	}
 	if(rc < 0) return rc;
+	rc = xmlTextWriterEndElement(writer);
+	if(rc < 0) return rc;
 
 	// writing the variable name
 	rc = xmlTextWriterStartElement(writer, BAD_CAST "name");
@@ -249,232 +251,74 @@ XmlfyVariable(xmlTextWriterPtr writer,
 	return 0;
 }
 
-bool
-XMLHelper::
-LoadXmlVariables(const char *filename) {
-}
-
 bool 
 XMLHelper::
 XmlfyParameters(const char *filename) {
-    xmlTextWriterPtr writer;
-    
+	xmlTextWriterPtr writer;
+
 	writer = xmlNewTextWriterFilename(filename, 0);
 	if(writer == NULL) {
 		cerr << "Error(ServiceManager::XmlfyParameters): "
-			<< "could not open output file for logging" << endl;
+			<< "could not open output file (" 
+			<< filename << ")" << endl;
 		return false;
 	}
 	int rc = xmlTextWriterSetIndent(writer, 2);
 	if(rc < 0) {
-		cerr << "Warning(ServiceManager::XmlfyParameters): could not set indentation" << endl;
+		cerr << "Warning(ServiceManager::XmlfyParameters): "
+			<< "could not set indentation" << endl;
 	}
-	rc = xmlTextWriterStartDocument(writer, NULL, XML_ENCODING, NULL);
+	rc = xmlTextWriterStartDocument(writer, NULL,
+			XML_ENCODING, NULL);
 	if(rc < 0) {
 		cerr << "Error(ServiceManager::XmlfyParameters): "
 			<< "error starting the xml document" << endl;
 		return false;
 	}
-	rc = xmlTextWriterStartElement(writer, BAD_CAST "PARAMETERS");
+	rc = xmlTextWriterStartElement(writer, BAD_CAST "VARIABLES");
 	if(rc < 0) {
 		cerr << "Error(ServiceManager::XmlfyParameters): "
 			<< "error starting the xml document" << endl;
 		return false;
 	}
 
-	map<const char *, VariableBase *, ServiceManager::ltstr>::iterator variable_iter;
-
-	for(variable_iter = ServiceManager::variables.begin(); variable_iter != ServiceManager::variables.end(); variable_iter++) {
-		//.parameter arrays containers have a special type (an empty string "") and they should not appear
-		//   in the parameter xml configuration file, so just ignore them
-		if(strcmp("", (*variable_iter).second->GetDataTypeName()) == 0) continue;
-		// opening parameter element
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "parameter");
+	
+	list<VariableBase *> param_list;
+	list<VariableBase *>::iterator param_iter;
+	ServiceManager::GetParameters(param_list);
+	for(param_iter = param_list.begin();
+			param_iter != param_list.end();
+			param_iter++) {
+		rc = XmlfyVariable(writer, *param_iter);
 		if(rc < 0) {
 			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter element" << endl;
-			return false;
-		}
-		
-		// writing parameter name 
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "name");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter name element" << endl;
-			return false;
-		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", (*variable_iter).second->GetName());
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter name value" << endl;
-			return false;
-		}
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter name element" << endl;
-			return false;
-		}
-		
-		// writing parameter type 
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "type");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter type element" << endl;
-			return false;
-		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", (*variable_iter).second->GetDataTypeName());
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter type value" << endl;
-			return false;
-		}
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter name element" << endl;
-			return false;
-		}
-		
-		// writing parameter default value
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "default_value");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter default value element" << endl;
-			return false;
-		}
-		if(string("double").compare((*variable_iter).second->GetDataTypeName()) == 0 ||
-				string("float").compare((*variable_iter).second->GetDataTypeName()) == 0) {
-			rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *(*variable_iter).second);
-		} else {
-			rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*variable_iter).second).c_str());
-		}
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter default value" << endl;
-			return false;
-		}
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter default value element" << endl;
-			return false;
-		}
-		
-		// writing parameter value
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "value");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter value element" << endl;
-			return false;
-		}
-		if(string("double").compare((*variable_iter).second->GetDataTypeName()) == 0 ||
-				string("float").compare((*variable_iter).second->GetDataTypeName()) == 0) {
-			rc = xmlTextWriterWriteFormatString(writer, "%e", (double) *(*variable_iter).second);
-		} else {
-			rc = xmlTextWriterWriteFormatString(writer, "%s", ((string) *(*variable_iter).second).c_str());
-		}
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter value" << endl;
-			return false;
-		}
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter value element" << endl;
-			return false;
-		}
-		
-		// writing parameter description
-		rc = xmlTextWriterStartElement(writer, BAD_CAST "description");
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "error writing parameter description element" << endl;
-			return false;
-		}
-		rc = xmlTextWriterWriteFormatString(writer, "%s", (*variable_iter).second->GetDescription());
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter description" << endl;
-			return false;
-		}
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter description element" << endl;
-			return false;
-		}
-
-		// if the parameter has enumerated values then create an entry with the 
-		//   possible values
-		cerr << "checking for enumerated values " << (*variable_iter).second->GetName() 
-			<< " (" << (*variable_iter).second->HasEnumeratedValues() << ")" << endl;
-		if((*variable_iter).second->HasEnumeratedValues()) {
-			rc = xmlTextWriterStartElement(writer, BAD_CAST "enumeration");
-			if(rc < 0) {
-				cerr << "Error(ServiceManager::XmlfyParameters): "
-					<< "error writing parameter enumeration values" << endl;
-				return false;
-			}
-			vector<string> values;
-			(*variable_iter).second->GetEnumeratedValues(values);
-			if(values.empty()) {
-				cerr << "Error(ServiceManager::XmlfyParameters): "
-					<< "could not get the parameter enumeration values" << endl;
-				return false;
-			}
-			vector<string>::iterator it;
-			for(it = values.begin(); it != values.end(); it++) {
-				rc = xmlTextWriterStartElement(writer, BAD_CAST "item");
-				if(rc < 0) {
-					cerr << "Error(ServiceManager::XmlfyParameters): "
-						<< "could not write parameter enumeration value entry" << endl;
-					return false;
-				}
-				rc = xmlTextWriterWriteFormatString(writer, "%s", 
-						(*it).c_str());
-				if(rc < 0) {
-					cerr << "Error(ServiceManager::XmlfyParameters): error writing parameter description" << endl;
-					return false;
-				}
-				rc = xmlTextWriterEndElement(writer);
-				if(rc < 0) {
-					cerr << "Error(ServiceManager::XmlfyParameters): "
-						<< "could not close parameter enumeration value entry" << endl;
-					return false;
-				}
-			}
-			rc = xmlTextWriterEndElement(writer);
-			if(rc < 0) {
-				cerr << "Error(ServiceManager::XmlfyParameters): "
-					<< " could not close the parameter enumeration values" << endl;
-				return false;
-			}
-		}
-		
-		// closing parameter element
-		rc = xmlTextWriterEndElement(writer);
-		if(rc < 0) {
-			cerr << "Error(ServiceManager::XmlfyParameters): "
-				<< "could not close the parameter element" << endl;
+				<< "error writing parameter variable"
+				<< endl;
 			return false;
 		}
 	}
-
+	
 	rc = xmlTextWriterEndElement(writer);
 	if(rc < 0) {
 		cerr << "Error(ServiceManager::XmlfyParameters): "
 			<< "could not close the root element" << endl;
+		return false;
 	}
 	rc = xmlTextWriterEndDocument(writer);
 	if(rc < 0) {
 		cerr << "Warning(ServiceManager::XmlfyParameters): "
-			<< "could not correctly close the XMLWriter" << endl;
+			<< "could not correctly close the XMLWriter"
+			<< endl;
 	}
 	xmlFreeTextWriter(writer);
 
 	return true;
 }
 
-bool 
+bool
 XMLHelper::
-LoadXmlParameters(const char *filename) {
+LoadXmlVariables(const char *filename, bool params,
+		bool regs, bool stats) {
 	xmlTextReaderPtr reader;
 	int ret;
 
@@ -485,26 +329,16 @@ LoadXmlParameters(const char *filename) {
 	 * entities substitution and DTD validation
 	 */
 	reader = xmlReaderForFile(filename, NULL, 0);
-//			XML_PARSE_DTDATTR |  /* default DTD attributes */
-//			XML_PARSE_NOENT |    /* substitute entities */
-//			XML_PARSE_DTDVALID); /* validate with the DTD */
 	if (reader != NULL) {
 		cur_status = NONE;
-		cur_param = NULL;
+		cur_var = NULL;
 		ret = xmlTextReaderRead(reader);
 		while (ret == 1) {
-			if(ProcessXmlParamNode(reader))
+			if(ProcessXmlVariableNode(reader, params, regs, stats))
 				ret = xmlTextReaderRead(reader);
 			else
 				return false;
 		}
-//		/*
-//		 * Once the document has been fully parsed check the validation results
-//		 */
-//		if (xmlTextReaderIsValid(reader) != 1) {
-//			cerr << "Document " << filename << " does not validate" << endl;
-//			return false;
-//		}
 		xmlFreeTextReader(reader);
 		if (ret != 0) {
 			cerr << filename << ": failed to parse" << endl;
@@ -518,37 +352,44 @@ LoadXmlParameters(const char *filename) {
 
 bool 
 XMLHelper::
-ProcessXmlParamNode(xmlTextReaderPtr reader) { 
+ProcessXmlVariableNode(xmlTextReaderPtr reader, bool params, bool regs, bool stats) { 
 	const xmlChar *name, *value;
 
 	name = xmlTextReaderConstName(reader);
 	if (name == NULL) {
-		cerr << "Could not read Xml parameter node" << endl;
+		cerr << "Could not read Xml variable node" << endl;
 		return false;
 	}
 
-	if(xmlStrEqual(name, xmlCharStrdup("PARAMETERS"))) {
+	if(xmlStrEqual(name, xmlCharStrdup("VARIABLES"))) {
 		if(xmlTextReaderNodeType(reader) == 1)
-			cerr << "PARAMETERS" << endl;
+			cerr << "VARIABLES" << endl;
 		return true;
 	}
 	
-	if(xmlStrEqual(name, xmlCharStrdup("parameter"))) {
+	if(xmlStrEqual(name, xmlCharStrdup("variable"))) {
 		if(xmlTextReaderNodeType(reader) == 1) {
-			cur_param = new CurParameter();
+			cur_var = new CurVariable();
 		}
 		if(xmlTextReaderNodeType(reader) == 15) {
-			cerr << "  parameter" << endl;
-			cerr << "    name = " << cur_param->name.str() << endl;
-			cerr << "    value = " << cur_param->value.str() << endl;
-			cerr << "    description = " << cur_param->description.str() << endl;
-			VariableBase *variable = ServiceManager::GetParameter(cur_param->name.str().c_str());
-			if(variable == NULL) {
-				cerr << "  !! could not get variable '" << cur_param->name.str() << "'" << endl;
-				return false;
+			cerr << "  variable" << endl;
+			cerr << "    type = " << cur_var->type.str() << endl;
+			cerr << "    name = " << cur_var->name.str() << endl;
+			cerr << "    value = " << cur_var->value.str() << endl;
+			cerr << "    description = " << cur_var->description.str() << endl;
+			bool modify = 
+				(params && cur_var->type.str().compare("parameter") == 0) ||
+				(regs && cur_var->type.str().compare("register") == 0) ||
+				(stats && cur_var->type.str().compare("statistic") == 0);
+			if(modify) {
+				VariableBase *variable = ServiceManager::GetParameter(cur_var->name.str().c_str());
+				if(variable == NULL) {
+					cerr << "  !! could not get variable '" << cur_var->name.str() << "'" << endl;
+					return false;
+				}
+				*variable = cur_var->value.str().c_str();
 			}
-			*variable = cur_param->value.str().c_str();
-			delete cur_param;
+			delete cur_var;
 		}
 		return true;
 	}
@@ -564,12 +405,7 @@ ProcessXmlParamNode(xmlTextReaderPtr reader) {
 	}
 	
 	if(xmlStrEqual(name, xmlCharStrdup("default_value"))) {
-//		if(xmlTextReaderNodeType(reader) == 1) {
-//			cur_status = VALUE;
-//		}
-//		if(xmlTextReaderNodeType(reader) == 15) {
-//			cur_status = NONE;
-//		}
+		// nothing to do
 		return true;
 	}
 
@@ -593,9 +429,9 @@ ProcessXmlParamNode(xmlTextReaderPtr reader) {
 		return true;
 	}
 	
-	if(xmlStrEqual(name, xmlCharStrdup("type"))) {
+	if(xmlStrEqual(name, xmlCharStrdup("data_type"))) {
 		if(xmlTextReaderNodeType(reader) == 1) {
-			cur_status = TYPE;
+			cur_status = DATA_TYPE;
 		}
 		if(xmlTextReaderNodeType(reader) == 15) {
 			cur_status = NONE;
@@ -607,23 +443,32 @@ ProcessXmlParamNode(xmlTextReaderPtr reader) {
 		switch(cur_status) {
 		case NONE:
 			break;
+		case TYPE:
+			cur_var->type << value;
+			break;
 		case NAME:
-			cur_param->name << value;
+			cur_var->name << value;
 			break;
 		case VALUE:
-			cur_param->value << value;
+			cur_var->value << value;
 			break;
 		case DESCRIPTION:
-			cur_param->description << value;
+			cur_var->description << value;
 			break;
-		case TYPE:
-			cur_param->type << value;
+		case DATA_TYPE:
+			cur_var->data_type << value;
 			break;
 		}
 		return true;
 	}
 	
 	return true;
+}
+
+bool 
+XMLHelper::
+LoadXmlParameters(const char *filename) {
+	LoadXmlVariables(filename, true, false, false);
 }
 
 } // end of namespace service

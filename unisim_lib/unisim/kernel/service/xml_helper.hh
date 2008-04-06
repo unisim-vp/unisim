@@ -51,7 +51,10 @@ public:
 	bool XmlfyParameters(const char *filename);
 	bool LoadXmlParameters(const char *filename);
 	bool XmlfyVariables(const char *filename);
-	bool LoadXmlVariables(const char *filename);
+	bool LoadXmlVariables(const char *filename,
+			bool params = true,
+			bool regs = true,
+			bool stats = true);
 	
 private:
 	static const char *XML_ENCODING; 
@@ -61,18 +64,20 @@ private:
 	
 	ServiceManager *manager;
 	
-	bool ProcessXmlParamNode(xmlTextReaderPtr reader);
+	bool ProcessXmlVariableNode(xmlTextReaderPtr reader,
+			bool params, bool regs, bool stats);
 	
-	class CurParameter {
+	class CurVariable {
 	public:
+		stringstream type;
 		stringstream name;
 		stringstream value;
 		stringstream description;
-		stringstream type;
+		stringstream data_type;
 	};
 	
-	enum CurStatus {NONE, NAME, VALUE, DESCRIPTION, TYPE};
-	CurParameter *cur_param;
+	enum CurStatus {NONE, TYPE, NAME, VALUE, DESCRIPTION, DATA_TYPE};
+	CurVariable *cur_var;
 	CurStatus cur_status;
 };
 
