@@ -397,6 +397,7 @@ bool GDBServer<ADDRESS>::Setup()
 	}
 	else
 	{
+		cerr << "ERROR! no root node (" << architecture_description_filename << ")" << endl;
 		unisim::util::xml::Error(architecture_description_filename, 0, "ERROR! no root node");
 		return false;
 	}

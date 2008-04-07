@@ -376,7 +376,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, bool params, bool regs, bool sta
 			cerr << "    type = " << cur_var->type.str() << endl;
 			cerr << "    name = " << cur_var->name.str() << endl;
 			cerr << "    value = " << cur_var->value.str() << endl;
-			cerr << "    description = " << cur_var->description.str() << endl;
+			// cerr << "    description = " << cur_var->description.str() << endl;
 			bool modify = 
 				(params && cur_var->type.str().compare("parameter") == 0) ||
 				(regs && cur_var->type.str().compare("register") == 0) ||
@@ -387,9 +387,22 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, bool params, bool regs, bool sta
 					cerr << "  !! could not get variable '" << cur_var->name.str() << "'" << endl;
 					return false;
 				}
+				cerr << "updating(" << (string)*variable << " -> ";
 				*variable = cur_var->value.str().c_str();
+				cerr << (string)*variable << ")" << endl;
+				
 			}
 			delete cur_var;
+		}
+		return true;
+	}
+
+	if(xmlStrEqual(name, xmlCharStrdup("type"))) {
+		if(xmlTextReaderNodeType(reader) == 1) {
+			cur_status = TYPE;
+		}
+		if(xmlTextReaderNodeType(reader) == 15) {
+			cur_status = NONE;
 		}
 		return true;
 	}
@@ -453,7 +466,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, bool params, bool regs, bool sta
 			cur_var->value << value;
 			break;
 		case DESCRIPTION:
-			cur_var->description << value;
+			// cur_var->description << value;
 			break;
 		case DATA_TYPE:
 			cur_var->data_type << value;
