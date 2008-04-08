@@ -187,6 +187,64 @@ public:
 };
 
 /**
+ * Describes the configuration of the ARM7TDMI processor
+ */
+class ARM7TDMI_Config : 
+	public ARMBase {
+public:
+	typedef uint32_t address_t;             // 32-bit effective address
+	typedef uint32_t reg_t;                 // register type
+	typedef int32_t sreg_t;                 // signed register type   
+	typedef uint32_t insn_t;                // instruction type
+	typedef uint16_t thumb_insn_t;          // thumb instruction type
+
+	static const Model MODEL = ARM7TDMI; // !< the model definition
+	static const uint32_t PROCESSOR_VERSION = 0; // !< the processor id
+	static const Architecture ARCHITECTURE = ARMV4T; // !< the processor architecture
+	
+	static const InsnSetVersion INSN_SET_VERSION = V4; // !< the supported instruction set version
+	static const THUMBInsnSetVersion THUMB_INSN_SET_VERSION = V2; // !< the supported thumb instruction set
+	
+	static const uint32_t FSB_BURST_SIZE = 32; // !< Front side bus parameters
+	
+	static const bool HAS_LOAD_STORE_V4 = true;
+	static const bool HAS_LOAD_STORE_V5E = true;
+	static const bool HAS_INSN_BX = true;
+	static const bool HAS_INSN_BLX = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_MOVES = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_LOADS = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_STORES = true;
+	static const bool HAS_INSN_COPROCESSOR_ALTER_OPS = true;
+	static const bool HAS_INSN_ARITH_CLZ = true;
+	static const bool HAS_INSN_ARITH_QADD = false;
+	static const bool HAS_INSN_ARITH_QDADD = false;
+	static const bool HAS_INSN_ARITH_QSUB = false;
+	static const bool HAS_INSN_ARITH_QDSUB = false;
+	static const bool HAS_INSN_ARITH_MULT_UMULL = true;
+	static const bool HAS_INSN_ARITH_MULT_UMLAL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMLAL = true;
+	static const bool HAS_INSN_ARITH_MULT_SMULXY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMULWY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAXY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLAWY = false;
+	static const bool HAS_INSN_ARITH_MULT_SMLALXY = false;
+	
+	static const bool HAS_INSN_CACHE_L1 = false;
+	static const bool HAS_DATA_CACHE_L1 = false;
+	static const bool HAS_CACHE_L2 = false;
+	
+	typedef ARMCache32KBDMWB32bls_Config cache_l1_t;
+	typedef ARMCache32KBDMWB32bls_Config insn_cache_l1_t;
+	typedef ARMCache96KBDMWB32bls_Config cache_l2_t;
+};
+
+class ARM7TDMI_DebugConfig : public ARM7TDMI_Config {
+public:
+	static const bool DEBUG_ENABLE = true;
+};
+
+/**
  * Describes the configuration of the ARM9TDMI processor
  */
 class ARM9TDMI_Config : 

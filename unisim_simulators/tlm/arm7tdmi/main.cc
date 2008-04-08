@@ -67,9 +67,9 @@
 #endif
 
 #ifdef ARM966E_S_DEBUG
-	typedef unisim::component::cxx::processor::arm::ARM966E_S_DebugConfig CPU_CONFIG;
+	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
 #else
-	typedef unisim::component::cxx::processor::arm::ARM966E_S_Config CPU_CONFIG;
+	typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
 #endif
 	
 typedef unisim::component::tlm::bridge::simple_fsb_to_mem::Addr32BurstSize32_Config BRIDGE_CONFIG;
