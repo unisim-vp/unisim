@@ -52,10 +52,18 @@ void
 CPU<CONFIG> ::
 Reset() {
 	cerr << "+++ Reset" << endl;
+	FlushPipeline();
+	fetch_pc = GetGPR(PC_reg);
+	cerr << "    current fetch_pc = 0x" << hex << fetch_pc << dec << endl;
+	fetchQueue = InstructionFactory<CONFIG>::New();
+	fetchQueue->SetFetchAddress(fetch_pc);
+	fetch_pc += InstructionByteSize();
+	fetchQueue->SetPredictedNextFetchAddress(fetch_pc);
+	cerr << "    next fetch_pc = 0x" << hex << fetch_pc << dec << endl;
 	// TODO
 	// set the correct fetch pc
 	// initialize all the registers
-	// delete all teh instructions
+	// delete all the instructions
 }
 
 template<class CONFIG>
@@ -66,11 +74,15 @@ IsBusy() {
 	 *   of if the current one is going to be removed */
 	/* TOCHECK: what did I do here?
 	 * Needs to be checked again. Why the lsQueue must be empty? */
+	bool busy = false;
 
 	cerr << "+++ IsBusy" << endl;
-	return executeQueue != 0 &&
+
+	busy = executeQueue != 0 &&
 		executeQueue->GetRemainingExecCycles() == 0 &&
 		lsQueue.empty();
+	cerr << "    - busy = " << busy << endl;
+	return busy?1:0;
 }
 
 template<class CONFIG>
@@ -98,15 +110,19 @@ template<class CONFIG>
 void
 CPU<CONFIG> ::
 StepExecute() {
+	stringstream str;
 	/* if the instruction has not been executed now it is the moment to 
 	 *   do so */
 	if(!executeQueue->HasBeenExecuted()) {
+		cerr << "    - executing 0x" << hex << executeQueue->GetFetchAddress() << dec << endl;
 		if(executeQueue->IsArm32()) {
 			typename isa::arm32::Operation<CONFIG> *op = 
 				arm32_decoder.Decode(
 					executeQueue->GetFetchAddress(),
 					executeQueue->GetArm32Encoding());
 			op->execute(*this);
+			op->disasm(*this, str);
+			cerr << "    - arm32 instruction: " << str.str() << endl;
 			executeQueue->SetOpcode(op);
 		} else {
 			typename isa::thumb::Operation<CONFIG> *op = 
@@ -114,6 +130,8 @@ StepExecute() {
 					executeQueue->GetFetchAddress(),
 					executeQueue->GetThumbEncoding());
 			op->execute(*this);
+			op->disasm(*this, str);
+			cerr << "    - thumb instruction: " << str.str() << endl;
 			executeQueue->SetOpcode(op);
 		}
 		executeQueue->SetExecuted();
@@ -121,14 +139,14 @@ StepExecute() {
 		 * TODO: get the instruction latency from the opcode */
 		executeQueue->SetExecCycles(1);
 	}
-	/* check if the current instruction has any memory request pending 
-	 * move possible memory operations from the lsQueue if the is no
-	 *   memory operation being serviced */
-	if(firstLS == 0 && !lsQueue.empty()) {
-		/* IMPORTANT: we do not remove the instruction from the lsQueue
-		 *   still, we wait for it to be completed */
-		firstLS = lsQueue.front();
-	}
+//	/* check if the current instruction has any memory request pending 
+//	 * move possible memory operations from the lsQueue if the is no
+//	 *   memory operation being serviced */
+//	if(firstLS == 0 && !lsQueue.empty()) {
+//		/* IMPORTANT: we do not remove the instruction from the lsQueue
+//		 *   still, we wait for it to be completed */
+//		firstLS = lsQueue.front();
+//	}
 	/* check if the current instruction has finished its operation, 
 	 * if so it can be removed from the pipeline */
 	if(executeQueue->GetRemainingExecCycles() != 0)
@@ -144,12 +162,16 @@ Step() {
 	/* start by removing the instruction in the executeQueue (if any) if it
 	 *   has finished its operation
 	 * check if the pipeline needs to be flushed */
+	cerr << "    Execute" << endl;
 	if(executeQueue != 0 &&
 			executeQueue->GetRemainingExecCycles() == 0 &&
 			lsQueue.empty()) {
 		if(GetGPR(PC_reg) != executeQueue->GetPredictedNextFetchAddress()) {
+			cerr << "    - misspredicted pc 0x" << hex << executeQueue->GetPredictedNextFetchAddress() << dec << " -> 0x" << hex << GetGPR(PC_reg) << dec << endl;
 			FlushPipeline();
-			fetch_pc = PC_reg;
+			cerr << "    - flushing pipeline" << endl;
+			fetch_pc = GetGPR(PC_reg);
+			cerr << "    - setting pc to 0x" << hex << fetch_pc << dec << endl;
 		}
 		InstructionFactory<CONFIG>::Destroy(executeQueue);
 		executeQueue = 0;
@@ -161,9 +183,11 @@ Step() {
 	/* if the execute queue is not empty then perform the necessary actions
 	 *   to finish the instruction, i.e.: send a load, store, etc...*/
 	if(executeQueue == 0) {
-		executeQueue = decodeQueue;
-		decodeQueue = 0;
-		if(executeQueue != 0) {
+		if(decodeQueue != 0) {
+			cerr << "    - moving from decodeQueue 0x" << hex 
+				<< decodeQueue->GetFetchAddress() << dec << endl;
+			executeQueue = decodeQueue;
+			decodeQueue = 0;
 			StepExecute();
 		}
 	}
@@ -172,9 +196,12 @@ Step() {
 	/* if the decode queue is not empty, then do nothing */
 	/* if the decode queue is empty, then move the instruction present in
 	 *   the fetch queue to the decode queue */
+	cerr << "    Decode" << endl;
 	if(decodeQueue == 0) {
 		if(fetchQueue != 0) {
 			if(fetchQueue->IsFetched()) {
+				cerr << "    - moving from fetchQueue 0x" << hex
+					<< fetchQueue->GetFetchAddress() << dec << endl;
 				decodeQueue = fetchQueue;
 				fetchQueue = 0;
 			}
@@ -184,11 +211,14 @@ Step() {
 	/* if the fetch queue is not empty, the do nothing */
 	/* if the fetch queue is empty, then send a read request to fetch fetch_pc
 	 *   instruction, after that increase fetch_pc */
+	cerr << "    Fetch" << endl;
 	if(fetchQueue == 0) {
 		fetchQueue = InstructionFactory<CONFIG>::New();
 		fetchQueue->SetFetchAddress(fetch_pc);
+		cerr << "    - current fetch_pc = 0x" << hex << fetch_pc << dec << endl;
 		fetch_pc += InstructionByteSize();
 		fetchQueue->SetPredictedNextFetchAddress(fetch_pc);
+		cerr << "    - next fetch_pc = 0x" << hex << fetch_pc << dec << endl;
 	}
 }
 
@@ -196,7 +226,7 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 NullStep(uint32_t time_passed) {
-	cerr << "+++ NullStep" << endl;
+	cerr << "+++ NullStep(" << time_passed << ")" << endl;
 	// TODO: check
 	for(uint32_t i = 0; i < time_passed; i++)
 		Step(); // ???? is this correct ???
@@ -212,13 +242,17 @@ GetInstructionRequest(bool &req, uint32_t &addr) const {
 	if(fetchQueue != 0) {
 		if(fetchQueue->IsRequested() == false) {
 			addr = fetchQueue->GetFetchAddress();
-			addr = addr & UINT32_C(0xfffffff0);
+			addr = addr & UINT32_C(0xfffffffc);
 			req = true;
 			fetchQueue->SetRequested(true);
-			return;
 		}
+	} else {
+		cerr << "    4" << endl;
+		req = false;
 	}
-	req = false;
+	cerr << "    req = " << req;
+	if(req) cerr << ", addr = 0x" << hex << addr << dec;
+	cerr << endl;
 	return;
 }
 
@@ -226,7 +260,7 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 SetInstruction(bool error, uint32_t val) {
-	cerr << "+++ SetInstruction" << endl;
+	cerr << "+++ SetInstruction (error = " << error << ", val = 0x" << hex << val << dec << ")" << endl;
 	// TODO
 	/* set the instruction opcode using val, now it could be a good moment to
 	 *   decode the instruction */
@@ -268,23 +302,25 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
-		uint32_t &data) {
+		uint32_t &data) const {
 	cerr << "+++ GetDataRequest" << endl;
+	MemoryOp<CONFIG> *memop = 0;
 	/* check if the instruction in the execute queue has any load/store to
 	 *   be done, if so, execute it. */
 	if(lsQueue.empty()) {
 		reg = false;
+		cerr << "    no memory operation ready" << endl;
 		return;
 	}
-	if(firstLS != 0) {
-		reg = false;
-		return; // nothing to make, the firstLS was already sent
-	} else {
+//	if(firstLS != 0) {
+//		reg = false;
+//		return; // nothing to make, the firstLS was already sent
+//	} else {
 		reg = true;
-		firstLS = lsQueue.front();
-		size = firstLS->GetSize();
-		addr = firstLS->GetAddress();
-		switch(firstLS->GetType()) {
+		memop = lsQueue.front();
+		size = memop->GetSize();
+		addr = memop->GetAddress();
+		switch(memop->GetType()) {
 			case MemoryOp<CONFIG>::READ:
 			case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
 			case MemoryOp<CONFIG>::READ_TO_PC:
@@ -293,12 +329,18 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 				break;
 			case MemoryOp<CONFIG>::WRITE:
 				is_read = false;
-				data = firstLS->GetWriteValue();
+				data = memop->GetWriteValue();
 				break;
 		}
+		cerr << "    memory operation ready:" << endl;
+		cerr << "    - " << (is_read?"read":"write") << endl;
+		cerr << "    - size = " << size << endl;
+		cerr << "    - address = 0x" << hex << addr << dec << endl;
+		if(!is_read)
+			cerr << "    - data = " << hex << data << dec << endl;
 		return;
 		
-	}
+//	}
 }
 
 template<class CONFIG>
@@ -312,22 +354,24 @@ SetDataResponse(bool error, uint32_t rdata) {
 			<< "Received a data response with an error" << endl;
 		exit(-1);
 	}
-	if(firstLS == 0) {
+	if(lsQueue.empty()) {
 		cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
 			<< "Received data in response that was not expected" << endl;
 		exit(-1);
 	}
 	int dest = 0;
 	bool flushPipeline = false;
-	switch(firstLS->GetType()) {
+	MemoryOp<CONFIG> *memop = lsQueue.front();
+	lsQueue.pop();
+	switch(memop->GetType()) {
 		case MemoryOp<CONFIG>::WRITE:
 			break;
 		case MemoryOp<CONFIG>::READ:
-			dest = firstLS->GetTargetReg();
+			dest = memop->GetTargetReg();
 			SetGPR(dest, rdata);
 			break;
 		case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
-			dest = firstLS->GetTargetReg();
+			dest = memop->GetTargetReg();
 			if(rdata & UINT32_C(1)) {
 				if(!GetCPSR_T()) flushPipeline = true;
 				SetCPSR_T(true);
@@ -340,16 +384,15 @@ SetDataResponse(bool error, uint32_t rdata) {
 			SetGPR(PC_reg, rdata);
 			break;
 		case MemoryOp<CONFIG>::READ_TO_PC:
-			dest = firstLS->GetTargetReg();
+			dest = memop->GetTargetReg();
 			SetGPR(PC_reg, rdata);
 			if(rdata != executeQueue->GetNextFetchAddress()) flushPipeline = true;
 			break;
 		case MemoryOp<CONFIG>::PREFETCH:
 			break;
 	}
-	lsQueue.pop();
-	freeLSQueue.push(firstLS);
-	firstLS = 0;
+	freeLSQueue.push(memop);
+	memop = 0;
 	if(flushPipeline) executeQueue->SetFlushPipelineRequired(true);
 	if(lsQueue.empty()) {
 		/* instruction is finished */

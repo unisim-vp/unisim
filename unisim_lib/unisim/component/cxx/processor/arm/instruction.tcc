@@ -53,6 +53,7 @@ Instruction() :
 	is_fetched(false),
 	thumb_op(0),
 	arm32_op(0),
+	executed(false),
 	flush_pipeline_required(false) {
 }
 

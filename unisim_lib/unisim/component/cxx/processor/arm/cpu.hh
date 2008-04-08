@@ -303,7 +303,7 @@ public:
 	void SetInstruction(bool error, uint32_t val);
 
 	void GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
-			uint32_t &data);
+			uint32_t &data) const;
 	void SetDataResponse(bool error, uint32_t rdata);
 	void SetWriteBerr();
 

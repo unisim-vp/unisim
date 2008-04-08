@@ -154,9 +154,9 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	/* Depending on the configuration being used set the initial pc */
 	if(CONFIG::MODEL == ARM966E_S) {
 		if(arm966es_vinithi)
-			SetGPR(15, (address_t)0xffff0000);
+			SetGPR(PC_reg, (address_t)0xffff0000);
 		else
-			SetGPR(15, (address_t)0x00000000);
+			SetGPR(PC_reg, (address_t)0x00000000);
 		/* disable normal and fast interruptions */
 		SetCPSR_F();
 		SetCPSR_I();
@@ -263,13 +263,11 @@ CPU(const char *name,
 	{
 	/* setting setup dependencies */
 	Object::SetupDependsOn(logger_import);
-	//	Object::SetupDependsOn(statistics_import);
-	//	Object::SetupDependsOn(linux_os_import);
 	
 	/* Reset all the registers */
 	InitGPR();
 
-	/* User running mode */
+	// set CPSR to system mode
 	cpsr = 0;
 	for(unsigned int i = 0; i < num_phys_spsrs; i++) {
 		spsr[i] = 0;
@@ -278,6 +276,28 @@ CPU(const char *name,
 		fake_fpr[i] = 0;
 	}
 	fake_fps = 0;
+	SetCPSR_Mode(SYSTEM_MODE);
+	// set initial pc
+	/* Depending on the configuration being used set the initial pc */
+	if(CONFIG::MODEL == ARM966E_S) {
+		if(arm966es_vinithi)
+			SetGPR(PC_reg, (address_t)0xffff0000);
+		else
+			SetGPR(PC_reg, (address_t)0x00000000);
+		/* disable normal and fast interruptions */
+		SetCPSR_F();
+		SetCPSR_I();
+	}
+
+	// initialize the variables to compute the final address on memory 
+    //   accesses
+	if(GetEndianess() == E_BIG_ENDIAN) {
+		munged_address_mask8 = (typename CONFIG::address_t)0x03;;
+		munged_address_mask16 = (typename CONFIG::address_t)0x02;
+	} else {
+		munged_address_mask8 = 0;
+		munged_address_mask16 = 0;
+	}
 
 	/* initialize the check condition table */
 	InitializeCheckConditionTable();
