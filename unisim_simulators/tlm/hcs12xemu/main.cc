@@ -510,7 +510,6 @@ int sc_main(int argc, char *argv[])
 
 		try
 		{
-		// TODO: voir utilite d'ajout l'extracteur de topologie pour validation
 			sc_start();
 		}
 		catch(std::runtime_error& e)
