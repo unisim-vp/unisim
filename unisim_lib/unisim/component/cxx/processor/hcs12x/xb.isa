@@ -30,62 +30,36 @@ op xb_5bit_cst (rr[2]:0b0[1]:sext<8> nnnnn[5])
 
 xb_5bit_cst.getEAddr = {
 
-//    return cpu->xb_getAddrRegValue(rr) + nnnnn;
-
-	address_t addr = cpu->xb_getAddrRegValue(rr);
-	
-	if ((nnnnn & 0x10) == 0x10 /* nnnnn = -16 to -1*/) {
-		/* shift bit 4 (sign bit) to bit 7 */ 
-		nnnnn = (nnnnn & 0xEF) | 0x80;
-	} 
-	
-	return addr+nnnnn;
+    return cpu->xb_getAddrRegValue(rr) + nnnnn;
 }
 
 xb_5bit_cst.disasm = {
-
-	if ((nnnnn & 0x10) == 0x10 /* nnnnn = -16 to -1*/) {
-		/* shift bit 4 (sign bit) to bit 7 */ 
-		nnnnn = (nnnnn & 0xEF) | 0x80;
-	} 
-
 	sink << std::dec << nnnnn << "," << CPU::xb_getAddrRegLabel(rr);
 }
 
-op xb_9_cst_z0 (0b111[3]:rr[2]:0b00[2]:s[1]:> <:sext<16> n8[8])
+op xb_9_cst_z0 (0b111[3]:rr[2]:0b00[2]:s[1]:> <:sext<8> n8[8])
 
 xb_9_cst_z0.getEAddr = {
-
 /*	
-   	if (s==0) {
-   		return cpu->xb_getAddrRegValue(rr) + n8;
-   	} else {
-   		return cpu->xb_getAddrRegValue(rr) + n8 - 256;
-   	}
-*/
+	int16_t n8to16 = 0x00FF & n8;
    	if (s==1) {
-   		n8 = n8 | 0x8000;
+   		n8to16 = n8to16 | 0x8000;
    	} 
-   	
+*/
 	return cpu->xb_getAddrRegValue(rr) + n8;   	
 }
 
 xb_9_cst_z0.disasm = {
 /*
-	if (s==0) {
-		sink << std::dec << n8 << "," << CPU::xb_getAddrRegLabel(rr);
-	} else {
-		sink << std::dec << -1*n8 << "," << CPU::xb_getAddrRegLabel(rr);
-	}
-*/
-
+	int16_t n8to16 = 0x00FF & n8;
    	if (s==1) {
-   		n8 = n8 | 0x8000;
+   		n8to16 = n8to16 | 0x8000;
    	} 
+*/   	
 	sink << std::dec << n8 << "," << CPU::xb_getAddrRegLabel(rr);
 }
 
-op xb_16bit_cst_z1 (0b111[3]:rr[2]:0b0[1]:0b1[1]:s[1]:> <:n16[16])
+op xb_16bit_cst_z1 (0b111[3]:rr[2]:0b0[1]:0b1[1]:s[1]:> <:sext<16> n16[16])
 
 xb_16bit_cst_z1.getEAddr = {
    	if (s==0) {
@@ -108,19 +82,20 @@ xb_16bit_cst_z1.disasm = {
 }
 
 
-op xb_auto(rr[2]:0b1[1]:p[1]:sext<8> nnnn[4])
+op xb_auto(rr[2]:0b1[1]:p[1]:nnnn[4])
 
 xb_auto.getEAddr = {
 
 	address_t regOldVal = cpu->xb_getAddrRegValue(rr);
 	address_t regNewVal;
 
-	// if (nnnn > 7) then decrement else increment
-	if (nnnn < 8) // increment index register
+	short val = nnnn;
+	// if (val > 7) then decrement else increment
+	if (val < 8) // increment index register
 	{
-		regNewVal = regOldVal + nnnn + 1;
+		regNewVal = regOldVal + val + 1;
 	} else { // decrement index register
-		regNewVal = regNewVal + nnnn - 16;
+		regNewVal = regNewVal + val - 16;
 	}
 
 	cpu->xb_setAddrRegValue(rr,regNewVal);	
@@ -136,15 +111,21 @@ xb_auto.getEAddr = {
 xb_auto.disasm = {
 
 	char*	regLabel = CPU::xb_getAddrRegLabel(rr);
-	char	sign;
-	if (nnnn > 7) {
-		sign = '-';
-		nnnn = nnnn - 16;
+	char	sign = '+';
+	short  val = nnnn;
+
+	if (val > 7) {
+		val = val - 16;
 	} else {
-		sign = '+';
-		nnnn = nnnn + 1;
+		val = val + 1;
 	}
-	sink << std::dec << nnnn << ",";
+	
+	if (val < 0) {
+		sign = '-';
+		val = -1*val;
+	}
+
+	sink << std::dec << val << ",";
 	if (p == 0) {
 		sink << sign << regLabel;
 	} else {

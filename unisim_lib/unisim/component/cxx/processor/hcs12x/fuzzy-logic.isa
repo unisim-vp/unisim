@@ -1,0 +1,66 @@
+// -*- C++ -*-
+
+// MEM: Membership function
+op mem(0x01[8])
+
+mem.disasm = {
+	sink << "MEM_toto";
+}
+
+mem.execute = {
+	// The final state of CCR flags is not defined
+}
+
+// REV: (8bits) MIN-MAX rule evaluation
+op rev(0x18[8]:0x3A[8])
+
+rev.disasm = {
+	sink << "REV_toto";
+}
+
+rev.execute = {
+	/* The V flag is affected by operation. 
+	 * The final state for the others CCR flags is not defined.
+	 */
+}
+
+// REVW: (16bits) MIN-MAX rule evaluation
+op revw(0x18[8]:0x3B[8])
+
+revw.disasm = {
+	sink << "REVW_todo";
+}
+
+revw.execute = {
+	/* The V flag is affected by operation. 
+	 * The C flag is used for special purpose.
+	 * The final state for the others CCR flags is not defined.
+	 */
+}
+
+// WAV: Weighted Average Calculation
+op wav(0x18[8]:0x3C[8])
+
+wav.disasm = {
+	sink << "WAV_todo";
+}
+
+wav.execute = {
+	/* The Z flag is affected by operation. 
+	 * The final state for the others CCR flags is not defined.
+	 */
+}
+
+// WAVR: Resume execution of interrupted WAV instruction
+op wavr(0x3C[8])
+
+wavr.disasm = {
+	sink << "WAVR_todo";
+}
+
+wavr.execute = {
+	/* The Z flag is affected by operation. 
+	 * The final state for the others CCR flags is not defined.
+	 */
+}
+

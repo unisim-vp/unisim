@@ -44,5 +44,6 @@ include "bit.isa"
 include "multiplication_division.isa"
 include "branch.isa"
 include "stacking.isa"
+include "fuzzy-logic.isa"
 include "others.isa"
 
