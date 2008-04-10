@@ -90,7 +90,7 @@ $(INSTALL_DIR)/zlib: $(SOURCE_DIR)/zlib-1.2.3
 
 $(ARCHIVE_DIR)/zlib-1.2.3.tar.bz2:
 	cd $(ARCHIVE_DIR) && \
-    wget "http://downloads.sourceforge.net/libpng/zlib-1.2.3.tar.bz2?modtime=1121682122&big_mirror=0"
+    wget "http://www.zlib.net/zlib-1.2.3.tar.bz2" || wget "http://www.gzip.org/zlib/zlib-1.2.3.tar.bz2"
 
 $(SOURCE_DIR)/zlib-1.2.3: $(ARCHIVE_DIR)/zlib-1.2.3.tar.bz2
 	cd $(SOURCE_DIR) && \

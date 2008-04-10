@@ -159,13 +159,14 @@ function Package {
 
 	case ${TARGET} in
 		*mingw32*)
-			ISS_FILENAME=${PACKAGE_NAME}-${VERSION}.iss
+			cd ${INSTALL_DIR}
 			rm -rf ${INSTALL_DIR}/dist
 			rm -f ${ISS_FILENAME}
 			
 			# build list of installed files
-			cd ${INSTALL_DIR}
 			file_list=`find .`
+
+			ISS_FILENAME=${PACKAGE_NAME}-${VERSION}.iss
 			
 			# Fill-in dist.iss
 			echo "[Setup]" > ${ISS_FILENAME}
@@ -297,12 +298,48 @@ function Configure
 
 function Compile
 {
-	INSTALL_DIR=$1
+	CONFIG_DIR=$1
+	INSTALL_DIR=$2
 	echo "========================================="
 	echo "=              Compiling                ="
 	echo "========================================="
 	rm -rf ${INSTALL_DIR}
-	fakeroot make -j ${NUM_PROCESSORS} install || exit
+	cd ${CONFIG_DIR}
+	fakeroot make -j ${NUM_PROCESSORS} all || exit
+}
+
+function Install
+{
+	CONFIG_DIR=$1
+	INSTALL_DIR=$2
+	echo "========================================="
+	echo "=              Compiling                ="
+	echo "========================================="
+	rm -rf ${INSTALL_DIR}
+	cd ${CONFIG_DIR}
+	fakeroot make install || exit
+}
+
+function Uninstall
+{
+	CONFIG_DIR=$1
+	INSTALL_DIR=$2
+	echo "========================================="
+	echo "=              Compiling                ="
+	echo "========================================="
+	rm -rf ${INSTALL_DIR}
+	cd ${CONFIG_DIR}
+	fakeroot make uninstall || exit
+}
+
+function Clean
+{
+	CONFIG_DIR=$1
+	echo "========================================="
+	echo "=              cleaning                 ="
+	echo "========================================="
+	cd ${CONFIG_DIR}
+	fakeroot make clean || exit
 }
 
 case ${TARGET} in
@@ -329,7 +366,8 @@ cd ${HOME}/tmp
 tar zxvf ${HERE}/${UNISIM_SIMULATORS_LONG_NAME}.tar.gz || exit
 
 Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} CXXFLAGS="-m32 -O3 -g3"
-Compile ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 
 case ${TARGET} in
 	*mingw32*)
@@ -355,7 +393,8 @@ case ${TARGET} in
 		;;
 esac
 
-Compile ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}
+Compile ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}
+Install ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}
 Package ${UNISIM_LIB_SHORT_NAME} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} ${UNISIM_LIB_LICENSE_FILE} "${UNISIM_LIB_DEPS}" "${UNISIM_LIB_DESCRIPTION}"
 
 case ${TARGET} in
@@ -382,14 +421,15 @@ case ${TARGET} in
 		;;
 esac
 
-Compile ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}
+Compile ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}
+Install ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}
 
 case ${TARGET} in
 	*mingw32*)
-		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/libxml2/bin/libxml2-2.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
-		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/SDL/bin/SDL.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
-		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/readline/bin/readline5.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
-		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/readline/bin/history5.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
+		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/libxml2/bin/libxml2-2.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
+		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/SDL/bin/SDL.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
+		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/readline/bin/readline5.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
+		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/readline/bin/history5.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
 		;;
 esac
 
@@ -397,8 +437,12 @@ Package ${UNISIM_SIMULATORS_SHORT_NAME} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DI
 
 case ${TARGET} in
 	*mingw32*)
+		Uninstall ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+		Clean ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR}
 		Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} \
           --host=i586-mingw32msvc
+		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		;;
 	*debian*)
 		;;
