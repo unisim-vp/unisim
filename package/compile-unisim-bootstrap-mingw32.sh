@@ -14,18 +14,18 @@ CXXFLAGS=
 INSTALL_DIR=$(PWD)/install
 SOURCE_DIR=$(PWD)/source
 PATCHES_DIR=$(PWD)/patches
-DOWNLOAD_DIR=$(PWD)/download
+ARCHIVE_DIR=$(PWD)/archives
 NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 
-all: notice $(INSTALL_DIR)/zlib $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
+all: notice $(INSTALL_DIR)/gdb $(INSTALL_DIR)/zlib $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
 	@echo "Your built is in $(INSTALL_DIR)"
 
 clean:
 	rm -rf $(SOURCE_DIR)/*
-	rm -rf $(INSTALL_DIR)/zlib $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
 
 mrproper: clean
-	rm -rf $(DOWNLOAD_DIR)/*
+	rm -rf $(ARCHIVE_DIR)/*
+	rm -rf $(INSTALL_DIR)/zlib $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
 
 notice:
 	@echo "unisim-bootstrap-mingw32: A script to bootstrap on Mingw32 before compiling UNISIM"
@@ -37,12 +37,49 @@ notice:
 	@echo "  - SystemC (2.2.0)"
 	@echo "  - readline (5.0)"
 	@echo "  - boost (1.34.1)"
-	@echo "The downloaded tarball/zip files will be placed in directory $(DOWNLOAD_DIR)"
+	@echo "It will automatically download/configure and install the following softwares which can interact with UNISIM:"
+	@echo "  - GDB (6.2) for m68hc1x"
+	@echo "  - GDB (6.8) for armeb and powerpc"
+	@echo "The downloaded tarball/zip files will be placed in directory $(ARCHIVE_DIR)"
 	@echo "They will be extracted into directory $(SOURCE_DIR)"
 	@echo "Everything will be installed into directory $(INSTALL_DIR)"
 	@echo "Press <ENTER> to start or <CTRL>+<C> to cancel"
 	@read
 
+# gdb
+
+$(INSTALL_DIR)/gdb: $(SOURCE_DIR)/gdb-6.8 $(SOURCE_DIR)/gdb-6.2
+	cd $(SOURCE_DIR)/gdb-6.2 && \
+    CC=$(CC) ./configure --prefix=$(INSTALL_DIR)/gdb --host=$(HOST) --target=m6811-elf --program-prefix=m68hc1x-elf- --disable-tui && \
+    make -j $(NUM_PROCESSORS) && \
+    make install && \
+    cd $(SOURCE_DIR)/gdb-6.8 && \
+    ./configure --prefix=$(INSTALL_DIR)/gdb --host=$(HOST) --target=armeb-linux-gnu --disable-sim && \
+    make -j $(NUM_PROCESSORS) && \
+    make install && \
+    make distclean && \
+    ./configure --prefix=$(INSTALL_DIR)/gdb --host=$(HOST) --target=powerpc-linux-gnu --disable-sim && \
+    make -j $(NUM_PROCESSORS) && \
+    make install
+
+$(SOURCE_DIR)/gdb-6.2: $(ARCHIVE_DIR)/gdb-6.2.tar.bz2
+	cd $(SOURCE_DIR) && \
+    tar jxvf $< &&\
+    cd $(SOURCE_DIR)/gdb-6.2 && \
+    cat $(PATCHES_DIR)/patch-gdb-6.2-m68hc1x-mingw32 | patch -p1
+
+$(SOURCE_DIR)/gdb-6.8: $(ARCHIVE_DIR)/gdb-6.8.tar.bz2
+	cd $(SOURCE_DIR) && \
+    tar jxvf $<
+
+$(ARCHIVE_DIR)/gdb-6.2.tar.bz2:
+	cd $(ARCHIVE_DIR) && \
+    wget "ftp://ftp.gnu.org/pub/gnu/gdb/gdb-6.2.tar.bz2"
+
+$(ARCHIVE_DIR)/gdb-6.8.tar.bz2:
+	cd $(ARCHIVE_DIR) && \
+    wget "ftp://ftp.gnu.org/pub/gnu/gdb/gdb-6.8.tar.bz2"
+	
 # zlib
 
 $(INSTALL_DIR)/zlib: $(SOURCE_DIR)/zlib-1.2.3
@@ -51,13 +88,13 @@ $(INSTALL_DIR)/zlib: $(SOURCE_DIR)/zlib-1.2.3
     make -j $(NUM_PROCESSORS) && \
     make install
 
-$(DOWNLOAD_DIR)/zlib-1.2.3.tar.gz:
-	cd $(DOWNLOAD_DIR) && \
-    wget "http://prdownloads.sourceforge.net/libpng/zlib-1.2.3.tar.gz?download"
+$(ARCHIVE_DIR)/zlib-1.2.3.tar.bz2:
+	cd $(ARCHIVE_DIR) && \
+    wget "http://downloads.sourceforge.net/libpng/zlib-1.2.3.tar.bz2?modtime=1121682122&big_mirror=0"
 
-$(SOURCE_DIR)/zlib-1.2.3: $(DOWNLOAD_DIR)/zlib-1.2.3.tar.gz
+$(SOURCE_DIR)/zlib-1.2.3: $(ARCHIVE_DIR)/zlib-1.2.3.tar.bz2
 	cd $(SOURCE_DIR) && \
-    tar zxvf $<
+    tar jxvf $<
 
 # SDL
 
@@ -67,11 +104,11 @@ $(INSTALL_DIR)/SDL: $(SOURCE_DIR)/SDL-1.2.13
     make -j $(NUM_PROCESSORS) && \
     make install
 
-$(DOWNLOAD_DIR)/SDL-1.2.13.tar.gz:
-	cd $(DOWNLOAD_DIR) && \
+$(ARCHIVE_DIR)/SDL-1.2.13.tar.gz:
+	cd $(ARCHIVE_DIR) && \
     wget http://www.libsdl.org/release/SDL-1.2.13.tar.gz
 
-$(SOURCE_DIR)/SDL-1.2.13: $(DOWNLOAD_DIR)/SDL-1.2.13.tar.gz
+$(SOURCE_DIR)/SDL-1.2.13: $(ARCHIVE_DIR)/SDL-1.2.13.tar.gz
 	cd $(SOURCE_DIR) && \
     tar zxvf $<
 
@@ -85,18 +122,18 @@ $(INSTALL_DIR)/libxml2: $(SOURCE_DIR)/libxml2-2.6.31
     cd $(INSTALL_DIR)/libxml2/include && \
     ln -s libxml2/libxml libxml
 
-$(DOWNLOAD_DIR)/libxml2-2.6.31.tar.gz:
-	cd $(DOWNLOAD_DIR) && \
+$(ARCHIVE_DIR)/libxml2-2.6.31.tar.gz:
+	cd $(ARCHIVE_DIR) && \
     wget ftp://xmlsoft.org/libxml2/libxml2-2.6.31.tar.gz
 
-$(SOURCE_DIR)/libxml2-2.6.31: $(DOWNLOAD_DIR)/libxml2-2.6.31.tar.gz
+$(SOURCE_DIR)/libxml2-2.6.31: $(ARCHIVE_DIR)/libxml2-2.6.31.tar.gz
 	cd $(SOURCE_DIR) && \
     tar zxvf $<
 
 # systemc
 
-$(DOWNLOAD_DIR)/systemc-2.2.0.tgz:
-	cd $(DOWNLOAD_DIR) && \
+$(ARCHIVE_DIR)/systemc-2.2.0.tgz:
+	cd $(ARCHIVE_DIR) && \
     wget "http://panoramis.free.fr/search.systemc.org/download/sc220/systemc-2.2.0.tgz"
 
 $(INSTALL_DIR)/systemc: $(SOURCE_DIR)/systemc-2.2.0
@@ -108,32 +145,32 @@ $(INSTALL_DIR)/systemc: $(SOURCE_DIR)/systemc-2.2.0
     make -j $(NUM_PROCESSORS) && \
     make install
 
-$(SOURCE_DIR)/systemc-2.2.0: $(DOWNLOAD_DIR)/systemc-2.2.0.tgz $(PATCHES_DIR)/patch-systemc-2.2.0-mingw32
+$(SOURCE_DIR)/systemc-2.2.0: $(ARCHIVE_DIR)/systemc-2.2.0.tgz $(PATCHES_DIR)/patch-systemc-2.2.0-mingw32
 	cd $(SOURCE_DIR) && \
-    tar zxvf $(DOWNLOAD_DIR)/systemc-2.2.0.tgz && \
+    tar zxvf $(ARCHIVE_DIR)/systemc-2.2.0.tgz && \
     cd $(SOURCE_DIR)/systemc-2.2.0 && \
     cat $(PATCHES_DIR)/patch-systemc-2.2.0-mingw32 | patch -p1
 
 # readline
 
-$(DOWNLOAD_DIR)/readline-5.0-1-bin.zip:
-	cd $(DOWNLOAD_DIR) && \
+$(ARCHIVE_DIR)/readline-5.0-1-bin.zip:
+	cd $(ARCHIVE_DIR) && \
     wget "http://downloads.sourceforge.net/gnuwin32/readline-5.0-1-bin.zip?modtime=1199320468&big_mirror=1"
 
-$(INSTALL_DIR)/readline: $(DOWNLOAD_DIR)/readline-5.0-1-bin.zip
+$(INSTALL_DIR)/readline: $(ARCHIVE_DIR)/readline-5.0-1-bin.zip
 	cd $(INSTALL_DIR) && \
     mkdir -p readline && \
     cd readline && \
-    unzip $(DOWNLOAD_DIR)/readline-5.0-1-bin.zip
+    unzip $(ARCHIVE_DIR)/readline-5.0-1-bin.zip
 
 # boost
-$(DOWNLOAD_DIR)/boost_1_34_1.tar.gz:
-	cd $(DOWNLOAD_DIR) && \
-    wget "http://downloads.sourceforge.net/boost/boost_1_34_1.tar.gz?modtime=1185241130&big_mirror=0"
+$(ARCHIVE_DIR)/boost_1_34_1.tar.bz2:
+	cd $(ARCHIVE_DIR) && \
+    wget "http://downloads.sourceforge.net/boost/boost_1_34_1.tar.bz2?modtime=1185241108&big_mirror=0"
 
-$(SOURCE_DIR)/boost_1_34_1: $(DOWNLOAD_DIR)/boost_1_34_1.tar.gz
+$(SOURCE_DIR)/boost_1_34_1: $(ARCHIVE_DIR)/boost_1_34_1.tar.bz2
 	cd $(SOURCE_DIR) && \
-    tar zxvf $<
+    tar jxvf $<
 
 $(INSTALL_DIR)/boost: $(SOURCE_DIR)/boost_1_34_1
 	cd $(SOURCE_DIR)/boost_1_34_1 &&\
@@ -144,7 +181,7 @@ $(INSTALL_DIR)/boost: $(SOURCE_DIR)/boost_1_34_1
     rm -f as && ln -s `which $(AS)` as &&\
     rm -f ld && ln -s `which $(LD)` ld &&\
     PATH=./:${PATH} &&\
-    $(SOURCE_DIR)/boost_1_34_1/configure --with-toolset=gcc --prefix=$(INSTALL_DIR)/boost --without-icu -without-libraries=python &&\
+    $(SOURCE_DIR)/boost_1_34_1/configure --with-toolset=gcc --prefix=$(INSTALL_DIR)/boost --without-icu --with-libraries=graph,thread &&\
     make BJAM_CONFIG="-j $(NUM_PROCESSORS)" &&\
     make install &&\
     cd $(INSTALL_DIR)/boost/include && mv boost-1_34_1/boost boost && rmdir boost-1_34_1 &&\

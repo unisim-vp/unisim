@@ -4,6 +4,7 @@ function Usage
 {
 	echo "Usage:"
 	echo "  $0 debian <version> [systemc]"
+	echo "  $0 redhat <version> [systemc]"
 	echo "  $0 mingw32 <version> [unisim-bootstrap-mingw32]"
 	echo "  - version: version of UNISIM"
 	echo "  - systemc: SystemC installation directory (debian only)"
@@ -33,7 +34,9 @@ esac
 
 UNISIM_TOOLS_SHORT_NAME=unisim-tools
 UNISIM_TOOLS_LONG_NAME=${UNISIM_TOOLS_SHORT_NAME}-${VERSION}
-UNISIM_TOOLS_PACKAGE_FILENAME=${UNISIM_TOOLS_LONG_NAME}.exe
+UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME=${UNISIM_TOOLS_LONG_NAME}.tar.gz
+UNISIM_TOOLS_WINDOWS_PACKAGE_FILENAME=${UNISIM_TOOLS_LONG_NAME}.exe
+UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME=${UNISIM_TOOLS_SHORT_NAME}_${VERSION}_${ARCH}.deb
 UNISIM_TOOLS_TEMPORARY_SOURCE_DIR=${HOME}/tmp/${UNISIM_TOOLS_LONG_NAME}
 UNISIM_TOOLS_TEMPORARY_INSTALL_DIR=${HOME}/tmp/${UNISIM_TOOLS_SHORT_NAME}_${VERSION}_${ARCH}
 UNISIM_TOOLS_TEMPORARY_CONFIG_DIR=${HOME}/tmp/${UNISIM_TOOLS_LONG_NAME}_config
@@ -43,7 +46,9 @@ UNISIM_TOOLS_DEPS="libc6 (>= 2.5)"
 
 UNISIM_LIB_SHORT_NAME=unisim-lib
 UNISIM_LIB_LONG_NAME=${UNISIM_LIB_SHORT_NAME}-${VERSION}
-UNISIM_LIB_PACKAGE_FILENAME=${UNISIM_LIB_LONG_NAME}.exe
+UNISIM_LIB_SOURCE_PACKAGE_FILENAME=${UNISIM_LIB_LONG_NAME}.tar.gz
+UNISIM_LIB_WINDOWS_PACKAGE_FILENAME=${UNISIM_LIB_LONG_NAME}.exe
+UNISIM_LIB_DEBIAN_PACKAGE_FILENAME=${UNISIM_LIB_SHORT_NAME}_${VERSION}_${ARCH}.deb
 UNISIM_LIB_TEMPORARY_SOURCE_DIR=${HOME}/tmp/${UNISIM_LIB_LONG_NAME}
 UNISIM_LIB_TEMPORARY_INSTALL_DIR=${HOME}/tmp/${UNISIM_LIB_SHORT_NAME}_${VERSION}_${ARCH}
 UNISIM_LIB_TEMPORARY_CONFIG_DIR=${HOME}/tmp/${UNISIM_LIB_LONG_NAME}_config
@@ -53,7 +58,9 @@ UNISIM_LIB_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27
 
 UNISIM_SIMULATORS_SHORT_NAME=unisim-simulators
 UNISIM_SIMULATORS_LONG_NAME=${UNISIM_SIMULATORS_SHORT_NAME}-${VERSION}
-UNISIM_SIMULATORS_PACKAGE_FILENAME=${UNISIM_SIMULATORS_LONG_NAME}.exe
+UNISIM_SIMULATORS_SOURCE_PACKAGE_FILENAME=${UNISIM_SIMULATORS_LONG_NAME}.tar.gz
+UNISIM_SIMULATORS_WINDOWS_PACKAGE_FILENAME=${UNISIM_SIMULATORS_LONG_NAME}.exe
+UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME=${UNISIM_SIMULATORS_SHORT_NAME}_${VERSION}_${ARCH}.deb
 UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR=${HOME}/tmp/${UNISIM_SIMULATORS_LONG_NAME}
 UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR=${HOME}/tmp/${UNISIM_SIMULATORS_SHORT_NAME}_${VERSION}_${ARCH}
 UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR=${HOME}/tmp/${UNISIM_SIMULATORS_LONG_NAME}_config
@@ -61,23 +68,52 @@ UNISIM_SIMULATORS_LICENSE_FILE="share/unisim_simulators/COPYING"
 UNISIM_SIMULATORS_DESCRIPTION="UNISIM Simulators"
 UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
 
-if test ! -f ${HERE}/${UNISIM_TOOLS_LONG_NAME}.tar.gz; then
-	Usage
-	echo "File ${HERE}/${UNISIM_TOOLS_LONG_NAME}.tar.gz is needed. Use \"make dist\" to build it."
-	exit
-fi
+case ${TARGET} in
+	*debian* | *mingw32*)
+		if test ! -f ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME}; then
+			Usage
+			echo "File ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME} is needed. Use \"make dist\" to build it."
+			exit
+		fi
+		
+		if test ! -f ${HERE}/${UNISIM_LIB_SOURCE_PACKAGE_FILENAME}; then
+			Usage
+			echo "File ${HERE}/${UNISIM_LIB_LONG_NAME}.tar.gz is needed. Use \"make dist\" to build it."
+			exit
+		fi
+		
+		if test ! -f ${HERE}/${UNISIM_SIMULATORS_SOURCE_PACKAGE_FILENAME}; then
+			Usage
+			echo "File ${HERE}/${UNISIM_SIMULATORS_SOURCE_PACKAGE_FILENAME} is needed. Use \"make dist\" to build it."
+			exit
+		fi
+		;;
+	*redhat*)
+		if test ! -f ${HERE}/${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME}; then
+			Usage
+			echo "File ${HERE}/${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME} is needed. Build first a debian package ($0 debian ....)."
+			exit
+		fi
+		
+		if test ! -f ${HERE}/${UNISIM_LIB_DEBIAN_PACKAGE_FILENAME}; then
+			Usage
+			echo "File ${HERE}/${UNISIM_LIB_DEBIAN_PACKAGE_FILENAME} is needed. Build first a debian package ($0 debian ....)."
+			exit
+		fi
+		
+		if test ! -f ${HERE}/${UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME}; then
+			Usage
+			echo "File ${HERE}/${UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME} is needed. Build first a debian package ($0 debian ....)."
+			exit
+		fi
 
-if test ! -f ${HERE}/${UNISIM_LIB_LONG_NAME}.tar.gz; then
-	Usage
-	echo "File ${HERE}/${UNISIM_LIB_LONG_NAME}.tar.gz is needed. Use \"make dist\" to build it."
-	exit
-fi
-
-if test ! -f ${HERE}/${UNISIM_SIMULATORS_LONG_NAME}.tar.gz; then
-	Usage
-	echo "File ${HERE}/${UNISIM_SIMULATORS_LONG_NAME}.tar.gz is needed. Use \"make dist\" to build it."
-	exit
-fi
+		cd ${HERE}
+		fakeroot alien --to-rpm ${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME} || exit
+		fakeroot alien --to-rpm ${UNISIM_LIB_DEBIAN_PACKAGE_FILENAME} || exit
+		fakeroot alien --to-rpm ${UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME}
+		exit
+		;;
+esac
 
 case ${TARGET} in
 	*mingw32*)
@@ -88,13 +124,16 @@ case ${TARGET} in
 			rm -rf ${UNISIM_BOOTSTRAP_MINGW32_DIR}
 			mkdir -p ${UNISIM_BOOTSTRAP_MINGW32_DIR}
 			cd ${UNISIM_BOOTSTRAP_MINGW32_DIR}
-			mkdir -p download
+			mkdir -p archives
 			mkdir -p source
 			mkdir -p patches
 			mkdir -p install
 			cp `dirname $0`/patch-systemc-2.2.0-mingw32 patches/.
+			cp `dirname $0`/patch-gdb-6.2-m68hc1x-mingw32 patches/.
 			cp `dirname $0`/COPYING .
 			`dirname $0`/compile-unisim-bootstrap-mingw32.sh || exit
+			`dirname $0`/compile-unisim-bootstrap-mingw32.sh clean || exit
+			rm -rf source
 		else
 			UNISIM_BOOTSTRAP_MINGW32_DIR=$3
 		fi
@@ -136,8 +175,8 @@ function Package {
 			echo "AppPublisherURL=http://www.unisim.org" >> ${ISS_FILENAME}
 			echo "AppSupportURL=http://www.unisim.org" >> ${ISS_FILENAME}
 			echo "AppUpdatesURL=http://www.unisim.org" >> ${ISS_FILENAME}
-			echo "DefaultDirName={pf}\\${PACKAGE_LONG_NAME}" >> ${ISS_FILENAME}
-			echo "DefaultGroupName=${PACKAGE_LONG_NAME}" >> ${ISS_FILENAME}
+			echo "DefaultDirName={pf}\\${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
+			echo "DefaultGroupName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 			echo "LicenseFile=./${LICENSE_FILE}" >> ${ISS_FILENAME}
 			echo "OutputDir=dist" >> ${ISS_FILENAME}
 			echo "OutputBaseFilename=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
@@ -171,6 +210,8 @@ function Package {
 		
 			wine ~/.wine/drive_c/Program\ Files/Inno\ Setup\ 5/ISCC.exe ${ISS_FILENAME} || exit
 			cp -f ${INSTALL_DIR}/dist/${PACKAGE_NAME}-${VERSION}.exe ${HERE}
+			rm -rf ${INSTALL_DIR}/dist
+			rm -f ${ISS_FILENAME}
 			;;
 		*debian*)
 			CONTROL_FILE=${INSTALL_DIR}/DEBIAN/control
@@ -342,6 +383,16 @@ case ${TARGET} in
 esac
 
 Compile ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}
+
+case ${TARGET} in
+	*mingw32*)
+		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/libxml2/bin/libxml2-2.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
+		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/SDL/bin/SDL.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
+		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/readline/bin/readline5.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
+		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/readline/bin/history5.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
+		;;
+esac
+
 Package ${UNISIM_SIMULATORS_SHORT_NAME} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} ${UNISIM_SIMULATORS_LICENSE_FILE} "${UNISIM_SIMULATORS_DEPS}" "${UNISIM_SIMULATORS_DESCRIPTION}"
 
 case ${TARGET} in
