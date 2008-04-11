@@ -7,8 +7,8 @@ function Usage
 	echo "  $0 redhat <version> [systemc]"
 	echo "  $0 mingw32 <version> [unisim-bootstrap-mingw32]"
 	echo "  - version: version of UNISIM"
-	echo "  - systemc: SystemC installation directory (debian only)"
-	echo "  - systemc: UNISIM bootstrap for mingw32 (optional, mingw32 only)"
+	echo "  - systemc: SystemC installation directory (optional, debian/redhat only)"
+	echo "  - unisim-bootstrap-mingw32: UNISIM bootstrap for mingw32 directory (optional, mingw32 only)"
 }
 
 if test "x$1" = x || test "x$2" = x; then
@@ -106,6 +106,10 @@ case ${TARGET} in
 			echo "File ${HERE}/${UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME} is needed. Build first a debian package ($0 debian ....)."
 			exit
 		fi
+
+		echo "========================================="
+		echo "=        Converting deb to rpm          ="
+		echo "========================================="
 
 		cd ${HERE}
 		fakeroot alien --to-rpm ${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME} || exit
@@ -313,7 +317,7 @@ function Install
 	CONFIG_DIR=$1
 	INSTALL_DIR=$2
 	echo "========================================="
-	echo "=              Compiling                ="
+	echo "=              Installing               ="
 	echo "========================================="
 	rm -rf ${INSTALL_DIR}
 	cd ${CONFIG_DIR}
@@ -325,7 +329,7 @@ function Uninstall
 	CONFIG_DIR=$1
 	INSTALL_DIR=$2
 	echo "========================================="
-	echo "=              Compiling                ="
+	echo "=             Uninstalling              ="
 	echo "========================================="
 	rm -rf ${INSTALL_DIR}
 	cd ${CONFIG_DIR}
@@ -336,7 +340,7 @@ function Clean
 {
 	CONFIG_DIR=$1
 	echo "========================================="
-	echo "=              cleaning                 ="
+	echo "=              Cleaning                 ="
 	echo "========================================="
 	cd ${CONFIG_DIR}
 	fakeroot make clean || exit
@@ -344,7 +348,13 @@ function Clean
 
 case ${TARGET} in
 	*mingw32*)
-		Package unisim-bootstrap-mingw32 ${UNISIM_BOOTSTRAP_MINGW32_DIR} COPYING "" "${UNISIM_BOOTSTRAP_MINGW32_DESCRIPTION}"
+		if test ! -f ${HERE}/${PACKAGE_NAME}-${VERSION}.exe; then
+			echo "Do you want to package unisim-bootstrap-mingw32 ? (Y/n)"
+			read YES_NO
+			if test ${YES_NO} = "y" || test ${YES_NO} = "Y"; then
+				Package unisim-bootstrap-mingw32 ${UNISIM_BOOTSTRAP_MINGW32_DIR} COPYING "" "${UNISIM_BOOTSTRAP_MINGW32_DESCRIPTION}"
+			fi
+		fi
 		;;
 	*debian*)
 		;;
@@ -395,6 +405,8 @@ esac
 
 Compile ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}
 Install ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}
+mkdir -p ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}/src
+cp ${HERE}/${UNISIM_LIB_LONG_NAME}.tar.gz ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}/src/.
 Package ${UNISIM_LIB_SHORT_NAME} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} ${UNISIM_LIB_LICENSE_FILE} "${UNISIM_LIB_DEPS}" "${UNISIM_LIB_DESCRIPTION}"
 
 case ${TARGET} in
@@ -433,6 +445,8 @@ case ${TARGET} in
 		;;
 esac
 
+mkdir -p ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/src
+cp ${HERE}/${UNISIM_SIMULATORS_LONG_NAME}.tar.gz ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/src/.
 Package ${UNISIM_SIMULATORS_SHORT_NAME} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} ${UNISIM_SIMULATORS_LICENSE_FILE} "${UNISIM_SIMULATORS_DEPS}" "${UNISIM_SIMULATORS_DESCRIPTION}"
 
 case ${TARGET} in
@@ -448,6 +462,8 @@ case ${TARGET} in
 		;;
 esac
 
+mkdir -p ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}/src
+cp ${HERE}/${UNISIM_TOOLS_LONG_NAME}.tar.gz ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}/src/.
 Package ${UNISIM_TOOLS_SHORT_NAME} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} ${UNISIM_TOOLS_LICENSE_FILE} "${UNISIM_TOOLS_DEPS}" "${UNISIM_TOOLS_DESCRIPTION}"
 
 echo "========================================="
