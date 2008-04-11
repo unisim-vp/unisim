@@ -66,7 +66,7 @@
 
 #endif
 
-#ifdef ARM966E_S_DEBUG
+#ifdef ARM7TDMI_DEBUG
 	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
 #else
 	typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
