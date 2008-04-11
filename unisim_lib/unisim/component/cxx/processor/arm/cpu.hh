@@ -716,7 +716,7 @@ public:
 	/* Memory access methods       START                          */
 	/**************************************************************/
 
-	/** reads 32bits from the memory system
+	/** reads 16bits instructions from the memory system
 	 * This method allows the user to read instructions from the memory system,
 	 *   that is, it tries to read from the pertinent caches and if failed from
 	 *   the external memory system.
@@ -724,7 +724,16 @@ public:
 	 * @param address the address to read data from
 	 * @param val the buffer to fill with the read data
 	 */
-	inline void ReadInsn(address_t address, uint32_t *val) GCC_INLINE;
+	inline void ReadInsn(address_t address, uint16_t &val) GCC_INLINE;
+	/** reads 32bits instructions from the memory system
+	 * This method allows the user to read instructions from the memory system,
+	 *   that is, it tries to read from the pertinent caches and if failed from
+	 *   the external memory system.
+	 * 
+	 * @param address the address to read data from
+	 * @param val the buffer to fill with the read data
+	 */
+	inline void ReadInsn(address_t address, uint32_t &val) GCC_INLINE;
 	/** reads a complete cache line from the memory system
 	 * This method reads a full cache line of processor instructions from the
 	 *   memory system (accessing the pertinent cache levels as necessary)

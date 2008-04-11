@@ -2650,17 +2650,33 @@ SubtractionOverflowFrom(const typename CONFIG::reg_t res, const typename CONFIG:
 template<class CONFIG> 
 void 
 CPU<CONFIG> ::
-ReadInsn(address_t address, uint32_t *val) {
+ReadInsn(address_t address, uint16_t &val) {
 	if(CONFIG::MODEL == ARM966E_S)
-		cp15_966es->PrRead(address, (uint8_t *)val, 4);
+		cp15_966es->PrRead(address, (uint8_t *)&val, 2);
 
 	if(CONFIG::HAS_INSN_CACHE_L1)
-		cache_il1->PrRead(address, (uint8_t *)val, 4);
+		cache_il1->PrRead(address, (uint8_t *)&val, 2);
 
 	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) 
-		cache_l1->PrRead(address, (uint8_t *)val, 4);
+		cache_l1->PrRead(address, (uint8_t *)&val, 2);
 
-	memory_interface->PrRead(address, (uint8_t *)val, 4);
+	memory_interface->PrRead(address, (uint8_t *)&val, 2);
+}
+
+template<class CONFIG> 
+void 
+CPU<CONFIG> ::
+ReadInsn(address_t address, uint32_t &val) {
+	if(CONFIG::MODEL == ARM966E_S)
+		cp15_966es->PrRead(address, (uint8_t *)&val, 4);
+
+	if(CONFIG::HAS_INSN_CACHE_L1)
+		cache_il1->PrRead(address, (uint8_t *)&val, 4);
+
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) 
+		cache_l1->PrRead(address, (uint8_t *)&val, 4);
+
+	memory_interface->PrRead(address, (uint8_t *)&val, 4);
 }
 
 template<class CONFIG> 

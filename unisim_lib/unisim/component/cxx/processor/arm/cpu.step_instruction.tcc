@@ -167,8 +167,9 @@ StepInstruction() {
 					<< Hex << current_pc << Dec
 					<< Endl << EndDebugInfo;
 
-			//		ReadInsn(current_pc, insn);
-			if(insn_cache_line_address != 
+			ReadInsn(current_pc, insn);
+			/* 
+			 * if(insn_cache_line_address != 
 				(current_pc & ~(typename CONFIG::address_t)0x1F)) {
 				insn_cache_line_address = 
 					(current_pc & ~(typename CONFIG::address_t)0x1F);
@@ -177,6 +178,7 @@ StepInstruction() {
 			}
 			insn = ((uint16_t *)insn_cache_line)[(current_pc & 
 						(typename CONFIG::address_t)0x1F) >> 1];
+						*/
 
 			/* arm instructions are big endian, so convert the instruction to 
 			 *   host format */
@@ -215,8 +217,9 @@ StepInstruction() {
 					<< Hex << current_pc << Dec
 					<< Endl << EndDebugInfo;
 
-			//		ReadInsn(current_pc, insn);
-			if(insn_cache_line_address != 
+			ReadInsn(current_pc, insn);
+			/*
+			 * if(insn_cache_line_address != 
 				(current_pc & ~(typename CONFIG::address_t)0x1F)) {
 				insn_cache_line_address = 
 					(current_pc & ~(typename CONFIG::address_t)0x1F);
@@ -225,6 +228,7 @@ StepInstruction() {
 			}
 			insn = insn_cache_line[(current_pc & 
 				(typename CONFIG::address_t)0x1F) >> 2];
+				*/
 
 			/* arm instructions are big endian, so convert the instruction to 
 			 *   host format */
