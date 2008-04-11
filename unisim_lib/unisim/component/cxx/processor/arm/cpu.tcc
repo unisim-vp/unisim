@@ -161,6 +161,12 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 		SetCPSR_F();
 		SetCPSR_I();
 	}
+	if(CONFIG::MODEL == ARM7TDMI) {
+		SetGPR(PC_reg, (address_t)UINT32_C(0x00000000));
+		/* disable normal and fast interruptions */
+		SetCPSR_F();
+		SetCPRS_I();
+	}
 
 	// initialize the variables to compute the final address on memory 
     //   accesses
@@ -289,6 +295,13 @@ CPU(const char *name,
 		SetCPSR_I();
 	}
 
+	if(CONFIG::MODEL == ARM7TDMI) {
+		SetGPR(PC_reg, (address_t)0x0);
+		/* disable normal and fast interruptions */
+		SetCPSR_F();
+		SetCPSR_I();
+	}
+
 	// initialize the variables to compute the final address on memory 
     //   accesses
 	if(GetEndianess() == E_BIG_ENDIAN) {
@@ -388,11 +401,12 @@ Setup() {
 		/* we are running in system mode */
 		/* currently supported: arm966e_s
 		 * if different report error */
-		if(CONFIG::MODEL != ARM966E_S) {
+		if(CONFIG::MODEL != ARM966E_S &&
+				CONFIG::MODEL != ARM7TDMI) {
 			if(logger_import) {
 				(*logger_import) << DebugError << LOCATION
 					<< "Running \"" << GetName() << "\" in system mode"
-					<< ". Only arm966e_s can run under this mode"
+					<< ". Only arm966e_s and arm7tdmi can run under this mode"
 					<< Endl << EndDebugError;
 			}
 			return false;
@@ -403,9 +417,15 @@ Setup() {
 		/* Depending on the configuration being used set the initial pc */
 		if(CONFIG::MODEL == ARM966E_S) {
 			if(arm966es_vinithi)
-				SetGPR(15, (address_t)0xffff0000);
+				SetGPR(PC_reg, (address_t)0xffff0000);
 			else
-				SetGPR(15, (address_t)0x00000000);
+				SetGPR(PC_reg, (address_t)0x00000000);
+			/* disable normal and fast interruptions */
+			SetCPSR_F();
+			SetCPSR_I();
+		}
+		if(CONFIG::MODEL == ARM7TDMI) {
+			SetGPR(PC_reg, (address_t)0x0);
 			/* disable normal and fast interruptions */
 			SetCPSR_F();
 			SetCPSR_I();
@@ -2486,7 +2506,7 @@ GetSPSRIndex() {
 		cerr << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 			<< "Trying to modify SPSR under SYSTEM_MODE" << endl;
 		exit(-1);
-#else // SOCLIB
+#else // ifndef SOCLIB
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION
 				<< "Trying to modify SPSR under SYSTEM_MODE" << Endl

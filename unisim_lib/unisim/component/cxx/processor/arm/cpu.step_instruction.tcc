@@ -82,7 +82,7 @@ StepInstruction() {
 	current_pc = GetGPR(PC_reg);
 
 	VerboseDumpRegsStart();
-	
+
 	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Starting step at PC = 0x"

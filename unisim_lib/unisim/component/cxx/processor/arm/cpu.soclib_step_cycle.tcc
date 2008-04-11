@@ -74,6 +74,16 @@ IsBusy() {
 	 *   of if the current one is going to be removed */
 	/* TOCHECK: what did I do here?
 	 * Needs to be checked again. Why the lsQueue must be empty? */
+	cerr << "+++ IsBusy" << endl;
+	if(fetchQueue) {
+		cerr << "    something in the fetchQueue" << endl;
+		if(fetchQueue->IsRequested() && !fetchQueue->IsFetched()) {
+			cerr << "    waiting for fetched instruction (1)" << endl;
+			return 1;
+		}
+	}
+	cerr << "    not busy (0)" << endl;
+	return 0;
 	bool busy = false;
 
 	cerr << "+++ IsBusy" << endl;
