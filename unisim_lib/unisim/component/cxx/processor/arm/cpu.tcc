@@ -3702,31 +3702,31 @@ typename CONFIG::address_t
 CPU<CONFIG> ::
 GetExceptionVectorAddr() {
 	// action depends on the cpu model 
-	if(CONFIG::MODEL == ARM966E_S) {
+	if(CONFIG::MODEL == ARM966E_S) 
 		// the cp15 should be able to get us the right value
 		return cp15_966es->GetExceptionVectorAddr();
-	} else {
-		
+	if(CONFIG::MODEL == ARM7TDMI)
+		return 0x0;
+
 #ifdef SOCLIB
 		
-		cerr << "TODO(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-			<< "): " << endl
+	cerr << "TODO(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+		<< "): " << endl
 		<< "exception vector address reporting is not implemented "
 		<< "for this architecture" << endl;
 		
 #else // SOCLIB
 		
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< "TODO: exception vector address reporting is not implemented "
-				<< "for this architecture" << Endl
-				<< EndDebugError;
-		}
+	if(logger_import) {
+		(*logger_import) << DebugError << LOCATION
+			<< "TODO: exception vector address reporting is not implemented "
+			<< "for this architecture" << Endl
+			<< EndDebugError;
+	}
 		
 #endif // SOCLIB
 		
-		Stop(-1);
-	}
+	Stop(-1);
 }
 
 template<class CONFIG>

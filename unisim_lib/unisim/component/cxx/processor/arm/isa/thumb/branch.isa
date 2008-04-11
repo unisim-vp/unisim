@@ -130,16 +130,15 @@ bl.disasm = {
 	typedef Operation<CONFIG> inherited;
 	
 	typename CONFIG::sreg_t bl_soffset;
-	
-	if(offset & 0x0400)
-		bl_soffset = (int32_t)((~(uint32_t)0x0400) + offset);
-	else
-		bl_soffset = offset;
-	
-	buffer << "bl";
-	buffer << " 0x" << hex 
-		<< ((bl_soffset << 12) + cpu.GetGPR(cpu.PC_reg) + 4 + (offset << 1))
-		<< dec;
+
+	buffer << "bl ";
+	if(h2 == 0) {
+		buffer << "????";
+		return;
+	} else {
+		bl_soffset = cpu.GetGPR(cpu.LR_reg) + (offset << 1);
+		buffer << "0x" << hex << bl_soffset << dec;
+	}
 }
 
 bl.execute = {
@@ -150,16 +149,17 @@ bl.execute = {
 	typename CONFIG::sreg_t bl_soffset;
 	
 	if(offset & 0x0400)
-		bl_soffset = (int32_t)((~(uint32_t)0x0400) + offset);
+		bl_soffset = (int32_t)(UINT32_C(0xfffff800) + offset);
 	else
 		bl_soffset = offset;
 	
 	if(h2) {
-		new_PC = cpu.GetGPR(cpu.LR_reg) + (offset << 11);
+		new_PC = (cpu.GetGPR(cpu.LR_reg) + (offset << 1));
 		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 3);
 		cpu.SetGPR(cpu.PC_reg, new_PC);
 	} else {
 		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 4 + (bl_soffset << 12));
+		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	}
 }
 
