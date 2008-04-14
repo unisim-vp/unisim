@@ -9,6 +9,68 @@ mem.disasm = {
 
 mem.execute = {
 	// The final state of CCR flags is not defined
+	
+/*
+
+Operation
+---------
+Grade of Membership ⇒ M(Y)
+(Y) + $0001 ⇒ Y
+(X) + $0004 ⇒ X
+
+Description
+-----------
+Before executing MEM, initialize A, X, and Y. Load A with the current crisp value of a system input
+variable. Load Y with the fuzzy input RAM location where the grade of membership is to be stored.
+Load X with the first address of a 4-byte data structure that describes a trapezoidal membership
+function. The data structure consists of:
+• Point_1 — The x-axis starting point for the leading side (at MX)
+• Point_2 — The x-axis position of the rightmost point (at MX+1)
+• Slope_1 — The slope of the leading side (at MX+2)
+• Slope_2—The slope of the trailing side (atMX+3); the right side slopes up and to the left from
+Point_2
+A Slope_1 or Slope_2 value of $00 is a special case in which the membership function either starts
+with a grade of $FF at input = Point_1, or ends with a grade of $FF at input = Point_2 (infinite slope).
+During execution, the value of A remains unchanged. X is incremented by four and Y is incremented
+by one.
+	
+*/
+
+// Grade of Membership (gm) ⇒ M(Y)
+	uint8_t gm;
+	uint8_t p1, p2;
+
+	uint8_t aVal = cpu->getRegA();
+	address_t xVal = cpu->getRegX();
+	address_t yVal = cpu->getRegY();
+
+	p1 = cpu->memRead8(xVal);
+	p2 = cpu->memRead8(xVal+1);
+	
+	if ((aVal < p1) or (aVal > p2)) {
+		gm = 0;
+	} else {
+		uint8_t s1, s2, min1, min2;
+
+		
+		s1 = cpu->memRead8(xVal+2);
+		s2 = cpu->memRead8(xVal+3);
+		
+		min1 = (aVal - p1) * s1;
+		min2 = (p2 - aVal) * s2;
+		if (min1 < min2) {
+			cpu->memWrite8(yVal, min1);
+		} else {
+			cpu->memWrite8(yVal, min2);		
+		} 
+	}
+
+// (Y) + $0001 ⇒ Y
+	cpu->setRegY(yVal + 1);
+
+// (X) + $0004 ⇒ X
+	cpu->setRegX(xVal + 4);
+
 }
 
 // REV: (8bits) MIN-MAX rule evaluation
