@@ -35,6 +35,7 @@
 #ifndef __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_HH__
 #define __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_HH__
 
+#include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/registers.hh>
