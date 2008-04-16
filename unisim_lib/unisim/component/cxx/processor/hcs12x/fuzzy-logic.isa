@@ -4,7 +4,7 @@
 op mem(0x01[8])
 
 mem.disasm = {
-	sink << "MEM_toto";
+	sink << "MEM";
 }
 
 mem.execute = {
@@ -77,13 +77,61 @@ by one.
 op rev(0x18[8]:0x3A[8])
 
 rev.disasm = {
-	sink << "REV_toto";
+	sink << "REV";
 }
 
 rev.execute = {
 	/* The V flag is affected by operation. 
 	 * The final state for the others CCR flags is not defined.
 	 */
+	 
+	 uint8_t aVal, ccrV, memX, memYX;
+	 address_t  xVal, yVal;
+	 
+	 xVal = cpu->getRegX();
+	 yVal = cpu->getRegY();
+	 
+	 memX = cpu->memRead8(xVal);
+	 while (memX != 0xFF) {
+	 	
+	 	ccrV = 0;
+	 	aVal = 0xFF;
+	 	while ((memX != 0xFE) && (memX != 0xFF)) {
+	 		memYX = cpu->memRead8(yVal+memX);
+	 		if (memYX < aVal) {
+	 			aVal = memYX;
+	 		}
+	 		xVal++;
+	 		memX = cpu->memRead8(xVal);
+	 	}
+	 	
+	 	if (memX != 0xFF) {
+	 		
+	 		ccrV = 1;
+	 		xVal++;
+	 		memX = cpu->memRead8(xVal);
+	 		while ((memX != 0xFE) && (memX != 0xFF)) {
+	 			memYX = cpu->memRead8(yVal+memX);
+	 			if (aVal > memYX) {
+	 				cpu->memWrite8(yVal+memX, aVal);
+	 			}
+	 			xVal++;
+	 			memX = cpu->memRead8(xVal);
+	 		}
+	 		
+	 		if (memX != 0xFF) {
+	 			xVal++;
+	 			memX = cpu->memRead8(xVal);
+	 		}
+	 	}
+	 }
+	 
+	 xVal++;
+	 
+	 cpu->setRegA(aVal);
+	 cpu->setRegX(xVal);
+	 cpu->setRegY(yVal);
+	 cpu->ccr->setV(ccrV);
 }
 
 // REVW: (16bits) MIN-MAX rule evaluation
@@ -98,6 +146,62 @@ revw.execute = {
 	 * The C flag is used for special purpose.
 	 * The final state for the others CCR flags is not defined.
 	 */
+
+	 uint8_t aVal, ccrV, ccrC, memOfMemX, memY;
+	 address_t memX, xVal, yVal;
+	 
+	 xVal = cpu->getRegX();
+	 yVal = cpu->getRegY();
+	 ccrC = cpu->ccr->getC();
+	 
+	 memX = cpu->memRead16(xVal);
+	 while (memX != 0xFFFF) {
+	 	
+	 	ccrV = 0;
+	 	aVal = 0xFF;
+	 	while ((memX != 0xFFFE) && (memX != 0xFFFF)) {
+	 		memOfMemX = cpu->memRead8(memX);
+	 		if (memOfMemX < aVal) {
+	 			aVal = memOfMemX;
+	 		}
+	 		xVal++;
+	 		memX = cpu->memRead16(xVal);
+	 	}
+	 	
+	 	if (memX != 0xFFFF) {
+			// *** Apply weight	***
+			if (ccrC == 1) {
+				memY = cpu->memRead8(yVal);
+				aVal = (uint8_t) ((uint16_t) aVal * (memY+1)) >> 8;
+				yVal++;
+			}
+			
+	 		ccrV = 1;
+	 		xVal++;
+	 		memX = cpu->memRead16(xVal);
+	 		while ((memX != 0xFFFE) && (memX != 0xFFFF)) {
+	 			memOfMemX = cpu->memRead16(memX);
+	 			if (aVal > memOfMemX) {
+	 				cpu->memWrite8(memX, aVal);
+	 			}
+	 			xVal++;
+		 		memX = cpu->memRead16(xVal);
+	 		}
+	 		
+	 		if (memX != 0xFFFF) {
+	 			xVal++;
+	 			memX = cpu->memRead16(xVal);
+	 		}
+	 	}
+	 }
+	 
+	 xVal++;
+	 
+	 cpu->setRegA(aVal);
+	 cpu->setRegX(xVal);
+	 cpu->setRegY(yVal);
+	 cpu->ccr->setV(ccrV);
+
 }
 
 // WAV: Weighted Average Calculation
