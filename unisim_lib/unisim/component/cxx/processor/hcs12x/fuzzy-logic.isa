@@ -74,12 +74,14 @@ by one.
 }
 
 // REV: (8bits) MIN-MAX rule evaluation
+// this instruction can be interrupted.
 op rev(0x18[8]:0x3A[8])
 
 rev.disasm = {
 	sink << "REV";
 }
 
+// *** INTERRUPTIBLE ***
 rev.execute = {
 	/* The V flag is affected by operation. 
 	 * The final state for the others CCR flags is not defined.
@@ -94,39 +96,39 @@ rev.execute = {
 	 memX = cpu->memRead8(xVal);
 	 while (memX != 0xFF) {
 	 	
-	 	ccrV = 0;
-	 	aVal = 0xFF;
+	 	ccrV = 0; // cpu->ccr->setV(ccrV);
+	 	aVal = 0xFF; // cpu->setRegA(aVal);
 	 	while ((memX != 0xFE) && (memX != 0xFF)) {
 	 		memYX = cpu->memRead8(yVal+memX);
 	 		if (memYX < aVal) {
-	 			aVal = memYX;
+	 			aVal = memYX; // cpu->setRegA(aVal);
 	 		}
-	 		xVal++;
+	 		xVal++; // cpu->setRegX(xVal);
 	 		memX = cpu->memRead8(xVal);
 	 	}
 	 	
 	 	if (memX != 0xFF) {
 	 		
-	 		ccrV = 1;
-	 		xVal++;
+	 		ccrV = 1; // cpu->ccr->setV(ccrV);
+	 		xVal++;  // cpu->setRegX(xVal);
 	 		memX = cpu->memRead8(xVal);
 	 		while ((memX != 0xFE) && (memX != 0xFF)) {
 	 			memYX = cpu->memRead8(yVal+memX);
 	 			if (aVal > memYX) {
 	 				cpu->memWrite8(yVal+memX, aVal);
 	 			}
-	 			xVal++;
+	 			xVal++; // cpu->setRegX(xVal);
 	 			memX = cpu->memRead8(xVal);
 	 		}
 	 		
 	 		if (memX != 0xFF) {
-	 			xVal++;
+	 			xVal++;  // cpu->setRegX(xVal);
 	 			memX = cpu->memRead8(xVal);
 	 		}
 	 	}
 	 }
 	 
-	 xVal++;
+	 xVal++;  // cpu->setRegX(xVal);
 	 
 	 cpu->setRegA(aVal);
 	 cpu->setRegX(xVal);
@@ -135,12 +137,14 @@ rev.execute = {
 }
 
 // REVW: (16bits) MIN-MAX rule evaluation
+// this instruction can be interrupted.
 op revw(0x18[8]:0x3B[8])
 
 revw.disasm = {
-	sink << "REVW_todo";
+	sink << "REVW";
 }
 
+// *** INTERRUPTIBLE ***
 revw.execute = {
 	/* The V flag is affected by operation. 
 	 * The C flag is used for special purpose.
@@ -151,20 +155,20 @@ revw.execute = {
 	 address_t memX, xVal, yVal;
 	 
 	 xVal = cpu->getRegX();
-	 yVal = cpu->getRegY();
+	 yVal = cpu->getRegY(); cpu->setRegTMP(1, yVal);  // (Y) weight pointer kept in TMP2
 	 ccrC = cpu->ccr->getC();
 	 
 	 memX = cpu->memRead16(xVal);
 	 while (memX != 0xFFFF) {
 	 	
-	 	ccrV = 0;
-	 	aVal = 0xFF;
+	 	ccrV = 0;  // cpu->ccr->setV(ccrV);
+	 	aVal = 0xFF;  // cpu->setRegA(aVal);
 	 	while ((memX != 0xFFFE) && (memX != 0xFFFF)) {
 	 		memOfMemX = cpu->memRead8(memX);
 	 		if (memOfMemX < aVal) {
-	 			aVal = memOfMemX;
+	 			aVal = memOfMemX; // cpu->setRegA(aVal);
 	 		}
-	 		xVal++;
+	 		xVal++;  // cpu->setRegX(xVal);
 	 		memX = cpu->memRead16(xVal);
 	 	}
 	 	
@@ -172,30 +176,30 @@ revw.execute = {
 			// *** Apply weight	***
 			if (ccrC == 1) {
 				memY = cpu->memRead8(yVal);
-				aVal = (uint8_t) ((uint16_t) aVal * (memY+1)) >> 8;
-				yVal++;
+				aVal = (uint8_t) ((uint16_t) aVal * (memY+1)) >> 8;  // cpu->setRegA(aVal);
+				yVal++;  cpu->setRegTMP(1, yVal); // cpu->setRegY(yVal);
 			}
 			
-	 		ccrV = 1;
-	 		xVal++;
+	 		ccrV = 1; // cpu->ccr->setV(ccrV);
+	 		xVal++;  // cpu->setRegX(xVal);
 	 		memX = cpu->memRead16(xVal);
 	 		while ((memX != 0xFFFE) && (memX != 0xFFFF)) {
 	 			memOfMemX = cpu->memRead16(memX);
 	 			if (aVal > memOfMemX) {
 	 				cpu->memWrite8(memX, aVal);
 	 			}
-	 			xVal++;
+	 			xVal++;  // cpu->setRegX(xVal);
 		 		memX = cpu->memRead16(xVal);
 	 		}
 	 		
 	 		if (memX != 0xFFFF) {
-	 			xVal++;
+	 			xVal++;  // cpu->setRegX(xVal);
 	 			memX = cpu->memRead16(xVal);
 	 		}
 	 	}
 	 }
 	 
-	 xVal++;
+	 xVal++;  // cpu->setRegX(xVal);
 	 
 	 cpu->setRegA(aVal);
 	 cpu->setRegX(xVal);
@@ -205,28 +209,107 @@ revw.execute = {
 }
 
 // WAV: Weighted Average Calculation
+/*
+This instruction can be interrupted. 
+New WAV instructions can be started and interrupted while a previous WAV instruction is interrupted
+*/
+
 op wav(0x18[8]:0x3C[8])
 
 wav.disasm = {
-	sink << "WAV_todo";
+	sink << "WAV";
 }
 
+// *** INTERRUPTIBLE ***
 wav.execute = {
 	/* The Z flag is affected by operation. 
 	 * The final state for the others CCR flags is not defined.
 	 */
+	 
+	 /*
+	  * Do until B = 0, leave SOP in Y : D, SOW in X
+	  *   Partial Product = (M pointed to by X) × (M pointed to by Y)
+	  *   Sum-of-Products (24-bit SOP) = Previous SOP + Partial Product
+	  *   Sum-of-Weights (16-bit SOW) = Previous SOW + (M pointed to by Y)
+	  *   (X) + $0001 ⇒ X; (Y) + $0001 ⇒ Y
+	  *   (B) – $01 ⇒ B
+	  **/
+	 
+	 uint8_t bVal, memX, memY;
+	 address_t xVal, yVal;
+	 uint32_t sop;
+	 uint16_t pp, sow;
+	 
+	 bVal = cpu->getRegB();
+	 xVal = cpu->getRegX();
+	 yVal = cpu->getRegY();
+	 sop = 0;
+	 sow = 0;
+	 cpu->setRegTMP(0, 0x0000);
+	 cpu->setRegTMP(1, 0x0000);
+	 cpu->setRegTMP(2, 0x0000);
+	 
+	 while (bVal > 0) {
+		
+		/** TODO: WAV is interruptible only at this point and not after.
+		 * if (InterruptPending)
+		 * {
+		 *   Write word @ -2,SP (stack TMP3); SP = SP - 2;
+		 *   Write word @ -2,SP (stack TMP2); SP = SP - 2;
+		 *   Write word @ -2,SP (stack TMP1); SP = SP - 2;
+		 *   Adjust PC to point at $3C wavr pseudo-opcode
+		 * }
+		 **/
+
+	 	memY = cpu->memRead8(yVal);
+		memX = cpu->memRead8(xVal);
+		
+	 	pp = memX * memY;
+	 	sop += pp;
+		cpu->setRegTMP(2, (uint16_t) (sop >> 16));
+		cpu->setRegTMP(1, (uint16_t) sop);
+
+	 	sow += memY;
+		cpu->setRegTMP(0, sow);
+		
+	 	xVal++;   // cpu->setRegX(xVal);
+	 	yVal++;   // cpu->setRegY(yVal);
+	 	bVal--;   // cpu->setRegb(bVal);
+	 	
+	 }
+	 
+	 cpu->setRegB(bVal);
+	 cpu->setRegY(cpu->getRegTMP(2));
+	 cpu->setRegD(cpu->getRegTMP(1));
+	 cpu->setRegX(cpu->getRegTMP(0));
+	 	 
+	 cpu->ccr->setZ(1);
 }
 
-// WAVR: Resume execution of interrupted WAV instruction
+// WAVR pseudo instruction: Resume execution of interrupted WAV instruction
 op wavr(0x3C[8])
 
 wavr.disasm = {
-	sink << "WAVR_todo";
+	sink << "WAVR";
 }
 
 wavr.execute = {
 	/* The Z flag is affected by operation. 
 	 * The final state for the others CCR flags is not defined.
 	 */
+	address_t sp = cpu->getRegSP();
+	cpu->setRegTMP(0, cpu->memRead16(sp));
+	cpu->setRegTMP(1, cpu->memRead16(sp+2));
+	cpu->setRegTMP(2, cpu->memRead16(sp+4));
+	cpu->setRegSP(sp+6);
+	
+	if ((cpu->getRegTMP(0) == 0) || 
+		(cpu->getRegTMP(1) == 0) || 
+		(cpu->getRegTMP(2) == 0)) 
+	{
+		cpu->ccr->setZ(1);
+	} else {
+		cpu->ccr->setZ(0);
+	}
 }
 
