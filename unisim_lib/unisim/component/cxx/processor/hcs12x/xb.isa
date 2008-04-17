@@ -37,25 +37,16 @@ xb_5bit_cst.disasm = {
 	sink << std::dec << nnnnn << "," << CPU::xb_getAddrRegLabel(rr);
 }
 
+// TODO: 20080417 - a revoir 
 op xb_9_cst_z0 (0b111[3]:rr[2]:0b00[2]:s[1]:> <:sext<8> n8[8])
 
 xb_9_cst_z0.getEAddr = {
-/*	
-	int16_t n8to16 = 0x00FF & n8;
-   	if (s==1) {
-   		n8to16 = n8to16 | 0x8000;
-   	} 
-*/
+
 	return cpu->xb_getAddrRegValue(rr) + n8;   	
 }
 
 xb_9_cst_z0.disasm = {
-/*
-	int16_t n8to16 = 0x00FF & n8;
-   	if (s==1) {
-   		n8to16 = n8to16 | 0x8000;
-   	} 
-*/   	
+
 	sink << std::dec << n8 << "," << CPU::xb_getAddrRegLabel(rr);
 }
 

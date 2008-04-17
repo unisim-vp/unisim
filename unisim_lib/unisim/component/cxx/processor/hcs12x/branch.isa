@@ -444,9 +444,16 @@ rts.execute = {
 
 /* ************ Loop Primitive ********* */
 
-op loop(0x04[8]:b765[3]:b4[1]:b3[1]:b210[3]:> <:rel9[8])
+op loop(0x04[8]:b765[3]:b4[1]:b3[1]:b210[3]:> <:sext<8> rel9[8])
 
 loop.disasm = {
+/*
+Encoding for lb is summarized in the following table. 
+Bit 3 is not used (don’t care), 
+Bit 5 selects branch on zero (DBEQ – 0) or not zero (DBNE – 1) versions, 
+and bit 4 is the sign bit of the 9-bit relative offset. 
+Bits 7 and 6 would be 0:0 for DBNE.
+*/
 	uint8_t abdxys = (b765 << 5) | (b4 << 4) | (b3 << 3) | b210;
 	
 	switch (b765) {
@@ -459,24 +466,13 @@ loop.disasm = {
 		default: sink << "??? ";
 	}
 	
-	sink << EBLB::getRegName(b210) << " , ";
-	
-	if (b4 == 1) {
-		sink << (-1*rel9);
-	} else {
-		sink << rel9;
-	}
-	
+	sink << EBLB::getRegName(b210) << " , " << std::dec << rel9;
 }
 
 loop.execute = {
-	int16_t branchAddr;
-	
-	if (b4 == 0) {
-		branchAddr = cpu->getRegPC() + rel9; 
-	} else {
-		branchAddr = cpu->getRegPC() - rel9;
-	} 
+	address_t branchAddr;
+
+	branchAddr = cpu->getRegPC() + rel9;
 	
 	switch (b765) {
 		case 0x00: /*DBEQ*/{

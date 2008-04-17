@@ -421,7 +421,7 @@ st_dyxs_dir.execute = {
 }
 
 // STD or STY or STX or STS opr16a
-op st_dyxs_ext(0x1F[6]:dyxs[2]:> <:opr16a[8])
+op st_dyxs_ext(0x1F[6]:dyxs[2]:> <:opr16a[16])
 
 st_dyxs_ext.disasm = {
 

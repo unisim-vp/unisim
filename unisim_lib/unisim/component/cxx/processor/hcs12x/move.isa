@@ -34,7 +34,7 @@ movb_0C.execute = {
 	cpu->memWrite8(opr16adst, tmp);
 }
 
-op movb_09(0x18[8]:0x09[8]:> <:*xb[XB]:> <:opr16asrc[8])
+op movb_09(0x18[8]:0x09[8]:> <:*xb[XB]:> <:opr16asrc[16])
 
 movb_09.disasm = {
 	sink << "MOVB $" <<  std::hex << opr16asrc << ",";
@@ -47,7 +47,7 @@ movb_09.execute = {
 	cpu->memWrite8(addr, tmp);
 }
 
-op movb_0D(0x18[8]:0x0D[8]:> <:*xb[XB]:> <:opr16a[8])
+op movb_0D(0x18[8]:0x0D[8]:> <:*xb[XB]:> <:opr16a[16])
 
 movb_0D.disasm = {
 	sink << "MOVB ";
@@ -117,7 +117,7 @@ movw_04.execute = {
 /* 
  * Movbw_18_01 IDX IDX1 IDX2 [D,IDX] [IDX2]
  * */
-op movw_01(0x18[8]:0x01[8]:> <:*xb[XB]:> <:opr16asrc[8])
+op movw_01(0x18[8]:0x01[8]:> <:*xb[XB]:> <:opr16asrc[16])
 
 movw_01.disasm = {
 	sink << "MOVW $" <<  std::hex << opr16asrc << ",";
@@ -131,7 +131,7 @@ movw_01.execute = {
 }
 
 
-op movw_05(0x18[8]:0x05[8]:> <:*xb[XB]:> <:opr16a[8])
+op movw_05(0x18[8]:0x05[8]:> <:*xb[XB]:> <:opr16a[16])
 
 movw_05.disasm = {
 	sink << "MOVW ";
