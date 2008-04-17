@@ -39,6 +39,7 @@
 #ifdef SOCLIB
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
+#include "unisim/component/cxx/processor/arm/config.hh"
 #include <inttypes.h>
 
 namespace unisim {
@@ -53,6 +54,48 @@ CPU<CONFIG> ::
 Reset() {
 	cerr << "+++ Reset" << endl;
 	FlushPipeline();
+	/* Reset all the registers */
+	InitGPR();
+
+	/* we are running in system mode */
+	/* currently supported: arm966e_s
+	 * if different report error */
+	if(CONFIG::MODEL != ARM966E_S) {
+		cerr << "Error(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+			<< "):" << endl
+			<< "Running arm in system mode"
+			<< ". Only arm966e_s can run under this mode"
+			<< endl;
+		exit(-1);
+	}
+	// set CPSR to system mode
+	cpsr = 0;
+	for(unsigned int i = 0; i < num_phys_spsrs; i++) {
+		spsr[i] = 0;
+	}
+	for(unsigned int i = 0; i < 8; i++) {
+		fake_fpr[i] = 0;
+	}
+	fake_fps = 0;
+	SetCPSR_Mode(SYSTEM_MODE);
+	// set initial pc
+	/* Depending on the configuration being used set the initial pc */
+	if(CONFIG::MODEL == ARM966E_S) {
+		if(arm966es_vinithi)
+			SetGPR(PC_reg, (address_t)UINT32_C(0xffff0000));
+		else
+			SetGPR(PC_reg, (address_t)UINT32_C(0x00000000));
+		/* disable normal and fast interruptions */
+		SetCPSR_F();
+		SetCPSR_I();
+	}
+	if(CONFIG::MODEL == ARM7TDMI) {
+		SetGPR(PC_reg, (address_t)UINT32_C(0x00000000));
+		/* disable normal and fast interruptions */
+		SetCPSR_F();
+		SetCPSR_I();
+	}
+
 	fetch_pc = GetGPR(PC_reg);
 	cerr << "    current fetch_pc = 0x" << hex << fetch_pc << dec << endl;
 	fetchQueue = InstructionFactory<CONFIG>::New();
@@ -74,15 +117,6 @@ IsBusy() {
 	 *   of if the current one is going to be removed */
 	/* TOCHECK: what did I do here?
 	 * Needs to be checked again. Why the lsQueue must be empty? */
-	cerr << "+++ IsBusy" << endl;
-	if(fetchQueue) {
-		cerr << "    something in the fetchQueue" << endl;
-		if(fetchQueue->IsRequested() && !fetchQueue->IsFetched()) {
-			cerr << "    waiting for fetched instruction (1)" << endl;
-			return 1;
-		}
-	}
-	cerr << "    not busy (0)" << endl;
 	return 0;
 	bool busy = false;
 
@@ -111,8 +145,9 @@ FlushPipeline() {
 		decodeQueue = 0;
 	}
 	if(fetchQueue) {
-		InstructionFactory<CONFIG>::Destroy(fetchQueue);
-		fetchQueue = 0;
+		fetchQueue->Flush();
+//		InstructionFactory<CONFIG>::Destroy(fetchQueue);
+//		fetchQueue = 0;
 	}
 }
 
@@ -130,8 +165,8 @@ StepExecute() {
 				arm32_decoder.Decode(
 					executeQueue->GetFetchAddress(),
 					executeQueue->GetArm32Encoding());
-			op->execute(*this);
 			op->disasm(*this, str);
+			op->execute(*this);
 			cerr << "    - arm32 instruction: " << str.str() << endl;
 			executeQueue->SetOpcode(op);
 		} else {
@@ -165,10 +200,64 @@ StepExecute() {
 }
 
 template<class CONFIG>
-void 
+void
 CPU<CONFIG> ::
 Step() {
 	cerr << "+++ Step" << endl;
+	/* when Step is called it means that the last SetInstruction was done with
+	 *   the right info and that it can be used by the processor, so set the
+	 *   instruction in the fetchQueue as requested and fetched
+	 * if there is not instruction in the fetchQueue then something has gone wrong,
+	 *   show message and exit
+	 * if there is an instruction in the fetchQueue which has been fetched and 
+	 *   requested then something has gone wrong, show message and exit
+	 */
+	if(fetchQueue == 0) {
+		cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+			<< "no instruction in the fetch queue so nothing could be received."
+			<< endl;
+		exit(-1);
+	}
+	if(fetchQueue != 0 && (fetchQueue->IsRequested() || fetchQueue->IsFetched())) {
+		cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+			<< "the instruction in the fetch queue was already fetched/requested."
+			<< endl;
+		exit(-1);
+	}
+
+	if(fetchQueue->IsFlushed()) {
+		cerr << "    - the received instruction (pc = 0x" << hex << fetchQueue->GetFetchAddress() << dec
+			<< ") needs to be flushed" << endl;
+		InstructionFactory<CONFIG>::Destroy(fetchQueue);
+		fetchQueue = 0;
+	} else {
+		fetchQueue->SetRequested(true);
+		fetchQueue->SetFetched(true);
+
+		address_t addr = fetchQueue->GetFetchAddress();
+		if(GetCPSR_T()) {
+			// it is a thumb instruction
+			typename isa::thumb::Operation<CONFIG> *op = NULL;
+			thumb_insn_t insn = fetchQueue->GetThumbEncoding();
+			op = thumb_decoder.Decode(addr, insn);
+			fetchQueue->SetOpcode(op);
+		} else {
+			// it is an arm32 instruction
+			typename isa::arm32::Operation<CONFIG> *op = NULL;
+			insn_t insn = fetchQueue->GetArm32Encoding();
+			op = arm32_decoder.Decode(addr, insn);
+			fetchQueue->SetOpcode(op);
+		}
+	}
+
+	StepCycle();
+}
+
+template<class CONFIG>
+void 
+CPU<CONFIG> ::
+StepCycle() {
+	cerr << "+++ StepCycle" << endl;
 	/* start by removing the instruction in the executeQueue (if any) if it
 	 *   has finished its operation
 	 * check if the pipeline needs to be flushed */
@@ -182,9 +271,13 @@ Step() {
 			cerr << "    - flushing pipeline" << endl;
 			fetch_pc = GetGPR(PC_reg);
 			cerr << "    - setting pc to 0x" << hex << fetch_pc << dec << endl;
-		}
-		InstructionFactory<CONFIG>::Destroy(executeQueue);
-		executeQueue = 0;
+		} else {
+			cerr << "    - instruction 0x" << hex << executeQueue->GetFetchAddress() << dec << " finished" << endl;
+			InstructionFactory<CONFIG>::Destroy(executeQueue);
+			executeQueue = 0;
+		}	
+		//InstructionFactory<CONFIG>::Destroy(executeQueue);
+		//executeQueue = 0;
 	}
 
 	/* if execute queue is empty then move the decode queue entry to execute
@@ -229,6 +322,10 @@ Step() {
 		fetch_pc += InstructionByteSize();
 		fetchQueue->SetPredictedNextFetchAddress(fetch_pc);
 		cerr << "    - next fetch_pc = 0x" << hex << fetch_pc << dec << endl;
+	} else {
+		cerr << "    - fetching = 0x" << hex << fetchQueue->GetFetchAddress() << dec << endl;
+		cerr << "    - is_fetched = " << (fetchQueue->IsFetched()?"true":"false") << endl;
+		cerr << "    - is_requested = " << (fetchQueue->IsRequested()?"true":"false") << endl;
 	}
 }
 
@@ -237,9 +334,11 @@ void
 CPU<CONFIG> ::
 NullStep(uint32_t time_passed) {
 	cerr << "+++ NullStep(" << time_passed << ")" << endl;
+//	if(fetchQueue != 0) 
+//	  fetchQueue->SetFetched(false);
 	// TODO: check
 	for(uint32_t i = 0; i < time_passed; i++)
-		Step(); // ???? is this correct ???
+		StepCycle();
 }
 
 template<class CONFIG>
@@ -254,7 +353,7 @@ GetInstructionRequest(bool &req, uint32_t &addr) const {
 			addr = fetchQueue->GetFetchAddress();
 			addr = addr & UINT32_C(0xfffffffc);
 			req = true;
-			fetchQueue->SetRequested(true);
+		//	fetchQueue->SetRequested(true);
 		}
 	} else {
 		cerr << "    4" << endl;
@@ -285,7 +384,7 @@ SetInstruction(bool error, uint32_t val) {
 	if(GetCPSR_T()) {
 		// it is a thumb instruction
 		// TOCHECK: what do we need to read the lower part or the higher ???
-		typename isa::thumb::Operation<CONFIG> *op = NULL;
+		// typename isa::thumb::Operation<CONFIG> *op = NULL;
 		uint16_t val16;
 		if(addr & UINT32_C(0X03)) {
 			// not aligned read the higher bits
@@ -295,16 +394,16 @@ SetInstruction(bool error, uint32_t val) {
 		thumb_insn_t insn = val16;
 		insn = BigEndian2Host(insn);
 		fetchQueue->SetThumbEncoding(insn);
-		op = thumb_decoder.Decode(addr, insn);
-		fetchQueue->SetOpcode(op);
+		// op = thumb_decoder.Decode(addr, insn);
+		// fetchQueue->SetOpcode(op);
 	} else {
 		// it is an arm32 instruction
-		typename isa::arm32::Operation<CONFIG> *op = NULL;
+		// typename isa::arm32::Operation<CONFIG> *op = NULL;
 		insn_t insn = val;
 		insn = BigEndian2Host(insn);
 		fetchQueue->SetArm32Encoding(insn);
-		op = arm32_decoder.Decode(addr, insn);
-		fetchQueue->SetOpcode(op);
+		// op = arm32_decoder.Decode(addr, insn);
+		// fetchQueue->SetOpcode(op);
 	}
 }
 
@@ -431,8 +530,10 @@ void
 CPU<CONFIG> ::
 SetIrq(uint32_t irq) {
 	// TODO ?? Set the corresponding irq
+	if(irq == 0) return;
+	
 	cerr << "TODO(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-		<< "?? Set the corresponding irq" << endl;
+		<< "?? Set the corresponding irq (irq bit mask = " << irq << ")" << endl;
 	exit(-1);
 }
 		

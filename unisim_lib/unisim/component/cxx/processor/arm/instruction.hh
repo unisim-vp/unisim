@@ -90,6 +90,12 @@ public:
 	 * @param req true if it has been requested, false otherwise
 	 */
 	void SetRequested(bool req = true);
+	/** sets the fetched information of the instruction
+	 * Sets the fetched information of the instruction
+	 *
+	 * @param req true if it has been fetched, false otherwise
+	 */
+	void SetFetched(bool req = true) {is_fetched = req;}
 	/** returns true if the instruction has been effectively fetched
 	 * Returns true if the instruction has been effectively fetched from the
 	 *   memory system.
@@ -227,6 +233,20 @@ public:
 	 */
 	bool BranchTaken() const;
 
+	/** true if the instruction needs to be flushed
+	 * Returns true if the instruction needs to be flushed.
+	 *
+	 * @return true if the instruction needs to be flushed, false otherwise
+	 */
+	bool IsFlushed() const {return is_flushed;}
+	
+	/** marks the instruction to be flushed
+	 * Marks the instruction as to be flushed.
+	 *
+	 * @param flush true if the instruction has to be flushed, false otherwise
+	 */
+	void Flush(bool flush = true) {is_flushed = flush;}
+
 	/** true if a flush is required
 	 * Returns true if the executed instruction has to do a pipeline flush
 	 *
@@ -253,6 +273,10 @@ private:
 	bool is_requested;
 	/** indicates if the instruction has been effectively fetched */
 	bool is_fetched;
+	/** the instruction encoding (thumb) */
+	typename CONFIG::thumb_insn_t thumb_encoding;
+	/** the instruction encoding (arm32) */
+	typename CONFIG::insn_t arm32_encoding;
 	/** the instruction opcode (thumb) */
 	thumb_op_t *thumb_op;
 	/** the instruction opcode (arm32) */
@@ -263,6 +287,8 @@ private:
 	uint32_t exec_cycles;
 	/** indicates if the instruction requires to perform a flush of the pipeline */
 	bool flush_pipeline_required;
+	/** indicates if the instruction requires to be flushed */
+	bool is_flushed;
 };
 
 using std::queue;

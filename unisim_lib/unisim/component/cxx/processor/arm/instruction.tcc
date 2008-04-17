@@ -54,7 +54,8 @@ Instruction() :
 	thumb_op(0),
 	arm32_op(0),
 	executed(false),
-	flush_pipeline_required(false) {
+	flush_pipeline_required(false),
+	is_flushed(false) {
 }
 
 template<class CONFIG>
@@ -73,6 +74,7 @@ Reset() {
 	thumb_op = 0;
 	arm32_op = 0;
 	executed = false;
+	is_flushed = false;
 }
 
 template<class CONFIG>
@@ -144,30 +146,28 @@ template<class CONFIG>
 void 
 Instruction<CONFIG> :: 
 SetArm32Encoding(typename CONFIG::insn_t encoding) {
-	// TODO
+	this->arm32_encoding = encoding;
 }
 
 template<class CONFIG>
 typename CONFIG::insn_t 
 Instruction<CONFIG> ::
 GetArm32Encoding() {
-	// TODO
-	return 0;
+	return arm32_encoding;
 }
 
 template<class CONFIG>
 void 
 Instruction<CONFIG> ::
 SetThumbEncoding(typename CONFIG::thumb_insn_t encoding) {
-	// TODO
+	this->thumb_encoding = encoding;
 }
 
 template<class CONFIG>
 typename CONFIG::thumb_insn_t 
 Instruction<CONFIG> :: 
 GetThumbEncoding() {
-	// TODO
-	return 0;
+	return thumb_encoding;
 }
 
 template<class CONFIG>
@@ -175,7 +175,7 @@ void
 Instruction<CONFIG> ::
 SetOpcode(typename isa::thumb::Operation<CONFIG> *op) {
 	thumb_op = op;
-	is_fetched = true;
+//	is_fetched = true;
 }
 
 template<class CONFIG>
@@ -183,7 +183,7 @@ void
 Instruction<CONFIG> ::
 SetOpcode(typename isa::arm32::Operation<CONFIG> *op) {
 	arm32_op = op;
-	is_fetched = true;
+//	is_fetched = true;
 }
 
 template<class CONFIG>
@@ -297,6 +297,7 @@ template<class CONFIG>
 void
 InstructionFactory<CONFIG> ::
 Destroy(Instruction<CONFIG> *insn) {
+	if(insn == NULL) return;
 	insn->Reset();
 	queue.push(insn);
 }

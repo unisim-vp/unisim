@@ -154,9 +154,9 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	/* Depending on the configuration being used set the initial pc */
 	if(CONFIG::MODEL == ARM966E_S) {
 		if(arm966es_vinithi)
-			SetGPR(PC_reg, (address_t)0xffff0000);
+			SetGPR(PC_reg, (address_t)UINT32_C(0xffff0000));
 		else
-			SetGPR(PC_reg, (address_t)0x00000000);
+			SetGPR(PC_reg, (address_t)UINT32_C(0x00000000));
 		/* disable normal and fast interruptions */
 		SetCPSR_F();
 		SetCPSR_I();
@@ -165,7 +165,7 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 		SetGPR(PC_reg, (address_t)UINT32_C(0x00000000));
 		/* disable normal and fast interruptions */
 		SetCPSR_F();
-		SetCPRS_I();
+		SetCPSR_I();
 	}
 
 	// initialize the variables to compute the final address on memory 

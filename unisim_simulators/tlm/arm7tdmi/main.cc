@@ -124,6 +124,9 @@ void help(char *prog_name) {
 	cerr << " --logger" << endl;
 	cerr << " -l" << endl;
 	cerr << "            activate the logger" << endl << endl;
+	cerr << " --xml-gdb <file>" << endl;
+	cerr << " -x <file>" << endl;
+	cerr << "            processor xml description file for gdb" << endl << endl;
 	cerr << " --gdb-server <port_number>" << endl;
 	cerr << " -d <port_number>" << endl;
 	cerr << "            activate the gdb server and use the given port" << endl << endl;
@@ -168,6 +171,7 @@ int main(int argc, char *argv[], char **envp) {
 		{"get-config", required_argument, 0, 'g'},
 		{"config", required_argument, 0, 'c'},
 		{"logger", no_argument, 0, 'l'},
+		{"xml-gdb", required_argument, 0, 'x'},
 		{"gdb-server", required_argument, 0, 'd'},
 		{"inline-debugger", no_argument, 0, 'i'},
 		{"message-spy", no_argument, 0, 'm'},
@@ -184,6 +188,7 @@ int main(int argc, char *argv[], char **envp) {
 	bool use_logger = false;
 	bool use_statistics = false;
 	bool use_gdb_server = false;
+	char *gdb_xml = 0;
 	int gdb_server_port = 0;
 	bool use_inline_debugger = false;
 	bool use_message_spy = false;
@@ -193,7 +198,7 @@ int main(int argc, char *argv[], char **envp) {
 	// Parse the command line arguments
 //	while((c = getopt_long (argc, argv, "dg:a:hi:zeoml:", long_options, 0)) != -1) {
 	int c;
-	while((c = getopt_long (argc, argv, "hv:g:c:ld:im", long_options, 0)) != -1) {
+	while((c = getopt_long (argc, argv, "hv:g:c:ld:x:im", long_options, 0)) != -1) {
 		switch(c) {
 		case 'h':
 			help(argv[0]);
@@ -206,6 +211,9 @@ int main(int argc, char *argv[], char **envp) {
 		case 'g':
 			get_config_name = optarg;
 			get_config = true;
+			break;
+		case 'x':
+			gdb_xml = optarg;
 			break;
 		case 'c':
 			set_config_name = optarg;
@@ -315,12 +323,6 @@ int main(int argc, char *argv[], char **envp) {
 		}
 	}
 	
-	// statistics connections
-	if(use_statistics) {
-		cpu->statistic_reporting_import >> *statistic_server->statistic_reporting_export[0];
-		*statistic_server->statistic_reporting_control_import[0] >> cpu->statistic_reporting_control_export;
-	}
-
 	if(use_inline_debugger) {
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
@@ -376,10 +378,17 @@ int main(int argc, char *argv[], char **envp) {
 
 	ServiceManager::LoadXmlParameters(set_config_name);
 	if(use_gdb_server) {
+		cerr << "gdb_server_port = " << gdb_server_port << endl;
 		VariableBase *var =	ServiceManager::GetParameter("gdb-server.tcp-port");
 		*var = gdb_server_port;
+		if(gdb_xml != 0) {
+			cerr << "gdb_xml = " << gdb_xml << endl;
+			var = ServiceManager::GetParameter("gdb-server.architecture-description-filename");
+			*var = gdb_xml;
+		}
 	}
 	{
+		cerr << "filename = " << filename << endl;
 		VariableBase *var = ServiceManager::GetParameter("elf32-loader.filename");
 		*var = filename;
 	}

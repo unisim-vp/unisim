@@ -297,6 +297,7 @@ public:
 
 	uint32_t IsBusy();
 	void Step();
+	void StepCycle();
 	void NullStep(uint32_t time_passed = 1);
 
 	void GetInstructionRequest(bool &req, uint32_t &addr) const;
