@@ -1,7 +1,7 @@
 #!/bin/bash
 export PATH=/usr/local/bin:/bin:/usr/bin:/usr/X11R6/bin
 export m4_path="`pwd`/m4"
-echo "doing aclocal -I$m4_path; autoconf; autoheader; automake -a in"
+echo "doing aclocal -I$m4_path; autoconf; autoheader; automake -ac in"
 find . -name "configure.ac" -execdir /bin/bash -c \
 "current_path=\`pwd\`; \
 has_to_build=\"false\"; \
@@ -71,7 +71,7 @@ then \
   then \
     autoheader; \
   fi; \
-  automake -a; \
+  automake -ac; \
 else \
   echo \"skipping:  \$current_path\"; \
 fi" \;
