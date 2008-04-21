@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH=/usr/local/bin:/bin:/usr/bin:/usr/X11R6/bin
 export m4_path="`pwd`/m4"
 echo "doing aclocal -I$m4_path; autoconf; autoheader; automake -a in"
 find . -name "configure.ac" -execdir /bin/bash -c \
