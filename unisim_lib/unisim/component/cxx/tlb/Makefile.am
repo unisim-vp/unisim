@@ -1,6 +1,6 @@
 includedir = $(prefix)/include/unisim/component/cxx/tlb
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/tlb
-include_HEADERS = tlb.hh
+include_HEADERS = tlb.hh tlb.tcc
 uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(sharedir) || true)

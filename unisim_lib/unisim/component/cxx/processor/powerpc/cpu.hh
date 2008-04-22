@@ -38,7 +38,7 @@
 #include <unisim/component/cxx/processor/powerpc/powerpc_types.hh>
 #include <unisim/component/cxx/processor/powerpc/fpu.hh>
 #include <unisim/component/cxx/cache/cache.hh>
-#include <unisim/component/cxx/tlb2/tlb.hh>
+#include <unisim/component/cxx/tlb/tlb.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/debug_control.hh>
@@ -115,9 +115,9 @@ using unisim::component::cxx::cache::CacheBlock;
 using unisim::component::cxx::cache::CacheLine;
 using unisim::component::cxx::cache::CacheSet;
 using unisim::component::cxx::cache::Cache;
-using unisim::component::cxx::tlb2::TLBEntry;
-using unisim::component::cxx::tlb2::TLBSet;
-using unisim::component::cxx::tlb2::TLB;
+using unisim::component::cxx::tlb::TLBEntry;
+using unisim::component::cxx::tlb::TLBSet;
+using unisim::component::cxx::tlb::TLB;
 
 
 typedef enum {

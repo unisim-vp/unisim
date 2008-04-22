@@ -32,80 +32,80 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_TLB_TLB_HH__
-#define __UNISIM_COMPONENT_CXX_TLB_TLB_HH__
+#ifndef __UNISIM_COMPONENT_CXX_TLB_TLB_TCC__
+#define __UNISIM_COMPONENT_CXX_TLB_TLB_TCC__
 
-#include <inttypes.h>
+#include <string.h>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace tlb {
 
-template <class CONFIG> class TLBEntry;
-template <class CONFIG> class TLBSet;
-template <class CONFIG> class TLB;
+template <class CONFIG>
+TLBEntry<CONFIG>::TLBEntry() : base_virtual_addr(0)
+{
+}
 
 template <class CONFIG>
-class TLBEntry
+TLBEntry<CONFIG>::~TLBEntry()
 {
-public:
-	typedef typename CONFIG::ENTRY_STATUS STATUS;
-	typedef typename CONFIG::VIRTUAL_ADDRESS VIRTUAL_ADDRESS;
-	typedef typename CONFIG::PTE PTE;
-	static const uint32_t PAGE_SIZE = CONFIG::PAGE_SIZE;
-
-	TLBEntry();
-	~TLBEntry();
-	inline void SetBaseVirtualAddr(VIRTUAL_ADDRESS base_virtual_addr);
-	inline VIRTUAL_ADDRESS GetBaseVirtualAddr() const;
-
-	STATUS status;
-	PTE pte;
-protected:
-private:
-	VIRTUAL_ADDRESS base_virtual_addr;
-};
+}
 
 template <class CONFIG>
-class TLBSet
+inline void TLBEntry<CONFIG>::SetBaseVirtualAddr(VIRTUAL_ADDRESS base_virtual_addr)
 {
-public:
-	typedef typename CONFIG::SET_STATUS STATUS;
-	typedef typename CONFIG::VIRTUAL_ADDRESS VIRTUAL_ADDRESS;
-	static const uint32_t ASSOCIATIVITY = CONFIG::TLB_ASSOCIATIVITY;
-
-	TLBSet();
-	~TLBSet();
-	inline TLBEntry<CONFIG>& operator [] (uint32_t way);
-
-	STATUS status;
-protected:
-private:
-	TLBEntry<CONFIG> entries[ASSOCIATIVITY];
-};
+	this->base_virtual_addr = base_virtual_addr;
+}
 
 template <class CONFIG>
-class TLB
+inline typename TLBEntry<CONFIG>::VIRTUAL_ADDRESS TLBEntry<CONFIG>::GetBaseVirtualAddr() const
 {
-public:
-	typedef typename CONFIG::VIRTUAL_ADDRESS VIRTUAL_ADDRESS;
-	static const uint32_t NUM_SETS = CONFIG::TLB_NUM_ENTRIES / TLBSet<CONFIG>::ASSOCIATIVITY;
+	return base_virtual_addr;
+}
 
-	TLB();
-	~TLB();
+template <class CONFIG>
+TLBSet<CONFIG>::TLBSet()
+{
+}
 
-	static inline void DecodeAddress(VIRTUAL_ADDRESS addr, VIRTUAL_ADDRESS& base_virtual_addr, uint32_t& index);
-	inline TLBSet<CONFIG>& operator [] (uint32_t index);
+template <class CONFIG>
+TLBSet<CONFIG>::~TLBSet()
+{
+}
 
-protected:
-private:
-	TLBSet<CONFIG> sets[NUM_SETS];
-};
+template <class CONFIG>
+TLBEntry<CONFIG>& TLBSet<CONFIG>::operator [] (uint32_t way)
+{
+	return entries[way];
+}
+
+template <class CONFIG>
+TLB<CONFIG>::TLB()
+{
+}
+
+template <class CONFIG>
+TLB<CONFIG>::~TLB()
+{
+}
+
+template <class CONFIG>
+inline void TLB<CONFIG>::DecodeAddress(VIRTUAL_ADDRESS addr, VIRTUAL_ADDRESS& base_virtual_addr, uint32_t& index)
+{
+	base_virtual_addr = addr & (~((VIRTUAL_ADDRESS) CONFIG::PAGE_SIZE - 1));
+	index = (addr / CONFIG::PAGE_SIZE) % NUM_SETS;
+}
+
+template <class CONFIG>
+TLBSet<CONFIG>& TLB<CONFIG>::operator [] (uint32_t index)
+{
+	return sets[index];
+}
 
 } // end of namespace tlb
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_TLB_TLB_HH__
+#endif // __UNISIM_COMPONENT_CXX_TLB_TLB_TCC__

@@ -37,7 +37,7 @@
 
 #include <unisim/component/cxx/processor/powerpc/exception.tcc>
 #include <unisim/component/cxx/cache/cache.tcc>
-#include <unisim/component/cxx/tlb2/tlb.tcc>
+#include <unisim/component/cxx/tlb/tlb.tcc>
 #include <unisim/util/queue/queue.tcc>
 
 #include <sstream>

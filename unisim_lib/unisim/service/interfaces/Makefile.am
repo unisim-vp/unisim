@@ -22,7 +22,8 @@ include_HEADERS = \
 	resetable.hh \
 	symbol_table_lookup.hh \
 	time.hh \
-	statistic_reporting.hh
+	statistic_reporting.hh \
+	trap_reporting.hh
 
 dist_share_DATA = COPYING
 
