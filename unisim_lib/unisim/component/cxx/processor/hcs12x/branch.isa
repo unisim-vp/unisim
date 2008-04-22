@@ -78,10 +78,10 @@ sbr.execute = {
 			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 1) branch = true; 
 			break;
 		case 0xE: // BGT: branch if greater than
-			if (cpu->ccr->getZ()+(cpu->ccr->getN() ^ cpu->ccr->getV()) == 0) branch = true; 
+			if (cpu->ccr->getZ() | (cpu->ccr->getN() ^ cpu->ccr->getV()) == 0) branch = true; 
 			break;
 		case 0xF: // BLE: branch if less than or equal
-			if (cpu->ccr->getZ()+(cpu->ccr->getN() ^ cpu->ccr->getV()) == 1) branch = true; 
+			if (cpu->ccr->getZ() | (cpu->ccr->getN() ^ cpu->ccr->getV()) == 1) branch = true; 
 			break;
 	}
 	
@@ -460,7 +460,7 @@ Bits 7 and 6 would be 0:0 for DBNE.
 		case 0x00: sink << "DBEQ "; break;
 		case 0x01: sink << "DBNE "; break;
 		case 0x02: sink << "TBEQ "; break;
-		case 0x03: sink << "TBNQ "; break;
+		case 0x03: sink << "TBNE "; break;
 		case 0x04: sink << "IBEQ "; break;
 		case 0x05: sink << "IBNE "; break;
 		default: sink << "??? ";
@@ -478,10 +478,12 @@ loop.execute = {
 		case 0x00: /*DBEQ*/{
 			uint16_t val; 
 			if (b210 < 0x4) {
-				val = cpu->eblb->getter<uint8_t>(b210) -1;
+				val = cpu->eblb->getter<uint8_t>(b210);
+				if (val != 0) { val = val - 1;}
 				cpu->eblb->setter<uint8_t>(b210, val);
 			} else {
-				val = cpu->eblb->getter<uint16_t>(b210) -1;
+				val = cpu->eblb->getter<uint16_t>(b210);
+				if (val != 0) { val = val - 1;}
 				cpu->eblb->setter<uint16_t>(b210, val);
 			}
 			if (val == 0) cpu->setRegPC(branchAddr);
@@ -490,10 +492,12 @@ loop.execute = {
 		case 0x01: /*DBNE*/{
 			uint16_t val; 
 			if (b210 < 0x4) {
-				val = cpu->eblb->getter<uint8_t>(b210) -1;
+				val = cpu->eblb->getter<uint8_t>(b210);
+				if (val != 0) { val = val - 1;}
 				cpu->eblb->setter<uint8_t>(b210, val);
 			} else {
-				val = cpu->eblb->getter<uint16_t>(b210) -1;
+				val = cpu->eblb->getter<uint16_t>(b210);
+				if (val != 0) { val = val - 1;}
 				cpu->eblb->setter<uint16_t>(b210, val);
 			}
 			if (val != 0) cpu->setRegPC(branchAddr);
@@ -502,16 +506,18 @@ loop.execute = {
 		case 0x02: /*TBEQ*/{
 			if (cpu->eblb->getter<uint8_t>(b210) == 0) cpu->setRegPC(branchAddr);
 		} break;
-		case 0x03: /*TBNQ*/{
+		case 0x03: /*TBNE*/{
 			if (cpu->eblb->getter<uint8_t>(b210) != 0) cpu->setRegPC(branchAddr);
 		} break;
 		case 0x04: /*IBEQ*/{
 			uint16_t val; 
 			if (b210 < 0x4) {
-				val = cpu->eblb->getter<uint8_t>(b210) +1;
+				val = cpu->eblb->getter<uint8_t>(b210);
+				if (val != 0) { val = val + 1;}
 				cpu->eblb->setter<uint8_t>(b210, val);
 			} else {
-				val = cpu->eblb->getter<uint16_t>(b210) +1;
+				val = cpu->eblb->getter<uint16_t>(b210);
+				if (val != 0) { val = val + 1;}
 				cpu->eblb->setter<uint16_t>(b210, val);
 			}
 			if (val == 0) cpu->setRegPC(branchAddr);
@@ -520,10 +526,12 @@ loop.execute = {
 		case 0x05: /*IBNE*/{
 			uint16_t val; 
 			if (b210 < 0x4) {
-				val = cpu->eblb->getter<uint8_t>(b210) +1;
+				val = cpu->eblb->getter<uint8_t>(b210);
+				if (val != 0) { val = val + 1;}
 				cpu->eblb->setter<uint8_t>(b210, val);
 			} else {
-				val = cpu->eblb->getter<uint16_t>(b210) +1;
+				val = cpu->eblb->getter<uint16_t>(b210);
+				if (val != 0) { val = val + 1;}
 				cpu->eblb->setter<uint16_t>(b210, val);
 			}
 			if (val != 0) cpu->setRegPC(branchAddr);

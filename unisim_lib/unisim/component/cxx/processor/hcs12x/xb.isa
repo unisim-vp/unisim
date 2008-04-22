@@ -30,7 +30,11 @@ op xb_5bit_cst (rr[2]:0b0[1]:sext<8> nnnnn[5])
 
 xb_5bit_cst.getEAddr = {
 
-    return cpu->xb_getAddrRegValue(rr) + nnnnn;
+	address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + nnnnn;
+	
+    return addr;
+    
+//    return cpu->xb_getAddrRegValue(rr) + nnnnn;
 }
 
 xb_5bit_cst.disasm = {
@@ -42,7 +46,11 @@ op xb_9_cst_z0 (0b111[3]:rr[2]:0b00[2]:s[1]:> <:sext<8> n8[8])
 
 xb_9_cst_z0.getEAddr = {
 
-	return cpu->xb_getAddrRegValue(rr) + n8;   	
+	address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n8;
+
+	return addr;
+
+//	return cpu->xb_getAddrRegValue(rr) + n8;
 }
 
 xb_9_cst_z0.disasm = {
@@ -53,12 +61,15 @@ xb_9_cst_z0.disasm = {
 op xb_16bit_cst_z1 (0b111[3]:rr[2]:0b0[1]:0b1[1]:s[1]:> <:sext<16> n16[16])
 
 xb_16bit_cst_z1.getEAddr = {
+	address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n16;
    	if (s==0) {
    		// Constant offset 16-bit signed
-   		return cpu->xb_getAddrRegValue(rr) + n16;
+   		return addr;
+//   	return cpu->xb_getAddrRegValue(rr) + n16;
    	} else {
    		// 16-bit offset indexed-indirect
-		return cpu->memRead16(cpu->xb_getAddrRegValue(rr) + n16);
+		return cpu->memRead16(addr);
+//		return cpu->memRead16(cpu->xb_getAddrRegValue(rr) + n16);
    	}
 }
 
@@ -86,7 +97,7 @@ xb_auto.getEAddr = {
 	{
 		regNewVal = regOldVal + val + 1;
 	} else { // decrement index register
-		regNewVal = regNewVal + val - 16;
+		regNewVal = (int16_t) regOldVal + val - 16;
 	}
 
 	cpu->xb_setAddrRegValue(rr,regNewVal);	

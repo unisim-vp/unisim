@@ -18,6 +18,8 @@ namespace hcs12x {
 #define INLINE
 #endif
 
+using std::cout;
+
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Line;
@@ -62,13 +64,13 @@ CPU::CPU(const char *name, Object *parent):
 //	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
 //	param_verbose_setup("verbose-setup", this, verbose_setup),
-	verbose_step(false),
+	verbose_step(true),
 //	param_verbose_step("verbose-step", this, verbose_step),
 //	verbose_step_insn(false),
 //	param_verbose_step_insn("verbose-step-insn", this, verbose_step_insn),
-	verbose_dump_regs_start(false),
+	verbose_dump_regs_start(true),
 //	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
-	verbose_dump_regs_end(false),
+	verbose_dump_regs_end(true),
 //	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
 //	memory_interface(_memory_interface),
 	instruction_counter(0)
@@ -301,7 +303,8 @@ void CPU::Step()
 	}
 
 	op = this->Decode(current_pc, insn);
-	
+	setRegPC(current_pc+op->GetEncoding().size);
+		
 	/* Execute instruction */
 
 	if(logger_import) {
@@ -319,9 +322,8 @@ void CPU::Step()
 			<< Endl << EndDebugInfo;
 	}
 
-	setRegPC(current_pc+op->GetEncoding().size);
 	op->execute(this);
-		
+	
 //	/* perform the memory load/store operations */
 //	PerformLoadStoreAccesses();
 	VerboseDumpRegsEnd();
@@ -422,7 +424,6 @@ bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)
 	if (memory_import) {
 		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
 	}
-//	BusRead(addr, (uint8_t *) buffer, size);
 	
 	return false;
 }
@@ -432,8 +433,6 @@ bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size
 	if (memory_import) {
 		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
 	}
-
-//	BusWrite(addr, (uint8_t *) buffer, size);
 	
 	return false;
 }
@@ -584,18 +583,16 @@ uint8_t CPU::getRegB() { return regB; }
     
 void CPU::setRegD(uint16_t val) { 
     // regD == regA:regB
-
-	uint16_t value = Host2BigEndian(val);
 	
-	setRegA((uint8_t) (value >> 8));
-	setRegB((uint8_t) (value & 0x00FF));
+	setRegA((uint8_t) (val >> 8));
+	setRegB((uint8_t) (val & 0x00FF));
 
 }    
     
 uint16_t CPU::getRegD() { 
     // regD == regA:regB
 	uint16_t val = (((uint16_t) getRegA()) << 8) | getRegB();
-    return BigEndian2Host(val); 
+	return val;
 }
 
 void CPU::setRegX(uint16_t val) { regX = val; }    
@@ -623,19 +620,46 @@ void EBLB::setter(uint8_t rr, T val) // setter function
 	 */
 {
 	switch (rr) {
-		case EBLBRegs::A: cpu->setRegA((uint8_t) val); break;
-		case EBLBRegs::B: cpu->setRegB((uint8_t) val); break;
-		case EBLBRegs::CCR: cpu->ccr->setCCRLow((uint8_t) val); break;
-		case EBLBRegs::CCRL: cpu->ccr->setCCRLow((uint8_t) val); break;
-		case EBLBRegs::CCRH: cpu->ccr->setCCRHigh((uint8_t) val); break;
-		case EBLBRegs::CCRW: cpu->ccr->setCCR((uint16_t) val); break;
-		case EBLBRegs::TMP1: cpu->setRegTMP(0, (uint16_t) val); break;
-		case EBLBRegs::TMP2: cpu->setRegTMP(1, (uint16_t) val); break;
-		case EBLBRegs::TMP3: cpu->setRegTMP(2, (uint16_t) val); break;
-		case EBLBRegs::D: cpu->setRegD((uint16_t) val); break;
-		case EBLBRegs::X: cpu->setRegX((uint16_t) val); break;
-		case EBLBRegs::Y: cpu->setRegY((uint16_t) val); break;
-		case EBLBRegs::SP: cpu->setRegSP((uint16_t) val); break;
+		case EBLBRegs::A: {
+			cpu->setRegA((uint8_t) val);
+		} break;
+		case EBLBRegs::B: {
+			cpu->setRegB((uint8_t) val);
+		} break;
+		case EBLBRegs::CCR: {
+			cpu->ccr->setCCRLow((uint8_t) val);
+		} break;
+		case EBLBRegs::CCRL: {
+			cpu->ccr->setCCRLow((uint8_t) val);
+		} break;
+		case EBLBRegs::CCRH: {
+			cpu->ccr->setCCRHigh((uint8_t) val);
+		} break;
+		case EBLBRegs::CCRW: {
+			cpu->ccr->setCCR((uint16_t) val);
+		} break;
+		case EBLBRegs::TMP1: {
+			cpu->setRegTMP(0, (uint16_t) val);
+		} break;
+		case EBLBRegs::TMP2: {
+			cpu->setRegTMP(1, (uint16_t) val); 
+		} break;
+		case EBLBRegs::TMP3: {
+			cpu->setRegTMP(2, (uint16_t) val);
+		} break;
+		case EBLBRegs::D: {
+			cpu->setRegD((uint16_t) val);
+		} break;
+		case EBLBRegs::X: {
+			cpu->setRegX((uint16_t) val);
+		} break;
+		case EBLBRegs::Y: {
+			cpu->setRegY((uint16_t) val);
+		} break;
+		case EBLBRegs::SP: {
+			cpu->setRegSP((uint16_t) val);
+		} break;
+		default:;
 	}
 }
 
@@ -649,19 +673,46 @@ T EBLB::getter(uint8_t rr) // getter function
 	 */
 {
 	switch (rr) {
-		case EBLBRegs::A: return (uint8_t) cpu->getRegA(); break;
-		case EBLBRegs::B: return (uint8_t) cpu->getRegB(); break;
-		case EBLBRegs::CCR: return (uint8_t) cpu->ccr->getCCRLow(); break;
-		case EBLBRegs::CCRL: return (uint8_t) cpu->ccr->getCCRLow(); break;
-		case EBLBRegs::CCRH: return (uint8_t) cpu->ccr->getCCRHigh(); break;
-		case EBLBRegs::CCRW: return (uint16_t) cpu->ccr->getCCR(); break;
-		case EBLBRegs::TMP1: return (uint16_t) cpu->getRegTMP(0); break;
-		case EBLBRegs::TMP2: return (uint16_t) cpu->getRegTMP(1); break;
-		case EBLBRegs::TMP3: return (uint16_t) cpu->getRegTMP(2); break;
-		case EBLBRegs::D: return (uint16_t) cpu->getRegD(); break;
-		case EBLBRegs::X: return (uint16_t) cpu->getRegX(); break;
-		case EBLBRegs::Y: return (uint16_t) cpu->getRegY(); break;
-		case EBLBRegs::SP: return (uint16_t) cpu->getRegSP(); break;
+		case EBLBRegs::A: {
+			return (uint8_t) cpu->getRegA();
+		} break;
+		case EBLBRegs::B: {
+			return (uint8_t) cpu->getRegB();
+		} break;
+		case EBLBRegs::CCR: {
+			return (uint8_t) cpu->ccr->getCCRLow();
+		} break;
+		case EBLBRegs::CCRL: {
+			return (uint8_t) cpu->ccr->getCCRLow();
+		} break;
+		case EBLBRegs::CCRH: {
+			return (uint8_t) cpu->ccr->getCCRHigh();
+		} break;
+		case EBLBRegs::CCRW: {
+			return (uint16_t) cpu->ccr->getCCR();
+		} break;
+		case EBLBRegs::TMP1: {
+			return (uint16_t) cpu->getRegTMP(0);
+		} break;
+		case EBLBRegs::TMP2: {
+			return (uint16_t) cpu->getRegTMP(1);
+		} break;
+		case EBLBRegs::TMP3: {
+			return (uint16_t) cpu->getRegTMP(2);
+		} break;
+		case EBLBRegs::D: {
+			return (uint16_t) cpu->getRegD();
+		} break;
+		case EBLBRegs::X: {
+			return (uint16_t) cpu->getRegX();
+		} break;
+		case EBLBRegs::Y: {
+			return (uint16_t) cpu->getRegY();
+		} break;
+		case EBLBRegs::SP: {
+			return (uint16_t) cpu->getRegSP();
+		} break;
+		default:;
 	}
 }
 
@@ -672,93 +723,6 @@ void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
 	setter<T>(rrDst, tmp);
 }
 
-uint8_t CCR_t::getC() { return c;};
-void 	CCR_t::setC(uint8_t val) { c == val;};            
-
-uint8_t CCR_t::getV() { return v;};
-void 	CCR_t::setV(uint8_t val) { v == val;};            
-
-uint8_t CCR_t::getZ() { return z;};
-void 	CCR_t::setZ(uint8_t val) { z == val;};            
-
-uint8_t CCR_t::getN() { return n;};
-void 	CCR_t::setN(uint8_t val) { n == val;};            
-
-uint8_t CCR_t::getI() { return i;};
-void 	CCR_t::setI(uint8_t val) { i == val;};            
-
-uint8_t CCR_t::getH() { return h;};
-void 	CCR_t::setH(uint8_t val) { h == val;};            
-
-uint8_t CCR_t::getX() { return x;};
-void 	CCR_t::setX(uint8_t val) { x == val;};            
-
-uint8_t CCR_t::getS() { return s;};
-void 	CCR_t::setS(uint8_t val) { s == val;};            
-
-uint8_t CCR_t::getIPL() { return ipl;};
-void 	CCR_t::setIPL(uint8_t val) { ipl == val;};            
-
-uint8_t CCR_t::getCCRLow() {
-	uint8_t val = 0;
-	val |= getC();
-	val |= getV() << 1;
-	val |= getZ() << 2;
-	val |= getN() << 3;
-	val |= getI() << 4;
-	val |= getH() << 5;
-	val |= getX() << 6;
-	val |= getS() << 7;
-	
-	return val;
-};	
-void CCR_t::setCCRLow(uint8_t val) {
-	setC(val & 0x01);
-	setV(val & 0x02);
-	setZ(val & 0x04);
-	setN(val & 0x08);
-	setI(val & 0x10);
-	setH(val & 0x20);
-	setX(val & 0x40);
-	setS(val & 0x80);
-};
-
-uint16_t CCR_t::getCCR() {
-	uint16_t val = 0;
-	val |= getC();
-	val |= getV() << 1;
-	val |= getZ() << 2;
-	val |= getN() << 3;
-	val |= getI() << 4;
-	val |= getH() << 5;
-	val |= getX() << 6;
-	val |= getS() << 7;
-	val |= getIPL() << 8;
-	
-	return val;
-
-};
-
-void CCR_t::setCCR(uint16_t val) {
-	setC((uint8_t) val & 0x01);
-	setV((uint8_t) val & 0x02);
-	setZ((uint8_t) val & 0x04);
-	setN((uint8_t) val & 0x08);
-	setI((uint8_t) val & 0x10);
-	setH((uint8_t) val & 0x20);
-	setX((uint8_t) val & 0x40);
-	setS((uint8_t) val & 0x80);
-	setIPL((uint8_t) ((val & 0x0700) >> 8));
-};
-	
-uint8_t CCR_t::getCCRHigh() {
-	return getIPL();
-};
-
-void CCR_t::setCCRHigh(uint8_t val) {
-	setIPL(val);
-};
-	
 
 } // end namespace
 }

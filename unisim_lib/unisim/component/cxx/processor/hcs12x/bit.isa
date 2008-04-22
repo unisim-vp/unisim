@@ -10,7 +10,7 @@ clc.disasm = {
 }
 
 clc.execute = {
-	cpu->ccr->setC(0);
+	cpu->ccr->clrC();
 }
 
 // CLI: clear bit I
@@ -21,7 +21,7 @@ cli.disasm = {
 }
 
 cli.execute = {
-	cpu->ccr->setI(0);
+	cpu->ccr->clrI();
 }
 
 // CLV: clear bit V
@@ -32,7 +32,7 @@ clv.disasm = {
 }
 
 clv.execute = {
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 }
 
 // clear Memory
@@ -46,10 +46,10 @@ clr_ext.execute = {
 
 	cpu->memWrite8(opr16a, 0);
 	
-	cpu->ccr->setN(0);
-	cpu->ccr->setZ(1);
-	cpu->ccr->setV(0);
-	cpu->ccr->setC(0);
+	cpu->ccr->clrN();
+	cpu->ccr->setZ();
+	cpu->ccr->clrV();
+	cpu->ccr->clrC();
 }
 
 op clr_idx(0x69[8]:> <:*xb[XB])
@@ -63,10 +63,10 @@ clr_idx.execute = {
 
 	cpu->memWrite8(xb->getEAddr(cpu), 0);
 
-	cpu->ccr->setN(0);
-	cpu->ccr->setZ(1);
-	cpu->ccr->setV(0);
-	cpu->ccr->setC(0);
+	cpu->ccr->clrN();
+	cpu->ccr->setZ();
+	cpu->ccr->clrV();
+	cpu->ccr->clrC();
 }
 
 op clr_ab(0b1[1]:b[1]:0x07[6])
@@ -87,10 +87,10 @@ clr_ab.execute = {
 		cpu->setRegB(0);
 	}
 	
-	cpu->ccr->setN(0);
-	cpu->ccr->setZ(1);
-	cpu->ccr->setV(0);
-	cpu->ccr->setC(0);
+	cpu->ccr->clrN();
+	cpu->ccr->setZ();
+	cpu->ccr->clrV();
+	cpu->ccr->clrC();
 }
 
 // COM: One's complement memory Location
@@ -105,10 +105,10 @@ com_ext.execute = {
 	uint8_t val = ~cpu->memRead8(opr16a);
 	cpu->memWrite8(opr16a, val);
 	
-	cpu->ccr->setC(1);
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else {cpu->ccr->setN(0);}
+	cpu->ccr->setC();
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 }
 
 op com_idx(0x61[8]:> <:*xb[XB])
@@ -125,10 +125,10 @@ com_idx.execute = {
 	uint8_t val = ~cpu->memRead8(addr);
 	cpu->memWrite8(addr, val);
 	
-	cpu->ccr->setC(1);
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else {cpu->ccr->setN(0);}
+	cpu->ccr->setC();
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 }
 
 op com_ab(0b010[3]:b[1]:0x1[4])
@@ -158,10 +158,10 @@ com_ab.execute = {
 		cpu->setRegB(val);
 	}
 
-	cpu->ccr->setC(1);
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else {cpu->ccr->setN(0);}
+	cpu->ccr->setC();
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 }
 
 // NEG: Two's Complement Negate
@@ -177,10 +177,10 @@ neg_ext.execute = {
 	Sub8(result, carry_out, overflow, 0, cpu->memRead8(opr16a), 0);
 	cpu->memWrite8(opr16a, result);
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
-	if (result == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);}
-	if ((result & 0x80) == 0x80) {cpu->ccr->setN(1);} else { cpu->ccr->setN(0);} 
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
 }
 
 op neg_idx(0x60[8]:> <:*xb[XB])
@@ -197,10 +197,10 @@ neg_idx.execute = {
 	Sub8(result, carry_out, overflow, 0, cpu->memRead8(addr), 0);
 	cpu->memWrite8(addr, result);
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
-	if (result == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);}
-	if ((result & 0x80) == 0x80) {cpu->ccr->setN(1);} else { cpu->ccr->setN(0);} 
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
 	
 }
 
@@ -231,10 +231,10 @@ neg_ab.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
-	if (result == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);}
-	if ((result & 0x80) == 0x80) {cpu->ccr->setN(1);} else { cpu->ccr->setN(0);} 
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
 }
 
 
@@ -255,9 +255,9 @@ bclr_dir.execute = {
 	
 	cpu->memWrite8(dd, val, MEMORY::DIRECT);
 	
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 }
 
 op bclr_ext(0x1D[8]:> <:opr16a[16]:> <:mm[8])
@@ -274,9 +274,9 @@ bclr_ext.execute = {
 	
 	cpu->memWrite8(opr16a, val);
 	
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 }
 
 op bclr_idx(0x0D[8]:> <:*xb[XB]:> <:mm[8])
@@ -296,9 +296,9 @@ bclr_idx.execute = {
 	
 	cpu->memWrite8(addr, val);
 	
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 }
 
 // BITA or BITB: bit test A/B (Logical 'AND' A/B with Memory
@@ -316,10 +316,10 @@ bit_ab_imm.disasm = {
 bit_ab_imm.execute = {
 	uint8_t val = cpu->getRegA() & ii;
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (val == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);};
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0);};
+	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 }
 
 op bit_ab_dir(0b1[1]:b[1]:0x15[6]:opr8a[8])
@@ -336,10 +336,10 @@ bit_ab_dir.disasm = {
 bit_ab_dir.execute = {
 	uint8_t val = cpu->getRegA() & cpu->memRead8(opr8a, MEMORY::DIRECT);
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (val == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);};
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0);};
+	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 }
 
 op bit_ab_ext(0b1[1]:b[1]:0x35[6]:> <:opr16a[16])
@@ -356,10 +356,10 @@ bit_ab_ext.disasm = {
 bit_ab_ext.execute = {
 	uint8_t val = cpu->getRegA() & cpu->memRead8(opr16a);
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (val == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);};
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0);};
+	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 }
 
 op bit_ab_idx(0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
@@ -376,10 +376,10 @@ bit_ab_idx.disasm = {
 bit_ab_idx.execute = {
 	uint8_t val = cpu->getRegA() & cpu->memRead8(xb->getEAddr(cpu));
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (val == 0) { cpu->ccr->setZ(1);} else { cpu->ccr->setZ(0);};
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0);};
+	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 }
 
 // BSET: Set bits in memory
@@ -396,9 +396,9 @@ bset_dir.execute = {
 	
 	cpu->memWrite8(dd, val, MEMORY::DIRECT);
 	
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 }
 
 op bset_ext(0x1C[8]:> <:opr16a[16]:> <:mm[8])
@@ -414,9 +414,9 @@ bset_ext.execute = {
 	
 	cpu->memWrite8(opr16a, val);
 	
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 }
 
 op bset_idx(0x0C[8]:> <:*xb[XB]:> <:mm[8])
@@ -435,9 +435,9 @@ bset_idx.execute = {
 	
 	cpu->memWrite8(addr, val);
 	
-	cpu->ccr->setV(0);
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 }
 
 /* ********** Shift and Rotate instructions ********************** */
@@ -454,15 +454,13 @@ lsl_ext.execute = {
 	uint8_t val = cpu->memRead8(opr16a);
 	uint8_t c2val = ~val + 1;
 	
-	uint8_t carry = 0;
-	if ((val & 0x80) == 0x80) { carry = 1; }	
 	val = val << 1;
 	cpu->memWrite8(opr16a, val);
-
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	
+	if ((val & 0x80) == 0x80) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op lsl_idx(0x68[8]:> <:*xb[XB])
@@ -476,16 +474,14 @@ lsl_idx.execute = {
 	address_t addr = xb->getEAddr(cpu);
 	uint8_t val = cpu->memRead8(addr);
 	uint8_t c2val = ~val + 1;
-	
-	uint8_t carry = 0;
-	if ((val & 0x80) == 0x80) { carry = 1; }	
+
 	val = val << 1;
 	cpu->memWrite8(addr, val);
-
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	
+	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op lsla(0x48[8])
@@ -497,16 +493,14 @@ lsla.disasm = {
 lsla.execute = {
 	uint8_t val = cpu->getRegA();
 	uint8_t c2val = ~val + 1;
-	
-	uint8_t carry = 0;
-	if ((val & 0x80) == 0x80) { carry = 1; }	
+
 	val = val << 1;
 	cpu->setRegA(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op lslb(0x58[8])
@@ -518,16 +512,14 @@ lslb.disasm = {
 lslb.execute = {
 	uint8_t val = cpu->getRegB();
 	uint8_t c2val = ~val + 1;
-	
-	uint8_t carry = 0;
-	if ((val & 0x80) == 0x80) { carry = 1; }
+
 	val = val << 1;
 	cpu->setRegB(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op lsld(0x59[8])
@@ -539,16 +531,14 @@ lsld.disasm = {
 lsld.execute = {
 	uint16_t val = cpu->getRegD();
 	uint16_t c2val = ~val + 1;
-	
-	uint8_t carry = 0;
-	if ((val & 0x8000) == 0x8000) { carry = 1; }
+
 	val = val << 1;
 	cpu->setRegD(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 // ROL: Rotate Memory/Accumulator Left through carry
@@ -567,10 +557,10 @@ rol_ext.execute = {
 	val = (val << 1) | carry;
 	cpu->memWrite8(opr16a, val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op rol_idx(0x65[8]:> <:*xb[XB])
@@ -590,10 +580,10 @@ rol_idx.execute = {
 	val = (val << 1) | carry;
 	cpu->memWrite8(addr, val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op rola(0x45[8])
@@ -611,10 +601,10 @@ rola.execute = {
 	val = (val << 1) | carry;
 	cpu->setRegA(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 	
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op rolb(0x55[8])
@@ -632,10 +622,10 @@ rolb.execute = {
 	val = (val << 1) | carry;
 	cpu->setRegB(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 	
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 
@@ -650,15 +640,13 @@ lsr_ext.execute = {
 	uint8_t val = cpu->memRead8(opr16a);
 	uint8_t c2val = ~val + 1;
 	
-	uint8_t carry = 0;
-	if ((val & 0x01) == 0x01) { carry = 1; }	
 	val = val >> 1;
 	cpu->memWrite8(opr16a, val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC();}	else  { cpu->ccr->clrC();}	
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 op lsr_idx(0x64[8]:> <:*xb[XB])
@@ -672,16 +660,14 @@ lsr_idx.execute = {
 	address_t addr = xb->getEAddr(cpu);
 	uint8_t val = cpu->memRead8(addr);
 	uint8_t c2val = ~val + 1;
-	
-	uint8_t carry = 0;
-	if ((val & 0x01) == 0x01) { carry = 1; }	
+
 	val = val >> 1;
 	cpu->memWrite8(addr, val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 op lsra(0x44[8])
@@ -693,16 +679,14 @@ lsra.disasm = {
 lsra.execute = {
 	uint8_t val = cpu->getRegA();
 	uint8_t c2val = ~val + 1;
-	
-	uint8_t carry = 0;
-	if ((val & 0x01) == 0x01) { carry = 1; }	
+
 	val = val >> 1;
 	cpu->setRegA(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 op lsrb(0x54[8])
@@ -714,16 +698,14 @@ lsrb.disasm = {
 lsrb.execute = {
 	uint8_t val = cpu->getRegB();
 	uint8_t c2val = ~val + 1;
-	
-	uint8_t carry = 0;
-	if ((val & 0x01) == 0x01) { carry = 1; }
+
 	val = val >> 1;
 	cpu->setRegB(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 op lsrd(0x49[8])
@@ -736,15 +718,13 @@ lsrd.execute = {
 	uint16_t val = cpu->getRegD();
 	uint16_t c2val = ~val + 1;
 	
-	uint8_t carry = 0;
-	if ((val & 0x0001) == 0x0001) { carry = 1; }
 	val = val >> 1;
 	cpu->setRegD(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if ((val & 0x0001) == 0x0001) { cpu->ccr->setC();}	else { cpu->ccr->clrC();}	
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 // ROR: Rotate Memory/Accumulator Right through Carry
@@ -763,10 +743,10 @@ ror_ext.execute = {
 	val = (carry << 7) | (val >> 1);
 	cpu->memWrite8(opr16a, val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 op ror_idx(0x66[8]:> <:*xb[XB])
@@ -786,10 +766,10 @@ ror_idx.execute = {
 	val = (carry << 7) | (val >> 1);
 	cpu->memWrite8(addr, val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 op rora(0x46[8])
@@ -807,10 +787,10 @@ rora.execute = {
 	val = (carry << 7) | (val >> 1);
 	cpu->setRegA(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 op rorb(0x56[8])
@@ -828,10 +808,10 @@ rorb.execute = {
 	val = (carry << 7) | (val >> 1);
 	cpu->setRegB(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	cpu->ccr->setN(0); 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
 }
 
 // ASR: Arithmetic Shift Right
@@ -853,10 +833,10 @@ asr_ext.execute = {
 	val = (val >> 1) | msb;
 	cpu->memWrite8(opr16a, val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 
 }
 
@@ -880,10 +860,10 @@ asr_idx.execute = {
 	val = (val >> 1) | msb;
 	cpu->memWrite8(addr, val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op asra(0x47[8])
@@ -898,16 +878,13 @@ asra.execute = {
 
 	uint8_t msb = val & 0x80;
 	
-	uint8_t carry = 0;
-	if ((val & 0x01) == 0x01) { carry = 1; }	
-
 	val = (val >> 1) | msb;
 	cpu->setRegA(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 op asrb(0x57[8])
@@ -922,14 +899,11 @@ asrb.execute = {
 
 	uint8_t msb = val & 0x80;
 	
-	uint8_t carry = 0;
-	if ((val & 0x01) == 0x01) { carry = 1; }
-
 	val = (val >> 1) | msb;
 	cpu->setRegB(val);
 
-	cpu->ccr->setC(carry);	
-	if (val == c2val) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	if (val == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }

@@ -133,7 +133,7 @@ rev.execute = {
 	 cpu->setRegA(aVal);
 	 cpu->setRegX(xVal);
 	 cpu->setRegY(yVal);
-	 cpu->ccr->setV(ccrV);
+	 if (ccrV) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 }
 
 // REVW: (16bits) MIN-MAX rule evaluation
@@ -204,7 +204,7 @@ revw.execute = {
 	 cpu->setRegA(aVal);
 	 cpu->setRegX(xVal);
 	 cpu->setRegY(yVal);
-	 cpu->ccr->setV(ccrV);
+	 if (ccrV) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 }
 
@@ -283,7 +283,7 @@ wav.execute = {
 	 cpu->setRegD(cpu->getRegTMP(1));
 	 cpu->setRegX(cpu->getRegTMP(0));
 	 	 
-	 cpu->ccr->setZ(1);
+	 cpu->ccr->setZ();
 }
 
 // WAVR pseudo instruction: Resume execution of interrupted WAV instruction
@@ -307,9 +307,9 @@ wavr.execute = {
 		(cpu->getRegTMP(1) == 0) || 
 		(cpu->getRegTMP(2) == 0)) 
 	{
-		cpu->ccr->setZ(1);
+		cpu->ccr->setZ();
 	} else {
-		cpu->ccr->setZ(0);
+		cpu->ccr->clrZ();
 	}
 }
 
@@ -344,9 +344,9 @@ tbl.execute = {
 	uint8_t lowBits = (uint8_t) result;
 	
 	cpu->setRegA(msBits);
-	if ((msBits & 0x80) == 0x80) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0);}
-	if (msBits == 0x00) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0);}	
-	if (lowBits > 0x7F) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0);}	
+	if ((msBits & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN();}
+	if (msBits == 0x00) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ();}	
+	if (lowBits > 0x7F) { cpu->ccr->setC(); } else { cpu->ccr->clrC();}	
 }
 
 
@@ -375,9 +375,9 @@ with the radix point between bits 7 and 8.
 	uint8_t lowBits = (uint8_t) result;
 	
 	cpu->setRegD(msBits);
-	if ((msBits & 0x8000) == 0x8000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0);}
-	if (msBits == 0x0000) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0);}	
-	if (lowBits > 0x7F) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0);}	
+	if ((msBits & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN();}
+	if (msBits == 0x0000) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ();}	
+	if (lowBits > 0x7F) { cpu->ccr->setC(); } else { cpu->ccr->clrC();}	
 }
 
 

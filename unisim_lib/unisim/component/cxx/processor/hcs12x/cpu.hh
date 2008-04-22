@@ -32,8 +32,7 @@
 #include <inttypes.h>
 
 
-#include <inttypes.h>
-#include <iostream>
+#include <unisim/component/cxx/processor/hcs12x/ccr.hh>
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
@@ -83,6 +82,7 @@ using unisim::util::endian::endian_type;
 using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
 using unisim::util::endian::Host2LittleEndian;
+using unisim::util::endian::LittleEndian2Host;
 
 using std::string;
 using std::stringstream;
@@ -101,71 +101,6 @@ struct CONFIG {
 		
 };
 
-/* I think it's better to declare the CCR as uint16_t and then use mask to set/get each bit */
- 
-class CCR_t
-{
-public:
-	uint8_t getC();
-	void 	setC(uint8_t val);            
-
-	uint8_t getV();
-	void 	setV(uint8_t val);            
-
-	uint8_t getZ();
-	void 	setZ(uint8_t val);            
-
-	uint8_t getN();
-	void 	setN(uint8_t val);            
-
-	uint8_t getI();
-	void 	setI(uint8_t val);            
-
-	uint8_t getH();
-	void 	setH(uint8_t val);            
-
-	uint8_t getX();
-	void 	setX(uint8_t val);            
-
-	uint8_t getS();
-	void 	setS(uint8_t val);            
-
-	uint8_t getIPL();
-	void 	setIPL(uint8_t val);            
-
-	uint8_t getCCRLow();	
-	void setCCRLow(uint8_t val);
-
-	uint16_t getCCR();
-	void setCCR(uint16_t val);
-	
-	uint8_t getCCRHigh();
-	void setCCRHigh(uint8_t val);
-	
-private:		
-#if BYTEORDER==LITTLE_ENDIAN
-	uint8_t c : 1;
-	uint8_t v : 1;
-	uint8_t z : 1;
-	uint8_t n : 1;
-	uint8_t i : 1;
-	uint8_t h : 1;
-	uint8_t x : 1;
-	uint8_t s : 1;
-	uint8_t ipl : 3;
-#else
-	uint8_t ipl : 3;
-	uint8_t s : 1;
-	uint8_t x : 1;
-	uint8_t h : 1;
-	uint8_t i : 1;
-	uint8_t n : 1;
-	uint8_t z : 1;
-	uint8_t v : 1;
-	uint8_t c : 1;
-#endif
-
-}; // end class CCR_t 
 
 	/* *******************************************************************
 	 * ********  Used for                                   **************
@@ -437,7 +372,7 @@ protected:
 	inline void VerboseDumpRegs() GCC_INLINE;
 	inline void VerboseDumpRegsStart() GCC_INLINE;
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
-	
+
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
 	/** indicates if the finished instructions require to be reported */

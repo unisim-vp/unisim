@@ -16,10 +16,9 @@ dec_ext.execute = {
 
 	cpu->memWrite8(opr16a, result);
 		
-	cpu->ccr->setV(overflow);
-	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // DEC IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -41,10 +40,10 @@ dec_idx.execute = {
 
 	cpu->memWrite8(addr, result);
 	
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // DECA  or DECB
@@ -78,10 +77,10 @@ dec_ab.execute = {
 		cpu->setRegB(result);		
 	}
 	
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
 
@@ -102,10 +101,10 @@ decw_ext.execute = {
 
 	cpu->memWrite16(opr16a, result);
 		
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // DECW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -128,10 +127,10 @@ decw_idx.execute = {
 
 	cpu->memWrite16(addr, result);
 	
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // DECX or DECY
@@ -166,10 +165,10 @@ dec_xy.execute = {
 		cpu->setRegY(result);
 	}
 	
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
 
@@ -195,7 +194,7 @@ dex.execute = {
 	uint16_t val = cpu->getRegX();
 	val--;
 	cpu->setRegX(val);
-	if (val == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);  
+	if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();  
 }
 
 // DEY
@@ -209,7 +208,7 @@ dey.execute = {
 	uint16_t val = cpu->getRegY();
 	val--;
 	cpu->setRegY(val);
-	if (val == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);  
+	if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();  
 }
 
 /* ********* Increment Instructions ****** */
@@ -230,10 +229,10 @@ inc_ext.execute = {
 
 	cpu->memWrite8(opr16a, result);
 		
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // INC IDX or IDX or IDX2 or [D,IDX] or [IDX2]
@@ -255,10 +254,10 @@ inc_idx.execute = {
 
 	cpu->memWrite8(addr, result);
 	
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // INCA  or INCB
@@ -292,10 +291,10 @@ inc_ab.execute = {
 		cpu->setRegB(result);		
 	}
 	
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
 
@@ -316,10 +315,10 @@ incw_ext.execute = {
 
 	cpu->memWrite16(opr16a, result);
 		
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // INCW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
@@ -342,10 +341,10 @@ incw_idx.execute = {
 
 	cpu->memWrite16(addr, result);
 	
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // INX or INCY
@@ -380,10 +379,10 @@ inc_xy.execute = {
 		cpu->setRegY(result);
 	}
 	
-	cpu->ccr->setV(overflow);
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
 
@@ -409,7 +408,7 @@ inx.execute = {
 	uint16_t val = cpu->getRegX();
 	val++;
 	cpu->setRegX(val);
-	if (val == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);  
+	if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();  
 }
 
 // INY
@@ -423,6 +422,6 @@ iny.execute = {
 	uint16_t val = cpu->getRegY();
 	val++;
 	cpu->setRegY(val);
-	if (val == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);  
+	if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();  
 }
 

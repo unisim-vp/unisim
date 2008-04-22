@@ -30,10 +30,10 @@ and_ab_imm.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
 
@@ -68,10 +68,10 @@ and_ab_dir.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ANDA/ANDB EXT (regAB & mem[opr16a] => regAB)
@@ -106,10 +106,10 @@ and_ab_ext.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ANDA/ANDB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB & mem[xb->addrE] => regAB)
@@ -146,10 +146,10 @@ and_ab_idx.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ANDCC  IMM  (ccr & ii => ccr)
@@ -202,10 +202,10 @@ and_xy_imm.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ANDX/ANDY DIR (regXY & mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
@@ -240,10 +240,10 @@ and_xy_dir.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ANDX/ANDY EXT (regXY & mem[opr16a]:mem[opr16a+1] => regXY)
@@ -278,10 +278,10 @@ and_xy_ext.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ANDX/ANDY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY & mem[xb->addrE]:mem[xb->addrE+1] => regXY)
@@ -316,10 +316,10 @@ and_xy_idx.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ORAA/ORAB IMM (regAB or opr8i => regAB)
@@ -353,10 +353,10 @@ ora_ab_imm.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
 
@@ -391,10 +391,10 @@ ora_ab_dir.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ORAA/ORAB EXT (regAB | mem[opr16a] => regAB)
@@ -429,10 +429,10 @@ ora_ab_ext.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ORAA/ORAB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB | mem[xb->addrE] => regAB)
@@ -469,10 +469,10 @@ ora_ab_idx.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ORCC  IMM  (ccr & ii => ccr)
@@ -543,10 +543,10 @@ or_xy_imm.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ORX/ORY DIR (regXY | mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
@@ -581,10 +581,10 @@ or_xy_dir.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ORX/ORY EXT (regXY | mem[opr16a]:mem[opr16a+1] => regXY)
@@ -619,10 +619,10 @@ or_xy_ext.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // ORX/ORY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY | mem[xb->addrE]:mem[xb->addrE+1] => regXY)
@@ -657,10 +657,10 @@ or_xy_idx.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // EORA/EORB IMM (regAB ^ opr8i => regAB)
@@ -694,10 +694,10 @@ eor_ab_imm.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // EORA/EORB  DIR  (regAB ^ mem[regDirect:opr8a] => regAB)s
@@ -731,10 +731,10 @@ eor_ab_dir.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // EORA/EORB EXT (regAB ^ mem[opr16a] => regAB)
@@ -769,10 +769,10 @@ eor_ab_ext.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // EORA/EORB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB ^ mem[xb->addrE] => regAB)
@@ -809,10 +809,10 @@ eor_ab_idx.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // EORX/EORY IMM (regXY ^ opr16i => regXY)
@@ -846,10 +846,10 @@ eor_xy_imm.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // EORX/EORY DIR (regXY ^ mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
@@ -884,10 +884,10 @@ eor_xy_dir.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // EORX/EORY EXT (regXY ^ mem[opr16a]:mem[opr16a+1] => regXY)
@@ -922,10 +922,10 @@ eor_xy_ext.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // EORX/EORY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY ^ mem[xb->addrE]:mem[xb->addrE+1] => regXY)
@@ -960,8 +960,8 @@ eor_xy_idx.execute = {
 		cpu->setRegY(result);
 	}
 
-	cpu->ccr->setV(0);
+	cpu->ccr->clrV();
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }

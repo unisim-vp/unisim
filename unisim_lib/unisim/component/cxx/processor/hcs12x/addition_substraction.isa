@@ -20,12 +20,12 @@ aba.execute = {
 	
 	cpu->setRegA(result);
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((aVal & 0x0F)+(bVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((aVal & 0x0F)+(bVal & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();	
 }
 
 // ABX  (X+B => X) 
@@ -101,12 +101,12 @@ adc_ab_imm.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((regVal & 0x0F)+(opr8i & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);		
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((regVal & 0x0F)+(opr8i & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();		
 	
 }
 
@@ -143,12 +143,12 @@ adc_ab_dir.execute = {
 	}
 	
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((regVal & 0x0F)+(opr8aVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);		
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((regVal & 0x0F)+(opr8aVal & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();		
 }
 
 // ADCab EXT (regAB + mem[opr16a] + carry => regAB)
@@ -185,12 +185,12 @@ adc_ab_ext.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((regVal & 0x0F)+(opr16aVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);		
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((regVal & 0x0F)+(opr16aVal & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();		
 	
 }
 
@@ -230,12 +230,12 @@ adc_ab_idx.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((regVal & 0x0F)+(xbVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);		
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((regVal & 0x0F)+(xbVal & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();		
 }
 
 // ADDab IMM (regAB + ii => regAB)
@@ -269,12 +269,12 @@ add_ab_imm.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((regVal & 0x0F)+(opr8i & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);		
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((regVal & 0x0F)+(opr8i & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();		
 	
 }
 
@@ -311,12 +311,12 @@ add_ab_dir.execute = {
 	}
 	
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((regVal & 0x0F)+(opr8aVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((regVal & 0x0F)+(opr8aVal & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();	
 }
 
 // ADDab EXT  (regAB + mem[opr16a] => regAB)
@@ -353,12 +353,12 @@ add_ab_ext.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((regVal & 0x0F)+(opr16aVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((regVal & 0x0F)+(opr16aVal & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();	
 	
 }
 
@@ -398,12 +398,12 @@ add_ab_idx.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
-	if (((regVal & 0x0F)+(xbVal & 0x0F)) > 0x09) cpu->ccr->setH(1); else cpu->ccr->setH(0);	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (((regVal & 0x0F)+(xbVal & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();	
 }
 
 // SUBD IMM or ADDD IMM (regD -+ ii => regD)
@@ -433,11 +433,11 @@ add_sub_d_imm.execute = {
 	
 	cpu->setRegD(result);
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SUBD DIR or ADDD DIR  (regD -+ mem[regDirect+opr8a]) 
@@ -469,11 +469,11 @@ add_sub_d_dir.execute = {
 	
 	cpu->setRegD(result);
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SUBD EXT or ADDD EXT (regD -+ mem[opr16a]) => regD)
@@ -508,11 +508,11 @@ add_sub_d_ext.execute = {
 
 	cpu->setRegD(result);
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SUBD/ADDD  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD -+ mem[xb->addrE] => regD) 
@@ -546,11 +546,11 @@ add_sub_d_idx.execute = {
 
 	cpu->setRegD(result);
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 /* ****** Subtraction Instructions **** */
@@ -573,11 +573,11 @@ sba.execute = {
 	
 	cpu->setRegA(result);
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SBCA/SBCB  IMM (regAB - ii - carry => regAB)
@@ -611,11 +611,11 @@ sbc_ab_imm.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SBCA/SBCB  DIR  (regAB - mem[regDirect:opr8a] - carry => regAB)
@@ -650,11 +650,11 @@ sbc_ab_dir.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SBCA/SBCB  EXT (regAB - mem[opr16a] - carry => regAB)
@@ -691,11 +691,11 @@ sbca_ext.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SBCA/ABCB IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] - carry => regAB)
@@ -734,11 +734,11 @@ sbc_ab_idx.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SUBA/SUBB  IMM (regAB - ii => regAB)
@@ -772,11 +772,11 @@ sub_ab_imm.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
 
@@ -813,11 +813,11 @@ sub_ab_dir.execute = {
 	}
 	
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SUBA/SUBB  EXT (regAB - mem[opr16a] => regAB)
@@ -854,11 +854,11 @@ sub_ab_ext.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1); else cpu->ccr->setZ(0);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1); else cpu->ccr->setN(0);
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
 
@@ -898,11 +898,11 @@ sub_ab_idx.execute = {
 		cpu->setRegB(result);
 	}
 	
-	cpu->ccr->setC(carry_out);
-	cpu->ccr->setV(overflow);
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-	if (result == 0) cpu->ccr->setZ(1);
-	if ((result & 0x80) == 0x80) cpu->ccr->setN(1);
+	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((result & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
 }
 
 /* ***** Binary-Coded Decimal Instructions ****** */
@@ -930,11 +930,11 @@ daa.execute = {
 		
 		cpu->setRegA(result);
 		
-		cpu->ccr->setC(carry_out);
-		cpu->ccr->setV(overflow);
+		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	
-		if (result == 0) cpu->ccr->setZ(1);
-		if ((result & 0x80) == 0x80) cpu->ccr->setN(1);
+		if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+		if ((result & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
 	}
 }
 

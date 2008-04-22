@@ -20,9 +20,9 @@ ldaab_imm.execute = {
 	    cpu->setRegB(opr8i); // ldab #<opr8i>	
 	}
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (opr8i == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if (opr8i < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (opr8i == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if (opr8i < 0) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 }
 
 // LDAA or LDAB opr8a
@@ -45,9 +45,9 @@ ldaab_dir.execute = {
 	    cpu->setRegB(val);	
 	}
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 }
 
 // LDAA or LDAB opr16a
@@ -70,9 +70,9 @@ ldaab_ext.execute = {
 	    cpu->setRegB(val);
 	}
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 	
 }
 
@@ -103,9 +103,9 @@ ldaab_idx.execute = {
 	    cpu->setRegB(val);	
 	}
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -132,9 +132,9 @@ ld_dyxs_imm.execute = {
 	case 3: cpu->setRegSP(opr16i); break;
 	}
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (opr16i == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((opr16i & 0x8000) == 0x8000) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (opr16i == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((opr16i & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -162,9 +162,9 @@ ld_dyxs_dir.execute = {
 	case 3: cpu->setRegSP(val); break;
 	}
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -194,9 +194,9 @@ ld_dyxs_ext.execute = {
 	case 3: cpu->setRegSP(val); break;
 	}
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -231,9 +231,9 @@ ld_dyxs_idx.execute = {
 	case 3: cpu->setRegSP(val); break;
 	}
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -319,9 +319,9 @@ staab_dir.execute = {
     cpu->memWrite8((uint16_t) opr8a, val, MEMORY::DIRECT);	
 
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -346,9 +346,9 @@ staab_ext.execute = {
     cpu->memWrite8((uint16_t) opr16a, val, MEMORY::DIRECT);
 
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -379,9 +379,9 @@ staab_idx.execute = {
     cpu->memWrite8(addr,val);	
 
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x80) == 0x80) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -414,9 +414,9 @@ st_dyxs_dir.execute = {
 	cpu->memWrite16((uint16_t) opr8a, val, MEMORY::DIRECT);
 
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -450,9 +450,9 @@ st_dyxs_ext.execute = {
 	cpu->memWrite16(opr16a, val);
 
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
 
@@ -491,8 +491,8 @@ st_dyxs_idx.execute = {
 	cpu->memWrite16(addr,val);
 
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }

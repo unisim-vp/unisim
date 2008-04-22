@@ -13,9 +13,9 @@ emul.execute = {
 	cpu->setRegY(result >> 16);
 	cpu->setRegD((uint16_t) result);
 
-	if (result > 0xFFFF) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0); }	
-	if (result == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	if (result > 0xFFFF) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
+	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 }
 
 // EMULS: 16 by 16 Bit Multiply (signed) (D) x (Y) => Y:D
@@ -34,17 +34,17 @@ emuls.execute = {
 /*
  * C: Set if bit 15 of the result is set; cleared otherwise
  */
-	if ((result & 0x8000) > 0x8000) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0); }	
+	if ((result & 0x8000) > 0x8000) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
 
 /*
  * Z: Set if result is $00000000; cleared otherwise
  */	
-	if (result == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 /*
  * N: Set if the MSB of the result is set; cleared otherwise
  */
-	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	
 }
@@ -61,7 +61,7 @@ mul.execute = {
 
 	cpu->setRegD(result);
 
-	if (result > 0xFF) { cpu->ccr->setC(1); } else { cpu->ccr->setC(0); }	
+	if (result > 0xFF) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
 }
 
 // EDIV: 32 by 16 bit to 16 bit divide (unsigned) (Y:D) div (X) => Y remainder => D
@@ -91,22 +91,22 @@ ediv.execute = {
 	 
 	if (divisor == 0) {
 		// TODO: throw an exception "division by 0"
-		cpu->ccr->setC(1);
+		cpu->ccr->setC();
 	} else {
-		cpu->ccr->setC(0);
+		cpu->ccr->clrC();
 		quotion = dividend / divisor;
 		remind = dividend % divisor;
 		
 		if (quotion > 0xFFFF) {
-			cpu->ccr->setV(1);
+			cpu->ccr->setV();
 		} else {
-			cpu->ccr->setV(0);
+			cpu->ccr->clrV();
 	
 			cpu->setRegY((uint16_t) quotion);
 			cpu->setRegD(remind);
 			
-			if (quotion == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
-			if (cpu->getRegY() & 0x8000 == 0x8000 ) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+			if (quotion == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+			if (cpu->getRegY() & 0x8000 == 0x8000 ) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 		}  
 	}
 
@@ -128,24 +128,24 @@ edivs.execute = {
 	 
 	if (divisor == 0) {
 		// TODO: throw an exception "division by 0"
-		cpu->ccr->setC(1);
+		cpu->ccr->setC();
 	} else {
-		cpu->ccr->setC(0);
+		cpu->ccr->clrC();
 		
 		quotion = dividend / divisor;
 		remind = dividend % divisor;
 
 		if ((uint16_t) quotion > 0x7FFF) {
-			cpu->ccr->setV(1);
+			cpu->ccr->setV();
 		} else {
-			cpu->ccr->setV(0);
+			cpu->ccr->clrV();
 			
 			cpu->setRegY((uint16_t) quotion); // cpu->setRegY((uint16_t) quotion | ((quotion >> 16) & 0x8000));
 			cpu->setRegD(remind);
 			
-			if (quotion == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+			if (quotion == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
-			if (cpu->getRegY() & 0x8000 == 0x8000 ) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+			if (cpu->getRegY() & 0x8000 == 0x8000 ) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 		}  
 	}
 }
@@ -166,13 +166,13 @@ fdiv.execute = {
 	uint16_t remind = dividend;
 	
 	if (divisor == 0) { 
-		cpu->ccr->setC(1); 
+		cpu->ccr->setC(); 
 	} else { 
-		cpu->ccr->setC(0); 
+		cpu->ccr->clrC(); 
 		if (dividend >= divisor) {
-			cpu->ccr->setV(1);
+			cpu->ccr->setV();
 		} else {
-			cpu->ccr->setV(0);
+			cpu->ccr->clrV();
 			quotion = dividend / divisor;
 			remind = dividend % divisor;
 		} 
@@ -180,7 +180,7 @@ fdiv.execute = {
 	
 	cpu->setRegX(quotion);
 	cpu->setRegD(remind);
-	if (quotion == 0) { cpu->ccr->setZ(1); }  else { cpu->ccr->setZ(0); }
+	if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
 }
 
 // IDIV: 16 by 16 integer divide (unsigned)
@@ -199,18 +199,18 @@ and the remainder is indeterminate. */
 	uint16_t quotion = 0xFFFF;
 	uint16_t remind = dividend;
 
-	cpu->ccr->setV(0);	
+	cpu->ccr->clrV();	
 	if (divisor == 0) { 
-		cpu->ccr->setC(1); 
+		cpu->ccr->setC(); 
 	} else { 
-		cpu->ccr->setC(0); 
+		cpu->ccr->clrC(); 
 		quotion = dividend / divisor;
 		remind = dividend % divisor;
 	}
 	
 	cpu->setRegX(quotion);
 	cpu->setRegD(remind);
-	if (quotion == 0) { cpu->ccr->setZ(1); }  else { cpu->ccr->setZ(0); }
+	if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
 }
 
 // IDIVS: 16 by 16 integer divide (signed)
@@ -229,11 +229,11 @@ and the remainder is indeterminate. */
 	uint16_t quotion = 0xFFFF;
 	uint16_t remind = dividend;
 
-	cpu->ccr->setV(0);	
+	cpu->ccr->clrV();	
 	if (divisor == 0) { 
-		cpu->ccr->setC(1); 
+		cpu->ccr->setC(); 
 	} else { 
-		cpu->ccr->setC(0); 
+		cpu->ccr->clrC(); 
 		quotion = dividend / divisor;
 		remind = dividend % divisor;
 	}
@@ -244,9 +244,9 @@ and the remainder is indeterminate. */
  * V: Set if the result was > $7FFF or < $8000; cleared otherwise
  * Undefined after division by zero
  */
-	if ((dividend == 0x8000) && (divisor == 0xFFFF)) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0);}
-	if (quotion == 0) { cpu->ccr->setZ(1); }  else { cpu->ccr->setZ(0); }
-	if ((quotion & 0x8000) == 0x8000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); } 
+	if ((dividend == 0x8000) && (divisor == 0xFFFF)) { cpu->ccr->setV(); } else { cpu->ccr->clrV();}
+	if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
+	if ((quotion & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
 
 
@@ -277,10 +277,10 @@ emacs.execute = {
 	cpu->memWrite16(opr16a+2, (uint16_t) accOpr);
 	
 	// N: Set if MSB of result is set; cleared otherwise
-	if (result & 0x80000000 == 0x80000000) { cpu->ccr->setN(1); } else { cpu->ccr->setN(0); }
+	if (result & 0x80000000 == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	
 	// Z: Set if result is $00000000; cleared otherwise
-	if (result == 0) { cpu->ccr->setZ(1); } else { cpu->ccr->setZ(0); }
+	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 /*
 	  * I: Intermediate result
 	  * R: Result
@@ -291,14 +291,14 @@ emacs.execute = {
 	 * Set if result > $7FFFFFFF (+ overflow) or < $80000000 (– underflow)
 	 * Indicates two’s complement overflow
 	 */
-	// if (result > 0x7FFFFFFF) { cpu->ccr->setV(1); } else { cpu->ccr->setV(0); }
-	cpu->ccr->setV(((accOpr & 0x80000000) & (inter & 0x80000000) & ~(result & 0x80000000) | ~(accOpr & 0x80000000) & ~(inter & 0x80000000) & (result & 0x80000000)) >> 31);
+	// if (result > 0x7FFFFFFF) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (((accOpr & 0x80000000) & (inter & 0x80000000) & ~(result & 0x80000000) | ~(accOpr & 0x80000000) & ~(inter & 0x80000000) & (result & 0x80000000)) >> 31) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 	/* C: M15 • I15 + I15 • !R15 + !R15 • M15
 	 * Set if there was a carry from bit 15 of the result; cleared otherwise
 	 * Indicates a carry from low word to high word of the result occurred
 	 */
-	cpu->ccr->setC(((accOpr & 0x00008000) & (inter & 0x00008000) | (inter & 0x00008000) & ~(result & 0x00008000) | ~(result & 0x00008000) & (accOpr & 0x00008000)) >> 15);
+	if (((accOpr & 0x00008000) & (inter & 0x00008000) | (inter & 0x00008000) & ~(result & 0x00008000) | ~(result & 0x00008000) & (accOpr & 0x00008000)) >> 15) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	 
 }
 

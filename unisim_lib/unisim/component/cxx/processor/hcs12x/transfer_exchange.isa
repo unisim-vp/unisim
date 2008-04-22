@@ -19,9 +19,9 @@ t_ab_ba.execute = {
 	}
 	
 // CRC flags 0->V; setZ; setN
-	cpu->ccr->setV(0);
-	if (val == 0) {cpu->ccr->setZ(1);} else {cpu->ccr->setZ(0);}
-	if (val < 0) { cpu->ccr->setN(1);} else { cpu->ccr->setN(0); }
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if (val < 0) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 }
 
 // ****************  Common Section to HCS12X ( HLS = 0 ) *************
@@ -165,10 +165,8 @@ tfr_hcs12.disasm = {
 		case 0x76: sink << "TSY "; break;
 		case 0x57: sink << "TXS "; break;
 		case 0x67: sink << "TYS "; break;
-		default: sink << "TFR ";
+		default: sink << "TFR " << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst);
 	}
-	
-	sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst); 
 
 }
 
