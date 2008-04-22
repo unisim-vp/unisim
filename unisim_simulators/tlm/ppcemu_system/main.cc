@@ -69,8 +69,11 @@
 
 #endif
 
-
+#ifdef DEBUG_PPCEMU_SYSTEM
+typedef unisim::component::cxx::processor::powerpc::MPC7447ADebugConfig CPU_CONFIG;
+#else
 typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
+#endif
 
 static const bool DEBUG_INFORMATION = false;
 
@@ -1027,6 +1030,7 @@ int sc_main(int argc, char *argv[])
 		// Connect inline-debugger to CPU
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
@@ -1036,6 +1040,7 @@ int sc_main(int argc, char *argv[])
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
+		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
 	}

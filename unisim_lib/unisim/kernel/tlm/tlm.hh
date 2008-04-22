@@ -33,8 +33,8 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __FULLSYSTEM_TLM_TLM_HH__
-#define __FULLSYSTEM_TLM_TLM_HH__
+#ifndef __UNISIM_KERNEL_TLM_TLM_HH__
+#define __UNISIM_KERNEL_TLM_TLM_HH__
 
 #include <systemc.h>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
@@ -342,4 +342,4 @@ private:
 } // end of kernel namespace
 } // end of unisim namespace
 
-#endif // __FULLSYSTEM_TLM_TLM_HH__
+#endif // __UNISIM_KERNEL_TLM_TLM_HH__

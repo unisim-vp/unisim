@@ -185,7 +185,11 @@ void help(char *prog_name)
 //=========================================================================
 
 // CPU parameters
-typedef unisim::component::cxx::processor::powerpc::MPC755Config CPU_CONFIG;
+#ifdef EMBEDDED_PPC_G4_BOARD_DEBUG
+typedef unisim::component::cxx::processor::powerpc::MPC7447ADebugConfig CPU_CONFIG;
+#else
+typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
+#endif
 // Front Side Bus template parameters
 typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
@@ -919,6 +923,7 @@ int sc_main(int argc, char *argv[])
 		*tee_memory_access_reporting->out[1] >> inline_debugger->memory_access_reporting_export;
 		inline_debugger->memory_access_reporting_control_import >>
 			*tee_memory_access_reporting->in_control[1];
+		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
@@ -930,6 +935,7 @@ int sc_main(int argc, char *argv[])
 		*tee_memory_access_reporting->out[1] >> gdb_server->memory_access_reporting_export;
 		gdb_server->memory_access_reporting_control_import >>
 			*tee_memory_access_reporting->in_control[1];
+		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
 	}

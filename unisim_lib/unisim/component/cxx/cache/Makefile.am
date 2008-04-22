@@ -1,24 +1,7 @@
+INCLUDES=-I$(top_srcdir)/../../../..
 includedir = $(prefix)/include/unisim/component/cxx/cache
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/cache
-include_HEADERS = cache.hh cache.tcc cache_interface.hh
-
-SUBDIRS=
-INCLUDE_SUBDIRS=
-
-if COND_mesi
-SUBDIRS += mesi
-INCLUDE_SUBDIRS += mesi
-endif
-
-if COND_insn
-SUBDIRS += insn
-INCLUDE_SUBDIRS += insn
-endif
-
-# if COND_arm
-# SUBDIRS += arm
-# INCLUDE_SUBDIRS += arm
-# endif
+include_HEADERS = cache.hh cache.tcc
 
 dist_share_DATA = COPYING
 

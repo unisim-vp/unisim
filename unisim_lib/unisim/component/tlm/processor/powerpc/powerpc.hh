@@ -48,9 +48,6 @@ namespace processor {
 namespace powerpc {
 
 using namespace unisim::component::cxx::processor::powerpc;
-using unisim::component::cxx::cache::BS_OK;
-using unisim::component::cxx::cache::CS_SHARED;
-using unisim::component::cxx::cache::CS_MISS;
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::util::garbage_collector::Pointer;
@@ -63,7 +60,6 @@ template <class CONFIG>
 class PowerPC :
 	public sc_module,
 	public unisim::component::cxx::processor::powerpc::CPU<CONFIG>,
-	public BusInterface<typename CONFIG::physical_address_t>,
 	public TlmSendIf<SnoopingFSBRequest<typename CONFIG::physical_address_t, CONFIG::FSB_BURST_SIZE>, SnoopingFSBResponse<CONFIG::FSB_BURST_SIZE> >
 {
 public:
@@ -100,22 +96,10 @@ public:
 	void Run();
 	virtual bool Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message);
 	virtual void Reset();
-	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc, CacheStatus& cs);
-	virtual void BusReadX(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc, CacheStatus& cs);
-	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, BusControl bc);
-	virtual void BusInvalidateBlock(physical_address_t physical_addr, BusControl bc);
-	virtual void BusFlushBlock(physical_address_t physical_addr, BusControl bc);
-	virtual void BusZeroBlock(physical_address_t physical_addr, BusControl bc);
-	virtual void BusInvalidateTLBEntry(physical_address_t addr, BusControl bc);
-	virtual void BusSetCacheStatus(CacheStatus cs);
-	BusStatus DevRead(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc);
-	BusStatus DevReadX(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc);
-	BusStatus DevWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, BusControl bc);
-	BusStatus DevInvalidateBlock(physical_address_t physical_addr, BusControl bc);
-	BusStatus DevFlushBlock(physical_address_t physical_addr, BusControl bc);
-	BusStatus DevZeroBlock(physical_address_t physical_addr, BusControl bc);
-	BusStatus DevInvalidateTLBEntry(physical_address_t addr, BusControl bc);
-	void DevOnBusError(BusStatus bs);
+	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
+	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg = CONFIG::WIMG_DEFAULT);
+	virtual void BusZeroBlock(physical_address_t physical_addr);
+	virtual void BusFlushBlock(physical_address_t physical_addr);
 private:
 	sc_time cpu_cycle_sctime;
 	sc_time bus_cycle_sctime;

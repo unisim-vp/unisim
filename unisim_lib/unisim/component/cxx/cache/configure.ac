@@ -59,10 +59,6 @@ AC_CHECK_HEADERS([iostream],,\
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache-mesi, mesi)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache-insn, insn)
-# UNISIM_CONFIG_SUBDIR(unisim-component-cxx-cache-arm, arm)
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT

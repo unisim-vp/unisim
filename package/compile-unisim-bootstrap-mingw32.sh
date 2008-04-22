@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 SHELL=/bin/bash
-BUILD=i686-pc-linux
+BUILD=i686-pc-linux-gnu
 HOST=i586-mingw32msvc
 CROSS_COMPILE=i586-mingw32msvc-
 CXX=$(CROSS_COMPILE)g++
@@ -9,6 +9,7 @@ AS=$(CROSS_COMPILE)as
 AR=$(CROSS_COMPILE)ar
 LD=$(CROSS_COMPILE)ld
 RANLIB=$(CROSS_COMPILE)ranlib
+BJAM=`which bjam`
 CXXFLAGS=
 
 INSTALL_DIR=$(PWD)/install
@@ -38,8 +39,7 @@ notice:
 	@echo "  - readline (5.0)"
 	@echo "  - boost (1.34.1)"
 	@echo "It will automatically download/configure and install the following softwares which can interact with UNISIM:"
-	@echo "  - GDB (6.2) for m68hc1x"
-	@echo "  - GDB (6.8) for armeb and powerpc"
+	@echo "  - GDB (6.8) for m68hc1x, armeb and powerpc"
 	@echo "The downloaded tarball/zip files will be placed in directory $(ARCHIVE_DIR)"
 	@echo "They will be extracted into directory $(SOURCE_DIR)"
 	@echo "Everything will be installed into directory $(INSTALL_DIR)"
@@ -48,33 +48,16 @@ notice:
 
 # gdb
 
-$(INSTALL_DIR)/gdb: $(SOURCE_DIR)/gdb-6.8 $(SOURCE_DIR)/gdb-6.2
-	cd $(SOURCE_DIR)/gdb-6.2 && \
-    CC=$(CC) ./configure --prefix=$(INSTALL_DIR)/gdb --host=$(HOST) --target=m6811-elf --program-prefix=m68hc1x-elf- --disable-tui && \
-    make -j $(NUM_PROCESSORS) && \
-    make install && \
-    cd $(SOURCE_DIR)/gdb-6.8 && \
-    ./configure --prefix=$(INSTALL_DIR)/gdb --host=$(HOST) --target=armeb-linux-gnu --disable-sim && \
-    make -j $(NUM_PROCESSORS) && \
-    make install && \
-    make distclean && \
-    ./configure --prefix=$(INSTALL_DIR)/gdb --host=$(HOST) --target=powerpc-linux-gnu --disable-sim && \
+
+$(INSTALL_DIR)/gdb: $(SOURCE_DIR)/gdb-6.8
+	cd $(SOURCE_DIR)/gdb-6.8 && \
+    ./configure --prefix=$(INSTALL_DIR)/gdb --build=$(BUILD) --host=$(HOST) --enable-targets=m6811-elf,armeb-linux-gnu,powerpc-linux-gnu,mips-linux-gnu,sparc-linux-gnu --disable-sim --disable-werror && \
     make -j $(NUM_PROCESSORS) && \
     make install
-
-$(SOURCE_DIR)/gdb-6.2: $(ARCHIVE_DIR)/gdb-6.2.tar.bz2
-	cd $(SOURCE_DIR) && \
-    tar jxvf $< &&\
-    cd $(SOURCE_DIR)/gdb-6.2 && \
-    cat $(PATCHES_DIR)/patch-gdb-6.2-m68hc1x-mingw32 | patch -p1
 
 $(SOURCE_DIR)/gdb-6.8: $(ARCHIVE_DIR)/gdb-6.8.tar.bz2
 	cd $(SOURCE_DIR) && \
     tar jxvf $<
-
-$(ARCHIVE_DIR)/gdb-6.2.tar.bz2:
-	cd $(ARCHIVE_DIR) && \
-    wget "ftp://ftp.gnu.org/pub/gnu/gdb/gdb-6.2.tar.bz2"
 
 $(ARCHIVE_DIR)/gdb-6.8.tar.bz2:
 	cd $(ARCHIVE_DIR) && \
@@ -181,7 +164,7 @@ $(INSTALL_DIR)/boost: $(SOURCE_DIR)/boost_1_34_1
     rm -f as && ln -s `which $(AS)` as &&\
     rm -f ld && ln -s `which $(LD)` ld &&\
     PATH=./:${PATH} &&\
-    $(SOURCE_DIR)/boost_1_34_1/configure --with-toolset=gcc --prefix=$(INSTALL_DIR)/boost --without-icu --with-libraries=graph,thread &&\
+    $(SOURCE_DIR)/boost_1_34_1/configure --with-toolset=gcc --prefix=$(INSTALL_DIR)/boost --without-icu --with-libraries=graph,thread --with-bjam=$(BJAM) &&\
     make BJAM_CONFIG="-j $(NUM_PROCESSORS)" &&\
     make install &&\
     cd $(INSTALL_DIR)/boost/include && mv boost-1_34_1/boost boost && rmdir boost-1_34_1 &&\

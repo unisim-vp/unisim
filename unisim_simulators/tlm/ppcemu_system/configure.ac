@@ -74,6 +74,7 @@ UNISIM_CHECK_SYSTEMC
 
 
 UNISIM_CHECK_UNISIM_LIB
+UNISIM_RELEASE
 
 UNISIM_LINK(unisim_kernel_service)
 
@@ -96,8 +97,6 @@ UNISIM_LINK(unisim_service_loader_linux_loader)
 UNISIM_LINK(unisim_service_logger)
 UNISIM_LINK(unisim_service_sdl)
 
-UNISIM_LINK(unisim_component_cxx_cache_insn)
-UNISIM_LINK(unisim_component_cxx_cache_mesi)
 UNISIM_LINK(unisim_component_cxx_processor_arm)
 UNISIM_LINK(unisim_component_cxx_processor_powerpc)
 UNISIM_LINK(unisim_component_cxx_pci_debug)

@@ -309,6 +309,36 @@ public:
 	typedef uint64_t virtual_address_t;     // only 52 bits are used, all remaining bits *must* be set to zero
 	typedef uint32_t physical_address_t;    // 32-bit physical address
 	typedef uint32_t reg_t;                 // register type
+	typedef enum { WIMG_DEFAULT = 0, WIMG_GUARDED_MEMORY = 1, WIMG_MEMORY_COHERENCY_ENFORCED = 2, WIMG_CACHE_INHIBITED = 4, WIMG_WRITE_THROUGH = 8 } WIMG;
+	static const uint32_t MEMORY_PAGE_SIZE = 4096; // DO NOT MODIFY THIS VALUE !!!!!
+
+	/* A Memory Page Table Entry */
+	class PTE
+	{
+	public:
+		physical_address_t base_physical_addr;  /*< 32-bit base physical address */
+		uint32_t c;                             /*< 1-bit C field */
+		WIMG wimg;                              /*< 4-bit WIMG field */
+		uint32_t pp;                            /*< 2-bit page protection field */
+	};
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = false; // Debug is disabled by default
+	static const bool DEBUG_STEP_ENABLE = false;
+	static const bool DEBUG_DTLB_ENABLE = false;
+	static const bool DEBUG_DL1_ENABLE = false;
+	static const bool DEBUG_IL1_ENABLE = false;
+	static const bool DEBUG_L2_ENABLE = false;
+	static const bool DEBUG_LOAD_ENABLE = false;
+	static const bool DEBUG_STORE_ENABLE = false;
+	static const bool DEBUG_READ_MEMORY_ENABLE = false;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = false;
+	static const bool DEBUG_EXCEPTION_ENABLE = false;
+	static const bool DEBUG_SET_MSR_ENABLE = false;
+	static const bool DEBUG_SET_HID0_ENABLE = false;
+	static const bool DEBUG_SET_HID1_ENABLE = false;
+	static const bool DEBUG_SET_HID2_ENABLE = false;
+	static const bool DEBUG_SET_L2CR_ENABLE = false;
 
 	// performance model
 	static const bool PERF_MODEL_ENABLE = false;
@@ -957,41 +987,172 @@ public:
 	static const uint32_t PROCESSOR_VERSION = 0x00083200UL;
 
 	// L1 Data cache parameters
-	static const bool L1_DATA_ENABLE = true;
-	static const uint32_t L1_DATA_CACHE_SIZE = 32768;
-	static const uint32_t L1_DATA_CACHE_BLOCK_SIZE = 32;
-	static const uint32_t L1_DATA_CACHE_ASSOCIATIVITY = 8;
-	static const unisim::component::cxx::cache::ReplacementPolicy L1_DATA_CACHE_REPLACEMENT_POLICY = unisim::component::cxx::cache::RP_LRU;
+	class DL1_CONFIG
+	{
+	public:
+		class BLOCK_STATUS
+		{
+		public:
+			bool valid;
+			bool dirty;
+		};
+
+		class LINE_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		class CACHE_STATUS
+		{
+		public:
+		};
+
+		static const bool ENABLE = true;
+		typedef uint32_t ADDRESS;
+		static const uint32_t CACHE_SIZE = 32 * 1024; // 32 KB
+		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
+		static const uint32_t CACHE_LOG_ASSOCIATIVITY = 3; // 8-way set associative
+		static const uint32_t CACHE_ASSOCIATIVITY = 1 << CACHE_LOG_ASSOCIATIVITY; // 8-way set associative
+		static const uint32_t CACHE_LOG_BLOCKS_PER_LINE = 0; // 1 blocks per line
+		static const uint32_t CACHE_BLOCKS_PER_LINE = 1 <<  CACHE_LOG_BLOCKS_PER_LINE; // 1 blocks per line
+	};
 
 	// L1 Instruction cache parameters
-	static const bool L1_INSN_ENABLE = true;
-	static const uint32_t L1_INSN_CACHE_SIZE = 32768;
-	static const uint32_t L1_INSN_CACHE_BLOCK_SIZE = 32;
-	static const uint32_t L1_INSN_CACHE_ASSOCIATIVITY = 8;
-	static const unisim::component::cxx::cache::ReplacementPolicy L1_INSN_CACHE_REPLACEMENT_POLICY = unisim::component::cxx::cache::RP_LRU;
+	class IL1_CONFIG
+	{
+	public:
+		class BLOCK_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class LINE_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		class CACHE_STATUS
+		{
+		public:
+		};
+
+
+		static const bool ENABLE = true;
+		typedef uint32_t ADDRESS;
+		static const uint32_t CACHE_SIZE = 32 * 1024; // 32 KB
+		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
+		static const uint32_t CACHE_LOG_ASSOCIATIVITY = 3; // 8-way set associative
+		static const uint32_t CACHE_ASSOCIATIVITY = 1 << CACHE_LOG_ASSOCIATIVITY; // 8-way set associative
+		static const uint32_t CACHE_LOG_BLOCKS_PER_LINE = 0; // 1 blocks per line
+		static const uint32_t CACHE_BLOCKS_PER_LINE = 1 <<  CACHE_LOG_BLOCKS_PER_LINE; // 1 blocks per line
+	};
 
 	// L2 cache parameters
-	static const bool L2_ENABLE = true;
-	static const uint32_t L2_CACHE_SIZE = 512 * 1024; // 512 KB
-	static const uint32_t L2_CACHE_BLOCK_SIZE = 32;
-	static const uint32_t L2_CACHE_ASSOCIATIVITY = 8;
-	static const unisim::component::cxx::cache::ReplacementPolicy L2_CACHE_REPLACEMENT_POLICY = unisim::component::cxx::cache::RP_LRU;
-	
+	class L2_CONFIG
+	{
+	public:
+		class BLOCK_STATUS
+		{
+		public:
+			bool valid;
+			bool dirty;
+		};
+
+		class LINE_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		class CACHE_STATUS
+		{
+		public:
+		};
+
+		static const bool ENABLE = true;
+		typedef uint32_t ADDRESS;
+		static const uint32_t CACHE_SIZE = 512 * 1024; // 32 KB
+		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
+		static const uint32_t CACHE_LOG_ASSOCIATIVITY = 3; // 8-way set associative
+		static const uint32_t CACHE_ASSOCIATIVITY = 1 << CACHE_LOG_ASSOCIATIVITY; // 8-way set associative
+		static const uint32_t CACHE_LOG_BLOCKS_PER_LINE = 0; // 1 blocks per line
+		static const uint32_t CACHE_BLOCKS_PER_LINE = 1 <<  CACHE_LOG_BLOCKS_PER_LINE; // 1 blocks per line
+	};
+
+	// ITLB Parameters
+	class ITLB_CONFIG
+	{
+	public:
+		class ENTRY_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		static const bool ENABLE = true;
+		typedef virtual_address_t VIRTUAL_ADDRESS;
+		static const uint32_t TLB_NUM_ENTRIES = 128;
+		static const uint32_t TLB_LOG_ASSOCIATIVITY = 1; // 2-way set associative
+		static const uint32_t TLB_ASSOCIATIVITY = 1 << TLB_LOG_ASSOCIATIVITY;
+		static const uint32_t PAGE_SIZE = MPC755Config::MEMORY_PAGE_SIZE;
+		typedef MPC755Config::PTE PTE;
+	};
+
+	// DTLB Parameters
+	class DTLB_CONFIG
+	{
+	public:
+		class ENTRY_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		static const bool ENABLE = true;
+		typedef virtual_address_t VIRTUAL_ADDRESS;
+		static const uint32_t TLB_NUM_ENTRIES = 128;
+		static const uint32_t TLB_LOG_ASSOCIATIVITY = 1; // 2-way set associative
+		static const uint32_t TLB_ASSOCIATIVITY = 1 << TLB_LOG_ASSOCIATIVITY;
+		static const uint32_t PAGE_SIZE = MPC755Config::MEMORY_PAGE_SIZE;
+		typedef MPC755Config::PTE PTE;
+	};
+
 	// Front side bus parameters
 	static const uint32_t FSB_BURST_SIZE = 32;
 
-	// DTLB parameters
-	static const bool DTLB_ENABLE = true;
-	static const uint32_t NUM_DTLB_ENTRIES = 128; // PowerPC 750 and 755 have a 128-entries DTLB
-	static const uint32_t DTLB_ASSOCIATIVITY = 2; // PowerPC 750 and 755 have a 2-way set associative DTLB
-	static const unisim::component::cxx::tlb::ReplacementPolicy DTLB_REPLACEMENT_POLICY = unisim::component::cxx::tlb::RP_LRU;
-	
-	// ITLB parameters
-	static const bool ITLB_ENABLE = true;
-	static const uint32_t NUM_ITLB_ENTRIES = 128; // PowerPC 750 and 755 have a 128-entries ITLB
-	static const uint32_t ITLB_ASSOCIATIVITY = 2; // PowerPC 750 and 755 have a 2-way set associative ITLB
-	static const unisim::component::cxx::tlb::ReplacementPolicy ITLB_REPLACEMENT_POLICY = unisim::component::cxx::tlb::RP_LRU;
-	
 	// Programming model parameters
 	static const unsigned int NUM_SPRGS = 8;
 	
@@ -1206,41 +1367,171 @@ public:
 	static const uint32_t HID0_RESET_VALUE = 0;
 	
 	// L1 Data cache parameters
-	static const bool L1_DATA_ENABLE = true;
-	static const uint32_t L1_DATA_CACHE_SIZE = 32768;
-	static const uint32_t L1_DATA_CACHE_BLOCK_SIZE = 32;
-	static const uint32_t L1_DATA_CACHE_ASSOCIATIVITY = 8;
-	static const unisim::component::cxx::cache::ReplacementPolicy L1_DATA_CACHE_REPLACEMENT_POLICY = unisim::component::cxx::cache::RP_LRU;
+	class DL1_CONFIG
+	{
+	public:
+		class BLOCK_STATUS
+		{
+		public:
+			bool valid;
+			bool dirty;
+		};
+
+		class LINE_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		class CACHE_STATUS
+		{
+		public:
+		};
+
+		static const bool ENABLE = true;
+		typedef uint32_t ADDRESS;
+		static const uint32_t CACHE_SIZE = 32 * 1024; //32 * 1024; // 32 KB
+		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
+		static const uint32_t CACHE_LOG_ASSOCIATIVITY = 3; // 8-way set associative
+		static const uint32_t CACHE_ASSOCIATIVITY = 1 << CACHE_LOG_ASSOCIATIVITY; // 8-way set associative
+		static const uint32_t CACHE_LOG_BLOCKS_PER_LINE = 0; // 1 blocks per line
+		static const uint32_t CACHE_BLOCKS_PER_LINE = 1 <<  CACHE_LOG_BLOCKS_PER_LINE; // 1 blocks per line
+	};
 
 	// L1 Instruction cache parameters
-	static const bool L1_INSN_ENABLE = true;
-	static const uint32_t L1_INSN_CACHE_SIZE = 32768;
-	static const uint32_t L1_INSN_CACHE_BLOCK_SIZE = 32;
-	static const uint32_t L1_INSN_CACHE_ASSOCIATIVITY = 8;
-	static const unisim::component::cxx::cache::ReplacementPolicy L1_INSN_CACHE_REPLACEMENT_POLICY = unisim::component::cxx::cache::RP_LRU;
+	class IL1_CONFIG
+	{
+	public:
+		class BLOCK_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class LINE_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		class CACHE_STATUS
+		{
+		public:
+		};
+
+		static const bool ENABLE = true;
+		typedef uint32_t ADDRESS;
+		static const uint32_t CACHE_SIZE = 32 * 1024; // 32 KB
+		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
+		static const uint32_t CACHE_LOG_ASSOCIATIVITY = 3; // 8-way set associative
+		static const uint32_t CACHE_ASSOCIATIVITY = 1 << CACHE_LOG_ASSOCIATIVITY; // 8-way set associative
+		static const uint32_t CACHE_LOG_BLOCKS_PER_LINE = 0; // 1 blocks per line
+		static const uint32_t CACHE_BLOCKS_PER_LINE = 1 <<  CACHE_LOG_BLOCKS_PER_LINE; // 1 blocks per line
+	};
 
 	// L2 cache parameters
-	static const bool L2_ENABLE = true;
-	static const uint32_t L2_CACHE_SIZE = 512 * 1024; // 512 KB
-	static const uint32_t L2_CACHE_BLOCK_SIZE = 32;
-	static const uint32_t L2_CACHE_ASSOCIATIVITY = 8;
-	static const unisim::component::cxx::cache::ReplacementPolicy L2_CACHE_REPLACEMENT_POLICY = unisim::component::cxx::cache::RP_LRU;
-	
+	class L2_CONFIG
+	{
+	public:
+		class BLOCK_STATUS
+		{
+		public:
+			bool valid;
+			bool dirty;
+		};
+
+		class LINE_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		class CACHE_STATUS
+		{
+		public:
+		};
+
+		static const bool ENABLE = true;
+		typedef uint32_t ADDRESS;
+		static const uint32_t CACHE_SIZE = 512 * 1024; // 32 KB
+		static const uint32_t CACHE_BLOCK_SIZE = 32;   // 32 bytes
+		static const uint32_t CACHE_LOG_ASSOCIATIVITY = 3; // 8-way set associative
+		static const uint32_t CACHE_ASSOCIATIVITY = 1 << CACHE_LOG_ASSOCIATIVITY; // 8-way set associative
+		static const uint32_t CACHE_LOG_BLOCKS_PER_LINE = 1; // 2 blocks per line
+		static const uint32_t CACHE_BLOCKS_PER_LINE = 1 <<  CACHE_LOG_BLOCKS_PER_LINE; // 1 blocks per line
+	};
+
+	// ITLB Parameters
+	class ITLB_CONFIG
+	{
+	public:
+		class ENTRY_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		static const bool ENABLE = true;
+		typedef virtual_address_t VIRTUAL_ADDRESS;
+		static const uint32_t TLB_NUM_ENTRIES = 128;
+		static const uint32_t TLB_LOG_ASSOCIATIVITY = 1; // 2-way set associative
+		static const uint32_t TLB_ASSOCIATIVITY = 1 << TLB_LOG_ASSOCIATIVITY;
+		static const uint32_t PAGE_SIZE = MPC755Config::MEMORY_PAGE_SIZE;
+		typedef MPC7447AConfig::PTE PTE;
+	};
+
+	// DTLB Parameters
+	class DTLB_CONFIG
+	{
+	public:
+		class ENTRY_STATUS
+		{
+		public:
+			bool valid;
+		};
+
+		class SET_STATUS
+		{
+		public:
+			uint32_t plru_bits;
+		};
+
+		static const bool ENABLE = true;
+		typedef virtual_address_t VIRTUAL_ADDRESS;
+		static const uint32_t TLB_NUM_ENTRIES = 128;
+		static const uint32_t TLB_LOG_ASSOCIATIVITY = 1; // 2-way set associative
+		static const uint32_t TLB_ASSOCIATIVITY = 1 << TLB_LOG_ASSOCIATIVITY;
+		static const uint32_t PAGE_SIZE = MPC755Config::MEMORY_PAGE_SIZE;
+		typedef MPC7447AConfig::PTE PTE;
+	};
+
 	// Front side bus parameters
 	static const uint32_t FSB_BURST_SIZE = 32;
 
-	// DTLB parameters
-	static const bool DTLB_ENABLE = true;
-	static const uint32_t NUM_DTLB_ENTRIES = 128; // PowerPC 750 and 755 have a 128-entries DTLB
-	static const uint32_t DTLB_ASSOCIATIVITY = 2; // PowerPC 750 and 755 have a 2-way set associative DTLB
-	static const unisim::component::cxx::tlb::ReplacementPolicy DTLB_REPLACEMENT_POLICY = unisim::component::cxx::tlb::RP_LRU;
-	
-	// ITLB parameters
-	static const bool ITLB_ENABLE = true;
-	static const uint32_t NUM_ITLB_ENTRIES = 128; // PowerPC 750 and 755 have a 128-entries ITLB
-	static const uint32_t ITLB_ASSOCIATIVITY = 2; // PowerPC 750 and 755 have a 2-way set associative ITLB
-	static const unisim::component::cxx::tlb::ReplacementPolicy ITLB_REPLACEMENT_POLICY = unisim::component::cxx::tlb::RP_LRU;
-	
 	// Programming model parameters
 	static const unsigned int NUM_VRS = 32;
 	static const unsigned int NUM_SPRGS = 8;
@@ -1390,6 +1681,50 @@ public:
 	static const bool HAS_ICTRL_EDCE = true;
 	static const bool HAS_ICTRL_EICP = true;
 	static const bool HAS_ICTRL_ICWL = true;
+};
+
+class MPC755DebugConfig : public MPC755Config
+{
+public:
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_L2_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_SET_HID0_ENABLE = true;
+	static const bool DEBUG_SET_HID1_ENABLE = true;
+	static const bool DEBUG_SET_HID2_ENABLE = true;
+	static const bool DEBUG_SET_L2CR_ENABLE = true;
+};
+
+class MPC7447ADebugConfig : public MPC7447AConfig
+{
+public:
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_L2_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_SET_HID0_ENABLE = true;
+	static const bool DEBUG_SET_HID1_ENABLE = true;
+	static const bool DEBUG_SET_HID2_ENABLE = true;
+	static const bool DEBUG_SET_L2CR_ENABLE = true;
 };
 
 /*

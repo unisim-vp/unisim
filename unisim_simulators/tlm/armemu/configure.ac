@@ -96,8 +96,6 @@ UNISIM_LINK(unisim_service_logger)
 UNISIM_LINK(unisim_service_sdl)
 UNISIM_LINK(unisim_service_statistic)
 
-UNISIM_LINK(unisim_component_cxx_cache_insn)
-UNISIM_LINK(unisim_component_cxx_cache_mesi)
 UNISIM_LINK(unisim_component_cxx_processor_arm)
 UNISIM_LINK(unisim_component_cxx_processor_powerpc)
 UNISIM_LINK(unisim_component_cxx_pci_debug)

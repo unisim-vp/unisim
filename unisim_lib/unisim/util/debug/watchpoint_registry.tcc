@@ -182,59 +182,83 @@ WatchpointRegistry<ADDRESS>::~WatchpointRegistry()
 template <class ADDRESS>
 bool WatchpointRegistry<ADDRESS>::SetWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-	AllocatePage(mt, addr);
-	WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
-	if(!page)
+	if(size > 0)
 	{
-		cerr << "Internal error: watchpoint page has not been allocated" << endl;
-		return false;
-	}
-
-	typename list<Watchpoint<ADDRESS> >::const_iterator watchpoint;
-
-	for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
-	{
-		if(watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat && watchpoint->HasOverlap(addr, size))
+		typename list<Watchpoint<ADDRESS> >::const_iterator watchpoint;
+	
+		for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
 		{
-// 		  cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-// 		       << ": FALSE mat = " << mat 
-// 		       << " mt = " << mt
-// 		       << " addr = 0x" << hex << addr << dec
-// 		       << " size = " << size << endl;
-			return false;
+			if(watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat && watchpoint->HasOverlap(addr, size))
+			{
+	// 		  cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+	// 		       << ": FALSE mat = " << mat 
+	// 		       << " mt = " << mt
+	// 		       << " addr = 0x" << hex << addr << dec
+	// 		       << " size = " << size << endl;
+				return false;
+			}
 		}
+		watchpoints.push_back(Watchpoint<ADDRESS>(mat, mt, addr, size));
+		has_watchpoints = true;
+
+		do
+		{
+			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1));
+			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
+
+			AllocatePage(mt, addr);
+			WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
+			if(!page)
+			{
+				cerr << "Internal error: watchpoint page has not been allocated" << endl;
+				return false;
+			}
+		
+			page->SetWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz);
+		// 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+		// 	     << ": TRUE mat = " << mat 
+		// 	     << " mt = " << mt
+		// 	     << " addr = 0x" << hex << addr << dec
+		// 	     << " size = " << size << endl;
+			size -= sz;
+			addr += sz;
+		} while(size > 0);
+		return true;
 	}
-	watchpoints.push_back(Watchpoint<ADDRESS>(mat, mt, addr, size));
-	page->SetWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), size);
-	has_watchpoints = true;
-// 	cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-// 	     << ": TRUE mat = " << mat 
-// 	     << " mt = " << mt
-// 	     << " addr = 0x" << hex << addr << dec
-// 	     << " size = " << size << endl;
-	return true;
+	return false;
 }
 
 template <class ADDRESS>
 bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-	WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
-	if(!page) return false;
-
-	typename list<Watchpoint<ADDRESS> >::iterator watchpoint;
-
-	for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
+	if(size > 0)
 	{
-		if(watchpoint->GetAddress() == addr && watchpoint->GetSize() == size && watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat)
+		do
 		{
-			watchpoints.erase(watchpoint);
-			page->RemoveWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), size);
-			if(watchpoints.empty())
-				has_watchpoints = false;
-			return true;
+			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1));
+			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
+
+			WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
+			if(!page) return false;
+		
+			page->RemoveWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz);
+			size -= sz;
+			addr += sz;
+		} while(size > 0);
+
+		typename list<Watchpoint<ADDRESS> >::iterator watchpoint;
+	
+		for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
+		{
+			if(watchpoint->GetAddress() == addr && watchpoint->GetSize() == size && watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat)
+			{
+				watchpoints.erase(watchpoint);
+				if(watchpoints.empty())
+					has_watchpoints = false;
+				return true;
+			}
 		}
 	}
-
 	return false;
 }
 
@@ -260,23 +284,22 @@ template <class ADDRESS>
 bool WatchpointRegistry<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(!has_watchpoints) return false;
-	WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
-	if(!page) {
-//     cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": " 
-// 	 << "FALSE " 
-//  	 << "addr = 0x" << hex << addr << dec << " size = " << size 
-//  	 << " mat = " << mat << " mt = " << mt << endl;
-		return false;
+	if(size > 0)
+	{
+		do
+		{
+			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1));
+			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
+
+			WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
+			if(!page) return false;
+			if(page->HasWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz)) return true;
+
+			size -= sz;
+			addr += sz;
+		} while(size > 0);
 	}
-	if(page->HasWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), size)) {
-		return true;
-	} else {
-//     cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": " 
-// 	 << "FALSE "
-// 	 << "addr = 0x" << hex << addr << dec << " size = " << size 
-// 	 << " mat = " << mat << " mt = " << mt << endl;
-		return false;
-	}
+	return false;
 }
 
 template <class ADDRESS>

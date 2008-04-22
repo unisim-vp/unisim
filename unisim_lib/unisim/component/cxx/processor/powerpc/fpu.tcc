@@ -1302,10 +1302,12 @@ void FPU<CONFIG>::Fp64Abs(unsigned int fd, unsigned int fa)
 	SoftDouble& result = fpr[fd];
 	SoftDouble& a = fpr[fa];
 
-	if(a.isNegative())
+	if(fd != fa)
 	{
-		if(fd != fa)
-			result = a;
+		result = a;
+	}
+	if(result.isNegative())
+	{
 		result.opposite();
 	}
 }
@@ -1316,10 +1318,12 @@ void FPU<CONFIG>::Fp64NegAbs(unsigned int fd, unsigned int fa)
 	SoftDouble& result = fpr[fd];
 	SoftDouble& a = fpr[fa];
 
-	if(a.isPositive())
+	if(fd != fa)
 	{
-		if(fd != fa)
-			result = a;
+		result = a;
+	}
+	if(result.isPositive())
+	{
 		result.opposite();
 	}
 }

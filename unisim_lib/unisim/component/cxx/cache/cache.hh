@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2008,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,176 +31,113 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_COMPONENT_CXX_CACHE_CACHE_HH__
 #define __UNISIM_COMPONENT_CXX_CACHE_CACHE_HH__
 
-#include <unisim/component/cxx/cache/cache_interface.hh>
-#include <unisim/kernel/service/service.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/service/interfaces/cache_power_estimator.hh>
-#include <unisim/service/interfaces/power_mode.hh>
-#include <iostream>
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace cache {
 
-using namespace std;
+template <class CONFIG> class CacheBlock;
+template <class CONFIG> class CacheLine;
+template <class CONFIG> class CacheSet;
+template <class CONFIG> class Cache;
 
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::ServiceImport;
-using unisim::kernel::service::ServiceExport;
-using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::CachePowerEstimator;
-using unisim::service::interfaces::PowerMode;
-
-typedef enum { RP_LRU, RP_PLRU } ReplacementPolicy;
-
-typedef enum { EvPrRd = 0, EvPrRdX = 1, EvPrWr = 2, EvBusRd = 3, EvBusRdX = 4 } Event;
-typedef enum { AcNone = 0, AcBusRd = 1, AcBusRdX = 2, AcWB = 3 } Action;
-
-template <class CACHE_BLOCK, class PHYSICAL_ADDRESS, uint32_t CACHE_SIZE, uint32_t CACHE_BLOCK_SIZE, uint32_t CACHE_ASSOCIATIVITY, ReplacementPolicy REPLACEMENT_POLICY>
-class Cache :
-	public CacheInterface<PHYSICAL_ADDRESS>,
-	public Service<Memory<PHYSICAL_ADDRESS> >,
-	public Client<Memory<PHYSICAL_ADDRESS> >,
-	public Client<CachePowerEstimator>,
-	public Client<PowerMode>,
-	public Service<PowerMode>
+template <class CONFIG>
+class CacheBlock
 {
 public:
-	ServiceImport<Memory<PHYSICAL_ADDRESS> > to_mem;
-	ServiceExport<Memory<PHYSICAL_ADDRESS> > to_cpu;
-	ServiceImport<CachePowerEstimator> power_estimator_import;
-	ServiceImport<PowerMode> power_mode_import;
-	ServiceExport<PowerMode> power_mode_export;
+	typedef typename CONFIG::BLOCK_STATUS STATUS;
+	typedef typename CONFIG::ADDRESS ADDRESS;
+	static const uint32_t SIZE = CONFIG::CACHE_BLOCK_SIZE;
 
-	Cache(const char *name,
-	      CacheInterface<PHYSICAL_ADDRESS> *next_level_cache,
-	      BusInterface<PHYSICAL_ADDRESS> *bus_interface,
-	      Object *parent = 0);
-	virtual ~Cache();
+	CacheBlock();
+	~CacheBlock();
+	inline uint8_t& operator [] (uint32_t offset);
+	static inline void DecodeAddress(ADDRESS addr, ADDRESS& base_addr, uint32_t& offset, uint32_t& size_to_block_boundary);
+	inline ADDRESS GetBaseAddr() const;
+	inline void Zero();
+	inline void Write(const void *buffer, uint32_t offset, uint32_t size);
+	inline void Read(void *buffer, uint32_t offset, uint32_t size);
 
-	void Enable();
-	void Disable();
-	bool IsEnabled();
-	void EnableAddressOnlyBroadcast();
-	void DisableAddressOnlyBroadcast();
-	
-	/* Invalidate all the cache */
-	void InvalidateSet(uint32_t index);
-	void Invalidate();
-
-	// Cache Power mode interface
-	virtual void SetPowerMode(unsigned int cycle_time, unsigned int voltage);
-	virtual unsigned int GetMinCycleTime(); // in ps
-	virtual unsigned int GetDefaultVoltage(); // in mV
-
-	// Memory interface
-	virtual void Reset();
-	virtual bool ReadMemory(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(PHYSICAL_ADDRESS addr, const void *buffer, uint32_t size);
-
-	// Processor to cache interface
-	virtual void PrInvalidateBlock(PHYSICAL_ADDRESS physical_addr, CacheControl cc);
-	virtual void PrFlushBlock(PHYSICAL_ADDRESS physical_addr, CacheControl cc);
-	virtual void PrZeroBlock(PHYSICAL_ADDRESS physical_addr, CacheControl cc);
-	virtual void PrWrite(PHYSICAL_ADDRESS addr, const void *buffer, uint32_t size, CacheControl cc);
-	virtual void PrRead(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc);
-	virtual void PrReadX(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc);
-	
-	// Bus to cache interface
-	virtual void BusInvalidateBlock(PHYSICAL_ADDRESS physical_addr);
-	virtual void BusFlushBlock(PHYSICAL_ADDRESS physical_addr);
-	virtual void BusRead(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size);
-	virtual void BusReadX(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size);
-	
-	//This methods are only used for cache coherency
-	virtual CacheStatus BusTest(PHYSICAL_ADDRESS physical_addr, void *buffer, uint32_t size);
-	virtual CacheStatus PrTest(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc);
-
+	STATUS status;
+protected:
+	friend class CacheLine<CONFIG>;
+	inline void SetBaseAddr(ADDRESS base_addr);
 private:
-	bool enabled;
-	bool address_only_broadcast_enabled;
-	CacheInterface<PHYSICAL_ADDRESS> *next_level_cache;
-	BusInterface<PHYSICAL_ADDRESS> *bus_interface;
-	CacheControl cc;
+	ADDRESS base_addr;
+	uint8_t storage[SIZE];
+};
 
-	/* Cache blocks */
-	CACHE_BLOCK cache[CACHE_SIZE / CACHE_BLOCK_SIZE / CACHE_ASSOCIATIVITY][CACHE_ASSOCIATIVITY];
+template <class CONFIG>
+class CacheLine
+{
+public:
+	typedef typename CONFIG::LINE_STATUS STATUS;
+	typedef typename CONFIG::ADDRESS ADDRESS;
+	static const uint32_t BLOCKS_PER_LINE = CONFIG::CACHE_BLOCKS_PER_LINE;
+	static const uint32_t SIZE = CacheBlock<CONFIG>::SIZE * BLOCKS_PER_LINE;
 
-	/* Most recently used blocks (LRU policy) */
-	CACHE_BLOCK *mru_block[CACHE_SIZE / CACHE_BLOCK_SIZE / CACHE_ASSOCIATIVITY];
-	/* Least recently used blocks (LRU policy) */
-	CACHE_BLOCK *lru_block[CACHE_SIZE / CACHE_BLOCK_SIZE / CACHE_ASSOCIATIVITY];
+	CacheLine();
+	~CacheLine();
 
-	/* Pseudo-LRU bits */
-	uint32_t plru_bits[CACHE_SIZE / CACHE_BLOCK_SIZE / CACHE_ASSOCIATIVITY];
+	inline void SetBaseAddr(ADDRESS addr);
+	inline ADDRESS GetBaseAddr() const;
+	static inline void DecodeAddress(ADDRESS addr, ADDRESS& line_base_addr, ADDRESS& block_base_addr, uint32_t& sector, uint32_t& offset, uint32_t& size_to_block_boundary);
+	inline CacheBlock<CONFIG>& operator [] (uint32_t sector);
 
-	/* Select a block according to the replacement policy */
-	inline CACHE_BLOCK *ChooseBlockToReplace(uint32_t index)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
+	STATUS status;
+protected:
+private:
+	ADDRESS base_addr;
+	CacheBlock<CONFIG> blocks[BLOCKS_PER_LINE];
+};
 
-	/* Initialize the replacement policy */
-	void InitializeReplacementPolicy(uint32_t index);
-	void InitializeReplacementPolicy();
+template <class CONFIG>
+class CacheSet
+{
+public:
+	typedef typename CONFIG::SET_STATUS STATUS;
+	typedef typename CONFIG::ADDRESS ADDRESS;
+	static const uint32_t ASSOCIATIVITY = CONFIG::CACHE_ASSOCIATIVITY;
+	static const uint32_t SIZE = CacheLine<CONFIG>::SIZE * ASSOCIATIVITY;
 
-	/* Update the replacement policy */
-	void UpdateReplacementPolicy(CACHE_BLOCK *block, uint32_t index);
+	CacheSet();
+	~CacheSet();
 
-	/* Associative search of a block */
-	inline CACHE_BLOCK *SearchBlock(uint32_t index, PHYSICAL_ADDRESS physical_addr)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
+	static inline void DecodeAddress(ADDRESS addr, ADDRESS& line_base_addr, ADDRESS& block_base_addr, uint32_t& sector, uint32_t& offset, uint32_t& size_to_block_boundary);
+	inline CacheLine<CONFIG>& operator [] (uint32_t way);
 
-	/* Decode physical address */
-	inline void DecodeAddress(PHYSICAL_ADDRESS addr, PHYSICAL_ADDRESS& base_physical_addr, uint32_t& index, uint32_t& offset)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
-	
-	inline void DoAction(CACHE_BLOCK *block, Event ev, CacheControl cc, CacheStatus& cs)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
+	STATUS status;
+protected:
+private:
+	CacheLine<CONFIG> lines[ASSOCIATIVITY];
+};
 
-	void ReadMemoryBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size);
-	void WriteMemoryBlockAligned(PHYSICAL_ADDRESS addr, const void *buffer, uint32_t size);
+template <class CONFIG>
+class Cache
+{
+public:
+	typedef typename CONFIG::CACHE_STATUS STATUS;
+	typedef typename CONFIG::ADDRESS ADDRESS;
+	static const uint32_t SIZE = CONFIG::CACHE_SIZE;
+	static const uint32_t NUM_SETS = CONFIG::CACHE_SIZE / CONFIG::CACHE_BLOCK_SIZE / CONFIG::CACHE_BLOCKS_PER_LINE / CacheSet<CONFIG>::ASSOCIATIVITY;
 
-	/* Write into cache */
-	inline void PrWriteBlockAligned(PHYSICAL_ADDRESS addr, const void *buffer, uint32_t size, CacheControl cc)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
+	Cache();
+	~Cache();
 
-	/* Read from cache */
-	inline void PrReadBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
-		/* Read from cache */
-	CacheStatus PrTestBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc);
-	
-	/* Read from cache */
-	inline void PrReadXBlockAligned(PHYSICAL_ADDRESS addr, void *buffer, uint32_t size, CacheControl cc)
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-	__attribute__((always_inline))
-#endif
-	;
+	static inline void DecodeAddress(ADDRESS addr, ADDRESS& line_base_addr, ADDRESS& block_base_addr, uint32_t& index, uint32_t& sector, uint32_t& offset, uint32_t& size_to_block_boundary);
+	inline CacheSet<CONFIG>& operator [] (uint32_t index);
 
+	STATUS status;
+
+protected:
+private:
+	CacheSet<CONFIG> sets[NUM_SETS];
 };
 
 } // end of namespace cache
@@ -208,4 +145,4 @@ private:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_COMPONENT_CXX_CACHE_CACHE_HH__

@@ -41,6 +41,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/trap_reporting.hh>
 
 #include <unisim/kernel/service/service.hh>
 
@@ -67,6 +68,7 @@ using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Logger;
+using unisim::service::interfaces::TrapReporting;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
@@ -109,6 +111,7 @@ template <class ADDRESS>
 class GDBServer :
 	public Service<DebugControl<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Service<TrapReporting>,
 	public Client<MemoryAccessReportingControl>,
 	public Client<Memory<ADDRESS> >,
 	public Client<Registers>,
@@ -117,6 +120,7 @@ class GDBServer :
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
+	ServiceExport<TrapReporting> trap_reporting_export;
 
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
@@ -130,7 +134,7 @@ public:
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
-	virtual void Trap();
+	virtual void ReportTrap();
 	virtual bool Setup();
 	virtual void OnDisconnect();
 

@@ -41,6 +41,7 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/trap_reporting.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -64,6 +65,7 @@ using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::TrapReporting;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::Breakpoint;
@@ -108,6 +110,7 @@ template <class ADDRESS>
 class InlineDebugger :
 	public Service<DebugControl<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Service<TrapReporting>,
 	public Client<MemoryAccessReportingControl>,
 	public Client<Disassembly<ADDRESS> >,
 	public Client<Memory<ADDRESS> >,
@@ -118,6 +121,7 @@ class InlineDebugger :
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
+	ServiceExport<TrapReporting> trap_reporting_export;
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
@@ -130,11 +134,11 @@ public:
 	// MemoryAccessReportingInterface
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual void ReportTrap();
 
 	// DebugControlInterface
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 
-	virtual void Trap();
 	virtual bool Setup();
 	virtual void OnDisconnect();
 private:

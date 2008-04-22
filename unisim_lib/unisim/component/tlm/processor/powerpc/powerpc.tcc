@@ -41,15 +41,11 @@ namespace tlm {
 namespace processor {
 namespace powerpc {
 
-using unisim::component::cxx::cache::BS_OK;
-using unisim::component::cxx::cache::CS_SHARED;
-using unisim::component::cxx::cache::CS_MISS;
-
 template <class CONFIG>
 PowerPC<CONFIG>::PowerPC(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	CPU<CONFIG>(name, this, parent),
+	CPU<CONFIG>(name, parent),
 	bus_port("bus-port"),
 	snoop_port("snoop-port"),
 	cpu_cycle_sctime(),
@@ -92,6 +88,10 @@ template <class CONFIG>
 void PowerPC<CONFIG>::Stop(int ret)
 {
 	// Call BusSynchronize to account for the remaining time spent in the cpu core
+	if(inherited::logger_import)
+	{
+		*inherited::logger_import << DebugInfo << "Program exited with status " << ret << Endl << EndDebugInfo;
+	}
 	BusSynchronize();
 	sc_stop();
 	wait();
@@ -190,45 +190,6 @@ void PowerPC<CONFIG>::Run()
 template <class CONFIG>
 bool PowerPC<CONFIG>::Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message)
 {
-	const Pointer<FSBReq>& req = message->GetRequest();
-	
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::Send()" << endl;
-#endif
-
-	switch(req->type)
-	{
-		case FSBReq::READ:
-		case FSBReq::READX:
-			{
-				Pointer<FSBRsp> rsp = new(rsp) FSBRsp();
-				message->SetResponse(rsp);
-				sc_event *rsp_ev = message->GetResponseEvent();
-				//We search for the data
-                MMUControl prev_mmc = CPU<CONFIG>::mmu.GetControl();
-                CacheStatus cs = CPU<CONFIG>::dl1.PrTest(req->addr, &(rsp->read_data), req->size, CC_NONE);
-                //we set shared but we should set the right value
-                rsp->read_status = (cs == CS_MISS)? FSBRsp::RS_MISS:FSBRsp::RS_MODIFIED;
-				if(rsp_ev) { 
-					// fprintf(stderr, "notifying event %i", &rsp_ev);
-					rsp_ev->notify(SC_ZERO_TIME);					
-				}
-			}
-			break;
-		case FSBReq::WRITE:
-         {  // We just invalidate the cache block
-            MMUControl prev_mmc = CPU<CONFIG>::mmu.GetControl();
-            CPU<CONFIG>::mmu.DisableDMMU();
-            CPU<CONFIG>::mmu.InvalidateDataCacheBlock(req->addr, CPU<CONFIG>::GetPrivilegeLevel());
-            CPU<CONFIG>::mmu.SetControl(prev_mmc);
-         }
-		
-			break;
-		default:
-			cerr << sc_time_stamp() << " " << name() << "::Send: receiving an unhandled request" << endl;
-			sc_stop();
-	}
 	return true;
 }
 
@@ -238,7 +199,7 @@ void PowerPC<CONFIG>::Reset()
 }
 	
 template <class CONFIG>
-void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc, CacheStatus& cs)
+void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
 {
 #ifdef DEBUG_POWERPC
 	if(DebugEnabled())
@@ -253,8 +214,8 @@ void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, ui
 	Pointer<TlmMessage<FSBReq, FSBRsp> > msg =
 			new(msg) TlmMessage<FSBReq, FSBRsp>(req, rsp_ev); // message for bus transaction
 	
-	req->type = FSBReq::READ; // transaction is a READ
-	req->global = (bc & BC_GLOBAL) ? true : false; // whether transaction is global or not
+	req->type = rwitm ? FSBReq::READX : FSBReq::READ; // transaction is a READ/READX
+	req->global = (wimg & CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED) ? true : false; // whether transaction is global or not
 	req->addr = physical_addr; // transaction address
 	req->size = size; // actual transaction size
 	
@@ -317,94 +278,11 @@ void PowerPC<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, ui
 #endif
 
 	// get the bus transaction response read status in order to update the block state
-	cs = (rsp->read_status & FSBRsp::RS_SHARED) ? CS_SHARED : CS_MISS;
 }
 	
-template <class CONFIG>
-void PowerPC<CONFIG>::BusReadX(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc, CacheStatus& cs)
-{
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusReadX()" << endl;
-#endif
-	// synchonize with bus cycle time
-	BusSynchronize();
-	
-	Pointer<FSBReq > req = new(req) FSBReq(); // bus transaction request
-	Pointer<FSBRsp > rsp; // bus transaction response
-	sc_event rsp_ev; // event notified when bus transaction response is ready
-	Pointer<TlmMessage<FSBReq, FSBRsp > > msg =
-			new(msg) TlmMessage<FSBReq, FSBRsp >(req, rsp_ev); // message for bus transaction
-	
-	req->type = FSBReq::READX; // transaction is a READX
-	req->global = (bc & BC_GLOBAL) ? true : false; // whether transaction is global or not
-	req->addr = physical_addr; // transaction address
-	req->size = size; // actual transaction size
-	
-	// loop until the request succeeds
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusReadX: loop until the request succeeds" << endl;
-#endif
-	// request succeeds when none of the processors is busy or have a modified copy of the request data in there caches
-	do
-	{
-		// loop until bus transaction request is accepted
-#ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusReadX: loop until bus transaction request is accepted" << endl;
-#endif
-		while(!bus_port->Send(msg))
-		{
-			// if bus transaction request is not accepted then retry later
-			wait(bus_cycle_sctime);
-#ifdef DEBUG_POWERPC
-			if(DebugEnabled())
-				cerr << sc_time_stamp() << " PPC::BusReadX: retry transaction request" << endl;
-#endif
-		}
-		
-		// bus transaction request has been accepted at this point
-#ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-		{
-			cerr << sc_time_stamp() << " PPC::BusReadX: transaction request accepted" << endl;
-			cerr << sc_time_stamp() << " PPC::BusReadX: waiting for response" << endl;
-		}
-#endif
-		// wait for the bus transaction response
-		wait(rsp_ev);
-		rsp = msg->GetResponse();
-#ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-		{
-			cerr << sc_time_stamp() << " PPC::BusReadX: received response" << endl;
-			if(!rsp->read_status & (FSBRsp::RS_BUSY | FSBRsp::RS_MODIFIED))
-				cerr << sc_time_stamp() << " PPC::BusReadX: response read status is neither RS_BUSY nor RS_MODIFIED" << endl;
-		}
-#endif
-	} while(rsp->read_status & (FSBRsp::RS_BUSY | FSBRsp::RS_MODIFIED));
-	
-	// bus transaction response has been received at this point
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusReadX: copying response data" << endl;
-#endif
-	// copy the data from the response
-	memcpy(buffer, rsp->read_data, size);
-	
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		if(rsp->read_status & FSBRsp::RS_SHARED)
-			cerr << sc_time_stamp() << " PPC::BusReadX: read status contains RS_SHARED" << endl;
-#endif
-
-	// get the bus transaction response read status in order to update the block state
-	cs = (rsp->read_status & FSBRsp::RS_SHARED) ? CS_SHARED : CS_MISS;
-}
 	
 template <class CONFIG>
-void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, BusControl bc)
+void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
 {
 #ifdef DEBUG_POWERPC
 	if(DebugEnabled())
@@ -418,7 +296,7 @@ void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buf
 			new(msg) TlmMessage<FSBReq, FSBRsp >(req); // message for bus transaction
 	
 	req->type = FSBReq::WRITE; // transaction is a WRITE
-	req->global = (bc & BC_GLOBAL) ? true : false; // whether transaction is global or not
+	req->global = (wimg & CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED) ? true : false; // whether transaction is global or not
 	req->addr = physical_addr; // transaction address
 	req->size = size; // actual transaction size
 	// copy the data into the bus transaction request
@@ -448,78 +326,87 @@ void PowerPC<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buf
 		cerr << sc_time_stamp() << " PPC::BusWrite: transaction request accepted" << endl;
 #endif
 }
-	
+
 template <class CONFIG>
-void PowerPC<CONFIG>::BusInvalidateBlock(physical_address_t physical_addr, BusControl bc)
+void PowerPC<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 {
-}
+#ifdef DEBUG_POWERPC
+	if(DebugEnabled())
+		cerr << sc_time_stamp() << " " << name() << "::BusZeroBlock()" << endl;
+#endif
+	// synchonize with bus cycle time
+	BusSynchronize();
+		
+	Pointer<FSBReq > req = new(req) FSBReq(); // bus transaction request
+	Pointer<TlmMessage<FSBReq, FSBRsp > > msg =
+			new(msg) TlmMessage<FSBReq, FSBRsp >(req); // message for bus transaction
 	
-template <class CONFIG>
-void PowerPC<CONFIG>::BusFlushBlock(physical_address_t physical_addr, BusControl bc)
-{
-}
-	
-template <class CONFIG>
-void PowerPC<CONFIG>::BusZeroBlock(physical_address_t physical_addr, BusControl bc)
-{
-}
-	
-template <class CONFIG>
-void PowerPC<CONFIG>::BusInvalidateTLBEntry(physical_address_t addr, BusControl bc)
-{
-}
-	
-template <class CONFIG>
-void PowerPC<CONFIG>::BusSetCacheStatus(CacheStatus cs)
-{
+	req->type = FSBReq::ZERO_BLOCK; // transaction is a ZERO_BLOCK
+	req->global = true; // whether transaction is global or not
+	req->addr = physical_addr; // transaction address
+	req->size = 0; // actual transaction size
+		
+	// loop until bus transaction request is accepted
+#ifdef DEBUG_POWERPC
+	if(DebugEnabled())
+		cerr << sc_time_stamp() << " PPC::BusZeroBlock: loop until the request succeeds" << endl;
+#endif
+	while(!bus_port->Send(msg))
+	{
+		// if bus transaction request is not accepted then retry later
+		wait(bus_cycle_sctime);
+#ifdef DEBUG_POWERPC
+		if(DebugEnabled())
+			cerr << sc_time_stamp() << " PPC::BusZeroBlock: retry transaction request" << endl;
+#endif
+	}
+	// bus transaction request has been accepted at this point
+#ifdef DEBUG_POWERPC
+	if(DebugEnabled())
+		cerr << sc_time_stamp() << " PPC::BusZeroBlock: transaction request accepted" << endl;
+#endif
 }
 
 template <class CONFIG>
-BusStatus PowerPC<CONFIG>::DevRead(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc)
+void PowerPC<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 {
-	return BS_OK;
-}
+#ifdef DEBUG_POWERPC
+	if(DebugEnabled())
+		cerr << sc_time_stamp() << " " << name() << "::BusFlushBlock()" << endl;
+#endif
+	// synchonize with bus cycle time
+	BusSynchronize();
+		
+	Pointer<FSBReq > req = new(req) FSBReq(); // bus transaction request
+	Pointer<TlmMessage<FSBReq, FSBRsp > > msg =
+			new(msg) TlmMessage<FSBReq, FSBRsp >(req); // message for bus transaction
 	
-template <class CONFIG>
-BusStatus PowerPC<CONFIG>::DevReadX(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc)
-{
-	return BS_OK;
+	req->type = FSBReq::FLUSH_BLOCK; // transaction is a FLUSH_BLOCK
+	req->global = true; // whether transaction is global or not
+	req->addr = physical_addr; // transaction address
+	req->size = 0; // actual transaction size
+		
+	// loop until bus transaction request is accepted
+#ifdef DEBUG_POWERPC
+	if(DebugEnabled())
+		cerr << sc_time_stamp() << " PPC::BusFlushBlock: loop until the request succeeds" << endl;
+#endif
+	while(!bus_port->Send(msg))
+	{
+		// if bus transaction request is not accepted then retry later
+		wait(bus_cycle_sctime);
+#ifdef DEBUG_POWERPC
+		if(DebugEnabled())
+			cerr << sc_time_stamp() << " PPC::BusFlushBlock: retry transaction request" << endl;
+#endif
+	}
+	// bus transaction request has been accepted at this point
+#ifdef DEBUG_POWERPC
+	if(DebugEnabled())
+		cerr << sc_time_stamp() << " PPC::BusFlushBlock: transaction request accepted" << endl;
+#endif
 }
-	
-template <class CONFIG>
-BusStatus PowerPC<CONFIG>::DevWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, BusControl bc)
-{
-	return BS_OK;
-}
-	
-template <class CONFIG>
-BusStatus PowerPC<CONFIG>::DevInvalidateBlock(physical_address_t physical_addr, BusControl bc)
-{
-	return BS_OK;
-}
-	
-template <class CONFIG>
-BusStatus PowerPC<CONFIG>::DevFlushBlock(physical_address_t physical_addr, BusControl bc)
-{
-	return BS_OK;
-}
-	
-template <class CONFIG>
-BusStatus PowerPC<CONFIG>::DevZeroBlock(physical_address_t physical_addr, BusControl bc)
-{
-	return BS_OK;
-}
-	
-template <class CONFIG>
-BusStatus PowerPC<CONFIG>::DevInvalidateTLBEntry(physical_address_t addr, BusControl bc)
-{
-	return BS_OK;
-}
-	
-template <class CONFIG>
-void PowerPC<CONFIG>::DevOnBusError(BusStatus bs)
-{
-}
+
 
 template <class CONFIG>
 PowerPC<CONFIG>::ExternalInterruptListener::ExternalInterruptListener(const sc_module_name& name, unisim::component::cxx::processor::powerpc::CPU<CONFIG> *_cpu) :

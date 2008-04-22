@@ -44,7 +44,7 @@ namespace cxx {
 namespace processor {
 namespace powerpc {
 
-template class CPU<MPC755Config>;
+template class CPU<MPC755DebugConfig>;
 
 } // end of namespace powerpc
 } // end of namespace processor

@@ -111,12 +111,14 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent) :
 	Object(_name, _parent),
 	Service<DebugControl<ADDRESS> >(_name, _parent),
 	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
+	Service<TrapReporting>(_name, _parent),
 	Client<MemoryAccessReportingControl>(_name, _parent),
 	Client<Memory<ADDRESS> >(_name, _parent),
 	Client<Registers>(_name, _parent),
 	Client<Logger>(_name, _parent),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
+	trap_reporting_export("trap-reporting-export", this),
 	memory_access_reporting_control_import("memory_access_reporting_control_import", this),
 	memory_import("memory-import", this),
 	registers_import("cpu-registers-import", this),
@@ -460,6 +462,12 @@ bool GDBServer<ADDRESS>::Setup()
 		socklen_t addr_len;
 #endif
 
+	if(logger_import)
+	{
+		(*logger_import) << DebugInfo;
+		(*logger_import) << "Listening on TCP port " << tcp_port << Endl;
+		(*logger_import) << EndDebugInfo;
+	}
 	addr_len = sizeof(addr);
 	sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
 	
@@ -725,10 +733,10 @@ void GDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Trap()
+void GDBServer<ADDRESS>::ReportTrap()
 {
-	//trap = true;
-	//synched = false;
+	trap = true;
+	synched = false;
 }
 
 template <class ADDRESS>

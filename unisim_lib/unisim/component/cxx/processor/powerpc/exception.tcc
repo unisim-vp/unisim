@@ -453,6 +453,7 @@ const char * AltivecUnavailableException<CONFIG>::what () const throw ()
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetNIA()); // save NIA
 	
 	// clear SRR1[0-5], SRR1[6]=MSR[6], clear SSR1[7-15], SRR1[16-31]=MSR[16-31]
@@ -475,7 +476,7 @@ void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 	
 	SetNIA(EXC_SYSTEM_RESET_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
 }
 
@@ -483,6 +484,7 @@ void CPU<CONFIG>::HandleException(const SystemResetException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetNIA()); // save NIA
 		
 	// clear SRR1[0-15], SRR1[16-31]=MSR[16-31]
@@ -508,7 +510,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 
 	SetNIA(EXC_MACHINE_CHECK_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
 }
 
@@ -516,6 +518,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 //	cerr << "before jumping to exception handler r9=0x" << hex << GetGPR(9) << std::dec << endl;
 	SetSRR0(GetNIA()); // save NIA
 	
@@ -529,7 +532,7 @@ void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 	
 	SetNIA(EXC_DECREMENTER_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 		(*logger_import) << DebugInfo << "bus cycle " << bus_cycle << ": " << exc.what() << Endl << EndDebugInfo;
 	
 	AckDecrementerOverflow();
@@ -539,6 +542,7 @@ void CPU<CONFIG>::HandleException(const DecrementerException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetNIA()); // save NIA
 	
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -551,7 +555,7 @@ void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 	
 	SetNIA(EXC_EXTERNAL_INTERRUPT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
 
 	AckExternalInterrupt();
@@ -560,6 +564,7 @@ void CPU<CONFIG>::HandleException(const ExternalInterruptException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetNIA()); // save NIA
 	
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -574,7 +579,7 @@ void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CON
 	
 	AckPerformanceMonitorInterrupt();
 	
-	if(logger_import)
+	if(IsVerboseException())
 		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
 }
 
@@ -582,6 +587,7 @@ void CPU<CONFIG>::HandleException(const PerformanceMonitorInterruptException<CON
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetNIA()); // save NIA
 	
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -596,7 +602,7 @@ void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFI
 	
 	AckSMI();
 
-	if(logger_import)
+	if(IsVerboseException())
 		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
 }
 
@@ -604,6 +610,7 @@ void CPU<CONFIG>::HandleException(const SystemManagementInterruptException<CONFI
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ThermalManagementInterruptException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetNIA()); // save NIA
 	
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -618,7 +625,7 @@ void CPU<CONFIG>::HandleException(const ThermalManagementInterruptException<CONF
 	
 	AckThermalManagementInterrupt();
 	
-	if(logger_import)
+	if(IsVerboseException())
 		(*logger_import) << DebugInfo << exc.what() << Endl << EndDebugInfo;
 }
 
@@ -641,6 +648,7 @@ void CPU<CONFIG>::HandleException(const ThermalManagementInterruptException<CONF
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-3], set SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -653,7 +661,7 @@ void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>&
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -667,6 +675,7 @@ void CPU<CONFIG>::HandleException(const ISIProtectionViolationException<CONFIG>&
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISINoExecuteException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -679,7 +688,7 @@ void CPU<CONFIG>::HandleException(const ISINoExecuteException<CONFIG>& exc)
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -693,6 +702,7 @@ void CPU<CONFIG>::HandleException(const ISINoExecuteException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIDirectStoreException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -705,7 +715,7 @@ void CPU<CONFIG>::HandleException(const ISIDirectStoreException<CONFIG>& exc)
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -719,6 +729,7 @@ void CPU<CONFIG>::HandleException(const ISIDirectStoreException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIPageFaultException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], set SRR1[1], clear SRR1[2-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -731,7 +742,7 @@ void CPU<CONFIG>::HandleException(const ISIPageFaultException<CONFIG>& exc)
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -745,6 +756,7 @@ void CPU<CONFIG>::HandleException(const ISIPageFaultException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-2], set SRR1[3], clear SRR1[4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -757,7 +769,7 @@ void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 		
 	SetNIA(EXC_ISI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -792,6 +804,7 @@ void CPU<CONFIG>::HandleException(const ISIGuardedMemoryException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -812,7 +825,7 @@ void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -830,6 +843,7 @@ void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -849,7 +863,7 @@ void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>&
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -867,6 +881,7 @@ void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>&
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -886,7 +901,7 @@ void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -904,6 +919,7 @@ void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -923,7 +939,7 @@ void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << ":" << "At 0x" << Hex << GetCIA() << Dec;
@@ -941,6 +957,7 @@ void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -960,7 +977,7 @@ void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFI
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -978,6 +995,7 @@ void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFI
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -997,7 +1015,7 @@ void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& 
 		
 	SetNIA(EXC_DSI_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1038,6 +1056,7 @@ void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& 
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_t instruction_encoding)
 {
+	if(linux_os_import) Stop(-1);
 	SetDAR(exc.GetAddress()); // DAR=effective address
 	
 	SetSRR0(GetCIA()); // save CIA
@@ -1091,7 +1110,7 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_
 		
 	SetNIA(EXC_ALIGNMENT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1126,6 +1145,7 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, uint32_
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-11], set SRR1[12], clear SRR1[13-15],
@@ -1138,7 +1158,7 @@ void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc
 		
 	SetNIA(EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1152,6 +1172,7 @@ void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const PrivilegeViolationException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-12], set SRR1[13], clear SRR1[14-15],
@@ -1164,7 +1185,7 @@ void CPU<CONFIG>::HandleException(const PrivilegeViolationException<CONFIG>& exc
 		
 	SetNIA(EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1178,6 +1199,7 @@ void CPU<CONFIG>::HandleException(const PrivilegeViolationException<CONFIG>& exc
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10-13], set SRR1[14], clear SRR1[15],
@@ -1190,7 +1212,7 @@ void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
 		
 	SetNIA(EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1204,6 +1226,7 @@ void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const FloatingPointException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 		
 	// keep SRR1[0], clear SRR1[1-4], keep SRR1[5-9], clear SRR1[10], set SRR1[11], clear SRR1[12-15],
@@ -1216,7 +1239,7 @@ void CPU<CONFIG>::HandleException(const FloatingPointException<CONFIG>& exc)
 		
 	SetNIA(EXC_PROGRAM_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1231,6 +1254,7 @@ void CPU<CONFIG>::HandleException(const FloatingPointException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 	
 	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
@@ -1239,7 +1263,7 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 	
 	SetNIA(EXC_FLOATING_POINT_UNAVAILABLE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1283,7 +1307,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 	else
 	{
 #if 1
-		if(logger_import)
+		if(IsVerboseException())
 		{
 			switch(GetGPR(0))
 			{
@@ -1587,7 +1611,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 			
 		SetNIA(EXC_SYSTEM_CALL_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 		
-		if(logger_import)
+		if(IsVerboseException())
 		{
 			(*logger_import) << DebugInfo;
 			(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1603,6 +1627,7 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetNIA()); // save NIA
 	
 	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
@@ -1611,7 +1636,7 @@ void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
 	
 	SetNIA(EXC_TRACE_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1626,6 +1651,7 @@ void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 	
 	SetSRR1((GetSRR1() & 0x87c0008cUL) | (GetMSR() & 0x0000ff73UL)); // clear SRR1[1-4], SRR1[10-15], copy MSR[16-23], MSR[25-27], and MSR[30-31]
@@ -1634,7 +1660,7 @@ void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CO
 	
 	SetNIA(EXC_INSTRUCTION_ADDRESS_BREAKPOINT_VECTOR | (GetMSR_IP() ? 0xfff00000UL : 0x00000000UL));
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
@@ -1648,6 +1674,7 @@ void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CO
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 {
+	if(linux_os_import) Stop(-1);
 	SetSRR0(GetCIA()); // save CIA
 	
 	uint32_t pte_hi = ((exc.GetVSID() & 0x00ffffffUL) << 7) | (exc.GetAPI() & 0x3fUL) | 0x80000000UL;
@@ -1681,7 +1708,7 @@ void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 	SetHASH1(exc.GetPrimaryPTEG());
 	SetHASH2(exc.GetSecondaryPTEG());
 	
-	if(logger_import)
+	if(IsVerboseException())
 	{
 		(*logger_import) << DebugInfo;
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;

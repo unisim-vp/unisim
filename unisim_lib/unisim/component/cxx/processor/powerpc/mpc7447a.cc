@@ -37,7 +37,6 @@
 #include <unisim/component/cxx/processor/powerpc/powerpc.tcc>
 #include <unisim/component/cxx/processor/powerpc/cpu.tcc>
 #include <unisim/component/cxx/processor/powerpc/fpu.tcc>
-#include <unisim/component/cxx/processor/powerpc/mmu.tcc>
 
 namespace unisim {
 namespace component {
@@ -45,7 +44,6 @@ namespace cxx {
 namespace processor {
 namespace powerpc {
 
-template class MMU<MPC7447AConfig>;
 template class CPU<MPC7447AConfig>;
 
 } // end of namespace powerpc

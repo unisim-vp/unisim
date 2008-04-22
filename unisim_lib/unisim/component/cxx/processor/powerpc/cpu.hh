@@ -37,18 +37,16 @@
 
 #include <unisim/component/cxx/processor/powerpc/powerpc_types.hh>
 #include <unisim/component/cxx/processor/powerpc/fpu.hh>
-#include <unisim/component/cxx/cache/mesi/cache.hh>
-#include <unisim/component/cxx/cache/insn/cache.hh>
+#include <unisim/component/cxx/cache/cache.hh>
+#include <unisim/component/cxx/tlb2/tlb.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/disassembly.hh>
-#include <unisim/component/cxx/cache/cache_interface.hh>
 #include <unisim/util/debug/simple_register.hh>
 #include <unisim/util/endian/endian.hh>
 //#include <memories/endian_interface.hh>
-#include <unisim/component/cxx/processor/powerpc/mmu.hh>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/kernel/service/service.hh>
@@ -61,6 +59,7 @@
 #include <unisim/service/interfaces/power_mode.hh>
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/service/interfaces/logger.hh>
+#include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/util/queue/queue.hh>
 #include <map>
 #include <iostream>
@@ -81,12 +80,13 @@ using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
-using unisim::component::cxx::cache::BusInterface;
-using unisim::component::cxx::cache::BusStatus;
-using unisim::component::cxx::cache::BusControl;
+using unisim::service::interfaces::CachePowerEstimator;
+using unisim::service::interfaces::PowerMode;
 using namespace unisim::util::endian;
 using unisim::kernel::service::Client;
+using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Object;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::LinuxOS;
@@ -94,7 +94,9 @@ using unisim::service::interfaces::CPULinuxOS;
 using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Synchronizable;
+using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::service::ParameterArray;
 using unisim::service::interfaces::Logger;
 //using unisim::service::interfaces::operator<<;
@@ -109,6 +111,14 @@ using unisim::service::interfaces::EndDebugWarning;
 using unisim::service::interfaces::EndDebugError;
 using namespace std;
 using unisim::util::queue::Queue;
+using unisim::component::cxx::cache::CacheBlock;
+using unisim::component::cxx::cache::CacheLine;
+using unisim::component::cxx::cache::CacheSet;
+using unisim::component::cxx::cache::Cache;
+using unisim::component::cxx::tlb2::TLBEntry;
+using unisim::component::cxx::tlb2::TLBSet;
+using unisim::component::cxx::tlb2::TLB;
+
 
 typedef enum {
 	// G1 processors
@@ -136,7 +146,14 @@ typedef enum {
 	NUM_MODELS
 } Model;
 
-
+typedef enum {
+	LSM_DEFAULT = 0,
+	LSM_FLOATING_POINT = 1,
+	LSM_BYTE_REVERSE = 2,
+	LSM_SIGN_EXTEND = 4,
+	LSM_MSB_FIRST = 8,
+	LSM_RAW_FLOAT = 16
+} LoadStoreMode;
 
 typedef union
 {
@@ -170,12 +187,75 @@ public:
 };
 
 template <class CONFIG>
+class CacheAccess
+{
+public:
+	typename CONFIG::ADDRESS addr;
+	typename CONFIG::ADDRESS line_base_addr;
+	typename CONFIG::ADDRESS block_base_addr;
+	//uint32_t index;
+	uint32_t way;
+	uint32_t sector;
+	uint32_t offset;
+	uint32_t size_to_block_boundary;
+	CacheSet<CONFIG> *set;
+	CacheLine<CONFIG> *line;
+	CacheLine<CONFIG> *line_to_evict;
+	CacheBlock<CONFIG> *block;
+};
+
+template <class CONFIG>
+class MMUAccess
+{
+public:
+	// Input
+
+	typename CONFIG::address_t addr;
+	PrivilegeLevel privilege_level;
+	MemoryAccessType memory_access_type;
+	MemoryType memory_type;
+
+	// LookupBAT intermediate computations
+	uint32_t bepi;							// BEPI bit field
+
+	// LookupTLB intermediate computations
+	uint32_t sr_num;						// Segment register number
+	uint32_t virtual_segment_id;			// Virtual segment id
+	uint32_t sr_ks;							// Supervisor key of a segment register
+	uint32_t sr_kp;							// User key of a segment register
+	uint32_t sr_noexecute;					// No-execute bit of a segment register
+	typename CONFIG::virtual_address_t virtual_addr;			// Virtual address
+	typename CONFIG::virtual_address_t base_virtual_addr;	// Base virtual address
+	TLBSet<class CONFIG::ITLB_CONFIG> *itlb_set;		// An ITLB Set
+	TLBEntry<class CONFIG::ITLB_CONFIG> *itlb_entry;	// An ITLB entry
+	TLBSet<class CONFIG::DTLB_CONFIG> *dtlb_set;		// A DTLB Set
+	TLBEntry<class CONFIG::DTLB_CONFIG> *dtlb_entry;	// A DTLB entry
+	uint32_t tlb_index;						// An index in DTLB/ITLB
+	uint32_t tlb_way;
+	bool key;
+	bool force_page_table_walk;
+
+	// Hardware Page table Search intermediate computations
+	uint32_t page_index;					// page index
+	uint32_t api;							// Abreviated page index
+
+	// Output
+	bool bat_hit;
+	bool tlb_hit;
+	typename CONFIG::physical_address_t physical_addr;
+	typename CONFIG::address_t protection_boundary;
+	typename CONFIG::WIMG wimg;
+};
+
+
+template <class CONFIG>
 class CPU :
 	public Decoder<CONFIG>,
 	public Client<Loader<typename CONFIG::physical_address_t> >,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
+	public Client<TrapReporting>,
 	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<typename CONFIG::address_t> >,
 	public Service<unisim::service::interfaces::Registers>,
@@ -190,6 +270,7 @@ class CPU :
 	public Service<Synchronizable>
 {
 public:
+
 	static inline bool IsMPC7XX() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
 	static inline bool IsMPC74X() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745; }
 	static inline bool IsMPC75X() { return CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
@@ -207,6 +288,9 @@ public:
 	typedef typename CONFIG::address_t address_t;
 	typedef typename CONFIG::virtual_address_t virtual_address_t;
 	typedef typename CONFIG::physical_address_t physical_address_t;
+	typedef typename CONFIG::WIMG WIMG;
+	typedef typename CONFIG::PTE PTE;
+	static const uint32_t MEMORY_PAGE_SIZE = CONFIG::MEMORY_PAGE_SIZE;
 
 	static const uint32_t FSB_WIDTH = 8; // 64-bit front side bus
 
@@ -360,6 +444,7 @@ public:
 	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceImport<LinuxOS> linux_os_import;
+	ServiceImport<TrapReporting> trap_reporting_import;
 	ServiceImport<Logger> logger_import;
 	ServiceImport<Logger> fpu_logger_import;
 	ServiceImport<Logger> mmu_logger_import;
@@ -378,7 +463,7 @@ public:
 	//=                    Constructor/Destructor                         =
 	//=====================================================================
 
-	CPU(const char *name, BusInterface<physical_address_t> *bus_interface, Object *parent = 0);
+	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 	
 	//=====================================================================
@@ -399,10 +484,93 @@ public:
 	virtual void Reset();
 
 	//=====================================================================
-	//=             instruction fetch (unused, but mandatory)             =
+	//=                     CPU control handling methods                  =
 	//=====================================================================
-	
-	virtual void Fetch(void *buffer, address_t addr, uint32_t size); // called by inherited class Decoder
+
+	void SetSupervisorPrivilegeLevel();
+	void SetUserPrivilegeLevel();
+	void EnableFPU();
+	void DisableFPU();
+	void EnableDataCache();
+	void DisableDataCache();
+	void EnableInsnCache();
+	void DisableInsnCache();
+	void EnableL2Cache();
+	void DisableL2Cache();
+	void EnableAddressBroadcast();
+	void DisableAddressBroadcast();
+	inline bool IsDataCacheEnabled();
+	inline bool IsInsnCacheEnabled();
+	inline bool IsL2CacheEnabled();
+	inline bool IsAddressBroadcastEnabled();
+
+	//=====================================================================
+	//=                     Cache/MMU handling methods                    =
+	//=====================================================================
+
+	void InvalidateITLBSet(uint32_t index);
+	void InvalidateITLB();
+	void InvalidateDTLBSet(uint32_t index);
+	void InvalidateDTLB();
+	void InvalidateDL1Set(uint32_t index);
+	void InvalidateDL1();
+	void InvalidateIL1Set(uint32_t index);
+	void InvalidateIL1();
+	void InvalidateL2Set(uint32_t index);
+	void InvalidateL2();
+	void ClearAccessDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void ClearAccessIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void ClearAccessL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void EvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void EvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void EvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void ChooseLineToEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void ChooseLineToEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void ChooseLineToEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void UpdateReplacementPolicyDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	void UpdateReplacementPolicyIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void UpdateReplacementPolicyL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access);
+	void FillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, WIMG wimg, bool rwitm);
+	void FillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, WIMG wimg);
+	void FillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, WIMG wimg, bool rwitm);
+	void ZeroDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, WIMG wimg);
+	void Fetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	template <bool TRANSLATE_ADDR> void Load(address_t addr, void *buffer, uint32_t size);
+	template <bool TRANSLATE_ADDR> void Store(address_t addr, const void *buffer, uint32_t size);
+	template <class T> void Load(T& value, address_t ea);
+	template <class T> void Store(T value, address_t ea);
+	void Int8Load(unsigned int rd, address_t ea);
+	void Int16Load(unsigned int rd, address_t ea);
+	void SInt16Load(unsigned int rd, address_t ea);
+	void Int32Load(unsigned int rd, address_t ea);
+	void Fp32Load(unsigned int fd, address_t ea);
+	void Fp64Load(unsigned int fd, address_t ea);
+	void Int16LoadByteReverse(unsigned int rd, address_t ea);
+	void Int32LoadByteReverse(unsigned int rd, address_t ea);
+	void IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size);
+	void Int8Store(unsigned int rs, address_t ea);
+	void Int16Store(unsigned int rs, address_t ea);
+	void Int32Store(unsigned int rs, address_t ea);
+	void Fp32Store(unsigned int fs, address_t ea);
+	void Fp64Store(unsigned int fs, address_t ea);
+	void FpStoreLSW(unsigned int fs, address_t ea);
+	void Int16StoreByteReverse(unsigned int rs, address_t ea);
+	void Int32StoreByteReverse(unsigned int rs, address_t ea);
+	void IntStoreMSBFirst(unsigned int rs, address_t ea, uint32_t size);
+
+
+
+
+
+
+
+	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
+	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT);
+	virtual void BusZeroBlock(physical_address_t physical_addr);
+	virtual void BusFlushBlock(physical_address_t physical_addr);
 
 	//=====================================================================
 	//=             memory access reporting control interface methods     =
@@ -410,19 +578,6 @@ public:
 
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report) ;
-
-	//=====================================================================
-	//=                        Interface with outside                     =
-	//=====================================================================
-	
-	virtual BusStatus DevRead(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc);
-	virtual BusStatus DevReadX(physical_address_t physical_addr, void *buffer, uint32_t size, BusControl bc);
-	virtual BusStatus DevWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, BusControl bc);
-	virtual BusStatus DevInvalidateBlock(physical_address_t physical_addr, BusControl bc);
-	virtual BusStatus DevFlushBlock(physical_address_t physical_addr, BusControl bc);
-	virtual BusStatus DevZeroBlock(physical_address_t physical_addr, BusControl bc);
-	virtual BusStatus DevInvalidateTLBEntry(physical_address_t addr, BusControl bc);
-	virtual void DevOnBusError(BusStatus bs);
 
 	// PowerPC Linux OS Interface
 	virtual void PerformExit(int ret);
@@ -434,24 +589,12 @@ public:
 	//=               Programmer view memory access methods               =
 	//=====================================================================
 	
-	void ReadMemory8(address_t addr, uint8_t& value);
-	void ReadMemory16(address_t addr, uint16_t& value);
-	void ReadMemoryByteReverse16(address_t addr, uint16_t& value);
-	void ReadMemory32(address_t addr, uint32_t& value);
-	void ReadMemoryByteReverse32(address_t addr, uint32_t& value);
-	void ReadMemory64(address_t addr, uint64_t& value);
-	void WriteMemory8(address_t addr, uint8_t value);
-	void WriteMemory16(address_t addr, uint16_t value);
-	void WriteMemoryByteReverse16(address_t addr, uint16_t value);
-	void WriteMemory32(address_t addr, uint32_t value);
-	void WriteMemoryByteReverse32(address_t addr, uint32_t value);
-	void WriteMemory64(address_t addr, uint64_t value);
+	bool ReadMemory(address_t addr, void *buffer, uint32_t size, MemoryType mt, bool translate_addr);
+	bool WriteMemory(address_t addr, const void *buffer, uint32_t size, MemoryType mt, bool translate_addr);
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
-	void ReadMemoryBuffer(address_t addr, void *buffer, uint32_t size);
-	void WriteMemoryBuffer(address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=                         utility methods                           =
@@ -946,18 +1089,52 @@ public:
 	//=                  MMU registers set/get methods                    =
 	//=====================================================================
 	
-	inline uint32_t GetSR(unsigned int n) { return mmu.GetSR(n); }
-	inline void SetSR(unsigned int n, uint32_t value) { mmu.SetSR(n, value); }
-	inline uint32_t GetSDR1() { return mmu.GetSDR1(); }
-	inline void SetSDR1(uint32_t value) { mmu.SetSDR1(value); }
-	inline uint32_t GetIBATU(unsigned int n) { return mmu.GetIBATU(n); }
-	inline void SetIBATU(unsigned int n, uint32_t value) { mmu.SetIBATU(n, value); }
-	inline uint32_t GetIBATL(unsigned int n) { return mmu.GetIBATL(n); }
-	inline void SetIBATL(unsigned int n, uint32_t value) { mmu.SetIBATL(n, value); }
-	inline uint32_t GetDBATU(unsigned int n) { return mmu.GetDBATU(n); }
-	inline void SetDBATU(unsigned int n, uint32_t value) { mmu.SetDBATU(n, value); }
-	inline uint32_t GetDBATL(unsigned int n) { return mmu.GetDBATL(n); }
-	inline void SetDBATL(unsigned int n, uint32_t value) { mmu.SetDBATL(n, value); }
+	inline uint32_t GetDBATL(unsigned int n) { return dbatl[n]; }
+	inline void SetDBATL(unsigned int n, uint32_t value) { dbatl[n] = value; }
+	
+	inline uint32_t GetDBATU(unsigned int n) { return dbatu[n]; }
+	inline void SetDBATU(unsigned int n, uint32_t value) { dbatu[n] = value; }
+	
+	inline uint32_t GetIBATL(unsigned int n) { return ibatl[n]; }
+	inline void SetIBATL(unsigned int n, uint32_t value) { ibatl[n] = value; }
+	
+	inline uint32_t GetIBATU(unsigned int n) { return ibatu[n]; }
+	inline void SetIBATU(unsigned int n, uint32_t value) { ibatu[n] = value; }
+	
+	// Methods for reading DBAT register bits
+	inline uint32_t GetDBATU_BEPI(unsigned int n) { return (GetDBATU(n) >> 17) & 0x7fff; }
+	inline uint32_t GetDBATU_BL(unsigned int n) { return (GetDBATU(n) >> 2) & 0x7ff; }
+	inline uint32_t GetDBATU_VS(unsigned int n) { return (GetDBATU(n) >> 1) & 1; }
+	inline uint32_t GetDBATU_VP(unsigned int n) { return GetDBATU(n) & 1; }
+	inline uint32_t GetDBATL_BRPN(unsigned int n) { return (GetDBATL(n) >> 17) & 0x7fff; }
+	inline uint32_t GetDBATL_WIMG(unsigned int n) { return (GetDBATL(n) >> 3) & 0xf; }
+	inline uint32_t GetDBATL_PP(unsigned int n) { return GetDBATL(n) & 3; }
+
+	// Methods for reading IBAT register bits
+	inline uint32_t GetIBATU_BEPI(unsigned int n) { return (GetIBATU(n) >> 17) & 0x7fff; }
+	inline uint32_t GetIBATU_BL(unsigned int n) { return (GetIBATU(n) >> 2) & 0x7ff; }
+	inline uint32_t GetIBATU_VS(unsigned int n) { return (GetIBATU(n) >> 1) & 1; }
+	inline uint32_t GetIBATU_VP(unsigned int n) { return GetIBATU(n) & 1; }
+	inline uint32_t GetIBATL_BRPN(unsigned int n) { return (GetIBATL(n) >> 17) & 0x7fff; }
+	inline uint32_t GetIBATL_WIMG(unsigned int n) { return (GetIBATL(n) >> 3) & 0xf; }
+	inline uint32_t GetIBATL_PP(unsigned int n) { return GetIBATL(n) & 3; }
+
+	inline uint32_t GetSR(unsigned int n) { return sr[n]; }
+	inline void SetSR(unsigned int n, uint32_t value) { sr[n] = value; }
+
+	// Methods for reading SR registers bits
+	inline uint32_t GetSR_T(unsigned int n) { return (sr[n] >> 31) & 1; }
+	inline uint32_t GetSR_KS(unsigned int n) { return (sr[n] >> 30) & 1; }
+	inline uint32_t GetSR_KP(unsigned int n) { return (sr[n] >> 29) & 1; }
+	inline uint32_t GetSR_N(unsigned int n) { return (sr[n] >> 28) & 1; }
+	inline uint32_t GetSR_VSID(unsigned int n) { return sr[n] & 0xffffffUL; }
+	
+	inline uint32_t GetSDR1() { return sdr1; }
+	inline void SetSDR1(uint32_t value) { sdr1 = value; }
+
+	// Methods for reading SDR1 bits
+	inline uint32_t GetSDR1_HTABORG() { return (sdr1 >> 16) & 0xffff; }
+	inline uint32_t GetSDR1_HTABMASK() { return sdr1 & 0x1ff; }
 
 	//=====================================================================
 	//=                    registers set/get methods                      =
@@ -1042,6 +1219,23 @@ public:
 	//=                   Vector instructions handling                    =
 	//=====================================================================
 	
+	//=====================================================================
+	//=                     MMU Address translation                       =
+	//=====================================================================
+
+	template <bool DEBUG> void LookupBAT(MMUAccess<CONFIG>& mmu_access);
+	void LookupITLB(MMUAccess<CONFIG>& mmu_access);
+	void LookupDTLB(MMUAccess<CONFIG>& mmu_access);
+	void UpdateITLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
+	void UpdateDTLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
+	void ChooseEntryToEvictITLB(MMUAccess<CONFIG>& mmu_access);
+	void ChooseEntryToEvictDTLB(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> void AccessTLB(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> void HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> void TranslateAddress(MMUAccess<CONFIG>& mmu_access);
+	void LoadITLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo);
+	void LoadDTLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo);
+	void DumpPageTable(ostream& os);
 
 	//=====================================================================
 	//=               Cache management instructions handling              =
@@ -1067,19 +1261,40 @@ public:
 	//=               Linked Load-Store instructions handling             =
 	//=====================================================================
 	
-	void Lwarx(address_t addr, uint32_t& value);
-	void Stwcx(address_t addr, uint32_t value);
+	void Lwarx(unsigned int rd, address_t addr);
+	void Stwcx(unsigned int rs, address_t addr);
 
 	//=====================================================================
 	//=                        Debugging stuffs                           =
 	//=====================================================================
 	
+	Parameter<bool> param_verbose_all;
+	Parameter<bool> param_verbose_step;
+	Parameter<bool> param_verbose_dtlb;
+	Parameter<bool> param_verbose_dl1;
+	Parameter<bool> param_verbose_il1;
+	Parameter<bool> param_verbose_l2;
+	Parameter<bool> param_verbose_load;
+	Parameter<bool> param_verbose_store;
+	Parameter<bool> param_verbose_read_memory;
+	Parameter<bool> param_verbose_write_memory;
+	Parameter<bool> param_verbose_exception;
+	Parameter<bool> param_verbose_set_msr;
+	Parameter<bool> param_verbose_set_hid0;
+	Parameter<bool> param_verbose_set_hid1;
+	Parameter<bool> param_verbose_set_hid2;
+	Parameter<bool> param_verbose_set_l2cr;
+	Parameter<uint64_t> param_trap_on_instruction_counter;
 	virtual unisim::util::debug::Register *GetRegister(const char *name);
 	virtual string Disasm(address_t addr, address_t& next_addr);
 	virtual const char *GetArchitectureName() const;
 	inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	string GetObjectFriendlyName(address_t addr);
 	string GetFunctionFriendlyName(address_t addr);
+	bool ProcessCustomDebugCommand(const char *custom_debug_command);
+	inline void MonitorLoad(address_t ea, uint32_t size);
+	inline void MonitorStore(address_t ea, uint32_t size);
+
 
 	//=====================================================================
 	//=               Hardware check/acknowledgement methods              =
@@ -1194,11 +1409,7 @@ private:
 	uint32_t hid1;          //!< hardware implementation dependent register 1 (all)
 	uint32_t hid2;          //!< hardware implementation dependent register 2 (7x5)
 	uint32_t iabr;          //!< instruction address breakpoint register (603e, 604e, 7xx, 7xxx)
-	uint32_t ibatl[CONFIG::NUM_BATS ? CONFIG::NUM_BATS : 1];	//!< instruction block address translation registers (lower 32 bits) (all)
-	uint32_t ibatu[CONFIG::NUM_BATS ? CONFIG::NUM_BATS : 1];	//!< instruction block address translation registers (upper 32 bits) (all)
 	uint32_t icmp;          //!< ITLB Compare register (603e, 7x5)
-	uint32_t dbatl[CONFIG::NUM_BATS ? CONFIG::NUM_BATS : 1];	//!< data block address translation registers (lower 32 bits)  (603e, 604e, 7xx, 7xxx)
-	uint32_t dbatu[CONFIG::NUM_BATS ? CONFIG::NUM_BATS : 1];	//!< data block address translation registers (upper 32 bits) (603e, 604e, 7xx, 7xxx)
 	uint32_t dcmp;          //!< DTLB Compare register (603e, 7x5)
 	uint32_t dmiss;         //!< DTLB Miss register (603e, 7x5)
 	uint32_t ictc;          //!< instruction cache throttling control register (7xx, 7xxx)
@@ -1246,10 +1457,8 @@ private:
 	uint32_t pvr;           //!< processor version register (all)
 	uint32_t rpa;           //!< Required Physical Address register (603e, 7x5)
 	uint32_t sda;           //!< Sampled data address (604e, 7xx, 7xxx)
-	uint32_t sdr1;          //!< SDR1 register (all)
 	uint32_t sia;           //!< Sampled instruction address (604e, 7xx, 7xxx)
 	uint32_t sprg[CONFIG::NUM_SPRGS ? CONFIG::NUM_SPRGS : 1];   //!< SPRGs registers (all)
-	uint32_t sr[16];        //!< segment registers (all)
 	uint32_t srr0;          //!< Save and restore register 0 (all)
 	uint32_t srr1;          //!< Save and restore register 1 (all)
 	uint32_t svr;           //!< System version register (7448)
@@ -1257,6 +1466,16 @@ private:
 	uint32_t thrm2;         //!< thermal assist unit register (7xx, 7400, 7410)
 	uint32_t thrm3;         //!< thermal assist unit register (7xx, 7400, 7410)
 	uint32_t tlbmiss;       //!< TLBMISS register (7441, 7445, 7447, 7447A, 7448, 7451, 7455)
+
+	//=====================================================================
+	//=                            MMU registers                          =
+	//=====================================================================
+	uint32_t dbatu[CONFIG::NUM_BATS];	/*< data block address translation registers (upper 32 bits) */
+	uint32_t dbatl[CONFIG::NUM_BATS];	/*< data block address translation registers (lower 32 bits) */
+	uint32_t ibatu[CONFIG::NUM_BATS];	/*< instruction block address translation registers (upper 32 bits) */
+	uint32_t ibatl[CONFIG::NUM_BATS];	/*< instruction block address translation registers (lower 32 bits) */
+	uint32_t sr[16];	/*< segment registers */
+	uint32_t sdr1;		/*< SDR1 register */
 
 	//=====================================================================
 	//=              PowerPC hardware interrupt signals                   =
@@ -1279,27 +1498,38 @@ private:
 	//=                     L1 Instruction Cache                          =
 	//=====================================================================
 	
-	unisim::component::cxx::cache::insn::Cache<
-		physical_address_t,
-		CONFIG::L1_INSN_CACHE_SIZE,
-		CONFIG::L1_INSN_CACHE_BLOCK_SIZE,
-		CONFIG::L1_INSN_CACHE_ASSOCIATIVITY,
-		CONFIG::L1_INSN_CACHE_REPLACEMENT_POLICY> il1;
-		
+	unisim::component::cxx::cache::Cache<class CONFIG::IL1_CONFIG> il1;
+	uint64_t num_il1_accesses;
+	uint64_t num_il1_misses;
+
+	//=====================================================================
+	//=                         L1 Data Cache                             =
+	//=====================================================================
+	
+	unisim::component::cxx::cache::Cache<class CONFIG::DL1_CONFIG> dl1;
+	uint64_t num_dl1_accesses;
+	uint64_t num_dl1_misses;
+
 	//=====================================================================
 	//=                       L2 Unified Cache                            =
 	//=====================================================================
 		
-	unisim::component::cxx::cache::mesi::Cache<
-		physical_address_t,
-		CONFIG::L2_CACHE_SIZE,
-		CONFIG::L2_CACHE_BLOCK_SIZE,
-		CONFIG::L2_CACHE_ASSOCIATIVITY,
-		CONFIG::L2_CACHE_REPLACEMENT_POLICY> l2;
-	
+	unisim::component::cxx::cache::Cache<class CONFIG::L2_CONFIG> l2;
+	uint64_t num_l2_accesses;
+	uint64_t num_l2_misses;
 	
 	//=====================================================================
-	//=                  Floating point Unit (MMU)                        =
+	//=                  MMU Translation Look-aside buffers               =
+	//=====================================================================
+
+	/* Data Translation look-aside buffer */
+	TLB<class CONFIG::DTLB_CONFIG> dtlb;
+
+	/* Instruction Translation look-aside buffer */
+	TLB<class CONFIG::ITLB_CONFIG> itlb;
+
+	//=====================================================================
+	//=                  Floating point Unit (FPU)                        =
 	//=====================================================================
 	
 	FPU<CONFIG> fpu;
@@ -1321,18 +1551,48 @@ private:
 	unsigned int num_insn_in_prefetch_buffer;                  //!< Number of instructions currently in the prefetch buffer
 	unsigned int cur_insn_in_prefetch_buffer;                  //!< Prefetch buffer index of the current instruction to be executed
 	uint32_t prefetch_buffer[CONFIG::NUM_PREFETCH_BUFFER_ENTRIES];     //!< The instruction prefetch buffer
-	bool icache_enabled;
-	bool dcache_enabled;
 	
 	//=====================================================================
 	//=                      Debugging stuffs                             =
 	//=====================================================================
 
+	bool verbose_all;
+	bool verbose_step;
+	bool verbose_dtlb;
+	bool verbose_dl1;
+	bool verbose_il1;
+	bool verbose_l2;
+	bool verbose_load;
+	bool verbose_store;
+	bool verbose_read_memory;
+	bool verbose_write_memory;
+	bool verbose_exception;
+	bool verbose_set_msr;
+	bool verbose_set_hid0;
+	bool verbose_set_hid1;
+	bool verbose_set_hid2;
+	bool verbose_set_l2cr;
+	uint64_t trap_on_instruction_counter;
 	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
 	string architecture_name;                                  //!< Architecture name (i.e. "powerpc")
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 	int StringLength(address_t addr);                          //!< Something to compute the length of a null-terminated string at an effective address
+	inline bool IsVerboseStep() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
+	inline bool IsVerboseDTLB() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
+	inline bool IsVerboseDL1() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DL1_ENABLE && (verbose_all || verbose_dl1); }
+	inline bool IsVerboseIL1() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_IL1_ENABLE && (verbose_all || verbose_il1); }
+	inline bool IsVerboseL2() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_L2_ENABLE && (verbose_all || verbose_l2); }
+	inline bool IsVerboseLoad() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_LOAD_ENABLE && (verbose_all || verbose_load); }
+	inline bool IsVerboseStore() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STORE_ENABLE && (verbose_all || verbose_store); }
+	inline bool IsVerboseReadMemory() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_READ_MEMORY_ENABLE && (verbose_all || verbose_read_memory); }
+	inline bool IsVerboseWriteMemory() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_WRITE_MEMORY_ENABLE && (verbose_all || verbose_write_memory); }
+	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
+	inline bool IsVerboseSetMSR() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_MSR_ENABLE && (verbose_all || verbose_set_msr); }
+	inline bool IsVerboseSetHID0() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID0_ENABLE && (verbose_all || verbose_set_hid0); }
+	inline bool IsVerboseSetHID1() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID1_ENABLE && (verbose_all || verbose_set_hid1); }
+	inline bool IsVerboseSetHID2() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_HID2_ENABLE && (verbose_all || verbose_set_hid2); }
+	inline bool IsVerboseSetL2CR() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_L2CR_ENABLE && (verbose_all || verbose_set_l2cr); }
 
 	//=====================================================================
 	//=                    CPU run-time parameters                        =
@@ -1342,6 +1602,14 @@ private:
 	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
 	Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
+
+	//=====================================================================
+	//=                    CPU run-time statistics                        =
+	//=====================================================================
+
+	Statistic<uint64_t> stat_instruction_counter;
+	Statistic<uint64_t> stat_cpu_cycle;                   //!< Number of cpu cycles
+	Statistic<uint64_t> stat_bus_cycle;                   //!< Number of front side bus cycles
 
 	//=====================================================================
 	//=                   lwarx/stwcx. reservation                        =
@@ -1354,8 +1622,6 @@ private:
 	//=                    Interface with outside                         =
 	//=====================================================================
 	
-	BusInterface<physical_address_t> *bus_interface;          //!< the bus interface to get access to the outside world (bus, memory, I/O, PCI...)
-
 	inline bool HasDecrementerOverflow() const { return decrementer_overflow; }
 	inline bool HasExternalInterrupt() const { return external_interrupt; }
 	inline bool HasHardReset() const { return hard_reset; }
@@ -1447,6 +1713,7 @@ protected:
 	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
 	uint64_t voltage;        //!< CPU voltage in mV
 	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
+	uint64_t cpu_cycle;      //!< Number of cpu cycles
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
 
 	//=====================================================================
@@ -1619,23 +1886,6 @@ protected:
 	void FPRIssue();
 	void VRIssue();
 	
-	//=====================================================================
-	//=                 Memory Management Unit (MMU)                      =
-	//=====================================================================
-		
-	MMU<CONFIG> mmu;
-
-	//=====================================================================
-	//=                         L1 Data Cache                             =
-	//=====================================================================
-	
-	unisim::component::cxx::cache::mesi::Cache<
-		physical_address_t,
-		CONFIG::L1_DATA_CACHE_SIZE,
-		CONFIG::L1_DATA_CACHE_BLOCK_SIZE,
-		CONFIG::L1_DATA_CACHE_ASSOCIATIVITY,
-		CONFIG::L1_DATA_CACHE_REPLACEMENT_POLICY> dl1;
-		
 
 };
 

@@ -52,6 +52,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Object(_name, _parent),
 	Service<DebugControl<ADDRESS> >(_name, _parent),
 	Service<MemoryAccessReporting<ADDRESS> >(_name, _parent),
+	Service<TrapReporting>(_name, _parent),
 	Client<MemoryAccessReportingControl>(_name, _parent),
 	Client<Disassembly<ADDRESS> >(_name, _parent),
 	Client<Memory<ADDRESS> >(_name, _parent),
@@ -59,6 +60,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
+	trap_reporting_export("trap-reporting-export", this),
 	memory_access_reporting_control_import("memory-access-reporting-control-import", this),
 	disasm_import("disasm-import", this),
 	memory_import("memory-import", this),
@@ -109,7 +111,7 @@ void InlineDebugger<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::Trap()
+void InlineDebugger<ADDRESS>::ReportTrap()
 {
 	trap = true;
 }

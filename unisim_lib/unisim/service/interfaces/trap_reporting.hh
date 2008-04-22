@@ -30,95 +30,24 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include <unisim/component/cxx/cache/insn/cache.hh>
+#ifndef __UNISIM_SERVICE_INTERFACES_TRAP_REPORTING_HH__
+#define __UNISIM_SERVICE_INTERFACES_TRAP_REPORTING_HH__
 
 namespace unisim {
-namespace component {
-namespace cxx {
-namespace cache {
-namespace insn {
-	
-Action actions[5][2] = {
-	// EvPrRd
-	{
-		// ST_INVALID
-		AcBusRd,        // (I)-[PrRd/BusRd]->(V)
-		// ST_VALID
-		AcNone          // (V)-[PrRd/..]->(V)
-	},
-	// EvPrRdX
-	{
-		// ST_INVALID
-		AcNone,         // (I)-[PrRdX/..]->(I)
-		// ST_VALID
-		AcNone          // (V)-[PrRdX/..]->(V)
-	},
-	// EvPrWr
-	{
-		// ST_INVALID
-		AcNone,         // (I)-[PrWr/..]->(I)
-		// ST_VALID
-		AcNone          // (V)-[PrWr/..]->(V)
-	},
-	// EvBusRd
-	{
-		// ST_INVALID
-		AcNone,         // (I)-[BusRd/..]->(I)
-		// ST_VALID
-		AcNone          // (V)-[BusRd/..]->(V)
-	},
-	// EvBusRdX
-	{
-		// ST_INVALID
-		AcNone,         // (I)-[BusRdX/..]->(I)
-		// ST_VALID
-		AcNone          // (V)-[BusRdX/..]->(V)
-	}
+namespace service {
+namespace interfaces {
+
+class TrapReporting
+{
+public:
+	virtual void ReportTrap() = 0;
 };
 
-CacheBlockState transitions[5][2] = {
-	// EvPrRd
-	{
-		// ST_INVALID
-		ST_VALID,           // (I)-[PrRd/BusRd]->(V)
-		// ST_VALID
-		ST_VALID            // (V)-[PrRd/..]->(V)
-	},
-	// EvPrRdX
-	{
-		// ST_INVALID
-		ST_INVALID,         // (I)-[PrRdX/..]->(I)
-		// ST_VALID
-		ST_VALID            // (V)-[PrRdX/..]->(V)
-	},
-	// EvPrWr
-	{
-		// ST_INVALID
-		ST_INVALID,         // (I)-[PrWr/..]->(I)
-		// ST_VALID
-		ST_VALID            // (V)-[PrWr/..]->(V)
-	},
-	// EvBusRd
-	{
-		// ST_INVALID
-		ST_INVALID,         // (I)-[BusRd/..]->(I)
-		// ST_VALID
-		ST_VALID            // (V)-[BusRd/..]->(V)
-	},
-	// EvBusRdX
-	{
-		// ST_INVALID
-		ST_INVALID,         // (I)-[BusRdX/..]->(I)
-		// ST_VALID
-		ST_VALID            // (V)-[BusRdX/..]->(V)
-	}
-};
-
-
-} // end of namespace insn
-} // end of namespace cache
-} // end of namespace cxx
-} // end of namespace component
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
+
+#endif

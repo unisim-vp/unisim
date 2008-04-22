@@ -65,7 +65,7 @@ then \
   fi; \
   echo \"\$message_to_display\"; \
   aclocal -I \$m4_path; \
-  autoconf; \
+  autoconf --force; \
   has_ac_config_headers=\`grep AC_CONFIG_HEADERS configure.ac\`; \
   if test \"x\$has_ac_config_headers\" != \"x\"; \
   then \
