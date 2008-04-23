@@ -537,26 +537,26 @@ string CPU::Disasm(physical_address_t addr, physical_address_t &next_addr)
 uint16_t CPU::xb_getAddrRegValue(uint8_t rr) {
     switch (rr) {
 	case 0:
-    	return getRegX();
+    	return getRegX(); break;
 	case 1:
-    	return getRegY();
+    	return getRegY(); break;
 	case 2:
-    	return getRegSP();
+    	return getRegSP(); break;
 	case 3:
-    	return getRegPC();    
+    	return getRegPC(); break;
 	}
 }
 
 void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
     switch (rr) {
 	case 0:
-    	return setRegX(val);
+    	return setRegX(val); break;
 	case 1:
-    	return setRegY(val);
+    	return setRegY(val); break;
 	case 2:
-    	return setRegSP(val);
+    	return setRegSP(val); break;
 	case 3:
-    	return setRegPC(val);    
+    	return setRegPC(val); break;
 	}
 }
 
@@ -564,11 +564,11 @@ void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
 uint16_t CPU::xb_getAccRegValue(uint8_t rr) {
     switch (rr) {
 	case 0:
-    	return getRegA();
+    	return getRegA(); break;
 	case 1:
-    	return getRegB();
+    	return getRegB(); break;
 	case 2:
-    	return getRegD();
+    	return getRegD(); break;
     default:
     	return 0; // ! or throw an exception 	
 	}

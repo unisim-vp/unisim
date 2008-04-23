@@ -42,10 +42,10 @@ sbr.execute = {
 			// Nothing to do
 			break;
 		case 0x2: // BHI: branch if higher (C+Z=0)
-			if (cpu->ccr->getC()+cpu->ccr->getZ() == 0) branch = true; 
+			if ((cpu->ccr->getC() | cpu->ccr->getZ()) == 0) branch = true; 
 			break;
 		case 0x3: // BLS: branch if lower or same 
-			if (cpu->ccr->getC()+cpu->ccr->getZ() == 1) branch = true;
+			if ((cpu->ccr->getC() | cpu->ccr->getZ()) == 1) branch = true;
 			break;
 		case 0x4: // BCC: branch if carel8y clear or BHS: branch if higher or same
 			if (cpu->ccr->getC() == 0) branch = true;
@@ -72,16 +72,17 @@ sbr.execute = {
 			if (cpu->ccr->getN() == 1) branch = true; 
 			break;
 		case 0xC: // BGE: branch if greater than or equal
-			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 0) branch = true; 
+			if ((cpu->ccr->getN() ^ cpu->ccr->getV()) == 0) branch = true; 
 			break;
 		case 0xD: // BLT: branch if less than
-			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 1) branch = true; 
+			if ((cpu->ccr->getN() ^ cpu->ccr->getV()) == 1) branch = true; 
 			break;
-		case 0xE: // BGT: branch if greater than
-			if (cpu->ccr->getZ() | (cpu->ccr->getN() ^ cpu->ccr->getV()) == 0) branch = true; 
+		case 0xE: { // BGT: branch if greater than 
+				if ((cpu->ccr->getZ() | (cpu->ccr->getN() ^ cpu->ccr->getV())) == 0) branch = true; 
+			}
 			break;
 		case 0xF: // BLE: branch if less than or equal
-			if (cpu->ccr->getZ() | (cpu->ccr->getN() ^ cpu->ccr->getV()) == 1) branch = true; 
+			if ((cpu->ccr->getZ() | (cpu->ccr->getN() ^ cpu->ccr->getV())) == 1) branch = true; 
 			break;
 	}
 	
@@ -126,10 +127,10 @@ lbr.execute = {
 			// Nothing to do
 			break;
 		case 0x2: // LBHI: branch if higher (C+Z=0)
-			if (cpu->ccr->getC()+cpu->ccr->getZ() == 0) branch = true; 
+			if ((cpu->ccr->getC() | cpu->ccr->getZ()) == 0) branch = true; 
 			break;
 		case 0x3: // LBLS: branch if lower or same 
-			if (cpu->ccr->getC()+cpu->ccr->getZ() == 1) branch = true;
+			if ((cpu->ccr->getC() | cpu->ccr->getZ()) == 1) branch = true;
 			break;
 		case 0x4: // LBCC: branch if carel8y clear or LBHS: branch if higher or same
 			if (cpu->ccr->getC() == 0) branch = true;
@@ -156,16 +157,16 @@ lbr.execute = {
 			if (cpu->ccr->getN() == 1) branch = true; 
 			break;
 		case 0xC: // LBGE: branch if greater than or equal
-			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 0) branch = true; 
+			if ((cpu->ccr->getN() ^ cpu->ccr->getV()) == 0) branch = true; 
 			break;
 		case 0xD: // LBLT: branch if less than
-			if (cpu->ccr->getN() ^ cpu->ccr->getV() == 1) branch = true; 
+			if ((cpu->ccr->getN() ^ cpu->ccr->getV()) == 1) branch = true; 
 			break;
 		case 0xE: // LBGT: branch if greater than
-			if (cpu->ccr->getZ()+(cpu->ccr->getN() ^ cpu->ccr->getV()) == 0) branch = true; 
+			if ((cpu->ccr->getZ() | (cpu->ccr->getN() ^ cpu->ccr->getV())) == 0) branch = true; 
 			break;
 		case 0xF: // LBLE: branch if less than or equal
-			if (cpu->ccr->getZ()+(cpu->ccr->getN() ^ cpu->ccr->getV()) == 1) branch = true; 
+			if ((cpu->ccr->getZ() | (cpu->ccr->getN() ^ cpu->ccr->getV())) == 1) branch = true; 
 			break;
 	}
 	
@@ -195,7 +196,7 @@ br_clr_set_dir.execute = {
 		opr8aVal = ~opr8aVal;
 	}
 	
-	if (opr8aVal & msk8 == 0) {
+	if ((opr8aVal & msk8) == 0) {
 		cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
 	}
 }
@@ -219,7 +220,7 @@ br_clr_set_ext.execute = {
 		opr16aVal = ~opr16aVal;
 	}
 	
-	if (opr16aVal & msk8 == 0) {
+	if ((opr16aVal & msk8) == 0) {
 		cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
 	}
 }
@@ -244,7 +245,7 @@ br_clr_set_idx.execute = {
 		xbVal = ~xbVal;
 	}
 	
-	if (xbVal & msk8 == 0) {
+	if ((xbVal & msk8) == 0) {
 		cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
 	}
 }
