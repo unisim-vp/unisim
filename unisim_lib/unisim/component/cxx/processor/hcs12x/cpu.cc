@@ -156,7 +156,7 @@ bool CPU::Setup()
 
 	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
 	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
-	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);	
+	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
 	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
 	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);	
 	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);

@@ -165,6 +165,7 @@ inline void Add32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint3
 #endif
 }
 
+/*
 inline void Sub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in) {
   Add8(result, carry_out, overflow,
 	x,
@@ -185,6 +186,82 @@ inline void Sub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint3
 	-y,
 	carry_in);
 }
+
+*/
+
+// REDA --
+inline void Sub8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in) {
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	if(carry_in)
+	{
+		__asm__ ("stc\nsbbb %b4, %b0\nsetc %1\nseto %2" : "=qQ" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "q" (y) : "cc");	
+	}
+	else
+	{
+		__asm__ ("subb %b4, %b0\nsetc %1\nseto %2" : "=qQ" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "q" (y) : "cc");
+	}
+#else
+	uint8_t res = x - y - carry_in;
+	uint8_t x7 = (x >> 7) & 1;
+	uint8_t y7 = (y >> 7) & 1;
+	uint8_t r7 = (res >> 7) & 1;
+	
+	overflow = (x7 & ~y7 & ~r7) | (~x7 & y7 & r7); 
+	carry_out = (~x7 & y7) | (y7 & r7) | (r7 & ~x7);
+	result = res;
+
+#endif
+}
+
+
+inline void Sub16(uint16_t& result, uint8_t& carry_out, uint8_t& overflow, uint16_t x, uint16_t y, uint8_t carry_in) {
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	if(carry_in)
+	{
+		__asm__ ("stc\nsbbw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
+	}
+	else
+	{
+		__asm__ ("subw %4, %w0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");
+	}
+#else
+	uint16_t res = x - y - carry_in;
+	uint16_t x15 = (x >> 15) & 1;
+	uint16_t y15 = (y >> 15) & 1;
+	uint16_t r15 = (res >> 15) & 1;
+	
+	overflow = (x15 & ~y15 & ~r15) | (~x15 & y15 & r15); 
+	carry_out = (~x15 & y15) | (y15 & r15) | (r15 & ~x15);
+	result = res;
+
+#endif
+}
+
+inline void Sub32(uint32_t& result, uint8_t& carry_out, uint8_t& overflow, uint32_t x, uint32_t y, uint8_t carry_in) {
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	if(carry_in)
+	{
+		__asm__ ("stc\nsbbl %4, %0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");	
+	}
+	else
+	{
+		__asm__ ("subl %4, %0\nsetc %1\nseto %2" : "=r" (result), "=qQ" (carry_out), "=qQ" (overflow) : "0" (x), "rm" (y) : "cc");
+	}
+#else
+	uint32_t res = x - y - carry_in;
+	uint32_t x31 = (x >> 31) & 1;
+	uint32_t y31 = (y >> 31) & 1;
+	uint32_t r31 = (res >> 31) & 1;
+	
+	overflow = (x31 & ~y31 & ~r31) | (~x31 & y31 & r31); 
+	carry_out = (~x31 & y31) | (y31 & r31) | (r31 & ~x31);
+	result = res;
+
+#endif
+}
+
+// REDA --
+
 
 inline void SignedSatAdd32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) 
 {

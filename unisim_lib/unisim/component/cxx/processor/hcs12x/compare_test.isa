@@ -173,7 +173,7 @@ cp_dyxs_imm.execute = {
 	}
 
 	Sub16(result, carry_out, overflow, regVal, opr16i, carry_in);
-	
+
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
@@ -197,7 +197,9 @@ cp_dyxs_dir.disasm = {
 cp_dyxs_dir.execute = {
 	uint8_t carry_out, overflow, carry_in;
 	uint16_t result, regVal;
-	uint16_t opr8aVal = cpu->memRead16(opr8a, MEMORY::DIRECT);
+	uint16_t opr8aVal;
+	
+	opr8aVal = cpu->memRead16(opr8a, MEMORY::DIRECT);
 	
 	carry_in = 0;
 	switch (dyxs) {

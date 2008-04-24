@@ -87,8 +87,10 @@ const char *ConcatenatedRegister<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetName() co
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 void ConcatenatedRegister<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetValue(void *buffer) const
 {
-	*(REGISTER_TYPE *) buffer = (REGISTER_TYPE ) (*regHigh << sizeof(SUB_REGISTER_TYPE)) | *regLow ;
+
+	*(REGISTER_TYPE *) buffer =  (REGISTER_TYPE ) ((REGISTER_TYPE ) *regHigh << (sizeof(SUB_REGISTER_TYPE)*8)) | *regLow;
 	*(REGISTER_TYPE *) buffer = LittleEndian2Host(*(REGISTER_TYPE *) buffer);
+
 }
 
 
