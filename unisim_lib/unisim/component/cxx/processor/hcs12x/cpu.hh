@@ -232,6 +232,19 @@ public:
 	void Step();
 	virtual void Stop(int ret);
 	virtual void Sync();
+	
+	/* TODO:
+	 * Stop All Clocks and puts the device in standby mode.
+	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode. 
+	 */
+	virtual void Sleep() = 0;
+	
+	/* TODO: 
+	 * Enter a wait state for an integer number of bus clock cycle
+	 * Only CPU12 clocks are stopped
+	 * Wait for not masked interrupt
+	 */
+	virtual void Wait() = 0;
 
 	//=====================================================================
 	//=             memory access reporting control interface methods     =

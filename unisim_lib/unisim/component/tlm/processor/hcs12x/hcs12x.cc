@@ -127,6 +127,24 @@ Sync() {
 	wait(time_spent);
 }
 
+void HCS12X ::Sleep() {
+/* TODO:
+ * Stop All Clocks and puts the device in standby mode.
+ * Asserting the ~RESET, ~XIRQ, or ~IRQ signals ends standby mode. 
+ */
+	
+}
+	
+void HCS12X ::Wait() {
+/* TODO: 
+ * Enter a wait state for an integer number of bus clock cycle
+ * Only CPU12 clocks are stopped
+ * Wait for not masked interrupt
+ */
+
+	wait(irq_event);
+	sc_stop();
+}
  
 bool 
 HCS12X :: 

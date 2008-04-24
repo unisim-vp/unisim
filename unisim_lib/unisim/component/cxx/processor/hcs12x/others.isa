@@ -51,7 +51,20 @@ stop.execute = {
 		 cpu->setRegSP(cpu->getRegSP()-2);
 		 cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
 		 
-		 // TODO: Stop All Clocks and puts the device in standby mode
+		 /* TODO: 
+		  * Stop All Clocks and puts the device in standby mode.
+		  * Asserting the RESET, XIRQ, or IRQ signals ends standby mode. 
+		  */
+		 
+	 	 cpu->Sleep();
+	 	 
+	 	 /* TODO:
+	 	  * If XIRQ is asserted while the X mask bit = 0 (XIRQ interrupts enabled), 
+	 	  * execution resumes with a vector fetch for the XIRQ interrupt. 
+	 	  * While the X mask bit = 1 (XIRQ interrupts disabled), 
+	 	  * a 2-cycle recovery sequence is used to adjust the instruction queue and the stack pointer, 
+	 	  * and execution continues with the next instruction after STOP.
+	 	  */
 	}
 }
 
@@ -96,6 +109,16 @@ wait.execute = {
 	 * Only CPU12 clocks are stopped
 	 * Wait for not masked interrupt
 	 */
+
+	 cpu->Wait();
+	 
+	 /*
+	  * If XIRQ is asserted while the X mask bit = 0 (XIRQ interrupts enabled),
+	  * execution resumes with a vector fetch for the XIRQ interrupt. 
+	  * While the X mask bit = 1 (XIRQ interrupts disabled), 
+	  * a 2-cycle recovery sequence is used to adjust the instruction queue and the stack pointer, 
+	  * and execution continues with the next instruction after WAI.
+	  */
 }
 
 // BGND: Enter Background debug mode

@@ -80,6 +80,20 @@ public:
 	
 	virtual void Stop(int ret);
 	virtual void Sync();
+
+	/* TODO:
+	 * Stop All Clocks and puts the device in standby mode.
+	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode. 
+	 */
+	virtual void Sleep();
+	
+	/* TODO: 
+	 * Enter a wait state for an integer number of bus clock cycle
+	 * Only CPU12 clocks are stopped
+	 * Wait for not masked interrupt
+	 */
+	virtual void Wait();
+
 	
 	virtual bool Setup();
 
@@ -97,6 +111,8 @@ public:
 private:
 	void Synchronize();
 	bool DebugEnable();
+	
+	sc_event irq_event, reset_event, xirq_event;
 	
 	sc_time cpu_cycle_time;
 	sc_time bus_cycle_time;
