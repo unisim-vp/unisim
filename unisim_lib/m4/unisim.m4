@@ -17,7 +17,7 @@ AC_DEFUN([UNISIM_CHECK_BOOST], [
 	AS_HELP_STRING([--with-boost=<path>], [boost library to use (will be completed with /include and /lib)]))
     if test "x$with_boost" != "x"; then
 	AC_MSG_NOTICE([using boost at $with_boost])
-	CPPFLAGS+=" -I$with_boost/include"
+	CPPFLAGS=${CPPFLAGS}" -I$with_boost/include"
     fi
 	
     # Check for some boost graph headers
@@ -36,20 +36,26 @@ AC_DEFUN([UNISIM_CHECK_UNISIM_TOOLS], [
     # Check if boost path has been overloaded
     AC_ARG_WITH(unisim_tools,
 	AS_HELP_STRING([--with-unisim-tools=<path>], [UNISIM tools to use (will be completed with /bin)]))
+	GENISSLIB=genisslib
     if test "x$with_unisim_tools" != "x"; then
-	AC_MSG_NOTICE([using UNISIM tools at $with_unisim_tools])
-	AC_SUBST(GENISSLIB_PATH, $with_unisim_tools/bin/genisslib)
+		AC_MSG_NOTICE([using UNISIM tools at $with_unisim_tools])
+		GENISSLIB_DIR=$with_unisim_tools/bin
+		GENISSLIB_PATH=$GENISSLIB_DIR/$GENISSLIB
+		AC_SUBST(GENISSLIB_PATH)
+		# Check for the GenISSLib program
+		AC_CHECK_PROG(genisslib_installed, $GENISSLIB, true, false, $GENISSLIB_DIR)
     else
-	AC_MSG_NOTICE([using UNISIM tools at the default program path])
-        AC_SUBST(GENISSLIB_PATH, genisslib)
-    fi	    
-    
-    # Check for the GenISSLib program
-    AC_CHECK_PROG(genisslib_installed, $GENISSLIB_PATH, true, false, /)
-    
-    if test "x$genisslib_installed" != "xtrue"; then
-            AC_MSG_ERROR([GenISSLib not found. Please install UNISIM tools.])
-    fi
+		AC_MSG_NOTICE([using UNISIM tools at the default program path])
+		GENISSLIB_PATH=$GENISSLIB
+		AC_SUBST(GENISSLIB_PATH)
+		# Check for the GenISSLib program
+		AC_CHECK_PROG(genisslib_installed, $GENISSLIB, true, false)
+	fi
+
+	
+	if test "x$genisslib_installed" != "xtrue"; then
+			AC_MSG_ERROR([GenISSLib not found. Please install UNISIM tools.])
+	fi
 ])
 
 
@@ -63,7 +69,7 @@ AC_DEFUN([UNISIM_CHECK_ZLIB], [
 	AS_HELP_STRING([--with-zlib=<path>], [zlib library to use (will be completed with /include and /lib)]))
     if test "x$with_zlib" != "x"; then
 	AC_MSG_NOTICE([using zlib at $with_zlib])
-	CPPFLAGS+=" -I$with_zlib/include"
+	CPPFLAGS=${CPPFLAGS}" -I$with_zlib/include"
     fi
 	
     # Check for zlib.h
@@ -80,7 +86,7 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
 	AS_HELP_STRING([--with-ncurses=<path>], [ncurses library to use (will be completed with /include and /lib)]))
     if test "x$with_ncurses" != "x"; then
 	AC_MSG_NOTICE([using ncurses at $with_ncurses])
-	CPPFLAGS+=" -I$with_ncurses/include"
+	CPPFLAGS=${CPPFLAGS}" -I$with_ncurses/include"
     fi
 	
     # Check for ncurses.h
@@ -97,7 +103,7 @@ AC_DEFUN([UNISIM_CHECK_READLINE], [
 	AS_HELP_STRING([--with-readline=<path>], [readline library to use (will be completed with /include and /lib)]))
     if test "x$with_readline" != "x"; then
 	AC_MSG_NOTICE([using readline at $with_readline])
-	CPPFLAGS+=" -I$with_readline/include"
+	CPPFLAGS=${CPPFLAGS}" -I$with_readline/include"
     fi
 	
     # Check for readline/readline.h
@@ -115,7 +121,7 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
 	AS_HELP_STRING([--with-sdl=<path>], [sdl library to use (will be completed with /include and /lib)]))
     if test "x$with_sdl" != "x"; then
 	AC_MSG_NOTICE([using SDL at $with_sdl])
-	CPPFLAGS+=" -I$with_sdl/include"
+	CPPFLAGS=${CPPFLAGS}" -I$with_sdl/include"
     fi
 
     # Check for the main SDL header
@@ -134,7 +140,7 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
 	
     if test "x$with_libxml2" != "x"; then
 		AC_MSG_NOTICE([using libxml2 at $with_libxml2])
-		CPPFLAGS+=" -I$with_libxml2/include/libxml2"
+		CPPFLAGS=${CPPFLAGS}" -I$with_libxml2/include/libxml2"
     fi
 	
     # Check for some libxml2 headers
@@ -157,9 +163,9 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 	AS_HELP_STRING([--with-systemc=<path>], [systemc library to use (will be completed with /include and /lib-linux)]))
     if test "x$with_systemc" != "x"; then
 	AC_MSG_NOTICE([using SystemC at $with_systemc])
-	CPPFLAGS+=" -I$with_systemc/include"
+	CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
     fi
-	CPPFLAGS+=" -DSC_INCLUDE_DYNAMIC_PROCESSES"
+	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 
     # Check for systemc.h
     AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.1). Use --with-systemc=<path> to overload default includes search path.]))

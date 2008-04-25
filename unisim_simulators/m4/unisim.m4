@@ -4,7 +4,7 @@
 #####################################################
 AC_DEFUN([UNISIM_CHECK_LIBSTDCXX], [
 	# Note: we can't check libstdc++ functions from libstdc++ because it's a library of C++ classes with no C functions.
-	LIBS+=" -lstdc++"
+	LIBS=${LIBS}" -lstdc++"
 ])
 
 ## UNISIM_CHECK_BOOST_THREAD
@@ -17,8 +17,8 @@ AC_DEFUN([UNISIM_CHECK_BOOST_THREAD], [
 	AS_HELP_STRING([--with-boost=<path>], [boost library to use (will be completed with /include and /lib)]))
     if test "x$with_boost" != "x"; then
 	AC_MSG_NOTICE([using boost at $with_boost])
-	CPPFLAGS+=" -I$with_boost/include"
-	LDFLAGS+=" -L$with_boost/lib"
+	CPPFLAGS=${CPPFLAGS}" -I$with_boost/include"
+	LDFLAGS=${LDFLAGS}" -L$with_boost/lib"
     fi
 	
     # Check for some boost thread headers
@@ -26,7 +26,7 @@ AC_DEFUN([UNISIM_CHECK_BOOST_THREAD], [
 	AC_MSG_ERROR([boost thread headers not found. Please install the boost thread development library. Use --with-boost=<path> to overload default includes search path.]))
 
 	# Note: we can't check libboost_thread functions from libboost_thread because it's a library of C++ classes with no C functions.
-	LIBS+=" -lboost_thread"
+	LIBS=${LIBS}" -lboost_thread"
 ])
 
 ## UNISIM_CHECK_WINSOCK2
@@ -35,7 +35,7 @@ AC_DEFUN([UNISIM_CHECK_BOOST_THREAD], [
 #####################################################
 AC_DEFUN([UNISIM_CHECK_WINSOCK2], [
 	# Note: we can't check socket functions from libwsock32 because of the PASCAL calling convention. cdecl is mandatory for autoconf.
-	LIBS+=" -lwsock32"
+	LIBS=${LIBS}" -lwsock32"
 ])
 
 ## UNISIM_CHECK_CURSES
@@ -48,8 +48,8 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
 	AS_HELP_STRING([--with-ncurses=<path>], [ncurses library to use (will be completed with /include and /lib)]))
     if test "x$with_ncurses" != "x"; then
 	AC_MSG_NOTICE([using ncurses at $with_ncurses])
-	LDFLAGS+=" -L$with_ncurses/lib"
-	CPPFLAGS+=" -I$with_ncurses/include"
+	LDFLAGS=${LDFLAGS}" -L$with_ncurses/lib"
+	CPPFLAGS=${CPPFLAGS}" -I$with_ncurses/include"
     fi
 	
     # Check for ncurses.h
@@ -61,7 +61,7 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
     if test "$broken_ncurses" == "yes"; then
 	AC_MSG_ERROR([installed ncurses library is broken.])
     else
-	LIBS+=" -lncurses"
+	LIBS=${LIBS}" -lncurses"
     fi
 ])
 
@@ -75,8 +75,8 @@ AC_DEFUN([UNISIM_CHECK_UNISIM_LIB], [
 	AS_HELP_STRING([--with-unisim-lib=<path>], [unisim library to use (will be completed with /include and /lib)]))
     if test "x$with_unisim_lib" != "x"; then
 	AC_MSG_NOTICE([using unisim library at $with_unisim_lib])
-	LDFLAGS+=" -L$with_unisim_lib/lib"
-	CPPFLAGS+=" -I$with_unisim_lib/include"
+	LDFLAGS=${LDFLAGS}" -L$with_unisim_lib/lib"
+	CPPFLAGS=${CPPFLAGS}" -I$with_unisim_lib/include"
     fi
 	
     # Check for ncurses.h
@@ -93,8 +93,8 @@ AC_DEFUN([UNISIM_CHECK_READLINE], [
 	AS_HELP_STRING([--with-readline=<path>], [readline library to use (will be completed with /include and /lib)]))
     if test "x$with_readline" != "x"; then
 	AC_MSG_NOTICE([using readline at $with_readline])
-	LDFLAGS+=" -L$with_readline/lib"
-	CPPFLAGS+=" -I$with_readline/include"
+	LDFLAGS=${LDFLAGS}" -L$with_readline/lib"
+	CPPFLAGS=${CPPFLAGS}" -I$with_readline/include"
     fi
 	
     # Check for readline/readline.h
@@ -109,7 +109,7 @@ AC_DEFUN([UNISIM_CHECK_READLINE], [
     if test "$broken_readline" == "yes"; then
 	AC_MSG_ERROR([installed readline library is broken.])
     else
-	LIBS+=" -lreadline"
+	LIBS=${LIBS}" -lreadline"
     fi
 ])
 
@@ -123,8 +123,8 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
 	AS_HELP_STRING([--with-sdl=<path>], [sdl library to use (will be completed with /include and /lib)]))
     if test "x$with_sdl" != "x"; then
 	AC_MSG_NOTICE([using SDL at $with_sdl])
-	LDFLAGS+=" -L$with_sdl/lib"
-	CPPFLAGS+=" -I$with_sdl/include"
+	LDFLAGS=${LDFLAGS}" -L$with_sdl/lib"
+	CPPFLAGS=${CPPFLAGS}" -I$with_sdl/include"
     fi
 
     # Check for the main SDL header
@@ -175,7 +175,7 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
     if test "$broken_sdl" == "yes"; then
 	AC_MSG_ERROR([installed SDL Library is broken.])
     else
-	LIBS+=" -lSDL"
+	LIBS=${LIBS}" -lSDL"
     fi
 ])
 
@@ -190,8 +190,8 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
 	
     if test "x$with_libxml2" != "x"; then
 		AC_MSG_NOTICE([using libxml2 at $with_libxml2])
-		LDFLAGS+=" -L$with_libxml2/lib"
-		CPPFLAGS+=" -I$with_libxml2/include/libxml2"
+		LDFLAGS=${LDFLAGS}" -L$with_libxml2/lib"
+		CPPFLAGS=${CPPFLAGS}" -I$with_libxml2/include/libxml2"
     fi
 	
     # Check for some libxml2 headers
@@ -223,7 +223,7 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     if test "$broken_libxml2" == "yes"; then
 		AC_MSG_ERROR([installed xml2 Library is broken.])
     else
-		LIBS+=" -lxml2"
+		LIBS=${LIBS}" -lxml2"
     fi
 ])
 
@@ -277,10 +277,10 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 	AS_HELP_STRING([--with-systemc=<path>], [systemc library to use (will be completed with /include and /lib-linux)]))
     if test "x$with_systemc" != "x"; then
 	AC_MSG_NOTICE([using SystemC at $with_systemc])
-	LDFLAGS+=" -L$with_systemc/lib-$SYSTEMC_TARGET_ARCH"
-	CPPFLAGS+=" -I$with_systemc/include"
+	LDFLAGS=${LDFLAGS}" -L$with_systemc/lib-$SYSTEMC_TARGET_ARCH"
+	CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
     fi
-	CPPFLAGS+=" -DSC_INCLUDE_DYNAMIC_PROCESSES"
+	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 
     # Check for systemc.h
     AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.1). Use --with-systemc=<path> to overload default includes search path.]))
@@ -291,7 +291,7 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
     if test "$broken_systemc" == "yes"; then
 	AC_MSG_ERROR([installed SystemC is broken. Please install the SystemC library (version > 2.1). Use --with-systemc=<path> to overload default includes search path.])
     else
-	LIBS+=" -lsystemc"
+	LIBS=${LIBS}" -lsystemc"
     fi
 ])
 

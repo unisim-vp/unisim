@@ -63,7 +63,7 @@ case $host in
 		UNISIM_CHECK_CURSES
 		;;
 	*mingw32*)  # win32 host
-		LIBS+=" -lwsock32"
+		UNISIM_CHECK_WINSOCK2
 		;;
 esac
 

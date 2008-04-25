@@ -393,7 +393,15 @@ Scanner::add_lookupdir( char const* _dir ) {
       if( errno != ERANGE ) throw CWDError;
       continue; 
     }
-    assert( storage[0] == '/' );
+#ifdef WIN32
+    // convert '\' into '/' to have a UNIX friendly path
+    char *pch;
+    for(pch = storage; *pch; pch++) {
+        if(*pch == '\\') *pch = '/';
+    }
+#else
+    assert( storage[0] == '/' ); // a directory path does not start with '/' on a windows host !
+#endif
     buffer.write( storage );
     break;
   }

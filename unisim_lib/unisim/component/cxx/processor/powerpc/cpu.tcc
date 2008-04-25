@@ -3001,31 +3001,33 @@ inline void CPU<CONFIG>::EvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_a
 				// dirty DL1 block eviction
 				if(IsL2CacheEnabled())
 				{
-					if(IsVerboseDL1())
-					{
-						(*logger_import) << DebugInfo << "DL1: evicting dirty block at 0x" << Hex << l1_block_to_evict.GetBaseAddr() << Dec << " into L2" << Endl << EndDebugInfo;
-					}
 					// DL1 block eviction into L2
 					CacheAccess<class CONFIG::L2_CONFIG> l2_access;
 
 					l2_access.addr = l1_block_to_evict.GetBaseAddr();
 					LookupL2(l2_access);
 
-					if(!l2_access.line)
+					if(l2_access.block)
 					{
-						EvictL2(l2_access);
+						if(IsVerboseDL1())
+						{
+							(*logger_import) << DebugInfo << "DL1: evicting dirty block at 0x" << Hex << l1_block_to_evict.GetBaseAddr() << Dec << " into L2" << Endl << EndDebugInfo;
+						}
+						memcpy(&(*l2_access.block)[l2_access.offset], &l1_block_to_evict[0], CacheBlock<typename CONFIG::DL1_CONFIG>::SIZE);
+						l2_access.block->status.dirty = true;
+	
+						UpdateReplacementPolicyL2(l2_access);
 					}
-
-					if(!l2_access.block)
+					else
 					{
-						FillL2(l2_access, CONFIG::WIMG_DEFAULT, true); // rwitm
+						if(IsVerboseDL1())
+						{
+							(*logger_import) << DebugInfo << "DL1: evicting dirty block at 0x" << Hex << l1_block_to_evict.GetBaseAddr() << Dec << " into memory" << Endl << EndDebugInfo;
+						}
+						// dirty DL1 block eviction into memory
+						// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
+						BusWrite(l1_block_to_evict.GetBaseAddr(), &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
 					}
-
-					memcpy(&(*l2_access.block)[l2_access.offset], &l1_block_to_evict[0], CacheBlock<typename CONFIG::DL1_CONFIG>::SIZE);
-					l2_access.block->status.valid = true;
-					l2_access.block->status.dirty = true;
-
-					UpdateReplacementPolicyL2(l2_access);
 				}
 				else
 				{

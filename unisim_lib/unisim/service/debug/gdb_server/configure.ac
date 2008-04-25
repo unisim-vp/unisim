@@ -67,9 +67,7 @@ case $host in
 		AC_CHECK_HEADERS([fcntl.h sys/times.h endian.h sys/socket.h netinet/in.h arpa/inet.h netinet/tcp.h netdb.h],, AC_MSG_ERROR([Some standard headers are missing.]))
 		;;
 	*mingw32*)  # win32 host
-		AC_CHECK_HEADERS([winsock2.h],, AC_MSG_ERROR([Some standard headers are missing.]))
-		# Note: we can't check socket functions from libwsock32 because of the PASCAL calling convention. cdecl is mandatory for autoconf.
-		LIBS+=" -lwsock32"
+		UNISIM_CHECK_WINSOCK2
 		;;
 esac
 
