@@ -143,7 +143,6 @@ void HCS12X ::Wait() {
  */
 
 	wait(irq_event);
-	sc_stop();
 }
  
 bool 
