@@ -634,9 +634,32 @@ string
 CPU<CONFIG> ::
 Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr) {
 	typename isa::arm32::Operation<CONFIG> *op = NULL;
-	op = arm32_decoder.Decode(addr);
+	typename isa::thumb::Operation<CONFIG> *top = NULL;
+	insn_t insn;
+	thumb_insn_t tinsn;
+
 	stringstream buffer;
-	op->disasm(*this, buffer);
+	if(!memory_import) {
+		buffer << "no memory_import";
+		return buffer.str(); 
+	}
+	if(GetCPSR_T()) {
+		if(!memory_import->ReadMemory(addr, &tinsn, 2)) {
+			buffer << "error with memory_import";
+			return buffer.str();
+		}
+		tinsn = BigEndian2Host(tinsn);
+		top = thumb_decoder.Decode(addr, tinsn);
+		top->disasm(*this, buffer);
+	} else {
+		if(!memory_import->ReadMemory(addr, &insn, 4)) {
+			buffer << "error with memory_import";
+			return buffer.str();
+		}
+		insn = BigEndian2Host(insn);
+		op = arm32_decoder.Decode(addr, insn);
+		op->disasm(*this, buffer);
+	}
 	return buffer.str();
 }
 
@@ -2651,14 +2674,20 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 ReadInsn(address_t address, uint16_t &val) {
-	if(CONFIG::MODEL == ARM966E_S)
+	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, (uint8_t *)&val, 2);
+		return;
+	}
 
-	if(CONFIG::HAS_INSN_CACHE_L1)
+	if(CONFIG::HAS_INSN_CACHE_L1) {
 		cache_il1->PrRead(address, (uint8_t *)&val, 2);
+		return;
+	}
 
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) 
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
 		cache_l1->PrRead(address, (uint8_t *)&val, 2);
+		return;
+	}
 
 	memory_interface->PrRead(address, (uint8_t *)&val, 2);
 }
@@ -2667,14 +2696,20 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 ReadInsn(address_t address, uint32_t &val) {
-	if(CONFIG::MODEL == ARM966E_S)
+	if(CONFIG::MODEL == ARM966E_S) {
 		cp15_966es->PrRead(address, (uint8_t *)&val, 4);
+		return;
+	}
 
-	if(CONFIG::HAS_INSN_CACHE_L1)
+	if(CONFIG::HAS_INSN_CACHE_L1) {
 		cache_il1->PrRead(address, (uint8_t *)&val, 4);
+		return;
+	}
 
-	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) 
+	if(CONFIG::HAS_DATA_CACHE_L1 || CONFIG::HAS_CACHE_L2) {
 		cache_l1->PrRead(address, (uint8_t *)&val, 4);
+		return;
+	}
 
 	memory_interface->PrRead(address, (uint8_t *)&val, 4);
 }

@@ -104,9 +104,10 @@ using unisim::service::statistic::StatisticServer;
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
 using unisim::kernel::service::ServiceManager;
+using unisim::kernel::service::VariableBase;
 
 void help(char *prog_name) {
-	cerr << "Usage: " << prog_name << " [<options>]" << endl << endl;
+	cerr << "Usage: " << prog_name << " [<options>] <binary to simulate>" << endl << endl;
 	cerr << "Options:" << endl;
 	cerr << " --help" << endl;
 	cerr << " -h" << endl;
@@ -123,51 +124,18 @@ void help(char *prog_name) {
 	cerr << " --logger" << endl;
 	cerr << " -l" << endl;
 	cerr << "            activate the logger" << endl << endl;
-	cerr << " --statistics" << endl;
-	cerr << " -s" << endl;
-	cerr << "            activate statistics service" << endl << endl;
-	cerr << " --gdb-server" << endl;
-	cerr << " -d" << endl;
-	cerr << "            activate the gdb server" << endl << endl;
+	cerr << " --xml-gdb <file>" << endl;
+	cerr << " -x <file>" << endl;
+	cerr << "            processor xml description file for gdb" << endl << endl;
+	cerr << " --gdb-server <port_number>" << endl;
+	cerr << " -d <port_number>" << endl;
+	cerr << "            activate the gdb server and use the given port" << endl << endl;
 	cerr << " --inline-debugger" << endl;
 	cerr << " -i" << endl;
 	cerr << "            activate the inline debugger (only active if logger option used)" << endl << endl;
 	cerr << " --message-spy" << endl;
 	cerr << " -m" << endl;
 	cerr << "            activate message spies" << endl << endl;
-//	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
-//	cerr << "       'program' is an ELF32 statically linked Linux binary" << endl;
-//	cerr << "Options:" << endl;
-//	cerr << "--inline-debugger" << endl;
-//	cerr << "-d" << endl;
-//	cerr << "            starts the inline debugger" << endl;
-//	cerr << "--gdb-server <TCP port>" << endl;
-//	cerr << "-g <TCP port>" << endl;
-//	cerr << "            starts a gdb server" << endl << endl;
-//	cerr << "--gdb-server-arch-file <arch file>" << endl;
-//	cerr << "-a  <arch file>" << endl;
-//	cerr << "            uses <arch file> as architecture description file for GDB server" << endl << endl;
-//	cerr << "-i <count>" << endl;
-//	cerr << "--max:inst <count>" << endl;
-//	cerr << "            execute <count> instructions then exit" << endl << endl;
-//	cerr << "-z" << endl;
-//	cerr << "--logger:zip" << endl;
-//	cerr << "            zip log file" << endl << endl;
-//	cerr << "-e" << endl;
-//	cerr << "--logger:error" << endl;
-//	cerr << "            pipe the log into the standard error" << endl << endl;
-//	cerr << "-o" << endl;
-//	cerr << "--logger:out" << endl;
-//	cerr << "            pipe the log into the standard output" << endl << endl;
-//	cerr << "-m" << endl;
-//	cerr << "--logger:message_spy" << endl;
-//	cerr << "            create message spies (requires one log to work)" << endl << endl;
-//	cerr << "-l <file>" << endl;
-//	cerr << "--logger:file <file>" << endl;
-//	cerr << "            store log file in <file>" << endl << endl;
-//	cerr << "--help" << endl;
-//	cerr << "-h" << endl;
-//	cerr << "            displays this help" << endl;
 }
 
 // Front Side Bus template parameters
@@ -203,8 +171,8 @@ int main(int argc, char *argv[], char **envp) {
 		{"get-config", required_argument, 0, 'g'},
 		{"config", required_argument, 0, 'c'},
 		{"logger", no_argument, 0, 'l'},
-		{"statistics", no_argument, 0, 's'},
-		{"gdb-server", no_argument, 0, 'd'},
+		{"xml-gdb", required_argument, 0, 'x'},
+		{"gdb-server", required_argument, 0, 'd'},
 		{"inline-debugger", no_argument, 0, 'i'},
 		{"message-spy", no_argument, 0, 'm'},
 		{0, 0, 0, 0}
@@ -213,12 +181,15 @@ int main(int argc, char *argv[], char **envp) {
 	char const *set_config_name = "default_parameters.xml";
 	char const *get_config_name = "default_parameters.xml";
 	char const *get_variables_name = "default_variables.xml";
+	char *filename = 0;
 	bool get_variables = false;
 	bool get_config = false;
 	bool set_config = false;
 	bool use_logger = false;
 	bool use_statistics = false;
 	bool use_gdb_server = false;
+	char *gdb_xml = 0;
+	int gdb_server_port = 0;
 	bool use_inline_debugger = false;
 	bool use_message_spy = false;
 	
@@ -227,7 +198,7 @@ int main(int argc, char *argv[], char **envp) {
 	// Parse the command line arguments
 //	while((c = getopt_long (argc, argv, "dg:a:hi:zeoml:", long_options, 0)) != -1) {
 	int c;
-	while((c = getopt_long (argc, argv, "hv:g:c:lsdim", long_options, 0)) != -1) {
+	while((c = getopt_long (argc, argv, "hv:g:c:ld:x:im", long_options, 0)) != -1) {
 		switch(c) {
 		case 'h':
 			help(argv[0]);
@@ -241,6 +212,9 @@ int main(int argc, char *argv[], char **envp) {
 			get_config_name = optarg;
 			get_config = true;
 			break;
+		case 'x':
+			gdb_xml = optarg;
+			break;
 		case 'c':
 			set_config_name = optarg;
 			set_config = true;
@@ -248,10 +222,8 @@ int main(int argc, char *argv[], char **envp) {
 		case 'l':
 			use_logger = true;
 			break;
-		case 's':
-			use_statistics = true;
-			break;
 		case 'd':
+			gdb_server_port = atoi(optarg);
 			use_gdb_server = true;
 			break;
 		case 'i':
@@ -262,6 +234,13 @@ int main(int argc, char *argv[], char **envp) {
 			break;
 		}
 	}
+
+	if(optind >= argc) {
+		help(argv[0]);
+		return 0;
+	}
+
+	filename = argv[optind];
 
 	if(!use_logger) {
 		use_message_spy = false;
@@ -344,12 +323,6 @@ int main(int argc, char *argv[], char **envp) {
 		}
 	}
 	
-	// statistics connections
-	if(use_statistics) {
-		cpu->statistic_reporting_import >> *statistic_server->statistic_reporting_export[0];
-		*statistic_server->statistic_reporting_control_import[0] >> cpu->statistic_reporting_control_export;
-	}
-
 	if(use_inline_debugger) {
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
@@ -404,6 +377,21 @@ int main(int argc, char *argv[], char **envp) {
 	}
 
 	ServiceManager::LoadXmlParameters(set_config_name);
+	if(use_gdb_server) {
+		cerr << "gdb_server_port = " << gdb_server_port << endl;
+		VariableBase *var =	ServiceManager::GetParameter("gdb-server.tcp-port");
+		*var = gdb_server_port;
+		if(gdb_xml != 0) {
+			cerr << "gdb_xml = " << gdb_xml << endl;
+			var = ServiceManager::GetParameter("gdb-server.architecture-description-filename");
+			*var = gdb_xml;
+		}
+	}
+	{
+		cerr << "filename = " << filename << endl;
+		VariableBase *var = ServiceManager::GetParameter("elf32-loader.filename");
+		*var = filename;
+	}
 	
 	if(ServiceManager::Setup())
 	{

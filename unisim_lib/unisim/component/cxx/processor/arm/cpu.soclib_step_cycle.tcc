@@ -42,6 +42,8 @@
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include <inttypes.h>
 
+// #define SOCLIB_DEBUG
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -52,7 +54,9 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 Reset() {
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ Reset" << endl;
+#endif
 	FlushPipeline();
 	/* Reset all the registers */
 	InitGPR();
@@ -97,12 +101,16 @@ Reset() {
 	}
 
 	fetch_pc = GetGPR(PC_reg);
+#ifdef SOCLIB_DEBUG
 	cerr << "    current fetch_pc = 0x" << hex << fetch_pc << dec << endl;
+#endif 
 	fetchQueue = InstructionFactory<CONFIG>::New();
 	fetchQueue->SetFetchAddress(fetch_pc);
 	fetch_pc += InstructionByteSize();
 	fetchQueue->SetPredictedNextFetchAddress(fetch_pc);
+#ifdef SOCLIB_DEBUG
 	cerr << "    next fetch_pc = 0x" << hex << fetch_pc << dec << endl;
+#endif
 	// TODO
 	// set the correct fetch pc
 	// initialize all the registers
@@ -120,12 +128,16 @@ IsBusy() {
 	return 0;
 	bool busy = false;
 
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ IsBusy" << endl;
+#endif
 
 	busy = executeQueue != 0 &&
 		executeQueue->GetRemainingExecCycles() == 0 &&
 		lsQueue.empty();
+#ifdef SOCLIB_DEBUG
 	cerr << "    - busy = " << busy << endl;
+#endif
 	return busy?1:0;
 }
 
@@ -133,7 +145,9 @@ template<class CONFIG>
 void
 CPU<CONFIG> ::
 FlushPipeline() {
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ FlushPipeline" << endl;
+#endif
 	// todo: Check
 	/* the instructions in the pipeline can be flushed */
 	if(executeQueue) {
@@ -159,7 +173,9 @@ StepExecute() {
 	/* if the instruction has not been executed now it is the moment to 
 	 *   do so */
 	if(!executeQueue->HasBeenExecuted()) {
+#ifdef SOCLIB_DEBUG
 		cerr << "    - executing 0x" << hex << executeQueue->GetFetchAddress() << dec << endl;
+#endif
 		if(executeQueue->IsArm32()) {
 			typename isa::arm32::Operation<CONFIG> *op = 
 				arm32_decoder.Decode(
@@ -167,7 +183,9 @@ StepExecute() {
 					executeQueue->GetArm32Encoding());
 			op->disasm(*this, str);
 			op->execute(*this);
+#ifdef SOCLIB_DEBUG
 			cerr << "    - arm32 instruction: " << str.str() << endl;
+#endif
 			executeQueue->SetOpcode(op);
 		} else {
 			typename isa::thumb::Operation<CONFIG> *op = 
@@ -176,7 +194,9 @@ StepExecute() {
 					executeQueue->GetThumbEncoding());
 			op->execute(*this);
 			op->disasm(*this, str);
+#ifdef SOCLIB_DEBUG
 			cerr << "    - thumb instruction: " << str.str() << endl;
+#endif
 			executeQueue->SetOpcode(op);
 		}
 		executeQueue->SetExecuted();
@@ -203,7 +223,9 @@ template<class CONFIG>
 void
 CPU<CONFIG> ::
 Step() {
+#ifdef SOCLIB
 	cerr << "+++ Step" << endl;
+#endif
 	/* when Step is called it means that the last SetInstruction was done with
 	 *   the right info and that it can be used by the processor, so set the
 	 *   instruction in the fetchQueue as requested and fetched
@@ -226,8 +248,10 @@ Step() {
 	}
 
 	if(fetchQueue->IsFlushed()) {
+#ifdef SOCLIB_DEBUG
 		cerr << "    - the received instruction (pc = 0x" << hex << fetchQueue->GetFetchAddress() << dec
 			<< ") needs to be flushed" << endl;
+#endif
 		InstructionFactory<CONFIG>::Destroy(fetchQueue);
 		fetchQueue = 0;
 	} else {
@@ -257,22 +281,34 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 StepCycle() {
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ StepCycle" << endl;
+#endif
 	/* start by removing the instruction in the executeQueue (if any) if it
 	 *   has finished its operation
 	 * check if the pipeline needs to be flushed */
+#ifdef SOCLIB_DEBUG
 	cerr << "    Execute" << endl;
+#endif
 	if(executeQueue != 0 &&
 			executeQueue->GetRemainingExecCycles() == 0 &&
 			lsQueue.empty()) {
 		if(GetGPR(PC_reg) != executeQueue->GetPredictedNextFetchAddress()) {
+#ifdef SOCLIB_DEBUG
 			cerr << "    - misspredicted pc 0x" << hex << executeQueue->GetPredictedNextFetchAddress() << dec << " -> 0x" << hex << GetGPR(PC_reg) << dec << endl;
+#endif
 			FlushPipeline();
+#ifdef SOCLIB_DEBUG
 			cerr << "    - flushing pipeline" << endl;
+#endif
 			fetch_pc = GetGPR(PC_reg);
+#ifdef SOCLIB_DEBUG
 			cerr << "    - setting pc to 0x" << hex << fetch_pc << dec << endl;
+#endif
 		} else {
+#ifdef SOCLIB_DEBUG
 			cerr << "    - instruction 0x" << hex << executeQueue->GetFetchAddress() << dec << " finished" << endl;
+#endif
 			InstructionFactory<CONFIG>::Destroy(executeQueue);
 			executeQueue = 0;
 		}	
@@ -287,8 +323,10 @@ StepCycle() {
 	 *   to finish the instruction, i.e.: send a load, store, etc...*/
 	if(executeQueue == 0) {
 		if(decodeQueue != 0) {
+#ifdef SOCLIB_DEBUG
 			cerr << "    - moving from decodeQueue 0x" << hex 
 				<< decodeQueue->GetFetchAddress() << dec << endl;
+#endif
 			executeQueue = decodeQueue;
 			decodeQueue = 0;
 			StepExecute();
@@ -299,12 +337,16 @@ StepCycle() {
 	/* if the decode queue is not empty, then do nothing */
 	/* if the decode queue is empty, then move the instruction present in
 	 *   the fetch queue to the decode queue */
+#ifdef SOCLIB_DEBUG
 	cerr << "    Decode" << endl;
+#endif
 	if(decodeQueue == 0) {
 		if(fetchQueue != 0) {
 			if(fetchQueue->IsFetched()) {
+#ifdef SOCLIB_DEBUG
 				cerr << "    - moving from fetchQueue 0x" << hex
 					<< fetchQueue->GetFetchAddress() << dec << endl;
+#endif
 				decodeQueue = fetchQueue;
 				fetchQueue = 0;
 			}
@@ -314,18 +356,26 @@ StepCycle() {
 	/* if the fetch queue is not empty, the do nothing */
 	/* if the fetch queue is empty, then send a read request to fetch fetch_pc
 	 *   instruction, after that increase fetch_pc */
+#ifdef SOCLIB_DEBUG
 	cerr << "    Fetch" << endl;
+#endif
 	if(fetchQueue == 0) {
 		fetchQueue = InstructionFactory<CONFIG>::New();
 		fetchQueue->SetFetchAddress(fetch_pc);
+#ifdef SOCLIB_DEBUG
 		cerr << "    - current fetch_pc = 0x" << hex << fetch_pc << dec << endl;
+#endif
 		fetch_pc += InstructionByteSize();
 		fetchQueue->SetPredictedNextFetchAddress(fetch_pc);
+#ifdef SOCLIB_DEBUG
 		cerr << "    - next fetch_pc = 0x" << hex << fetch_pc << dec << endl;
+#endif
 	} else {
+#ifdef SOCLIB_DEBUG
 		cerr << "    - fetching = 0x" << hex << fetchQueue->GetFetchAddress() << dec << endl;
 		cerr << "    - is_fetched = " << (fetchQueue->IsFetched()?"true":"false") << endl;
 		cerr << "    - is_requested = " << (fetchQueue->IsRequested()?"true":"false") << endl;
+#endif
 	}
 }
 
@@ -333,7 +383,9 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 NullStep(uint32_t time_passed) {
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ NullStep(" << time_passed << ")" << endl;
+#endif
 //	if(fetchQueue != 0) 
 //	  fetchQueue->SetFetched(false);
 	// TODO: check
@@ -345,7 +397,9 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 GetInstructionRequest(bool &req, uint32_t &addr) const {
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ GetInstructionRequest" << endl;
+#endif
 	/* check if the instruction on the fetch queue has been requested,
 	 *   if not then return the address to fetch */
 	if(fetchQueue != 0) {
@@ -356,12 +410,16 @@ GetInstructionRequest(bool &req, uint32_t &addr) const {
 		//	fetchQueue->SetRequested(true);
 		}
 	} else {
+#ifdef SOCLIB_DEBUG
 		cerr << "    4" << endl;
+#endif
 		req = false;
 	}
+#ifdef SOCLIB_DEBUG
 	cerr << "    req = " << req;
 	if(req) cerr << ", addr = 0x" << hex << addr << dec;
 	cerr << endl;
+#endif
 	return;
 }
 
@@ -369,7 +427,9 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 SetInstruction(bool error, uint32_t val) {
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ SetInstruction (error = " << error << ", val = 0x" << hex << val << dec << ")" << endl;
+#endif
 	// TODO
 	/* set the instruction opcode using val, now it could be a good moment to
 	 *   decode the instruction */
@@ -412,44 +472,45 @@ void
 CPU<CONFIG> ::
 GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 		uint32_t &data) const {
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ GetDataRequest" << endl;
+#endif
 	MemoryOp<CONFIG> *memop = 0;
 	/* check if the instruction in the execute queue has any load/store to
 	 *   be done, if so, execute it. */
 	if(lsQueue.empty()) {
 		reg = false;
+#ifdef SOCLIB_DEBUG
 		cerr << "    no memory operation ready" << endl;
+#endif
 		return;
 	}
-//	if(firstLS != 0) {
-//		reg = false;
-//		return; // nothing to make, the firstLS was already sent
-//	} else {
-		reg = true;
-		memop = lsQueue.front();
-		size = memop->GetSize();
-		addr = memop->GetAddress();
-		switch(memop->GetType()) {
-			case MemoryOp<CONFIG>::READ:
-			case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
-			case MemoryOp<CONFIG>::READ_TO_PC:
-			case MemoryOp<CONFIG>::PREFETCH:
-				is_read = true;
-				break;
-			case MemoryOp<CONFIG>::WRITE:
-				is_read = false;
-				data = memop->GetWriteValue();
-				break;
-		}
-		cerr << "    memory operation ready:" << endl;
-		cerr << "    - " << (is_read?"read":"write") << endl;
-		cerr << "    - size = " << size << endl;
-		cerr << "    - address = 0x" << hex << addr << dec << endl;
-		if(!is_read)
-			cerr << "    - data = " << hex << data << dec << endl;
-		return;
+	reg = true;
+	memop = lsQueue.front();
+	size = memop->GetSize();
+	addr = memop->GetAddress();
+	switch(memop->GetType()) {
+		case MemoryOp<CONFIG>::READ:
+		case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
+		case MemoryOp<CONFIG>::READ_TO_PC:
+		case MemoryOp<CONFIG>::PREFETCH:
+			is_read = true;
+			break;
+		case MemoryOp<CONFIG>::WRITE:
+			is_read = false;
+			data = memop->GetWriteValue();
+			break;
+	}
+#ifdef SOCLIB_DEBUG
+	cerr << "    memory operation ready:" << endl;
+	cerr << "    - " << (is_read?"read":"write") << endl;
+	cerr << "    - size = " << size << endl;
+	cerr << "    - address = 0x" << hex << addr << dec << endl;
+	if(!is_read)
+		cerr << "    - data = " << hex << data << dec << endl;
+#endif
+	return;
 		
-//	}
 }
 
 template<class CONFIG>

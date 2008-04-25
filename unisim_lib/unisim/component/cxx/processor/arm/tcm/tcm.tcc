@@ -194,7 +194,7 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 			<< " - size = " << size << endl
 			<< " - data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			cerr << " " << buffer[i];
+			cerr << " " << ((unsigned int)buffer[i]);
 		cerr << dec << endl;
 
 #else // SOCLIB
@@ -206,7 +206,7 @@ PrWrite(address_t addr, const uint8_t *buffer, uint32_t size) {
 			<< " - size = " << size << Endl
 			<< " - data =" << Hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*logger_import) << " " << buffer[i];
+			(*logger_import) << " " << ((unsigned int)buffer[i]);
 		(*logger_import) << Dec << Endl << EndDebugInfo;
 		
 #endif // SOCLIB
@@ -265,7 +265,7 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 			<< " - size = " << size << endl
 			<< " - read data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			cerr << " " << buffer[i];
+			cerr << " " << ((unsigned int)buffer[i]);
 		cerr << dec << endl;
 			
 #else // SOCLIB
@@ -277,7 +277,7 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 			<< " - size = " << size << Endl
 			<< " - read data =" << Hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*logger_import) << " " << buffer[i];
+			(*logger_import) << " " << ((unsigned int)buffer[i]);
 		(*logger_import) << Dec << Endl << EndDebugInfo;
 
 #endif // SOCLIB

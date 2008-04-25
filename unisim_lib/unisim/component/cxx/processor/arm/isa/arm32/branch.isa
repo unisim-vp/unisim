@@ -155,7 +155,7 @@ bl.execute = {
 	}
 
 	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + cpu.InstructionByteSize());
-  
+
 	new_PC = cpu.GetGPR(cpu.PC_reg) + (imm << 2) + 8;
 	cpu.SetGPR(cpu.PC_reg, new_PC);
 }
