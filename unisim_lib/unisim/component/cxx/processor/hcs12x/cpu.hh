@@ -201,11 +201,6 @@ private:
 	
 };	/***********   END EBLB  **********/
 
-
-#define MAX_ADDRESS     0x007FFFFF // 8 MByte
-#define MEMORY_SIZE     (MAX_ADDRESS + 1)    
-
-
 class CPU : public Decoder,
 	public Client<DebugControl<physical_address_t> >,
 	public Client<MemoryAccessReporting<physical_address_t> >,

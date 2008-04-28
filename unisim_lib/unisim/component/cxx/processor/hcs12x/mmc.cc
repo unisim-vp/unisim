@@ -62,6 +62,9 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 		case MEMORY::EXTENDED: { 
 			address = logicalAddress; 
 		} break;
+		case MEMORY::GLOBAL: {
+			address = getGlobalAddress(logicalAddress);
+		} break;
 		case MEMORY::DIRECT: {
 			address = getDirectAddress((uint8_t) logicalAddress); 
 		} break;
@@ -71,6 +74,10 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 
 void MMC::setGpage (uint8_t val) { _gpage = val;}
 uint8_t MMC::getGpage () { return _gpage; }
+
+physical_address_t MMC::getGlobalAddress(address_t logicalAddress) {
+	return ((physical_address_t) getGpage() << sizeof(address_t)*8) | logicalAddress;	
+}
 
 void MMC::setDirect (uint8_t val) { 
  

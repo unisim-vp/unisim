@@ -111,30 +111,17 @@ CPU::CPU(const char *name, Object *parent):
 //	running(true)
 	
 {
-/*
-#if BYTE_ORDER == LITTLE_ENDIAN
-	regB = (uint8_t *) &regD;
-	regA = (uint8_t *) &regD+1;
-#endif
-#if BYTE_ORDER == BIG_ENDIAN
-	regA = (uint8_t *) &regD;
-	regB = (uint8_t *) &regD+1;	
-#endif
-*/
 	setRegA(0x00);
 	setRegB(0x00);	
-//    setRegD(0x0000);
     setRegX(0x0000);
     setRegY(0x0000);
     setRegSP(0xFE00);
     setRegPC(0x8000);
-    
-    // temporary declaration. my be in a config file or defined as constants
-    uint8_t gpage=0, rpage=0, epage=0, ppage=0, direct=0;
-    
-    mmc = new MMC(gpage, rpage, epage, ppage, direct);
-  
+
     ccr = new CCR_t();
+    
+    mmc = new MMC(CONFIG::GLOBAL_RESET_PAGE, CONFIG::RAM_LOW_PAGE, CONFIG::EEPROM_LOW_PAGE, CONFIG::FLASH_LOW_PAGE, CONFIG::DIRECT_PAGE);
+  
     eblb = new EBLB(this);
 
 }

@@ -70,11 +70,12 @@ public:
 	
     void    setGpage (uint8_t val);
     uint8_t getGpage ();
-
+	physical_address_t getGlobalAddress(address_t logicalAddress);
+	
     void    setDirect (uint8_t val);
     uint8_t getDirect ();
 	address_t getDirectAddress(uint8_t lowByte);
-
+	
     void    setRpage (uint8_t val);
     uint8_t getRpage ();
 
@@ -83,8 +84,7 @@ public:
 
     void    setPpage (uint8_t val);
     uint8_t getPpage ();
-
-
+	
 private:
 	// The truth size of {GPage, RPage, EPage, PPage, Direct} is 0x07bits. 
 	

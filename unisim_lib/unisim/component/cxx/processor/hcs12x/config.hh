@@ -56,12 +56,18 @@ struct CONFIG {
 	/*
 	 * static initialization may rise problems in SMP architectures !!!
 	 */
-	static const bool DEBUG_ENABLE = true;
-	static const bool DEBUG_EXCEPTION_ENABLE = false;
-	static const bool HAS_HARD_RESET = false;
-	static const bool HAS_SOFT_RESET = false;
-	static const bool HAS_EXTERNAL_INTERRUPT = false;
+	static const bool DEBUG_ENABLE				= true;
+	static const bool DEBUG_EXCEPTION_ENABLE	= false;
+	static const bool HAS_HARD_RESET			= false;
+	static const bool HAS_SOFT_RESET			= false;
+	static const bool HAS_EXTERNAL_INTERRUPT	= false;
 
+	static const unsigned char GLOBAL_RESET_PAGE	= 0x00; // reset gpage register value
+	static const unsigned char RAM_LOW_PAGE			= 0x00; // low ram page (rpage register)
+	static const unsigned char EEPROM_LOW_PAGE		= 0x10; // low eeprom page (epage register) 
+	static const unsigned char EXTERNAL_LOW			= 0x14; // low external space page
+	static const unsigned char FLASH_LOW_PAGE		= 0x40; // low flash page (ppage register)
+	static const unsigned char DIRECT_PAGE			= 0x00; // reset direct page (direct register)
 };
 
 
