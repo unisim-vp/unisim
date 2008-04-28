@@ -61,6 +61,7 @@ CPU::CPU(const char *name, Object *parent):
 //	param_default_endianess("default-endianess", this, default_endianess),
 //	verbose_all(true),
 	verbose_all(false),
+	verbose_exception(false),
 //	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
 //	param_verbose_setup("verbose-setup", this, verbose_setup),
@@ -322,19 +323,38 @@ void CPU::Step()
 			<< Endl << EndDebugInfo;
 	}
 
-	op->execute(this);
-	
-//	/* perform the memory load/store operations */
-//	PerformLoadStoreAccesses();
-	VerboseDumpRegsEnd();
-	
-	instruction_counter++;
+	try 
+	{
 
-/*		
-	if(requires_finished_instruction_reporting)
-		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
-*/	
+		op->execute(this);
+		
+	//	/* perform the memory load/store operations */
+	//	PerformLoadStoreAccesses();
+		VerboseDumpRegsEnd();
+		
+		instruction_counter++;
+	
+	/*		
+		if(requires_finished_instruction_reporting)
+			if(memory_access_reporting_import)
+				memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
+	*/	
+		
+		if(HasAsynchronousInterrupt())
+		{
+			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw SystemResetException();
+			if(CONFIG::HAS_SOFT_RESET && HasSoftReset()) throw SystemResetException();
+			if(CONFIG::HAS_EXTERNAL_INTERRUPT && HasExternalInterrupt()) throw ExternalInterruptException();
+		}
+	}
+	catch(ExternalInterruptException& exc) { HandleException(exc); }
+	catch(SystemResetException& exc) { HandleException(exc); }
+	catch(Exception& e)
+	{
+		if(logger_import)
+			(*logger_import) << DebugError << "uncaught processor exception :" << e.what() << Endl << EndDebugError;
+		Stop(1);
+	}
 	
 }
 
@@ -345,6 +365,86 @@ void CPU::Stop(int ret)
 
 void CPU::Sync()
 {
+
+}
+
+
+//=====================================================================
+//=                    Exception handling methods                     =
+//=====================================================================
+
+/* System reset exception */
+void CPU::HandleException(const SystemResetException& exc)
+{
+
+}
+
+void CPU::ReqHardReset()
+{
+	hard_reset = true;
+	ReqAsynchronousInterrupt();
+}
+
+void CPU::AckHardReset()
+{
+	hard_reset = false;
+	AckAsynchronousInterrupt();
+}
+
+void CPU::ReqSoftReset()
+{
+	soft_reset = true;
+	ReqAsynchronousInterrupt();
+}
+
+void CPU::AckSoftReset()
+{
+	soft_reset = false;
+	AckAsynchronousInterrupt();
+}
+
+void CPU::ReqAsynchronousInterrupt()
+{
+	asynchronous_interrupt = true;
+}
+
+void CPU::AckAsynchronousInterrupt()
+{
+	asynchronous_interrupt = false;
+	
+	if(CONFIG::HAS_EXTERNAL_INTERRUPT) asynchronous_interrupt |= external_interrupt;
+	if(CONFIG::HAS_SOFT_RESET) asynchronous_interrupt |= soft_reset;
+	if(CONFIG::HAS_HARD_RESET) asynchronous_interrupt |= hard_reset;
+}
+
+/* External interrupt exception */
+void CPU::HandleException(const ExternalInterruptException& exc)
+{
+
+	AckExternalInterrupt();
+}
+
+void CPU::ReqExternalInterrupt()
+{
+	if(logger_import) {
+		(*logger_import) << DebugInfo << File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
+			<< "Received external interrupt"
+			<< Endl << EndDebugInfo;
+	}
+	external_interrupt = true;
+	ReqAsynchronousInterrupt();
+}
+
+void CPU::AckExternalInterrupt()
+{
+	external_interrupt = false;
+	AckAsynchronousInterrupt();
+}
+
+/* Program exceptions */
+void CPU::HandleException(const IllegalInstructionException& exc)
+{
+
 }
 
 //=====================================================================
@@ -417,6 +517,19 @@ void CPU::VerboseDumpRegsEnd() {
 void CPU::Reset()
 {
 	//TODO
+	bus_cycle = 0;
+	cpu_cycle = 0;
+	instruction_counter = 0;
+
+	external_interrupt = false;
+	soft_reset = false;
+	hard_reset = false;
+	asynchronous_interrupt = false;
+	
+	if(CONFIG::HAS_EXTERNAL_INTERRUPT) external_interrupt = false;
+	if(CONFIG::HAS_SOFT_RESET) soft_reset = false;
+	if(CONFIG::HAS_HARD_RESET) hard_reset = false;
+	asynchronous_interrupt = false;
 }
 
 bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)

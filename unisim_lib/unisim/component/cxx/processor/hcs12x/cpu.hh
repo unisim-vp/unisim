@@ -35,7 +35,7 @@
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
-
+#include <unisim/component/cxx/processor/hcs12x/exception.hh>
 
 namespace unisim {
 namespace component {
@@ -98,7 +98,11 @@ struct CONFIG {
 	 * static initialization may rise problems in SMP architectures !!!
 	 */
 	static const bool DEBUG_ENABLE = true;
-		
+	static const bool DEBUG_EXCEPTION_ENABLE = false;
+	static const bool HAS_HARD_RESET = false;
+	static const bool HAS_SOFT_RESET = false;
+	static const bool HAS_EXTERNAL_INTERRUPT = false;
+
 };
 
 
@@ -299,10 +303,50 @@ public:
 	//=====================================================================
 
     inline uint64_t GetInstructionCounter() const { return instruction_counter; }
+	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 
 	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size) = 0;
 	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size) = 0;
 
+	//=====================================================================
+	//=                    Interface with outside                         =
+	//=====================================================================
+	
+	inline bool HasExternalInterrupt() const { return external_interrupt; }
+	inline bool HasHardReset() const { return hard_reset; }
+	inline bool HasSoftReset() const { return soft_reset; }
+	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
+
+	//=====================================================================
+	//=                    Exception handling methods                     =
+	//=====================================================================
+	
+	// System reset exception
+	void HandleException(const SystemResetException& exc);
+
+	// External interrupt exception
+	void HandleException(const ExternalInterruptException& exc);
+
+	// Program exceptions: Illegal instruction exception 
+	void HandleException(const IllegalInstructionException& exc);
+
+	//=====================================================================
+	//=               Hardware check/acknowledgement methods              =
+	//=====================================================================
+	
+	void AckExternalInterrupt();
+	void AckHardReset();
+	void AckSoftReset();
+	void AckAsynchronousInterrupt();
+
+	//=====================================================================
+	//=                    Hardware interrupt request                     =
+	//=====================================================================
+	
+	void ReqExternalInterrupt();
+	void ReqHardReset();
+	void ReqSoftReset();
+	void ReqAsynchronousInterrupt();
 
 	//======================================================================
 	//=                  Registers Acces Routines                          =
@@ -372,12 +416,23 @@ public:
 	class EBLB	*eblb;
 		 
 protected:
+	//=====================================================================
+	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
+	//=====================================================================
+	
+	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
+	uint64_t voltage;        //!< CPU voltage in mV
+	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
+	uint64_t cpu_cycle;      //!< Number of cpu cycles
+	uint64_t bus_cycle;      //!< Number of front side bus cycles
+
 	//utils attributes
 	bool verbose_all;
 	bool verbose_setup;
 	bool verbose_step;
 	bool verbose_dump_regs_start;
 	bool verbose_dump_regs_end;
+	bool verbose_exception;
 	
 		// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;
@@ -397,6 +452,16 @@ private:
 //    uint16_t	regD;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
+
+	//=====================================================================
+	//=                   68HCS12X interrupt signals                      =
+	//=====================================================================
+	
+	bool external_interrupt;              //!< External interrupt signal
+	bool soft_reset;                      //!< Soft reset signal
+	bool hard_reset;                      //!< Hard reset signal
+	
+	bool asynchronous_interrupt;          //!< summary of all hardware interrupt signals
 
 	// Registers map
 	map<string, Register *> registers_registry;       
