@@ -94,15 +94,16 @@ xb_9_cst_z0.disasm = {
 op xb_16bit_cst_z1 (0b111[3]:rr[2]:0b0[1]:0b1[1]:s[1]:> <:sext<16> n16[16])
 
 xb_16bit_cst_z1.getEAddr = {
-	address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n16;
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+
    	if (s==0) {
    		// Constant offset 16-bit signed
    		return addr;
-//   	return cpu->xb_getAddrRegValue(rr) + n16;
    	} else {
    		// 16-bit offset indexed-indirect
+   		
 		return cpu->memRead16(addr);
-//		return cpu->memRead16(cpu->xb_getAddrRegValue(rr) + n16);
    	}
 }
 
@@ -186,7 +187,8 @@ xb_acc_offset.disasm = {
 op xb_accD_offset_idx_ind (0b111[3]:rr[2]:0b111[3])
 
 xb_accD_offset_idx_ind.getEAddr = {
-	return cpu->memRead16(cpu->getRegD() + cpu->xb_getAddrRegValue(rr));
+
+	return cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegD() + cpu->xb_getAddrRegValue(rr), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 }
 
 xb_accD_offset_idx_ind.disasm = {

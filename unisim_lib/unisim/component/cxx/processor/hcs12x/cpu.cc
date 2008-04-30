@@ -120,7 +120,7 @@ CPU::CPU(const char *name, Object *parent):
 
     ccr = new CCR_t();
     
-    mmc = new MMC(CONFIG::GLOBAL_RESET_PAGE, CONFIG::RAM_LOW_PAGE, CONFIG::EEPROM_LOW_PAGE, CONFIG::FLASH_LOW_PAGE, CONFIG::DIRECT_PAGE);
+    mmc = new MMC(CONFIG::GLOBAL_RESET_PAGE, CONFIG::RAM_RESET_PAGE, CONFIG::EEPROM_RESET_PAGE, CONFIG::FLASH_RESET_PAGE, CONFIG::DIRECT_RESET_PAGE);
   
     eblb = new EBLB(this);
 
@@ -572,43 +572,31 @@ bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size
 
 /* ********** MEMORY ACCESS ROUTINES ******* */
 
-uint8_t CPU::memRead8(address_t logicalAddress, MEMORY::MAP type) {
-
-	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type);
+uint8_t CPU::memRead8(physical_address_t addr) {
 
 	uint8_t data;
 	BusRead(addr, &data, 1);
 	return data;
-	
 }
 
-uint16_t CPU::memRead16(address_t logicalAddress, MEMORY::MAP type) {
-
-    physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type);
+uint16_t CPU::memRead16(physical_address_t addr) {
 
 	uint16_t data;
 	BusRead(addr, &data, 2);
 
 	return BigEndian2Host(data);
-
 }
 
-void CPU::memWrite8(address_t logicalAddress, uint8_t val, MEMORY::MAP type) {
-
-	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type);
+void CPU::memWrite8(physical_address_t addr, uint8_t val) {
 
 	BusWrite( addr, &val, 1); 
-
 }
 
-void CPU::memWrite16(address_t logicalAddress, uint16_t val, MEMORY::MAP type) {
-
-    physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type);
+void CPU::memWrite16(physical_address_t addr, uint16_t val) {
 
 	val = Host2BigEndian(val);
 	
 	BusWrite(addr, &val, 2);
-
 }
 
 /* ********** END MEM ACCESS ROUTINES ****** */

@@ -37,15 +37,23 @@
 
 #include <inttypes.h>
 #include <iostream>
+#include <cmath>
+
+#include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
+
+#define MASK2RAM (pow(2, CONFIG::CPU2RAM_ADDRESS_SIZE) -1)
+#define	MASK2EEPROM (pow(2, CONFIG::CPU2EEPROM_ADDRESS_SIZE) -1)
+#define MASK2FLASH (pow(2, CONFIG::CPU2FLASH_ADDRESS_SIZE) -1)
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace hcs12x {
-	
-//using namespace std;
+
+#define WO_GLOBAL_ADDRESS	false	// without global addressing (64KB address space)
+#define W_GLOBAL_ADDRESS	true	// with global addressung (8MB address space)
 
 class MEMORY {
 public:
@@ -56,7 +64,7 @@ public:
 	 * PPAGE -> FLASH
 	 * DIRECt -> Direct page
 	 */
-	enum MAP {EXTENDED=0, GLOBAL=1, RAM=2, EEPROM=3, FLASH=4, DIRECT=5};
+	enum MAP {DIRECT=0, EXTENDED=1, RAM=2, EEPROM=3, FLASH=4};
 };
 
 class MMC 
@@ -64,17 +72,15 @@ class MMC
 public:
 
 
-    MMC(uint8_t gpage, uint8_t rpage, uint8_t epage, uint8_t ppage, uint8_t direct=0x00);
+    MMC(uint8_t gpage, uint8_t rpage, uint8_t epage, uint8_t ppage, uint8_t direct);
        
-	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type);
+	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
 	
     void    setGpage (uint8_t val);
     uint8_t getGpage ();
-	physical_address_t getGlobalAddress(address_t logicalAddress);
 	
     void    setDirect (uint8_t val);
     uint8_t getDirect ();
-	address_t getDirectAddress(uint8_t lowByte);
 	
     void    setRpage (uint8_t val);
     uint8_t getRpage ();
@@ -84,7 +90,13 @@ public:
 
     void    setPpage (uint8_t val);
     uint8_t getPpage ();
-	
+
+protected:
+	physical_address_t getDirectAddress(uint8_t lowByte);
+	physical_address_t getRamAddress(address_t logicalAddress);
+	physical_address_t getEepromAddress(address_t logicalAddress);
+	physical_address_t getFlashAddress(address_t logicalAddress);
+
 private:
 	// The truth size of {GPage, RPage, EPage, PPage, Direct} is 0x07bits. 
 	

@@ -99,7 +99,8 @@ cmp_ab_dir.disasm = {
 cmp_ab_dir.execute = {
 	uint8_t result, carry_out, overflow, carry_in;
 	uint8_t regVal;
-	uint8_t opr8aVal = cpu->memRead8(opr8a, MEMORY::DIRECT);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	uint8_t opr8aVal = cpu->memRead8(addr);
 	
 	carry_in = 0;
 	if (b==0) {
@@ -131,7 +132,9 @@ cmp_ab_ext.disasm = {
 cmp_ab_ext.execute = {
 	uint8_t result, carry_out, overflow, carry_in;
 	uint8_t regVal;
-	uint8_t opr16aVal = cpu->memRead8(opr16a);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+		
+	uint8_t opr16aVal = cpu->memRead8(addr);
 	
 	carry_in = 0;
 	if (b==0) {
@@ -163,7 +166,8 @@ cmp_ab_idx.disasm = {
 cmp_ab_idx.execute = {
 	uint8_t result, carry_out, overflow, carry_in;
 	uint8_t regVal;
-	uint8_t xbVal = cpu->memRead8(xb->getEAddr(cpu));
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	uint8_t xbVal = cpu->memRead8(addr);
 	
 	carry_in = 0;
 	if (b==0) {
@@ -231,8 +235,8 @@ cp_dyxs_dir.execute = {
 	uint8_t carry_out, overflow, carry_in;
 	uint16_t result, regVal;
 	uint16_t opr8aVal;
-	
-	opr8aVal = cpu->memRead16(opr8a, MEMORY::DIRECT);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	opr8aVal = cpu->memRead16(addr);
 	
 	carry_in = 0;
 	switch (dyxs) {
@@ -302,7 +306,8 @@ cp_dyxs_idx.disasm = {
 cp_dyxs_idx.execute = {
 	uint8_t carry_out, overflow, carry_in;
 	uint16_t result, regVal;
-	uint16_t xbVal = cpu->memRead16(xb->getEAddr(cpu));
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	uint16_t xbVal = cpu->memRead16(addr);
 	
 	carry_in = 0;
 	switch (dyxs) {
@@ -332,8 +337,8 @@ tst_ext.disasm = {
 tst_ext.execute = {
 	uint8_t carry_out, overflow, carry_in;
 	uint8_t result;
-	
-	uint8_t opr16aVal = cpu->memRead8(opr16a);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint8_t opr16aVal = cpu->memRead8(addr);
 	carry_in = 0;
 	
 	Sub8(result, carry_out, overflow, opr16aVal, 0, carry_in);
@@ -356,8 +361,8 @@ tst_idx.disasm = {
 tst_idx.execute = {
 	uint8_t carry_out, overflow, carry_in;
 	uint8_t result;
-	
-	uint8_t xbVal = cpu->memRead8(xb->getEAddr(cpu));
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint8_t xbVal = cpu->memRead8(addr);
 	
 	carry_in = 0;
 	
@@ -409,7 +414,8 @@ tstw_ext.disasm = {
 tstw_ext.execute = {
 	uint8_t carry_out, overflow, carry_in;
 	uint16_t result;
-	uint16_t opr16aVal = cpu->memRead16(opr16a);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t opr16aVal = cpu->memRead16(addr);
 	
 	carry_in = 0;
 	
@@ -433,7 +439,8 @@ tstw_idx.disasm = {
 tstw_idx.execute = {
 	uint8_t carry_out, overflow, carry_in;
 	uint16_t result;
-	uint16_t xbVal = cpu->memRead16(xb->getEAddr(cpu));
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t xbVal = cpu->memRead16(addr);
 	
 	carry_in = 0;
 	
@@ -495,7 +502,7 @@ emin_dm.disasm = {
 emin_dm.execute = {
 	 
 	uint16_t dVal = cpu->getRegD();
-	address_t addr = xb->getEAddr(cpu);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 	uint16_t mVal = cpu->memRead16(addr);
 	
 	uint16_t min;
@@ -547,7 +554,7 @@ min_am.disasm = {
 min_am.execute = {
 	 
 	uint8_t aVal = cpu->getRegA();
-	address_t addr = xb->getEAddr(cpu);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 	uint8_t mVal = cpu->memRead8(addr);
 	
 	uint8_t min;
@@ -601,7 +608,8 @@ emax_dm.disasm = {
 emax_dm.execute = {
 	 
 	uint16_t dVal = cpu->getRegD();
-	address_t addr = xb->getEAddr(cpu);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	
 	uint16_t mVal = cpu->memRead16(addr);
 	
 	uint16_t max;
@@ -653,7 +661,7 @@ max_am.disasm = {
 max_am.execute = {
 	 
 	uint8_t aVal = cpu->getRegA();
-	address_t addr = xb->getEAddr(cpu);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 	uint8_t mVal = cpu->memRead8(addr);
 	
 	uint8_t max;

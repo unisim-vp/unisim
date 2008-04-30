@@ -69,7 +69,8 @@ ldaab_dir.disasm = {
 }
 
 ldaab_dir.execute = {
-	uint8_t val = cpu->memRead8((uint16_t) opr8a, MEMORY::DIRECT);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+	uint8_t val = cpu->memRead8(addr);
 	if (b==0) {
 	    cpu->setRegA(val);
 	} else {
@@ -94,7 +95,9 @@ ldaab_ext.disasm = {
 }
 
 ldaab_ext.execute = {
-	uint8_t val = cpu->memRead8(opr16a); 
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+
+	uint8_t val = cpu->memRead8(addr); 
 	if (b==0) {
 	    cpu->setRegA(val);
 	} else {
@@ -125,7 +128,8 @@ ldaab_idx.disasm = {
 
 ldaab_idx.execute = {
     
-    address_t	addr = xb->getEAddr(cpu);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+    
 	uint8_t		val = cpu->memRead8(addr);     
 	
 	if (b==0) {
@@ -184,8 +188,8 @@ ld_dyxs_dir.disasm = {
 }
 
 ld_dyxs_dir.execute = {
-
-	uint16_t val = cpu->memRead16((uint16_t) dd, MEMORY::DIRECT);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(dd, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+	uint16_t val = cpu->memRead16(addr);
 	switch (dyxs) {
 	case 0: cpu->setRegD(val); break;
 	case 1: cpu->setRegY(val); break;
@@ -215,8 +219,9 @@ ld_dyxs_ext.disasm = {
 }
 
 ld_dyxs_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 	
-	uint16_t val = cpu->memRead16(opr16a);
+	uint16_t val = cpu->memRead16(addr);
 	
 	switch (dyxs) {
 	case 0: cpu->setRegD(val); break;
@@ -252,7 +257,8 @@ ld_dyxs_idx.disasm = {
 
 ld_dyxs_idx.execute = {
     
-    address_t	addr = xb->getEAddr(cpu);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+    
 	uint16_t	val = cpu->memRead16(addr);     
 
 	switch (dyxs) {
@@ -345,9 +351,11 @@ staab_dir.disasm = {
 staab_dir.execute = {
 
 	uint8_t val;
-
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+	
 	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
-    cpu->memWrite8((uint16_t) opr8a, val, MEMORY::DIRECT);	
+	
+    cpu->memWrite8(addr, val);	
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->clrV();
@@ -373,8 +381,10 @@ staab_ext.disasm = {
 staab_ext.execute = {
 
 	uint8_t	val;
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+		
 	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
-    cpu->memWrite8((uint16_t) opr16a, val, MEMORY::DIRECT);
+    cpu->memWrite8(addr, val);
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->clrV();
@@ -404,7 +414,8 @@ staab_idx.disasm = {
 
 staab_idx.execute = {
 
-    address_t	addr = xb->getEAddr(cpu);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+
 	uint8_t val;
 	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
     cpu->memWrite8(addr,val);	
@@ -434,7 +445,8 @@ st_dyxs_dir.disasm = {
 st_dyxs_dir.execute = {
 
 	uint16_t val;
-	
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+		
 	switch (dyxs) {
 	case 0: val = cpu->getRegD(); break;
 	case 1: val = cpu->getRegY(); break;
@@ -442,7 +454,7 @@ st_dyxs_dir.execute = {
 	case 3: val = cpu->getRegSP(); break;
 	}
 	
-	cpu->memWrite16((uint16_t) opr8a, val, MEMORY::DIRECT);
+	cpu->memWrite16(addr, val);
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->clrV();
@@ -470,6 +482,7 @@ st_dyxs_ext.disasm = {
 st_dyxs_ext.execute = {
 
 	uint16_t val = 0;
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		
 	switch (dyxs) {
 	case 0: val = cpu->getRegD(); break;
@@ -478,7 +491,7 @@ st_dyxs_ext.execute = {
 	case 3: val = cpu->getRegSP(); break;
 	}
 	
-	cpu->memWrite16(opr16a, val);
+	cpu->memWrite16(addr, val);
 
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->clrV();
@@ -510,7 +523,8 @@ st_dyxs_idx.disasm = {
 
 st_dyxs_idx.execute = {
 
-    address_t	addr = xb->getEAddr(cpu);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+    
 	uint16_t val = 0;
 	
 	switch (dyxs) {

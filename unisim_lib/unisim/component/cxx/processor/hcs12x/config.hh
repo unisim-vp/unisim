@@ -46,6 +46,8 @@
 #define GCC_INLINE
 #endif
 
+#define MC9S12XDP512
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -62,12 +64,36 @@ struct CONFIG {
 	static const bool HAS_SOFT_RESET			= false;
 	static const bool HAS_EXTERNAL_INTERRUPT	= false;
 
-	static const unsigned char GLOBAL_RESET_PAGE	= 0x00; // reset gpage register value
-	static const unsigned char RAM_LOW_PAGE			= 0x00; // low ram page (rpage register)
-	static const unsigned char EEPROM_LOW_PAGE		= 0x10; // low eeprom page (epage register) 
-	static const unsigned char EXTERNAL_LOW			= 0x14; // low external space page
-	static const unsigned char FLASH_LOW_PAGE		= 0x40; // low flash page (ppage register)
-	static const unsigned char DIRECT_PAGE			= 0x00; // reset direct page (direct register)
+	static const unsigned char CPU2RAM_ADDRESS_SIZE	= 12;	// Number of bits used by the CPU to address RAM (max=16)
+	static const unsigned char CPU2EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
+	static const unsigned char CPU2FLASH_ADDRESS_SIZE	= 14;	// Number of bits used by the CPU to address FLASH (max=16)
+	static const unsigned char CPU2DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
+	
+	//=====================================================================
+	//=                  RESET VALUES OF MMC REGISTERS                    =
+	//=====================================================================
+
+#ifdef MC9S12XDP512
+	static const unsigned char GPAGE_LOW			= 0x00;		// low gpage register value
+	static const unsigned char GPAGE_HIGH			= 0x7F;		// high gpage register value
+	static const unsigned char GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value 
+	static const unsigned char DIRECT_RESET_PAGE	= 0x00;		// reset direct register value 
+
+	static const unsigned char RPAGE_LOW			= 0xF8;		// low rpage (ram page) register value
+	static const unsigned char RPAGE_HIGH			= 0xFF;		// high rpage register value
+	static const unsigned char RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
+
+	static const unsigned char EPAGE_LOW			= 0xFC;		// low epage (eeprom page) register value
+	static const unsigned char EPAGE_HIGH			= 0xFF;		// high epage register value 
+	static const unsigned char EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value  
+
+	static const unsigned char PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
+	static const unsigned char PPAGE_HIGH			= 0xFF;		// high ppage register value
+	static const unsigned char FLASH_RESET_PAGE		= 0xFE;		// reset ppage register value 
+
+#else // use of low values
+#endif
+
 };
 
 

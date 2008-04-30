@@ -77,8 +77,9 @@ psha.disasm = {
 }
 
 psha.execute = {
+
 	cpu->setRegSP(cpu->getRegSP()-1);
-	cpu->memWrite8(cpu->getRegSP(), cpu->getRegA());
+	cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegA());
 }
 
 // PSHB: Push B
@@ -91,7 +92,7 @@ pshb.disasm = {
 
 pshb.execute = {
 	cpu->setRegSP(cpu->getRegSP()-1);
-	cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
+	cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
 }
 
 // PSHC: Push CCR (8 lower bits)
@@ -104,7 +105,7 @@ pshc.disasm = {
 
 pshc.execute = {
 	cpu->setRegSP(cpu->getRegSP()-1);
-	cpu->memWrite8(cpu->getRegSP(), cpu->ccr->getCCRLow());
+	cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCRLow());
 }
 
 // PSHCW: Push CCR word (16 bits)
@@ -117,7 +118,7 @@ pshcw.disasm = {
 
 pshcw.execute = {
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
 }
 
 // PSHD: Push D
@@ -130,7 +131,7 @@ pshd.disasm = {
 
 pshd.execute = {
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite16(cpu->getRegSP(), cpu->getRegD());
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegD());
 }
 
 // PSHX: Push X
@@ -143,7 +144,7 @@ pshx.disasm = {
 
 pshx.execute = {
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
 }
 
 // PSHY: Push Y
@@ -156,7 +157,7 @@ pshy.disasm = {
 
 pshy.execute = {
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
 }
 
 // PULA: Pull A
@@ -168,7 +169,7 @@ pula.disasm = {
 }
 
 pula.execute = {
-	cpu->setRegA(cpu->memRead8(cpu->getRegSP()));
+	cpu->setRegA(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 	cpu->setRegSP(cpu->getRegSP()+1);
 }
 
@@ -181,7 +182,7 @@ pulb.disasm = {
 }
 
 pulb.execute = {
-	cpu->setRegB(cpu->memRead8(cpu->getRegSP()));
+	cpu->setRegB(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 	cpu->setRegSP(cpu->getRegSP()+1);
 }
 
@@ -194,7 +195,7 @@ pulc.disasm = {
 }
 
 pulc.execute = {
-	cpu->ccr->setCCRLow(cpu->memRead8(cpu->getRegSP()));
+	cpu->ccr->setCCRLow(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 	cpu->setRegSP(cpu->getRegSP()+1);
 }
 
@@ -207,7 +208,7 @@ pulcw.disasm = {
 }
 
 pulcw.execute = {
-	cpu->ccr->setCCR(cpu->memRead16(cpu->getRegSP()));
+	cpu->ccr->setCCR(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 	cpu->setRegSP(cpu->getRegSP()+2);
 }
 
@@ -220,7 +221,7 @@ puld.disasm = {
 }
 
 puld.execute = {
-	cpu->setRegD(cpu->memRead16(cpu->getRegSP()));
+	cpu->setRegD(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 	cpu->setRegSP(cpu->getRegSP()+2);
 }
 
@@ -233,7 +234,7 @@ pulx.disasm = {
 }
 
 pulx.execute = {
-	cpu->setRegX(cpu->memRead16(cpu->getRegSP()));
+	cpu->setRegX(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 	cpu->setRegSP(cpu->getRegSP()+2);
 }
 
@@ -246,7 +247,7 @@ puly.disasm = {
 }
 
 puly.execute = {
-	cpu->setRegY(cpu->memRead16(cpu->getRegSP()));
+	cpu->setRegY(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 	cpu->setRegSP(cpu->getRegSP()+2);
 }
 

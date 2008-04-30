@@ -223,7 +223,8 @@ br_clr_set_dir.disasm = {
 }
 
 br_clr_set_dir.execute = {
-	uint8_t opr8aVal = cpu->memRead8(opr8a,MEMORY::DIRECT);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+	uint8_t opr8aVal = cpu->memRead8(addr);
 	
 	if (b==0) {
 		opr8aVal = ~opr8aVal;
@@ -247,7 +248,8 @@ br_clr_set_ext.disasm = {
 }
 
 br_clr_set_ext.execute = {
-	uint8_t opr16aVal = cpu->memRead8(opr16a);
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint8_t opr16aVal = cpu->memRead8(addr);
 	
 	if (b==0) {
 		opr16aVal = ~opr16aVal;
@@ -272,7 +274,8 @@ br_clr_set_idx.disasm = {
 }
 
 br_clr_set_idx.execute = {
-	uint8_t xbVal = cpu->memRead8(xb->getEAddr(cpu));
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint8_t xbVal = cpu->memRead8(addr);
 	
 	if (b==0) {
 		xbVal = ~xbVal;
@@ -298,10 +301,16 @@ bsr.execute = {
 	 * RTNh:RTNl => M[SP]:M[SP+1]
 	 * Subroutine address fi PC
 	 */
-
+	physical_address_t addr;	
+	
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
-	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
 	cpu->setRegPC((int16_t) cpu->getRegPC() + rel8);
 }
 
@@ -321,13 +330,21 @@ call_ext.execute = {
 	 * page => PPAGE
 	 * Subroutine address => PC
 	 */
-	 
+	physical_address_t addr;
+		 
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
-	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
 
 	cpu->setRegSP(cpu->getRegSP()-1);
-	cpu->memWrite8(cpu->getRegSP(), cpu->mmc->getPpage());
+	
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, cpu->mmc->getPpage());
+
 	cpu->mmc->setPpage(page);
 	cpu->setRegPC(opr16a);
 }
@@ -349,13 +366,17 @@ call_idx.execute = {
 	 * page => PPAGE
 	 * Subroutine address => PC
 	 */
-	 
+	physical_address_t addr;
+		 
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
-	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
 	
 	cpu->setRegSP(cpu->getRegSP()-1);
-	cpu->memWrite8(cpu->getRegSP(), cpu->mmc->getPpage());
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, cpu->mmc->getPpage());
 	cpu->mmc->setPpage(page);
 	cpu->setRegPC(xb->getEAddr(cpu));
 }
@@ -395,11 +416,16 @@ jsr_dir.execute = {
 	 * RTNh:RTNl => M[SP]:M[SP+1]
 	 * subroutine address => PC
 	 */
+	physical_address_t addr;
+		 
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
-	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
 	
-	cpu->setRegPC(cpu->mmc->getDirectAddress(opr8a));
+	addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+	cpu->setRegPC((address_t) addr);
 }
 
 op jsr_ext(0x16[8]:> <:opr16a[16])
@@ -409,9 +435,13 @@ jsr_ext.disasm = {
 }
 
 jsr_ext.execute = {
+	physical_address_t addr;
+
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
-	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
 	
 	cpu->setRegPC(opr16a);
 }
@@ -424,9 +454,13 @@ jsr_idx.disasm = {
 }
 
 jsr_idx.execute = {
+	physical_address_t addr;
+	
 	cpu->setRegSP(cpu->getRegSP()-2);
-	cpu->memWrite8(cpu->getRegSP(), (uint8_t) (cpu->getRegPC() >> 8));
-	cpu->memWrite8(cpu->getRegSP()+1, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
 	
 	cpu->setRegPC(xb->getEAddr(cpu));
 }
@@ -447,12 +481,16 @@ rtc.execute = {
 	 */
 
 	 uint8_t hByte, lByte;
+	 physical_address_t addr;
 	 
-	 cpu->mmc->setPpage(cpu->memRead8(cpu->getRegSP()));
+	 addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	 cpu->mmc->setPpage(cpu->memRead8(addr));
 	 cpu->setRegSP(cpu->getRegSP() + 1);
 	 
-	 hByte = cpu->memRead8(cpu->getRegSP());
-	 lByte = cpu->memRead8(cpu->getRegSP()+1);
+	 addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	 hByte = cpu->memRead8(addr);
+	 addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	 lByte = cpu->memRead8(addr);
 	 cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
 	 
 	 cpu->setRegSP(cpu->getRegSP() + 2);
@@ -466,13 +504,16 @@ rts.disasm = {
 }
 
 rts.execute = {
-	 uint8_t hByte, lByte;
+	uint8_t hByte, lByte;
+	physical_address_t addr;
 
-	 hByte = cpu->memRead8(cpu->getRegSP());
-	 lByte = cpu->memRead8(cpu->getRegSP()+1);
-	 cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS); 
+	hByte = cpu->memRead8(addr);
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS); 
+	lByte = cpu->memRead8(addr);
+	cpu->setRegPC(((uint16_t) hByte << 8) | (0x00FF & lByte));
 	 
-	 cpu->setRegSP(cpu->getRegSP() + 2);
+	cpu->setRegSP(cpu->getRegSP() + 2);
 }
 
 

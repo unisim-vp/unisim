@@ -281,10 +281,12 @@ public:
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 	
 	/* ******** MEMORY ACCESS ROUTINES ******* */
-	uint8_t memRead8(address_t addr, MEMORY::MAP type=MEMORY::EXTENDED);
-	void memWrite8(address_t addr,uint8_t val, MEMORY::MAP type=MEMORY::EXTENDED);
-	uint16_t memRead16(address_t addr, MEMORY::MAP type=MEMORY::EXTENDED);
-	void memWrite16(address_t addr,uint16_t val, MEMORY::MAP type=MEMORY::EXTENDED);
+	uint8_t memRead8(physical_address_t addr);
+	void memWrite8(physical_address_t addr,uint8_t val);
+	uint16_t memRead16(physical_address_t addr);
+	void memWrite16(physical_address_t addr,uint16_t val);
+	
+//	physical_address_t addr = cpu->mmc->getPhysicalAddress(logicalAddress, type, WO_GLOBAL_ADDRESS);
 	
 	/* ******** END MEM ACCESS ROUTINES ****** */
 
