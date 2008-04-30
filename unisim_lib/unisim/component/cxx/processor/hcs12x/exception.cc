@@ -44,45 +44,59 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-SystemResetException::SystemResetException()
+
+ResetException::ResetException()
 {
 }
 
-const char * SystemResetException::what () const throw ()
+const char * ResetException::what () const throw ()
 {
 	return "system reset exception";
 }
 
-ExternalInterruptException::ExternalInterruptException()
+TrapException::TrapException()
 {
 }
 
-const char * ExternalInterruptException::what () const throw ()
+const char * TrapException::what () const throw ()
 {
-	return "external interrupt exception";
+	return "An unimplemented opcode trap exception";
 }
 
-ProgramException::ProgramException(const char *name)
-{
-	std::stringstream sstr;
-	sstr << "Program " << name << " exception";
-	what_str = sstr.str();
-}
-
-
-ProgramException::~ProgramException() throw()
+SoftwareInterrupt::SoftwareInterrupt()
 {
 }
 
-
-const char * ProgramException::what () const throw ()
+const char * SoftwareInterrupt::what () const throw ()
 {
-	return what_str.c_str();
+	return "A software interrupt instruction (SWI) or BDM vector request";
 }
 
-
-IllegalInstructionException::IllegalInstructionException() : ProgramException("illegal instruction")
+SysCallInterrupt::SysCallInterrupt()
 {
+}
+
+const char * SysCallInterrupt::what () const throw ()
+{
+	return "A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)";
+}
+
+NonMaskableXIRQInterrupt::NonMaskableXIRQInterrupt()
+{
+}
+
+const char * NonMaskableXIRQInterrupt::what () const throw ()
+{
+	return "Non-maskable (X bit) interrupts";
+}
+
+MaskableInterrupt::MaskableInterrupt()
+{
+}
+
+const char * MaskableInterrupt::what () const throw ()
+{
+	return "Maskable (I bit) interrupt";
 }
 
 } // end of namespace hcs12x

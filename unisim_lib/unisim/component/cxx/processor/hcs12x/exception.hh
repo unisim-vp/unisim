@@ -52,36 +52,54 @@ using std::string;
 
 class Exception : public std::exception {};
 
-
-class SystemResetException : public Exception
+// Hardware and Software reset 
+class ResetException : public Exception
 {
 public:
-	SystemResetException();
-	virtual const char * what () const throw ();
+	ResetException();
+	virtual const char * what () const throw ();	
 };
 
-class ExternalInterruptException : public Exception
+// An unimplemented opcode trap
+class TrapException : public Exception
 {
 public:
-	ExternalInterruptException();
-	virtual const char * what () const throw ();
+	TrapException();
+	virtual const char * what () const throw ();	
 };
 
-class ProgramException : public Exception
+// A software interrupt instruction (SWI) or BDM vector request
+class SoftwareInterrupt : public Exception
 {
 public:
-	ProgramException(const char *name);
-	virtual ~ProgramException() throw();
-	virtual const char * what () const throw ();
-private:
-	string what_str;
+	SoftwareInterrupt();
+	virtual const char * what () const throw ();	
 };
 
-class IllegalInstructionException : public ProgramException
+// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
+class SysCallInterrupt : public Exception
 {
 public:
-	IllegalInstructionException();
+	SysCallInterrupt();
+	virtual const char * what () const throw ();	
 };
+
+// Non-maskable (X bit) interrupts
+class NonMaskableXIRQInterrupt : public Exception
+{
+public:
+	NonMaskableXIRQInterrupt();
+	virtual const char * what () const throw ();	
+};
+
+// Maskable (I bit) interrupt
+class MaskableInterrupt : public Exception
+{
+public:
+	MaskableInterrupt();
+	virtual const char * what () const throw ();	
+};
+
 
 } // end of namespace hcs12x
 } // end of namespace processor

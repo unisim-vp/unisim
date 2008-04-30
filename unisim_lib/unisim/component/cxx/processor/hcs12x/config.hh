@@ -62,7 +62,11 @@ struct CONFIG {
 	static const bool DEBUG_EXCEPTION_ENABLE	= false;
 	static const bool HAS_HARD_RESET			= false;
 	static const bool HAS_SOFT_RESET			= false;
-	static const bool HAS_EXTERNAL_INTERRUPT	= false;
+	static const bool HAS_TRAP_EXCEPTION		= false;
+	static const bool HAS_SOFTWARE_INTERRUPT	= false;
+	static const bool HAS_SYS_CALL_INTERRUPT	= false;
+	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
+	static const bool HAS_MASKABLE_INTERRUPT	= false;
 
 	static const unsigned char CPU2RAM_ADDRESS_SIZE	= 12;	// Number of bits used by the CPU to address RAM (max=16)
 	static const unsigned char CPU2EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)

@@ -359,16 +359,25 @@ void CPU::Step()
 			if(memory_access_reporting_import)
 				memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
 	*/	
-		
+
 		if(HasAsynchronousInterrupt())
 		{
-			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw SystemResetException();
-			if(CONFIG::HAS_SOFT_RESET && HasSoftReset()) throw SystemResetException();
-			if(CONFIG::HAS_EXTERNAL_INTERRUPT && HasExternalInterrupt()) throw ExternalInterruptException();
+			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw ResetException();
+			if(CONFIG::HAS_SOFT_RESET && HasSoftReset()) throw ResetException();
+			if(CONFIG::HAS_TRAP_EXCEPTION && HasTrapException()) throw TrapException();
+			if(CONFIG::HAS_SOFTWARE_INTERRUPT && HasSoftwareInterrupt()) throw SoftwareInterrupt();
+			if(CONFIG::HAS_SYS_CALL_INTERRUPT && HasSysCallInterrupt()) throw SysCallInterrupt();
+			if(CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
+			if(CONFIG::HAS_MASKABLE_INTERRUPT && HasMaskableInterrupt()) throw MaskableInterrupt();
+			
 		}
 	}
-	catch(ExternalInterruptException& exc) { HandleException(exc); }
-	catch(SystemResetException& exc) { HandleException(exc); }
+	catch(ResetException& exc) { HandleException(exc); }
+	catch(TrapException& exc) { HandleException(exc); }
+	catch(SoftwareInterrupt& exc) { HandleException(exc); }
+	catch(SysCallInterrupt& exc) { HandleException(exc); }
+	catch(NonMaskableXIRQInterrupt& exc) { HandleException(exc); }
+	catch(MaskableInterrupt& exc) { HandleException(exc); }
 	catch(Exception& e)
 	{
 		if(logger_import)
@@ -393,8 +402,27 @@ void CPU::Sync()
 //=                    Exception handling methods                     =
 //=====================================================================
 
-/* System reset exception */
-void CPU::HandleException(const SystemResetException& exc)
+void CPU::ReqAsynchronousInterrupt()
+{
+	asynchronous_interrupt = true;
+}
+
+void CPU::AckAsynchronousInterrupt()
+{
+	asynchronous_interrupt = false;
+	
+	if(CONFIG::HAS_SOFT_RESET) asynchronous_interrupt |= soft_reset;
+	if(CONFIG::HAS_HARD_RESET) asynchronous_interrupt |= hard_reset;
+	if(CONFIG::HAS_TRAP_EXCEPTION) asynchronous_interrupt |= trap_exception;
+	if(CONFIG::HAS_SOFTWARE_INTERRUPT) asynchronous_interrupt |= software_interrupt;
+	if(CONFIG::HAS_SYS_CALL_INTERRUPT) asynchronous_interrupt |= sysCall_interrupt;
+	if(CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT) asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
+	if(CONFIG::HAS_MASKABLE_INTERRUPT) asynchronous_interrupt |= maskable_interrupt;
+
+}
+
+// Hardware and Software reset
+void CPU::HandleException(const ResetException& exc)
 {
 
 }
@@ -423,49 +451,97 @@ void CPU::AckSoftReset()
 	AckAsynchronousInterrupt();
 }
 
-void CPU::ReqAsynchronousInterrupt()
+// An unimplemented opcode trap
+void CPU::HandleException(const TrapException& exc)
 {
-	asynchronous_interrupt = true;
+	// TODO
 }
 
-void CPU::AckAsynchronousInterrupt()
+
+void CPU::ReqTrapException()
 {
-	asynchronous_interrupt = false;
-	
-	if(CONFIG::HAS_EXTERNAL_INTERRUPT) asynchronous_interrupt |= external_interrupt;
-	if(CONFIG::HAS_SOFT_RESET) asynchronous_interrupt |= soft_reset;
-	if(CONFIG::HAS_HARD_RESET) asynchronous_interrupt |= hard_reset;
+	trap_exception = true;
+	// TODO
 }
 
-/* External interrupt exception */
-void CPU::HandleException(const ExternalInterruptException& exc)
+void CPU::AckTrapException()
 {
-
-	AckExternalInterrupt();
+	trap_exception = false;
+	// TODO
 }
 
-void CPU::ReqExternalInterrupt()
+// A software interrupt instruction (SWI) or BDM vector request 
+void CPU::HandleException(const SoftwareInterrupt& exc)
 {
-	if(logger_import) {
-		(*logger_import) << DebugInfo << File << __FILE__ << Function << __FUNCTION__ << Line << __LINE__
-			<< "Received external interrupt"
-			<< Endl << EndDebugInfo;
-	}
-	external_interrupt = true;
-	ReqAsynchronousInterrupt();
+	// TODO
 }
 
-void CPU::AckExternalInterrupt()
+void CPU::ReqSoftwareInterrupt()
 {
-	external_interrupt = false;
-	AckAsynchronousInterrupt();
+	software_interrupt = true;
+	// TODO
 }
 
-/* Program exceptions */
-void CPU::HandleException(const IllegalInstructionException& exc)
+void CPU::AckSoftwareInterrupt()
 {
-
+	software_interrupt = false;
+	// TODO
 }
+
+// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
+void CPU::HandleException(const SysCallInterrupt& exc)
+{
+	// TODO
+}
+
+void CPU::ReqSysCallInterrupt()
+{
+	sysCall_interrupt = true;
+	// TODO
+}
+
+void CPU::AckSysCallInterrupt()
+{
+	sysCall_interrupt = false;
+	// TODO
+}
+
+// Non-maskable (X bit) interrupts
+void CPU::HandleException(const NonMaskableXIRQInterrupt& exc)
+{
+	// TODO
+}
+
+void CPU::ReqNonMaskableAccessErrorInterrupt()
+{
+	nonMaskableXIRQ_interrupt = true;
+	// TODO
+}
+
+void CPU::AckNonMaskableAccessErrorInterrupt()
+{
+	nonMaskableXIRQ_interrupt = false;
+	// TODO
+}
+
+// Maskable (I bit) interrupt
+void CPU::HandleException(const MaskableInterrupt& exc)
+{
+	// TODO
+}
+
+void CPU::ReqMaskableInterrupt()
+{
+	maskable_interrupt = true;
+	// TODO
+}
+
+void CPU::AckMaskableInterrupt()
+{
+	maskable_interrupt = false;
+	// TODO
+}
+
 
 //=====================================================================
 //=             memory access reporting control interface methods     =
@@ -541,14 +617,14 @@ void CPU::Reset()
 	cpu_cycle = 0;
 	instruction_counter = 0;
 
-	external_interrupt = false;
 	soft_reset = false;
 	hard_reset = false;
-	asynchronous_interrupt = false;
+	trap_exception = false;
+	software_interrupt = false;
+	sysCall_interrupt = false;
+	nonMaskableXIRQ_interrupt = false;
+	maskable_interrupt = false;
 	
-	if(CONFIG::HAS_EXTERNAL_INTERRUPT) external_interrupt = false;
-	if(CONFIG::HAS_SOFT_RESET) soft_reset = false;
-	if(CONFIG::HAS_HARD_RESET) hard_reset = false;
 	asynchronous_interrupt = false;
 }
 

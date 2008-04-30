@@ -329,41 +329,62 @@ public:
 	//=====================================================================
 	//=                    Interface with outside                         =
 	//=====================================================================
-	
-	inline bool HasExternalInterrupt() const { return external_interrupt; }
+
 	inline bool HasHardReset() const { return hard_reset; }
 	inline bool HasSoftReset() const { return soft_reset; }
+	inline bool HasTrapException() const { return trap_exception; }
+	inline bool HasSoftwareInterrupt() const { return software_interrupt; }
+	inline bool HasSysCallInterrupt() const { return sysCall_interrupt; }
+	inline bool HasNonMaskableXIRQInterrupt() const { return nonMaskableXIRQ_interrupt; }
+	inline bool HasMaskableInterrupt() const { return maskable_interrupt; }
 	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
 
 	//=====================================================================
 	//=                    Exception handling methods                     =
 	//=====================================================================
-	
-	// System reset exception
-	void HandleException(const SystemResetException& exc);
 
-	// External interrupt exception
-	void HandleException(const ExternalInterruptException& exc);
+	// Hardware and Software reset
+	void HandleException(const ResetException& exc);
 
-	// Program exceptions: Illegal instruction exception 
-	void HandleException(const IllegalInstructionException& exc);
+	// An unimplemented opcode trap
+	void HandleException(const TrapException& exc);
+
+	// A software interrupt instruction (SWI) or BDM vector request 
+	void HandleException(const SoftwareInterrupt& exc);
+
+	// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
+	void HandleException(const SysCallInterrupt& exc);
+
+	// Non-maskable (X bit) interrupts
+	void HandleException(const NonMaskableXIRQInterrupt& exc);
+
+	// Maskable (I bit) interrupt
+	void HandleException(const MaskableInterrupt& exc);
 
 	//=====================================================================
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
-	
-	void AckExternalInterrupt();
+
 	void AckHardReset();
 	void AckSoftReset();
+	void AckTrapException();
+	void AckSoftwareInterrupt();
+	void AckSysCallInterrupt();
+	void AckNonMaskableAccessErrorInterrupt();
+	void AckMaskableInterrupt();
 	void AckAsynchronousInterrupt();
 
 	//=====================================================================
 	//=                    Hardware interrupt request                     =
 	//=====================================================================
 	
-	void ReqExternalInterrupt();
 	void ReqHardReset();
 	void ReqSoftReset();
+	void ReqTrapException();
+	void ReqSoftwareInterrupt();
+	void ReqSysCallInterrupt();
+	void ReqNonMaskableAccessErrorInterrupt();
+	void ReqMaskableInterrupt();
 	void ReqAsynchronousInterrupt();
 
 	//======================================================================
@@ -466,8 +487,6 @@ protected:
 
 private:
 	uint8_t		regA, regB;
-
-//    uint16_t	regD;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
 
@@ -475,9 +494,13 @@ private:
 	//=                   68HCS12X interrupt signals                      =
 	//=====================================================================
 	
-	bool external_interrupt;              //!< External interrupt signal
-	bool soft_reset;                      //!< Soft reset signal
-	bool hard_reset;                      //!< Hard reset signal
+	bool soft_reset;						//!< Soft reset signal
+	bool hard_reset;						//!< Hard reset signal
+	bool trap_exception;					//!< Trap signal
+	bool software_interrupt;				//!< Software interrupt signal
+	bool sysCall_interrupt;					//!< SysCall interrupt signal
+	bool nonMaskableXIRQ_interrupt;			//!< Non maskable access error Interrupt signal
+	bool maskable_interrupt;				//!< Maskable interrupt signal 
 	
 	bool asynchronous_interrupt;          //!< summary of all hardware interrupt signals
 
