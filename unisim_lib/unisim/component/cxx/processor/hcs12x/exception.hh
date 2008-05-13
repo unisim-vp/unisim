@@ -60,14 +60,6 @@ public:
 	virtual const char * what () const throw ();	
 };
 
-// An unimplemented opcode trap
-class TrapException : public Exception
-{
-public:
-	TrapException();
-	virtual const char * what () const throw ();	
-};
-
 // A software interrupt instruction (SWI) or BDM vector request
 class SoftwareInterrupt : public Exception
 {

@@ -364,7 +364,6 @@ void CPU::Step()
 		{
 			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw ResetException();
 			if(CONFIG::HAS_SOFT_RESET && HasSoftReset()) throw ResetException();
-			if(CONFIG::HAS_TRAP_EXCEPTION && HasTrapException()) throw TrapException();
 			if(CONFIG::HAS_SOFTWARE_INTERRUPT && HasSoftwareInterrupt()) throw SoftwareInterrupt();
 			if(CONFIG::HAS_SYS_CALL_INTERRUPT && HasSysCallInterrupt()) throw SysCallInterrupt();
 			if(CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
@@ -373,7 +372,6 @@ void CPU::Step()
 		}
 	}
 	catch(ResetException& exc) { HandleException(exc); }
-	catch(TrapException& exc) { HandleException(exc); }
 	catch(SoftwareInterrupt& exc) { HandleException(exc); }
 	catch(SysCallInterrupt& exc) { HandleException(exc); }
 	catch(NonMaskableXIRQInterrupt& exc) { HandleException(exc); }
@@ -413,7 +411,6 @@ void CPU::AckAsynchronousInterrupt()
 	
 	if(CONFIG::HAS_SOFT_RESET) asynchronous_interrupt |= soft_reset;
 	if(CONFIG::HAS_HARD_RESET) asynchronous_interrupt |= hard_reset;
-	if(CONFIG::HAS_TRAP_EXCEPTION) asynchronous_interrupt |= trap_exception;
 	if(CONFIG::HAS_SOFTWARE_INTERRUPT) asynchronous_interrupt |= software_interrupt;
 	if(CONFIG::HAS_SYS_CALL_INTERRUPT) asynchronous_interrupt |= sysCall_interrupt;
 	if(CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT) asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
@@ -424,7 +421,7 @@ void CPU::AckAsynchronousInterrupt()
 // Hardware and Software reset
 void CPU::HandleException(const ResetException& exc)
 {
-
+	// TODO:
 }
 
 void CPU::ReqHardReset()
@@ -449,25 +446,6 @@ void CPU::AckSoftReset()
 {
 	soft_reset = false;
 	AckAsynchronousInterrupt();
-}
-
-// An unimplemented opcode trap
-void CPU::HandleException(const TrapException& exc)
-{
-	// TODO
-}
-
-
-void CPU::ReqTrapException()
-{
-	trap_exception = true;
-	// TODO
-}
-
-void CPU::AckTrapException()
-{
-	trap_exception = false;
-	// TODO
 }
 
 // A software interrupt instruction (SWI) or BDM vector request 
@@ -619,7 +597,6 @@ void CPU::Reset()
 
 	soft_reset = false;
 	hard_reset = false;
-	trap_exception = false;
 	software_interrupt = false;
 	sysCall_interrupt = false;
 	nonMaskableXIRQ_interrupt = false;

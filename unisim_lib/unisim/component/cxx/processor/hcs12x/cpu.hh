@@ -332,7 +332,6 @@ public:
 
 	inline bool HasHardReset() const { return hard_reset; }
 	inline bool HasSoftReset() const { return soft_reset; }
-	inline bool HasTrapException() const { return trap_exception; }
 	inline bool HasSoftwareInterrupt() const { return software_interrupt; }
 	inline bool HasSysCallInterrupt() const { return sysCall_interrupt; }
 	inline bool HasNonMaskableXIRQInterrupt() const { return nonMaskableXIRQ_interrupt; }
@@ -345,9 +344,6 @@ public:
 
 	// Hardware and Software reset
 	void HandleException(const ResetException& exc);
-
-	// An unimplemented opcode trap
-	void HandleException(const TrapException& exc);
 
 	// A software interrupt instruction (SWI) or BDM vector request 
 	void HandleException(const SoftwareInterrupt& exc);
@@ -367,7 +363,6 @@ public:
 
 	void AckHardReset();
 	void AckSoftReset();
-	void AckTrapException();
 	void AckSoftwareInterrupt();
 	void AckSysCallInterrupt();
 	void AckNonMaskableAccessErrorInterrupt();
@@ -380,7 +375,6 @@ public:
 	
 	void ReqHardReset();
 	void ReqSoftReset();
-	void ReqTrapException();
 	void ReqSoftwareInterrupt();
 	void ReqSysCallInterrupt();
 	void ReqNonMaskableAccessErrorInterrupt();
@@ -496,7 +490,6 @@ private:
 	
 	bool soft_reset;						//!< Soft reset signal
 	bool hard_reset;						//!< Hard reset signal
-	bool trap_exception;					//!< Trap signal
 	bool software_interrupt;				//!< Software interrupt signal
 	bool sysCall_interrupt;					//!< SysCall interrupt signal
 	bool nonMaskableXIRQ_interrupt;			//!< Non maskable access error Interrupt signal

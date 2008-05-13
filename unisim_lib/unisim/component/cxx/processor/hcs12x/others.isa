@@ -60,11 +60,11 @@ stop.execute = {
 		// TODO: consume two cycles	 
 	} else {
 		/*
-		 * (SP) – $0002 ⇒ SP; RTNH : RTNL ⇒ (M(SP) : M(SP+1))
-		 * (SP) – $0002 ⇒ SP; YH : YL ⇒ (M(SP) : M(SP+1))
-		 * (SP) – $0002 ⇒ SP; XH : XL ⇒ (M(SP) : M(SP+1))
-		 * (SP) – $0002 ⇒ SP; B : A ⇒ (M(SP) : M(SP+1))
-		 * (SP) – $0002 ⇒ SP; CCRH : CCRL ⇒ (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; B : A => (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
 		 * Stop All Clocks and puts the device in standby mode
 		 */
 		 
@@ -111,11 +111,11 @@ wait.disasm = {
 wait.execute = {
 
 	/*
-	 * (SP) – $0002 ⇒ SP; RTNH : RTNL ⇒ (M(SP) : M(SP+1))
-	 * (SP) – $0002 ⇒ SP; YH : YL ⇒ (M(SP) : M(SP+1))
-	 * (SP) – $0002 ⇒ SP; XH : XL ⇒ (M(SP) : M(SP+1))
-	 * (SP) – $0002 ⇒ SP; B : A ⇒ (M(SP) : M(SP+1))
-	 * (SP) – $0002 ⇒ SP; CCRH : CCRL ⇒ (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; B : A => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
 	 * The CPU12 then enters a wait state for an integer number of bus clock cycles. 
 	 * During the wait state, CPU12 clocks are stopped, but otherMCUclocks can continue to run.
 	 * WAIT for not masked interrupt
@@ -178,11 +178,11 @@ rti.disasm = {
 
 rti.execute = {
 	/*
-	 * (M(SP) : M(SP+1)) ⇒ CCRH : CCRL; (SP) + $0002 ⇒ SP
-	 * (M(SP) : M(SP+1)) ⇒ B : A; (SP) + $0002 ⇒ SP
-	 * (M(SP) : M(SP+1)) ⇒ XH : XL; (SP) + $0004 ⇒ SP
-	 * (M(SP) : M(SP+1)) ⇒ PCH : PCL; (SP) – $0002 ⇒ SP
-	 * (M(SP) : M(SP+1)) ⇒ YH : YL; (SP) + $0004 ⇒ SP
+	 * (M(SP) : M(SP+1)) => CCRH : CCRL; (SP) + $0002 => SP
+	 * (M(SP) : M(SP+1)) => B : A; (SP) + $0002 => SP
+	 * (M(SP) : M(SP+1)) => XH : XL; (SP) + $0004 => SP
+	 * (M(SP) : M(SP+1)) => PCH : PCL; (SP) – $0002 => SP
+	 * (M(SP) : M(SP+1)) => YH : YL; (SP) + $0004 => SP
 	 * */
 	 
 	address_t addr = cpu->getRegSP();
@@ -218,16 +218,16 @@ swi.disasm = {
 }
 
 swi.execute = {
-	/* (SP) – $0002 ⇒ SP; RTNH : RTNL ⇒ (M(SP) : M(SP+1))
-	 * (SP) – $0002 ⇒ SP; YH : YL ⇒ (M(SP) : M(SP+1))
-	 * (SP) – $0002 ⇒ SP; XH : XL ⇒ (M(SP) : M(SP+1))
-	 * (SP) – $0002 ⇒ SP; B : A⇒ (M(SP) : M(SP+1))
+	/* (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; B : A=> (M(SP) : M(SP+1))
 	 * In case of CPU12
-	 * (SP) – $0001 ⇒ SP; CCR ⇒ (M(SP) )
+	 * (SP) – $0001 => SP; CCR => (M(SP) )
 	 * In case of CPU12X
-	 * (SP) – $0002 ⇒ SP; CCRH : CCRL ⇒ (M(SP) : M(SP+1))
-	 * 1 ⇒ I; 0 ⇒ U
-	 * (SWI Vector) ⇒ PC
+	 * (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
+	 * 1 => I; 0 => U
+	 * (SWI Vector) => PC
 	 */
 
 	address_t addr = cpu->getRegSP();
@@ -251,7 +251,7 @@ swi.execute = {
 	cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() | 0x10);
 	cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 	
-	// TODO: (SWI Vector) ⇒ PC
+	// TODO: (SWI Vector) => PC
 }
 
 // TRAP: unimplemented opcode trap
@@ -267,16 +267,16 @@ trap.execute = {
 	
 	if (((trapnum >= 0x30) && (trapnum <= 0x39)) || ((trapnum >= 0x40) && (trapnum <= 0xFF))) {
 		/*
-		 * (SP) – $0002 ⇒ SP; RTNH : RTNL ⇒ (M(SP) : M(SP+1))
-		 * (SP) – $0002 ⇒ SP; YH : YL ⇒ (M(SP) : M(SP+1))
-		 * (SP) – $0002 ⇒ SP; XH : XL ⇒ (M(SP) : M(SP+1))
-		 * (SP) – $0002 ⇒ SP; B : A ⇒ (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
+		 * (SP) – $0002 => SP; B : A => (M(SP) : M(SP+1))
 		 * In case of CPU12
-		 * (SP) – $0001 ⇒ SP; CCR ⇒ (M(SP) )
+		 * (SP) – $0001 => SP; CCR => (M(SP) )
 		 * In case of CPU12X
-		 * (SP) – $0002 ⇒ SP; CCRH : CCRL ⇒ (M(SP) : M(SP+1))
-		 * 1 ⇒ I; 0 ⇒ U
-		 * (Trap Vector) ⇒ PC
+		 * (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
+		 * 1 => I; 0 => U
+		 * (Trap Vector) => PC
 		 */
 		 
 		address_t addr = cpu->getRegSP();
@@ -297,10 +297,12 @@ trap.execute = {
 		addr = addr - 2;
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
 		
+		// 1 => I; 0 => U
 		cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() | 0x10);
 		cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 		
-		// TODO: (Trap Vector) ⇒ PC
+		// (Trap Vector) => PC
+		cpu->setRegPC(cpu->memRead16(CONFIG::TRAP_VECTOR_ADDRESS));
 	}
 }
 

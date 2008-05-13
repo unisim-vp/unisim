@@ -46,6 +46,8 @@
 #define GCC_INLINE
 #endif
 
+#include <unisim/component/cxx/processor/hcs12x/types.hh>
+
 #define MC9S12XDP512
 
 namespace unisim {
@@ -62,40 +64,45 @@ struct CONFIG {
 	static const bool DEBUG_EXCEPTION_ENABLE	= false;
 	static const bool HAS_HARD_RESET			= false;
 	static const bool HAS_SOFT_RESET			= false;
-	static const bool HAS_TRAP_EXCEPTION		= false;
 	static const bool HAS_SOFTWARE_INTERRUPT	= false;
 	static const bool HAS_SYS_CALL_INTERRUPT	= false;
 	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
 	static const bool HAS_MASKABLE_INTERRUPT	= false;
 
-	static const unsigned char CPU2RAM_ADDRESS_SIZE	= 12;	// Number of bits used by the CPU to address RAM (max=16)
+	static const unsigned char CPU2RAM_ADDRESS_SIZE		= 12;	// Number of bits used by the CPU to address RAM (max=16)
 	static const unsigned char CPU2EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
 	static const unsigned char CPU2FLASH_ADDRESS_SIZE	= 14;	// Number of bits used by the CPU to address FLASH (max=16)
 	static const unsigned char CPU2DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
-	
+
+	static const address_t TRAP_VECTOR_ADDRESS 			= 0xFFF8;// Shared interrupt vector for traps ($FFF8:$FFF9)
+		
 	//=====================================================================
 	//=                  RESET VALUES OF MMC REGISTERS                    =
 	//=====================================================================
 
-#ifdef MC9S12XDP512
 	static const unsigned char GPAGE_LOW			= 0x00;		// low gpage register value
 	static const unsigned char GPAGE_HIGH			= 0x7F;		// high gpage register value
-	static const unsigned char GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value 
-	static const unsigned char DIRECT_RESET_PAGE	= 0x00;		// reset direct register value 
-
 	static const unsigned char RPAGE_LOW			= 0xF8;		// low rpage (ram page) register value
 	static const unsigned char RPAGE_HIGH			= 0xFF;		// high rpage register value
-	static const unsigned char RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
-
 	static const unsigned char EPAGE_LOW			= 0xFC;		// low epage (eeprom page) register value
 	static const unsigned char EPAGE_HIGH			= 0xFF;		// high epage register value 
-	static const unsigned char EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value  
-
 	static const unsigned char PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
 	static const unsigned char PPAGE_HIGH			= 0xFF;		// high ppage register value
+
+#ifdef MC9S12XDP512
+	static const unsigned char GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value 
+	static const unsigned char DIRECT_RESET_PAGE	= 0x00;		// reset direct register value 
+	static const unsigned char RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
+	static const unsigned char EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value  
 	static const unsigned char FLASH_RESET_PAGE		= 0xFE;		// reset ppage register value 
 
 #else // use of low values
+	static const unsigned char GLOBAL_RESET_PAGE	= GPAGE_LOW;	// reset gpage register value 
+	static const unsigned char DIRECT_RESET_PAGE	= 0x00;			// reset direct register value 
+	static const unsigned char RAM_RESET_PAGE		= RPAGE_LOW;	// reset rpage register value
+	static const unsigned char EEPROM_RESET_PAGE	= EPAGE_LOW;	// reset epage register value  
+	static const unsigned char FLASH_RESET_PAGE		= PPAGE_LOW;	// reset ppage register value 
+
 #endif
 
 };

@@ -54,15 +54,6 @@ const char * ResetException::what () const throw ()
 	return "system reset exception";
 }
 
-TrapException::TrapException()
-{
-}
-
-const char * TrapException::what () const throw ()
-{
-	return "An unimplemented opcode trap exception";
-}
-
 SoftwareInterrupt::SoftwareInterrupt()
 {
 }
