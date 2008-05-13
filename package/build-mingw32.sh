@@ -117,7 +117,16 @@ function Download
 	ARCHIVE=${TMP_DIR}/${ARCHIVE_NAME}
 	if test ! -f ${ARCHIVE}; then
 		cd ${TMP_DIR}
-		wget ${ARCHIVE_URL}
+		printf "Downloading ${ARCHIVE_URL}"
+		success=no
+		until [ $success = yes ]; do
+			if wget -t 1 -q ${ARCHIVE_URL}; then
+				success=yes
+			else
+				printf "."
+			fi
+		done
+		printf "\n"
 	fi
 
 	cd ${TMP_DIR} || exit
@@ -142,7 +151,16 @@ function InstallBinArchive
 	ARCHIVE=${TMP_DIR}/${ARCHIVE_NAME}
 	if test ! -f ${ARCHIVE}; then
 		cd ${TMP_DIR}
-		wget ${ARCHIVE_URL} -O ${ARCHIVE}
+		printf "Downloading ${ARCHIVE_URL}"
+		success=no
+		until [ $success = yes ]; do
+			if wget -t 1 -q -O ${ARCHIVE} ${ARCHIVE_URL}; then
+				success=yes
+			else
+				printf "."
+			fi
+		done
+		printf "\n"
 	fi
 
 	cd ${INSTALL_DIR}
@@ -284,7 +302,16 @@ for file in ${mingw_file_list}
 do
 	if test ! -f ${TMP_DIR}/${file}; then
 		cd ${TMP_DIR}
-		wget ${mingw_url}/${file} || exit
+		printf "Downloading ${ARCHIVE_URL}"
+		success=no
+		until [ $success = yes ]; do
+			if wget -t 1 -q ${mingw_url}/${file}; then
+				success=yes
+			else
+				printf "."
+			fi
+		done
+		printf "\n"
 	fi
 	if test -f ${TMP_DIR}/${file}; then
 		cd ${INSTALL_DIR}
