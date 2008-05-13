@@ -192,7 +192,7 @@ function Package {
 			echo "Name: \"english\"; MessagesFile: \"compiler:Default.isl\"" >> ${ISS_FILENAME}
 			echo "" >> ${ISS_FILENAME}
 			echo "[Tasks]" >> ${ISS_FILENAME}
-			echo "Name: \"desktopicon\"; Description: \"{cm:CreateDesktopIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked" >> ${ISS_FILENAME}
+#			echo "Name: \"desktopicon\"; Description: \"{cm:CreateDesktopIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked" >> ${ISS_FILENAME}
 			echo "" >> ${ISS_FILENAME}
 			echo "[Files]" >> ${ISS_FILENAME}
 			for file in ${file_list}

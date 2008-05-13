@@ -18,7 +18,7 @@ PATCHES_DIR=$(PWD)/patches
 ARCHIVE_DIR=$(PWD)/archives
 NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 
-all: notice $(INSTALL_DIR)/gdb $(INSTALL_DIR)/zlib $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
+all: notice $(INSTALL_DIR)/expat $(INSTALL_DIR)/zlib $(INSTALL_DIR)/gdb $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
 	@echo "Your built is in $(INSTALL_DIR)"
 
 clean:
@@ -26,7 +26,7 @@ clean:
 
 mrproper: clean
 	rm -rf $(ARCHIVE_DIR)/*
-	rm -rf $(INSTALL_DIR)/zlib $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
+	rm -rf $(INSTALL_DIR)/*
 
 notice:
 	@echo "unisim-bootstrap-mingw32: A script to bootstrap on Mingw32 before compiling UNISIM"
@@ -38,6 +38,7 @@ notice:
 	@echo "  - SystemC (2.2.0)"
 	@echo "  - readline (5.0)"
 	@echo "  - boost (1.34.1)"
+	@echo "  - expat (2.0.1)"
 	@echo "It will automatically download/configure and install the following softwares which can interact with UNISIM:"
 	@echo "  - GDB (6.8) for m68hc1x, armeb and powerpc"
 	@echo "The downloaded tarball/zip files will be placed in directory $(ARCHIVE_DIR)"
@@ -46,12 +47,33 @@ notice:
 	@echo "Press <ENTER> to start or <CTRL>+<C> to cancel"
 	@read
 
+# expat
+
+$(INSTALL_DIR)/expat: $(SOURCE_DIR)/expat-2.0.1
+	cd $(SOURCE_DIR)/expat-2.0.1 && \
+    ./configure --prefix=$(INSTALL_DIR)/expat --build=$(BUILD) --host=$(HOST) && \
+    make -j $(NUM_PROCESSORS) && \
+    make install
+
+$(SOURCE_DIR)/expat-2.0.1: $(ARCHIVE_DIR)/expat-2.0.1.tar.gz
+	cd $(SOURCE_DIR) && \
+    tar zxvf $<
+
+$(ARCHIVE_DIR)/expat-2.0.1.tar.gz:
+	cd $(ARCHIVE_DIR) && \
+    wget "http://downloads.sourceforge.net/expat/expat-2.0.1.tar.gz"
+
+
 # gdb
 
 
-$(INSTALL_DIR)/gdb: $(SOURCE_DIR)/gdb-6.8
+$(INSTALL_DIR)/gdb: $(SOURCE_DIR)/gdb-6.8 $(INSTALL_DIR)/expat
 	cd $(SOURCE_DIR)/gdb-6.8 && \
-    ./configure --prefix=$(INSTALL_DIR)/gdb --build=$(BUILD) --host=$(HOST) --enable-targets=m6811-elf,armeb-linux-gnu,powerpc-linux-gnu,mips-linux-gnu,sparc-linux-gnu --disable-sim --disable-werror && \
+    ./configure --prefix=$(INSTALL_DIR)/gdb \
+                --build=$(BUILD) --host=$(HOST) \
+                --enable-targets=i686-pc-mingw32,m6811-elf,armeb-linux-gnu,powerpc-linux-gnu,mips-linux-gnu,sparc-linux-gnu \
+                --disable-sim --disable-werror \
+                --with-libexpat-prefix=$(INSTALL_DIR)/expat && \
     make -j $(NUM_PROCESSORS) && \
     make install
 
@@ -103,7 +125,8 @@ $(INSTALL_DIR)/libxml2: $(SOURCE_DIR)/libxml2-2.6.31
     make -j $(NUM_PROCESSORS) && \
     make install && \
     cd $(INSTALL_DIR)/libxml2/include && \
-    ln -s libxml2/libxml libxml
+    mv libxml2/libxml . && \
+    rm -rf libxml2
 
 $(ARCHIVE_DIR)/libxml2-2.6.31.tar.gz:
 	cd $(ARCHIVE_DIR) && \
@@ -138,7 +161,7 @@ $(SOURCE_DIR)/systemc-2.2.0: $(ARCHIVE_DIR)/systemc-2.2.0.tgz $(PATCHES_DIR)/pat
 
 $(ARCHIVE_DIR)/readline-5.0-1-bin.zip:
 	cd $(ARCHIVE_DIR) && \
-    wget "http://downloads.sourceforge.net/gnuwin32/readline-5.0-1-bin.zip?modtime=1199320468&big_mirror=1"
+    wget "http://downloads.sourceforge.net/gnuwin32/readline-5.0-1-bin.zip"
 
 $(INSTALL_DIR)/readline: $(ARCHIVE_DIR)/readline-5.0-1-bin.zip
 	cd $(INSTALL_DIR) && \
@@ -149,7 +172,7 @@ $(INSTALL_DIR)/readline: $(ARCHIVE_DIR)/readline-5.0-1-bin.zip
 # boost
 $(ARCHIVE_DIR)/boost_1_34_1.tar.bz2:
 	cd $(ARCHIVE_DIR) && \
-    wget "http://downloads.sourceforge.net/boost/boost_1_34_1.tar.bz2?modtime=1185241108&big_mirror=0"
+    wget "http://downloads.sourceforge.net/boost/boost_1_34_1.tar.bz2"
 
 $(SOURCE_DIR)/boost_1_34_1: $(ARCHIVE_DIR)/boost_1_34_1.tar.bz2
 	cd $(SOURCE_DIR) && \

@@ -1,0 +1,320 @@
+#!/bin/bash
+
+VERSION=1.0
+TMP_DIR=${HOME}/tmp
+INSTALL_DIR=${TMP_DIR}/mingw32_install
+HERE=`pwd`
+NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
+
+function Package {
+	PACKAGE_NAME=$1
+
+	cd ${INSTALL_DIR}
+	rm -rf ${INSTALL_DIR}/dist
+	rm -f ${ISS_FILENAME}
+	
+	# build list of installed files
+	file_list=`find .`
+
+	ISS_FILENAME=${PACKAGE_NAME}-${VERSION}.iss
+	
+	# Fill-in dist.iss
+	echo "[Setup]" > ${ISS_FILENAME}
+	echo "AppName=${PACKAGE_NAME}" >> ${ISS_FILENAME}
+	echo "AppVerName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
+	echo "AppPublisher=CEA" >> ${ISS_FILENAME}
+	echo "AppPublisherURL=http://www.unisim.org" >> ${ISS_FILENAME}
+	echo "AppSupportURL=http://www.unisim.org" >> ${ISS_FILENAME}
+	echo "AppUpdatesURL=http://www.unisim.org" >> ${ISS_FILENAME}
+	echo "DefaultDirName={pf}\\${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
+	echo "DefaultGroupName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
+	echo "OutputDir=dist" >> ${ISS_FILENAME}
+	echo "OutputBaseFilename=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
+	echo "Compression=lzma" >> ${ISS_FILENAME}
+	echo "SolidCompression=yes" >> ${ISS_FILENAME}
+	echo "" >> ${ISS_FILENAME}
+	echo "[Languages]" >> ${ISS_FILENAME}
+	echo "Name: \"english\"; MessagesFile: \"compiler:Default.isl\"" >> ${ISS_FILENAME}
+	echo "" >> ${ISS_FILENAME}
+	echo "[Tasks]" >> ${ISS_FILENAME}
+	#echo "Name: \"desktopicon\"; Description: \"{cm:CreateDesktopIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked" >> ${ISS_FILENAME}
+	echo "" >> ${ISS_FILENAME}
+	echo "[Files]" >> ${ISS_FILENAME}
+	for file in ${file_list}
+	do
+		if test -f ${file}; then
+			stripped_filename=`echo ${file} | sed 's:./::'`
+			echo "Source: \"${stripped_filename}\"; DestDir: \"{app}/`dirname ${stripped_filename}`\"; Flags: ignoreversion" >> ${ISS_FILENAME}
+		fi
+	done
+	
+	echo "========================================="
+	echo "=            Inno Setup Script          ="
+	echo "========================================="
+	cat ${ISS_FILENAME}
+	
+	# Build the package
+	echo "========================================="
+	echo "=            Package build              ="
+	echo "========================================="
+
+	wine ~/.wine/drive_c/Program\ Files/Inno\ Setup\ 5/ISCC.exe ${ISS_FILENAME} || exit
+	cp -f ${INSTALL_DIR}/dist/${PACKAGE_NAME}-${VERSION}.exe ${HERE}
+	rm -rf ${INSTALL_DIR}/dist
+	rm -f ${ISS_FILENAME}
+}
+
+function Configure
+{
+	NAME=$1
+	NUM_FIXED_ARGS=1
+	
+	declare -a args
+	i=0
+	j=0
+	for arg in "$@"
+	do
+			if test ${i} -ge ${NUM_FIXED_ARGS}; then
+					args[${j}]=${arg}
+					j=$((${j}+1))
+			fi
+			i=$((${i}+1))
+	done
+
+	echo "========================================="
+	echo "=              Configuring              ="
+	echo "========================================="
+	cd ${TMP_DIR}/${NAME}
+	./configure --prefix=${INSTALL_DIR} "${args[@]}" || exit
+}
+
+function Compile
+{
+	NAME=$1
+	echo "========================================="
+	echo "=              Compiling                ="
+	echo "========================================="
+	cd ${TMP_DIR}/${NAME}
+	make -j ${NUM_PROCESSORS} all || exit
+}
+
+function Install
+{
+	NAME=$1
+	echo "========================================="
+	echo "=              Installing               ="
+	echo "========================================="
+	cd ${TMP_DIR}/${NAME}
+	make install || exit
+}
+
+function Download
+{
+	NAME=$1
+	ARCHIVE_NAME=$2
+	ARCHIVE_URL=$3
+
+	ARCHIVE=${TMP_DIR}/${ARCHIVE_NAME}
+	if test ! -f ${ARCHIVE}; then
+		cd ${TMP_DIR}
+		wget ${ARCHIVE_URL}
+	fi
+
+	cd ${TMP_DIR} || exit
+	rm -rf ${NAME}
+
+	ext=`echo "${ARCHIVE}" | awk -F . '{print $NF}'`
+	case ${ext} in
+		bz2)
+			tar jxvf ${ARCHIVE} || exit
+			;;
+		gz)
+			tar zxvf ${ARCHIVE} || exit
+			;;
+	esac
+}
+
+function InstallBinArchive
+{
+	ARCHIVE_NAME=$1
+	ARCHIVE_URL=$2
+
+	ARCHIVE=${TMP_DIR}/${ARCHIVE_NAME}
+	if test ! -f ${ARCHIVE}; then
+		cd ${TMP_DIR}
+		wget ${ARCHIVE_URL} -O ${ARCHIVE}
+	fi
+
+	cd ${INSTALL_DIR}
+	ext=`echo "${ARCHIVE}" | awk -F . '{print $NF}'`
+	case ${ext} in
+		bz2)
+			tar jxvf ${ARCHIVE} || exit
+			;;
+		gz)
+			tar zxvf ${ARCHIVE} || exit
+			;;
+		zip)
+			unzip ${ARCHIVE}
+			;;
+	esac
+}
+
+rm -rf ${INSTALL_DIR}
+mkdir -p ${INSTALL_DIR}
+
+# Compile some missing libraries
+
+# expat
+Download expat-2.0.1 expat-2.0.1.tar.gz http://downloads.sourceforge.net/expat/expat-2.0.1.tar.gz
+Configure expat-2.0.1 --host=i586-mingw32msvc
+Compile expat-2.0.1
+Install expat-2.0.1
+
+# GDB
+Download gdb-6.8 gdb-6.8.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-6.8.tar.bz2
+Configure gdb-6.8 --host=i586-mingw32msvc --build=i686-pc-linux-gnu \
+            --enable-targets=i686-pc-mingw32,m6811-elf,armeb-linux-gnu,powerpc-linux-gnu,mips-linux-gnu,sparc-linux-gnu \
+            --disable-sim --disable-werror \
+            --with-libexpat-prefix=${INSTALL_DIR}
+Compile gdb-6.8
+Install gdb-6.8
+
+# SDL
+Download SDL-1.2.13 SDL-1.2.13.tar.gz http://www.libsdl.org/release/SDL-1.2.13.tar.gz
+Configure SDL-1.2.13 --host=i586-mingw32msvc
+Compile SDL-1.2.13
+Install SDL-1.2.13
+
+# libxml2
+Download libxml2-2.6.31 libxml2-2.6.31.tar.gz ftp://xmlsoft.org/libxml2/libxml2-2.6.31.tar.gz
+Configure libxml2-2.6.31 --host=i586-mingw32msvc --without-python
+Compile libxml2-2.6.31
+Install libxml2-2.6.31
+
+# boost
+Download boost_1_34_1 boost_1_34_1.tar.bz2 http://downloads.sourceforge.net/boost/boost_1_34_1.tar.bz2
+cd ${TMP_DIR}/boost_1_34_1
+rm -f g++
+ln -s `which i586-mingw32msvc-g++` g++
+rm -f gcc
+ln -s `which i586-mingw32msvc-gcc` gcc
+rm -f ar
+ln -s `which i586-mingw32msvc-ar` ar
+rm -f ranlib
+ln -s `which i586-mingw32msvc-ranlib` ranlib
+rm -f as
+ln -s `which i586-mingw32msvc-as` as
+rm -f ld
+ln -s `which i586-mingw32msvc-ld` ld
+PATH=./:${PATH} ./configure --with-toolset=gcc --prefix=${INSTALL_DIR} --without-icu --with-libraries=graph,thread
+PATH=./:${PATH} make BJAM_CONFIG="-j ${NUM_PROCESSORS}"
+PATH=./:${PATH} make install
+cd ${INSTALL_DIR}/include
+mv boost-1_34_1/boost boost
+rmdir boost-1_34_1
+cd ${INSTALL_DIR}/lib
+ln -s libboost_thread-mgw34-mt-1_34_1.a libboost_thread.a
+
+# Install MSYS and MINGW
+mingw_url="http://downloads.sourceforge.net/mingw"
+mingw_file_list="binutils-2.18.50-20080109-2.tar.gz \
+gcc-core-3.4.5-20060117-2.tar.gz \
+gcc-g++-3.4.5-20060117-2.tar.gz \
+w32api-3.11.tar.gz \
+mingw-runtime-3.14.tar.gz \
+bash-3.1-MSYS-1.0.11-1.tar.bz2 \
+bzip2-1.0.3-MSYS-1.0.11-1.tar.bz2 \
+coreutils-5.97-MSYS-1.0.11-snapshot.tar.bz2 \
+csmake-3.81-MSYS-1.0.11-2.tar.bz2 \
+diffutils-2.8.7-MSYS-1.0.11-1.tar.bz2 \
+findutils-4.3-MSYS-1.0.11-1.tar.bz2 \
+gawk-3.1.5-MSYS-1.0.11-1.tar.bz2 \
+lzma-4.43-MSYS-1.0.11-1-bin.tar.gz \
+make-3.81-MSYS-1.0.11-2.tar.bz2 \
+MSYS-1.0.11-20071204.tar.bz2 \
+msysCORE-1.0.11-2007.01.19-1.tar.bz2 \
+tar-1.13.19-MSYS-2005.06.08.tar.bz2 \
+tar-1.19.90-MSYS-1.0.11-1-bin.tar.gz \
+texinfo-4.11-MSYS-1.0.11-1.tar.bz2 \
+autoconf2.1-2.13-3-bin.tar.bz2 \
+autoconf2.5-2.61-1-bin.tar.bz2 \
+autoconf-4-1-bin.tar.bz2 \
+autogen-5.9.2-MSYS-1.0.11-1-bin.tar.gz \
+autogen-5.9.2-MSYS-1.0.11-1-dev.tar.gz \
+autogen-5.9.2-MSYS-1.0.11-1-dll25.tar.gz \
+automake1.10-1.10-1-bin.tar.bz2 \
+automake1.9-1.9.6-2-bin.tar.bz2 \
+automake-3-1-bin.tar.bz2 \
+bison-2.3-MSYS-1.0.11-1.tar.bz2 \
+crypt-1.1-1-MSYS-1.0.11-1.tar.bz2 \
+cvs-1.11.22-MSYS-1.0.11-1-bin.tar.gz \
+flex-2.5.33-MSYS-1.0.11-1.tar.bz2 \
+gdbm-1.8.3-MSYS-1.0.11-1.tar.bz2 \
+gettext-0.16.1-1-bin.tar.bz2 \
+gettext-0.16.1-1-dll.tar.bz2 \
+gettext-0.16.1-MSYS-1.0.11-1.tar.bz2 \
+gettext-devel-0.16.1-MSYS-1.0.11-1.tar.bz2 \
+gmp-4.2.2-MSYS-1.0.11-1-dev.tar.gz \
+gmp-4.2.2-MSYS-1.0.11-1-dll3.tar.gz \
+guile-1.8.4-MSYS-1.0.11-1-bin.tar.gz \
+guile-1.8.4-MSYS-1.0.11-1-dev.tar.gz \
+guile-1.8.4-MSYS-1.0.11-1-dll17.tar.gz \
+guile-1.8.4-MSYS-1.0.11-1-doc.tar.gz \
+inetutils-1.3.2-40-MSYS-1.0.11-2-bin.tar.gz \
+libiconv-1.11-1-bin.tar.bz2 \
+libiconv-1.11-1-dll.tar.bz2 \
+libiconv-1.11-MSYS-1.0.11-1.tar.bz2 \
+libtool1.5-1.5.25a-1-bin.tar.bz2 \
+libtool1.5-1.5.25a-1-dll.tar.bz2 \
+lndir-6.8.1.0-MSYS-1.0.11-1.tar.bz2 \
+lpr-1.0.1-MSYS.tar.gz \
+minires-1.01-1-MSYS-1.0.11-1.tar.bz2 \
+openssh-4.7p1-MSYS-1.0.11-1-bin.tar.gz \
+openssl-0.9.8g-1-MSYS-1.0.11-2-bin.tar.gz \
+openssl-0.9.8g-1-MSYS-1.0.11-2-dev.tar.gz \
+openssl-0.9.8g-1-MSYS-1.0.11-2-dll098.tar.gz \
+perl-5.6.1-MSYS-1.0.11-1.tar.bz2 \
+perl-man-5.6.1-MSYS-1.0.11-1.tar.bz2 \
+regex-0.12-MSYS-1.0.11-1.tar.bz2 \
+vim-7.1-MSYS-1.0.11-1-bin.tar.gz \
+zlib-1.2.3-MSYS-1.0.11-1.tar.bz2"
+
+for file in ${mingw_file_list}
+do
+	if test ! -f ${TMP_DIR}/${file}; then
+		cd ${TMP_DIR}
+		wget ${mingw_url}/${file} || exit
+	fi
+	if test -f ${TMP_DIR}/${file}; then
+		cd ${INSTALL_DIR}
+		ext=`echo "${TMP_DIR}/${file}" | awk -F . '{print $NF}'`
+		case ${ext} in
+			bz2)
+				tar jxvf ${TMP_DIR}/${file} || exit
+				;;
+			gz)
+				tar zxvf ${TMP_DIR}/${file} || exit
+				;;
+		esac
+	fi
+done
+
+cp -rf ${INSTALL_DIR}/usr/local/* ${INSTALL_DIR}/.
+cp -rf ${INSTALL_DIR}/usr/spool ${INSTALL_DIR}/.
+cp -rf ${INSTALL_DIR}/coreutils-5.97/* ${INSTALL_DIR}/.
+rm -rf ${INSTALL_DIR}/usr
+rm -rf ${INSTALL_DIR}/coreutils-5.97
+
+# Install some addtional utilities from gnuwin32
+
+InstallBinArchive readline-bin.zip http://gnuwin32.sourceforge.net/downlinks/readline-bin-zip.php
+InstallBinArchive file-bin.zip http://gnuwin32.sourceforge.net/downlinks/file-bin-zip.php
+InstallBinArchive unrar-bin.zip http://gnuwin32.sourceforge.net/downlinks/unrar-bin-zip.php
+InstallBinArchive unzip-bin.zip http://gnuwin32.sourceforge.net/downlinks/unzip-bin-zip.php
+InstallBinArchive zip-bin.zip http://gnuwin32.sourceforge.net/downlinks/zip-bin-zip.php
+InstallBinArchive wget-bin.zip http://gnuwin32.sourceforge.net/downlinks/wget-bin-zip.php
+
+# Package everything into a single .EXE installer
+Package mingw32-unisim-pack
+
