@@ -8,6 +8,8 @@ NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 
 function Package {
 	PACKAGE_NAME=$1
+	START=$2
+	START_ICON=$3
 
 	cd ${INSTALL_DIR}
 	rm -rf ${INSTALL_DIR}/dist
@@ -26,18 +28,20 @@ function Package {
 	echo "AppPublisherURL=http://www.unisim.org" >> ${ISS_FILENAME}
 	echo "AppSupportURL=http://www.unisim.org" >> ${ISS_FILENAME}
 	echo "AppUpdatesURL=http://www.unisim.org" >> ${ISS_FILENAME}
-	echo "DefaultDirName={pf}\\${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
+	echo "DefaultDirName={sd}\\${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 	echo "DefaultGroupName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
+	echo "AllowNoIcons=yes" >> ${ISS_FILENAME}
 	echo "OutputDir=dist" >> ${ISS_FILENAME}
 	echo "OutputBaseFilename=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
-	echo "Compression=lzma" >> ${ISS_FILENAME}
+	echo "Compression=zip" >> ${ISS_FILENAME}
 	echo "SolidCompression=yes" >> ${ISS_FILENAME}
 	echo "" >> ${ISS_FILENAME}
 	echo "[Languages]" >> ${ISS_FILENAME}
 	echo "Name: \"english\"; MessagesFile: \"compiler:Default.isl\"" >> ${ISS_FILENAME}
 	echo "" >> ${ISS_FILENAME}
 	echo "[Tasks]" >> ${ISS_FILENAME}
-	#echo "Name: \"desktopicon\"; Description: \"{cm:CreateDesktopIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked" >> ${ISS_FILENAME}
+	echo "Name: \"desktopicon\"; Description: \"{cm:CreateDesktopIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked" >> ${ISS_FILENAME}
+#	echo "Name: \"quicklaunchicon\"; Description: \"{cm:CreateQuickLaunchIcon}\"; GroupDescription: \"{cm:AdditionalIcons}\"; Flags: unchecked" >> ${ISS_FILENAME}
 	echo "" >> ${ISS_FILENAME}
 	echo "[Files]" >> ${ISS_FILENAME}
 	for file in ${file_list}
@@ -47,6 +51,14 @@ function Package {
 			echo "Source: \"${stripped_filename}\"; DestDir: \"{app}/`dirname ${stripped_filename}`\"; Flags: ignoreversion" >> ${ISS_FILENAME}
 		fi
 	done
+
+	if test "x${START}" != x && test "x${START_ICON}" != x; then
+		echo "" >> ${ISS_FILENAME}
+		echo "[Icons]" >> ${ISS_FILENAME}
+		echo "Name: \"{group}\\${PACKAGE_NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"" >> ${ISS_FILENAME}
+		echo "Name: \"{commondesktop}\\${PACKAGE_NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Tasks: desktopicon" >> ${ISS_FILENAME}
+#		echo "Name: \"{userappdata}\\${PACKAGE_NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Tasks: quicklaunchicon" >> ${ISS_FILENAME}
+	fi
 	
 	echo "========================================="
 	echo "=            Inno Setup Script          ="
@@ -120,7 +132,7 @@ function Download
 		printf "Downloading ${ARCHIVE_URL}"
 		success=no
 		until [ $success = yes ]; do
-			if wget -t 1 -q ${ARCHIVE_URL}; then
+			if wget --timeout=60 -t 1 -q ${ARCHIVE_URL}; then
 				success=yes
 			else
 				printf "."
@@ -132,13 +144,14 @@ function Download
 	cd ${TMP_DIR} || exit
 	rm -rf ${NAME}
 
+	echo "Unpacking ${ARCHIVE_NAME}"
 	ext=`echo "${ARCHIVE}" | awk -F . '{print $NF}'`
 	case ${ext} in
 		bz2)
-			tar jxvf ${ARCHIVE} || exit
+			tar jxf ${ARCHIVE} || exit
 			;;
 		gz)
-			tar zxvf ${ARCHIVE} || exit
+			tar zxf ${ARCHIVE} || exit
 			;;
 	esac
 }
@@ -154,7 +167,7 @@ function InstallBinArchive
 		printf "Downloading ${ARCHIVE_URL}"
 		success=no
 		until [ $success = yes ]; do
-			if wget -t 1 -q -O ${ARCHIVE} ${ARCHIVE_URL}; then
+			if wget --timeout=60 -t 1 -q -O ${ARCHIVE} ${ARCHIVE_URL}; then
 				success=yes
 			else
 				printf "."
@@ -163,17 +176,18 @@ function InstallBinArchive
 		printf "\n"
 	fi
 
+	echo "Unpacking ${ARCHIVE_NAME}"
 	cd ${INSTALL_DIR}
 	ext=`echo "${ARCHIVE}" | awk -F . '{print $NF}'`
 	case ${ext} in
 		bz2)
-			tar jxvf ${ARCHIVE} || exit
+			tar jxf ${ARCHIVE} || exit
 			;;
 		gz)
-			tar zxvf ${ARCHIVE} || exit
+			tar zxf ${ARCHIVE} || exit
 			;;
 		zip)
-			unzip ${ARCHIVE}
+			unzip -q ${ARCHIVE}
 			;;
 	esac
 }
@@ -181,7 +195,7 @@ function InstallBinArchive
 rm -rf ${INSTALL_DIR}
 mkdir -p ${INSTALL_DIR}
 
-# Compile some missing libraries
+Compile some missing libraries
 
 # expat
 Download expat-2.0.1 expat-2.0.1.tar.gz http://downloads.sourceforge.net/expat/expat-2.0.1.tar.gz
@@ -305,7 +319,7 @@ do
 		printf "Downloading ${mingw_url}/${file}"
 		success=no
 		until [ $success = yes ]; do
-			if wget -t 1 -q ${mingw_url}/${file}; then
+			if wget --timeout=60 -t 1 -q ${mingw_url}/${file}; then
 				success=yes
 			else
 				printf "."
@@ -314,14 +328,15 @@ do
 		printf "\n"
 	fi
 	if test -f ${TMP_DIR}/${file}; then
+		echo "Unpacking ${file}"
 		cd ${INSTALL_DIR}
 		ext=`echo "${TMP_DIR}/${file}" | awk -F . '{print $NF}'`
 		case ${ext} in
 			bz2)
-				tar jxvf ${TMP_DIR}/${file} || exit
+				tar jxf ${TMP_DIR}/${file} || exit
 				;;
 			gz)
-				tar zxvf ${TMP_DIR}/${file} || exit
+				tar zxf ${TMP_DIR}/${file} || exit
 				;;
 		esac
 	fi
@@ -343,5 +358,5 @@ InstallBinArchive zip-bin.zip http://gnuwin32.sourceforge.net/downlinks/zip-bin-
 InstallBinArchive wget-bin.zip http://gnuwin32.sourceforge.net/downlinks/wget-bin-zip.php
 
 # Package everything into a single .EXE installer
-Package mingw32-unisim-pack
+Package mingw32-unisim-pack msys.bat m.ico
 
