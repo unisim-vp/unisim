@@ -302,7 +302,7 @@ for file in ${mingw_file_list}
 do
 	if test ! -f ${TMP_DIR}/${file}; then
 		cd ${TMP_DIR}
-		printf "Downloading ${ARCHIVE_URL}"
+		printf "Downloading ${mingw_url}/${file}"
 		success=no
 		until [ $success = yes ]; do
 			if wget -t 1 -q ${mingw_url}/${file}; then
