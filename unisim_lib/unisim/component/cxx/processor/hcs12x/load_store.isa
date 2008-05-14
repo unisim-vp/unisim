@@ -541,3 +541,403 @@ st_dyxs_idx.execute = {
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 }
+
+// **********  GLOBAL MEMORY MODE ***************
+
+// GLDAA or GLDAB opr8a
+op gldaab_dir(0x18[8]:> <:0b1[1]:b[1]:0x16[6]:opr8a[8] )
+
+gldaab_dir.disasm = {
+	if (b==0) {
+	    sink << "GLDAA $";
+	} else {
+	    sink << "GLDAB $";
+	}
+	sink << std::hex << opr8a;
+}
+
+gldaab_dir.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, W_GLOBAL_ADDRESS);
+	uint8_t val = cpu->memRead8(addr);
+	if (b==0) {
+	    cpu->setRegA(val);
+	} else {
+	    cpu->setRegB(val);	
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+}
+
+// GLDAA or GLDAB opr16a
+op gldaab_ext(0x18[8]:0b1[1]:b[1]:0x36[6]:> <:opr16a[16] )
+
+gldaab_ext.disasm = {
+	if (b==0) {
+	    sink << "GLDAA $";
+	} else {
+	    sink << "GLDAB $";	
+	}
+	sink << std::hex << opr16a; 
+}
+
+gldaab_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
+
+	uint8_t val = cpu->memRead8(addr); 
+	if (b==0) {
+	    cpu->setRegA(val);
+	} else {
+	    cpu->setRegB(val);
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+	
+}
+
+// GLDAA or GLDAB oprx0_xysp
+// GLDAA or GLDAB oprx9,xysp
+// GLDAA or GLDAB oprx16,xysp
+// GLDAA or GLDAB [D,xysp]
+// GLDAA or GLDAB [oprx16,xysp]
+op gldaab_idx(0x18[8]:0b1[1]:b[1]:0x26[6]:> <:*xb[XB]) 
+
+gldaab_idx.disasm = {
+	if (b==0) {
+	    sink << "GLDAA ";
+	} else {
+	    sink << "GLDAB ";	
+	}
+    xb->disasm(sink);
+}
+
+gldaab_idx.execute = {
+    
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
+    
+	uint8_t		val = cpu->memRead8(addr);     
+	
+	if (b==0) {
+	    cpu->setRegA(val);
+	} else {
+	    cpu->setRegB(val);	
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GLDD or GLDY or GLDX or GLDS opr8a
+op gld_dyxs_dir(0x18[8]:> <:0x37[6]:dyxs[2]:dd[8])
+
+gld_dyxs_dir.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "GLDD $"; break;
+	case 1: sink << "GLDY $"; break;
+	case 2: sink << "GLDX $"; break;
+	case 3: sink << "GLDS $"; break;
+	}
+	sink << std::hex << dd;
+}
+
+gld_dyxs_dir.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(dd, MEMORY::DIRECT, W_GLOBAL_ADDRESS);
+	uint16_t val = cpu->memRead16(addr);
+	switch (dyxs) {
+	case 0: cpu->setRegD(val); break;
+	case 1: cpu->setRegY(val); break;
+	case 2: cpu->setRegX(val); break;
+	case 3: cpu->setRegSP(val); break;
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GLDD or GLDY or GLDX or GLDS opr16a
+op gld_dyxs_ext(0x18[8]:0x3F[6]:dyxs[2]:> <:opr16a[16])
+
+gld_dyxs_ext.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "GLDD $"; break;
+	case 1: sink << "GLDY $"; break;
+	case 2: sink << "GLDX $"; break;
+	case 3: sink << "GLDS $"; break;
+	}
+
+	sink << std::hex << opr16a;
+}
+
+gld_dyxs_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
+	
+	uint16_t val = cpu->memRead16(addr);
+	
+	switch (dyxs) {
+	case 0: cpu->setRegD(val); break;
+	case 1: cpu->setRegY(val); break;
+	case 2: cpu->setRegX(val); break;
+	case 3: cpu->setRegSP(val); break;
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GLDD or GLDY or GLDX or GLDS oprx0_xysp
+// GLDD or GLDY or GLDX or GLDS oprx9,xysp
+// GLDD or GLDY or GLDX or GLDS oprx16,xysp
+// GLDD or GLDY or GLDX or GLDS [D,xysp]
+// GLDD or GLDY or GLDX or GLDS [oprx16,xysp]
+op gld_dyxs_idx(0x18[8]:0x3B[6]:dyxs[2]:> <:*xb[XB]) 
+
+gld_dyxs_idx.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "GLDD "; break;
+	case 1: sink << "GLDY "; break;
+	case 2: sink << "GLDX "; break;
+	case 3: sink << "GLDS "; break;
+	}
+
+    xb->disasm(sink);
+}
+
+gld_dyxs_idx.execute = {
+    
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
+    
+	uint16_t	val = cpu->memRead16(addr);     
+
+	switch (dyxs) {
+	case 0: cpu->setRegD(val); break;
+	case 1: cpu->setRegY(val); break;
+	case 2: cpu->setRegX(val); break;
+	case 3: cpu->setRegSP(val); break;
+	}
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GSTAA or GSTAB opr8a
+op gstaab_dir(0x18[8]:> <:0x2D[7]:b[1]:opr8a[8])
+
+gstaab_dir.disasm = {
+
+	if (b==0) {
+	    sink << "GSTAA $";
+	} else {
+	    sink << "GSTAB $";
+	}
+	sink << std::hex << opr8a;
+
+}
+
+gstaab_dir.execute = {
+
+	uint8_t val;
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, W_GLOBAL_ADDRESS);
+	
+	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
+	
+    cpu->memWrite8(addr, val);	
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GSTAA or GSTAB opr16a
+op gstaab_ext(0x18[8]:0x3D[7]:b[1]:> <:opr16a[16])
+
+gstaab_ext.disasm = {
+
+	if (b==0) {
+	    sink << "GSTAA $";
+	} else {
+	    sink << "GSTAB $";
+	}
+	sink << std::hex << opr16a;
+
+}
+
+gstaab_ext.execute = {
+
+	uint8_t	val;
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
+		
+	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
+    cpu->memWrite8(addr, val);
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GSTAA or GSTAB oprx0_xysp
+// GSTAA or GSTAB oprx9,xysp
+// GSTAA or GSTAB oprx16,xysp
+// GSTAA or GSTAB [D,xysp]
+// GSTAA or GSTAB [oprx16,xysp]
+
+op gstaab_idx(0x18[8]:0x35[7]:b[1]:> <:*xb[XB])
+
+gstaab_idx.disasm = {
+
+	if (b==0) {
+	    sink << "GSTAA ";
+	} else {
+	    sink << "GSTAB ";	
+	}
+    xb->disasm(sink);
+
+}
+
+gstaab_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
+
+	uint8_t val;
+	if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
+    cpu->memWrite8(addr,val);	
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GSTD or GSTY or GSTX or GSTS opr8a
+op gst_dyxs_dir(0x18[8]:> <:0x17[6]:dyxs[2]:opr8a[8])
+
+gst_dyxs_dir.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "GSTD $"; break;
+	case 1: sink << "GSTY $"; break;
+	case 2: sink << "GSTX $"; break;
+	case 3: sink << "GSTS $"; break;
+	}
+	
+	sink << std::hex << opr8a;
+}
+
+gst_dyxs_dir.execute = {
+
+	uint16_t val;
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, W_GLOBAL_ADDRESS);
+		
+	switch (dyxs) {
+	case 0: val = cpu->getRegD(); break;
+	case 1: val = cpu->getRegY(); break;
+	case 2: val = cpu->getRegX(); break;
+	case 3: val = cpu->getRegSP(); break;
+	}
+	
+	cpu->memWrite16(addr, val);
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GSTD or GSTY or GSTX or GSTS opr16a
+op gst_dyxs_ext(0x18[8]:0x1F[6]:dyxs[2]:> <:opr16a[16])
+
+gst_dyxs_ext.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "GSTD $"; break;
+	case 1: sink << "GSTY $"; break;
+	case 2: sink << "GSTX $"; break;
+	case 3: sink << "GSTS $"; break;
+	}
+	
+	sink << std::hex << opr16a;
+
+}
+
+gst_dyxs_ext.execute = {
+
+	uint16_t val = 0;
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
+		
+	switch (dyxs) {
+	case 0: val = cpu->getRegD(); break;
+	case 1: val = cpu->getRegY(); break;
+	case 2: val = cpu->getRegX(); break;
+	case 3: val = cpu->getRegSP(); break;
+	}
+	
+	cpu->memWrite16(addr, val);
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+
+// GSTD or GSTY or GSTX or GSTS oprx0_xysp
+// GSTD or GSTY or GSTX or GSTS oprx9,xysp
+// GSTD or GSTY or GSTX or GSTS oprx16,xysp
+// GSTD or GSTY or GSTX or GSTS [D,xysp]
+// GSTD or GSTY or GSTX or GSTS [oprx16,xysp]
+
+op gst_dyxs_idx(0x18[8]:0x1B[6]:dyxs[2]:> <:*xb[XB])
+
+gst_dyxs_idx.disasm = {
+
+	switch (dyxs) {
+	case 0: sink << "GSTD "; break;
+	case 1: sink << "GSTY "; break;
+	case 2: sink << "GSTX "; break;
+	case 3: sink << "GSTS "; break;
+	}
+
+    xb->disasm(sink);
+
+}
+
+gst_dyxs_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
+    
+	uint16_t val = 0;
+	
+	switch (dyxs) {
+	case 0: val = cpu->getRegD(); break;
+	case 1: val = cpu->getRegY(); break;
+	case 2: val = cpu->getRegX(); break;
+	case 3: val = cpu->getRegSP(); break;
+	}
+	cpu->memWrite16(addr,val);
+
+// CRC flags 0->V; setZ; setN
+	cpu->ccr->clrV();
+	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+
+}
+

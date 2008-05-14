@@ -441,6 +441,462 @@ add_ab_idx.execute = {
 	if (((regVal & 0x0F)+(xbVal & 0x0F)) > 0x09) cpu->ccr->setH(); else cpu->ccr->clrH();	
 }
 
+// ADED IMM  (regD + #opr16i + carry => regD) 
+op aded_imm(0x18[8]:0xC3[8]:opr16i[16])
+
+aded_imm.disasm = {
+	sink << "ADED #$" << std::hex << opr16i;
+}
+
+aded_imm.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	uint16_t regVal = cpu->getRegD();
+
+	Add16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	
+	cpu->setRegD(result);
+		
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// ADED DIR  (regD + mem16[regDirect:opr8a] + carry => regD)
+op aded_dir(0x18[8]:> <:0xD3[8]:opr8a[8])
+
+aded_dir.disasm = {
+	sink << "ADED $" << std::hex << opr8a;
+}
+
+aded_dir.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	uint16_t regVal = cpu->getRegD();
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+	uint16_t opr8aVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	cpu->setRegD(result);	
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// ADED EXT (regD + mem16[opr16a] + carry => regD)
+op aded_ext(0x18[8]:0xF3[8]:> <:opr16a[16])
+
+aded_ext.disasm = {
+	sink << "ADED $" << std::hex << opr16a;
+}
+
+aded_ext.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	
+	uint16_t regVal = cpu->getRegD();
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t opr16aVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	cpu->setRegD(result);
+		
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// ADED IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD + mem16[xb->addrE] + carry => regD)
+op aded_idx(0x18[8]:0xE3[8]:> <:*xb[XB])
+
+aded_idx.disasm = {
+	sink << "ADED ";
+	xb->disasm(sink);
+}
+
+aded_idx.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	
+	uint16_t regVal = cpu->getRegD();
+	
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t xbVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	cpu->setRegD(result);
+		
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// ADExy IMM  (regXY + #opr16i + carry => regXY) 
+op ade_xy_imm(0x18[8]:0b1[1]:b[1]:0x09[6]:opr16i[16])
+
+ade_xy_imm.disasm = {
+	if (b==0) {
+		sink << "ADEX #$";
+	} else {
+		sink << "ADEY #$";
+	}
+	sink << std::hex << opr16i;
+}
+
+ade_xy_imm.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+
+	Add16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// ADExy DIR  (regXY + mem16[regDirect:opr8a] + carry => regXY)
+op ade_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x19[6]:opr8a[8])
+
+ade_xy_dir.disasm = {
+	if (b==0) {
+		sink << "ADEX $";
+	} else {
+		sink << "ADEY $"; 
+	}
+	sink << std::hex << opr8a;
+}
+
+ade_xy_dir.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+	uint16_t opr8aVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// ADExy EXT (regXY + mem16[opr16a] + carry => regXY)
+op ade_xy_ext(0x18[8]:0b1[1]:b[1]:0x39[6]:> <:opr16a[16])
+
+ade_xy_ext.disasm = {
+	if (b==0) {
+		sink << "ADEX $";
+	} else {
+		sink << "ADEY $";		
+	}
+	sink << std::hex << opr16a;
+}
+
+ade_xy_ext.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t opr16aVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// ADExy IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] + carry => regXY)
+op ade_xy_idx(0x18[8]:0b1[1]:b[1]:0x29[6]:> <:*xb[XB])
+
+ade_xy_idx.disasm = {
+	if (b==0){
+		sink << "ADEX ";
+	} else {
+		sink << "ADEY ";
+	}
+
+	xb->disasm(sink);
+}
+
+ade_xy_idx.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	
+	uint16_t regVal;
+	
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t xbVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+
+// ADDxy IMM (regXY + #opr16i => regXY)
+op add_xy_imm(0x18[8]:0b1[1]:b[1]:0x0B[6]:opr16i[16])
+
+add_xy_imm.disasm = {
+	if (b==0) {
+		sink << "ADDX #$";
+	} else {
+		sink << "ADDY #$";
+	}
+	sink << std::hex << opr16i;
+}
+
+add_xy_imm.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = 0;
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+
+	Add16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// ADDxy DIR  (regXY + mem16[regDirect:opr8a] => regXY)
+op add_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x1B[6]:opr8a[8])
+
+add_xy_dir.disasm = {
+	if (b==0) {
+		sink << "ADDX $";
+	} else {
+		sink << "ADDY $"; 
+	}
+	sink << std::hex << opr8a;
+}
+
+add_xy_dir.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	uint8_t carry_in = 0;
+	uint16_t regVal;
+	
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	uint16_t opr8aVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// ADDxy EXT  (regXY + mem16[opr16a] => regXY)
+op add_xy_ext(0x18[8]:0b1[1]:b[1]:0x3B[6]:> <:opr16a[16])
+
+add_xy_ext.disasm = {
+	if (b==0) {
+		sink << "ADDX $";
+	} else {
+		sink << "ADDY $";		
+	}
+	sink << std::hex << opr16a;
+}
+
+add_xy_ext.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = 0;
+	
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t opr16aVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// ADDxy  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] => regXY)
+op add_xy_idx(0x18[8]:0b1[1]:b[1]:0x2B[6]:> <:*xb[XB])
+
+add_xy_idx.disasm = {
+	if (b==0){
+		sink << "ADDX ";
+	} else {
+		sink << "ADDY ";
+	}
+
+	xb->disasm(sink);
+}
+
+add_xy_idx.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = 0;
+	
+	uint16_t regVal;
+	
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t xbVal = cpu->memRead16(addr);
+
+	Add16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+
+
+
 // SUBD IMM or ADDD IMM (regD -+ ii => regD)
 op add_sub_d_imm(0b1[1]:b[1]:0x03[6]:> <:opr16i[16])
 
@@ -695,9 +1151,9 @@ sbc_ab_dir.execute = {
 }
 
 // SBCA/SBCB  EXT (regAB - mem[opr16a] - carry => regAB)
-op sbca_ext(0b1[1]:b[1]:0x32[6]:> <:opr16a[16])
+op sbc_ab_ext(0b1[1]:b[1]:0x32[6]:> <:opr16a[16])
 
-sbca_ext.disasm = {
+sbc_ab_ext.disasm = {
 	if (b==0) {
 		sink << "SBCA $";
 	} else {
@@ -706,7 +1162,7 @@ sbca_ext.disasm = {
 	sink << std::hex << opr16a;
 }
 
-sbca_ext.execute = {
+sbc_ab_ext.execute = {
 	uint8_t result, carry_out, overflow;
 	
 	uint8_t carry_in = cpu->ccr->getC();
@@ -735,7 +1191,7 @@ sbca_ext.execute = {
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
-// SBCA/ABCB IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] - carry => regAB)
+// SBCA/SBCB IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] - carry => regAB)
 op sbc_ab_idx(0b1[1]:b[1]:0x22[6]:> <:*xb[XB])
 
 sbc_ab_idx.disasm = {
@@ -776,6 +1232,284 @@ sbc_ab_idx.execute = {
 	
 	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SBED  IMM (regD - #opr16i - carry => regD)
+op sbed_imm(0x18[8]:0x83[8]:opr16i[16])
+
+sbed_imm.disasm = {
+	sink << "SBED #$" << std::hex << opr16i;
+}
+
+sbed_imm.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	uint16_t regVal = cpu->getRegD();
+
+	Sub16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	
+	cpu->setRegD(result);
+		
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SBED  DIR  (regD - mem16[regDirect:opr8a] - carry => regD)
+op sbed_dir(0x18[8]:> <:0x93[8]:opr8a[8])
+
+sbed_dir.disasm = {
+	sink << "SBED $" << std::hex << opr8a;
+}
+
+sbed_dir.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	uint16_t regVal = cpu->getRegD();
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	uint16_t opr8aVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	cpu->setRegD(result);
+		
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SBED  EXT (regD - mem16[opr16a] - carry => regD)
+op sbed_ext(0x18[8]:0xB3[8]:> <:opr16a[16])
+
+sbed_ext.disasm = {
+	sink << "SBED $" << std::hex << opr16a;
+}
+
+sbed_ext.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	
+	uint16_t regVal = cpu->getRegD();
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t opr16aVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	cpu->setRegD(result);
+		
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SBED IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD - mem16[xb->addrE] - carry => regD)
+op sbed_idx(0x18[8]:0xA3[8]:> <:*xb[XB])
+
+sbed_idx.disasm = {
+	sink << "SBED ";
+	xb->disasm(sink);
+}
+
+sbed_idx.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	
+	uint16_t regVal = cpu->getRegD();
+	
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t xbVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	cpu->setRegD(result);
+		
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SBEX/SBEY  IMM (regXY - #opr16i - carry => regXY)
+op sbe_xy_imm(0x18[8]:0b1[1]:b[1]:0x02[6]:opr16i[16])
+
+sbe_xy_imm.disasm = {
+	if (b==0) {
+		sink << "SBEX #$";
+	} else {
+		sink << "SBEY #$";
+	}
+	sink << std::hex << opr16i;
+}
+
+sbe_xy_imm.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+
+	Sub16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SBEX/SBEY  DIR  (regXY - mem16[regDirect:opr8a] - carry => regXY)
+op sbe_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x12[6]:opr8a[8])
+
+sbe_xy_dir.disasm = {
+	if (b==0) {
+		sink << "SBEX $";
+	} else {
+		sink << "SBEY $"; 
+	}
+	sink << std::hex << opr8a;
+}
+
+sbe_xy_dir.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	uint16_t opr8aVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SBEX/SBEY  EXT (regXY - mem16[opr16a] - carry => regXY)
+op sbe_xy_ext(0x18[8]:0b1[1]:b[1]:0x32[6]:> <:opr16a[16])
+
+sbe_xy_ext.disasm = {
+	if (b==0) {
+		sink << "SBEX $";
+	} else {
+		sink << "SBEY $";		
+	}
+	sink << std::hex << opr16a;
+}
+
+sbe_xy_ext.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t opr16aVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SBEX/SBEY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY - mem16[xb->addrE] - carry => regXY)
+op sbe_xy_idx(0x18[8]:0b1[1]:b[1]:0x22[6]:> <:*xb[XB])
+
+sbe_xy_idx.disasm = {
+	if (b==0){
+		sink << "SBEX ";
+	} else {
+		sink << "SBEY ";
+	}
+
+	xb->disasm(sink);
+}
+
+sbe_xy_idx.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = cpu->ccr->getC();
+	
+	uint16_t regVal;
+	
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t xbVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
 // SUBA/SUBB  IMM (regAB - ii => regAB)
@@ -942,6 +1676,179 @@ sub_ab_idx.execute = {
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
 }
+
+// ******************************
+
+// SUBX/SUBY  IMM (regXy - opr16i => regXY)
+op sub_xy_imm(0x18[8]:0b1[1]:b[1]:0x00[6]:opr16i[16])
+
+sub_xy_imm.disasm = {
+	if (b==0) {
+		sink << "SUBX #$";
+	} else {
+		sink << "SUBY #$";
+	}
+	sink << std::hex << opr16i;
+}
+
+sub_xy_imm.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = 0;
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+
+	Sub16(result, carry_out, overflow, regVal, opr16i, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// SUBX/SUBY  DIR  (regXY - mem16[regDirect:opr8a] => regXY)
+op sub_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x10[6]:opr8a[8])
+
+sub_xy_dir.disasm = {
+	if (b==0) {
+		sink << "SUBX $";
+	} else {
+		sink << "SUBY $"; 
+	}
+	sink << std::hex << opr8a;
+}
+
+sub_xy_dir.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = 0;
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	uint16_t opr8aVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+// SUBX/SUBY  EXT (regXY - mem16[opr16a] => regXY)
+op sub_xy_ext(0x18[8]:0b1[1]:b[1]:0x30[6]:> <:opr16a[16])
+
+sub_xy_ext.disasm = {
+	if (b==0) {
+		sink << "SUBX $";
+	} else {
+		sink << "SUBY $";		
+	}
+	sink << std::hex << opr16a;
+}
+
+sub_xy_ext.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = 0;
+	
+	uint16_t regVal;
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t opr16aVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// SUBX/SUBY  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY - mem16[xb->addrE] => regXY)
+op sub_xy_idx(0x18[8]:0b1[1]:b[1]:0x20[6]:> <:*xb[XB])
+
+sub_xy_idx.disasm = {
+	if (b==0){
+		sink << "SUBX ";
+	} else {
+		sink << "SUBY ";
+	}
+
+	xb->disasm(sink);
+}
+
+sub_xy_idx.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	uint8_t carry_in = 0;
+	
+	uint16_t regVal;
+	
+	if (b==0) {
+		regVal = cpu->getRegX();
+	} else {
+		regVal = cpu->getRegY();
+	}
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t xbVal = cpu->memRead16(addr);
+
+	Sub16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	
+	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
+}
+
+// ******************************
 
 /* ***** Binary-Coded Decimal Instructions ****** */
 
