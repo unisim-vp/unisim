@@ -325,6 +325,150 @@ cp_dyxs_idx.execute = {
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
+/* ****** Compare to memory with Borrow ********** */
+
+// CPE_dyxs  IMM
+op cpe_dyxs_imm(0x18[8]:0x23[6]:dyxs[2]:> <:opr16i[16])
+
+cpe_dyxs_imm.disasm = {
+	switch (dyxs) {
+		case 0: sink << "CPED #$"; break;
+		case 1: sink << "CPEY #$"; break;
+		case 2: sink << "CPEX #$"; break;
+		case 3: sink << "CPES #$";  
+	}
+	sink << std::hex << opr16i;
+}
+
+cpe_dyxs_imm.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	
+	carry_in = cpu->ccr->getC();
+	switch (dyxs) {
+		case 0: regVal = cpu->getRegD(); break;
+		case 1: regVal = cpu->getRegY(); break;
+		case 2: regVal = cpu->getRegX(); break;
+		case 3: regVal = cpu->getRegSP();  
+	}
+
+	Sub16(result, carry_out, overflow, regVal, opr16i, carry_in);
+
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+}
+
+// CPE_dyxs DIR
+op cpe_dyxs_dir(0x18[8]:> <:0x27[6]:dyxs[2]:opr8a[8])
+
+cpe_dyxs_dir.disasm = {
+	switch (dyxs) {
+		case 0: sink << "CPED $"; break;
+		case 1: sink << "CPEY $"; break;
+		case 2: sink << "CPEX $"; break;
+		case 3: sink << "CPES $";  
+	}
+	sink << std::hex << opr8a;
+}
+
+cpe_dyxs_dir.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	uint16_t opr8aVal;
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	opr8aVal = cpu->memRead16(addr);
+	
+	carry_in = cpu->ccr->getC();
+	switch (dyxs) {
+		case 0: regVal = cpu->getRegD(); break;
+		case 1: regVal = cpu->getRegY(); break;
+		case 2: regVal = cpu->getRegX(); break;
+		case 3: regVal = cpu->getRegSP();  
+	}
+	
+	Sub16(result, carry_out, overflow, regVal, opr8aVal, carry_in);
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+	
+}
+
+// CPE_dyxs EXT
+op cpe_dyxs_ext(0x18[8]:0x2F[6]:dyxs[2]:> <:opr16a[16])
+
+cpe_dyxs_ext.disasm = {
+	switch (dyxs) {
+		case 0: sink << "CPED $"; break;
+		case 1: sink << "CPEY $"; break;
+		case 2: sink << "CPEX $"; break;
+		case 3: sink << "CPES $";  
+	}
+	sink << std::hex << opr16a;
+}
+
+cpe_dyxs_ext.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	uint16_t opr16aVal = cpu->memRead16(opr16a);
+	
+	carry_in = cpu->ccr->getC();
+	switch (dyxs) {
+		case 0: regVal = cpu->getRegD(); break;
+		case 1: regVal = cpu->getRegY(); break;
+		case 2: regVal = cpu->getRegX(); break;
+		case 3: regVal = cpu->getRegSP();  
+	}
+	
+	Sub16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+}
+
+// CPE_dyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+op cpe_dyxs_idx(0x18[8]:0x2B[6]:dyxs[2]:> <:*xb[XB])
+
+cpe_dyxs_idx.disasm = {
+	switch (dyxs) {
+		case 0: sink << "CPED "; break;
+		case 1: sink << "CPEY "; break;
+		case 2: sink << "CPEX "; break;
+		case 3: sink << "CPES ";  
+	}
+	xb->disasm(sink);
+}
+
+cpe_dyxs_idx.execute = {
+	uint8_t carry_out, overflow, carry_in;
+	uint16_t result, regVal;
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	uint16_t xbVal = cpu->memRead16(addr);
+	
+	carry_in = cpu->ccr->getC();
+	switch (dyxs) {
+		case 0: regVal = cpu->getRegD(); break;
+		case 1: regVal = cpu->getRegY(); break;
+		case 2: regVal = cpu->getRegX(); break;
+		case 3: regVal = cpu->getRegSP();  
+	}
+	
+	Sub16(result, carry_out, overflow, regVal, xbVal, carry_in);
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+}
+
+
 /* ************ Test Instructions **************** */
 
 // TST EXT

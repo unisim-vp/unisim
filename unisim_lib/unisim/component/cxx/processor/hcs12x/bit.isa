@@ -102,6 +102,39 @@ clr_idx.execute = {
 	cpu->ccr->clrC();
 }
 
+op clrw_ext(0x18[8]:0x79[8]:> <:opr16a[16])
+
+clrw_ext.disasm = {
+	sink << "CLRW $" << std::hex << opr16a;
+}
+
+clrw_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	cpu->memWrite16(addr, 0);
+	
+	cpu->ccr->clrN();
+	cpu->ccr->setZ();
+	cpu->ccr->clrV();
+	cpu->ccr->clrC();
+}
+
+op clrw_idx(0x18[8]:0x69[8]:> <:*xb[XB])
+
+clrw_idx.disasm = {
+	sink << "CLRW ";
+	xb->disasm(sink);
+}
+
+clrw_idx.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	cpu->memWrite16(addr, 0);
+
+	cpu->ccr->clrN();
+	cpu->ccr->setZ();
+	cpu->ccr->clrV();
+	cpu->ccr->clrC();
+}
+
 op clr_ab(0b1[1]:b[1]:0x07[6])
 
 clr_ab.disasm = {
@@ -118,6 +151,30 @@ clr_ab.execute = {
 		cpu->setRegA(0);
 	} else {
 		cpu->setRegB(0);
+	}
+	
+	cpu->ccr->clrN();
+	cpu->ccr->setZ();
+	cpu->ccr->clrV();
+	cpu->ccr->clrC();
+}
+
+op clr_xy(0x18[8]:0b1[1]:b[1]:0x07[6])
+
+clr_xy.disasm = {
+	if (b==0) {
+		sink << "CLRX";
+	} else {
+		sink << "CLRY";
+	}
+}
+
+clr_xy.execute = {
+
+	if (b==0) {
+		cpu->setRegX(0);
+	} else {
+		cpu->setRegY(0);
 	}
 	
 	cpu->ccr->clrN();
@@ -196,6 +253,75 @@ com_ab.execute = {
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 }
 
+op comw_ext(0x18[8]:0x71[8]:> <:opr16a[16])
+
+comw_ext.disasm = {
+	sink << "COMW $" << std::hex << opr16a;
+}
+
+comw_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val = ~cpu->memRead16(addr);
+	cpu->memWrite16(addr, val);
+	
+	cpu->ccr->setC();
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+}
+
+op comw_idx(0x18[8]:0x61[8]:> <:*xb[XB])
+
+comw_idx.disasm = {
+	sink << "COMW ";
+	xb->disasm(sink);
+}
+
+comw_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val = ~cpu->memRead16(addr);
+	cpu->memWrite16(addr, val);
+	
+	cpu->ccr->setC();
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+}
+
+op com_xy(0x18[8]:0b010[3]:b[1]:0x1[4])
+
+com_xy.disasm = {
+	if (b==0) {
+		sink << "COMX";
+	} else {
+		sink << "COMY";
+	}
+}
+
+com_xy.execute = {
+	
+	uint16_t val;
+	if (b==0) {
+		val = cpu->getRegX();
+	} else {
+		val = cpu->getRegY();
+	}
+	
+	val = ~val;
+	
+	if (b==0) {
+		cpu->setRegX(val);
+	} else {
+		cpu->setRegY(val);
+	}
+
+	cpu->ccr->setC();
+	cpu->ccr->clrV();
+	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
+}
+
 // NEG: Two's Complement Negate
 op neg_ext(0x70[8]:> <:opr16a[16])
 
@@ -268,6 +394,85 @@ neg_ab.execute = {
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
+}
+
+op negw_ext(0x18[8]:0x70[8]:> <:opr16a[16])
+
+negw_ext.disasm = {
+	sink << "NEGW $" << std::hex << opr16a;
+}
+
+negw_ext.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	
+	Sub16(result, carry_out, overflow, 0, cpu->memRead16(addr), 0);
+	cpu->memWrite16(addr, result);
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
+}
+
+op negw_idx(0x18[8]:0x60[8]:> <:*xb[XB])
+
+negw_idx.disasm = {
+	sink << "NEGW $";
+	xb->disasm(sink);
+}
+
+negw_idx.execute = {
+
+	uint8_t carry_out, overflow;
+	uint16_t result;
+	
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+		
+	Sub16(result, carry_out, overflow, 0, cpu->memRead16(addr), 0);
+	cpu->memWrite16(addr, result);
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
+	
+}
+
+op neg_xy(0x18[8]:0b010[3]:b[1]:0x0[4])
+
+neg_xy.disasm = {
+	if (b==0) {
+		sink << "NEGX";
+	} else {
+		sink << "NEGY";
+	}
+}
+
+neg_xy.execute = {
+	uint8_t carry_out, overflow;
+	uint16_t val, result;
+	
+	if (b==0) {
+		val = cpu->getRegX();
+	} else {
+		val = cpu->getRegY();
+	}
+
+	Sub16(result, carry_out, overflow, 0, val, 0);
+
+	if (b==0) {
+		cpu->setRegX(result);
+	} else {
+		cpu->setRegY(result);
+	}
+	
+	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();} 
 }
 
 
@@ -350,7 +555,13 @@ bit_ab_imm.disasm = {
 }
 
 bit_ab_imm.execute = {
-	uint8_t val = cpu->getRegA() & ii;
+	uint8_t val;
+	
+	if (b==0) {
+		val = cpu->getRegA() & ii;
+	} else {
+		val = cpu->getRegB() & ii;
+	}
 	
 	cpu->ccr->clrV();
 	
@@ -371,7 +582,13 @@ bit_ab_dir.disasm = {
 
 bit_ab_dir.execute = {
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
-	uint8_t val = cpu->getRegA() & cpu->memRead8(addr);
+	uint8_t val;
+	
+	if (b==0) {
+		val = cpu->getRegA() & cpu->memRead8(addr);
+	} else {
+		val = cpu->getRegB() & cpu->memRead8(addr);
+	}
 	
 	cpu->ccr->clrV();
 	
@@ -392,7 +609,13 @@ bit_ab_ext.disasm = {
 
 bit_ab_ext.execute = {
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
-	uint8_t val = cpu->getRegA() & cpu->memRead8(addr);
+	uint8_t val;
+	
+	if (b==0) {
+		val = cpu->getRegA() & cpu->memRead8(addr);
+	} else {
+		val = cpu->getRegB() & cpu->memRead8(addr);
+	}
 	
 	cpu->ccr->clrV();
 	
@@ -413,12 +636,126 @@ bit_ab_idx.disasm = {
 
 bit_ab_idx.execute = {
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
-	uint8_t val = cpu->getRegA() & cpu->memRead8(addr);
+	uint8_t val;
+	
+	if (b==0) {
+		val = cpu->getRegA() & cpu->memRead8(addr);
+	} else {
+		val = cpu->getRegB() & cpu->memRead8(addr);
+	}
 	
 	cpu->ccr->clrV();
 	
 	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+}
+
+// BITX or BITY: bit test X/Y (Logical 'AND' X/Y with Memory
+op bit_xy_imm(0x18[8]:0b1[1]:b[1]:0x05[6]:opr16i[16])
+
+bit_xy_imm.disasm = {
+	if (b==0) {
+		sink << "BITX #$";
+	} else {
+		sink << "BITY #$";
+	} 
+	sink << std::hex << opr16i;
+}
+
+bit_xy_imm.execute = {
+	uint16_t val;
+	
+	if (b==0) {
+		val = cpu->getRegX() & opr16i;
+	} else {
+		val = cpu->getRegY() & opr16i;
+	}
+	
+	cpu->ccr->clrV();
+	
+	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+}
+
+op bit_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x15[6]:opr8a[8])
+
+bit_xy_dir.disasm = {
+	if (b==0) {
+		sink << "BITA $";
+	} else {
+		sink << "BITB $";
+	} 
+	sink << std::hex << opr8a;
+}
+
+bit_xy_dir.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
+	uint16_t val;
+	
+	if (b==0) {
+		val = cpu->getRegX() & cpu->memRead16(addr);
+	} else {
+		val = cpu->getRegY() & cpu->memRead16(addr);
+	}
+	
+	cpu->ccr->clrV();
+	
+	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+}
+
+op bit_xy_ext(0x18[8]:0b1[1]:b[1]:0x35[6]:> <:opr16a[16])
+
+bit_xy_ext.disasm = {
+	if (b==0) {
+		sink << "BITX $";
+	} else {
+		sink << "BITY $";
+	} 
+	sink << std::hex << opr16a;
+}
+
+bit_xy_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val;
+	
+	if (b==0) {
+		val = cpu->getRegX() & cpu->memRead16(addr);
+	} else {
+		val = cpu->getRegY() & cpu->memRead16(addr);
+	}	
+	
+	cpu->ccr->clrV();
+	
+	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+}
+
+op bit_xy_idx(0x18[8]:0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
+
+bit_xy_idx.disasm = {
+	if (b==0) {
+		sink << "BITX ";
+	} else {
+		sink << "BITY ";
+	} 
+	xb->disasm(sink);
+}
+
+bit_xy_idx.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val;
+	
+	if (b==0) {
+		val = cpu->getRegX() & cpu->memRead16(addr);
+	} else {
+		val = cpu->getRegY() & cpu->memRead16(addr);
+	}	
+	
+	cpu->ccr->clrV();
+	
+	if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 }
 
 // BSET: Set bits in memory
@@ -496,11 +833,12 @@ lsl_ext.execute = {
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
 	uint8_t val = cpu->memRead8(addr);
 	uint8_t c2val = ~val + 1;
+
+	if ((val & 0x80) == 0x80) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 	
 	val = val << 1;
 	cpu->memWrite8(addr, val);
 	
-	if ((val & 0x80) == 0x80) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
@@ -519,10 +857,11 @@ lsl_idx.execute = {
 	uint8_t val = cpu->memRead8(addr);
 	uint8_t c2val = ~val + 1;
 
+	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
 	val = val << 1;
 	cpu->memWrite8(addr, val);
 	
-	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
@@ -538,10 +877,11 @@ lsla.execute = {
 	uint8_t val = cpu->getRegA();
 	uint8_t c2val = ~val + 1;
 
+	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
 	val = val << 1;
 	cpu->setRegA(val);
 
-	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
@@ -557,10 +897,11 @@ lslb.execute = {
 	uint8_t val = cpu->getRegB();
 	uint8_t c2val = ~val + 1;
 
+	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+
 	val = val << 1;
 	cpu->setRegB(val);
 
-	if ((val & 0x80) == 0x80) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
@@ -576,10 +917,98 @@ lsld.execute = {
 	uint16_t val = cpu->getRegD();
 	uint16_t c2val = ~val + 1;
 
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
 	val = val << 1;
 	cpu->setRegD(val);
 
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+
+// LSLW: Logical Shift Left
+// ASLW: Arithmetic Shift Left
+op lslw_ext(0x18[8]:0x78[8]:> <:opr16a[16])
+
+lslw_ext.disasm = {
+	sink << "LSLW $" << std::hex << opr16a;
+}
+
+lslw_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+	
+	val = val << 1;
+	cpu->memWrite16(addr, val);
+	
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+op lslw_idx(0x18[8]:0x68[8]:> <:*xb[XB])
+
+lslw_idx.disasm = {
+	sink << "LSLW ";
+	xb->disasm(sink);
+}
+
+lslw_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
+	val = val << 1;
+	cpu->memWrite16(addr, val);
+	
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+op lslx(0x18[8]:0x48[8])
+
+lslx.disasm = {
+	sink << "LSLX";
+}
+
+lslx.execute = {
+	uint16_t val = cpu->getRegX();
+	uint16_t c2val = ~val + 1;
+
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
+	val = val << 1;
+	cpu->setRegX(val);
+
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+op lsly(0x18[8]:0x58[8])
+
+lsly.disasm = {
+	sink << "LSLY";
+}
+
+lsly.execute = {
+	uint16_t val = cpu->getRegY();
+	uint16_t c2val = ~val + 1;
+
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+
+	val = val << 1;
+	cpu->setRegY(val);
+
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
@@ -675,6 +1104,95 @@ rolb.execute = {
 }
 
 
+// ROLW: Rotate word Memory/Accumulator Left through carry
+op rolw_ext(0x18[8]:0x75[8]:> <:opr16a[16])
+
+rolw_ext.disasm = {
+	sink << "ROLw $" << std::hex << opr16a;
+}
+
+rolw_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+	
+	uint16_t carry = 0;
+	if ((val & 0x8000) == 0x8000) { carry = 1; }	
+	val = (val << 1) | carry;
+	cpu->memWrite16(addr, val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+op rolw_idx(0x18[8]:0x65[8]:> <:*xb[XB])
+
+rolw_idx.disasm = {
+	sink << "ROLW ";
+	xb->disasm(sink);
+}
+
+rolw_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+	
+	uint16_t carry = 0;
+	if ((val & 0x8000) == 0x8000) { carry = 1; }	
+	val = (val << 1) | carry;
+	cpu->memWrite16(addr, val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+op rolx(0x18[8]:0x45[8])
+
+rolx.disasm = {
+	sink << "ROLX";
+}
+
+rolx.execute = {
+	uint16_t val = cpu->getRegX();
+	uint16_t c2val = ~val + 1;
+	
+	uint16_t carry = 0;
+	if ((val & 0x8000) == 0x8000) { carry = 1; }	
+	val = (val << 1) | carry;
+	cpu->setRegX(val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 	
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+op roly(0x18[8]:0x55[8])
+
+roly.disasm = {
+	sink << "ROLY";
+}
+
+roly.execute = {
+	uint16_t val = cpu->getRegY();
+	uint16_t c2val = ~val + 1;
+	
+	uint16_t carry = 0;
+	if ((val & 0x8000) == 0x8000) { carry = 1; }
+	val = (val << 1) | carry;
+	cpu->setRegY(val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 	
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
 // LSR: Logical Shift Right
 op lsr_ext(0x74[8]:> <:opr16a[16])
 
@@ -686,11 +1204,12 @@ lsr_ext.execute = {
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
 	uint8_t val = cpu->memRead8(addr);
 	uint8_t c2val = ~val + 1;
+
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC();}	else  { cpu->ccr->clrC();}	
 	
 	val = val >> 1;
 	cpu->memWrite8(addr, val);
 
-	if ((val & 0x01) == 0x01) { cpu->ccr->setC();}	else  { cpu->ccr->clrC();}	
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	cpu->ccr->clrN(); 
@@ -709,10 +1228,11 @@ lsr_idx.execute = {
 	uint8_t val = cpu->memRead8(addr);
 	uint8_t c2val = ~val + 1;
 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
 	val = val >> 1;
 	cpu->memWrite8(addr, val);
 
-	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	cpu->ccr->clrN(); 
@@ -728,10 +1248,11 @@ lsra.execute = {
 	uint8_t val = cpu->getRegA();
 	uint8_t c2val = ~val + 1;
 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+
 	val = val >> 1;
 	cpu->setRegA(val);
 
-	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	cpu->ccr->clrN(); 
@@ -747,10 +1268,11 @@ lsrb.execute = {
 	uint8_t val = cpu->getRegB();
 	uint8_t c2val = ~val + 1;
 
+	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+
 	val = val >> 1;
 	cpu->setRegB(val);
 
-	if ((val & 0x01) == 0x01) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	cpu->ccr->clrN(); 
@@ -765,16 +1287,102 @@ lsrd.disasm = {
 lsrd.execute = {
 	uint16_t val = cpu->getRegD();
 	uint16_t c2val = ~val + 1;
+
+	if ((val & 0x0001) == 0x0001) { cpu->ccr->setC();}	else { cpu->ccr->clrC();}	
 	
 	val = val >> 1;
 	cpu->setRegD(val);
 
-	if ((val & 0x0001) == 0x0001) { cpu->ccr->setC();}	else { cpu->ccr->clrC();}	
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	cpu->ccr->clrN(); 
 }
 
+// LSRW: Logical Shift Right word
+op lsrw_ext(0x18[8]:0x74[8]:> <:opr16a[16])
+
+lsrw_ext.disasm = {
+	sink << "LSRW $" << std::hex << opr16a;
+}
+
+lsrw_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+
+	if ((val & 0x0001) == 0x0001) { cpu->ccr->setC();}	else  { cpu->ccr->clrC();}	
+	
+	val = val >> 1;
+	cpu->memWrite16(addr, val);
+
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
+}
+
+op lsrw_idx(0x18[8]:0x64[8]:> <:*xb[XB])
+
+lsrw_idx.disasm = {
+	sink << "LSRW ";
+	xb->disasm(sink);
+}
+
+lsrw_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+
+	if ((val & 0x0001) == 0x0001) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
+	val = val >> 1;
+	cpu->memWrite16(addr, val);
+
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
+}
+
+op lsrx(0x18[8]:0x44[8])
+
+lsrx.disasm = {
+	sink << "LSRX";
+}
+
+lsrx.execute = {
+	uint16_t val = cpu->getRegX();
+	uint16_t c2val = ~val + 1;
+
+	if ((val & 0x0001) == 0x0001) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+
+	val = val >> 1;
+	cpu->setRegX(val);
+
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
+}
+
+op lsry(0x18[8]:0x54[8])
+
+lsry.disasm = {
+	sink << "LSRY";
+}
+
+lsry.execute = {
+	uint16_t val = cpu->getRegY();
+	uint16_t c2val = ~val + 1;
+
+	if ((val & 0x0001) == 0x0001) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+
+	val = val >> 1;
+	cpu->setRegY(val);
+
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
+}
+ 
 // ROR: Rotate Memory/Accumulator Right through Carry
 op ror_ext(0x76[8]:> <:opr16a[16])
 
@@ -864,6 +1472,96 @@ rorb.execute = {
 	cpu->ccr->clrN(); 
 }
 
+
+// RORW: Rotate word Memory/Accumulator Right through Carry
+op rorw_ext(0x18[8]:0x76[8]:> <:opr16a[16])
+
+rorw_ext.disasm = {
+	sink << "RORW $" << std::hex << opr16a;
+}
+
+rorw_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+	
+	uint16_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }	
+	val = (carry << 15) | (val >> 1);
+	cpu->memWrite16(addr, val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
+}
+
+op rorw_idx(0x18[8]:0x66[8]:> <:*xb[XB])
+
+rorw_idx.disasm = {
+	sink << "RORW ";
+	xb->disasm(sink);
+}
+
+rorw_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+	
+	uint16_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }	
+	val = (carry << 15) | (val >> 1);
+	cpu->memWrite16(addr, val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
+}
+
+op rorx(0x18[8]:0x46[8])
+
+rorx.disasm = {
+	sink << "RORX";
+}
+
+rorx.execute = {
+	uint16_t val = cpu->getRegX();
+	uint16_t c2val = ~val + 1;
+	
+	uint16_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }	
+	val = (carry << 15) | (val >> 1);
+	cpu->setRegX(val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
+}
+
+op rory(0x18[8]:0x56[8])
+
+rory.disasm = {
+	sink << "RORY";
+}
+
+rory.execute = {
+	uint16_t val = cpu->getRegY();
+	uint16_t c2val = ~val + 1;
+	
+	uint16_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }
+	val = (carry << 15) | (val >> 1);
+	cpu->setRegY(val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	cpu->ccr->clrN(); 
+}
+
 // ASR: Arithmetic Shift Right
 op asr_ext(0x77[8]:> <:opr16a[16])
 
@@ -929,11 +1627,14 @@ asra.execute = {
 	uint8_t c2val = ~val + 1;
 
 	uint8_t msb = val & 0x80;
+
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
 	
 	val = (val >> 1) | msb;
 	cpu->setRegA(val);
 
-	if ((val & 0x01) == 0x01) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
+	if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
@@ -950,12 +1651,186 @@ asrb.execute = {
 	uint8_t c2val = ~val + 1;
 
 	uint8_t msb = val & 0x80;
+
+	uint8_t carry = 0;
+	if ((val & 0x01) == 0x01) { carry = 1; }	
 	
 	val = (val >> 1) | msb;
 	cpu->setRegB(val);
 
-	if ((val & 0x01) == 0x01) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
+	if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
 	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
 }
+
+// ASRW: Arithmetic Shift Right word
+op asrw_ext(0x18[8]:0x77[8]:> <:opr16a[16])
+
+asrw_ext.disasm = {
+	sink << "ASRW $" << std::hex << opr16a;
+}
+
+asrw_ext.execute = {
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+
+	uint16_t msb = val & 0x8000;
+		
+	uint16_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }
+	
+	val = (val >> 1) | msb;
+	cpu->memWrite16(addr, val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+
+}
+
+op asrw_idx(0x18[8]:0x67[8]:> <:*xb[XB])
+
+asrw_idx.disasm = {
+	sink << "ASRW ";
+	xb->disasm(sink);
+}
+
+asrw_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	uint16_t val = cpu->memRead16(addr);
+	uint16_t c2val = ~val + 1;
+
+	uint16_t msb = val & 0x8000;
+	
+	uint16_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }	
+
+	val = (val >> 1) | msb;
+	cpu->memWrite16(addr, val);
+
+	if (carry) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+op asrx(0x18[8]:0x47[8])
+
+asrx.disasm = {
+	sink << "ASRX";
+}
+
+asrx.execute = {
+	uint16_t val = cpu->getRegX();
+	uint16_t c2val = ~val + 1;
+
+	uint16_t msb = val & 0x8000;
+
+	uint16_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }	
+	
+	val = (val >> 1) | msb;
+	cpu->setRegX(val);
+
+	if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+op asry(0x18[8]:0x57[8])
+
+asry.disasm = {
+	sink << "ASRY";
+}
+
+asry.execute = {
+	uint16_t val = cpu->getRegY();
+	uint16_t c2val = ~val + 1;
+
+	uint16_t msb = val & 0x8000;
+
+	uint16_t carry = 0;
+	if ((val & 0x0001) == 0x0001) { carry = 1; }	
+	
+	val = (val >> 1) | msb;
+	cpu->setRegY(val);
+
+	if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
+	if (val == c2val) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); } 
+}
+
+// BTAS: Bit(s) Test and Set in Memory
+
+op btas_dir(0x18[8]:0x35[8]:opr8a[8]:msk8[8])
+
+btas_dir.disasm = {
+	sink << "BTAS $" << std::hex << opr8a << ", $" << std::hex << msk8;
+}
+
+btas_dir.execute = {
+/*
+If (M) & (Mask) = 0, then set Z, else clear Z
+(M) | (Mask) => M
+
+N: Set if MSB of test is set; cleared otherwise
+Z: Set if test is $00; cleared otherwise
+V: 0; cleared
+*/
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	uint8_t opr8aVal = cpu->memRead8(addr);
+	
+	uint8_t test = opr8aVal & msk8;
+	if (test == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((test & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
+	cpu->ccr->clrV();
+	
+	cpu->memWrite8(addr, opr8aVal | msk8);
+}
+
+op btas_ext(0x18[8]:> <:0x36[8]:opr16a[16]:msk8[8])
+
+btas_ext.disasm = {
+	sink << "BTAS $" << std::hex << opr16a << ", $" << std::hex << msk8;
+}
+
+btas_ext.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint8_t opr16aVal = cpu->memRead8(addr);
+	
+	uint8_t test = opr16aVal & msk8;
+	if (test == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((test & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
+	cpu->ccr->clrV();
+	
+	cpu->memWrite8(addr, opr16aVal | msk8);
+}
+
+op btas_idx(0x18[8]:0x37[8]:> <:*xb[XB]:> <:msk8[8])
+
+btas_idx.disasm = {
+	sink << "BTAS ";
+	xb->disasm(sink);
+	sink << ", $" << std::hex << msk8;
+}
+
+btas_idx.execute = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	uint8_t xbVal = cpu->memRead8(addr);
+	
+	uint8_t test = xbVal & msk8;
+	if (test == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
+	if ((test & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
+	cpu->ccr->clrV();
+	
+	cpu->memWrite8(addr, xbVal | msk8);
+}
+
