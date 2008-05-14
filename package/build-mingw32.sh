@@ -4,6 +4,13 @@ VERSION=1.0
 TMP_DIR=${HOME}/tmp
 INSTALL_DIR=${TMP_DIR}/mingw32_install
 HERE=`pwd`
+MY_DIR=`dirname $0`
+if test ${MY_DIR} = "."; then
+	MY_DIR=${HERE}
+elif test ${MY_DIR} = ".."; then
+	MY_DIR=${HERE}/..
+fi
+
 NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 
 function Package {
@@ -132,7 +139,7 @@ function Download
 		printf "Downloading ${ARCHIVE_URL}"
 		success=no
 		until [ $success = yes ]; do
-			if wget --timeout=60 -t 1 -q ${ARCHIVE_URL}; then
+			if wget --timeout=60 -t 1 -q  -O ${ARCHIVE_NAME} ${ARCHIVE_URL}; then
 				success=yes
 			else
 				printf "."
@@ -195,7 +202,7 @@ function InstallBinArchive
 rm -rf ${INSTALL_DIR}
 mkdir -p ${INSTALL_DIR}
 
-Compile some missing libraries
+# Compile some missing libraries
 
 # expat
 Download expat-2.0.1 expat-2.0.1.tar.gz http://downloads.sourceforge.net/expat/expat-2.0.1.tar.gz
@@ -217,12 +224,14 @@ Download SDL-1.2.13 SDL-1.2.13.tar.gz http://www.libsdl.org/release/SDL-1.2.13.t
 Configure SDL-1.2.13 --host=i586-mingw32msvc
 Compile SDL-1.2.13
 Install SDL-1.2.13
-
+s
 # libxml2
 Download libxml2-2.6.31 libxml2-2.6.31.tar.gz ftp://xmlsoft.org/libxml2/libxml2-2.6.31.tar.gz
 Configure libxml2-2.6.31 --host=i586-mingw32msvc --without-python
 Compile libxml2-2.6.31
 Install libxml2-2.6.31
+mv ${INSTALL_DIR}/include/libxml2/libxml ${INSTALL_DIR}/include
+rm -rf ${INSTALL_DIR}/include/libxml2
 
 # boost
 Download boost_1_34_1 boost_1_34_1.tar.bz2 http://downloads.sourceforge.net/boost/boost_1_34_1.tar.bz2
@@ -247,6 +256,31 @@ mv boost-1_34_1/boost boost
 rmdir boost-1_34_1
 cd ${INSTALL_DIR}/lib
 ln -s libboost_thread-mgw34-mt-1_34_1.a libboost_thread.a
+
+# SystemC
+
+Download systemc-2.2.0 systemc-2.2.0.tar.gz http://panoramis.free.fr/search.systemc.org/download/sc220/systemc-2.2.0.tgz
+cd ${TMP_DIR}/systemc-2.2.0
+cat ${MY_DIR}/patch-systemc-2.2.0-mingw32 | patch -p1
+mkdir -p objdir
+cd objdir
+../configure --prefix=${INSTALL_DIR} --host=i586-mingw32msvc CXX=i586-mingw32msvc-g++ AS=i586-mingw32msvc-as
+make -j ${NUM_PROCESSORS} all
+make install
+mv ${INSTALL_DIR}/lib-mingw32/* ${INSTALL_DIR}/lib/.
+rm -rf ${INSTALL_DIR}/lib-linux
+mkdir -p ${INSTALL_DIR}/share
+mkdir -p ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/AUTHORS ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/ChangeLog ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/COPYING ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/docs ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/examples ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/INSTALL ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/LICENSE ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/NEWS ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/README ${INSTALL_DIR}/share/systemc-2.2.0
+mv ${INSTALL_DIR}/RELEASENOTES ${INSTALL_DIR}/share/systemc-2.2.0
 
 # Install MSYS and MINGW
 mingw_url="http://downloads.sourceforge.net/mingw"

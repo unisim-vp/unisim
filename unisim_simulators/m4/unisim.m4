@@ -186,12 +186,12 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
 AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     # Check if libxml2 path has been overloaded
     AC_ARG_WITH(libxml2,
-	AS_HELP_STRING([--with-libxml2=<path>], [path to the libxml2 library]))
+	AS_HELP_STRING([--with-libxml2=<path>], [libxml2 library to use (will be completed with /include and /lib)]))
 	
     if test "x$with_libxml2" != "x"; then
 		AC_MSG_NOTICE([using libxml2 at $with_libxml2])
 		LDFLAGS=${LDFLAGS}" -L$with_libxml2/lib"
-		CPPFLAGS=${CPPFLAGS}" -I$with_libxml2/include/libxml2"
+		CPPFLAGS=${CPPFLAGS}" -I$with_libxml2/include"
     fi
 	
     # Check for some libxml2 headers
@@ -199,7 +199,7 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     AC_CHECK_HEADER(libxml/xmlwriter.h, , broken_incxml2=yes)
 	
     if test "$broken_incxml2" == "yes"; then
-		AC_MSG_ERROR([libxml2 includes not found (/libxml2/libxml/*.hh). Please use --with-libxml2=<path>])
+		AC_MSG_ERROR([libxml2 includes not found (libxml/*.hh). Please use --with-libxml2=<path>])
     fi
 
     # Check for libxml2 functions
@@ -274,10 +274,10 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 
     # Check if SystemC path has been overloaded
     AC_ARG_WITH(systemc,
-	AS_HELP_STRING([--with-systemc=<path>], [systemc library to use (will be completed with /include and /lib-linux)]))
+	AS_HELP_STRING([--with-systemc=<path>], [systemc library to use (will be completed with /include and /lib-${SYSTEMC_TARGET_ARCH})]))
     if test "x$with_systemc" != "x"; then
 	AC_MSG_NOTICE([using SystemC at $with_systemc])
-	LDFLAGS=${LDFLAGS}" -L$with_systemc/lib-$SYSTEMC_TARGET_ARCH"
+	LDFLAGS=${LDFLAGS}" -L$with_systemc/lib-${SYSTEMC_TARGET_ARCH}"
 	CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
     fi
 	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"

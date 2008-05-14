@@ -43,17 +43,17 @@ AC_DEFUN([UNISIM_CHECK_UNISIM_TOOLS], [
 		GENISSLIB_PATH=$GENISSLIB_DIR/$GENISSLIB
 		AC_SUBST(GENISSLIB_PATH)
 		# Check for the GenISSLib program
-		AC_CHECK_PROG(genisslib_installed, $GENISSLIB, true, false, $GENISSLIB_DIR)
+		AC_CHECK_PROG(genisslib_installed, $GENISSLIB, yes, no, $GENISSLIB_DIR)
     else
 		AC_MSG_NOTICE([using UNISIM tools at the default program path])
 		GENISSLIB_PATH=$GENISSLIB
 		AC_SUBST(GENISSLIB_PATH)
 		# Check for the GenISSLib program
-		AC_CHECK_PROG(genisslib_installed, $GENISSLIB, true, false)
+		AC_CHECK_PROG(genisslib_installed, $GENISSLIB, yes, no)
 	fi
 
 	
-	if test "x$genisslib_installed" != "xtrue"; then
+	if test "x$genisslib_installed" != "xyes"; then
 			AC_MSG_ERROR([GenISSLib not found. Please install UNISIM tools.])
 	fi
 ])
@@ -136,11 +136,11 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
 AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     # Check if libxml2 path has been overloaded
     AC_ARG_WITH(libxml2,
-	AS_HELP_STRING([--with-libxml2=<path>], [path to the libxml2 library]))
+	AS_HELP_STRING([--with-libxml2=<path>], [libxml2 library to use (will be completed with /include and /lib)]))
 	
     if test "x$with_libxml2" != "x"; then
 		AC_MSG_NOTICE([using libxml2 at $with_libxml2])
-		CPPFLAGS=${CPPFLAGS}" -I$with_libxml2/include/libxml2"
+		CPPFLAGS=${CPPFLAGS}" -I$with_libxml2/include"
     fi
 	
     # Check for some libxml2 headers
@@ -148,7 +148,7 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     AC_CHECK_HEADER(libxml/xmlwriter.h, , broken_incxml2=yes)
 	
     if test "$broken_incxml2" == "yes"; then
-		AC_MSG_ERROR([libxml2 includes not found (/libxml2/libxml/*.hh). Please use --with-libxml2=<path>])
+		AC_MSG_ERROR([libxml2 includes not found (libxml/*.hh). Please use --with-libxml2=<path>])
     fi
 
 ])
@@ -160,7 +160,7 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
 AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
     # Check if SystemC path has been overloaded
     AC_ARG_WITH(systemc,
-	AS_HELP_STRING([--with-systemc=<path>], [systemc library to use (will be completed with /include and /lib-linux)]))
+	AS_HELP_STRING([--with-systemc=<path>], [systemc library to use (will be completed with /include)]))
     if test "x$with_systemc" != "x"; then
 	AC_MSG_NOTICE([using SystemC at $with_systemc])
 	CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
@@ -180,10 +180,10 @@ AC_ARG_ENABLE($1,
 	AS_HELP_STRING([--enable-$1], [enable compiling $1 (default)])
 	AS_HELP_STRING([--disable-$1], [disable compiling $1]),
 	[case "${enableval}" in
-	yes) unisim_enabled=true ;;
+	yes) unisim_enabled=yes ;;
 	no) unisim_enabled=no ;;
 	*) AC_MSG_ERROR(bad value ${enableval} for --enable-$1) ;;
-	esac], [unisim_enabled=true])
+	esac], [unisim_enabled=yes])
 	if test "x$3" != x; then
 		supported_host1="$3"
 		supported_host2="$4"
@@ -220,7 +220,7 @@ AC_ARG_ENABLE($1,
 															$supported_host7)
 																;;
 															*)
-																unisim_enabled=false
+																unisim_enabled=no
 																;;
 														esac
 														;;
@@ -236,8 +236,8 @@ AC_ARG_ENABLE($1,
 				;;
 		esac
 	fi
-	AM_CONDITIONAL(COND_$2, test $unisim_enabled == true)
-	if test $unisim_enabled == true; then
+	AM_CONDITIONAL(COND_$2, test $unisim_enabled == yes)
+	if test $unisim_enabled == yes; then
 		AC_CONFIG_SUBDIRS([$2])
 	fi
 ])
@@ -253,9 +253,9 @@ AC_ARG_ENABLE(release,
 	AS_HELP_STRING([--enable-release], [build all the library versions])
 	AS_HELP_STRING([--disable-release], [build the minimum number of library versions (default)]),
 	[case "${enableval}" in
-	yes) unisim_enabled_release=true ;;
-	no) unisim_enabled_release=false ;;
+	yes) unisim_enabled_release=yes ;;
+	no) unisim_enabled_release=no ;;
 	*) AC_MSG_ERROR(bad value ${enableval} for --enable-release) ;;
-	esac], [unisim_enabled_release=false])
-	AM_CONDITIONAL(COND_release, test x$unisim_enabled_release = xtrue)
+	esac], [unisim_enabled_release=no])
+	AM_CONDITIONAL(COND_release, test x$unisim_enabled_release = xyes)
 ])
