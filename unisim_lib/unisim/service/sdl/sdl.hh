@@ -44,6 +44,7 @@
 
 #include <inttypes.h>
 #include <SDL/SDL.h>
+#include <SDL/SDL_thread.h>
 
 #include <list>
 #include <string>
