@@ -349,6 +349,74 @@ call_ext.execute = {
 	cpu->setRegPC(opr16a);
 }
 
+// I have to decode indexed-indirect addressing here, 
+// because in the case of indexed-indirect the value of PPAGE is stored in memory after the subroutine address
+// XB decoder return only one address
+
+op call_16offset_idx_ind(0x4B[8]:> <:0b111[3]:rr[2]:0b0[1]:0b11[2]:> <:sext<16> n16[16])
+
+call_16offset_idx_ind.disasm = {
+
+	sink << "CALL ";
+	sink << "[" << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr) << "]";
+}
+
+call_16offset_idx_ind.execute = {
+
+	physical_address_t addr;
+		 
+	cpu->setRegSP(cpu->getRegSP()-2);
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
+	cpu->setRegSP(cpu->getRegSP()-1);
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, cpu->mmc->getPpage());
+
+	physical_address_t idxAddr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+
+	address_t subAddr = cpu->memRead16(idxAddr);
+	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
+
+	cpu->mmc->setPpage(ppageVal);
+	cpu->setRegPC(subAddr);
+
+}
+
+op call_accD_offset_idx_ind(0x4B[8]:> <:0b111[3]:rr[2]:0b111[3])
+
+call_accD_offset_idx_ind.disasm = {
+
+	sink << "CALL ";
+	sink << "[D," << CPU::xb_getAddrRegLabel(rr) << "]";
+}
+
+call_accD_offset_idx_ind.execute = {
+
+	physical_address_t addr;
+		 
+	cpu->setRegSP(cpu->getRegSP()-2);
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() >> 8));
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
+	
+	cpu->setRegSP(cpu->getRegSP()-1);
+	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	cpu->memWrite8(addr, cpu->mmc->getPpage());
+
+	physical_address_t idxAddr = cpu->mmc->getPhysicalAddress(cpu->getRegD() + cpu->xb_getAddrRegValue(rr), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+
+	address_t subAddr = cpu->memRead16(idxAddr);
+	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
+
+	cpu->mmc->setPpage(ppageVal);
+	cpu->setRegPC(subAddr);
+
+}
+
 op call_idx(0x4B[8]:> <:*xb[XB]:> <:page[8])
 
 call_idx.disasm = {
@@ -377,6 +445,7 @@ call_idx.execute = {
 	cpu->setRegSP(cpu->getRegSP()-1);
 	addr = cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 	cpu->memWrite8(addr, cpu->mmc->getPpage());
+
 	cpu->mmc->setPpage(page);
 	cpu->setRegPC(xb->getEAddr(cpu));
 }
