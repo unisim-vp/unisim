@@ -64,6 +64,14 @@ manque les loafd flottant a update comme lfdu)
  */
 
 {
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+
 #include <stdarg.h>
 
 // DD New depencies are arriving ...
@@ -86,21 +94,29 @@ manque les loafd flottant a update comme lfdu)
     struct operand_t *next;
   } operand_t;
 
+
 #define INPUT(_type, _value) \
 {\
-	operands[noperands].type = _type;\
-	operands[noperands].dir = INPUT_T;\
-	operands[noperands++].value = _value;\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].type = _type;\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].dir = INPUT_T;\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands++].value = _value;\
 }
 
 #define OUTPUT(_type, _value) \
 {\
-	operands[noperands].type = _type;\
-	operands[noperands].dir = OUTPUT_T;\
-	operands[noperands++].value = _value;\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].type = _type;\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].dir = OUTPUT_T;\
+	Operation<CONFIG>::operands[Operation<CONFIG>::noperands++].value = _value;\
 }
 
   typedef operand_t operands_t[64];
+
+
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 }
 
@@ -109,7 +125,7 @@ var operands : {operands_t}
 
 constructor action initialize_operands() {
   stringstream ss;
-  disasm(ss);
+  Operation<CONFIG>::disasm(0,ss);
   string s;
   ss >> s;
   if(s!="???")
