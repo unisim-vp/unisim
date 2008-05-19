@@ -36,8 +36,21 @@
 
 {
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+
 typedef unsigned int latencies_t[8];
-#define LAT(lat) (latencies[nstages++] = (lat), latency += (lat))
+#define LAT(lat) (Operation<CONFIG>::latencies[Operation<CONFIG>::nstages++] = (lat), Operation<CONFIG>::latency += (lat))
+
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 }
 
