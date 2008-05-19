@@ -1267,6 +1267,8 @@ public:
 	//=====================================================================
 	//=                        Debugging stuffs                           =
 	//=====================================================================
+
+  address_t GetEA() { return effective_address; }
 	
 	Parameter<bool> param_verbose_all;
 	Parameter<bool> param_verbose_step;
@@ -1555,6 +1557,7 @@ private:
 	//=====================================================================
 	//=                      Debugging stuffs                             =
 	//=====================================================================
+        address_t effective_address;
 
 	bool verbose_all;
 	bool verbose_step;
