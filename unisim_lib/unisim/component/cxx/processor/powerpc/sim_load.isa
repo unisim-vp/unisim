@@ -37,9 +37,9 @@
 /**
  * Returns the target register of the load instruction.
  */
-action {int} loadstore_target_register({CPU *} {cpu}) { 
+action {int} loadstore_target_register({CPU<CONFIG> *} {cpu}) { 
   cerr << "ISS Error: action loadstore_target_register not set for: ";
-  disasm(cerr);
+  Operation<CONFIG>::disasm(0,cerr);
   cerr << endl;
   exit(1);
 }
@@ -122,7 +122,7 @@ stfsx.loadstore_target_register =  { return fs; }
  */
 action {int} memory_access_size() {  
   cerr << "ISS Error: action memory_acces_size not set for: ";
-  disasm(cerr);
+  Operation<CONFIG>::disasm(0, cerr);
   cerr << endl;
   exit(1);
 }
@@ -206,9 +206,9 @@ sync.memory_access_size =    { return 4; }
 /**
  * Returns the number of byte (chararcter) for load/store-string instructions
  */
-action {int} loadstore_string_numbyte({CPU *} {cpu}) {  
+action {int} loadstore_string_numbyte({CPU<CONFIG> *} {cpu}) {  
   cerr << "ISS Error: action memory_acces_size not set for: ";
-  disasm(cerr);
+  Operation<CONFIG>::disasm(0,cerr);
   cerr << endl;
   exit(1);
 }
@@ -224,7 +224,7 @@ stswx.loadstore_string_numbyte = { return cpu->GetXER(); }
  * Returns the effective memory address of the target load / store instruction.
  * In case of a load / store with update, provide the effective (non updated) address
  */
-action {address_t} loadstore_effective_address({CPU *} {cpu}) { 
+action {typename CONFIG::address_t} loadstore_effective_address({CPU<CONFIG> *} {cpu}) { 
   return cpu->GetEA();
 }
 
@@ -235,9 +235,9 @@ action {bool} is_splitted() {
   return false;
 }
 
-action {list <Operation*>} split_into() {
+action {list <Operation<CONFIG> *>} split_into() {
   cerr << "ISS Error: operation non splitable: ";
-  disasm(cerr);
+  Operation<CONFIG>::disasm(0,cerr);
   cerr << endl;
   exit(1);
 }
@@ -248,20 +248,20 @@ lbzu.is_splitted = {
   return true;
 }
 lbzu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lbz_ctype=0;
   lbz_ctype = 34 << 26;
   lbz_ctype = lbz_ctype | (rd << 21);
   lbz_ctype = lbz_ctype | (ra << 16);
   lbz_ctype = lbz_ctype | (d & 0xffff);
-  l.push_back( new OpLbz(lbz_ctype,GetAddr()) );
+  l.push_back( new OpLbz<CONFIG>(lbz_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -269,14 +269,14 @@ lbzux.is_splitted = {
   return true;
 }
 lbzux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lbzx_ctype=0;
   lbzx_ctype = 31 << 26;
   lbzx_ctype = lbzx_ctype | (rd << 21);
   lbzx_ctype = lbzx_ctype | (ra << 16);
   lbzx_ctype = lbzx_ctype | (rb << 11);
   lbzx_ctype = lbzx_ctype | (87 << 1);
-  l.push_back( new OpLbzx(lbzx_ctype,GetAddr()) );
+  l.push_back( new OpLbzx<CONFIG>(lbzx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -284,7 +284,7 @@ lbzux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  l.push_back( new OpAdd<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -292,20 +292,20 @@ lhzu.is_splitted = {
   return true;
 }
 lhzu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lbz_ctype=0;
   lbz_ctype = 40 << 26;
   lbz_ctype = lbz_ctype | (rd << 21);
   lbz_ctype = lbz_ctype | (ra << 16);
   lbz_ctype = lbz_ctype | (d & 0xffff);
-  l.push_back( new OpLbz(lbz_ctype,GetAddr()) );
+  l.push_back( new OpLbz<CONFIG>(lbz_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -313,14 +313,14 @@ lhzux.is_splitted = {
   return true;
 }
 lhzux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lbzx_ctype=0;
   lbzx_ctype = 31 << 26;
   lbzx_ctype = lbzx_ctype | (rd << 21);
   lbzx_ctype = lbzx_ctype | (ra << 16);
   lbzx_ctype = lbzx_ctype | (rb << 11);
   lbzx_ctype = lbzx_ctype | (279 << 1);
-  l.push_back( new OpLbzx(lbzx_ctype,GetAddr()) );
+  l.push_back( new OpLbzx<CONFIG>(lbzx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -328,7 +328,7 @@ lhzux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  l.push_back( new OpAdd<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -336,20 +336,20 @@ lwzu.is_splitted = {
   return true;
 }
 lwzu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lwz_ctype=0;
   lwz_ctype = 32 << 26;
   lwz_ctype = lwz_ctype | (rd << 21);
   lwz_ctype = lwz_ctype | (ra << 16);
   lwz_ctype = lwz_ctype | (d & 0xffff);
-  l.push_back( new OpLwz(lwz_ctype,GetAddr()) );
+  l.push_back( new OpLwz<CONFIG>(lwz_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
 
   return l;
 }
@@ -358,14 +358,14 @@ lwzux.is_splitted = {
   return true;
 }
 lwzux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lwzx_ctype=0;
   lwzx_ctype = 31 << 26;
   lwzx_ctype = lwzx_ctype | (rd << 21);
   lwzx_ctype = lwzx_ctype | (ra << 16);
   lwzx_ctype = lwzx_ctype | (rb << 11);
   lwzx_ctype = lwzx_ctype | (23 << 1);
-  l.push_back( new OpLwzx(lwzx_ctype,GetAddr()) );
+  l.push_back( new OpLwzx<CONFIG>(lwzx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -373,7 +373,7 @@ lwzux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  l.push_back( new OpAdd<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -382,21 +382,21 @@ stbu.is_splitted = {
   return true;
 }
 stbu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
 
   CodeType stb_ctype=0;
   stb_ctype = 38 << 26;
   stb_ctype = stb_ctype | (rs << 21);
   stb_ctype = stb_ctype | (ra << 16);
   stb_ctype = stb_ctype | (d & 0xffff);
-  l.push_back( new OpStb(stb_ctype,GetAddr()) );
+  l.push_back( new OpStb<CONFIG>(stb_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
 
   return l;
 }
@@ -405,7 +405,7 @@ stbux.is_splitted = {
   return true;
 }
 stbux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
 
   CodeType stbx_ctype=0;
   stbx_ctype = 31 << 26;
@@ -413,7 +413,7 @@ stbux.split_into = {
   stbx_ctype = stbx_ctype | (ra << 16);
   stbx_ctype = stbx_ctype | (rb << 11);
   stbx_ctype = stbx_ctype | (215 << 1);
-  l.push_back( new OpStb(stbx_ctype,GetAddr()) );
+  l.push_back( new OpStb<CONFIG>(stbx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -421,7 +421,7 @@ stbux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAddi(add_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
 
   return l;
 }
@@ -430,21 +430,21 @@ sthu.is_splitted = {
   return true;
 }
 sthu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
 
   CodeType stb_ctype=0;
   stb_ctype = 44 << 26;
   stb_ctype = stb_ctype | (rs << 21);
   stb_ctype = stb_ctype | (ra << 16);
   stb_ctype = stb_ctype | (d & 0xffff);
-  l.push_back( new OpStb(stb_ctype,GetAddr()) );
+  l.push_back( new OpStb<CONFIG>(stb_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
 
   return l;
 }
@@ -453,7 +453,7 @@ sthux.is_splitted = {
   return true;
 }
 sthux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
 
   CodeType sthx_ctype=0;
   sthx_ctype = 31 << 26;
@@ -461,7 +461,7 @@ sthux.split_into = {
   sthx_ctype = sthx_ctype | (ra << 16);
   sthx_ctype = sthx_ctype | (rb << 11);
   sthx_ctype = sthx_ctype | (407 << 1);
-  l.push_back( new OpStb(sthx_ctype,GetAddr()) );
+  l.push_back( new OpStb<CONFIG>(sthx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -469,7 +469,7 @@ sthux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAddi(add_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
 
   return l;
 }
@@ -479,21 +479,21 @@ stwu.is_splitted = {
   return true;
 }
 stwu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
 
   CodeType stw_ctype=0;
   stw_ctype = 36 << 26;
   stw_ctype = stw_ctype | (rs << 21);
   stw_ctype = stw_ctype | (ra << 16);
   stw_ctype = stw_ctype | (d & 0xffff);
-  l.push_back( new OpStw(stw_ctype,GetAddr()) );
+  l.push_back( new OpStw<CONFIG>(stw_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
 
   return l;
 }
@@ -502,7 +502,7 @@ stwux.is_splitted = {
   return true;
 }
 stwux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
 
   CodeType stwx_ctype=0;
   stwx_ctype = 31 << 26;
@@ -510,7 +510,7 @@ stwux.split_into = {
   stwx_ctype = stwx_ctype | (ra << 16);
   stwx_ctype = stwx_ctype | (rb << 11);
   stwx_ctype = stwx_ctype | (151 << 1);
-  l.push_back( new OpStwx(stwx_ctype,GetAddr()) );
+  l.push_back( new OpStwx<CONFIG>(stwx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -518,7 +518,7 @@ stwux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  l.push_back( new OpAdd<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -528,20 +528,20 @@ lfdu.is_splitted = {
   return true;
 }
 lfdu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lfd_ctype=0;
   lfd_ctype = 50 << 26;
   lfd_ctype = lfd_ctype | (fd << 21);
   lfd_ctype = lfd_ctype | (ra << 16);
   lfd_ctype = lfd_ctype | (d & 0xffff);
-  l.push_back( new OpLfd(lfd_ctype,GetAddr()) );
+  l.push_back( new OpLfd<CONFIG>(lfd_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -549,14 +549,14 @@ lfdux.is_splitted = {
   return true;
 }
 lfdux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lfdx_ctype=0;
   lfdx_ctype = 50 << 26;
   lfdx_ctype = lfdx_ctype | (fd << 21);
   lfdx_ctype = lfdx_ctype | (ra << 16);
   lfdx_ctype = lfdx_ctype | (rb << 11);
   lfdx_ctype = lfdx_ctype | (599 << 1);
-  l.push_back( new OpLfdx(lfdx_ctype,GetAddr()) );
+  l.push_back( new OpLfdx<CONFIG>(lfdx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -564,7 +564,7 @@ lfdux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  l.push_back( new OpAdd<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -572,20 +572,20 @@ lfsu.is_splitted = {
   return true;
 }
 lfsu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lfs_ctype=0;
   lfs_ctype = 50 << 26;
   lfs_ctype = lfs_ctype | (fd << 21);
   lfs_ctype = lfs_ctype | (ra << 16);
   lfs_ctype = lfs_ctype | (d & 0xffff);
-  l.push_back( new OpLfs(lfs_ctype,GetAddr()) );
+  l.push_back( new OpLfs<CONFIG>(lfs_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -593,14 +593,14 @@ lfsux.is_splitted = {
   return true;
 }
 lfsux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType lfsx_ctype=0;
   lfsx_ctype = 50 << 26;
   lfsx_ctype = lfsx_ctype | (fd << 21);
   lfsx_ctype = lfsx_ctype | (ra << 16);
   lfsx_ctype = lfsx_ctype | (rb << 11);
   lfsx_ctype = lfsx_ctype | (535 << 1);
-  l.push_back( new OpLfsx(lfsx_ctype,GetAddr()) );
+  l.push_back( new OpLfsx<CONFIG>(lfsx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -608,7 +608,7 @@ lfsux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  l.push_back( new OpAdd<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -617,20 +617,20 @@ stfdu.is_splitted = {
   return true;
 }
 stfdu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType stfd_ctype=0;
   stfd_ctype = 54 << 26;
   stfd_ctype = stfd_ctype | (fs << 21);
   stfd_ctype = stfd_ctype | (ra << 16);
   stfd_ctype = stfd_ctype | (d & 0xffff);
-  l.push_back( new OpStfd(stfd_ctype,GetAddr()) );
+  l.push_back( new OpStfd<CONFIG>(stfd_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -638,14 +638,14 @@ stfdux.is_splitted = {
   return true;
 }
 stfdux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType stfdx_ctype=0;
   stfdx_ctype = 31 << 26;
   stfdx_ctype = stfdx_ctype | (fs << 21);
   stfdx_ctype = stfdx_ctype | (ra << 16);
   stfdx_ctype = stfdx_ctype | (rb << 11);
   stfdx_ctype = stfdx_ctype | (727 << 1);
-  l.push_back( new OpStfdx(stfdx_ctype,GetAddr()) );
+  l.push_back( new OpStfdx<CONFIG>(stfdx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -653,7 +653,7 @@ stfdux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  l.push_back( new OpAdd<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -661,20 +661,20 @@ stfsu.is_splitted = {
   return true;
 }
 stfsu.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType stfs_ctype=0;
   stfs_ctype = 52 << 26;
   stfs_ctype = stfs_ctype | (fs << 21);
   stfs_ctype = stfs_ctype | (ra << 16);
   stfs_ctype = stfs_ctype | (d & 0xffff);
-  l.push_back( new OpStfs(stfs_ctype,GetAddr()) );
+  l.push_back( new OpStfs<CONFIG>(stfs_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType addi_ctype=0;
   addi_ctype = 14 << 26;
   addi_ctype = addi_ctype | (ra << 21);
   addi_ctype = addi_ctype | (ra << 16);
   addi_ctype = addi_ctype | (d & 0xffff);
-  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  l.push_back( new OpAddi<CONFIG>(addi_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
@@ -682,14 +682,14 @@ stfsux.is_splitted = {
   return true;
 }
 stfsux.split_into = {
-  list<Operation*> l;
+  list<Operation<CONFIG> *> l;
   CodeType stfsx_ctype=0;
   stfsx_ctype = 31 << 26;
   stfsx_ctype = stfsx_ctype | (fs << 21);
   stfsx_ctype = stfsx_ctype | (ra << 16);
   stfsx_ctype = stfsx_ctype | (rb << 11);
   stfsx_ctype = stfsx_ctype | (663 << 1);
-  l.push_back( new OpStfsx(stfsx_ctype,GetAddr()) );
+  l.push_back( new OpStfsx<CONFIG>(stfsx_ctype,Operation<CONFIG>::GetAddr()) );
 
   CodeType add_ctype=0;
   add_ctype = 31 << 26;
@@ -697,16 +697,16 @@ stfsux.split_into = {
   add_ctype = add_ctype | (ra << 16);
   add_ctype = add_ctype | (rb << 11);
   add_ctype = add_ctype | (266 << 1);
-  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  l.push_back( new OpAdd<CONFIG>(add_ctype,Operation<CONFIG>::GetAddr()) );
   return l;
 }
 
 /**
  * Returns the true value of single-precision to store
  */
-action {uint32_t} get_single({CPU *} {cpu}) { 
+action {uint32_t} get_single({CPU<CONFIG> *} {cpu}) { 
   cerr << "ISS Error: operation do not provide single precision information: ";
-  disasm(cerr);
+  Operation<CONFIG>::disasm(0,cerr);
   cerr << endl;
   exit(1);
 }
