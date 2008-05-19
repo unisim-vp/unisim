@@ -1,0 +1,746 @@
+/*
+ *  Copyright (c) 2007,
+ *  INRIA Futurs
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Sylvain Girbal (sylvain.girbal@inria.fr)
+ *          David Parello (david.parello@univ-perp.fr)
+ */
+
+
+/**
+ * Returns the target register of the load instruction.
+ */
+action {int} loadstore_target_register({CPU *} {cpu}) { 
+  cerr << "ISS Error: action loadstore_target_register not set for: ";
+  disasm(cerr);
+  cerr << endl;
+  exit(1);
+}
+
+//Load & Load byte reversed
+eciwx.loadstore_target_register =  { return rd; }
+lbz.loadstore_target_register =    { return rd; }
+lbzx.loadstore_target_register =   { return rd; }
+lha.loadstore_target_register =    { return rd; }
+lhax.loadstore_target_register =   { return rd; }
+lhbrx.loadstore_target_register =  { return rd; }
+lhz.loadstore_target_register =    { return rd; }
+lhzx.loadstore_target_register =   { return rd; }
+lwarx.loadstore_target_register =  { return rd; }
+lwbrx.loadstore_target_register =  { return rd; }
+lwz.loadstore_target_register =    { return rd; }
+lwzx.loadstore_target_register =   { return rd; }
+lbzu.loadstore_target_register =   { return rd; }
+lbzux.loadstore_target_register =  { return rd; }
+lhau.loadstore_target_register =   { return rd; }
+lhaux.loadstore_target_register =  { return rd; }
+lhzu.loadstore_target_register =   { return rd; }
+lhzux.loadstore_target_register =  { return rd; }
+lwzu.loadstore_target_register =   { return rd; }
+lwzux.loadstore_target_register =  { return rd; }
+//Load multiple
+lmw.loadstore_target_register =    { return rd; }
+//Load string
+lswi.loadstore_target_register =   { return rd; }
+lswx.loadstore_target_register =   { return rd; }
+//Load float
+lfd.loadstore_target_register =    { return fd; }
+lfdu.loadstore_target_register =   { return fd; }
+lfdux.loadstore_target_register =  { return fd; }
+lfdx.loadstore_target_register =   { return fd; }
+lfs.loadstore_target_register =    { return fd; }
+lfsu.loadstore_target_register =   { return fd; }
+lfsux.loadstore_target_register =  { return fd; }
+lfsx.loadstore_target_register =   { return fd; }
+//Store & Store byte reversed
+ecowx.loadstore_target_register =  { return rs; }
+stb.loadstore_target_register =    { return rs; }
+stbu.loadstore_target_register =   { return rs; }
+stbux.loadstore_target_register =  { return rs; }
+stbx.loadstore_target_register =   { return rs; }
+sth.loadstore_target_register =    { return rs; }
+sthu.loadstore_target_register =   { return rs; }
+sthux.loadstore_target_register =  { return rs; }
+sthx.loadstore_target_register =   { return rs; }
+stw.loadstore_target_register =    { return rs; }
+stwu.loadstore_target_register =   { return rs; }
+stwux.loadstore_target_register =  { return rs; }
+stwx.loadstore_target_register =   { return rs; }
+sthbrx.loadstore_target_register = { return rs; }
+stwbrx.loadstore_target_register = { return rs; }
+//Store multiple
+stmw.loadstore_target_register =   { return rs; }
+//Store string
+stswi.loadstore_target_register =  { return rs; }
+stswx.loadstore_target_register =  { return rs; }
+//Store float
+stfd.loadstore_target_register =   { return fs; }
+stfdu.loadstore_target_register =  { return fs; }
+stfdux.loadstore_target_register = { return fs; }
+stfdx.loadstore_target_register =  { return fs; }
+stfiwx.loadstore_target_register = { return fs; }
+stfs.loadstore_target_register =   { return fs; }
+stfsu.loadstore_target_register =  { return fs; }
+stfsux.loadstore_target_register = { return fs; }
+stfsx.loadstore_target_register =  { return fs; }
+
+
+
+
+
+
+
+/**
+ * Returns the memory acces size in bytes of a load / store instruction
+ */
+action {int} memory_access_size() {  
+  cerr << "ISS Error: action memory_acces_size not set for: ";
+  disasm(cerr);
+  cerr << endl;
+  exit(1);
+}
+
+lbz.memory_access_size =     { return 1; }
+lbzu.memory_access_size =    { return 1; }
+lbzux.memory_access_size =   { return 1; }
+lbzx.memory_access_size =    { return 1; }
+lha.memory_access_size =     { return 2; }
+lhau.memory_access_size =    { return 2; }
+lhaux.memory_access_size =   { return 2; }
+lhax.memory_access_size =    { return 2; }
+lhz.memory_access_size =     { return 2; }
+lhzu.memory_access_size =    { return 2; }
+lhzux.memory_access_size =   { return 2; }
+lhzx.memory_access_size =    { return 2; }
+lwz.memory_access_size =     { return 4; }
+lwzu.memory_access_size =    { return 4; }
+lwzux.memory_access_size =   { return 4; }
+lwzx.memory_access_size =    { return 4; }
+stb.memory_access_size =     { return 1; }
+stbu.memory_access_size =    { return 1; }
+stbux.memory_access_size =   { return 1; }
+stbx.memory_access_size =    { return 1; }
+sth.memory_access_size =     { return 2; }
+sthu.memory_access_size =    { return 2; }
+sthux.memory_access_size =   { return 2; }
+sthx.memory_access_size =    { return 2; }
+stw.memory_access_size =     { return 4; }
+stwu.memory_access_size =    { return 4; }
+stwux.memory_access_size =   { return 4; }
+stwx.memory_access_size =    { return 4; }
+lhbrx.memory_access_size =   { return 2; }
+lwbrx.memory_access_size =   { return 4; }
+sthbrx.memory_access_size =  { return 2; }
+stwbrx.memory_access_size =  { return 4; }
+lswi.memory_access_size =    { return 4; }
+lswx.memory_access_size =    { return 4; }
+stswi.memory_access_size =   { return 4; }
+stswx.memory_access_size =   { return 4; }
+lmw.memory_access_size =     { return 4; }
+stmw.memory_access_size =    { return 4; }
+lfd.memory_access_size =     { return 8; }
+lfdu.memory_access_size =    { return 8; }
+lfdux.memory_access_size =   { return 8; }
+lfdx.memory_access_size =    { return 8; }
+lfs.memory_access_size =     { return 4; }
+lfsu.memory_access_size =    { return 4; }
+lfsux.memory_access_size =   { return 4; }
+lfsx.memory_access_size =    { return 4; }
+stfd.memory_access_size =    { return 8; }
+stfdu.memory_access_size =   { return 8; }
+stfdux.memory_access_size =  { return 8; }
+stfdx.memory_access_size =   { return 8; }
+stfiwx.memory_access_size =  { return 4; }
+stfs.memory_access_size =    { return 4; }
+stfsu.memory_access_size =   { return 4; }
+stfsux.memory_access_size =  { return 4; }
+stfsx.memory_access_size =   { return 4; }
+dcba.memory_access_size =    { return 4; }
+dcbf.memory_access_size =    { return 4; }
+dcbi.memory_access_size =    { return 4; }
+dcbst.memory_access_size =   { return 4; }
+dcbt.memory_access_size =    { return 4; }
+dcbtst.memory_access_size =  { return 4; }
+dcbz.memory_access_size =    { return 4; }
+icbi.memory_access_size =    { return 4; }
+tlbia.memory_access_size =   { return 4; }
+tlbie.memory_access_size =   { return 4; }
+tlbsync.memory_access_size = { return 4; }
+eciwx.memory_access_size =   { return 4; }
+ecowx.memory_access_size =   { return 4; }
+eieio.memory_access_size =   { return 4; }
+isync.memory_access_size =   { return 4; }
+lwarx.memory_access_size =   { return 4; }
+stwcx_.memory_access_size =  { return 4; }
+sync.memory_access_size =    { return 4; }
+
+
+
+/**
+ * Returns the number of byte (chararcter) for load/store-string instructions
+ */
+action {int} loadstore_string_numbyte({CPU *} {cpu}) {  
+  cerr << "ISS Error: action memory_acces_size not set for: ";
+  disasm(cerr);
+  cerr << endl;
+  exit(1);
+}
+
+lswi.loadstore_string_numbyte =  { return nb ? nb : 32; }
+lswx.loadstore_string_numbyte =  { return cpu->GetXER(); }
+stswi.loadstore_string_numbyte = { return nb ? nb : 32; }
+stswx.loadstore_string_numbyte = { return cpu->GetXER(); }
+
+
+
+/**
+ * Returns the effective memory address of the target load / store instruction.
+ * In case of a load / store with update, provide the effective (non updated) address
+ */
+action {address_t} loadstore_effective_address({CPU *} {cpu}) { 
+  return cpu->GetEA();
+}
+
+
+/* Instruction SPLITTING !!!!!!!!!! */
+
+action {bool} is_splitted() {
+  return false;
+}
+
+action {list <Operation*>} split_into() {
+  cerr << "ISS Error: operation non splitable: ";
+  disasm(cerr);
+  cerr << endl;
+  exit(1);
+}
+
+
+// Integer LOADS with update 
+lbzu.is_splitted = {
+  return true;
+}
+lbzu.split_into = {
+  list<Operation*> l;
+  CodeType lbz_ctype=0;
+  lbz_ctype = 34 << 26;
+  lbz_ctype = lbz_ctype | (rd << 21);
+  lbz_ctype = lbz_ctype | (ra << 16);
+  lbz_ctype = lbz_ctype | (d & 0xffff);
+  l.push_back( new OpLbz(lbz_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  return l;
+}
+
+lbzux.is_splitted = {
+  return true;
+}
+lbzux.split_into = {
+  list<Operation*> l;
+  CodeType lbzx_ctype=0;
+  lbzx_ctype = 31 << 26;
+  lbzx_ctype = lbzx_ctype | (rd << 21);
+  lbzx_ctype = lbzx_ctype | (ra << 16);
+  lbzx_ctype = lbzx_ctype | (rb << 11);
+  lbzx_ctype = lbzx_ctype | (87 << 1);
+  l.push_back( new OpLbzx(lbzx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  return l;
+}
+
+lhzu.is_splitted = {
+  return true;
+}
+lhzu.split_into = {
+  list<Operation*> l;
+  CodeType lbz_ctype=0;
+  lbz_ctype = 40 << 26;
+  lbz_ctype = lbz_ctype | (rd << 21);
+  lbz_ctype = lbz_ctype | (ra << 16);
+  lbz_ctype = lbz_ctype | (d & 0xffff);
+  l.push_back( new OpLbz(lbz_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  return l;
+}
+
+lhzux.is_splitted = {
+  return true;
+}
+lhzux.split_into = {
+  list<Operation*> l;
+  CodeType lbzx_ctype=0;
+  lbzx_ctype = 31 << 26;
+  lbzx_ctype = lbzx_ctype | (rd << 21);
+  lbzx_ctype = lbzx_ctype | (ra << 16);
+  lbzx_ctype = lbzx_ctype | (rb << 11);
+  lbzx_ctype = lbzx_ctype | (279 << 1);
+  l.push_back( new OpLbzx(lbzx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  return l;
+}
+
+lwzu.is_splitted = {
+  return true;
+}
+lwzu.split_into = {
+  list<Operation*> l;
+  CodeType lwz_ctype=0;
+  lwz_ctype = 32 << 26;
+  lwz_ctype = lwz_ctype | (rd << 21);
+  lwz_ctype = lwz_ctype | (ra << 16);
+  lwz_ctype = lwz_ctype | (d & 0xffff);
+  l.push_back( new OpLwz(lwz_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+
+  return l;
+}
+
+lwzux.is_splitted = {
+  return true;
+}
+lwzux.split_into = {
+  list<Operation*> l;
+  CodeType lwzx_ctype=0;
+  lwzx_ctype = 31 << 26;
+  lwzx_ctype = lwzx_ctype | (rd << 21);
+  lwzx_ctype = lwzx_ctype | (ra << 16);
+  lwzx_ctype = lwzx_ctype | (rb << 11);
+  lwzx_ctype = lwzx_ctype | (23 << 1);
+  l.push_back( new OpLwzx(lwzx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  return l;
+}
+
+// Integer STORES with update 
+stbu.is_splitted = {
+  return true;
+}
+stbu.split_into = {
+  list<Operation*> l;
+
+  CodeType stb_ctype=0;
+  stb_ctype = 38 << 26;
+  stb_ctype = stb_ctype | (rs << 21);
+  stb_ctype = stb_ctype | (ra << 16);
+  stb_ctype = stb_ctype | (d & 0xffff);
+  l.push_back( new OpStb(stb_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+
+  return l;
+}
+
+stbux.is_splitted = {
+  return true;
+}
+stbux.split_into = {
+  list<Operation*> l;
+
+  CodeType stbx_ctype=0;
+  stbx_ctype = 31 << 26;
+  stbx_ctype = stbx_ctype | (rs << 21);
+  stbx_ctype = stbx_ctype | (ra << 16);
+  stbx_ctype = stbx_ctype | (rb << 11);
+  stbx_ctype = stbx_ctype | (215 << 1);
+  l.push_back( new OpStb(stbx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAddi(add_ctype,GetAddr()) );
+
+  return l;
+}
+
+sthu.is_splitted = {
+  return true;
+}
+sthu.split_into = {
+  list<Operation*> l;
+
+  CodeType stb_ctype=0;
+  stb_ctype = 44 << 26;
+  stb_ctype = stb_ctype | (rs << 21);
+  stb_ctype = stb_ctype | (ra << 16);
+  stb_ctype = stb_ctype | (d & 0xffff);
+  l.push_back( new OpStb(stb_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+
+  return l;
+}
+
+sthux.is_splitted = {
+  return true;
+}
+sthux.split_into = {
+  list<Operation*> l;
+
+  CodeType sthx_ctype=0;
+  sthx_ctype = 31 << 26;
+  sthx_ctype = sthx_ctype | (rs << 21);
+  sthx_ctype = sthx_ctype | (ra << 16);
+  sthx_ctype = sthx_ctype | (rb << 11);
+  sthx_ctype = sthx_ctype | (407 << 1);
+  l.push_back( new OpStb(sthx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAddi(add_ctype,GetAddr()) );
+
+  return l;
+}
+
+
+stwu.is_splitted = {
+  return true;
+}
+stwu.split_into = {
+  list<Operation*> l;
+
+  CodeType stw_ctype=0;
+  stw_ctype = 36 << 26;
+  stw_ctype = stw_ctype | (rs << 21);
+  stw_ctype = stw_ctype | (ra << 16);
+  stw_ctype = stw_ctype | (d & 0xffff);
+  l.push_back( new OpStw(stw_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+
+  return l;
+}
+
+stwux.is_splitted = {
+  return true;
+}
+stwux.split_into = {
+  list<Operation*> l;
+
+  CodeType stwx_ctype=0;
+  stwx_ctype = 31 << 26;
+  stwx_ctype = stwx_ctype | (rs << 21);
+  stwx_ctype = stwx_ctype | (ra << 16);
+  stwx_ctype = stwx_ctype | (rb << 11);
+  stwx_ctype = stwx_ctype | (151 << 1);
+  l.push_back( new OpStwx(stwx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  return l;
+}
+
+
+// Floating point LOADS with update 
+lfdu.is_splitted = {
+  return true;
+}
+lfdu.split_into = {
+  list<Operation*> l;
+  CodeType lfd_ctype=0;
+  lfd_ctype = 50 << 26;
+  lfd_ctype = lfd_ctype | (fd << 21);
+  lfd_ctype = lfd_ctype | (ra << 16);
+  lfd_ctype = lfd_ctype | (d & 0xffff);
+  l.push_back( new OpLfd(lfd_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  return l;
+}
+
+lfdux.is_splitted = {
+  return true;
+}
+lfdux.split_into = {
+  list<Operation*> l;
+  CodeType lfdx_ctype=0;
+  lfdx_ctype = 50 << 26;
+  lfdx_ctype = lfdx_ctype | (fd << 21);
+  lfdx_ctype = lfdx_ctype | (ra << 16);
+  lfdx_ctype = lfdx_ctype | (rb << 11);
+  lfdx_ctype = lfdx_ctype | (599 << 1);
+  l.push_back( new OpLfdx(lfdx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  return l;
+}
+
+lfsu.is_splitted = {
+  return true;
+}
+lfsu.split_into = {
+  list<Operation*> l;
+  CodeType lfs_ctype=0;
+  lfs_ctype = 50 << 26;
+  lfs_ctype = lfs_ctype | (fd << 21);
+  lfs_ctype = lfs_ctype | (ra << 16);
+  lfs_ctype = lfs_ctype | (d & 0xffff);
+  l.push_back( new OpLfs(lfs_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  return l;
+}
+
+lfsux.is_splitted = {
+  return true;
+}
+lfsux.split_into = {
+  list<Operation*> l;
+  CodeType lfsx_ctype=0;
+  lfsx_ctype = 50 << 26;
+  lfsx_ctype = lfsx_ctype | (fd << 21);
+  lfsx_ctype = lfsx_ctype | (ra << 16);
+  lfsx_ctype = lfsx_ctype | (rb << 11);
+  lfsx_ctype = lfsx_ctype | (535 << 1);
+  l.push_back( new OpLfsx(lfsx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  return l;
+}
+
+// Floating point stores with update 
+stfdu.is_splitted = {
+  return true;
+}
+stfdu.split_into = {
+  list<Operation*> l;
+  CodeType stfd_ctype=0;
+  stfd_ctype = 54 << 26;
+  stfd_ctype = stfd_ctype | (fs << 21);
+  stfd_ctype = stfd_ctype | (ra << 16);
+  stfd_ctype = stfd_ctype | (d & 0xffff);
+  l.push_back( new OpStfd(stfd_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  return l;
+}
+
+stfdux.is_splitted = {
+  return true;
+}
+stfdux.split_into = {
+  list<Operation*> l;
+  CodeType stfdx_ctype=0;
+  stfdx_ctype = 31 << 26;
+  stfdx_ctype = stfdx_ctype | (fs << 21);
+  stfdx_ctype = stfdx_ctype | (ra << 16);
+  stfdx_ctype = stfdx_ctype | (rb << 11);
+  stfdx_ctype = stfdx_ctype | (727 << 1);
+  l.push_back( new OpStfdx(stfdx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  return l;
+}
+
+stfsu.is_splitted = {
+  return true;
+}
+stfsu.split_into = {
+  list<Operation*> l;
+  CodeType stfs_ctype=0;
+  stfs_ctype = 52 << 26;
+  stfs_ctype = stfs_ctype | (fs << 21);
+  stfs_ctype = stfs_ctype | (ra << 16);
+  stfs_ctype = stfs_ctype | (d & 0xffff);
+  l.push_back( new OpStfs(stfs_ctype,GetAddr()) );
+
+  CodeType addi_ctype=0;
+  addi_ctype = 14 << 26;
+  addi_ctype = addi_ctype | (ra << 21);
+  addi_ctype = addi_ctype | (ra << 16);
+  addi_ctype = addi_ctype | (d & 0xffff);
+  l.push_back( new OpAddi(addi_ctype,GetAddr()) );
+  return l;
+}
+
+stfsux.is_splitted = {
+  return true;
+}
+stfsux.split_into = {
+  list<Operation*> l;
+  CodeType stfsx_ctype=0;
+  stfsx_ctype = 31 << 26;
+  stfsx_ctype = stfsx_ctype | (fs << 21);
+  stfsx_ctype = stfsx_ctype | (ra << 16);
+  stfsx_ctype = stfsx_ctype | (rb << 11);
+  stfsx_ctype = stfsx_ctype | (663 << 1);
+  l.push_back( new OpStfsx(stfsx_ctype,GetAddr()) );
+
+  CodeType add_ctype=0;
+  add_ctype = 31 << 26;
+  add_ctype = add_ctype | (ra << 21);
+  add_ctype = add_ctype | (ra << 16);
+  add_ctype = add_ctype | (rb << 11);
+  add_ctype = add_ctype | (266 << 1);
+  l.push_back( new OpAdd(add_ctype,GetAddr()) );
+  return l;
+}
+
+/**
+ * Returns the true value of single-precision to store
+ */
+action {uint32_t} get_single({CPU *} {cpu}) { 
+  cerr << "ISS Error: operation do not provide single precision information: ";
+  disasm(cerr);
+  cerr << endl;
+  exit(1);
+}
+
+stfs.get_single = { return cpu->GetFp32(fs); }
+stfsu.get_single = { return cpu->GetFp32(fs); }
+stfsux.get_single = { return cpu->GetFp32(fs); }
+stfsx.get_single = { return cpu->GetFp32(fs); }
+
+// Single precision not necessary here
+//stfiwx.get_single = { return cpu->GetFp32(fs); }
+
+
+/**
+ * Returns true if store need a conversion to single-precision value.
+ */
+action {bool} store_need_conversion() { 
+  return false;
+}
+
+stfs.store_need_conversion = { return true; }
+stfsu.store_need_conversion = { return true; }
+stfsux.store_need_conversion = { return true; }
+stfsx.store_need_conversion = { return true; }
+
+
+
+// Return true if load need a sign extension.
+action {bool} is_sign_extended() { 
+  return false;
+}
+
+lha.is_sign_extended = { return true; }
+lhau.is_sign_extended = { return true; }
+lhaux.is_sign_extended = { return true; }
+lhax.is_sign_extended = { return true; }
+
