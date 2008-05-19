@@ -636,6 +636,8 @@ void CPU<CONFIG>::Reset()
 	if(CONFIG::HAS_HASH2) SetHASH2(0);
 	if(CONFIG::HAS_RPA) SetRPA(0);
 	if(CONFIG::HAS_L2PM) SetL2PM(0);
+
+	effective_address = 0;
 }
 
 template <class CONFIG>
@@ -3710,6 +3712,7 @@ void CPU<CONFIG>::Int8Load(unsigned int rd, address_t ea)
 	Load<uint8_t>(value, ea);
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3719,6 +3722,7 @@ void CPU<CONFIG>::Int16Load(unsigned int rd, address_t ea)
 	Load<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) BigEndian2Host(value); // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3728,6 +3732,7 @@ void CPU<CONFIG>::SInt16Load(unsigned int rd, address_t ea)
 	Load<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) (int16_t) BigEndian2Host(value); // 16-bit to 32-bit sign extension
 	MonitorLoad(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3737,6 +3742,7 @@ void CPU<CONFIG>::Int32Load(unsigned int rd, address_t ea)
 	Load<uint32_t>(value, ea);
 	gpr[rd] = BigEndian2Host(value);
 	MonitorLoad(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3746,6 +3752,7 @@ void CPU<CONFIG>::Fp32Load(unsigned int fd, address_t ea)
 	Load<uint32_t>(value, ea);
 	fpu.SetFp32(fd, BigEndian2Host(value));
 	MonitorLoad(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3755,6 +3762,7 @@ void CPU<CONFIG>::Fp64Load(unsigned int fd, address_t ea)
 	Load<uint64_t>(value, ea);
 	fpu.SetFp64(fd, BigEndian2Host(value));
 	MonitorLoad(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3764,6 +3772,7 @@ void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, address_t ea)
 	Load<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) LittleEndian2Host(value); // reverse bytes and 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3773,6 +3782,7 @@ void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, address_t ea)
 	Load<uint32_t>(value, ea);
 	gpr[rd] = LittleEndian2Host(value); // reverse bytes
 	MonitorLoad(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3822,6 +3832,7 @@ void CPU<CONFIG>::Int8Store(unsigned int rs, address_t ea)
 	uint8_t value = gpr[rs];
 	Store<uint8_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3830,6 +3841,7 @@ void CPU<CONFIG>::Int16Store(unsigned int rs, address_t ea)
 	uint16_t value = Host2BigEndian((uint16_t) gpr[rs]);
 	Store<uint16_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3838,6 +3850,7 @@ void CPU<CONFIG>::Int32Store(unsigned int rs, address_t ea)
 	uint32_t value = Host2BigEndian(gpr[rs]);
 	Store<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3846,6 +3859,7 @@ void CPU<CONFIG>::Fp32Store(unsigned int fs, address_t ea)
 	uint32_t value = Host2BigEndian(fpu.GetFp32(fs));
 	Store<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3854,6 +3868,7 @@ void CPU<CONFIG>::Fp64Store(unsigned int fs, address_t ea)
 	uint64_t value = Host2BigEndian(fpu.GetFp64(fs));
 	Store<uint64_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3862,6 +3877,7 @@ void CPU<CONFIG>::FpStoreLSW(unsigned int fs, address_t ea)
 	uint32_t value = Host2BigEndian((uint32_t) fpu.GetFp64(fs));
 	Store<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3870,6 +3886,7 @@ void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, address_t ea)
 	uint16_t value = Host2LittleEndian((uint16_t) gpr[rs]);
 	Store<uint16_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
@@ -3878,6 +3895,7 @@ void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, address_t ea)
 	uint32_t value = Host2LittleEndian(gpr[rs]);
 	Store<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
+	effective_address = ea;
 }
 
 template <class CONFIG>
