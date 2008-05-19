@@ -1,0 +1,338 @@
+/*
+ *  Copyright (c) 2007,
+ *  INRIA Futurs
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Eric Renard (erenard@lri.fr)
+ *          Sylvain Girbal (sylvain.girbal@inria.fr)
+ *          David Parello (david.parello@univ-perp.fr)
+ */
+
+{
+#include <stdarg.h>
+
+typedef uint32_t registers_written_t;
+
+#define RegNone					0x00000000
+#define RegCTR					0x00000001
+#define RegLR					0x00000002
+
+typedef uint32_t function_t;
+
+#define FnInvalid				0x00000000
+#define FnNop					0x00000001
+#define FnIntBasic				0x00000002
+#define FnIntBasicSerial			0x00000004
+#define FnIntExtended				0x00000008
+#define FnFpCommon				0x00000010
+#define FnFpFPSCR				0x00000020
+#define FnFpFPSCRSerial				0x00000040
+#define FnCache					0x00000080
+#define FnCacheSerial				0x00000100
+#define FnBranch				0x00000200
+#define FnConditionalBranch			0x00000400
+#define FnBranchCountReg			0x00000800
+#define FnBranchLinkReg				0x00001000
+#define FnCondRegister				0x00002000
+#define FnSysRegister				0x00004000
+#define FnSysRegisterSerial			0x00008000
+#define FnSysCall				0x00010000
+#define FnMac					0x00020000
+
+#define FnLoadInstruction			0x10000000
+#define FnLoad					0x10000000
+#define FnLoadByteReversed			0x11000000
+#define FnLoadFloat				0x12000000
+#define FnLoadMultiple				0x13000000
+#define FnLoadMultipleRegList                   0x13100000
+#define FnLoadString				0x14000000
+#define FnLoadStringImm				0x15000000
+#define FnLoadSerial				0x16000000
+
+#define FnStore					0x20000000
+#define FnStoreByteReversed			0x21000000
+#define FnStoreFloat				0x22000000
+#define FnStoreMultiple				0x23000000
+#define FnStoreMultipleRegList                  0x23100000
+#define FnStoreString				0x24000000
+#define FnStoreStringImm			0x25000000
+#define FnStoreSerial				0x26000000
+#define FnDataCacheBA				0x27000000
+#define FnDataCacheBF				0x28000000
+#define FnDataCacheBI				0x29000000
+
+//STF
+#define FnAccelerator				0x40000000
+#define FnAcceleratorInit			0x40000001
+#define FnAcceleratorMTA			0x40000002
+#define FnAcceleratorMFA			0x40000003
+//EOSTF
+
+#define FnPrefetchLoad                          0x80000000
+
+  static char *get_function_name(function_t fn)
+  { static char buffer[256];
+    char *buf = buffer;
+    *buf = 0;
+    if(!fn) buf += sprintf(buf, "FnInvalid"); 
+    else    buf += sprintf(buf, "FnValid");
+    return buffer;
+  }
+
+}
+
+var registers_written : {registers_written_t} = {0}
+
+/** Functions **/
+var function : {function_t}
+constructor action initialize_function() {
+  function = FnInvalid;
+  registers_written = RegNone;
+}
+
+/** Branch (FnBranch | FnConditionalBranch | FnBranchCountReg | FnBranchLinkReg) **/
+b.initialize_function = {
+  function = FnBranch;
+  //  registers_written = (lk ? RegLR : RegNone);
+}
+bc.initialize_function = {
+  function = FnConditionalBranch;
+  //  registers_written = (lk ? RegLR : RegNone) | (((bo & 4) == 0) ? RegCTR : RegNone);
+}
+bcctr.initialize_function = {
+  function = FnBranchCountReg;
+  //  registers_written = (lk ? RegLR : RegNone);
+}
+bclr.initialize_function = {
+  function = FnBranchLinkReg;
+  //  registers_written = (lk ? RegLR : RegNone) | (((bo & 4) == 0) ? RegCTR : RegNone);
+}
+
+/** System Register (FnSysRegister | FnSysRegisterSerial) **/
+eieio.initialize_function =   { function = FnSysRegister; }
+isync.initialize_function =   { function = FnSysRegisterSerial; }
+mfmsr.initialize_function =   { function = FnSysRegister; }
+mfspr.initialize_function =   { function = FnSysRegisterSerial; }
+mfsr.initialize_function =    { function = FnSysRegister; }
+mfsrin.initialize_function =  { function = FnSysRegisterSerial; }
+mftb.initialize_function =    { function = FnSysRegister; }
+mtmsr.initialize_function =   { function = FnSysRegisterSerial; }
+mtspr.initialize_function = {
+	function = FnSysRegisterSerial;
+	uint32_t d = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	registers_written = ((d == 8) ? RegLR : RegNone) | ((d == 9) ? RegCTR : RegNone);
+}
+mtsr.initialize_function =    { function = FnSysRegisterSerial; }
+mtsrin.initialize_function =  { function = FnSysRegisterSerial; }
+rfi.initialize_function =     { function = FnSysRegisterSerial; }
+sc.initialize_function =      { function = FnSysCall; }
+sync.initialize_function =    { function = FnSysRegister; }
+tlbsync.initialize_function = { function = FnSysRegister; }
+tlbia.initialize_function =   { function = FnSysRegister; }
+tlbie.initialize_function =   { function = FnSysRegister; }
+
+/** Condition Register **/
+crand.initialize_function =   { function = FnCondRegister; }
+crandc.initialize_function =  { function = FnCondRegister; }
+creqv.initialize_function =   { function = FnCondRegister; }
+crnand.initialize_function =  { function = FnCondRegister; }
+crnor.initialize_function =   { function = FnCondRegister; }
+cror.initialize_function =    { function = FnCondRegister; }
+crorc.initialize_function =   { function = FnCondRegister; }
+crxor.initialize_function =   { function = FnCondRegister; }
+mcrf.initialize_function =    { function = FnCondRegister; }
+mcrxr.initialize_function =   { function = FnCondRegister; }
+mfcr.initialize_function =    { function = FnCondRegister; }
+mtcrf.initialize_function =   { function = FnCondRegister; }
+
+/** Integer (FnIntBasic | FnIntBasicSerial | FnIntExtended) **/
+add.initialize_function =     { function = FnIntBasic; }
+addc.initialize_function =    { function = FnIntBasic; }
+adde.initialize_function =    { function = FnIntBasicSerial; }
+addi.initialize_function =    { function = FnIntBasic; }
+addic.initialize_function =   { function = FnIntBasic; }
+addic_.initialize_function =  { function = FnIntBasic; }
+addis.initialize_function =   { function = FnIntBasic; }
+addme.initialize_function =   { function = FnIntBasicSerial; }
+addze.initialize_function =   { function = FnIntBasicSerial; }
+divw.initialize_function =    { function = FnIntExtended; }
+divwu.initialize_function =   { function = FnIntExtended; }
+mulhw.initialize_function =   { function = FnIntBasic; }
+mulhwu.initialize_function =  { function = FnIntBasic; }
+mulli.initialize_function =   { function = FnIntExtended; }
+mullw.initialize_function =   { function = FnIntExtended; }
+neg.initialize_function =     { function = FnIntBasic; }
+subf.initialize_function =    { function = FnIntBasic; }
+subfc.initialize_function =   { function = FnIntBasic; }
+subfe.initialize_function =   { function = FnIntBasicSerial; }
+subfic.initialize_function =  { function = FnIntBasic; }
+subfme.initialize_function =  { function = FnIntBasicSerial; }
+subfze.initialize_function =  { function = FnIntBasicSerial; }
+cmp.initialize_function =     { function = FnIntBasic; }
+cmpi.initialize_function =    { function = FnIntBasic; }
+cmpl.initialize_function =    { function = FnIntBasic; }
+cmpli.initialize_function =   { function = FnIntBasic; }
+and.initialize_function =     { function = FnIntBasic; }
+andc.initialize_function =    { function = FnIntBasic; }
+andi_.initialize_function =   { function = FnIntBasic; }
+andis_.initialize_function =  { function = FnIntBasic; }
+cntlzw.initialize_function =  { function = FnIntBasic; }
+eqv.initialize_function =     { function = FnIntBasic; }
+extsb.initialize_function =   { function = FnIntBasic; }
+extsh.initialize_function =   { function = FnIntBasic; }
+nand.initialize_function =    { function = FnIntBasic; }
+nor.initialize_function =     { function = FnIntBasic; }
+or.initialize_function =      { function = FnIntBasic; }
+orc.initialize_function =     { function = FnIntBasic; }
+ori.initialize_function =     { function = FnIntBasic; }
+oris.initialize_function =    { function = FnIntBasic; }
+xor.initialize_function =     { function = FnIntBasic; }
+xori.initialize_function =    { function = FnIntBasic; }
+xoris.initialize_function =   { function = FnIntBasic; }
+rlwimi.initialize_function =  { function = FnIntBasic; }
+rlwinm.initialize_function =  { function = FnIntBasic; }
+rlwnm.initialize_function =   { function = FnIntBasic; }
+slw.initialize_function =     { function = FnIntBasic; }
+sraw.initialize_function =    { function = FnIntBasic; }
+srawi.initialize_function =   { function = FnIntBasic; }
+srw.initialize_function =     { function = FnIntBasic; }
+/*
+tw.initialize_function =      { function = FnIntBasicSerial; }
+twi.initialize_function =     { function = FnIntBasicSerial; }
+*/
+tw.initialize_function =      { function = FnSysCall; }
+twi.initialize_function =     { function = FnSysCall; }
+
+/** Floating (FnFpCommon |FnFpFPSCR | FnFpFPSCRSerial) **/
+fadd.initialize_function =    { function = FnFpCommon; }
+fadds.initialize_function =   { function = FnFpCommon; }
+fdiv.initialize_function =    { function = FnFpCommon; }
+fdivs.initialize_function =   { function = FnFpCommon; }
+fmul.initialize_function =    { function = FnFpCommon; }
+fmuls.initialize_function =   { function = FnFpCommon; }
+fres.initialize_function =    { function = FnFpCommon; }
+frsqrte.initialize_function = { function = FnFpCommon; }
+fsub.initialize_function =    { function = FnFpCommon; }
+fsubs.initialize_function =   { function = FnFpCommon; }
+fsel.initialize_function =    { function = FnFpCommon; }
+fsqrt.initialize_function =   { function = FnFpCommon; }
+fsqrts.initialize_function =  { function = FnFpCommon; }
+fmadd.initialize_function =   { function = FnFpCommon; }
+fmadds.initialize_function =  { function = FnFpCommon; }
+fmsub.initialize_function =   { function = FnFpCommon; }
+fmsubs.initialize_function =  { function = FnFpCommon; }
+fnmadd.initialize_function =  { function = FnFpCommon; }
+fnmadds.initialize_function = { function = FnFpCommon; }
+fnmsub.initialize_function =  { function = FnFpCommon; }
+fnmsubs.initialize_function = { function = FnFpCommon; }
+fcmpo.initialize_function =   { function = FnFpCommon; }
+fcmpu.initialize_function =   { function = FnFpCommon; }
+fctiw.initialize_function =   { function = FnFpCommon; }
+fctiwz.initialize_function =  { function = FnFpCommon; }
+frsp.initialize_function =    { function = FnFpCommon; }
+fabs.initialize_function =    { function = FnFpCommon; }
+fmr.initialize_function =     { function = FnFpCommon; }
+fnabs.initialize_function =   { function = FnFpCommon; }
+fneg.initialize_function =    { function = FnFpCommon; }
+mcrfs.initialize_function =   { function = FnFpFPSCRSerial; }
+mffs.initialize_function =    { function = FnFpFPSCRSerial; }
+mtfsb0.initialize_function =  { function = FnFpFPSCR; }
+mtfsb1.initialize_function =  { function = FnFpFPSCR; }
+mtfsf.initialize_function =   { function = FnFpFPSCR; }
+mtfsfi.initialize_function =  { function = FnFpFPSCR; }
+
+/** Load Store (FnLoad | FnLoadFloat | FnLoadMultiple | FnLoadSerial | FnStore | FnStoreFloat | FnStoreMultiple | FnStoreSerial | FnCache | FnCacheSerial) **/
+dcba.initialize_function =    { function = FnDataCacheBA; }
+dcbf.initialize_function =    { function = FnDataCacheBF; }
+dcbi.initialize_function =    { function = FnDataCacheBI; }
+dcbst.initialize_function =   { function = FnCacheSerial; }
+dcbt.initialize_function =    { function = FnCache; }
+dcbtst.initialize_function =  { function = FnCache; }
+dcbz.initialize_function =    { function = FnCacheSerial; }
+eciwx.initialize_function =   { function = FnLoad; }
+ecowx.initialize_function =   { function = FnStore; }
+icbi.initialize_function =    { function = FnCacheSerial; }
+lbz.initialize_function =     { function = FnLoad; }
+lbzu.initialize_function =    { function = FnLoad; }
+lbzux.initialize_function =   { function = FnLoad; }
+lbzx.initialize_function =    { function = FnLoad; }
+lha.initialize_function =     { function = FnLoad; }
+lhau.initialize_function =    { function = FnLoad; }
+lhaux.initialize_function =   { function = FnLoad; }
+lhax.initialize_function =    { function = FnLoad; }
+lhz.initialize_function =     { function = FnLoad; }
+lhzu.initialize_function =    { function = FnLoad; }
+lhzux.initialize_function =   { function = FnLoad; }
+lhzx.initialize_function =    { function = FnLoad; }
+lwz.initialize_function =     { function = FnLoad; }
+lwzu.initialize_function =    { function = FnLoad; }
+lwzux.initialize_function =   { function = FnLoad; }
+lwzx.initialize_function =    { function = FnLoad; }
+stb.initialize_function =     { function = FnStore; }
+stbu.initialize_function =    { function = FnStore; }
+stbux.initialize_function =   { function = FnStore; }
+stbx.initialize_function =    { function = FnStore; }
+sth.initialize_function =     { function = FnStore; }
+sthu.initialize_function =    { function = FnStore; }
+sthux.initialize_function =   { function = FnStore; }
+sthx.initialize_function =    { function = FnStore; }
+stw.initialize_function =     { function = FnStore; }
+stwu.initialize_function =    { function = FnStore; }
+stwux.initialize_function =   { function = FnStore; }
+stwx.initialize_function =    { function = FnStore; }
+lhbrx.initialize_function =   { function = FnLoadByteReversed; }
+lwbrx.initialize_function =   { function = FnLoadByteReversed; }
+sthbrx.initialize_function =  { function = FnStoreByteReversed; }
+stwbrx.initialize_function =  { function = FnStoreByteReversed; }
+lmw.initialize_function =     { function = FnLoadMultiple; }
+lswi.initialize_function =    { function = FnLoadStringImm; }
+lswx.initialize_function =    { function = FnLoadString; }
+stswi.initialize_function =   { function = FnStoreStringImm; }
+stswx.initialize_function =   { function = FnStoreString; }
+stmw.initialize_function =    { function = FnStoreMultiple; }
+lfd.initialize_function =     { function = FnLoadFloat; }
+lfdu.initialize_function =    { function = FnLoadFloat; }
+lfdux.initialize_function =   { function = FnLoadFloat; }
+lfdx.initialize_function =    { function = FnLoadFloat; }
+lfs.initialize_function =     { function = FnLoadFloat; }
+lfsu.initialize_function =    { function = FnLoadFloat; }
+lfsux.initialize_function =   { function = FnLoadFloat; }
+lfsx.initialize_function =    { function = FnLoadFloat; }
+stfd.initialize_function =    { function = FnStoreFloat; }
+stfdu.initialize_function =   { function = FnStoreFloat; }
+stfdux.initialize_function =  { function = FnStoreFloat; }
+stfdx.initialize_function =   { function = FnStoreFloat; }
+stfiwx.initialize_function =  { function = FnStoreFloat; }
+stfs.initialize_function =    { function = FnStoreFloat; }
+stfsu.initialize_function =   { function = FnStoreFloat; }
+stfsux.initialize_function =  { function = FnStoreFloat; }
+stfsx.initialize_function =   { function = FnStoreFloat; }
+lwarx.initialize_function =   { function = FnLoad; }
+stwcx_.initialize_function =  { function = FnStoreSerial; }
