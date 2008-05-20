@@ -4262,6 +4262,8 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 	
 	switch(memop->GetSize()) {
 	case 1:
+		address = address ^ munged_address_mask8;
+
 		val8 = (uint8_t)memop->GetWriteValue();
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrWrite(address, &val8, 1);
@@ -4275,6 +4277,8 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 	case 2:
 		val16 = (uint16_t)memop->GetWriteValue();
 		val16 = Host2BigEndian(val16);
+
+		address = address ^ munged_address_mask16;
 
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrWrite(address, (uint8_t *)&val16, 2);
