@@ -826,10 +826,6 @@ private:
 	*/
 
 
-	static const int TRUE;
-	static const int FALSE;
-	static const int OK;
-	static const int ERROR;
 	static const double BIGNUM;
 	
 	static const int WAVE_PIPE;

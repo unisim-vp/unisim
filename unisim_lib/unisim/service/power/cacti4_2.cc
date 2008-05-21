@@ -56,12 +56,33 @@
 #define NULL 0
 #endif
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
+#ifdef TRUE
+#undef TRUE
+#endif
+
+#ifdef FALSE
+#undef FALSE
+#endif
+
+#ifdef OK
+#undef OK
+#endif
+
 namespace unisim {
 namespace service {
 namespace power {
 
 using std::cerr;
 using std::endl;
+
+const int TRUE = 1;
+const int FALSE = 0;
+const int OK = 1;
+const int ERROR = 0;
 
 const int Cacti4_2::CHUNKSIZE = 8;
 
@@ -123,10 +144,6 @@ const double Cacti4_2::Vbitpre = (3.3);
 const double Cacti4_2::Vt = (1.09);
 const double Cacti4_2::Vbitsense = (0.05*5/*Vdd*/);
 const double Cacti4_2::Vbitswing = (0.20*5/*Vdd*/);
-const int Cacti4_2::TRUE = 1;
-const int Cacti4_2::FALSE = 0;
-const int Cacti4_2::OK = 1;
-const int Cacti4_2::ERROR = 0;
 const double Cacti4_2::BIGNUM = 1e30;
 const int Cacti4_2::WAVE_PIPE = 3;
 const int Cacti4_2::MAX_COL_MUX = 16;
