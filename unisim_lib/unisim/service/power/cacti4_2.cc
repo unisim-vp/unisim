@@ -52,6 +52,10 @@
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+#ifndef NULL
+#define NULL 0
+#endif
+
 namespace unisim {
 namespace service {
 namespace power {

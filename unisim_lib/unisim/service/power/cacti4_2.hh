@@ -828,9 +828,6 @@ private:
 
 	static const int TRUE;
 	static const int FALSE;
-	#ifndef NULL
-	#define NULL 0
-	#endif
 	static const int OK;
 	static const int ERROR;
 	static const double BIGNUM;
