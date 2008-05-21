@@ -835,8 +835,6 @@ private:
 	static const int ERROR;
 	static const double BIGNUM;
 	
-	#define MAX(a,b) (((a)>(b))?(a):(b))
-
 	static const int WAVE_PIPE;
 	static const int MAX_COL_MUX;
 

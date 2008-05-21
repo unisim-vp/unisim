@@ -46,6 +46,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef MAX
+#undef MAX
+#endif
+
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 namespace unisim {
 namespace service {
 namespace power {
