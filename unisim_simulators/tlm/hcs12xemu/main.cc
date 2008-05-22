@@ -70,7 +70,7 @@
 #endif
 
 
-static const bool DEBUG_INFORMATION = false;
+//static const bool DEBUG_INFORMATION = false;
 
 bool debug_enabled;
 
@@ -284,7 +284,7 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
-	//  - PowerPC processor
+	//  - 68HCS12X processor
 	CPU *cpu =new CPU("cpu");
 	//  - Front side bus
 	FRONT_SIDE_BUS *bus = new FRONT_SIDE_BUS("bus");
@@ -347,7 +347,7 @@ int sc_main(int argc, char *argv[])
 	//  - Front Side Bus
 	(*bus)["cycle-time"] = fsb_cycle_time;
 
-	//  - PowerPC processor
+	//  - 68HCS12X processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
 	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
 	(*cpu)["bus-cycle-time"] = fsb_cycle_time;

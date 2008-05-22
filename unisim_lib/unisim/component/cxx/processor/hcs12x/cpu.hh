@@ -253,6 +253,7 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 	
+	
 	/* TODO:
 	 * Stop All Clocks and puts the device in standby mode.
 	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode. 
@@ -285,8 +286,6 @@ public:
 	void memWrite8(physical_address_t addr,uint8_t val);
 	uint16_t memRead16(physical_address_t addr);
 	void memWrite16(physical_address_t addr,uint16_t val);
-	
-//	physical_address_t addr = cpu->mmc->getPhysicalAddress(logicalAddress, type, WO_GLOBAL_ADDRESS);
 	
 	/* ******** END MEM ACCESS ROUTINES ****** */
 

@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Reda NOUACER (reda.nouacer@cea.fr)
  */
  
 
@@ -59,7 +60,6 @@ using unisim::service::interfaces::Function;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Line;
 
-//uint32_t HCS12X::FSB_WIDTH = 2; // two bytes
  
 HCS12X:: 
 HCS12X(const sc_module_name& name, Object *parent) :
@@ -210,7 +210,9 @@ BusSynchronize() {
 	cpu_time = sc_time_stamp();
 	last_cpu_time = sc_time_stamp();
 	bus_time = sc_time_stamp();
-	return;
+	
+// 20080522 REDA: move 'return' to the end of function 	
+//	return;
 
 	if( verbose_tlm_bus_synchronize && inherited::logger_import)
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -251,6 +253,10 @@ BusSynchronize() {
 		(*inherited::logger_import) << DebugInfo << LOCATION
 			<< "Bus synchro END" 
 			<< Endl << EndDebugInfo;
+
+// 20080522 REDA: replace the above moved 'return' 	
+	return;
+
 }
 	
  

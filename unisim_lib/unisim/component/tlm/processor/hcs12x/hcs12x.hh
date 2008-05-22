@@ -29,7 +29,8 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Reda Nouacer (reda.nouacer@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Reda NOUACER (reda.nouacer@cea.fr)
  */
  
 #ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_HCS12X_HH__
