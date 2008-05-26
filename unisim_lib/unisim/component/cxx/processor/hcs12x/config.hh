@@ -62,6 +62,7 @@ struct CONFIG {
 	 */
 	static const bool DEBUG_ENABLE				= true;
 	static const bool DEBUG_EXCEPTION_ENABLE	= false;
+	static const bool REGISTERS_INFO			= true;
 	static const bool HAS_HARD_RESET			= false;
 	static const bool HAS_SOFT_RESET			= false;
 	static const bool HAS_SOFTWARE_INTERRUPT	= false;

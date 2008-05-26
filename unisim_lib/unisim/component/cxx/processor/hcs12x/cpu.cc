@@ -353,12 +353,19 @@ void CPU::Step()
 		VerboseDumpRegsEnd();
 		
 		instruction_counter++;
+
+		RegistersInfo();
 	
 	/*		
 		if(requires_finished_instruction_reporting)
 			if(memory_access_reporting_import)
 				memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
 	*/	
+
+		if(requires_finished_instruction_reporting)
+			if(memory_access_reporting_import)
+				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
+
 
 		if(HasAsynchronousInterrupt())
 		{
@@ -582,6 +589,15 @@ void CPU::VerboseDumpRegsEnd() {
 			<< "Register dump at the end of instruction execution: " << Endl;
 		VerboseDumpRegs();
 		(*logger_import) << EndDebugInfo;
+	}
+}
+
+inline INLINE
+void CPU::RegistersInfo() {
+
+	if (CONFIG::REGISTERS_INFO) {
+		cout << "CCR=0x" << std::hex << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
+		cout << "D  =0x" << getRegD()     << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << "\n";
 	}
 }
 

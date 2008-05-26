@@ -473,6 +473,8 @@ protected:
 	inline void VerboseDumpRegsStart() GCC_INLINE;
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
 
+	inline void RegistersInfo() GCC_INLINE;
+	
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
 	/** indicates if the finished instructions require to be reported */
