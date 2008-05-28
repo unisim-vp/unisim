@@ -245,6 +245,9 @@ Generator::decoder_decl( Product_t& _product ) const {
     _product.code( " Operation" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( " *Decode(%s addr, %s insn);\n", isa().m_addrtype.str(), codetype_constref().str() );
+    _product.code( " std::vector<DecodeTableEntry" );
+    _product.template_abbrev( isa().m_tparams );
+    _product.code( " > const& GetDecodeTable() const { return decode_table; };\n" );
     _product.code( " virtual void Fetch" );
     insn_fetch_protoargs( _product );
     _product.code( " ;\n" );
