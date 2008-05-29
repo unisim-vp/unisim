@@ -53,7 +53,7 @@ ldaab_imm.execute = {
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->clrV();
 	if (opr8i == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
-	if (opr8i < 0) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+	if ((opr8i & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 }
 
 // LDAA or LDAB opr8a
