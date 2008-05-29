@@ -41,7 +41,7 @@ t_ab_ba.disasm = {
 }
 
 t_ab_ba.execute = {
-	int8_t val;
+	uint8_t val;
 	
 	if (b == 0) {
 		val = cpu->getRegA();
@@ -54,7 +54,7 @@ t_ab_ba.execute = {
 // CRC flags 0->V; setZ; setN
 	cpu->ccr->clrV();
 	if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
-	if (val < 0) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
+	if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 }
 
 // ****************  Common Section to HCS12X ( HLS = 0 ) *************
@@ -164,7 +164,7 @@ exg_hcs12.execute = {
 
 // ***************************  TRANSFER Instructions
 
-// TAP or TFR or TPA or TSX or TSY or TXS or TYS or SEX
+// TFR or TPA or TSX or TSY or TXS or TYS or SEX
 op tfr_hcs12(0xB7[8]:> <:0b0[1]:lms[3]:hls[1]:lls[3])  
 /*
  * lms sourceRegister index
@@ -214,6 +214,7 @@ tfr_hcs12.execute = {
 
 	uint8_t srcSize, dstSize; 
 	uint8_t rrSrc, rrDst;
+	uint8_t oldCCRLow = cpu->ccr->getCCRLow();
 	
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
@@ -264,6 +265,9 @@ tfr_hcs12.execute = {
 		cpu->eblb->setter<uint8_t>(rrDst, tmp);
 	}
 	
+	if ((oldCCRLow & 0x40) == 0x00) {
+		cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() & 0xBF);
+	}
 }
 
 // ****************  Specific Section to HCS12X ( HLS = 1 ) *************
@@ -383,6 +387,7 @@ exg_hcs12x.execute = {
 
 	uint8_t srcSize, dstSize; 
 	uint8_t rrSrc, rrDst;
+	uint8_t oldCCRLow = cpu->ccr->getCCRLow();
 	
 	// Test du num de registre pour choisir TMP1, TMP2, TMP3, CCR, CCRL, CCRH, CCRW
 	switch (lms) {
@@ -496,6 +501,10 @@ exg_hcs12x.execute = {
 		 	}
 		 }
 	}	
+	
+	if ((oldCCRLow & 0x40) == 0x00) {
+		cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() & 0xBF);
+	}
 }
 
 // *************************** HCS12X - TRANSFER Instructions
