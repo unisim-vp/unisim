@@ -1929,23 +1929,95 @@ daa.execute = {
 	uint8_t hBit = cpu->ccr->getH();
 	uint8_t cBit = cpu->ccr->getC();
 
-	if (hBit == 1) {
-		uint8_t result, result0, carry_out0, carry_out, overflow;
+	uint8_t overflow, carry_out, result;
 
-		uint8_t aVal = cpu->getRegA();
-		
-		if (hBit == 1) {
-			Add8(result0, carry_out0, overflow, aVal, 0x06, 0x0);
-			Add8(result, carry_out, overflow, result0, carry_out0 << 4, 0x0); 
-		}
-		
-		cpu->setRegA(result);
-		
-		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();} 
-		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	uint8_t aVal = cpu->getRegA(); 
+	uint8_t a74 =  aVal >> 4;
+	uint8_t a30 = aVal & 0x0F;
+
 	
-		if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
-		if ((result & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
+	if ((cBit == 0) &&
+		(a74 < 0x9) &&
+		(hBit == 0) &&
+		(a30 > 0x9))
+	{
+		Add8(result, carry_out, overflow, aVal, 0x06, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->clrC();
 	}
+	
+	if ((cBit == 0) &&
+		(a74 < 0xA) &&
+		(hBit == 1) &&
+		(a30 < 0x4))
+	{
+		Add8(result, carry_out, overflow, aVal, 0x06, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->clrC();
+	}
+
+	if ((cBit == 0) &&
+		(a74 > 0x9) &&
+		(hBit == 0) &&
+		(a30 < 0xA))
+	{
+		Add8(result, carry_out, overflow, aVal, 0x60, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->setC();
+	}
+
+	if ((cBit == 0) &&
+		(a74 > 0x8) &&
+		(hBit == 0) &&
+		(a30 > 0x9))
+	{
+		Add8(result, carry_out, overflow, aVal, 0x66, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->setC();
+	}
+
+	if ((cBit == 0) &&
+		(a74 > 0x9) &&
+		(hBit == 1) &&
+		(a30 < 0x4))
+	{
+		Add8(result, carry_out, overflow, aVal, 0x66, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->setC();
+	}
+
+	if ((cBit == 1) &&
+		(a74 < 0x3) &&
+		(hBit == 0) &&
+		(a30 < 0xA))
+	{
+		Add8(result, carry_out, overflow, aVal, 0x60, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->setC();
+	}
+
+	if ((cBit == 1) &&
+		(a74 < 0x3) &&
+		(hBit == 0) &&
+		(a30 > 0x9))
+	{
+		Add8(result, carry_out, overflow, aVal, 0x66, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->setC();
+	}
+
+	if ((cBit == 1) &&
+		(a74 < 0x4) &&
+		(hBit == 1) &&
+		(a30 < 0x4))
+	{
+		Add8(result, carry_out, overflow, aVal, 0x66, 0x00);
+		cpu->setRegA(result);
+		cpu->ccr->setC();
+	}
+	
+	if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+	if (result == 0x00) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if (overflow == 1) cpu->ccr->setV(); else cpu->ccr->clrV(); 
 }
 
