@@ -259,3 +259,26 @@ AC_ARG_ENABLE(release,
 	esac], [unisim_enabled_release=no])
 	AM_CONDITIONAL(COND_release, test x$unisim_enabled_release = xyes)
 ])
+
+
+## UNISIM_CHECK_PTHREAD
+## Checks if the pthread library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_PTHREAD], [
+    # Check if pthread path has been overloaded
+    AC_ARG_WITH(pthread,
+	AS_HELP_STRING([--with-pthread=<path>], [pthread library to use (will be completed with /include and /lib)]))
+    if test "x$with_pthread" != "x"; then
+	AC_MSG_NOTICE([using pthread at $with_pthread])
+	CPPFLAGS=${CPPFLAGS}" -I$with_pthread/include"
+    fi
+	
+    # Check for some pthread graph headers
+    AC_CHECK_HEADERS([pthread/graph/adjacency_list.hpp pthread/graph/topological_sort.hpp pthread/graph/visitors.hpp],,\
+	AC_MSG_ERROR([pthread graph headers not found. Please install the pthread graph development library. Use --with-pthread=<path> to overload default includes search path.]))
+    # Check for some pthread thread headers
+    AC_CHECK_HEADERS([pthread/thread/mutex.hpp],,\
+	AC_MSG_ERROR([pthread thread headers not found. Please install the pthread thread development library. Use --with-pthread=<path> to overload default includes search path.]))
+])
+
