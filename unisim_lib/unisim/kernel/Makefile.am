@@ -3,6 +3,11 @@ sharedir = $(prefix)/share/unisim_lib/unisim/kernel
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
+if COND_clm
+SUBDIRS += clm
+INCLUDE_SUBDIRS += clm
+endif
+
 if COND_tlm
 SUBDIRS += tlm
 INCLUDE_SUBDIRS += tlm

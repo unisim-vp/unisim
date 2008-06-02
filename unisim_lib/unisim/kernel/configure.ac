@@ -40,6 +40,7 @@ AM_INIT_AUTOMAKE
 
 AC_PROG_INSTALL
 
+UNISIM_CONFIG_SUBDIR(unisim-kernel-clm, clm)
 UNISIM_CONFIG_SUBDIR(unisim-kernel-tlm, tlm)
 UNISIM_CONFIG_SUBDIR(unisim-kernel-service, service)
 

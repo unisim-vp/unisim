@@ -9,6 +9,11 @@ SUBDIRS += cxx
 INCLUDE_SUBDIRS += cxx
 endif
 
+if COND_clm
+SUBDIRS += clm
+INCLUDE_SUBDIRS += clm
+endif
+
 if COND_tlm
 SUBDIRS += tlm
 INCLUDE_SUBDIRS += tlm

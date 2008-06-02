@@ -45,6 +45,7 @@ AC_PROG_INSTALL
 AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-component-cxx, cxx)
+UNISIM_CONFIG_SUBDIR(unisim-component-clm, clm)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm, tlm)
 
 # launch the generation of makefiles
