@@ -114,6 +114,7 @@ UNISIM_LINK(unisim_component_cxx_processor_powerpc)
 #UNISIM_LINK(unisim_component_cxx_bridge_pci_isa)
 UNISIM_LINK(unisim_component_cxx_memory_ram)
 #UNISIM_LINK(unisim_component_cxx_memory_flash_am29lv)
+UNISIM_LINK(pthread)
 
 # files to generate
 #   this should include all the makefiles to generate
