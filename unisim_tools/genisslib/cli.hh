@@ -24,16 +24,15 @@ struct CLI {
   char const*            m_displayname;
   char const*            m_callname;
   intptr_t               m_opt_tabstop;
-  intptr_t               m_optc;
-  
-  enum Appearances_t { AtMostOnce, Unlimited, Once };
   
   struct Exit_t { int m_value; Exit_t( int _value ) : m_value( _value ) {} };
   
   struct Args_t {
     virtual ~Args_t() {};
-    virtual bool         match( Appearances_t _appearances, ... ) = 0;
-    virtual char const*  pop();
+    virtual bool         match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) = 0;
+    virtual bool         match( bool _active, char const* _shortdesc, char const* _longdesc ) = 0;
+    virtual char const*  pop_front();
+    virtual char const*  front() const;
   };
   
   CLI();

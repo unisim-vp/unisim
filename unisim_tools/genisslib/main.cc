@@ -56,92 +56,85 @@ struct GIL : public CLI, public Opts {
   
   GIL() {}
   
+  bool add_lookupdir( char const* _arg ) {
+    if( not _arg ) return false;
+    Scanner::add_lookupdir( _arg );
+    return true;
+  }
+  
+  bool setminwordsize( char const* _arg ) {
+    if( not _arg ) return false;
+    minwordsize = strtoul( _arg, 0, 0 );
+    return true;
+  }
+  
+  bool on_off( bool GIL::*_member, char const* _arg ) {
+    if( not _arg ) return false;
+    this->*_member = (strcmp( _arg, "on" ) == 0);
+    return true;
+  }
+  
   void parse( CLI::Args_t& _args ) {
-    if( _args.match( CLI::Unlimited, "-I", 0,
-                     "<directory>", "include a directory into the search path for includes." ) )
-      {
-        char const* arg;
-        if( not (arg = _args.pop()) ) {
-          cerr << GENISSLIB ": '-I' must be followed by a directory.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
-        Scanner::add_lookupdir( arg );
-      }
-    else if( _args.match( CLI::AtMostOnce, "-o", "--output", 0,
-                          "<output>", "Outputs the instruction set simulator source code into "
-                          "<output>.hh and <output>.cc/<output>.tcc (default is <output>=\"" DEFAULT_OUTPUT "\")." ) )
-      {
-        if( not (outputprefix = _args.pop()) ) { 
-          cerr << GENISSLIB ": '-o' must be followed by an output name.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
-      }
-    else if( _args.match( CLI::AtMostOnce, "-w", "--word-size", 0,
-                          "<size>", "Uses <size> as the minimum bit size for holding an operand bit field." ) )
-      {
-        char const* arg;
-        if( not (arg = _args.pop()) ) {
-          cerr << GENISSLIB ": '-w' must be followed by a size.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
-        minwordsize = strtoul( arg, 0, 0 );
-      }
-    else if( _args.match( CLI::AtMostOnce, "--specialization", 0,
-                          "on/off", "Toggles specialized operation generation (default: on)." ) )
-      {
-        char const* arg;
-        if( not (arg = _args.pop()) ) {
-          cerr << GENISSLIB ": '--specialization' must be followed by 'on' or 'off'.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
-        specialization = ( strcmp( arg, "on" ) == 0 );
-      }
-    else if( _args.match( CLI::AtMostOnce, "--source-lines", 0,
-                          "on/off", "Toggles on/off source line reference in generated files (default: on)." ) )
-      {
-        char const* arg;
-        if( not (arg = _args.pop()) ) {
-          cerr << GENISSLIB ": '--source-lines' must be followed by 'on' or 'off'.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
-        sourcelines = ( strcmp( arg, "on" ) == 0 );
-      }
-    else if( _args.match( CLI::AtMostOnce, "-v", "--version", 0,
-                          "", "Displays " GENISSLIB " version and exits." ) )
-      {
-        version();
-        throw CLI::Exit_t( 0 );
-      }
-    else if( _args.match( CLI::AtMostOnce, "-M", 0, "<filename>",
-                          "Output a rule file (<filename>) suitable for make describing the "
-                          "dependencies of the main source file." ) )
-      {
-        if( not (depfilename = _args.pop()) ) {
-          cerr << GENISSLIB ": '-M' must be followed by a file name.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
-      }
-    else if( _args.match( CLI::AtMostOnce, "-E", "--expand", 0,
-                          "<filename>", "Expands the preprocessed input file to <filename>." ) )
-      {
-        if( not (expandname = _args.pop()) ) {
-          cerr << GENISSLIB ": '-E' must be followed by a file name.\n";
-          help();
-          throw CLI::Exit_t( 1 );
-        }
-      }
-    else if( _args.match( CLI::Once, 0,
-                          "<inputfile>", "The input file to process" )
-             )
-      {
-        inputname = _args.pop();
-      }
+    if( _args.match( "-I", "<directory>", "include a directory into the search path for includes." ) ) {
+      if( this->add_lookupdir( _args.pop_front() ) ) return;
+      cerr << GENISSLIB ": '-I' must be followed by a directory.\n";
+      help();
+      throw CLI::Exit_t( 1 );
+    }
+    
+    if( _args.match( "-o,--output", "<output>", "Outputs the instruction set simulator source code into "
+                     "<output>.hh and <output>.cc/<output>.tcc (default is <output>=\"" DEFAULT_OUTPUT "\")." ) ) {
+      if( (outputprefix = _args.pop_front()) ) return;
+      cerr << GENISSLIB ": '-o' must be followed by an output name.\n";
+      help();
+      throw CLI::Exit_t( 1 );
+    }
+    
+    if( _args.match( "-w,--word-size", "<size>", "Uses <size> as the minimum bit size for holding an operand bit field." ) ) {
+      if( this->setminwordsize( _args.pop_front() ) ) return;
+      cerr << GENISSLIB ": '-w' must be followed by a size.\n";
+      help();
+      throw CLI::Exit_t( 1 );
+    }
+    
+    if( _args.match( "--specialization", "on/off", "Toggles specialized operation generation (default: on)." ) ) {
+      if( this->on_off( &GIL::specialization, _args.pop_front() ) ) return;
+      cerr << GENISSLIB ": '--specialization' must be followed by 'on' or 'off'.\n";
+      help();
+      throw CLI::Exit_t( 1 );
+    }
+
+    if( _args.match( "--source-lines", "on/off", "Toggles on/off source line reference in generated files (default: on)." ) ) {
+      if( this->on_off( &GIL::sourcelines, _args.pop_front() ) ) return;
+      cerr << GENISSLIB ": '--source-lines' must be followed by 'on' or 'off'.\n";
+      help();
+      throw CLI::Exit_t( 1 );
+    }
+
+    if( _args.match( "-v,--version", "", "Displays " GENISSLIB " version and exits." ) ) {
+      version();
+      throw CLI::Exit_t( 0 );
+    }
+    
+    if( _args.match( "-M", "<filename>", "Output a rule file (<filename>) suitable for make "
+                     "describing the dependencies of the main source file." ) ) {
+      if( (depfilename = _args.pop_front()) ) return;
+      cerr << GENISSLIB ": '-M' must be followed by a file name.\n";
+      help();
+      throw CLI::Exit_t( 1 );
+    }
+
+    if( _args.match( "-E,--expand", "<filename>", "Expands the preprocessed input file to <filename>." ) ) {
+      if( (expandname = _args.pop_front()) ) return;
+      cerr << GENISSLIB ": '-E' must be followed by a file name.\n";
+      help();
+      throw CLI::Exit_t( 1 );
+    }
+    
+    if( _args.match( not inputname, "<inputfile>", "The input file to process" ) ) {
+      inputname = _args.pop_front();
+      return;
+    }
   }
 };
 

@@ -25,24 +25,46 @@
 using namespace std;
 
 CLI::CLI()
-  : m_callname( 0 ), m_opt_tabstop( 0 ), m_optc( 0 )
+  : m_displayname( 0 ), m_callname( 0 ), m_opt_tabstop( 0 )
 {}
+
+struct Pattern {
+  char const* m_begin;
+  char const* m_end;
+
+  Pattern( char const* _patterns ) : m_begin( 0 ), m_end( _patterns ) {}
+
+  bool        next() {
+    char const* end = m_end;
+    while( *end != '\0' and *end != ',' ) ++end;
+    if( m_end == end ) return false;
+    m_begin = m_end; m_end = end; return true;
+  }
+
+  uintptr_t   length() const { return m_end - m_begin; }
+  void        strcpy( char* _buf ) const {
+    uintptr_t size = length();
+    memcpy( _buf, m_begin, size );
+    _buf[size] = '\0';
+  }
+  bool        operator!=( char const* _string ) const {
+    uintptr_t size = length();
+    if( strncmp( m_begin, _string, size ) != 0 ) return true;
+    return _string[size] != '\0';
+  }
+};
 
 struct InfoArgs_t : public CLI::Args_t {
   CLI&                   m_cli;
 
   InfoArgs_t( CLI& _cli ) : m_cli( _cli ) {}
   
-  bool match( CLI::Appearances_t _appearances, ... ) {
-    // Gathering information about optionnal and mandatory arguments
-    m_cli.m_optc++;
-    if( _appearances == CLI::Once ) return false;
-    va_list args;
-    va_start( args, _appearances );
+  bool match( bool _active, char const* _shortdesc, char const* _longdesc ) { return false; }
+  
+  bool match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) {
     intptr_t value = 0;
-    for( char const* optname; (optname = va_arg( args, char const* )); ) { value += 2 + strlen( optname ); }
-    value += 1 + strlen( va_arg( args, char const* ) ); // synopsis
-    va_end( args );
+    for( Pattern pattern( _patterns ); pattern.next(); ) { value += 2 + pattern.length(); }
+    value += 1 + strlen( _shortdesc );
     if( value > m_cli.m_opt_tabstop ) m_cli.m_opt_tabstop = value;
     return false;
   }
@@ -57,16 +79,9 @@ CLI::set( char const* _displayname, char const* _callname ) {
 }
 
 struct Proto_t : public CLI::Args_t {
-  bool match( CLI::Appearances_t _appearances, ... ) {
-    if( _appearances != CLI::Once ) return false;
-    
-    va_list args;
-    va_start( args, _appearances );
-    for( char const* optname; (optname = va_arg( args, char const* )); ) {}
-    char const* opt_synopsis = va_arg( args, char const* );
-    va_end( args );
-    
-    cerr << ' ' << opt_synopsis;
+  bool match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) { return false; }
+  bool match( bool _active, char const* _shortdesc, char const* _longdesc ) {
+    cerr << ' ' << _shortdesc;
     return false;
   }
 };
@@ -136,7 +151,7 @@ struct Screen_t {
   }
   
   Screen_t& write( char const* _str ) { while( *_str ) write( *_str++ ); return *this; }
-  
+  Screen_t& write( char const* _beg, char const* _end ) { while( _beg < _end ) write( *_beg++ ); return *this; }
 };
   
 struct Opts_t : public CLI::Args_t {
@@ -144,22 +159,17 @@ struct Opts_t : public CLI::Args_t {
   
   Opts_t( intptr_t _align ) : m_align( _align + 2 ) {}
   
-  bool match( CLI::Appearances_t _appearances, ... ) {
-    if( _appearances == CLI::Once ) return false;
+  bool match( bool _active, char const* _shortdesc, char const* _longdesc ) { return false; }
+  
+  bool match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) {
     Screen_t screen( m_align, 120 );
     
-    va_list args;
-    va_start( args, _appearances );
     char const* sep = "  ";
-    for( char const* optname; (optname = va_arg( args, char const* )); ) {
-      screen.write( sep ).write( optname );
+    for( Pattern pattern( _patterns ); pattern.next(); ) {
+      screen.write( sep ).write( pattern.m_begin, pattern.m_end );
       sep = ", ";
     }
-    char const* opt_synopsis = va_arg( args, char const* );
-    char const* opt_description = va_arg( args, char const* );
-    va_end( args );
-    
-    screen.write( " " ).write( opt_synopsis ).tab().write( opt_description );
+    screen.write( " " ).write( _shortdesc ).tab().write( _longdesc );
     screen.flush();
     return false;
   }
@@ -180,54 +190,79 @@ CLI::help() {
 }
 
 struct ValueArgs_t : public CLI::Args_t {
-  intptr_t  m_argidx, m_argc;
-  char**    m_argvals;
-  intptr_t  m_optidx, m_optc;
-  intptr_t* m_optoccs;
-  bool      m_hasmatch;
+  intptr_t    m_argidx, m_argc;
+  char**      m_argvals;
+  char const* m_subrem;
+  char        m_subarg[3];
   
-  ValueArgs_t( intptr_t _argc, char** _argvals,
-               intptr_t _optc, intptr_t* _optoccs )
-    : m_argidx( 0 ), m_argc( _argc ), m_argvals( _argvals ),
-      m_optidx( 0 ), m_optc( _optc ), m_optoccs( _optoccs ),
-      m_hasmatch( false )
-  {}
+  std::string m_matched;
+  std::string m_tmp;
   
-  bool match( CLI::Appearances_t _appearances, ... ) {
-    assert( m_optidx < m_optc );
-    intptr_t&   optocc = m_optoccs[m_optidx++];
-    assert( m_argidx < m_argc );
-    char const* argval = m_argvals[m_argidx];
-    
-    va_list args;
-    va_start( args, _appearances );
-    bool nomatch = true;
-    bool alternatives = false;
-    for( char const* optname; (optname = va_arg( args, char const* )); )
-      { nomatch = nomatch and (strcmp( optname, argval ) != 0); alternatives = true; }
-    nomatch = nomatch and alternatives;
-    va_end( args );
-    
-    if( nomatch ) return false;
-    
-    switch( _appearances ) {
-    case CLI::AtMostOnce:
-      if( optocc >= 1 )
-        throw Str::fmt( "error: `%s' appears more than once on command line.\n", argval );
-      break;
-    case CLI::Once:
-      if( optocc >= 1 ) return false;
-      break;
-    default: break;
-    };
-    optocc += 1;
-    if( alternatives ) m_argidx += 1;
-    m_hasmatch = true;
-    return true;
+  ValueArgs_t( intptr_t _argc, char** _argvals )
+    : m_argidx( 0 ), m_argc( _argc ), m_argvals( _argvals ), m_subrem( 0 )
+  {
+    memcpy( m_subarg, "-\0", 3 );
   }
   
-  char const* pop() { return (m_argidx < m_argc) ? m_argvals[m_argidx++] : 0; }
-  bool        next() { m_optidx = 0; m_hasmatch = false; return m_argidx < m_argc; }
+  bool match( bool _active, char const* _shortdesc, char const* _longdesc ) {
+    if( not _active or m_subarg[1] ) return false;
+    m_matched = front();
+    assert( not m_matched.empty() );
+    return true;
+  }
+
+  bool match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) {
+    char const* arg = front();
+    assert( arg );
+    for( Pattern pattern( _patterns ); pattern.next(); ) {
+      if( pattern != arg ) continue;
+      m_matched = pop_front();
+      return true;
+    }
+    // Checking for condensed short option form
+    if( arg[0] != '-' or arg[1] == '-' or arg[1] == '\0' or arg[2] == '\0' ) return false;
+    m_subarg[1] = arg[1];
+    m_subrem = &arg[2];
+    // replay
+    bool short_match = this->match( _patterns, _shortdesc, _longdesc );
+    m_subarg[1] = '\0';
+    if( short_match ) return true;
+    m_subrem = 0;
+    return false;
+  }
+  
+  char const* pop_front() {
+    if( m_subarg[1] ) {
+      m_tmp = m_subarg;
+      m_subarg[1] = '\0';
+      return m_tmp.c_str();
+    }
+    if( m_subrem ) {
+      char const* tmp = m_subrem;
+      m_subrem = 0;
+      m_argidx++;
+      return tmp;
+    }
+    return (m_argidx < m_argc) ? m_argvals[m_argidx++] : 0;
+  }
+  
+  char const* front() const {
+    if( m_subarg[1] )       return m_subarg;
+    if( m_subrem )          return m_subrem;
+    if( m_argidx < m_argc ) return m_argvals[m_argidx];
+    return 0;
+  }
+  
+  bool        next() {
+    m_matched.clear();
+    assert( m_subarg[1] == '\0' );
+    if( m_subrem ) {
+      m_subarg[1] = *m_subrem++;
+      if( *m_subrem == '\0' ) m_subrem = 0;
+      return true;
+    }
+    return m_argidx < m_argc;
+  }
 };
 
 void
@@ -239,14 +274,11 @@ CLI::process( intptr_t _argc, char** _argv ) {
     }
   }
 
-  intptr_t optoccs[m_optc];
-  for( intptr_t idx = m_optc; (--idx) >= 0; ) optoccs[idx] = 0;
-  
   try {
-    for( ValueArgs_t args( _argc, _argv, m_optc, optoccs ); args.next(); ) {
+    for( ValueArgs_t args( _argc, _argv ); args.next(); ) {
       parse( args );
-      if( args.m_hasmatch ) continue;
-      cerr << m_displayname << ": unexpected argument: " << args.pop() << "\n";
+      if( not args.m_matched.empty() ) continue;
+      cerr << m_displayname << ": unexpected argument: " << args.front() << "\n";
       throw Exit_t( 1 );
     }
   } catch( ConstStr_t _error ) {
@@ -256,5 +288,6 @@ CLI::process( intptr_t _argc, char** _argv ) {
   }
 }
 
-char const* CLI::Args_t::pop() { assert( false ); }
+char const* CLI::Args_t::pop_front() { assert( false ); return 0; }
+char const* CLI::Args_t::front() const { assert( false ); return 0; }
 
