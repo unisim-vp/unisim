@@ -48,7 +48,8 @@
 //#define DD_DEBUG_TIMESTAMP 9450
 //#define DD_DEBUG_TIMESTAMP 3400
 //#define DD_DEBUG_TIMESTAMP 82300
-//#define DD_DEBUG_TIMESTAMP 0
+//#define DD_DEBUG_TIMESTAMP 352320
+//#define DD_DEBUG_TIMESTAMP 381929
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -60,14 +61,14 @@
 #define DD_DEBUG_USEREF
 #define DD_DEBUG_OPERATIONREFCOUNT
 */
+
+#define DD_DEBUG_PIPELINE_VERB2
 //#define DEBUG_CACHEWB
-
 #define DD_DEBUG_DCACHE
-
 //#define DD_DEBUG_SPLITTING
-
 #define DD_DEBUG_DCACHE_VERB2
-
+//#define DD_DEBUG_FPLOAD
+//#define DD_DEBUG_LSQ
 //#define DD_DEBUG_BUS
 
 //#define DD_DEBUG_DRAM
@@ -114,7 +115,6 @@
 //#define DD_DEBUG_ALIGNMENT
 
 
-#define DD_DEBUG_PIPELINE_VERB2
 //#define DD_DEBUG_LSCONFLICT_VERB2
 /*
 #define DD_DEBUG_LSCONFLICT
