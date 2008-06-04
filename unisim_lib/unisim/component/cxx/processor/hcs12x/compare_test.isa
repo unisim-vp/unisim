@@ -341,9 +341,10 @@ cpe_dyxs_imm.disasm = {
 }
 
 cpe_dyxs_imm.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, zeroBit;
 	uint16_t result, regVal;
 	
+	zeroBit = cpu->ccr->getZ(); 
 	carry_in = cpu->ccr->getC();
 	switch (dyxs) {
 		case 0: regVal = cpu->getRegD(); break;
@@ -356,7 +357,7 @@ cpe_dyxs_imm.execute = {
 
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
-	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 }
@@ -375,12 +376,13 @@ cpe_dyxs_dir.disasm = {
 }
 
 cpe_dyxs_dir.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, zeroBit;
 	uint16_t result, regVal;
 	uint16_t opr8aVal;
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
 	opr8aVal = cpu->memRead16(addr);
 	
+	zeroBit =  cpu->ccr->getZ();
 	carry_in = cpu->ccr->getC();
 	switch (dyxs) {
 		case 0: regVal = cpu->getRegD(); break;
@@ -393,7 +395,7 @@ cpe_dyxs_dir.execute = {
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
-	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	
 }
@@ -412,10 +414,11 @@ cpe_dyxs_ext.disasm = {
 }
 
 cpe_dyxs_ext.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, zeroBit;
 	uint16_t result, regVal;
 	uint16_t opr16aVal = cpu->memRead16(opr16a);
 	
+	zeroBit =  cpu->ccr->getZ();
 	carry_in = cpu->ccr->getC();
 	switch (dyxs) {
 		case 0: regVal = cpu->getRegD(); break;
@@ -428,7 +431,7 @@ cpe_dyxs_ext.execute = {
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
-	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 }
@@ -447,11 +450,12 @@ cpe_dyxs_idx.disasm = {
 }
 
 cpe_dyxs_idx.execute = {
-	uint8_t carry_out, overflow, carry_in;
+	uint8_t carry_out, overflow, carry_in, zeroBit;
 	uint16_t result, regVal;
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 	uint16_t xbVal = cpu->memRead16(addr);
 	
+	zeroBit =  cpu->ccr->getZ();
 	carry_in = cpu->ccr->getC();
 	switch (dyxs) {
 		case 0: regVal = cpu->getRegD(); break;
@@ -464,7 +468,7 @@ cpe_dyxs_idx.execute = {
 	
 	if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
-	if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+	if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 }
 
@@ -670,7 +674,7 @@ emin_dm.execute = {
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if (((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) >> 15) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !D15 • M15 + M15 • R15 + R15 • !D15
 	 * Set if the value of the content of memory is larger than the value of the
@@ -722,7 +726,7 @@ min_am.execute = {
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if (((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) >> 7) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !A7 • M7 + M7 • R7 + R7 • !A7
 	 * Set if the value of the content of memory is larger than the value of the
@@ -777,7 +781,7 @@ emax_dm.execute = {
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if (((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) >> 15) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !D15 • M15 + M15 • R15 + R15 • !D15
 	 * Set if the value of the content of memory is larger than the value of the
@@ -829,7 +833,7 @@ max_am.execute = {
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if (((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) >> 7) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !A7 • M7 + M7 • R7 + R7 • !A7
 	 * Set if the value of the content of memory is larger than the value of the

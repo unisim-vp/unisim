@@ -41,12 +41,12 @@ emul.disasm = {
 }
 
 emul.execute = {
-	uint32_t result = cpu->getRegD() * cpu->getRegY();
+	uint32_t result = (uint32_t) cpu->getRegD() * cpu->getRegY();
 
 	cpu->setRegY(result >> 16);
 	cpu->setRegD((uint16_t) result);
 
-	if (result > 0xFFFF) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
+	if ((result & 0x00008000) == 0x00008000) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 }
@@ -59,7 +59,7 @@ emuls.disasm = {
 }
 
 emuls.execute = {
-	uint32_t result = cpu->getRegD() * cpu->getRegY();
+	uint32_t result = (uint32_t) cpu->getRegD() * cpu->getRegY();
 
 	cpu->setRegY((uint16_t) (result >> 16));
 	cpu->setRegD((uint16_t) result);
@@ -67,7 +67,7 @@ emuls.execute = {
 /*
  * C: Set if bit 15 of the result is set; cleared otherwise
  */
-	if ((result & 0x8000) > 0x8000) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
+	if ((result & 0x8000) == 0x8000) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
 
 /*
  * Z: Set if result is $00000000; cleared otherwise
@@ -94,7 +94,7 @@ mul.execute = {
 
 	cpu->setRegD(result);
 
-	if (result > 0xFF) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
+	if ((result & 0x0080) == 0x0080) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
 }
 
 // EDIV: 32 by 16 bit to 16 bit divide (unsigned) (Y:D) div (X) => Y remainder => D
@@ -139,7 +139,7 @@ ediv.execute = {
 			cpu->setRegD(remind);
 			
 			if (quotion == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-			if (cpu->getRegY() & 0x8000 == 0x8000 ) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+			if ((cpu->getRegY() & 0x8000) == 0x8000 ) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 		}  
 	}
 
@@ -168,7 +168,10 @@ edivs.execute = {
 		quotion = dividend / divisor;
 		remind = dividend % divisor;
 
-		if ((uint16_t) quotion > 0x7FFF) {
+		if (quotion > 0x7FFF) { 
+			/* NOTA: 
+			 * For EDIVS, there is a mistake in specification about setting V.
+			 */
 			cpu->ccr->setV();
 		} else {
 			cpu->ccr->clrV();
@@ -275,6 +278,7 @@ and the remainder is indeterminate. */
 	cpu->setRegD(remind);
 /*
  * V: Set if the result was > $7FFF or < $8000; cleared otherwise
+ * V: Set for numerator $8000 (-32768) and denominator $FFFF (-1) result is (+32768)
  * Undefined after division by zero
  */
 	if ((dividend == 0x8000) && (divisor == 0xFFFF)) { cpu->ccr->setV(); } else { cpu->ccr->clrV();}

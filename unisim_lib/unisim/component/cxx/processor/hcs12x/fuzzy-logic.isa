@@ -129,39 +129,39 @@ rev.execute = {
 	 memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 while (memX != 0xFF) {
 	 	
-	 	ccrV = 0; // cpu->ccr->setV(ccrV);
-	 	aVal = 0xFF; // cpu->setRegA(aVal);
+	 	ccrV = 0; 
+	 	aVal = 0xFF; 
 	 	while ((memX != 0xFE) && (memX != 0xFF)) {
 	 		memYX = cpu->memRead8(cpu->mmc->getPhysicalAddress(yVal+memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 		if (memYX < aVal) {
-	 			aVal = memYX; // cpu->setRegA(aVal);
+	 			aVal = memYX; 
 	 		}
-	 		xVal++; // cpu->setRegX(xVal);
+	 		xVal++; 
 	 		memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 	}
 	 	
 	 	if (memX != 0xFF) {
 	 		
-	 		ccrV = 1; // cpu->ccr->setV(ccrV);
-	 		xVal++;  // cpu->setRegX(xVal);
+	 		ccrV = 1; 
+	 		xVal++;  
 	 		memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 		while ((memX != 0xFE) && (memX != 0xFF)) {
 	 			memYX = cpu->memRead8(cpu->mmc->getPhysicalAddress(yVal+memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 			if (aVal > memYX) {
 	 				cpu->memWrite8(cpu->mmc->getPhysicalAddress(yVal+memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), aVal);
 	 			}
-	 			xVal++; // cpu->setRegX(xVal);
+	 			xVal++; 
 	 			memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 		}
 	 		
 	 		if (memX != 0xFF) {
-	 			xVal++;  // cpu->setRegX(xVal);
+	 			xVal++;  
 	 			memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 		}
 	 	}
 	 }
 	 
-	 xVal++;  // cpu->setRegX(xVal);
+	 xVal++;  
 	 
 	 cpu->setRegA(aVal);
 	 cpu->setRegX(xVal);
@@ -194,14 +194,14 @@ revw.execute = {
 	 memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 while (memX != 0xFFFF) {
 	 	
-	 	ccrV = 0;  // cpu->ccr->setV(ccrV);
-	 	aVal = 0xFF;  // cpu->setRegA(aVal);
+	 	ccrV = 0;  
+	 	aVal = 0xFF;  
 	 	while ((memX != 0xFFFE) && (memX != 0xFFFF)) {
 	 		memOfMemX = cpu->memRead8(cpu->mmc->getPhysicalAddress(memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 		if (memOfMemX < aVal) {
-	 			aVal = memOfMemX; // cpu->setRegA(aVal);
+	 			aVal = memOfMemX; 
 	 		}
-	 		xVal++;  // cpu->setRegX(xVal);
+	 		xVal++;  
 	 		memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 	}
 	 	
@@ -213,26 +213,26 @@ revw.execute = {
 				yVal++;  cpu->setRegTMP(1, yVal); // cpu->setRegY(yVal);
 			}
 			
-	 		ccrV = 1; // cpu->ccr->setV(ccrV);
-	 		xVal++;  // cpu->setRegX(xVal);
+	 		ccrV = 1; 
+	 		xVal++;  
 	 		memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 		while ((memX != 0xFFFE) && (memX != 0xFFFF)) {
 	 			memOfMemX = cpu->memRead16(cpu->mmc->getPhysicalAddress(memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 			if (aVal > memOfMemX) {
 	 				cpu->memWrite8(cpu->mmc->getPhysicalAddress(memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), aVal);
 	 			}
-	 			xVal++;  // cpu->setRegX(xVal);
+	 			xVal++;  
 		 		memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 		}
 	 		
 	 		if (memX != 0xFFFF) {
-	 			xVal++;  // cpu->setRegX(xVal);
+	 			xVal++;  
 	 			memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	 		}
 	 	}
 	 }
 	 
-	 xVal++;  // cpu->setRegX(xVal);
+	 xVal++;  
 	 
 	 cpu->setRegA(aVal);
 	 cpu->setRegX(xVal);
@@ -305,9 +305,9 @@ wav.execute = {
 	 	sow += memY;
 		cpu->setRegTMP(0, sow);
 		
-	 	xVal++;   // cpu->setRegX(xVal);
-	 	yVal++;   // cpu->setRegY(yVal);
-	 	bVal--;   // cpu->setRegb(bVal);
+	 	xVal++;   
+	 	yVal++;   
+	 	bVal--;   
 	 	
 	 }
 	 
@@ -412,7 +412,7 @@ with the radix point between bits 7 and 8.
 	
 	cpu->setRegD(msBits);
 	if ((msBits & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN();}
-	if (msBits == 0x0000) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ();}	
+	if (result == 0x0000) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ();}	
 	if (lowBits > 0x7F) { cpu->ccr->setC(); } else { cpu->ccr->clrC();}	
 }
 
