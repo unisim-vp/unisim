@@ -705,6 +705,15 @@ class AddressGenerationUnit : public module
 			  {
 			    (*instruction)->singleprecision = (uint32_t)((*instruction)->operation->get_single(state));
 			  }
+			/*
+			if ( ((*instruction)->operation->function == FnLoadFloat) 
+			     && ((*instruction)->operation->memory_access_size() == 4)
+			     && ((*instruction)->operation->load_need_conversion())
+			     )
+			  {
+			    (*instruction)->singleprecision = (uint32_t)((*instruction)->operation->get_single(state));
+			  }
+			*/
 			/* If instruction memory access is misaligned */
 			// We ignore misalignment because memory sub-system is able to handle them... 
 			/*

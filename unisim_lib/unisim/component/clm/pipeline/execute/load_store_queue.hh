@@ -36,21 +36,20 @@
  */
 
 /***************************************************************************
-                       LoadStoreQueue.hh  -  description
+                       load_store_queue.hh  -  description
  ***************************************************************************/
 
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_LOAD_STORE_QUEUE_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_LOAD_STORE_QUEUE_HH__
-//#include <systemc.h>
-//#include <utility.h>Go To Statement Considered Harmful
-//#include <types.h>
-//#include <common.h>
-//#include <CacheCommon.h>
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interface/instruction_interface.hh>
 
 #include <unisim/component/clm/interface/memreq.h>
+
+#include <unisim/component/cxx/processor/powerpc/floating.hh>
+
+#include <unisim/component/clm/utility/common.h>
 
 namespace unisim {
 namespace component {
@@ -63,6 +62,13 @@ using unisim::component::clm::processor::ooosim::DL1_nLineSize;
 
 using unisim::component::clm::interface::memreq;
 using unisim::component::clm::interface::memreq_types;
+
+using unisim::component::clm::utility::hexa;
+  /*
+using unisim::component::cxx::processor::powerpc::Flags;
+using unisim::component::cxx::processor::powerpc::SoftFloat;
+using unisim::component::cxx::processor::powerpc::SoftDouble;
+  */
 
   //using unisim::service::interfaces::StatisticReporting;
 
@@ -116,6 +122,32 @@ double LongToF32(UInt32 val) {
     f = *(double *)&(val2);
     result = f;
 		return result;
+}
+
+UInt64 LongToF32bis(UInt32 val) {
+    UInt64 val1, val2, val3;
+    double f;
+    double result;
+		
+    val1 = val & 0x40000000;
+    val2 = (val >> 23) & 0x07f;
+    if(val1) {
+        if(val2==0x07f)
+            val2 = 0x07ff;
+        else
+            val2 = val2 | 0x0400;
+    } else {
+        if(val2!=0)
+            val2 = val2 | 0x0380;
+    }
+    val3 = val & 0x0ffffffff;
+    val2 = ((val3 & 0x080000000) << 32 ) | val2 << 52 | (val3 & 0x7fffff) << 29;
+    /*
+    f = *(double *)&(val2);
+    result = f;
+		return result;
+    */
+    return val2;
 }
 
 
@@ -798,19 +830,38 @@ public:
 			      }
 			    //				else if(instruction->fn & FnFpLoad)
 			    //			else if(instruction->fn & FnLoadFloat)
-			    else if(instruction->fn == FnLoadFloat)
+			    //else
+			    if(instruction->fn == FnLoadFloat)
 			      {
 				if(instruction->operation->memory_access_size() == 4)
 				  {
 				    // do a single to double precision floating point conversion
-				    double tmp = LongToF32((UInt32) data);
-				    instruction->destinations[0].data = *(UInt64 *) &tmp;
+				    //   double tmp = LongToF32((UInt32) data);
+				    //				    double tmp = LongToF32((uint32_t) data);
+				    /*
+				    Flags tmp_flags;
+				    SoftDouble tmp_res;
+				    double tmp = (tmp_res.assign(SoftFloat((UInt32) data),tmp_flags)).queryValue();
+				    */
+				    //instruction->destinations[0].data = *(UInt64 *) &tmp;
+				    //			    instruction->destinations[0].data = *(uint64_t *) &tmp;
+				    instruction->destinations[0].data = LongToF32bis((uint32_t) data);
 				  }
 				else
 				  {
 				    // no floating point conversion needed
 				    instruction->destinations[0].data = data;
 				  }
+#ifdef DD_DEBUG_FPLOAD
+       if (DD_DEBUG_TIMESTAMP < timestamp() )
+	 {
+	   cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== [DD_FPLOAD] Floating Point Load ! ==== " << endl;
+	   cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== Instruction : "<< *instruction <<" ==== " << endl;
+	   cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== Converted Value : "<< hexa(instruction->destinations[0].data) <<" ==== " << endl;
+	   cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== Original Value(32) : "<< hexa((uint32_t)data) <<" ==== " << endl;
+	   cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== Original Value(64) : "<< hexa(data) <<" ==== " << endl;
+	 }
+#endif
 			      }
 			    else
 			      {
