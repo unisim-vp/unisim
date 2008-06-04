@@ -248,7 +248,7 @@ swi.execute = {
 	addr = addr - 2;
 	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
 	
-	cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() | 0x10);
+	cpu->ccr->setI();
 	cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 	
 	// TODO: (SWI Vector) => PC
@@ -298,7 +298,7 @@ trap.execute = {
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
 		
 		// 1 => I; 0 => U
-		cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() | 0x10);
+		cpu->ccr->setI();
 		cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 		
 		// (Trap Vector) => PC
@@ -306,3 +306,52 @@ trap.execute = {
 	}
 }
 
+// SYS: System Call Interrupt
+// System call interrupt vector is $FF12:$FF13
+
+op sys(0x18[8]:0xA7[8])
+
+sys.disasm = {
+	sink << "SYS";
+}
+
+sys.execute = {
+	
+	/*
+	 * (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
+	 * (SP) – $0002 => SP; B : A => (M(SP) : M(SP+1))
+	 * In case of CPU12
+	 * (SP) – $0001 => SP; CCR => (M(SP) )
+	 * In case of CPU12X
+	 * (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
+	 * 1 => I; 0 => U
+	 * (Trap Vector) => PC
+	 */
+		 
+	address_t addr = cpu->getRegSP();
+		
+	addr = addr - 2;
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegPC());
+		
+	addr = addr - 2;
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
+		
+	addr = addr - 2;
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
+
+	addr = addr - 2;
+	cpu->memWrite8(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegA());
+		
+	addr = addr - 2;
+	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
+		
+	// 1 => I; 0 => U
+	cpu->ccr->setI();
+	cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
+		
+	// (Sys Vector) => PC
+	cpu->setRegPC(cpu->memRead16(CONFIG::SYS_VECTOR_ADDRESS));
+}
