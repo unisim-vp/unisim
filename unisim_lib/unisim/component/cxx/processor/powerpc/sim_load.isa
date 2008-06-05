@@ -716,6 +716,13 @@ stfsu.get_single = { return cpu->GetFp32(fs); }
 stfsux.get_single = { return cpu->GetFp32(fs); }
 stfsx.get_single = { return cpu->GetFp32(fs); }
 
+/*
+lfs.get_single = { return cpu->GetFp32(fs); }
+lfsu.get_single = { return cpu->GetFp32(fs); }
+lfsux.get_single = { return cpu->GetFp32(fs); }
+lfsx.get_single = { return cpu->GetFp32(fs); }
+*/
+
 // Single precision not necessary here
 //stfiwx.get_single = { return cpu->GetFp32(fs); }
 
@@ -731,6 +738,19 @@ stfs.store_need_conversion = { return true; }
 stfsu.store_need_conversion = { return true; }
 stfsux.store_need_conversion = { return true; }
 stfsx.store_need_conversion = { return true; }
+
+/**
+ * Returns true if store need a conversion to single-precision value.
+ */
+action {bool} load_need_conversion() { 
+  return false;
+}
+
+lfs.load_need_conversion = { return true; }
+lfsu.load_need_conversion = { return true; }
+lfsux.load_need_conversion = { return true; }
+lfsx.load_need_conversion = { return true; }
+
 
 
 
