@@ -52,11 +52,19 @@ using std::string;
 
 class Exception : public std::exception {};
 
-// Hardware and Software reset 
+// Hardware and Software reset (including COP, clock monitor, and pin)
 class ResetException : public Exception
 {
 public:
 	ResetException();
+	virtual const char * what () const throw ();	
+};
+
+// Unimplemented opcode trap
+class TrapException : public Exception
+{
+public:
+	TrapException();
 	virtual const char * what () const throw ();	
 };
 

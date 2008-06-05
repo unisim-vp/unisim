@@ -331,8 +331,6 @@ public:
 
 	inline bool HasHardReset() const { return hard_reset; }
 	inline bool HasSoftReset() const { return soft_reset; }
-	inline bool HasSoftwareInterrupt() const { return software_interrupt; }
-	inline bool HasSysCallInterrupt() const { return sysCall_interrupt; }
 	inline bool HasNonMaskableXIRQInterrupt() const { return nonMaskableXIRQ_interrupt; }
 	inline bool HasMaskableInterrupt() const { return maskable_interrupt; }
 	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
@@ -341,8 +339,11 @@ public:
 	//=                    Exception handling methods                     =
 	//=====================================================================
 
-	// Hardware and Software reset
+	// Hardware and Software reset (including COP, clock monitor, and pin)
 	void HandleException(const ResetException& exc);
+
+	// Unimplemented opcode trap
+	void HandleException(const TrapException& exc);
 
 	// A software interrupt instruction (SWI) or BDM vector request 
 	void HandleException(const SoftwareInterrupt& exc);
@@ -362,8 +363,6 @@ public:
 
 	void AckHardReset();
 	void AckSoftReset();
-	void AckSoftwareInterrupt();
-	void AckSysCallInterrupt();
 	void AckNonMaskableAccessErrorInterrupt();
 	void AckMaskableInterrupt();
 	void AckAsynchronousInterrupt();
@@ -374,8 +373,6 @@ public:
 	
 	void ReqHardReset();
 	void ReqSoftReset();
-	void ReqSoftwareInterrupt();
-	void ReqSysCallInterrupt();
 	void ReqNonMaskableAccessErrorInterrupt();
 	void ReqMaskableInterrupt();
 	void ReqAsynchronousInterrupt();
@@ -491,8 +488,6 @@ private:
 	
 	bool soft_reset;						//!< Soft reset signal
 	bool hard_reset;						//!< Hard reset signal
-	bool software_interrupt;				//!< Software interrupt signal
-	bool sysCall_interrupt;					//!< SysCall interrupt signal
 	bool nonMaskableXIRQ_interrupt;			//!< Non maskable access error Interrupt signal
 	bool maskable_interrupt;				//!< Maskable interrupt signal 
 	

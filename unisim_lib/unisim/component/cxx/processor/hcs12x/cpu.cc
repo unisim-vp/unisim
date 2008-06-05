@@ -371,16 +371,12 @@ void CPU::Step()
 		{
 			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw ResetException();
 			if(CONFIG::HAS_SOFT_RESET && HasSoftReset()) throw ResetException();
-			if(CONFIG::HAS_SOFTWARE_INTERRUPT && HasSoftwareInterrupt()) throw SoftwareInterrupt();
-			if(CONFIG::HAS_SYS_CALL_INTERRUPT && HasSysCallInterrupt()) throw SysCallInterrupt();
 			if(CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
 			if(CONFIG::HAS_MASKABLE_INTERRUPT && HasMaskableInterrupt()) throw MaskableInterrupt();
 			
 		}
 	}
 	catch(ResetException& exc) { HandleException(exc); }
-	catch(SoftwareInterrupt& exc) { HandleException(exc); }
-	catch(SysCallInterrupt& exc) { HandleException(exc); }
 	catch(NonMaskableXIRQInterrupt& exc) { HandleException(exc); }
 	catch(MaskableInterrupt& exc) { HandleException(exc); }
 	catch(Exception& e)
@@ -418,8 +414,6 @@ void CPU::AckAsynchronousInterrupt()
 	
 	if(CONFIG::HAS_SOFT_RESET) asynchronous_interrupt |= soft_reset;
 	if(CONFIG::HAS_HARD_RESET) asynchronous_interrupt |= hard_reset;
-	if(CONFIG::HAS_SOFTWARE_INTERRUPT) asynchronous_interrupt |= software_interrupt;
-	if(CONFIG::HAS_SYS_CALL_INTERRUPT) asynchronous_interrupt |= sysCall_interrupt;
 	if(CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT) asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
 	if(CONFIG::HAS_MASKABLE_INTERRUPT) asynchronous_interrupt |= maskable_interrupt;
 
@@ -455,39 +449,21 @@ void CPU::AckSoftReset()
 	AckAsynchronousInterrupt();
 }
 
+// Unimplemented opcode trap 
+void CPU::HandleException(const TrapException& exc)
+{
+	// TODO
+}
+
 // A software interrupt instruction (SWI) or BDM vector request 
 void CPU::HandleException(const SoftwareInterrupt& exc)
 {
 	// TODO
 }
 
-void CPU::ReqSoftwareInterrupt()
-{
-	software_interrupt = true;
-	// TODO
-}
-
-void CPU::AckSoftwareInterrupt()
-{
-	software_interrupt = false;
-	// TODO
-}
-
 // A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
 void CPU::HandleException(const SysCallInterrupt& exc)
 {
-	// TODO
-}
-
-void CPU::ReqSysCallInterrupt()
-{
-	sysCall_interrupt = true;
-	// TODO
-}
-
-void CPU::AckSysCallInterrupt()
-{
-	sysCall_interrupt = false;
 	// TODO
 }
 
@@ -613,8 +589,6 @@ void CPU::Reset()
 
 	soft_reset = false;
 	hard_reset = false;
-	software_interrupt = false;
-	sysCall_interrupt = false;
 	nonMaskableXIRQ_interrupt = false;
 	maskable_interrupt = false;
 	
