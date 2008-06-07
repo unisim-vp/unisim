@@ -40,16 +40,17 @@ struct Product_t {
   bool                open( char const* _ext );
   void                close();
   std::ostream&       sink() { return *m_stream; };
-  void                usercode( FileLoc_t const& _fileloc, char const* _format, ... );
-  void                usercode( SourceCode_t const& _source );
-  void                code( char const* _format, ... );
-  void                template_signature( Vect_t<CodePair_t> const& _tparams );
-  void                template_abbrev( Vect_t<CodePair_t> const& _tparams );
-  void                ns_enter( std::vector<ConstStr_t> const& _namespace );
-  void                ns_leave( std::vector<ConstStr_t> const& _namespace );
-  void                require_newline();
-  void                write( char const* _chars );
-  void                flatten_indentation();
+  Product_t&          usercode( FileLoc_t const& _fileloc, char const* _format, ... );
+  Product_t&          usercode( SourceCode_t const& _source );
+  Product_t&          usercode( SourceCode_t const& _source, char const* _fmt );
+  Product_t&          code( char const* _format, ... );
+  Product_t&          template_signature( Vect_t<CodePair_t> const& _tparams );
+  Product_t&          template_abbrev( Vect_t<CodePair_t> const& _tparams );
+  Product_t&          ns_enter( std::vector<ConstStr_t> const& _namespace );
+  Product_t&          ns_leave( std::vector<ConstStr_t> const& _namespace );
+  Product_t&          require_newline();
+  Product_t&          write( char const* _chars );
+  Product_t&          flatten_indentation();
 };
 
 #endif // __PRODUCT_HH__

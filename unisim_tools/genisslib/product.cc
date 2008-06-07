@@ -63,13 +63,22 @@ Product_t::~Product_t() {
   close();
 }
 
-/** Output source code into the output file using the 
+/** Output source code into the output file
     Also generate #line in the output file to link the C compiler error to the original source code
     @param _source the ScourceCode_t object to dump
  */
-void
+Product_t&
 Product_t::usercode( SourceCode_t const& _source ) {
-  usercode( _source.m_fileloc, "%s", _source.m_content.str() );
+  return usercode( _source.m_fileloc, "%s", _source.m_content.str() );
+}
+
+/** Output source code with surrounding braces into the output file
+    Also generate #line in the output file to link the C compiler error to the original source code
+    @param _source the ScourceCode_t object to dump
+ */
+Product_t&
+Product_t::usercode( SourceCode_t const& _source, char const* _fmt ) {
+  return usercode( _source.m_fileloc, _fmt, _source.m_content.str() );
 }
 
 /** Output source code into the output file
@@ -78,7 +87,7 @@ Product_t::usercode( SourceCode_t const& _source ) {
     @param lineno the line number where source code was found
     @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
 */
-void
+Product_t&
 Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
   if( m_sourcelines ) {
     require_newline();
@@ -106,13 +115,14 @@ Product_t::usercode( FileLoc_t const& _fileloc, char const* _fmt, ... ) {
     require_newline();
     code( "#line %u \"%s\"\n", m_lineno + 1, m_filename.str() );
   }
+  return *this;
 }
 
 /** Output a string into the output file
     @param format a C string with format specifier (like in printf), referenced arguments in the format string must follow
 */
 
-void
+Product_t&
 Product_t::code( char const* _fmt, ... ) {
   va_list args;
   for( intptr_t capacity = 128, size; true; capacity = (size > -1) ? size + 1 : capacity * 2 ) {
@@ -131,22 +141,25 @@ Product_t::code( char const* _fmt, ... ) {
     write( storage );
     break;
   }
+  return *this;
 }
 
-void
+Product_t&
 Product_t::require_newline() {
-  if( m_line.empty() ) return;
+  if( m_line.empty() ) return *this;
   write( "\n" );
+  return *this;
 }
 
-void
+Product_t&
 Product_t::ns_leave( std::vector<ConstStr_t> const& _namespace ) {
   for( intptr_t idx = _namespace.size(); (--idx) >= 0; )
     code( "} " );
   code( "\n" );
+  return *this;
 }
 
-void
+Product_t&
 Product_t::ns_enter( std::vector<ConstStr_t> const& _namespace ) {
   char const* sep = "";
   for( std::vector<ConstStr_t>::const_iterator ns = _namespace.begin(); ns < _namespace.end(); sep = " ", ++ ns ) {
@@ -154,11 +167,12 @@ Product_t::ns_enter( std::vector<ConstStr_t> const& _namespace ) {
   }
   code( "\n" );
   flatten_indentation();
+  return *this;
 }
 
-void
+Product_t&
 Product_t::template_signature( Vect_t<CodePair_t> const& _tparams ) {
-  if( _tparams.empty() ) return;
+  if( _tparams.empty() ) return *this;
 
   code( "template <" );
   
@@ -170,12 +184,13 @@ Product_t::template_signature( Vect_t<CodePair_t> const& _tparams ) {
   }
   
   code( ">\n" );
+  return *this;
 }
 
 
-void
+Product_t&
 Product_t::template_abbrev( Vect_t<CodePair_t> const& _tparams ) {
-  if( _tparams.empty() ) return;
+  if( _tparams.empty() ) return *this;
 
   code( "<" );
 
@@ -186,11 +201,12 @@ Product_t::template_abbrev( Vect_t<CodePair_t> const& _tparams ) {
   }
   
   code( ">" );
+  return *this;
 }
 
-void
+Product_t&
 Product_t::flatten_indentation() {
-  if( m_indentations.empty() ) return;
+  if( m_indentations.empty() ) return *this;
   int indentation = m_indentations.back();
   vector<int>::reverse_iterator prev = m_indentations.rbegin();
   for( vector<int>::reverse_iterator ind = m_indentations.rbegin(); ind < m_indentations.rend(); ++ind ) {
@@ -201,12 +217,13 @@ Product_t::flatten_indentation() {
   indentation = *prev;
   for( vector<int>::reverse_iterator ind = m_indentations.rbegin(); ind < prev; ++ind )
     *ind = indentation;
+  return *this;
 }
 
 
-void
+Product_t&
 Product_t::write( char const* _ptr ) {
-  if( not _ptr ) return;
+  if( not _ptr ) return *this;
   for( char chr = *_ptr; chr; chr = *++_ptr ) {
     if( chr == '\n' ) {
       int current_indentation = m_indentations.back();
@@ -250,4 +267,5 @@ Product_t::write( char const* _ptr ) {
     if( m_line.empty() and chr <= ' ' ) continue;
     m_line.write( chr );
   }
+  return *this;
 }
