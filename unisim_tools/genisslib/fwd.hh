@@ -26,6 +26,7 @@ struct CodePair_t;
 struct Action_t;
 struct Group_t;
 struct Variable_t;
+struct Inheritance_t;
 struct BitField_t;
 struct Isa;
 struct Product_t;

@@ -43,6 +43,7 @@ union  yylval_t {
   Constraint_t*                constraint;             /**< A constraint object */
   Vect_t<Constraint_t>*        constraint_list;        /**< A constraint list object */
   Specialization_t*            specialization;         /**< A specialization object */
+  Inheritance_t*               inheritance;            /**< An inheritance descriptor */
 };
 
 /* define the type of yylval */

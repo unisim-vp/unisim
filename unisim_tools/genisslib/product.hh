@@ -41,6 +41,7 @@ struct Product_t {
   void                close();
   std::ostream&       sink() { return *m_stream; };
   void                usercode( FileLoc_t const& _fileloc, char const* _format, ... );
+  void                usercode( SourceCode_t const& _source );
   void                code( char const* _format, ... );
   void                template_signature( Vect_t<CodePair_t> const& _tparams );
   void                template_abbrev( Vect_t<CodePair_t> const& _tparams );

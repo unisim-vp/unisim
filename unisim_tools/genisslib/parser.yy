@@ -43,7 +43,6 @@ create_action( Operation_t* _operation, ActionProto_t const* _actionproto, Sourc
   Action_t const* prev_action = _operation->action( _actionproto );
 
   if( prev_action ) {
-    // FIXME: this was downgraded from warning to error
     Scanner::fileloc.err( "error: action `%s.%s' redefined",
                           _operation->m_symbol.str(), _actionproto->m_symbol.str() );
     
@@ -102,6 +101,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %token TOK_OP
 %token TOK_SOURCE_CODE
 %token TOK_SPECIALIZE
+%token TOK_INHERITANCE
 %token '*'
 %token '('
 %token ')'
@@ -149,6 +149,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<sourcecode> op_condition
 %type<param_list> param_list
 %type<param> param
+%type<inheritance> global_inheritance_declaration
 %type<boolean> sext
 %type<uinteger> size_modifier
 %type<sinteger> shift
@@ -168,7 +169,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<string_list> namespace_list
 %%
 
-input: declaration_list { }
+input: declaration_list { };
 
 declaration_list: | declaration_list declaration {}
 ;
@@ -314,6 +315,10 @@ declaration:
 {
   Scanner::isa().m_vars.append( *$1 );
   delete $1;
+}
+     | global_inheritance_declaration TOK_ENDL
+{
+  Scanner::isa().m_inheritances.push_back( $1 );
 }
   | group_declaration
 {
@@ -512,6 +517,17 @@ size_modifier:
 }
 ;
 
+global_inheritance_declaration:
+TOK_INHERITANCE TOK_SOURCE_CODE TOK_SOURCE_CODE '=' TOK_SOURCE_CODE
+{
+  $$ = new Inheritance_t( $2, $3, $5 );
+}
+| TOK_INHERITANCE TOK_SOURCE_CODE TOK_SOURCE_CODE
+{
+  $$ = new Inheritance_t( $2, $3, 0 );
+}
+;
+
 var_list_declaration:
 {
   $$ = 0;
@@ -520,6 +536,7 @@ var_list_declaration:
 {
   $$ = $2;
 }
+;
 
 global_var_list_declaration: TOK_VAR var_list
 {
@@ -568,7 +585,6 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   { /* action protype name should be unique */
     ActionProto_t const*  prev_proto = Scanner::isa().actionproto( symbol );
     if( prev_proto ) {
-      // FIXME: downgraded warning to error
       Scanner::fileloc.err( "error: action prototype `%s' redefined", prev_proto->m_symbol.str() );
       prev_proto->m_fileloc.err( "action prototype `%s' previously defined here", prev_proto->m_symbol.str() );
       YYABORT;

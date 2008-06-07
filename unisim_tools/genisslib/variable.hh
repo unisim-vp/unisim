@@ -23,6 +23,7 @@
 
 #include <conststr.hh>
 #include <referencecounting.hh>
+#include <vector>
 
 /** A variable object */
 struct Variable_t : virtual ReferenceCounter {
@@ -36,5 +37,15 @@ struct Variable_t : virtual ReferenceCounter {
 };
 
 std::ostream& operator<<( std::ostream& _sink, Variable_t const& _var );
+
+struct Inheritance_t : virtual ReferenceCounter {
+  Ptr_t<SourceCode_t>           m_modifier;
+  Ptr_t<SourceCode_t>           m_typename;
+  Ptr_t<SourceCode_t>           m_initargs;
+  
+  Inheritance_t( SourceCode_t* _modifier, SourceCode_t* _typename, SourceCode_t* _initargs );
+  Inheritance_t( Inheritance_t const& _variable );
+  ~Inheritance_t();
+};
 
 #endif // __VARIABLE_HH__

@@ -37,12 +37,13 @@ struct Isa {
   Vect_t<Operation_t>           m_operations;      /**< Defined instructions */
   Vect_t<Group_t>               m_groups;          /**< Defined groups */
   Vect_t<SDClass_t>             m_sdclasses;       /**< Defined subdecoder classes */
-  Vect_t<SDInstance_t>          m_sdinstances;    /**< Defined subdecoder instances */
+  Vect_t<SDInstance_t>          m_sdinstances;     /**< Defined subdecoder instances */
   Vect_t<SourceCode_t>          m_decl_srccodes;   /**< Code to insert in header file */
   Vect_t<SourceCode_t>          m_impl_srccodes;   /**< Code to insert in source file */
   ConstStr_t                    m_addrtype;        /**< C type for instructions addresses */
   std::vector<ConstStr_t>       m_includes;        /**< files included by the isa main file */
   Vect_t<Specialization_t>      m_specializations; /**< Requested specializations */
+  Vect_t<Inheritance_t>         m_inheritances;    /**< Defined inheritances for operation class */
 
   Isa();
   ~Isa();

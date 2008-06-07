@@ -100,7 +100,7 @@ Generator::iss( Product_t& _product ) const {
   _product.ns_leave( isa().m_namespace );
 
   for( Vect_t<SourceCode_t>::const_iterator srccode = isa().m_decl_srccodes.begin(); srccode < isa().m_decl_srccodes.end(); ++ srccode ) {
-    _product.usercode( (**srccode).m_fileloc, "%s", (**srccode).m_content.str() );
+    _product.usercode( **srccode );
   }
   
   _product.ns_enter( isa().m_namespace );
@@ -128,7 +128,7 @@ Generator::iss( Product_t& _product ) const {
   additional_impl_includes( _product );
   
   for( Vect_t<SourceCode_t>::const_iterator srccode = isa().m_impl_srccodes.begin(); srccode < isa().m_impl_srccodes.end(); ++ srccode ) {
-    _product.usercode( (**srccode).m_fileloc, "%s", (**srccode).m_content.str() );
+    _product.usercode( **srccode );
   }
   
   _product.ns_enter( isa().m_namespace );
@@ -296,6 +296,16 @@ void
 Generator::operation_decl( Product_t& _product ) const {
   _product.template_signature( isa().m_tparams );
   _product.code( "class Operation\n" );
+  if( isa().m_inheritances.size() > 0 ) {
+    char const* sep = ": ";
+    for( Vect_t<Inheritance_t>::const_iterator inh = isa().m_inheritances.begin(); inh != isa().m_inheritances.end(); ++inh ) {
+      _product.code( sep ); sep = ", ";
+      _product.usercode( *(**inh).m_modifier );
+      _product.code( " " );
+      _product.usercode( *(**inh).m_typename );
+      _product.code( "\n" );
+    }
+  }
   _product.code( "{\n" );
   _product.code( "public:\n" );
 
@@ -321,7 +331,7 @@ Generator::operation_decl( Product_t& _product ) const {
     }
     _product.code( " virtual " );
     if( isa().m_actionprotos[idx]->m_returns ) {
-      _product.usercode( isa().m_actionprotos[idx]->m_returns->m_fileloc, "%s", isa().m_actionprotos[idx]->m_returns->m_content.str() );
+      _product.usercode( *(isa().m_actionprotos[idx]->m_returns) );
     } else {
       _product.code( "void" );
     }
@@ -329,13 +339,14 @@ Generator::operation_decl( Product_t& _product ) const {
     _product.code( " %s(", isa().m_actionprotos[idx]->m_symbol.str() );
 
     if( not isa().m_actionprotos[idx]->m_params.empty() ) {
-      char const* sep = "";
+      char const* sep = " ";
       for( Vect_t<CodePair_t>::const_iterator param = isa().m_actionprotos[idx]->m_params.begin();
            param < isa().m_actionprotos[idx]->m_params.end(); ++ param, sep = ",\n" )
         {
           _product.code( sep );
-          _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
-          _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
+          _product.usercode( *(**param).m_ctype );
+          _product.code( " " );
+          _product.usercode( *(**param).m_csymbol );
         }
     }
 
@@ -408,22 +419,24 @@ Generator::isa_operations_decl( Product_t& _product ) const {
         _product.code( " virtual char const* %s_text();\n", actionproto->m_symbol.str() );
       }
 
-      _product.code( " virtual\n" );
+      _product.code( " virtual\n " );
 
       if( actionproto->m_returns ) {
-        _product.usercode( actionproto->m_returns->m_fileloc, " %s", actionproto->m_returns->m_content.str() );
+        _product.usercode( *actionproto->m_returns );
       } else {
-        _product.code( " void\n" );
+        _product.code( "void\n" );
       }
 
       _product.code( " %s(", actionproto->m_symbol.str() );
 
       if( not actionproto->m_params.empty() ) {
-        char const* sep = "";
-        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param, sep = ",\n" ) {
+        char const* sep = " ";
+        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin();
+             param < actionproto->m_params.end(); ++ param, sep = ",\n" ) {
           _product.code( sep );
-          _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
-          _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
+          _product.usercode( *(**param).m_ctype );
+          _product.code( " " );
+          _product.usercode( *(**param).m_csymbol );
         }
         _product.code( " " );
       }
@@ -444,11 +457,19 @@ Generator::operation_impl( Product_t& _product ) const {
   _product.template_abbrev( isa().m_tparams );
   _product.code( "::Operation(%s _code, %s _addr, const char *_name)\n", codetype_constref().str(), isa().m_addrtype.str() );
   _product.code( ": \n");
+  
+  for( Vect_t<Inheritance_t>::const_iterator inh = isa().m_inheritances.begin(); inh != isa().m_inheritances.end(); ++ inh ) {
+    if( not (**inh).m_initargs ) continue;
+    _product.usercode( *(**inh).m_typename );
+    _product.code( "( " );
+    _product.usercode( *(**inh).m_initargs );
+    _product.code( " ),\n" );
+  }
 
   for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
     if( not (**var).m_cinit ) continue;
     _product.code( " %s(", (**var).m_symbol.str() );
-    _product.usercode( (**var).m_cinit->m_fileloc, "%s", (**var).m_cinit->m_content.str() );
+    _product.usercode( *(**var).m_cinit );
     _product.code( "),\n" );
   }
 
@@ -482,29 +503,31 @@ Generator::operation_impl( Product_t& _product ) const {
     _product.template_signature( isa().m_tparams );
 
     if(isa().m_actionprotos[idx]->m_returns) {
-      _product.usercode( isa().m_actionprotos[idx]->m_returns->m_fileloc, "%s ", isa().m_actionprotos[idx]->m_returns->m_content.str() );
+      _product.usercode( *(isa().m_actionprotos[idx]->m_returns) );
     }
     else {
       _product.code( "\nvoid\n" );
     }
 
-    _product.code( "Operation" );
+    _product.code( " Operation" );
     _product.template_abbrev( isa().m_tparams );
     _product.code( "::%s(", isa().m_actionprotos[idx]->m_symbol.str() );
 
     if( not isa().m_actionprotos[idx]->m_params.empty() ) {
-      char const* sep = "";
+      char const* sep = " ";
       for( Vect_t<CodePair_t>::const_iterator param = isa().m_actionprotos[idx]->m_params.begin();
            param < isa().m_actionprotos[idx]->m_params.end(); ++ param, sep = ",\n" )
         {
           _product.code( sep );
-          _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
-          _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
+          _product.usercode( *(**param).m_ctype );
+          _product.code( " " );
+          _product.usercode( *(**param).m_csymbol );
         }
     }
 
     _product.code( ")\n{\n" );
-    _product.usercode( isa().m_actionprotos[idx]->m_defaultcode->m_fileloc, "{%s}\n", isa().m_actionprotos[idx]->m_defaultcode->m_content.str() );
+    _product.usercode( isa().m_actionprotos[idx]->m_defaultcode->m_fileloc,
+                       "{%s}\n", isa().m_actionprotos[idx]->m_defaultcode->m_content.str() );
     _product.code( "}\n" );
   }
 }
@@ -537,22 +560,23 @@ Generator::isa_operations_methods( Product_t& _product ) const {
       _product.template_signature( isa().m_tparams );
 
       if( actionproto->m_returns ) {
-        _product.usercode( actionproto->m_returns->m_fileloc, "%s ", actionproto->m_returns->m_content.str() );
+        _product.usercode( *actionproto->m_returns );
       }
       else {
         _product.code( "\nvoid\n" );
       }
 
-      _product.code( "Op%s", Str::capitalize( (**op).m_symbol ).str() );
+      _product.code( " Op%s", Str::capitalize( (**op).m_symbol ).str() );
       _product.template_abbrev( isa().m_tparams );
       _product.code( "::%s(", actionproto->m_symbol.str() );
 
       if( not actionproto->m_params.empty() ) {
-        char const* sep = "";
+        char const* sep = " ";
         for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param, sep = ",\n" ) {
           _product.code( sep );
-          _product.usercode( (**param).m_ctype->m_fileloc, " %s", (**param).m_ctype->m_content.str() );
-          _product.usercode( (**param).m_csymbol->m_fileloc, " %s", (**param).m_csymbol->m_content.str() );
+          _product.usercode( *(**param).m_ctype );
+          _product.code( " " );
+          _product.usercode( *(**param).m_csymbol );
         }
       }
 
@@ -654,7 +678,7 @@ Generator::decoder_impl( Product_t& _product ) const {
   for( Vect_t<Operation_t>::const_reverse_iterator op = isa().m_operations.rbegin(); op < isa().m_operations.rend(); ++ op ) {
     if( (**op).m_condition ) {
       _product.code( "if(" );
-      _product.usercode( (**op).m_condition->m_fileloc, "%s", (**op).m_condition->m_content.str() );
+      _product.usercode( *(**op).m_condition );
       _product.code( ")" );
     }
     _product.code( " decode_table.push_back(DecodeTableEntry" );

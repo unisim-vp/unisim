@@ -304,6 +304,7 @@ Scanner::Token_t Scanner::s_tokens[] = {
   {"template", TOK_TEMPLATE},
   {"decoder", TOK_DECODER},
   {"specialize", TOK_SPECIALIZE},
+  {"inheritance", TOK_INHERITANCE},
   {0,0}
 };
 

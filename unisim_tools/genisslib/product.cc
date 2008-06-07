@@ -63,6 +63,15 @@ Product_t::~Product_t() {
   close();
 }
 
+/** Output source code into the output file using the 
+    Also generate #line in the output file to link the C compiler error to the original source code
+    @param _source the ScourceCode_t object to dump
+ */
+void
+Product_t::usercode( SourceCode_t const& _source ) {
+  usercode( _source.m_fileloc, "%s", _source.m_content.str() );
+}
+
 /** Output source code into the output file
     Also generate #line in the output file to link the C compiler error to the original source code
     @param filename the name of the file where source code was found

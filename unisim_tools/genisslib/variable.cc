@@ -39,3 +39,13 @@ std::ostream&
 operator<<( std::ostream& _sink, Variable_t const& _var ) {
   return (_sink << _var.m_symbol << " : " << (*_var.m_ctype));
 }
+
+Inheritance_t::Inheritance_t( SourceCode_t* _modifier, SourceCode_t* _typename, SourceCode_t* _initargs )
+  : m_modifier( _modifier ), m_typename( _typename ), m_initargs( _initargs )
+{}
+
+Inheritance_t::Inheritance_t( Inheritance_t const& _inh )
+  : m_modifier( _inh.m_modifier ), m_typename( _inh.m_typename ), m_initargs( _inh.m_initargs )
+{}
+
+Inheritance_t::~Inheritance_t() {};
