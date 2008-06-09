@@ -132,17 +132,17 @@ void HCS12X ::Sleep() {
  * Stop All Clocks and puts the device in standby mode.
  * Asserting the ~RESET, ~XIRQ, or ~IRQ signals ends standby mode. 
  */
-	
+	wait(irq_event | reset_event | xirq_event);
 }
 	
 void HCS12X ::Wait() {
 /* TODO: 
  * Enter a wait state for an integer number of bus clock cycle
  * Only CPU12 clocks are stopped
- * Wait for not masked interrupt
+ * Wait for not masked interrupts or non-masquable interrupts
  */
 
-	wait(irq_event);
+	wait(irq_event | xirq_event);
 }
  
 bool 

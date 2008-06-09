@@ -104,7 +104,6 @@ public:
 
 	virtual void Reset();
 	
-	// cache interface implemented by the arm processor to get the request from the caches
 	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size);
 	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size);
 
@@ -113,7 +112,9 @@ private:
 	void Synchronize();
 	bool DebugEnable();
 	
-	sc_event irq_event, reset_event, xirq_event;
+	sc_event	irq_event,		// I-bit-Maskable Interrupt Requests 
+				reset_event,	// Hardware and Software Reset
+				xirq_event;		// X-bit Non-Maskable Interrupt Requests
 	
 	sc_time cpu_cycle_time;
 	sc_time bus_cycle_time;

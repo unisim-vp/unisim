@@ -407,7 +407,7 @@ public:
 	/********************************************************************
 	 * *******  Used for Indexed Operations XB: Postbyte Code  **********
 	 * ******************************************************************/
-	static char* xb_getAddrRegLabel(uint8_t rr) {
+	static string xb_getAddrRegLabel(uint8_t rr) {
 		switch (rr) {
     	case 0:
        		return "X";
@@ -420,7 +420,7 @@ public:
 		}
 	}
 
-	static char* xb_getAccRegLabel(uint8_t rr) {
+	static string xb_getAccRegLabel(uint8_t rr) {
 		switch (rr) {
     	case 0:
        		return "A";

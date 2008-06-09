@@ -146,7 +146,7 @@ xb_auto.getEAddr = {
 
 xb_auto.disasm = {
 
-	char*	regLabel = CPU::xb_getAddrRegLabel(rr);
+	string	regLabel = CPU::xb_getAddrRegLabel(rr);
 	char	sign = '+';
 	short  val = nnnn;
 
