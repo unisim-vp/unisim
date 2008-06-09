@@ -89,56 +89,69 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 
 %}
 
-%token TOK_NAMESPACE
-%token TOK_ADDRESS
-%token TOK_SUBDECODER
-%token TOK_DECL
-%token TOK_IMPL
-%token TOK_GROUP
-%token TOK_STATIC
-%token TOK_CONSTRUCTOR
-%token TOK_DESTRUCTOR
-%token TOK_OP
-%token TOK_SOURCE_CODE
-%token TOK_SPECIALIZE
-%token TOK_INHERITANCE
+/*
+ * control characters
+ */
 %token '*'
-%token '('
-%token ')'
 %token ':'
 %token ';'
 %token ','
-%token TOK_ACTION
 %token '='
 %token '-'
-%token TOK_IDENT
-%token TOK_INTEGER
-%token TOK_ENDL
-%token TOK_TAB
-%token TOK_STRING
 %token '.'
+%token '('
+%token ')'
 %token '['
 %token ']'
 %token '<'
 %token '>'
+%token TOK_ENDL
+%token TOK_TAB
 %token TOK_QUAD_DOT
+/*
+ * keywords
+ */
+%token TOK_ACTION
+%token TOK_ADDRESS
+%token TOK_BIG_ENDIAN
+%token TOK_CONST
+%token TOK_CONSTRUCTOR
+%token TOK_DECL
+%token TOK_DECODER
+%token TOK_DESTRUCTOR
+%token TOK_GROUP
+%token TOK_IMPL
 %token TOK_INCLUDE
+%token TOK_INHERITANCE
+%token TOK_LITTLE_ENDIAN
+%token TOK_NAMESPACE
+%token TOK_OP
+%token TOK_REWIND
 %token TOK_SEXT
 %token TOK_SHL
 %token TOK_SHR
-%token TOK_REWIND
-%token TOK_VAR
-%token TOK_BIG_ENDIAN
-%token TOK_LITTLE_ENDIAN
+%token TOK_SPECIALIZE
+%token TOK_STATIC
+%token TOK_SUBDECODER
 %token TOK_TEMPLATE
-%token TOK_DECODER
+%token TOK_VAR
+/*
+ * basic types
+ */
+%token TOK_SOURCE_CODE
+%token TOK_IDENT
+%token TOK_INTEGER
+%token TOK_STRING
+/*
+ * complex types
+ */
+%type<sourcecode> TOK_SOURCE_CODE
+%type<persistent_string> TOK_IDENT
+%type<uinteger> TOK_INTEGER
+%type<volatile_string> TOK_STRING
 %type<sourcecode> address_declaration
 %type<sourcecode> sourcecode_decl_declaration
 %type<sourcecode> sourcecode_impl_declaration
-%type<persistent_string> TOK_IDENT
-%type<sourcecode> TOK_SOURCE_CODE
-%type<uinteger> TOK_INTEGER
-%type<volatile_string> TOK_STRING
 %type<operation> operation_declaration
 %type<bitfield_list> bitfield_list
 %type<bitfield> bitfield
@@ -151,6 +164,7 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<param> param
 %type<inheritance> global_inheritance_declaration
 %type<boolean> sext
+%type<boolean> constness
 %type<uinteger> size_modifier
 %type<sinteger> shift
 %type<variable> var
@@ -574,13 +588,13 @@ var: TOK_IDENT ':' TOK_SOURCE_CODE var_init
 }
 ;
 
-action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' param_list ')' TOK_SOURCE_CODE
+action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' param_list ')' constness TOK_SOURCE_CODE
 {
   ActionProto_t::type_t action_proto_type = ActionProto_t::type_t( $1 );
   SourceCode_t*         returns = $3;
   ConstStr_t            symbol = ConstStr_t( $4, Scanner::symbols );
   Vect_t<CodePair_t>*   param_list = $6;
-  SourceCode_t*         default_sourcecode = $8;
+  SourceCode_t*         default_sourcecode = $9;
 
   { /* action protype name should be unique */
     ActionProto_t const*  prev_proto = Scanner::isa().actionproto( symbol );
@@ -627,7 +641,7 @@ action_proto_declaration: action_proto_type TOK_ACTION returns TOK_IDENT '(' par
   }
   
   ActionProto_t* actionproto =
-    new ActionProto_t( action_proto_type, symbol, returns, *param_list, default_sourcecode, Scanner::comments, Scanner::fileloc );
+    new ActionProto_t( action_proto_type, symbol, returns, *param_list, $8, default_sourcecode, Scanner::comments, Scanner::fileloc );
   Scanner::comments.clear();
   delete param_list;
   $$ = actionproto;
@@ -643,6 +657,15 @@ returns:
   $$ = $1;
 }
 ;
+
+constness:
+{
+  $$ = false;
+}
+| TOK_CONST
+{
+  $$ = true;
+}
 
 param: TOK_SOURCE_CODE TOK_SOURCE_CODE
 {

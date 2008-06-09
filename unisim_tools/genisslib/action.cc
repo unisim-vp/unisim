@@ -63,10 +63,10 @@ operator<<( std::ostream& _sink, Action_t const& _act ) {
     @param lineno a line number where the action prototype was found
 */
 ActionProto_t::ActionProto_t( ActionProto_t::type_t _type, ConstStr_t _symbol, SourceCode_t* _returns,
-                              Vect_t<CodePair_t>& _params, SourceCode_t* _defaultcode,
+                              Vect_t<CodePair_t>& _params, bool _constness, SourceCode_t* _defaultcode,
                               Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc )
   : m_type( _type ), m_symbol( _symbol ), m_returns( _returns ),
-    m_params( _params ), m_defaultcode( _defaultcode ),
+    m_params( _params ), m_constness( _constness ), m_defaultcode( _defaultcode ),
     m_comments( _comments ), m_fileloc( _fileloc )
 {}
 
@@ -91,7 +91,7 @@ operator<<( std::ostream& _sink, ActionProto_t const& _ap ) {
   for( Vect_t<CodePair_t>::const_iterator codepair = _ap.m_params.begin(); codepair < _ap.m_params.end(); sep = ", ", ++ codepair )
     _sink << sep << *(*codepair);
   
-  _sink << ") " << (*_ap.m_defaultcode) << '\n';
+  _sink << ") " << (_ap.m_constness ? "const " : "")<< (*_ap.m_defaultcode) << '\n';
   return _sink;
 }
 

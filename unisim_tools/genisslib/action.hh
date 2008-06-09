@@ -48,12 +48,13 @@ struct ActionProto_t : virtual ReferenceCounter {
   ConstStr_t               m_symbol;              /**< The associated symbol */
   Ptr_t<SourceCode_t>      m_returns;             /**< The C return type of the action */
   Vect_t<CodePair_t>       m_params;              /**< The C parameters of the action */
+  bool                     m_constness;           /**< The constness of the action */
   Ptr_t<SourceCode_t>      m_defaultcode;         /**< The default C implementation of the action */
   Vect_t<Comment_t>        m_comments;            /**< The list of the C comment associated with the action prototype */
   FileLoc_t                m_fileloc;             /**< The file location where the action prototype was declared */
   
   ActionProto_t( type_t _type, ConstStr_t _symbol, SourceCode_t* _returns, Vect_t<CodePair_t>& _params,
-                 SourceCode_t* _defaultcode, Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc );
+                 bool _constness, SourceCode_t* _defaultcode, Vect_t<Comment_t>& _comments, FileLoc_t const& _fileloc );
   ~ActionProto_t();
   
   char const*              returntype() const;

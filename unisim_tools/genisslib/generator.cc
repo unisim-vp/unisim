@@ -308,9 +308,9 @@ Generator::operation_decl( Product_t& _product ) const {
 
   _product.code( " Operation(%s code, %s addr, const char *name);\n", codetype_constref().str(), isa().m_addrtype.str() );
   _product.code( " virtual ~Operation();\n" );
-  _product.code( " inline %s GetAddr() { return addr; }\n", isa().m_addrtype.str() );
-  _product.code( " inline %s GetEncoding() { return encoding; }\n", codetype_constref().str() );
-  _product.code( " inline const char *GetName() { return name; }\n" );
+  _product.code( " inline %s GetAddr() const { return addr; }\n", isa().m_addrtype.str() );
+  _product.code( " inline %s GetEncoding() const { return encoding; }\n", codetype_constref().str() );
+  _product.code( " inline const char *GetName() const { return name; }\n" );
   
   for( Vect_t<Variable_t>::const_iterator var = isa().m_vars.begin(); var < isa().m_vars.end(); ++ var ) {
     _product.usercode( (**var).m_ctype->m_fileloc, " %s %s;", (**var).m_ctype->m_content.str(), (**var).m_symbol.str() );
@@ -344,7 +344,7 @@ Generator::operation_decl( Product_t& _product ) const {
         }
     }
 
-    _product.code( " );\n" );
+    _product.code( " )%s;\n", (isa().m_actionprotos[idx]->m_constness ? " const" : "") );
   }
 
   _product.code( "protected:\n" );
@@ -435,7 +435,7 @@ Generator::isa_operations_decl( Product_t& _product ) const {
         _product.code( " " );
       }
 
-      _product.code( ");\n" );
+      _product.code( ")%s;\n", (actionproto->m_constness ? " const" : "") );
     }
 
     _product.code( "private:\n" );
@@ -511,7 +511,7 @@ Generator::operation_impl( Product_t& _product ) const {
         }
     }
 
-    _product.code( ")\n{\n" );
+    _product.code( ")%s\n{\n", (isa().m_actionprotos[idx]->m_constness ? " const" : "") );
     _product.usercode( *isa().m_actionprotos[idx]->m_defaultcode, "{%s}\n" );
     _product.code( "}\n" );
   }
@@ -538,7 +538,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
         _product.template_signature( isa().m_tparams );
         _product.code( " char const* Op%s", Str::capitalize( (**op).m_symbol ).str() );
         _product.template_abbrev( isa().m_tparams );
-        _product.code( "::%s_text()\n", actionproto->m_symbol.str() );
+        _product.code( "::%s_text() const\n", actionproto->m_symbol.str() );
         _product.code( " { return %s; }", Str::dqcstring( (**action).m_source_code->m_content.str() ).str() );
       }
 
@@ -565,7 +565,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
         }
       }
 
-      _product.code( ")\n{\n" );
+      _product.code( ")%s\n{\n", (actionproto->m_constness ? " const" : "") );
       _product.usercode( *(**action).m_source_code, "{%s}\n" );
       _product.code( "}\n" );
     }
