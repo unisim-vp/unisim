@@ -426,12 +426,10 @@ Generator::isa_operations_decl( Product_t& _product ) const {
       if( not actionproto->m_params.empty() ) {
         char const* sep = " ";
         for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin();
-             param < actionproto->m_params.end(); ++ param, sep = ",\n" ) {
-          _product.code( sep );
-          _product.usercode( *(**param).m_ctype );
-          _product.code( " " );
-          _product.usercode( *(**param).m_csymbol );
-        }
+             param < actionproto->m_params.end(); ++ param, sep = ",\n" )
+          {
+            _product.code( sep ).usercode( *(**param).m_ctype ).code( " " ).usercode( *(**param).m_csymbol );
+          }
         _product.code( " " );
       }
 
@@ -557,12 +555,11 @@ Generator::isa_operations_methods( Product_t& _product ) const {
 
       if( not actionproto->m_params.empty() ) {
         char const* sep = " ";
-        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin(); param < actionproto->m_params.end(); ++ param, sep = ",\n" ) {
-          _product.code( sep );
-          _product.usercode( *(**param).m_ctype );
-          _product.code( " " );
-          _product.usercode( *(**param).m_csymbol );
-        }
+        for( Vect_t<CodePair_t>::const_iterator param = actionproto->m_params.begin();
+             param < actionproto->m_params.end(); ++ param, sep = ",\n" )
+          {
+            _product.code( sep ).usercode( *(**param).m_ctype ).code( " " ).usercode( *(**param).m_csymbol );
+          }
       }
 
       _product.code( ")%s\n{\n", (actionproto->m_constness ? " const" : "") );
