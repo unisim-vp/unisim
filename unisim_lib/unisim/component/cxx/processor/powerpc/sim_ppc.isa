@@ -37,13 +37,13 @@
 
 {
 
+#include <stdarg.h>
+
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace powerpc {
-
-#include <stdarg.h>
 
   //typedef uint32_t registers_written_t;
 
