@@ -12,14 +12,14 @@ include_HEADERS = cpu.hh exception.hh powerpc_types.hh \
 	fpu.hh floating.hh config.hh branch.isa condition.isa floating.isa \
 	integer.isa loadstore.isa misc.isa altivec.isa ppc.isa perf.isa \
 	fpu.tcc cpu.tcc exception.tcc
-nodist_include_HEADERS = powerpc.hh powerpc.tcc
-BUILT_SOURCES = powerpc.hh powerpc.tcc
-CLEANFILES = powerpc.tcc powerpc.hh
+nodist_include_HEADERS = $(top_srcdir)/powerpc.hh $(top_srcdir)/powerpc.tcc
+BUILT_SOURCES = $(top_srcdir)/powerpc.hh $(top_srcdir)/powerpc.tcc
+CLEANFILES = $(top_srcdir)/powerpc.tcc $(top_srcdir)/powerpc.hh
 
-powerpc.tcc: powerpc.hh
-powerpc.hh: $(srcdir)/branch.isa $(srcdir)/condition.isa $(srcdir)/floating.isa $(srcdir)/integer.isa \
+$(top_srcdir)/powerpc.tcc: $(top_srcdir)/powerpc.hh
+$(top_srcdir)/powerpc.hh: $(srcdir)/branch.isa $(srcdir)/condition.isa $(srcdir)/floating.isa $(srcdir)/integer.isa \
 	$(srcdir)/loadstore.isa $(srcdir)/misc.isa $(srcdir)/altivec.isa $(srcdir)/ppc.isa $(srcdir)/perf.isa
-	$(GENISSLIB_PATH) -I $(srcdir) -o powerpc -w 32 $(srcdir)/ppc.isa
+	$(GENISSLIB_PATH) -I $(srcdir) -o $(top_srcdir)/powerpc -w 32 $(srcdir)/ppc.isa
 
 dist_share_DATA = COPYING
 

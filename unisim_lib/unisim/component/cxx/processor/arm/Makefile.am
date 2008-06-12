@@ -71,16 +71,16 @@ nobase_include_HEADERS = \
 	isa/thumb/profiling.isa
 
 nodist_include_HEADERS = \
-	isa_arm32.tcc isa_arm32.hh \
-	isa_thumb.tcc isa_thumb.hh
+	$(top_srcdir)/isa_arm32.tcc $(top_srcdir)/isa_arm32.hh \
+	$(top_srcdir)/isa_thumb.tcc $(top_srcdir)/isa_thumb.hh
 
-BUILT_SOURCES = isa_arm32.tcc isa_arm32.hh \
-	isa_thumb.tcc isa_thumb.hh
-CLEANFILES = isa_arm32.tcc isa_arm32.hh \
-	isa_thumb.tcc isa_thumb.hh
+BUILT_SOURCES = $(top_srcdir)/isa_arm32.tcc $(top_srcdir)/isa_arm32.hh \
+	$(top_srcdir)/isa_thumb.tcc $(top_srcdir)/isa_thumb.hh
+CLEANFILES = $(top_srcdir)/isa_arm32.tcc $(top_srcdir)/isa_arm32.hh \
+	$(top_srcdir)/isa_thumb.tcc $(top_srcdir)/isa_thumb.hh
 
-isa_arm32.tcc: isa_arm32.hh 
-isa_arm32.hh: $(srcdir)/isa/arm32/arm32.isa $(srcdir)/isa/arm32/constructors_dec.isa \
+$(top_srcdir)/isa_arm32.tcc: $(top_srcdir)/isa_arm32.hh 
+$(top_srcdir)/isa_arm32.hh: $(srcdir)/isa/arm32/arm32.isa $(srcdir)/isa/arm32/constructors_dec.isa \
 	$(srcdir)/isa/arm32/actions_dec.isa $(srcdir)/isa/arm32/branch.isa \
 	$(srcdir)/isa/arm32/coprocessor.isa $(srcdir)/isa/arm32/coprocessor_v5e.isa \
 	$(srcdir)/isa/arm32/data_processing.isa $(srcdir)/isa/arm32/data_processing_v5e.isa \
@@ -94,7 +94,7 @@ isa_arm32.hh: $(srcdir)/isa/arm32/arm32.isa $(srcdir)/isa/arm32/constructors_dec
 	$(srcdir)/isa/arm32/dependency.isa \
 	$(srcdir)/isa/arm32/profiling.isa \
 	$(srcdir)/isa/arm32/specialization.isa
-	$(GENISSLIB_PATH) -o isa_arm32 -w 32 -I $(srcdir)/isa/arm32 $(srcdir)/isa/arm32/arm32.isa
+	$(GENISSLIB_PATH) -o $(top_srcdir)/isa_arm32 -w 32 -I $(srcdir)/isa/arm32 $(srcdir)/isa/arm32/arm32.isa
 
 isa_thumb.tcc: isa_thumb.hh 
 isa_thumb.hh: $(srcdir)/isa/thumb/thumb.isa $(srcdir)/isa/thumb/constructors_dec.isa \
@@ -105,7 +105,7 @@ isa_thumb.hh: $(srcdir)/isa/thumb/thumb.isa $(srcdir)/isa/thumb/constructors_dec
 	$(srcdir)/isa/thumb/load_store_reg.isa \
 	$(srcdir)/isa/thumb/load_store_multiple.isa \
 	$(srcdir)/isa/thumb/profiling.isa
-	$(GENISSLIB_PATH) -o isa_thumb -w 32 -I $(srcdir)/isa/thumb $(srcdir)/isa/thumb/thumb.isa
+	$(GENISSLIB_PATH) -o $(top_srcdir)/isa_thumb -w 32 -I $(srcdir)/isa/thumb $(srcdir)/isa/thumb/thumb.isa
 
 dist_share_DATA = COPYING
 
