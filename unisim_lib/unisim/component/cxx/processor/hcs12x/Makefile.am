@@ -16,8 +16,14 @@ $(top_srcdir)/xb.cc $(top_srcdir)/hcs12x.cc: $(top_srcdir)/%.cc: $(top_srcdir)/%
 $(top_srcdir)/hcs12x.hh: $(top_srcdir)/xb.hh
 
 $(top_srcdir)/xb_sub.isa: $(top_srcdir)/xb.hh
-$(top_srcdir)/xb.hh $(top_srcdir)/hcs12x.hh: $(top_srcdir)/%.hh: $(top_srcdir)/%.isa
-	$(GENISSLIB_PATH) -I $(srcdir) -o $(basename $@) -w 32 $<
+$(top_srcdir)/xb.hh: $(top_srcdir)/xb.isa
+	cd $(top_srcdir); $(GENISSLIB_PATH) -I . -o xb -w 32 xb.isa
+
+$(top_srcdir)/hcs12x.hh: $(top_srcdir)/hcs12x.isa
+	cd $(top_srcdir); $(GENISSLIB_PATH) -I . -o hcs12x -w 32 hcs12x.isa
+
+# $(top_srcdir)/xb.hh $(top_srcdir)/hcs12x.hh: $(top_srcdir)/%.hh: $(top_srcdir)/%.isa
+# 	cd $(top_srcdir); $(GENISSLIB_PATH) -I . -o $(basename $@) -w 32 $<
 
 dist_share_DATA = COPYING
 

@@ -21,7 +21,7 @@ $(top_srcdir)/powerpc.tcc: $(top_srcdir)/powerpc.hh
 $(top_srcdir)/powerpc.hh: $(srcdir)/branch.isa $(srcdir)/condition.isa $(srcdir)/floating.isa $(srcdir)/integer.isa \
 	$(srcdir)/loadstore.isa $(srcdir)/misc.isa $(srcdir)/altivec.isa $(srcdir)/ppc.isa $(srcdir)/perf.isa \
 	$(srcdir)/sim_branch.isa $(srcdir)/sim_dependencies.isa $(srcdir)/sim_latencies.isa $(srcdir)/sim_load.isa $(srcdir)/sim_ppc.isa
-	$(GENISSLIB_PATH) -I $(srcdir) -o $(top_srcdir)/powerpc -w 32 $(srcdir)/ppc.isa
+	cd $(top_srcdir); $(GENISSLIB_PATH) -I . -o powerpc -w 32 ppc.isa
 
 dist_share_DATA = COPYING
 

@@ -1,11 +1,11 @@
-#include "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.hh"
+#include "xb.hh"
 #include <cassert>
 #include <ostream>
 #include <cstring>
-#line 52 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 52 "xb.isa"
 
 using namespace std;
-#line 9 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 9 "xb.cc"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
 unsigned int const CodeType::maxsize;
 std::ostream& operator << ( std::ostream& _sink, CodeType const& _ct ) {
@@ -29,39 +29,39 @@ Operation::~Operation()
 {
 }
 
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 uint16_t
-#line 35 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 35 "xb.cc"
 Operation::getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 CPU *
-#line 39 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 39 "xb.cc"
+#line 60 "xb.isa"
 cpu
-#line 42 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 42 "xb.cc"
 )
 {
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	{ assert( false ); return 0; }
-#line 47 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 47 "xb.cc"
 }
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 void
-#line 51 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 51 "xb.cc"
 Operation::disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 ostream&
-#line 55 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 55 "xb.cc"
+#line 56 "xb.isa"
 sink
-#line 58 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 58 "xb.cc"
 )
 {
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	{
 		sink << "?";
 	}
-#line 65 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 65 "xb.cc"
 }
 class OpXb_auto : public Operation
 {
@@ -71,16 +71,16 @@ public:
 	uint32_t p;
 	uint32_t nnnn;
 	virtual
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	uint16_t
-#line 77 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 77 "xb.cc"
 	getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	CPU *
-#line 81 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 81 "xb.cc"
+#line 60 "xb.isa"
 	cpu
-#line 84 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 84 "xb.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -116,16 +116,16 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	void
-#line 122 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 122 "xb.cc"
 	disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	ostream&
-#line 126 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 126 "xb.cc"
+#line 56 "xb.isa"
 	sink
-#line 129 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 129 "xb.cc"
 	);
 private:
 };
@@ -137,16 +137,16 @@ public:
 	uint32_t rr;
 	int32_t nnnnn;
 	virtual
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	uint16_t
-#line 143 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 143 "xb.cc"
 	getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	CPU *
-#line 147 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 147 "xb.cc"
+#line 60 "xb.isa"
 	cpu
-#line 150 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 150 "xb.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -182,16 +182,16 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	void
-#line 188 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 188 "xb.cc"
 	disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	ostream&
-#line 192 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 192 "xb.cc"
+#line 56 "xb.isa"
 	sink
-#line 195 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 195 "xb.cc"
 	);
 private:
 };
@@ -204,16 +204,16 @@ public:
 	uint32_t s;
 	int32_t n8;
 	virtual
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	uint16_t
-#line 210 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 210 "xb.cc"
 	getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	CPU *
-#line 214 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 214 "xb.cc"
+#line 60 "xb.isa"
 	cpu
-#line 217 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 217 "xb.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -249,16 +249,16 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	void
-#line 255 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 255 "xb.cc"
 	disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	ostream&
-#line 259 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 259 "xb.cc"
+#line 56 "xb.isa"
 	sink
-#line 262 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 262 "xb.cc"
 	);
 private:
 };
@@ -271,16 +271,16 @@ public:
 	uint32_t s;
 	int32_t n16;
 	virtual
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	uint16_t
-#line 277 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 277 "xb.cc"
 	getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	CPU *
-#line 281 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 281 "xb.cc"
+#line 60 "xb.isa"
 	cpu
-#line 284 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 284 "xb.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -316,16 +316,16 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	void
-#line 322 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 322 "xb.cc"
 	disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	ostream&
-#line 326 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 326 "xb.cc"
+#line 56 "xb.isa"
 	sink
-#line 329 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 329 "xb.cc"
 	);
 private:
 };
@@ -337,16 +337,16 @@ public:
 	uint32_t rr;
 	uint32_t aa;
 	virtual
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	uint16_t
-#line 343 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 343 "xb.cc"
 	getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	CPU *
-#line 347 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 347 "xb.cc"
+#line 60 "xb.isa"
 	cpu
-#line 350 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 350 "xb.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -382,16 +382,16 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	void
-#line 388 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 388 "xb.cc"
 	disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	ostream&
-#line 392 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 392 "xb.cc"
+#line 56 "xb.isa"
 	sink
-#line 395 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 395 "xb.cc"
 	);
 private:
 };
@@ -402,16 +402,16 @@ public:
 	OpXb_accD_offset_idx_ind(CodeType const& code, uint16_t addr);
 	uint32_t rr;
 	virtual
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	uint16_t
-#line 408 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 408 "xb.cc"
 	getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 	CPU *
-#line 412 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 412 "xb.cc"
+#line 60 "xb.isa"
 	cpu
-#line 415 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 415 "xb.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -447,33 +447,33 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	void
-#line 453 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 453 "xb.cc"
 	disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 	ostream&
-#line 457 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 457 "xb.cc"
+#line 56 "xb.isa"
 	sink
-#line 460 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 460 "xb.cc"
 	);
 private:
 };
 
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 uint16_t
-#line 467 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 467 "xb.cc"
 OpXb_auto::getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 CPU *
-#line 471 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 471 "xb.cc"
+#line 60 "xb.isa"
 cpu
-#line 474 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 474 "xb.cc"
 )
 {
-#line 123 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 123 "xb.isa"
 	{
 
 		address_t regOldVal = cpu->xb_getAddrRegValue(rr);
@@ -497,21 +497,21 @@ cpu
 			return regOldVal;
 		}
 	}
-#line 501 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 501 "xb.cc"
 }
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 void
-#line 505 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 505 "xb.cc"
 OpXb_auto::disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 ostream&
-#line 509 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 509 "xb.cc"
+#line 56 "xb.isa"
 sink
-#line 512 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 512 "xb.cc"
 )
 {
-#line 147 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 147 "xb.isa"
 	{
 
 		string	regLabel = CPU::xb_getAddrRegLabel(rr);
@@ -536,7 +536,7 @@ sink
 			sink << regLabel << sign;
 		}
 	}
-#line 540 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 540 "xb.cc"
 }
 
 static Operation *DecodeOpXb_auto(CodeType const& code, uint16_t addr)
@@ -544,19 +544,19 @@ static Operation *DecodeOpXb_auto(CodeType const& code, uint16_t addr)
 	return new OpXb_auto(code, addr);
 }
 
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 uint16_t
-#line 550 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 550 "xb.cc"
 OpXb_5bit_cst::getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 CPU *
-#line 554 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 554 "xb.cc"
+#line 60 "xb.isa"
 cpu
-#line 557 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 557 "xb.cc"
 )
 {
-#line 64 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 64 "xb.isa"
 	{
 
 		address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + nnnnn;
@@ -565,25 +565,25 @@ cpu
 
 		//    return cpu->xb_getAddrRegValue(rr) + nnnnn;
 	}
-#line 569 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 569 "xb.cc"
 }
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 void
-#line 573 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 573 "xb.cc"
 OpXb_5bit_cst::disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 ostream&
-#line 577 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 577 "xb.cc"
+#line 56 "xb.isa"
 sink
-#line 580 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 580 "xb.cc"
 )
 {
-#line 73 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 73 "xb.isa"
 	{
 		sink << std::dec << nnnnn << "," << CPU::xb_getAddrRegLabel(rr);
 	}
-#line 587 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 587 "xb.cc"
 }
 
 static Operation *DecodeOpXb_5bit_cst(CodeType const& code, uint16_t addr)
@@ -592,19 +592,19 @@ static Operation *DecodeOpXb_5bit_cst(CodeType const& code, uint16_t addr)
 }
 
 // TODO: 20080417 - a revoir
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 uint16_t
-#line 598 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 598 "xb.cc"
 OpXb_9_cst_z0::getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 CPU *
-#line 602 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 602 "xb.cc"
+#line 60 "xb.isa"
 cpu
-#line 605 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 605 "xb.cc"
 )
 {
-#line 80 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 80 "xb.isa"
 	{
 
 		address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n8;
@@ -613,26 +613,26 @@ cpu
 
 		//	return cpu->xb_getAddrRegValue(rr) + n8;
 	}
-#line 617 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 617 "xb.cc"
 }
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 void
-#line 621 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 621 "xb.cc"
 OpXb_9_cst_z0::disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 ostream&
-#line 625 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 625 "xb.cc"
+#line 56 "xb.isa"
 sink
-#line 628 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 628 "xb.cc"
 )
 {
-#line 89 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 89 "xb.isa"
 	{
 
 		sink << std::dec << n8 << "," << CPU::xb_getAddrRegLabel(rr);
 	}
-#line 636 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 636 "xb.cc"
 }
 
 static Operation *DecodeOpXb_9_cst_z0(CodeType const& code, uint16_t addr)
@@ -640,19 +640,19 @@ static Operation *DecodeOpXb_9_cst_z0(CodeType const& code, uint16_t addr)
 	return new OpXb_9_cst_z0(code, addr);
 }
 
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 uint16_t
-#line 646 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 646 "xb.cc"
 OpXb_16bit_cst_z1::getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 CPU *
-#line 650 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 650 "xb.cc"
+#line 60 "xb.isa"
 cpu
-#line 653 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 653 "xb.cc"
 )
 {
-#line 96 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 96 "xb.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -666,21 +666,21 @@ cpu
 			return cpu->memRead16(addr);
 		}
 	}
-#line 670 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 670 "xb.cc"
 }
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 void
-#line 674 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 674 "xb.cc"
 OpXb_16bit_cst_z1::disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 ostream&
-#line 678 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 678 "xb.cc"
+#line 56 "xb.isa"
 sink
-#line 681 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 681 "xb.cc"
 )
 {
-#line 110 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 110 "xb.isa"
 	{
 		if (s==0) {
 			// constant offset 16-bit signed
@@ -690,7 +690,7 @@ sink
 			sink << "[" << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr) << "]";
 		}
 	}
-#line 694 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 694 "xb.cc"
 }
 
 static Operation *DecodeOpXb_16bit_cst_z1(CodeType const& code, uint16_t addr)
@@ -698,44 +698,44 @@ static Operation *DecodeOpXb_16bit_cst_z1(CodeType const& code, uint16_t addr)
 	return new OpXb_16bit_cst_z1(code, addr);
 }
 
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 uint16_t
-#line 704 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 704 "xb.cc"
 OpXb_acc_offset::getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 CPU *
-#line 708 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 708 "xb.cc"
+#line 60 "xb.isa"
 cpu
-#line 711 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 711 "xb.cc"
 )
 {
-#line 175 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 175 "xb.isa"
 	{
 		uint16_t addrRegVal = cpu->xb_getAddrRegValue(rr);
 		uint16_t accRegVal = cpu->xb_getAccRegValue(aa);
 
 		return addrRegVal + accRegVal;
 	}
-#line 721 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 721 "xb.cc"
 }
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 void
-#line 725 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 725 "xb.cc"
 OpXb_acc_offset::disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 ostream&
-#line 729 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 729 "xb.cc"
+#line 56 "xb.isa"
 sink
-#line 732 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 732 "xb.cc"
 )
 {
-#line 182 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 182 "xb.isa"
 	{
 		sink << CPU::xb_getAccRegLabel(aa) << "," << CPU::xb_getAddrRegLabel(rr);
 	}
-#line 739 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 739 "xb.cc"
 }
 
 static Operation *DecodeOpXb_acc_offset(CodeType const& code, uint16_t addr)
@@ -743,42 +743,42 @@ static Operation *DecodeOpXb_acc_offset(CodeType const& code, uint16_t addr)
 	return new OpXb_acc_offset(code, addr);
 }
 
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 uint16_t
-#line 749 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 749 "xb.cc"
 OpXb_accD_offset_idx_ind::getEAddr(
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 60 "xb.isa"
 CPU *
-#line 753 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 60 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 753 "xb.cc"
+#line 60 "xb.isa"
 cpu
-#line 756 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 756 "xb.cc"
 )
 {
-#line 189 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 189 "xb.isa"
 	{
 
 		return cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegD() + cpu->xb_getAddrRegValue(rr), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	}
-#line 764 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 764 "xb.cc"
 }
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 void
-#line 768 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 768 "xb.cc"
 OpXb_accD_offset_idx_ind::disasm(
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 56 "xb.isa"
 ostream&
-#line 772 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
-#line 56 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 772 "xb.cc"
+#line 56 "xb.isa"
 sink
-#line 775 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 775 "xb.cc"
 )
 {
-#line 194 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.isa"
+#line 194 "xb.isa"
 	{
 		sink << "[D," << CPU::xb_getAddrRegLabel(rr) << "]";
 	}
-#line 782 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/xb.cc"
+#line 782 "xb.cc"
 }
 
 static Operation *DecodeOpXb_accD_offset_idx_ind(CodeType const& code, uint16_t addr)
