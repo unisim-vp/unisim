@@ -93,6 +93,21 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
     AC_CHECK_HEADER(ncurses.h,, AC_MSG_ERROR([ncurses.h not found. Please install the readline development library. Use --with-ncurses=<path> to overload default includes search path.]))
 ])
 
+## UNISIM_CHECK_PTHREAD
+## Checks if the curses library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_PTHREAD], [
+    # Check for pthread.h
+    AC_CHECK_HEADER(pthread.h,, AC_MSG_ERROR([pthread.h not found.]))
+
+    if test "$broken_pthread" == "yes"; then
+	AC_MSG_ERROR([installed pthread library is broken.])
+    else
+	LIBS=${LIBS}" -lpthread"
+    fi
+])
+
 ## UNISIM_CHECK_READLINE
 ## Checks if the realine library is installed
 ## Does not take parameters
@@ -261,24 +276,24 @@ AC_ARG_ENABLE(release,
 ])
 
 
-## UNISIM_CHECK_PTHREAD
+## UNISIM_CHECK_BOOST
 ## Checks if the pthread library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN([UNISIM_CHECK_PTHREAD], [
-    # Check if pthread path has been overloaded
-    AC_ARG_WITH(pthread,
-	AS_HELP_STRING([--with-pthread=<path>], [pthread library to use (will be completed with /include and /lib)]))
-    if test "x$with_pthread" != "x"; then
-	AC_MSG_NOTICE([using pthread at $with_pthread])
-	CPPFLAGS=${CPPFLAGS}" -I$with_pthread/include"
+AC_DEFUN([UNISIM_CHECK_BOOST], [
+    # Check if boost path has been overloaded
+    AC_ARG_WITH(boost,
+	AS_HELP_STRING([--with-boost=<path>], [boost library to use (will be completed with /include and /lib)]))
+    if test "x$with_boost" != "x"; then
+	AC_MSG_NOTICE([using boost at $with_boost])
+	CPPFLAGS=${CPPFLAGS}" -I$with_boost/include"
     fi
 	
-    # Check for some pthread graph headers
-    AC_CHECK_HEADERS([pthread/graph/adjacency_list.hpp pthread/graph/topological_sort.hpp pthread/graph/visitors.hpp],,\
-	AC_MSG_ERROR([pthread graph headers not found. Please install the pthread graph development library. Use --with-pthread=<path> to overload default includes search path.]))
-    # Check for some pthread thread headers
-    AC_CHECK_HEADERS([pthread/thread/mutex.hpp],,\
-	AC_MSG_ERROR([pthread thread headers not found. Please install the pthread thread development library. Use --with-pthread=<path> to overload default includes search path.]))
+    # Check for some boost graph headers
+    AC_CHECK_HEADERS([boost/graph/adjacency_list.hpp boost/graph/topological_sort.hpp boost/graph/visitors.hpp],,\
+	AC_MSG_ERROR([boost graph headers not found. Please install the boost graph development library. Use --with-boost=<path> to overload default includes search path.]))
+    # Check for some boost thread headers
+    AC_CHECK_HEADERS([boost/thread/mutex.hpp],,\
+	AC_MSG_ERROR([boost thread headers not found. Please install the boost thread development library. Use --with-boost=<path> to overload default includes search path.]))
 ])
 

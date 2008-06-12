@@ -63,6 +63,13 @@ UNISIM_CHECK_BOOST
 ###### CHECK FOR LIBXML2 ######################################################
 UNISIM_CHECK_LIBXML2
 
+###### CHECK FOR PTHREAD ######################################################
+case $host in
+	*linux*)   # linux host
+		UNISIM_CHECK_PTHREAD
+		;;
+esac
+
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])

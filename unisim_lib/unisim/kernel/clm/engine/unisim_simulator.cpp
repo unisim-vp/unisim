@@ -45,7 +45,12 @@
 #include <fstream>
 #include "unisim.h"
 #include "unisim_commandline.h"
+
+#ifdef WIN32
+#include <windows.h>
+#else
 #include <pthread.h>
+#endif
 
 fsc_simcontext *Simulator::context = 0;
 
@@ -264,21 +269,55 @@ void Simulator::show_progress()
   }
 }
 
+#ifdef WIN32
+DWORD WINAPI progress_bar_thread_statup(LPVOID sim)
+#else
 void* progress_bar_thread_statup(void* sim)
+#endif
 { Simulator *s = (Simulator *)sim;
   while(1)
   { s->show_progress();
+#ifdef WIN32
+    Sleep(5000);
+#else
     sleep(5);
+#endif
   }
+#ifdef WIN32
+  ExitThread(0);
+#else
   pthread_exit(NULL);
+#endif
 }
 
 void Simulator::set_progress_max(uint64_t max)
-{ pthread_t t;
+{
+#ifdef WIN32
+  HANDLE t;
+#else
+  pthread_t t;
+#endif
   start_time=time(NULL);
   ListPointer<unisim_module> m;
   for(m = unisim_module::unisim_module_list.Begin(); m; m++)
   { m->set_progress_max(start_time,max);
   }
+#ifdef WIN32
+  LPSECURITY_ATTRIBUTES lpThreadAttributes = 0; // the thread gets a default security descriptor
+  SIZE_T dwStackSize = 0; // use the default stack size
+  LPTHREAD_START_ROUTINE lpStartAddress = &progress_bar_thread_statup;
+  LPVOID lpParameter = this;
+  DWORD dwCreationFlags = 0; // The thread runs immediately after creation
+  LPDWORD lpThreadId = NULL; // the thread identifier is not returned
+
+  t = CreateThread(
+     lpThreadAttributes,
+     dwStackSize,
+     lpStartAddress,
+     lpParameter,
+     dwCreationFlags,
+     lpThreadId);
+#else
   pthread_create(&t, NULL, progress_bar_thread_statup, this);
+#endif
 }

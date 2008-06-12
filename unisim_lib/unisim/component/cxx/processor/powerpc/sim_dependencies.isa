@@ -35,7 +35,7 @@
 
 /* --------------------------------------------------------------------------
 
-Ces instructions updatant ra, ra ne devrait pas être a la fois input et output.
+Ces instructions updatant ra, ra ne devrait pas ï¿½tre a la fois input et output.
 Mais sinon elle respecte bien le format rd = premier registre
 
 > lbzu lhau lhzu lwzu
@@ -65,6 +65,8 @@ manque les loafd flottant a update comme lfdu)
 
 {
 
+#include <stdarg.h>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -72,7 +74,6 @@ namespace processor {
 namespace powerpc {
 
 
-#include <stdarg.h>
 
 // DD New depencies are arriving ...
 /*

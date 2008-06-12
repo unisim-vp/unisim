@@ -40,7 +40,7 @@ function Package {
 	echo "AllowNoIcons=yes" >> ${ISS_FILENAME}
 	echo "OutputDir=dist" >> ${ISS_FILENAME}
 	echo "OutputBaseFilename=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
-	echo "Compression=zip" >> ${ISS_FILENAME}
+	echo "Compression=lzma" >> ${ISS_FILENAME}
 	echo "SolidCompression=yes" >> ${ISS_FILENAME}
 	echo "" >> ${ISS_FILENAME}
 	echo "[Languages]" >> ${ISS_FILENAME}

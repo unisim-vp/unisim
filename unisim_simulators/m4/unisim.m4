@@ -65,6 +65,24 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
     fi
 ])
 
+## UNISIM_CHECK_PTHREAD
+## Checks if the curses library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_PTHREAD], [
+    # Check for pthread.h
+    AC_CHECK_HEADER(pthread.h,, AC_MSG_ERROR([pthread.h not found.]))
+
+    # Check for functions wgetch in libncurses.a
+    AC_CHECK_LIB(pthread, pthread_create, broken_pthread=no, broken_pthread=yes)
+
+    if test "$broken_pthread" == "yes"; then
+	AC_MSG_ERROR([installed pthread library is broken.])
+    else
+	LIBS=${LIBS}" -lpthread"
+    fi
+])
+
 ## UNISIM_CHECK_UNISIM_LIB
 ## Checks if the unisim library is installed
 ## Does not take parameters

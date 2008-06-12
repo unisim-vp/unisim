@@ -410,7 +410,7 @@ int sc_main(int argc, char *argv[])
 	//  - Linux OS run-time configuration
 	(*linux_os)["system"] = "powerpc";
 	(*linux_os)["endianess"] = E_BIG_ENDIAN;
-	(*linux_os)["verbose"] = false;
+	(*linux_os)["verbose"] = true;//false;
 
 	//  - Loggers
 	if(logger_on)
@@ -620,20 +620,20 @@ int sc_main(int argc, char *argv[])
 	if(logger_on) {
 		unsigned int logger_index = 0;
 		logger->time_import >> time->time_export;
-		cpu->logger_import >> *logger->logger_export[logger_index++];
+/*		cpu->logger_import >> *logger->logger_export[logger_index++];
 		cpu->fpu_logger_import >> *logger->logger_export[logger_index++];
 		cpu->mmu_logger_import >> *logger->logger_export[logger_index++];
 		bus->logger_import >> *logger->logger_export[logger_index++];
 		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
 		memory->logger_import >> *logger->logger_export[logger_index++];
-		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
+		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];*/
 		linux_os->logger_import >> *logger->logger_export[logger_index++];
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
+/*		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)
 				bus_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
 		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
 			if(mem_msg_spy[i] != NULL)
-				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
+				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];*/
 	}
 
 #ifdef DEBUG_SERVICE

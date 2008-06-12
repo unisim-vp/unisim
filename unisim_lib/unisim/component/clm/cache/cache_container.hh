@@ -6,7 +6,7 @@
                                     BSD LICENSE  
 ********************************************************************************  
 Copyright (c) 2006, Commissariat a l'Energie Atomique (CEA) & INRIA
-Authors: Daniel Gracia Pérez (daniel.gracia-perez@cea.fr)
+Authors: Daniel Gracia Pï¿½rez (daniel.gracia-perez@cea.fr)
          Sylvain Girbal (sylvain.girbal@inria.fr)
 Foundings: Partly founded with HiPEAC foundings
 All rights reserved.  
@@ -54,11 +54,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* get a random number */
 INLINE int myrand()                    /* returns random number */
 {
-#if !defined(__alpha) && !defined(linux)
+#if !defined(__alpha) && !defined(linux) && !defined(WIN32) && !defined(WIN64)
   extern long random(void);
 #endif
 
-#if defined(__CYGWIN32__) || defined(hpux) || defined(__hpux) || defined(__svr4__) || defined(_MSC_VER)
+#if defined(__CYGWIN32__) || defined(hpux) || defined(__hpux) || defined(__svr4__) || defined(_MSC_VER) || defined(WIN32) || defined(WIN64)
   return rand();
 #else
   return random();

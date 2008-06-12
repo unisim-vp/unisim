@@ -64,6 +64,7 @@ AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
 case $host in
 	*linux*)   # linux host
 		UNISIM_CHECK_CURSES
+		UNISIM_CHECK_PTHREAD
 		;;
 	*mingw32*)  # win32 host
 		UNISIM_CHECK_WINSOCK2
@@ -114,7 +115,6 @@ UNISIM_LINK(unisim_component_cxx_processor_powerpc)
 #UNISIM_LINK(unisim_component_cxx_bridge_pci_isa)
 UNISIM_LINK(unisim_component_cxx_memory_ram)
 #UNISIM_LINK(unisim_component_cxx_memory_flash_am29lv)
-UNISIM_LINK(pthread)
 
 # files to generate
 #   this should include all the makefiles to generate

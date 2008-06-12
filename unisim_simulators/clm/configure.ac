@@ -56,7 +56,8 @@ AC_CONFIG_FILES([Makefile])
 #UNISIM_CONFIG_SUBDIR(simulator-tlm-arm966e_s, arm966e_s)
 #UNISIM_CONFIG_SUBDIR(simulator-tlm-arm7tdmi, arm7tdmi)
 #UNISIM_CONFIG_SUBDIR(simulator-tlm-hcs12xemu, hcs12xemu)
-UNISIM_CONFIG_SUBDIR(simulator-clm-ooosim, ooosim, *linux*)
+#UNISIM_CONFIG_SUBDIR(simulator-clm-ooosim, ooosim, *linux*)
+UNISIM_CONFIG_SUBDIR(simulator-clm-ooosim, ooosim)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

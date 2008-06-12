@@ -1500,7 +1500,7 @@ public:
 		static const uint32_t TLB_NUM_ENTRIES = 128;
 		static const uint32_t TLB_LOG_ASSOCIATIVITY = 1; // 2-way set associative
 		static const uint32_t TLB_ASSOCIATIVITY = 1 << TLB_LOG_ASSOCIATIVITY;
-		static const uint32_t PAGE_SIZE = MPC755Config::MEMORY_PAGE_SIZE;
+		static const uint32_t PAGE_SIZE = MPC7447AConfig::MEMORY_PAGE_SIZE;
 		typedef MPC7447AConfig::PTE PTE;
 	};
 
@@ -1525,7 +1525,7 @@ public:
 		static const uint32_t TLB_NUM_ENTRIES = 128;
 		static const uint32_t TLB_LOG_ASSOCIATIVITY = 1; // 2-way set associative
 		static const uint32_t TLB_ASSOCIATIVITY = 1 << TLB_LOG_ASSOCIATIVITY;
-		static const uint32_t PAGE_SIZE = MPC755Config::MEMORY_PAGE_SIZE;
+		static const uint32_t PAGE_SIZE = MPC7447AConfig::MEMORY_PAGE_SIZE;
 		typedef MPC7447AConfig::PTE PTE;
 	};
 

@@ -169,6 +169,9 @@ using unisim::component::clm::memory::dram::DRAM;
 using unisim::component::clm::cache::CacheWB;
 using unisim::component::clm::processor::ooosim::OooSimCpu;
 
+#ifdef interface
+#undef interface
+#endif
 using unisim::component::clm::interface::InstructionPtr;
 
 // Using Parameters

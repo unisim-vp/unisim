@@ -43,7 +43,12 @@
 #include <errno.h>
 #include <fstream>
 #include <sstream>
+
+#ifdef WIN32
+#include <windows.h>
+#else
 #include <sys/times.h>
+#endif
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/cpu_linux_os.hh"
@@ -129,24 +134,6 @@ private:
 	int GetSyscallNumber(int id);
 	int ARMGetSyscallNumber(int id);
 	int PPCGetSyscallNumber(int id);
-	void *ConvertStat(struct stat *s);
-	void *ARMConvertStat(struct stat *s);
-	void *PPCConvertStat(struct stat *s);
-	unsigned int StatSize();
-	unsigned int ARMStatSize();
-	unsigned int PPCStatSize();
-	void *ConvertStat64(struct stat64 *s);
-	void *ARMConvertStat64(struct stat64 *s);
-	void *PPCConvertStat64(struct stat64 *s);
-	unsigned int Stat64Size();
-	unsigned int ARMStat64Size();
-	unsigned int PPCStat64Size();
-	void *ConvertTms(struct tms *t);
-	void *ARMConvertTms(struct tms *t);
-	void *PPCConvertTms(struct tms *t);
-	unsigned int TmsSize();
-	unsigned int ARMTmsSize();
-	unsigned int PPCTmsSize();
 	ADDRESS_TYPE GetMmapBase() const;
 	void SetMmapBase(ADDRESS_TYPE base);
 	ADDRESS_TYPE GetMmapBrkPoint() const;
@@ -473,6 +460,25 @@ private:
     /*****************************************************************************
      * PPC structures END                                                        *
      *****************************************************************************/
+
+	int Stat(int fd, struct powerpc_stat_t *target_stat);
+	int Stat64(int fd, struct powerpc_stat64_t *target_stat);
+	int Stat64(int fd, struct arm_stat64_t *target_stat);
+	int Times(struct powerpc_tms_t *target_tms);
+	int Times(struct arm_tms_t *target_tms);
+
+	static const int LINUX_O_ACCMODE = 00000003;
+	static const int LINUX_O_RDONLY = 00000000;
+	static const int LINUX_O_WRONLY = 00000001;
+	static const int LINUX_O_RDWR = 00000002;
+	static const int LINUX_O_CREAT = 00000100;
+	static const int LINUX_O_EXCL = 00000200;
+	static const int LINUX_O_TRUNC = 00001000;
+	static const int LINUX_O_APPEND = 00002000;
+
+	const char *osrelease_filename;
+	const char *fake_osrelease_filename;
+	const char *fake_osrelease;
 };
 
 } // end of linux_os namespace

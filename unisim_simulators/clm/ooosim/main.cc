@@ -133,7 +133,9 @@ int main(int argc, char **argv, char **envp)
     }
 
   signal(SIGINT,GeneratedSimulator::at_ctrlc);
+#if !defined(WIN32) && !defined(WIN64)
   signal(SIGTSTP,GeneratedSimulator::at_ctrlz);
+#endif
   while(!unisim_terminated)
   { 
     fsc_phase();
