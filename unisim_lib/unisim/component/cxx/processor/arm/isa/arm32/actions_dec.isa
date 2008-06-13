@@ -31,7 +31,7 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
- 
+
 action {void} execute({CPU<CONFIG> &} {cpu}) {
 	throw UndefinedInstructionException<CONFIG>();
 }

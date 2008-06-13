@@ -37,7 +37,6 @@
 
 #ifdef SOCLIB
 
-#include "iss.h"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
