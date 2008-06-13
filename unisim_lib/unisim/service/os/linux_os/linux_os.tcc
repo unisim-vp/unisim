@@ -752,30 +752,36 @@ LSC_open() {
 	ReadMem(addr, pathname, pathnamelen + 1);
 	flags = GetSystemCallParam(1);
 	mode = GetSystemCallParam(2);
+#if defined(linux)
+	ret = open(pathname, flags, mode);
+#else
+	int host_flags = 0;
+	int host_mode = 0;
+	// non-Linux open flags encoding may differ from a true Linux host
+	if((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
+	if((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
+	if((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
+	if(flags & LINUX_O_CREAT) host_flags |= O_CREAT;
+	if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
+	if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
+	if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
 #if defined(WIN32) || defined(WIN64)
-	int win_flags = 0;
-	int win_mode = 0;
-	// Windows and Linux open flags encoding differ
-	if((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) win_flags = (win_flags & ~O_ACCMODE) | O_RDONLY;
-	if((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) win_flags = (win_flags & ~O_ACCMODE) | O_WRONLY;
-	if((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) win_flags = (win_flags & ~O_ACCMODE) | O_RDWR;
-	if(flags & LINUX_O_CREAT) win_flags |= O_CREAT;
-	if(flags & LINUX_O_EXCL) win_flags |= O_EXCL;
-	if(flags & LINUX_O_TRUNC) win_flags |= O_TRUNC;
-	if(flags & LINUX_O_APPEND) win_flags |= O_APPEND;
-	win_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
+	host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
+#else
+	host_mode = mode; // other UNIX systems should have the same bit encoding for protection
+#endif
 	if(strcmp(pathname, osrelease_filename) == 0)
 	{
 		{
 			std::ofstream fake_file(fake_osrelease_filename);
 			fake_file << fake_osrelease << std::endl;
 		}
-		ret = open(fake_osrelease_filename, win_flags, win_mode);
+		ret = open(fake_osrelease_filename, host_flags, host_mode);
 	}
 	else
-		ret = open(pathname, win_flags, win_mode);
-#else
-	ret = open(pathname, flags, mode);
+	{
+		ret = open(pathname, host_flags, host_mode);
+	}
 #endif
 	
 	if(verbose && logger_import)
