@@ -256,6 +256,8 @@ typedef unisim::component::tlm::debug::TransactionSpy<PCIMsgReqType, PCIMsgRspTy
 typedef unisim::component::tlm::message::InterruptRequest IRQReqSpyType;
 typedef unisim::component::tlm::debug::TransactionSpy<IRQReqSpyType> IRQMsgSpyType;
 
+extern char **environ;
+
 int sc_main(int argc, char *argv[])
 {
 #ifdef WIN32

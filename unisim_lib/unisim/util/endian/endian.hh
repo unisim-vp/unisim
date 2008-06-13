@@ -38,7 +38,9 @@
 #include <inttypes.h>
 #include <string.h>
 
-#ifdef WIN32
+#if defined(__APPLE_CC__)
+#include <sys/types.h>
+#elif defined(WIN32)
 #define __LITTLE_ENDIAN 1234
 #define __BIG_ENDIAN    4321
 #define LITTLE_ENDIAN __LITTLE_ENDIAN

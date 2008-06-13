@@ -64,7 +64,6 @@ AC_CHECK_HEADERS([iostream fstream],,\
 
 case $host in
 	*linux*)   # linux host
-		AC_CHECK_HEADERS([endian.h],, AC_MSG_ERROR([Some standard headers are missing.]))
 		;;
 	*mingw32*)  # win32 host
 		;;

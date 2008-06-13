@@ -44,7 +44,7 @@
 #include <unisim/component/tlm/message/interrupt.hh>
 #include <unisim/component/cxx/pci/debug/pci_stub.hh>
 #include <string>
-#include <values.h>
+//#include <values.h>
 #include <math.h>
 
 namespace unisim {

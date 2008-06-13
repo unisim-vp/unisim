@@ -176,6 +176,8 @@ typedef unisim::component::tlm::message::MemoryRequest<FSB_ADDRESS_TYPE, FSB_MAX
 typedef unisim::component::tlm::message::MemoryResponse<FSB_MAX_DATA_SIZE> MemMsgRspType;
 typedef unisim::component::tlm::debug::TransactionSpy<MemMsgReqType, MemMsgRspType> MemMsgSpyType;
 
+extern char **environ;
+
 int sc_main(int argc, char *argv[])
 {
 #ifdef WIN32

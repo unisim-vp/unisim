@@ -35,16 +35,7 @@
 #ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 #define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 
-#ifdef WIN32
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN    4321
-#define LITTLE_ENDIAN __LITTLE_ENDIAN
-#define BIG_ENDIAN __BIG_ENDIAN
-#define __BYTE_ORDER __LITTLE_ENDIAN
-#define BYTE_ORDER LITTLE_ENDIAN
-#else
-#include <endian.h>
-#endif
+#include <unisim/util/endian/endian.hh>
 
 namespace unisim {
 namespace service {

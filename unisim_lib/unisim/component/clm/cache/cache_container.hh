@@ -54,11 +54,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* get a random number */
 INLINE int myrand()                    /* returns random number */
 {
-#if !defined(__alpha) && !defined(linux) && !defined(WIN32) && !defined(WIN64)
+#if !defined(__alpha) && !defined(linux) && !defined(WIN32) && !defined(WIN64) && !defined(__APPLE_CC__)
   extern long random(void);
 #endif
 
-#if defined(__CYGWIN32__) || defined(hpux) || defined(__hpux) || defined(__svr4__) || defined(_MSC_VER) || defined(WIN32) || defined(WIN64)
+#if defined(__CYGWIN32__) || defined(hpux) || defined(__hpux) || defined(__svr4__) || defined(_MSC_VER) || defined(WIN32) || defined(WIN64) || defined(__APPLE_CC__)
   return rand();
 #else
   return random();

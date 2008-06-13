@@ -49,8 +49,7 @@ AC_CONFIG_FILES([Makefile])
 
 ###### CHECK FOR HOST ######################
 
-#UNISIM_CONFIG_SUBDIR(unisim-service-os-linux_os, linux_os, *linux*)
-UNISIM_CONFIG_SUBDIR(unisim-service-os-linux_os, linux_os)
+UNISIM_CONFIG_SUBDIR(unisim-service-os-linux_os, linux_os, *linux*, *macosx*, *darwin*, *mingw*)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
