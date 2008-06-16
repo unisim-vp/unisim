@@ -822,7 +822,6 @@ public:
 #endif
 			    //	if(instruction->fn & FnIntSextLoad)
 			    //if(instruction->fn & FnIntExtended) // Faux !!!! // Creer une fonction booleene qui dit s'il faut faire une extension de signe...
-			    //			    if (0)
 			    if (instruction->operation->is_sign_extended())
 			      {
 				// do a sign extension
@@ -830,7 +829,8 @@ public:
 			      }
 			    //				else if(instruction->fn & FnFpLoad)
 			    //			else if(instruction->fn & FnLoadFloat)
-			    //else
+			    else
+			    {
 			    if(instruction->fn == FnLoadFloat)
 			      {
 				if(instruction->operation->memory_access_size() == 4)
@@ -873,7 +873,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
   cerr << "[DD_DEBUG_LSQ]: In else destination.data: " << hexa(instruction->destinations[0].data) << endl;
 #endif
 			      }
-				
+			    }
 			    if(load->instruction->replay_trap) instruction->replay_trap = true;
 			    outInstruction[cdbPort].data = instruction;
 			    load->cdbPort = cdbPort;
