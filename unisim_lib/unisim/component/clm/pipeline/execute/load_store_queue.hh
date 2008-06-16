@@ -1631,7 +1631,8 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 #endif
 				//	if(instruction->fn & FnIntSextLoad)
 				//if(instruction->fn & FnIntExtended) // Faux !!!! // Creer une fonction booleene qui dit s'il faut faire une extension de signe...
-				if (0)
+				//				if (0)
+				if (instruction->operation->is_sign_extended())
 				  {
 				    // do a sign extension
 				    instruction->destinations[0].data = SignExtension(data, instruction->operation->memory_access_size() * 8);
