@@ -80,6 +80,8 @@ struct CiscGenerator : public Generator {
   void                          additional_impl_includes( Product_t& _product ) const;
   void                          subdecoder_bounds( Product_t& _product ) const;
 
+  void                          insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const;
+  void                          insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const;
 };
 
 #endif // __CISCGENERATOR_HH__

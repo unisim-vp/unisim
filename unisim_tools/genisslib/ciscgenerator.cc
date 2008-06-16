@@ -520,3 +520,40 @@ CiscGenerator::opcode( Operation_t const* _op ) {
   assert( res != m_opcodes.end() );
   return res->second;
 }
+
+void
+CiscGenerator::insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const {
+  bool subops = false;
+  
+  for( BFWordIterator bfword( _op.m_bitfields ); bfword.next(); ) {
+    if( (**bfword.m_left).type() == BitField_t::SubOp ) { subops = true; break; }
+  }
+  
+  if( not subops ) return;
+  _product.code( "~Op%s();\n", Str::capitalize( _op.m_symbol ).str() );
+}
+
+void
+CiscGenerator::insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const {
+  std::vector<ConstStr_t> subops;
+  
+  for( BFWordIterator bfword( _op.m_bitfields ); bfword.next(); ) {
+    if( (**bfword.m_left).type() != BitField_t::SubOp ) continue;
+    SubOpBitField_t const& sobf = dynamic_cast<SubOpBitField_t const&>( **bfword.m_left );
+    subops.push_back( sobf.m_symbol );
+  }
+  
+  if( subops.size() == 0 ) return;
+  
+  _product.template_signature( isa().m_tparams );
+  _product.code( "Op%s", Str::capitalize( _op.m_symbol ).str() );
+  _product.template_abbrev( isa().m_tparams );
+  _product.code( "::~Op%s()\n", Str::capitalize( _op.m_symbol ).str() );
+  
+  _product.code( "{\n" );
+  for( std::vector<ConstStr_t>::const_iterator name = subops.begin(); name != subops.end(); ++name ) {
+    _product.code( "delete %s;\n", name->str() );
+  }
+  _product.code( "}\n\n" );
+  
+}

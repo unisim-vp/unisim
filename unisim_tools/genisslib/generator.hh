@@ -64,6 +64,8 @@ struct Generator {
   virtual void                        additional_decl_includes( Product_t& _product ) const = 0;
   
   virtual void                        subdecoder_bounds( Product_t& _product ) const = 0;
+  virtual void                        insn_destructor_decl( Product_t& _product, Operation_t const& _op ) const = 0;
+  virtual void                        insn_destructor_impl( Product_t& _product, Operation_t const& _op ) const = 0;
 };
 
 #endif // __GENERATOR_HH__

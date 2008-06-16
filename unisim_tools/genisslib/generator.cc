@@ -369,6 +369,7 @@ Generator::isa_operations_decl( Product_t& _product ) const {
     _product.code( "public:\n" );
     _product.code( " Op%s(%s code, %s addr);\n", Str::capitalize( (**op).m_symbol ).str(),
                    codetype_constref().str(), isa().m_addrtype.str() );
+    insn_destructor_decl( _product, **op );
       
     for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
       BitField_t::Type_t bftype = (**bf).type();
@@ -606,6 +607,8 @@ Generator::isa_operations_ctors( Product_t& _product ) const {
     
     insn_decode_impl( _product, **op, "code", "addr" );
     _product.code( "}\n\n" );
+    
+    insn_destructor_impl( _product, **op );
   }
 }
 
