@@ -35,8 +35,7 @@ struct Operation_t : virtual ReferenceCounter {
   Ptr_t<SourceCode_t>           m_condition;         /**< The condition associated with the operation */
   FileLoc_t                     m_fileloc;           /**< The file location where the operation was declared */
   
-  Operation_t( ConstStr_t _symbol, Vect_t<BitField_t>& _bitfields,
-               Vect_t<Comment_t>& _comments, Vect_t<Variable_t>& _variables,
+  Operation_t( ConstStr_t _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
                SourceCode_t* _op_condition, FileLoc_t const& _fileloc );
   ~Operation_t();
   

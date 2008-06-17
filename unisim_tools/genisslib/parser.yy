@@ -169,7 +169,6 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
 %type<sinteger> shift
 %type<variable> var
 %type<variable_list> var_list
-%type<variable_list> var_list_declaration
 %type<sourcecode> returns
 %type<variable_list> global_var_list_declaration
 %type<group> group_declaration
@@ -330,6 +329,7 @@ declaration:
   Scanner::isa().m_vars.append( *$1 );
   delete $1;
 }
+     | op_var_list_declaration {}
      | global_inheritance_declaration TOK_ENDL
 {
   Scanner::isa().m_inheritances.push_back( $1 );
@@ -417,12 +417,11 @@ op_condition: TOK_SOURCE_CODE ':'
 }
 ;
 
-operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl var_list_declaration
+operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl
 {
   SourceCode_t*       op_cond = $1;
   ConstStr_t          symbol = ConstStr_t( $3, Scanner::symbols );
   Vect_t<BitField_t>* bitfields = $4;
-  Vect_t<Variable_t>* vars = $5;
   
   {
     Operation_t const* prev_op = Scanner::isa().operation( symbol );
@@ -439,9 +438,8 @@ operation_declaration : op_condition TOK_OP TOK_IDENT bitfield_list_decl var_lis
     }
   }
 
-  Operation_t* operation = new Operation_t( symbol, *bitfields, Scanner::comments, *vars, op_cond, Scanner::fileloc );
+  Operation_t* operation = new Operation_t( symbol, *bitfields, Scanner::comments, op_cond, Scanner::fileloc );
   delete bitfields;
-  delete vars;
   Scanner::comments.clear();
 
   $$ = operation;
@@ -542,15 +540,30 @@ TOK_INHERITANCE TOK_SOURCE_CODE TOK_SOURCE_CODE '=' TOK_SOURCE_CODE
 }
 ;
 
-var_list_declaration:
+op_var_list_declaration: TOK_IDENT '.' TOK_VAR var_list
 {
-  $$ = 0;
+  ConstStr_t    target_symbol = ConstStr_t( $1, Scanner::symbols );
+  Vect_t<Variable_t>* var_list = $4;
+  
+  /* Target symbol points to either an operation or a group */
+  Operation_t* operation = Scanner::isa().operation( target_symbol );
+  if( operation ) {
+    /* Target symbol points to an operation */
+    operation->m_variables.append( *var_list );
+  } else {
+    Group_t* group = Scanner::isa().group( target_symbol );
+    if( group ) {
+      /* Target symbol points to a group */
+      for( Vect_t<Operation_t>::iterator gop = group->m_operations.begin(); gop < group->m_operations.end(); ++ gop )
+        (**gop).m_variables.append( *var_list );
+    } else {
+      /* Target symbol doesn't point to anything */
+      Scanner::fileloc.err( "error: undefined operation or group `%s'", target_symbol.str() );
+      YYABORT;
+    }
+  }
+  delete var_list;
 }
-  | TOK_VAR var_list
-{
-  $$ = $2;
-}
-;
 
 global_var_list_declaration: TOK_VAR var_list
 {

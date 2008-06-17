@@ -39,9 +39,9 @@ using namespace std;
     @return an operation object
 */
 Operation_t::Operation_t( ConstStr_t _symbol, Vect_t<BitField_t>& _bitfields, Vect_t<Comment_t>& _comments,
-                          Vect_t<Variable_t>& _vars, SourceCode_t* _op_condition, FileLoc_t const& _fileloc )
+                          SourceCode_t* _op_condition, FileLoc_t const& _fileloc )
   : m_symbol( _symbol ), m_bitfields( _bitfields ), m_comments( _comments ),
-    m_variables( _vars ), m_condition( _op_condition ), m_fileloc( _fileloc )
+    m_condition( _op_condition ), m_fileloc( _fileloc )
 {
 }
 

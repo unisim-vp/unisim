@@ -19,6 +19,7 @@
 #include <operation.hh>
 #include <strtools.hh>
 #include <action.hh>
+#include <variable.hh>
 #include <bitfield.hh>
 #include <iostream>
 
@@ -96,10 +97,10 @@ Specialization_t::newop() {
 
   //  Actions, comments, variables, conditions, and fileloc are
   //  duplicated.
-  Operation_t* res = new Operation_t( symbol, *static_cast<Vect_t<BitField_t>*>( 0 ),
-                                      m_operation->m_comments, m_operation->m_variables,
+  Operation_t* res = new Operation_t( symbol, *static_cast<Vect_t<BitField_t>*>( 0 ), m_operation->m_comments,
                                       m_operation->m_condition, m_operation->m_fileloc );
   
+  res->m_variables = m_operation->m_variables;
   res->m_actions = m_operation->m_actions;
   // Generating new bitfield.
   Vect_t<BitField_t>& bflist = m_operation->m_bitfields;
