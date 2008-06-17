@@ -4,7 +4,7 @@ bin_PROGRAMS = ooosim
 ooosim_SOURCES = main.cc
 ooosim_CPPFLAGS =
 
-include_HEADERS = simulator.hh
+noinst_HEADERS = simulator.hh
 
 if COND_release
 #bin_PROGRAMS += ooosim
