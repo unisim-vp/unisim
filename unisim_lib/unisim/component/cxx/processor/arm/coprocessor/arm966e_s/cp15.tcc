@@ -261,7 +261,7 @@ ReadRegister(uint8_t opcode1,
 		uint8_t crm, 
 		reg_t& reg) {
 	bool handled = false;
-	char *name;
+	const char *name;
 	
 	reg = 0;
 
@@ -1469,7 +1469,7 @@ WriteControlReg(reg_t value) {
 	}
 	
 	if(VerboseWriteReg()) {
-		char *endian;
+		const char *endian;
 		if((final_value >> 12) & 1) {
 			endian = "big-endian";
 		} else {

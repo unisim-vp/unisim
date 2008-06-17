@@ -82,6 +82,7 @@ Reset() {
 	}
 	fake_fps = 0;
 	SetCPSR_Mode(SYSTEM_MODE);
+	exception = 0;
 	// set initial pc
 	/* Depending on the configuration being used set the initial pc */
 	if(CONFIG::MODEL == ARM966E_S) {
@@ -176,33 +177,77 @@ StepExecute() {
 #ifdef SOCLIB_DEBUG
 		cerr << "    - executing 0x" << hex << executeQueue->GetFetchAddress() << dec << endl;
 #endif
-		if(executeQueue->IsArm32()) {
-			typename isa::arm32::Operation<CONFIG> *op = 
-				arm32_decoder.Decode(
-					executeQueue->GetFetchAddress(),
-					executeQueue->GetArm32Encoding());
-			op->disasm(*this, str);
-			op->execute(*this);
+		try{
+			if(executeQueue->IsArm32()) {
+				typename isa::arm32::Operation<CONFIG> *op = 
+					arm32_decoder.Decode(
+						executeQueue->GetFetchAddress(),
+						executeQueue->GetArm32Encoding());
+				op->disasm(*this, str);
+				op->execute(*this);
 #ifdef SOCLIB_DEBUG
-			cerr << "    - arm32 instruction: " << str.str() << endl;
+				cerr << "    - arm32 instruction: " << str.str() << endl;
 #endif
-			executeQueue->SetOpcode(op);
-		} else {
-			typename isa::thumb::Operation<CONFIG> *op = 
-				thumb_decoder.Decode(
-					executeQueue->GetFetchAddress(),
-					executeQueue->GetThumbEncoding());
-			op->execute(*this);
-			op->disasm(*this, str);
+				executeQueue->SetOpcode(op);
+			} else {
+				typename isa::thumb::Operation<CONFIG> *op = 
+					thumb_decoder.Decode(
+						executeQueue->GetFetchAddress(),
+						executeQueue->GetThumbEncoding());
+				op->execute(*this);
+				op->disasm(*this, str);
 #ifdef SOCLIB_DEBUG
-			cerr << "    - thumb instruction: " << str.str() << endl;
+				cerr << "    - thumb instruction: " << str.str() << endl;
 #endif
-			executeQueue->SetOpcode(op);
+				executeQueue->SetOpcode(op);
+			}
+			executeQueue->SetExecuted();
+			/* set the instruction latency 
+			 * TODO: get the instruction latency from the opcode */
+			executeQueue->SetExecCycles(1);
+		} catch(ResetException<CONFIG> &exc) {
+#ifdef SOCLIB_DEBUG
+			cerr << "**** Received a RESET exception ****" << endl;
+#endif
+			exception |= RESET_EXCEPTION;
+		} catch(UndefinedInstructionException<CONFIG> &exc) {
+#ifdef SOCLIB_DEBUG
+			cerr << "**** Received an UndefinedInstruction exception ****" << endl;
+#endif
+			exception |= UNDEFINED_INSTRUCTION_EXCEPTION;
+		} catch(SoftwareInterruptException<CONFIG> &exc) {
+#ifdef SOCLIB_DEBUG
+			cerr << "**** Received a SoftwareInterrupt(SWI) exception ****" << endl;
+#endif
+			exception |= SOFTWARE_INTERRUPT_EXCEPTION;
+		} catch(PrefetchAbortException<CONFIG> &exc) {
+#ifdef SOCLIB_DEBUG
+			cerr << "**** Received a PrefetchAbort exception ****" << endl;
+#endif
+			exception |= PREFETCH_ABORT_EXCEPTION;
+		} catch(DataAbortException<CONFIG> &exc) {
+#ifdef SOCLIB_DEBUG
+			cerr << "**** Received a DataAbort exception ****" << endl;
+#endif
+			exception |= DATA_ABORT_EXCEPTION;
+		} catch(IRQException<CONFIG> &exc) {
+#ifdef SOCLIB_DEBUG
+			cerr << "**** Received an IRQ exception ****" << endl;
+			cerr << "     This could not have been received here (maybe an error?)" << endl;
+#endif
+			exception |= IRQ_EXCEPTION;
+		} catch(FIQException<CONFIG> &exc) {
+#ifdef SOCLIB_DEBUG
+			cerr << "**** Received a FIQ exception ****" << endl;
+			cerr << "     This could not have been received here (maybe an error?)" << endl;
+#endif
+			exception |= FIQ_EXCEPTION;
+		} catch(Exception &exc) {
+#ifdef SOCLIB_DEBUG
+			cerr << "**** Received an unhandled processor exception ****" << endl;
+#endif
+			Stop(1);
 		}
-		executeQueue->SetExecuted();
-		/* set the instruction latency 
-		 * TODO: get the instruction latency from the opcode */
-		executeQueue->SetExecCycles(1);
 	}
 //	/* check if the current instruction has any memory request pending 
 //	 * move possible memory operations from the lsQueue if the is no
@@ -226,6 +271,19 @@ Step() {
 #ifdef SOCLIB
 	cerr << "+++ Step" << endl;
 #endif
+	/* TODO 
+	 * check for exceptions
+	 * INFO
+	 * the checking for the exceptions could also be done at the beginning of the step
+	 *   or it could even be broken in separate handlers for internal and external exceptions
+	 *   (and other weird possibilities)
+	 */
+	if(HandleExceptions()) {
+		// The pipeline needs to be flushed
+		FlushPipeline();
+		fetch_pc = GetGPR(PC_reg);
+	}
+
 	/* when Step is called it means that the last SetInstruction was done with
 	 *   the right info and that it can be used by the processor, so set the
 	 *   instruction in the fetchQueue as requested and fetched
@@ -275,6 +333,113 @@ Step() {
 	}
 
 	StepCycle();
+
+}
+
+template<class CONFIG>
+bool
+CPU<CONFIG> ::
+HandleExceptions() {
+	if(exception) {
+		// limitation:
+		// we can raise an exception if the following conditions are true:
+		// - there is no instruction in the executeQueue
+		// - if there is an instruction in the executeQueue:
+		//   - it has not been executed
+		//   - it has been executed but the number of remaining cycles is 0
+		if(executeQueue != 0) return false;
+		else {
+			if(!executeQueue->HasBeenExecuted()) return false;
+			else {
+				if(executeQueue->HasBeenExecuted() &&
+						executeQueue->GetRemainingExecCycles() != 0) return false;
+			}
+		}
+
+		// check the exception that was produced and if they are handled or not
+		// checking exceptions by their priority
+		// - 1 : Reset
+		// - 2 : Data abort
+		// - 3 : FIQ
+		// - 4 : IRQ
+		// - 5 : Prefetch abort
+		// - 6 : Undefined instruction / SWI
+
+		// 1 : checking Reset exception
+		if(exception & RESET_EXCEPTION) {
+			uint32_t mask = RESET_EXCEPTION;
+			mask = ~mask;
+			exception &= mask;
+			PerformResetException();
+			return true;
+		}
+
+		// 2 : checking Data abort exception
+		if(exception & DATA_ABORT_EXCEPTION) {
+			uint32_t mask = DATA_ABORT_EXCEPTION;
+			mask = ~mask;
+			exception &= mask;
+			PerformDataAbortException();
+			return true;
+		}
+
+		// 3 : checking FIQ exception
+		if(exception & FIQ_EXCEPTION) {
+			if(GetCPSR_F()) {
+				// FIQ interruptions are disabled
+				// do nothing
+				return false;
+			} else {
+				uint32_t mask = FIQ_EXCEPTION;
+				mask = ~mask;
+				exception &= mask;
+				PerformFIQException();
+				return true;
+			}
+		}
+
+		// 4 : checking IRQ exception
+		if(exception & IRQ_EXCEPTION) {
+			if(GetCPSR_I()) {
+				// IRQ interruptions are disabled
+				// do nothing
+				return false;
+			} else {
+				uint32_t mask = IRQ_EXCEPTION;
+				mask = ~mask;
+				exception &= mask;
+				PerformIRQException();
+				return true;
+			}
+		}
+		
+		// 5 : checking Prefetch abort
+		if(exception & PREFETCH_ABORT_EXCEPTION) {
+			uint32_t mask = PREFETCH_ABORT_EXCEPTION;
+			mask = ~mask;
+			exception &= mask;
+			PerformPrefetchAbortException();
+			return true;
+		}
+
+		// 6 : checking Undefined instruction / SWI
+		if(exception & UNDEFINED_INSTRUCTION_EXCEPTION) {
+			uint32_t mask = UNDEFINED_INSTRUCTION_EXCEPTION;
+			mask = ~mask;
+			exception &= mask;
+			PerformUndefInsnException();
+			return true;
+		}
+
+		if(exception & SOFTWARE_INTERRUPT_EXCEPTION) {
+			uint32_t mask = SOFTWARE_INTERRUPT_EXCEPTION;
+			mask = ~mask;
+			exception &= mask;
+			PerformSWIException();
+			return true;
+		}
+	}
+	return false;
 }
 
 template<class CONFIG>
@@ -590,12 +755,24 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 SetIrq(uint32_t irq) {
-	// TODO ?? Set the corresponding irq
-	if(irq == 0) return;
+	// Checks the irq range, if out of range, then display error and stop.
+	// If irq received then set the correspondent exception flag (exception member variable).
+	// List of avalaible interrupts:
+	// - irq 1 (IRQ_IRQ) == normal IRQ
+	// - irq 2 (FIQ_IRQ) == fast IRQ
 	
-	cerr << "TODO(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-		<< "?? Set the corresponding irq (irq bit mask = " << irq << ")" << endl;
-	exit(-1);
+	if(irq) {
+		if(irq == IRQ_IRQ) {
+			exception |= IRQ_EXCEPTION;
+		} else if(irq == FIQ_IRQ) {
+			exception |= FIQ_EXCEPTION;
+		} else {
+			cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+				<< "Received unknow interruption type (irq = 0x" << hex << irq << dec << ")" << endl;
+			exit(-1);
+		}
+	}
+	return;
 }
 		
 template<class CONFIG>

@@ -169,21 +169,38 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
 ])
 
 ## UNISIM_CHECK_SYSTEMC
-## Checks if the libxml2 library is installed
+## Checks if the SystemC library is installed
 ## Does not take parameters
 #####################################################
 AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
     # Check if SystemC path has been overloaded
     AC_ARG_WITH(systemc,
-	AS_HELP_STRING([--with-systemc=<path>], [systemc library to use (will be completed with /include)]))
+	AS_HELP_STRING([--with-systemc=<path>], [SystemC library to use (will be completed with /include)]))
     if test "x$with_systemc" != "x"; then
-	AC_MSG_NOTICE([using SystemC at $with_systemc])
-	CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
+		AC_MSG_NOTICE([using SystemC at $with_systemc])
+		CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
     fi
 	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 
     # Check for systemc.h
     AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.1). Use --with-systemc=<path> to overload default includes search path.]))
+])
+
+## UNISIM_CHECK_TLM20
+## Checks if the OSCI TLM2.0 library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_TLM20], [
+	# Check if TLM2.0 path has been overloaded
+	AC_ARG_WITH(systemc,
+	AS_HELP_STRING([--with-tlm20=<path>], [TLM2.0 library to use (will be completed with /include)]))
+	if test "x$with_tlm20" != "x"; then
+		AC_MSG_NOTICE([using TLM2.0 at $with_tlm20])
+		CPPFLAGS=${CPPFLAGS}" -I$with_tlm20/include"
+	fi
+
+	# Check for tlm.h
+	AC_CHECK_HEADER(tlm.h,, AC_MSG_ERROR([tlm.h not found for TLM2.0. Please install the TLM library (version 2.0). Use --with-tlm20=<path> to overload default includes search path.]))
 ])
 
 ## UNISIM_CONFIG_SUBDIR

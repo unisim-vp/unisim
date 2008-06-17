@@ -958,7 +958,7 @@ public:
     inline address_t GetDataAbortExceptionAddr() GCC_INLINE;
     inline address_t GetIRQExceptionAddr() GCC_INLINE;
     inline address_t GetFIQExceptionAddr() GCC_INLINE;
-    
+
     /**************************************************************/
     /* Exception methods            END                           */
     /**************************************************************/
@@ -1021,6 +1021,27 @@ public:
     void CheckAlignmentExcep(address_t addr); // TODO
 
 private:
+
+#ifdef SOCLIB
+	uint32_t exception;
+	enum {IRQ_IRQ = 1,
+		FIQ_IRQ = 2};
+	enum {RESET_EXCEPTION = 1,
+		UNDEFINED_INSTRUCTION_EXCEPTION = 2,
+		SOFTWARE_INTERRUPT_EXCEPTION = 4,
+		PREFETCH_ABORT_EXCEPTION = 8,
+		DATA_ABORT_EXCEPTION = 16,
+		IRQ_EXCEPTION = 32,
+		FIQ_EXCEPTION = 64};
+	/** Handles possible exceptions
+	 * This method checks if there is any pending exception and handles it.
+	 * Returns true if the pipeline needs to be flushed.
+	 * 
+	 * @return true if the pipeline needs to be flushed.
+	 */
+	inline bool HandleExceptions() GCC_INLINE;
+
+#endif
 	typename isa::arm32::Decoder<CONFIG> arm32_decoder;
 	typename isa::thumb::Decoder<CONFIG> thumb_decoder;
 

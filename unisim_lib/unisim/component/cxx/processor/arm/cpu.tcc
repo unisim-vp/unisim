@@ -100,6 +100,7 @@ using unisim::util::debug::Symbol;
 template<class CONFIG>
 CPU<CONFIG> ::
 CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
+	exception(0),
 	insn_cache_line_address(0),
 	memory_interface(_memory_interface),
 	running(true),

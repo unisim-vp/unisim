@@ -267,7 +267,7 @@ StepInstruction() {
 	catch(ResetException<CONFIG> &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor reset exception :" << exc.what() 
+				<< "Received processor reset exception :" << exc.what() 
 				<< Endl << EndDebugError;
 		PerformResetException();
 	}
@@ -290,35 +290,35 @@ StepInstruction() {
 	catch(PrefetchAbortException<CONFIG> &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor prefetch abort exception :" << exc.what()
+				<< "Received processor prefetch abort exception :" << exc.what()
 				<< Endl << EndDebugError;
 		PerformPrefetchAbortException();
 	}
 	catch(DataAbortException<CONFIG> &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor data abort exception :" << exc.what() 
+				<< "Received processor data abort exception :" << exc.what() 
 				<< Endl << EndDebugError;
 		PerformDataAbortException();
 	}
 	catch(IRQException<CONFIG> &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor IRQ exception :" << exc.what() 
+				<< "Received processor IRQ exception :" << exc.what() 
 				<< Endl << EndDebugError;
 		PerformIRQException();
 	}
 	catch(FIQException<CONFIG> &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor FIQ exception :" << exc.what() 
+				<< "Received processor FIQ exception :" << exc.what() 
 				<< Endl << EndDebugError;
 		PerformFIQException();
 	}
 	catch(Exception &exc) {
 		if(logger_import)
 			(*logger_import) << DebugError << LOCATION 
-				<< "uncaught processor exception :" << exc.what() 
+				<< "Received unhandled processor exception :" << exc.what() 
 				<< Endl << EndDebugError;
 		Stop(1);
 	}
