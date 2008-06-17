@@ -253,8 +253,11 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
     # Mimics the behavior of SystemC configure to guess where libsystemc.a is installed (e.g. lib-linux)
     CXX_COMP=`basename $CXX`
     case "$host" in
-	powerpc-apple-macosx* | powerpc-apple-darwin*)
+	*powerpc*macosx* | *powerpc*darwin*)
 	    SYSTEMC_TARGET_ARCH="macosx"
+	;;
+	*86*macosx* | *86*darwin*)
+	    SYSTEMC_TARGET_ARCH="macosx-x86"
 	;;
 	sparc-sun-solaris*)
 	    case "$CXX_COMP" in

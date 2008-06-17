@@ -1,8 +1,8 @@
 #!/usr/bin/make -f
 SHELL=/bin/bash
 BUILD=i686-pc-linux-gnu
-HOST=i586-mingw32msvc
-CROSS_COMPILE=i586-mingw32msvc-
+HOST=powerpc-apple-darwin8
+CROSS_COMPILE=${HOST}-
 CXX=$(CROSS_COMPILE)g++
 CC=$(CROSS_COMPILE)gcc
 AS=$(CROSS_COMPILE)as
@@ -29,7 +29,7 @@ mrproper: clean
 	rm -rf $(INSTALL_DIR)/*
 
 notice:
-	@echo "unisim-bootstrap-mingw32: A script to bootstrap on Mingw32 before compiling UNISIM"
+	@echo "unisim-bootstrap-powerpc-darwin: A script to bootstrap on powerpc-apple-darwin before compiling UNISIM"
 	@echo "This script is intended for Ubuntu (7.04/7.10 and maybe later) but may work with other Linux distributions"
 	@echo "It will automatically download, configure, compile and install the following libraries which are needed to build UNISIM:"
 	@echo "  - zlib (1.2.3)"
@@ -71,7 +71,7 @@ $(INSTALL_DIR)/gdb: $(SOURCE_DIR)/gdb-6.8 $(INSTALL_DIR)/expat
 	cd $(SOURCE_DIR)/gdb-6.8 && \
     ./configure --prefix=$(INSTALL_DIR)/gdb \
                 --build=$(BUILD) --host=$(HOST) \
-                --enable-targets=i686-pc-mingw32,m6811-elf,armeb-linux-gnu,powerpc-linux-gnu,mips-linux-gnu,sparc-linux-gnu \
+                --enable-targets=${HOST},m6811-elf,armeb-linux-gnu,powerpc-linux-gnu,mips-linux-gnu,sparc-linux-gnu \
                 --disable-sim --disable-werror \
                 --with-libexpat-prefix=$(INSTALL_DIR)/expat && \
     make -j $(NUM_PROCESSORS) && \
@@ -151,23 +151,27 @@ $(INSTALL_DIR)/systemc: $(SOURCE_DIR)/systemc-2.2.0
     make -j $(NUM_PROCESSORS) && \
     make install
 
-$(SOURCE_DIR)/systemc-2.2.0: $(ARCHIVE_DIR)/systemc-2.2.0.tgz $(PATCHES_DIR)/patch-systemc-2.2.0-mingw32
+$(SOURCE_DIR)/systemc-2.2.0: $(ARCHIVE_DIR)/systemc-2.2.0.tgz $(PATCHES_DIR)/patch-systemc-2.2.0
 	cd $(SOURCE_DIR) && \
     tar zxvf $(ARCHIVE_DIR)/systemc-2.2.0.tgz && \
     cd $(SOURCE_DIR)/systemc-2.2.0 && \
-    cat $(PATCHES_DIR)/patch-systemc-2.2.0-mingw32 | patch -p1
+    cat $(PATCHES_DIR)/patch-systemc-2.2.0 | patch -p1
 
 # readline
 
-$(ARCHIVE_DIR)/readline-5.0-1-bin.zip:
+$(ARCHIVE_DIR)/readline-5.2.tar.gz:
 	cd $(ARCHIVE_DIR) && \
-    wget "http://downloads.sourceforge.net/gnuwin32/readline-5.0-1-bin.zip"
+    wget "ftp://ftp.gnu.org/gnu/readline/readline-5.2.tar.gz"
 
-$(INSTALL_DIR)/readline: $(ARCHIVE_DIR)/readline-5.0-1-bin.zip
-	cd $(INSTALL_DIR) && \
-    mkdir -p readline && \
-    cd readline && \
-    unzip $(ARCHIVE_DIR)/readline-5.0-1-bin.zip
+$(SOURCE_DIR)/readline-5.2: $(ARCHIVE_DIR)/readline-5.2.tar.gz
+	cd $(SOURCE_DIR) && \
+    tar zxvf $<
+
+$(INSTALL_DIR)/readline: $(SOURCE_DIR)/readline-5.2
+	cd $(SOURCE_DIR)/readline-5.2 && \
+    ./configure --prefix=$(INSTALL_DIR)/readline --host=$(HOST) --build=$(BUILD) && \
+    make -j $(NUM_PROCESSORS) && \
+    make install
 
 # boost
 $(ARCHIVE_DIR)/boost_1_34_1.tar.bz2:
@@ -191,4 +195,4 @@ $(INSTALL_DIR)/boost: $(SOURCE_DIR)/boost_1_34_1
     make BJAM_CONFIG="-j $(NUM_PROCESSORS)" &&\
     make install &&\
     cd $(INSTALL_DIR)/boost/include && mv boost-1_34_1/boost boost && rmdir boost-1_34_1 &&\
-    cd $(INSTALL_DIR)/boost/lib && ln -s libboost_thread-mgw34-mt-1_34_1.a libboost_thread.a
+    cd $(INSTALL_DIR)/boost/lib && cp libboost_thread-gcc40-mt-1_34_1.a libboost_thread.a && $(RANLIB) libboost_thread.a

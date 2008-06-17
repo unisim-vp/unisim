@@ -6,9 +6,13 @@ function Usage
 	echo "  $0 debian <version> [systemc]"
 	echo "  $0 redhat <version>"
 	echo "  $0 mingw32 <version> [unisim-bootstrap-mingw32]"
+	echo "  $0 powerpc-darwin <version> [unisim-bootstrap-powerpc-darwin]"
+	echo "  $0 i686-darwin <version> [unisim-bootstrap-i686-darwin]"
 	echo "  - version: version of UNISIM"
 	echo "  - systemc: SystemC installation directory (optional, debian/redhat only)"
 	echo "  - unisim-bootstrap-mingw32: UNISIM bootstrap for mingw32 directory (optional, mingw32 only)"
+	echo "  - unisim-bootstrap-powerpc-darwin: UNISIM bootstrap for powerpc-darwin directory (optional, powerpc-darwin only)"
+	echo "  - unisim-bootstrap-i686-darwin: UNISIM bootstrap for i686-darwin directory (optional, i686-darwin only)"
 }
 
 if test "x$1" = x || test "x$2" = x; then
@@ -28,6 +32,9 @@ case ${TARGET} in
 		UNISIM_PREFIX=
 		;;
 	*debian*)
+		UNISIM_PREFIX=/usr
+		;;
+	*macosx*)
 		UNISIM_PREFIX=/usr
 		;;
 esac
@@ -69,7 +76,7 @@ UNISIM_SIMULATORS_DESCRIPTION="UNISIM Simulators"
 UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
 
 case ${TARGET} in
-	*debian* | *mingw32*)
+	*debian* | *mingw32* | powerpc*darwin* | *86*darwin*)
 		if test ! -f ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME}; then
 			Usage
 			echo "File ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME} is needed. Use \"make dist\" to build it."
@@ -132,8 +139,7 @@ case ${TARGET} in
 			mkdir -p source
 			mkdir -p patches
 			mkdir -p install
-			cp `dirname $0`/patch-systemc-2.2.0-mingw32 patches/.
-			cp `dirname $0`/patch-gdb-6.2-m68hc1x-mingw32 patches/.
+			cp `dirname $0`/patch-systemc-2.2.0 patches/.
 			cp `dirname $0`/COPYING .
 			`dirname $0`/compile-unisim-bootstrap-mingw32.sh || exit
 			`dirname $0`/compile-unisim-bootstrap-mingw32.sh clean || exit
@@ -142,6 +148,50 @@ case ${TARGET} in
 			UNISIM_BOOTSTRAP_MINGW32_DIR=$3
 		fi
 		SYSTEMC_INSTALL_DIR=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/systemc
+		;;
+	*86*darwin*)
+		UNISIM_BOOTSTRAP_I686_DARWIN_SHORT_NAME=unisim-bootstrap-i686-darwin
+		UNISIM_BOOTSTRAP_I686_DARWIN_LONG_NAME=${UNISIM_BOOTSTRAP_I686_DARWIN_SHORT_NAME}-${VERSION}
+		if test "x$3" = x; then
+			UNISIM_BOOTSTRAP_I686_DARWIN_DIR=${HOME}/tmp/${UNISIM_BOOTSTRAP_I686_DARWIN_LONG_NAME}
+			rm -rf ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}
+			mkdir -p ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}
+			cd ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}
+			mkdir -p archives
+			mkdir -p source
+			mkdir -p patches
+			mkdir -p install
+			cp `dirname $0`/patch-systemc-2.2.0 patches/.
+			cp `dirname $0`/COPYING .
+			`dirname $0`/compile-unisim-bootstrap-i686-darwin.sh || exit
+			`dirname $0`/compile-unisim-bootstrap-i686-darwin.sh clean || exit
+			rm -rf source
+		else
+			UNISIM_BOOTSTRAP_I686_DARWIN_DIR=$3
+		fi
+		SYSTEMC_INSTALL_DIR=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/systemc
+		;;
+	*powerpc*darwin*)
+		UNISIM_BOOTSTRAP_POWERPC_DARWIN_SHORT_NAME=unisim-bootstrap-powerpc-darwin
+		UNISIM_BOOTSTRAP_POWERPC_DARWIN_LONG_NAME=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_SHORT_NAME}-${VERSION}
+		if test "x$3" = x; then
+			UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR=${HOME}/tmp/${UNISIM_BOOTSTRAP_POWERPC_DARWIN_LONG_NAME}
+			rm -rf ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}
+			mkdir -p ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}
+			cd ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}
+			mkdir -p archives
+			mkdir -p source
+			mkdir -p patches
+			mkdir -p install
+			cp `dirname $0`/patch-systemc-2.2.0 patches/.
+			cp `dirname $0`/COPYING .
+			`dirname $0`/compile-unisim-bootstrap-powerpc-darwin.sh || exit
+			`dirname $0`/compile-unisim-bootstrap-powerpc-darwin.sh clean || exit
+			rm -rf source
+		else
+			UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR=$3
+		fi
+		SYSTEMC_INSTALL_DIR=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/systemc
 		;;
 	*debian*)
 		if test "x$3" = x; then
@@ -217,6 +267,14 @@ function Package {
 			cp -f ${INSTALL_DIR}/dist/${PACKAGE_NAME}-${VERSION}.exe ${HERE}
 			rm -rf ${INSTALL_DIR}/dist
 			rm -f ${ISS_FILENAME}
+			;;
+		*86*darwin*)
+			cd ${INSTALL_DIR}
+			tar zcvf ${HERE}/${PACKAGE_NAME}-${VERSION}-i686-darwin.tar.gz *
+			;;
+		*powerpc*darwin*)
+			cd ${INSTALL_DIR}
+			tar zcvf ${HERE}/${PACKAGE_NAME}-${VERSION}-powerpc-darwin.tar.gz *
 			;;
 		*debian*)
 			CONTROL_FILE=${INSTALL_DIR}/DEBIAN/control
@@ -356,6 +414,24 @@ case ${TARGET} in
 			fi
 		fi
 		;;
+	*86*darwin*)
+		if test ! -f ${HERE}/${PACKAGE_NAME}-${VERSION}.exe; then
+			echo "Do you want to package unisim-bootstrap-i686-darwin ? (Y/n)"
+			read YES_NO
+			if test ${YES_NO} = "y" || test ${YES_NO} = "Y"; then
+				Package unisim-bootstrap-i686-darwin ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR} COPYING "" "${UNISIM_BOOTSTRAP_I686_DARWIN_DESCRIPTION}"
+			fi
+		fi
+		;;
+	*powerpc*darwin*)
+		if test ! -f ${HERE}/${PACKAGE_NAME}-${VERSION}.exe; then
+			echo "Do you want to package unisim-bootstrap-powerpc-darwin ? (Y/n)"
+			read YES_NO
+			if test ${YES_NO} = "y" || test ${YES_NO} = "Y"; then
+				Package unisim-bootstrap-powerpc-darwin ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR} COPYING "" "${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DESCRIPTION}"
+			fi
+		fi
+		;;
 	*debian*)
 		;;
 esac
@@ -393,6 +469,32 @@ case ${TARGET} in
           --with-libxml2=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/libxml2 \
           --enable-release
 		;;
+	*86*darwin*)
+		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
+          --host=i686-apple-darwin8 \
+          --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
+          --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          --with-sdl=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/SDL \
+          --with-boost=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/boost \
+          --with-zlib=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/zlib \
+          --with-readline=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/readline \
+          --with-libxml2=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/libxml2 \
+          --enable-release
+		;;
+	*powerpc*darwin*)
+		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
+          --host=powerpc-apple-darwin8 \
+          --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
+          --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          --with-sdl=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/SDL \
+          --with-boost=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/boost \
+          --with-zlib=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/zlib \
+          --with-readline=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/readline \
+          --with-libxml2=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libxml2 \
+          --enable-release
+		;;
 	*debian*)
 		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
           --host=i686-pc-linux-gnu \
@@ -421,6 +523,32 @@ case ${TARGET} in
           --with-zlib=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/zlib \
           --with-readline=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/readline \
           --with-libxml2=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/libxml2 \
+          --enable-release
+		;;
+	*86*darwin*)
+		Configure ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR} ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} \
+          --host=i686-apple-darwin8 \
+          --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
+          --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          --with-sdl=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/SDL \
+          --with-boost=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/boost \
+          --with-zlib=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/zlib \
+          --with-readline=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/readline \
+          --with-libxml2=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/libxml2 \
+          --enable-release
+		;;
+	*powerpc*darwin*)
+		Configure ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR} ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} \
+          --host=powerpc-apple-darwin8 \
+          --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
+          --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          --with-sdl=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/SDL \
+          --with-boost=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/boost \
+          --with-zlib=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/zlib \
+          --with-readline=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/readline \
+          --with-libxml2=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
 	*debian*)
@@ -455,6 +583,22 @@ case ${TARGET} in
 		Clean ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR}
 		Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} \
           --host=i586-mingw32msvc
+		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+		;;
+	*86*darwin*)
+		Uninstall ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+		Clean ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR}
+		Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} \
+          --host=i686-apple-darwin8
+		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+		;;
+	*powerpc*darwin*)
+		Uninstall ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
+		Clean ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR}
+		Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} \
+          --host=powerpc-apple-darwin8
 		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		;;

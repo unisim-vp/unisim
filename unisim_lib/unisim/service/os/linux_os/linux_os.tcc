@@ -1163,10 +1163,14 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 #if defined(WIN32) || defined(WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
-#else
+#elif defined(linux)
 	struct stat64 host_stat;
 	ret = fstat64(fd, &host_stat);
+#elif defined(__APPLE_CC__)
+	struct stat host_stat;
+	ret = fstat(fd, &host_stat);
 #endif
+
 	if(ret < 0) return ret;
 
 #if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
@@ -1263,9 +1267,12 @@ Stat64(int fd, arm_stat64_t *target_stat)
 #if defined(WIN32) || defined(WIN64)
 	struct _stati64 host_stat;
 	ret = _fstati64(fd, &host_stat);
-#else
+#elif defined(linux)
 	struct stat64 host_stat;
 	ret = fstat64(fd, &host_stat);
+#elif defined(__APPLE_CC__)
+	struct stat host_stat;
+	ret = fstat(fd, &host_stat);
 #endif
 	if(ret < 0) return ret;
 
