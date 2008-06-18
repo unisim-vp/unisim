@@ -94,7 +94,6 @@ extend_oplist( Vect_t<Operation_t>* _oplist, ConstStr_t _symbol ) {
  */
 %token '*'
 %token ':'
-%token ';'
 %token ','
 %token '='
 %token '-'
