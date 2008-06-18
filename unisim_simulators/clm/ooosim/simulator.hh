@@ -50,6 +50,7 @@
 //#define DD_DEBUG_TIMESTAMP 82300
 //#define DD_DEBUG_TIMESTAMP 352320
 //#define DD_DEBUG_TIMESTAMP 381929
+//#define DD_DEBUG_TIMESTAMP 80000
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -133,7 +134,7 @@
 
 // Simulator paramters
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
-#include <unisim/component/clm/interface/instruction_interface.hh>
+#include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 
 #include <unisim/component/clm/cache/cache_wb.hh>
@@ -169,10 +170,10 @@ using unisim::component::clm::memory::dram::DRAM;
 using unisim::component::clm::cache::CacheWB;
 using unisim::component::clm::processor::ooosim::OooSimCpu;
 
-#ifdef interface
-#undef interface
-#endif
-using unisim::component::clm::interface::InstructionPtr;
+//#ifdef interface
+//#undef interface
+//#endif
+using unisim::component::clm::interfaces::InstructionPtr;
 
 // Using Parameters
 using unisim::component::clm::processor::ooosim::nCPU;
