@@ -129,6 +129,7 @@ decimal_number [0-9]+
 }
 \\\n { Scanner::fileloc.m_line++; }
 \n { Scanner::fileloc.m_line++; return TOK_ENDL; }
+";" { return TOK_ENDL; }
 "*" { return '*'; }
 "." { return '.'; }
 "[" { return '['; }
@@ -139,7 +140,6 @@ decimal_number [0-9]+
 ">"  { return '>'; }
 "," { return ','; }
 ":" { return ':'; }
-";" { return ';'; }
 "=" { return '='; }
 "-" { return '-'; }
 "?" { return '?'; }
@@ -362,7 +362,6 @@ Scanner::tokenname( int _token ) {
   case '<': return "`<'";
   case '>': return "`>'";
   case ':' : return "`:'";
-  case ';': return "`;'";
   case '=' : return "`='";
   case '.': return "`.'";
   case '[': return "`['";

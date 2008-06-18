@@ -278,7 +278,7 @@ CiscGenerator::finalize() {
   }
   
   bitsize( insn_min_bitsize, insn_max_bitsize );
-  cerr << "Instruction Size: [" << insn_min_bitsize << ";" << insn_max_bitsize << "]" << endl;
+  cerr << "Instruction Size: [" << insn_min_bitsize << ":" << insn_max_bitsize << "]" << endl;
   
   /* Generating the topological graph of operations, and checking for
    * conflicts (overlapping encodings) 
