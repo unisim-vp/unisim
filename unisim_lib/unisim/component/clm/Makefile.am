@@ -24,9 +24,9 @@ nobase_include_HEADERS = \
 \
 	fsb/bus.hh \
 \
-	interface/instruction_interface.hh \
-	interface/memreq.h \
-	interface/memreq_interface.h \
+	interfaces/instruction_interface.hh \
+	interfaces/memreq.h \
+	interfaces/memreq_interface.h \
 \
 	memory/dram/dram_components.hh \
 	memory/dram/dram.hh \

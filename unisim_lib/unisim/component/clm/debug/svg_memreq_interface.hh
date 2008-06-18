@@ -15,7 +15,7 @@
 #include <string>
 #include <inttypes.h>
 //#include "memreq.h"
-#include <unisim/component/clm/interface/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.h>
 
 //class Instruction;
 
@@ -27,7 +27,7 @@ namespace clm {
 namespace debug {
 
 
-  using unisim::component::clm::interface::memreq_dataless;
+  using unisim::component::clm::interfaces::memreq_dataless;
 
 
 template<class INSTRUCTION>

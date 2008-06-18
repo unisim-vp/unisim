@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_FETCH_FETCHER_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_FETCH_FETCHER_HH__
 
-#include <unisim/component/clm/interface/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.h>
 
 //#include <system/memory/cache/CacheCommon.h>
 #include <unisim/component/clm/cache/cache_common.hh>
@@ -60,12 +60,12 @@ namespace pipeline {
 namespace fetch {
 
 
-using unisim::component::clm::interface::memreq;
-using unisim::component::clm::interface::memreq_types;
+using unisim::component::clm::interfaces::memreq;
+using unisim::component::clm::interfaces::memreq_types;
 using unisim::service::interfaces::StatisticReporting;
 
-using unisim::component::clm::interface::Source;
-using unisim::component::clm::interface::Destination;
+using unisim::component::clm::interfaces::Source;
+using unisim::component::clm::interfaces::Destination;
 
   using unisim::kernel::service::Client;
   //  using unisim::kernel::service::Service;

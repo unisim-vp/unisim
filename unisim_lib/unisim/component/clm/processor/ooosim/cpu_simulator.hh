@@ -52,7 +52,7 @@
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 #include <unisim/component/clm/utility/error.h>
 //#include "memreq.h"
-#include <unisim/component/clm/interface/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.h>
 #include <unisim/component/clm/memory/mem_common.h>
 
 #include <unisim/component/clm/utility/utility.h>
@@ -99,10 +99,10 @@ namespace clm {
 namespace processor {
 namespace ooosim {
 
-using unisim::component::clm::interface::InstructionPtr;
+using unisim::component::clm::interfaces::InstructionPtr;
 
-using unisim::component::clm::interface::memreq;
-using unisim::component::clm::interface::memreq_types;
+using unisim::component::clm::interfaces::memreq;
+using unisim::component::clm::interfaces::memreq_types;
 
 using unisim::component::clm::pipeline::fetch::Fetcher;
 using unisim::component::clm::pipeline::decode::AllocatorRenamer;

@@ -47,7 +47,7 @@
 //#include <types.h>
 //#include <common.h>
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
-#include <unisim/component/clm/interface/instruction_interface.hh>
+#include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 namespace unisim {
 namespace component {
@@ -65,18 +65,9 @@ using unisim::component::clm::processor::ooosim::nCountArchitecturalRegisters;
 using unisim::component::clm::processor::ooosim::nCountRegisters;
 using unisim::component::clm::processor::ooosim::nXERArchitecturalRegisters;
 using unisim::component::clm::processor::ooosim::nXERRegisters;
-  /*
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-  */
+ 
+using unisim::component::clm::interfaces::InstructionPtr;
+
 
 /* A mapping table */
 template <int nArchitecturalRegisters, int nRegisters>

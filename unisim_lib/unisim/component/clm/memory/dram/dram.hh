@@ -56,6 +56,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include <generic/memory/MyMemEmulator.hh>
 #include <unisim/component/cxx/memory/ram/memory.hh>
 
+#include <unisim/component/clm/interfaces/memreq.h>
 //#include <generic/memory/memory_interface.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
@@ -72,7 +73,7 @@ namespace memory {
 namespace dram {
 
 // new usings
-using unisim::component::clm::interface::memreq;
+using unisim::component::clm::interfaces::memreq;
 
 
 using unisim::kernel::service::Client;

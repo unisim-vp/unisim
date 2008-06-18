@@ -18,8 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CLM_INTERFACE_INSTRUCTION_INTERFACE_HH__
-#define __UNISIM_COMPONENT_CLM_INTERFACE_INSTRUCTION_INTERFACE_HH__
+#ifndef __UNISIM_COMPONENT_CLM_INTERFACES_INSTRUCTION_INTERFACE_HH__
+#define __UNISIM_COMPONENT_CLM_INTERFACES_INSTRUCTION_INTERFACE_HH__
 
 //#include "system/cpu/powerpc405/iss_interface.h"
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
@@ -30,7 +30,7 @@
 namespace unisim {
 namespace component {
 namespace clm {
-namespace interface {
+namespace interfaces {
 
   //  using unisim::component::cxx::processor::powerpc::operand_type_t;
   /*
@@ -980,7 +980,7 @@ public:
 
 #undef GCC_INLINE
 
-} // end of namespace interface
+} // end of namespace interfaces
 } // end of namespace clm
 } // end of namespace component
 } // end of namespace unisim

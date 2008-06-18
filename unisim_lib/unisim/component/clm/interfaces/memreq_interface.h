@@ -38,21 +38,21 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   
 ***************************************************************************** */
 
-#ifndef __UNISIM_COMPONENT_CLM_INTERFACE_MEMREQ_INTERFACE_H__
-#define __UNISIM_COMPONENT_CLM_INTERFACE_MEMREQ_INTERFACE_H__
+#ifndef __UNISIM_COMPONENT_CLM_INTERFACES_MEMREQ_INTERFACE_H__
+#define __UNISIM_COMPONENT_CLM_INTERFACES_MEMREQ_INTERFACE_H__
 
 //#include "unisim/unisim.h"
 #include <unisim/kernel/clm/engine/include/unisim/unisim.h>
 // TODO : moving services...
 #include <utils/services/service.hh>
 //#include "memreq.h"
-#include <unisim/component/clm/interface/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.h>
 #include <generic/memory/memory_interface.hh>
 
 namespace unisim {
 namespace component {
 namespace clm {
-namespace interface {
+namespace interfaces {
 
 using full_system::utils::services::ServiceExport;
 using full_system::utils::services::ServiceImport;
@@ -119,7 +119,7 @@ class outMEMREQitf : public Client < MemoryInterface < address_t > >
   }
 };
 
-} // end of namespace interface
+} // end of namespace interfaces
 } // end of namespace clm
 } // end of namespace component
 } // end of namespace unisim

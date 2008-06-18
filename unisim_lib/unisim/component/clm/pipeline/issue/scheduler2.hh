@@ -48,7 +48,7 @@
 //#include <common.h>
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
-#include <unisim/component/clm/interface/instruction_interface.hh>
+#include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 namespace unisim {
 namespace component {
@@ -56,7 +56,7 @@ namespace clm {
 namespace pipeline {
 namespace issue {
 
-using unisim::component::clm::interface::InstructionPtr;
+using unisim::component::clm::interfaces::InstructionPtr;
 
 using unisim::component::clm::processor::ooosim::nConditionRegisters;
 using unisim::component::clm::processor::ooosim::nFPSCArchitecturalRegisters;

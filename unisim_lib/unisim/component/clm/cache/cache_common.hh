@@ -45,7 +45,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //#include "mem_common.h"
 #include <unisim/component/clm/memory/mem_common.h>
-#include <unisim/component/clm/interface/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.h>
 #include <inttypes.h>
 
 namespace unisim {
@@ -53,7 +53,7 @@ namespace component {
 namespace clm {
 namespace cache {
 
-  using unisim::component::clm::interface::memreq_types;
+  using unisim::component::clm::interfaces::memreq_types;
 
 #define ID_MSHR  0
 #define ID_CACHE 1

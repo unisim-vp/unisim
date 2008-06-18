@@ -48,7 +48,7 @@
 //#include <systemc.h>
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
-#include <unisim/component/clm/interface/instruction_interface.hh>
+#include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 
 namespace unisim {
@@ -58,7 +58,7 @@ namespace pipeline {
 namespace common {
 
 
-using unisim::component::clm::interface::InstructionPtr;
+using unisim::component::clm::interfaces::InstructionPtr;
 
 /** A SystemC module to arbiter a bus access between several instructions. Oldest instructions have priority */
 template <class T, int nSources, int InputWidth, int OutputWidth, int nChannels>

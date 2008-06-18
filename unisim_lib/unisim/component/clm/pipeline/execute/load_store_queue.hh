@@ -43,9 +43,9 @@
 #define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_LOAD_STORE_QUEUE_HH__
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
-#include <unisim/component/clm/interface/instruction_interface.hh>
+#include <unisim/component/clm/interfaces/instruction_interface.hh>
 
-#include <unisim/component/clm/interface/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.h>
 
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 
@@ -60,8 +60,8 @@ namespace execute {
   // Parameters
 using unisim::component::clm::processor::ooosim::DL1_nLineSize;
 
-using unisim::component::clm::interface::memreq;
-using unisim::component::clm::interface::memreq_types;
+using unisim::component::clm::interfaces::memreq;
+using unisim::component::clm::interfaces::memreq_types;
 
 using unisim::component::clm::utility::hexa;
   /*

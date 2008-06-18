@@ -47,7 +47,7 @@
 //#include <generics/others/types.h>
 //#include <generics/others/common.h>
 #include <unisim/component/clm/utility/common.h>
-#include <unisim/component/clm/interface/instruction_interface.hh>
+#include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 namespace unisim {
 namespace component {
@@ -55,7 +55,7 @@ namespace clm {
 namespace pipeline {
 namespace fetch {
 
-using unisim::component::clm::interface::InstructionPtr;
+using unisim::component::clm::interfaces::InstructionPtr;
 
 using unisim::component::clm::utility::hexa;
 

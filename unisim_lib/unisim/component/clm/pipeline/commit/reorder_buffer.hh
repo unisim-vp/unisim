@@ -42,12 +42,10 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_COMMIT_REORDER_BUFFER_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_COMMIT_REORDER_BUFFER_HH__
 
-//#include <systemc.h>
-//#include <utility.h>
-//#include <types.h>
-//#include <common.h>
 #include <unisim/component/clm/processor/ooosim/cpu_emulator.hh>
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
+
+#include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 #include <unisim/component/clm/utility/common.h>
 
@@ -58,7 +56,7 @@ namespace clm {
 namespace pipeline {
 namespace commit {
 
-using unisim::component::clm::interface::InstructionPtr;
+using unisim::component::clm::interfaces::InstructionPtr;
 
 using unisim::component::clm::processor::ooosim::CPUEmu;
 

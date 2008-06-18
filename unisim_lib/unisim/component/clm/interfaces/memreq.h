@@ -39,8 +39,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   
 ***************************************************************************** */
 
-#ifndef __UNISIM_COMPONENT_CLM_INTERFACE_MEMREQ_H__
-#define __UNISIM_COMPONENT_CLM_INTERFACE_MEMREQ_H__
+#ifndef __UNISIM_COMPONENT_CLM_INTERFACES_MEMREQ_H__
+#define __UNISIM_COMPONENT_CLM_INTERFACES_MEMREQ_H__
 
 //#include <unisim/unisim_inttypes.h>
 #include <unisim/kernel/clm/engine/unisim_inttypes.h>
@@ -52,7 +52,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace unisim {
 namespace component {
 namespace clm {
-namespace interface {
+namespace interfaces {
 
 
 using namespace std;
@@ -327,7 +327,7 @@ class memreq : public memreq_dataless <INSTRUCTION>
 
 uint64_t memreq_types::memreq_id_max;
 
-} // end of namespace interface
+} // end of namespace interfaces
 } // end of namespace clm
 } // end of namespace component
 } // end of namespace unisim

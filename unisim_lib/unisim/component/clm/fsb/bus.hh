@@ -42,7 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __UNISIM_COMPONENT_CLM_FSB_BUS_HH__
 
 
-#include <unisim/component/clm/interface/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.h>
 #include <unisim/component/clm/utility/error.h>
 #include <unisim/component/clm/utility/utility.h>
 #include <sstream>
@@ -56,8 +56,8 @@ namespace clm {
 namespace fsb {
 
 // new usings
-using unisim::component::clm::interface::memreq;
-using unisim::component::clm::interface::memreq_types;
+using unisim::component::clm::interfaces::memreq;
+using unisim::component::clm::interfaces::memreq_types;
 
 using unisim::component::clm::debug::SVGmemreqInterface;
 

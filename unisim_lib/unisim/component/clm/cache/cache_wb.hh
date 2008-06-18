@@ -48,7 +48,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "mem_common.h"
 #include <unisim/component/clm/memory/mem_common.h>
 //#include "memreq.h"
-#include <unisim/component/clm/interface/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.h>
 //#include "common.h"
 #include <unisim/component/clm/utility/common.h>
 //#include "base/utility.h"
@@ -78,7 +78,7 @@ namespace clm {
 namespace cache {
 
   // new usings for merge
-using unisim::component::clm::interface::memreq;
+using unisim::component::clm::interfaces::memreq;
 using unisim::service::interfaces::StatisticReporting;
 using unisim::component::clm::utility::hexa;
 using unisim::component::clm::debug::SVGmemreqInterface;

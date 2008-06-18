@@ -47,6 +47,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unisim/component/clm/memory/mem_common.h>
 #include <unisim/component/clm/utility/utility.h>
 #include <unisim/component/clm/memory/memory_container.hh>
+#include <unisim/component/clm/interfaces/memreq.h>
+
 
 namespace unisim {
 namespace component {
@@ -56,7 +58,7 @@ namespace dram {
 
 // new usings
 //using unisim::component::clm::interface::memreq;
-using unisim::component::clm::interface::memreq_types;
+using unisim::component::clm::interfaces::memreq_types;
 
 using unisim::component::clm::utility::hexa;
 
