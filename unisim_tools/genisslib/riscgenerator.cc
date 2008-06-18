@@ -324,7 +324,7 @@ RiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _old, char 
 
 void
 RiscGenerator::subdecoder_bounds( Product_t& _product ) const {
-  _product.code( "[%d;%d]", m_insn_bitsize, m_insn_bitsize );
+  _product.code( "[%d:%d]", m_insn_bitsize, m_insn_bitsize );
 }
 
 RiscGenerator::OpCode_t const&

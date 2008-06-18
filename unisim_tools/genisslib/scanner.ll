@@ -362,6 +362,7 @@ Scanner::tokenname( int _token ) {
   case '<': return "`<'";
   case '>': return "`>'";
   case ':' : return "`:'";
+  case ';': return "`;'";
   case '=' : return "`='";
   case '.': return "`.'";
   case '[': return "`['";

@@ -504,7 +504,7 @@ CiscGenerator::insn_unchanged_expr( Product_t& _product, char const* _ref, char 
 
 void
 CiscGenerator::subdecoder_bounds( Product_t& _product ) const {
-  _product.code( "[%d;%d]", m_insn_min_bitsize, m_insn_max_bitsize );
+  _product.code( "[%d:%d]", m_insn_min_bitsize, m_insn_max_bitsize );
 }
 
 CiscGenerator::OpCode_t const&

@@ -238,7 +238,7 @@ template_scheme:
 ;
 
 subdecoder_class:
-  TOK_SUBDECODER namespace_list '[' TOK_INTEGER ';' TOK_INTEGER ']'
+  TOK_SUBDECODER namespace_list '[' TOK_INTEGER ':' TOK_INTEGER ']'
 {
   StringVect_t* nmspc_in = $2;
   unsigned int minsize = $4, maxsize = $6;
