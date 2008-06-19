@@ -1,0 +1,137 @@
+/*
+ *  Copyright (c) 2008,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+ */
+
+#ifndef UNISIM_SERVICE_LOADER_S19_LOADER_HH_
+#define UNISIM_SERVICE_LOADER_S19_LOADER_HH_
+
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/loader.hh>
+#include <unisim/service/interfaces/symbol_table_build.hh>
+
+#include <unisim/util/endian/endian.hh>
+#include <unisim/kernel/service/service.hh>
+
+#include <iostream>
+#include <fstream>
+
+#include <inttypes.h>
+#include  <stdio.h>
+#include  <stdlib.h>
+#include  <string.h>
+
+namespace unisim {
+namespace service {
+namespace loader {
+namespace s19_loader {
+
+using namespace std;
+using unisim::service::interfaces::Memory;
+using namespace unisim::util::endian;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::Parameter;
+using unisim::util::debug::Symbol;
+using unisim::service::interfaces::SymbolTableBuild;
+using unisim::service::interfaces::Loader;
+
+
+	
+class S19_Loader :
+	public Client<Memory<uint32_t> >,
+	public Service<Loader<uint32_t> >,
+	public Client<SymbolTableBuild<uint32_t> > 
+{
+public:
+
+	enum {ERR_NOFILE, ERR_BADREC, ERR_NOSUPPORT, ERR_BADADDR, ERR_BADCHKSUM, ERR_BADFILENAME};
+
+/* ********* S-Record Types *********************** 
+ * Record	Description		Address Bytes	Data Sequence
+ * ------	-----------		-------------	-------------
+ * S0		Block header	2				Yes
+ * S1		Data Sequence	2				Yes
+ * S2		Data Sequence	3				Yes
+ * S3		Data Sequence	4				Yes
+ * S5		Record Count	2				Yes
+ * S7		End of Block	4				No
+ * S8		End of Block	3				No
+ * S9		End of Block	2				No
+ */
+	enum {S0='0', S1='1', S2='2', S3='3', S5='5', S7='7', S8='8', S9='9'};
+
+	ServiceImport<Memory<uint32_t> > memory_import;
+	ServiceImport<SymbolTableBuild<uint32_t> > symbol_table_build_import;
+	ServiceExport<Loader<uint32_t> > loader_export;
+
+	virtual void Reset();
+	virtual uint32_t GetEntryPoint() const;
+	virtual uint32_t GetTopAddr() const;
+	virtual uint32_t GetStackBase() const;
+
+	S19_Loader(char const *name, Object *parent = 0);
+	virtual ~S19_Loader();	
+	void	ProcessRecord(int linenum, char srec[256]);
+	void	ShowError(int  errnum, int linenum, char srec[256]);
+	int		Load();
+
+	/* TODO: 
+	 * use the tlm bus interface
+	 * or connect the loader to the simulated RAM
+	 */
+	       
+	void	busWrite(uint32_t addr, int data);
+
+private:
+	string filename;
+	uint32_t entry_point;
+	uint32_t top_addr;
+	uint32_t base_addr;
+	bool force_use_virtual_address;
+	
+	Parameter<string> param_filename;
+	Parameter<uint32_t> param_base_addr;
+	Parameter<bool> param_force_use_virtual_address;
+};
+
+
+
+} // end UNISIM namespace
+} // end SERVICE namespace
+} // end LOADER namespace
+} // end S19_LOADER
+
+#endif /*UNISIM_SERVICE_LOADER_S19_LOADER_HH_*/

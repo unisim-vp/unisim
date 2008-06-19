@@ -8,6 +8,11 @@ SUBDIRS += elf_loader
 INCLUDE_SUBDIRS += elf_loader
 endif
 
+if COND_s19_loader
+SUBDIRS += s19_loader
+INCLUDE_SUBDIRS += s19_loader
+endif
+
 if COND_pmac_bootx
 SUBDIRS += pmac_bootx
 INCLUDE_SUBDIRS += pmac_bootx

@@ -31,27 +31,49 @@
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
+#          Reda Nouacer (reda.nouacer@cea.fr)
 #
 
-AC_INIT([UNISIM Loader], [1.0])
+AC_INIT([UNISIM ELF Loader service], [1.0],
+	[Reda Nouacer <reda.nouacer@cea.fr>],
+	[s19_loader])
 AC_CONFIG_AUX_DIR(config)
-
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([inttypes.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+AC_CHECK_HEADERS([iostream fstream],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR TARGET SPECIFIC HEADERS ######################
+
+case $host in
+	*linux*)   # linux host
+		;;
+	*mingw32*)  # win32 host
+		;;
+esac
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-service-loader-elf_loader, elf_loader)
-UNISIM_CONFIG_SUBDIR(unisim-service-loader-s19_loader, s19_loader)
-UNISIM_CONFIG_SUBDIR(unisim-service-loader-pmac_bootx, pmac_bootx)
-UNISIM_CONFIG_SUBDIR(unisim-service-loader-pmac_linux_kernel_loader, pmac_linux_kernel_loader)
-UNISIM_CONFIG_SUBDIR(unisim-service-loader-linux_loader, linux_loader)
-UNISIM_CONFIG_SUBDIR(unisim-service-loader-arm_generic_kernel_loader, arm_generic_kernel_loader)
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-
