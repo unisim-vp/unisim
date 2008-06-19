@@ -426,11 +426,18 @@ public:
     __icache->outMEM >> __bus->inCPU[1];
     __bus->outCPU[0] >> __dcache->inMEM;
     __bus->outCPU[1] >> __icache->inMEM;
+    /*
     __dcache->outCPU >> __cpu->inDL1Data;
     __icache->outCPU >> __cpu->inIL1Data;
     __cpu->outDL1Data >> __dcache->inCPU;
     //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
     __cpu->outIL1Data >> __icache->inCPU;
+    */
+    __dcache->outCPU >> __cpu->lsq->inDL1[0];
+    __icache->outCPU >> __cpu->fetch->inIL1;
+    __cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    __cpu->fetch->outIL1 >> __icache->inCPU;
 
     
 

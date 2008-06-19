@@ -18,6 +18,7 @@ int main(int argc, char **argv, char **envp)
   command_line.add_option("gdb-server-arch-file", "<file>", "uses <arch file> as architecture description file for GDB server.\nDefaults to \"gdb_powerpc.xml\"");
   command_line.add_option("max:inst", "<count>", "execute <count> instructions then exit");
   //  command_line.add_option("fastforward", "number of instructions to skip before starting the simulation");
+  command_line.add_option("dump-latex", "<file>", "Draw the architecture");
   command_line.add_option("dump-machine-description", "<file>", "Dump the machine description in <file> then exits.");
   command_line.add_option("dump-statistics", "<file>", "Dump the statistics at the end of the simulation to <file>.");
   command_line.add_option("load-checkpoint", "<file>", "Load a checkpoint from <file>");
@@ -53,6 +54,9 @@ int main(int argc, char **argv, char **envp)
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
   */
+
+ 
+
   ///////////////////////////////////////// "From Emulator" Start ///////////////////////
   int c;
   bool use_gdb_server = false;
@@ -97,6 +101,10 @@ int main(int argc, char **argv, char **envp)
     return 0;
     }
   
+  if(command_line["dump-latex"])
+  { s.dump_latex(command_line["dump-latex"]);
+    exit(0);
+  }
 
 
 
@@ -136,6 +144,8 @@ int main(int argc, char **argv, char **envp)
 #if !defined(WIN32) && !defined(WIN64)
   signal(SIGTSTP,GeneratedSimulator::at_ctrlz);
 #endif
+
+
   while(!unisim_terminated)
   { 
     fsc_phase();
