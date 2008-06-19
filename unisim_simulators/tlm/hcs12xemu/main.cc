@@ -32,17 +32,16 @@
  * Authors: Reda Nouacer (reda.nouacer@cea.fr)
  */
  
-//#include <unisim/component/tlm/processor/powerpc/powerpc.hh>
 
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
+#include <unisim/service/loader/s19_loader/s19_loader.hh>
 #include <unisim/service/debug/symbol_table/symbol_table.hh>
 #include <iostream>
 #include <getopt.h>
 #include <unisim/kernel/service/service.hh>
 #include <stdlib.h>
-//#include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/component/tlm/processor/hcs12x/hcs12x.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
 //#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
@@ -51,8 +50,7 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/logger/logger_server.hh>
-
-//#include <unisim/component/cxx/processor/powerpc/config.hh>
+#include <unisim/service/loader/s19_loader/s19_loader.hh>
 
 #include <stdexcept>
 #include <unisim/component/tlm/debug/transaction_spy.hh>
@@ -91,15 +89,19 @@ void SigIntHandler(int signum)
 }
 
 
+
 using namespace std;
+
 using unisim::util::endian::E_BIG_ENDIAN;
+using unisim::util::garbage_collector::GarbageCollector;
+
 using unisim::service::loader::elf_loader::Elf32Loader;
+using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
-
-using unisim::util::garbage_collector::GarbageCollector;
 using unisim::service::logger::LoggerServer;
+
 using unisim::kernel::service::ServiceManager;
 
 void help(char *prog_name)
@@ -217,8 +219,8 @@ int sc_main(int argc, char *argv[])
 	bool logger_out = false;
 	bool logger_on = false;
 	bool logger_messages = false;
-	double cpu_frequency = 1.0; // in Mhz
-	uint32_t cpu_clock_multiplier = 1;
+	double cpu_frequency = 40.0; // in Mhz
+	uint32_t cpu_clock_multiplier = 1; // REDA: I think that clock_multipier =2 
 //	double cpu_ipc = 1.0; // in instructions per cycle
 	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
@@ -277,7 +279,7 @@ int sc_main(int argc, char *argv[])
 	char **sim_envp = environ;
 
 	// If no filename has been specified then display the help
-	if(!filename)
+	if(filename == NULL)
 	{
 		help(argv[0]);
 		return 0;
@@ -327,8 +329,25 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
+	
+	bool isS19 = false;
+	
+	if ((strstr(filename, ".s19") == NULL) &&
+		 (strstr(filename, ".S19") == NULL))  {
+		isS19 = true;
+	}
+	
+	//  - S19 loader
+	S19_Loader *s19_loader;
 	//  - ELF32 loader
-	Elf32Loader *elf32_loader = new Elf32Loader("elf32-loader");
+	Elf32Loader *elf32_loader;
+	
+	if (isS19) {
+		s19_loader = new S19_Loader("S19_Loader");
+	} else {
+		elf32_loader = new Elf32Loader("elf32-loader");
+	}
+
 	//  - Symbol table
 	SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol-table");
 	//  - GDB server
@@ -376,8 +395,14 @@ int sc_main(int argc, char *argv[])
 		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
 		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
 	}
-	//  - ELF32 Loader run-time configuration
-	(*elf32_loader)["filename"] = filename;
+	
+	if (isS19) {
+		//  - S19 Loader run-time configuration
+		(*s19_loader)["filename"] = filename;
+	} else {
+		//  - ELF32 Loader run-time configuration
+		(*elf32_loader)["filename"] = filename;
+	}
 
 	//  - Loggers
 	if(logger_on)
@@ -464,8 +489,14 @@ int sc_main(int argc, char *argv[])
 		cpu->memory_access_reporting_control_export;
 	}
 
-	elf32_loader->memory_import >> memory->memory_export;
-	elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+	if (isS19) {
+		s19_loader->memory_import >> memory->memory_export;
+		s19_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+	} else {
+		elf32_loader->memory_import >> memory->memory_export;
+		elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+	}
+	
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	bus->memory_import >> fsb_to_mem_bridge->memory_export;
 	fsb_to_mem_bridge->memory_import >> memory->memory_export;
@@ -553,6 +584,7 @@ int sc_main(int argc, char *argv[])
 	if(fsb_to_mem_bridge) delete fsb_to_mem_bridge;
 	if(time) delete time;
 	if(logger) delete logger;
+	if(s19_loader) delete s19_loader;
 	if(elf32_loader) delete elf32_loader;
 
 #ifdef WIN32
