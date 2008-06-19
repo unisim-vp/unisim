@@ -779,8 +779,7 @@ template<class CONFIG>
 unsigned int 
 CPU<CONFIG> ::
 GetDebugRegisterCount() const {
-	// TODO
-	return 0;
+	return 16 /* gpr */ + 1 /* cpsr */;
 }
  
 template<class CONFIG>
@@ -788,6 +787,10 @@ uint32_t
 CPU<CONFIG> ::
 GetDebugRegisterValue(unsigned int reg) const {
 	// TODO
+	if(reg < 16)
+		return GetGPR(reg);
+	if(reg == 16)
+		return GetCPSR();
 	return 0;
 }
 
@@ -795,7 +798,14 @@ template<class CONFIG>
 void 
 CPU<CONFIG> ::
 SetDebugRegisterValue(unsigned int reg, uint32_t value) {
-	// TODO
+	if(reg < 16) {
+		SetGPR(reg, value);
+		return;
+	}
+	if(reg == 16) {
+		SetCPSR(value);
+		return;
+	}
 }
 
 template<class CONFIG>

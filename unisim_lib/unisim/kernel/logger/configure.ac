@@ -30,20 +30,37 @@
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
-#          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Kernel Libraries], [1.0])
+AC_INIT([UNISIM Logger Kernel Library], [1.0],
+	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
+	[service])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
 
-UNISIM_CONFIG_SUBDIR(unisim-kernel-clm, clm)
-UNISIM_CONFIG_SUBDIR(unisim-kernel-tlm, tlm)
-UNISIM_CONFIG_SUBDIR(unisim-kernel-service, service)
-UNISIM_CONFIG_SUBDIR(unisim-kernel-logger, logger)
+AC_LANG([C++])
+
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+AC_CHECK_HEADERS([sstream string iostream],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR BOOST ########################################################
+## UNISIM_CHECK_BOOST
+
+###### CHECK FOR LIBXML2 ######################################################
+## UNISIM_CHECK_LIBXML2
 
 # files to generate
 #   this should include all the makefiles to generate

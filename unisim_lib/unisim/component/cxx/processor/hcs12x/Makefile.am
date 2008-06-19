@@ -12,7 +12,8 @@ nodist_include_HEADERS = $(top_srcdir)/hcs12x.hh $(top_srcdir)/xb.hh $(top_srcdi
 BUILT_SOURCES = $(top_srcdir)/hcs12x.hh $(top_srcdir)/hcs12x.cc $(top_srcdir)/xb.cc $(top_srcdir)/xb.hh $(top_srcdir)/xb_sub.isa
 CLEANFILES = $(top_srcdir)/hcs12x.cc $(top_srcdir)/hcs12x.hh $(top_srcdir)/xb.cc $(top_srcdir)/xb.hh $(top_srcdir)/xb_sub.isa
 
-$(top_srcdir)/xb.cc $(top_srcdir)/hcs12x.cc: $(top_srcdir)/%.cc: $(top_srcdir)/%.hh
+$(top_srcdir)/xb.cc: $(top_srcdir)/xb.hh
+$(top_srcdir)/hcs12x.cc: $(top_srcdir)/hcs12x.hh
 $(top_srcdir)/hcs12x.hh: $(top_srcdir)/xb.hh
 
 $(top_srcdir)/xb_sub.isa: $(top_srcdir)/xb.hh
