@@ -309,6 +309,26 @@ public:
 		*/		
 		syscall_in_pipeline = false;
 		stall_counter = 0;
+
+		// --- Latex rendering hints -----------------
+		latex_left_ports.push_back(&inIL1);
+		latex_left_ports.push_back(&outIL1);
+
+		for(int i=0;i<Width;i++)
+		{ 
+		  latex_right_ports.push_back(&outInstruction[i]);
+		}
+		
+		for (i=0; i<WriteBackWidth; i++)
+		  {
+		    latex_left_ports.push_back(&inWriteBackInstruction[i]);
+		  }
+		for (i=0; i<RetireWidth; i++)
+		  {
+		    latex_left_ports.push_back(&inRetireInstruction[i]);
+		  }
+		latex_left_ports.push_back(&inFlush);
+		//		latex_bottom_ports.push_back(&outFlush);
 	}
 
 

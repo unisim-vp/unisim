@@ -179,12 +179,16 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
   outport < memreq < Instruction, nIL1CachetoMemDataPathSize > > outIL1Data;   ///< To L1 Instruction Memory
   inport  < memreq < Instruction, nIL1MemtoCacheDataPathSize > > inIL1Data;    ///< From L1 Instruction Cache
   */
+
+  // Forwarded ports are not very well supported, especially for latex generation...
+  // So we remove them.
+  /*
   outport < memreq < InstructionPtr, nIL1CPUtoCacheDataPathSize > > outIL1Data;   ///< To L1 Instruction Memory
   inport  < memreq < InstructionPtr, nIL1CachetoCPUDataPathSize > > inIL1Data;    ///< From L1 Instruction Cache
 
   outport < memreq < InstructionPtr, nDL1CPUtoCacheDataPathSize > > outDL1Data;   ///< To data cache
   inport  < memreq < InstructionPtr, nDL1CachetoCPUDataPathSize > > inDL1Data;    ///< From data Cache
-
+  */
   bool verbose;               ///< Increase verbosity level when set to true
   bool use_emulator;          ///< Validate against the emulator if set to true
 
@@ -202,11 +206,14 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
   { 
     class_name = " OooSimCpu";
     category = category_PROCESSOR;
+
+    // Forwards removed
+    /*
     outIL1Data.set_unisim_name(this,"outIL1Data");
     inIL1Data.set_unisim_name(this,"inIL1Data");
     outDL1Data.set_unisim_name(this,"outDL1Data");
     inDL1Data.set_unisim_name(this,"inDL1Data");
-
+    */
     initialization();
     int a = 0x1234;
     host_endianess = (*(char *) &a == 0x34) ? little_endian : big_endian;
@@ -327,8 +334,10 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 	
 	}
     */
+    /*
     inIL1Data >> fetch->inIL1;
     outIL1Data >>  fetch->outIL1;
+    */
     
     for (int i=0; i<Degree; i++)
       {
@@ -430,8 +439,11 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 
     // CPU -> Cache (lsq->dcache) 
     //lsq->outDL1[0] >> outDL1Data;
+    // Forwards removed.
+    /*
     outDL1Data >> lsq->outDL1[0];
     inDL1Data >> lsq->inDL1[0];
+    */
 
     //// Flush signals
     rob->outFlush >> lsq->inFlush;
@@ -1375,7 +1387,10 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
   //   Fetch
   //  typedef Fetcher<UInt64, nSources, fetchWidth, IL1_nLineSize, IL1_nCachetoCPUDataPathSize, InstructionQueueSize, InstructionSize, BHT_Size, BHT_nLevels, BHT_nHistorySize, BTB_nlines, BTB_associativity, RAS_Size, retireWidth, WriteBackWidth,fetchMaxPendingRequests, MaxBranches> FetcherClass;
   typedef Fetcher<UInt64, nSources, fetchWidth, IL1_nLineSize, nIL1CachetoCPUDataPathSize, InstructionQueueSize, InstructionSize, BHT_Size, BHT_nLevels, BHT_nHistorySize, BTB_nlines, BTB_associativity, RAS_Size, retireWidth, WriteBackWidth,fetchMaxPendingRequests, MaxBranches> FetcherClass;
+public: // Allow external connections with Inst. Cache.
   FetcherClass *fetch;
+private:
+
 
   //typedef DummyExecutionCore<UInt64, nSources, Width, WriteBackWidth, retireWidth, nStages> DummyExecutionCore_stage;
   //  typedef DummyExecutionCore<UInt64, nSources, fetchWidth, WriteBackWidth, retireWidth, 1, nDL1CachetoCPUDataPathSize> DummyExecutionCoreClass;
@@ -1431,7 +1446,9 @@ typedef AddressGenerationUnit<UInt64, nSources, addressGenerationPipelineDepth> 
   //  AddressGenerationUnitClass *agu1_stage;
 
 typedef LoadStoreQueue<UInt64, nSources, loadQueueSize, storeQueueSize, nAddressGenerationUnits, allocateRenameWidth, retireWidth, DL1_nCPUtoCacheDataPathSize, DL1_nPorts, LSQ_nCDBPorts> LoadStoreQueueClass;
+public: // Allow external connections with Inst. Cache.
   LoadStoreQueueClass *lsq;
+private:
 
   static const int nChannels = 5;
 typedef Arbiter<UInt64, nSources, commonDataBusArbiterPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
