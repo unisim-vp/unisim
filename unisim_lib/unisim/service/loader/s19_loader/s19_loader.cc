@@ -110,9 +110,9 @@ int S19_Loader::Load()
 		exit(1);
 	}
 
-	printf("\n\nLoad file %s to simulated RAM.", filename.c_str());
 
-	printf("\n\nLoad started...");
+	cout << "\n\nLoad file " << filename << " to simulated RAM." ;
+	cout << "\n\nLoad started...";
 
 	while (!feof(bootptr))  {
 		linenum++;
@@ -122,7 +122,7 @@ int S19_Loader::Load()
 
 	fclose(bootptr);
 
-	printf("\n\nFile %s successfully Loaded.", filename.c_str());
+	cout << "\n\nFile " << filename << " successfully Loaded." ;
 
 	return 0;	
 }
@@ -229,7 +229,7 @@ void  S19_Loader::ProcessRecord(int linenum, char srec[256])
 	
 	sscanf(srec+2+(cnt*2), "%2x", &tchksum);
 	if ((tchksum + (chksum & 0xff)) != 0xff)  {
-		printf("check sum %x\n",chksum);
+		cout << "check sum " << chksum << "\n";
 		ShowError(ERR_BADCHKSUM,linenum,srec);
 		exit(2);
 	}
@@ -242,24 +242,24 @@ void  S19_Loader::ShowError(int  errnum, int linenum, char srec[256])
 {
 
 	switch (errnum) {
-		case ERR_NOFILE: printf("\nError: Unable to open specified .S19 bootstrap file."); break;
-		case ERR_BADREC: printf("\nError: Bad S19 record."); break;
-		case ERR_NOSUPPORT: printf("\nError: Unsupported S-record format; must be S0, S1 or S9."); break;
-		case ERR_BADADDR: printf("\nError: Address is out of range for this MCU."); break;
-		case ERR_BADCHKSUM: printf("\nError: Record checksum is bad."); break;
-		case ERR_BADFILENAME: printf("\nError: Illegal character in file name."); break;
-		default: printf("\nError: Unknown!");
+		case ERR_NOFILE: cout << "\nError: Unable to open specified .S19 bootstrap file."; break;
+		case ERR_BADREC: cout << "\nError: Bad S19 record."; break;
+		case ERR_NOSUPPORT: cout << "\nError: Unsupported S-record format; must be S0, S1 or S9."; break;
+		case ERR_BADADDR: cout << "\nError: Address is out of range for this MCU."; break;
+		case ERR_BADCHKSUM: cout << "\nError: Record checksum is bad."; break;
+		case ERR_BADFILENAME: cout << "\nError: Illegal character in file name."; break;
+		default: cout << "\nError: Unknown!";
 	}
 	
 	if (linenum)  {
-		printf("\nline %d:  %s", linenum, srec);
+		cout << "\nline " << linenum << " " << srec ;
 	}
 }
 
 // TODO: use the tlm bus interface
 
 void S19_Loader::busWrite(uint32_t addr, int data) {
-	printf("\naddr %x  data  %x",addr,data);
+	cout << "\naddr " << addr << " data " << data;   
 }
 
 } // end UNISIM namespace
