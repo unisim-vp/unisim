@@ -178,39 +178,71 @@ void unisim_module::compute_latex_ports()
 void unisim_module::dump_latex_ports(ostream &os)
 { string x,y;
   int c;
+  int fused_size;
   const char*port_distance="0.30";
   c = 1;
-  y = "-0.33"; 
+  y = "-0.33";
+  fused_size = 1;
   for(list<unisim_port*>::iterator p=latex_left_ports.begin();p!=latex_left_ports.end();p++)
-  { os << "\\draw (module.north west) +(0," << y << ") node [biglport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext[rotate=90]{" << (*p)->get_name() << "}};" << endl;
-    y += "-"; y+= port_distance; y += "-0.33";
-    c = 1-c;
-    if(c) y += "-0.33";
-  }
+    { if ( ((*p)->latex_rendering_fused) )
+      {
+	fused_size++;
+      }
+    else
+      {
+	os << "\\draw (module.north west) +(0," << y << ") node [biglport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext[rotate=90]{" << (*p)->get_name() << "(" << fused_size << ")" << "}};" << endl;
+	y += "-"; y+= port_distance; y += "-0.33";
+	c = 1-c;
+	if(c) y += "-0.33";
+      }
+    }
   c = 1;
   y = "-0.33";
+  fused_size = 1;
   for(list<unisim_port*>::iterator p=latex_right_ports.begin();p!=latex_right_ports.end();p++)
-  { os << "\\draw (module.north east) +(0," << y << ") node [bigrport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext[rotate=90]{" << (*p)->get_name() << "}};" << endl;
-  //    y += "-1-0.33";
-    y += "-"; y+= port_distance; y += "-0.33";
-    c = 1-c;
-  }
+    { if ( !((*p)->latex_rendering_fused) )
+      {
+	fused_size++;
+      }
+    else
+      {
+	os << "\\draw (module.north east) +(0," << y << ") node [bigrport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext[rotate=90]{" << (*p)->get_name() << "(" << fused_size << ")" << "}};" << endl;
+	//    y += "-1-0.33";
+	y += "-"; y+= port_distance; y += "-0.33";
+	c = 1-c;
+      }
+    }
   c = 1;
   x = "0.33";
+  fused_size = 1;
   for(list<unisim_port*>::iterator p=latex_bottom_ports.begin();p!=latex_bottom_ports.end();p++)
-  { os << "\\draw (module.south west) +(" << x << ",0) node [bigbport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext{" << (*p)->get_name() << "}};" << endl;
-  //    x += "+1+0.33";
-    x += "+"; x+= port_distance; x += "+0.33";
-    c = 1-c;
+  { if ( !((*p)->latex_rendering_fused) )
+      {
+	fused_size++;
+      }
+    else
+    {
+      os << "\\draw (module.south west) +(" << x << ",0) node [bigbport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext{" << (*p)->get_name() << "}};" << endl;
+      //    x += "+1+0.33";
+      x += "+"; x+= port_distance; x += "+0.33";
+      c = 1-c;
+    }
   }
   c = 1;
   x = "0.33";
   for(list<unisim_port*>::iterator p=latex_top_ports.begin();p!=latex_top_ports.end();p++)
-  { os << "\\draw (module.south east) +(" << x << ",0) node [bigbport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext{" << (*p)->get_name() << "}};" << endl;
-  //    x += "+1+0.33";
-    x += "+"; x+= port_distance; x += "+0.33";
-    c = 1-c;
-  }
+    { if ( !((*p)->latex_rendering_fused) )
+      {
+	fused_size++;
+      }
+    else
+      {
+	os << "\\draw (module.south east) +(" << x << ",0) node [bigbport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext{" << (*p)->get_name() << "(" << fused_size << ")" << "}};" << endl;
+	//    x += "+1+0.33";
+	x += "+"; x+= port_distance; x += "+0.33";
+	c = 1-c;
+      }
+    }
 }
 
 void unisim_module::dump_latex_conns(ostream &os)
@@ -218,7 +250,10 @@ void unisim_module::dump_latex_conns(ostream &os)
   char link_from, link_to;
   os << "% --- connections ---------------------" << endl;
   for(o=module_outport_list.begin();o!=module_outport_list.end();o++)
-  { string pname = (*o)->get_name();
+  { 
+    if (! ((*o)->is_fused()) )
+    {
+    string pname = (*o)->get_name();
     link_from = '-';
     link_to = '-';
     os << "\\draw [signal] (" << Name() << "_" << pname << ") ";
@@ -242,6 +277,7 @@ void unisim_module::dump_latex_conns(ostream &os)
 
     os << link_from << link_to;
     os << " (" << (*o)->get_connected_module()->Name() << "_" << (*o)->get_connected_port()->get_name() << ");" << endl;
+    }
   }
 }
 

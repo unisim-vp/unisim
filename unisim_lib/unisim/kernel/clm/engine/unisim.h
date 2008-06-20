@@ -141,7 +141,11 @@ class unisim_port
 
   unisim_port * get_connected_port();
   unisim_module * get_connected_module();
-  
+ 
+  // DD Latex rendering ()
+  void set_fused();
+  bool is_fused();
+
  protected:
   static List<unisim_port> unisim_inport_list;  ///< static list of instantiated input ports
   static List<unisim_port> unisim_outport_list; ///< static list of instantiated output ports
@@ -159,6 +163,8 @@ class unisim_port
   unisim_module *parent_module;               ///< Module owning this port
 public:
   unisim_port *connected_port;                ///< Port connected to this port
+
+  bool latex_rendering_fused;
 };
 
 class Signal_Status;

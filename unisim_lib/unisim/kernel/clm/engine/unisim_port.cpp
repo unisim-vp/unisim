@@ -53,6 +53,7 @@ unisim_port::unisim_port()
   forward = false;
   parent_module = NULL;
   connected_port = NULL;
+  latex_rendering_fused = false;
 }
 
 /**
@@ -299,3 +300,17 @@ Unisim_Outport_Base::Unisim_Outport_Base() : unisim_port(), enable("enable"), ac
 Unisim_Inport_Base::Unisim_Inport_Base() : unisim_port(), enable("enable"), accept("accept")
 { unisim_module::unisim_current_module->register_port(this);
 }
+
+/**
+ * \brief For Latex Rendering set the signal has fused
+ */
+void unisim_port::set_fused()
+{
+  latex_rendering_fused = true;
+}
+
+bool unisim_port::is_fused()
+{
+  return latex_rendering_fused;
+}
+
