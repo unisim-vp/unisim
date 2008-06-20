@@ -123,6 +123,39 @@ public:
 		    sensitive_method(on_Enable) << inInstruction[i].enable;
 		  }
 
+		// --- Latex rendering hints -----------------
+
+		for (j = 0; j < nChannels; j++)
+		  {
+		    for(int i=0;i<OutputWidth-1;i++)
+		      { 
+			outInstruction[i][j].set_fused();
+		      }
+		    latex_right_ports.push_back(&outInstruction[OutputWidth-1][j]);
+		  }
+		/*
+		latex_left_ports.push_back(&inInstruction[Width-1]);
+		
+		for(int i=0;i<Width-1;i++)
+		{ 
+		  outInstruction[i].set_fused();
+		}
+		latex_right_ports.push_back(&outInstruction[Width-1]);
+		
+		for (i=0; i<WriteBackWidth-1; i++)
+		  {
+		    inWriteBackInstruction[i].set_fused();
+		  }
+		latex_top_ports.push_back(&inWriteBackInstruction[WriteBackWidth-1]);
+
+		for (i=0; i<RetireWidth-1; i++)
+		  {
+		    inRetireInstruction[i].set_fused();
+		  }
+		latex_top_ports.push_back(&inRetireInstruction[RetireWidth-1]);
+
+		latex_top_ports.push_back(&inFlush);
+		*/
 	}
 
   void on_Data()
