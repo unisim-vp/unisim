@@ -217,7 +217,7 @@ void Simulator::dump_latex(const string &filename)
   os << "\\begin{document}" << endl;
   os << "\\begin{tikzpicture}" << endl;
 
-  os << "\\tikzstyle{bigmodule}=[draw=yellow!50!black,thick,fill=yellow!20,font=\\sffamily,minimum width=3cm,minimum height=3cm,node distance=4cm,inner sep=0cm,text width=2.5cm,text centered,anchor=north west]" << endl;
+  os << "\\tikzstyle{bigmodule}=[draw=yellow!50!black,thick,fill=yellow!20,font=\\sffamily,minimum width=1cm,minimum height=1cm,node distance=0.5cm,inner sep=0cm,text width=1.0cm,text centered,anchor=north west]" << endl;
   os << "\\tikzstyle{bigport}=[rectangle,draw=yellow!50!black,thick,fill=black!20,inner sep=0pt,node distance=5mm,font=\\sffamily\\tiny]" << endl;
   os << "\\tikzstyle{biglport}=[bigport,anchor=north west,minimum height=0.5cm,minimum width=2.0mm]" << endl;
   os << "\\tikzstyle{bigrport}=[bigport,anchor=north east,minimum height=0.5cm,minimum width=2.0mm]" << endl;
