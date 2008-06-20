@@ -54,6 +54,7 @@ unisim_port::unisim_port()
   parent_module = NULL;
   connected_port = NULL;
   latex_rendering_fused = false;
+  name = "Unset !!!";
 }
 
 /**

@@ -268,11 +268,27 @@ void unisim_module::dump_latex_conns(ostream &os)
     unisim_module *to_module = (*o)->get_connected_module();
     unisim_port *to_port = (*o)->get_connected_port();
 
+    if (to_module==NULL) { cerr << "DD Kernel Error: to_module = NULL" << endl; exit(-1); }
+    if (to_port==NULL) { cerr << "DD Kernel Error: to_port = NULL" << endl; exit(-1); }
+
     for(list<unisim_port*>::iterator p=to_module->latex_bottom_ports.begin();p!=to_module->latex_bottom_ports.end();p++)
-    { if(to_port->get_name()==(*p)->get_name()) link_to = '|';
+    {
+      /*
+      cerr << "DD Kernel Latex rendering Debug :" << endl;
+      cerr << "to_port: " << (*to_port) << endl;
+      cerr << "p: " << *(*p) << endl;
+      */
+      if(to_port->get_name()==(*p)->get_name()) link_to = '|';
     }
     for(list<unisim_port*>::iterator p=to_module->latex_top_ports.begin();p!=to_module->latex_top_ports.end();p++)
-    { if(to_port->get_name()==(*p)->get_name()) link_to = '|';
+    {
+      /*
+      cerr << "DD Kernel Latex rendering Debug :" << endl;
+      cerr << "to_module: " << (*to_module) << endl;
+      cerr << "to_port: " << (*to_port) << endl;
+      cerr << "p: " << *(*p) << endl;
+      */
+      if(to_port->get_name()==(*p)->get_name()) link_to = '|';
     }
 
     os << link_from << link_to;
