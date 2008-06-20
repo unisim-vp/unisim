@@ -314,20 +314,25 @@ public:
 		latex_left_ports.push_back(&inIL1);
 		latex_left_ports.push_back(&outIL1);
 
-		for(int i=0;i<Width;i++)
+		for(int i=0;i<Width-1;i++)
 		{ 
-		  latex_right_ports.push_back(&outInstruction[i]);
+		  outInstruction[i].set_fused();
 		}
+		latex_right_ports.push_back(&outInstruction[Width-1]);
 		
-		for (i=0; i<WriteBackWidth; i++)
+		for (i=0; i<WriteBackWidth-1; i++)
 		  {
-		    latex_left_ports.push_back(&inWriteBackInstruction[i]);
+		    inWriteBackInstruction[i].set_fused();
 		  }
-		for (i=0; i<RetireWidth; i++)
+		latex_top_ports.push_back(&inWriteBackInstruction[WriteBackWidth-1]);
+
+		for (i=0; i<RetireWidth-1; i++)
 		  {
-		    latex_left_ports.push_back(&inRetireInstruction[i]);
+		    inRetireInstruction[i].set_fused();
 		  }
-		latex_left_ports.push_back(&inFlush);
+		latex_top_ports.push_back(&inRetireInstruction[RetireWidth-1]);
+
+		latex_top_ports.push_back(&inFlush);
 		//		latex_bottom_ports.push_back(&outFlush);
 	}
 
