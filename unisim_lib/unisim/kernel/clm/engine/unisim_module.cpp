@@ -178,11 +178,12 @@ void unisim_module::compute_latex_ports()
 void unisim_module::dump_latex_ports(ostream &os)
 { string x,y;
   int c;
+  const char*port_distance="0.30";
   c = 1;
   y = "-0.33"; 
   for(list<unisim_port*>::iterator p=latex_left_ports.begin();p!=latex_left_ports.end();p++)
   { os << "\\draw (module.north west) +(0," << y << ") node [biglport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext[rotate=90]{" << (*p)->get_name() << "}};" << endl;
-    y += "-1-0.33";
+    y += "-"; y+= port_distance; y += "-0.33";
     c = 1-c;
     if(c) y += "-0.33";
   }
@@ -190,14 +191,24 @@ void unisim_module::dump_latex_ports(ostream &os)
   y = "-0.33";
   for(list<unisim_port*>::iterator p=latex_right_ports.begin();p!=latex_right_ports.end();p++)
   { os << "\\draw (module.north east) +(0," << y << ") node [bigrport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext[rotate=90]{" << (*p)->get_name() << "}};" << endl;
-    y += "-1-0.33";
+  //    y += "-1-0.33";
+    y += "-"; y+= port_distance; y += "-0.33";
     c = 1-c;
   }
   c = 1;
   x = "0.33";
   for(list<unisim_port*>::iterator p=latex_bottom_ports.begin();p!=latex_bottom_ports.end();p++)
   { os << "\\draw (module.south west) +(" << x << ",0) node [bigbport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext{" << (*p)->get_name() << "}};" << endl;
-    x += "+1+0.33";
+  //    x += "+1+0.33";
+    x += "+"; x+= port_distance; x += "+0.33";
+    c = 1-c;
+  }
+  c = 1;
+  x = "0.33";
+  for(list<unisim_port*>::iterator p=latex_top_ports.begin();p!=latex_top_ports.end();p++)
+  { os << "\\draw (module.south east) +(" << x << ",0) node [bigbport] (" << Name() << "_" << (*p)->get_name() << ") {\\pgftext{" << (*p)->get_name() << "}};" << endl;
+  //    x += "+1+0.33";
+    x += "+"; x+= port_distance; x += "+0.33";
     c = 1-c;
   }
 }
