@@ -280,9 +280,9 @@ unisim_port * unisim_port::get_connected_port()
  * \brief Returns the module connected to this port 
  */
 unisim_module * unisim_port::get_connected_module()
-{ if(connected_port->parent_module) return connected_port->parent_module;
+{ if(connected_port) return connected_port->parent_module;
 //  if(forward) return forwarded_port->get_connected_module();
-  cerr << "Error: port '" << *connected_port << "' don't seems to be properly connected. Aliased=" << forward << endl;
+  cerr << "Error: port '" << name << "' don't seems to be properly connected. Aliased=" << forward << endl;
   exit(1);
 }
 
