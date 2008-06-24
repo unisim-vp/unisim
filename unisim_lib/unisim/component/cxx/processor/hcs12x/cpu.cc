@@ -115,8 +115,10 @@ CPU::CPU(const char *name, Object *parent):
 	setRegB(0x00);	
     setRegX(0x0000);
     setRegY(0x0000);
+
+	//TODO: intitialize segment register 
     setRegSP(0xFE00);
-    setRegPC(0x8000);
+    setRegPC(0x8000); 
 
     ccr = new CCR_t();
     
@@ -212,21 +214,26 @@ void CPU::OnBusCycle()
 
 void CPU::Step()
 {
-	uint16_t 	current_pc;
+	address_t 	current_pc;
+	physical_address_t physical_pc;
 
 	uint8_t 	buffer[CodeType::maxsize]; 
 	Operation 	*op;
 
-
 	current_pc = getRegPC();
 	
+	if (CONFIG::FLASH_MODE) {
+		physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::FLASH, WO_GLOBAL_ADDRESS);
+	} else {
+		physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::RAM, WO_GLOBAL_ADDRESS);
+	}
 
 	VerboseDumpRegsStart();
 	
 	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Starting step at PC = 0x"
-			<< Hex << current_pc << Dec
+			<< Hex << physical_pc << Dec
 			<< Endl << EndDebugInfo;
 	
 	if(debug_control_import) {
@@ -236,15 +243,15 @@ void CPU::Step()
 			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 				(*logger_import) << DebugInfo << LOCATION
 					<< "Fetching debug command (PC = 0x"
-					<< Hex << current_pc << Dec << ")"
+					<< Hex << physical_pc << Dec << ")"
 					<< Endl << EndDebugInfo;
-			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+			dbg_cmd = debug_control_import->FetchDebugCommand(physical_pc);
 	
 			if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Received debug DBG_STEP command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
+						<< Hex << physical_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
 				break;
 			}
@@ -252,7 +259,7 @@ void CPU::Step()
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Received debug DBG_SYNC command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
+						<< Hex << physical_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
 				Sync();
 				continue;
@@ -262,7 +269,7 @@ void CPU::Step()
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Received debug DBG_KILL command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
+						<< Hex << physical_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
 				Stop(0);
 			}
@@ -270,7 +277,7 @@ void CPU::Step()
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Received debug DBG_RESET command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
+						<< Hex << physical_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
 				// TODO : memory_interface->Reset(); 
 			}
@@ -282,7 +289,7 @@ void CPU::Step()
 			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 				(*logger_import) << DebugInfo << LOCATION
 					<< "Reporting memory acces for fetch at address 0x"
-					<< Hex << current_pc << Dec
+					<< Hex << physical_pc << Dec
 					<< Endl << EndDebugInfo;
 /*
 			uint32_t insn_size;
@@ -293,7 +300,7 @@ void CPU::Step()
 				
 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, 
 					MemoryAccessReporting<address_t>::MT_INSN, 
-					current_pc, insn_size);
+					physical_pc, insn_size);
 */
 		}
 	}
@@ -303,12 +310,11 @@ void CPU::Step()
 	{
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Fetching (reading) instruction at address 0x"
-			<< Hex << current_pc << Dec
+			<< Hex << physical_pc << Dec
 			<< Endl << EndDebugInfo;
 	}
 
-	// ReadInsn(current_pc, insn);
-	BusRead(current_pc, buffer, CodeType::maxsize);
+	BusRead(physical_pc, buffer, CodeType::maxsize);
 	CodeType 	insn( buffer, CodeType::maxsize);
 	
 	/* Decode current PC */
@@ -318,7 +324,7 @@ void CPU::Step()
 		ctstr << insn;
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Decoding instruction at 0x"
-			<< Hex << current_pc << Dec
+			<< Hex << physical_pc << Dec
 			<< " (0x" << Hex << ctstr.str() << Dec << ")"
 			<< Endl << EndDebugInfo;
 	}
@@ -338,7 +344,7 @@ void CPU::Step()
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Executing instruction "
 			<< disasm_str.str()
-			<< " at 0x" << Hex << current_pc << Dec
+			<< " at 0x" << Hex << physical_pc << Dec
 			<< " (0x" << Hex << ctstr.str() << Dec << ", " << instruction_counter << ")"
 			<< Endl << EndDebugInfo;
 	}
