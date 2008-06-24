@@ -331,9 +331,9 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 	
 	bool isS19 = false;
-	
-	if ((strstr(filename, ".s19") == NULL) &&
-		 (strstr(filename, ".S19") == NULL))  {
+	cout << filename << "\n";
+	if ((strstr(filename, ".s19") != NULL) ||
+		 (strstr(filename, ".S19") != NULL))  {
 		isS19 = true;
 	}
 	
