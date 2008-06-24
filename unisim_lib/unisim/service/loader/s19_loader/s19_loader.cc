@@ -138,7 +138,7 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 	int     chksum;
 	int     tchksum;
 	unsigned char     sdata[254];
-	int     addr;
+	physical_address_t     addr;
 	int     n, sdataIndex;
 	int		addrSize;
 
@@ -150,93 +150,108 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 		return false;                            /* exit fatally */
 	}
 
-	/* S0 = header, ignore it */
-    /* S7 = A termination record for a block S3, ignore it */
-    /* S8 = A termination record for a block S2, ignore it */
-    /* S9 = A termination record for a block S1, ignore it */
-
-	if ((srec[1] == S0) || (srec[1] == S7) || (srec[1] == S8) || (srec[1] == S9)) 
-	{
-	    return true;
-	} 
 
 	sscanf(srec+2, "%2x", &cnt);            /* get the number of bytes in rec */
 	chksum = cnt;
 
-    /* S5 = A record containing the number of S1, S2, and S3 records
-     *      transmitted in a particular block.
-     */
-	if (srec[1] == S5) {
-		sscanf(srec+4, "%4x", &s5cnt);           /* get addr of this rec */
-		chksum += (s5cnt >> 8);
-		chksum += (s5cnt & 0xff);
-
-		sscanf(srec+2+(cnt*2), "%2x", &tchksum);
-		if ((tchksum + (chksum & 0xff)) != 0xff)  {
-			ShowError(ERR_BADCHKSUM,linenum,srec);
-			return false;
-		}
-		
-		return true;
-	}
-	
-    /* not (S0 or S1 or S2 or S3), unsupported record */
-    /* show the error */
-	if ((srec[1] != S1) && (srec[1] != S2) && (srec[1] != S3)) 
-	{
-		ShowError(ERR_NOSUPPORT,linenum,srec);           /* show the error */
-		return false;
-	}
-
 	switch (srec[1]) {
-		case S1: { /* A record containing code/data and the 2-byte address (offset) at which the code/data is reside */
-			addrSize = 4;	// S1: address is coded on 4 hex digits (2 bytes)
-			sscanf(srec+4, "%4x", &addr);           /* get addr of this rec */
-			chksum += (addr >> 8);
-			chksum += (addr & 0xff);
+		case S0: {	/* S0 = header, ignore it */
+			return true; 
 		} break;
 		
-		case S2: { /* A record containing code/data and the 3-byte address (offset) at which the code/data is reside */
-			addrSize = 6;	// S2: address is coded on 6 hex digits (3 bytes)
-			sscanf(srec+4, "%6x", &addr);           /* get addr of this rec */
-			chksum += (addr >> 16);
-			chksum += ((addr >> 8) & 0xff);			
-			chksum += (addr & 0xff);
+		case S5: {
+		    /* S5 = A record containing the number of S1, S2, and S3 records
+		     *      transmitted in a particular block.
+		     */
+			sscanf(srec+4, "%4x", &s5cnt);           /* get addr of this rec */
+			chksum += (s5cnt >> 8);
+			chksum += (s5cnt & 0xff);
+	
+			sscanf(srec+2+(cnt*2), "%2x", &tchksum);
+			if ((tchksum + (chksum & 0xff)) != 0xff)  {
+				ShowError(ERR_BADCHKSUM,linenum,srec);
+				return false;
+			}
+			
+			return true;
+
 		} break;
 		
-		case S3: { /* A record containing code/data and the 4-byte address (offset) at which the code/data is reside */
-			addrSize = 8;	// S3: address is coded on 8 hex digits (4 bytes)		
-			sscanf(srec+4, "%8x", &addr);           /* get addr of this rec */
-			chksum += (addr >> 24);
-			chksum += ((addr >> 16) & 0xff);			
-			chksum += ((addr >> 8) & 0xff);			
-			chksum += (addr & 0xff);
+		case S7: {	/* S7 = A termination record for a block S3,
+					 * may contain entry point. default 0x00000000 
+					 */
+			sscanf(srec+4, "%8x", &entry_point);           /* get addr of this rec */
+			return true;
+		} break;
+		
+		case S8: {	/* S8 = A termination record for a block S2,
+					 * may contain entry point. default 0x000000 
+					 */
+			sscanf(srec+4, "%6x", &entry_point);           /* get addr of this rec */
+			return true;
+		} break;
+		
+		case S9: {	/* S9 = A termination record for a block S1,
+					 * may contain entry point. default 0x0000 
+					 */
+			sscanf(srec+4, "%4x", &entry_point);           /* get addr of this rec */
+			return true;
 		} break;
 		
 		default: {
-		    /* not (S1 or S2 or S3), unsupported record */
-    		/* show the error */
-			ShowError(ERR_NOSUPPORT,linenum,srec);  /* show the error */
-			return false;
+		
+			switch (srec[1]) {
+				case S1: { /* A record containing code/data and the 2-byte address (offset) at which the code/data is reside */
+					addrSize = 4;	// S1: address is coded on 4 hex digits (2 bytes)
+					sscanf(srec+4, "%4x", &addr);           /* get addr of this rec */
+					chksum += (addr >> 8);
+					chksum += (addr & 0xff);
+				} break;
+				
+				case S2: { /* A record containing code/data and the 3-byte address (offset) at which the code/data is reside */
+					addrSize = 6;	// S2: address is coded on 6 hex digits (3 bytes)
+					sscanf(srec+4, "%6x", &addr);           /* get addr of this rec */
+					chksum += (addr >> 16);
+					chksum += ((addr >> 8) & 0xff);			
+					chksum += (addr & 0xff);
+				} break;
+				
+				case S3: { /* A record containing code/data and the 4-byte address (offset) at which the code/data is reside */
+					addrSize = 8;	// S3: address is coded on 8 hex digits (4 bytes)		
+					sscanf(srec+4, "%8x", &addr);           /* get addr of this rec */
+					chksum += (addr >> 24);
+					chksum += ((addr >> 16) & 0xff);			
+					chksum += ((addr >> 8) & 0xff);			
+					chksum += (addr & 0xff);
+				} break;
+				
+				default: {
+				    /* not (S1 or S2 or S3), unsupported record */
+		    		/* show the error */
+					ShowError(ERR_NOSUPPORT,linenum,srec);  /* show the error */
+					return false;
+				}
+			}
+		
+			sdataIndex = 0;
+			for (n=2; n<(cnt-2); n++)  {
+				sscanf(srec+addrSize+(n*2), "%2x", &sdata[sdataIndex]);
+				chksum += sdata[sdataIndex];
+				
+				sdataIndex++;
+			}
+			
+			sscanf(srec+2+(cnt*2), "%2x", &tchksum);
+			if ((tchksum + (chksum & 0xff)) != 0xff)  {
+				cerr << "check sum " << chksum << "\n";
+				ShowError(ERR_BADCHKSUM,linenum,srec);
+				return false;
+			}
+			
+			return memWrite(addr, sdata,sdataIndex);
 		}
 	}
-
-	sdataIndex = 0;
-	for (n=2; n<(cnt-2); n++)  {
-		sscanf(srec+addrSize+(n*2), "%2x", &sdata[sdataIndex]);
-		chksum += sdata[sdataIndex];
-		
-		sdataIndex++;
-	}
 	
-	sscanf(srec+2+(cnt*2), "%2x", &tchksum);
-	if ((tchksum + (chksum & 0xff)) != 0xff)  {
-		cerr << "check sum " << chksum << "\n";
-		ShowError(ERR_BADCHKSUM,linenum,srec);
-		return false;
-	}
-	
-	return memWrite(addr, sdata,sdataIndex);
 }
 
 bool S19_Loader::memWrite(physical_address_t addr, const void *buffer, uint32_t size) {
