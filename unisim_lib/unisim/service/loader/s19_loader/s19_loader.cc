@@ -47,9 +47,9 @@ namespace s19_loader {
 
 S19_Loader::S19_Loader(char const *name, Object *parent) :
 	Object(name,parent),
-	Client<Memory<uint32_t> >(name, parent),
-	Client<SymbolTableBuild<uint32_t> >(name, parent),
-	Service<Loader<uint32_t> >(name, parent),
+	Client<Memory<physical_address_t> >(name, parent),
+	Client<SymbolTableBuild<physical_address_t> >(name, parent),
+	Service<Loader<physical_address_t> >(name, parent),
 	memory_import("memory-import", this),
 	symbol_table_build_import("symbol-table-build-import", this),
 	loader_export("loader-export", this),
@@ -70,99 +70,103 @@ S19_Loader::S19_Loader(char const *name, Object *parent) :
 S19_Loader::~S19_Loader() 
 { }
 
+void S19_Loader::OnDisconnect()
+{
+}
+
 void S19_Loader::Reset() 
 {
+	if(memory_import) memory_import->Reset();
 }
 
-uint32_t S19_Loader::GetEntryPoint() const
-{ //TODO
-	return 0;
+physical_address_t S19_Loader::GetEntryPoint() const
+{ 
+	return entry_point;
 }
 
-uint32_t S19_Loader::GetTopAddr() const
+physical_address_t S19_Loader::GetTopAddr() const
+{  
+	return top_addr;
+}
+
+physical_address_t S19_Loader::GetStackBase() const
 {  // TODO
 	return 0;
 }
 
-uint32_t S19_Loader::GetStackBase() const
-{  // TODO
-	return 0;
-}
-
-int S19_Loader::Load()
-{
+bool S19_Loader::Setup() {
+	 
 	int             linenum;            /* tracks line number in bootstrap file */
-	char            srec[256];          /* holds S-record from bootstrap file */
+	char            srec[S_RECORD_SIZE];          /* holds S-record from bootstrap file */
 	unsigned int    status;             /* general status variable */
-	FILE            *bootptr;           /* pointer to bootstrap file */
 	int             n, j;               /* temp registers */
+	FILE            *bootptr;           /* pointer to bootstrap file */
+	bool			success;
 
-	if (strchr(filename.c_str(), '/') == NULL)  {
-		ShowError(ERR_BADFILENAME,0,NULL);
-		exit(2);
-	}
-
+	if(symbol_table_build_import) symbol_table_build_import->Reset();
+	
+	if(filename.empty()) return true;
+	
 	linenum = 0;
 
 	bootptr = fopen(filename.c_str(), "r");
 	if (!bootptr)  {
 		ShowError(ERR_NOFILE,0,NULL);
-		exit(1);
+		return false;
 	}
 
-
-	cout << "\n\nLoad file " << filename << " to simulated RAM." ;
-	cout << "\n\nLoad started...";
+	cerr << Object::GetName() << ": Load file \"" << filename << "\" to simulated RAM." << endl;
+	cerr << Object::GetName() << ": Load started..." << endl;
 
 	while (!feof(bootptr))  {
 		linenum++;
-		fgets(srec, 256, bootptr);
-		ProcessRecord(linenum,srec);
+		fgets(srec, S_RECORD_SIZE, bootptr);
+		success = ProcessRecord(linenum,srec);
 	}
 
 	fclose(bootptr);
 
-	cout << "\n\nFile " << filename << " successfully Loaded." ;
+	cerr << Object::GetName() << ": File \"" << filename << "\" successfully Loaded." << endl;
 
-	return 0;	
+	return success;
 }
 
 
-void  S19_Loader::ProcessRecord(int linenum, char srec[256])
+bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 {
 	int     cnt, s5cnt;
 	int     chksum;
 	int     tchksum;
-	int     sdata;
+	unsigned char     sdata[254];
 	int     addr;
-	int     n;
+	int     n, sdataIndex;
 	int		addrSize;
 
-	if (srec[0] == '\0')  return;           /* just in case */
-	if (srec[0] == '\n')  return;           /* just in case */
-	if (srec[0] == '*')  return;            /* * in column 1 = comment */
+	if (srec[0] == '\0')  return true;           /* just in case */
+	if (srec[0] == '\n')  return true;           /* just in case */
+	if (srec[0] == '*')  return true;            /* * in column 1 = comment */
 	if (srec[0] != 'S')  {                  /* no S in column 1... */
 		ShowError(ERR_BADREC,linenum,srec); /* show bad record format */
-		exit(2);                            /* exit fatally */
+		return false;                            /* exit fatally */
 	}
-	
-    /* S0 = header, ignore it */
+
+	/* S0 = header, ignore it */
     /* S7 = A termination record for a block S3, ignore it */
     /* S8 = A termination record for a block S2, ignore it */
     /* S9 = A termination record for a block S1, ignore it */
 
-	if ((srec[1] == S0) || (srec[1] == S7) ||
-	    (srec[1] == S8) || (srec[1] == S9)) 
+	if ((srec[1] == S0) || (srec[1] == S7) || (srec[1] == S8) || (srec[1] == S9)) 
 	{
-	    return;
+	    return true;
 	} 
+
+	sscanf(srec+2, "%2x", &cnt);            /* get the number of bytes in rec */
+	chksum = cnt;
 
     /* S5 = A record containing the number of S1, S2, and S3 records
      *      transmitted in a particular block.
      */
 	if (srec[1] == S5) {
-		sscanf(srec+2, "%2x", &cnt);            /* get the number of bytes in rec */
-		chksum = cnt;
 		sscanf(srec+4, "%4x", &s5cnt);           /* get addr of this rec */
 		chksum += (s5cnt >> 8);
 		chksum += (s5cnt & 0xff);
@@ -170,20 +174,19 @@ void  S19_Loader::ProcessRecord(int linenum, char srec[256])
 		sscanf(srec+2+(cnt*2), "%2x", &tchksum);
 		if ((tchksum + (chksum & 0xff)) != 0xff)  {
 			ShowError(ERR_BADCHKSUM,linenum,srec);
-			exit(2);
+			return false;
 		}
+		
+		return true;
 	}
 	
-    /* not (S1 or S2 or S3), unsupported record */
+    /* not (S0 or S1 or S2 or S3), unsupported record */
     /* show the error */
 	if ((srec[1] != S1) && (srec[1] != S2) && (srec[1] != S3)) 
 	{
 		ShowError(ERR_NOSUPPORT,linenum,srec);           /* show the error */
-		exit(2);
+		return false;
 	}
-
-	sscanf(srec+2, "%2x", &cnt);            /* get the number of bytes in rec */
-	chksum = cnt;
 
 	switch (srec[1]) {
 		case S1: { /* A record containing code/data and the 2-byte address (offset) at which the code/data is reside */
@@ -214,52 +217,70 @@ void  S19_Loader::ProcessRecord(int linenum, char srec[256])
 		    /* not (S1 or S2 or S3), unsupported record */
     		/* show the error */
 			ShowError(ERR_NOSUPPORT,linenum,srec);  /* show the error */
-			exit(2);
+			return false;
 		}
 	}
 
+	sdataIndex = 0;
 	for (n=2; n<(cnt-2); n++)  {
-		sscanf(srec+addrSize+(n*2), "%2x", &sdata);
-		chksum += sdata;
+		sscanf(srec+addrSize+(n*2), "%2x", &sdata[sdataIndex]);
+		chksum += sdata[sdataIndex];
 		
-		busWrite(addr, sdata);
-		
-		addr++;
+		sdataIndex++;
 	}
 	
 	sscanf(srec+2+(cnt*2), "%2x", &tchksum);
 	if ((tchksum + (chksum & 0xff)) != 0xff)  {
-		cout << "check sum " << chksum << "\n";
+		cerr << "check sum " << chksum << "\n";
 		ShowError(ERR_BADCHKSUM,linenum,srec);
-		exit(2);
+		return false;
 	}
 	
+	return memWrite(addr, sdata,sdataIndex);
+}
+
+bool S19_Loader::memWrite(physical_address_t addr, const void *buffer, uint32_t size) {
+
+	bool success = false;
 	
+	if(memory_import)
+	{
+		if(size > 0) 
+		{
+			if(!memory_import->WriteMemory(addr, buffer, size))
+			{
+				cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+			}
+			else 
+			{
+				cerr << Object::GetName() << ": write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+				success = true;
+			}
+		}
+	}
+
+	return success;
 }
 
 
-void  S19_Loader::ShowError(int  errnum, int linenum, char srec[256])
+void  S19_Loader::ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE])
 {
-
+	cerr << Object::GetName() << ": ";
 	switch (errnum) {
-		case ERR_NOFILE: cout << "\nError: Unable to open specified .S19 bootstrap file."; break;
-		case ERR_BADREC: cout << "\nError: Bad S19 record."; break;
-		case ERR_NOSUPPORT: cout << "\nError: Unsupported S-record format; must be S0, S1 or S9."; break;
-		case ERR_BADADDR: cout << "\nError: Address is out of range for this MCU."; break;
-		case ERR_BADCHKSUM: cout << "\nError: Record checksum is bad."; break;
-		case ERR_BADFILENAME: cout << "\nError: Illegal character in file name."; break;
-		default: cout << "\nError: Unknown!";
+		case ERR_NOFILE: cerr << "Error: Unable to open \"" << filename << "\""; break;
+		case ERR_BADREC: cerr << "Error: Bad S19 record."; break;
+		case ERR_NOSUPPORT: cerr << "Error: Unsupported S-record format; must be S0, S1 or S9."; break;
+		case ERR_BADADDR: cerr << "Error: Address is out of range for this MCU."; break;
+		case ERR_BADCHKSUM: cerr << "Error: Record checksum is bad."; break;
+		case ERR_BADFILENAME: cerr << "Error: Illegal character in file name."; break;
+		default: cerr << "Error: Unknown!";
 	}
 	
 	if (linenum)  {
-		cout << "\nline " << linenum << " " << srec ;
+		cerr << "\nline " << linenum << " " << srec ;
 	}
-}
-
-// TODO: use the tlm bus interface
-
-void S19_Loader::busWrite(uint32_t addr, int data) {
-	cout << "\naddr " << addr << " data " << data;   
+	
+	cerr << endl;
 }
 
 } // end UNISIM namespace

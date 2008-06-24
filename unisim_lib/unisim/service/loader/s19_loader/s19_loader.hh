@@ -68,12 +68,14 @@ using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
+typedef uint32_t physical_address_t;
 
+#define S_RECORD_SIZE	515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
 	
 class S19_Loader :
-	public Client<Memory<uint32_t> >,
-	public Service<Loader<uint32_t> >,
-	public Client<SymbolTableBuild<uint32_t> > 
+	public Client<Memory<physical_address_t> >,
+	public Service<Loader<physical_address_t> >,
+	public Client<SymbolTableBuild<physical_address_t> > 
 {
 public:
 
@@ -93,37 +95,38 @@ public:
  */
 	enum {S0='0', S1='1', S2='2', S3='3', S5='5', S7='7', S8='8', S9='9'};
 
-	ServiceImport<Memory<uint32_t> > memory_import;
-	ServiceImport<SymbolTableBuild<uint32_t> > symbol_table_build_import;
-	ServiceExport<Loader<uint32_t> > loader_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
+	ServiceImport<SymbolTableBuild<physical_address_t> > symbol_table_build_import;
+	ServiceExport<Loader<physical_address_t> > loader_export;
 
+	virtual void OnDisconnect();
+	virtual bool Setup();
 	virtual void Reset();
-	virtual uint32_t GetEntryPoint() const;
-	virtual uint32_t GetTopAddr() const;
-	virtual uint32_t GetStackBase() const;
+	virtual physical_address_t GetEntryPoint() const;
+	virtual physical_address_t GetTopAddr() const;
+	virtual physical_address_t GetStackBase() const;
 
 	S19_Loader(char const *name, Object *parent = 0);
 	virtual ~S19_Loader();	
-	void	ProcessRecord(int linenum, char srec[256]);
-	void	ShowError(int  errnum, int linenum, char srec[256]);
-	int		Load();
+	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);
+	void	ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE]);
 
 	/* TODO: 
-	 * use the tlm bus interface
-	 * or connect the loader to the simulated RAM
+	 * connect the loader to the simulated RAM
+	 * and use memory_import->writeMemory()
 	 */
 	       
-	void	busWrite(uint32_t addr, int data);
+	bool	memWrite(physical_address_t addr, const void *buffer, uint32_t size);
 
 private:
 	string filename;
-	uint32_t entry_point;
-	uint32_t top_addr;
-	uint32_t base_addr;
+	physical_address_t entry_point;
+	physical_address_t top_addr;
+	physical_address_t base_addr;
 	bool force_use_virtual_address;
 	
 	Parameter<string> param_filename;
-	Parameter<uint32_t> param_base_addr;
+	Parameter<physical_address_t> param_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
 };
 
