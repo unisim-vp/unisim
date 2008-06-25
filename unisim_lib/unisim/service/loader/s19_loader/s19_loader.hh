@@ -102,6 +102,7 @@ public:
 	virtual void OnDisconnect();
 	virtual bool Setup();
 	virtual void Reset();
+	virtual uint16_t GetEntryPage() const;
 	virtual physical_address_t GetEntryPoint() const;
 	virtual physical_address_t GetTopAddr() const;
 	virtual physical_address_t GetStackBase() const;
@@ -119,15 +120,18 @@ public:
 	bool	memWrite(physical_address_t addr, const void *buffer, uint32_t size);
 
 private:
-	string filename;
-	physical_address_t entry_point;
-	physical_address_t top_addr;
-	physical_address_t base_addr;
-	bool force_use_virtual_address;
+	string				filename;
+	uint16_t			entry_page;
+	physical_address_t	entry_point;
+	physical_address_t	top_addr;
+	physical_address_t	base_addr;
+	bool				force_use_virtual_address;
 	
-	Parameter<string> param_filename;
-	Parameter<physical_address_t> param_base_addr;
-	Parameter<bool> param_force_use_virtual_address;
+	Parameter<string>	param_filename;
+	Parameter<physical_address_t>	param_base_addr;
+	Parameter<bool>		param_force_use_virtual_address;
+	
+	bool				isFirstDataRec;
 };
 
 

@@ -55,12 +55,14 @@ S19_Loader::S19_Loader(char const *name, Object *parent) :
 	loader_export("loader-export", this),
 	filename(),
 	entry_point(0),
+	entry_page(0),
 	base_addr(0),
 	top_addr(0),
 	force_use_virtual_address(false),
 	param_filename("filename", this, filename),
 	param_base_addr("base-addr", this, base_addr),
-	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address)
+	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address),
+	isFirstDataRec(true)
 	
 {
 	Object::SetupDependsOn(memory_import);
@@ -77,6 +79,11 @@ void S19_Loader::OnDisconnect()
 void S19_Loader::Reset() 
 {
 	if(memory_import) memory_import->Reset();
+}
+
+uint16_t S19_Loader::GetEntryPage() const
+{
+	return entry_page;
 }
 
 physical_address_t S19_Loader::GetEntryPoint() const
@@ -180,21 +187,39 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 		case S7: {	/* S7 = A termination record for a block S3,
 					 * may contain entry point. default 0x00000000 
 					 */
-			sscanf(srec+4, "%8x", &entry_point);           /* get addr of this rec */
+			sscanf(srec+4, "%8x", &addr);           /* get addr of this rec */
+
+			if (addr != 0x00) {
+				entry_page = addr / 0x10000;
+				entry_point = addr % 0x10000;
+			}
+
 			return true;
 		} break;
 		
 		case S8: {	/* S8 = A termination record for a block S2,
 					 * may contain entry point. default 0x000000 
 					 */
-			sscanf(srec+4, "%6x", &entry_point);           /* get addr of this rec */
+			sscanf(srec+4, "%6x", &addr);           /* get addr of this rec */
+
+			if (addr != 0x00) {
+				entry_page = addr / 0x10000;
+				entry_point = addr % 0x10000;
+			}
+
 			return true;
 		} break;
 		
 		case S9: {	/* S9 = A termination record for a block S1,
 					 * may contain entry point. default 0x0000 
 					 */
-			sscanf(srec+4, "%4x", &entry_point);           /* get addr of this rec */
+			sscanf(srec+4, "%4x", &addr);           /* get addr of this rec */
+
+			if (addr != 0x00) {
+				entry_page = addr / 0x4000;
+				entry_point = (addr % 0x4000) + 0x8000;
+			}
+
 			return true;
 		} break;
 		
@@ -247,6 +272,19 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 				ShowError(ERR_BADCHKSUM,linenum,srec);
 				return false;
 			}
+			
+			if (isFirstDataRec) {
+				isFirstDataRec = false;
+				if (addr < 0x10000) {
+					entry_page = addr / 0x4000;
+					entry_point = (addr % 0x4000) + 0x8000;
+				} else {
+					entry_page = addr / 0x10000;
+					entry_point = addr % 0x10000;
+				}
+			}
+			
+			top_addr = addr;
 			
 			return memWrite(addr, sdata,sdataIndex);
 		}
