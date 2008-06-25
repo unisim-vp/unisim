@@ -529,6 +529,17 @@ int sc_main(int argc, char *argv[])
 
 	if(ServiceManager::Setup())
 	{
+		if (isS19) {
+			// TODO: define more fine way to set the CPU "flash_mode"
+			cpu->SetFlashMode(true); 
+			
+			// get instructions from flash using global addressing
+			cpu->SetStartAddress(s19_loader->GetEntryPage(), s19_loader->GetEntryPoint()); 
+		} else {
+			// run in DIRECT mode. Get instructions from low 64k address
+			cpu->SetStartAddress(0, elf32_loader->GetEntryPoint()); 
+		}
+		
 		cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
 
 		double time_start = host_time->GetTime();
