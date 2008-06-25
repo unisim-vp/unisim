@@ -239,8 +239,7 @@ public:
 
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
-	void SetStartAddress(uint16_t page, address_t entry_point);
-	void SetFlashMode(bool mode);
+	void SetEntryPoint(physical_address_t entry_point);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -506,6 +505,7 @@ private:
 	/** the instruction counter */
 	uint64_t instruction_counter;
 
+	void SetFlashMode(bool mode);
 };
 
 

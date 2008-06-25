@@ -135,12 +135,24 @@ CPU::~CPU()
 	delete ccr; ccr = NULL;
 }
 
-void CPU::SetStartAddress(uint16_t page, address_t entry_point)
+void CPU::SetEntryPoint(physical_address_t entry_point)
 {
-    setRegPC(entry_point);
-    if (flash_mode) {
-    	mmc->setPpage((uint8_t) page);
-    }
+	address_t cpu_address;
+	uint8_t   page;
+	
+	if (entry_point < 0x10000) {
+		page = entry_point / 0x4000;
+		cpu_address = (entry_point % 0x4000) + 0x8000;
+	} else {
+		page = entry_point / 0x10000;
+		cpu_address = entry_point % 0x10000;
+		
+		mmc->setPpage(page); // TODO: understand more and go back 
+		this->SetFlashMode(true);
+	}
+	
+	setRegPC(cpu_address);
+	
 }
 
 void CPU::SetFlashMode(bool mode)
