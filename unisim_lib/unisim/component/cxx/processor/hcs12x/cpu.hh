@@ -239,6 +239,8 @@ public:
 
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
+	void SetStartAddress(uint16_t page, address_t entry_point);
+	void SetFlashMode(bool mode);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -496,6 +498,8 @@ private:
 	
 	bool asynchronous_interrupt;          //!< summary of all hardware interrupt signals
 
+	bool flash_mode;						//!< if TRUE the CPU fetch instructions from flash. default is FALSE
+	
 	// Registers map
 	map<string, Register *> registers_registry;       
 

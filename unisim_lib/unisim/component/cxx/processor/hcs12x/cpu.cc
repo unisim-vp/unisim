@@ -107,8 +107,9 @@ CPU::CPU(const char *name, Object *parent):
 	verbose_dump_regs_end(true),
 //	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
 //	memory_interface(_memory_interface),
-	instruction_counter(0)
-//	running(true)
+	instruction_counter(0),
+//	running(true),
+	flash_mode(false)
 	
 {
 	setRegA(0x00);
@@ -117,8 +118,7 @@ CPU::CPU(const char *name, Object *parent):
     setRegY(0x0000);
 
 	//TODO: intitialize segment register 
-    setRegSP(0xFE00);
-    setRegPC(0x8000); 
+//    setRegSP(0xFE00);
 
     ccr = new CCR_t();
     
@@ -133,6 +133,19 @@ CPU::~CPU()
 	delete mmc; mmc = NULL;
 	delete eblb; eblb = NULL;
 	delete ccr; ccr = NULL;
+}
+
+void CPU::SetStartAddress(uint16_t page, address_t entry_point)
+{
+    setRegPC(entry_point);
+    if (flash_mode) {
+    	mmc->setPpage((uint8_t) page);
+    }
+}
+
+void CPU::SetFlashMode(bool mode)
+{
+	flash_mode = mode;
 }
 
 //=====================================================================
@@ -221,11 +234,10 @@ void CPU::Step()
 	Operation 	*op;
 
 	current_pc = getRegPC();
+	physical_pc = current_pc;
 	
-	if (CONFIG::FLASH_MODE) {
+	if (flash_mode) {
 		physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::FLASH, WO_GLOBAL_ADDRESS);
-	} else {
-		physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::RAM, WO_GLOBAL_ADDRESS);
 	}
 
 	VerboseDumpRegsStart();

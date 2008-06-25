@@ -101,19 +101,18 @@ struct CONFIG {
 	static const uint8_t DIRECT_RESET_PAGE	= 0x00;		// reset direct register value 
 	static const uint8_t RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
 	static const uint8_t EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value  
-	static const uint8_t FLASH_RESET_PAGE		= 0xFE;		// reset ppage register value 
+	static const uint8_t FLASH_RESET_PAGE	= 0xFE;		// reset ppage register value 
 /*
 #else // use of low values
 	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;	// reset gpage register value 
 	static const uint8_t DIRECT_RESET_PAGE	= 0x00;			// reset direct register value 
 	static const uint8_t RAM_RESET_PAGE		= RPAGE_LOW;	// reset rpage register value
 	static const uint8_t EEPROM_RESET_PAGE	= EPAGE_LOW;	// reset epage register value  
-	static const uint8_t FLASH_RESET_PAGE		= PPAGE_LOW;	// reset ppage register value 
+	static const uint8_t FLASH_RESET_PAGE	= PPAGE_LOW;	// reset ppage register value 
 
 #endif
 */
 
-	static const bool FLASH_MODE = true;
 };
 
 

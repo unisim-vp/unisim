@@ -105,14 +105,14 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 65 "hcs12x.isa"
+#line 66 "hcs12x.isa"
 	void
 #line 111 "hcs12x.hh"
 	disasm(
-#line 65 "hcs12x.isa"
+#line 66 "hcs12x.isa"
 	ostream&
 #line 115 "hcs12x.hh"
-#line 65 "hcs12x.isa"
+#line 66 "hcs12x.isa"
 	sink
 #line 118 "hcs12x.hh"
 	);
