@@ -55,7 +55,6 @@ S19_Loader::S19_Loader(char const *name, Object *parent) :
 	loader_export("loader-export", this),
 	filename(),
 	entry_point(0),
-	entry_page(0),
 	base_addr(0),
 	top_addr(0),
 	force_use_virtual_address(false),
@@ -79,11 +78,6 @@ void S19_Loader::OnDisconnect()
 void S19_Loader::Reset() 
 {
 	if(memory_import) memory_import->Reset();
-}
-
-uint16_t S19_Loader::GetEntryPage() const
-{
-	return entry_page;
 }
 
 physical_address_t S19_Loader::GetEntryPoint() const
@@ -190,8 +184,7 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 			sscanf(srec+4, "%8x", &addr);           /* get addr of this rec */
 
 			if (addr != 0x00) {
-				entry_page = addr / 0x10000;
-				entry_point = addr % 0x10000;
+				entry_point = addr;
 			}
 
 			return true;
@@ -203,8 +196,7 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 			sscanf(srec+4, "%6x", &addr);           /* get addr of this rec */
 
 			if (addr != 0x00) {
-				entry_page = addr / 0x10000;
-				entry_point = addr % 0x10000;
+				entry_point = addr;
 			}
 
 			return true;
@@ -216,8 +208,7 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 			sscanf(srec+4, "%4x", &addr);           /* get addr of this rec */
 
 			if (addr != 0x00) {
-				entry_page = addr / 0x4000;
-				entry_point = (addr % 0x4000) + 0x8000;
+				entry_point = addr;
 			}
 
 			return true;
@@ -275,13 +266,7 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 			
 			if (isFirstDataRec) {
 				isFirstDataRec = false;
-				if (addr < 0x10000) {
-					entry_page = addr / 0x4000;
-					entry_point = (addr % 0x4000) + 0x8000;
-				} else {
-					entry_page = addr / 0x10000;
-					entry_point = addr % 0x10000;
-				}
+				entry_point = addr;
 			}
 			
 			top_addr = addr;
