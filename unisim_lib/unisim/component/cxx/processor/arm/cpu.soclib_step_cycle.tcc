@@ -42,7 +42,7 @@
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include <inttypes.h>
 
-// #define SOCLIB_DEBUG
+#define SOCLIB_DEBUG
 
 namespace unisim {
 namespace component {
@@ -50,6 +50,10 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
+using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::Host2BigEndian;
+
+	
 template<class CONFIG>
 void 
 CPU<CONFIG> ::
@@ -637,6 +641,7 @@ void
 CPU<CONFIG> ::
 GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 		uint32_t &data) const {
+	uint16_t hdata;
 #ifdef SOCLIB_DEBUG
 	cerr << "+++ GetDataRequest" << endl;
 #endif
@@ -664,6 +669,18 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 		case MemoryOp<CONFIG>::WRITE:
 			is_read = false;
 			data = memop->GetWriteValue();
+			switch(size) {
+			case 1:
+				// do nothing
+				break;
+			case 2:
+				hdata = data;
+				data = Host2BigEndian(hdata);
+				break;
+			case 4:
+				data = Host2BigEndian(data);
+				break;
+			}
 			break;
 	}
 #ifdef SOCLIB_DEBUG
@@ -686,8 +703,32 @@ SetDataResponse(bool error, uint32_t rdata) {
 	 *   in the execute queue. */
 	if(error) {
 		cerr << "TODO(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-			<< "Received a data response with an error" << endl;
-		exit(-1);
+			<< "Received a data response with an error, request description: " << endl;
+		MemoryOp<CONFIG> *memop = lsQueue.front();
+		switch(memop->GetType()) {
+		case MemoryOp<CONFIG>::WRITE:
+			cerr << " + type: write" << endl;
+			cerr << " + addr: 0x" << hex << memop->GetAddress() << dec << endl;
+			cerr << " + size: " << memop->GetSize() << endl;
+			break;
+		case MemoryOp<CONFIG>::READ:
+			cerr << " + type: read" << endl;
+			cerr << " + dest: r" << memop->GetTargetReg() << endl;
+			cerr << " + addr: 0x" << hex << memop->GetAddress() << dec << endl;
+			cerr << " + size: " << memop->GetSize() << endl;
+			break;
+		case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
+			cerr << " + type: read to pc with thumb update" << endl;
+			break;
+		case MemoryOp<CONFIG>::READ_TO_PC:
+			cerr << " + type: read to pc" << endl;
+			break;
+		case MemoryOp<CONFIG>::PREFETCH:
+			cerr << " + type: prefetch" << endl;
+			break;
+		}
+		return;
+//		exit(-1);
 	}
 	if(lsQueue.empty()) {
 		cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
@@ -696,13 +737,80 @@ SetDataResponse(bool error, uint32_t rdata) {
 	}
 	int dest = 0;
 	bool flushPipeline = false;
+	uint16_t rhdata = 0;
 	MemoryOp<CONFIG> *memop = lsQueue.front();
 	lsQueue.pop();
+#ifdef SOCLIB_DEBUG
+	uint32_t data = 0;
+	uint16_t hdata = 0;
+	switch(memop->GetType()) {
+	case MemoryOp<CONFIG>::WRITE:
+		cerr << " + type: write" << endl;
+		cerr << " + addr: 0x" << hex << memop->GetAddress() << dec << endl;
+		cerr << " + size: " << memop->GetSize() << endl;
+		data = memop->GetWriteValue();
+		switch(memop->GetSize()) {
+		case 1:
+			// do nothing
+			break;
+		case 2:
+			hdata = data;
+			data = Host2BigEndian(hdata);
+			break;
+		case 4:
+			data = Host2BigEndian(data);
+			break;
+		}
+		cerr << " + data: 0x" << hex << memop->GetWriteValue() << dec << " (0x" << hex << data << dec << ")" << endl;
+		break;
+	case MemoryOp<CONFIG>::READ:
+		cerr << " + type: read" << endl;
+		cerr << " + dest: r" << memop->GetTargetReg() << endl;
+		cerr << " + addr: 0x" << hex << memop->GetAddress() << dec << endl;
+		cerr << " + size: " << memop->GetSize() << endl;
+		data = rdata;
+		switch(memop->GetSize()) {
+		case 1:
+			// do nothing
+			break;
+		case 2:
+			hdata = data;
+			data = Host2BigEndian(hdata);
+			break;
+		case 4:
+			data = Host2BigEndian(data);
+			break;
+		}
+		cerr << " + data: 0x" << hex << data << dec << " (0x" << hex << rdata << dec << ")" << endl;
+		break;
+	case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
+		cerr << " + type: read to pc with thumb update" << endl;
+		break;
+	case MemoryOp<CONFIG>::READ_TO_PC:
+		cerr << " + type: read to pc" << endl;
+		break;
+	case MemoryOp<CONFIG>::PREFETCH:
+		cerr << " + type: prefetch" << endl;
+		break;
+	}
+#endif // SOCLIB_DEBUG
 	switch(memop->GetType()) {
 		case MemoryOp<CONFIG>::WRITE:
 			break;
 		case MemoryOp<CONFIG>::READ:
 			dest = memop->GetTargetReg();
+			switch(memop->GetSize()) {
+			case 1:
+				// do nothing
+				break;
+			case 2:
+				rhdata = rdata;
+				rdata = BigEndian2Host(rhdata);
+				break;
+			case 4:
+				rdata = BigEndian2Host(rdata);
+				break;
+			}
 			SetGPR(dest, rdata);
 			break;
 		case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
@@ -714,12 +822,36 @@ SetDataResponse(bool error, uint32_t rdata) {
 				if(GetCPSR_T()) flushPipeline = true;
 				SetCPSR_T(false);
 			}
+			switch(memop->GetSize()) {
+			case 1:
+				// do nothing
+				break;
+			case 2:
+				rhdata = rdata;
+				rdata = BigEndian2Host(rhdata);
+				break;
+			case 4:
+				rdata = BigEndian2Host(rdata);
+				break;
+			}
 			rdata = rdata & UINT32_C(0xfffffffe);
 			if(rdata != executeQueue->GetNextFetchAddress()) flushPipeline = true;
 			SetGPR(PC_reg, rdata);
 			break;
 		case MemoryOp<CONFIG>::READ_TO_PC:
 			dest = memop->GetTargetReg();
+			switch(memop->GetSize()) {
+			case 1:
+				// do nothing
+				break;
+			case 2:
+				rhdata = rdata;
+				rdata = BigEndian2Host(rhdata);
+				break;
+			case 4:
+				rdata = BigEndian2Host(rdata);
+				break;
+			}
 			SetGPR(PC_reg, rdata);
 			if(rdata != executeQueue->GetNextFetchAddress()) flushPipeline = true;
 			break;
