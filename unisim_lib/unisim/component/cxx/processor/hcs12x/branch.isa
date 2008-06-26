@@ -61,7 +61,7 @@ sbr.disasm = {
 		case 0xE: sink << "BGT ";break;
 		case 0xF: sink << "BLE ";break;
 	}
-	sink << rel8;
+	sink << std::dec << rel8;
 }
 
 sbr.execute = {
@@ -150,7 +150,7 @@ lbr.disasm = {
 		case 0xE: sink << "LBGT ";break;
 		case 0xF: sink << "LBLE ";break;
 	}
-	sink << rel16;
+	sink << std::dec << rel16;
 }
 
 lbr.execute = {
@@ -227,7 +227,7 @@ br_clr_set_dir.disasm = {
 		sink << "BRSET $";
 	}
 	
-	sink << std::hex << opr8a << ", $" << std::hex << msk8 << ", " << rel8;
+	sink << std::hex << opr8a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 }
 
 br_clr_set_dir.execute = {
@@ -254,7 +254,7 @@ br_clr_set_ext.disasm = {
 		sink << "BRSET $";
 	}
 	
-	sink << std::hex << opr16a << ", $" << std::hex << msk8 << ", " << rel8;
+	sink << std::hex << opr16a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 }
 
 br_clr_set_ext.execute = {
@@ -272,7 +272,7 @@ br_clr_set_ext.execute = {
 	}
 }
 
-op br_clr_set_idx(0x3[7]:b[1]:> <:*xb[XB]:> <:msk8[8]:sext<8> rel8[8])
+op br_clr_set_idx(0x07[7]:b[1]:> <:*xb[XB]:> <:msk8[8]:sext<8> rel8[8])
 
 br_clr_set_idx.disasm = {
 	if (b==1) {
@@ -282,7 +282,7 @@ br_clr_set_idx.disasm = {
 	}
 	
 	xb->disasm(sink);
-	sink << ", $" << std::hex << msk8 << ", " << rel8;
+	sink << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 }
 
 br_clr_set_idx.execute = {
@@ -306,7 +306,7 @@ br_clr_set_idx.execute = {
 op bsr(0x07[8]:rel8[8])
 
 bsr.disasm = {
-	sink << "BSR " << rel8;
+	sink << "BSR " << std::dec << rel8;
 }
 
 bsr.execute = {

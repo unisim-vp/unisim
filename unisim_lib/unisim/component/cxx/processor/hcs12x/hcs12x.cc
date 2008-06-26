@@ -37291,7 +37291,7 @@ sink
 			case 0xE: sink << "BGT ";break;
 			case 0xF: sink << "BLE ";break;
 		}
-		sink << rel8;
+		sink << std::dec << rel8;
 	}
 #line 37297 "hcs12x.cc"
 }
@@ -37411,7 +37411,7 @@ sink
 			case 0xE: sink << "LBGT ";break;
 			case 0xF: sink << "LBLE ";break;
 		}
-		sink << rel16;
+		sink << std::dec << rel16;
 	}
 #line 37417 "hcs12x.cc"
 }
@@ -37518,7 +37518,7 @@ sink
 			sink << "BRSET $";
 		}
 
-		sink << std::hex << opr8a << ", $" << std::hex << msk8 << ", " << rel8;
+		sink << std::hex << opr8a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
 #line 37524 "hcs12x.cc"
 }
@@ -37577,7 +37577,7 @@ sink
 			sink << "BRSET $";
 		}
 
-		sink << std::hex << opr16a << ", $" << std::hex << msk8 << ", " << rel8;
+		sink << std::hex << opr16a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
 #line 37583 "hcs12x.cc"
 }
@@ -37637,7 +37637,7 @@ sink
 		}
 
 		xb->disasm(sink);
-		sink << ", $" << std::hex << msk8 << ", " << rel8;
+		sink << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
 #line 37643 "hcs12x.cc"
 }
@@ -37692,7 +37692,7 @@ sink
 {
 #line 308 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
-		sink << "BSR " << rel8;
+		sink << "BSR " << std::dec << rel8;
 	}
 #line 37698 "hcs12x.cc"
 }
@@ -44080,7 +44080,7 @@ Decoder::Decoder()
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x4b\xe3" ), 2 ), CodeType( (uint8_t*)( "\xff\xe7" ), 2 ), DecodeOpCall_16offset_idx_ind));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x4a" ), 1 ), CodeType( (uint8_t*)( "\xff" ), 1 ), DecodeOpCall_ext));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x07" ), 1 ), CodeType( (uint8_t*)( "\xff" ), 1 ), DecodeOpBsr));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x06" ), 1 ), CodeType( (uint8_t*)( "\xfe" ), 1 ), DecodeOpBr_clr_set_idx));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x0e" ), 1 ), CodeType( (uint8_t*)( "\xfe" ), 1 ), DecodeOpBr_clr_set_idx));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x1e" ), 1 ), CodeType( (uint8_t*)( "\xfe" ), 1 ), DecodeOpBr_clr_set_ext));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x4e" ), 1 ), CodeType( (uint8_t*)( "\xfe" ), 1 ), DecodeOpBr_clr_set_dir));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x20" ), 2 ), CodeType( (uint8_t*)( "\xff\xf0" ), 2 ), DecodeOpLbr));
