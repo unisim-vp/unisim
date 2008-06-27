@@ -338,9 +338,9 @@ int sc_main(int argc, char *argv[])
 	}
 	
 	//  - S19 loader
-	S19_Loader *s19_loader;
+	S19_Loader *s19_loader = NULL;
 	//  - ELF32 loader
-	Elf32Loader *elf32_loader;
+	Elf32Loader *elf32_loader = NULL;
 	
 	if (isS19) {
 		s19_loader = new S19_Loader("S19_Loader");
@@ -535,7 +535,7 @@ int sc_main(int argc, char *argv[])
 			cpu->SetEntryPoint(elf32_loader->GetEntryPoint()); 
 		}
 		
-		cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
+		cerr << "Starting simulation ..." << endl;
 
 		double time_start = host_time->GetTime();
 
