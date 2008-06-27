@@ -124,12 +124,12 @@ private:
 	sc_time nice_time;
 	sc_time next_nice_time;
 	uint64_t nice_time_int;
-	double ipc;
+//	double ipc;
 	uint64_t cpu_cycle_time_int;
 	uint64_t bus_cycle_time_int;
 	
 	Parameter<uint64_t> param_nice_time;
-	Parameter<double> param_ipc;
+//	Parameter<double> param_ipc;
 	Parameter<uint64_t> param_cpu_cycle_time;
 	Parameter<uint64_t> param_bus_cycle_time;
 	

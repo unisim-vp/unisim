@@ -76,12 +76,12 @@ HCS12X(const sc_module_name& name, Object *parent) :
 	nice_time(),
 	next_nice_time(),
 	nice_time_int(10),
-	ipc(1.0),
+//	ipc(1.0),
 	cpu_cycle_time_int(0),
 	bus_cycle_time_int(0),
 	last_instruction_counter(0),
 	param_nice_time("nice-time", this, nice_time_int),
-	param_ipc("ipc", this, ipc),
+//	param_ipc("ipc", this, ipc),
 	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),
 	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int),
 	verbose_tlm_bus_synchronize(false),
@@ -180,7 +180,7 @@ Setup() {
 			<< "Setting CPU cycle time to " << cpu_cycle_time.to_string() << Endl
 			<< "Setting Bus cycle time to " << bus_cycle_time.to_string() << Endl
 			<< "Setting nice time to " << nice_time.to_string() << Endl
-			<< "Setting IPC to " << ipc << Endl
+//			<< "Setting IPC to " << ipc << Endl
 			<< EndDebugInfo;
 	}
 	
@@ -274,7 +274,9 @@ HCS12X::Synchronize()
 void 
 HCS12X :: 
 Run() {
-	sc_time time_per_instruction = cpu_cycle_time * ipc;
+	uint8_t opCycles = 0;
+//	sc_time time_per_instruction = cpu_cycle_time * ipc;
+	sc_time time_per_instruction;
 	
 	while(1) {
 		if(cpu_time >= bus_time) {
@@ -289,7 +291,10 @@ Run() {
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "Executing step"
 				<< Endl << EndDebugInfo;
-		inherited::Step();
+				
+		opCycles = inherited::Step();
+		time_per_instruction = cpu_cycle_time * opCycles; 
+		
 		if( verbose_tlm_run_thread && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "Finished executing step"
