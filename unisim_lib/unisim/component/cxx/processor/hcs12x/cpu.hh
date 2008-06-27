@@ -74,6 +74,7 @@
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
 
 
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -253,7 +254,8 @@ public:
 	//=====================================================================
 	
 	void OnBusCycle();
-	void Step();
+	// step() Return the number of cpu cycles consumed by the operation
+	uint8_t Step();
 	virtual void Stop(int ret);
 	virtual void Sync();
 	
@@ -284,7 +286,7 @@ public:
 	virtual void Reset();
 	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
-	
+
 	/* ******** MEMORY ACCESS ROUTINES ******* */
 	uint8_t memRead8(physical_address_t addr);
 	void memWrite8(physical_address_t addr,uint8_t val);
@@ -293,6 +295,12 @@ public:
 	
 	/* ******** END MEM ACCESS ROUTINES ****** */
 
+	//=====================================================================
+	//=             bus interface methods                              =
+	//=====================================================================
+	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size) = 0;
+	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size) = 0;
+	
 	//=====================================================================
 	//=             CPURegistersInterface interface methods               =
 	//=====================================================================
@@ -325,9 +333,6 @@ public:
 
     inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
-
-	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size) = 0;
-	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size) = 0;
 
 	//=====================================================================
 	//=                    Interface with outside                         =

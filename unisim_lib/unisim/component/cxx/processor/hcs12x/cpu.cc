@@ -237,14 +237,15 @@ void CPU::OnBusCycle()
 {
 }
 
-void CPU::Step()
+uint8_t CPU::Step()
 {
 	address_t 	current_pc;
 	physical_address_t physical_pc;
 
 	uint8_t 	buffer[CodeType::maxsize]; 
 	Operation 	*op;
-
+	uint8_t	opCycles = 0;
+	
 	current_pc = getRegPC();
 	physical_pc = current_pc;
 	
@@ -377,6 +378,11 @@ void CPU::Step()
 	{
 
 		op->execute(this);
+		if (CONFIG::TIMING_ENABLE) 
+		{
+			opCycles = op->getCycles();
+		} 
+		
 		
 	//	/* perform the memory load/store operations */
 	//	PerformLoadStoreAccesses();
@@ -416,6 +422,7 @@ void CPU::Step()
 		Stop(1);
 	}
 	
+	return opCycles;
 }
 
 void CPU::Stop(int ret)

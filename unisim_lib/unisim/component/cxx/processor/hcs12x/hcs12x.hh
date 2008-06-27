@@ -105,28 +105,33 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
+#line 70 "hcs12x.isa"
+	uint8_t
+#line 111 "hcs12x.hh"
+	getCycles( );
+	virtual
 #line 66 "hcs12x.isa"
 	void
-#line 111 "hcs12x.hh"
+#line 116 "hcs12x.hh"
 	disasm(
 #line 66 "hcs12x.isa"
 	ostream&
-#line 115 "hcs12x.hh"
+#line 120 "hcs12x.hh"
 #line 66 "hcs12x.isa"
 	sink
-#line 118 "hcs12x.hh"
+#line 123 "hcs12x.hh"
 	);
 	virtual
 #line 60 "hcs12x.isa"
 	void
-#line 123 "hcs12x.hh"
+#line 128 "hcs12x.hh"
 	execute(
 #line 60 "hcs12x.isa"
 	CPU *
-#line 127 "hcs12x.hh"
+#line 132 "hcs12x.hh"
 #line 60 "hcs12x.isa"
 	cpu
-#line 130 "hcs12x.hh"
+#line 135 "hcs12x.hh"
 	);
 protected:
 	CodeType encoding;

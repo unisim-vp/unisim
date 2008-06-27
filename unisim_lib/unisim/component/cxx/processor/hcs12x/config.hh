@@ -49,18 +49,21 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <inttypes.h>
 
-#define MC9S12XDP512
-
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace hcs12x {
 
+// ToRemove: Used Tempory for development purposes to force MC9s12XDP512 
+#define MC9S12XDP512
+
 struct CONFIG {
 	/*
 	 * static initialization may rise problems in SMP architectures !!!
 	 */
+	static const bool TIMING_ENABLE				= false;
+
 	static const bool DEBUG_ENABLE				= true;
 	static const bool DEBUG_EXCEPTION_ENABLE	= false;
 	static const bool REGISTERS_INFO			= true;
@@ -71,13 +74,14 @@ struct CONFIG {
 	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
 	static const bool HAS_MASKABLE_INTERRUPT	= false;
 
+	static const uint8_t CPU2DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
+
 //	static const uint8_t CPU2RAM_ADDRESS_SIZE		= 12;	// Number of bits used by the CPU to address RAM (max=16)
-	static const uint8_t CPU2RAM_ADDRESS_SIZE		= 16;	// Number of bits used by the CPU to address RAM (max=16)
+	static const uint8_t CPU2RAM_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address RAM (max=16)
 //	static const uint8_t CPU2EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
-	static const uint8_t CPU2EEPROM_ADDRESS_SIZE	= 16;	// Number of bits used by the CPU to address EEPROM (max=16)
+	static const uint8_t CPU2EEPROM_ADDRESS_SIZE	= 12;	// Number of bits used by the CPU to address EEPROM (max=16)
 //	static const uint8_t CPU2FLASH_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address FLASH (max=16)
 	static const uint8_t CPU2FLASH_ADDRESS_SIZE		= 16;	// Number of bits used by the CPU to address FLASH (max=16)
-	static const uint8_t CPU2DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
 
 	static const address_t TRAP_VECTOR_ADDRESS 			= 0xFFF8;// Shared interrupt vector for traps ($FFF8:$FFF9)
 	static const address_t SYS_VECTOR_ADDRESS			= 0xFF12;// System call interrupt vector is $FF12:$FF13
@@ -88,30 +92,33 @@ struct CONFIG {
 
 	static const uint8_t GPAGE_LOW			= 0x00;		// low gpage register value
 	static const uint8_t GPAGE_HIGH			= 0x7F;		// high gpage register value
+
 	static const uint8_t RPAGE_LOW			= 0xF8;		// low rpage (ram page) register value
 	static const uint8_t RPAGE_HIGH			= 0xFF;		// high rpage register value
 	static const uint8_t EPAGE_LOW			= 0xFC;		// low epage (eeprom page) register value
 	static const uint8_t EPAGE_HIGH			= 0xFF;		// high epage register value 
 	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
 	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
-/*
+
 #ifdef MC9S12XDP512
-*/
+
 	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value 
 	static const uint8_t DIRECT_RESET_PAGE	= 0x00;		// reset direct register value 
+
 	static const uint8_t RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
 	static const uint8_t EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value  
 	static const uint8_t FLASH_RESET_PAGE	= 0xFE;		// reset ppage register value 
-/*
+
 #else // use of low values
 	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;	// reset gpage register value 
 	static const uint8_t DIRECT_RESET_PAGE	= 0x00;			// reset direct register value 
+
 	static const uint8_t RAM_RESET_PAGE		= RPAGE_LOW;	// reset rpage register value
 	static const uint8_t EEPROM_RESET_PAGE	= EPAGE_LOW;	// reset epage register value  
 	static const uint8_t FLASH_RESET_PAGE	= PPAGE_LOW;	// reset ppage register value 
 
 #endif
-*/
+
 
 };
 
