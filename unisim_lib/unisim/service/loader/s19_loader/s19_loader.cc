@@ -69,7 +69,8 @@ S19_Loader::S19_Loader(char const *name, Object *parent) :
 }
 
 S19_Loader::~S19_Loader() 
-{ }
+{ 
+}
 
 void S19_Loader::OnDisconnect()
 {
