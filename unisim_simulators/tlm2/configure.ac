@@ -33,8 +33,11 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Component Library], [1.0])
+AC_INIT([UNISIM TLM2 Simulator Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
@@ -44,10 +47,9 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx, cxx)
-UNISIM_CONFIG_SUBDIR(unisim-component-clm, clm)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm, tlm)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2, tlm2)
+###### CHECK FOR HOST ######################
+
+UNISIM_CONFIG_SUBDIR(simulator-tlm2-simple_bus_test, simple_bus_test)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

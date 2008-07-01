@@ -19,6 +19,11 @@ SUBDIRS += tlm
 INCLUDE_SUBDIRS += tlm
 endif
 
+if COND_tlm2
+SUBDIRS += tlm2
+INCLUDE_SUBDIRS += tlm2
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

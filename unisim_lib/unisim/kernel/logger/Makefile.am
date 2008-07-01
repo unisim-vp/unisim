@@ -4,7 +4,7 @@ sharedir = $(prefix)/share/unisim_lib/unisim/kernel/logger
 include_HEADERS = logger.hh logger_server.hh
 
 lib_LIBRARIES = libunisim_kernel_logger.a
-libunisim_kernel_logger_a_SOURCES = logger.cc
+libunisim_kernel_logger_a_SOURCES = logger.cc logger_server.cc
 
 dist_share_DATA = COPYING
 
