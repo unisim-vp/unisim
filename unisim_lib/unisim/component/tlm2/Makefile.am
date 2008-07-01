@@ -9,6 +9,11 @@ SUBDIRS += simple_bus
 INCLUDE_SUBDIRS += simple_bus
 endif
 
+if COND_memory
+SUBDIRS += memory
+INCLUDE_SUBDIRS += memory
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

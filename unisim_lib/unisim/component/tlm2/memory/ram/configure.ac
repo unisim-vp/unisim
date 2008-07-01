@@ -30,21 +30,32 @@
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+#          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM TLM2 Component Library], [1.0])
+AC_INIT([UNISIM TLM RAM Memory Component Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+UNISIM_CHECK_SYSTEMC
+UNISIM_CHECK_TLM20
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
-
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-simple_bus, simple_bus)
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-memory, memory)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
