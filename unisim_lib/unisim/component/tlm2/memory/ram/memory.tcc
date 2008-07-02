@@ -124,6 +124,10 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 	sc_dt::uint64 addr = payload.get_address();
 	unsigned char *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
+	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
+	unsigned int byte_enable_length = byte_enable_ptr ? payload.get_byte_enable_length() : 0;
+	unsigned int streaming_width = payload.get_streaming_width();
+	bool status;
 
 	switch(cmd)
 	{
@@ -137,7 +141,12 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
-			inherited::ReadMemory(addr, data_ptr, data_length);
+
+			if(byte_enable_length || streaming_width)
+				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
+			else
+				status = inherited::ReadMemory(addr, data_ptr, data_length);
+			break;
 			break;
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
@@ -149,7 +158,10 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
-			inherited::WriteMemory(addr, data_ptr, data_length);
+			if(byte_enable_length || streaming_width)
+				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
+			else
+				status = inherited::WriteMemory(addr, data_ptr, data_length);
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			if(IsVerbose())
@@ -161,11 +173,18 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
+			status = true;
 			break;
 	}
 
 	payload.set_response_status(tlm::TLM_OK_RESPONSE);
 	phase = tlm::BEGIN_RESP;
+
+	if(status)
+		payload.set_response_status(tlm::TLM_OK_RESPONSE);
+	else
+		payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+
 	t = t + cycle_sctime;
 	return tlm::TLM_COMPLETED;
 }
@@ -177,6 +196,10 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 	sc_dt::uint64 addr = payload.get_address();
 	unsigned char *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
+	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
+	unsigned int byte_enable_length = byte_enable_ptr ? payload.get_byte_enable_length() : 0;
+	unsigned int streaming_width = payload.get_streaming_width();
+	bool status;
 
 	switch(cmd)
 	{
@@ -190,7 +213,11 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
-			inherited::ReadMemory(addr, data_ptr, data_length);
+
+			if(byte_enable_length || streaming_width)
+				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
+			else
+				status = inherited::ReadMemory(addr, data_ptr, data_length);
 			break;
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
@@ -202,7 +229,10 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
-			inherited::WriteMemory(addr, data_ptr, data_length);
+			if(byte_enable_length || streaming_width)
+				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
+			else
+				status = inherited::WriteMemory(addr, data_ptr, data_length);
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			if(IsVerbose())
@@ -214,10 +244,15 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
+			status = true;
 			break;
 	}
 
-	payload.set_response_status(tlm::TLM_OK_RESPONSE);
+	if(status)
+		payload.set_response_status(tlm::TLM_OK_RESPONSE);
+	else
+		payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+
 	t = t + cycle_sctime;
 }
 
