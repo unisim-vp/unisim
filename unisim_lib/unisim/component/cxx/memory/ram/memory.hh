@@ -89,6 +89,8 @@ public:
 	virtual void Reset();
 	virtual bool WriteMemory(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size);
+	bool WriteMemory(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);
+	bool ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);
 
 protected:
 	PHYSICAL_ADDR org;

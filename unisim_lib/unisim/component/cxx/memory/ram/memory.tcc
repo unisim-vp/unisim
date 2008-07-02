@@ -191,6 +191,192 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 	return true;
 }
 
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width)
+{
+	uint32_t offset;
+	PHYSICAL_ADDR addr;
+	uint32_t byte_enable_offset;
+	uint32_t copied;
+
+	if(physical_addr < lo_addr || (physical_addr + (size - 1)) > hi_addr || (physical_addr + size) < physical_addr) return false;
+	// the third condition is for testing overwrapping (gdb did it !)
+
+	PHYSICAL_ADDR key;
+	MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page;
+	byte_enable_offset = 0;
+	copied = 0;
+	offset = 0;
+	if(streaming_width == 0) streaming_width = size;
+	
+	addr = physical_addr - lo_addr;
+
+	do
+	{
+		uint32_t copy_size;
+		uint32_t max_page_copy_size;
+	
+		key = (addr + offset) / PAGE_SIZE;
+		page = hash_table.Find(key);
+		if(!page)
+		{
+			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+			hash_table.Insert(page);
+		}
+	
+		max_page_copy_size = PAGE_SIZE - ((addr + offset) & (PAGE_SIZE - 1));
+
+		do
+		{
+			// Compute how many bytes remain in the buffer
+			copy_size = size - offset;
+
+			// Saturate the amount of bytes with the maximum allowed for the page
+			if(copy_size > max_page_copy_size) copy_size = max_page_copy_size;
+
+			// Compute how many bytes remain until the end of the streaming window
+			uint32_t max_streaming_copy_size = streaming_width - offset;
+
+			// Saturate the amount of bytes with the maximum allowed for the streaming window
+			if(copy_size > max_streaming_copy_size) copy_size = max_streaming_copy_size;
+	
+			// Compute the offset from the beginning of the page
+			uint32_t page_offset = (addr + offset) & (PAGE_SIZE - 1);
+
+			if(byte_enable_length)
+			{
+				uint8_t *src = &((uint8_t *)buffer)[copied];
+				uint8_t *dst = &page->storage[page_offset];
+
+				do
+				{
+					uint8_t mask = byte_enable[byte_enable_offset];
+					// Combine the buffer and the page content according to the byte enable buffer
+					*dst = ((*dst) & ~mask) | ((*src) & mask);
+					// cycle through the byte enable buffer
+					if(++byte_enable_offset >= byte_enable_length) byte_enable_offset = 0;
+				} while(++src, ++dst, --copy_size);
+			}
+			else
+			{
+				memcpy(&((uint8_t *)buffer)[copied], &page->storage[page_offset], copy_size);
+			}
+
+			offset += copy_size;
+			copied += copy_size;
+
+			max_page_copy_size -= copy_size;
+
+			// Check if the end of the streaming window has been reached
+			if(offset == streaming_width)
+			{
+				// Restart from the initial address
+				offset = 0;
+				if(addr / PAGE_SIZE != key)
+				{
+					// Force another page lookup
+					break;
+				}
+			}
+		} while(copied != size && max_page_copy_size); // Loop until some bytes remain
+	} while(copied != size);
+	
+	return true;
+}
+
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width)
+{
+	uint32_t offset;
+	PHYSICAL_ADDR addr;
+	uint32_t byte_enable_offset;
+	uint32_t copied;
+
+	if(physical_addr < lo_addr || (physical_addr + (size - 1)) > hi_addr || (physical_addr + size) < physical_addr) return false;
+	// the third condition is for testing overwrapping (gdb did it !)
+
+	PHYSICAL_ADDR key;
+	MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page;
+	byte_enable_offset = 0;
+	copied = 0;
+	offset = 0;
+	if(streaming_width == 0) streaming_width = size;
+	
+	addr = physical_addr - lo_addr;
+
+	do
+	{
+		uint32_t copy_size;
+		uint32_t max_page_copy_size;
+	
+		key = (addr + offset) / PAGE_SIZE;
+		page = hash_table.Find(key);
+		if(!page)
+		{
+			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+			hash_table.Insert(page);
+		}
+	
+		max_page_copy_size = PAGE_SIZE - ((addr + offset) & (PAGE_SIZE - 1));
+
+		do
+		{
+			// Compute how many bytes remain in the buffer
+			copy_size = size - offset;
+
+			// Saturate the amount of bytes with the maximum allowed for the page
+			if(copy_size > max_page_copy_size) copy_size = max_page_copy_size;
+
+			// Compute how many bytes remain until the end of the streaming window
+			uint32_t max_streaming_copy_size = streaming_width - offset;
+
+			// Saturate the amount of bytes with the maximum allowed for the streaming window
+			if(copy_size > max_streaming_copy_size) copy_size = max_streaming_copy_size;
+	
+			// Compute the offset from the beginning of the page
+			uint32_t page_offset = (addr + offset) & (PAGE_SIZE - 1);
+
+			if(byte_enable_length)
+			{
+				uint8_t *src = &page->storage[page_offset];
+				uint8_t *dst = &((uint8_t *)buffer)[copied];
+
+				do
+				{
+					uint8_t mask = byte_enable[byte_enable_offset];
+					// Combine the buffer and the page content according to the byte enable buffer
+					*dst = ((*dst) & ~mask) | ((*src) & mask);
+					// cycle through the byte enable buffer
+					if(++byte_enable_offset >= byte_enable_length) byte_enable_offset = 0;
+				} while(++src, ++dst, --copy_size);
+			}
+			else
+			{
+				memcpy(&page->storage[page_offset], &((uint8_t *)buffer)[copied], copy_size);
+			}
+
+			offset += copy_size;
+			copied += copy_size;
+
+			max_page_copy_size -= copy_size;
+
+			// Check if the end of the streaming window has been reached
+			if(offset == streaming_width)
+			{
+				// Restart from the initial address
+				offset = 0;
+				if(addr / PAGE_SIZE != key)
+				{
+					// Force another page lookup
+					break;
+				}
+			}
+		} while(copied != size && max_page_copy_size); // Loop until some bytes remain
+	} while(copied != size);
+	
+	return true;
+}
+
 } // end of namespace ram
 } // end of namespace memory
 } // end of namespace cxx

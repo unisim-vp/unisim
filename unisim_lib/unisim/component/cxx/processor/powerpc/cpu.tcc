@@ -1939,7 +1939,7 @@ void CPU<CONFIG>::Step()
 				uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : FSB_WIDTH - (addr & (FSB_WIDTH - 1));
 				uint32_t size_to_prefetch = size_to_block_boundary > (4 * CONFIG::NUM_PREFETCH_BUFFER_ENTRIES) ? CONFIG::NUM_PREFETCH_BUFFER_ENTRIES / 4 : size_to_block_boundary;
 				// refill the prefetch buffer with up to one cache line, not much
-				Fetch(addr, prefetch_buffer, size_to_prefetch);
+				EmuFetch(addr, prefetch_buffer, size_to_prefetch);
 				num_insn_in_prefetch_buffer = size_to_prefetch / 4;
 				cur_insn_in_prefetch_buffer = 0;
 			}
@@ -1947,7 +1947,7 @@ void CPU<CONFIG>::Step()
 		}
 		else
 		{
-			Fetch(addr, &insn, 4);
+			EmuFetch(addr, &insn, 4);
 		}
 
 #if BYTE_ORDER == LITTLE_ENDIAN
@@ -2984,7 +2984,7 @@ void CPU<CONFIG>::LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
+inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
 {
 	if(IsVerboseDL1())
 	{
@@ -3053,7 +3053,7 @@ inline void CPU<CONFIG>::EvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_a
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access)
+inline void CPU<CONFIG>::EmuEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access)
 {
 	if(IsVerboseIL1())
 	{
@@ -3077,7 +3077,7 @@ inline void CPU<CONFIG>::EvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_a
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::EvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
+void CPU<CONFIG>::EmuEvictL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 {
 	if(IsVerboseL2())
 	{
@@ -3253,7 +3253,7 @@ void CPU<CONFIG>::UpdateReplacementPolicyL2(CacheAccess<typename CONFIG::L2_CONF
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::FillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, WIMG wimg, bool rwitm)
+inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, WIMG wimg, bool rwitm)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(IsVerboseDL1())
@@ -3276,7 +3276,7 @@ inline void CPU<CONFIG>::FillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_ac
 			{
 				(*logger_import) << DebugInfo << "L2: line miss at 0x" << Hex << l2_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			EvictL2(l2_access);
+			EmuEvictL2(l2_access);
 		}
 	
 		if(!l2_access.block)
@@ -3285,7 +3285,7 @@ inline void CPU<CONFIG>::FillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_ac
 			{
 				(*logger_import) << DebugInfo << "L2: block miss at 0x" << Hex << l2_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			FillL2(l2_access, wimg, rwitm);
+			EmuFillL2(l2_access, wimg, rwitm);
 		}
 
 		memcpy(&(*l1_access.block)[0], &(*l2_access.block)[l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
@@ -3304,7 +3304,7 @@ inline void CPU<CONFIG>::FillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_ac
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::FillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, WIMG wimg)
+inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, WIMG wimg)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(IsVerboseIL1())
@@ -3328,7 +3328,7 @@ inline void CPU<CONFIG>::FillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_ac
 			{
 				(*logger_import) << DebugInfo << "L2: line miss at 0x" << Hex << l2_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			EvictL2(l2_access);
+			EmuEvictL2(l2_access);
 		}
 	
 		if(!l2_access.block)
@@ -3337,7 +3337,7 @@ inline void CPU<CONFIG>::FillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_ac
 			{
 				(*logger_import) << DebugInfo << "L2: block miss at 0x" << Hex << l2_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			FillL2(l2_access, wimg, false);
+			EmuFillL2(l2_access, wimg, false);
 		}
 		memcpy(&(*l1_access.block)[0], &(*l2_access.block)[l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
 		UpdateReplacementPolicyL2(l2_access);
@@ -3354,7 +3354,7 @@ inline void CPU<CONFIG>::FillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_ac
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::FillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, WIMG wimg, bool rwitm)
+void CPU<CONFIG>::EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, WIMG wimg, bool rwitm)
 {
 	l2_access.block = &(*l2_access.line)[l2_access.sector];
 	if(IsVerboseL2())
@@ -3369,7 +3369,7 @@ void CPU<CONFIG>::FillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, WIM
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Fetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
+void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	WIMG wimg;
 	physical_address_t physical_addr;
@@ -3384,7 +3384,7 @@ void CPU<CONFIG>::Fetch(typename CONFIG::address_t addr, void *buffer, uint32_t 
 		mmu_access.memory_access_type = MAT_READ;
 		mmu_access.memory_type = MT_INSN;
 	
-		TranslateAddress<false>(mmu_access);
+		EmuTranslateAddress<false>(mmu_access);
 	
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -3415,7 +3415,7 @@ void CPU<CONFIG>::Fetch(typename CONFIG::address_t addr, void *buffer, uint32_t 
 			{
 				(*logger_import) << DebugInfo << "IL1: line miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			EvictIL1(l1_access);
+			EmuEvictIL1(l1_access);
 		}
 
 		if(!l1_access.block)
@@ -3425,7 +3425,7 @@ void CPU<CONFIG>::Fetch(typename CONFIG::address_t addr, void *buffer, uint32_t 
 			{
 				(*logger_import) << DebugInfo << "IL1: block miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			FillIL1(l1_access, wimg);
+			EmuFillIL1(l1_access, wimg);
 		}
 	
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);
@@ -3440,7 +3440,7 @@ void CPU<CONFIG>::Fetch(typename CONFIG::address_t addr, void *buffer, uint32_t 
 
 template <class CONFIG>
 template <bool TRANSLATE_ADDR>
-void CPU<CONFIG>::Load(address_t addr, void *buffer, uint32_t size)
+void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
 {
 	WIMG wimg;
 	physical_address_t physical_addr;
@@ -3457,7 +3457,7 @@ void CPU<CONFIG>::Load(address_t addr, void *buffer, uint32_t size)
 		mmu_access.memory_access_type = MAT_READ;
 		mmu_access.memory_type = MT_DATA;
 
-		TranslateAddress<false>(mmu_access);
+		EmuTranslateAddress<false>(mmu_access);
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -3486,7 +3486,7 @@ void CPU<CONFIG>::Load(address_t addr, void *buffer, uint32_t size)
 			{
 				(*logger_import) << DebugInfo << "DL1: line miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			EvictDL1(l1_access);
+			EmuEvictDL1(l1_access);
 		}
 
 		if(!l1_access.block)
@@ -3495,7 +3495,7 @@ void CPU<CONFIG>::Load(address_t addr, void *buffer, uint32_t size)
 			{
 				(*logger_import) << DebugInfo << "DL1: block miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			FillDL1(l1_access, wimg, false /* not a rwitm */);
+			EmuFillDL1(l1_access, wimg, false /* not a rwitm */);
 		}
 
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);
@@ -3523,7 +3523,7 @@ void CPU<CONFIG>::Load(address_t addr, void *buffer, uint32_t size)
 
 template <class CONFIG>
 template <bool TRANSLATE_ADDR>
-void CPU<CONFIG>::Store(address_t addr, const void *buffer, uint32_t size)
+void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 {
 	if(IsVerboseStore())
 	{
@@ -3551,7 +3551,7 @@ void CPU<CONFIG>::Store(address_t addr, const void *buffer, uint32_t size)
 		mmu_access.memory_access_type = MAT_WRITE;
 		mmu_access.memory_type = MT_DATA;
 
-		TranslateAddress<false>(mmu_access);
+		EmuTranslateAddress<false>(mmu_access);
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -3580,7 +3580,7 @@ void CPU<CONFIG>::Store(address_t addr, const void *buffer, uint32_t size)
 			{
 				(*logger_import) << DebugInfo << "DL1: line miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			EvictDL1(l1_access);
+			EmuEvictDL1(l1_access);
 		}
 		
 		if(!l1_access.block)
@@ -3589,7 +3589,7 @@ void CPU<CONFIG>::Store(address_t addr, const void *buffer, uint32_t size)
 			{
 				(*logger_import) << DebugInfo << "DL1: block miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
-			FillDL1(l1_access, wimg, true);
+			EmuFillDL1(l1_access, wimg, true);
 		}
 	
 		// DL1 hit
@@ -3623,7 +3623,7 @@ void CPU<CONFIG>::Store(address_t addr, const void *buffer, uint32_t size)
 
 template <class CONFIG>
 template <class T>
-inline void CPU<CONFIG>::Load(T& value, address_t ea)
+inline void CPU<CONFIG>::EmuLoad(T& value, address_t ea)
 {
 	// Data Address Breakpoint handling
 	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
@@ -3643,19 +3643,19 @@ inline void CPU<CONFIG>::Load(T& value, address_t ea)
 	if(size_to_fsb_boundary >= sizeof(T))
 	{
 		// Memory load does not cross a FSB boundary
-		Load<true>(munged_ea, &value, sizeof(T));
+		EmuLoad<true>(munged_ea, &value, sizeof(T));
 	}
 	else
 	{
 		// Memory load crosses a FSB boundary
-		Load<true>(munged_ea, &value, size_to_fsb_boundary);
-		Load<true>(munged_ea + size_to_fsb_boundary, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
+		EmuLoad<true>(munged_ea, &value, size_to_fsb_boundary);
+		EmuLoad<true>(munged_ea + size_to_fsb_boundary, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
 	}
 }
 
 template <class CONFIG>
 template <class T>
-inline void CPU<CONFIG>::Store(T value, address_t ea)
+inline void CPU<CONFIG>::EmuStore(T value, address_t ea)
 {
 	// Data Address	Breakpoint handling
 	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
@@ -3675,13 +3675,13 @@ inline void CPU<CONFIG>::Store(T value, address_t ea)
 	if(size_to_fsb_boundary >= sizeof(T))
 	{
 		// Memory store does not cross a FSB boundary
-		Store<true>(munged_ea, &value, sizeof(T));
+		EmuStore<true>(munged_ea, &value, sizeof(T));
 	}
 	else
 	{
 		// Memory store crosses a FSB boundary
-		Store<true>(munged_ea, &value, size_to_fsb_boundary);
-		Store<true>(munged_ea + size_to_fsb_boundary, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
+		EmuStore<true>(munged_ea, &value, size_to_fsb_boundary);
+		EmuStore<true>(munged_ea + size_to_fsb_boundary, ((uint8_t *) &value) + size_to_fsb_boundary, sizeof(T) - size_to_fsb_boundary);
 	}
 }
 
@@ -3709,7 +3709,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int8Load(unsigned int rd, address_t ea)
 {
 	uint8_t value;
-	Load<uint8_t>(value, ea);
+	EmuLoad<uint8_t>(value, ea);
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
@@ -3719,7 +3719,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int16Load(unsigned int rd, address_t ea)
 {
 	uint16_t value;
-	Load<uint16_t>(value, ea);
+	EmuLoad<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) BigEndian2Host(value); // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
@@ -3729,7 +3729,7 @@ template <class CONFIG>
 void CPU<CONFIG>::SInt16Load(unsigned int rd, address_t ea)
 {
 	uint16_t value;
-	Load<uint16_t>(value, ea);
+	EmuLoad<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) (int16_t) BigEndian2Host(value); // 16-bit to 32-bit sign extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
@@ -3739,7 +3739,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int32Load(unsigned int rd, address_t ea)
 {
 	uint32_t value;
-	Load<uint32_t>(value, ea);
+	EmuLoad<uint32_t>(value, ea);
 	gpr[rd] = BigEndian2Host(value);
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
@@ -3749,7 +3749,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Fp32Load(unsigned int fd, address_t ea)
 {
 	uint32_t value;
-	Load<uint32_t>(value, ea);
+	EmuLoad<uint32_t>(value, ea);
 	fpu.SetFp32(fd, BigEndian2Host(value));
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
@@ -3759,7 +3759,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Fp64Load(unsigned int fd, address_t ea)
 {
 	uint64_t value;
-	Load<uint64_t>(value, ea);
+	EmuLoad<uint64_t>(value, ea);
 	fpu.SetFp64(fd, BigEndian2Host(value));
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
@@ -3769,7 +3769,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, address_t ea)
 {
 	uint16_t value;
-	Load<uint16_t>(value, ea);
+	EmuLoad<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) LittleEndian2Host(value); // reverse bytes and 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
@@ -3779,7 +3779,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, address_t ea)
 {
 	uint32_t value;
-	Load<uint32_t>(value, ea);
+	EmuLoad<uint32_t>(value, ea);
 	gpr[rd] = LittleEndian2Host(value); // reverse bytes
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
@@ -3793,7 +3793,7 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size)
 		case 1:
 		{
 			uint8_t value;
-			Load<uint8_t>(value, ea);
+			EmuLoad<uint8_t>(value, ea);
 			gpr[rd] = (uint32_t) value << 24;
 			break;
 		}
@@ -3801,7 +3801,7 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size)
 		case 2:
 		{
 			uint16_t value;
-			Load<uint16_t>(value, ea);
+			EmuLoad<uint16_t>(value, ea);
 			gpr[rd] = (uint32_t) BigEndian2Host(value) << 16;
 			break;
 		}
@@ -3809,7 +3809,7 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size)
 		case 3:
 		{
 			uint8_t buffer[3];
-			Load<typeof(buffer)>(buffer, ea);
+			EmuLoad<typeof(buffer)>(buffer, ea);
 			uint32_t value = ((uint32_t) buffer[0] << 24) | ((uint32_t) buffer[1] << 16) | ((uint32_t) buffer[2] << 8);
 			gpr[rd] = value;
 			break;
@@ -3818,7 +3818,7 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size)
 		case 4:
 		{
 			uint32_t value;
-			Load<uint32_t>(value, ea);
+			EmuLoad<uint32_t>(value, ea);
 			gpr[rd] = BigEndian2Host(value);
 			break;
 		}
@@ -3830,7 +3830,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int8Store(unsigned int rs, address_t ea)
 {
 	uint8_t value = gpr[rs];
-	Store<uint8_t>(value, ea);
+	EmuStore<uint8_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3839,7 +3839,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int16Store(unsigned int rs, address_t ea)
 {
 	uint16_t value = Host2BigEndian((uint16_t) gpr[rs]);
-	Store<uint16_t>(value, ea);
+	EmuStore<uint16_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3848,7 +3848,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int32Store(unsigned int rs, address_t ea)
 {
 	uint32_t value = Host2BigEndian(gpr[rs]);
-	Store<uint32_t>(value, ea);
+	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3857,7 +3857,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Fp32Store(unsigned int fs, address_t ea)
 {
 	uint32_t value = Host2BigEndian(fpu.GetFp32(fs));
-	Store<uint32_t>(value, ea);
+	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3866,7 +3866,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Fp64Store(unsigned int fs, address_t ea)
 {
 	uint64_t value = Host2BigEndian(fpu.GetFp64(fs));
-	Store<uint64_t>(value, ea);
+	EmuStore<uint64_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3875,7 +3875,7 @@ template <class CONFIG>
 void CPU<CONFIG>::FpStoreLSW(unsigned int fs, address_t ea)
 {
 	uint32_t value = Host2BigEndian((uint32_t) fpu.GetFp64(fs));
-	Store<uint32_t>(value, ea);
+	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3884,7 +3884,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, address_t ea)
 {
 	uint16_t value = Host2LittleEndian((uint16_t) gpr[rs]);
-	Store<uint16_t>(value, ea);
+	EmuStore<uint16_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3893,7 +3893,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, address_t ea)
 {
 	uint32_t value = Host2LittleEndian(gpr[rs]);
-	Store<uint32_t>(value, ea);
+	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3906,14 +3906,14 @@ void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, address_t ea, uint32_t size)
 		case 1:
 			{
 				uint8_t value = gpr[rs] >> 24;
-				Store<uint8_t>(value, ea);
+				EmuStore<uint8_t>(value, ea);
 				break;
 			}
 
 		case 2:
 			{
 				uint16_t value = Host2BigEndian((uint16_t)(gpr[rs] >> 16));
-				Store<uint16_t>(value, ea);
+				EmuStore<uint16_t>(value, ea);
 				break;
 			}
 
@@ -3924,214 +3924,20 @@ void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, address_t ea, uint32_t size)
 				buffer[0] = value >> 24;
 				buffer[1] = value >> 16;
 				buffer[2] = value >> 8;
-				Store<typeof(buffer)>(buffer, ea);
+				EmuStore<typeof(buffer)>(buffer, ea);
 				break;
 			}
 
 		case 4:
 			{
 				uint32_t value = Host2BigEndian(gpr[rs]);
-				Store<uint32_t>(value, ea);
+				EmuStore<uint32_t>(value, ea);
 				break;
 			}
 	}
 
 	MonitorStore(ea, size);
 }
-
-// template <class CONFIG>
-// void CPU<CONFIG>::LoadRegister(unsigned int i, address_t ea, uint32_t size, LoadStoreMode lsm)
-// {
-// 	// Address munging
-// 	address_t munged_ea = GetMSR_LE() ? ea ^ (8 - size) : ea;
-// 
-// 	uint8_t buffer[size];
-// 	uint32_t size_to_fsb_boundary = FSB_WIDTH - (munged_ea & (FSB_WIDTH - 1));
-// 
-// 	// Ensure that memory access does not cross a FSB boundary
-// 	if(size_to_fsb_boundary >= size)
-// 	{
-// 		// Memory load does not cross a FSB boundary
-// 		Load<true>(munged_ea, buffer, size);
-// 	}
-// 	else
-// 	{
-// 		// Memory load crosses a FSB boundary
-// 		Load<true>(munged_ea, buffer, size_to_fsb_boundary);
-// 		Load<true>(munged_ea + size_to_fsb_boundary, buffer + size_to_fsb_boundary, size - size_to_fsb_boundary);
-// 	}
-// 
-// 	// Reverse bytes, sign extend, and write back value into general purpose register
-// 	if(lsm & LSM_FLOATING_POINT)
-// 	{
-// 		switch(size)
-// 		{
-// 			case 4:
-// 			{
-// 				uint32_t value = BigEndian2Host(*(uint32_t *) buffer);
-// 				fpu.SetFp32(i, value);
-// 				break;
-// 			}
-// 	
-// 			case 8:
-// 			{
-// 				uint64_t value = BigEndian2Host(*(uint64_t *) buffer);
-// 				fpu.SetFp64(i, value);
-// 				break;
-// 			}
-// 		}
-// 	}
-// 	else
-// 	{
-// 		switch(size)
-// 		{
-// 			case 1:
-// 			{
-// 				uint8_t read_value = *buffer;
-// 				uint32_t value = (lsm & LSM_MSB_FIRST) ? (uint32_t) read_value << 24 : (uint32_t) ((lsm & LSM_SIGN_EXTEND) ? (uint32_t) (int8_t) read_value : read_value);
-// 				gpr[i] = value;
-// 				break;
-// 			}
-// 	
-// 			case 2:
-// 			{
-// 				uint16_t read_value = (lsm & LSM_BYTE_REVERSE) ? LittleEndian2Host(*(uint16_t *) buffer) : BigEndian2Host(*(uint16_t *) buffer);
-// 				uint32_t value = (lsm & LSM_MSB_FIRST) ? (uint32_t) read_value << 16 : (uint32_t) ((lsm & LSM_SIGN_EXTEND) ? (uint32_t) (int16_t) read_value : read_value);
-// 				gpr[i] = value;
-// 				break;
-// 			}
-// 	
-// 			case 3:
-// 			{
-// 				uint32_t read_value = (lsm & LSM_BYTE_REVERSE) ?  ((uint32_t) buffer[0] << 16) | ((uint32_t) buffer[1] << 8) | ((uint32_t) buffer[2]) :
-// 																((uint32_t) buffer[0]) | ((uint32_t) buffer[1] << 8) | ((uint32_t) buffer[2] << 16);
-// 				uint32_t value = (lsm & LSM_MSB_FIRST) ? (uint32_t) read_value << 8 : (uint32_t) ((lsm & LSM_SIGN_EXTEND) ? ((int32_t) read_value << 8) >> 8: read_value);
-// 				gpr[i] = value;
-// 				break;
-// 			}
-// 	
-// 			case 4:
-// 			{
-// 				uint32_t read_value = (lsm & LSM_BYTE_REVERSE) ? LittleEndian2Host(*(uint32_t *) buffer) : BigEndian2Host(*(uint32_t *) buffer);
-// 				uint32_t value = read_value;
-// 				gpr[i] = value;
-// 				break;
-// 			}
-// 		}
-// 	}
-// 
-// 	// Memory access reporting
-// 	if(requires_memory_access_reporting)
-// 	{
-// 		if(memory_access_reporting_import)
-// 		{
-// 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_DATA, ea, size);
-// 		}
-// 	}
-// 	
-// 	// Data Address Breakpoint handling
-// 	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
-// 	{
-// 		if(GetDABR_DR() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT())
-// 		{
-// 			throw DSIDataAddressBreakpointException<CONFIG>(ea, MAT_READ);
-// 		}
-// 	}
-// }
-// 
-// template <class CONFIG>
-// void CPU<CONFIG>::StoreRegister(unsigned int i, address_t ea, uint32_t size, LoadStoreMode lsm)
-// {
-// 	// Address munging
-// 	address_t munged_ea = GetMSR_LE() ? ea ^ (8 - size) : ea;
-// 
-// 	// Read value from general purpose register
-// 	uint8_t buffer[size];
-// 
-// 	if(lsm & LSM_FLOATING_POINT)
-// 	{
-// 		switch(size)
-// 		{
-// 			case 4:
-// 				if(lsm & LSM_RAW_FLOAT)
-// 					*(uint32_t *) buffer = (uint32_t) Host2BigEndian((uint32_t) fpu.GetFp64(i));
-// 				else
-// 					*(uint32_t *) buffer = (uint32_t) Host2BigEndian(fpu.GetFp32(i));
-// 				break;
-// 			case 8:
-// 				*(uint64_t *) buffer = (uint64_t) Host2BigEndian(fpu.GetFp64(i));
-// 				break;
-// 		}
-// 	}
-// 	else
-// 	{
-// 		switch(size)
-// 		{
-// 			case 1:
-// 				{
-// 					uint8_t value = (lsm & LSM_MSB_FIRST) ? gpr[i] >> 24 : gpr[i];
-// 					*buffer = value;
-// 					break;
-// 				}
-// 	
-// 			case 2:
-// 				{
-// 					uint16_t value = (lsm & LSM_MSB_FIRST) ? gpr[i] >> 16 : gpr[i];
-// 					*(uint16_t *) buffer = (lsm & LSM_BYTE_REVERSE) ? Host2LittleEndian(value) : Host2BigEndian(value);
-// 					break;
-// 				}
-// 	
-// 			case 3:
-// 				{
-// 					uint32_t value = (lsm & LSM_MSB_FIRST) ? gpr[i] >> 8 : gpr[i];
-// 					buffer[0] = (lsm & LSM_BYTE_REVERSE) ? value : value >> 16;
-// 					buffer[1] = value >> 8;
-// 					buffer[2] = (lsm & LSM_BYTE_REVERSE) ? value >> 16 : value;
-// 					break;
-// 				}
-// 	
-// 			case 4:
-// 				{
-// 					uint32_t value = gpr[i];
-// 					*(uint32_t *) buffer = (lsm & LSM_BYTE_REVERSE) ? Host2LittleEndian(value) : Host2BigEndian(value);
-// 					break;
-// 				}
-// 		}
-// 	}
-// 
-// 	uint32_t size_to_fsb_boundary = FSB_WIDTH - (munged_ea & (FSB_WIDTH - 1));
-// 
-// 	// Ensure that memory access does not cross a FSB boundary
-// 	if(size_to_fsb_boundary >= size)
-// 	{
-// 		// Memory store does not cross a FSB boundary
-// 		Store<true>(munged_ea, buffer, size);
-// 	}
-// 	else
-// 	{
-// 		// Memory store crosses a FSB boundary
-// 		Store<true>(munged_ea, buffer, size_to_fsb_boundary);
-// 		Store<true>(munged_ea + size_to_fsb_boundary, buffer + size_to_fsb_boundary, size - size_to_fsb_boundary);
-// 	}
-// 
-// 	// Memory access reporting
-// 	if(requires_memory_access_reporting) 
-// 	{
-// 		if(memory_access_reporting_import)
-// 		{
-// 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE, MemoryAccessReporting<address_t>::MT_DATA, ea, size);
-// 		}
-// 	}
-// 
-// 	// Data Address	Breakpoint handling
-// 	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
-// 	{
-// 		if(GetDABR_DW() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT())
-// 		{
-// 			throw DSIDataAddressBreakpointException<CONFIG>(ea, MAT_WRITE);
-// 		}
-// 	}
-// }
 
 template <class CONFIG>
 template <bool DEBUG>
@@ -4728,7 +4534,7 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 			}
 			else
 			{
-				Load<false>(pte_addr, &pte_value, 8);
+				EmuLoad<false>(pte_addr, &pte_value, 8);
 			}
 
 			pte_value = BigEndian2Host(pte_value);
@@ -4791,7 +4597,7 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 
 				if(!DEBUG)
 				{
-					Store<false>(pte_addr, &pte_value, 8);
+					EmuStore<false>(pte_addr, &pte_value, 8);
 				}
 
 				if(memory_type == MT_INSN)
@@ -4926,7 +4732,7 @@ void CPU<CONFIG>::DumpPageTable(ostream& os)
 
 template <class CONFIG>
 template <bool DEBUG>
-void CPU<CONFIG>::TranslateAddress(MMUAccess<CONFIG>& mmu_access)
+void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 {
 	LookupBAT<DEBUG>(mmu_access);
 	if(!mmu_access.bat_hit)
@@ -4961,7 +4767,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, Memory
 			mmu_access.memory_access_type = MAT_READ;
 			mmu_access.memory_type = mt;
 	
-			TranslateAddress<true>(mmu_access); // debug is enabled
+			EmuTranslateAddress<true>(mmu_access); // debug is enabled
 	
 			wimg = mmu_access.wimg;
 			physical_addr = mmu_access.physical_addr;
@@ -5107,7 +4913,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 			mmu_access.memory_access_type = MAT_WRITE;
 			mmu_access.memory_type = mt;
 	
-			TranslateAddress<true>(mmu_access); // debug is enabled
+			EmuTranslateAddress<true>(mmu_access); // debug is enabled
 	
 			wimg = mmu_access.wimg;
 			physical_addr = mmu_access.physical_addr;
@@ -5256,7 +5062,7 @@ bool CPU<CONFIG>::InjectReadMemory(address_t addr, void *buffer, uint32_t size)
 		{
 			uint32_t size_to_fsb_boundary = FSB_WIDTH - (addr & (FSB_WIDTH - 1));
 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-			Load<true>(addr, dst, sz);
+			EmuLoad<true>(addr, dst, sz);
 			dst += sz;
 			addr += sz;
 			size -= sz;
@@ -5276,7 +5082,7 @@ bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t
 		{
 			uint32_t size_to_fsb_boundary = FSB_WIDTH - (addr & (FSB_WIDTH - 1));
 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-			Store<true>(addr, src, sz);
+			EmuStore<true>(addr, src, sz);
 			src += sz;
 			addr += sz;
 			size -= sz;
@@ -5305,7 +5111,7 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 		mmu_access.memory_access_type = MAT_READ;
 		mmu_access.memory_type = MT_INSN;
 	
-		TranslateAddress<true>(mmu_access);
+		EmuTranslateAddress<true>(mmu_access);
 	
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -5421,7 +5227,7 @@ void CPU<CONFIG>::Dcbi(address_t addr)
 		mmu_access.memory_access_type = MAT_WRITE;
 		mmu_access.memory_type = MT_DATA;
 
-		TranslateAddress<false>(mmu_access);
+		EmuTranslateAddress<false>(mmu_access);
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -5534,7 +5340,7 @@ void CPU<CONFIG>::Dcbst(address_t addr)
 		mmu_access.memory_access_type = MAT_READ; // 3.4.4.4 Data Cache Block Store (dcbst): This instruction is treated as a load with respect to address translation and memory protection
 		mmu_access.memory_type = MT_DATA;
 
-		TranslateAddress<false>(mmu_access);
+		EmuTranslateAddress<false>(mmu_access);
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -5652,7 +5458,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 		mmu_access.memory_access_type = MAT_WRITE; // 3.4.4.3 Data Cache Block Zero (dcbz): The dcbz instruction is treated as a store to the addressed byte with respect to address translation, protection, and pipelining.
 		mmu_access.memory_type = MT_DATA;
 
-		TranslateAddress<false>(mmu_access);
+		EmuTranslateAddress<false>(mmu_access);
 
 		wimg = mmu_access.wimg;
 		physical_addr = mmu_access.physical_addr;
@@ -5682,7 +5488,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 	
 		if(!l1_access.line)
 		{
-			EvictDL1(l1_access);
+			EmuEvictDL1(l1_access);
 		}
 	
 		if(!l1_access.block)
@@ -5708,7 +5514,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 		
 			if(!l2_access.line)
 			{
-				EvictL2(l2_access);
+				EmuEvictL2(l2_access);
 			}
 		
 			if(!l2_access.block)
