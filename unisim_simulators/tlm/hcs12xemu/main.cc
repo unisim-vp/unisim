@@ -52,6 +52,9 @@
 #include <unisim/service/logger/logger_server.hh>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
 
+#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/loader.hh>
+
 #include <stdexcept>
 #include <unisim/component/tlm/debug/transaction_spy.hh>
 
@@ -101,13 +104,15 @@ using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::logger::LoggerServer;
+using unisim::kernel::service::Service;
+using unisim::service::interfaces::Loader;
 
 using unisim::kernel::service::ServiceManager;
 
 void help(char *prog_name)
 {
 	cerr << "Usage: " << prog_name << " [<options>] <program> [program arguments]" << endl << endl;
-	cerr << "       'program' is statically linked ELF32 HCS12X Linux program" << endl << endl;
+	cerr << "       For using ElfLoader, 'program' is statically linked ELF32 HCS12X Linux program" << endl << endl;
 	cerr << "Options:" << endl;
 	cerr << "--inline-debugger" << endl;
 	cerr << "-d" << endl;
@@ -136,6 +141,12 @@ void help(char *prog_name)
 	cerr << "-o" << endl;
 	cerr << "--logger:out" << endl;
 	cerr << "            pipe the log into the standard output" << endl << endl;
+	cerr << "-c <mode>" << endl;
+	cerr << "--compiler-memory-modele <mode>" << endl;
+	cerr << "            indicate the memory map modele to use for interpreting addresses" << endl;
+	cerr << "            0: banked modele (default)" << endl;
+	cerr << "            1: linear modele (recommended by Motorola/Freescale)" << endl;
+	cerr << "            2: gnu/gcc modele " << endl << endl;
 	cerr << "--help" << endl;
 	cerr << "-h" << endl;
 	cerr << "            displays this help" << endl;
@@ -204,6 +215,7 @@ int sc_main(int argc, char *argv[])
 	{"logger:error", no_argument, 0, 'e'},
 	{"logger:out", no_argument, 0, 'o'},
 	{"logger:message_spy", no_argument, 0, 'm'},
+	{"compiler-memory-modele", required_argument, 0, 'c'},
 	{0, 0, 0, 0}
 	};
 
@@ -226,9 +238,10 @@ int sc_main(int argc, char *argv[])
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
 
+	int memoryMode = S19_Loader::BANKED;
 	
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "dg:a:hi:l:zeom", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "c:dg:a:hi:l:zeom", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -262,6 +275,9 @@ int sc_main(int argc, char *argv[])
 				break;
 			case 'm':
 				logger_messages = true;
+				break;
+			case 'c':
+				memoryMode = atoi(optarg);
 				break;
 		}
 	}
@@ -336,18 +352,16 @@ int sc_main(int argc, char *argv[])
 		 (strstr(filename, ".S19") != NULL))  {
 		isS19 = true;
 	}
-	
-	//  - S19 loader
-	S19_Loader *s19_loader = NULL;
-	//  - ELF32 loader
-	Elf32Loader *elf32_loader = NULL;
+
+	Service<Loader<physical_address_t> > *loader = NULL;
 	
 	if (isS19) {
-		s19_loader = new S19_Loader("S19_Loader");
+		loader = new S19_Loader("S19_Loader", (S19_Loader::MODE) memoryMode);
 	} else {
-		elf32_loader = new Elf32Loader("elf32-loader");
+		loader = new Elf32Loader("elf32-loader");
 	}
-
+	
+		
 	//  - Symbol table
 	SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol-table");
 	//  - GDB server
@@ -395,15 +409,9 @@ int sc_main(int argc, char *argv[])
 		(*gdb_server)["tcp-port"] = gdb_server_tcp_port;
 		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
 	}
-	
-	if (isS19) {
-		//  - S19 Loader run-time configuration
-		(*s19_loader)["filename"] = filename;
-	} else {
-		//  - ELF32 Loader run-time configuration
-		(*elf32_loader)["filename"] = filename;
-	}
 
+	(*loader)["filename"] = filename;
+	
 	//  - Loggers
 	if(logger_on)
 	{
@@ -490,11 +498,11 @@ int sc_main(int argc, char *argv[])
 	}
 
 	if (isS19) {
-		s19_loader->memory_import >> memory->memory_export;
-		s19_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+		((S19_Loader *) loader)->memory_import >> memory->memory_export;
+		((S19_Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	} else {
-		elf32_loader->memory_import >> memory->memory_export;
-		elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+		((Elf32Loader *) loader)->memory_import >> memory->memory_export;
+		((Elf32Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	}
 	
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
@@ -529,11 +537,18 @@ int sc_main(int argc, char *argv[])
 
 	if(ServiceManager::Setup())
 	{
+
+		physical_address_t entry_point = loader->GetEntryPoint();
+		address_t cpu_address;
+		uint8_t page = 0;
+		
 		if (isS19) {
-			cpu->SetEntryPoint(s19_loader->GetEntryPoint()); 
+			((S19_Loader *) loader)->GetPagedAddress(entry_point, page, cpu_address); 
 		} else {
-			cpu->SetEntryPoint(elf32_loader->GetEntryPoint()); 
-		}
+			cpu_address = (address_t) entry_point;
+		} 
+		
+		cpu->SetEntryPoint(page, cpu_address);
 		
 		cerr << "Starting simulation ..." << endl;
 
@@ -590,8 +605,8 @@ int sc_main(int argc, char *argv[])
 	if(fsb_to_mem_bridge) delete fsb_to_mem_bridge;
 	if(time) delete time;
 	if(logger) delete logger;
-	if(s19_loader) delete s19_loader;
-	if(elf32_loader) delete elf32_loader;
+
+	if(loader) delete loader;
 
 #ifdef WIN32
 	// releases the winsock2 resources
