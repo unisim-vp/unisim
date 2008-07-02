@@ -45,7 +45,7 @@ namespace loader {
 namespace s19_loader {
 
 
-S19_Loader::S19_Loader(char const *name, Object *parent) :
+S19_Loader::S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent) :
 	Object(name,parent),
 	Client<Memory<physical_address_t> >(name, parent),
 	Client<SymbolTableBuild<physical_address_t> >(name, parent),
@@ -61,7 +61,8 @@ S19_Loader::S19_Loader(char const *name, Object *parent) :
 	param_filename("filename", this, filename),
 	param_base_addr("base-addr", this, base_addr),
 	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address),
-	isFirstDataRec(true)
+	isFirstDataRec(true),
+	memoryMode(memMode)
 	
 {
 	Object::SetupDependsOn(memory_import);
@@ -133,6 +134,45 @@ bool S19_Loader::Setup() {
 	return success;
 }
 
+void S19_Loader::GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t &cpu_address)
+{
+	if (memoryMode == GNUGCC) 
+	{
+		if (s19_addr < 0x10000) {
+			page = 0;
+			cpu_address = (address_t) s19_addr;
+		} else {
+			page = (page_t) ((s19_addr - 0x10000) / 0x4000);
+			cpu_address = (address_t) ((s19_addr - 0x10000) % 0x4000);
+		}
+	} 
+	else
+	{
+		if (memoryMode == LINEAR) {
+			page = (page_t) (s19_addr / 0x4000);
+			cpu_address = (address_t) ((s19_addr % 0x4000) + 0x8000);
+		} else { // BANKED
+			page = (page_t) (s19_addr / 0x10000);
+			cpu_address = (address_t) (s19_addr % 0x10000);
+		}
+	}
+	
+}
+
+physical_address_t S19_Loader::GetFlashAddress(page_t page, address_t cpu_address)
+{
+	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS = 0x00400000;
+	static const uint8_t FLASH_ADDRESS_SIZE = 14;
+	static const address_t FLASH_CPU_ADDRESS_BITS = 0x3FFF;
+	 
+	if (page != 0x00)
+	{
+		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) page << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & cpu_address);
+	} else 
+	{
+		return cpu_address;
+	}
+}
 
 bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 {
@@ -140,7 +180,10 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 	int     chksum;
 	int     tchksum;
 	unsigned char     sdata[254];
-	physical_address_t     addr;
+	physical_address_t     flash_address;
+	s19_address_t s19_addr;
+	address_t cpu_address;
+	page_t page;
 	int     n, sdataIndex;
 	int		addrSize;
 
@@ -182,10 +225,10 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 		case S7: {	/* S7 = A termination record for a block S3,
 					 * may contain entry point. default 0x00000000 
 					 */
-			sscanf(srec+4, "%8x", &addr);           /* get addr of this rec */
+			sscanf(srec+4, "%8x", &s19_addr);           /* get addr of this rec */
 
-			if (addr != 0x00) {
-				entry_point = addr;
+			if (s19_addr != 0x00) {
+				entry_point = s19_addr;
 			}
 
 			return true;
@@ -194,10 +237,10 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 		case S8: {	/* S8 = A termination record for a block S2,
 					 * may contain entry point. default 0x000000 
 					 */
-			sscanf(srec+4, "%6x", &addr);           /* get addr of this rec */
+			sscanf(srec+4, "%6x", &s19_addr);           /* get addr of this rec */
 
-			if (addr != 0x00) {
-				entry_point = addr;
+			if (s19_addr != 0x00) {
+				entry_point = s19_addr;
 			}
 
 			return true;
@@ -206,10 +249,10 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 		case S9: {	/* S9 = A termination record for a block S1,
 					 * may contain entry point. default 0x0000 
 					 */
-			sscanf(srec+4, "%4x", &addr);           /* get addr of this rec */
+			sscanf(srec+4, "%4x", &s19_addr);           /* get addr of this rec */
 
-			if (addr != 0x00) {
-				entry_point = addr;
+			if (s19_addr != 0x00) {
+				entry_point = s19_addr;
 			}
 
 			return true;
@@ -220,26 +263,26 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 			switch (srec[1]) {
 				case S1: { /* A record containing code/data and the 2-byte address (offset) at which the code/data is reside */
 					addrSize = 4;	// S1: address is coded on 4 hex digits (2 bytes)
-					sscanf(srec+4, "%4x", &addr);           /* get addr of this rec */
-					chksum += (addr >> 8);
-					chksum += (addr & 0xff);
+					sscanf(srec+4, "%4x", &s19_addr);           /* get addr of this rec */
+					chksum += (s19_addr >> 8);
+					chksum += (s19_addr & 0xff);
 				} break;
 				
 				case S2: { /* A record containing code/data and the 3-byte address (offset) at which the code/data is reside */
 					addrSize = 6;	// S2: address is coded on 6 hex digits (3 bytes)
-					sscanf(srec+4, "%6x", &addr);           /* get addr of this rec */
-					chksum += (addr >> 16);
-					chksum += ((addr >> 8) & 0xff);			
-					chksum += (addr & 0xff);
+					sscanf(srec+4, "%6x", &s19_addr);           /* get addr of this rec */
+					chksum += (s19_addr >> 16);
+					chksum += ((s19_addr >> 8) & 0xff);			
+					chksum += (s19_addr & 0xff);
 				} break;
 				
 				case S3: { /* A record containing code/data and the 4-byte address (offset) at which the code/data is reside */
 					addrSize = 8;	// S3: address is coded on 8 hex digits (4 bytes)		
-					sscanf(srec+4, "%8x", &addr);           /* get addr of this rec */
-					chksum += (addr >> 24);
-					chksum += ((addr >> 16) & 0xff);			
-					chksum += ((addr >> 8) & 0xff);			
-					chksum += (addr & 0xff);
+					sscanf(srec+4, "%8x", &s19_addr);           /* get addr of this rec */
+					chksum += (s19_addr >> 24);
+					chksum += ((s19_addr >> 16) & 0xff);			
+					chksum += ((s19_addr >> 8) & 0xff);			
+					chksum += (s19_addr & 0xff);
 				} break;
 				
 				default: {
@@ -267,12 +310,15 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 			
 			if (isFirstDataRec) {
 				isFirstDataRec = false;
-				entry_point = addr;
+				entry_point = s19_addr;
 			}
 			
-			top_addr = addr;
+			top_addr = s19_addr;
 			
-			return memWrite(addr, sdata,sdataIndex);
+			GetPagedAddress(s19_addr, page, cpu_address);
+			flash_address = GetFlashAddress(page, cpu_address);
+			
+			return memWrite(flash_address, sdata,sdataIndex);
 		}
 	}
 	

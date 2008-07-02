@@ -50,6 +50,11 @@
 #include  <stdlib.h>
 #include  <string.h>
 
+typedef uint32_t physical_address_t;
+typedef uint16_t address_t;
+typedef uint32_t s19_address_t;
+typedef uint8_t page_t;
+
 namespace unisim {
 namespace service {
 namespace loader {
@@ -68,8 +73,6 @@ using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
-typedef uint32_t physical_address_t;
-
 #define S_RECORD_SIZE	515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
 	
 class S19_Loader :
@@ -78,6 +81,8 @@ class S19_Loader :
 	public Client<SymbolTableBuild<physical_address_t> > 
 {
 public:
+
+	enum MODE {BANKED=0, LINEAR=1, GNUGCC=2};
 
 	enum {ERR_NOFILE, ERR_BADREC, ERR_NOSUPPORT, ERR_BADADDR, ERR_BADCHKSUM, ERR_BADFILENAME};
 
@@ -106,8 +111,10 @@ public:
 	virtual physical_address_t GetTopAddr() const;
 	virtual physical_address_t GetStackBase() const;
 
-	S19_Loader(char const *name, Object *parent = 0);
+	S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent = 0);
 	virtual ~S19_Loader();	
+	void GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t &cpu_address);
+	physical_address_t GetFlashAddress(page_t page, address_t cpu_address);
 	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);
 	void	ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE]);
 
@@ -130,6 +137,7 @@ private:
 	Parameter<bool>		param_force_use_virtual_address;
 	
 	bool				isFirstDataRec;
+	int					memoryMode;
 };
 
 
