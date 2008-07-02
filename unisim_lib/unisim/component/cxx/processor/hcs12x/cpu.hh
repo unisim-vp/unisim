@@ -240,7 +240,7 @@ public:
 
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
-	void SetEntryPoint(physical_address_t entry_point);
+	void SetEntryPoint(uint8_t page, address_t cpu_address);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -502,15 +502,12 @@ private:
 	
 	bool asynchronous_interrupt;          //!< summary of all hardware interrupt signals
 
-	bool flash_mode;						//!< if TRUE the CPU fetch instructions from flash. default is FALSE
-	
 	// Registers map
 	map<string, Register *> registers_registry;       
 
 	/** the instruction counter */
 	uint64_t instruction_counter;
 
-	void SetFlashMode(bool mode);
 };
 
 

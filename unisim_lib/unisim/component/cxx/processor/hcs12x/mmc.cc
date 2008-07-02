@@ -42,13 +42,14 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 	
-MMC::MMC(uint8_t gpage, uint8_t rpage, uint8_t epage, uint8_t ppage, uint8_t direct) {
-    setGpage(gpage);    
-    setRpage(rpage);
-    setEpage(epage);
-    setPpage(ppage);
-    setDirect(direct);
-    
+MMC::MMC(MEMORY::MODE mode) : 
+	mmcMode(mode),
+	_gpage(GLOBAL_RESET_PAGE),
+    _direct(DIRECT_RESET_PAGE),
+    _rpage(RAM_RESET_PAGE),      
+    _epage(EEPROM_RESET_PAGE),      
+    _ppage(FLASH_RESET_PAGE) 
+{    
 }
 
 
@@ -63,21 +64,25 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 			address = getDirectAddress((uint8_t) logicalAddress);
 			gShift = sizeof(address_t) * 8; 
 		} break;
-		case MEMORY::EXTENDED: { 
-			address = logicalAddress;
-			gShift = sizeof(address_t) * 8; 
-		} break;
-		case MEMORY::RAM: { 
-			address = getRamAddress(logicalAddress);
-			gShift = CONFIG::CPU2RAM_ADDRESS_SIZE + 8; 
-		} break;
-		case MEMORY::EEPROM: { 
-			address = getEepromAddress(logicalAddress);
-			gShift = CONFIG::CPU2EEPROM_ADDRESS_SIZE + 8; 
-		} break;
-		case MEMORY::FLASH: { 
-			address = getFlashAddress(logicalAddress);
-			gShift = CONFIG::CPU2FLASH_ADDRESS_SIZE + 8; 
+
+		case MEMORY::EXTENDED: {
+
+			if (logicalAddress < EEPROM_LOW_OFFSET) { // Access to registers
+				address = logicalAddress;
+				gShift = sizeof(address_t) * 8; 
+
+			} else if (logicalAddress < RAM_LOW_OFFSET) { // Access to EEPROM
+				address = getEepromAddress(logicalAddress);
+				gShift = EEPROM_ADDRESS_SIZE + 8; 
+
+			} else if (logicalAddress < FLASH_LOW_OFFSET) { // Access to RAM
+				address = getRamAddress(logicalAddress);
+				gShift = RAM_ADDRESS_SIZE + 8; 
+
+			} else { // Access to Flash
+				address = getFlashAddress(logicalAddress);
+				gShift = FLASH_ADDRESS_SIZE + 8; 
+			}
 		} break;
 	}
 
@@ -101,26 +106,54 @@ void MMC::setDirect (uint8_t val) {
 uint8_t MMC::getDirect () { return _direct; }
 
 physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
-	return (((address_t) getDirect()) << CONFIG::CPU2DIRECT_ADDRESS_SIZE) | ((address_t) lowByte & 0x00FF);
+	if (mmcMode == MEMORY::GLOBAL)
+	{
+		return (((address_t) getDirect()) << DIRECT_ADDRESS_SIZE) | ((address_t) lowByte & 0x00FF);
+	} else 
+	{
+		return lowByte;
+	}
+	
 }
 
 
 void MMC::setRpage (uint8_t val) { _rpage = val;}
 uint8_t MMC::getRpage () { return _rpage; }
 physical_address_t MMC::getRamAddress(address_t logicalAddress) {
-	return ((physical_address_t) getRpage() << CONFIG::CPU2RAM_ADDRESS_SIZE) | ((address_t) MASK2RAM & logicalAddress);
+	if (mmcMode == MEMORY::GLOBAL)
+	{
+		return RAM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getRpage() << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
+	} else 
+	{
+		return logicalAddress;
+	}
+
 }
 
 void MMC::setEpage (uint8_t val) { _epage = val;}
 uint8_t MMC::getEpage () { return _epage; }
 physical_address_t MMC::getEepromAddress(address_t logicalAddress) {
-	return  ((physical_address_t) getEpage() << CONFIG::CPU2EEPROM_ADDRESS_SIZE) | ((address_t) MASK2EEPROM & logicalAddress);
+	if (mmcMode == MEMORY::GLOBAL)
+	{
+		return EEPROM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getEpage() << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
+	} else 
+	{
+		return logicalAddress;
+	}
+
 }
 
 void MMC::setPpage (uint8_t val) { _ppage = val;}
 uint8_t MMC::getPpage () { return _ppage; }
 physical_address_t MMC::getFlashAddress(address_t logicalAddress) {
-	return ((physical_address_t) getPpage() << CONFIG::CPU2FLASH_ADDRESS_SIZE) | ((address_t) MASK2FLASH & logicalAddress);
+	if (mmcMode == MEMORY::GLOBAL)
+	{
+		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getPpage() << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
+	} else 
+	{
+		return logicalAddress;
+	}
+
 }
 
 }

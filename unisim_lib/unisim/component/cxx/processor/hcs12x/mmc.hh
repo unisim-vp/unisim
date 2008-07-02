@@ -42,10 +42,6 @@
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
-#define MASK2RAM (pow(2, CONFIG::CPU2RAM_ADDRESS_SIZE) -1)
-#define	MASK2EEPROM (pow(2, CONFIG::CPU2EEPROM_ADDRESS_SIZE) -1)
-#define MASK2FLASH (pow(2, CONFIG::CPU2FLASH_ADDRESS_SIZE) -1)
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -55,24 +51,79 @@ namespace hcs12x {
 #define WO_GLOBAL_ADDRESS	false	// without global addressing (64KB address space)
 #define W_GLOBAL_ADDRESS	true	// with global addressung (8MB address space)
 
+// ToRemove: Used Tempory for development purposes to force MC9s12XDP512 
+#define MC9S12XDP512
+// *** end to remove ***
+
 class MEMORY {
 public:
-	/*
-	 * GPAGE -> GLOBAL
-	 * RPAGE -> RAM
-	 * EPAGE -> EEPROM
-	 * PPAGE -> FLASH
-	 * DIRECt -> Direct page
-	 */
-	enum MAP {DIRECT=0, EXTENDED=1, RAM=2, EEPROM=3, FLASH=4};
+
+	enum MAP {DIRECT=0, EXTENDED=1};
+	enum MODE {NORMAL=0, GLOBAL=1};
 };
 
 class MMC 
 {
+public: 
+
+	static const uint8_t DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
+	static const uint8_t RAM_ADDRESS_SIZE		= 12;	// Number of bits used by the CPU to address RAM (max=16)
+	static const uint8_t EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
+	static const uint8_t FLASH_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address FLASH (max=16)
+
+	static const address_t RAM_CPU_ADDRESS_BITS		= 0x0FFF;
+	static const address_t EEPROM_CPU_ADDRESS_BITS	= 0x03FF;
+	static const address_t FLASH_CPU_ADDRESS_BITS	= 0x3FFF;
+	
+	static const physical_address_t RAM_PHYSICAL_ADDRESS_FIXED_BITS		= 0x00000000;
+	static const physical_address_t EEPROM_PHYSICAL_ADDRESS_FIXED_BITS	= 0x00100000;
+	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS	= 0x00400000;
+
+	//=====================================================================
+	//=   RESET VALUES OF MMC REGISTERS and Logical Memories Offsets      =
+	//=====================================================================
+
+	static const address_t REG_LOW_OFFSET	= 0x0000;
+	static const address_t REG_HIGH_OFFSET	= 0x07FF;
+	static const address_t EEPROM_LOW_OFFSET= 0x0800;
+	static const address_t EEPROM_HIGH_OFFSET=0x0FFF;
+	static const address_t RAM_LOW_OFFSET	= 0x1000;
+	static const address_t RAM_HIGH_OFFSET	= 0x3FFF;
+	static const address_t FLASH_LOW_OFFSET	= 0x4000;
+	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
+	 
+#ifdef MC9S12XDP512
+
+	static const uint8_t GPAGE_REG_ADDRESS	= 0x0010;
+	static const uint8_t DIRECT_REG_ADDRESS	= 0x0011;
+	static const uint8_t RPAGE_REG_ADDRESS	= 0x0016;
+	static const uint8_t EPAGE_REG_ADDRESS	= 0x0017;
+	static const uint8_t PPAGE_REG_ADDRESS	= 0x0030;
+	
+	static const uint8_t GPAGE_LOW			= 0x00;		// low gpage register value
+	static const uint8_t GPAGE_HIGH			= 0x7F;		// high gpage register value
+
+	static const uint8_t RPAGE_LOW			= 0xF8;		// low rpage (ram page) register value
+	static const uint8_t RPAGE_HIGH			= 0xFF;		// high rpage register value
+	static const uint8_t EPAGE_LOW			= 0xFC;		// low epage (eeprom page) register value
+	static const uint8_t EPAGE_HIGH			= 0xFF;		// high epage register value 
+	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
+	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
+
+	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value 
+	static const uint8_t DIRECT_RESET_PAGE	= 0x00;		// reset direct register value 
+
+	static const uint8_t RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
+	static const uint8_t EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value  
+	static const uint8_t FLASH_RESET_PAGE	= 0xFE;		// reset ppage register value 
+
+#else // unknown and will cause compilation errors
+
+#endif
+	
 public:
 
-
-    MMC(uint8_t gpage, uint8_t rpage, uint8_t epage, uint8_t ppage, uint8_t direct);
+    MMC(MEMORY::MODE mode);
        
 	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
 	
@@ -109,6 +160,7 @@ private:
     uint8_t     _epage;      
     uint8_t     _ppage;      
 
+	MEMORY::MODE mmcMode;
 };
 
 }

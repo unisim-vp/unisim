@@ -107,9 +107,8 @@ CPU::CPU(const char *name, Object *parent):
 	verbose_dump_regs_end(true),
 //	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
 //	memory_interface(_memory_interface),
-	instruction_counter(0),
+	instruction_counter(0)
 //	running(true),
-	flash_mode(false)
 	
 {
 	setRegA(0x00);
@@ -122,43 +121,33 @@ CPU::CPU(const char *name, Object *parent):
 
     ccr = new CCR_t();
     
-    mmc = new MMC(CONFIG::GLOBAL_RESET_PAGE, CONFIG::RAM_RESET_PAGE, CONFIG::EEPROM_RESET_PAGE, CONFIG::FLASH_RESET_PAGE, CONFIG::DIRECT_RESET_PAGE);
-  
     eblb = new EBLB(this);
 
 }
 
 CPU::~CPU() 
 { 
-	delete mmc; mmc = NULL;
-	delete eblb; eblb = NULL;
-	delete ccr; ccr = NULL;
+	if (mmc) { delete mmc; mmc = NULL;}
+	if (eblb) { delete eblb; eblb = NULL;}
+	if (ccr) { delete ccr; ccr = NULL;}
 }
 
-void CPU::SetEntryPoint(physical_address_t entry_point)
+void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 {
-	address_t cpu_address;
-	uint8_t   page;
-	
-	if (entry_point < 0x10000) {
-		page = entry_point / 0x4000;
-		cpu_address = (entry_point % 0x4000) + 0x8000;
-	} else {
-		page = entry_point / 0x10000;
-		cpu_address = entry_point % 0x10000;
-		
-		mmc->setPpage(page); // TODO: understand more and go back 
-		this->SetFlashMode(true);
-	}
 	
 	setRegPC(cpu_address);
 	
+	if (page==0) 
+	{
+		mmc = new MMC(MEMORY::NORMAL);
+	} else
+	{
+		mmc = new MMC(MEMORY::GLOBAL);
+		mmc->setPpage(page);  
+	}
+  
 }
 
-void CPU::SetFlashMode(bool mode)
-{
-	flash_mode = mode;
-}
 
 //=====================================================================
 //=                  Client/Service setup methods                     =
@@ -249,9 +238,7 @@ uint8_t CPU::Step()
 	current_pc = getRegPC();
 	physical_pc = current_pc;
 	
-	if (flash_mode) {
-		physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::FLASH, WO_GLOBAL_ADDRESS);
-	}
+	physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 
 	VerboseDumpRegsStart();
 	
