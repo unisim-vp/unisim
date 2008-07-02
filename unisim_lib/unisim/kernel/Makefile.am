@@ -13,6 +13,11 @@ SUBDIRS += tlm
 INCLUDE_SUBDIRS += tlm
 endif
 
+if COND_tlm2
+SUBDIRS += tlm2
+INCLUDE_SUBDIRS += tlm2
+endif
+
 if COND_logger
 SUBDIRS += logger
 INCLUDE_SUBDIRS += logger

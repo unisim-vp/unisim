@@ -33,18 +33,20 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Kernel Libraries], [1.0])
+AC_INIT([UNISIM Kernel TLM Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
-AC_PROG_INSTALL
+AC_PATH_PROGS(SH, sh)
 
-UNISIM_CONFIG_SUBDIR(unisim-kernel-clm, clm)
-UNISIM_CONFIG_SUBDIR(unisim-kernel-tlm, tlm)
-UNISIM_CONFIG_SUBDIR(unisim-kernel-tlm2, tlm2)
-UNISIM_CONFIG_SUBDIR(unisim-kernel-service, service)
-UNISIM_CONFIG_SUBDIR(unisim-kernel-logger, logger)
+AC_PROG_INSTALL
+AC_PROG_LN_S
+
+AC_LANG([C++])
 
 # files to generate
 #   this should include all the makefiles to generate
