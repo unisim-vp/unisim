@@ -67,7 +67,7 @@ action {void} disasm({ostream&} {sink}) {
 	sink << "?";
 }
 
-action {uint8_t} getCycles () { return 2; }
+action {uint8_t} getCycles () { return 1; }
 
 include "load_store.isa"
 include "transfer_exchange.isa"

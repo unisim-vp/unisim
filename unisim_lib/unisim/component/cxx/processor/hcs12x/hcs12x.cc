@@ -35,7 +35,7 @@ uint8_t
 Operation::getCycles()
 {
 #line 70 "hcs12x.isa"
-	{ return 2; }
+	{ return 1; }
 #line 40 "hcs12x.cc"
 }
 #line 66 "hcs12x.isa"

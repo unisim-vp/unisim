@@ -53,11 +53,14 @@ impl {
 using namespace std;
 }
 
+action {uint8_t} getCycles () { return 1; }
+
 action {void} disasm({ostream&} {sink}) {
 	sink << "?";
 }
 
 action {uint16_t} getEAddr ( {CPU *} {cpu} ) { assert( false ); return 0; }
+
 
 op xb_5bit_cst (rr[2]:0b0[1]:sext<8> nnnnn[5])
 

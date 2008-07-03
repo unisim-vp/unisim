@@ -86,29 +86,34 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	uint16_t
 #line 92 "xb.hh"
 	getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	CPU *
 #line 96 "xb.hh"
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	cpu
 #line 99 "xb.hh"
 	);
 	virtual
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	void
 #line 104 "xb.hh"
 	disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	ostream&
 #line 108 "xb.hh"
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	sink
 #line 111 "xb.hh"
 	);
+	virtual
+#line 56 "xb.isa"
+	uint8_t
+#line 116 "xb.hh"
+	getCycles( );
 protected:
 	CodeType encoding;
 	uint16_t addr;

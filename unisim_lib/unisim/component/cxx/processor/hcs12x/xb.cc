@@ -29,39 +29,48 @@ Operation::~Operation()
 {
 }
 
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 uint16_t
 #line 35 "xb.cc"
 Operation::getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 CPU *
 #line 39 "xb.cc"
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 cpu
 #line 42 "xb.cc"
 )
 {
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	{ assert( false ); return 0; }
 #line 47 "xb.cc"
 }
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 void
 #line 51 "xb.cc"
 Operation::disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 ostream&
 #line 55 "xb.cc"
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 sink
 #line 58 "xb.cc"
 )
 {
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	{
 		sink << "?";
 	}
 #line 65 "xb.cc"
+}
+#line 56 "xb.isa"
+uint8_t
+#line 69 "xb.cc"
+Operation::getCycles()
+{
+#line 56 "xb.isa"
+	{ return 1; }
+#line 74 "xb.cc"
 }
 class OpXb_auto : public Operation
 {
@@ -71,61 +80,28 @@ public:
 	uint32_t p;
 	uint32_t nnnn;
 	virtual
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	uint16_t
-#line 77 "xb.cc"
+#line 86 "xb.cc"
 	getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	CPU *
-#line 81 "xb.cc"
-#line 60 "xb.isa"
+#line 90 "xb.cc"
+#line 62 "xb.isa"
 	cpu
-#line 84 "xb.cc"
+#line 93 "xb.cc"
 	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
 	virtual
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	void
-#line 122 "xb.cc"
+#line 98 "xb.cc"
 	disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	ostream&
-#line 126 "xb.cc"
-#line 56 "xb.isa"
+#line 102 "xb.cc"
+#line 58 "xb.isa"
 	sink
-#line 129 "xb.cc"
+#line 105 "xb.cc"
 	);
 private:
 };
@@ -137,61 +113,28 @@ public:
 	uint32_t rr;
 	int32_t nnnnn;
 	virtual
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	uint16_t
-#line 143 "xb.cc"
+#line 119 "xb.cc"
 	getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	CPU *
-#line 147 "xb.cc"
-#line 60 "xb.isa"
+#line 123 "xb.cc"
+#line 62 "xb.isa"
 	cpu
-#line 150 "xb.cc"
+#line 126 "xb.cc"
 	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
 	virtual
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	void
-#line 188 "xb.cc"
+#line 131 "xb.cc"
 	disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	ostream&
-#line 192 "xb.cc"
-#line 56 "xb.isa"
+#line 135 "xb.cc"
+#line 58 "xb.isa"
 	sink
-#line 195 "xb.cc"
+#line 138 "xb.cc"
 	);
 private:
 };
@@ -204,61 +147,28 @@ public:
 	uint32_t s;
 	int32_t n8;
 	virtual
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	uint16_t
-#line 210 "xb.cc"
+#line 153 "xb.cc"
 	getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	CPU *
-#line 214 "xb.cc"
-#line 60 "xb.isa"
+#line 157 "xb.cc"
+#line 62 "xb.isa"
 	cpu
-#line 217 "xb.cc"
+#line 160 "xb.cc"
 	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
 	virtual
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	void
-#line 255 "xb.cc"
+#line 165 "xb.cc"
 	disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	ostream&
-#line 259 "xb.cc"
-#line 56 "xb.isa"
+#line 169 "xb.cc"
+#line 58 "xb.isa"
 	sink
-#line 262 "xb.cc"
+#line 172 "xb.cc"
 	);
 private:
 };
@@ -271,61 +181,28 @@ public:
 	uint32_t s;
 	int32_t n16;
 	virtual
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	uint16_t
-#line 277 "xb.cc"
+#line 187 "xb.cc"
 	getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	CPU *
-#line 281 "xb.cc"
-#line 60 "xb.isa"
+#line 191 "xb.cc"
+#line 62 "xb.isa"
 	cpu
-#line 284 "xb.cc"
+#line 194 "xb.cc"
 	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
 	virtual
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	void
-#line 322 "xb.cc"
+#line 199 "xb.cc"
 	disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	ostream&
-#line 326 "xb.cc"
-#line 56 "xb.isa"
+#line 203 "xb.cc"
+#line 58 "xb.isa"
 	sink
-#line 329 "xb.cc"
+#line 206 "xb.cc"
 	);
 private:
 };
@@ -337,61 +214,28 @@ public:
 	uint32_t rr;
 	uint32_t aa;
 	virtual
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	uint16_t
-#line 343 "xb.cc"
+#line 220 "xb.cc"
 	getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	CPU *
-#line 347 "xb.cc"
-#line 60 "xb.isa"
+#line 224 "xb.cc"
+#line 62 "xb.isa"
 	cpu
-#line 350 "xb.cc"
+#line 227 "xb.cc"
 	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
 	virtual
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	void
-#line 388 "xb.cc"
+#line 232 "xb.cc"
 	disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	ostream&
-#line 392 "xb.cc"
-#line 56 "xb.isa"
+#line 236 "xb.cc"
+#line 58 "xb.isa"
 	sink
-#line 395 "xb.cc"
+#line 239 "xb.cc"
 	);
 private:
 };
@@ -402,78 +246,45 @@ public:
 	OpXb_accD_offset_idx_ind(CodeType const& code, uint16_t addr);
 	uint32_t rr;
 	virtual
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	uint16_t
-#line 408 "xb.cc"
+#line 252 "xb.cc"
 	getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 	CPU *
-#line 412 "xb.cc"
-#line 60 "xb.isa"
+#line 256 "xb.cc"
+#line 62 "xb.isa"
 	cpu
-#line 415 "xb.cc"
+#line 259 "xb.cc"
 	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
 	virtual
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	void
-#line 453 "xb.cc"
+#line 264 "xb.cc"
 	disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 	ostream&
-#line 457 "xb.cc"
-#line 56 "xb.isa"
+#line 268 "xb.cc"
+#line 58 "xb.isa"
 	sink
-#line 460 "xb.cc"
+#line 271 "xb.cc"
 	);
 private:
 };
 
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 uint16_t
-#line 467 "xb.cc"
+#line 278 "xb.cc"
 OpXb_auto::getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 CPU *
-#line 471 "xb.cc"
-#line 60 "xb.isa"
+#line 282 "xb.cc"
+#line 62 "xb.isa"
 cpu
-#line 474 "xb.cc"
+#line 285 "xb.cc"
 )
 {
-#line 123 "xb.isa"
+#line 126 "xb.isa"
 	{
 
 		address_t regOldVal = cpu->xb_getAddrRegValue(rr);
@@ -497,21 +308,21 @@ cpu
 			return regOldVal;
 		}
 	}
-#line 501 "xb.cc"
+#line 312 "xb.cc"
 }
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 void
-#line 505 "xb.cc"
+#line 316 "xb.cc"
 OpXb_auto::disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 ostream&
-#line 509 "xb.cc"
-#line 56 "xb.isa"
+#line 320 "xb.cc"
+#line 58 "xb.isa"
 sink
-#line 512 "xb.cc"
+#line 323 "xb.cc"
 )
 {
-#line 147 "xb.isa"
+#line 150 "xb.isa"
 	{
 
 		string	regLabel = CPU::xb_getAddrRegLabel(rr);
@@ -536,7 +347,7 @@ sink
 			sink << regLabel << sign;
 		}
 	}
-#line 540 "xb.cc"
+#line 351 "xb.cc"
 }
 
 static Operation *DecodeOpXb_auto(CodeType const& code, uint16_t addr)
@@ -544,19 +355,19 @@ static Operation *DecodeOpXb_auto(CodeType const& code, uint16_t addr)
 	return new OpXb_auto(code, addr);
 }
 
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 uint16_t
-#line 550 "xb.cc"
+#line 361 "xb.cc"
 OpXb_5bit_cst::getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 CPU *
-#line 554 "xb.cc"
-#line 60 "xb.isa"
+#line 365 "xb.cc"
+#line 62 "xb.isa"
 cpu
-#line 557 "xb.cc"
+#line 368 "xb.cc"
 )
 {
-#line 64 "xb.isa"
+#line 67 "xb.isa"
 	{
 
 		address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + nnnnn;
@@ -565,25 +376,25 @@ cpu
 
 		//    return cpu->xb_getAddrRegValue(rr) + nnnnn;
 	}
-#line 569 "xb.cc"
+#line 380 "xb.cc"
 }
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 void
-#line 573 "xb.cc"
+#line 384 "xb.cc"
 OpXb_5bit_cst::disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 ostream&
-#line 577 "xb.cc"
-#line 56 "xb.isa"
+#line 388 "xb.cc"
+#line 58 "xb.isa"
 sink
-#line 580 "xb.cc"
+#line 391 "xb.cc"
 )
 {
-#line 73 "xb.isa"
+#line 76 "xb.isa"
 	{
 		sink << std::dec << nnnnn << "," << CPU::xb_getAddrRegLabel(rr);
 	}
-#line 587 "xb.cc"
+#line 398 "xb.cc"
 }
 
 static Operation *DecodeOpXb_5bit_cst(CodeType const& code, uint16_t addr)
@@ -592,19 +403,19 @@ static Operation *DecodeOpXb_5bit_cst(CodeType const& code, uint16_t addr)
 }
 
 // TODO: 20080417 - a revoir
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 uint16_t
-#line 598 "xb.cc"
+#line 409 "xb.cc"
 OpXb_9_cst_z0::getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 CPU *
-#line 602 "xb.cc"
-#line 60 "xb.isa"
+#line 413 "xb.cc"
+#line 62 "xb.isa"
 cpu
-#line 605 "xb.cc"
+#line 416 "xb.cc"
 )
 {
-#line 80 "xb.isa"
+#line 83 "xb.isa"
 	{
 
 		address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n8;
@@ -613,26 +424,26 @@ cpu
 
 		//	return cpu->xb_getAddrRegValue(rr) + n8;
 	}
-#line 617 "xb.cc"
+#line 428 "xb.cc"
 }
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 void
-#line 621 "xb.cc"
+#line 432 "xb.cc"
 OpXb_9_cst_z0::disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 ostream&
-#line 625 "xb.cc"
-#line 56 "xb.isa"
+#line 436 "xb.cc"
+#line 58 "xb.isa"
 sink
-#line 628 "xb.cc"
+#line 439 "xb.cc"
 )
 {
-#line 89 "xb.isa"
+#line 92 "xb.isa"
 	{
 
 		sink << std::dec << n8 << "," << CPU::xb_getAddrRegLabel(rr);
 	}
-#line 636 "xb.cc"
+#line 447 "xb.cc"
 }
 
 static Operation *DecodeOpXb_9_cst_z0(CodeType const& code, uint16_t addr)
@@ -640,19 +451,19 @@ static Operation *DecodeOpXb_9_cst_z0(CodeType const& code, uint16_t addr)
 	return new OpXb_9_cst_z0(code, addr);
 }
 
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 uint16_t
-#line 646 "xb.cc"
+#line 457 "xb.cc"
 OpXb_16bit_cst_z1::getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 CPU *
-#line 650 "xb.cc"
-#line 60 "xb.isa"
+#line 461 "xb.cc"
+#line 62 "xb.isa"
 cpu
-#line 653 "xb.cc"
+#line 464 "xb.cc"
 )
 {
-#line 96 "xb.isa"
+#line 99 "xb.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -666,21 +477,21 @@ cpu
 			return cpu->memRead16(addr);
 		}
 	}
-#line 670 "xb.cc"
+#line 481 "xb.cc"
 }
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 void
-#line 674 "xb.cc"
+#line 485 "xb.cc"
 OpXb_16bit_cst_z1::disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 ostream&
-#line 678 "xb.cc"
-#line 56 "xb.isa"
+#line 489 "xb.cc"
+#line 58 "xb.isa"
 sink
-#line 681 "xb.cc"
+#line 492 "xb.cc"
 )
 {
-#line 110 "xb.isa"
+#line 113 "xb.isa"
 	{
 		if (s==0) {
 			// constant offset 16-bit signed
@@ -690,7 +501,7 @@ sink
 			sink << "[" << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr) << "]";
 		}
 	}
-#line 694 "xb.cc"
+#line 505 "xb.cc"
 }
 
 static Operation *DecodeOpXb_16bit_cst_z1(CodeType const& code, uint16_t addr)
@@ -698,44 +509,44 @@ static Operation *DecodeOpXb_16bit_cst_z1(CodeType const& code, uint16_t addr)
 	return new OpXb_16bit_cst_z1(code, addr);
 }
 
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 uint16_t
-#line 704 "xb.cc"
+#line 515 "xb.cc"
 OpXb_acc_offset::getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 CPU *
-#line 708 "xb.cc"
-#line 60 "xb.isa"
+#line 519 "xb.cc"
+#line 62 "xb.isa"
 cpu
-#line 711 "xb.cc"
+#line 522 "xb.cc"
 )
 {
-#line 175 "xb.isa"
+#line 178 "xb.isa"
 	{
 		uint16_t addrRegVal = cpu->xb_getAddrRegValue(rr);
 		uint16_t accRegVal = cpu->xb_getAccRegValue(aa);
 
 		return addrRegVal + accRegVal;
 	}
-#line 721 "xb.cc"
+#line 532 "xb.cc"
 }
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 void
-#line 725 "xb.cc"
+#line 536 "xb.cc"
 OpXb_acc_offset::disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 ostream&
-#line 729 "xb.cc"
-#line 56 "xb.isa"
+#line 540 "xb.cc"
+#line 58 "xb.isa"
 sink
-#line 732 "xb.cc"
+#line 543 "xb.cc"
 )
 {
-#line 182 "xb.isa"
+#line 185 "xb.isa"
 	{
 		sink << CPU::xb_getAccRegLabel(aa) << "," << CPU::xb_getAddrRegLabel(rr);
 	}
-#line 739 "xb.cc"
+#line 550 "xb.cc"
 }
 
 static Operation *DecodeOpXb_acc_offset(CodeType const& code, uint16_t addr)
@@ -743,42 +554,42 @@ static Operation *DecodeOpXb_acc_offset(CodeType const& code, uint16_t addr)
 	return new OpXb_acc_offset(code, addr);
 }
 
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 uint16_t
-#line 749 "xb.cc"
+#line 560 "xb.cc"
 OpXb_accD_offset_idx_ind::getEAddr(
-#line 60 "xb.isa"
+#line 62 "xb.isa"
 CPU *
-#line 753 "xb.cc"
-#line 60 "xb.isa"
+#line 564 "xb.cc"
+#line 62 "xb.isa"
 cpu
-#line 756 "xb.cc"
+#line 567 "xb.cc"
 )
 {
-#line 189 "xb.isa"
+#line 192 "xb.isa"
 	{
 
 		return cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegD() + cpu->xb_getAddrRegValue(rr), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	}
-#line 764 "xb.cc"
+#line 575 "xb.cc"
 }
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 void
-#line 768 "xb.cc"
+#line 579 "xb.cc"
 OpXb_accD_offset_idx_ind::disasm(
-#line 56 "xb.isa"
+#line 58 "xb.isa"
 ostream&
-#line 772 "xb.cc"
-#line 56 "xb.isa"
+#line 583 "xb.cc"
+#line 58 "xb.isa"
 sink
-#line 775 "xb.cc"
+#line 586 "xb.cc"
 )
 {
-#line 194 "xb.isa"
+#line 197 "xb.isa"
 	{
 		sink << "[D," << CPU::xb_getAddrRegLabel(rr) << "]";
 	}
-#line 782 "xb.cc"
+#line 593 "xb.cc"
 }
 
 static Operation *DecodeOpXb_accD_offset_idx_ind(CodeType const& code, uint16_t addr)

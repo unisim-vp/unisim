@@ -67,7 +67,7 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 
 		case MEMORY::EXTENDED: {
 
-			if ((logicalAddress >= REG_LOW_OFFSET) && (logicalAddress <= REG_HIGH_OFFSET)) { // Access to registers
+			if (logicalAddress <= REG_HIGH_OFFSET) { // Access to registers
 				address = logicalAddress;
 				gShift = sizeof(address_t) * 8; 
 
@@ -85,7 +85,7 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 
 			} 
 			
-			if ((logicalAddress >= FLASH_LOW_OFFSET) && (logicalAddress <= FLASH_HIGH_OFFSET)) { // Access to Flash
+			if (logicalAddress >= FLASH_LOW_OFFSET) { // Access to Flash
 				address = getFlashAddress(logicalAddress);
 				gShift = FLASH_ADDRESS_SIZE + 8; 
 			}
