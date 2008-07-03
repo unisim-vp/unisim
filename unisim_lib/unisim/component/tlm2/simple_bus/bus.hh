@@ -1,6 +1,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_BUS_BUS_CONTROLLER_HH__
 #define __UNISIM_COMPONENT_TLM2_BUS_BUS_CONTROLLER_HH__
 
+#include <map>
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/multi_passthrough_target_socket.h>
@@ -59,10 +60,26 @@ private:
 	 * Simple initiator socket callbacks                                 END *
 	 *************************************************************************/
 
+	/*************************************************************************
+	 * Dispatcher methods and variables                                  END *
+	 *************************************************************************/
+
 	BusPeq<TYPES> peq;
 	BusPeq<TYPES> free_peq;
 	void Dispatcher();
+	void DispatchFW(BusTlmGenericProtocol<TYPES> *item);
+	void DispatchBW(BusTlmGenericProtocol<TYPES> *item);
 	void BusSynchronize();
+	std::map<transaction_type *, BusTlmGenericProtocol<TYPES> *> pending_transactions;
+	void PrintPendingTransactions();
+	void AddPendingTransaction(transaction_type &trans, BusTlmGenericProtocol<TYPES> *item);
+	void RemovePendingTransaction(transaction_type &trans);
+	sc_event end_req_event;
+	sc_event end_resp_event;
+
+	/*************************************************************************
+	 * Dispatcher methods and variables                                  END *
+	 *************************************************************************/
 
 	/*************************************************************************
 	 * Parameters                                                      START *

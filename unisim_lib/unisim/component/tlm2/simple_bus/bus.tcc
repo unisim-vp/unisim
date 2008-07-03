@@ -14,6 +14,7 @@ targ_socket("target_socket"),
 init_socket("init_socket"),
 peq("peq"),
 free_peq("peq"),
+pending_transactions(),
 bus_cycle_time(SC_ZERO_TIME),
 bus_cycle_time_double(0.0),
 param_bus_cycle_time_double("bus_cycle_time", this, bus_cycle_time_double) {
@@ -61,44 +62,43 @@ T_nb_transport_fw_cb(int id,
 		typename TYPES::tlm_payload_type &trans, 
 		typename TYPES::tlm_phase_type &phase, 
 		sc_core::sc_time &time) {
-	cerr << GetName() << "(" << sc_time_stamp() + time << "): received nb_transport_fw on port id = " << id << ", putting it in the waiting queue" << endl;
-	BusTlmGenericProtocol<TYPES> *item = 0;
-	switch(phase) {
-	case tlm::BEGIN_REQ:
-		// put the incomming request in the waiting queue
-		// return tlm::ACCEPTED
+	cerr << GetName() << "(" << sc_time_stamp() + time << "): received nb_transport_fw on port id = " << id << endl;
+	if(phase == tlm::BEGIN_REQ) {
+		trans.acquire();
+		BusTlmGenericProtocol<TYPES> *item = 0;
 		item = free_peq.get_next_transaction();
 		if(item == 0) {
 			item = new BusTlmGenericProtocol<TYPES>();
-			assert(trans.has_mm());
-			trans.acquire();
-			item->payload = &trans;
-			item->from_initiator = true;
-			item->id = id;
-			item->phase = phase;
 		}
+		assert(trans.has_mm());
+		trans.acquire();
+		item->payload = &trans;
+		item->from_initiator = true;
+		item->id = id;
+		item->send_end_req = true;
+		item->send_end_resp = true;
+		AddPendingTransaction(trans, item);
 		peq.notify(*item, time);
 		return tlm::TLM_ACCEPTED;
-		break;
-	case tlm::END_RESP:
-		// forward the end response message to the target module
-		return init_socket->nb_transport_fw(trans, phase, time);
-		break;
-	// cases that can not be handled
-	case tlm::END_REQ:
+	} else if(phase == tlm::END_RESP) {
+		end_resp_event.notify(time);
+		return tlm::TLM_COMPLETED;
+	} else {
 		cerr << "FATAL_ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "):" << endl;
-		cerr << GetName() << "(" << sc_time_stamp() + time << "): unhandled phase END_REQ received (" << phase << ")" << endl;
+		cerr << GetName() << "(" << sc_time_stamp() + time << "): unexpected phase value ";
+		if(phase == tlm::END_REQ) cerr << "END_REQ";
+		else cerr << "BEGIN_RESP";
+		cerr << endl;
 		sc_stop();
 		wait();
-		break;
-	case tlm::BEGIN_RESP:
-	default:
-		cerr << "FATAL_ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "):" << endl;
-		cerr << GetName() << "(" << sc_time_stamp() + time << "): unhandled phase BEGIN_RESP received (" << phase << ")" << endl;
-		sc_stop();
-		wait();
-		break;
 	}
+
+	// this should never be executed
+	cerr << "FATAL_ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "):" << endl;
+	cerr << GetName() << "(" << sc_time_stamp() + time << "): unreacheable code reached" << endl;
+	sc_stop();
+	wait();
+	return tlm::TLM_ACCEPTED; // unnecessary, but to avoid compilation errors/warnings
 }
 
 template<unsigned int BUSWIDTH, typename TYPES>
@@ -142,6 +142,39 @@ BusController<BUSWIDTH, TYPES>::
 I_nb_transport_bw_cb(typename TYPES::tlm_payload_type &trans, 
 		typename TYPES::tlm_phase_type &phase, 
 		sc_core::sc_time &time) {
+	cerr << GetName() << "(" << sc_time_stamp() + time << "): received nb_transport_bw from output port" << endl;
+
+	if(phase == tlm::END_REQ) {
+		// send the END_REQ to the initiator module and unlock the dispatcher
+		BusTlmGenericProtocol<TYPES> *item = pending_transactions[&trans];
+		item->send_end_req = true;
+		item->send_end_resp = true;
+		end_req_event.notify(time);
+		return tlm::TLM_ACCEPTED;
+	} else if(phase == tlm::BEGIN_RESP) {
+		assert(pending_transactions.find(&trans) != pending_transactions.end());
+		BusTlmGenericProtocol<TYPES> *item = pending_transactions[&trans];
+		item->send_end_req = false;
+		item->send_end_resp = true;
+		item->from_initiator = false;
+		peq.notify(*item, time);
+		return tlm::TLM_ACCEPTED;
+	} else {
+		cerr << "FATAL_ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "):" << endl;
+		cerr << GetName() << "(" << sc_time_stamp() + time << "): unexpected phase value ";
+		if(phase == tlm::BEGIN_REQ) cerr << "BEGIN_REQ";
+		else cerr << "END_RESP";
+		cerr << endl;
+		sc_stop();
+		wait();
+	}
+
+	// this should never be executed
+	cerr << "FATAL_ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "):" << endl;
+	cerr << GetName() << "(" << sc_time_stamp() + time << "): unreacheable code reached" << endl;
+	sc_stop();
+	wait();
+	return tlm::TLM_ACCEPTED; // unnecessary, but to avoid compilation errors/warnings
 }
 
 template<unsigned int BUSWIDTH, typename TYPES>
@@ -156,6 +189,10 @@ I_invalidate_direct_mem_ptr_cb(sc_dt::uint64 start_range,
  * Simple initiator socket callbacks                                 END *
  *************************************************************************/
 
+/*************************************************************************
+ * Dispatcher methods and variables                                START *
+ *************************************************************************/
+
 template<unsigned int BUSWIDTH, typename TYPES>
 void
 BusController<BUSWIDTH, TYPES>::
@@ -167,13 +204,144 @@ Dispatcher() {
 	while(1) {
 		wait(ev);
 		item = peq.get_next_transaction();
-		if(item != 0) BusSynchronize();
 		while(item != 0) {
-	        item->payload = 0;
-			free_peq.notify(*item);
-			wait(bus_cycle_time);
+			BusSynchronize();
+			cerr << GetName() << "(" << sc_time_stamp() << "): dispatching transaction (item " << item << ", trans " << item->payload << ", from_initiator = " << item->from_initiator << ")" << endl;
+			if(item->from_initiator) {
+				DispatchFW(item);
+			} else {
+				DispatchBW(item);
+			}
 			item = peq.get_next_transaction();
 		}
+	}
+}
+
+template<unsigned int BUSWIDTH, typename TYPES>
+void
+BusController<BUSWIDTH, TYPES>::
+DispatchFW(BusTlmGenericProtocol<TYPES> *item) {
+	sc_time time(SC_ZERO_TIME);
+	sc_time end_req_time(SC_ZERO_TIME);
+	typename TYPES::tlm_phase_type phase;
+
+	phase = tlm::BEGIN_REQ;
+	cerr << GetName() << "(" << sc_time_stamp() << "): sending request to target (" << item->payload << ")" << endl;
+	switch(init_socket->nb_transport_fw(*(item->payload), phase, time)) {
+	case tlm::TLM_ACCEPTED:
+	case tlm::TLM_UPDATED:
+		// transaction not yet finished
+		if(phase == tlm::BEGIN_REQ) {
+			// request phase not yet finished
+			wait(end_req_event);
+			// check if the END_REQ message needs to be sent
+			if(item->send_end_req) {
+				phase = tlm::END_REQ;
+				end_req_time = SC_ZERO_TIME;
+				targ_socket[item->id]->nb_transport_bw(*(item->payload), phase, end_req_time);
+				item->send_end_req = false;
+			}
+		} else if (phase == tlm::END_REQ) {
+			// request phase finished, but respose phase not yet started
+			phase = tlm::END_REQ;
+			end_req_time = time;
+			targ_socket[item->id]->nb_transport_bw(*(item->payload), phase, end_req_time);
+			item->send_end_req = false;
+			wait(time);
+		} else if(phase == tlm::BEGIN_RESP) {
+			// send the END_REQ message 
+			phase = tlm::END_REQ;
+			end_req_time = SC_ZERO_TIME;
+			targ_socket[item->id]->nb_transport_bw(*(item->payload), phase, end_req_time);
+			// reuse the item to send the response to the initiator module
+			item->phase = tlm::BEGIN_RESP;
+			item->from_initiator = false;
+			item->send_end_req = false;
+			item->send_end_resp = true;
+			peq.notify(*item, time);
+		} else {
+			cerr << "FATAL_ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "):" << endl;
+			cerr << GetName() << "(" << sc_time_stamp() + time << "): unhandled phase value tlm::END_RESP" << endl;
+			sc_stop();
+			wait();
+		}
+		break;
+	case tlm::TLM_COMPLETED:
+		cerr << GetName() << "(" << sc_time_stamp() + time << "): received TLM_COMPLETE to BEGIN_REQ (for transaction " << item->payload << ")" << endl;
+		cerr << "\tgeneratig an END_REQ for the source" << endl;
+		phase = tlm::END_REQ;
+		end_req_time = SC_ZERO_TIME;
+		switch(targ_socket[item->id]->nb_transport_bw(*(item->payload), phase, time)) {
+		case tlm::TLM_ACCEPTED:
+			cerr << GetName() << "(" << sc_time_stamp() + time << "): END_REQ accepted (TLM_ACCEPTED) by the source" << endl;
+			// the response can be sent, reuse the item for that
+			item->from_initiator = false;
+			item->send_end_req = false;
+			item->send_end_resp = false;
+			peq.notify(*item, time);
+			break;
+		case tlm::TLM_UPDATED:
+			cerr << "FATAL_ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "):" << endl;
+			cerr << GetName() << "(" << sc_time_stamp() + time << "): unhandled sync tlm::TLM_UPDATED" << endl;
+			sc_stop();
+			wait();
+			break;
+		case tlm::TLM_COMPLETED:
+			cerr << GetName() << "(" << sc_time_stamp() + time << "): END_REQ accepted (TLM_COMPLETED) by the source" << endl;
+			// the item can be removed
+			item->payload->release();
+			item->payload = 0;
+			RemovePendingTransaction(*(item->payload));
+			free_peq.notify(*item);
+			break;
+		}
+		break;
+	default:
+		cerr << "FATAL_ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "):" << endl;
+		cerr << GetName() << "(" << sc_time_stamp() + time << "): unhandled sync value received" << endl;
+		sc_stop();
+		wait();
+		break;
+	}
+}
+
+template<unsigned int BUSWIDTH, typename TYPES>
+void
+BusController<BUSWIDTH, TYPES>::
+DispatchBW(BusTlmGenericProtocol<TYPES> *item) {
+	typename TYPES::tlm_phase_type phase;
+	sc_time time(SC_ZERO_TIME);
+	sc_time end_resp_time;
+
+	phase = tlm::BEGIN_RESP;
+	cerr << GetName() << "(" << sc_time_stamp() + time << "): sending BEGIN_RESP to source (for transaction " << item->payload << ")" << endl;
+	switch(targ_socket[item->id]->nb_transport_bw(*(item->payload), phase, time)) {
+	case tlm::TLM_ACCEPTED:
+	case tlm::TLM_UPDATED:
+		// the bus must wait for the response (END_RESP) from the initiator to the target
+		wait(end_resp_event);
+		if(item->send_end_resp) {
+			phase = tlm::END_RESP;
+			end_resp_time = SC_ZERO_TIME;
+			init_socket->nb_transport_fw(*(item->payload), phase, end_resp_time);
+			// the transaction can be released and removed from the lookup table
+			RemovePendingTransaction(*(item->payload));
+			item->payload->release();
+			item->payload = 0;
+			free_peq.notify(*item);
+		}
+		break;
+	case tlm::TLM_COMPLETED:
+		// a response (END_RESP) must be sent to the target
+		phase = tlm::END_RESP;
+		end_resp_time = time;
+		init_socket->nb_transport_fw(*(item->payload), phase, end_resp_time);
+		// the transaction can be released and removed from the lookup table
+		RemovePendingTransaction(*(item->payload));
+		item->payload->release();
+		item->payload = 0;
+		free_peq.notify(*item);
+		break;
 	}
 }
 
@@ -188,6 +356,44 @@ BusSynchronize() {
 	sc_time diff = sc_time(diff_int, false);
 	wait(diff);
 }
+
+template<unsigned int BUSWIDTH, typename TYPES>
+void 
+BusController<BUSWIDTH, TYPES>::
+PrintPendingTransactions() {
+	typename std::map<transaction_type *, BusTlmGenericProtocol<TYPES> *>::iterator it;
+
+	for(it = pending_transactions.begin(); it != pending_transactions.end(); it++) {
+		cerr << "\t" << it->first << "\t" << it->second << endl;
+	}
+
+}
+
+template<unsigned int BUSWIDTH, typename TYPES>
+void
+BusController<BUSWIDTH, TYPES>::
+AddPendingTransaction(typename TYPES::tlm_payload_type &trans, BusTlmGenericProtocol<TYPES> *item) {
+	assert(pending_transactions.find(&trans) == pending_transactions.end());
+	cerr << GetName() << ": adding pending transaction " << &trans << endl;
+	pending_transactions[&trans] = item;
+	PrintPendingTransactions();
+}
+
+template<unsigned int BUSWIDTH, typename TYPES>
+void
+BusController<BUSWIDTH, TYPES>::
+RemovePendingTransaction(typename TYPES::tlm_payload_type &trans) {
+	typename std::map<transaction_type *, BusTlmGenericProtocol<TYPES> *>::iterator it;
+	cerr << GetName() << ": removing pending transaction " << &trans << endl;
+	PrintPendingTransactions();
+	it = pending_transactions.find(&trans);
+	assert(it != pending_transactions.end());
+	pending_transactions.erase(it);
+}
+
+/*************************************************************************
+ * Dispatcher methods and variables                                  END *
+ *************************************************************************/
 
 } // end of namespace bus
 } // end of namespace tlm2

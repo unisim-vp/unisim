@@ -11,6 +11,8 @@ public:
 	PAYLOAD_TYPE *payload;
 	bool from_initiator;
 	unsigned int id;
+	bool send_end_req;
+	bool send_end_resp;
 };
 
 template<typename TYPES = tlm::tlm_base_protocol_types>
@@ -27,6 +29,8 @@ public:
 	bool from_initiator;
 	unsigned int id;
 	typename TYPES::tlm_phase_type phase;
+	bool send_end_req;
+	bool send_end_resp;
 };
 
 template<typename TYPES = tlm::tlm_base_protocol_types>
