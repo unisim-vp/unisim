@@ -1,5 +1,6 @@
 #include "unisim/component/tlm2/simple_bus/bus.hh"
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/tlm2/tlm.hh"
 //#include "unisim/component/tlm2/simple_bus/bus.tcc"
 
 class Initiator : 
@@ -8,6 +9,9 @@ public unisim::kernel::service::Object,
 public tlm::tlm_bw_transport_if<> {
 public:
 	tlm::tlm_initiator_socket<> init_socket;
+	sc_event end_req_event;
+	sc_event end_resp_event;
+	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 
 	SC_HAS_PROCESS(Initiator);
 
@@ -21,21 +25,58 @@ public:
 	}
 
 	void thread() {
-		tlm::tlm_generic_payload trans;
+		tlm::tlm_generic_payload *trans;
 		unsigned int i = 0;
 
 		while(i < 10) {
-			sc_time delay(1.0, SC_NS);
-			cerr << GetName() << "(" << sc_time_stamp() + delay << "): Sending data" << endl;
-			init_socket->b_transport(trans, delay);
-			wait(delay);
-			cerr << GetName() << "(" << sc_time_stamp() << "): Response received" << endl;
+			trans = payload_fabric.allocate();
+			sc_time time(1.0, SC_NS);
+			cerr << GetName() << "(" << sc_time_stamp() + time << "): Sending transaction " << trans << endl;
+//			init_socket->b_transport(trans, delay);
+			tlm::tlm_phase phase = tlm::BEGIN_REQ;
+
+			switch(init_socket->nb_transport_fw(*trans, phase, time)) {
+			case tlm::TLM_ACCEPTED:
+				cerr << GetName() << "(" << sc_time_stamp() + time << "): transaction accepted, waiting for END_REQ or BEGIN_RESP (for transaction " << trans << ")" << endl;
+				wait(end_req_event);
+				cerr << GetName() << "(" << sc_time_stamp() << "): END_REQ received (for transaction " << trans << ")"  << endl;
+				wait(end_resp_event);
+				break;
+			case tlm::TLM_UPDATED:
+				break;
+			case tlm::TLM_COMPLETED:
+				break;
+			}
+			cerr << GetName() << "(" << sc_time_stamp() << "): Response received (for transaction " << trans << ")" << endl;
+			trans->release();
 			i++;
 		}
 	}
 
 	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload &trans, tlm::tlm_phase &phase, sc_core::sc_time &t) {
-		return tlm::TLM_COMPLETED; // Dummy implementation
+		switch(phase) {
+		case tlm::BEGIN_REQ:
+			cerr << GetName() << "(" << sc_time_stamp() + t << "): received unexpected BEGIN_REQ" << endl;
+			sc_stop();
+			wait();
+			break;
+		case tlm::END_REQ:
+			cerr << GetName() << "(" << sc_time_stamp() + t << "): received END_REQ (for transaction " << &trans << ")" << endl;
+			end_req_event.notify(t);
+			return tlm::TLM_ACCEPTED;
+			break;
+		case tlm::BEGIN_RESP:
+			cerr << GetName() << "(" << sc_time_stamp() + t << "): received BEGIN_RESP (for transaction " << &trans << ")" << endl;
+			end_resp_event.notify(t);
+			return tlm::TLM_COMPLETED;
+			break;
+		case tlm::END_RESP:
+			cerr << GetName() << "(" << sc_time_stamp() + t << "): received unexpected END_RESP" << endl;
+			sc_stop();
+			wait();
+			break;
+		}
+		return tlm::TLM_ACCEPTED; // Dummy implementation
 	}
 
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
@@ -61,6 +102,27 @@ public:
 	}
 
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload &trans, tlm::tlm_phase &phase, sc_core::sc_time &t) {
+		switch(phase) {
+		case tlm::BEGIN_REQ:
+			cerr << GetName() << "(" << sc_time_stamp() + t << "): received BEGIN_REQ" << endl;
+			t = t + sc_time(10,SC_NS);
+			return tlm::TLM_COMPLETED;
+			break;
+		case tlm::END_REQ:
+			cerr << GetName() << "(" << sc_time_stamp() + t << "): received unexpected END_REQ" << endl;
+			sc_stop();
+			wait();
+			break;
+		case tlm::BEGIN_RESP:
+			cerr << GetName() << "(" << sc_time_stamp() + t << "): received unexpected BEGIN_RESP" << endl;
+			sc_stop();
+			wait();
+			break;
+		case tlm::END_RESP:
+			cerr << GetName() << "(" << sc_time_stamp() + t << "): received END_RESP" << endl;
+			return tlm::TLM_COMPLETED;
+			break;
+		}
 		return tlm::TLM_COMPLETED;
 	}
 
