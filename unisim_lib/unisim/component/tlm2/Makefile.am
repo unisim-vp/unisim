@@ -4,9 +4,9 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm2
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
-if COND_simple_bus
-SUBDIRS += simple_bus
-INCLUDE_SUBDIRS += simple_bus
+if COND_bus
+SUBDIRS += bus
+INCLUDE_SUBDIRS += bus
 endif
 
 if COND_memory

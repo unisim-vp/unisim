@@ -1,5 +1,39 @@
-#ifndef __UNISIM_COMPONENT_TLM2_BUS_BUS_CONTROLLER_HH__
-#define __UNISIM_COMPONENT_TLM2_BUS_BUS_CONTROLLER_HH__
+/*
+ *  Copyright (c) 2008,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
+
+#ifndef __UNISIM_COMPONENT_TLM2_BUS_GENERIC_BUS_BUS_HH__
+#define __UNISIM_COMPONENT_TLM2_BUS_GENERIC_BUS_BUS_HH__
 
 #include <map>
 #include <systemc.h>
@@ -7,29 +41,30 @@
 #include <tlm_utils/multi_passthrough_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
 #include "unisim/kernel/service/service.hh"
-#include "unisim/component/tlm2/simple_bus/bus_types.hh"
+#include "unisim/component/tlm2/bus/generic_bus/bus_types.hh"
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace bus {
+namespace generic_bus {
 
 template<unsigned int BUSWIDTH = 32,
 	typename TYPES = tlm::tlm_base_protocol_types>
-class BusController : 
+class Bus : 
 	public unisim::kernel::service::Object,
 	public sc_module { //,
 //	public tlm::tlm_bw_transport_if<TYPES>,
 //	public tlm::tlm_fw_transport_if<TYPES> {
 public:
-	SC_HAS_PROCESS(BusController);
-	BusController(const sc_module_name& name, unisim::kernel::service::Object *parent);
-	~BusController();
+	SC_HAS_PROCESS(Bus);
+	Bus(const sc_module_name& name, unisim::kernel::service::Object *parent);
+	~Bus();
 
 	virtual bool Setup();
 
-	tlm_utils::multi_passthrough_target_socket<BusController, BUSWIDTH, TYPES> targ_socket;
-	tlm_utils::simple_initiator_socket<BusController, BUSWIDTH, TYPES> init_socket;
+	tlm_utils::multi_passthrough_target_socket<Bus, BUSWIDTH, TYPES> targ_socket;
+	tlm_utils::simple_initiator_socket<Bus, BUSWIDTH, TYPES> init_socket;
 
 private:
 	typedef typename TYPES::tlm_payload_type transaction_type;
@@ -95,9 +130,10 @@ private:
 
 };
 
+} // end of namespace generic_bus
 } // end of namespace bus
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM2_BUS_BUS_CONTROLLER_HH__
+#endif // __UNISIM_COMPONENT_TLM2_BUS_GENERIC_BUS_BUS_HH__

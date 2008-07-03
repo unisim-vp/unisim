@@ -43,7 +43,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-simple_bus, simple_bus)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-bus, bus)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-memory, memory)
 
 # launch the generation of makefiles

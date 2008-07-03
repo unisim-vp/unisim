@@ -1,14 +1,49 @@
-#ifndef __UNISIM_COMPONENT_TLM2_BUS_BUS_CONTROLLER_TCC__
-#define __UNISIM_COMPONENT_TLM2_BUS_BUS_CONTROLLER_TCC__
+/*
+ *  Copyright (c) 2008,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
+
+#ifndef __UNISIM_COMPONENT_TLM2_BUS_GENERIC_BUS_BUS_TCC__
+#define __UNISIM_COMPONENT_TLM2_BUS_GENERIC_BUS_BUS_TCC__
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace bus {
+namespace generic_bus {
 
 template<unsigned int BUSWIDTH, typename TYPES>
-BusController<BUSWIDTH, TYPES>::
-BusController(const sc_module_name& name, unisim::kernel::service::Object *parent) :
+Bus<BUSWIDTH, TYPES>::
+Bus(const sc_module_name& name, unisim::kernel::service::Object *parent) :
 unisim::kernel::service::Object(name, parent),
 targ_socket("target_socket"),
 init_socket("init_socket"),
@@ -19,26 +54,26 @@ bus_cycle_time(SC_ZERO_TIME),
 bus_cycle_time_double(0.0),
 param_bus_cycle_time_double("bus_cycle_time", this, bus_cycle_time_double) {
 	/* register target multi socket callbacks */
- 	targ_socket.register_nb_transport_fw(    this, &BusController<BUSWIDTH, TYPES>::T_nb_transport_fw_cb);
- 	targ_socket.register_b_transport(        this, &BusController<BUSWIDTH, TYPES>::T_b_transport_cb);
- 	targ_socket.register_transport_dbg(      this, &BusController<BUSWIDTH, TYPES>::T_transport_dbg_cb);
- 	targ_socket.register_get_direct_mem_ptr( this, &BusController<BUSWIDTH, TYPES>::T_get_direct_mem_ptr_cb);
+ 	targ_socket.register_nb_transport_fw(    this, &Bus<BUSWIDTH, TYPES>::T_nb_transport_fw_cb);
+ 	targ_socket.register_b_transport(        this, &Bus<BUSWIDTH, TYPES>::T_b_transport_cb);
+ 	targ_socket.register_transport_dbg(      this, &Bus<BUSWIDTH, TYPES>::T_transport_dbg_cb);
+ 	targ_socket.register_get_direct_mem_ptr( this, &Bus<BUSWIDTH, TYPES>::T_get_direct_mem_ptr_cb);
 
 	/* register initiator socket callbacks */
-	init_socket.register_nb_transport_bw(           this, &BusController<BUSWIDTH, TYPES>::I_nb_transport_bw_cb);
-	init_socket.register_invalidate_direct_mem_ptr( this, &BusController<BUSWIDTH, TYPES>::I_invalidate_direct_mem_ptr_cb);
+	init_socket.register_nb_transport_bw(           this, &Bus<BUSWIDTH, TYPES>::I_nb_transport_bw_cb);
+	init_socket.register_invalidate_direct_mem_ptr( this, &Bus<BUSWIDTH, TYPES>::I_invalidate_direct_mem_ptr_cb);
 
 	SC_THREAD(Dispatcher);
 }
 
 template<unsigned int BUSWIDTH, typename TYPES>
-BusController<BUSWIDTH, TYPES>::
-~BusController() {
+Bus<BUSWIDTH, TYPES>::
+~Bus() {
 }
 
 template<unsigned int BUSWIDTH, typename TYPES>
 bool
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 Setup() {
 	if(bus_cycle_time_double == 0.0) {
 		cerr << "PARAMETER ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): the bus cycle time time must be bigger than 0" << endl;
@@ -57,7 +92,7 @@ Setup() {
 
 template<unsigned int BUSWIDTH, typename TYPES>
 tlm::tlm_sync_enum
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 T_nb_transport_fw_cb(int id, 
 		typename TYPES::tlm_payload_type &trans, 
 		typename TYPES::tlm_phase_type &phase, 
@@ -103,7 +138,7 @@ T_nb_transport_fw_cb(int id,
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 T_b_transport_cb(int id,
 		typename TYPES::tlm_payload_type &trans,
 		sc_core::sc_time &time) {
@@ -113,7 +148,7 @@ T_b_transport_cb(int id,
 
 template<unsigned int BUSWIDTH, typename TYPES>
 unsigned int
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 T_transport_dbg_cb(int id,
 		typename TYPES::tlm_payload_type &trans) {
 	return 0;  // Dummy implementation
@@ -121,7 +156,7 @@ T_transport_dbg_cb(int id,
 
 template<unsigned int BUSWIDTH, typename TYPES>
 bool
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 T_get_direct_mem_ptr_cb(int id,
 		typename TYPES::tlm_payload_type &trans,
 		tlm::tlm_dmi &dmi) {
@@ -138,7 +173,7 @@ T_get_direct_mem_ptr_cb(int id,
 	
 template<unsigned int BUSWIDTH, typename TYPES>
 tlm::tlm_sync_enum
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 I_nb_transport_bw_cb(typename TYPES::tlm_payload_type &trans, 
 		typename TYPES::tlm_phase_type &phase, 
 		sc_core::sc_time &time) {
@@ -179,7 +214,7 @@ I_nb_transport_bw_cb(typename TYPES::tlm_payload_type &trans,
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 I_invalidate_direct_mem_ptr_cb(sc_dt::uint64 start_range, 
 		sc_dt::uint64 end_range) {
 	// Dummy implementation
@@ -195,7 +230,7 @@ I_invalidate_direct_mem_ptr_cb(sc_dt::uint64 start_range,
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 Dispatcher() {
 	sc_core::sc_event &ev = peq.get_event();
 	BusTlmGenericProtocol<TYPES> *item;
@@ -219,7 +254,7 @@ Dispatcher() {
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 DispatchFW(BusTlmGenericProtocol<TYPES> *item) {
 	sc_time time(SC_ZERO_TIME);
 	sc_time end_req_time(SC_ZERO_TIME);
@@ -307,7 +342,7 @@ DispatchFW(BusTlmGenericProtocol<TYPES> *item) {
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 DispatchBW(BusTlmGenericProtocol<TYPES> *item) {
 	typename TYPES::tlm_phase_type phase;
 	sc_time time(SC_ZERO_TIME);
@@ -347,7 +382,7 @@ DispatchBW(BusTlmGenericProtocol<TYPES> *item) {
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 BusSynchronize() {
 	sc_time cur_time = sc_time_stamp();
 	sc_dt::uint64 cur_time_int = cur_time.value();
@@ -359,7 +394,7 @@ BusSynchronize() {
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void 
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 PrintPendingTransactions() {
 	typename std::map<transaction_type *, BusTlmGenericProtocol<TYPES> *>::iterator it;
 
@@ -371,7 +406,7 @@ PrintPendingTransactions() {
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 AddPendingTransaction(typename TYPES::tlm_payload_type &trans, BusTlmGenericProtocol<TYPES> *item) {
 	assert(pending_transactions.find(&trans) == pending_transactions.end());
 	cerr << GetName() << ": adding pending transaction " << &trans << endl;
@@ -381,7 +416,7 @@ AddPendingTransaction(typename TYPES::tlm_payload_type &trans, BusTlmGenericProt
 
 template<unsigned int BUSWIDTH, typename TYPES>
 void
-BusController<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES>::
 RemovePendingTransaction(typename TYPES::tlm_payload_type &trans) {
 	typename std::map<transaction_type *, BusTlmGenericProtocol<TYPES> *>::iterator it;
 	cerr << GetName() << ": removing pending transaction " << &trans << endl;
@@ -395,10 +430,11 @@ RemovePendingTransaction(typename TYPES::tlm_payload_type &trans) {
  * Dispatcher methods and variables                                  END *
  *************************************************************************/
 
+} // end of namespace generic_bus
 } // end of namespace bus
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM2_BUS_BUS_CONTROLLER_TCC___
+#endif // __UNISIM_COMPONENT_TLM2_BUS_GENERIC_BUS_BUS_TCC___
 
