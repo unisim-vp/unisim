@@ -64,11 +64,11 @@ using unisim::component::clm::interfaces::memreq;
 using unisim::component::clm::interfaces::memreq_types;
 
 using unisim::component::clm::utility::hexa;
-  /*
+ 
 using unisim::component::cxx::processor::powerpc::Flags;
 using unisim::component::cxx::processor::powerpc::SoftFloat;
 using unisim::component::cxx::processor::powerpc::SoftDouble;
-  */
+  
 
   //using unisim::service::interfaces::StatisticReporting;
 
@@ -125,6 +125,16 @@ double LongToF32(UInt32 val) {
 }
 
 UInt64 LongToF32bis(UInt32 val) {
+
+  uint64_t raw_fp64;
+  uint32_t raw_fp32 = val;
+  
+  SoftFloat fp32(raw_fp32);
+  Flags flagsConvert;
+  SoftDouble fp64(fp32, flagsConvert);
+  
+  raw_fp64 = fp64.queryValue();
+  /*
     UInt64 val1, val2, val3;
     double f;
     double result;
@@ -142,12 +152,14 @@ UInt64 LongToF32bis(UInt32 val) {
     }
     val3 = val & 0x0ffffffff;
     val2 = ((val3 & 0x080000000) << 32 ) | val2 << 52 | (val3 & 0x7fffff) << 29;
-    /*
+  */
+  /*
     f = *(double *)&(val2);
     result = f;
 		return result;
-    */
-    return val2;
+  */
+  //    return val2;
+  return raw_fp64;
 }
 
 
@@ -813,7 +825,8 @@ public:
 				  }
 			      }
 			    
-#ifdef DD_DEBUG_LSQ
+			    //#ifdef DD_DEBUG_LSQ
+#ifdef DD_DEBUG_FPLOAD
 			    //Mourad Modifs
 			    if (DD_DEBUG_TIMESTAMP < timestamp())
 			      {
