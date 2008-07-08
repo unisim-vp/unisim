@@ -10,9 +10,9 @@ int sc_main(int argv, char **argc) {
 
 
 	VariableBase *var = ServiceManager::GetParameter("top.bus.bus_cycle_time");
-    *var = 1000000.0;
+    *var = 0.0;
 	if(!ServiceManager::Setup()) {
-		cerr << "Error" << endl;
+		return 0;
 	}
 
 	sc_start();

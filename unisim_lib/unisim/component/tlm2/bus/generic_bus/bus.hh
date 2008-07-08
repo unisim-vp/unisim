@@ -41,6 +41,7 @@
 #include <tlm_utils/multi_passthrough_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/bus/generic_bus/bus_types.hh"
 
 namespace unisim {
@@ -50,7 +51,8 @@ namespace bus {
 namespace generic_bus {
 
 template<unsigned int BUSWIDTH = 32,
-	typename TYPES = tlm::tlm_base_protocol_types>
+	typename TYPES = tlm::tlm_base_protocol_types,
+	bool DEBUG = false>
 class Bus : 
 	public unisim::kernel::service::Object,
 	public sc_module { //,
@@ -126,6 +128,30 @@ private:
 
 	/*************************************************************************
 	 * Parameters                                                        END *
+	 *************************************************************************/
+
+	/*************************************************************************
+	 * Logger and verbose parameters                                   START *
+	 *************************************************************************/
+
+	unisim::kernel::logger::Logger logger;
+	bool verbose_all;
+	unisim::kernel::service::Parameter<bool> param_verbose_all;
+	bool verbose_setup;
+	unisim::kernel::service::Parameter<bool> param_verbose_setup;
+
+	/*************************************************************************
+	 * Logger and verbose parameters                                     END *
+	 *************************************************************************/
+
+	/*************************************************************************
+	 * Verbose methods                                                 START *
+	 *************************************************************************/
+
+	inline bool VerboseSetup();
+
+	/*************************************************************************
+	 * Verbose methods                                                   END *
 	 *************************************************************************/
 
 };

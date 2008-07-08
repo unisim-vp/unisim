@@ -19,6 +19,12 @@ public:
 	LoggerServer();
 	~LoggerServer();
 
+	static LoggerServer *GetInstance();
+	
+	void DebugInfo(const unisim::kernel::service::Object &obj, const char *buffer);
+	void DebugWarning(const unisim::kernel::service::Object &obj, const char *buffer);
+	void DebugError(const unisim::kernel::service::Object &obj, const char *buffer);
+
 	bool_parameter_t param_std_err;
 	bool_parameter_t param_std_out;
 	bool_parameter_t param_file;
@@ -27,6 +33,8 @@ public:
 	string_parameter_t param_xml_filename;
 
 private:
+	static LoggerServer *singleton;
+
 	bool opt_std_err;
 	bool opt_std_out;
 	bool opt_file;

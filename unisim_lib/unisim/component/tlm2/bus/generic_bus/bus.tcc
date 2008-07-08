@@ -41,8 +41,10 @@ namespace tlm2 {
 namespace bus {
 namespace generic_bus {
 
-template<unsigned int BUSWIDTH, typename TYPES>
-Bus<BUSWIDTH, TYPES>::
+using namespace unisim::kernel::logger;
+
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
+Bus<BUSWIDTH, TYPES, DEBUG>::
 Bus(const sc_module_name& name, unisim::kernel::service::Object *parent) :
 unisim::kernel::service::Object(name, parent),
 targ_socket("target_socket"),
@@ -52,36 +54,41 @@ free_peq("peq"),
 pending_transactions(),
 bus_cycle_time(SC_ZERO_TIME),
 bus_cycle_time_double(0.0),
-param_bus_cycle_time_double("bus_cycle_time", this, bus_cycle_time_double) {
+param_bus_cycle_time_double("bus_cycle_time", this, bus_cycle_time_double),
+logger(*this),
+verbose_all(false),
+param_verbose_all("verbose_all", this, verbose_all),
+verbose_setup(true),
+param_verbose_setup("verbose_setup", this, verbose_setup) {
 	/* register target multi socket callbacks */
- 	targ_socket.register_nb_transport_fw(    this, &Bus<BUSWIDTH, TYPES>::T_nb_transport_fw_cb);
- 	targ_socket.register_b_transport(        this, &Bus<BUSWIDTH, TYPES>::T_b_transport_cb);
- 	targ_socket.register_transport_dbg(      this, &Bus<BUSWIDTH, TYPES>::T_transport_dbg_cb);
- 	targ_socket.register_get_direct_mem_ptr( this, &Bus<BUSWIDTH, TYPES>::T_get_direct_mem_ptr_cb);
+ 	targ_socket.register_nb_transport_fw(    this, &Bus<BUSWIDTH, TYPES, DEBUG>::T_nb_transport_fw_cb);
+ 	targ_socket.register_b_transport(        this, &Bus<BUSWIDTH, TYPES, DEBUG>::T_b_transport_cb);
+ 	targ_socket.register_transport_dbg(      this, &Bus<BUSWIDTH, TYPES, DEBUG>::T_transport_dbg_cb);
+ 	targ_socket.register_get_direct_mem_ptr( this, &Bus<BUSWIDTH, TYPES, DEBUG>::T_get_direct_mem_ptr_cb);
 
 	/* register initiator socket callbacks */
-	init_socket.register_nb_transport_bw(           this, &Bus<BUSWIDTH, TYPES>::I_nb_transport_bw_cb);
-	init_socket.register_invalidate_direct_mem_ptr( this, &Bus<BUSWIDTH, TYPES>::I_invalidate_direct_mem_ptr_cb);
+	init_socket.register_nb_transport_bw(           this, &Bus<BUSWIDTH, TYPES, DEBUG>::I_nb_transport_bw_cb);
+	init_socket.register_invalidate_direct_mem_ptr( this, &Bus<BUSWIDTH, TYPES, DEBUG>::I_invalidate_direct_mem_ptr_cb);
 
 	SC_THREAD(Dispatcher);
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
-Bus<BUSWIDTH, TYPES>::
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
+Bus<BUSWIDTH, TYPES, DEBUG>::
 ~Bus() {
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 bool
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 Setup() {
 	if(bus_cycle_time_double == 0.0) {
-		cerr << "PARAMETER ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): the bus cycle time time must be bigger than 0" << endl;
-		cerr << GetName() << endl;
+		logger << DebugError << "PARAMETER ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): the bus_cycle_time parameter  must be bigger than 0" << EndDebug;
 		return false;
 	}
 	bus_cycle_time = sc_time(bus_cycle_time_double, SC_PS);
-	cerr << GetName() << ": setting bus_cycle_time to " << bus_cycle_time << endl;
+	if(VerboseSetup())
+		logger << DebugInfo << "Setting bus_cycle_time to " << bus_cycle_time << EndDebug;
 
 	return true;
 }
@@ -90,9 +97,9 @@ Setup() {
  * Multi passtrough target socket callbacks                        START *
  *************************************************************************/
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 tlm::tlm_sync_enum
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 T_nb_transport_fw_cb(int id, 
 		typename TYPES::tlm_payload_type &trans, 
 		typename TYPES::tlm_phase_type &phase, 
@@ -136,9 +143,9 @@ T_nb_transport_fw_cb(int id,
 	return tlm::TLM_ACCEPTED; // unnecessary, but to avoid compilation errors/warnings
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 T_b_transport_cb(int id,
 		typename TYPES::tlm_payload_type &trans,
 		sc_core::sc_time &time) {
@@ -146,17 +153,17 @@ T_b_transport_cb(int id,
 	init_socket->b_transport(trans, time);
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 unsigned int
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 T_transport_dbg_cb(int id,
 		typename TYPES::tlm_payload_type &trans) {
 	return 0;  // Dummy implementation
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 bool
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 T_get_direct_mem_ptr_cb(int id,
 		typename TYPES::tlm_payload_type &trans,
 		tlm::tlm_dmi &dmi) {
@@ -171,9 +178,9 @@ T_get_direct_mem_ptr_cb(int id,
  * Simple initiator socket callbacks                               START *
  *************************************************************************/
 	
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 tlm::tlm_sync_enum
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 I_nb_transport_bw_cb(typename TYPES::tlm_payload_type &trans, 
 		typename TYPES::tlm_phase_type &phase, 
 		sc_core::sc_time &time) {
@@ -212,9 +219,9 @@ I_nb_transport_bw_cb(typename TYPES::tlm_payload_type &trans,
 	return tlm::TLM_ACCEPTED; // unnecessary, but to avoid compilation errors/warnings
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 I_invalidate_direct_mem_ptr_cb(sc_dt::uint64 start_range, 
 		sc_dt::uint64 end_range) {
 	// Dummy implementation
@@ -228,9 +235,9 @@ I_invalidate_direct_mem_ptr_cb(sc_dt::uint64 start_range,
  * Dispatcher methods and variables                                START *
  *************************************************************************/
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 Dispatcher() {
 	sc_core::sc_event &ev = peq.get_event();
 	BusTlmGenericProtocol<TYPES> *item;
@@ -252,9 +259,9 @@ Dispatcher() {
 	}
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 DispatchFW(BusTlmGenericProtocol<TYPES> *item) {
 	sc_time time(SC_ZERO_TIME);
 	sc_time end_req_time(SC_ZERO_TIME);
@@ -340,9 +347,9 @@ DispatchFW(BusTlmGenericProtocol<TYPES> *item) {
 	}
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 DispatchBW(BusTlmGenericProtocol<TYPES> *item) {
 	typename TYPES::tlm_phase_type phase;
 	sc_time time(SC_ZERO_TIME);
@@ -380,9 +387,9 @@ DispatchBW(BusTlmGenericProtocol<TYPES> *item) {
 	}
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 BusSynchronize() {
 	sc_time cur_time = sc_time_stamp();
 	sc_dt::uint64 cur_time_int = cur_time.value();
@@ -392,9 +399,9 @@ BusSynchronize() {
 	wait(diff);
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void 
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 PrintPendingTransactions() {
 	typename std::map<transaction_type *, BusTlmGenericProtocol<TYPES> *>::iterator it;
 
@@ -404,9 +411,9 @@ PrintPendingTransactions() {
 
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 AddPendingTransaction(typename TYPES::tlm_payload_type &trans, BusTlmGenericProtocol<TYPES> *item) {
 	assert(pending_transactions.find(&trans) == pending_transactions.end());
 	cerr << GetName() << ": adding pending transaction " << &trans << endl;
@@ -414,9 +421,9 @@ AddPendingTransaction(typename TYPES::tlm_payload_type &trans, BusTlmGenericProt
 	PrintPendingTransactions();
 }
 
-template<unsigned int BUSWIDTH, typename TYPES>
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
 void
-Bus<BUSWIDTH, TYPES>::
+Bus<BUSWIDTH, TYPES, DEBUG>::
 RemovePendingTransaction(typename TYPES::tlm_payload_type &trans) {
 	typename std::map<transaction_type *, BusTlmGenericProtocol<TYPES> *>::iterator it;
 	cerr << GetName() << ": removing pending transaction " << &trans << endl;
@@ -428,6 +435,23 @@ RemovePendingTransaction(typename TYPES::tlm_payload_type &trans) {
 
 /*************************************************************************
  * Dispatcher methods and variables                                  END *
+ *************************************************************************/
+
+/*************************************************************************
+ * Verbose methods                                                 START *
+ *************************************************************************/
+
+template<unsigned int BUSWIDTH, typename TYPES, bool DEBUG>
+inline bool 
+Bus<BUSWIDTH, TYPES, DEBUG>::
+VerboseSetup() {
+	if(DEBUG && (verbose_all || verbose_setup)) 
+		return true;
+	return false;
+}
+
+/*************************************************************************
+ * Verbose methods                                                   END *
  *************************************************************************/
 
 } // end of namespace generic_bus

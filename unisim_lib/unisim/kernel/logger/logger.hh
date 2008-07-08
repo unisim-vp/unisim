@@ -41,7 +41,7 @@ private:
 	mode_t mode;
 	void PrintMode();
 
-	static LoggerServer server;
+	LoggerServer *server;
 };
 
 Logger& DebugInfo(Logger&);

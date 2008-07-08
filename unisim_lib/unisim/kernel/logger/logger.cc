@@ -5,7 +5,9 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
-Logger::Logger(const unisim::kernel::service::Object &_obj) : obj(_obj), buffer(), mode(NO_MODE) {}
+Logger::Logger(const unisim::kernel::service::Object &_obj) : obj(_obj), buffer(), mode(NO_MODE) {
+	server = LoggerServer::GetInstance();
+}
 
 Logger&
 Logger::operator <<(ostream& (*f)(ostream &)) {
@@ -55,7 +57,7 @@ Logger::EndDebugInfo() {
 		return;
 	}
 	mode = NO_MODE;
-	std::cout << "DebugInfo(" << obj.GetName() << "): " << endl << buffer.str() << endl;
+	server->DebugInfo(obj, buffer.str().c_str());
 }
 
 void
@@ -70,7 +72,7 @@ void
 Logger::EndDebugWarning() {
 	if(mode != WARNING_MODE) return;
 	mode = NO_MODE;
-	std::cout << "DebugWarning(" << obj.GetName() << "): " << endl << buffer.str() << endl;
+	server->DebugWarning(obj, buffer.str().c_str());
 }
 
 void
@@ -85,7 +87,7 @@ void
 Logger::EndDebugError() {
 	if(mode != ERROR_MODE) return;
 	mode = NO_MODE;
-	std::cout << "DebugError(" << obj.GetName() << "): " << endl << buffer.str() << endl;
+	server->DebugError(obj, buffer.str().c_str());
 }
 
 void

@@ -4,6 +4,8 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
+LoggerServer *LoggerServer::singleton = 0;
+
 LoggerServer::
 LoggerServer() :
 	Object("kernel_logger", 0),
@@ -24,6 +26,33 @@ LoggerServer() :
 
 LoggerServer::
 ~LoggerServer() {
+}
+
+LoggerServer *
+LoggerServer::
+GetInstance() {
+	if(singleton == 0) {
+		singleton = new LoggerServer();
+	}
+	return singleton;
+}
+
+void
+LoggerServer::
+DebugInfo(const unisim::kernel::service::Object &obj, const char *buffer) {
+	std::cout << "DebugInfo(" << obj.GetName() << "): " << endl << buffer << endl;
+}
+
+void 
+LoggerServer::
+DebugWarning(const unisim::kernel::service::Object &obj, const char *buffer) {
+	std::cout << "DebugWarning(" << obj.GetName() << "): " << endl << buffer << endl;
+}
+
+void 
+LoggerServer::
+DebugError(const unisim::kernel::service::Object &obj, const char *buffer) {
+	std::cout << "DebugError(" << obj.GetName() << "): " << endl << buffer << endl;
 }
 
 } // end of namespace logger
