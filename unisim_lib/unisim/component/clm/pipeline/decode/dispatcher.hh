@@ -187,6 +187,50 @@ public:
 		integerIssueQueueFunction = FnInvalid;
 		floatingPointIssueQueueFunction = FnInvalid;
 		loadStoreIssueQueueFunction = FnInvalid;
+		// --- Latex rendering hints -----------------
+
+		for(int i=0;i<Width-1;i++)
+		{ 
+		  inInstruction[i].set_fused();
+		}
+		latex_left_ports.push_back(&inInstruction[Width-1]);
+
+		for(int i=0;i<Width-1;i++)
+		{ 
+		  outIntegerInstruction[i].set_fused();
+		}
+		latex_right_ports.push_back(&outIntegerInstruction[Width-1]);
+		
+		for(int i=0;i<Width-1;i++)
+		{ 
+		  outFloatingPointInstruction[i].set_fused();
+		}
+		latex_right_ports.push_back(&outFloatingPointInstruction[Width-1]);
+		
+		for(int i=0;i<Width-1;i++)
+		{ 
+		  outLoadStoreInstruction[i].set_fused();
+		}
+		latex_right_ports.push_back(&outLoadStoreInstruction[Width-1]);
+		
+		/*
+		for (i=0; i<WriteBackWidth-1; i++)
+		  {
+		    inWriteBackInstruction[i].set_fused();
+		  }
+		latex_top_ports.push_back(&inWriteBackInstruction[WriteBackWidth-1]);
+
+		for (i=0; i<RetireWidth-1; i++)
+		  {
+		    inRetireInstruction[i].set_fused();
+		  }
+		latex_top_ports.push_back(&inRetireInstruction[RetireWidth-1]);
+		*/
+
+		//		latex_top_ports.push_back(&inFlush);
+		//		latex_bottom_ports.push_back(&outFlush);
+
+
 	}
 
 	/** A SystemC process for managing the valid, accept and enable hand-shaking */

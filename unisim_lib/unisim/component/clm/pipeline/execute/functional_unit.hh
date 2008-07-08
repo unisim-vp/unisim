@@ -511,8 +511,8 @@ class FunctionalUnit : public module
 					{
 					case GPR_T:
 					  /* Copy the integer register value back to the instruction */
-					  //(*instruction)->destinations[j].data = state->GetGPR(dstreg);
-					  (*instruction)->destinations[j].data = (0x00000000ffffffff & state->GetGPR(dstreg));
+					  (*instruction)->destinations[j].data = state->GetGPR(dstreg);
+					  //(*instruction)->destinations[j].data = (0x00000000ffffffff & state->GetGPR(dstreg));
 					  break;
 					  
 					case FPR_T:
