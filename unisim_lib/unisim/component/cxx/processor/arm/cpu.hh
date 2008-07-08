@@ -1239,6 +1239,11 @@ private:
 	 * @param memop the memory operation containing the read access
 	 * */
 	void PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop);
+#ifdef SOCLIB
+protected:
+	/** defines if the first request in the lsQueue is an external access or not */
+	bool external_memory_request;
+#endif // SOCLIB
 public:
 	/** action to perform (execute) when an unpredictable behavior instruction
 	 *  is found */

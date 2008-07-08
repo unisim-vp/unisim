@@ -61,11 +61,17 @@ public:
 	void SetReadToPCUpdateT(typename CONFIG::address_t address) {
 		type = READ_TO_PC_UPDATE_T;
 		this->address = address;
+#ifdef SOCLIB
+		this->external = false;
+#endif // SOCLIB
 	}
 	
 	void SetReadToPC(typename CONFIG::address_t address) {
 		type = READ_TO_PC;
 		this->address = address;
+#ifdef SOCLIB
+		this->external = false;
+#endif // SOCLIB
 	}
 	
 	void SetRead(typename CONFIG::address_t address, 
@@ -79,6 +85,9 @@ public:
 		target_reg = dest;
 		this->read_signed = read_signed;
 		this->aligned = aligned;
+#ifdef SOCLIB
+		this->external = false;
+#endif // SOCLIB
 	}
 	
 	void SetWrite(typename CONFIG::address_t address, 
@@ -88,11 +97,17 @@ public:
 		this->address = address;
 		this->size = size;
 		write_value = value;
+#ifdef SOCLIB
+		this->external = false;
+#endif // SOCLIB
 	}
 	
 	void SetPrefetch(typename CONFIG::address_t address) {
 		type = PREFETCH;
 		this->address = address;
+#ifdef SOCLIB
+		this->external = false;
+#endif // SOCLIB
 	}
 	
 	type_t GetType() const {return type;}
@@ -102,6 +117,10 @@ public:
 	uint32_t GetWriteValue() const {return write_value;}
 	bool NeedAlignment() const {return !aligned;}
 	bool IsSigned() const {return read_signed;}
+#ifdef SOCLIB
+	bool IsExternal() const {return external;}
+	void SetExternal(bool ext) {external = ext;}
+#endif // SOCLIB
 	
 private:
 	typename CONFIG::address_t address;
@@ -111,6 +130,9 @@ private:
 	uint32_t write_value;
 	bool read_signed;
 	bool aligned;
+#ifdef SOCLIB
+	bool external;
+#endif // SOCLIB
 };
 
 } // end of namespace arm

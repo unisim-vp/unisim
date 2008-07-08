@@ -116,6 +116,41 @@ Reset() {
 #ifdef SOCLIB_DEBUG
 	cerr << "    next fetch_pc = 0x" << hex << fetch_pc << dec << endl;
 #endif
+	// check the local memory before letting the system perform an external memory access
+	if(CONFIG::MODEL == ARM966E_S) {
+		if(GetCPSR_T()) {
+			thumb_insn_t insn;
+			external_memory_request = false;
+			ReadInsn(fetchQueue->GetFetchAddress(), insn);
+			if(!external_memory_request) {
+				insn = BigEndian2Host(insn);
+				fetchQueue->SetThumbEncoding(insn);
+				fetchQueue->SetRequested(true);
+				fetchQueue->SetFetched(true);
+				address_t addr = fetchQueue->GetFetchAddress();
+				typename isa::thumb::Operation<CONFIG> *op = NULL;
+				thumb_insn_t insn = fetchQueue->GetThumbEncoding();
+				op = thumb_decoder.Decode(addr, insn);
+				fetchQueue->SetOpcode(op);
+			}
+		} else {
+			insn_t insn;
+			external_memory_request = false;
+			ReadInsn(fetchQueue->GetFetchAddress(), insn);
+			if(!external_memory_request) {
+				insn = BigEndian2Host(insn);
+				fetchQueue->SetArm32Encoding(insn);
+				fetchQueue->SetRequested(true);
+				fetchQueue->SetFetched(true);
+				address_t addr = fetchQueue->GetFetchAddress();
+				typename isa::arm32::Operation<CONFIG> *op = NULL;
+				insn_t insn = fetchQueue->GetArm32Encoding();
+				op = arm32_decoder.Decode(addr, insn);
+				fetchQueue->SetOpcode(op);
+			}
+		}
+
+	}
 	// TODO
 	// set the correct fetch pc
 	// initialize all the registers
@@ -164,7 +199,12 @@ FlushPipeline() {
 		decodeQueue = 0;
 	}
 	if(fetchQueue) {
-		fetchQueue->Flush();
+		if(fetchQueue->IsFetched()) {
+			InstructionFactory<CONFIG>::Destroy(fetchQueue);
+			fetchQueue = 0;
+		} else {
+			fetchQueue->Flush();
+		}
 //		InstructionFactory<CONFIG>::Destroy(fetchQueue);
 //		fetchQueue = 0;
 	}
@@ -209,6 +249,8 @@ StepExecute() {
 			/* set the instruction latency 
 			 * TODO: get the instruction latency from the opcode */
 			executeQueue->SetExecCycles(1);
+			/* prepare memory accesses to internal/external memory */
+			if(!lsQueue.empty()) PerformLoadStoreAccesses();
 		} catch(ResetException<CONFIG> &exc) {
 #ifdef SOCLIB_DEBUG
 			cerr << "**** Received a RESET exception ****" << endl;
@@ -272,7 +314,7 @@ template<class CONFIG>
 void
 CPU<CONFIG> ::
 Step() {
-#ifdef SOCLIB
+#ifdef SOCLIB_DEBUG
 	cerr << "+++ Step" << endl;
 #endif
 	/* TODO 
@@ -302,12 +344,12 @@ Step() {
 			<< endl;
 		exit(-1);
 	}
-	if(fetchQueue != 0 && (fetchQueue->IsRequested() || fetchQueue->IsFetched())) {
-		cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-			<< "the instruction in the fetch queue was already fetched/requested."
-			<< endl;
-		exit(-1);
-	}
+//	if(fetchQueue != 0 && (fetchQueue->IsRequested() || fetchQueue->IsFetched())) {
+//		cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+//			<< "the instruction in the fetch queue was already fetched/requested."
+//			<< endl;
+//		exit(-1);
+//	}
 
 	if(fetchQueue->IsFlushed()) {
 #ifdef SOCLIB_DEBUG
@@ -453,6 +495,18 @@ StepCycle() {
 #ifdef SOCLIB_DEBUG
 	cerr << "+++ StepCycle" << endl;
 #endif
+
+#ifdef SOCLIB_DEBUG
+	cerr << "    Memory Ops" << endl;
+#endif
+	/* do memory accesses */
+	if(!lsQueue.empty()) {
+		MemoryOp<CONFIG> *memop = lsQueue.front();
+		if(!memop->IsExternal()) {
+			PerformLoadStoreAccesses();
+		}
+	}
+
 	/* start by removing the instruction in the executeQueue (if any) if it
 	 *   has finished its operation
 	 * check if the pipeline needs to be flushed */
@@ -522,8 +576,8 @@ StepCycle() {
 		}
 	}
 
-	/* if the fetch queue is not empty, the do nothing */
-	/* if the fetch queue is empty, then send a read request to fetch fetch_pc
+	/* if the fetch queue is not empty, the do nothing 
+	 * if the fetch queue is empty, then send a read request to fetch fetch_pc
 	 *   instruction, after that increase fetch_pc */
 #ifdef SOCLIB_DEBUG
 	cerr << "    Fetch" << endl;
@@ -539,6 +593,42 @@ StepCycle() {
 #ifdef SOCLIB_DEBUG
 		cerr << "    - next fetch_pc = 0x" << hex << fetch_pc << dec << endl;
 #endif
+		// check the local memory before letting the system perform an external memory access
+		if(CONFIG::MODEL == ARM966E_S) {
+			if(GetCPSR_T()) {
+				thumb_insn_t insn;
+				external_memory_request = false;
+				ReadInsn(fetchQueue->GetFetchAddress(), insn);
+				if(!external_memory_request) {
+					cerr << "    - instruction found in internal memory" << endl;
+					insn = BigEndian2Host(insn);
+					fetchQueue->SetThumbEncoding(insn);
+					fetchQueue->SetRequested(true);
+					fetchQueue->SetFetched(true);
+					address_t addr = fetchQueue->GetFetchAddress();
+					typename isa::thumb::Operation<CONFIG> *op = NULL;
+					thumb_insn_t insn = fetchQueue->GetThumbEncoding();
+					op = thumb_decoder.Decode(addr, insn);
+					fetchQueue->SetOpcode(op);
+				}
+			} else {
+				insn_t insn;
+				external_memory_request = false;
+				ReadInsn(fetchQueue->GetFetchAddress(), insn);
+				if(!external_memory_request) {
+					cerr << "   - instruction found in internal memory" << endl;
+					insn = BigEndian2Host(insn);
+					fetchQueue->SetArm32Encoding(insn);
+					fetchQueue->SetRequested(true);
+					fetchQueue->SetFetched(true);
+					address_t addr = fetchQueue->GetFetchAddress();
+					typename isa::arm32::Operation<CONFIG> *op = NULL;
+					insn_t insn = fetchQueue->GetArm32Encoding();
+					op = arm32_decoder.Decode(addr, insn);
+					fetchQueue->SetOpcode(op);
+				}
+			}
+		}
 	} else {
 #ifdef SOCLIB_DEBUG
 		cerr << "    - fetching = 0x" << hex << fetchQueue->GetFetchAddress() << dec << endl;
@@ -571,6 +661,7 @@ GetInstructionRequest(bool &req, uint32_t &addr) const {
 #endif
 	/* check if the instruction on the fetch queue has been requested,
 	 *   if not then return the address to fetch */
+	req = false;
 	if(fetchQueue != 0) {
 		if(fetchQueue->IsRequested() == false) {
 			addr = fetchQueue->GetFetchAddress();
@@ -578,16 +669,15 @@ GetInstructionRequest(bool &req, uint32_t &addr) const {
 			req = true;
 		//	fetchQueue->SetRequested(true);
 		}
-	} else {
-#ifdef SOCLIB_DEBUG
-		cerr << "    4" << endl;
-#endif
-		req = false;
 	}
 #ifdef SOCLIB_DEBUG
-	cerr << "    req = " << req;
-	if(req) cerr << ", addr = 0x" << hex << addr << dec;
-	cerr << endl;
+	if(!req)
+		cerr << "    No instruction to fetch" << endl;
+	else {
+		cerr << "    req = " << req;
+		if(req) cerr << ", addr = 0x" << hex << addr << dec;
+		cerr << endl;
+	}
 #endif
 	return;
 }
@@ -646,6 +736,7 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 	cerr << "+++ GetDataRequest" << endl;
 #endif
 	MemoryOp<CONFIG> *memop = 0;
+	reg = false;
 	/* check if the instruction in the execute queue has any load/store to
 	 *   be done, if so, execute it. */
 	if(lsQueue.empty()) {
@@ -655,33 +746,34 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 #endif
 		return;
 	}
-	reg = true;
 	memop = lsQueue.front();
+	if(!memop->IsExternal()) return;
+	reg = true;
 	size = memop->GetSize();
 	addr = memop->GetAddress();
 	switch(memop->GetType()) {
-		case MemoryOp<CONFIG>::READ:
-		case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
-		case MemoryOp<CONFIG>::READ_TO_PC:
-		case MemoryOp<CONFIG>::PREFETCH:
-			is_read = true;
+	case MemoryOp<CONFIG>::READ:
+	case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
+	case MemoryOp<CONFIG>::READ_TO_PC:
+	case MemoryOp<CONFIG>::PREFETCH:
+		is_read = true;
+		break;
+	case MemoryOp<CONFIG>::WRITE:
+		is_read = false;
+		data = memop->GetWriteValue();
+		switch(size) {
+		case 1:
+			// do nothing
 			break;
-		case MemoryOp<CONFIG>::WRITE:
-			is_read = false;
-			data = memop->GetWriteValue();
-			switch(size) {
-			case 1:
-				// do nothing
-				break;
-			case 2:
-				hdata = data;
-				data = Host2BigEndian(hdata);
-				break;
-			case 4:
-				data = Host2BigEndian(data);
-				break;
-			}
+		case 2:
+			hdata = data;
+			data = Host2BigEndian(hdata);
 			break;
+		case 4:
+			data = Host2BigEndian(data);
+			break;
+		}
+		break;
 	}
 #ifdef SOCLIB_DEBUG
 	cerr << "    memory operation ready:" << endl;
@@ -691,8 +783,285 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 	if(!is_read)
 		cerr << "    - data = " << hex << data << dec << endl;
 #endif
-	return;
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformLoadStoreAccesses() {
+	external_memory_request = false;
+	// while the lsQueue is not empty process entries
+	MemoryOp<CONFIG> *memop = lsQueue.front();
+	// by default we set a memory request as internal
+	switch(memop->GetType()) {
+	case MemoryOp<CONFIG>::PREFETCH:
+		PerformPrefetchAccess(memop);
+		break;
+	case MemoryOp<CONFIG>::WRITE:
+		PerformWriteAccess(memop);
+		break;
+	case MemoryOp<CONFIG>::READ:
+		PerformReadAccess(memop);
+		break;
+	case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
+		PerformReadToPCUpdateTAccess(memop);
+		break;
+	case MemoryOp<CONFIG>::READ_TO_PC:
+		PerformReadToPCAccess(memop);
+		break;
+	}
+	if(!external_memory_request) {
+		lsQueue.pop();
+		freeLSQueue.push(memop);
+//		if(lsQueue.empty()) {
+//			/* instruction is finished */
+//			if(executeQueue->IsFlushPipelineRequired()) {
+//				/* flush the pipeline and set the new pc to fetch */
+//				FlushPipeline();
+//				fetch_pc = GetGPR(PC_reg);
+//			} else {
+//				InstructionFactory<CONFIG>::Destroy(executeQueue);
+//			}
+//		}
+	} else
+		memop->SetExternal(true);
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformPrefetchAccess(MemoryOp<CONFIG> *memop) {
+	address_t read_address = memop->GetAddress();
+	uint32_t value;
+	
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
+	}
+	if(CONFIG::MODEL == ARM7TDMI) {
+		external_memory_request = true;
+	}
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformWriteAccess(MemoryOp<CONFIG> *memop) {
+	address_t address = memop->GetAddress();
+	uint8_t val8;
+	uint16_t val16;
+	uint32_t val32;
+	
+	if(CONFIG::MODEL == ARM7TDMI) {
+		external_memory_request = true;
+		return;
+	}
+	switch(memop->GetSize()) {
+	case 1:
+		address = address ^ munged_address_mask8;
+
+		val8 = (uint8_t)memop->GetWriteValue();
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrWrite(address, &val8, 1);
+		}
+		break;
+	case 2:
+		val16 = (uint16_t)memop->GetWriteValue();
+		val16 = Host2BigEndian(val16);
+
+		address = address ^ munged_address_mask16;
+
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrWrite(address, (uint8_t *)&val16, 2);
+		}
+		break;
+	case 4:
+		val32 = memop->GetWriteValue();
+		val32 = Host2BigEndian(val32);
+
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrWrite(address, (uint8_t *)&val32, 4);
+		}
+		break;
+	}
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformReadAccess(MemoryOp<CONFIG> *memop) {
+	typename CONFIG::reg_t val32, val32_l, val32_r;
+	uint16_t val16; // , val16_l, val16_r;
+	uint8_t val8;
+	typename CONFIG::reg_t value = 0;
+	address_t address = memop->GetAddress();
+	uint32_t size = memop->GetSize();
+	address_t read_address = address & ~(address_t)(size - 1); 
+	
+	if(CONFIG::MODEL == ARM7TDMI) {
+		external_memory_request = true;
+		return;
+	}
+	
+	switch(size) {
+	case 1:
+		read_address = read_address ^ munged_address_mask8;
+
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrRead(read_address, &val8, 1);
+			if(external_memory_request) return;
+		}
+		if(memop->IsSigned()) {
+			value = (typename CONFIG::sreg_t)(int8_t)val8;
+		} else
+			value = val8;
+		break;
+	case 2:
+		/* NOTE: 16bits reads are always aligned */
+		read_address = read_address ^ munged_address_mask16;
+
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrRead(read_address, (uint8_t *)&val16, 2);
+			if(external_memory_request) return;
+		}
 		
+		val16 = BigEndian2Host(val16);
+		
+		if(memop->IsSigned()) {
+			value = (typename CONFIG::sreg_t)(int16_t)val16;
+		} else
+			value = val16;
+		break;
+	case 4:
+		if(CONFIG::MODEL == ARM966E_S) {
+			cp15_966es->PrRead(read_address, (uint8_t *)&val32, 4);
+			if(external_memory_request) return;
+		}		
+		
+		val32 = BigEndian2Host(val32);
+		
+		switch(address & 0x03) {
+		case 0x00:
+			// nothing to do
+			break;
+		case 0x01:
+			val32_l = (val32 << 8) & ~((typename CONFIG::reg_t)0x0FF);
+			val32_r = (val32 >> 24) & ((typename CONFIG::reg_t)0x0FF);
+			val32 = val32_l + val32_r;
+			break;
+		case 0x02:
+			val32_l = (val32 << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+			val32_r = (val32 >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+			val32 = val32_l + val32_r;
+			break;
+		case 0x03:
+			val32_l = (val32 << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+			val32_r = (val32 >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+			val32 = val32_l + val32_r;
+			break;
+		}
+		value = val32;
+		break;
+	}
+	SetGPR(memop->GetTargetReg(), value);
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	address_t address = memop->GetAddress();
+	address_t read_address = address & ~(0x3);
+
+	if(CONFIG::MODEL == ARM7TDMI) {
+		external_memory_request = true;
+		return;
+	}
+
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
+		if(external_memory_request) return;
+	}
+	
+	value = BigEndian2Host(value);
+	
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+
+	SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+	if(GetGPR(PC_reg) != executeQueue->GetNextFetchAddress()) executeQueue->SetFlushPipelineRequired(true);
+	// code valid for version 5 and above
+	if(CONFIG::ARCHITECTURE == ARMV5T ||
+		CONFIG::ARCHITECTURE == ARMV5TXM ||
+		CONFIG::ARCHITECTURE == ARMV5TE ||
+		CONFIG::ARCHITECTURE == ARMV5TEXP) {
+		SetCPSR_T((value & 0x01) == 1);
+	}
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
+	typename CONFIG::reg_t value;
+	typename CONFIG::reg_t value_l, value_r;
+	address_t address = memop->GetAddress();
+	address_t read_address = address & ~(0x3);
+
+	if(CONFIG::MODEL == ARM7TDMI) {
+		external_memory_request = true;
+		return;
+	}
+
+	if(CONFIG::MODEL == ARM966E_S) {
+		cp15_966es->PrRead(read_address, (uint8_t *)&value, 4);
+		if(external_memory_request) return;
+	}
+	
+	value = BigEndian2Host(value);
+	
+	switch(address & 0x03) {
+	case 0x00:
+		// nothing to do
+		break;
+	case 0x01:
+		value_l = (value << 8) & ~((typename CONFIG::reg_t)0x0FF);
+		value_r = (value >> 24) & ((typename CONFIG::reg_t)0x0FF);
+		value = value_l + value_r;
+		break;
+	case 0x02:
+		value_l = (value << 16) & ~((typename CONFIG::reg_t)0x0FFFF);
+		value_r = (value >> 16) & ((typename CONFIG::reg_t)0x0FFFF);
+		value = value_l + value_r;
+		break;
+	case 0x03:
+		value_l = (value << 24) & ~((typename CONFIG::reg_t)0x0FFFFFF);
+		value_r = (value >> 8) & ((typename CONFIG::reg_t)0x0FFFFFF);
+		value = value_l + value_r;
+		break;
+	}
+
+	SetGPR(PC_reg, value & (typename CONFIG::reg_t)0xFFFFFFFE);
+	if(GetGPR(PC_reg) != executeQueue->GetNextFetchAddress()) executeQueue->SetFlushPipelineRequired(true);
 }
 
 template<class CONFIG>
@@ -739,6 +1108,11 @@ SetDataResponse(bool error, uint32_t rdata) {
 	bool flushPipeline = false;
 	uint16_t rhdata = 0;
 	MemoryOp<CONFIG> *memop = lsQueue.front();
+	if(!memop->IsExternal()) {
+		cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+			<< "Received data in response that was not expected" << endl;
+		exit(-1);
+	}
 	lsQueue.pop();
 #ifdef SOCLIB_DEBUG
 	uint32_t data = 0;
@@ -861,16 +1235,16 @@ SetDataResponse(bool error, uint32_t rdata) {
 	freeLSQueue.push(memop);
 	memop = 0;
 	if(flushPipeline) executeQueue->SetFlushPipelineRequired(true);
-	if(lsQueue.empty()) {
-		/* instruction is finished */
-		if(executeQueue->IsFlushPipelineRequired()) {
-			/* flush the pipeline and set the new pc to fetch */
-			FlushPipeline();
-			fetch_pc = GetGPR(PC_reg);
-		} else {
-			InstructionFactory<CONFIG>::Destroy(executeQueue);
-		}
-	}
+//	if(lsQueue.empty()) {
+//		/* instruction is finished */
+//		if(executeQueue->IsFlushPipelineRequired()) {
+//			/* flush the pipeline and set the new pc to fetch */
+//			FlushPipeline();
+//			fetch_pc = GetGPR(PC_reg);
+//		} else {
+//			InstructionFactory<CONFIG>::Destroy(executeQueue);
+//		}
+//	}
 }
 
 template<class CONFIG>

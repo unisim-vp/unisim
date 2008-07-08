@@ -114,6 +114,7 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	firstLS(0),
 	hasSentFirstLS(false),
 	freeLSQueue(),
+	external_memory_request(false),
 	instruction_counter(0),
 	default_endianess(E_BIG_ENDIAN),
 	/* initialization of parameters for the 966es  START*/
@@ -4190,6 +4191,8 @@ CreateMemorySystem() {
 /* Memory system methods (private)                      START */
 /**************************************************************/
 
+#ifndef SOCLIB
+
 template<class CONFIG>
 inline INLINE
 void
@@ -4239,15 +4242,11 @@ PerformPrefetchAccess(MemoryOp<CONFIG> *memop) {
 	
 	/* should we report a memory access for a prefetch???? */
 	
-#ifndef SOCLIB
-	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
 					MemoryAccessReporting<address_t>::MT_DATA,
 					read_address, 4);
-	
-#endif // SOCLIB
 	
 }
 
@@ -4490,6 +4489,8 @@ PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
 		SetCPSR_T((value & 0x01) == 1);
 	}
 }
+
+#endif // SOCLIB
 
 /**************************************************************/
 /* Memory system methods (private)                        END */

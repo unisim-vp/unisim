@@ -110,6 +110,8 @@ CP15(unsigned int _cp_id,
 	verbose_pr_write(false),
 	verbose_debug_read(false),
 	verbose_debug_write(false) {
+	
+	InitRegs();
 }	
 
 
