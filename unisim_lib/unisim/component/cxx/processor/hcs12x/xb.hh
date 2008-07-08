@@ -75,7 +75,30 @@ Operation *sub_decode(uint16_t addr, CodeType const& code) {
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 
-#line 79 "xb.hh"
+namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
+
+	class XbModes {
+	public:
+		enum MODE {IDX=0, IDX1=1, IDX2=2, IDX2_Ind=3, IDXD_Ind=4, Unknown=0xFF};
+
+		static inline uint8_t GetIDXCycles(uint8_t xbMode, uint8_t idx, uint8_t idx1, uint8_t idx2, uint8_t idx2_ind, uint8_t idxd_ind)
+		{
+			switch (xbMode)
+			{
+				case 0: return idx;
+				case 1: return idx1;
+				case 2: return idx2;
+				case 3: return idx2_ind;
+				case 4: return idxd_ind;
+				default: return 0xff;
+			}
+		}
+
+	};
+
+} } } } } }  // end namespaces
+
+#line 102 "xb.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
 class Operation
 {
@@ -86,34 +109,34 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 62 "xb.isa"
+#line 89 "xb.isa"
 	uint16_t
-#line 92 "xb.hh"
+#line 115 "xb.hh"
 	getEAddr(
-#line 62 "xb.isa"
+#line 89 "xb.isa"
 	CPU *
-#line 96 "xb.hh"
-#line 62 "xb.isa"
+#line 119 "xb.hh"
+#line 89 "xb.isa"
 	cpu
-#line 99 "xb.hh"
+#line 122 "xb.hh"
 	);
 	virtual
-#line 58 "xb.isa"
+#line 85 "xb.isa"
 	void
-#line 104 "xb.hh"
+#line 127 "xb.hh"
 	disasm(
-#line 58 "xb.isa"
+#line 85 "xb.isa"
 	ostream&
-#line 108 "xb.hh"
-#line 58 "xb.isa"
+#line 131 "xb.hh"
+#line 85 "xb.isa"
 	sink
-#line 111 "xb.hh"
+#line 134 "xb.hh"
 	);
 	virtual
-#line 56 "xb.isa"
+#line 80 "xb.isa"
 	uint8_t
-#line 116 "xb.hh"
-	getCycles( );
+#line 139 "xb.hh"
+	getXbMode( );
 protected:
 	CodeType encoding;
 	uint16_t addr;

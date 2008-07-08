@@ -47,13 +47,40 @@ decl {
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 
+namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
+
+class XbModes {
+public:
+	enum MODE {IDX=0, IDX1=1, IDX2=2, IDX2_Ind=3, IDXD_Ind=4, Unknown=0xFF};
+
+	static inline uint8_t GetIDXCycles(uint8_t xbMode, uint8_t idx, uint8_t idx1, uint8_t idx2, uint8_t idx2_ind, uint8_t idxd_ind)
+	{
+		switch (xbMode)
+		{
+			case 0: return idx;
+			case 1: return idx1;
+			case 2: return idx2;
+			case 3: return idx2_ind;
+			case 4: return idxd_ind;
+			default: return 0xff;
+		}
+	} 	
+
+};
+
+} } } } } }  // end namespaces
+
 }
 
 impl {
 using namespace std;
+
 }
 
-action {uint8_t} getCycles () { return 1; }
+action {uint8_t} getXbMode () \
+{ 
+	return XbModes::Unknown; 
+}
 
 action {void} disasm({ostream&} {sink}) {
 	sink << "?";
@@ -63,6 +90,8 @@ action {uint16_t} getEAddr ( {CPU *} {cpu} ) { assert( false ); return 0; }
 
 
 op xb_5bit_cst (rr[2]:0b0[1]:sext<8> nnnnn[5])
+
+xb_5bit_cst.getXbMode = { return XbModes::IDX; }
 
 xb_5bit_cst.getEAddr = {
 
@@ -77,8 +106,11 @@ xb_5bit_cst.disasm = {
 	sink << std::dec << nnnnn << "," << CPU::xb_getAddrRegLabel(rr);
 }
 
+
 // TODO: 20080417 - a revoir 
 op xb_9_cst_z0 (0b111[3]:rr[2]:0b00[2]:s[1]:> <:sext<8> n8[8])
+
+xb_9_cst_z0.getXbMode = { return XbModes::IDX1; }
 
 xb_9_cst_z0.getEAddr = {
 
@@ -94,34 +126,47 @@ xb_9_cst_z0.disasm = {
 	sink << std::dec << n8 << "," << CPU::xb_getAddrRegLabel(rr);
 }
 
-op xb_16bit_cst_z1 (0b111[3]:rr[2]:0b0[1]:0b1[1]:s[1]:> <:sext<16> n16[16])
 
-xb_16bit_cst_z1.getEAddr = {
+op xb_16bit_cst_z1_s0 (0b111[3]:rr[2]:0b010[3]:> <:sext<16> n16[16])
+
+xb_16bit_cst_z1_s0.getXbMode = { return XbModes::IDX2; }
+
+xb_16bit_cst_z1_s0.getEAddr = {
 
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 
-   	if (s==0) {
-   		// Constant offset 16-bit signed
-   		return addr;
-   	} else {
-   		// 16-bit offset indexed-indirect
-   		
-		return cpu->memRead16(addr);
-   	}
+	// Constant offset 16-bit signed
+   	return addr;
 }
 
-xb_16bit_cst_z1.disasm = {
-	if (s==0) {
-		// constant offset 16-bit signed
-		sink << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr);
-	} else {
-		// 16-bit offset index-indirect
-		sink << "[" << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr) << "]";
-	}
+xb_16bit_cst_z1_s0.disasm = {
+
+	// constant offset 16-bit signed
+	sink << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr);
+}
+
+op xb_16bit_cst_z1_s1 (0b111[3]:rr[2]:0b011[3]:> <:sext<16> n16[16])
+
+xb_16bit_cst_z1_s1.getXbMode = { return XbModes::IDX2_Ind; }
+
+xb_16bit_cst_z1_s1.getEAddr = {
+
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+
+	// 16-bit offset indexed-indirect
+	return cpu->memRead16(addr);
+}
+
+xb_16bit_cst_z1_s1.disasm = {
+
+	// 16-bit offset index-indirect
+	sink << "[" << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr) << "]";
 }
 
 
 op xb_auto(rr[2]:0b1[1]:p[1]:nnnn[4])
+
+xb_auto.getXbMode = { return XbModes::IDX; }
 
 xb_auto.getEAddr = {
 
@@ -175,6 +220,8 @@ xb_auto.disasm = {
 
 op xb_acc_offset (0b111[3]:rr[2]:0b1[1]:aa[2])
 
+xb_acc_offset.getXbMode = { return XbModes::IDX; }
+
 xb_acc_offset.getEAddr = {
 	uint16_t addrRegVal = cpu->xb_getAddrRegValue(rr);
 	uint16_t accRegVal = cpu->xb_getAccRegValue(aa);
@@ -188,6 +235,8 @@ xb_acc_offset.disasm = {
 
 
 op xb_accD_offset_idx_ind (0b111[3]:rr[2]:0b111[3])
+
+xb_accD_offset_idx_ind.getXbMode = { return XbModes::IDXD_Ind; }
 
 xb_accD_offset_idx_ind.getEAddr = {
 

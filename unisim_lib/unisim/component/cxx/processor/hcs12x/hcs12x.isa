@@ -55,6 +55,9 @@ decl {
 
 impl {
 #include <unisim/component/cxx/processor/hcs12x/xb.hh>
+
+using unisim::component::cxx::processor::hcs12x::XB::XbModes;
+ 
 }
 
 action {void} execute({CPU *} {cpu}) {
@@ -67,7 +70,14 @@ action {void} disasm({ostream&} {sink}) {
 	sink << "?";
 }
 
-action {uint8_t} getCycles () { return 1; }
+action {uint8_t} getCycles () {
+/*
+ * if (indexed_addressing) then 
+ *   return XbModes::GetIDXCycles(xb->getXbMode(), <idx_cyles>, <idx1_cyles>, <idx2_cyles>, <idx2_ind_cyles>, <idxd_ind_cyles>);
+ *
+ */
+	return 1; 
+}
 
 include "load_store.isa"
 include "transfer_exchange.isa"
