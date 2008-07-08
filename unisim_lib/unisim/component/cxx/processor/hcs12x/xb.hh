@@ -79,17 +79,17 @@ namespace unisim { namespace component { namespace cxx { namespace processor { n
 
 	class XbModes {
 	public:
-		enum MODE {IDX=0, IDX1=1, IDX2=2, IDX2_Ind=3, IDXD_Ind=4, Unknown=0xFF};
+		enum MODE {IDX=0, IDX1=1, IDX2=2, IDXD_Ind=3, IDX2_Ind=4, Unknown=0xFF};
 
-		static inline uint8_t GetIDXCycles(uint8_t xbMode, uint8_t idx, uint8_t idx1, uint8_t idx2, uint8_t idx2_ind, uint8_t idxd_ind)
+		static inline uint8_t GetIDXCycles(uint8_t xbMode, uint8_t idx, uint8_t idx1, uint8_t idx2, uint8_t idxd_ind, uint8_t idx2_ind)
 		{
 			switch (xbMode)
 			{
-				case 0: return idx;
-				case 1: return idx1;
-				case 2: return idx2;
-				case 3: return idx2_ind;
-				case 4: return idxd_ind;
+				case XbModes::IDX: return idx;
+				case XbModes::IDX1: return idx1;
+				case XbModes::IDX2: return idx2;
+				case XbModes::IDXD_Ind: return idxd_ind;
+				case XbModes::IDX2_Ind: return idx2_ind;
 				default: return 0xff;
 			}
 		}

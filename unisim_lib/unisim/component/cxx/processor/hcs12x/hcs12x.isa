@@ -73,7 +73,7 @@ action {void} disasm({ostream&} {sink}) {
 action {uint8_t} getCycles () {
 /*
  * if (indexed_addressing) then 
- *   return XbModes::GetIDXCycles(xb->getXbMode(), <idx_cyles>, <idx1_cyles>, <idx2_cyles>, <idx2_ind_cyles>, <idxd_ind_cyles>);
+ *   return XbModes::GetIDXCycles(xb->getXbMode(), <idx_cyles>, <idx1_cyles>, <idx2_cyles>, <idxd_ind_cyles>, <idx2_ind_cyles>);
  *
  */
 	return 1; 

@@ -36,6 +36,8 @@
 // A->B  or B->A 
 op t_ab_ba(0x18[8]:0x7[7]:b[1])
 
+t_ab_ba.getCycles = { return 2; }
+
 t_ab_ba.disasm = {
 	if (b == 0) { sink << "TAB"; } else { sink << "TBA";} 
 }
@@ -62,6 +64,9 @@ t_ab_ba.execute = {
 
 // XGDX or XGDY or EXG 
 op exg_hcs12(0xB7[8]:> <:0b1[1]:lms[3]:0b0[1]:lls[3])  
+
+exg_hcs12.getCycles = { return 1; }
+
 /*
  * lms sourceRegister index
  * lls destinationRegister index  
@@ -166,6 +171,9 @@ exg_hcs12.execute = {
 
 // TFR or TPA or TSX or TSY or TXS or TYS or SEX
 op tfr_hcs12(0xB7[8]:> <:0b0[1]:lms[3]:hls[1]:lls[3])  
+
+tfr_hcs12.getCycles = { return 1; }
+
 /*
  * lms sourceRegister index
  * lls destinationRegister index  
@@ -276,6 +284,9 @@ tfr_hcs12.execute = {
 
 // XGDX or XGDY or EXG 
 op exg_hcs12x(0xB7[8]:> <:0b1[1]:lms[3]:0b1[1]:lls[3])  
+
+exg_hcs12x.getCycles = { return 1; }
+
 /*
  * lms sourceRegister index
  * lls destinationRegister index  
@@ -511,6 +522,9 @@ exg_hcs12x.execute = {
 
 // TAP or TFR or TPA or TSX or TSY or TXS or TYS or SEX
 op tfr_hcs12x(0xB7[8]:> <:0b0[1]:lms[3]:0b1[1]:lls[3])  
+
+tfr_hcs12x.getCycles = { return 1; }
+
 /*
  * lms sourceRegister index
  * lls destinationRegister index  
