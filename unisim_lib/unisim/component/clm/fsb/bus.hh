@@ -155,11 +155,11 @@ class Bus : public module, public Client<SVGmemreqInterface<INSTRUCTION> >
     parameters.add("Snooping",Snooping);
     // --- Latex rendering hints -----------------
     for(int i=0;i<nCPU;i++)
-    { latex_left_ports.push_back(&inCPU[i]);
-      latex_left_ports.push_back(&outCPU[i]);
+    { latex_top_ports.push_back(&inCPU[i]);
+      latex_top_ports.push_back(&outCPU[i]);
     }
-    latex_right_ports.push_back(&outMEM);
-    latex_right_ports.push_back(&inMEM);
+    latex_bottom_ports.push_back(&outMEM);
+    latex_bottom_ports.push_back(&inMEM);
   }
 
   /**

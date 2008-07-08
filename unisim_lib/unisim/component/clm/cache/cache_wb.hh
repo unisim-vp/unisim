@@ -321,10 +321,10 @@ class CacheWB : public module
     */
     // -------------------------------------------
     //Latex rendering hints
-    latex_left_ports.push_back(&inCPU);
-    latex_left_ports.push_back(&outCPU);
-    latex_right_ports.push_back(&outMEM);
-    latex_right_ports.push_back(&inMEM);
+    latex_top_ports.push_back(&inCPU);
+    latex_top_ports.push_back(&outCPU);
+    latex_bottom_ports.push_back(&outMEM);
+    latex_bottom_ports.push_back(&inMEM);
 #ifdef CACHE_CHECK_COHERENCY
     all_caches << this;
 #endif
