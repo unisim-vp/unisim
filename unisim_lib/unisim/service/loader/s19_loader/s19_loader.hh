@@ -114,16 +114,6 @@ public:
 	S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent = 0);
 	virtual ~S19_Loader();	
 	void GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t &cpu_address);
-	physical_address_t GetFlashAddress(page_t page, address_t cpu_address);
-	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);
-	void	ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE]);
-
-	/* TODO: 
-	 * connect the loader to the simulated RAM
-	 * and use memory_import->writeMemory()
-	 */
-	       
-	bool	memWrite(physical_address_t addr, const void *buffer, uint32_t size);
 
 private:
 	string				filename;
@@ -138,6 +128,12 @@ private:
 	
 	bool				isFirstDataRec;
 	int					memoryMode;
+
+	physical_address_t GetFlashAddress(page_t page, address_t cpu_address);
+	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);
+	void	ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE]);
+	bool	memWrite(physical_address_t addr, const void *buffer, uint32_t size);
+
 };
 
 
