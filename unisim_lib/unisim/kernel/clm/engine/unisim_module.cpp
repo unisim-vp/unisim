@@ -200,7 +200,7 @@ void unisim_module::dump_latex_ports(ostream &os)
   y = "-0.33";
   fused_size = 1;
   for(list<unisim_port*>::iterator p=latex_right_ports.begin();p!=latex_right_ports.end();p++)
-    { if ( !((*p)->latex_rendering_fused) )
+    { if ( ((*p)->latex_rendering_fused) )
       {
 	fused_size++;
       }
@@ -216,7 +216,7 @@ void unisim_module::dump_latex_ports(ostream &os)
   x = "0.33";
   fused_size = 1;
   for(list<unisim_port*>::iterator p=latex_bottom_ports.begin();p!=latex_bottom_ports.end();p++)
-  { if ( !((*p)->latex_rendering_fused) )
+  { if ( ((*p)->latex_rendering_fused) )
       {
 	fused_size++;
       }
@@ -231,7 +231,7 @@ void unisim_module::dump_latex_ports(ostream &os)
   c = 1;
   x = "0.33";
   for(list<unisim_port*>::iterator p=latex_top_ports.begin();p!=latex_top_ports.end();p++)
-    { if ( !((*p)->latex_rendering_fused) )
+    { if ( ((*p)->latex_rendering_fused) )
       {
 	fused_size++;
       }
