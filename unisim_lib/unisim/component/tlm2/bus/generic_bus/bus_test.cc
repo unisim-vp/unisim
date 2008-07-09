@@ -42,7 +42,10 @@ namespace bus {
 namespace generic_bus {
 
 template
-class Bus<>;
+class Bus<32, tlm::tlm_base_protocol_types, false>;
+
+template
+class Bus<32, tlm::tlm_base_protocol_types, true>;
 
 } // end of namespace generic_bus
 } // end of namespace bus

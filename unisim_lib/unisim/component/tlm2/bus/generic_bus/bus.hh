@@ -139,6 +139,10 @@ private:
 	unisim::kernel::service::Parameter<bool> param_verbose_all;
 	bool verbose_setup;
 	unisim::kernel::service::Parameter<bool> param_verbose_setup;
+	bool verbose_non_blocking;
+	unisim::kernel::service::Parameter<bool> param_verbose_non_blocking;
+	bool verbose_blocking;
+	unisim::kernel::service::Parameter<bool> param_verbose_blocking;
 
 	/*************************************************************************
 	 * Logger and verbose parameters                                     END *
@@ -149,6 +153,8 @@ private:
 	 *************************************************************************/
 
 	inline bool VerboseSetup();
+	inline bool VerboseNonBlocking();
+	inline bool VerboseBlocking();
 
 	/*************************************************************************
 	 * Verbose methods                                                   END *

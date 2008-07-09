@@ -1,7 +1,12 @@
 #include "unisim/component/tlm2/bus/generic_bus/bus.hh"
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 
+
+using namespace unisim::kernel::logger;
+
+template<bool DEBUG = false>
 class Initiator : 
 public sc_module,
 public unisim::kernel::service::Object,
@@ -11,16 +16,21 @@ public:
 	sc_event end_req_event;
 	sc_event end_resp_event;
 	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
+	Logger logger;	
 
 	SC_HAS_PROCESS(Initiator);
 
 	Initiator(const sc_module_name &name, unisim::kernel::service::Object *parent = 0) : 
 	sc_module(name),
 	unisim::kernel::service::Object(name, parent),
-	init_socket("init_socket") {
+	init_socket("init_socket"),
+	logger(*this) {
 		SC_THREAD(thread);
-//		dont_initialize();
 		init_socket.bind(*this);
+	}
+
+	bool Setup() {
+		return true;
 	}
 
 	void thread() {
@@ -30,23 +40,38 @@ public:
 		while(i < 10) {
 			trans = payload_fabric.allocate();
 			sc_time time(1.0, SC_NS);
-			cerr << GetName() << "(" << sc_time_stamp() + time << "): Sending transaction " << trans << endl;
-//			init_socket->b_transport(trans, delay);
+			if(DEBUG)
+				logger << DebugInfo << "Sending transaction" << endl
+					<< " - time = " << sc_time_stamp() + time << endl
+					<< " - trans = " << trans << EndDebug;
 			tlm::tlm_phase phase = tlm::BEGIN_REQ;
 
 			switch(init_socket->nb_transport_fw(*trans, phase, time)) {
 			case tlm::TLM_ACCEPTED:
-				cerr << GetName() << "(" << sc_time_stamp() + time << "): transaction accepted, waiting for END_REQ or BEGIN_RESP (for transaction " << trans << ")" << endl;
+				if(DEBUG)
+					logger << DebugInfo << "Transaction accepted, waiting for the end request event" << endl
+						<< " - time = " << sc_time_stamp() + time << endl
+						<< " - trans = " << trans << EndDebug;
 				wait(end_req_event);
-				cerr << GetName() << "(" << sc_time_stamp() << "): END_REQ received (for transaction " << trans << ")"  << endl;
+				if(DEBUG)
+					logger << DebugInfo << "END_REQ received, waiting for the end response event" << endl
+						<< " - time = " << sc_time_stamp() << endl
+						<< " - trans = " << trans << EndDebug;
 				wait(end_resp_event);
+				if(DEBUG)
+					logger << DebugInfo << "END_RESP received" << endl
+						<< " - time = " << sc_time_stamp() << endl
+						<< " - trans = " << trans << EndDebug;
 				break;
 			case tlm::TLM_UPDATED:
 				break;
 			case tlm::TLM_COMPLETED:
 				break;
 			}
-			cerr << GetName() << "(" << sc_time_stamp() << "): Response received (for transaction " << trans << ")" << endl;
+			if(DEBUG)
+				logger << DebugInfo << "Transaction finished, releasing transaction" << endl
+					<< " - time = " << sc_time_stamp() << endl
+					<< " - trans = " << trans << EndDebug;
 			trans->release();
 			i++;
 		}
@@ -55,22 +80,32 @@ public:
 	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload &trans, tlm::tlm_phase &phase, sc_core::sc_time &t) {
 		switch(phase) {
 		case tlm::BEGIN_REQ:
-			cerr << GetName() << "(" << sc_time_stamp() + t << "): received unexpected BEGIN_REQ" << endl;
+			logger << DebugError << "Received unexpected BEGIN_REQ phase, returning TLM_ACCEPTED" << endl
+				<< " - time = " << sc_time_stamp() + t << endl
+				<< " - trans = " << &trans << EndDebug;
 			sc_stop();
 			wait();
 			break;
 		case tlm::END_REQ:
-			cerr << GetName() << "(" << sc_time_stamp() + t << "): received END_REQ (for transaction " << &trans << ")" << endl;
+			if(DEBUG)
+				logger << DebugInfo << "Received END_REQ, notifying end request event" << endl
+					<< " - time = " << sc_time_stamp() + t << endl
+					<< " - trans = " << &trans << EndDebug;
 			end_req_event.notify(t);
 			return tlm::TLM_ACCEPTED;
 			break;
 		case tlm::BEGIN_RESP:
-			cerr << GetName() << "(" << sc_time_stamp() + t << "): received BEGIN_RESP (for transaction " << &trans << ")" << endl;
+			if(DEBUG)
+				logger << DebugInfo << "Received END_RESP, notifying end response event" << endl
+					<< " - time = " << sc_time_stamp() + t << endl
+					<< " - trans = " << &trans << EndDebug;
 			end_resp_event.notify(t);
 			return tlm::TLM_COMPLETED;
 			break;
 		case tlm::END_RESP:
-			cerr << GetName() << "(" << sc_time_stamp() + t << "): received unexpected END_RESP" << endl;
+			logger << DebugError << "Received unexpected END_RESP phase, returning TLM_ACCEPTED" << endl
+				<< " - time = " << sc_time_stamp() + t << endl
+				<< " - trans = " << &trans << EndDebug;
 			sc_stop();
 			wait();
 			break;
@@ -84,41 +119,56 @@ public:
 
 };
 
+template<bool DEBUG = false>
 class Target :
 public sc_module,
 public unisim::kernel::service::Object,
 public tlm::tlm_fw_transport_if<> {
 public:
 	tlm::tlm_target_socket<> targ_socket;
+	Logger logger;
 
 	SC_HAS_PROCESS(Target);
 
 	Target(const sc_module_name &name, unisim::kernel::service::Object *parent = 0) :
 	sc_module(name),
 	unisim::kernel::service::Object(name, parent),
-	targ_socket("targ_socket") {
+	targ_socket("targ_socket"),
+	logger(*this) {
 		targ_socket.bind(*this);
 	}
 
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload &trans, tlm::tlm_phase &phase, sc_core::sc_time &t) {
+		sc_time delay(10, SC_NS);
 		switch(phase) {
 		case tlm::BEGIN_REQ:
-			cerr << GetName() << "(" << sc_time_stamp() + t << "): received BEGIN_REQ" << endl;
-			t = t + sc_time(10,SC_NS);
+			if(DEBUG) {
+				logger << DebugInfo << "Received BEGIN_REQ phase, returning TLM_COMPLETED with delay of " << delay << endl
+					<< " - time = " << sc_time_stamp() + t << endl
+					<< " - trans = " << &trans << EndDebug;
+			}
+			t = t + delay;
 			return tlm::TLM_COMPLETED;
 			break;
 		case tlm::END_REQ:
-			cerr << GetName() << "(" << sc_time_stamp() + t << "): received unexpected END_REQ" << endl;
+			logger << DebugError << "Received unexpected END_REQ phase" << endl
+				<< " - time = " << sc_time_stamp() + t << endl
+				<< " - trans = " << &trans << EndDebug;
 			sc_stop();
 			wait();
 			break;
 		case tlm::BEGIN_RESP:
-			cerr << GetName() << "(" << sc_time_stamp() + t << "): received unexpected BEGIN_RESP" << endl;
+			logger << DebugError << "Received unexpected BEGIN_RESP phase" << endl
+				<< " - time = " << sc_time_stamp() + t << endl
+				<< " - trans = " << &trans << EndDebug;
 			sc_stop();
 			wait();
 			break;
 		case tlm::END_RESP:
-			cerr << GetName() << "(" << sc_time_stamp() + t << "): received END_RESP" << endl;
+			if(DEBUG)
+				logger << DebugInfo << "Received END_RESP phase, returning TLM_COMPLETED" << endl
+					<< " - time = " << sc_time_stamp() + t << endl
+					<< " - trans = " << &trans << EndDebug;
 			return tlm::TLM_COMPLETED;
 			break;
 		}
@@ -126,8 +176,12 @@ public:
 	}
 
 	virtual void b_transport(tlm::tlm_generic_payload &trans, sc_time &delay) {
-		cerr << GetName() << "(" << sc_time_stamp() + delay << "): Request received" << endl;
-		delay += sc_time(1.0, SC_NS);
+		sc_time my_delay(1.0, SC_NS);
+		if(DEBUG)
+			logger << DebugInfo << "Received blocking transaction, returning with a delay of " << my_delay << endl
+				<< " - time = " << sc_time_stamp() + delay << endl
+				<< " - trans = " << &trans << EndDebug;
+		delay += my_delay;
 	}
 
 	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload &trans, tlm::tlm_dmi &dmi_data) {
@@ -139,25 +193,25 @@ public:
 	}
 };
 
-
-class Top1 :
+template<bool DEBUG = false>
+class Top :
 public sc_module,
 public unisim::kernel::service::Object {
 public:
-	Initiator *init;
-	Initiator *init2;
-	Target *targ;
-	unisim::component::tlm2::bus::generic_bus::Bus<> *bus;
+	Initiator<DEBUG> *init;
+	Initiator<DEBUG> *init2;
+	Target<DEBUG> *targ;
+	unisim::component::tlm2::bus::generic_bus::Bus<32, tlm::tlm_base_protocol_types, DEBUG> *bus;
 
-	SC_HAS_PROCESS(Top1);
+	SC_HAS_PROCESS(Top);
 
-	Top1(const sc_module_name &name, unisim::kernel::service::Object *parent = 0) :
+	Top(const sc_module_name &name, unisim::kernel::service::Object *parent = 0) :
 	sc_module(name),
 	unisim::kernel::service::Object(name, parent) {
-		init = new Initiator("init", this);
-		init2 = new Initiator("init2", this);
-		targ = new Target("targ", this);
-		bus = new unisim::component::tlm2::bus::generic_bus::Bus<>("bus", this);
+		init = new Initiator<DEBUG>("init", this);
+		init2 = new Initiator<DEBUG>("init2", this);
+		targ = new Target<DEBUG>("targ", this);
+		bus = new unisim::component::tlm2::bus::generic_bus::Bus<32, tlm::tlm_base_protocol_types, DEBUG>("bus", this);
 
 		init->init_socket(bus->targ_socket);
 		init2->init_socket(bus->targ_socket);

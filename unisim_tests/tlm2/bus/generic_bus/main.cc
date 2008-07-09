@@ -6,15 +6,21 @@ using unisim::kernel::service::ServiceManager;
 using unisim::kernel::service::VariableBase;
 
 int sc_main(int argv, char **argc) {
-	Top1 top("top");
+	Top<true> top("top");
 
 
 	VariableBase *var = ServiceManager::GetParameter("top.bus.bus_cycle_time");
-    *var = 0.0;
+    *var = 10.0;
+	var = ServiceManager::GetParameter("top.bus.verbose_all");
+	*var = true;
 	var = ServiceManager::GetParameter("kernel_logger.std_out");
 	*var = true;
-	var = ServiceManager::GetParameter("kernel_logger.std_color");
+	var = ServiceManager::GetParameter("kernel_logger.std_out_color");
 	*var = true;
+	var = ServiceManager::GetParameter("kernel_logger.std_err");
+	*var = false;
+	var = ServiceManager::GetParameter("kernel_logger.std_err_color");
+	*var = false;
 	if(!ServiceManager::Setup()) {
 		return 0;
 	}
