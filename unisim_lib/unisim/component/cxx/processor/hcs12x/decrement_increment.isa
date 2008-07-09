@@ -3,6 +3,8 @@
 // DEC EXT
 op dec_ext(0x73[8]:opr16a[8])
 
+dec_ext.getCycles = { return 4; }
+
 dec_ext.disasm = {
 	sink << "DEC $" << std::hex << opr16a;
 }
@@ -24,6 +26,8 @@ dec_ext.execute = {
 
 // DEC IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op dec_idx(0x63[8]:> <:*xb[XB])
+
+dec_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 dec_idx.disasm = {
 	sink << "DEC ";
@@ -49,6 +53,8 @@ dec_idx.execute = {
 
 // DECA  or DECB
 op dec_ab(0b010[3]:b[1]:0x3[4])
+
+dec_ab.getCycles = { return 1; }
 
 dec_ab.disasm = {
 	if (b == 0) {
@@ -88,6 +94,8 @@ dec_ab.execute = {
 // DECW  EXT
 op decw_ext(0x18[8]:0x73[8]:opr16a[16])
 
+decw_ext.getCycles = { return 5; }
+
 decw_ext.disasm = {
 	sink << "DECW $" << std::hex << opr16a;
 }
@@ -111,6 +119,8 @@ decw_ext.execute = {
 
 // DECW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op decw_idx(0x18[8]:0x63[8]:> <:*xb[XB])
+
+decw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 7, 7); }
 
 decw_idx.disasm = {
 	sink << "DECW ";
@@ -137,6 +147,8 @@ decw_idx.execute = {
 
 // DECX or DECY
 op dec_xy(0x18[8]:0b010[3]:b[1]:0x3[4])
+
+dec_xy.getCycles = { return 2; }
 
 dec_xy.disasm = {
 	if (b==0) {
@@ -177,6 +189,8 @@ dec_xy.execute = {
 // DES
 op des(0x1B[8]:0x9F[8])
 
+des.getCycles = { return 2; }
+
 des.disasm = {
 	sink << "DES";
 }
@@ -187,6 +201,8 @@ des.execute = {
 
 // DEX
 op dex(0x09[8])
+
+dex.getCycles = { return 1; }
 
 dex.disasm = {
 	sink << "DEX";
@@ -201,6 +217,8 @@ dex.execute = {
 
 // DEY
 op dey(0x03[8])
+
+dey.getCycles = { return 1; }
 
 dey.disasm = {
 	sink << "DEY";
@@ -217,6 +235,8 @@ dey.execute = {
 
 // INC EXT
 op inc_ext(0x72[8]:opr16a[8])
+
+inc_ext.getCycles = { return 4; }
 
 inc_ext.disasm = {
 	sink << "INC $" << std::hex << opr16a;
@@ -240,6 +260,8 @@ inc_ext.execute = {
 
 // INC IDX or IDX or IDX2 or [D,IDX] or [IDX2]
 op inc_idx(0x62[8]:> <:*xb[XB])
+
+inc_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 inc_idx.disasm = {
 	sink << "INC ";
@@ -265,6 +287,8 @@ inc_idx.execute = {
 
 // INCA  or INCB
 op inc_ab(0b010[3]:b[1]:0x2[4])
+
+inc_ab.getCycles = { return 1; }
 
 inc_ab.disasm = {
 	if (b == 0) {
@@ -304,6 +328,8 @@ inc_ab.execute = {
 // INCW EXT
 op incw_ext(0x18[8]:0x72[8]:opr16a[16])
 
+incw_ext.getCycles = { return 5; }
+
 incw_ext.disasm = {
 	sink << "INCW $" << std::hex << opr16a;
 }
@@ -327,6 +353,8 @@ incw_ext.execute = {
 
 // INCW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op incw_idx(0x18[8]:0x62[8]:> <:*xb[XB])
+
+incw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 incw_idx.disasm = {
 	sink << "INCW ";
@@ -353,6 +381,8 @@ incw_idx.execute = {
 
 // INX or INCY
 op inc_xy(0x18[8]:0b010[3]:b[1]:0x2[4])
+
+inc_xy.getCycles = { return 2; }
 
 inc_xy.disasm = {
 	if (b==0) {
@@ -393,6 +423,8 @@ inc_xy.execute = {
 // INS
 op ins(0x1B[8]:0x81[8])
 
+ins.getCycles = { return 2; }
+
 ins.disasm = {
 	sink << "INS";
 }
@@ -403,6 +435,8 @@ ins.execute = {
 
 // INX
 op inx(0x08[8])
+
+inx.getCycles = { return 1; }
 
 inx.disasm = {
 	sink << "INX";
@@ -417,6 +451,8 @@ inx.execute = {
 
 // INY
 op iny(0x02[8])
+
+iny.getCycles = { return 1; }
 
 iny.disasm = {
 	sink << "INY";

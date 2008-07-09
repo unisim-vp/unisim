@@ -38,6 +38,8 @@
 // ABA ( A+B => A)
 op aba(0x18[8]:0x06[8])
 
+aba.getCycles = { return 2;}
+
 aba.disasm = {
 	sink << "ABA";
 }
@@ -71,6 +73,8 @@ aba.execute = {
 // ABX  (X+B => X) 
 op abx(0x1A[8]:0xE5[8])
 
+abx.getCycles = { return 2;}
+
 abx.disasm = {
 	sink << "ABX";
 }
@@ -93,6 +97,8 @@ abx.execute = {
 // ABY (Y+B=>Y)
 op aby(0x19[8]:0xED[8])
 
+aby.getCycles = { return 2;}
+
 aby.disasm = {
 	sink << "ABY";
 }
@@ -112,6 +118,8 @@ aby.execute = {
 
 // ADCab IMM  (regAB + ii + carry => regAB) 
 op adc_ab_imm(0b1[1]:b[1]:0x09[6]:opr8i[8])
+
+adc_ab_imm.getCycles = { return 1;}
 
 adc_ab_imm.disasm = {
 	if (b==0) {
@@ -158,6 +166,8 @@ adc_ab_imm.execute = {
 
 // ADCab DIR  (regAB + mem[regDirect:opr8a] + carry => regAB)
 op adc_ab_dir(0b1[1]:b[1]:0x19[6]:opr8a[8])
+
+adc_ab_dir.getCycles = { return 3;}
 
 adc_ab_dir.disasm = {
 	if (b==0) {
@@ -209,6 +219,8 @@ adc_ab_dir.execute = {
 // ADCab EXT (regAB + mem[opr16a] + carry => regAB)
 op adc_ab_ext(0b1[1]:b[1]:0x39[6]:> <:opr16a[16])
 
+adc_ab_ext.getCycles = { return 3;}
+
 adc_ab_ext.disasm = {
 	if (b==0) {
 		sink << "ADCA $";
@@ -258,6 +270,8 @@ adc_ab_ext.execute = {
 
 // ADCab IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB + mem[xb->addrE] + carry => regAB)
 op adc_ab_idx(0b1[1]:b[1]:0x29[6]:> <:*xb[XB])
+
+adc_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 adc_ab_idx.disasm = {
 	if (b==0){
@@ -311,6 +325,8 @@ adc_ab_idx.execute = {
 // ADDab IMM (regAB + ii => regAB)
 op add_ab_imm(0b1[1]:b[1]:0x0B[6]:opr8i[8])
 
+add_ab_imm.getCycles = { return 1; }
+
 add_ab_imm.disasm = {
 	if (b==0) {
 		sink << "ADDA #$";
@@ -357,6 +373,8 @@ add_ab_imm.execute = {
 
 // ADDab DIR  (regAB + mem[regDirect:opr8a] => regAB)
 op add_ab_dir(0b1[1]:b[1]:0x1B[6]:opr8a[8])
+
+add_ab_dir.getCycles = { return 3; }
 
 add_ab_dir.disasm = {
 	if (b==0) {
@@ -408,6 +426,8 @@ add_ab_dir.execute = {
 // ADDab EXT  (regAB + mem[opr16a] => regAB)
 op add_ab_ext(0b1[1]:b[1]:0x3B[6]:> <:opr16a[16])
 
+add_ab_ext.getCycles = { return 3; }
+
 add_ab_ext.disasm = {
 	if (b==0) {
 		sink << "ADDA $";
@@ -457,6 +477,8 @@ add_ab_ext.execute = {
 
 // ADDab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB + mem[xb->addrE] => regAB)
 op add_ab_idx(0b1[1]:b[1]:0x2B[6]:> <:*xb[XB])
+
+add_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 add_ab_idx.disasm = {
 	if (b==0){
@@ -510,6 +532,8 @@ add_ab_idx.execute = {
 // ADED IMM  (regD + #opr16i + carry => regD) 
 op aded_imm(0x18[8]:0xC3[8]:opr16i[16])
 
+aded_imm.getCycles = { return 3; }
+
 aded_imm.disasm = {
 	sink << "ADED #$" << std::hex << opr16i;
 }
@@ -535,6 +559,8 @@ aded_imm.execute = {
 
 // ADED DIR  (regD + mem16[regDirect:opr8a] + carry => regD)
 op aded_dir(0x18[8]:> <:0xD3[8]:opr8a[8])
+
+aded_dir.getCycles = { return 4; }
 
 aded_dir.disasm = {
 	sink << "ADED $" << std::hex << opr8a;
@@ -563,6 +589,8 @@ aded_dir.execute = {
 
 // ADED EXT (regD + mem16[opr16a] + carry => regD)
 op aded_ext(0x18[8]:0xF3[8]:> <:opr16a[16])
+
+aded_ext.getCycles = { return 4; }
 
 aded_ext.disasm = {
 	sink << "ADED $" << std::hex << opr16a;
@@ -594,6 +622,8 @@ aded_ext.execute = {
 // ADED IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD + mem16[xb->addrE] + carry => regD)
 op aded_idx(0x18[8]:0xE3[8]:> <:*xb[XB])
 
+aded_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+
 aded_idx.disasm = {
 	sink << "ADED ";
 	xb->disasm(sink);
@@ -623,6 +653,8 @@ aded_idx.execute = {
 
 // ADExy IMM  (regXY + #opr16i + carry => regXY) 
 op ade_xy_imm(0x18[8]:0b1[1]:b[1]:0x09[6]:opr16i[16])
+
+ade_xy_imm.getCycles = { return 3; }
 
 ade_xy_imm.disasm = {
 	if (b==0) {
@@ -663,6 +695,8 @@ ade_xy_imm.execute = {
 
 // ADExy DIR  (regXY + mem16[regDirect:opr8a] + carry => regXY)
 op ade_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x19[6]:opr8a[8])
+
+ade_xy_dir.getCycles = { return 4; }
 
 ade_xy_dir.disasm = {
 	if (b==0) {
@@ -706,6 +740,8 @@ ade_xy_dir.execute = {
 // ADExy EXT (regXY + mem16[opr16a] + carry => regXY)
 op ade_xy_ext(0x18[8]:0b1[1]:b[1]:0x39[6]:> <:opr16a[16])
 
+ade_xy_ext.getCycles = { return 4; }
+
 ade_xy_ext.disasm = {
 	if (b==0) {
 		sink << "ADEX $";
@@ -748,6 +784,8 @@ ade_xy_ext.execute = {
 
 // ADExy IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] + carry => regXY)
 op ade_xy_idx(0x18[8]:0b1[1]:b[1]:0x29[6]:> <:*xb[XB])
+
+ade_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 ade_xy_idx.disasm = {
 	if (b==0){
@@ -794,6 +832,8 @@ ade_xy_idx.execute = {
 // ADDxy IMM (regXY + #opr16i => regXY)
 op add_xy_imm(0x18[8]:0b1[1]:b[1]:0x0B[6]:opr16i[16])
 
+add_xy_imm.getCycles = { return 3; }
+
 add_xy_imm.disasm = {
 	if (b==0) {
 		sink << "ADDX #$";
@@ -833,6 +873,8 @@ add_xy_imm.execute = {
 
 // ADDxy DIR  (regXY + mem16[regDirect:opr8a] => regXY)
 op add_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x1B[6]:opr8a[8])
+
+add_xy_dir.getCycles = { return 4; }
 
 add_xy_dir.disasm = {
 	if (b==0) {
@@ -876,6 +918,8 @@ add_xy_dir.execute = {
 // ADDxy EXT  (regXY + mem16[opr16a] => regXY)
 op add_xy_ext(0x18[8]:0b1[1]:b[1]:0x3B[6]:> <:opr16a[16])
 
+add_xy_ext.getCycles = { return 4; }
+
 add_xy_ext.disasm = {
 	if (b==0) {
 		sink << "ADDX $";
@@ -918,6 +962,8 @@ add_xy_ext.execute = {
 
 // ADDxy  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] => regXY)
 op add_xy_idx(0x18[8]:0b1[1]:b[1]:0x2B[6]:> <:*xb[XB])
+
+add_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 add_xy_idx.disasm = {
 	if (b==0){
@@ -966,6 +1012,8 @@ add_xy_idx.execute = {
 // SUBD IMM or ADDD IMM (regD -+ ii => regD)
 op add_sub_d_imm(0b1[1]:b[1]:0x03[6]:> <:opr16i[16])
 
+add_sub_d_imm.getCycles = { return 2; }
+
 add_sub_d_imm.disasm = {
 	if (b==0) {
 		sink << "SUBD #$";
@@ -999,6 +1047,8 @@ add_sub_d_imm.execute = {
 
 // SUBD DIR or ADDD DIR  (regD -+ mem[regDirect+opr8a]) 
 op add_sub_d_dir(0b1[1]:b[1]:0x13[6]:opr8a[8])
+
+add_sub_d_dir.getCycles = { return 3; }
 
 add_sub_d_dir.disasm = {
 	if (b==0) {
@@ -1036,6 +1086,8 @@ add_sub_d_dir.execute = {
 
 // SUBD EXT or ADDD EXT (regD -+ mem[opr16a]) => regD)
 op add_sub_d_ext(0b1[1]:b[1]:0x33[6]:> <:opr16a[16])
+
+add_sub_d_ext.getCycles = { return 3; }
 
 add_sub_d_ext.disasm = {
 	if (b==0) {
@@ -1075,6 +1127,8 @@ add_sub_d_ext.execute = {
 
 // SUBD/ADDD  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD -+ mem[xb->addrE] => regD) 
 op add_sub_d_idx(0b1[1]:b[1]:0x23[6]:> <:*xb[XB])
+
+add_sub_d_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 add_sub_d_idx.disasm = {
 	if (b==0) {
@@ -1116,6 +1170,8 @@ add_sub_d_idx.execute = {
 // SBA  (regA - regB => regA)
 op sba(0x18[8]:0x16[8])
 
+sba.getCycles = { return 2; }
+
 sba.disasm = {
 	sink << "SBA";
 }
@@ -1140,6 +1196,8 @@ sba.execute = {
 
 // SBCA/SBCB  IMM (regAB - ii - carry => regAB)
 op sbc_ab_imm(0b1[1]:b[1]:0x02[6]:opr8i[8])
+
+sbc_ab_imm.getCycles = { return 1; }
 
 sbc_ab_imm.disasm = {
 	if (b==0) {
@@ -1178,6 +1236,8 @@ sbc_ab_imm.execute = {
 
 // SBCA/SBCB  DIR  (regAB - mem[regDirect:opr8a] - carry => regAB)
 op sbc_ab_dir(0b1[1]:b[1]:0x12[6]:opr8a[8])
+
+sbc_ab_dir.getCycles = { return 3; }
 
 sbc_ab_dir.disasm = {
 	if (b==0) {
@@ -1219,6 +1279,8 @@ sbc_ab_dir.execute = {
 // SBCA/SBCB  EXT (regAB - mem[opr16a] - carry => regAB)
 op sbc_ab_ext(0b1[1]:b[1]:0x32[6]:> <:opr16a[16])
 
+sbc_ab_ext.getCycles = { return 3; }
+
 sbc_ab_ext.disasm = {
 	if (b==0) {
 		sink << "SBCA $";
@@ -1259,6 +1321,8 @@ sbc_ab_ext.execute = {
 
 // SBCA/SBCB IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] - carry => regAB)
 op sbc_ab_idx(0b1[1]:b[1]:0x22[6]:> <:*xb[XB])
+
+sbc_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 sbc_ab_idx.disasm = {
 	if (b==0){
@@ -1303,6 +1367,8 @@ sbc_ab_idx.execute = {
 // SBED  IMM (regD - #opr16i - carry => regD)
 op sbed_imm(0x18[8]:0x83[8]:opr16i[16])
 
+sbed_imm.getCycles = { return 3; }
+
 sbed_imm.disasm = {
 	sink << "SBED #$" << std::hex << opr16i;
 }
@@ -1327,6 +1393,8 @@ sbed_imm.execute = {
 
 // SBED  DIR  (regD - mem16[regDirect:opr8a] - carry => regD)
 op sbed_dir(0x18[8]:> <:0x93[8]:opr8a[8])
+
+sbed_dir.getCycles = { return 4; }
 
 sbed_dir.disasm = {
 	sink << "SBED $" << std::hex << opr8a;
@@ -1355,6 +1423,8 @@ sbed_dir.execute = {
 
 // SBED  EXT (regD - mem16[opr16a] - carry => regD)
 op sbed_ext(0x18[8]:0xB3[8]:> <:opr16a[16])
+
+sbed_ext.getCycles = { return 4; }
 
 sbed_ext.disasm = {
 	sink << "SBED $" << std::hex << opr16a;
@@ -1385,6 +1455,8 @@ sbed_ext.execute = {
 // SBED IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD - mem16[xb->addrE] - carry => regD)
 op sbed_idx(0x18[8]:0xA3[8]:> <:*xb[XB])
 
+sbed_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+
 sbed_idx.disasm = {
 	sink << "SBED ";
 	xb->disasm(sink);
@@ -1414,6 +1486,8 @@ sbed_idx.execute = {
 
 // SBEX/SBEY  IMM (regXY - #opr16i - carry => regXY)
 op sbe_xy_imm(0x18[8]:0b1[1]:b[1]:0x02[6]:opr16i[16])
+
+sbe_xy_imm.getCycles = { return 3; }
 
 sbe_xy_imm.disasm = {
 	if (b==0) {
@@ -1453,6 +1527,8 @@ sbe_xy_imm.execute = {
 
 // SBEX/SBEY  DIR  (regXY - mem16[regDirect:opr8a] - carry => regXY)
 op sbe_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x12[6]:opr8a[8])
+
+sbe_xy_dir.getCycles = { return 4; }
 
 sbe_xy_dir.disasm = {
 	if (b==0) {
@@ -1495,6 +1571,8 @@ sbe_xy_dir.execute = {
 // SBEX/SBEY  EXT (regXY - mem16[opr16a] - carry => regXY)
 op sbe_xy_ext(0x18[8]:0b1[1]:b[1]:0x32[6]:> <:opr16a[16])
 
+sbe_xy_ext.getCycles = { return 4; }
+
 sbe_xy_ext.disasm = {
 	if (b==0) {
 		sink << "SBEX $";
@@ -1536,6 +1614,8 @@ sbe_xy_ext.execute = {
 
 // SBEX/SBEY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY - mem16[xb->addrE] - carry => regXY)
 op sbe_xy_idx(0x18[8]:0b1[1]:b[1]:0x22[6]:> <:*xb[XB])
+
+sbe_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 sbe_xy_idx.disasm = {
 	if (b==0){
@@ -1581,6 +1661,8 @@ sbe_xy_idx.execute = {
 // SUBA/SUBB  IMM (regAB - ii => regAB)
 op sub_ab_imm(0b1[1]:b[1]:0x00[6]:opr8i[8])
 
+sub_ab_imm.getCycles = { return 1; }
+
 sub_ab_imm.disasm = {
 	if (b==0) {
 		sink << "SUBA #$";
@@ -1619,6 +1701,8 @@ sub_ab_imm.execute = {
 
 // SUBA/SUBB  DIR  (regAB - mem[regDirect:opr8a] => regAB)
 op sub_ab_dir(0b1[1]:b[1]:0x10[6]:opr8a[8])
+
+sub_ab_dir.getCycles = { return 3; }
 
 sub_ab_dir.disasm = {
 	if (b==0) {
@@ -1661,6 +1745,8 @@ sub_ab_dir.execute = {
 // SUBA/SUBB  EXT (regAB - mem[opr16a] => regAB)
 op sub_ab_ext(0b1[1]:b[1]:0x30[6]:> <:opr16a[16])
 
+sub_ab_ext.getCycles = { return 3; }
+
 sub_ab_ext.disasm = {
 	if (b==0) {
 		sink << "SUBA $";
@@ -1702,6 +1788,8 @@ sub_ab_ext.execute = {
 
 // SUBA/SUBB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] => regAB)
 op sub_ab_idx(0b1[1]:b[1]:0x20[6]:> <:*xb[XB])
+
+sub_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 sub_ab_idx.disasm = {
 	if (b==0){
@@ -1748,6 +1836,8 @@ sub_ab_idx.execute = {
 // SUBX/SUBY  IMM (regXy - opr16i => regXY)
 op sub_xy_imm(0x18[8]:0b1[1]:b[1]:0x00[6]:opr16i[16])
 
+sub_xy_imm.getCycles = { return 3; }
+
 sub_xy_imm.disasm = {
 	if (b==0) {
 		sink << "SUBX #$";
@@ -1787,6 +1877,8 @@ sub_xy_imm.execute = {
 
 // SUBX/SUBY  DIR  (regXY - mem16[regDirect:opr8a] => regXY)
 op sub_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x10[6]:opr8a[8])
+
+sub_xy_dir.getCycles = { return 4; }
 
 sub_xy_dir.disasm = {
 	if (b==0) {
@@ -1829,6 +1921,8 @@ sub_xy_dir.execute = {
 
 // SUBX/SUBY  EXT (regXY - mem16[opr16a] => regXY)
 op sub_xy_ext(0x18[8]:0b1[1]:b[1]:0x30[6]:> <:opr16a[16])
+
+sub_xy_ext.getCycles = { return 4; }
 
 sub_xy_ext.disasm = {
 	if (b==0) {
@@ -1873,6 +1967,8 @@ sub_xy_ext.execute = {
 // SUBX/SUBY  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY - mem16[xb->addrE] => regXY)
 op sub_xy_idx(0x18[8]:0b1[1]:b[1]:0x20[6]:> <:*xb[XB])
 
+sub_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+
 sub_xy_idx.disasm = {
 	if (b==0){
 		sink << "SUBX ";
@@ -1914,12 +2010,13 @@ sub_xy_idx.execute = {
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
 }
 
-// ******************************
 
 /* ***** Binary-Coded Decimal Instructions ****** */
 
 // DAA (if (ccr.H) then regA + 0x6 => regA)
 op daa(0x18[8]:0x07[8])
+
+daa.getCycles = { return 3; }
 
 daa.disasm = {
 	sink << "DAA";

@@ -36,6 +36,8 @@
 // CBA
 op cba(0x18[8]:0x17[8])
 
+cba.getCycles = { return 2; }
+
 cba.disasm = {
 	sink << "CBA";
 }
@@ -55,6 +57,8 @@ cba.execute = {
 
 //  CMPab  IMM
 op cmp_ab_imm(0b1[1]:b[1]:0x01[6]:opr8i[8])
+
+cmp_ab_imm.getCycles = { return 1; }
 
 cmp_ab_imm.disasm = {
 	if (b==0) {
@@ -86,6 +90,8 @@ cmp_ab_imm.execute = {
 
 // CMPab  DIR
 op cmp_ab_dir(0b1[1]:b[1]:0x11[6]:opr8a[8])
+
+cmp_ab_dir.getCycles = { return 3; }
 
 cmp_ab_dir.disasm = {
 	if (b==0) {
@@ -119,6 +125,8 @@ cmp_ab_dir.execute = {
 
 // CMPab  EXT
 op cmp_ab_ext(0b1[1]:b[1]:0x31[6]:opr16a[8])
+
+cmp_ab_ext.getCycles = { return 3; }
 
 cmp_ab_ext.disasm = {
 	if (b==0) {
@@ -154,6 +162,8 @@ cmp_ab_ext.execute = {
 // CMPab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] 
 op cmp_ab_idx(0b1[1]:b[1]:0x21[6]:> <:*xb[XB])
 
+cmp_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+
 cmp_ab_idx.disasm = {
 	if (b==0) {
 		sink << "CMPA ";
@@ -186,6 +196,8 @@ cmp_ab_idx.execute = {
 
 // CPdyxs  IMM
 op cp_dyxs_imm(0x23[6]:dyxs[2]:> <:opr16i[16])
+
+cp_dyxs_imm.getCycles = { return 2; }
 
 cp_dyxs_imm.disasm = {
 	switch (dyxs) {
@@ -220,6 +232,8 @@ cp_dyxs_imm.execute = {
 
 // CPdyxs DIR
 op cp_dyxs_dir(0x27[6]:dyxs[2]:opr8a[8])
+
+cp_dyxs_dir.getCycles = { return 3; }
 
 cp_dyxs_dir.disasm = {
 	switch (dyxs) {
@@ -258,6 +272,8 @@ cp_dyxs_dir.execute = {
 // CPdyxs EXT
 op cp_dyxs_ext(0x2F[6]:dyxs[2]:> <:opr16a[16])
 
+cp_dyxs_ext.getCycles = { return 3; }
+
 cp_dyxs_ext.disasm = {
 	switch (dyxs) {
 		case 0: sink << "CPD $"; break;
@@ -292,6 +308,8 @@ cp_dyxs_ext.execute = {
 
 // CPdyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op cp_dyxs_idx(0x2B[6]:dyxs[2]:> <:*xb[XB])
+
+cp_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 cp_dyxs_idx.disasm = {
 	switch (dyxs) {
@@ -330,6 +348,8 @@ cp_dyxs_idx.execute = {
 // CPE_dyxs  IMM
 op cpe_dyxs_imm(0x18[8]:0x23[6]:dyxs[2]:> <:opr16i[16])
 
+cpe_dyxs_imm.getCycles = { return 3; }
+
 cpe_dyxs_imm.disasm = {
 	switch (dyxs) {
 		case 0: sink << "CPED #$"; break;
@@ -364,6 +384,8 @@ cpe_dyxs_imm.execute = {
 
 // CPE_dyxs DIR
 op cpe_dyxs_dir(0x18[8]:> <:0x27[6]:dyxs[2]:opr8a[8])
+
+cpe_dyxs_dir.getCycles = { return 4; }
 
 cpe_dyxs_dir.disasm = {
 	switch (dyxs) {
@@ -403,6 +425,8 @@ cpe_dyxs_dir.execute = {
 // CPE_dyxs EXT
 op cpe_dyxs_ext(0x18[8]:0x2F[6]:dyxs[2]:> <:opr16a[16])
 
+cpe_dyxs_ext.getCycles = { return 4; }
+
 cpe_dyxs_ext.disasm = {
 	switch (dyxs) {
 		case 0: sink << "CPED $"; break;
@@ -438,6 +462,8 @@ cpe_dyxs_ext.execute = {
 
 // CPE_dyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op cpe_dyxs_idx(0x18[8]:0x2B[6]:dyxs[2]:> <:*xb[XB])
+
+cpe_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 cpe_dyxs_idx.disasm = {
 	switch (dyxs) {
@@ -478,6 +504,8 @@ cpe_dyxs_idx.execute = {
 // TST EXT
 op tst_ext(0xF7[8]:> <:opr16a[16])
 
+tst_ext.getCycles = { return 3; }
+
 tst_ext.disasm = {
 	sink << "TST $" << std::hex << opr16a;
 }
@@ -500,6 +528,8 @@ tst_ext.execute = {
 
 // TST IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op tst_idx(0xE7[8]:> <:*xb[XB])
+
+tst_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 tst_idx.disasm = {
 	sink << "TST ";
@@ -524,6 +554,8 @@ tst_idx.execute = {
 
 // TSTA or TSTB
 op tst_ab(0b1[1]:b[1]:0x17[6])
+
+tst_ab.getCycles = { return 1; }
 
 tst_ab.disasm = {
 	if (b==0) {
@@ -555,6 +587,8 @@ tst_ab.execute = {
 // TSTW EXT
 op tstw_ext(0x18[8]:0xF7[8]:opr16a[16])
 
+tstw_ext.getCycles = { return 4; }
+
 tstw_ext.disasm = {
 	sink << "TSTW $" << std::hex << opr16a;
 }
@@ -579,6 +613,8 @@ tstw_ext.execute = {
 // TSTW IDX or IDX1 or IDX2 or [D, IDX] or [IDX2]
 op tstw_idx(0x18[8]:0xE7[8]:> <:*xb[XB])
 
+tstw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+
 tstw_idx.disasm = {
 	sink << "TSTW ";
 	xb->disasm(sink);
@@ -602,6 +638,8 @@ tstw_idx.execute = {
 
 // TSTX or TSTY
 op tst_xy(0x18[8]:0b1[1]:b[1]:0x17[6])
+
+tst_xy.getCycles = { return 2; }
 
 tst_xy.disasm = {
 	switch (b) {
@@ -632,22 +670,19 @@ tst_xy.execute = {
 /* ************ Minimum Instructions ************* */
 
 // EMIND: MIN ((D), (M : M + 1)) ⇒ D
-// EMINM: MIN ((D), (M : M + 1)) ⇒ M : M + 1
 
-// opcode(EMIND)-> 0x18 0x1B  opcode(EMINM)-> 0x18 0x1F
-op emin_dm(0x18[8]:0b00011[5]:b[1]:0b11[2]:> <:*xb[XB])
+// opcode(EMIND)-> 0x18 0x1B
+op emind(0x18[8]:0x1B[8]:> <:*xb[XB])
 
-emin_dm.disasm = {
-	if (b == 0) {
-		sink << "EMIND ";
-	} else {
-		sink << "EMINM ";
-	}
+emind.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+
+emind.disasm = {
 	
+	sink << "EMIND ";
 	xb->disasm(sink);
 }
 
-emin_dm.execute = {
+emind.execute = {
 	 
 	uint16_t dVal = cpu->getRegD();
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -658,11 +693,7 @@ emin_dm.execute = {
 	 
 	uint16_t result = dVal - mVal;
 
-	if (b == 0) {
-		cpu->setRegD(min);
-	} else {
-		cpu->memWrite16(addr, min);
-	}
+	cpu->setRegD(min);
 	 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -683,23 +714,67 @@ emin_dm.execute = {
 	if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 }
 
+// EMINM: MIN ((D), (M : M + 1)) ⇒ M : M + 1
+
+// opcode(EMINM)-> 0x18 0x1F
+op eminm(0x18[8]:0x1F[8]:> <:*xb[XB])
+
+eminm.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
+
+eminm.disasm = {
+
+	sink << "EMINM ";
+	xb->disasm(sink);
+}
+
+eminm.execute = {
+	 
+	uint16_t dVal = cpu->getRegD();
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	uint16_t mVal = cpu->memRead16(addr);
+	
+	uint16_t min;
+	if (dVal > mVal) { min == mVal; } else { min = dVal; }
+	 
+	uint16_t result = dVal - mVal;
+
+	cpu->memWrite16(addr, min);
+	 
+	// N: Set if MSB of result is set; cleared otherwise
+	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+	// Z: Set if result is $0000; cleared otherwise
+	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	 
+	/* 
+	 * V: D15 • !M15 • !R15 + !D15 • M15 • R15
+	 * Set if a two’s complement overflow resulted from the operation; cleared
+	 * otherwise
+	 */
+	if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	/*
+	 * C: !D15 • M15 + M15 • R15 + R15 • !D15
+	 * Set if the value of the content of memory is larger than the value of the
+	 * accumulator; cleared otherwise
+	 */
+	if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+}
+
+
 // MINA: MIN ((A), (M)) ⇒ A
-// MINM: MIN ((A), (M)) ⇒ M
 
-// opcode(MINA)-> 0x18 0x19  opcode(MINM)->0x18 0x1D
-op min_am(0x18[8]:0b00011[5]:b[1]:0b01[2]:> <:*xb[XB])
+// opcode(MINA)-> 0x18 0x19 
+op mina(0x18[8]:0x19[8]:> <:*xb[XB])
 
-min_am.disasm = {
-	if (b == 0) {
-		sink << "MINA ";
-	} else {
-		sink << "MINM ";
-	}
+mina.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+
+mina.disasm = {
+
+	sink << "MINA ";
 	
 	xb->disasm(sink);
 }
 
-min_am.execute = {
+mina.execute = {
 	 
 	uint8_t aVal = cpu->getRegA();
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -710,11 +785,7 @@ min_am.execute = {
 	 
 	uint8_t result = aVal - mVal;
 
-	if (b == 0) {
-		cpu->setRegA(min);
-	} else {
-		cpu->memWrite8(addr, min);
-	}
+	cpu->setRegA(min);
 	 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -735,25 +806,69 @@ min_am.execute = {
 	if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 }
 
-/* ************ Maximum Instructions ************* */
+// MINM: MIN ((A), (M)) ⇒ M
 
-// EMAND: MAX ((D), (M : M + 1)) ⇒ D
-// EMANM: MAX ((D), (M : M + 1)) ⇒ M : M + 1
+// opcode(MINM)->0x18 0x1D
+op minm(0x18[8]:0x1D[8]:> <:*xb[XB])
 
-// opcode(EMAXD)-> 0x18 0x1A  opcode(EMAXM)-> 0x18 0x1E
-op emax_dm(0x18[8]:0b00011[5]:b[1]:0b10[2]:> <:*xb[XB])
+minm.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
-emax_dm.disasm = {
-	if (b == 0) {
-		sink << "EMAXD ";
-	} else {
-		sink << "EMAXM ";
-	}
+minm.disasm = {
+
+	sink << "MINM ";
 	
 	xb->disasm(sink);
 }
 
-emax_dm.execute = {
+minm.execute = {
+	 
+	uint8_t aVal = cpu->getRegA();
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	uint8_t mVal = cpu->memRead8(addr);
+	
+	uint8_t min;
+	if (aVal > mVal) { min == mVal; } else { min = aVal; }
+	 
+	uint8_t result = aVal - mVal;
+
+	cpu->memWrite8(addr, min);
+	 
+	// N: Set if MSB of result is set; cleared otherwise
+	if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+	// Z: Set if result is $00; cleared otherwise
+	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	 
+	/* 
+	 * V: A7 • !M7 • !R7 + !A7 • M7 • R7
+	 * Set if a two’s complement overflow resulted from the operation; cleared
+	 * otherwise
+	 */
+	if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	/*
+	 * C: !A7 • M7 + M7 • R7 + R7 • !A7
+	 * Set if the value of the content of memory is larger than the value of the
+	 * accumulator; cleared otherwise
+	 */
+	if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+}
+
+
+/* ************ Maximum Instructions ************* */
+
+// EMAND: MAX ((D), (M : M + 1)) ⇒ D
+
+// opcode(EMAXD)-> 0x18 0x1A
+op emaxd(0x18[8]:0x1A[8]:> <:*xb[XB])
+
+emaxd.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+
+emaxd.disasm = {
+
+	sink << "EMAXD ";	
+	xb->disasm(sink);
+}
+
+emaxd.execute = {
 	 
 	uint16_t dVal = cpu->getRegD();
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -765,12 +880,8 @@ emax_dm.execute = {
 	 
 	uint16_t result = dVal - mVal;
 
-	if (b == 0) {
-		cpu->setRegD(max);
-	} else {
-		cpu->memWrite16(addr, max);
-	}
-	 
+	cpu->setRegD(max);
+		 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	// Z: Set if result is $0000; cleared otherwise
@@ -790,23 +901,67 @@ emax_dm.execute = {
 	if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 }
 
-// MAXA: MAX ((A), (M)) ⇒ A
-// MAXM: MAx ((A), (M)) ⇒ M
+// EMANM: MAX ((D), (M : M + 1)) ⇒ M : M + 1
 
-// opcode(MAXA)-> 0x18 0x18  opcode(MAXM)->0x18 0x1C
-op max_am(0x18[8]:0b00011[5]:b[1]:0b00[2]:> <:*xb[XB])
+// opcode(EMAXM)-> 0x18 0x1E
+op emaxm(0x18[8]:0x1E[8]:> <:*xb[XB])
 
-max_am.disasm = {
-	if (b == 0) {
-		sink << "MAXA ";
-	} else {
-		sink << "MAXM ";
-	}
-	
+emaxm.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
+
+emaxm.disasm = {
+
+	sink << "EMAXM ";	
 	xb->disasm(sink);
 }
 
-max_am.execute = {
+emaxm.execute = {
+	 
+	uint16_t dVal = cpu->getRegD();
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	
+	uint16_t mVal = cpu->memRead16(addr);
+	
+	uint16_t max;
+	if (mVal > dVal) { max == mVal; } else { max = dVal; }
+	 
+	uint16_t result = dVal - mVal;
+
+	cpu->memWrite16(addr, max);
+		 
+	// N: Set if MSB of result is set; cleared otherwise
+	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+	// Z: Set if result is $0000; cleared otherwise
+	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	 
+	/* 
+	 * V: D15 • !M15 • !R15 + !D15 • M15 • R15
+	 * Set if a two’s complement overflow resulted from the operation; cleared
+	 * otherwise
+	 */
+	if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	/*
+	 * C: !D15 • M15 + M15 • R15 + R15 • !D15
+	 * Set if the value of the content of memory is larger than the value of the
+	 * accumulator; cleared otherwise
+	 */
+	if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+}
+
+
+// MAXA: MAX ((A), (M)) ⇒ A
+
+// opcode(MAXA)-> 0x18 0x18 
+op maxa(0x18[8]:0x18[8]:> <:*xb[XB])
+
+maxa.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+
+maxa.disasm = {
+
+	sink << "MAXA ";	
+	xb->disasm(sink);
+}
+
+maxa.execute = {
 	 
 	uint8_t aVal = cpu->getRegA();
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -817,11 +972,52 @@ max_am.execute = {
 	 
 	uint8_t result = aVal - mVal;
 
-	if (b == 0) {
-		cpu->setRegA(max);
-	} else {
-		cpu->memWrite8(addr, max);
-	}
+	cpu->setRegA(max);
+		 
+	// N: Set if MSB of result is set; cleared otherwise
+	if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+	// Z: Set if result is $00; cleared otherwise
+	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+	 
+	/* 
+	 * V: A7 • !M7 • !R7 + !A7 • M7 • R7
+	 * Set if a two’s complement overflow resulted from the operation; cleared
+	 * otherwise
+	 */
+	if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	/*
+	 * C: !A7 • M7 + M7 • R7 + R7 • !A7
+	 * Set if the value of the content of memory is larger than the value of the
+	 * accumulator; cleared otherwise
+	 */
+	if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+}
+
+// MAXM: MAx ((A), (M)) ⇒ M
+
+// opcode(MAXM)->0x18 0x1C
+op maxm(0x18[8]:0x1C[8]:> <:*xb[XB])
+
+maxm.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
+
+maxm.disasm = {
+
+	sink << "MAXM ";	
+	xb->disasm(sink);
+}
+
+maxm.execute = {
+	 
+	uint8_t aVal = cpu->getRegA();
+	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	uint8_t mVal = cpu->memRead8(addr);
+	
+	uint8_t max;
+	if (mVal > aVal) { max == mVal; } else { max = aVal; }
+	 
+	uint8_t result = aVal - mVal;
+
+	cpu->memWrite8(addr, max);
 	 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }

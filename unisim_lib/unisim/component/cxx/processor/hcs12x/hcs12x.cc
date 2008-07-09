@@ -3710,16 +3710,21 @@ class OpAba : public Operation
 public:
 	OpAba(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 3716 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 3716 "hcs12x.cc"
+#line 3721 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 3720 "hcs12x.cc"
+#line 3725 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 3723 "hcs12x.cc"
+#line 3728 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -3760,14 +3765,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 3764 "hcs12x.cc"
+#line 3769 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 3768 "hcs12x.cc"
+#line 3773 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 3771 "hcs12x.cc"
+#line 3776 "hcs12x.cc"
 	);
 private:
 };
@@ -3777,16 +3782,21 @@ class OpAbx : public Operation
 public:
 	OpAbx(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 3788 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 3783 "hcs12x.cc"
+#line 3793 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 3787 "hcs12x.cc"
+#line 3797 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 3790 "hcs12x.cc"
+#line 3800 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -3827,14 +3837,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 3831 "hcs12x.cc"
+#line 3841 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 3835 "hcs12x.cc"
+#line 3845 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 3838 "hcs12x.cc"
+#line 3848 "hcs12x.cc"
 	);
 private:
 };
@@ -3844,16 +3854,21 @@ class OpAby : public Operation
 public:
 	OpAby(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 3860 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 3850 "hcs12x.cc"
+#line 3865 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 3854 "hcs12x.cc"
+#line 3869 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 3857 "hcs12x.cc"
+#line 3872 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -3894,14 +3909,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 3898 "hcs12x.cc"
+#line 3913 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 3902 "hcs12x.cc"
+#line 3917 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 3905 "hcs12x.cc"
+#line 3920 "hcs12x.cc"
 	);
 private:
 };
@@ -3913,16 +3928,21 @@ public:
 	uint32_t b;
 	uint32_t opr8i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 3934 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 3919 "hcs12x.cc"
+#line 3939 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 3923 "hcs12x.cc"
+#line 3943 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 3926 "hcs12x.cc"
+#line 3946 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -3963,14 +3983,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 3967 "hcs12x.cc"
+#line 3987 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 3971 "hcs12x.cc"
+#line 3991 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 3974 "hcs12x.cc"
+#line 3994 "hcs12x.cc"
 	);
 private:
 };
@@ -3982,16 +4002,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4008 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 3988 "hcs12x.cc"
+#line 4013 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 3992 "hcs12x.cc"
+#line 4017 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 3995 "hcs12x.cc"
+#line 4020 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4032,14 +4057,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4036 "hcs12x.cc"
+#line 4061 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4040 "hcs12x.cc"
+#line 4065 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4043 "hcs12x.cc"
+#line 4068 "hcs12x.cc"
 	);
 private:
 };
@@ -4051,16 +4076,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4082 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4057 "hcs12x.cc"
+#line 4087 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4061 "hcs12x.cc"
+#line 4091 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4064 "hcs12x.cc"
+#line 4094 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4101,14 +4131,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4105 "hcs12x.cc"
+#line 4135 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4109 "hcs12x.cc"
+#line 4139 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4112 "hcs12x.cc"
+#line 4142 "hcs12x.cc"
 	);
 private:
 };
@@ -4121,19 +4151,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 4125 "hcs12x.cc"
+#line 4155 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4160 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4130 "hcs12x.cc"
+#line 4165 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4134 "hcs12x.cc"
+#line 4169 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4137 "hcs12x.cc"
+#line 4172 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4174,14 +4209,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4178 "hcs12x.cc"
+#line 4213 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4182 "hcs12x.cc"
+#line 4217 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4185 "hcs12x.cc"
+#line 4220 "hcs12x.cc"
 	);
 private:
 };
@@ -4193,16 +4228,21 @@ public:
 	uint32_t b;
 	uint32_t opr8i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4234 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4199 "hcs12x.cc"
+#line 4239 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4203 "hcs12x.cc"
+#line 4243 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4206 "hcs12x.cc"
+#line 4246 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4243,14 +4283,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4247 "hcs12x.cc"
+#line 4287 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4251 "hcs12x.cc"
+#line 4291 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4254 "hcs12x.cc"
+#line 4294 "hcs12x.cc"
 	);
 private:
 };
@@ -4262,16 +4302,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4308 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4268 "hcs12x.cc"
+#line 4313 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4272 "hcs12x.cc"
+#line 4317 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4275 "hcs12x.cc"
+#line 4320 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4312,14 +4357,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4316 "hcs12x.cc"
+#line 4361 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4320 "hcs12x.cc"
+#line 4365 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4323 "hcs12x.cc"
+#line 4368 "hcs12x.cc"
 	);
 private:
 };
@@ -4331,16 +4376,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4382 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4337 "hcs12x.cc"
+#line 4387 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4341 "hcs12x.cc"
+#line 4391 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4344 "hcs12x.cc"
+#line 4394 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4381,14 +4431,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4385 "hcs12x.cc"
+#line 4435 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4389 "hcs12x.cc"
+#line 4439 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4392 "hcs12x.cc"
+#line 4442 "hcs12x.cc"
 	);
 private:
 };
@@ -4401,19 +4451,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 4405 "hcs12x.cc"
+#line 4455 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4460 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4410 "hcs12x.cc"
+#line 4465 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4414 "hcs12x.cc"
+#line 4469 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4417 "hcs12x.cc"
+#line 4472 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4454,14 +4509,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4458 "hcs12x.cc"
+#line 4513 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4462 "hcs12x.cc"
+#line 4517 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4465 "hcs12x.cc"
+#line 4520 "hcs12x.cc"
 	);
 private:
 };
@@ -4472,16 +4527,21 @@ public:
 	OpAded_imm(CodeType const& code, uint16_t addr);
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4533 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4478 "hcs12x.cc"
+#line 4538 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4482 "hcs12x.cc"
+#line 4542 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4485 "hcs12x.cc"
+#line 4545 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4522,14 +4582,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4526 "hcs12x.cc"
+#line 4586 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4530 "hcs12x.cc"
+#line 4590 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4533 "hcs12x.cc"
+#line 4593 "hcs12x.cc"
 	);
 private:
 };
@@ -4540,16 +4600,21 @@ public:
 	OpAded_dir(CodeType const& code, uint16_t addr);
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4606 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4546 "hcs12x.cc"
+#line 4611 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4550 "hcs12x.cc"
+#line 4615 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4553 "hcs12x.cc"
+#line 4618 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4590,14 +4655,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4594 "hcs12x.cc"
+#line 4659 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4598 "hcs12x.cc"
+#line 4663 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4601 "hcs12x.cc"
+#line 4666 "hcs12x.cc"
 	);
 private:
 };
@@ -4608,16 +4673,21 @@ public:
 	OpAded_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4679 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4614 "hcs12x.cc"
+#line 4684 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4618 "hcs12x.cc"
+#line 4688 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4621 "hcs12x.cc"
+#line 4691 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4658,14 +4728,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4662 "hcs12x.cc"
+#line 4732 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4666 "hcs12x.cc"
+#line 4736 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4669 "hcs12x.cc"
+#line 4739 "hcs12x.cc"
 	);
 private:
 };
@@ -4677,19 +4747,24 @@ public:
 	~OpAded_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 4681 "hcs12x.cc"
+#line 4751 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4756 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4686 "hcs12x.cc"
+#line 4761 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4690 "hcs12x.cc"
+#line 4765 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4693 "hcs12x.cc"
+#line 4768 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4730,14 +4805,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4734 "hcs12x.cc"
+#line 4809 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4738 "hcs12x.cc"
+#line 4813 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4741 "hcs12x.cc"
+#line 4816 "hcs12x.cc"
 	);
 private:
 };
@@ -4749,16 +4824,21 @@ public:
 	uint32_t b;
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4830 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4755 "hcs12x.cc"
+#line 4835 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4759 "hcs12x.cc"
+#line 4839 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4762 "hcs12x.cc"
+#line 4842 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4799,14 +4879,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4803 "hcs12x.cc"
+#line 4883 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4807 "hcs12x.cc"
+#line 4887 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4810 "hcs12x.cc"
+#line 4890 "hcs12x.cc"
 	);
 private:
 };
@@ -4818,16 +4898,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4904 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4824 "hcs12x.cc"
+#line 4909 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4828 "hcs12x.cc"
+#line 4913 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4831 "hcs12x.cc"
+#line 4916 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4868,14 +4953,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4872 "hcs12x.cc"
+#line 4957 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4876 "hcs12x.cc"
+#line 4961 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4879 "hcs12x.cc"
+#line 4964 "hcs12x.cc"
 	);
 private:
 };
@@ -4887,16 +4972,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 4978 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4893 "hcs12x.cc"
+#line 4983 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4897 "hcs12x.cc"
+#line 4987 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4900 "hcs12x.cc"
+#line 4990 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -4937,14 +5027,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 4941 "hcs12x.cc"
+#line 5031 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 4945 "hcs12x.cc"
+#line 5035 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 4948 "hcs12x.cc"
+#line 5038 "hcs12x.cc"
 	);
 private:
 };
@@ -4957,19 +5047,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 4961 "hcs12x.cc"
+#line 5051 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5056 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 4966 "hcs12x.cc"
+#line 5061 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 4970 "hcs12x.cc"
+#line 5065 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 4973 "hcs12x.cc"
+#line 5068 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5010,14 +5105,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5014 "hcs12x.cc"
+#line 5109 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5018 "hcs12x.cc"
+#line 5113 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5021 "hcs12x.cc"
+#line 5116 "hcs12x.cc"
 	);
 private:
 };
@@ -5029,16 +5124,21 @@ public:
 	uint32_t b;
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5130 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5035 "hcs12x.cc"
+#line 5135 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5039 "hcs12x.cc"
+#line 5139 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5042 "hcs12x.cc"
+#line 5142 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5079,14 +5179,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5083 "hcs12x.cc"
+#line 5183 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5087 "hcs12x.cc"
+#line 5187 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5090 "hcs12x.cc"
+#line 5190 "hcs12x.cc"
 	);
 private:
 };
@@ -5098,16 +5198,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5204 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5104 "hcs12x.cc"
+#line 5209 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5108 "hcs12x.cc"
+#line 5213 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5111 "hcs12x.cc"
+#line 5216 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5148,14 +5253,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5152 "hcs12x.cc"
+#line 5257 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5156 "hcs12x.cc"
+#line 5261 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5159 "hcs12x.cc"
+#line 5264 "hcs12x.cc"
 	);
 private:
 };
@@ -5167,16 +5272,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5278 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5173 "hcs12x.cc"
+#line 5283 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5177 "hcs12x.cc"
+#line 5287 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5180 "hcs12x.cc"
+#line 5290 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5217,14 +5327,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5221 "hcs12x.cc"
+#line 5331 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5225 "hcs12x.cc"
+#line 5335 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5228 "hcs12x.cc"
+#line 5338 "hcs12x.cc"
 	);
 private:
 };
@@ -5237,19 +5347,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 5241 "hcs12x.cc"
+#line 5351 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5356 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5246 "hcs12x.cc"
+#line 5361 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5250 "hcs12x.cc"
+#line 5365 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5253 "hcs12x.cc"
+#line 5368 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5290,14 +5405,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5294 "hcs12x.cc"
+#line 5409 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5298 "hcs12x.cc"
+#line 5413 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5301 "hcs12x.cc"
+#line 5416 "hcs12x.cc"
 	);
 private:
 };
@@ -5309,16 +5424,21 @@ public:
 	uint32_t b;
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5430 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5315 "hcs12x.cc"
+#line 5435 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5319 "hcs12x.cc"
+#line 5439 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5322 "hcs12x.cc"
+#line 5442 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5359,14 +5479,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5363 "hcs12x.cc"
+#line 5483 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5367 "hcs12x.cc"
+#line 5487 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5370 "hcs12x.cc"
+#line 5490 "hcs12x.cc"
 	);
 private:
 };
@@ -5378,16 +5498,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5504 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5384 "hcs12x.cc"
+#line 5509 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5388 "hcs12x.cc"
+#line 5513 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5391 "hcs12x.cc"
+#line 5516 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5428,14 +5553,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5432 "hcs12x.cc"
+#line 5557 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5436 "hcs12x.cc"
+#line 5561 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5439 "hcs12x.cc"
+#line 5564 "hcs12x.cc"
 	);
 private:
 };
@@ -5447,16 +5572,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5578 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5453 "hcs12x.cc"
+#line 5583 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5457 "hcs12x.cc"
+#line 5587 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5460 "hcs12x.cc"
+#line 5590 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5497,14 +5627,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5501 "hcs12x.cc"
+#line 5631 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5505 "hcs12x.cc"
+#line 5635 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5508 "hcs12x.cc"
+#line 5638 "hcs12x.cc"
 	);
 private:
 };
@@ -5517,19 +5647,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 5521 "hcs12x.cc"
+#line 5651 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5656 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5526 "hcs12x.cc"
+#line 5661 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5530 "hcs12x.cc"
+#line 5665 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5533 "hcs12x.cc"
+#line 5668 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5570,14 +5705,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5574 "hcs12x.cc"
+#line 5709 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5578 "hcs12x.cc"
+#line 5713 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5581 "hcs12x.cc"
+#line 5716 "hcs12x.cc"
 	);
 private:
 };
@@ -5587,16 +5722,21 @@ class OpSba : public Operation
 public:
 	OpSba(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5728 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5593 "hcs12x.cc"
+#line 5733 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5597 "hcs12x.cc"
+#line 5737 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5600 "hcs12x.cc"
+#line 5740 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5637,14 +5777,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5641 "hcs12x.cc"
+#line 5781 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5645 "hcs12x.cc"
+#line 5785 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5648 "hcs12x.cc"
+#line 5788 "hcs12x.cc"
 	);
 private:
 };
@@ -5656,16 +5796,21 @@ public:
 	uint32_t b;
 	uint32_t opr8i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5802 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5662 "hcs12x.cc"
+#line 5807 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5666 "hcs12x.cc"
+#line 5811 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5669 "hcs12x.cc"
+#line 5814 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5706,14 +5851,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5710 "hcs12x.cc"
+#line 5855 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5714 "hcs12x.cc"
+#line 5859 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5717 "hcs12x.cc"
+#line 5862 "hcs12x.cc"
 	);
 private:
 };
@@ -5725,16 +5870,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5876 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5731 "hcs12x.cc"
+#line 5881 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5735 "hcs12x.cc"
+#line 5885 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5738 "hcs12x.cc"
+#line 5888 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5775,14 +5925,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5779 "hcs12x.cc"
+#line 5929 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5783 "hcs12x.cc"
+#line 5933 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5786 "hcs12x.cc"
+#line 5936 "hcs12x.cc"
 	);
 private:
 };
@@ -5794,16 +5944,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 5950 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5800 "hcs12x.cc"
+#line 5955 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5804 "hcs12x.cc"
+#line 5959 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5807 "hcs12x.cc"
+#line 5962 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5844,14 +5999,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5848 "hcs12x.cc"
+#line 6003 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5852 "hcs12x.cc"
+#line 6007 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5855 "hcs12x.cc"
+#line 6010 "hcs12x.cc"
 	);
 private:
 };
@@ -5864,19 +6019,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 5868 "hcs12x.cc"
+#line 6023 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6028 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5873 "hcs12x.cc"
+#line 6033 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5877 "hcs12x.cc"
+#line 6037 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5880 "hcs12x.cc"
+#line 6040 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5917,14 +6077,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5921 "hcs12x.cc"
+#line 6081 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5925 "hcs12x.cc"
+#line 6085 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5928 "hcs12x.cc"
+#line 6088 "hcs12x.cc"
 	);
 private:
 };
@@ -5935,16 +6095,21 @@ public:
 	OpSbed_imm(CodeType const& code, uint16_t addr);
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6101 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 5941 "hcs12x.cc"
+#line 6106 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 5945 "hcs12x.cc"
+#line 6110 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 5948 "hcs12x.cc"
+#line 6113 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -5985,14 +6150,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 5989 "hcs12x.cc"
+#line 6154 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 5993 "hcs12x.cc"
+#line 6158 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 5996 "hcs12x.cc"
+#line 6161 "hcs12x.cc"
 	);
 private:
 };
@@ -6003,16 +6168,21 @@ public:
 	OpSbed_dir(CodeType const& code, uint16_t addr);
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6174 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6009 "hcs12x.cc"
+#line 6179 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6013 "hcs12x.cc"
+#line 6183 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6016 "hcs12x.cc"
+#line 6186 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6053,14 +6223,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6057 "hcs12x.cc"
+#line 6227 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6061 "hcs12x.cc"
+#line 6231 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6064 "hcs12x.cc"
+#line 6234 "hcs12x.cc"
 	);
 private:
 };
@@ -6071,16 +6241,21 @@ public:
 	OpSbed_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6247 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6077 "hcs12x.cc"
+#line 6252 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6081 "hcs12x.cc"
+#line 6256 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6084 "hcs12x.cc"
+#line 6259 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6121,14 +6296,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6125 "hcs12x.cc"
+#line 6300 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6129 "hcs12x.cc"
+#line 6304 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6132 "hcs12x.cc"
+#line 6307 "hcs12x.cc"
 	);
 private:
 };
@@ -6140,19 +6315,24 @@ public:
 	~OpSbed_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 6144 "hcs12x.cc"
+#line 6319 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6324 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6149 "hcs12x.cc"
+#line 6329 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6153 "hcs12x.cc"
+#line 6333 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6156 "hcs12x.cc"
+#line 6336 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6193,14 +6373,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6197 "hcs12x.cc"
+#line 6377 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6201 "hcs12x.cc"
+#line 6381 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6204 "hcs12x.cc"
+#line 6384 "hcs12x.cc"
 	);
 private:
 };
@@ -6212,16 +6392,21 @@ public:
 	uint32_t b;
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6398 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6218 "hcs12x.cc"
+#line 6403 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6222 "hcs12x.cc"
+#line 6407 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6225 "hcs12x.cc"
+#line 6410 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6262,14 +6447,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6266 "hcs12x.cc"
+#line 6451 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6270 "hcs12x.cc"
+#line 6455 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6273 "hcs12x.cc"
+#line 6458 "hcs12x.cc"
 	);
 private:
 };
@@ -6281,16 +6466,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6472 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6287 "hcs12x.cc"
+#line 6477 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6291 "hcs12x.cc"
+#line 6481 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6294 "hcs12x.cc"
+#line 6484 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6331,14 +6521,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6335 "hcs12x.cc"
+#line 6525 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6339 "hcs12x.cc"
+#line 6529 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6342 "hcs12x.cc"
+#line 6532 "hcs12x.cc"
 	);
 private:
 };
@@ -6350,16 +6540,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6546 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6356 "hcs12x.cc"
+#line 6551 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6360 "hcs12x.cc"
+#line 6555 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6363 "hcs12x.cc"
+#line 6558 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6400,14 +6595,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6404 "hcs12x.cc"
+#line 6599 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6408 "hcs12x.cc"
+#line 6603 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6411 "hcs12x.cc"
+#line 6606 "hcs12x.cc"
 	);
 private:
 };
@@ -6420,19 +6615,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 6424 "hcs12x.cc"
+#line 6619 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6624 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6429 "hcs12x.cc"
+#line 6629 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6433 "hcs12x.cc"
+#line 6633 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6436 "hcs12x.cc"
+#line 6636 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6473,14 +6673,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6477 "hcs12x.cc"
+#line 6677 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6481 "hcs12x.cc"
+#line 6681 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6484 "hcs12x.cc"
+#line 6684 "hcs12x.cc"
 	);
 private:
 };
@@ -6492,16 +6692,21 @@ public:
 	uint32_t b;
 	uint32_t opr8i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6698 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6498 "hcs12x.cc"
+#line 6703 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6502 "hcs12x.cc"
+#line 6707 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6505 "hcs12x.cc"
+#line 6710 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6542,14 +6747,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6546 "hcs12x.cc"
+#line 6751 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6550 "hcs12x.cc"
+#line 6755 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6553 "hcs12x.cc"
+#line 6758 "hcs12x.cc"
 	);
 private:
 };
@@ -6561,16 +6766,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6772 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6567 "hcs12x.cc"
+#line 6777 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6571 "hcs12x.cc"
+#line 6781 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6574 "hcs12x.cc"
+#line 6784 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6611,14 +6821,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6615 "hcs12x.cc"
+#line 6825 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6619 "hcs12x.cc"
+#line 6829 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6622 "hcs12x.cc"
+#line 6832 "hcs12x.cc"
 	);
 private:
 };
@@ -6630,16 +6840,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6846 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6636 "hcs12x.cc"
+#line 6851 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6640 "hcs12x.cc"
+#line 6855 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6643 "hcs12x.cc"
+#line 6858 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6680,14 +6895,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6684 "hcs12x.cc"
+#line 6899 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6688 "hcs12x.cc"
+#line 6903 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6691 "hcs12x.cc"
+#line 6906 "hcs12x.cc"
 	);
 private:
 };
@@ -6700,19 +6915,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 6704 "hcs12x.cc"
+#line 6919 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6924 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6709 "hcs12x.cc"
+#line 6929 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6713 "hcs12x.cc"
+#line 6933 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6716 "hcs12x.cc"
+#line 6936 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6753,14 +6973,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6757 "hcs12x.cc"
+#line 6977 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6761 "hcs12x.cc"
+#line 6981 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6764 "hcs12x.cc"
+#line 6984 "hcs12x.cc"
 	);
 private:
 };
@@ -6772,16 +6992,21 @@ public:
 	uint32_t b;
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 6998 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6778 "hcs12x.cc"
+#line 7003 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6782 "hcs12x.cc"
+#line 7007 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6785 "hcs12x.cc"
+#line 7010 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6822,14 +7047,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6826 "hcs12x.cc"
+#line 7051 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6830 "hcs12x.cc"
+#line 7055 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6833 "hcs12x.cc"
+#line 7058 "hcs12x.cc"
 	);
 private:
 };
@@ -6841,16 +7066,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7072 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6847 "hcs12x.cc"
+#line 7077 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6851 "hcs12x.cc"
+#line 7081 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6854 "hcs12x.cc"
+#line 7084 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6891,14 +7121,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6895 "hcs12x.cc"
+#line 7125 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6899 "hcs12x.cc"
+#line 7129 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6902 "hcs12x.cc"
+#line 7132 "hcs12x.cc"
 	);
 private:
 };
@@ -6910,16 +7140,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7146 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6916 "hcs12x.cc"
+#line 7151 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6920 "hcs12x.cc"
+#line 7155 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6923 "hcs12x.cc"
+#line 7158 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -6960,14 +7195,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 6964 "hcs12x.cc"
+#line 7199 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 6968 "hcs12x.cc"
+#line 7203 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 6971 "hcs12x.cc"
+#line 7206 "hcs12x.cc"
 	);
 private:
 };
@@ -6980,19 +7215,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 6984 "hcs12x.cc"
+#line 7219 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7224 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 6989 "hcs12x.cc"
+#line 7229 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 6993 "hcs12x.cc"
+#line 7233 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 6996 "hcs12x.cc"
+#line 7236 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7033,14 +7273,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7037 "hcs12x.cc"
+#line 7277 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7041 "hcs12x.cc"
+#line 7281 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7044 "hcs12x.cc"
+#line 7284 "hcs12x.cc"
 	);
 private:
 };
@@ -7050,16 +7290,21 @@ class OpDaa : public Operation
 public:
 	OpDaa(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7296 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7056 "hcs12x.cc"
+#line 7301 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7060 "hcs12x.cc"
+#line 7305 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7063 "hcs12x.cc"
+#line 7308 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7100,14 +7345,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7104 "hcs12x.cc"
+#line 7349 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7108 "hcs12x.cc"
+#line 7353 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7111 "hcs12x.cc"
+#line 7356 "hcs12x.cc"
 	);
 private:
 };
@@ -7118,16 +7363,21 @@ public:
 	OpDec_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7369 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7124 "hcs12x.cc"
+#line 7374 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7128 "hcs12x.cc"
+#line 7378 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7131 "hcs12x.cc"
+#line 7381 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7168,14 +7418,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7172 "hcs12x.cc"
+#line 7422 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7176 "hcs12x.cc"
+#line 7426 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7179 "hcs12x.cc"
+#line 7429 "hcs12x.cc"
 	);
 private:
 };
@@ -7187,19 +7437,24 @@ public:
 	~OpDec_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 7191 "hcs12x.cc"
+#line 7441 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7446 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7196 "hcs12x.cc"
+#line 7451 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7200 "hcs12x.cc"
+#line 7455 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7203 "hcs12x.cc"
+#line 7458 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7240,14 +7495,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7244 "hcs12x.cc"
+#line 7499 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7248 "hcs12x.cc"
+#line 7503 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7251 "hcs12x.cc"
+#line 7506 "hcs12x.cc"
 	);
 private:
 };
@@ -7258,16 +7513,21 @@ public:
 	OpDec_ab(CodeType const& code, uint16_t addr);
 	uint32_t b;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7519 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7264 "hcs12x.cc"
+#line 7524 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7268 "hcs12x.cc"
+#line 7528 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7271 "hcs12x.cc"
+#line 7531 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7308,14 +7568,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7312 "hcs12x.cc"
+#line 7572 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7316 "hcs12x.cc"
+#line 7576 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7319 "hcs12x.cc"
+#line 7579 "hcs12x.cc"
 	);
 private:
 };
@@ -7326,16 +7586,21 @@ public:
 	OpDecw_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7592 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7332 "hcs12x.cc"
+#line 7597 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7336 "hcs12x.cc"
+#line 7601 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7339 "hcs12x.cc"
+#line 7604 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7376,14 +7641,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7380 "hcs12x.cc"
+#line 7645 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7384 "hcs12x.cc"
+#line 7649 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7387 "hcs12x.cc"
+#line 7652 "hcs12x.cc"
 	);
 private:
 };
@@ -7395,19 +7660,24 @@ public:
 	~OpDecw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 7399 "hcs12x.cc"
+#line 7664 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7669 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7404 "hcs12x.cc"
+#line 7674 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7408 "hcs12x.cc"
+#line 7678 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7411 "hcs12x.cc"
+#line 7681 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7448,14 +7718,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7452 "hcs12x.cc"
+#line 7722 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7456 "hcs12x.cc"
+#line 7726 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7459 "hcs12x.cc"
+#line 7729 "hcs12x.cc"
 	);
 private:
 };
@@ -7466,16 +7736,21 @@ public:
 	OpDec_xy(CodeType const& code, uint16_t addr);
 	uint32_t b;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7742 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7472 "hcs12x.cc"
+#line 7747 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7476 "hcs12x.cc"
+#line 7751 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7479 "hcs12x.cc"
+#line 7754 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7516,14 +7791,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7520 "hcs12x.cc"
+#line 7795 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7524 "hcs12x.cc"
+#line 7799 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7527 "hcs12x.cc"
+#line 7802 "hcs12x.cc"
 	);
 private:
 };
@@ -7533,16 +7808,21 @@ class OpDes : public Operation
 public:
 	OpDes(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7814 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7539 "hcs12x.cc"
+#line 7819 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7543 "hcs12x.cc"
+#line 7823 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7546 "hcs12x.cc"
+#line 7826 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7583,14 +7863,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7587 "hcs12x.cc"
+#line 7867 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7591 "hcs12x.cc"
+#line 7871 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7594 "hcs12x.cc"
+#line 7874 "hcs12x.cc"
 	);
 private:
 };
@@ -7600,16 +7880,21 @@ class OpDex : public Operation
 public:
 	OpDex(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7886 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7606 "hcs12x.cc"
+#line 7891 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7610 "hcs12x.cc"
+#line 7895 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7613 "hcs12x.cc"
+#line 7898 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7650,14 +7935,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7654 "hcs12x.cc"
+#line 7939 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7658 "hcs12x.cc"
+#line 7943 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7661 "hcs12x.cc"
+#line 7946 "hcs12x.cc"
 	);
 private:
 };
@@ -7667,16 +7952,21 @@ class OpDey : public Operation
 public:
 	OpDey(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 7958 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7673 "hcs12x.cc"
+#line 7963 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7677 "hcs12x.cc"
+#line 7967 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7680 "hcs12x.cc"
+#line 7970 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7717,14 +8007,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7721 "hcs12x.cc"
+#line 8011 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7725 "hcs12x.cc"
+#line 8015 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7728 "hcs12x.cc"
+#line 8018 "hcs12x.cc"
 	);
 private:
 };
@@ -7735,16 +8025,21 @@ public:
 	OpInc_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8031 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7741 "hcs12x.cc"
+#line 8036 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7745 "hcs12x.cc"
+#line 8040 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7748 "hcs12x.cc"
+#line 8043 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7785,14 +8080,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7789 "hcs12x.cc"
+#line 8084 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7793 "hcs12x.cc"
+#line 8088 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7796 "hcs12x.cc"
+#line 8091 "hcs12x.cc"
 	);
 private:
 };
@@ -7804,19 +8099,24 @@ public:
 	~OpInc_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 7808 "hcs12x.cc"
+#line 8103 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8108 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7813 "hcs12x.cc"
+#line 8113 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7817 "hcs12x.cc"
+#line 8117 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7820 "hcs12x.cc"
+#line 8120 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7857,14 +8157,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7861 "hcs12x.cc"
+#line 8161 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7865 "hcs12x.cc"
+#line 8165 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7868 "hcs12x.cc"
+#line 8168 "hcs12x.cc"
 	);
 private:
 };
@@ -7875,16 +8175,21 @@ public:
 	OpInc_ab(CodeType const& code, uint16_t addr);
 	uint32_t b;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8181 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7881 "hcs12x.cc"
+#line 8186 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7885 "hcs12x.cc"
+#line 8190 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7888 "hcs12x.cc"
+#line 8193 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7925,14 +8230,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7929 "hcs12x.cc"
+#line 8234 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 7933 "hcs12x.cc"
+#line 8238 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 7936 "hcs12x.cc"
+#line 8241 "hcs12x.cc"
 	);
 private:
 };
@@ -7943,16 +8248,21 @@ public:
 	OpIncw_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8254 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 7949 "hcs12x.cc"
+#line 8259 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 7953 "hcs12x.cc"
+#line 8263 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 7956 "hcs12x.cc"
+#line 8266 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -7993,14 +8303,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 7997 "hcs12x.cc"
+#line 8307 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8001 "hcs12x.cc"
+#line 8311 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8004 "hcs12x.cc"
+#line 8314 "hcs12x.cc"
 	);
 private:
 };
@@ -8012,19 +8322,24 @@ public:
 	~OpIncw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 8016 "hcs12x.cc"
+#line 8326 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8331 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8021 "hcs12x.cc"
+#line 8336 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8025 "hcs12x.cc"
+#line 8340 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8028 "hcs12x.cc"
+#line 8343 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8065,14 +8380,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8069 "hcs12x.cc"
+#line 8384 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8073 "hcs12x.cc"
+#line 8388 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8076 "hcs12x.cc"
+#line 8391 "hcs12x.cc"
 	);
 private:
 };
@@ -8083,16 +8398,21 @@ public:
 	OpInc_xy(CodeType const& code, uint16_t addr);
 	uint32_t b;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8404 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8089 "hcs12x.cc"
+#line 8409 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8093 "hcs12x.cc"
+#line 8413 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8096 "hcs12x.cc"
+#line 8416 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8133,14 +8453,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8137 "hcs12x.cc"
+#line 8457 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8141 "hcs12x.cc"
+#line 8461 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8144 "hcs12x.cc"
+#line 8464 "hcs12x.cc"
 	);
 private:
 };
@@ -8150,16 +8470,21 @@ class OpIns : public Operation
 public:
 	OpIns(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8476 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8156 "hcs12x.cc"
+#line 8481 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8160 "hcs12x.cc"
+#line 8485 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8163 "hcs12x.cc"
+#line 8488 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8200,14 +8525,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8204 "hcs12x.cc"
+#line 8529 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8208 "hcs12x.cc"
+#line 8533 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8211 "hcs12x.cc"
+#line 8536 "hcs12x.cc"
 	);
 private:
 };
@@ -8217,16 +8542,21 @@ class OpInx : public Operation
 public:
 	OpInx(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8548 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8223 "hcs12x.cc"
+#line 8553 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8227 "hcs12x.cc"
+#line 8557 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8230 "hcs12x.cc"
+#line 8560 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8267,14 +8597,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8271 "hcs12x.cc"
+#line 8601 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8275 "hcs12x.cc"
+#line 8605 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8278 "hcs12x.cc"
+#line 8608 "hcs12x.cc"
 	);
 private:
 };
@@ -8284,16 +8614,21 @@ class OpIny : public Operation
 public:
 	OpIny(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8620 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8290 "hcs12x.cc"
+#line 8625 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8294 "hcs12x.cc"
+#line 8629 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8297 "hcs12x.cc"
+#line 8632 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8334,14 +8669,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8338 "hcs12x.cc"
+#line 8673 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8342 "hcs12x.cc"
+#line 8677 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8345 "hcs12x.cc"
+#line 8680 "hcs12x.cc"
 	);
 private:
 };
@@ -8351,16 +8686,21 @@ class OpCba : public Operation
 public:
 	OpCba(CodeType const& code, uint16_t addr);
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8692 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8357 "hcs12x.cc"
+#line 8697 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8361 "hcs12x.cc"
+#line 8701 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8364 "hcs12x.cc"
+#line 8704 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8401,14 +8741,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8405 "hcs12x.cc"
+#line 8745 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8409 "hcs12x.cc"
+#line 8749 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8412 "hcs12x.cc"
+#line 8752 "hcs12x.cc"
 	);
 private:
 };
@@ -8420,16 +8760,21 @@ public:
 	uint32_t b;
 	uint32_t opr8i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8766 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8426 "hcs12x.cc"
+#line 8771 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8430 "hcs12x.cc"
+#line 8775 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8433 "hcs12x.cc"
+#line 8778 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8470,14 +8815,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8474 "hcs12x.cc"
+#line 8819 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8478 "hcs12x.cc"
+#line 8823 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8481 "hcs12x.cc"
+#line 8826 "hcs12x.cc"
 	);
 private:
 };
@@ -8489,16 +8834,21 @@ public:
 	uint32_t b;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8840 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8495 "hcs12x.cc"
+#line 8845 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8499 "hcs12x.cc"
+#line 8849 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8502 "hcs12x.cc"
+#line 8852 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8539,14 +8889,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8543 "hcs12x.cc"
+#line 8893 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8547 "hcs12x.cc"
+#line 8897 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8550 "hcs12x.cc"
+#line 8900 "hcs12x.cc"
 	);
 private:
 };
@@ -8558,16 +8908,21 @@ public:
 	uint32_t b;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8914 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8564 "hcs12x.cc"
+#line 8919 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8568 "hcs12x.cc"
+#line 8923 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8571 "hcs12x.cc"
+#line 8926 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8608,14 +8963,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8612 "hcs12x.cc"
+#line 8967 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8616 "hcs12x.cc"
+#line 8971 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8619 "hcs12x.cc"
+#line 8974 "hcs12x.cc"
 	);
 private:
 };
@@ -8628,19 +8983,24 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 8632 "hcs12x.cc"
+#line 8987 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 8992 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8637 "hcs12x.cc"
+#line 8997 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8641 "hcs12x.cc"
+#line 9001 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8644 "hcs12x.cc"
+#line 9004 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8681,14 +9041,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8685 "hcs12x.cc"
+#line 9045 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8689 "hcs12x.cc"
+#line 9049 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8692 "hcs12x.cc"
+#line 9052 "hcs12x.cc"
 	);
 private:
 };
@@ -8700,16 +9060,21 @@ public:
 	uint32_t dyxs;
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9066 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8706 "hcs12x.cc"
+#line 9071 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8710 "hcs12x.cc"
+#line 9075 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8713 "hcs12x.cc"
+#line 9078 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8750,14 +9115,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8754 "hcs12x.cc"
+#line 9119 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8758 "hcs12x.cc"
+#line 9123 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8761 "hcs12x.cc"
+#line 9126 "hcs12x.cc"
 	);
 private:
 };
@@ -8769,16 +9134,21 @@ public:
 	uint32_t dyxs;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9140 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8775 "hcs12x.cc"
+#line 9145 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8779 "hcs12x.cc"
+#line 9149 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8782 "hcs12x.cc"
+#line 9152 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8819,14 +9189,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8823 "hcs12x.cc"
+#line 9193 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8827 "hcs12x.cc"
+#line 9197 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8830 "hcs12x.cc"
+#line 9200 "hcs12x.cc"
 	);
 private:
 };
@@ -8838,16 +9208,21 @@ public:
 	uint32_t dyxs;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9214 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8844 "hcs12x.cc"
+#line 9219 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8848 "hcs12x.cc"
+#line 9223 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8851 "hcs12x.cc"
+#line 9226 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8888,14 +9263,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8892 "hcs12x.cc"
+#line 9267 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8896 "hcs12x.cc"
+#line 9271 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8899 "hcs12x.cc"
+#line 9274 "hcs12x.cc"
 	);
 private:
 };
@@ -8908,19 +9283,24 @@ public:
 	uint32_t dyxs;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 8912 "hcs12x.cc"
+#line 9287 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9292 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8917 "hcs12x.cc"
+#line 9297 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8921 "hcs12x.cc"
+#line 9301 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8924 "hcs12x.cc"
+#line 9304 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -8961,14 +9341,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 8965 "hcs12x.cc"
+#line 9345 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 8969 "hcs12x.cc"
+#line 9349 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 8972 "hcs12x.cc"
+#line 9352 "hcs12x.cc"
 	);
 private:
 };
@@ -8980,16 +9360,21 @@ public:
 	uint32_t dyxs;
 	uint32_t opr16i;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9366 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 8986 "hcs12x.cc"
+#line 9371 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 8990 "hcs12x.cc"
+#line 9375 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 8993 "hcs12x.cc"
+#line 9378 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9030,14 +9415,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9034 "hcs12x.cc"
+#line 9419 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9038 "hcs12x.cc"
+#line 9423 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9041 "hcs12x.cc"
+#line 9426 "hcs12x.cc"
 	);
 private:
 };
@@ -9049,16 +9434,21 @@ public:
 	uint32_t dyxs;
 	uint32_t opr8a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9440 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 9055 "hcs12x.cc"
+#line 9445 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 9059 "hcs12x.cc"
+#line 9449 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 9062 "hcs12x.cc"
+#line 9452 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9099,14 +9489,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9103 "hcs12x.cc"
+#line 9493 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9107 "hcs12x.cc"
+#line 9497 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9110 "hcs12x.cc"
+#line 9500 "hcs12x.cc"
 	);
 private:
 };
@@ -9118,16 +9508,21 @@ public:
 	uint32_t dyxs;
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9514 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 9124 "hcs12x.cc"
+#line 9519 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 9128 "hcs12x.cc"
+#line 9523 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 9131 "hcs12x.cc"
+#line 9526 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9168,14 +9563,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9172 "hcs12x.cc"
+#line 9567 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9176 "hcs12x.cc"
+#line 9571 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9179 "hcs12x.cc"
+#line 9574 "hcs12x.cc"
 	);
 private:
 };
@@ -9188,19 +9583,24 @@ public:
 	uint32_t dyxs;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 9192 "hcs12x.cc"
+#line 9587 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9592 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 9197 "hcs12x.cc"
+#line 9597 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 9201 "hcs12x.cc"
+#line 9601 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 9204 "hcs12x.cc"
+#line 9604 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9241,14 +9641,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9245 "hcs12x.cc"
+#line 9645 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9249 "hcs12x.cc"
+#line 9649 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9252 "hcs12x.cc"
+#line 9652 "hcs12x.cc"
 	);
 private:
 };
@@ -9259,16 +9659,21 @@ public:
 	OpTst_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9665 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 9265 "hcs12x.cc"
+#line 9670 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 9269 "hcs12x.cc"
+#line 9674 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 9272 "hcs12x.cc"
+#line 9677 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9309,14 +9714,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9313 "hcs12x.cc"
+#line 9718 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9317 "hcs12x.cc"
+#line 9722 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9320 "hcs12x.cc"
+#line 9725 "hcs12x.cc"
 	);
 private:
 };
@@ -9328,19 +9733,24 @@ public:
 	~OpTst_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 9332 "hcs12x.cc"
+#line 9737 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9742 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 9337 "hcs12x.cc"
+#line 9747 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 9341 "hcs12x.cc"
+#line 9751 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 9344 "hcs12x.cc"
+#line 9754 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9381,14 +9791,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9385 "hcs12x.cc"
+#line 9795 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9389 "hcs12x.cc"
+#line 9799 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9392 "hcs12x.cc"
+#line 9802 "hcs12x.cc"
 	);
 private:
 };
@@ -9399,16 +9809,21 @@ public:
 	OpTst_ab(CodeType const& code, uint16_t addr);
 	uint32_t b;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9815 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 9405 "hcs12x.cc"
+#line 9820 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 9409 "hcs12x.cc"
+#line 9824 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 9412 "hcs12x.cc"
+#line 9827 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9449,14 +9864,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9453 "hcs12x.cc"
+#line 9868 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9457 "hcs12x.cc"
+#line 9872 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9460 "hcs12x.cc"
+#line 9875 "hcs12x.cc"
 	);
 private:
 };
@@ -9467,16 +9882,21 @@ public:
 	OpTstw_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
 	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9888 "hcs12x.cc"
+	getCycles();
+	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 9473 "hcs12x.cc"
+#line 9893 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 9477 "hcs12x.cc"
+#line 9897 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 9480 "hcs12x.cc"
+#line 9900 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9517,14 +9937,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9521 "hcs12x.cc"
+#line 9941 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9525 "hcs12x.cc"
+#line 9945 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9528 "hcs12x.cc"
+#line 9948 "hcs12x.cc"
 	);
 private:
 };
@@ -9536,19 +9956,24 @@ public:
 	~OpTstw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 9540 "hcs12x.cc"
+#line 9960 "hcs12x.cc"
 	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 9965 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 9545 "hcs12x.cc"
+#line 9970 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 9549 "hcs12x.cc"
+#line 9974 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 9552 "hcs12x.cc"
+#line 9977 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -9589,14 +10014,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 9593 "hcs12x.cc"
+#line 10018 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 9597 "hcs12x.cc"
+#line 10022 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 9600 "hcs12x.cc"
+#line 10025 "hcs12x.cc"
 	);
 private:
 };
@@ -9607,435 +10032,10 @@ public:
 	OpTst_xy(CodeType const& code, uint16_t addr);
 	uint32_t b;
 	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 9613 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 9617 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 9620 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 9661 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 9665 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 9668 "hcs12x.cc"
-	);
-private:
-};
-
-class OpEmin_dm : public Operation
-{
-public:
-	OpEmin_dm(CodeType const& code, uint16_t addr);
-	~OpEmin_dm();
-	uint32_t b;
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 9681 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 9686 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 9690 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 9693 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 9734 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 9738 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 9741 "hcs12x.cc"
-	);
-private:
-};
-
-class OpMin_am : public Operation
-{
-public:
-	OpMin_am(CodeType const& code, uint16_t addr);
-	~OpMin_am();
-	uint32_t b;
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 9754 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 9759 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 9763 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 9766 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 9807 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 9811 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 9814 "hcs12x.cc"
-	);
-private:
-};
-
-class OpEmax_dm : public Operation
-{
-public:
-	OpEmax_dm(CodeType const& code, uint16_t addr);
-	~OpEmax_dm();
-	uint32_t b;
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 9827 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 9832 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 9836 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 9839 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 9880 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 9884 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 9887 "hcs12x.cc"
-	);
-private:
-};
-
-class OpMax_am : public Operation
-{
-public:
-	OpMax_am(CodeType const& code, uint16_t addr);
-	~OpMax_am();
-	uint32_t b;
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 9900 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 9905 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 9909 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 9912 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 9953 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 9957 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 9960 "hcs12x.cc"
-	);
-private:
-};
-
-class OpAnd_ab_imm : public Operation
-{
-public:
-	OpAnd_ab_imm(CodeType const& code, uint16_t addr);
-	uint32_t b;
-	uint32_t opr8i;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 9974 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 9978 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 9981 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 10022 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 10026 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 10029 "hcs12x.cc"
-	);
-private:
-};
-
-class OpAnd_ab_dir : public Operation
-{
-public:
-	OpAnd_ab_dir(CodeType const& code, uint16_t addr);
-	uint32_t b;
-	uint32_t opr8a;
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10038 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -10099,23 +10099,31 @@ public:
 private:
 };
 
-class OpAnd_ab_ext : public Operation
+class OpEmind : public Operation
 {
 public:
-	OpAnd_ab_ext(CodeType const& code, uint16_t addr);
-	uint32_t b;
-	uint32_t opr16a;
+	OpEmind(CodeType const& code, uint16_t addr);
+	~OpEmind();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 10110 "hcs12x.cc"
+	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10115 "hcs12x.cc"
+	getCycles();
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10112 "hcs12x.cc"
+#line 10120 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10116 "hcs12x.cc"
+#line 10124 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10119 "hcs12x.cc"
+#line 10127 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10156,14 +10164,760 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10160 "hcs12x.cc"
+#line 10168 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10164 "hcs12x.cc"
+#line 10172 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10167 "hcs12x.cc"
+#line 10175 "hcs12x.cc"
+	);
+private:
+};
+
+class OpEminm : public Operation
+{
+public:
+	OpEminm(CodeType const& code, uint16_t addr);
+	~OpEminm();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 10187 "hcs12x.cc"
+	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10192 "hcs12x.cc"
+	getCycles();
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10197 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10201 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10204 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10245 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10249 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10252 "hcs12x.cc"
+	);
+private:
+};
+
+class OpMina : public Operation
+{
+public:
+	OpMina(CodeType const& code, uint16_t addr);
+	~OpMina();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 10264 "hcs12x.cc"
+	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10269 "hcs12x.cc"
+	getCycles();
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10274 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10278 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10281 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10322 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10326 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10329 "hcs12x.cc"
+	);
+private:
+};
+
+class OpMinm : public Operation
+{
+public:
+	OpMinm(CodeType const& code, uint16_t addr);
+	~OpMinm();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 10341 "hcs12x.cc"
+	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10346 "hcs12x.cc"
+	getCycles();
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10351 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10355 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10358 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10399 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10403 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10406 "hcs12x.cc"
+	);
+private:
+};
+
+class OpEmaxd : public Operation
+{
+public:
+	OpEmaxd(CodeType const& code, uint16_t addr);
+	~OpEmaxd();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 10418 "hcs12x.cc"
+	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10423 "hcs12x.cc"
+	getCycles();
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10428 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10432 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10435 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10476 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10480 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10483 "hcs12x.cc"
+	);
+private:
+};
+
+class OpEmaxm : public Operation
+{
+public:
+	OpEmaxm(CodeType const& code, uint16_t addr);
+	~OpEmaxm();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 10495 "hcs12x.cc"
+	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10500 "hcs12x.cc"
+	getCycles();
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10505 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10509 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10512 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10553 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10557 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10560 "hcs12x.cc"
+	);
+private:
+};
+
+class OpMaxa : public Operation
+{
+public:
+	OpMaxa(CodeType const& code, uint16_t addr);
+	~OpMaxa();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 10572 "hcs12x.cc"
+	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10577 "hcs12x.cc"
+	getCycles();
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10582 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10586 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10589 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10630 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10634 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10637 "hcs12x.cc"
+	);
+private:
+};
+
+class OpMaxm : public Operation
+{
+public:
+	OpMaxm(CodeType const& code, uint16_t addr);
+	~OpMaxm();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 10649 "hcs12x.cc"
+	* xb;
+	virtual
+#line 73 "hcs12x.isa"
+	uint8_t
+#line 10654 "hcs12x.cc"
+	getCycles();
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10659 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10663 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10666 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10707 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10711 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10714 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAnd_ab_imm : public Operation
+{
+public:
+	OpAnd_ab_imm(CodeType const& code, uint16_t addr);
+	uint32_t b;
+	uint32_t opr8i;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10728 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10732 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10735 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10776 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10780 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10783 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAnd_ab_dir : public Operation
+{
+public:
+	OpAnd_ab_dir(CodeType const& code, uint16_t addr);
+	uint32_t b;
+	uint32_t opr8a;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10797 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10801 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10804 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10845 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10849 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10852 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAnd_ab_ext : public Operation
+{
+public:
+	OpAnd_ab_ext(CodeType const& code, uint16_t addr);
+	uint32_t b;
+	uint32_t opr16a;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 10866 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 10870 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 10873 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 10914 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 10918 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 10921 "hcs12x.cc"
 	);
 private:
 };
@@ -10176,19 +10930,19 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 10180 "hcs12x.cc"
+#line 10934 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10185 "hcs12x.cc"
+#line 10939 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10189 "hcs12x.cc"
+#line 10943 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10192 "hcs12x.cc"
+#line 10946 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10229,14 +10983,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10233 "hcs12x.cc"
+#line 10987 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10237 "hcs12x.cc"
+#line 10991 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10240 "hcs12x.cc"
+#line 10994 "hcs12x.cc"
 	);
 private:
 };
@@ -10249,14 +11003,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10253 "hcs12x.cc"
+#line 11007 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10257 "hcs12x.cc"
+#line 11011 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10260 "hcs12x.cc"
+#line 11014 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10297,14 +11051,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10301 "hcs12x.cc"
+#line 11055 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10305 "hcs12x.cc"
+#line 11059 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10308 "hcs12x.cc"
+#line 11062 "hcs12x.cc"
 	);
 private:
 };
@@ -10318,14 +11072,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10322 "hcs12x.cc"
+#line 11076 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10326 "hcs12x.cc"
+#line 11080 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10329 "hcs12x.cc"
+#line 11083 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10366,14 +11120,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10370 "hcs12x.cc"
+#line 11124 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10374 "hcs12x.cc"
+#line 11128 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10377 "hcs12x.cc"
+#line 11131 "hcs12x.cc"
 	);
 private:
 };
@@ -10387,14 +11141,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10391 "hcs12x.cc"
+#line 11145 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10395 "hcs12x.cc"
+#line 11149 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10398 "hcs12x.cc"
+#line 11152 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10435,14 +11189,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10439 "hcs12x.cc"
+#line 11193 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10443 "hcs12x.cc"
+#line 11197 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10446 "hcs12x.cc"
+#line 11200 "hcs12x.cc"
 	);
 private:
 };
@@ -10456,14 +11210,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10460 "hcs12x.cc"
+#line 11214 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10464 "hcs12x.cc"
+#line 11218 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10467 "hcs12x.cc"
+#line 11221 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10504,14 +11258,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10508 "hcs12x.cc"
+#line 11262 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10512 "hcs12x.cc"
+#line 11266 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10515 "hcs12x.cc"
+#line 11269 "hcs12x.cc"
 	);
 private:
 };
@@ -10524,19 +11278,19 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 10528 "hcs12x.cc"
+#line 11282 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10533 "hcs12x.cc"
+#line 11287 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10537 "hcs12x.cc"
+#line 11291 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10540 "hcs12x.cc"
+#line 11294 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10577,14 +11331,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10581 "hcs12x.cc"
+#line 11335 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10585 "hcs12x.cc"
+#line 11339 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10588 "hcs12x.cc"
+#line 11342 "hcs12x.cc"
 	);
 private:
 };
@@ -10598,14 +11352,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10602 "hcs12x.cc"
+#line 11356 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10606 "hcs12x.cc"
+#line 11360 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10609 "hcs12x.cc"
+#line 11363 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10646,14 +11400,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10650 "hcs12x.cc"
+#line 11404 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10654 "hcs12x.cc"
+#line 11408 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10657 "hcs12x.cc"
+#line 11411 "hcs12x.cc"
 	);
 private:
 };
@@ -10667,14 +11421,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10671 "hcs12x.cc"
+#line 11425 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10675 "hcs12x.cc"
+#line 11429 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10678 "hcs12x.cc"
+#line 11432 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10715,14 +11469,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10719 "hcs12x.cc"
+#line 11473 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10723 "hcs12x.cc"
+#line 11477 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10726 "hcs12x.cc"
+#line 11480 "hcs12x.cc"
 	);
 private:
 };
@@ -10736,14 +11490,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10740 "hcs12x.cc"
+#line 11494 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10744 "hcs12x.cc"
+#line 11498 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10747 "hcs12x.cc"
+#line 11501 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10784,14 +11538,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10788 "hcs12x.cc"
+#line 11542 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10792 "hcs12x.cc"
+#line 11546 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10795 "hcs12x.cc"
+#line 11549 "hcs12x.cc"
 	);
 private:
 };
@@ -10804,19 +11558,19 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 10808 "hcs12x.cc"
+#line 11562 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10813 "hcs12x.cc"
+#line 11567 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10817 "hcs12x.cc"
+#line 11571 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10820 "hcs12x.cc"
+#line 11574 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10857,14 +11611,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10861 "hcs12x.cc"
+#line 11615 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10865 "hcs12x.cc"
+#line 11619 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10868 "hcs12x.cc"
+#line 11622 "hcs12x.cc"
 	);
 private:
 };
@@ -10877,14 +11631,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10881 "hcs12x.cc"
+#line 11635 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10885 "hcs12x.cc"
+#line 11639 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10888 "hcs12x.cc"
+#line 11642 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10925,14 +11679,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10929 "hcs12x.cc"
+#line 11683 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 10933 "hcs12x.cc"
+#line 11687 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 10936 "hcs12x.cc"
+#line 11690 "hcs12x.cc"
 	);
 private:
 };
@@ -10946,14 +11700,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 10950 "hcs12x.cc"
+#line 11704 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 10954 "hcs12x.cc"
+#line 11708 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 10957 "hcs12x.cc"
+#line 11711 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -10994,14 +11748,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 10998 "hcs12x.cc"
+#line 11752 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11002 "hcs12x.cc"
+#line 11756 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11005 "hcs12x.cc"
+#line 11759 "hcs12x.cc"
 	);
 private:
 };
@@ -11015,14 +11769,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11019 "hcs12x.cc"
+#line 11773 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11023 "hcs12x.cc"
+#line 11777 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11026 "hcs12x.cc"
+#line 11780 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11063,14 +11817,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11067 "hcs12x.cc"
+#line 11821 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11071 "hcs12x.cc"
+#line 11825 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11074 "hcs12x.cc"
+#line 11828 "hcs12x.cc"
 	);
 private:
 };
@@ -11084,14 +11838,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11088 "hcs12x.cc"
+#line 11842 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11092 "hcs12x.cc"
+#line 11846 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11095 "hcs12x.cc"
+#line 11849 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11132,14 +11886,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11136 "hcs12x.cc"
+#line 11890 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11140 "hcs12x.cc"
+#line 11894 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11143 "hcs12x.cc"
+#line 11897 "hcs12x.cc"
 	);
 private:
 };
@@ -11152,19 +11906,19 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 11156 "hcs12x.cc"
+#line 11910 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11161 "hcs12x.cc"
+#line 11915 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11165 "hcs12x.cc"
+#line 11919 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11168 "hcs12x.cc"
+#line 11922 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11205,14 +11959,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11209 "hcs12x.cc"
+#line 11963 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11213 "hcs12x.cc"
+#line 11967 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11216 "hcs12x.cc"
+#line 11970 "hcs12x.cc"
 	);
 private:
 };
@@ -11226,14 +11980,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11230 "hcs12x.cc"
+#line 11984 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11234 "hcs12x.cc"
+#line 11988 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11237 "hcs12x.cc"
+#line 11991 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11274,14 +12028,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11278 "hcs12x.cc"
+#line 12032 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11282 "hcs12x.cc"
+#line 12036 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11285 "hcs12x.cc"
+#line 12039 "hcs12x.cc"
 	);
 private:
 };
@@ -11295,14 +12049,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11299 "hcs12x.cc"
+#line 12053 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11303 "hcs12x.cc"
+#line 12057 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11306 "hcs12x.cc"
+#line 12060 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11343,14 +12097,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11347 "hcs12x.cc"
+#line 12101 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11351 "hcs12x.cc"
+#line 12105 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11354 "hcs12x.cc"
+#line 12108 "hcs12x.cc"
 	);
 private:
 };
@@ -11364,14 +12118,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11368 "hcs12x.cc"
+#line 12122 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11372 "hcs12x.cc"
+#line 12126 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11375 "hcs12x.cc"
+#line 12129 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11412,14 +12166,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11416 "hcs12x.cc"
+#line 12170 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11420 "hcs12x.cc"
+#line 12174 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11423 "hcs12x.cc"
+#line 12177 "hcs12x.cc"
 	);
 private:
 };
@@ -11432,19 +12186,19 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 11436 "hcs12x.cc"
+#line 12190 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11441 "hcs12x.cc"
+#line 12195 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11445 "hcs12x.cc"
+#line 12199 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11448 "hcs12x.cc"
+#line 12202 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11485,14 +12239,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11489 "hcs12x.cc"
+#line 12243 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11493 "hcs12x.cc"
+#line 12247 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11496 "hcs12x.cc"
+#line 12250 "hcs12x.cc"
 	);
 private:
 };
@@ -11506,14 +12260,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11510 "hcs12x.cc"
+#line 12264 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11514 "hcs12x.cc"
+#line 12268 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11517 "hcs12x.cc"
+#line 12271 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11554,14 +12308,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11558 "hcs12x.cc"
+#line 12312 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11562 "hcs12x.cc"
+#line 12316 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11565 "hcs12x.cc"
+#line 12319 "hcs12x.cc"
 	);
 private:
 };
@@ -11575,14 +12329,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11579 "hcs12x.cc"
+#line 12333 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11583 "hcs12x.cc"
+#line 12337 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11586 "hcs12x.cc"
+#line 12340 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11623,14 +12377,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11627 "hcs12x.cc"
+#line 12381 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11631 "hcs12x.cc"
+#line 12385 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11634 "hcs12x.cc"
+#line 12388 "hcs12x.cc"
 	);
 private:
 };
@@ -11644,14 +12398,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11648 "hcs12x.cc"
+#line 12402 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11652 "hcs12x.cc"
+#line 12406 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11655 "hcs12x.cc"
+#line 12409 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11692,14 +12446,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11696 "hcs12x.cc"
+#line 12450 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11700 "hcs12x.cc"
+#line 12454 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11703 "hcs12x.cc"
+#line 12457 "hcs12x.cc"
 	);
 private:
 };
@@ -11712,19 +12466,19 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 11716 "hcs12x.cc"
+#line 12470 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11721 "hcs12x.cc"
+#line 12475 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11725 "hcs12x.cc"
+#line 12479 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11728 "hcs12x.cc"
+#line 12482 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11765,14 +12519,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11769 "hcs12x.cc"
+#line 12523 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11773 "hcs12x.cc"
+#line 12527 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11776 "hcs12x.cc"
+#line 12530 "hcs12x.cc"
 	);
 private:
 };
@@ -11784,14 +12538,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11788 "hcs12x.cc"
+#line 12542 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11792 "hcs12x.cc"
+#line 12546 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11795 "hcs12x.cc"
+#line 12549 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11832,14 +12586,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11836 "hcs12x.cc"
+#line 12590 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11840 "hcs12x.cc"
+#line 12594 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11843 "hcs12x.cc"
+#line 12597 "hcs12x.cc"
 	);
 private:
 };
@@ -11851,14 +12605,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11855 "hcs12x.cc"
+#line 12609 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11859 "hcs12x.cc"
+#line 12613 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11862 "hcs12x.cc"
+#line 12616 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11899,14 +12653,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11903 "hcs12x.cc"
+#line 12657 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11907 "hcs12x.cc"
+#line 12661 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11910 "hcs12x.cc"
+#line 12664 "hcs12x.cc"
 	);
 private:
 };
@@ -11918,14 +12672,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11922 "hcs12x.cc"
+#line 12676 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11926 "hcs12x.cc"
+#line 12680 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11929 "hcs12x.cc"
+#line 12683 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -11966,14 +12720,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 11970 "hcs12x.cc"
+#line 12724 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 11974 "hcs12x.cc"
+#line 12728 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 11977 "hcs12x.cc"
+#line 12731 "hcs12x.cc"
 	);
 private:
 };
@@ -11986,14 +12740,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 11990 "hcs12x.cc"
+#line 12744 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 11994 "hcs12x.cc"
+#line 12748 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 11997 "hcs12x.cc"
+#line 12751 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12034,14 +12788,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12038 "hcs12x.cc"
+#line 12792 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12042 "hcs12x.cc"
+#line 12796 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12045 "hcs12x.cc"
+#line 12799 "hcs12x.cc"
 	);
 private:
 };
@@ -12053,19 +12807,19 @@ public:
 	~OpClr_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 12057 "hcs12x.cc"
+#line 12811 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12062 "hcs12x.cc"
+#line 12816 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12066 "hcs12x.cc"
+#line 12820 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12069 "hcs12x.cc"
+#line 12823 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12106,14 +12860,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12110 "hcs12x.cc"
+#line 12864 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12114 "hcs12x.cc"
+#line 12868 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12117 "hcs12x.cc"
+#line 12871 "hcs12x.cc"
 	);
 private:
 };
@@ -12126,14 +12880,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12130 "hcs12x.cc"
+#line 12884 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12134 "hcs12x.cc"
+#line 12888 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12137 "hcs12x.cc"
+#line 12891 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12174,14 +12928,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12178 "hcs12x.cc"
+#line 12932 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12182 "hcs12x.cc"
+#line 12936 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12185 "hcs12x.cc"
+#line 12939 "hcs12x.cc"
 	);
 private:
 };
@@ -12193,19 +12947,19 @@ public:
 	~OpClrw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 12197 "hcs12x.cc"
+#line 12951 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12202 "hcs12x.cc"
+#line 12956 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12206 "hcs12x.cc"
+#line 12960 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12209 "hcs12x.cc"
+#line 12963 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12246,14 +13000,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12250 "hcs12x.cc"
+#line 13004 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12254 "hcs12x.cc"
+#line 13008 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12257 "hcs12x.cc"
+#line 13011 "hcs12x.cc"
 	);
 private:
 };
@@ -12266,14 +13020,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12270 "hcs12x.cc"
+#line 13024 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12274 "hcs12x.cc"
+#line 13028 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12277 "hcs12x.cc"
+#line 13031 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12314,14 +13068,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12318 "hcs12x.cc"
+#line 13072 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12322 "hcs12x.cc"
+#line 13076 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12325 "hcs12x.cc"
+#line 13079 "hcs12x.cc"
 	);
 private:
 };
@@ -12334,14 +13088,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12338 "hcs12x.cc"
+#line 13092 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12342 "hcs12x.cc"
+#line 13096 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12345 "hcs12x.cc"
+#line 13099 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12382,14 +13136,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12386 "hcs12x.cc"
+#line 13140 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12390 "hcs12x.cc"
+#line 13144 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12393 "hcs12x.cc"
+#line 13147 "hcs12x.cc"
 	);
 private:
 };
@@ -12402,14 +13156,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12406 "hcs12x.cc"
+#line 13160 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12410 "hcs12x.cc"
+#line 13164 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12413 "hcs12x.cc"
+#line 13167 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12450,14 +13204,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12454 "hcs12x.cc"
+#line 13208 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12458 "hcs12x.cc"
+#line 13212 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12461 "hcs12x.cc"
+#line 13215 "hcs12x.cc"
 	);
 private:
 };
@@ -12469,19 +13223,19 @@ public:
 	~OpCom_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 12473 "hcs12x.cc"
+#line 13227 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12478 "hcs12x.cc"
+#line 13232 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12482 "hcs12x.cc"
+#line 13236 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12485 "hcs12x.cc"
+#line 13239 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12522,14 +13276,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12526 "hcs12x.cc"
+#line 13280 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12530 "hcs12x.cc"
+#line 13284 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12533 "hcs12x.cc"
+#line 13287 "hcs12x.cc"
 	);
 private:
 };
@@ -12542,14 +13296,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12546 "hcs12x.cc"
+#line 13300 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12550 "hcs12x.cc"
+#line 13304 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12553 "hcs12x.cc"
+#line 13307 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12590,14 +13344,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12594 "hcs12x.cc"
+#line 13348 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12598 "hcs12x.cc"
+#line 13352 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12601 "hcs12x.cc"
+#line 13355 "hcs12x.cc"
 	);
 private:
 };
@@ -12610,14 +13364,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12614 "hcs12x.cc"
+#line 13368 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12618 "hcs12x.cc"
+#line 13372 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12621 "hcs12x.cc"
+#line 13375 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12658,14 +13412,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12662 "hcs12x.cc"
+#line 13416 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12666 "hcs12x.cc"
+#line 13420 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12669 "hcs12x.cc"
+#line 13423 "hcs12x.cc"
 	);
 private:
 };
@@ -12677,19 +13431,19 @@ public:
 	~OpComw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 12681 "hcs12x.cc"
+#line 13435 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12686 "hcs12x.cc"
+#line 13440 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12690 "hcs12x.cc"
+#line 13444 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12693 "hcs12x.cc"
+#line 13447 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12730,14 +13484,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12734 "hcs12x.cc"
+#line 13488 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12738 "hcs12x.cc"
+#line 13492 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12741 "hcs12x.cc"
+#line 13495 "hcs12x.cc"
 	);
 private:
 };
@@ -12750,14 +13504,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12754 "hcs12x.cc"
+#line 13508 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12758 "hcs12x.cc"
+#line 13512 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12761 "hcs12x.cc"
+#line 13515 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12798,14 +13552,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12802 "hcs12x.cc"
+#line 13556 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12806 "hcs12x.cc"
+#line 13560 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12809 "hcs12x.cc"
+#line 13563 "hcs12x.cc"
 	);
 private:
 };
@@ -12818,14 +13572,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12822 "hcs12x.cc"
+#line 13576 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12826 "hcs12x.cc"
+#line 13580 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12829 "hcs12x.cc"
+#line 13583 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12866,14 +13620,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12870 "hcs12x.cc"
+#line 13624 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12874 "hcs12x.cc"
+#line 13628 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12877 "hcs12x.cc"
+#line 13631 "hcs12x.cc"
 	);
 private:
 };
@@ -12885,19 +13639,19 @@ public:
 	~OpNeg_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 12889 "hcs12x.cc"
+#line 13643 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12894 "hcs12x.cc"
+#line 13648 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12898 "hcs12x.cc"
+#line 13652 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12901 "hcs12x.cc"
+#line 13655 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -12938,14 +13692,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 12942 "hcs12x.cc"
+#line 13696 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 12946 "hcs12x.cc"
+#line 13700 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 12949 "hcs12x.cc"
+#line 13703 "hcs12x.cc"
 	);
 private:
 };
@@ -12958,14 +13712,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 12962 "hcs12x.cc"
+#line 13716 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 12966 "hcs12x.cc"
+#line 13720 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 12969 "hcs12x.cc"
+#line 13723 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13006,14 +13760,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13010 "hcs12x.cc"
+#line 13764 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13014 "hcs12x.cc"
+#line 13768 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13017 "hcs12x.cc"
+#line 13771 "hcs12x.cc"
 	);
 private:
 };
@@ -13026,14 +13780,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13030 "hcs12x.cc"
+#line 13784 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13034 "hcs12x.cc"
+#line 13788 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13037 "hcs12x.cc"
+#line 13791 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13074,14 +13828,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13078 "hcs12x.cc"
+#line 13832 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13082 "hcs12x.cc"
+#line 13836 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13085 "hcs12x.cc"
+#line 13839 "hcs12x.cc"
 	);
 private:
 };
@@ -13093,19 +13847,19 @@ public:
 	~OpNegw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 13097 "hcs12x.cc"
+#line 13851 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13102 "hcs12x.cc"
+#line 13856 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13106 "hcs12x.cc"
+#line 13860 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13109 "hcs12x.cc"
+#line 13863 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13146,14 +13900,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13150 "hcs12x.cc"
+#line 13904 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13154 "hcs12x.cc"
+#line 13908 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13157 "hcs12x.cc"
+#line 13911 "hcs12x.cc"
 	);
 private:
 };
@@ -13166,14 +13920,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13170 "hcs12x.cc"
+#line 13924 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13174 "hcs12x.cc"
+#line 13928 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13177 "hcs12x.cc"
+#line 13931 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13214,14 +13968,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13218 "hcs12x.cc"
+#line 13972 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13222 "hcs12x.cc"
+#line 13976 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13225 "hcs12x.cc"
+#line 13979 "hcs12x.cc"
 	);
 private:
 };
@@ -13235,14 +13989,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13239 "hcs12x.cc"
+#line 13993 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13243 "hcs12x.cc"
+#line 13997 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13246 "hcs12x.cc"
+#line 14000 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13283,14 +14037,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13287 "hcs12x.cc"
+#line 14041 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13291 "hcs12x.cc"
+#line 14045 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13294 "hcs12x.cc"
+#line 14048 "hcs12x.cc"
 	);
 private:
 };
@@ -13304,14 +14058,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13308 "hcs12x.cc"
+#line 14062 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13312 "hcs12x.cc"
+#line 14066 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13315 "hcs12x.cc"
+#line 14069 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13352,14 +14106,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13356 "hcs12x.cc"
+#line 14110 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13360 "hcs12x.cc"
+#line 14114 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13363 "hcs12x.cc"
+#line 14117 "hcs12x.cc"
 	);
 private:
 };
@@ -13371,20 +14125,20 @@ public:
 	~OpBclr_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 13375 "hcs12x.cc"
+#line 14129 "hcs12x.cc"
 	* xb;
 	uint32_t mm;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13381 "hcs12x.cc"
+#line 14135 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13385 "hcs12x.cc"
+#line 14139 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13388 "hcs12x.cc"
+#line 14142 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13425,14 +14179,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13429 "hcs12x.cc"
+#line 14183 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13433 "hcs12x.cc"
+#line 14187 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13436 "hcs12x.cc"
+#line 14190 "hcs12x.cc"
 	);
 private:
 };
@@ -13446,14 +14200,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13450 "hcs12x.cc"
+#line 14204 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13454 "hcs12x.cc"
+#line 14208 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13457 "hcs12x.cc"
+#line 14211 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13494,14 +14248,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13498 "hcs12x.cc"
+#line 14252 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13502 "hcs12x.cc"
+#line 14256 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13505 "hcs12x.cc"
+#line 14259 "hcs12x.cc"
 	);
 private:
 };
@@ -13515,14 +14269,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13519 "hcs12x.cc"
+#line 14273 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13523 "hcs12x.cc"
+#line 14277 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13526 "hcs12x.cc"
+#line 14280 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13563,14 +14317,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13567 "hcs12x.cc"
+#line 14321 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13571 "hcs12x.cc"
+#line 14325 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13574 "hcs12x.cc"
+#line 14328 "hcs12x.cc"
 	);
 private:
 };
@@ -13584,14 +14338,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13588 "hcs12x.cc"
+#line 14342 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13592 "hcs12x.cc"
+#line 14346 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13595 "hcs12x.cc"
+#line 14349 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13632,14 +14386,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13636 "hcs12x.cc"
+#line 14390 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13640 "hcs12x.cc"
+#line 14394 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13643 "hcs12x.cc"
+#line 14397 "hcs12x.cc"
 	);
 private:
 };
@@ -13652,19 +14406,19 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 13656 "hcs12x.cc"
+#line 14410 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13661 "hcs12x.cc"
+#line 14415 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13665 "hcs12x.cc"
+#line 14419 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13668 "hcs12x.cc"
+#line 14422 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13705,14 +14459,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13709 "hcs12x.cc"
+#line 14463 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13713 "hcs12x.cc"
+#line 14467 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13716 "hcs12x.cc"
+#line 14470 "hcs12x.cc"
 	);
 private:
 };
@@ -13726,14 +14480,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13730 "hcs12x.cc"
+#line 14484 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13734 "hcs12x.cc"
+#line 14488 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13737 "hcs12x.cc"
+#line 14491 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13774,14 +14528,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13778 "hcs12x.cc"
+#line 14532 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13782 "hcs12x.cc"
+#line 14536 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13785 "hcs12x.cc"
+#line 14539 "hcs12x.cc"
 	);
 private:
 };
@@ -13795,14 +14549,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13799 "hcs12x.cc"
+#line 14553 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13803 "hcs12x.cc"
+#line 14557 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13806 "hcs12x.cc"
+#line 14560 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13843,14 +14597,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13847 "hcs12x.cc"
+#line 14601 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13851 "hcs12x.cc"
+#line 14605 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13854 "hcs12x.cc"
+#line 14608 "hcs12x.cc"
 	);
 private:
 };
@@ -13864,14 +14618,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13868 "hcs12x.cc"
+#line 14622 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13872 "hcs12x.cc"
+#line 14626 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13875 "hcs12x.cc"
+#line 14629 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13912,14 +14666,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13916 "hcs12x.cc"
+#line 14670 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13920 "hcs12x.cc"
+#line 14674 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13923 "hcs12x.cc"
+#line 14677 "hcs12x.cc"
 	);
 private:
 };
@@ -13932,19 +14686,19 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 13936 "hcs12x.cc"
+#line 14690 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 13941 "hcs12x.cc"
+#line 14695 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 13945 "hcs12x.cc"
+#line 14699 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 13948 "hcs12x.cc"
+#line 14702 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -13985,14 +14739,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 13989 "hcs12x.cc"
+#line 14743 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 13993 "hcs12x.cc"
+#line 14747 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 13996 "hcs12x.cc"
+#line 14750 "hcs12x.cc"
 	);
 private:
 };
@@ -14006,14 +14760,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 14010 "hcs12x.cc"
+#line 14764 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 14014 "hcs12x.cc"
+#line 14768 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 14017 "hcs12x.cc"
+#line 14771 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -14054,14 +14808,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 14058 "hcs12x.cc"
+#line 14812 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 14062 "hcs12x.cc"
+#line 14816 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 14065 "hcs12x.cc"
+#line 14819 "hcs12x.cc"
 	);
 private:
 };
@@ -14075,14 +14829,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 14079 "hcs12x.cc"
+#line 14833 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 14083 "hcs12x.cc"
+#line 14837 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 14086 "hcs12x.cc"
+#line 14840 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -14123,14 +14877,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 14127 "hcs12x.cc"
+#line 14881 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 14131 "hcs12x.cc"
+#line 14885 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 14134 "hcs12x.cc"
+#line 14888 "hcs12x.cc"
 	);
 private:
 };
@@ -14142,20 +14896,20 @@ public:
 	~OpBset_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 14146 "hcs12x.cc"
+#line 14900 "hcs12x.cc"
 	* xb;
 	uint32_t mm;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 14152 "hcs12x.cc"
+#line 14906 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 14156 "hcs12x.cc"
+#line 14910 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 14159 "hcs12x.cc"
+#line 14913 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -14196,14 +14950,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 14200 "hcs12x.cc"
+#line 14954 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 14204 "hcs12x.cc"
+#line 14958 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 14207 "hcs12x.cc"
+#line 14961 "hcs12x.cc"
 	);
 private:
 };
@@ -14213,760 +14967,6 @@ class OpLsl_ext : public Operation
 public:
 	OpLsl_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14220 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14224 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14227 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14268 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14272 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14275 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLsl_idx : public Operation
-{
-public:
-	OpLsl_idx(CodeType const& code, uint16_t addr);
-	~OpLsl_idx();
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 14287 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14292 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14296 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14299 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14340 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14344 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14347 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLsla : public Operation
-{
-public:
-	OpLsla(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14359 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14363 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14366 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14407 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14411 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14414 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLslb : public Operation
-{
-public:
-	OpLslb(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14426 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14430 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14433 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14474 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14478 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14481 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLsld : public Operation
-{
-public:
-	OpLsld(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14493 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14497 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14500 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14541 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14545 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14548 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLslw_ext : public Operation
-{
-public:
-	OpLslw_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14561 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14565 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14568 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14609 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14613 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14616 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLslw_idx : public Operation
-{
-public:
-	OpLslw_idx(CodeType const& code, uint16_t addr);
-	~OpLslw_idx();
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 14628 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14633 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14637 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14640 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14681 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14685 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14688 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLslx : public Operation
-{
-public:
-	OpLslx(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14700 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14704 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14707 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14748 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14752 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14755 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLsly : public Operation
-{
-public:
-	OpLsly(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14767 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14771 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14774 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14815 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14819 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14822 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRol_ext : public Operation
-{
-public:
-	OpRol_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14835 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14839 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14842 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14883 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14887 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14890 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRol_idx : public Operation
-{
-public:
-	OpRol_idx(CodeType const& code, uint16_t addr);
-	~OpRol_idx();
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 14902 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 14907 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 14911 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 14914 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 14955 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 14959 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 14962 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRola : public Operation
-{
-public:
-	OpRola(CodeType const& code, uint16_t addr);
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -15030,161 +15030,26 @@ public:
 private:
 };
 
-class OpRolb : public Operation
+class OpLsl_idx : public Operation
 {
 public:
-	OpRolb(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 15041 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 15045 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 15048 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 15089 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 15093 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 15096 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRolw_ext : public Operation
-{
-public:
-	OpRolw_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 15109 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 15113 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 15116 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 15157 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 15161 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 15164 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRolw_idx : public Operation
-{
-public:
-	OpRolw_idx(CodeType const& code, uint16_t addr);
-	~OpRolw_idx();
+	OpLsl_idx(CodeType const& code, uint16_t addr);
+	~OpLsl_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 15176 "hcs12x.cc"
+#line 15041 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 15181 "hcs12x.cc"
+#line 15046 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 15185 "hcs12x.cc"
+#line 15050 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 15188 "hcs12x.cc"
+#line 15053 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -15225,33 +15090,33 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 15229 "hcs12x.cc"
+#line 15094 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 15233 "hcs12x.cc"
+#line 15098 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 15236 "hcs12x.cc"
+#line 15101 "hcs12x.cc"
 	);
 private:
 };
 
-class OpRolx : public Operation
+class OpLsla : public Operation
 {
 public:
-	OpRolx(CodeType const& code, uint16_t addr);
+	OpLsla(CodeType const& code, uint16_t addr);
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 15248 "hcs12x.cc"
+#line 15113 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 15252 "hcs12x.cc"
+#line 15117 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 15255 "hcs12x.cc"
+#line 15120 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -15292,22 +15157,157 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 15296 "hcs12x.cc"
+#line 15161 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 15300 "hcs12x.cc"
+#line 15165 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 15303 "hcs12x.cc"
+#line 15168 "hcs12x.cc"
 	);
 private:
 };
 
-class OpRoly : public Operation
+class OpLslb : public Operation
 {
 public:
-	OpRoly(CodeType const& code, uint16_t addr);
+	OpLslb(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 15180 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 15184 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 15187 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 15228 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 15232 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 15235 "hcs12x.cc"
+	);
+private:
+};
+
+class OpLsld : public Operation
+{
+public:
+	OpLsld(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 15247 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 15251 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 15254 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 15295 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 15299 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 15302 "hcs12x.cc"
+	);
+private:
+};
+
+class OpLslw_ext : public Operation
+{
+public:
+	OpLslw_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -15371,94 +15371,26 @@ public:
 private:
 };
 
-class OpLsr_ext : public Operation
+class OpLslw_idx : public Operation
 {
 public:
-	OpLsr_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 15383 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 15387 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 15390 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 15431 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 15435 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 15438 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLsr_idx : public Operation
-{
-public:
-	OpLsr_idx(CodeType const& code, uint16_t addr);
-	~OpLsr_idx();
+	OpLslw_idx(CodeType const& code, uint16_t addr);
+	~OpLslw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 15450 "hcs12x.cc"
+#line 15382 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 15455 "hcs12x.cc"
+#line 15387 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 15459 "hcs12x.cc"
+#line 15391 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 15462 "hcs12x.cc"
+#line 15394 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -15499,33 +15431,33 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 15503 "hcs12x.cc"
+#line 15435 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 15507 "hcs12x.cc"
+#line 15439 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 15510 "hcs12x.cc"
+#line 15442 "hcs12x.cc"
 	);
 private:
 };
 
-class OpLsra : public Operation
+class OpLslx : public Operation
 {
 public:
-	OpLsra(CodeType const& code, uint16_t addr);
+	OpLslx(CodeType const& code, uint16_t addr);
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 15522 "hcs12x.cc"
+#line 15454 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 15526 "hcs12x.cc"
+#line 15458 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 15529 "hcs12x.cc"
+#line 15461 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -15566,22 +15498,90 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 15570 "hcs12x.cc"
+#line 15502 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 15574 "hcs12x.cc"
+#line 15506 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 15577 "hcs12x.cc"
+#line 15509 "hcs12x.cc"
 	);
 private:
 };
 
-class OpLsrb : public Operation
+class OpLsly : public Operation
 {
 public:
-	OpLsrb(CodeType const& code, uint16_t addr);
+	OpLsly(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 15521 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 15525 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 15528 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 15569 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 15573 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 15576 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRol_ext : public Operation
+{
+public:
+	OpRol_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -15645,161 +15645,26 @@ public:
 private:
 };
 
-class OpLsrd : public Operation
+class OpRol_idx : public Operation
 {
 public:
-	OpLsrd(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 15656 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 15660 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 15663 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 15704 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 15708 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 15711 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLsrw_ext : public Operation
-{
-public:
-	OpLsrw_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 15724 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 15728 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 15731 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 15772 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 15776 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 15779 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLsrw_idx : public Operation
-{
-public:
-	OpLsrw_idx(CodeType const& code, uint16_t addr);
-	~OpLsrw_idx();
+	OpRol_idx(CodeType const& code, uint16_t addr);
+	~OpRol_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 15791 "hcs12x.cc"
+#line 15656 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 15796 "hcs12x.cc"
+#line 15661 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 15800 "hcs12x.cc"
+#line 15665 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 15803 "hcs12x.cc"
+#line 15668 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -15840,22 +15705,157 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 15844 "hcs12x.cc"
+#line 15709 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 15848 "hcs12x.cc"
+#line 15713 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 15851 "hcs12x.cc"
+#line 15716 "hcs12x.cc"
 	);
 private:
 };
 
-class OpLsrx : public Operation
+class OpRola : public Operation
 {
 public:
-	OpLsrx(CodeType const& code, uint16_t addr);
+	OpRola(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 15728 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 15732 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 15735 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 15776 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 15780 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 15783 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRolb : public Operation
+{
+public:
+	OpRolb(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 15795 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 15799 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 15802 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 15843 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 15847 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 15850 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRolw_ext : public Operation
+{
+public:
+	OpRolw_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -15919,161 +15919,26 @@ public:
 private:
 };
 
-class OpLsry : public Operation
+class OpRolw_idx : public Operation
 {
 public:
-	OpLsry(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 15930 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 15934 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 15937 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 15978 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 15982 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 15985 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRor_ext : public Operation
-{
-public:
-	OpRor_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 15998 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 16002 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 16005 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 16046 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 16050 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 16053 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRor_idx : public Operation
-{
-public:
-	OpRor_idx(CodeType const& code, uint16_t addr);
-	~OpRor_idx();
+	OpRolw_idx(CodeType const& code, uint16_t addr);
+	~OpRolw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 16065 "hcs12x.cc"
+#line 15930 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 16070 "hcs12x.cc"
+#line 15935 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 16074 "hcs12x.cc"
+#line 15939 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 16077 "hcs12x.cc"
+#line 15942 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -16114,22 +15979,157 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 16118 "hcs12x.cc"
+#line 15983 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 16122 "hcs12x.cc"
+#line 15987 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 16125 "hcs12x.cc"
+#line 15990 "hcs12x.cc"
 	);
 private:
 };
 
-class OpRora : public Operation
+class OpRolx : public Operation
 {
 public:
-	OpRora(CodeType const& code, uint16_t addr);
+	OpRolx(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 16002 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 16006 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 16009 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 16050 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 16054 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 16057 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRoly : public Operation
+{
+public:
+	OpRoly(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 16069 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 16073 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 16076 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 16117 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 16121 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 16124 "hcs12x.cc"
+	);
+private:
+};
+
+class OpLsr_ext : public Operation
+{
+public:
+	OpLsr_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -16193,161 +16193,26 @@ public:
 private:
 };
 
-class OpRorb : public Operation
+class OpLsr_idx : public Operation
 {
 public:
-	OpRorb(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 16204 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 16208 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 16211 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 16252 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 16256 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 16259 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRorw_ext : public Operation
-{
-public:
-	OpRorw_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 16272 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 16276 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 16279 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 16320 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 16324 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 16327 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRorw_idx : public Operation
-{
-public:
-	OpRorw_idx(CodeType const& code, uint16_t addr);
-	~OpRorw_idx();
+	OpLsr_idx(CodeType const& code, uint16_t addr);
+	~OpLsr_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 16339 "hcs12x.cc"
+#line 16204 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 16344 "hcs12x.cc"
+#line 16209 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 16348 "hcs12x.cc"
+#line 16213 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 16351 "hcs12x.cc"
+#line 16216 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -16388,33 +16253,33 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 16392 "hcs12x.cc"
+#line 16257 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 16396 "hcs12x.cc"
+#line 16261 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 16399 "hcs12x.cc"
+#line 16264 "hcs12x.cc"
 	);
 private:
 };
 
-class OpRorx : public Operation
+class OpLsra : public Operation
 {
 public:
-	OpRorx(CodeType const& code, uint16_t addr);
+	OpLsra(CodeType const& code, uint16_t addr);
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 16411 "hcs12x.cc"
+#line 16276 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 16415 "hcs12x.cc"
+#line 16280 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 16418 "hcs12x.cc"
+#line 16283 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -16455,22 +16320,157 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 16459 "hcs12x.cc"
+#line 16324 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 16463 "hcs12x.cc"
+#line 16328 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 16466 "hcs12x.cc"
+#line 16331 "hcs12x.cc"
 	);
 private:
 };
 
-class OpRory : public Operation
+class OpLsrb : public Operation
 {
 public:
-	OpRory(CodeType const& code, uint16_t addr);
+	OpLsrb(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 16343 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 16347 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 16350 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 16391 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 16395 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 16398 "hcs12x.cc"
+	);
+private:
+};
+
+class OpLsrd : public Operation
+{
+public:
+	OpLsrd(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 16410 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 16414 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 16417 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 16458 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 16462 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 16465 "hcs12x.cc"
+	);
+private:
+};
+
+class OpLsrw_ext : public Operation
+{
+public:
+	OpLsrw_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -16534,94 +16534,26 @@ public:
 private:
 };
 
-class OpAsr_ext : public Operation
+class OpLsrw_idx : public Operation
 {
 public:
-	OpAsr_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 16546 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 16550 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 16553 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 16594 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 16598 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 16601 "hcs12x.cc"
-	);
-private:
-};
-
-class OpAsr_idx : public Operation
-{
-public:
-	OpAsr_idx(CodeType const& code, uint16_t addr);
-	~OpAsr_idx();
+	OpLsrw_idx(CodeType const& code, uint16_t addr);
+	~OpLsrw_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 16613 "hcs12x.cc"
+#line 16545 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 16618 "hcs12x.cc"
+#line 16550 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 16622 "hcs12x.cc"
+#line 16554 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 16625 "hcs12x.cc"
+#line 16557 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -16662,33 +16594,33 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 16666 "hcs12x.cc"
+#line 16598 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 16670 "hcs12x.cc"
+#line 16602 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 16673 "hcs12x.cc"
+#line 16605 "hcs12x.cc"
 	);
 private:
 };
 
-class OpAsra : public Operation
+class OpLsrx : public Operation
 {
 public:
-	OpAsra(CodeType const& code, uint16_t addr);
+	OpLsrx(CodeType const& code, uint16_t addr);
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 16685 "hcs12x.cc"
+#line 16617 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 16689 "hcs12x.cc"
+#line 16621 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 16692 "hcs12x.cc"
+#line 16624 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -16729,22 +16661,90 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 16733 "hcs12x.cc"
+#line 16665 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 16737 "hcs12x.cc"
+#line 16669 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 16740 "hcs12x.cc"
+#line 16672 "hcs12x.cc"
 	);
 private:
 };
 
-class OpAsrb : public Operation
+class OpLsry : public Operation
 {
 public:
-	OpAsrb(CodeType const& code, uint16_t addr);
+	OpLsry(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 16684 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 16688 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 16691 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 16732 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 16736 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 16739 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRor_ext : public Operation
+{
+public:
+	OpRor_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -16808,94 +16808,26 @@ public:
 private:
 };
 
-class OpAsrw_ext : public Operation
+class OpRor_idx : public Operation
 {
 public:
-	OpAsrw_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 16820 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 16824 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 16827 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 16868 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 16872 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 16875 "hcs12x.cc"
-	);
-private:
-};
-
-class OpAsrw_idx : public Operation
-{
-public:
-	OpAsrw_idx(CodeType const& code, uint16_t addr);
-	~OpAsrw_idx();
+	OpRor_idx(CodeType const& code, uint16_t addr);
+	~OpRor_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 16887 "hcs12x.cc"
+#line 16819 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 16892 "hcs12x.cc"
+#line 16824 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 16896 "hcs12x.cc"
+#line 16828 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 16899 "hcs12x.cc"
+#line 16831 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -16936,33 +16868,33 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 16940 "hcs12x.cc"
+#line 16872 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 16944 "hcs12x.cc"
+#line 16876 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 16947 "hcs12x.cc"
+#line 16879 "hcs12x.cc"
 	);
 private:
 };
 
-class OpAsrx : public Operation
+class OpRora : public Operation
 {
 public:
-	OpAsrx(CodeType const& code, uint16_t addr);
+	OpRora(CodeType const& code, uint16_t addr);
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 16959 "hcs12x.cc"
+#line 16891 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 16963 "hcs12x.cc"
+#line 16895 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 16966 "hcs12x.cc"
+#line 16898 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17003,22 +16935,90 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17007 "hcs12x.cc"
+#line 16939 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17011 "hcs12x.cc"
+#line 16943 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17014 "hcs12x.cc"
+#line 16946 "hcs12x.cc"
 	);
 private:
 };
 
-class OpAsry : public Operation
+class OpRorb : public Operation
 {
 public:
-	OpAsry(CodeType const& code, uint16_t addr);
+	OpRorb(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 16958 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 16962 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 16965 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17006 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17010 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17013 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRorw_ext : public Operation
+{
+public:
+	OpRorw_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -17082,23 +17082,26 @@ public:
 private:
 };
 
-class OpBtas_dir : public Operation
+class OpRorw_idx : public Operation
 {
 public:
-	OpBtas_dir(CodeType const& code, uint16_t addr);
-	uint32_t opr8a;
-	uint32_t msk8;
+	OpRorw_idx(CodeType const& code, uint16_t addr);
+	~OpRorw_idx();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 17093 "hcs12x.cc"
+	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17095 "hcs12x.cc"
+#line 17098 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17099 "hcs12x.cc"
+#line 17102 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17102 "hcs12x.cc"
+#line 17105 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17139,14 +17142,765 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17143 "hcs12x.cc"
+#line 17146 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17147 "hcs12x.cc"
+#line 17150 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17150 "hcs12x.cc"
+#line 17153 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRorx : public Operation
+{
+public:
+	OpRorx(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17165 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17169 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17172 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17213 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17217 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17220 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRory : public Operation
+{
+public:
+	OpRory(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17232 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17236 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17239 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17280 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17284 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17287 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAsr_ext : public Operation
+{
+public:
+	OpAsr_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17300 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17304 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17307 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17348 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17352 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17355 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAsr_idx : public Operation
+{
+public:
+	OpAsr_idx(CodeType const& code, uint16_t addr);
+	~OpAsr_idx();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 17367 "hcs12x.cc"
+	* xb;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17372 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17376 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17379 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17420 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17424 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17427 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAsra : public Operation
+{
+public:
+	OpAsra(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17439 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17443 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17446 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17487 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17491 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17494 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAsrb : public Operation
+{
+public:
+	OpAsrb(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17506 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17510 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17513 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17554 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17558 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17561 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAsrw_ext : public Operation
+{
+public:
+	OpAsrw_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17574 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17578 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17581 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17622 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17626 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17629 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAsrw_idx : public Operation
+{
+public:
+	OpAsrw_idx(CodeType const& code, uint16_t addr);
+	~OpAsrw_idx();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 17641 "hcs12x.cc"
+	* xb;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17646 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17650 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17653 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17694 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17698 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17701 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAsrx : public Operation
+{
+public:
+	OpAsrx(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17713 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17717 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17720 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17761 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17765 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17768 "hcs12x.cc"
+	);
+private:
+};
+
+class OpAsry : public Operation
+{
+public:
+	OpAsry(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17780 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17784 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17787 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17828 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17832 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17835 "hcs12x.cc"
+	);
+private:
+};
+
+class OpBtas_dir : public Operation
+{
+public:
+	OpBtas_dir(CodeType const& code, uint16_t addr);
+	uint32_t opr8a;
+	uint32_t msk8;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 17849 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 17853 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 17856 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 17897 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 17901 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 17904 "hcs12x.cc"
 	);
 private:
 };
@@ -17160,14 +17914,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17164 "hcs12x.cc"
+#line 17918 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17168 "hcs12x.cc"
+#line 17922 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17171 "hcs12x.cc"
+#line 17925 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17208,14 +17962,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17212 "hcs12x.cc"
+#line 17966 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17216 "hcs12x.cc"
+#line 17970 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17219 "hcs12x.cc"
+#line 17973 "hcs12x.cc"
 	);
 private:
 };
@@ -17227,20 +17981,20 @@ public:
 	~OpBtas_idx();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 17231 "hcs12x.cc"
+#line 17985 "hcs12x.cc"
 	* xb;
 	uint32_t msk8;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17237 "hcs12x.cc"
+#line 17991 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17241 "hcs12x.cc"
+#line 17995 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17244 "hcs12x.cc"
+#line 17998 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17281,14 +18035,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17285 "hcs12x.cc"
+#line 18039 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17289 "hcs12x.cc"
+#line 18043 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17292 "hcs12x.cc"
+#line 18046 "hcs12x.cc"
 	);
 private:
 };
@@ -17300,14 +18054,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17304 "hcs12x.cc"
+#line 18058 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17308 "hcs12x.cc"
+#line 18062 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17311 "hcs12x.cc"
+#line 18065 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17348,14 +18102,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17352 "hcs12x.cc"
+#line 18106 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17356 "hcs12x.cc"
+#line 18110 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17359 "hcs12x.cc"
+#line 18113 "hcs12x.cc"
 	);
 private:
 };
@@ -17367,14 +18121,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17371 "hcs12x.cc"
+#line 18125 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17375 "hcs12x.cc"
+#line 18129 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17378 "hcs12x.cc"
+#line 18132 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17415,14 +18169,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17419 "hcs12x.cc"
+#line 18173 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17423 "hcs12x.cc"
+#line 18177 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17426 "hcs12x.cc"
+#line 18180 "hcs12x.cc"
 	);
 private:
 };
@@ -17434,14 +18188,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17438 "hcs12x.cc"
+#line 18192 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17442 "hcs12x.cc"
+#line 18196 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17445 "hcs12x.cc"
+#line 18199 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17482,14 +18236,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17486 "hcs12x.cc"
+#line 18240 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17490 "hcs12x.cc"
+#line 18244 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17493 "hcs12x.cc"
+#line 18247 "hcs12x.cc"
 	);
 private:
 };
@@ -17501,14 +18255,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17505 "hcs12x.cc"
+#line 18259 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17509 "hcs12x.cc"
+#line 18263 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17512 "hcs12x.cc"
+#line 18266 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17549,14 +18303,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17553 "hcs12x.cc"
+#line 18307 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17557 "hcs12x.cc"
+#line 18311 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17560 "hcs12x.cc"
+#line 18314 "hcs12x.cc"
 	);
 private:
 };
@@ -17568,14 +18322,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17572 "hcs12x.cc"
+#line 18326 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17576 "hcs12x.cc"
+#line 18330 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17579 "hcs12x.cc"
+#line 18333 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17616,14 +18370,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17620 "hcs12x.cc"
+#line 18374 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17624 "hcs12x.cc"
+#line 18378 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17627 "hcs12x.cc"
+#line 18381 "hcs12x.cc"
 	);
 private:
 };
@@ -17635,14 +18389,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17639 "hcs12x.cc"
+#line 18393 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17643 "hcs12x.cc"
+#line 18397 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17646 "hcs12x.cc"
+#line 18400 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17683,14 +18437,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17687 "hcs12x.cc"
+#line 18441 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17691 "hcs12x.cc"
+#line 18445 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17694 "hcs12x.cc"
+#line 18448 "hcs12x.cc"
 	);
 private:
 };
@@ -17702,14 +18456,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17706 "hcs12x.cc"
+#line 18460 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17710 "hcs12x.cc"
+#line 18464 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17713 "hcs12x.cc"
+#line 18467 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17750,14 +18504,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17754 "hcs12x.cc"
+#line 18508 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17758 "hcs12x.cc"
+#line 18512 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17761 "hcs12x.cc"
+#line 18515 "hcs12x.cc"
 	);
 private:
 };
@@ -17769,14 +18523,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17773 "hcs12x.cc"
+#line 18527 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17777 "hcs12x.cc"
+#line 18531 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17780 "hcs12x.cc"
+#line 18534 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17817,14 +18571,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17821 "hcs12x.cc"
+#line 18575 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17825 "hcs12x.cc"
+#line 18579 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17828 "hcs12x.cc"
+#line 18582 "hcs12x.cc"
 	);
 private:
 };
@@ -17837,14 +18591,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17841 "hcs12x.cc"
+#line 18595 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17845 "hcs12x.cc"
+#line 18599 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17848 "hcs12x.cc"
+#line 18602 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17885,14 +18639,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17889 "hcs12x.cc"
+#line 18643 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17893 "hcs12x.cc"
+#line 18647 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17896 "hcs12x.cc"
+#line 18650 "hcs12x.cc"
 	);
 private:
 };
@@ -17906,14 +18660,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17910 "hcs12x.cc"
+#line 18664 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17914 "hcs12x.cc"
+#line 18668 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17917 "hcs12x.cc"
+#line 18671 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -17954,14 +18708,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 17958 "hcs12x.cc"
+#line 18712 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 17962 "hcs12x.cc"
+#line 18716 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 17965 "hcs12x.cc"
+#line 18719 "hcs12x.cc"
 	);
 private:
 };
@@ -17975,14 +18729,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 17979 "hcs12x.cc"
+#line 18733 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 17983 "hcs12x.cc"
+#line 18737 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 17986 "hcs12x.cc"
+#line 18740 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -18023,14 +18777,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 18027 "hcs12x.cc"
+#line 18781 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 18031 "hcs12x.cc"
+#line 18785 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 18034 "hcs12x.cc"
+#line 18788 "hcs12x.cc"
 	);
 private:
 };
@@ -18046,14 +18800,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 18050 "hcs12x.cc"
+#line 18804 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 18054 "hcs12x.cc"
+#line 18808 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 18057 "hcs12x.cc"
+#line 18811 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -18094,14 +18848,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 18098 "hcs12x.cc"
+#line 18852 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 18102 "hcs12x.cc"
+#line 18856 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 18105 "hcs12x.cc"
+#line 18859 "hcs12x.cc"
 	);
 private:
 };
@@ -18117,14 +18871,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 18121 "hcs12x.cc"
+#line 18875 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 18125 "hcs12x.cc"
+#line 18879 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 18128 "hcs12x.cc"
+#line 18882 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -18165,14 +18919,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 18169 "hcs12x.cc"
+#line 18923 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 18173 "hcs12x.cc"
+#line 18927 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 18176 "hcs12x.cc"
+#line 18930 "hcs12x.cc"
 	);
 private:
 };
@@ -18185,21 +18939,21 @@ public:
 	uint32_t b;
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 18189 "hcs12x.cc"
+#line 18943 "hcs12x.cc"
 	* xb;
 	uint32_t msk8;
 	int32_t rel8;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 18196 "hcs12x.cc"
+#line 18950 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 18200 "hcs12x.cc"
+#line 18954 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 18203 "hcs12x.cc"
+#line 18957 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -18240,14 +18994,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 18244 "hcs12x.cc"
+#line 18998 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 18248 "hcs12x.cc"
+#line 19002 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 18251 "hcs12x.cc"
+#line 19005 "hcs12x.cc"
 	);
 private:
 };
@@ -18260,14 +19014,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 18264 "hcs12x.cc"
+#line 19018 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 18268 "hcs12x.cc"
+#line 19022 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 18271 "hcs12x.cc"
+#line 19025 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -18308,14 +19062,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 18312 "hcs12x.cc"
+#line 19066 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 18316 "hcs12x.cc"
+#line 19070 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 18319 "hcs12x.cc"
+#line 19073 "hcs12x.cc"
 	);
 private:
 };
@@ -18329,14 +19083,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 18333 "hcs12x.cc"
+#line 19087 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 18337 "hcs12x.cc"
+#line 19091 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 18340 "hcs12x.cc"
+#line 19094 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -18377,14 +19131,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 18381 "hcs12x.cc"
+#line 19135 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 18385 "hcs12x.cc"
+#line 19139 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 18388 "hcs12x.cc"
+#line 19142 "hcs12x.cc"
 	);
 private:
 };
@@ -18398,14 +19152,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 18402 "hcs12x.cc"
+#line 19156 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 18406 "hcs12x.cc"
+#line 19160 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 18409 "hcs12x.cc"
+#line 19163 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -18446,14 +19200,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 18450 "hcs12x.cc"
+#line 19204 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 18454 "hcs12x.cc"
+#line 19208 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 18457 "hcs12x.cc"
+#line 19211 "hcs12x.cc"
 	);
 private:
 };
@@ -18466,14 +19220,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 18470 "hcs12x.cc"
+#line 19224 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 18474 "hcs12x.cc"
+#line 19228 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 18477 "hcs12x.cc"
+#line 19231 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -18514,14 +19268,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 18518 "hcs12x.cc"
+#line 19272 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 18522 "hcs12x.cc"
+#line 19276 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 18525 "hcs12x.cc"
+#line 19279 "hcs12x.cc"
 	);
 private:
 };
@@ -18531,760 +19285,6 @@ class OpJmp_ext : public Operation
 public:
 	OpJmp_ext(CodeType const& code, uint16_t addr);
 	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 18538 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 18542 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 18545 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 18586 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 18590 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 18593 "hcs12x.cc"
-	);
-private:
-};
-
-class OpJmp_idx : public Operation
-{
-public:
-	OpJmp_idx(CodeType const& code, uint16_t addr);
-	~OpJmp_idx();
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 18605 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 18610 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 18614 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 18617 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 18658 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 18662 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 18665 "hcs12x.cc"
-	);
-private:
-};
-
-class OpJsr_dir : public Operation
-{
-public:
-	OpJsr_dir(CodeType const& code, uint16_t addr);
-	uint32_t opr8a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 18678 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 18682 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 18685 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 18726 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 18730 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 18733 "hcs12x.cc"
-	);
-private:
-};
-
-class OpJsr_ext : public Operation
-{
-public:
-	OpJsr_ext(CodeType const& code, uint16_t addr);
-	uint32_t opr16a;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 18746 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 18750 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 18753 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 18794 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 18798 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 18801 "hcs12x.cc"
-	);
-private:
-};
-
-class OpJsr_idx : public Operation
-{
-public:
-	OpJsr_idx(CodeType const& code, uint16_t addr);
-	~OpJsr_idx();
-#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
-	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 18813 "hcs12x.cc"
-	* xb;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 18818 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 18822 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 18825 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 18866 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 18870 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 18873 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRtc : public Operation
-{
-public:
-	OpRtc(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 18885 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 18889 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 18892 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 18933 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 18937 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 18940 "hcs12x.cc"
-	);
-private:
-};
-
-class OpRts : public Operation
-{
-public:
-	OpRts(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 18952 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 18956 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 18959 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 19000 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 19004 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 19007 "hcs12x.cc"
-	);
-private:
-};
-
-class OpLoop : public Operation
-{
-public:
-	OpLoop(CodeType const& code, uint16_t addr);
-	uint32_t b765;
-	uint32_t b4;
-	uint32_t b3;
-	uint32_t b210;
-	int32_t rel9;
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 19024 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 19028 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 19031 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 19072 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 19076 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 19079 "hcs12x.cc"
-	);
-private:
-};
-
-class OpPsha : public Operation
-{
-public:
-	OpPsha(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 19091 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 19095 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 19098 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 19139 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 19143 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 19146 "hcs12x.cc"
-	);
-private:
-};
-
-class OpPshb : public Operation
-{
-public:
-	OpPshb(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 19158 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 19162 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 19165 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 19206 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 19210 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 19213 "hcs12x.cc"
-	);
-private:
-};
-
-class OpPshc : public Operation
-{
-public:
-	OpPshc(CodeType const& code, uint16_t addr);
-	virtual
-#line 69 "hcs12x.isa"
-	void
-#line 19225 "hcs12x.cc"
-	disasm(
-#line 69 "hcs12x.isa"
-	ostream&
-#line 19229 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-	sink
-#line 19232 "hcs12x.cc"
-	);
-	/*
-	*  Copyright (c) 2008,
-	*  Commissariat a l'Energie Atomique (CEA)
-	*  All rights reserved.
-	*
-	*  Redistribution and use in source and binary forms, with or without modification,
-*  are permitted provided that the following conditions are met:
-	*
-	*   - Redistributions of source code must retain the above copyright notice, this
-	*     list of conditions and the following disclaimer.
-	*
-	*   - Redistributions in binary form must reproduce the above copyright notice,
-	*     this list of conditions and the following disclaimer in the documentation
-	*     and/or other materials provided with the distribution.
-	*
-	*   - Neither the name of CEA nor the names of its contributors may be used to
-	*     endorse or promote products derived from this software without specific prior
-	*     written permission.
-	*
-	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-	*  DISCLAIMED.
-	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-	*
-	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
-	*/
-	/* instruction endian */
-	// subdecoder XB
-	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
-	virtual
-#line 63 "hcs12x.isa"
-	void
-#line 19273 "hcs12x.cc"
-	execute(
-#line 63 "hcs12x.isa"
-	CPU *
-#line 19277 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-	cpu
-#line 19280 "hcs12x.cc"
-	);
-private:
-};
-
-class OpPshcw : public Operation
-{
-public:
-	OpPshcw(CodeType const& code, uint16_t addr);
 	virtual
 #line 69 "hcs12x.isa"
 	void
@@ -19348,21 +19348,26 @@ public:
 private:
 };
 
-class OpPshd : public Operation
+class OpJmp_idx : public Operation
 {
 public:
-	OpPshd(CodeType const& code, uint16_t addr);
+	OpJmp_idx(CodeType const& code, uint16_t addr);
+	~OpJmp_idx();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 19359 "hcs12x.cc"
+	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19359 "hcs12x.cc"
+#line 19364 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19363 "hcs12x.cc"
+#line 19368 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19366 "hcs12x.cc"
+#line 19371 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19403,14 +19408,763 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19407 "hcs12x.cc"
+#line 19412 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19411 "hcs12x.cc"
+#line 19416 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19414 "hcs12x.cc"
+#line 19419 "hcs12x.cc"
+	);
+private:
+};
+
+class OpJsr_dir : public Operation
+{
+public:
+	OpJsr_dir(CodeType const& code, uint16_t addr);
+	uint32_t opr8a;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19432 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19436 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19439 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 19480 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 19484 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 19487 "hcs12x.cc"
+	);
+private:
+};
+
+class OpJsr_ext : public Operation
+{
+public:
+	OpJsr_ext(CodeType const& code, uint16_t addr);
+	uint32_t opr16a;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19500 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19504 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19507 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 19548 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 19552 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 19555 "hcs12x.cc"
+	);
+private:
+};
+
+class OpJsr_idx : public Operation
+{
+public:
+	OpJsr_idx(CodeType const& code, uint16_t addr);
+	~OpJsr_idx();
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+	unisim::component::cxx::processor::hcs12x::XB::Operation
+#line 19567 "hcs12x.cc"
+	* xb;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19572 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19576 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19579 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 19620 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 19624 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 19627 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRtc : public Operation
+{
+public:
+	OpRtc(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19639 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19643 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19646 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 19687 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 19691 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 19694 "hcs12x.cc"
+	);
+private:
+};
+
+class OpRts : public Operation
+{
+public:
+	OpRts(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19706 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19710 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19713 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 19754 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 19758 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 19761 "hcs12x.cc"
+	);
+private:
+};
+
+class OpLoop : public Operation
+{
+public:
+	OpLoop(CodeType const& code, uint16_t addr);
+	uint32_t b765;
+	uint32_t b4;
+	uint32_t b3;
+	uint32_t b210;
+	int32_t rel9;
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19778 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19782 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19785 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 19826 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 19830 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 19833 "hcs12x.cc"
+	);
+private:
+};
+
+class OpPsha : public Operation
+{
+public:
+	OpPsha(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19845 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19849 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19852 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 19893 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 19897 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 19900 "hcs12x.cc"
+	);
+private:
+};
+
+class OpPshb : public Operation
+{
+public:
+	OpPshb(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19912 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19916 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19919 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 19960 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 19964 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 19967 "hcs12x.cc"
+	);
+private:
+};
+
+class OpPshc : public Operation
+{
+public:
+	OpPshc(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 19979 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 19983 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 19986 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 20027 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 20031 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 20034 "hcs12x.cc"
+	);
+private:
+};
+
+class OpPshcw : public Operation
+{
+public:
+	OpPshcw(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 20046 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 20050 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 20053 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 20094 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 20098 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 20101 "hcs12x.cc"
+	);
+private:
+};
+
+class OpPshd : public Operation
+{
+public:
+	OpPshd(CodeType const& code, uint16_t addr);
+	virtual
+#line 69 "hcs12x.isa"
+	void
+#line 20113 "hcs12x.cc"
+	disasm(
+#line 69 "hcs12x.isa"
+	ostream&
+#line 20117 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+	sink
+#line 20120 "hcs12x.cc"
+	);
+	/*
+	*  Copyright (c) 2008,
+	*  Commissariat a l'Energie Atomique (CEA)
+	*  All rights reserved.
+	*
+	*  Redistribution and use in source and binary forms, with or without modification,
+*  are permitted provided that the following conditions are met:
+	*
+	*   - Redistributions of source code must retain the above copyright notice, this
+	*     list of conditions and the following disclaimer.
+	*
+	*   - Redistributions in binary form must reproduce the above copyright notice,
+	*     this list of conditions and the following disclaimer in the documentation
+	*     and/or other materials provided with the distribution.
+	*
+	*   - Neither the name of CEA nor the names of its contributors may be used to
+	*     endorse or promote products derived from this software without specific prior
+	*     written permission.
+	*
+	*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+	*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+	*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+	*  DISCLAIMED.
+	*  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+	*  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+	*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+	*  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+	*  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+	*  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	*
+	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+	*/
+	/* instruction endian */
+	// subdecoder XB
+	//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
+	virtual
+#line 63 "hcs12x.isa"
+	void
+#line 20161 "hcs12x.cc"
+	execute(
+#line 63 "hcs12x.isa"
+	CPU *
+#line 20165 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+	cpu
+#line 20168 "hcs12x.cc"
 	);
 private:
 };
@@ -19422,14 +20176,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19426 "hcs12x.cc"
+#line 20180 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19430 "hcs12x.cc"
+#line 20184 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19433 "hcs12x.cc"
+#line 20187 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19470,14 +20224,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19474 "hcs12x.cc"
+#line 20228 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19478 "hcs12x.cc"
+#line 20232 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19481 "hcs12x.cc"
+#line 20235 "hcs12x.cc"
 	);
 private:
 };
@@ -19489,14 +20243,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19493 "hcs12x.cc"
+#line 20247 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19497 "hcs12x.cc"
+#line 20251 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19500 "hcs12x.cc"
+#line 20254 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19537,14 +20291,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19541 "hcs12x.cc"
+#line 20295 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19545 "hcs12x.cc"
+#line 20299 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19548 "hcs12x.cc"
+#line 20302 "hcs12x.cc"
 	);
 private:
 };
@@ -19556,14 +20310,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19560 "hcs12x.cc"
+#line 20314 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19564 "hcs12x.cc"
+#line 20318 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19567 "hcs12x.cc"
+#line 20321 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19604,14 +20358,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19608 "hcs12x.cc"
+#line 20362 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19612 "hcs12x.cc"
+#line 20366 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19615 "hcs12x.cc"
+#line 20369 "hcs12x.cc"
 	);
 private:
 };
@@ -19623,14 +20377,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19627 "hcs12x.cc"
+#line 20381 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19631 "hcs12x.cc"
+#line 20385 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19634 "hcs12x.cc"
+#line 20388 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19671,14 +20425,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19675 "hcs12x.cc"
+#line 20429 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19679 "hcs12x.cc"
+#line 20433 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19682 "hcs12x.cc"
+#line 20436 "hcs12x.cc"
 	);
 private:
 };
@@ -19690,14 +20444,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19694 "hcs12x.cc"
+#line 20448 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19698 "hcs12x.cc"
+#line 20452 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19701 "hcs12x.cc"
+#line 20455 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19738,14 +20492,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19742 "hcs12x.cc"
+#line 20496 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19746 "hcs12x.cc"
+#line 20500 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19749 "hcs12x.cc"
+#line 20503 "hcs12x.cc"
 	);
 private:
 };
@@ -19757,14 +20511,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19761 "hcs12x.cc"
+#line 20515 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19765 "hcs12x.cc"
+#line 20519 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19768 "hcs12x.cc"
+#line 20522 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19805,14 +20559,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19809 "hcs12x.cc"
+#line 20563 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19813 "hcs12x.cc"
+#line 20567 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19816 "hcs12x.cc"
+#line 20570 "hcs12x.cc"
 	);
 private:
 };
@@ -19824,14 +20578,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19828 "hcs12x.cc"
+#line 20582 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19832 "hcs12x.cc"
+#line 20586 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19835 "hcs12x.cc"
+#line 20589 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19872,14 +20626,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19876 "hcs12x.cc"
+#line 20630 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19880 "hcs12x.cc"
+#line 20634 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19883 "hcs12x.cc"
+#line 20637 "hcs12x.cc"
 	);
 private:
 };
@@ -19891,14 +20645,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19895 "hcs12x.cc"
+#line 20649 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19899 "hcs12x.cc"
+#line 20653 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19902 "hcs12x.cc"
+#line 20656 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -19939,14 +20693,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 19943 "hcs12x.cc"
+#line 20697 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 19947 "hcs12x.cc"
+#line 20701 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 19950 "hcs12x.cc"
+#line 20704 "hcs12x.cc"
 	);
 private:
 };
@@ -19958,14 +20712,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 19962 "hcs12x.cc"
+#line 20716 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 19966 "hcs12x.cc"
+#line 20720 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 19969 "hcs12x.cc"
+#line 20723 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20006,14 +20760,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20010 "hcs12x.cc"
+#line 20764 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20014 "hcs12x.cc"
+#line 20768 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20017 "hcs12x.cc"
+#line 20771 "hcs12x.cc"
 	);
 private:
 };
@@ -20025,14 +20779,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20029 "hcs12x.cc"
+#line 20783 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20033 "hcs12x.cc"
+#line 20787 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20036 "hcs12x.cc"
+#line 20790 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20073,14 +20827,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20077 "hcs12x.cc"
+#line 20831 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20081 "hcs12x.cc"
+#line 20835 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20084 "hcs12x.cc"
+#line 20838 "hcs12x.cc"
 	);
 private:
 };
@@ -20092,14 +20846,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20096 "hcs12x.cc"
+#line 20850 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20100 "hcs12x.cc"
+#line 20854 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20103 "hcs12x.cc"
+#line 20857 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20140,14 +20894,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20144 "hcs12x.cc"
+#line 20898 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20148 "hcs12x.cc"
+#line 20902 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20151 "hcs12x.cc"
+#line 20905 "hcs12x.cc"
 	);
 private:
 };
@@ -20159,14 +20913,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20163 "hcs12x.cc"
+#line 20917 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20167 "hcs12x.cc"
+#line 20921 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20170 "hcs12x.cc"
+#line 20924 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20207,14 +20961,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20211 "hcs12x.cc"
+#line 20965 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20215 "hcs12x.cc"
+#line 20969 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20218 "hcs12x.cc"
+#line 20972 "hcs12x.cc"
 	);
 private:
 };
@@ -20226,14 +20980,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20230 "hcs12x.cc"
+#line 20984 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20234 "hcs12x.cc"
+#line 20988 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20237 "hcs12x.cc"
+#line 20991 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20274,14 +21028,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20278 "hcs12x.cc"
+#line 21032 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20282 "hcs12x.cc"
+#line 21036 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20285 "hcs12x.cc"
+#line 21039 "hcs12x.cc"
 	);
 private:
 };
@@ -20293,14 +21047,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20297 "hcs12x.cc"
+#line 21051 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20301 "hcs12x.cc"
+#line 21055 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20304 "hcs12x.cc"
+#line 21058 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20341,14 +21095,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20345 "hcs12x.cc"
+#line 21099 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20349 "hcs12x.cc"
+#line 21103 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20352 "hcs12x.cc"
+#line 21106 "hcs12x.cc"
 	);
 private:
 };
@@ -20360,19 +21114,19 @@ public:
 	~OpTbl();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 20364 "hcs12x.cc"
+#line 21118 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20369 "hcs12x.cc"
+#line 21123 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20373 "hcs12x.cc"
+#line 21127 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20376 "hcs12x.cc"
+#line 21130 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20413,14 +21167,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20417 "hcs12x.cc"
+#line 21171 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20421 "hcs12x.cc"
+#line 21175 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20424 "hcs12x.cc"
+#line 21178 "hcs12x.cc"
 	);
 private:
 };
@@ -20432,19 +21186,19 @@ public:
 	~OpEtlb();
 #line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
-#line 20436 "hcs12x.cc"
+#line 21190 "hcs12x.cc"
 	* xb;
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20441 "hcs12x.cc"
+#line 21195 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20445 "hcs12x.cc"
+#line 21199 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20448 "hcs12x.cc"
+#line 21202 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20485,14 +21239,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20489 "hcs12x.cc"
+#line 21243 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20493 "hcs12x.cc"
+#line 21247 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20496 "hcs12x.cc"
+#line 21250 "hcs12x.cc"
 	);
 private:
 };
@@ -20504,14 +21258,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20508 "hcs12x.cc"
+#line 21262 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20512 "hcs12x.cc"
+#line 21266 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20515 "hcs12x.cc"
+#line 21269 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20552,14 +21306,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20556 "hcs12x.cc"
+#line 21310 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20560 "hcs12x.cc"
+#line 21314 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20563 "hcs12x.cc"
+#line 21317 "hcs12x.cc"
 	);
 private:
 };
@@ -20571,14 +21325,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20575 "hcs12x.cc"
+#line 21329 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20579 "hcs12x.cc"
+#line 21333 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20582 "hcs12x.cc"
+#line 21336 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20619,14 +21373,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20623 "hcs12x.cc"
+#line 21377 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20627 "hcs12x.cc"
+#line 21381 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20630 "hcs12x.cc"
+#line 21384 "hcs12x.cc"
 	);
 private:
 };
@@ -20638,14 +21392,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20642 "hcs12x.cc"
+#line 21396 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20646 "hcs12x.cc"
+#line 21400 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20649 "hcs12x.cc"
+#line 21403 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20686,14 +21440,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20690 "hcs12x.cc"
+#line 21444 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20694 "hcs12x.cc"
+#line 21448 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20697 "hcs12x.cc"
+#line 21451 "hcs12x.cc"
 	);
 private:
 };
@@ -20705,14 +21459,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20709 "hcs12x.cc"
+#line 21463 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20713 "hcs12x.cc"
+#line 21467 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20716 "hcs12x.cc"
+#line 21470 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20753,14 +21507,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20757 "hcs12x.cc"
+#line 21511 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20761 "hcs12x.cc"
+#line 21515 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20764 "hcs12x.cc"
+#line 21518 "hcs12x.cc"
 	);
 private:
 };
@@ -20772,14 +21526,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20776 "hcs12x.cc"
+#line 21530 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20780 "hcs12x.cc"
+#line 21534 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20783 "hcs12x.cc"
+#line 21537 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20820,14 +21574,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20824 "hcs12x.cc"
+#line 21578 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20828 "hcs12x.cc"
+#line 21582 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20831 "hcs12x.cc"
+#line 21585 "hcs12x.cc"
 	);
 private:
 };
@@ -20839,14 +21593,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20843 "hcs12x.cc"
+#line 21597 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20847 "hcs12x.cc"
+#line 21601 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20850 "hcs12x.cc"
+#line 21604 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20887,14 +21641,14 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20891 "hcs12x.cc"
+#line 21645 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20895 "hcs12x.cc"
+#line 21649 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20898 "hcs12x.cc"
+#line 21652 "hcs12x.cc"
 	);
 private:
 };
@@ -20906,14 +21660,14 @@ public:
 	virtual
 #line 69 "hcs12x.isa"
 	void
-#line 20910 "hcs12x.cc"
+#line 21664 "hcs12x.cc"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 20914 "hcs12x.cc"
+#line 21668 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 	sink
-#line 20917 "hcs12x.cc"
+#line 21671 "hcs12x.cc"
 	);
 	/*
 	*  Copyright (c) 2008,
@@ -20954,28 +21708,28 @@ public:
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 20958 "hcs12x.cc"
+#line 21712 "hcs12x.cc"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 20962 "hcs12x.cc"
+#line 21716 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 	cpu
-#line 20965 "hcs12x.cc"
+#line 21719 "hcs12x.cc"
 	);
 private:
 };
 
 #line 69 "hcs12x.isa"
 void
-#line 20972 "hcs12x.cc"
+#line 21726 "hcs12x.cc"
 OpCall_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 20976 "hcs12x.cc"
+#line 21730 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 20979 "hcs12x.cc"
+#line 21733 "hcs12x.cc"
 )
 {
 #line 461 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -20984,18 +21738,18 @@ sink
 		xb->disasm(sink);
 		sink << ", $" << std::hex << page;
 	}
-#line 20988 "hcs12x.cc"
+#line 21742 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 20992 "hcs12x.cc"
+#line 21746 "hcs12x.cc"
 OpCall_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 20996 "hcs12x.cc"
+#line 21750 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 20999 "hcs12x.cc"
+#line 21753 "hcs12x.cc"
 )
 {
 #line 467 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -21026,7 +21780,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	}
-#line 21030 "hcs12x.cc"
+#line 21784 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCall_idx(CodeType const& code, uint16_t addr)
@@ -21038,32 +21792,32 @@ static Operation *DecodeOpCall_idx(CodeType const& code, uint16_t addr)
 // trapnum: Trap number $30-$39 or $40-$FF
 #line 69 "hcs12x.isa"
 void
-#line 21042 "hcs12x.cc"
+#line 21796 "hcs12x.cc"
 OpTrap::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21046 "hcs12x.cc"
+#line 21800 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21049 "hcs12x.cc"
+#line 21803 "hcs12x.cc"
 )
 {
 #line 262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "TRAP $" << std::hex << trapnum;
 	}
-#line 21056 "hcs12x.cc"
+#line 21810 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21060 "hcs12x.cc"
+#line 21814 "hcs12x.cc"
 OpTrap::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21064 "hcs12x.cc"
+#line 21818 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21067 "hcs12x.cc"
+#line 21821 "hcs12x.cc"
 )
 {
 #line 266 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
@@ -21109,7 +21863,7 @@ cpu
 			cpu->setRegPC(cpu->memRead16(CONFIG::TRAP_VECTOR_ADDRESS));
 		}
 	}
-#line 21113 "hcs12x.cc"
+#line 21867 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTrap(CodeType const& code, uint16_t addr)
@@ -21153,23 +21907,23 @@ static Operation *DecodeOpTrap(CodeType const& code, uint16_t addr)
 // LDAA or LDAB #opr8i
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21157 "hcs12x.cc"
+#line 21911 "hcs12x.cc"
 OpLdaab_imm::getCycles()
 {
 #line 38 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 1; }
-#line 21162 "hcs12x.cc"
+#line 21916 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21166 "hcs12x.cc"
+#line 21920 "hcs12x.cc"
 OpLdaab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21170 "hcs12x.cc"
+#line 21924 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21173 "hcs12x.cc"
+#line 21927 "hcs12x.cc"
 )
 {
 #line 40 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21181,18 +21935,18 @@ sink
 		}
 		sink  << std::hex << opr8i;
 	}
-#line 21185 "hcs12x.cc"
+#line 21939 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21189 "hcs12x.cc"
+#line 21943 "hcs12x.cc"
 OpLdaab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21193 "hcs12x.cc"
+#line 21947 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21196 "hcs12x.cc"
+#line 21950 "hcs12x.cc"
 )
 {
 #line 49 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21207,7 +21961,7 @@ cpu
 		if (opr8i == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((opr8i & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 	}
-#line 21211 "hcs12x.cc"
+#line 21965 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLdaab_imm(CodeType const& code, uint16_t addr)
@@ -21218,23 +21972,23 @@ static Operation *DecodeOpLdaab_imm(CodeType const& code, uint16_t addr)
 // LDAA or LDAB opr8a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21222 "hcs12x.cc"
+#line 21976 "hcs12x.cc"
 OpLdaab_dir::getCycles()
 {
 #line 64 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
-#line 21227 "hcs12x.cc"
+#line 21981 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21231 "hcs12x.cc"
+#line 21985 "hcs12x.cc"
 OpLdaab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21235 "hcs12x.cc"
+#line 21989 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21238 "hcs12x.cc"
+#line 21992 "hcs12x.cc"
 )
 {
 #line 66 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21246,18 +22000,18 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 21250 "hcs12x.cc"
+#line 22004 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21254 "hcs12x.cc"
+#line 22008 "hcs12x.cc"
 OpLdaab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21258 "hcs12x.cc"
+#line 22012 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21261 "hcs12x.cc"
+#line 22015 "hcs12x.cc"
 )
 {
 #line 75 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21274,7 +22028,7 @@ cpu
 		if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 	}
-#line 21278 "hcs12x.cc"
+#line 22032 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLdaab_dir(CodeType const& code, uint16_t addr)
@@ -21285,23 +22039,23 @@ static Operation *DecodeOpLdaab_dir(CodeType const& code, uint16_t addr)
 // LDAA or LDAB opr16a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21289 "hcs12x.cc"
+#line 22043 "hcs12x.cc"
 OpLdaab_ext::getCycles()
 {
 #line 92 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
-#line 21294 "hcs12x.cc"
+#line 22048 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21298 "hcs12x.cc"
+#line 22052 "hcs12x.cc"
 OpLdaab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21302 "hcs12x.cc"
+#line 22056 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21305 "hcs12x.cc"
+#line 22059 "hcs12x.cc"
 )
 {
 #line 94 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21313,18 +22067,18 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 21317 "hcs12x.cc"
+#line 22071 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21321 "hcs12x.cc"
+#line 22075 "hcs12x.cc"
 OpLdaab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21325 "hcs12x.cc"
+#line 22079 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21328 "hcs12x.cc"
+#line 22082 "hcs12x.cc"
 )
 {
 #line 103 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21343,7 +22097,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 21347 "hcs12x.cc"
+#line 22101 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLdaab_ext(CodeType const& code, uint16_t addr)
@@ -21358,23 +22112,23 @@ static Operation *DecodeOpLdaab_ext(CodeType const& code, uint16_t addr)
 // LDAA or LDAB [oprx16,xysp]
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21362 "hcs12x.cc"
+#line 22116 "hcs12x.cc"
 OpLdaab_idx::getCycles()
 {
 #line 126 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
-#line 21367 "hcs12x.cc"
+#line 22121 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21371 "hcs12x.cc"
+#line 22125 "hcs12x.cc"
 OpLdaab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21375 "hcs12x.cc"
+#line 22129 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21378 "hcs12x.cc"
+#line 22132 "hcs12x.cc"
 )
 {
 #line 128 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21386,18 +22140,18 @@ sink
 		}
 		xb->disasm(sink);
 	}
-#line 21390 "hcs12x.cc"
+#line 22144 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21394 "hcs12x.cc"
+#line 22148 "hcs12x.cc"
 OpLdaab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21398 "hcs12x.cc"
+#line 22152 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21401 "hcs12x.cc"
+#line 22155 "hcs12x.cc"
 )
 {
 #line 137 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21418,7 +22172,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 21422 "hcs12x.cc"
+#line 22176 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLdaab_idx(CodeType const& code, uint16_t addr)
@@ -21429,23 +22183,23 @@ static Operation *DecodeOpLdaab_idx(CodeType const& code, uint16_t addr)
 // LDD or LDY or LDX or LDS #opr16i
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21433 "hcs12x.cc"
+#line 22187 "hcs12x.cc"
 OpLd_dyxs_imm::getCycles()
 {
 #line 158 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 2; }
-#line 21438 "hcs12x.cc"
+#line 22192 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21442 "hcs12x.cc"
+#line 22196 "hcs12x.cc"
 OpLd_dyxs_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21446 "hcs12x.cc"
+#line 22200 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21449 "hcs12x.cc"
+#line 22203 "hcs12x.cc"
 )
 {
 #line 160 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21459,18 +22213,18 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 21463 "hcs12x.cc"
+#line 22217 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21467 "hcs12x.cc"
+#line 22221 "hcs12x.cc"
 OpLd_dyxs_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21471 "hcs12x.cc"
+#line 22225 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21474 "hcs12x.cc"
+#line 22228 "hcs12x.cc"
 )
 {
 #line 171 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21488,7 +22242,7 @@ cpu
 		if ((opr16i & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 21492 "hcs12x.cc"
+#line 22246 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLd_dyxs_imm(CodeType const& code, uint16_t addr)
@@ -21499,23 +22253,23 @@ static Operation *DecodeOpLd_dyxs_imm(CodeType const& code, uint16_t addr)
 // LDD or LDY or LDX or LDS opr8a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21503 "hcs12x.cc"
+#line 22257 "hcs12x.cc"
 OpLd_dyxs_dir::getCycles()
 {
 #line 189 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
-#line 21508 "hcs12x.cc"
+#line 22262 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21512 "hcs12x.cc"
+#line 22266 "hcs12x.cc"
 OpLd_dyxs_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21516 "hcs12x.cc"
+#line 22270 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21519 "hcs12x.cc"
+#line 22273 "hcs12x.cc"
 )
 {
 #line 191 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21529,18 +22283,18 @@ sink
 		}
 		sink << std::hex << dd;
 	}
-#line 21533 "hcs12x.cc"
+#line 22287 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21537 "hcs12x.cc"
+#line 22291 "hcs12x.cc"
 OpLd_dyxs_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21541 "hcs12x.cc"
+#line 22295 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21544 "hcs12x.cc"
+#line 22298 "hcs12x.cc"
 )
 {
 #line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21559,7 +22313,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 21563 "hcs12x.cc"
+#line 22317 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLd_dyxs_dir(CodeType const& code, uint16_t addr)
@@ -21570,23 +22324,23 @@ static Operation *DecodeOpLd_dyxs_dir(CodeType const& code, uint16_t addr)
 // LDD or LDY or LDX or LDS opr16a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21574 "hcs12x.cc"
+#line 22328 "hcs12x.cc"
 OpLd_dyxs_ext::getCycles()
 {
 #line 221 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
-#line 21579 "hcs12x.cc"
+#line 22333 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21583 "hcs12x.cc"
+#line 22337 "hcs12x.cc"
 OpLd_dyxs_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21587 "hcs12x.cc"
+#line 22341 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21590 "hcs12x.cc"
+#line 22344 "hcs12x.cc"
 )
 {
 #line 223 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21601,18 +22355,18 @@ sink
 
 		sink << std::hex << opr16a;
 	}
-#line 21605 "hcs12x.cc"
+#line 22359 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21609 "hcs12x.cc"
+#line 22363 "hcs12x.cc"
 OpLd_dyxs_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21613 "hcs12x.cc"
+#line 22367 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21616 "hcs12x.cc"
+#line 22370 "hcs12x.cc"
 )
 {
 #line 235 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21633,7 +22387,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 21637 "hcs12x.cc"
+#line 22391 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLd_dyxs_ext(CodeType const& code, uint16_t addr)
@@ -21648,23 +22402,23 @@ static Operation *DecodeOpLd_dyxs_ext(CodeType const& code, uint16_t addr)
 // LDD or LDY or LDX or LDS [oprx16,xysp]
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21652 "hcs12x.cc"
+#line 22406 "hcs12x.cc"
 OpLd_dyxs_idx::getCycles()
 {
 #line 260 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
-#line 21657 "hcs12x.cc"
+#line 22411 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21661 "hcs12x.cc"
+#line 22415 "hcs12x.cc"
 OpLd_dyxs_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21665 "hcs12x.cc"
+#line 22419 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21668 "hcs12x.cc"
+#line 22422 "hcs12x.cc"
 )
 {
 #line 262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21679,18 +22433,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 21683 "hcs12x.cc"
+#line 22437 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21687 "hcs12x.cc"
+#line 22441 "hcs12x.cc"
 OpLd_dyxs_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21691 "hcs12x.cc"
+#line 22445 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21694 "hcs12x.cc"
+#line 22448 "hcs12x.cc"
 )
 {
 #line 274 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21712,7 +22466,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 21716 "hcs12x.cc"
+#line 22470 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLd_dyxs_idx(CodeType const& code, uint16_t addr)
@@ -21725,23 +22479,23 @@ static Operation *DecodeOpLd_dyxs_idx(CodeType const& code, uint16_t addr)
 // LEAY oprx16,xysp
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21729 "hcs12x.cc"
+#line 22483 "hcs12x.cc"
 OpLeay::getCycles()
 {
 #line 299 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
-#line 21734 "hcs12x.cc"
+#line 22488 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21738 "hcs12x.cc"
+#line 22492 "hcs12x.cc"
 OpLeay::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21742 "hcs12x.cc"
+#line 22496 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21745 "hcs12x.cc"
+#line 22499 "hcs12x.cc"
 )
 {
 #line 301 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21750,18 +22504,18 @@ sink
 		sink << "LEAY ";
 		xb->disasm(sink);
 	}
-#line 21754 "hcs12x.cc"
+#line 22508 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21758 "hcs12x.cc"
+#line 22512 "hcs12x.cc"
 OpLeay::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21762 "hcs12x.cc"
+#line 22516 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21765 "hcs12x.cc"
+#line 22519 "hcs12x.cc"
 )
 {
 #line 307 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21772,7 +22526,7 @@ cpu
 		cpu->setRegY(addr);
 
 	}
-#line 21776 "hcs12x.cc"
+#line 22530 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLeay(CodeType const& code, uint16_t addr)
@@ -21785,23 +22539,23 @@ static Operation *DecodeOpLeay(CodeType const& code, uint16_t addr)
 // LEAX oprx16,xysp
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21789 "hcs12x.cc"
+#line 22543 "hcs12x.cc"
 OpLeax::getCycles()
 {
 #line 320 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
-#line 21794 "hcs12x.cc"
+#line 22548 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21798 "hcs12x.cc"
+#line 22552 "hcs12x.cc"
 OpLeax::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21802 "hcs12x.cc"
+#line 22556 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21805 "hcs12x.cc"
+#line 22559 "hcs12x.cc"
 )
 {
 #line 322 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21811,18 +22565,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 21815 "hcs12x.cc"
+#line 22569 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21819 "hcs12x.cc"
+#line 22573 "hcs12x.cc"
 OpLeax::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21823 "hcs12x.cc"
+#line 22577 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21826 "hcs12x.cc"
+#line 22580 "hcs12x.cc"
 )
 {
 #line 329 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21833,7 +22587,7 @@ cpu
 		cpu->setRegX(addr);
 
 	}
-#line 21837 "hcs12x.cc"
+#line 22591 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLeax(CodeType const& code, uint16_t addr)
@@ -21846,23 +22600,23 @@ static Operation *DecodeOpLeax(CodeType const& code, uint16_t addr)
 // LEAS  oprx16,xysp
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21850 "hcs12x.cc"
+#line 22604 "hcs12x.cc"
 OpLeas::getCycles()
 {
 #line 342 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
-#line 21855 "hcs12x.cc"
+#line 22609 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21859 "hcs12x.cc"
+#line 22613 "hcs12x.cc"
 OpLeas::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21863 "hcs12x.cc"
+#line 22617 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21866 "hcs12x.cc"
+#line 22620 "hcs12x.cc"
 )
 {
 #line 344 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21872,18 +22626,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 21876 "hcs12x.cc"
+#line 22630 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21880 "hcs12x.cc"
+#line 22634 "hcs12x.cc"
 OpLeas::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21884 "hcs12x.cc"
+#line 22638 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21887 "hcs12x.cc"
+#line 22641 "hcs12x.cc"
 )
 {
 #line 351 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21894,7 +22648,7 @@ cpu
 		cpu->setRegSP(addr);
 
 	}
-#line 21898 "hcs12x.cc"
+#line 22652 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLeas(CodeType const& code, uint16_t addr)
@@ -21905,23 +22659,23 @@ static Operation *DecodeOpLeas(CodeType const& code, uint16_t addr)
 // STAA or STAB opr8a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21909 "hcs12x.cc"
+#line 22663 "hcs12x.cc"
 OpStaab_dir::getCycles()
 {
 #line 362 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 2; }
-#line 21914 "hcs12x.cc"
+#line 22668 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21918 "hcs12x.cc"
+#line 22672 "hcs12x.cc"
 OpStaab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21922 "hcs12x.cc"
+#line 22676 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21925 "hcs12x.cc"
+#line 22679 "hcs12x.cc"
 )
 {
 #line 364 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21935,18 +22689,18 @@ sink
 		sink << std::hex << opr8a;
 
 	}
-#line 21939 "hcs12x.cc"
+#line 22693 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 21943 "hcs12x.cc"
+#line 22697 "hcs12x.cc"
 OpStaab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 21947 "hcs12x.cc"
+#line 22701 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 21950 "hcs12x.cc"
+#line 22704 "hcs12x.cc"
 )
 {
 #line 375 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -21965,7 +22719,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 21969 "hcs12x.cc"
+#line 22723 "hcs12x.cc"
 }
 
 static Operation *DecodeOpStaab_dir(CodeType const& code, uint16_t addr)
@@ -21976,23 +22730,23 @@ static Operation *DecodeOpStaab_dir(CodeType const& code, uint16_t addr)
 // STAA or STAB opr16a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 21980 "hcs12x.cc"
+#line 22734 "hcs12x.cc"
 OpStaab_ext::getCycles()
 {
 #line 394 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
-#line 21985 "hcs12x.cc"
+#line 22739 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 21989 "hcs12x.cc"
+#line 22743 "hcs12x.cc"
 OpStaab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 21993 "hcs12x.cc"
+#line 22747 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 21996 "hcs12x.cc"
+#line 22750 "hcs12x.cc"
 )
 {
 #line 396 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22006,18 +22760,18 @@ sink
 		sink << std::hex << opr16a;
 
 	}
-#line 22010 "hcs12x.cc"
+#line 22764 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22014 "hcs12x.cc"
+#line 22768 "hcs12x.cc"
 OpStaab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22018 "hcs12x.cc"
+#line 22772 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22021 "hcs12x.cc"
+#line 22775 "hcs12x.cc"
 )
 {
 #line 407 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22035,7 +22789,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22039 "hcs12x.cc"
+#line 22793 "hcs12x.cc"
 }
 
 static Operation *DecodeOpStaab_ext(CodeType const& code, uint16_t addr)
@@ -22050,23 +22804,23 @@ static Operation *DecodeOpStaab_ext(CodeType const& code, uint16_t addr)
 // STAA or STAB [oprx16,xysp]
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22054 "hcs12x.cc"
+#line 22808 "hcs12x.cc"
 OpStaab_idx::getCycles()
 {
 #line 430 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
-#line 22059 "hcs12x.cc"
+#line 22813 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22063 "hcs12x.cc"
+#line 22817 "hcs12x.cc"
 OpStaab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22067 "hcs12x.cc"
+#line 22821 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22070 "hcs12x.cc"
+#line 22824 "hcs12x.cc"
 )
 {
 #line 432 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22080,18 +22834,18 @@ sink
 		xb->disasm(sink);
 
 	}
-#line 22084 "hcs12x.cc"
+#line 22838 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22088 "hcs12x.cc"
+#line 22842 "hcs12x.cc"
 OpStaab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22092 "hcs12x.cc"
+#line 22846 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22095 "hcs12x.cc"
+#line 22849 "hcs12x.cc"
 )
 {
 #line 443 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22109,7 +22863,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22113 "hcs12x.cc"
+#line 22867 "hcs12x.cc"
 }
 
 static Operation *DecodeOpStaab_idx(CodeType const& code, uint16_t addr)
@@ -22120,23 +22874,23 @@ static Operation *DecodeOpStaab_idx(CodeType const& code, uint16_t addr)
 // STD or STY or STX or STS opr8a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22124 "hcs12x.cc"
+#line 22878 "hcs12x.cc"
 OpSt_dyxs_dir::getCycles()
 {
 #line 461 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 2; }
-#line 22129 "hcs12x.cc"
+#line 22883 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22133 "hcs12x.cc"
+#line 22887 "hcs12x.cc"
 OpSt_dyxs_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22137 "hcs12x.cc"
+#line 22891 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22140 "hcs12x.cc"
+#line 22894 "hcs12x.cc"
 )
 {
 #line 463 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22151,18 +22905,18 @@ sink
 
 		sink << std::hex << opr8a;
 	}
-#line 22155 "hcs12x.cc"
+#line 22909 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22159 "hcs12x.cc"
+#line 22913 "hcs12x.cc"
 OpSt_dyxs_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22163 "hcs12x.cc"
+#line 22917 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22166 "hcs12x.cc"
+#line 22920 "hcs12x.cc"
 )
 {
 #line 475 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22186,7 +22940,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22190 "hcs12x.cc"
+#line 22944 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSt_dyxs_dir(CodeType const& code, uint16_t addr)
@@ -22197,23 +22951,23 @@ static Operation *DecodeOpSt_dyxs_dir(CodeType const& code, uint16_t addr)
 // STD or STY or STX or STS opr16a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22201 "hcs12x.cc"
+#line 22955 "hcs12x.cc"
 OpSt_dyxs_ext::getCycles()
 {
 #line 499 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
-#line 22206 "hcs12x.cc"
+#line 22960 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22210 "hcs12x.cc"
+#line 22964 "hcs12x.cc"
 OpSt_dyxs_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22214 "hcs12x.cc"
+#line 22968 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22217 "hcs12x.cc"
+#line 22971 "hcs12x.cc"
 )
 {
 #line 501 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22229,18 +22983,18 @@ sink
 		sink << std::hex << opr16a;
 
 	}
-#line 22233 "hcs12x.cc"
+#line 22987 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22237 "hcs12x.cc"
+#line 22991 "hcs12x.cc"
 OpSt_dyxs_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22241 "hcs12x.cc"
+#line 22995 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22244 "hcs12x.cc"
+#line 22998 "hcs12x.cc"
 )
 {
 #line 514 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22264,7 +23018,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22268 "hcs12x.cc"
+#line 23022 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSt_dyxs_ext(CodeType const& code, uint16_t addr)
@@ -22279,23 +23033,23 @@ static Operation *DecodeOpSt_dyxs_ext(CodeType const& code, uint16_t addr)
 // STD or STY or STX or STS [oprx16,xysp]
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22283 "hcs12x.cc"
+#line 23037 "hcs12x.cc"
 OpSt_dyxs_idx::getCycles()
 {
 #line 543 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
-#line 22288 "hcs12x.cc"
+#line 23042 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22292 "hcs12x.cc"
+#line 23046 "hcs12x.cc"
 OpSt_dyxs_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22296 "hcs12x.cc"
+#line 23050 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22299 "hcs12x.cc"
+#line 23053 "hcs12x.cc"
 )
 {
 #line 545 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22311,18 +23065,18 @@ sink
 		xb->disasm(sink);
 
 	}
-#line 22315 "hcs12x.cc"
+#line 23069 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22319 "hcs12x.cc"
+#line 23073 "hcs12x.cc"
 OpSt_dyxs_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22323 "hcs12x.cc"
+#line 23077 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22326 "hcs12x.cc"
+#line 23080 "hcs12x.cc"
 )
 {
 #line 558 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22346,7 +23100,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22350 "hcs12x.cc"
+#line 23104 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSt_dyxs_idx(CodeType const& code, uint16_t addr)
@@ -22358,23 +23112,23 @@ static Operation *DecodeOpSt_dyxs_idx(CodeType const& code, uint16_t addr)
 // GLDAA or GLDAB opr8a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22362 "hcs12x.cc"
+#line 23116 "hcs12x.cc"
 OpGldaab_dir::getCycles()
 {
 #line 584 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
-#line 22367 "hcs12x.cc"
+#line 23121 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22371 "hcs12x.cc"
+#line 23125 "hcs12x.cc"
 OpGldaab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22375 "hcs12x.cc"
+#line 23129 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22378 "hcs12x.cc"
+#line 23132 "hcs12x.cc"
 )
 {
 #line 586 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22386,18 +23140,18 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 22390 "hcs12x.cc"
+#line 23144 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22394 "hcs12x.cc"
+#line 23148 "hcs12x.cc"
 OpGldaab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22398 "hcs12x.cc"
+#line 23152 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22401 "hcs12x.cc"
+#line 23155 "hcs12x.cc"
 )
 {
 #line 595 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22414,7 +23168,7 @@ cpu
 		if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 	}
-#line 22418 "hcs12x.cc"
+#line 23172 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGldaab_dir(CodeType const& code, uint16_t addr)
@@ -22425,23 +23179,23 @@ static Operation *DecodeOpGldaab_dir(CodeType const& code, uint16_t addr)
 // GLDAA or GLDAB opr16a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22429 "hcs12x.cc"
+#line 23183 "hcs12x.cc"
 OpGldaab_ext::getCycles()
 {
 #line 612 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
-#line 22434 "hcs12x.cc"
+#line 23188 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22438 "hcs12x.cc"
+#line 23192 "hcs12x.cc"
 OpGldaab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22442 "hcs12x.cc"
+#line 23196 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22445 "hcs12x.cc"
+#line 23199 "hcs12x.cc"
 )
 {
 #line 614 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22453,18 +23207,18 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 22457 "hcs12x.cc"
+#line 23211 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22461 "hcs12x.cc"
+#line 23215 "hcs12x.cc"
 OpGldaab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22465 "hcs12x.cc"
+#line 23219 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22468 "hcs12x.cc"
+#line 23222 "hcs12x.cc"
 )
 {
 #line 623 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22483,7 +23237,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22487 "hcs12x.cc"
+#line 23241 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGldaab_ext(CodeType const& code, uint16_t addr)
@@ -22498,23 +23252,23 @@ static Operation *DecodeOpGldaab_ext(CodeType const& code, uint16_t addr)
 // GLDAA or GLDAB [oprx16,xysp]
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22502 "hcs12x.cc"
+#line 23256 "hcs12x.cc"
 OpGldaab_idx::getCycles()
 {
 #line 646 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
-#line 22507 "hcs12x.cc"
+#line 23261 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22511 "hcs12x.cc"
+#line 23265 "hcs12x.cc"
 OpGldaab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22515 "hcs12x.cc"
+#line 23269 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22518 "hcs12x.cc"
+#line 23272 "hcs12x.cc"
 )
 {
 #line 648 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22526,18 +23280,18 @@ sink
 		}
 		xb->disasm(sink);
 	}
-#line 22530 "hcs12x.cc"
+#line 23284 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22534 "hcs12x.cc"
+#line 23288 "hcs12x.cc"
 OpGldaab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22538 "hcs12x.cc"
+#line 23292 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22541 "hcs12x.cc"
+#line 23295 "hcs12x.cc"
 )
 {
 #line 657 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22558,7 +23312,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22562 "hcs12x.cc"
+#line 23316 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGldaab_idx(CodeType const& code, uint16_t addr)
@@ -22569,23 +23323,23 @@ static Operation *DecodeOpGldaab_idx(CodeType const& code, uint16_t addr)
 // GLDD or GLDY or GLDX or GLDS opr8a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22573 "hcs12x.cc"
+#line 23327 "hcs12x.cc"
 OpGld_dyxs_dir::getCycles()
 {
 #line 678 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
-#line 22578 "hcs12x.cc"
+#line 23332 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22582 "hcs12x.cc"
+#line 23336 "hcs12x.cc"
 OpGld_dyxs_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22586 "hcs12x.cc"
+#line 23340 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22589 "hcs12x.cc"
+#line 23343 "hcs12x.cc"
 )
 {
 #line 680 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22599,18 +23353,18 @@ sink
 		}
 		sink << std::hex << dd;
 	}
-#line 22603 "hcs12x.cc"
+#line 23357 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22607 "hcs12x.cc"
+#line 23361 "hcs12x.cc"
 OpGld_dyxs_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22611 "hcs12x.cc"
+#line 23365 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22614 "hcs12x.cc"
+#line 23368 "hcs12x.cc"
 )
 {
 #line 691 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22629,7 +23383,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22633 "hcs12x.cc"
+#line 23387 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGld_dyxs_dir(CodeType const& code, uint16_t addr)
@@ -22640,23 +23394,23 @@ static Operation *DecodeOpGld_dyxs_dir(CodeType const& code, uint16_t addr)
 // GLDD or GLDY or GLDX or GLDS opr16a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22644 "hcs12x.cc"
+#line 23398 "hcs12x.cc"
 OpGld_dyxs_ext::getCycles()
 {
 #line 710 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
-#line 22649 "hcs12x.cc"
+#line 23403 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22653 "hcs12x.cc"
+#line 23407 "hcs12x.cc"
 OpGld_dyxs_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22657 "hcs12x.cc"
+#line 23411 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22660 "hcs12x.cc"
+#line 23414 "hcs12x.cc"
 )
 {
 #line 712 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22671,18 +23425,18 @@ sink
 
 		sink << std::hex << opr16a;
 	}
-#line 22675 "hcs12x.cc"
+#line 23429 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22679 "hcs12x.cc"
+#line 23433 "hcs12x.cc"
 OpGld_dyxs_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22683 "hcs12x.cc"
+#line 23437 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22686 "hcs12x.cc"
+#line 23440 "hcs12x.cc"
 )
 {
 #line 724 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22703,7 +23457,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22707 "hcs12x.cc"
+#line 23461 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGld_dyxs_ext(CodeType const& code, uint16_t addr)
@@ -22718,23 +23472,23 @@ static Operation *DecodeOpGld_dyxs_ext(CodeType const& code, uint16_t addr)
 // GLDD or GLDY or GLDX or GLDS [oprx16,xysp]
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22722 "hcs12x.cc"
+#line 23476 "hcs12x.cc"
 OpGld_dyxs_idx::getCycles()
 {
 #line 749 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
-#line 22727 "hcs12x.cc"
+#line 23481 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22731 "hcs12x.cc"
+#line 23485 "hcs12x.cc"
 OpGld_dyxs_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22735 "hcs12x.cc"
+#line 23489 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22738 "hcs12x.cc"
+#line 23492 "hcs12x.cc"
 )
 {
 #line 751 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22749,18 +23503,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 22753 "hcs12x.cc"
+#line 23507 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22757 "hcs12x.cc"
+#line 23511 "hcs12x.cc"
 OpGld_dyxs_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22761 "hcs12x.cc"
+#line 23515 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22764 "hcs12x.cc"
+#line 23518 "hcs12x.cc"
 )
 {
 #line 763 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22782,7 +23536,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22786 "hcs12x.cc"
+#line 23540 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGld_dyxs_idx(CodeType const& code, uint16_t addr)
@@ -22793,23 +23547,23 @@ static Operation *DecodeOpGld_dyxs_idx(CodeType const& code, uint16_t addr)
 // GSTAA or GSTAB opr8a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22797 "hcs12x.cc"
+#line 23551 "hcs12x.cc"
 OpGstaab_dir::getCycles()
 {
 #line 785 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
-#line 22802 "hcs12x.cc"
+#line 23556 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22806 "hcs12x.cc"
+#line 23560 "hcs12x.cc"
 OpGstaab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22810 "hcs12x.cc"
+#line 23564 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22813 "hcs12x.cc"
+#line 23567 "hcs12x.cc"
 )
 {
 #line 787 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22823,18 +23577,18 @@ sink
 		sink << std::hex << opr8a;
 
 	}
-#line 22827 "hcs12x.cc"
+#line 23581 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22831 "hcs12x.cc"
+#line 23585 "hcs12x.cc"
 OpGstaab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22835 "hcs12x.cc"
+#line 23589 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22838 "hcs12x.cc"
+#line 23592 "hcs12x.cc"
 )
 {
 #line 798 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22853,7 +23607,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22857 "hcs12x.cc"
+#line 23611 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGstaab_dir(CodeType const& code, uint16_t addr)
@@ -22864,23 +23618,23 @@ static Operation *DecodeOpGstaab_dir(CodeType const& code, uint16_t addr)
 // GSTAA or GSTAB opr16a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22868 "hcs12x.cc"
+#line 23622 "hcs12x.cc"
 OpGstaab_ext::getCycles()
 {
 #line 817 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
-#line 22873 "hcs12x.cc"
+#line 23627 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22877 "hcs12x.cc"
+#line 23631 "hcs12x.cc"
 OpGstaab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22881 "hcs12x.cc"
+#line 23635 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22884 "hcs12x.cc"
+#line 23638 "hcs12x.cc"
 )
 {
 #line 819 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22894,18 +23648,18 @@ sink
 		sink << std::hex << opr16a;
 
 	}
-#line 22898 "hcs12x.cc"
+#line 23652 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22902 "hcs12x.cc"
+#line 23656 "hcs12x.cc"
 OpGstaab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22906 "hcs12x.cc"
+#line 23660 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22909 "hcs12x.cc"
+#line 23663 "hcs12x.cc"
 )
 {
 #line 830 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22923,7 +23677,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 22927 "hcs12x.cc"
+#line 23681 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGstaab_ext(CodeType const& code, uint16_t addr)
@@ -22938,23 +23692,23 @@ static Operation *DecodeOpGstaab_ext(CodeType const& code, uint16_t addr)
 // GSTAA or GSTAB [oprx16,xysp]
 #line 73 "hcs12x.isa"
 uint8_t
-#line 22942 "hcs12x.cc"
+#line 23696 "hcs12x.cc"
 OpGstaab_idx::getCycles()
 {
 #line 853 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
-#line 22947 "hcs12x.cc"
+#line 23701 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 22951 "hcs12x.cc"
+#line 23705 "hcs12x.cc"
 OpGstaab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 22955 "hcs12x.cc"
+#line 23709 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 22958 "hcs12x.cc"
+#line 23712 "hcs12x.cc"
 )
 {
 #line 855 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22968,18 +23722,18 @@ sink
 		xb->disasm(sink);
 
 	}
-#line 22972 "hcs12x.cc"
+#line 23726 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 22976 "hcs12x.cc"
+#line 23730 "hcs12x.cc"
 OpGstaab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 22980 "hcs12x.cc"
+#line 23734 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 22983 "hcs12x.cc"
+#line 23737 "hcs12x.cc"
 )
 {
 #line 866 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -22997,7 +23751,7 @@ cpu
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 23001 "hcs12x.cc"
+#line 23755 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGstaab_idx(CodeType const& code, uint16_t addr)
@@ -23008,23 +23762,23 @@ static Operation *DecodeOpGstaab_idx(CodeType const& code, uint16_t addr)
 // GSTD or GSTY or GSTX or GSTS opr8a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 23012 "hcs12x.cc"
+#line 23766 "hcs12x.cc"
 OpGst_dyxs_dir::getCycles()
 {
 #line 884 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
-#line 23017 "hcs12x.cc"
+#line 23771 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 23021 "hcs12x.cc"
+#line 23775 "hcs12x.cc"
 OpGst_dyxs_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 23025 "hcs12x.cc"
+#line 23779 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 23028 "hcs12x.cc"
+#line 23782 "hcs12x.cc"
 )
 {
 #line 886 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -23039,18 +23793,18 @@ sink
 
 		sink << std::hex << opr8a;
 	}
-#line 23043 "hcs12x.cc"
+#line 23797 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 23047 "hcs12x.cc"
+#line 23801 "hcs12x.cc"
 OpGst_dyxs_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 23051 "hcs12x.cc"
+#line 23805 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 23054 "hcs12x.cc"
+#line 23808 "hcs12x.cc"
 )
 {
 #line 898 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -23074,7 +23828,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 23078 "hcs12x.cc"
+#line 23832 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGst_dyxs_dir(CodeType const& code, uint16_t addr)
@@ -23085,23 +23839,23 @@ static Operation *DecodeOpGst_dyxs_dir(CodeType const& code, uint16_t addr)
 // GSTD or GSTY or GSTX or GSTS opr16a
 #line 73 "hcs12x.isa"
 uint8_t
-#line 23089 "hcs12x.cc"
+#line 23843 "hcs12x.cc"
 OpGst_dyxs_ext::getCycles()
 {
 #line 922 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
-#line 23094 "hcs12x.cc"
+#line 23848 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 23098 "hcs12x.cc"
+#line 23852 "hcs12x.cc"
 OpGst_dyxs_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 23102 "hcs12x.cc"
+#line 23856 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 23105 "hcs12x.cc"
+#line 23859 "hcs12x.cc"
 )
 {
 #line 924 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -23117,18 +23871,18 @@ sink
 		sink << std::hex << opr16a;
 
 	}
-#line 23121 "hcs12x.cc"
+#line 23875 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 23125 "hcs12x.cc"
+#line 23879 "hcs12x.cc"
 OpGst_dyxs_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 23129 "hcs12x.cc"
+#line 23883 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 23132 "hcs12x.cc"
+#line 23886 "hcs12x.cc"
 )
 {
 #line 937 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -23152,7 +23906,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 23156 "hcs12x.cc"
+#line 23910 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGst_dyxs_ext(CodeType const& code, uint16_t addr)
@@ -23167,23 +23921,23 @@ static Operation *DecodeOpGst_dyxs_ext(CodeType const& code, uint16_t addr)
 // GSTD or GSTY or GSTX or GSTS [oprx16,xysp]
 #line 73 "hcs12x.isa"
 uint8_t
-#line 23171 "hcs12x.cc"
+#line 23925 "hcs12x.cc"
 OpGst_dyxs_idx::getCycles()
 {
 #line 966 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
-#line 23176 "hcs12x.cc"
+#line 23930 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 23180 "hcs12x.cc"
+#line 23934 "hcs12x.cc"
 OpGst_dyxs_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 23184 "hcs12x.cc"
+#line 23938 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 23187 "hcs12x.cc"
+#line 23941 "hcs12x.cc"
 )
 {
 #line 968 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -23199,18 +23953,18 @@ sink
 		xb->disasm(sink);
 
 	}
-#line 23203 "hcs12x.cc"
+#line 23957 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 23207 "hcs12x.cc"
+#line 23961 "hcs12x.cc"
 OpGst_dyxs_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 23211 "hcs12x.cc"
+#line 23965 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 23214 "hcs12x.cc"
+#line 23968 "hcs12x.cc"
 )
 {
 #line 981 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
@@ -23234,7 +23988,7 @@ cpu
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 
 	}
-#line 23238 "hcs12x.cc"
+#line 23992 "hcs12x.cc"
 }
 
 static Operation *DecodeOpGst_dyxs_idx(CodeType const& code, uint16_t addr)
@@ -23278,41 +24032,41 @@ static Operation *DecodeOpGst_dyxs_idx(CodeType const& code, uint16_t addr)
 // A->B  or B->A
 #line 73 "hcs12x.isa"
 uint8_t
-#line 23282 "hcs12x.cc"
+#line 24036 "hcs12x.cc"
 OpT_ab_ba::getCycles()
 {
 #line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 2; }
-#line 23287 "hcs12x.cc"
+#line 24041 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 23291 "hcs12x.cc"
+#line 24045 "hcs12x.cc"
 OpT_ab_ba::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 23295 "hcs12x.cc"
+#line 24049 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 23298 "hcs12x.cc"
+#line 24052 "hcs12x.cc"
 )
 {
 #line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 		if (b == 0) { sink << "TAB"; } else { sink << "TBA";}
 	}
-#line 23305 "hcs12x.cc"
+#line 24059 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 23309 "hcs12x.cc"
+#line 24063 "hcs12x.cc"
 OpT_ab_ba::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 23313 "hcs12x.cc"
+#line 24067 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 23316 "hcs12x.cc"
+#line 24070 "hcs12x.cc"
 )
 {
 #line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -23332,7 +24086,7 @@ cpu
 		if (val == 0) {cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN(); }
 	}
-#line 23336 "hcs12x.cc"
+#line 24090 "hcs12x.cc"
 }
 
 static Operation *DecodeOpT_ab_ba(CodeType const& code, uint16_t addr)
@@ -23345,12 +24099,12 @@ static Operation *DecodeOpT_ab_ba(CodeType const& code, uint16_t addr)
 // XGDX or XGDY or EXG
 #line 73 "hcs12x.isa"
 uint8_t
-#line 23349 "hcs12x.cc"
+#line 24103 "hcs12x.cc"
 OpExg_hcs12::getCycles()
 {
 #line 68 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 1; }
-#line 23354 "hcs12x.cc"
+#line 24108 "hcs12x.cc"
 }
 /*
 * lms sourceRegister index
@@ -23358,14 +24112,14 @@ OpExg_hcs12::getCycles()
 * */
 #line 69 "hcs12x.isa"
 void
-#line 23362 "hcs12x.cc"
+#line 24116 "hcs12x.cc"
 OpExg_hcs12::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 23366 "hcs12x.cc"
+#line 24120 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 23369 "hcs12x.cc"
+#line 24123 "hcs12x.cc"
 )
 {
 #line 74 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -23399,18 +24153,18 @@ sink
 		sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst);
 
 	}
-#line 23403 "hcs12x.cc"
+#line 24157 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 23407 "hcs12x.cc"
+#line 24161 "hcs12x.cc"
 OpExg_hcs12::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 23411 "hcs12x.cc"
+#line 24165 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 23414 "hcs12x.cc"
+#line 24168 "hcs12x.cc"
 )
 {
 #line 105 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -23478,7 +24232,7 @@ cpu
 		}
 
 	}
-#line 23482 "hcs12x.cc"
+#line 24236 "hcs12x.cc"
 }
 
 static Operation *DecodeOpExg_hcs12(CodeType const& code, uint16_t addr)
@@ -23490,12 +24244,12 @@ static Operation *DecodeOpExg_hcs12(CodeType const& code, uint16_t addr)
 // TFR or TPA or TSX or TSY or TXS or TYS or SEX
 #line 73 "hcs12x.isa"
 uint8_t
-#line 23494 "hcs12x.cc"
+#line 24248 "hcs12x.cc"
 OpTfr_hcs12::getCycles()
 {
 #line 175 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 1; }
-#line 23499 "hcs12x.cc"
+#line 24253 "hcs12x.cc"
 }
 /*
 * lms sourceRegister index
@@ -23503,14 +24257,14 @@ OpTfr_hcs12::getCycles()
 * */
 #line 69 "hcs12x.isa"
 void
-#line 23507 "hcs12x.cc"
+#line 24261 "hcs12x.cc"
 OpTfr_hcs12::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 23511 "hcs12x.cc"
+#line 24265 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 23514 "hcs12x.cc"
+#line 24268 "hcs12x.cc"
 )
 {
 #line 181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -23546,18 +24300,18 @@ sink
 		}
 
 	}
-#line 23550 "hcs12x.cc"
+#line 24304 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 23554 "hcs12x.cc"
+#line 24308 "hcs12x.cc"
 OpTfr_hcs12::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 23558 "hcs12x.cc"
+#line 24312 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 23561 "hcs12x.cc"
+#line 24315 "hcs12x.cc"
 )
 {
 #line 215 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -23626,7 +24380,7 @@ cpu
 			cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() & 0xBF);
 		}
 	}
-#line 23630 "hcs12x.cc"
+#line 24384 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTfr_hcs12(CodeType const& code, uint16_t addr)
@@ -23639,12 +24393,12 @@ static Operation *DecodeOpTfr_hcs12(CodeType const& code, uint16_t addr)
 // XGDX or XGDY or EXG
 #line 73 "hcs12x.isa"
 uint8_t
-#line 23643 "hcs12x.cc"
+#line 24397 "hcs12x.cc"
 OpExg_hcs12x::getCycles()
 {
 #line 288 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 1; }
-#line 23648 "hcs12x.cc"
+#line 24402 "hcs12x.cc"
 }
 /*
 * lms sourceRegister index
@@ -23652,14 +24406,14 @@ OpExg_hcs12x::getCycles()
 * */
 #line 69 "hcs12x.isa"
 void
-#line 23656 "hcs12x.cc"
+#line 24410 "hcs12x.cc"
 OpExg_hcs12x::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 23660 "hcs12x.cc"
+#line 24414 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 23663 "hcs12x.cc"
+#line 24417 "hcs12x.cc"
 )
 {
 #line 294 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -23759,18 +24513,18 @@ sink
 		sink << srcName << "," << dstName;
 
 	}
-#line 23763 "hcs12x.cc"
+#line 24517 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 23767 "hcs12x.cc"
+#line 24521 "hcs12x.cc"
 OpExg_hcs12x::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 23771 "hcs12x.cc"
+#line 24525 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 23774 "hcs12x.cc"
+#line 24528 "hcs12x.cc"
 )
 {
 #line 391 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -23903,7 +24657,7 @@ cpu
 			cpu->ccr->setCCRLow(cpu->ccr->getCCRLow() & 0xBF);
 		}
 	}
-#line 23907 "hcs12x.cc"
+#line 24661 "hcs12x.cc"
 }
 
 static Operation *DecodeOpExg_hcs12x(CodeType const& code, uint16_t addr)
@@ -23915,12 +24669,12 @@ static Operation *DecodeOpExg_hcs12x(CodeType const& code, uint16_t addr)
 // TAP or TFR or TPA or TSX or TSY or TXS or TYS or SEX
 #line 73 "hcs12x.isa"
 uint8_t
-#line 23919 "hcs12x.cc"
+#line 24673 "hcs12x.cc"
 OpTfr_hcs12x::getCycles()
 {
 #line 526 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 1; }
-#line 23924 "hcs12x.cc"
+#line 24678 "hcs12x.cc"
 }
 /*
 * lms sourceRegister index
@@ -23928,14 +24682,14 @@ OpTfr_hcs12x::getCycles()
 * */
 #line 69 "hcs12x.isa"
 void
-#line 23932 "hcs12x.cc"
+#line 24686 "hcs12x.cc"
 OpTfr_hcs12x::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 23936 "hcs12x.cc"
+#line 24690 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 23939 "hcs12x.cc"
+#line 24693 "hcs12x.cc"
 )
 {
 #line 532 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -24038,18 +24792,18 @@ sink
 
 		sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst);
 	}
-#line 24042 "hcs12x.cc"
+#line 24796 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24046 "hcs12x.cc"
+#line 24800 "hcs12x.cc"
 OpTfr_hcs12x::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24050 "hcs12x.cc"
+#line 24804 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24053 "hcs12x.cc"
+#line 24807 "hcs12x.cc"
 )
 {
 #line 632 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
@@ -24170,7 +24924,7 @@ cpu
 			}
 		}
 	}
-#line 24174 "hcs12x.cc"
+#line 24928 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTfr_hcs12x(CodeType const& code, uint16_t addr)
@@ -24213,41 +24967,41 @@ static Operation *DecodeOpTfr_hcs12x(CodeType const& code, uint16_t addr)
 */
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24217 "hcs12x.cc"
+#line 24971 "hcs12x.cc"
 OpMovb_0B::getCycles()
 {
 #line 38 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return 3;}
-#line 24222 "hcs12x.cc"
+#line 24976 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24226 "hcs12x.cc"
+#line 24980 "hcs12x.cc"
 OpMovb_0B::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24230 "hcs12x.cc"
+#line 24984 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24233 "hcs12x.cc"
+#line 24987 "hcs12x.cc"
 )
 {
 #line 40 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		sink << "MOVB #$" << std::hex << ii << ",$" << std::hex << opr16a;
 	}
-#line 24240 "hcs12x.cc"
+#line 24994 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24244 "hcs12x.cc"
+#line 24998 "hcs12x.cc"
 OpMovb_0B::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24248 "hcs12x.cc"
+#line 25002 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24251 "hcs12x.cc"
+#line 25005 "hcs12x.cc"
 )
 {
 #line 44 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24256,7 +25010,7 @@ cpu
 
 		cpu->memWrite8(addr,ii);
 	}
-#line 24260 "hcs12x.cc"
+#line 25014 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovb_0B(CodeType const& code, uint16_t addr)
@@ -24266,23 +25020,23 @@ static Operation *DecodeOpMovb_0B(CodeType const& code, uint16_t addr)
 
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24270 "hcs12x.cc"
+#line 25024 "hcs12x.cc"
 OpMovb_08::getCycles()
 {
 #line 52 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 4, 5); }
-#line 24275 "hcs12x.cc"
+#line 25029 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24279 "hcs12x.cc"
+#line 25033 "hcs12x.cc"
 OpMovb_08::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24283 "hcs12x.cc"
+#line 25037 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24286 "hcs12x.cc"
+#line 25040 "hcs12x.cc"
 )
 {
 #line 54 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24291,18 +25045,18 @@ sink
 		sink << "MOVB #$" << std::hex << ii << ",";
 		xb->disasm(sink);
 	}
-#line 24295 "hcs12x.cc"
+#line 25049 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24299 "hcs12x.cc"
+#line 25053 "hcs12x.cc"
 OpMovb_08::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24303 "hcs12x.cc"
+#line 25057 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24306 "hcs12x.cc"
+#line 25060 "hcs12x.cc"
 )
 {
 #line 60 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24311,7 +25065,7 @@ cpu
 
 		cpu->memWrite8(addr,ii);
 	}
-#line 24315 "hcs12x.cc"
+#line 25069 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovb_08(CodeType const& code, uint16_t addr)
@@ -24321,41 +25075,41 @@ static Operation *DecodeOpMovb_08(CodeType const& code, uint16_t addr)
 
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24325 "hcs12x.cc"
+#line 25079 "hcs12x.cc"
 OpMovb_0C::getCycles()
 {
 #line 69 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return 5; }
-#line 24330 "hcs12x.cc"
+#line 25084 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24334 "hcs12x.cc"
+#line 25088 "hcs12x.cc"
 OpMovb_0C::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24338 "hcs12x.cc"
+#line 25092 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24341 "hcs12x.cc"
+#line 25095 "hcs12x.cc"
 )
 {
 #line 71 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		sink << "MOVB $" << std::hex << opr16asrc << ",$" << std::hex << opr16adst;
 	}
-#line 24348 "hcs12x.cc"
+#line 25102 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24352 "hcs12x.cc"
+#line 25106 "hcs12x.cc"
 OpMovb_0C::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24356 "hcs12x.cc"
+#line 25110 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24359 "hcs12x.cc"
+#line 25113 "hcs12x.cc"
 )
 {
 #line 75 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24366,7 +25120,7 @@ cpu
 		uint8_t tmp = cpu->memRead8(addrsrc);
 		cpu->memWrite8(addrdst, tmp);
 	}
-#line 24370 "hcs12x.cc"
+#line 25124 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovb_0C(CodeType const& code, uint16_t addr)
@@ -24376,23 +25130,23 @@ static Operation *DecodeOpMovb_0C(CodeType const& code, uint16_t addr)
 
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24380 "hcs12x.cc"
+#line 25134 "hcs12x.cc"
 OpMovb_09::getCycles()
 {
 #line 85 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 6); }
-#line 24385 "hcs12x.cc"
+#line 25139 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24389 "hcs12x.cc"
+#line 25143 "hcs12x.cc"
 OpMovb_09::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24393 "hcs12x.cc"
+#line 25147 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24396 "hcs12x.cc"
+#line 25150 "hcs12x.cc"
 )
 {
 #line 87 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24400,18 +25154,18 @@ sink
 		sink << "MOVB $" <<  std::hex << opr16asrc << ",";
 		xb->disasm(sink);
 	}
-#line 24404 "hcs12x.cc"
+#line 25158 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24408 "hcs12x.cc"
+#line 25162 "hcs12x.cc"
 OpMovb_09::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24412 "hcs12x.cc"
+#line 25166 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24415 "hcs12x.cc"
+#line 25169 "hcs12x.cc"
 )
 {
 #line 92 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24420,7 +25174,7 @@ cpu
 		uint8_t tmp = cpu->memRead8(opr16asrc);
 		cpu->memWrite8(addr, tmp);
 	}
-#line 24424 "hcs12x.cc"
+#line 25178 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovb_09(CodeType const& code, uint16_t addr)
@@ -24430,23 +25184,23 @@ static Operation *DecodeOpMovb_09(CodeType const& code, uint16_t addr)
 
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24434 "hcs12x.cc"
+#line 25188 "hcs12x.cc"
 OpMovb_0D::getCycles()
 {
 #line 100 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 6, 7); }
-#line 24439 "hcs12x.cc"
+#line 25193 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24443 "hcs12x.cc"
+#line 25197 "hcs12x.cc"
 OpMovb_0D::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24447 "hcs12x.cc"
+#line 25201 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24450 "hcs12x.cc"
+#line 25204 "hcs12x.cc"
 )
 {
 #line 102 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24455,18 +25209,18 @@ sink
 		xb->disasm(sink);
 		sink << ",$" << std::hex << opr16a;
 	}
-#line 24459 "hcs12x.cc"
+#line 25213 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24463 "hcs12x.cc"
+#line 25217 "hcs12x.cc"
 OpMovb_0D::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24467 "hcs12x.cc"
+#line 25221 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24470 "hcs12x.cc"
+#line 25224 "hcs12x.cc"
 )
 {
 #line 108 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24477,7 +25231,7 @@ cpu
 		uint8_t tmp = cpu->memRead8(addrxb);
 		cpu->memWrite8(addropr16a, tmp);
 	}
-#line 24481 "hcs12x.cc"
+#line 25235 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovb_0D(CodeType const& code, uint16_t addr)
@@ -24487,7 +25241,7 @@ static Operation *DecodeOpMovb_0D(CodeType const& code, uint16_t addr)
 
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24491 "hcs12x.cc"
+#line 25245 "hcs12x.cc"
 OpMovb_0A::getCycles()
 {
 #line 118 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24503,18 +25257,18 @@ OpMovb_0A::getCycles()
 			default: return 0x00;
 		}
 	}
-#line 24507 "hcs12x.cc"
+#line 25261 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24511 "hcs12x.cc"
+#line 25265 "hcs12x.cc"
 OpMovb_0A::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24515 "hcs12x.cc"
+#line 25269 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24518 "hcs12x.cc"
+#line 25272 "hcs12x.cc"
 )
 {
 #line 131 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24524,18 +25278,18 @@ sink
 		sink << ",";
 		xbdst->disasm(sink);
 	}
-#line 24528 "hcs12x.cc"
+#line 25282 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24532 "hcs12x.cc"
+#line 25286 "hcs12x.cc"
 OpMovb_0A::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24536 "hcs12x.cc"
+#line 25290 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24539 "hcs12x.cc"
+#line 25293 "hcs12x.cc"
 )
 {
 #line 138 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24545,7 +25299,7 @@ cpu
 		uint8_t  tmp = cpu->memRead8(addrsrc);
 		cpu->memWrite8(addrdst, tmp);
 	}
-#line 24549 "hcs12x.cc"
+#line 25303 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovb_0A(CodeType const& code, uint16_t addr)
@@ -24556,41 +25310,41 @@ static Operation *DecodeOpMovb_0A(CodeType const& code, uint16_t addr)
 // ---------
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24560 "hcs12x.cc"
+#line 25314 "hcs12x.cc"
 OpMovw_03::getCycles()
 {
 #line 149 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return 4; }
-#line 24565 "hcs12x.cc"
+#line 25319 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24569 "hcs12x.cc"
+#line 25323 "hcs12x.cc"
 OpMovw_03::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24573 "hcs12x.cc"
+#line 25327 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24576 "hcs12x.cc"
+#line 25330 "hcs12x.cc"
 )
 {
 #line 151 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		sink << "MOVW #$" << std::hex << opr16i << ",$" << std::hex << opr16a;
 	}
-#line 24583 "hcs12x.cc"
+#line 25337 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24587 "hcs12x.cc"
+#line 25341 "hcs12x.cc"
 OpMovw_03::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24591 "hcs12x.cc"
+#line 25345 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24594 "hcs12x.cc"
+#line 25348 "hcs12x.cc"
 )
 {
 #line 155 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24599,7 +25353,7 @@ cpu
 
 		cpu->memWrite16(addr,opr16i);
 	}
-#line 24603 "hcs12x.cc"
+#line 25357 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovw_03(CodeType const& code, uint16_t addr)
@@ -24609,41 +25363,41 @@ static Operation *DecodeOpMovw_03(CodeType const& code, uint16_t addr)
 
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24613 "hcs12x.cc"
+#line 25367 "hcs12x.cc"
 OpMovw_04::getCycles()
 {
 #line 163 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return 5; }
-#line 24618 "hcs12x.cc"
+#line 25372 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24622 "hcs12x.cc"
+#line 25376 "hcs12x.cc"
 OpMovw_04::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24626 "hcs12x.cc"
+#line 25380 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24629 "hcs12x.cc"
+#line 25383 "hcs12x.cc"
 )
 {
 #line 165 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		sink << "MOVW $" << std::hex << opr16asrc << ",$" << std::hex << opr16adst;
 	}
-#line 24636 "hcs12x.cc"
+#line 25390 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24640 "hcs12x.cc"
+#line 25394 "hcs12x.cc"
 OpMovw_04::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24644 "hcs12x.cc"
+#line 25398 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24647 "hcs12x.cc"
+#line 25401 "hcs12x.cc"
 )
 {
 #line 169 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24654,7 +25408,7 @@ cpu
 		uint16_t tmp = cpu->memRead16(addrsrc);
 		cpu->memWrite16(addrdst, tmp);
 	}
-#line 24658 "hcs12x.cc"
+#line 25412 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovw_04(CodeType const& code, uint16_t addr)
@@ -24665,14 +25419,14 @@ static Operation *DecodeOpMovw_04(CodeType const& code, uint16_t addr)
 // Movw_18_00 IDX IDX1 IDX2 [D,IDX] [IDX2]
 #line 69 "hcs12x.isa"
 void
-#line 24669 "hcs12x.cc"
+#line 25423 "hcs12x.cc"
 OpMovw_00::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24673 "hcs12x.cc"
+#line 25427 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24676 "hcs12x.cc"
+#line 25430 "hcs12x.cc"
 )
 {
 #line 181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24681,18 +25435,18 @@ sink
 		sink << "MOVW #$" << std::hex << opr16i << ",";
 		xb->disasm(sink);
 	}
-#line 24685 "hcs12x.cc"
+#line 25439 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24689 "hcs12x.cc"
+#line 25443 "hcs12x.cc"
 OpMovw_00::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24693 "hcs12x.cc"
+#line 25447 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24696 "hcs12x.cc"
+#line 25450 "hcs12x.cc"
 )
 {
 #line 187 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24701,7 +25455,7 @@ cpu
 
 		cpu->memWrite16(addr,opr16i);
 	}
-#line 24705 "hcs12x.cc"
+#line 25459 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovw_00(CodeType const& code, uint16_t addr)
@@ -24714,23 +25468,23 @@ static Operation *DecodeOpMovw_00(CodeType const& code, uint16_t addr)
 * */
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24718 "hcs12x.cc"
+#line 25472 "hcs12x.cc"
 OpMovw_01::getCycles()
 {
 #line 200 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 6); }
-#line 24723 "hcs12x.cc"
+#line 25477 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24727 "hcs12x.cc"
+#line 25481 "hcs12x.cc"
 OpMovw_01::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24731 "hcs12x.cc"
+#line 25485 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24734 "hcs12x.cc"
+#line 25488 "hcs12x.cc"
 )
 {
 #line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24738,18 +25492,18 @@ sink
 		sink << "MOVW $" <<  std::hex << opr16asrc << ",";
 		xb->disasm(sink);
 	}
-#line 24742 "hcs12x.cc"
+#line 25496 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24746 "hcs12x.cc"
+#line 25500 "hcs12x.cc"
 OpMovw_01::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24750 "hcs12x.cc"
+#line 25504 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24753 "hcs12x.cc"
+#line 25507 "hcs12x.cc"
 )
 {
 #line 207 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24760,7 +25514,7 @@ cpu
 		uint16_t tmp = cpu->memRead16(addrsrc);
 		cpu->memWrite16(addr, tmp);
 	}
-#line 24764 "hcs12x.cc"
+#line 25518 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovw_01(CodeType const& code, uint16_t addr)
@@ -24770,23 +25524,23 @@ static Operation *DecodeOpMovw_01(CodeType const& code, uint16_t addr)
 
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24774 "hcs12x.cc"
+#line 25528 "hcs12x.cc"
 OpMovw_05::getCycles()
 {
 #line 218 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 6, 7); }
-#line 24779 "hcs12x.cc"
+#line 25533 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24783 "hcs12x.cc"
+#line 25537 "hcs12x.cc"
 OpMovw_05::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24787 "hcs12x.cc"
+#line 25541 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24790 "hcs12x.cc"
+#line 25544 "hcs12x.cc"
 )
 {
 #line 220 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24795,18 +25549,18 @@ sink
 		xb->disasm(sink);
 		sink << ",$" << std::hex << opr16a;
 	}
-#line 24799 "hcs12x.cc"
+#line 25553 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24803 "hcs12x.cc"
+#line 25557 "hcs12x.cc"
 OpMovw_05::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24807 "hcs12x.cc"
+#line 25561 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24810 "hcs12x.cc"
+#line 25564 "hcs12x.cc"
 )
 {
 #line 226 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24817,7 +25571,7 @@ cpu
 		uint16_t tmp = cpu->memRead16(addrxb);
 		cpu->memWrite16(addrdst, tmp);
 	}
-#line 24821 "hcs12x.cc"
+#line 25575 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovw_05(CodeType const& code, uint16_t addr)
@@ -24827,7 +25581,7 @@ static Operation *DecodeOpMovw_05(CodeType const& code, uint16_t addr)
 
 #line 73 "hcs12x.isa"
 uint8_t
-#line 24831 "hcs12x.cc"
+#line 25585 "hcs12x.cc"
 OpMovw_02::getCycles()
 {
 #line 236 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24843,18 +25597,18 @@ OpMovw_02::getCycles()
 			default: return 0x00;
 		}
 	}
-#line 24847 "hcs12x.cc"
+#line 25601 "hcs12x.cc"
 }
 #line 69 "hcs12x.isa"
 void
-#line 24851 "hcs12x.cc"
+#line 25605 "hcs12x.cc"
 OpMovw_02::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24855 "hcs12x.cc"
+#line 25609 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24858 "hcs12x.cc"
+#line 25612 "hcs12x.cc"
 )
 {
 #line 249 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24864,18 +25618,18 @@ sink
 		sink << ",";
 		xbdst->disasm(sink);
 	}
-#line 24868 "hcs12x.cc"
+#line 25622 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24872 "hcs12x.cc"
+#line 25626 "hcs12x.cc"
 OpMovw_02::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24876 "hcs12x.cc"
+#line 25630 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24879 "hcs12x.cc"
+#line 25633 "hcs12x.cc"
 )
 {
 #line 256 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
@@ -24886,7 +25640,7 @@ cpu
 		uint16_t  tmp = cpu->memRead16(addrsrc);
 		cpu->memWrite16(addrdst, tmp);
 	}
-#line 24890 "hcs12x.cc"
+#line 25644 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMovw_02(CodeType const& code, uint16_t addr)
@@ -24929,37 +25683,46 @@ static Operation *DecodeOpMovw_02(CodeType const& code, uint16_t addr)
 */
 /* ***** Addition Instructions ****** */
 // ABA ( A+B => A)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 25689 "hcs12x.cc"
+OpAba::getCycles()
+{
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 2;}
+#line 25694 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 24935 "hcs12x.cc"
+#line 25698 "hcs12x.cc"
 OpAba::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 24939 "hcs12x.cc"
+#line 25702 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 24942 "hcs12x.cc"
+#line 25705 "hcs12x.cc"
 )
 {
-#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 43 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ABA";
 	}
-#line 24949 "hcs12x.cc"
+#line 25712 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 24953 "hcs12x.cc"
+#line 25716 "hcs12x.cc"
 OpAba::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 24957 "hcs12x.cc"
+#line 25720 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 24960 "hcs12x.cc"
+#line 25723 "hcs12x.cc"
 )
 {
-#line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 47 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -24985,7 +25748,7 @@ cpu
 
 		if ((a3 & b3) | (b3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 	}
-#line 24989 "hcs12x.cc"
+#line 25752 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAba(CodeType const& code, uint16_t addr)
@@ -24994,37 +25757,46 @@ static Operation *DecodeOpAba(CodeType const& code, uint16_t addr)
 }
 
 // ABX  (X+B => X)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 25763 "hcs12x.cc"
+OpAbx::getCycles()
+{
+#line 76 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 2;}
+#line 25768 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25000 "hcs12x.cc"
+#line 25772 "hcs12x.cc"
 OpAbx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25004 "hcs12x.cc"
+#line 25776 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25007 "hcs12x.cc"
-)
-{
-#line 74 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
-	{
-		sink << "ABX";
-	}
-#line 25014 "hcs12x.cc"
-}
-#line 63 "hcs12x.isa"
-void
-#line 25018 "hcs12x.cc"
-OpAbx::execute(
-#line 63 "hcs12x.isa"
-CPU *
-#line 25022 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-cpu
-#line 25025 "hcs12x.cc"
+#line 25779 "hcs12x.cc"
 )
 {
 #line 78 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{
+		sink << "ABX";
+	}
+#line 25786 "hcs12x.cc"
+}
+#line 63 "hcs12x.isa"
+void
+#line 25790 "hcs12x.cc"
+OpAbx::execute(
+#line 63 "hcs12x.isa"
+CPU *
+#line 25794 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+cpu
+#line 25797 "hcs12x.cc"
+)
+{
+#line 82 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 
 		uint16_t result;
@@ -25039,7 +25811,7 @@ cpu
 		cpu->setRegX(result);
 
 	}
-#line 25043 "hcs12x.cc"
+#line 25815 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAbx(CodeType const& code, uint16_t addr)
@@ -25048,37 +25820,46 @@ static Operation *DecodeOpAbx(CodeType const& code, uint16_t addr)
 }
 
 // ABY (Y+B=>Y)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 25826 "hcs12x.cc"
+OpAby::getCycles()
+{
+#line 100 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 2;}
+#line 25831 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25054 "hcs12x.cc"
+#line 25835 "hcs12x.cc"
 OpAby::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25058 "hcs12x.cc"
+#line 25839 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25061 "hcs12x.cc"
+#line 25842 "hcs12x.cc"
 )
 {
-#line 96 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 102 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ABY";
 	}
-#line 25068 "hcs12x.cc"
+#line 25849 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25072 "hcs12x.cc"
+#line 25853 "hcs12x.cc"
 OpAby::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25076 "hcs12x.cc"
+#line 25857 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25079 "hcs12x.cc"
+#line 25860 "hcs12x.cc"
 )
 {
-#line 99 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 105 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint16_t result;
 		uint8_t carry_out, overflow;
@@ -25092,7 +25873,7 @@ cpu
 		cpu->setRegY(result);
 
 	}
-#line 25096 "hcs12x.cc"
+#line 25877 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAby(CodeType const& code, uint16_t addr)
@@ -25101,19 +25882,28 @@ static Operation *DecodeOpAby(CodeType const& code, uint16_t addr)
 }
 
 // ADCab IMM  (regAB + ii + carry => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 25888 "hcs12x.cc"
+OpAdc_ab_imm::getCycles()
+{
+#line 122 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 1;}
+#line 25893 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25107 "hcs12x.cc"
+#line 25897 "hcs12x.cc"
 OpAdc_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25111 "hcs12x.cc"
+#line 25901 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25114 "hcs12x.cc"
+#line 25904 "hcs12x.cc"
 )
 {
-#line 116 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 124 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADCA #$";
@@ -25122,21 +25912,21 @@ sink
 		}
 		sink << std::hex << opr8i;
 	}
-#line 25126 "hcs12x.cc"
+#line 25916 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25130 "hcs12x.cc"
+#line 25920 "hcs12x.cc"
 OpAdc_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25134 "hcs12x.cc"
+#line 25924 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25137 "hcs12x.cc"
+#line 25927 "hcs12x.cc"
 )
 {
-#line 125 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 133 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -25170,7 +25960,7 @@ cpu
 
 		if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 	}
-#line 25174 "hcs12x.cc"
+#line 25964 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdc_ab_imm(CodeType const& code, uint16_t addr)
@@ -25179,19 +25969,28 @@ static Operation *DecodeOpAdc_ab_imm(CodeType const& code, uint16_t addr)
 }
 
 // ADCab DIR  (regAB + mem[regDirect:opr8a] + carry => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 25975 "hcs12x.cc"
+OpAdc_ab_dir::getCycles()
+{
+#line 170 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3;}
+#line 25980 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25185 "hcs12x.cc"
+#line 25984 "hcs12x.cc"
 OpAdc_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25189 "hcs12x.cc"
+#line 25988 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25192 "hcs12x.cc"
+#line 25991 "hcs12x.cc"
 )
 {
-#line 162 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 172 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADCA $";
@@ -25200,21 +25999,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 25204 "hcs12x.cc"
+#line 26003 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25208 "hcs12x.cc"
+#line 26007 "hcs12x.cc"
 OpAdc_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25212 "hcs12x.cc"
+#line 26011 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25215 "hcs12x.cc"
+#line 26014 "hcs12x.cc"
 )
 {
-#line 171 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -25252,7 +26051,7 @@ cpu
 		if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 
 	}
-#line 25256 "hcs12x.cc"
+#line 26055 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdc_ab_dir(CodeType const& code, uint16_t addr)
@@ -25261,19 +26060,28 @@ static Operation *DecodeOpAdc_ab_dir(CodeType const& code, uint16_t addr)
 }
 
 // ADCab EXT (regAB + mem[opr16a] + carry => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26066 "hcs12x.cc"
+OpAdc_ab_ext::getCycles()
+{
+#line 222 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3;}
+#line 26071 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25267 "hcs12x.cc"
+#line 26075 "hcs12x.cc"
 OpAdc_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25271 "hcs12x.cc"
+#line 26079 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25274 "hcs12x.cc"
+#line 26082 "hcs12x.cc"
 )
 {
-#line 212 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 224 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADCA $";
@@ -25282,21 +26090,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 25286 "hcs12x.cc"
+#line 26094 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25290 "hcs12x.cc"
+#line 26098 "hcs12x.cc"
 OpAdc_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25294 "hcs12x.cc"
+#line 26102 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25297 "hcs12x.cc"
+#line 26105 "hcs12x.cc"
 )
 {
-#line 221 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 233 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -25334,7 +26142,7 @@ cpu
 		if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 
 	}
-#line 25338 "hcs12x.cc"
+#line 26146 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdc_ab_ext(CodeType const& code, uint16_t addr)
@@ -25343,19 +26151,28 @@ static Operation *DecodeOpAdc_ab_ext(CodeType const& code, uint16_t addr)
 }
 
 // ADCab IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB + mem[xb->addrE] + carry => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26157 "hcs12x.cc"
+OpAdc_ab_idx::getCycles()
+{
+#line 274 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+#line 26162 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25349 "hcs12x.cc"
+#line 26166 "hcs12x.cc"
 OpAdc_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25353 "hcs12x.cc"
+#line 26170 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25356 "hcs12x.cc"
+#line 26173 "hcs12x.cc"
 )
 {
-#line 262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 276 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "ADCA ";
@@ -25365,21 +26182,21 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 25369 "hcs12x.cc"
+#line 26186 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25373 "hcs12x.cc"
+#line 26190 "hcs12x.cc"
 OpAdc_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25377 "hcs12x.cc"
+#line 26194 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25380 "hcs12x.cc"
+#line 26197 "hcs12x.cc"
 )
 {
-#line 272 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 286 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -25418,7 +26235,7 @@ cpu
 		if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 
 	}
-#line 25422 "hcs12x.cc"
+#line 26239 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdc_ab_idx(CodeType const& code, uint16_t addr)
@@ -25427,19 +26244,28 @@ static Operation *DecodeOpAdc_ab_idx(CodeType const& code, uint16_t addr)
 }
 
 // ADDab IMM (regAB + ii => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26250 "hcs12x.cc"
+OpAdd_ab_imm::getCycles()
+{
+#line 328 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 1; }
+#line 26255 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25433 "hcs12x.cc"
+#line 26259 "hcs12x.cc"
 OpAdd_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25437 "hcs12x.cc"
+#line 26263 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25440 "hcs12x.cc"
+#line 26266 "hcs12x.cc"
 )
 {
-#line 314 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 330 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDA #$";
@@ -25448,21 +26274,21 @@ sink
 		}
 		sink << std::hex << opr8i;
 	}
-#line 25452 "hcs12x.cc"
+#line 26278 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25456 "hcs12x.cc"
+#line 26282 "hcs12x.cc"
 OpAdd_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25460 "hcs12x.cc"
+#line 26286 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25463 "hcs12x.cc"
+#line 26289 "hcs12x.cc"
 )
 {
-#line 323 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 339 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -25497,7 +26323,7 @@ cpu
 		if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 
 	}
-#line 25501 "hcs12x.cc"
+#line 26327 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_ab_imm(CodeType const& code, uint16_t addr)
@@ -25506,19 +26332,28 @@ static Operation *DecodeOpAdd_ab_imm(CodeType const& code, uint16_t addr)
 }
 
 // ADDab DIR  (regAB + mem[regDirect:opr8a] => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26338 "hcs12x.cc"
+OpAdd_ab_dir::getCycles()
+{
+#line 377 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 26343 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25512 "hcs12x.cc"
+#line 26347 "hcs12x.cc"
 OpAdd_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25516 "hcs12x.cc"
+#line 26351 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25519 "hcs12x.cc"
+#line 26354 "hcs12x.cc"
 )
 {
-#line 361 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 379 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDA $";
@@ -25527,21 +26362,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 25531 "hcs12x.cc"
+#line 26366 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25535 "hcs12x.cc"
+#line 26370 "hcs12x.cc"
 OpAdd_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25539 "hcs12x.cc"
+#line 26374 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25542 "hcs12x.cc"
+#line 26377 "hcs12x.cc"
 )
 {
-#line 370 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 388 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -25579,7 +26414,7 @@ cpu
 		if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 
 	}
-#line 25583 "hcs12x.cc"
+#line 26418 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_ab_dir(CodeType const& code, uint16_t addr)
@@ -25588,19 +26423,28 @@ static Operation *DecodeOpAdd_ab_dir(CodeType const& code, uint16_t addr)
 }
 
 // ADDab EXT  (regAB + mem[opr16a] => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26429 "hcs12x.cc"
+OpAdd_ab_ext::getCycles()
+{
+#line 429 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 26434 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25594 "hcs12x.cc"
+#line 26438 "hcs12x.cc"
 OpAdd_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25598 "hcs12x.cc"
+#line 26442 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25601 "hcs12x.cc"
+#line 26445 "hcs12x.cc"
 )
 {
-#line 411 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 431 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDA $";
@@ -25609,21 +26453,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 25613 "hcs12x.cc"
+#line 26457 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25617 "hcs12x.cc"
+#line 26461 "hcs12x.cc"
 OpAdd_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25621 "hcs12x.cc"
+#line 26465 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25624 "hcs12x.cc"
+#line 26468 "hcs12x.cc"
 )
 {
-#line 420 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 440 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -25661,7 +26505,7 @@ cpu
 		if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 
 	}
-#line 25665 "hcs12x.cc"
+#line 26509 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_ab_ext(CodeType const& code, uint16_t addr)
@@ -25670,19 +26514,28 @@ static Operation *DecodeOpAdd_ab_ext(CodeType const& code, uint16_t addr)
 }
 
 // ADDab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB + mem[xb->addrE] => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26520 "hcs12x.cc"
+OpAdd_ab_idx::getCycles()
+{
+#line 481 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+#line 26525 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25676 "hcs12x.cc"
+#line 26529 "hcs12x.cc"
 OpAdd_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25680 "hcs12x.cc"
+#line 26533 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25683 "hcs12x.cc"
+#line 26536 "hcs12x.cc"
 )
 {
-#line 461 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 483 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "ADDA ";
@@ -25692,21 +26545,21 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 25696 "hcs12x.cc"
+#line 26549 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25700 "hcs12x.cc"
+#line 26553 "hcs12x.cc"
 OpAdd_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25704 "hcs12x.cc"
+#line 26557 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25707 "hcs12x.cc"
+#line 26560 "hcs12x.cc"
 )
 {
-#line 471 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 493 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -25745,7 +26598,7 @@ cpu
 		if ((a3 & m3) | (m3 & _r3) | (_r3 & a3)) cpu->ccr->setH(); else cpu->ccr->clrH();
 
 	}
-#line 25749 "hcs12x.cc"
+#line 26602 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_ab_idx(CodeType const& code, uint16_t addr)
@@ -25754,37 +26607,46 @@ static Operation *DecodeOpAdd_ab_idx(CodeType const& code, uint16_t addr)
 }
 
 // ADED IMM  (regD + #opr16i + carry => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26613 "hcs12x.cc"
+OpAded_imm::getCycles()
+{
+#line 535 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 26618 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25760 "hcs12x.cc"
+#line 26622 "hcs12x.cc"
 OpAded_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25764 "hcs12x.cc"
+#line 26626 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25767 "hcs12x.cc"
+#line 26629 "hcs12x.cc"
 )
 {
-#line 513 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 537 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ADED #$" << std::hex << opr16i;
 	}
-#line 25774 "hcs12x.cc"
+#line 26636 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25778 "hcs12x.cc"
+#line 26640 "hcs12x.cc"
 OpAded_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25782 "hcs12x.cc"
+#line 26644 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25785 "hcs12x.cc"
+#line 26647 "hcs12x.cc"
 )
 {
-#line 517 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 541 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -25803,7 +26665,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 25807 "hcs12x.cc"
+#line 26669 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAded_imm(CodeType const& code, uint16_t addr)
@@ -25812,37 +26674,46 @@ static Operation *DecodeOpAded_imm(CodeType const& code, uint16_t addr)
 }
 
 // ADED DIR  (regD + mem16[regDirect:opr8a] + carry => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26680 "hcs12x.cc"
+OpAded_dir::getCycles()
+{
+#line 563 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 26685 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25818 "hcs12x.cc"
+#line 26689 "hcs12x.cc"
 OpAded_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25822 "hcs12x.cc"
+#line 26693 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25825 "hcs12x.cc"
+#line 26696 "hcs12x.cc"
 )
 {
-#line 539 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 565 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ADED $" << std::hex << opr8a;
 	}
-#line 25832 "hcs12x.cc"
+#line 26703 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25836 "hcs12x.cc"
+#line 26707 "hcs12x.cc"
 OpAded_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25840 "hcs12x.cc"
+#line 26711 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25843 "hcs12x.cc"
+#line 26714 "hcs12x.cc"
 )
 {
-#line 543 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 569 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -25863,7 +26734,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 25867 "hcs12x.cc"
+#line 26738 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAded_dir(CodeType const& code, uint16_t addr)
@@ -25872,37 +26743,46 @@ static Operation *DecodeOpAded_dir(CodeType const& code, uint16_t addr)
 }
 
 // ADED EXT (regD + mem16[opr16a] + carry => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26749 "hcs12x.cc"
+OpAded_ext::getCycles()
+{
+#line 593 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 26754 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25878 "hcs12x.cc"
+#line 26758 "hcs12x.cc"
 OpAded_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25882 "hcs12x.cc"
+#line 26762 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25885 "hcs12x.cc"
+#line 26765 "hcs12x.cc"
 )
 {
-#line 567 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 595 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ADED $" << std::hex << opr16a;
 	}
-#line 25892 "hcs12x.cc"
+#line 26772 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25896 "hcs12x.cc"
+#line 26776 "hcs12x.cc"
 OpAded_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25900 "hcs12x.cc"
+#line 26780 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25903 "hcs12x.cc"
+#line 26783 "hcs12x.cc"
 )
 {
-#line 571 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 599 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -25925,7 +26805,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 25929 "hcs12x.cc"
+#line 26809 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAded_ext(CodeType const& code, uint16_t addr)
@@ -25934,38 +26814,47 @@ static Operation *DecodeOpAded_ext(CodeType const& code, uint16_t addr)
 }
 
 // ADED IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD + mem16[xb->addrE] + carry => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26820 "hcs12x.cc"
+OpAded_idx::getCycles()
+{
+#line 625 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 26825 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 25940 "hcs12x.cc"
+#line 26829 "hcs12x.cc"
 OpAded_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 25944 "hcs12x.cc"
+#line 26833 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 25947 "hcs12x.cc"
+#line 26836 "hcs12x.cc"
 )
 {
-#line 597 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 627 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ADED ";
 		xb->disasm(sink);
 	}
-#line 25955 "hcs12x.cc"
+#line 26844 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 25959 "hcs12x.cc"
+#line 26848 "hcs12x.cc"
 OpAded_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 25963 "hcs12x.cc"
+#line 26852 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 25966 "hcs12x.cc"
+#line 26855 "hcs12x.cc"
 )
 {
-#line 602 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 632 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -25987,7 +26876,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 25991 "hcs12x.cc"
+#line 26880 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAded_idx(CodeType const& code, uint16_t addr)
@@ -25996,19 +26885,28 @@ static Operation *DecodeOpAded_idx(CodeType const& code, uint16_t addr)
 }
 
 // ADExy IMM  (regXY + #opr16i + carry => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26891 "hcs12x.cc"
+OpAde_xy_imm::getCycles()
+{
+#line 657 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 26896 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26002 "hcs12x.cc"
+#line 26900 "hcs12x.cc"
 OpAde_xy_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26006 "hcs12x.cc"
+#line 26904 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26009 "hcs12x.cc"
+#line 26907 "hcs12x.cc"
 )
 {
-#line 627 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 659 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADEX #$";
@@ -26017,21 +26915,21 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 26021 "hcs12x.cc"
+#line 26919 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26025 "hcs12x.cc"
+#line 26923 "hcs12x.cc"
 OpAde_xy_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26029 "hcs12x.cc"
+#line 26927 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26032 "hcs12x.cc"
+#line 26930 "hcs12x.cc"
 )
 {
-#line 636 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 668 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26059,7 +26957,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 26063 "hcs12x.cc"
+#line 26961 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAde_xy_imm(CodeType const& code, uint16_t addr)
@@ -26068,19 +26966,28 @@ static Operation *DecodeOpAde_xy_imm(CodeType const& code, uint16_t addr)
 }
 
 // ADExy DIR  (regXY + mem16[regDirect:opr8a] + carry => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 26972 "hcs12x.cc"
+OpAde_xy_dir::getCycles()
+{
+#line 699 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 26977 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26074 "hcs12x.cc"
+#line 26981 "hcs12x.cc"
 OpAde_xy_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26078 "hcs12x.cc"
+#line 26985 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26081 "hcs12x.cc"
+#line 26988 "hcs12x.cc"
 )
 {
-#line 667 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 701 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADEX $";
@@ -26089,21 +26996,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 26093 "hcs12x.cc"
+#line 27000 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26097 "hcs12x.cc"
+#line 27004 "hcs12x.cc"
 OpAde_xy_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26101 "hcs12x.cc"
+#line 27008 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26104 "hcs12x.cc"
+#line 27011 "hcs12x.cc"
 )
 {
-#line 676 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 710 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26133,7 +27040,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26137 "hcs12x.cc"
+#line 27044 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAde_xy_dir(CodeType const& code, uint16_t addr)
@@ -26142,19 +27049,28 @@ static Operation *DecodeOpAde_xy_dir(CodeType const& code, uint16_t addr)
 }
 
 // ADExy EXT (regXY + mem16[opr16a] + carry => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27055 "hcs12x.cc"
+OpAde_xy_ext::getCycles()
+{
+#line 743 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 27060 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26148 "hcs12x.cc"
+#line 27064 "hcs12x.cc"
 OpAde_xy_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26152 "hcs12x.cc"
+#line 27068 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26155 "hcs12x.cc"
+#line 27071 "hcs12x.cc"
 )
 {
-#line 709 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 745 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADEX $";
@@ -26163,21 +27079,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 26167 "hcs12x.cc"
+#line 27083 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26171 "hcs12x.cc"
+#line 27087 "hcs12x.cc"
 OpAde_xy_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26175 "hcs12x.cc"
+#line 27091 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26178 "hcs12x.cc"
+#line 27094 "hcs12x.cc"
 )
 {
-#line 718 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 754 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26208,7 +27124,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 26212 "hcs12x.cc"
+#line 27128 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAde_xy_ext(CodeType const& code, uint16_t addr)
@@ -26217,19 +27133,28 @@ static Operation *DecodeOpAde_xy_ext(CodeType const& code, uint16_t addr)
 }
 
 // ADExy IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] + carry => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27139 "hcs12x.cc"
+OpAde_xy_idx::getCycles()
+{
+#line 788 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 27144 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26223 "hcs12x.cc"
+#line 27148 "hcs12x.cc"
 OpAde_xy_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26227 "hcs12x.cc"
+#line 27152 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26230 "hcs12x.cc"
+#line 27155 "hcs12x.cc"
 )
 {
-#line 752 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 790 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "ADEX ";
@@ -26239,21 +27164,21 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 26243 "hcs12x.cc"
+#line 27168 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26247 "hcs12x.cc"
+#line 27172 "hcs12x.cc"
 OpAde_xy_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26251 "hcs12x.cc"
+#line 27176 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26254 "hcs12x.cc"
+#line 27179 "hcs12x.cc"
 )
 {
-#line 762 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 800 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26284,7 +27209,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26288 "hcs12x.cc"
+#line 27213 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAde_xy_idx(CodeType const& code, uint16_t addr)
@@ -26293,19 +27218,28 @@ static Operation *DecodeOpAde_xy_idx(CodeType const& code, uint16_t addr)
 }
 
 // ADDxy IMM (regXY + #opr16i => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27224 "hcs12x.cc"
+OpAdd_xy_imm::getCycles()
+{
+#line 835 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 27229 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26299 "hcs12x.cc"
+#line 27233 "hcs12x.cc"
 OpAdd_xy_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26303 "hcs12x.cc"
+#line 27237 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26306 "hcs12x.cc"
+#line 27240 "hcs12x.cc"
 )
 {
-#line 797 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 837 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDX #$";
@@ -26314,21 +27248,21 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 26318 "hcs12x.cc"
+#line 27252 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26322 "hcs12x.cc"
+#line 27256 "hcs12x.cc"
 OpAdd_xy_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26326 "hcs12x.cc"
+#line 27260 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26329 "hcs12x.cc"
+#line 27263 "hcs12x.cc"
 )
 {
-#line 806 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 846 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26356,7 +27290,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 26360 "hcs12x.cc"
+#line 27294 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_xy_imm(CodeType const& code, uint16_t addr)
@@ -26365,19 +27299,28 @@ static Operation *DecodeOpAdd_xy_imm(CodeType const& code, uint16_t addr)
 }
 
 // ADDxy DIR  (regXY + mem16[regDirect:opr8a] => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27305 "hcs12x.cc"
+OpAdd_xy_dir::getCycles()
+{
+#line 877 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 27310 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26371 "hcs12x.cc"
+#line 27314 "hcs12x.cc"
 OpAdd_xy_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26375 "hcs12x.cc"
+#line 27318 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26378 "hcs12x.cc"
+#line 27321 "hcs12x.cc"
 )
 {
-#line 837 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 879 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDX $";
@@ -26386,21 +27329,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 26390 "hcs12x.cc"
+#line 27333 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26394 "hcs12x.cc"
+#line 27337 "hcs12x.cc"
 OpAdd_xy_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26398 "hcs12x.cc"
+#line 27341 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26401 "hcs12x.cc"
+#line 27344 "hcs12x.cc"
 )
 {
-#line 846 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 888 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26430,7 +27373,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26434 "hcs12x.cc"
+#line 27377 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_xy_dir(CodeType const& code, uint16_t addr)
@@ -26439,19 +27382,28 @@ static Operation *DecodeOpAdd_xy_dir(CodeType const& code, uint16_t addr)
 }
 
 // ADDxy EXT  (regXY + mem16[opr16a] => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27388 "hcs12x.cc"
+OpAdd_xy_ext::getCycles()
+{
+#line 921 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 27393 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26445 "hcs12x.cc"
+#line 27397 "hcs12x.cc"
 OpAdd_xy_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26449 "hcs12x.cc"
+#line 27401 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26452 "hcs12x.cc"
+#line 27404 "hcs12x.cc"
 )
 {
-#line 879 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 923 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDX $";
@@ -26460,94 +27412,18 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 26464 "hcs12x.cc"
+#line 27416 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26468 "hcs12x.cc"
+#line 27420 "hcs12x.cc"
 OpAdd_xy_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26472 "hcs12x.cc"
+#line 27424 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26475 "hcs12x.cc"
-)
-{
-#line 888 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
-	{
-		uint8_t carry_out, overflow;
-		uint16_t result;
-
-		uint8_t carry_in = 0;
-
-		uint16_t regVal;
-		if (b==0) {
-			regVal = cpu->getRegX();
-			} else {
-			regVal = cpu->getRegY();
-		}
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
-		uint16_t opr16aVal = cpu->memRead16(addr);
-
-		Add16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
-
-		if (b==0) {
-			cpu->setRegX(result);
-			} else {
-			cpu->setRegY(result);
-		}
-
-		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
-		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
-
-		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
-
-	}
-#line 26509 "hcs12x.cc"
-}
-
-static Operation *DecodeOpAdd_xy_ext(CodeType const& code, uint16_t addr)
-{
-	return new OpAdd_xy_ext(code, addr);
-}
-
-// ADDxy  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] => regXY)
-#line 69 "hcs12x.isa"
-void
-#line 26520 "hcs12x.cc"
-OpAdd_xy_idx::disasm(
-#line 69 "hcs12x.isa"
-ostream&
-#line 26524 "hcs12x.cc"
-#line 69 "hcs12x.isa"
-sink
-#line 26527 "hcs12x.cc"
-)
-{
-#line 922 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
-	{
-		if (b==0){
-			sink << "ADDX ";
-			} else {
-			sink << "ADDY ";
-		}
-
-		xb->disasm(sink);
-	}
-#line 26540 "hcs12x.cc"
-}
-#line 63 "hcs12x.isa"
-void
-#line 26544 "hcs12x.cc"
-OpAdd_xy_idx::execute(
-#line 63 "hcs12x.isa"
-CPU *
-#line 26548 "hcs12x.cc"
-#line 63 "hcs12x.isa"
-cpu
-#line 26551 "hcs12x.cc"
+#line 27427 "hcs12x.cc"
 )
 {
 #line 932 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
@@ -26558,6 +27434,91 @@ cpu
 		uint8_t carry_in = 0;
 
 		uint16_t regVal;
+		if (b==0) {
+			regVal = cpu->getRegX();
+			} else {
+			regVal = cpu->getRegY();
+		}
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+		uint16_t opr16aVal = cpu->memRead16(addr);
+
+		Add16(result, carry_out, overflow, regVal, opr16aVal, carry_in);
+
+		if (b==0) {
+			cpu->setRegX(result);
+			} else {
+			cpu->setRegY(result);
+		}
+
+		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+
+		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	}
+#line 27461 "hcs12x.cc"
+}
+
+static Operation *DecodeOpAdd_xy_ext(CodeType const& code, uint16_t addr)
+{
+	return new OpAdd_xy_ext(code, addr);
+}
+
+// ADDxy  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY + mem16[xb->addrE] => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27472 "hcs12x.cc"
+OpAdd_xy_idx::getCycles()
+{
+#line 966 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 27477 "hcs12x.cc"
+}
+#line 69 "hcs12x.isa"
+void
+#line 27481 "hcs12x.cc"
+OpAdd_xy_idx::disasm(
+#line 69 "hcs12x.isa"
+ostream&
+#line 27485 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+sink
+#line 27488 "hcs12x.cc"
+)
+{
+#line 968 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{
+		if (b==0){
+			sink << "ADDX ";
+			} else {
+			sink << "ADDY ";
+		}
+
+		xb->disasm(sink);
+	}
+#line 27501 "hcs12x.cc"
+}
+#line 63 "hcs12x.isa"
+void
+#line 27505 "hcs12x.cc"
+OpAdd_xy_idx::execute(
+#line 63 "hcs12x.isa"
+CPU *
+#line 27509 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+cpu
+#line 27512 "hcs12x.cc"
+)
+{
+#line 978 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{
+		uint8_t carry_out, overflow;
+		uint16_t result;
+
+		uint8_t carry_in = 0;
+
+		uint16_t regVal;
 
 		if (b==0) {
 			regVal = cpu->getRegX();
@@ -26581,7 +27542,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26585 "hcs12x.cc"
+#line 27546 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_xy_idx(CodeType const& code, uint16_t addr)
@@ -26590,19 +27551,28 @@ static Operation *DecodeOpAdd_xy_idx(CodeType const& code, uint16_t addr)
 }
 
 // SUBD IMM or ADDD IMM (regD -+ ii => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27557 "hcs12x.cc"
+OpAdd_sub_d_imm::getCycles()
+{
+#line 1015 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 2; }
+#line 27562 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26596 "hcs12x.cc"
+#line 27566 "hcs12x.cc"
 OpAdd_sub_d_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26600 "hcs12x.cc"
+#line 27570 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26603 "hcs12x.cc"
+#line 27573 "hcs12x.cc"
 )
 {
-#line 969 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1017 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBD #$";
@@ -26611,21 +27581,21 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 26615 "hcs12x.cc"
+#line 27585 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26619 "hcs12x.cc"
+#line 27589 "hcs12x.cc"
 OpAdd_sub_d_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26623 "hcs12x.cc"
+#line 27593 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26626 "hcs12x.cc"
+#line 27596 "hcs12x.cc"
 )
 {
-#line 978 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1026 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26647,7 +27617,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26651 "hcs12x.cc"
+#line 27621 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_sub_d_imm(CodeType const& code, uint16_t addr)
@@ -26656,19 +27626,28 @@ static Operation *DecodeOpAdd_sub_d_imm(CodeType const& code, uint16_t addr)
 }
 
 // SUBD DIR or ADDD DIR  (regD -+ mem[regDirect+opr8a])
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27632 "hcs12x.cc"
+OpAdd_sub_d_dir::getCycles()
+{
+#line 1051 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 27637 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26662 "hcs12x.cc"
+#line 27641 "hcs12x.cc"
 OpAdd_sub_d_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26666 "hcs12x.cc"
+#line 27645 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26669 "hcs12x.cc"
+#line 27648 "hcs12x.cc"
 )
 {
-#line 1003 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1053 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBD $";
@@ -26677,21 +27656,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 26681 "hcs12x.cc"
+#line 27660 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26685 "hcs12x.cc"
+#line 27664 "hcs12x.cc"
 OpAdd_sub_d_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26689 "hcs12x.cc"
+#line 27668 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26692 "hcs12x.cc"
+#line 27671 "hcs12x.cc"
 )
 {
-#line 1012 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1062 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26716,7 +27695,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26720 "hcs12x.cc"
+#line 27699 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_sub_d_dir(CodeType const& code, uint16_t addr)
@@ -26725,19 +27704,28 @@ static Operation *DecodeOpAdd_sub_d_dir(CodeType const& code, uint16_t addr)
 }
 
 // SUBD EXT or ADDD EXT (regD -+ mem[opr16a]) => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27710 "hcs12x.cc"
+OpAdd_sub_d_ext::getCycles()
+{
+#line 1090 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 27715 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26731 "hcs12x.cc"
+#line 27719 "hcs12x.cc"
 OpAdd_sub_d_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26735 "hcs12x.cc"
+#line 27723 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26738 "hcs12x.cc"
+#line 27726 "hcs12x.cc"
 )
 {
-#line 1040 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1092 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBD $";
@@ -26748,21 +27736,21 @@ sink
 		sink << std::hex << opr16a;
 
 	}
-#line 26752 "hcs12x.cc"
+#line 27740 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26756 "hcs12x.cc"
+#line 27744 "hcs12x.cc"
 OpAdd_sub_d_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26760 "hcs12x.cc"
+#line 27748 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26763 "hcs12x.cc"
+#line 27751 "hcs12x.cc"
 )
 {
-#line 1051 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1103 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26787,7 +27775,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26791 "hcs12x.cc"
+#line 27779 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_sub_d_ext(CodeType const& code, uint16_t addr)
@@ -26796,19 +27784,28 @@ static Operation *DecodeOpAdd_sub_d_ext(CodeType const& code, uint16_t addr)
 }
 
 // SUBD/ADDD  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD -+ mem[xb->addrE] => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27790 "hcs12x.cc"
+OpAdd_sub_d_idx::getCycles()
+{
+#line 1131 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+#line 27795 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26802 "hcs12x.cc"
+#line 27799 "hcs12x.cc"
 OpAdd_sub_d_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26806 "hcs12x.cc"
+#line 27803 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26809 "hcs12x.cc"
+#line 27806 "hcs12x.cc"
 )
 {
-#line 1079 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1133 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBD ";
@@ -26818,21 +27815,21 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 26822 "hcs12x.cc"
+#line 27819 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26826 "hcs12x.cc"
+#line 27823 "hcs12x.cc"
 OpAdd_sub_d_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26830 "hcs12x.cc"
+#line 27827 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26833 "hcs12x.cc"
+#line 27830 "hcs12x.cc"
 )
 {
-#line 1089 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1143 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -26857,7 +27854,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26861 "hcs12x.cc"
+#line 27858 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAdd_sub_d_idx(CodeType const& code, uint16_t addr)
@@ -26867,37 +27864,46 @@ static Operation *DecodeOpAdd_sub_d_idx(CodeType const& code, uint16_t addr)
 
 /* ****** Subtraction Instructions **** */
 // SBA  (regA - regB => regA)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27870 "hcs12x.cc"
+OpSba::getCycles()
+{
+#line 1173 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 2; }
+#line 27875 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26873 "hcs12x.cc"
+#line 27879 "hcs12x.cc"
 OpSba::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26877 "hcs12x.cc"
+#line 27883 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26880 "hcs12x.cc"
+#line 27886 "hcs12x.cc"
 )
 {
-#line 1119 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1175 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBA";
 	}
-#line 26887 "hcs12x.cc"
+#line 27893 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26891 "hcs12x.cc"
+#line 27897 "hcs12x.cc"
 OpSba::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26895 "hcs12x.cc"
+#line 27901 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26898 "hcs12x.cc"
+#line 27904 "hcs12x.cc"
 )
 {
-#line 1123 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1179 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -26915,7 +27921,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26919 "hcs12x.cc"
+#line 27925 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSba(CodeType const& code, uint16_t addr)
@@ -26924,19 +27930,28 @@ static Operation *DecodeOpSba(CodeType const& code, uint16_t addr)
 }
 
 // SBCA/SBCB  IMM (regAB - ii - carry => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 27936 "hcs12x.cc"
+OpSbc_ab_imm::getCycles()
+{
+#line 1200 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 1; }
+#line 27941 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 26930 "hcs12x.cc"
+#line 27945 "hcs12x.cc"
 OpSbc_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 26934 "hcs12x.cc"
+#line 27949 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 26937 "hcs12x.cc"
+#line 27952 "hcs12x.cc"
 )
 {
-#line 1144 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBCA #$";
@@ -26945,21 +27960,21 @@ sink
 		}
 		sink << std::hex << opr8i;
 	}
-#line 26949 "hcs12x.cc"
+#line 27964 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 26953 "hcs12x.cc"
+#line 27968 "hcs12x.cc"
 OpSbc_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 26957 "hcs12x.cc"
+#line 27972 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 26960 "hcs12x.cc"
+#line 27975 "hcs12x.cc"
 )
 {
-#line 1153 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1211 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -26985,7 +28000,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 26989 "hcs12x.cc"
+#line 28004 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbc_ab_imm(CodeType const& code, uint16_t addr)
@@ -26994,19 +28009,28 @@ static Operation *DecodeOpSbc_ab_imm(CodeType const& code, uint16_t addr)
 }
 
 // SBCA/SBCB  DIR  (regAB - mem[regDirect:opr8a] - carry => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28015 "hcs12x.cc"
+OpSbc_ab_dir::getCycles()
+{
+#line 1240 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 28020 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27000 "hcs12x.cc"
+#line 28024 "hcs12x.cc"
 OpSbc_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27004 "hcs12x.cc"
+#line 28028 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27007 "hcs12x.cc"
+#line 28031 "hcs12x.cc"
 )
 {
-#line 1182 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1242 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBCA $";
@@ -27015,21 +28039,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 27019 "hcs12x.cc"
+#line 28043 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27023 "hcs12x.cc"
+#line 28047 "hcs12x.cc"
 OpSbc_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27027 "hcs12x.cc"
+#line 28051 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27030 "hcs12x.cc"
+#line 28054 "hcs12x.cc"
 )
 {
-#line 1191 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1251 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27057,7 +28081,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27061 "hcs12x.cc"
+#line 28085 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbc_ab_dir(CodeType const& code, uint16_t addr)
@@ -27066,19 +28090,28 @@ static Operation *DecodeOpSbc_ab_dir(CodeType const& code, uint16_t addr)
 }
 
 // SBCA/SBCB  EXT (regAB - mem[opr16a] - carry => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28096 "hcs12x.cc"
+OpSbc_ab_ext::getCycles()
+{
+#line 1282 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 28101 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27072 "hcs12x.cc"
+#line 28105 "hcs12x.cc"
 OpSbc_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27076 "hcs12x.cc"
+#line 28109 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27079 "hcs12x.cc"
+#line 28112 "hcs12x.cc"
 )
 {
-#line 1222 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1284 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBCA $";
@@ -27087,21 +28120,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 27091 "hcs12x.cc"
+#line 28124 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27095 "hcs12x.cc"
+#line 28128 "hcs12x.cc"
 OpSbc_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27099 "hcs12x.cc"
+#line 28132 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27102 "hcs12x.cc"
+#line 28135 "hcs12x.cc"
 )
 {
-#line 1231 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1293 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27130,7 +28163,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27134 "hcs12x.cc"
+#line 28167 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbc_ab_ext(CodeType const& code, uint16_t addr)
@@ -27139,19 +28172,28 @@ static Operation *DecodeOpSbc_ab_ext(CodeType const& code, uint16_t addr)
 }
 
 // SBCA/SBCB IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] - carry => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28178 "hcs12x.cc"
+OpSbc_ab_idx::getCycles()
+{
+#line 1325 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+#line 28183 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27145 "hcs12x.cc"
+#line 28187 "hcs12x.cc"
 OpSbc_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27149 "hcs12x.cc"
+#line 28191 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27152 "hcs12x.cc"
+#line 28194 "hcs12x.cc"
 )
 {
-#line 1263 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1327 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "SBCA ";
@@ -27161,21 +28203,21 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 27165 "hcs12x.cc"
+#line 28207 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27169 "hcs12x.cc"
+#line 28211 "hcs12x.cc"
 OpSbc_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27173 "hcs12x.cc"
+#line 28215 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27176 "hcs12x.cc"
+#line 28218 "hcs12x.cc"
 )
 {
-#line 1273 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1337 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27205,7 +28247,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27209 "hcs12x.cc"
+#line 28251 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbc_ab_idx(CodeType const& code, uint16_t addr)
@@ -27214,37 +28256,46 @@ static Operation *DecodeOpSbc_ab_idx(CodeType const& code, uint16_t addr)
 }
 
 // SBED  IMM (regD - #opr16i - carry => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28262 "hcs12x.cc"
+OpSbed_imm::getCycles()
+{
+#line 1370 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 28267 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27220 "hcs12x.cc"
+#line 28271 "hcs12x.cc"
 OpSbed_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27224 "hcs12x.cc"
+#line 28275 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27227 "hcs12x.cc"
+#line 28278 "hcs12x.cc"
 )
 {
-#line 1306 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1372 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBED #$" << std::hex << opr16i;
 	}
-#line 27234 "hcs12x.cc"
+#line 28285 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27238 "hcs12x.cc"
+#line 28289 "hcs12x.cc"
 OpSbed_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27242 "hcs12x.cc"
+#line 28293 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27245 "hcs12x.cc"
+#line 28296 "hcs12x.cc"
 )
 {
-#line 1310 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1376 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27262,7 +28313,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27266 "hcs12x.cc"
+#line 28317 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbed_imm(CodeType const& code, uint16_t addr)
@@ -27271,37 +28322,46 @@ static Operation *DecodeOpSbed_imm(CodeType const& code, uint16_t addr)
 }
 
 // SBED  DIR  (regD - mem16[regDirect:opr8a] - carry => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28328 "hcs12x.cc"
+OpSbed_dir::getCycles()
+{
+#line 1397 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 28333 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27277 "hcs12x.cc"
+#line 28337 "hcs12x.cc"
 OpSbed_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27281 "hcs12x.cc"
+#line 28341 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27284 "hcs12x.cc"
+#line 28344 "hcs12x.cc"
 )
 {
-#line 1331 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1399 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBED $" << std::hex << opr8a;
 	}
-#line 27291 "hcs12x.cc"
+#line 28351 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27295 "hcs12x.cc"
+#line 28355 "hcs12x.cc"
 OpSbed_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27299 "hcs12x.cc"
+#line 28359 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27302 "hcs12x.cc"
+#line 28362 "hcs12x.cc"
 )
 {
-#line 1335 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1403 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27322,7 +28382,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27326 "hcs12x.cc"
+#line 28386 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbed_dir(CodeType const& code, uint16_t addr)
@@ -27331,37 +28391,46 @@ static Operation *DecodeOpSbed_dir(CodeType const& code, uint16_t addr)
 }
 
 // SBED  EXT (regD - mem16[opr16a] - carry => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28397 "hcs12x.cc"
+OpSbed_ext::getCycles()
+{
+#line 1427 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 28402 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27337 "hcs12x.cc"
+#line 28406 "hcs12x.cc"
 OpSbed_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27341 "hcs12x.cc"
+#line 28410 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27344 "hcs12x.cc"
+#line 28413 "hcs12x.cc"
 )
 {
-#line 1359 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1429 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBED $" << std::hex << opr16a;
 	}
-#line 27351 "hcs12x.cc"
+#line 28420 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27355 "hcs12x.cc"
+#line 28424 "hcs12x.cc"
 OpSbed_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27359 "hcs12x.cc"
+#line 28428 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27362 "hcs12x.cc"
+#line 28431 "hcs12x.cc"
 )
 {
-#line 1363 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1433 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27383,7 +28452,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27387 "hcs12x.cc"
+#line 28456 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbed_ext(CodeType const& code, uint16_t addr)
@@ -27392,38 +28461,47 @@ static Operation *DecodeOpSbed_ext(CodeType const& code, uint16_t addr)
 }
 
 // SBED IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regD - mem16[xb->addrE] - carry => regD)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28467 "hcs12x.cc"
+OpSbed_idx::getCycles()
+{
+#line 1458 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 28472 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27398 "hcs12x.cc"
+#line 28476 "hcs12x.cc"
 OpSbed_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27402 "hcs12x.cc"
+#line 28480 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27405 "hcs12x.cc"
+#line 28483 "hcs12x.cc"
 )
 {
-#line 1388 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1460 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBED ";
 		xb->disasm(sink);
 	}
-#line 27413 "hcs12x.cc"
+#line 28491 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27417 "hcs12x.cc"
+#line 28495 "hcs12x.cc"
 OpSbed_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27421 "hcs12x.cc"
+#line 28499 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27424 "hcs12x.cc"
+#line 28502 "hcs12x.cc"
 )
 {
-#line 1393 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1465 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27445,7 +28523,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27449 "hcs12x.cc"
+#line 28527 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbed_idx(CodeType const& code, uint16_t addr)
@@ -27454,19 +28532,28 @@ static Operation *DecodeOpSbed_idx(CodeType const& code, uint16_t addr)
 }
 
 // SBEX/SBEY  IMM (regXY - #opr16i - carry => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28538 "hcs12x.cc"
+OpSbe_xy_imm::getCycles()
+{
+#line 1490 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 28543 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27460 "hcs12x.cc"
+#line 28547 "hcs12x.cc"
 OpSbe_xy_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27464 "hcs12x.cc"
+#line 28551 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27467 "hcs12x.cc"
+#line 28554 "hcs12x.cc"
 )
 {
-#line 1418 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1492 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBEX #$";
@@ -27475,21 +28562,21 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 27479 "hcs12x.cc"
+#line 28566 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27483 "hcs12x.cc"
+#line 28570 "hcs12x.cc"
 OpSbe_xy_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27487 "hcs12x.cc"
+#line 28574 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27490 "hcs12x.cc"
+#line 28577 "hcs12x.cc"
 )
 {
-#line 1427 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1501 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27516,7 +28603,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27520 "hcs12x.cc"
+#line 28607 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbe_xy_imm(CodeType const& code, uint16_t addr)
@@ -27525,19 +28612,28 @@ static Operation *DecodeOpSbe_xy_imm(CodeType const& code, uint16_t addr)
 }
 
 // SBEX/SBEY  DIR  (regXY - mem16[regDirect:opr8a] - carry => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28618 "hcs12x.cc"
+OpSbe_xy_dir::getCycles()
+{
+#line 1531 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 28623 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27531 "hcs12x.cc"
+#line 28627 "hcs12x.cc"
 OpSbe_xy_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27535 "hcs12x.cc"
+#line 28631 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27538 "hcs12x.cc"
+#line 28634 "hcs12x.cc"
 )
 {
-#line 1457 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1533 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBEX $";
@@ -27546,21 +28642,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 27550 "hcs12x.cc"
+#line 28646 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27554 "hcs12x.cc"
+#line 28650 "hcs12x.cc"
 OpSbe_xy_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27558 "hcs12x.cc"
+#line 28654 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27561 "hcs12x.cc"
+#line 28657 "hcs12x.cc"
 )
 {
-#line 1466 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1542 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27589,7 +28685,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27593 "hcs12x.cc"
+#line 28689 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbe_xy_dir(CodeType const& code, uint16_t addr)
@@ -27598,19 +28694,28 @@ static Operation *DecodeOpSbe_xy_dir(CodeType const& code, uint16_t addr)
 }
 
 // SBEX/SBEY  EXT (regXY - mem16[opr16a] - carry => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28700 "hcs12x.cc"
+OpSbe_xy_ext::getCycles()
+{
+#line 1574 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 28705 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27604 "hcs12x.cc"
+#line 28709 "hcs12x.cc"
 OpSbe_xy_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27608 "hcs12x.cc"
+#line 28713 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27611 "hcs12x.cc"
+#line 28716 "hcs12x.cc"
 )
 {
-#line 1498 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1576 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBEX $";
@@ -27619,21 +28724,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 27623 "hcs12x.cc"
+#line 28728 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27627 "hcs12x.cc"
+#line 28732 "hcs12x.cc"
 OpSbe_xy_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27631 "hcs12x.cc"
+#line 28736 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27634 "hcs12x.cc"
+#line 28739 "hcs12x.cc"
 )
 {
-#line 1507 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1585 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27663,7 +28768,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27667 "hcs12x.cc"
+#line 28772 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbe_xy_ext(CodeType const& code, uint16_t addr)
@@ -27672,19 +28777,28 @@ static Operation *DecodeOpSbe_xy_ext(CodeType const& code, uint16_t addr)
 }
 
 // SBEX/SBEY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY - mem16[xb->addrE] - carry => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28783 "hcs12x.cc"
+OpSbe_xy_idx::getCycles()
+{
+#line 1618 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 28788 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27678 "hcs12x.cc"
+#line 28792 "hcs12x.cc"
 OpSbe_xy_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27682 "hcs12x.cc"
+#line 28796 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27685 "hcs12x.cc"
+#line 28799 "hcs12x.cc"
 )
 {
-#line 1540 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1620 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "SBEX ";
@@ -27694,21 +28808,21 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 27698 "hcs12x.cc"
+#line 28812 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27702 "hcs12x.cc"
+#line 28816 "hcs12x.cc"
 OpSbe_xy_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27706 "hcs12x.cc"
+#line 28820 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27709 "hcs12x.cc"
+#line 28823 "hcs12x.cc"
 )
 {
-#line 1550 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1630 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27739,7 +28853,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27743 "hcs12x.cc"
+#line 28857 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbe_xy_idx(CodeType const& code, uint16_t addr)
@@ -27748,19 +28862,28 @@ static Operation *DecodeOpSbe_xy_idx(CodeType const& code, uint16_t addr)
 }
 
 // SUBA/SUBB  IMM (regAB - ii => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28868 "hcs12x.cc"
+OpSub_ab_imm::getCycles()
+{
+#line 1664 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 1; }
+#line 28873 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27754 "hcs12x.cc"
+#line 28877 "hcs12x.cc"
 OpSub_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27758 "hcs12x.cc"
+#line 28881 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27761 "hcs12x.cc"
+#line 28884 "hcs12x.cc"
 )
 {
-#line 1584 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1666 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBA #$";
@@ -27769,21 +28892,21 @@ sink
 		}
 		sink << std::hex << opr8i;
 	}
-#line 27773 "hcs12x.cc"
+#line 28896 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27777 "hcs12x.cc"
+#line 28900 "hcs12x.cc"
 OpSub_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27781 "hcs12x.cc"
+#line 28904 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27784 "hcs12x.cc"
+#line 28907 "hcs12x.cc"
 )
 {
-#line 1593 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1675 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27810,7 +28933,7 @@ cpu
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 27814 "hcs12x.cc"
+#line 28937 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSub_ab_imm(CodeType const& code, uint16_t addr)
@@ -27819,19 +28942,28 @@ static Operation *DecodeOpSub_ab_imm(CodeType const& code, uint16_t addr)
 }
 
 // SUBA/SUBB  DIR  (regAB - mem[regDirect:opr8a] => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 28948 "hcs12x.cc"
+OpSub_ab_dir::getCycles()
+{
+#line 1705 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 28953 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27825 "hcs12x.cc"
+#line 28957 "hcs12x.cc"
 OpSub_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27829 "hcs12x.cc"
+#line 28961 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27832 "hcs12x.cc"
+#line 28964 "hcs12x.cc"
 )
 {
-#line 1623 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1707 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBA $";
@@ -27840,21 +28972,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 27844 "hcs12x.cc"
+#line 28976 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27848 "hcs12x.cc"
+#line 28980 "hcs12x.cc"
 OpSub_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27852 "hcs12x.cc"
+#line 28984 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27855 "hcs12x.cc"
+#line 28987 "hcs12x.cc"
 )
 {
-#line 1632 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1716 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27883,7 +29015,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 27887 "hcs12x.cc"
+#line 29019 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSub_ab_dir(CodeType const& code, uint16_t addr)
@@ -27892,19 +29024,28 @@ static Operation *DecodeOpSub_ab_dir(CodeType const& code, uint16_t addr)
 }
 
 // SUBA/SUBB  EXT (regAB - mem[opr16a] => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29030 "hcs12x.cc"
+OpSub_ab_ext::getCycles()
+{
+#line 1748 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 29035 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27898 "hcs12x.cc"
+#line 29039 "hcs12x.cc"
 OpSub_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27902 "hcs12x.cc"
+#line 29043 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27905 "hcs12x.cc"
+#line 29046 "hcs12x.cc"
 )
 {
-#line 1664 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1750 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBA $";
@@ -27913,21 +29054,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 27917 "hcs12x.cc"
+#line 29058 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27921 "hcs12x.cc"
+#line 29062 "hcs12x.cc"
 OpSub_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 27925 "hcs12x.cc"
+#line 29066 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 27928 "hcs12x.cc"
+#line 29069 "hcs12x.cc"
 )
 {
-#line 1673 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1759 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27957,7 +29098,7 @@ cpu
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 27961 "hcs12x.cc"
+#line 29102 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSub_ab_ext(CodeType const& code, uint16_t addr)
@@ -27966,19 +29107,28 @@ static Operation *DecodeOpSub_ab_ext(CodeType const& code, uint16_t addr)
 }
 
 // SUBA/SUBB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regAB - mem[xb->addrE] => regAB)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29113 "hcs12x.cc"
+OpSub_ab_idx::getCycles()
+{
+#line 1792 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+#line 29118 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 27972 "hcs12x.cc"
+#line 29122 "hcs12x.cc"
 OpSub_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 27976 "hcs12x.cc"
+#line 29126 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 27979 "hcs12x.cc"
+#line 29129 "hcs12x.cc"
 )
 {
-#line 1706 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1794 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "SUBA ";
@@ -27988,21 +29138,21 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 27992 "hcs12x.cc"
+#line 29142 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 27996 "hcs12x.cc"
+#line 29146 "hcs12x.cc"
 OpSub_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28000 "hcs12x.cc"
+#line 29150 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28003 "hcs12x.cc"
+#line 29153 "hcs12x.cc"
 )
 {
-#line 1716 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1804 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -28032,7 +29182,7 @@ cpu
 		if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 		if ((result & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
 	}
-#line 28036 "hcs12x.cc"
+#line 29186 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSub_ab_idx(CodeType const& code, uint16_t addr)
@@ -28042,19 +29192,28 @@ static Operation *DecodeOpSub_ab_idx(CodeType const& code, uint16_t addr)
 
 // ******************************
 // SUBX/SUBY  IMM (regXy - opr16i => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29198 "hcs12x.cc"
+OpSub_xy_imm::getCycles()
+{
+#line 1839 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 29203 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28048 "hcs12x.cc"
+#line 29207 "hcs12x.cc"
 OpSub_xy_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28052 "hcs12x.cc"
+#line 29211 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28055 "hcs12x.cc"
+#line 29214 "hcs12x.cc"
 )
 {
-#line 1751 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1841 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBX #$";
@@ -28063,21 +29222,21 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 28067 "hcs12x.cc"
+#line 29226 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28071 "hcs12x.cc"
+#line 29230 "hcs12x.cc"
 OpSub_xy_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28075 "hcs12x.cc"
+#line 29234 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28078 "hcs12x.cc"
+#line 29237 "hcs12x.cc"
 )
 {
-#line 1760 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1850 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28105,7 +29264,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 28109 "hcs12x.cc"
+#line 29268 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSub_xy_imm(CodeType const& code, uint16_t addr)
@@ -28114,19 +29273,28 @@ static Operation *DecodeOpSub_xy_imm(CodeType const& code, uint16_t addr)
 }
 
 // SUBX/SUBY  DIR  (regXY - mem16[regDirect:opr8a] => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29279 "hcs12x.cc"
+OpSub_xy_dir::getCycles()
+{
+#line 1881 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 29284 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28120 "hcs12x.cc"
+#line 29288 "hcs12x.cc"
 OpSub_xy_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28124 "hcs12x.cc"
+#line 29292 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28127 "hcs12x.cc"
+#line 29295 "hcs12x.cc"
 )
 {
-#line 1791 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1883 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBX $";
@@ -28135,21 +29303,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 28139 "hcs12x.cc"
+#line 29307 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28143 "hcs12x.cc"
+#line 29311 "hcs12x.cc"
 OpSub_xy_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28147 "hcs12x.cc"
+#line 29315 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28150 "hcs12x.cc"
+#line 29318 "hcs12x.cc"
 )
 {
-#line 1800 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1892 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28179,7 +29347,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 28183 "hcs12x.cc"
+#line 29351 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSub_xy_dir(CodeType const& code, uint16_t addr)
@@ -28188,19 +29356,28 @@ static Operation *DecodeOpSub_xy_dir(CodeType const& code, uint16_t addr)
 }
 
 // SUBX/SUBY  EXT (regXY - mem16[opr16a] => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29362 "hcs12x.cc"
+OpSub_xy_ext::getCycles()
+{
+#line 1925 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 4; }
+#line 29367 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28194 "hcs12x.cc"
+#line 29371 "hcs12x.cc"
 OpSub_xy_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28198 "hcs12x.cc"
+#line 29375 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28201 "hcs12x.cc"
+#line 29378 "hcs12x.cc"
 )
 {
-#line 1833 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1927 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBX $";
@@ -28209,21 +29386,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 28213 "hcs12x.cc"
+#line 29390 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28217 "hcs12x.cc"
+#line 29394 "hcs12x.cc"
 OpSub_xy_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28221 "hcs12x.cc"
+#line 29398 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28224 "hcs12x.cc"
+#line 29401 "hcs12x.cc"
 )
 {
-#line 1842 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1936 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28254,7 +29431,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 28258 "hcs12x.cc"
+#line 29435 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSub_xy_ext(CodeType const& code, uint16_t addr)
@@ -28263,19 +29440,28 @@ static Operation *DecodeOpSub_xy_ext(CodeType const& code, uint16_t addr)
 }
 
 // SUBX/SUBY  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]  (regXY - mem16[xb->addrE] => regXY)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29446 "hcs12x.cc"
+OpSub_xy_idx::getCycles()
+{
+#line 1970 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 29451 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28269 "hcs12x.cc"
+#line 29455 "hcs12x.cc"
 OpSub_xy_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28273 "hcs12x.cc"
+#line 29459 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28276 "hcs12x.cc"
+#line 29462 "hcs12x.cc"
 )
 {
-#line 1876 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1972 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "SUBX ";
@@ -28285,21 +29471,21 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 28289 "hcs12x.cc"
+#line 29475 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28293 "hcs12x.cc"
+#line 29479 "hcs12x.cc"
 OpSub_xy_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28297 "hcs12x.cc"
+#line 29483 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28300 "hcs12x.cc"
+#line 29486 "hcs12x.cc"
 )
 {
-#line 1886 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1982 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28330,7 +29516,7 @@ cpu
 		if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
 	}
-#line 28334 "hcs12x.cc"
+#line 29520 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSub_xy_idx(CodeType const& code, uint16_t addr)
@@ -28338,40 +29524,48 @@ static Operation *DecodeOpSub_xy_idx(CodeType const& code, uint16_t addr)
 	return new OpSub_xy_idx(code, addr);
 }
 
-// ******************************
 /* ***** Binary-Coded Decimal Instructions ****** */
 // DAA (if (ccr.H) then regA + 0x6 => regA)
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29532 "hcs12x.cc"
+OpDaa::getCycles()
+{
+#line 2019 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+	{ return 3; }
+#line 29537 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28347 "hcs12x.cc"
+#line 29541 "hcs12x.cc"
 OpDaa::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28351 "hcs12x.cc"
+#line 29545 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28354 "hcs12x.cc"
+#line 29548 "hcs12x.cc"
 )
 {
-#line 1924 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 2021 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "DAA";
 	}
-#line 28361 "hcs12x.cc"
+#line 29555 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28365 "hcs12x.cc"
+#line 29559 "hcs12x.cc"
 OpDaa::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28369 "hcs12x.cc"
+#line 29563 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28372 "hcs12x.cc"
+#line 29566 "hcs12x.cc"
 )
 {
-#line 1928 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 2025 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t hBit = cpu->ccr->getH();
 		uint8_t cBit = cpu->ccr->getC();
@@ -28467,7 +29661,7 @@ cpu
 		if (result == 0x00) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if (overflow == 1) cpu->ccr->setV(); else cpu->ccr->clrV();
 	}
-#line 28471 "hcs12x.cc"
+#line 29665 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDaa(CodeType const& code, uint16_t addr)
@@ -28477,37 +29671,46 @@ static Operation *DecodeOpDaa(CodeType const& code, uint16_t addr)
 
 // -*- C++ -*-
 // DEC EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29677 "hcs12x.cc"
+OpDec_ext::getCycles()
+{
+#line 6 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 4; }
+#line 29682 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28483 "hcs12x.cc"
+#line 29686 "hcs12x.cc"
 OpDec_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28487 "hcs12x.cc"
+#line 29690 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28490 "hcs12x.cc"
+#line 29693 "hcs12x.cc"
 )
 {
-#line 6 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 8 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DEC $" << std::hex << opr16a;
 	}
-#line 28497 "hcs12x.cc"
+#line 29700 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28501 "hcs12x.cc"
+#line 29704 "hcs12x.cc"
 OpDec_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28505 "hcs12x.cc"
+#line 29708 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28508 "hcs12x.cc"
+#line 29711 "hcs12x.cc"
 )
 {
-#line 10 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 12 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t opr16aVal = cpu->memRead8(addr);
@@ -28522,7 +29725,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 28526 "hcs12x.cc"
+#line 29729 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDec_ext(CodeType const& code, uint16_t addr)
@@ -28531,38 +29734,47 @@ static Operation *DecodeOpDec_ext(CodeType const& code, uint16_t addr)
 }
 
 // DEC IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29740 "hcs12x.cc"
+OpDec_idx::getCycles()
+{
+#line 30 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
+#line 29745 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28537 "hcs12x.cc"
+#line 29749 "hcs12x.cc"
 OpDec_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28541 "hcs12x.cc"
+#line 29753 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28544 "hcs12x.cc"
+#line 29756 "hcs12x.cc"
 )
 {
-#line 28 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 32 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DEC ";
 		xb->disasm(sink);
 	}
-#line 28552 "hcs12x.cc"
+#line 29764 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28556 "hcs12x.cc"
+#line 29768 "hcs12x.cc"
 OpDec_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28560 "hcs12x.cc"
+#line 29772 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28563 "hcs12x.cc"
+#line 29775 "hcs12x.cc"
 )
 {
-#line 33 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 37 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -28579,7 +29791,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 28583 "hcs12x.cc"
+#line 29795 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDec_idx(CodeType const& code, uint16_t addr)
@@ -28588,19 +29800,28 @@ static Operation *DecodeOpDec_idx(CodeType const& code, uint16_t addr)
 }
 
 // DECA  or DECB
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29806 "hcs12x.cc"
+OpDec_ab::getCycles()
+{
+#line 57 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 1; }
+#line 29811 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28594 "hcs12x.cc"
+#line 29815 "hcs12x.cc"
 OpDec_ab::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28598 "hcs12x.cc"
+#line 29819 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28601 "hcs12x.cc"
+#line 29822 "hcs12x.cc"
 )
 {
-#line 53 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 59 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		if (b == 0) {
 			sink << "DECA";
@@ -28608,21 +29829,21 @@ sink
 			sink << "DECB";
 		}
 	}
-#line 28612 "hcs12x.cc"
+#line 29833 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28616 "hcs12x.cc"
+#line 29837 "hcs12x.cc"
 OpDec_ab::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28620 "hcs12x.cc"
+#line 29841 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28623 "hcs12x.cc"
+#line 29844 "hcs12x.cc"
 )
 {
-#line 61 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 67 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 
 		uint8_t result, carry_out, overflow, carry_in;
@@ -28649,7 +29870,7 @@ cpu
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 28653 "hcs12x.cc"
+#line 29874 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDec_ab(CodeType const& code, uint16_t addr)
@@ -28658,37 +29879,46 @@ static Operation *DecodeOpDec_ab(CodeType const& code, uint16_t addr)
 }
 
 // DECW  EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29885 "hcs12x.cc"
+OpDecw_ext::getCycles()
+{
+#line 97 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 5; }
+#line 29890 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28664 "hcs12x.cc"
+#line 29894 "hcs12x.cc"
 OpDecw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28668 "hcs12x.cc"
+#line 29898 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28671 "hcs12x.cc"
+#line 29901 "hcs12x.cc"
 )
 {
-#line 91 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 99 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DECW $" << std::hex << opr16a;
 	}
-#line 28678 "hcs12x.cc"
+#line 29908 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28682 "hcs12x.cc"
+#line 29912 "hcs12x.cc"
 OpDecw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28686 "hcs12x.cc"
+#line 29916 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28689 "hcs12x.cc"
+#line 29919 "hcs12x.cc"
 )
 {
-#line 95 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 103 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t opr16aVal = cpu->memRead16(addr);
@@ -28705,7 +29935,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 28709 "hcs12x.cc"
+#line 29939 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDecw_ext(CodeType const& code, uint16_t addr)
@@ -28714,38 +29944,47 @@ static Operation *DecodeOpDecw_ext(CodeType const& code, uint16_t addr)
 }
 
 // DECW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 29950 "hcs12x.cc"
+OpDecw_idx::getCycles()
+{
+#line 123 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 7, 7); }
+#line 29955 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28720 "hcs12x.cc"
+#line 29959 "hcs12x.cc"
 OpDecw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28724 "hcs12x.cc"
+#line 29963 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28727 "hcs12x.cc"
+#line 29966 "hcs12x.cc"
 )
 {
-#line 115 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 125 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DECW ";
 		xb->disasm(sink);
 	}
-#line 28735 "hcs12x.cc"
+#line 29974 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28739 "hcs12x.cc"
+#line 29978 "hcs12x.cc"
 OpDecw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28743 "hcs12x.cc"
+#line 29982 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28746 "hcs12x.cc"
+#line 29985 "hcs12x.cc"
 )
 {
-#line 120 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 130 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -28763,7 +30002,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 28767 "hcs12x.cc"
+#line 30006 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDecw_idx(CodeType const& code, uint16_t addr)
@@ -28772,19 +30011,28 @@ static Operation *DecodeOpDecw_idx(CodeType const& code, uint16_t addr)
 }
 
 // DECX or DECY
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30017 "hcs12x.cc"
+OpDec_xy::getCycles()
+{
+#line 151 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 2; }
+#line 30022 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28778 "hcs12x.cc"
+#line 30026 "hcs12x.cc"
 OpDec_xy::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28782 "hcs12x.cc"
+#line 30030 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28785 "hcs12x.cc"
+#line 30033 "hcs12x.cc"
 )
 {
-#line 141 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 153 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		if (b==0) {
 			sink << "DECX";
@@ -28792,21 +30040,21 @@ sink
 			sink << "DECY";
 		}
 	}
-#line 28796 "hcs12x.cc"
+#line 30044 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28800 "hcs12x.cc"
+#line 30048 "hcs12x.cc"
 OpDec_xy::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28804 "hcs12x.cc"
+#line 30052 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28807 "hcs12x.cc"
+#line 30055 "hcs12x.cc"
 )
 {
-#line 149 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 161 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 
 		uint16_t val;
@@ -28834,7 +30082,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 28838 "hcs12x.cc"
+#line 30086 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDec_xy(CodeType const& code, uint16_t addr)
@@ -28843,41 +30091,50 @@ static Operation *DecodeOpDec_xy(CodeType const& code, uint16_t addr)
 }
 
 // DES
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30097 "hcs12x.cc"
+OpDes::getCycles()
+{
+#line 192 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 2; }
+#line 30102 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28849 "hcs12x.cc"
+#line 30106 "hcs12x.cc"
 OpDes::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28853 "hcs12x.cc"
+#line 30110 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28856 "hcs12x.cc"
+#line 30113 "hcs12x.cc"
 )
 {
-#line 180 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 194 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DES";
 	}
-#line 28863 "hcs12x.cc"
+#line 30120 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28867 "hcs12x.cc"
+#line 30124 "hcs12x.cc"
 OpDes::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28871 "hcs12x.cc"
+#line 30128 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28874 "hcs12x.cc"
+#line 30131 "hcs12x.cc"
 )
 {
-#line 184 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 198 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP() - 1);
 	}
-#line 28881 "hcs12x.cc"
+#line 30138 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDes(CodeType const& code, uint16_t addr)
@@ -28886,44 +30143,53 @@ static Operation *DecodeOpDes(CodeType const& code, uint16_t addr)
 }
 
 // DEX
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30149 "hcs12x.cc"
+OpDex::getCycles()
+{
+#line 205 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 1; }
+#line 30154 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28892 "hcs12x.cc"
+#line 30158 "hcs12x.cc"
 OpDex::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28896 "hcs12x.cc"
+#line 30162 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28899 "hcs12x.cc"
+#line 30165 "hcs12x.cc"
 )
 {
-#line 191 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 207 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DEX";
 	}
-#line 28906 "hcs12x.cc"
+#line 30172 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28910 "hcs12x.cc"
+#line 30176 "hcs12x.cc"
 OpDex::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28914 "hcs12x.cc"
+#line 30180 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28917 "hcs12x.cc"
+#line 30183 "hcs12x.cc"
 )
 {
-#line 195 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 211 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		uint16_t val = cpu->getRegX();
 		val--;
 		cpu->setRegX(val);
 		if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	}
-#line 28927 "hcs12x.cc"
+#line 30193 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDex(CodeType const& code, uint16_t addr)
@@ -28932,44 +30198,53 @@ static Operation *DecodeOpDex(CodeType const& code, uint16_t addr)
 }
 
 // DEY
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30204 "hcs12x.cc"
+OpDey::getCycles()
+{
+#line 221 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 1; }
+#line 30209 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28938 "hcs12x.cc"
+#line 30213 "hcs12x.cc"
 OpDey::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28942 "hcs12x.cc"
+#line 30217 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28945 "hcs12x.cc"
+#line 30220 "hcs12x.cc"
 )
 {
-#line 205 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 223 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DEY";
 	}
-#line 28952 "hcs12x.cc"
+#line 30227 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 28956 "hcs12x.cc"
+#line 30231 "hcs12x.cc"
 OpDey::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 28960 "hcs12x.cc"
+#line 30235 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 28963 "hcs12x.cc"
+#line 30238 "hcs12x.cc"
 )
 {
-#line 209 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 227 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		uint16_t val = cpu->getRegY();
 		val--;
 		cpu->setRegY(val);
 		if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	}
-#line 28973 "hcs12x.cc"
+#line 30248 "hcs12x.cc"
 }
 
 static Operation *DecodeOpDey(CodeType const& code, uint16_t addr)
@@ -28979,37 +30254,46 @@ static Operation *DecodeOpDey(CodeType const& code, uint16_t addr)
 
 /* ********* Increment Instructions ****** */
 // INC EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30260 "hcs12x.cc"
+OpInc_ext::getCycles()
+{
+#line 239 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 4; }
+#line 30265 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 28985 "hcs12x.cc"
+#line 30269 "hcs12x.cc"
 OpInc_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 28989 "hcs12x.cc"
+#line 30273 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 28992 "hcs12x.cc"
+#line 30276 "hcs12x.cc"
 )
 {
-#line 221 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 241 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INC $" << std::hex << opr16a;
 	}
-#line 28999 "hcs12x.cc"
+#line 30283 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29003 "hcs12x.cc"
+#line 30287 "hcs12x.cc"
 OpInc_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29007 "hcs12x.cc"
+#line 30291 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29010 "hcs12x.cc"
+#line 30294 "hcs12x.cc"
 )
 {
-#line 225 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 245 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t opr16aVal = cpu->memRead8(addr);
@@ -29025,7 +30309,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29029 "hcs12x.cc"
+#line 30313 "hcs12x.cc"
 }
 
 static Operation *DecodeOpInc_ext(CodeType const& code, uint16_t addr)
@@ -29034,38 +30318,47 @@ static Operation *DecodeOpInc_ext(CodeType const& code, uint16_t addr)
 }
 
 // INC IDX or IDX or IDX2 or [D,IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30324 "hcs12x.cc"
+OpInc_idx::getCycles()
+{
+#line 264 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
+#line 30329 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29040 "hcs12x.cc"
+#line 30333 "hcs12x.cc"
 OpInc_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29044 "hcs12x.cc"
+#line 30337 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29047 "hcs12x.cc"
+#line 30340 "hcs12x.cc"
 )
 {
-#line 244 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 266 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INC ";
 		xb->disasm(sink);
 	}
-#line 29055 "hcs12x.cc"
+#line 30348 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29059 "hcs12x.cc"
+#line 30352 "hcs12x.cc"
 OpInc_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29063 "hcs12x.cc"
+#line 30356 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29066 "hcs12x.cc"
+#line 30359 "hcs12x.cc"
 )
 {
-#line 249 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 271 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -29082,7 +30375,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29086 "hcs12x.cc"
+#line 30379 "hcs12x.cc"
 }
 
 static Operation *DecodeOpInc_idx(CodeType const& code, uint16_t addr)
@@ -29091,19 +30384,28 @@ static Operation *DecodeOpInc_idx(CodeType const& code, uint16_t addr)
 }
 
 // INCA  or INCB
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30390 "hcs12x.cc"
+OpInc_ab::getCycles()
+{
+#line 291 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 1; }
+#line 30395 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29097 "hcs12x.cc"
+#line 30399 "hcs12x.cc"
 OpInc_ab::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29101 "hcs12x.cc"
+#line 30403 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29104 "hcs12x.cc"
+#line 30406 "hcs12x.cc"
 )
 {
-#line 269 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 293 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		if (b == 0) {
 			sink << "INCA";
@@ -29111,21 +30413,21 @@ sink
 			sink << "INCB";
 		}
 	}
-#line 29115 "hcs12x.cc"
+#line 30417 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29119 "hcs12x.cc"
+#line 30421 "hcs12x.cc"
 OpInc_ab::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29123 "hcs12x.cc"
+#line 30425 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29126 "hcs12x.cc"
+#line 30428 "hcs12x.cc"
 )
 {
-#line 277 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 301 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 
 		uint8_t result, carry_out, overflow, carry_in;
@@ -29152,7 +30454,7 @@ cpu
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 29156 "hcs12x.cc"
+#line 30458 "hcs12x.cc"
 }
 
 static Operation *DecodeOpInc_ab(CodeType const& code, uint16_t addr)
@@ -29161,37 +30463,46 @@ static Operation *DecodeOpInc_ab(CodeType const& code, uint16_t addr)
 }
 
 // INCW EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30469 "hcs12x.cc"
+OpIncw_ext::getCycles()
+{
+#line 331 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 5; }
+#line 30474 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29167 "hcs12x.cc"
+#line 30478 "hcs12x.cc"
 OpIncw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29171 "hcs12x.cc"
+#line 30482 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29174 "hcs12x.cc"
+#line 30485 "hcs12x.cc"
 )
 {
-#line 307 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 333 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INCW $" << std::hex << opr16a;
 	}
-#line 29181 "hcs12x.cc"
+#line 30492 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29185 "hcs12x.cc"
+#line 30496 "hcs12x.cc"
 OpIncw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29189 "hcs12x.cc"
+#line 30500 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29192 "hcs12x.cc"
+#line 30503 "hcs12x.cc"
 )
 {
-#line 311 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 337 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t opr16aVal = cpu->memRead16(addr);
@@ -29208,7 +30519,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29212 "hcs12x.cc"
+#line 30523 "hcs12x.cc"
 }
 
 static Operation *DecodeOpIncw_ext(CodeType const& code, uint16_t addr)
@@ -29217,38 +30528,47 @@ static Operation *DecodeOpIncw_ext(CodeType const& code, uint16_t addr)
 }
 
 // INCW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30534 "hcs12x.cc"
+OpIncw_idx::getCycles()
+{
+#line 357 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
+#line 30539 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29223 "hcs12x.cc"
+#line 30543 "hcs12x.cc"
 OpIncw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29227 "hcs12x.cc"
+#line 30547 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29230 "hcs12x.cc"
+#line 30550 "hcs12x.cc"
 )
 {
-#line 331 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 359 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INCW ";
 		xb->disasm(sink);
 	}
-#line 29238 "hcs12x.cc"
+#line 30558 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29242 "hcs12x.cc"
+#line 30562 "hcs12x.cc"
 OpIncw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29246 "hcs12x.cc"
+#line 30566 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29249 "hcs12x.cc"
+#line 30569 "hcs12x.cc"
 )
 {
-#line 336 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 364 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -29266,7 +30586,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29270 "hcs12x.cc"
+#line 30590 "hcs12x.cc"
 }
 
 static Operation *DecodeOpIncw_idx(CodeType const& code, uint16_t addr)
@@ -29275,19 +30595,28 @@ static Operation *DecodeOpIncw_idx(CodeType const& code, uint16_t addr)
 }
 
 // INX or INCY
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30601 "hcs12x.cc"
+OpInc_xy::getCycles()
+{
+#line 385 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 2; }
+#line 30606 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29281 "hcs12x.cc"
+#line 30610 "hcs12x.cc"
 OpInc_xy::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29285 "hcs12x.cc"
+#line 30614 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29288 "hcs12x.cc"
+#line 30617 "hcs12x.cc"
 )
 {
-#line 357 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 387 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		if (b==0) {
 			sink << "INCX";
@@ -29295,21 +30624,21 @@ sink
 			sink << "INCY";
 		}
 	}
-#line 29299 "hcs12x.cc"
+#line 30628 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29303 "hcs12x.cc"
+#line 30632 "hcs12x.cc"
 OpInc_xy::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29307 "hcs12x.cc"
+#line 30636 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29310 "hcs12x.cc"
+#line 30639 "hcs12x.cc"
 )
 {
-#line 365 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 395 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 
 		uint16_t val;
@@ -29337,7 +30666,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 29341 "hcs12x.cc"
+#line 30670 "hcs12x.cc"
 }
 
 static Operation *DecodeOpInc_xy(CodeType const& code, uint16_t addr)
@@ -29346,41 +30675,50 @@ static Operation *DecodeOpInc_xy(CodeType const& code, uint16_t addr)
 }
 
 // INS
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30681 "hcs12x.cc"
+OpIns::getCycles()
+{
+#line 426 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 2; }
+#line 30686 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29352 "hcs12x.cc"
+#line 30690 "hcs12x.cc"
 OpIns::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29356 "hcs12x.cc"
+#line 30694 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29359 "hcs12x.cc"
+#line 30697 "hcs12x.cc"
 )
 {
-#line 396 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 428 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INS";
 	}
-#line 29366 "hcs12x.cc"
+#line 30704 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29370 "hcs12x.cc"
+#line 30708 "hcs12x.cc"
 OpIns::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29374 "hcs12x.cc"
+#line 30712 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29377 "hcs12x.cc"
+#line 30715 "hcs12x.cc"
 )
 {
-#line 400 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 432 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP() + 1);
 	}
-#line 29384 "hcs12x.cc"
+#line 30722 "hcs12x.cc"
 }
 
 static Operation *DecodeOpIns(CodeType const& code, uint16_t addr)
@@ -29389,44 +30727,53 @@ static Operation *DecodeOpIns(CodeType const& code, uint16_t addr)
 }
 
 // INX
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30733 "hcs12x.cc"
+OpInx::getCycles()
+{
+#line 439 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 1; }
+#line 30738 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29395 "hcs12x.cc"
+#line 30742 "hcs12x.cc"
 OpInx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29399 "hcs12x.cc"
+#line 30746 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29402 "hcs12x.cc"
+#line 30749 "hcs12x.cc"
 )
 {
-#line 407 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 441 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INX";
 	}
-#line 29409 "hcs12x.cc"
+#line 30756 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29413 "hcs12x.cc"
+#line 30760 "hcs12x.cc"
 OpInx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29417 "hcs12x.cc"
+#line 30764 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29420 "hcs12x.cc"
+#line 30767 "hcs12x.cc"
 )
 {
-#line 411 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 445 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		uint16_t val = cpu->getRegX();
 		val++;
 		cpu->setRegX(val);
 		if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	}
-#line 29430 "hcs12x.cc"
+#line 30777 "hcs12x.cc"
 }
 
 static Operation *DecodeOpInx(CodeType const& code, uint16_t addr)
@@ -29435,44 +30782,53 @@ static Operation *DecodeOpInx(CodeType const& code, uint16_t addr)
 }
 
 // INY
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30788 "hcs12x.cc"
+OpIny::getCycles()
+{
+#line 455 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+	{ return 1; }
+#line 30793 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29441 "hcs12x.cc"
+#line 30797 "hcs12x.cc"
 OpIny::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29445 "hcs12x.cc"
+#line 30801 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29448 "hcs12x.cc"
+#line 30804 "hcs12x.cc"
 )
 {
-#line 421 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 457 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INY";
 	}
-#line 29455 "hcs12x.cc"
+#line 30811 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29459 "hcs12x.cc"
+#line 30815 "hcs12x.cc"
 OpIny::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29463 "hcs12x.cc"
+#line 30819 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29466 "hcs12x.cc"
+#line 30822 "hcs12x.cc"
 )
 {
-#line 425 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 461 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		uint16_t val = cpu->getRegY();
 		val++;
 		cpu->setRegY(val);
 		if (val == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 	}
-#line 29476 "hcs12x.cc"
+#line 30832 "hcs12x.cc"
 }
 
 static Operation *DecodeOpIny(CodeType const& code, uint16_t addr)
@@ -29514,37 +30870,46 @@ static Operation *DecodeOpIny(CodeType const& code, uint16_t addr)
 * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 */
 // CBA
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30876 "hcs12x.cc"
+OpCba::getCycles()
+{
+#line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 2; }
+#line 30881 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29520 "hcs12x.cc"
+#line 30885 "hcs12x.cc"
 OpCba::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29524 "hcs12x.cc"
+#line 30889 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29527 "hcs12x.cc"
+#line 30892 "hcs12x.cc"
 )
 {
-#line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		sink << "CBA";
 	}
-#line 29534 "hcs12x.cc"
+#line 30899 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29538 "hcs12x.cc"
+#line 30903 "hcs12x.cc"
 OpCba::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29542 "hcs12x.cc"
+#line 30907 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29545 "hcs12x.cc"
+#line 30910 "hcs12x.cc"
 )
 {
-#line 43 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 
@@ -29556,7 +30921,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29560 "hcs12x.cc"
+#line 30925 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCba(CodeType const& code, uint16_t addr)
@@ -29565,19 +30930,28 @@ static Operation *DecodeOpCba(CodeType const& code, uint16_t addr)
 }
 
 //  CMPab  IMM
+#line 73 "hcs12x.isa"
+uint8_t
+#line 30936 "hcs12x.cc"
+OpCmp_ab_imm::getCycles()
+{
+#line 61 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 1; }
+#line 30941 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29571 "hcs12x.cc"
+#line 30945 "hcs12x.cc"
 OpCmp_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29575 "hcs12x.cc"
+#line 30949 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29578 "hcs12x.cc"
+#line 30952 "hcs12x.cc"
 )
 {
-#line 59 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 63 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
 			sink << "CMPA #$";
@@ -29586,21 +30960,21 @@ sink
 		}
 		sink << std::hex << opr8i;
 	}
-#line 29590 "hcs12x.cc"
+#line 30964 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29594 "hcs12x.cc"
+#line 30968 "hcs12x.cc"
 OpCmp_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29598 "hcs12x.cc"
+#line 30972 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29601 "hcs12x.cc"
+#line 30975 "hcs12x.cc"
 )
 {
-#line 68 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 72 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -29619,7 +30993,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29623 "hcs12x.cc"
+#line 30997 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCmp_ab_imm(CodeType const& code, uint16_t addr)
@@ -29628,19 +31002,28 @@ static Operation *DecodeOpCmp_ab_imm(CodeType const& code, uint16_t addr)
 }
 
 // CMPab  DIR
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31008 "hcs12x.cc"
+OpCmp_ab_dir::getCycles()
+{
+#line 94 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 3; }
+#line 31013 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29634 "hcs12x.cc"
+#line 31017 "hcs12x.cc"
 OpCmp_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29638 "hcs12x.cc"
+#line 31021 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29641 "hcs12x.cc"
+#line 31024 "hcs12x.cc"
 )
 {
-#line 90 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 96 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
 			sink << "CMPA $";
@@ -29649,21 +31032,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 29653 "hcs12x.cc"
+#line 31036 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29657 "hcs12x.cc"
+#line 31040 "hcs12x.cc"
 OpCmp_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29661 "hcs12x.cc"
+#line 31044 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29664 "hcs12x.cc"
+#line 31047 "hcs12x.cc"
 )
 {
-#line 99 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 105 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -29684,7 +31067,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29688 "hcs12x.cc"
+#line 31071 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCmp_ab_dir(CodeType const& code, uint16_t addr)
@@ -29693,19 +31076,28 @@ static Operation *DecodeOpCmp_ab_dir(CodeType const& code, uint16_t addr)
 }
 
 // CMPab  EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31082 "hcs12x.cc"
+OpCmp_ab_ext::getCycles()
+{
+#line 129 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 3; }
+#line 31087 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29699 "hcs12x.cc"
+#line 31091 "hcs12x.cc"
 OpCmp_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29703 "hcs12x.cc"
+#line 31095 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29706 "hcs12x.cc"
+#line 31098 "hcs12x.cc"
 )
 {
-#line 123 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 131 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
 			sink << "CMPA $";
@@ -29714,21 +31106,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 29718 "hcs12x.cc"
+#line 31110 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29722 "hcs12x.cc"
+#line 31114 "hcs12x.cc"
 OpCmp_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29726 "hcs12x.cc"
+#line 31118 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29729 "hcs12x.cc"
+#line 31121 "hcs12x.cc"
 )
 {
-#line 132 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 140 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -29750,7 +31142,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29754 "hcs12x.cc"
+#line 31146 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCmp_ab_ext(CodeType const& code, uint16_t addr)
@@ -29759,19 +31151,28 @@ static Operation *DecodeOpCmp_ab_ext(CodeType const& code, uint16_t addr)
 }
 
 // CMPab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31157 "hcs12x.cc"
+OpCmp_ab_idx::getCycles()
+{
+#line 165 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+#line 31162 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29765 "hcs12x.cc"
+#line 31166 "hcs12x.cc"
 OpCmp_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29769 "hcs12x.cc"
+#line 31170 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29772 "hcs12x.cc"
+#line 31173 "hcs12x.cc"
 )
 {
-#line 157 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 167 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
 			sink << "CMPA ";
@@ -29780,21 +31181,21 @@ sink
 		}
 		xb->disasm(sink);
 	}
-#line 29784 "hcs12x.cc"
+#line 31185 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29788 "hcs12x.cc"
+#line 31189 "hcs12x.cc"
 OpCmp_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29792 "hcs12x.cc"
+#line 31193 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29795 "hcs12x.cc"
+#line 31196 "hcs12x.cc"
 )
 {
-#line 166 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 176 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -29815,7 +31216,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 29819 "hcs12x.cc"
+#line 31220 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCmp_ab_idx(CodeType const& code, uint16_t addr)
@@ -29824,19 +31225,28 @@ static Operation *DecodeOpCmp_ab_idx(CodeType const& code, uint16_t addr)
 }
 
 // CPdyxs  IMM
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31231 "hcs12x.cc"
+OpCp_dyxs_imm::getCycles()
+{
+#line 200 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 2; }
+#line 31236 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29830 "hcs12x.cc"
+#line 31240 "hcs12x.cc"
 OpCp_dyxs_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29834 "hcs12x.cc"
+#line 31244 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29837 "hcs12x.cc"
+#line 31247 "hcs12x.cc"
 )
 {
-#line 190 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPD #$"; break;
@@ -29846,21 +31256,21 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 29850 "hcs12x.cc"
+#line 31260 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29854 "hcs12x.cc"
+#line 31264 "hcs12x.cc"
 OpCp_dyxs_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29858 "hcs12x.cc"
+#line 31268 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29861 "hcs12x.cc"
+#line 31271 "hcs12x.cc"
 )
 {
-#line 200 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 212 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -29881,7 +31291,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 29885 "hcs12x.cc"
+#line 31295 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCp_dyxs_imm(CodeType const& code, uint16_t addr)
@@ -29890,19 +31300,28 @@ static Operation *DecodeOpCp_dyxs_imm(CodeType const& code, uint16_t addr)
 }
 
 // CPdyxs DIR
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31306 "hcs12x.cc"
+OpCp_dyxs_dir::getCycles()
+{
+#line 236 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 3; }
+#line 31311 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29896 "hcs12x.cc"
+#line 31315 "hcs12x.cc"
 OpCp_dyxs_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29900 "hcs12x.cc"
+#line 31319 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29903 "hcs12x.cc"
+#line 31322 "hcs12x.cc"
 )
 {
-#line 224 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 238 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPD $"; break;
@@ -29912,21 +31331,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 29916 "hcs12x.cc"
+#line 31335 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29920 "hcs12x.cc"
+#line 31339 "hcs12x.cc"
 OpCp_dyxs_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29924 "hcs12x.cc"
+#line 31343 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29927 "hcs12x.cc"
+#line 31346 "hcs12x.cc"
 )
 {
-#line 234 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 248 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -29950,7 +31369,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 29954 "hcs12x.cc"
+#line 31373 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCp_dyxs_dir(CodeType const& code, uint16_t addr)
@@ -29959,19 +31378,28 @@ static Operation *DecodeOpCp_dyxs_dir(CodeType const& code, uint16_t addr)
 }
 
 // CPdyxs EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31384 "hcs12x.cc"
+OpCp_dyxs_ext::getCycles()
+{
+#line 275 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 3; }
+#line 31389 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 29965 "hcs12x.cc"
+#line 31393 "hcs12x.cc"
 OpCp_dyxs_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 29969 "hcs12x.cc"
+#line 31397 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 29972 "hcs12x.cc"
+#line 31400 "hcs12x.cc"
 )
 {
-#line 261 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 277 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPD $"; break;
@@ -29981,21 +31409,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 29985 "hcs12x.cc"
+#line 31413 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 29989 "hcs12x.cc"
+#line 31417 "hcs12x.cc"
 OpCp_dyxs_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 29993 "hcs12x.cc"
+#line 31421 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 29996 "hcs12x.cc"
+#line 31424 "hcs12x.cc"
 )
 {
-#line 271 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 287 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -30017,7 +31445,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 30021 "hcs12x.cc"
+#line 31449 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCp_dyxs_ext(CodeType const& code, uint16_t addr)
@@ -30026,19 +31454,28 @@ static Operation *DecodeOpCp_dyxs_ext(CodeType const& code, uint16_t addr)
 }
 
 // CPdyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31460 "hcs12x.cc"
+OpCp_dyxs_idx::getCycles()
+{
+#line 312 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+#line 31465 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30032 "hcs12x.cc"
+#line 31469 "hcs12x.cc"
 OpCp_dyxs_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30036 "hcs12x.cc"
+#line 31473 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30039 "hcs12x.cc"
+#line 31476 "hcs12x.cc"
 )
 {
-#line 296 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 314 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPD "; break;
@@ -30048,21 +31485,21 @@ sink
 		}
 		xb->disasm(sink);
 	}
-#line 30052 "hcs12x.cc"
+#line 31489 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30056 "hcs12x.cc"
+#line 31493 "hcs12x.cc"
 OpCp_dyxs_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30060 "hcs12x.cc"
+#line 31497 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30063 "hcs12x.cc"
+#line 31500 "hcs12x.cc"
 )
 {
-#line 306 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 324 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -30084,7 +31521,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 30088 "hcs12x.cc"
+#line 31525 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCp_dyxs_idx(CodeType const& code, uint16_t addr)
@@ -30094,19 +31531,28 @@ static Operation *DecodeOpCp_dyxs_idx(CodeType const& code, uint16_t addr)
 
 /* ****** Compare to memory with Borrow ********** */
 // CPE_dyxs  IMM
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31537 "hcs12x.cc"
+OpCpe_dyxs_imm::getCycles()
+{
+#line 351 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 3; }
+#line 31542 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30100 "hcs12x.cc"
+#line 31546 "hcs12x.cc"
 OpCpe_dyxs_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30104 "hcs12x.cc"
+#line 31550 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30107 "hcs12x.cc"
+#line 31553 "hcs12x.cc"
 )
 {
-#line 333 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 353 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPED #$"; break;
@@ -30116,21 +31562,21 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 30120 "hcs12x.cc"
+#line 31566 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30124 "hcs12x.cc"
+#line 31570 "hcs12x.cc"
 OpCpe_dyxs_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30128 "hcs12x.cc"
+#line 31574 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30131 "hcs12x.cc"
+#line 31577 "hcs12x.cc"
 )
 {
-#line 343 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 363 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in, zeroBit;
 		uint16_t result, regVal;
@@ -30152,7 +31598,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 30156 "hcs12x.cc"
+#line 31602 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCpe_dyxs_imm(CodeType const& code, uint16_t addr)
@@ -30161,19 +31607,28 @@ static Operation *DecodeOpCpe_dyxs_imm(CodeType const& code, uint16_t addr)
 }
 
 // CPE_dyxs DIR
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31613 "hcs12x.cc"
+OpCpe_dyxs_dir::getCycles()
+{
+#line 388 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 4; }
+#line 31618 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30167 "hcs12x.cc"
+#line 31622 "hcs12x.cc"
 OpCpe_dyxs_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30171 "hcs12x.cc"
+#line 31626 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30174 "hcs12x.cc"
+#line 31629 "hcs12x.cc"
 )
 {
-#line 368 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 390 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPED $"; break;
@@ -30183,21 +31638,21 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 30187 "hcs12x.cc"
+#line 31642 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30191 "hcs12x.cc"
+#line 31646 "hcs12x.cc"
 OpCpe_dyxs_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30195 "hcs12x.cc"
+#line 31650 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30198 "hcs12x.cc"
+#line 31653 "hcs12x.cc"
 )
 {
-#line 378 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 400 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in, zeroBit;
 		uint16_t result, regVal;
@@ -30222,7 +31677,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 30226 "hcs12x.cc"
+#line 31681 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCpe_dyxs_dir(CodeType const& code, uint16_t addr)
@@ -30231,19 +31686,28 @@ static Operation *DecodeOpCpe_dyxs_dir(CodeType const& code, uint16_t addr)
 }
 
 // CPE_dyxs EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31692 "hcs12x.cc"
+OpCpe_dyxs_ext::getCycles()
+{
+#line 428 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 4; }
+#line 31697 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30237 "hcs12x.cc"
+#line 31701 "hcs12x.cc"
 OpCpe_dyxs_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30241 "hcs12x.cc"
+#line 31705 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30244 "hcs12x.cc"
+#line 31708 "hcs12x.cc"
 )
 {
-#line 406 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 430 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPED $"; break;
@@ -30253,21 +31717,21 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 30257 "hcs12x.cc"
+#line 31721 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30261 "hcs12x.cc"
+#line 31725 "hcs12x.cc"
 OpCpe_dyxs_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30265 "hcs12x.cc"
+#line 31729 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30268 "hcs12x.cc"
+#line 31732 "hcs12x.cc"
 )
 {
-#line 416 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 440 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in, zeroBit;
 		uint16_t result, regVal;
@@ -30290,7 +31754,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 30294 "hcs12x.cc"
+#line 31758 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCpe_dyxs_ext(CodeType const& code, uint16_t addr)
@@ -30299,19 +31763,28 @@ static Operation *DecodeOpCpe_dyxs_ext(CodeType const& code, uint16_t addr)
 }
 
 // CPE_dyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31769 "hcs12x.cc"
+OpCpe_dyxs_idx::getCycles()
+{
+#line 466 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 31774 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30305 "hcs12x.cc"
+#line 31778 "hcs12x.cc"
 OpCpe_dyxs_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30309 "hcs12x.cc"
+#line 31782 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30312 "hcs12x.cc"
+#line 31785 "hcs12x.cc"
 )
 {
-#line 442 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 468 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPED "; break;
@@ -30321,21 +31794,21 @@ sink
 		}
 		xb->disasm(sink);
 	}
-#line 30325 "hcs12x.cc"
+#line 31798 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30329 "hcs12x.cc"
+#line 31802 "hcs12x.cc"
 OpCpe_dyxs_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30333 "hcs12x.cc"
+#line 31806 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30336 "hcs12x.cc"
+#line 31809 "hcs12x.cc"
 )
 {
-#line 452 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 478 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in, zeroBit;
 		uint16_t result, regVal;
@@ -30358,7 +31831,7 @@ cpu
 		if (zeroBit && (result == 0)) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 30362 "hcs12x.cc"
+#line 31835 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCpe_dyxs_idx(CodeType const& code, uint16_t addr)
@@ -30368,37 +31841,46 @@ static Operation *DecodeOpCpe_dyxs_idx(CodeType const& code, uint16_t addr)
 
 /* ************ Test Instructions **************** */
 // TST EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31847 "hcs12x.cc"
+OpTst_ext::getCycles()
+{
+#line 507 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 3; }
+#line 31852 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30374 "hcs12x.cc"
+#line 31856 "hcs12x.cc"
 OpTst_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30378 "hcs12x.cc"
+#line 31860 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30381 "hcs12x.cc"
+#line 31863 "hcs12x.cc"
 )
 {
-#line 481 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 509 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		sink << "TST $" << std::hex << opr16a;
 	}
-#line 30388 "hcs12x.cc"
+#line 31870 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30392 "hcs12x.cc"
+#line 31874 "hcs12x.cc"
 OpTst_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30396 "hcs12x.cc"
+#line 31878 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30399 "hcs12x.cc"
+#line 31881 "hcs12x.cc"
 )
 {
-#line 485 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 513 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint8_t result;
@@ -30414,7 +31896,7 @@ cpu
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 30418 "hcs12x.cc"
+#line 31900 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTst_ext(CodeType const& code, uint16_t addr)
@@ -30423,38 +31905,47 @@ static Operation *DecodeOpTst_ext(CodeType const& code, uint16_t addr)
 }
 
 // TST IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31911 "hcs12x.cc"
+OpTst_idx::getCycles()
+{
+#line 532 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
+#line 31916 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30429 "hcs12x.cc"
+#line 31920 "hcs12x.cc"
 OpTst_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30433 "hcs12x.cc"
+#line 31924 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30436 "hcs12x.cc"
+#line 31927 "hcs12x.cc"
 )
 {
-#line 504 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 534 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		sink << "TST ";
 		xb->disasm(sink);
 	}
-#line 30444 "hcs12x.cc"
+#line 31935 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30448 "hcs12x.cc"
+#line 31939 "hcs12x.cc"
 OpTst_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30452 "hcs12x.cc"
+#line 31943 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30455 "hcs12x.cc"
+#line 31946 "hcs12x.cc"
 )
 {
-#line 509 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 539 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint8_t result;
@@ -30470,7 +31961,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 30474 "hcs12x.cc"
+#line 31965 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTst_idx(CodeType const& code, uint16_t addr)
@@ -30479,19 +31970,28 @@ static Operation *DecodeOpTst_idx(CodeType const& code, uint16_t addr)
 }
 
 // TSTA or TSTB
+#line 73 "hcs12x.isa"
+uint8_t
+#line 31976 "hcs12x.cc"
+OpTst_ab::getCycles()
+{
+#line 558 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 1; }
+#line 31981 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30485 "hcs12x.cc"
+#line 31985 "hcs12x.cc"
 OpTst_ab::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30489 "hcs12x.cc"
+#line 31989 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30492 "hcs12x.cc"
+#line 31992 "hcs12x.cc"
 )
 {
-#line 528 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 560 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
 			sink << "TSTA ";
@@ -30499,21 +31999,21 @@ sink
 			sink << "TSTB ";
 		}
 	}
-#line 30503 "hcs12x.cc"
+#line 32003 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30507 "hcs12x.cc"
+#line 32007 "hcs12x.cc"
 OpTst_ab::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30511 "hcs12x.cc"
+#line 32011 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30514 "hcs12x.cc"
+#line 32014 "hcs12x.cc"
 )
 {
-#line 536 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 568 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -30532,7 +32032,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 30536 "hcs12x.cc"
+#line 32036 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTst_ab(CodeType const& code, uint16_t addr)
@@ -30541,37 +32041,46 @@ static Operation *DecodeOpTst_ab(CodeType const& code, uint16_t addr)
 }
 
 // TSTW EXT
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32047 "hcs12x.cc"
+OpTstw_ext::getCycles()
+{
+#line 590 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 4; }
+#line 32052 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30547 "hcs12x.cc"
+#line 32056 "hcs12x.cc"
 OpTstw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30551 "hcs12x.cc"
+#line 32060 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30554 "hcs12x.cc"
+#line 32063 "hcs12x.cc"
 )
 {
-#line 558 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 592 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		sink << "TSTW $" << std::hex << opr16a;
 	}
-#line 30561 "hcs12x.cc"
+#line 32070 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30565 "hcs12x.cc"
+#line 32074 "hcs12x.cc"
 OpTstw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30569 "hcs12x.cc"
+#line 32078 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30572 "hcs12x.cc"
+#line 32081 "hcs12x.cc"
 )
 {
-#line 562 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 596 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result;
@@ -30588,7 +32097,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 30592 "hcs12x.cc"
+#line 32101 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTstw_ext(CodeType const& code, uint16_t addr)
@@ -30597,38 +32106,47 @@ static Operation *DecodeOpTstw_ext(CodeType const& code, uint16_t addr)
 }
 
 // TSTW IDX or IDX1 or IDX2 or [D, IDX] or [IDX2]
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32112 "hcs12x.cc"
+OpTstw_idx::getCycles()
+{
+#line 616 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 32117 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30603 "hcs12x.cc"
+#line 32121 "hcs12x.cc"
 OpTstw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30607 "hcs12x.cc"
+#line 32125 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30610 "hcs12x.cc"
+#line 32128 "hcs12x.cc"
 )
 {
-#line 582 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 618 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		sink << "TSTW ";
 		xb->disasm(sink);
 	}
-#line 30618 "hcs12x.cc"
+#line 32136 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30622 "hcs12x.cc"
+#line 32140 "hcs12x.cc"
 OpTstw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30626 "hcs12x.cc"
+#line 32144 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30629 "hcs12x.cc"
+#line 32147 "hcs12x.cc"
 )
 {
-#line 587 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 623 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result;
@@ -30644,7 +32162,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 30648 "hcs12x.cc"
+#line 32166 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTstw_idx(CodeType const& code, uint16_t addr)
@@ -30653,40 +32171,49 @@ static Operation *DecodeOpTstw_idx(CodeType const& code, uint16_t addr)
 }
 
 // TSTX or TSTY
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32177 "hcs12x.cc"
+OpTst_xy::getCycles()
+{
+#line 642 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return 2; }
+#line 32182 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30659 "hcs12x.cc"
+#line 32186 "hcs12x.cc"
 OpTst_xy::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30663 "hcs12x.cc"
+#line 32190 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30666 "hcs12x.cc"
+#line 32193 "hcs12x.cc"
 )
 {
-#line 606 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 644 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (b) {
 			case 0: sink << "TSTX "; break;
 			case 1: sink << "TSTY "; break;
 		}
 	}
-#line 30676 "hcs12x.cc"
+#line 32203 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30680 "hcs12x.cc"
+#line 32207 "hcs12x.cc"
 OpTst_xy::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30684 "hcs12x.cc"
+#line 32211 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30687 "hcs12x.cc"
+#line 32214 "hcs12x.cc"
 )
 {
-#line 613 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 651 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -30704,7 +32231,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 30708 "hcs12x.cc"
+#line 32235 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTst_xy(CodeType const& code, uint16_t addr)
@@ -30714,45 +32241,49 @@ static Operation *DecodeOpTst_xy(CodeType const& code, uint16_t addr)
 
 /* ************ Minimum Instructions ************* */
 // EMIND: MIN ((D), (M : M + 1)) ⇒ D
-// EMINM: MIN ((D), (M : M + 1)) ⇒ M : M + 1
-// opcode(EMIND)-> 0x18 0x1B  opcode(EMINM)-> 0x18 0x1F
+// opcode(EMIND)-> 0x18 0x1B
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32248 "hcs12x.cc"
+OpEmind::getCycles()
+{
+#line 677 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 32253 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30722 "hcs12x.cc"
-OpEmin_dm::disasm(
+#line 32257 "hcs12x.cc"
+OpEmind::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30726 "hcs12x.cc"
+#line 32261 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30729 "hcs12x.cc"
+#line 32264 "hcs12x.cc"
 )
 {
-#line 640 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 679 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
-		if (b == 0) {
-			sink << "EMIND ";
-			} else {
-			sink << "EMINM ";
-		}
 
+		sink << "EMIND ";
 		xb->disasm(sink);
 	}
-#line 30742 "hcs12x.cc"
+#line 32273 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30746 "hcs12x.cc"
-OpEmin_dm::execute(
+#line 32277 "hcs12x.cc"
+OpEmind::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30750 "hcs12x.cc"
+#line 32281 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30753 "hcs12x.cc"
+#line 32284 "hcs12x.cc"
 )
 {
-#line 650 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 685 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint16_t dVal = cpu->getRegD();
@@ -30764,11 +32295,7 @@ cpu
 
 		uint16_t result = dVal - mVal;
 
-		if (b == 0) {
-			cpu->setRegD(min);
-			} else {
-			cpu->memWrite16(addr, min);
-		}
+		cpu->setRegD(min);
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -30788,54 +32315,142 @@ cpu
 		*/
 		if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 	}
-#line 30792 "hcs12x.cc"
+#line 32319 "hcs12x.cc"
 }
 
-static Operation *DecodeOpEmin_dm(CodeType const& code, uint16_t addr)
+static Operation *DecodeOpEmind(CodeType const& code, uint16_t addr)
 {
-	return new OpEmin_dm(code, addr);
+	return new OpEmind(code, addr);
+}
+
+// EMINM: MIN ((D), (M : M + 1)) ⇒ M : M + 1
+// opcode(EMINM)-> 0x18 0x1F
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32331 "hcs12x.cc"
+OpEminm::getCycles()
+{
+#line 722 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
+#line 32336 "hcs12x.cc"
+}
+#line 69 "hcs12x.isa"
+void
+#line 32340 "hcs12x.cc"
+OpEminm::disasm(
+#line 69 "hcs12x.isa"
+ostream&
+#line 32344 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+sink
+#line 32347 "hcs12x.cc"
+)
+{
+#line 724 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{
+
+		sink << "EMINM ";
+		xb->disasm(sink);
+	}
+#line 32356 "hcs12x.cc"
+}
+#line 63 "hcs12x.isa"
+void
+#line 32360 "hcs12x.cc"
+OpEminm::execute(
+#line 63 "hcs12x.isa"
+CPU *
+#line 32364 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+cpu
+#line 32367 "hcs12x.cc"
+)
+{
+#line 730 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{
+
+		uint16_t dVal = cpu->getRegD();
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+		uint16_t mVal = cpu->memRead16(addr);
+
+		uint16_t min;
+		if (dVal > mVal) { min == mVal; } else { min = dVal; }
+
+		uint16_t result = dVal - mVal;
+
+		cpu->memWrite16(addr, min);
+
+		// N: Set if MSB of result is set; cleared otherwise
+		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		// Z: Set if result is $0000; cleared otherwise
+		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
+		/*
+		* V: D15 • !M15 • !R15 + !D15 • M15 • R15
+		* Set if a two’s complement overflow resulted from the operation; cleared
+		* otherwise
+		*/
+		if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+		/*
+		* C: !D15 • M15 + M15 • R15 + R15 • !D15
+		* Set if the value of the content of memory is larger than the value of the
+		* accumulator; cleared otherwise
+		*/
+		if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+	}
+#line 32402 "hcs12x.cc"
+}
+
+static Operation *DecodeOpEminm(CodeType const& code, uint16_t addr)
+{
+	return new OpEminm(code, addr);
 }
 
 // MINA: MIN ((A), (M)) ⇒ A
-// MINM: MIN ((A), (M)) ⇒ M
-// opcode(MINA)-> 0x18 0x19  opcode(MINM)->0x18 0x1D
+// opcode(MINA)-> 0x18 0x19
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32414 "hcs12x.cc"
+OpMina::getCycles()
+{
+#line 768 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 32419 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30805 "hcs12x.cc"
-OpMin_am::disasm(
+#line 32423 "hcs12x.cc"
+OpMina::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30809 "hcs12x.cc"
+#line 32427 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30812 "hcs12x.cc"
+#line 32430 "hcs12x.cc"
 )
 {
-#line 692 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 770 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
-		if (b == 0) {
-			sink << "MINA ";
-			} else {
-			sink << "MINM ";
-		}
+
+		sink << "MINA ";
 
 		xb->disasm(sink);
 	}
-#line 30825 "hcs12x.cc"
+#line 32440 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30829 "hcs12x.cc"
-OpMin_am::execute(
+#line 32444 "hcs12x.cc"
+OpMina::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30833 "hcs12x.cc"
+#line 32448 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30836 "hcs12x.cc"
+#line 32451 "hcs12x.cc"
 )
 {
-#line 702 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 777 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint8_t aVal = cpu->getRegA();
@@ -30847,11 +32462,7 @@ cpu
 
 		uint8_t result = aVal - mVal;
 
-		if (b == 0) {
-			cpu->setRegA(min);
-			} else {
-			cpu->memWrite8(addr, min);
-		}
+		cpu->setRegA(min);
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -30871,55 +32482,143 @@ cpu
 		*/
 		if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 	}
-#line 30875 "hcs12x.cc"
+#line 32486 "hcs12x.cc"
 }
 
-static Operation *DecodeOpMin_am(CodeType const& code, uint16_t addr)
+static Operation *DecodeOpMina(CodeType const& code, uint16_t addr)
 {
-	return new OpMin_am(code, addr);
+	return new OpMina(code, addr);
+}
+
+// MINM: MIN ((A), (M)) ⇒ M
+// opcode(MINM)->0x18 0x1D
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32498 "hcs12x.cc"
+OpMinm::getCycles()
+{
+#line 814 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
+#line 32503 "hcs12x.cc"
+}
+#line 69 "hcs12x.isa"
+void
+#line 32507 "hcs12x.cc"
+OpMinm::disasm(
+#line 69 "hcs12x.isa"
+ostream&
+#line 32511 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+sink
+#line 32514 "hcs12x.cc"
+)
+{
+#line 816 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{
+
+		sink << "MINM ";
+
+		xb->disasm(sink);
+	}
+#line 32524 "hcs12x.cc"
+}
+#line 63 "hcs12x.isa"
+void
+#line 32528 "hcs12x.cc"
+OpMinm::execute(
+#line 63 "hcs12x.isa"
+CPU *
+#line 32532 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+cpu
+#line 32535 "hcs12x.cc"
+)
+{
+#line 823 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{
+
+		uint8_t aVal = cpu->getRegA();
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+		uint8_t mVal = cpu->memRead8(addr);
+
+		uint8_t min;
+		if (aVal > mVal) { min == mVal; } else { min = aVal; }
+
+		uint8_t result = aVal - mVal;
+
+		cpu->memWrite8(addr, min);
+
+		// N: Set if MSB of result is set; cleared otherwise
+		if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		// Z: Set if result is $00; cleared otherwise
+		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
+		/*
+		* V: A7 • !M7 • !R7 + !A7 • M7 • R7
+		* Set if a two’s complement overflow resulted from the operation; cleared
+		* otherwise
+		*/
+		if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+		/*
+		* C: !A7 • M7 + M7 • R7 + R7 • !A7
+		* Set if the value of the content of memory is larger than the value of the
+		* accumulator; cleared otherwise
+		*/
+		if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+	}
+#line 32570 "hcs12x.cc"
+}
+
+static Operation *DecodeOpMinm(CodeType const& code, uint16_t addr)
+{
+	return new OpMinm(code, addr);
 }
 
 /* ************ Maximum Instructions ************* */
 // EMAND: MAX ((D), (M : M + 1)) ⇒ D
-// EMANM: MAX ((D), (M : M + 1)) ⇒ M : M + 1
-// opcode(EMAXD)-> 0x18 0x1A  opcode(EMAXM)-> 0x18 0x1E
+// opcode(EMAXD)-> 0x18 0x1A
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32583 "hcs12x.cc"
+OpEmaxd::getCycles()
+{
+#line 863 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 32588 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30889 "hcs12x.cc"
-OpEmax_dm::disasm(
+#line 32592 "hcs12x.cc"
+OpEmaxd::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30893 "hcs12x.cc"
+#line 32596 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30896 "hcs12x.cc"
+#line 32599 "hcs12x.cc"
 )
 {
-#line 746 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 865 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
-		if (b == 0) {
-			sink << "EMAXD ";
-			} else {
-			sink << "EMAXM ";
-		}
 
+		sink << "EMAXD ";
 		xb->disasm(sink);
 	}
-#line 30909 "hcs12x.cc"
+#line 32608 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30913 "hcs12x.cc"
-OpEmax_dm::execute(
+#line 32612 "hcs12x.cc"
+OpEmaxd::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 30917 "hcs12x.cc"
+#line 32616 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 30920 "hcs12x.cc"
+#line 32619 "hcs12x.cc"
 )
 {
-#line 756 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 871 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint16_t dVal = cpu->getRegD();
@@ -30932,11 +32631,7 @@ cpu
 
 		uint16_t result = dVal - mVal;
 
-		if (b == 0) {
-			cpu->setRegD(max);
-			} else {
-			cpu->memWrite16(addr, max);
-		}
+		cpu->setRegD(max);
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -30956,54 +32651,142 @@ cpu
 		*/
 		if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 	}
-#line 30960 "hcs12x.cc"
+#line 32655 "hcs12x.cc"
 }
 
-static Operation *DecodeOpEmax_dm(CodeType const& code, uint16_t addr)
+static Operation *DecodeOpEmaxd(CodeType const& code, uint16_t addr)
 {
-	return new OpEmax_dm(code, addr);
+	return new OpEmaxd(code, addr);
+}
+
+// EMANM: MAX ((D), (M : M + 1)) ⇒ M : M + 1
+// opcode(EMAXM)-> 0x18 0x1E
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32667 "hcs12x.cc"
+OpEmaxm::getCycles()
+{
+#line 909 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
+#line 32672 "hcs12x.cc"
+}
+#line 69 "hcs12x.isa"
+void
+#line 32676 "hcs12x.cc"
+OpEmaxm::disasm(
+#line 69 "hcs12x.isa"
+ostream&
+#line 32680 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+sink
+#line 32683 "hcs12x.cc"
+)
+{
+#line 911 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{
+
+		sink << "EMAXM ";
+		xb->disasm(sink);
+	}
+#line 32692 "hcs12x.cc"
+}
+#line 63 "hcs12x.isa"
+void
+#line 32696 "hcs12x.cc"
+OpEmaxm::execute(
+#line 63 "hcs12x.isa"
+CPU *
+#line 32700 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+cpu
+#line 32703 "hcs12x.cc"
+)
+{
+#line 917 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{
+
+		uint16_t dVal = cpu->getRegD();
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+
+		uint16_t mVal = cpu->memRead16(addr);
+
+		uint16_t max;
+		if (mVal > dVal) { max == mVal; } else { max = dVal; }
+
+		uint16_t result = dVal - mVal;
+
+		cpu->memWrite16(addr, max);
+
+		// N: Set if MSB of result is set; cleared otherwise
+		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		// Z: Set if result is $0000; cleared otherwise
+		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
+		/*
+		* V: D15 • !M15 • !R15 + !D15 • M15 • R15
+		* Set if a two’s complement overflow resulted from the operation; cleared
+		* otherwise
+		*/
+		if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+		/*
+		* C: !D15 • M15 + M15 • R15 + R15 • !D15
+		* Set if the value of the content of memory is larger than the value of the
+		* accumulator; cleared otherwise
+		*/
+		if (mVal > dVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+	}
+#line 32739 "hcs12x.cc"
+}
+
+static Operation *DecodeOpEmaxm(CodeType const& code, uint16_t addr)
+{
+	return new OpEmaxm(code, addr);
 }
 
 // MAXA: MAX ((A), (M)) ⇒ A
-// MAXM: MAx ((A), (M)) ⇒ M
-// opcode(MAXA)-> 0x18 0x18  opcode(MAXM)->0x18 0x1C
+// opcode(MAXA)-> 0x18 0x18
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32751 "hcs12x.cc"
+OpMaxa::getCycles()
+{
+#line 956 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
+#line 32756 "hcs12x.cc"
+}
 #line 69 "hcs12x.isa"
 void
-#line 30973 "hcs12x.cc"
-OpMax_am::disasm(
+#line 32760 "hcs12x.cc"
+OpMaxa::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 30977 "hcs12x.cc"
+#line 32764 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 30980 "hcs12x.cc"
+#line 32767 "hcs12x.cc"
 )
 {
-#line 799 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 958 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
-		if (b == 0) {
-			sink << "MAXA ";
-			} else {
-			sink << "MAXM ";
-		}
 
+		sink << "MAXA ";
 		xb->disasm(sink);
 	}
-#line 30993 "hcs12x.cc"
+#line 32776 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 30997 "hcs12x.cc"
-OpMax_am::execute(
+#line 32780 "hcs12x.cc"
+OpMaxa::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31001 "hcs12x.cc"
+#line 32784 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31004 "hcs12x.cc"
+#line 32787 "hcs12x.cc"
 )
 {
-#line 809 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 964 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint8_t aVal = cpu->getRegA();
@@ -31015,11 +32798,7 @@ cpu
 
 		uint8_t result = aVal - mVal;
 
-		if (b == 0) {
-			cpu->setRegA(max);
-			} else {
-			cpu->memWrite8(addr, max);
-		}
+		cpu->setRegA(max);
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -31039,12 +32818,95 @@ cpu
 		*/
 		if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 	}
-#line 31043 "hcs12x.cc"
+#line 32822 "hcs12x.cc"
 }
 
-static Operation *DecodeOpMax_am(CodeType const& code, uint16_t addr)
+static Operation *DecodeOpMaxa(CodeType const& code, uint16_t addr)
 {
-	return new OpMax_am(code, addr);
+	return new OpMaxa(code, addr);
+}
+
+// MAXM: MAx ((A), (M)) ⇒ M
+// opcode(MAXM)->0x18 0x1C
+#line 73 "hcs12x.isa"
+uint8_t
+#line 32834 "hcs12x.cc"
+OpMaxm::getCycles()
+{
+#line 1001 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
+#line 32839 "hcs12x.cc"
+}
+#line 69 "hcs12x.isa"
+void
+#line 32843 "hcs12x.cc"
+OpMaxm::disasm(
+#line 69 "hcs12x.isa"
+ostream&
+#line 32847 "hcs12x.cc"
+#line 69 "hcs12x.isa"
+sink
+#line 32850 "hcs12x.cc"
+)
+{
+#line 1003 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{
+
+		sink << "MAXM ";
+		xb->disasm(sink);
+	}
+#line 32859 "hcs12x.cc"
+}
+#line 63 "hcs12x.isa"
+void
+#line 32863 "hcs12x.cc"
+OpMaxm::execute(
+#line 63 "hcs12x.isa"
+CPU *
+#line 32867 "hcs12x.cc"
+#line 63 "hcs12x.isa"
+cpu
+#line 32870 "hcs12x.cc"
+)
+{
+#line 1009 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+	{
+
+		uint8_t aVal = cpu->getRegA();
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+		uint8_t mVal = cpu->memRead8(addr);
+
+		uint8_t max;
+		if (mVal > aVal) { max == mVal; } else { max = aVal; }
+
+		uint8_t result = aVal - mVal;
+
+		cpu->memWrite8(addr, max);
+
+		// N: Set if MSB of result is set; cleared otherwise
+		if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		// Z: Set if result is $00; cleared otherwise
+		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
+		/*
+		* V: A7 • !M7 • !R7 + !A7 • M7 • R7
+		* Set if a two’s complement overflow resulted from the operation; cleared
+		* otherwise
+		*/
+		if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+		/*
+		* C: !A7 • M7 + M7 • R7 + R7 • !A7
+		* Set if the value of the content of memory is larger than the value of the
+		* accumulator; cleared otherwise
+		*/
+		if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+	}
+#line 32905 "hcs12x.cc"
+}
+
+static Operation *DecodeOpMaxm(CodeType const& code, uint16_t addr)
+{
+	return new OpMaxm(code, addr);
 }
 
 /*
@@ -31083,14 +32945,14 @@ static Operation *DecodeOpMax_am(CodeType const& code, uint16_t addr)
 // ANDA/ANDB  IMM  (regAB & ii => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 31087 "hcs12x.cc"
+#line 32949 "hcs12x.cc"
 OpAnd_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31091 "hcs12x.cc"
+#line 32953 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31094 "hcs12x.cc"
+#line 32956 "hcs12x.cc"
 )
 {
 #line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31102,18 +32964,18 @@ sink
 		}
 		sink << std::hex << opr8i;
 	}
-#line 31106 "hcs12x.cc"
+#line 32968 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31110 "hcs12x.cc"
+#line 32972 "hcs12x.cc"
 OpAnd_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31114 "hcs12x.cc"
+#line 32976 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31117 "hcs12x.cc"
+#line 32979 "hcs12x.cc"
 )
 {
 #line 48 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31141,7 +33003,7 @@ cpu
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 31145 "hcs12x.cc"
+#line 33007 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAnd_ab_imm(CodeType const& code, uint16_t addr)
@@ -31152,14 +33014,14 @@ static Operation *DecodeOpAnd_ab_imm(CodeType const& code, uint16_t addr)
 // ANDA/ANDB  DIR  (regAB & mem[regDirect:opr8a] => regAB)s
 #line 69 "hcs12x.isa"
 void
-#line 31156 "hcs12x.cc"
+#line 33018 "hcs12x.cc"
 OpAnd_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31160 "hcs12x.cc"
+#line 33022 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31163 "hcs12x.cc"
+#line 33025 "hcs12x.cc"
 )
 {
 #line 76 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31171,18 +33033,18 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 31175 "hcs12x.cc"
+#line 33037 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31179 "hcs12x.cc"
+#line 33041 "hcs12x.cc"
 OpAnd_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31183 "hcs12x.cc"
+#line 33045 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31186 "hcs12x.cc"
+#line 33048 "hcs12x.cc"
 )
 {
 #line 85 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31211,7 +33073,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31215 "hcs12x.cc"
+#line 33077 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAnd_ab_dir(CodeType const& code, uint16_t addr)
@@ -31222,14 +33084,14 @@ static Operation *DecodeOpAnd_ab_dir(CodeType const& code, uint16_t addr)
 // ANDA/ANDB EXT (regAB & mem[opr16a] => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 31226 "hcs12x.cc"
+#line 33088 "hcs12x.cc"
 OpAnd_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31230 "hcs12x.cc"
+#line 33092 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31233 "hcs12x.cc"
+#line 33095 "hcs12x.cc"
 )
 {
 #line 114 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31241,18 +33103,18 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 31245 "hcs12x.cc"
+#line 33107 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31249 "hcs12x.cc"
+#line 33111 "hcs12x.cc"
 OpAnd_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31253 "hcs12x.cc"
+#line 33115 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31256 "hcs12x.cc"
+#line 33118 "hcs12x.cc"
 )
 {
 #line 123 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31281,7 +33143,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31285 "hcs12x.cc"
+#line 33147 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAnd_ab_ext(CodeType const& code, uint16_t addr)
@@ -31292,14 +33154,14 @@ static Operation *DecodeOpAnd_ab_ext(CodeType const& code, uint16_t addr)
 // ANDA/ANDB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB & mem[xb->addrE] => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 31296 "hcs12x.cc"
+#line 33158 "hcs12x.cc"
 OpAnd_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31300 "hcs12x.cc"
+#line 33162 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31303 "hcs12x.cc"
+#line 33165 "hcs12x.cc"
 )
 {
 #line 152 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31312,18 +33174,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 31316 "hcs12x.cc"
+#line 33178 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31320 "hcs12x.cc"
+#line 33182 "hcs12x.cc"
 OpAnd_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31324 "hcs12x.cc"
+#line 33186 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31327 "hcs12x.cc"
+#line 33189 "hcs12x.cc"
 )
 {
 #line 162 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31353,7 +33215,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31357 "hcs12x.cc"
+#line 33219 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAnd_ab_idx(CodeType const& code, uint16_t addr)
@@ -31364,14 +33226,14 @@ static Operation *DecodeOpAnd_ab_idx(CodeType const& code, uint16_t addr)
 // ANDCC  IMM  (ccr & ii => ccr)
 #line 69 "hcs12x.isa"
 void
-#line 31368 "hcs12x.cc"
+#line 33230 "hcs12x.cc"
 OpAndcc_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31372 "hcs12x.cc"
+#line 33234 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31375 "hcs12x.cc"
+#line 33237 "hcs12x.cc"
 )
 {
 #line 192 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31379,18 +33241,18 @@ sink
 
 		sink << "ANDCC #$" << std::hex << opr8i;
 	}
-#line 31383 "hcs12x.cc"
+#line 33245 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31387 "hcs12x.cc"
+#line 33249 "hcs12x.cc"
 OpAndcc_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31391 "hcs12x.cc"
+#line 33253 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31394 "hcs12x.cc"
+#line 33256 "hcs12x.cc"
 )
 {
 #line 197 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31404,7 +33266,7 @@ cpu
 		cpu->ccr->setCCRLow(result);
 
 	}
-#line 31408 "hcs12x.cc"
+#line 33270 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAndcc_imm(CodeType const& code, uint16_t addr)
@@ -31415,14 +33277,14 @@ static Operation *DecodeOpAndcc_imm(CodeType const& code, uint16_t addr)
 // ANDX/ANDY IMM (regXY & opr16i => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 31419 "hcs12x.cc"
+#line 33281 "hcs12x.cc"
 OpAnd_xy_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31423 "hcs12x.cc"
+#line 33285 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31426 "hcs12x.cc"
+#line 33288 "hcs12x.cc"
 )
 {
 #line 211 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31435,18 +33297,18 @@ sink
 
 		sink << std::hex << opr16i;
 	}
-#line 31439 "hcs12x.cc"
+#line 33301 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31443 "hcs12x.cc"
+#line 33305 "hcs12x.cc"
 OpAnd_xy_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31447 "hcs12x.cc"
+#line 33309 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31450 "hcs12x.cc"
+#line 33312 "hcs12x.cc"
 )
 {
 #line 221 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31473,7 +33335,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31477 "hcs12x.cc"
+#line 33339 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAnd_xy_imm(CodeType const& code, uint16_t addr)
@@ -31484,14 +33346,14 @@ static Operation *DecodeOpAnd_xy_imm(CodeType const& code, uint16_t addr)
 // ANDX/ANDY DIR (regXY & mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 31488 "hcs12x.cc"
+#line 33350 "hcs12x.cc"
 OpAnd_xy_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31492 "hcs12x.cc"
+#line 33354 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31495 "hcs12x.cc"
+#line 33357 "hcs12x.cc"
 )
 {
 #line 248 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31504,18 +33366,18 @@ sink
 
 		sink << std::hex << opr8a;
 	}
-#line 31508 "hcs12x.cc"
+#line 33370 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31512 "hcs12x.cc"
+#line 33374 "hcs12x.cc"
 OpAnd_xy_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31516 "hcs12x.cc"
+#line 33378 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31519 "hcs12x.cc"
+#line 33381 "hcs12x.cc"
 )
 {
 #line 258 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31544,7 +33406,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31548 "hcs12x.cc"
+#line 33410 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAnd_xy_dir(CodeType const& code, uint16_t addr)
@@ -31555,14 +33417,14 @@ static Operation *DecodeOpAnd_xy_dir(CodeType const& code, uint16_t addr)
 // ANDX/ANDY EXT (regXY & mem[opr16a]:mem[opr16a+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 31559 "hcs12x.cc"
+#line 33421 "hcs12x.cc"
 OpAnd_xy_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31563 "hcs12x.cc"
+#line 33425 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31566 "hcs12x.cc"
+#line 33428 "hcs12x.cc"
 )
 {
 #line 287 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31575,18 +33437,18 @@ sink
 
 		sink << std::hex << opr16a;
 	}
-#line 31579 "hcs12x.cc"
+#line 33441 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31583 "hcs12x.cc"
+#line 33445 "hcs12x.cc"
 OpAnd_xy_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31587 "hcs12x.cc"
+#line 33449 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31590 "hcs12x.cc"
+#line 33452 "hcs12x.cc"
 )
 {
 #line 297 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31615,7 +33477,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31619 "hcs12x.cc"
+#line 33481 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAnd_xy_ext(CodeType const& code, uint16_t addr)
@@ -31626,14 +33488,14 @@ static Operation *DecodeOpAnd_xy_ext(CodeType const& code, uint16_t addr)
 // ANDX/ANDY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY & mem[xb->addrE]:mem[xb->addrE+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 31630 "hcs12x.cc"
+#line 33492 "hcs12x.cc"
 OpAnd_xy_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31634 "hcs12x.cc"
+#line 33496 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31637 "hcs12x.cc"
+#line 33499 "hcs12x.cc"
 )
 {
 #line 326 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31646,18 +33508,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 31650 "hcs12x.cc"
+#line 33512 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31654 "hcs12x.cc"
+#line 33516 "hcs12x.cc"
 OpAnd_xy_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31658 "hcs12x.cc"
+#line 33520 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31661 "hcs12x.cc"
+#line 33523 "hcs12x.cc"
 )
 {
 #line 336 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31686,7 +33548,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31690 "hcs12x.cc"
+#line 33552 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAnd_xy_idx(CodeType const& code, uint16_t addr)
@@ -31697,14 +33559,14 @@ static Operation *DecodeOpAnd_xy_idx(CodeType const& code, uint16_t addr)
 // ORAA/ORAB IMM (regAB or opr8i => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 31701 "hcs12x.cc"
+#line 33563 "hcs12x.cc"
 OpOra_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31705 "hcs12x.cc"
+#line 33567 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31708 "hcs12x.cc"
+#line 33570 "hcs12x.cc"
 )
 {
 #line 366 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31716,18 +33578,18 @@ sink
 		}
 		sink << std::hex << opr8i;
 	}
-#line 31720 "hcs12x.cc"
+#line 33582 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31724 "hcs12x.cc"
+#line 33586 "hcs12x.cc"
 OpOra_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31728 "hcs12x.cc"
+#line 33590 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31731 "hcs12x.cc"
+#line 33593 "hcs12x.cc"
 )
 {
 #line 375 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31755,7 +33617,7 @@ cpu
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	}
-#line 31759 "hcs12x.cc"
+#line 33621 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOra_ab_imm(CodeType const& code, uint16_t addr)
@@ -31766,14 +33628,14 @@ static Operation *DecodeOpOra_ab_imm(CodeType const& code, uint16_t addr)
 // ORAA/ORAB  DIR  (regAB | mem[regDirect:opr8a] => regAB)s
 #line 69 "hcs12x.isa"
 void
-#line 31770 "hcs12x.cc"
+#line 33632 "hcs12x.cc"
 OpOra_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31774 "hcs12x.cc"
+#line 33636 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31777 "hcs12x.cc"
+#line 33639 "hcs12x.cc"
 )
 {
 #line 403 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31785,18 +33647,18 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 31789 "hcs12x.cc"
+#line 33651 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31793 "hcs12x.cc"
+#line 33655 "hcs12x.cc"
 OpOra_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31797 "hcs12x.cc"
+#line 33659 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31800 "hcs12x.cc"
+#line 33662 "hcs12x.cc"
 )
 {
 #line 412 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31825,7 +33687,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31829 "hcs12x.cc"
+#line 33691 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOra_ab_dir(CodeType const& code, uint16_t addr)
@@ -31836,14 +33698,14 @@ static Operation *DecodeOpOra_ab_dir(CodeType const& code, uint16_t addr)
 // ORAA/ORAB EXT (regAB | mem[opr16a] => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 31840 "hcs12x.cc"
+#line 33702 "hcs12x.cc"
 OpOra_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31844 "hcs12x.cc"
+#line 33706 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31847 "hcs12x.cc"
+#line 33709 "hcs12x.cc"
 )
 {
 #line 441 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31855,18 +33717,18 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 31859 "hcs12x.cc"
+#line 33721 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31863 "hcs12x.cc"
+#line 33725 "hcs12x.cc"
 OpOra_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31867 "hcs12x.cc"
+#line 33729 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31870 "hcs12x.cc"
+#line 33732 "hcs12x.cc"
 )
 {
 #line 450 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31895,7 +33757,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31899 "hcs12x.cc"
+#line 33761 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOra_ab_ext(CodeType const& code, uint16_t addr)
@@ -31906,14 +33768,14 @@ static Operation *DecodeOpOra_ab_ext(CodeType const& code, uint16_t addr)
 // ORAA/ORAB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB | mem[xb->addrE] => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 31910 "hcs12x.cc"
+#line 33772 "hcs12x.cc"
 OpOra_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31914 "hcs12x.cc"
+#line 33776 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31917 "hcs12x.cc"
+#line 33779 "hcs12x.cc"
 )
 {
 #line 479 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31926,18 +33788,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 31930 "hcs12x.cc"
+#line 33792 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 31934 "hcs12x.cc"
+#line 33796 "hcs12x.cc"
 OpOra_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 31938 "hcs12x.cc"
+#line 33800 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 31941 "hcs12x.cc"
+#line 33803 "hcs12x.cc"
 )
 {
 #line 489 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31967,7 +33829,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 31971 "hcs12x.cc"
+#line 33833 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOra_ab_idx(CodeType const& code, uint16_t addr)
@@ -31978,14 +33840,14 @@ static Operation *DecodeOpOra_ab_idx(CodeType const& code, uint16_t addr)
 // ORCC  IMM  (ccr & ii => ccr)
 #line 69 "hcs12x.isa"
 void
-#line 31982 "hcs12x.cc"
+#line 33844 "hcs12x.cc"
 OpOrcc_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 31986 "hcs12x.cc"
+#line 33848 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 31989 "hcs12x.cc"
+#line 33851 "hcs12x.cc"
 )
 {
 #line 519 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -31993,18 +33855,18 @@ sink
 
 		sink << "ORCC #$" << std::hex << opr8i;
 	}
-#line 31997 "hcs12x.cc"
+#line 33859 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32001 "hcs12x.cc"
+#line 33863 "hcs12x.cc"
 OpOrcc_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32005 "hcs12x.cc"
+#line 33867 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32008 "hcs12x.cc"
+#line 33870 "hcs12x.cc"
 )
 {
 #line 524 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32022,7 +33884,7 @@ cpu
 		cpu->ccr->setCCRLow(result);
 
 	}
-#line 32026 "hcs12x.cc"
+#line 33888 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOrcc_imm(CodeType const& code, uint16_t addr)
@@ -32041,14 +33903,14 @@ static Operation *DecodeOpOrcc_imm(CodeType const& code, uint16_t addr)
 // ORX/ORY IMM (regXY | opr16i => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 32045 "hcs12x.cc"
+#line 33907 "hcs12x.cc"
 OpOr_xy_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32049 "hcs12x.cc"
+#line 33911 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32052 "hcs12x.cc"
+#line 33914 "hcs12x.cc"
 )
 {
 #line 556 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32061,18 +33923,18 @@ sink
 
 		sink << std::hex << opr16i;
 	}
-#line 32065 "hcs12x.cc"
+#line 33927 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32069 "hcs12x.cc"
+#line 33931 "hcs12x.cc"
 OpOr_xy_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32073 "hcs12x.cc"
+#line 33935 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32076 "hcs12x.cc"
+#line 33938 "hcs12x.cc"
 )
 {
 #line 566 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32099,7 +33961,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32103 "hcs12x.cc"
+#line 33965 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOr_xy_imm(CodeType const& code, uint16_t addr)
@@ -32110,14 +33972,14 @@ static Operation *DecodeOpOr_xy_imm(CodeType const& code, uint16_t addr)
 // ORX/ORY DIR (regXY | mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 32114 "hcs12x.cc"
+#line 33976 "hcs12x.cc"
 OpOr_xy_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32118 "hcs12x.cc"
+#line 33980 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32121 "hcs12x.cc"
+#line 33983 "hcs12x.cc"
 )
 {
 #line 593 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32130,18 +33992,18 @@ sink
 
 		sink << std::hex << opr8a;
 	}
-#line 32134 "hcs12x.cc"
+#line 33996 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32138 "hcs12x.cc"
+#line 34000 "hcs12x.cc"
 OpOr_xy_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32142 "hcs12x.cc"
+#line 34004 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32145 "hcs12x.cc"
+#line 34007 "hcs12x.cc"
 )
 {
 #line 603 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32170,7 +34032,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32174 "hcs12x.cc"
+#line 34036 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOr_xy_dir(CodeType const& code, uint16_t addr)
@@ -32181,14 +34043,14 @@ static Operation *DecodeOpOr_xy_dir(CodeType const& code, uint16_t addr)
 // ORX/ORY EXT (regXY | mem[opr16a]:mem[opr16a+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 32185 "hcs12x.cc"
+#line 34047 "hcs12x.cc"
 OpOr_xy_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32189 "hcs12x.cc"
+#line 34051 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32192 "hcs12x.cc"
+#line 34054 "hcs12x.cc"
 )
 {
 #line 632 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32201,18 +34063,18 @@ sink
 
 		sink << std::hex << opr16a;
 	}
-#line 32205 "hcs12x.cc"
+#line 34067 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32209 "hcs12x.cc"
+#line 34071 "hcs12x.cc"
 OpOr_xy_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32213 "hcs12x.cc"
+#line 34075 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32216 "hcs12x.cc"
+#line 34078 "hcs12x.cc"
 )
 {
 #line 642 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32241,7 +34103,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32245 "hcs12x.cc"
+#line 34107 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOr_xy_ext(CodeType const& code, uint16_t addr)
@@ -32252,14 +34114,14 @@ static Operation *DecodeOpOr_xy_ext(CodeType const& code, uint16_t addr)
 // ORX/ORY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY | mem[xb->addrE]:mem[xb->addrE+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 32256 "hcs12x.cc"
+#line 34118 "hcs12x.cc"
 OpOr_xy_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32260 "hcs12x.cc"
+#line 34122 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32263 "hcs12x.cc"
+#line 34125 "hcs12x.cc"
 )
 {
 #line 671 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32272,18 +34134,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 32276 "hcs12x.cc"
+#line 34138 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32280 "hcs12x.cc"
+#line 34142 "hcs12x.cc"
 OpOr_xy_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32284 "hcs12x.cc"
+#line 34146 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32287 "hcs12x.cc"
+#line 34149 "hcs12x.cc"
 )
 {
 #line 681 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32312,7 +34174,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32316 "hcs12x.cc"
+#line 34178 "hcs12x.cc"
 }
 
 static Operation *DecodeOpOr_xy_idx(CodeType const& code, uint16_t addr)
@@ -32323,14 +34185,14 @@ static Operation *DecodeOpOr_xy_idx(CodeType const& code, uint16_t addr)
 // EORA/EORB IMM (regAB ^ opr8i => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 32327 "hcs12x.cc"
+#line 34189 "hcs12x.cc"
 OpEor_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32331 "hcs12x.cc"
+#line 34193 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32334 "hcs12x.cc"
+#line 34196 "hcs12x.cc"
 )
 {
 #line 711 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32342,18 +34204,18 @@ sink
 		}
 		sink << std::hex << opr8i;
 	}
-#line 32346 "hcs12x.cc"
+#line 34208 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32350 "hcs12x.cc"
+#line 34212 "hcs12x.cc"
 OpEor_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32354 "hcs12x.cc"
+#line 34216 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32357 "hcs12x.cc"
+#line 34219 "hcs12x.cc"
 )
 {
 #line 720 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32380,7 +34242,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32384 "hcs12x.cc"
+#line 34246 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEor_ab_imm(CodeType const& code, uint16_t addr)
@@ -32391,14 +34253,14 @@ static Operation *DecodeOpEor_ab_imm(CodeType const& code, uint16_t addr)
 // EORA/EORB  DIR  (regAB ^ mem[regDirect:opr8a] => regAB)s
 #line 69 "hcs12x.isa"
 void
-#line 32395 "hcs12x.cc"
+#line 34257 "hcs12x.cc"
 OpEor_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32399 "hcs12x.cc"
+#line 34261 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32402 "hcs12x.cc"
+#line 34264 "hcs12x.cc"
 )
 {
 #line 747 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32410,18 +34272,18 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 32414 "hcs12x.cc"
+#line 34276 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32418 "hcs12x.cc"
+#line 34280 "hcs12x.cc"
 OpEor_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32422 "hcs12x.cc"
+#line 34284 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32425 "hcs12x.cc"
+#line 34287 "hcs12x.cc"
 )
 {
 #line 756 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32450,7 +34312,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32454 "hcs12x.cc"
+#line 34316 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEor_ab_dir(CodeType const& code, uint16_t addr)
@@ -32461,14 +34323,14 @@ static Operation *DecodeOpEor_ab_dir(CodeType const& code, uint16_t addr)
 // EORA/EORB EXT (regAB ^ mem[opr16a] => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 32465 "hcs12x.cc"
+#line 34327 "hcs12x.cc"
 OpEor_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32469 "hcs12x.cc"
+#line 34331 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32472 "hcs12x.cc"
+#line 34334 "hcs12x.cc"
 )
 {
 #line 785 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32480,18 +34342,18 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 32484 "hcs12x.cc"
+#line 34346 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32488 "hcs12x.cc"
+#line 34350 "hcs12x.cc"
 OpEor_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32492 "hcs12x.cc"
+#line 34354 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32495 "hcs12x.cc"
+#line 34357 "hcs12x.cc"
 )
 {
 #line 794 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32520,7 +34382,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32524 "hcs12x.cc"
+#line 34386 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEor_ab_ext(CodeType const& code, uint16_t addr)
@@ -32531,14 +34393,14 @@ static Operation *DecodeOpEor_ab_ext(CodeType const& code, uint16_t addr)
 // EORA/EORB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB ^ mem[xb->addrE] => regAB)
 #line 69 "hcs12x.isa"
 void
-#line 32535 "hcs12x.cc"
+#line 34397 "hcs12x.cc"
 OpEor_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32539 "hcs12x.cc"
+#line 34401 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32542 "hcs12x.cc"
+#line 34404 "hcs12x.cc"
 )
 {
 #line 823 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32551,18 +34413,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 32555 "hcs12x.cc"
+#line 34417 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32559 "hcs12x.cc"
+#line 34421 "hcs12x.cc"
 OpEor_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32563 "hcs12x.cc"
+#line 34425 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32566 "hcs12x.cc"
+#line 34428 "hcs12x.cc"
 )
 {
 #line 833 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32592,7 +34454,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32596 "hcs12x.cc"
+#line 34458 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEor_ab_idx(CodeType const& code, uint16_t addr)
@@ -32603,14 +34465,14 @@ static Operation *DecodeOpEor_ab_idx(CodeType const& code, uint16_t addr)
 // EORX/EORY IMM (regXY ^ opr16i => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 32607 "hcs12x.cc"
+#line 34469 "hcs12x.cc"
 OpEor_xy_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32611 "hcs12x.cc"
+#line 34473 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32614 "hcs12x.cc"
+#line 34476 "hcs12x.cc"
 )
 {
 #line 863 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32623,18 +34485,18 @@ sink
 
 		sink << std::hex << opr16i;
 	}
-#line 32627 "hcs12x.cc"
+#line 34489 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32631 "hcs12x.cc"
+#line 34493 "hcs12x.cc"
 OpEor_xy_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32635 "hcs12x.cc"
+#line 34497 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32638 "hcs12x.cc"
+#line 34500 "hcs12x.cc"
 )
 {
 #line 873 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32661,7 +34523,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32665 "hcs12x.cc"
+#line 34527 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEor_xy_imm(CodeType const& code, uint16_t addr)
@@ -32672,14 +34534,14 @@ static Operation *DecodeOpEor_xy_imm(CodeType const& code, uint16_t addr)
 // EORX/EORY DIR (regXY ^ mem[regDirect:opr8a]:mem[regDirect:opr8a+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 32676 "hcs12x.cc"
+#line 34538 "hcs12x.cc"
 OpEor_xy_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32680 "hcs12x.cc"
+#line 34542 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32683 "hcs12x.cc"
+#line 34545 "hcs12x.cc"
 )
 {
 #line 900 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32692,18 +34554,18 @@ sink
 
 		sink << std::hex << opr8a;
 	}
-#line 32696 "hcs12x.cc"
+#line 34558 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32700 "hcs12x.cc"
+#line 34562 "hcs12x.cc"
 OpEor_xy_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32704 "hcs12x.cc"
+#line 34566 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32707 "hcs12x.cc"
+#line 34569 "hcs12x.cc"
 )
 {
 #line 910 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32732,7 +34594,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32736 "hcs12x.cc"
+#line 34598 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEor_xy_dir(CodeType const& code, uint16_t addr)
@@ -32743,14 +34605,14 @@ static Operation *DecodeOpEor_xy_dir(CodeType const& code, uint16_t addr)
 // EORX/EORY EXT (regXY ^ mem[opr16a]:mem[opr16a+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 32747 "hcs12x.cc"
+#line 34609 "hcs12x.cc"
 OpEor_xy_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32751 "hcs12x.cc"
+#line 34613 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32754 "hcs12x.cc"
+#line 34616 "hcs12x.cc"
 )
 {
 #line 939 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32763,18 +34625,18 @@ sink
 
 		sink << std::hex << opr16a;
 	}
-#line 32767 "hcs12x.cc"
+#line 34629 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32771 "hcs12x.cc"
+#line 34633 "hcs12x.cc"
 OpEor_xy_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32775 "hcs12x.cc"
+#line 34637 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32778 "hcs12x.cc"
+#line 34640 "hcs12x.cc"
 )
 {
 #line 949 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32803,7 +34665,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32807 "hcs12x.cc"
+#line 34669 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEor_xy_ext(CodeType const& code, uint16_t addr)
@@ -32814,14 +34676,14 @@ static Operation *DecodeOpEor_xy_ext(CodeType const& code, uint16_t addr)
 // EORX/EORY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY ^ mem[xb->addrE]:mem[xb->addrE+1] => regXY)
 #line 69 "hcs12x.isa"
 void
-#line 32818 "hcs12x.cc"
+#line 34680 "hcs12x.cc"
 OpEor_xy_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32822 "hcs12x.cc"
+#line 34684 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32825 "hcs12x.cc"
+#line 34687 "hcs12x.cc"
 )
 {
 #line 978 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32834,18 +34696,18 @@ sink
 
 		xb->disasm(sink);
 	}
-#line 32838 "hcs12x.cc"
+#line 34700 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32842 "hcs12x.cc"
+#line 34704 "hcs12x.cc"
 OpEor_xy_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32846 "hcs12x.cc"
+#line 34708 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32849 "hcs12x.cc"
+#line 34711 "hcs12x.cc"
 )
 {
 #line 988 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
@@ -32874,7 +34736,7 @@ cpu
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 	}
-#line 32878 "hcs12x.cc"
+#line 34740 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEor_xy_idx(CodeType const& code, uint16_t addr)
@@ -32919,39 +34781,39 @@ static Operation *DecodeOpEor_xy_idx(CodeType const& code, uint16_t addr)
 // CLC: clear bit C
 #line 69 "hcs12x.isa"
 void
-#line 32923 "hcs12x.cc"
+#line 34785 "hcs12x.cc"
 OpClc::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32927 "hcs12x.cc"
+#line 34789 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32930 "hcs12x.cc"
+#line 34792 "hcs12x.cc"
 )
 {
 #line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLC";
 	}
-#line 32937 "hcs12x.cc"
+#line 34799 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32941 "hcs12x.cc"
+#line 34803 "hcs12x.cc"
 OpClc::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32945 "hcs12x.cc"
+#line 34807 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32948 "hcs12x.cc"
+#line 34810 "hcs12x.cc"
 )
 {
 #line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		cpu->ccr->clrC();
 	}
-#line 32955 "hcs12x.cc"
+#line 34817 "hcs12x.cc"
 }
 
 static Operation *DecodeOpClc(CodeType const& code, uint16_t addr)
@@ -32962,39 +34824,39 @@ static Operation *DecodeOpClc(CodeType const& code, uint16_t addr)
 // CLI: clear bit I
 #line 69 "hcs12x.isa"
 void
-#line 32966 "hcs12x.cc"
+#line 34828 "hcs12x.cc"
 OpCli::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 32970 "hcs12x.cc"
+#line 34832 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 32973 "hcs12x.cc"
+#line 34835 "hcs12x.cc"
 )
 {
 #line 52 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLI";
 	}
-#line 32980 "hcs12x.cc"
+#line 34842 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 32984 "hcs12x.cc"
+#line 34846 "hcs12x.cc"
 OpCli::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 32988 "hcs12x.cc"
+#line 34850 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 32991 "hcs12x.cc"
+#line 34853 "hcs12x.cc"
 )
 {
 #line 56 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		cpu->ccr->clrI();
 	}
-#line 32998 "hcs12x.cc"
+#line 34860 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCli(CodeType const& code, uint16_t addr)
@@ -33005,39 +34867,39 @@ static Operation *DecodeOpCli(CodeType const& code, uint16_t addr)
 // CLV: clear bit V
 #line 69 "hcs12x.isa"
 void
-#line 33009 "hcs12x.cc"
+#line 34871 "hcs12x.cc"
 OpClv::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33013 "hcs12x.cc"
+#line 34875 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33016 "hcs12x.cc"
+#line 34878 "hcs12x.cc"
 )
 {
 #line 63 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLV";
 	}
-#line 33023 "hcs12x.cc"
+#line 34885 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33027 "hcs12x.cc"
+#line 34889 "hcs12x.cc"
 OpClv::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33031 "hcs12x.cc"
+#line 34893 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33034 "hcs12x.cc"
+#line 34896 "hcs12x.cc"
 )
 {
 #line 67 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		cpu->ccr->clrV();
 	}
-#line 33041 "hcs12x.cc"
+#line 34903 "hcs12x.cc"
 }
 
 static Operation *DecodeOpClv(CodeType const& code, uint16_t addr)
@@ -33048,32 +34910,32 @@ static Operation *DecodeOpClv(CodeType const& code, uint16_t addr)
 // clear Memory
 #line 69 "hcs12x.isa"
 void
-#line 33052 "hcs12x.cc"
+#line 34914 "hcs12x.cc"
 OpClr_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33056 "hcs12x.cc"
+#line 34918 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33059 "hcs12x.cc"
+#line 34921 "hcs12x.cc"
 )
 {
 #line 74 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLR $" << std::hex << opr16a;
 	}
-#line 33066 "hcs12x.cc"
+#line 34928 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33070 "hcs12x.cc"
+#line 34932 "hcs12x.cc"
 OpClr_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33074 "hcs12x.cc"
+#line 34936 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33077 "hcs12x.cc"
+#line 34939 "hcs12x.cc"
 )
 {
 #line 78 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33086,7 +34948,7 @@ cpu
 		cpu->ccr->clrV();
 		cpu->ccr->clrC();
 	}
-#line 33090 "hcs12x.cc"
+#line 34952 "hcs12x.cc"
 }
 
 static Operation *DecodeOpClr_ext(CodeType const& code, uint16_t addr)
@@ -33096,14 +34958,14 @@ static Operation *DecodeOpClr_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33100 "hcs12x.cc"
+#line 34962 "hcs12x.cc"
 OpClr_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33104 "hcs12x.cc"
+#line 34966 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33107 "hcs12x.cc"
+#line 34969 "hcs12x.cc"
 )
 {
 #line 90 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33111,18 +34973,18 @@ sink
 		sink << "CLR ";
 		xb->disasm(sink);
 	}
-#line 33115 "hcs12x.cc"
+#line 34977 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33119 "hcs12x.cc"
+#line 34981 "hcs12x.cc"
 OpClr_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33123 "hcs12x.cc"
+#line 34985 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33126 "hcs12x.cc"
+#line 34988 "hcs12x.cc"
 )
 {
 #line 95 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33135,7 +34997,7 @@ cpu
 		cpu->ccr->clrV();
 		cpu->ccr->clrC();
 	}
-#line 33139 "hcs12x.cc"
+#line 35001 "hcs12x.cc"
 }
 
 static Operation *DecodeOpClr_idx(CodeType const& code, uint16_t addr)
@@ -33145,32 +35007,32 @@ static Operation *DecodeOpClr_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33149 "hcs12x.cc"
+#line 35011 "hcs12x.cc"
 OpClrw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33153 "hcs12x.cc"
+#line 35015 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33156 "hcs12x.cc"
+#line 35018 "hcs12x.cc"
 )
 {
 #line 107 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLRW $" << std::hex << opr16a;
 	}
-#line 33163 "hcs12x.cc"
+#line 35025 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33167 "hcs12x.cc"
+#line 35029 "hcs12x.cc"
 OpClrw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33171 "hcs12x.cc"
+#line 35033 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33174 "hcs12x.cc"
+#line 35036 "hcs12x.cc"
 )
 {
 #line 111 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33183,7 +35045,7 @@ cpu
 		cpu->ccr->clrV();
 		cpu->ccr->clrC();
 	}
-#line 33187 "hcs12x.cc"
+#line 35049 "hcs12x.cc"
 }
 
 static Operation *DecodeOpClrw_ext(CodeType const& code, uint16_t addr)
@@ -33193,14 +35055,14 @@ static Operation *DecodeOpClrw_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33197 "hcs12x.cc"
+#line 35059 "hcs12x.cc"
 OpClrw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33201 "hcs12x.cc"
+#line 35063 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33204 "hcs12x.cc"
+#line 35066 "hcs12x.cc"
 )
 {
 #line 123 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33208,18 +35070,18 @@ sink
 		sink << "CLRW ";
 		xb->disasm(sink);
 	}
-#line 33212 "hcs12x.cc"
+#line 35074 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33216 "hcs12x.cc"
+#line 35078 "hcs12x.cc"
 OpClrw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33220 "hcs12x.cc"
+#line 35082 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33223 "hcs12x.cc"
+#line 35085 "hcs12x.cc"
 )
 {
 #line 128 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33232,7 +35094,7 @@ cpu
 		cpu->ccr->clrV();
 		cpu->ccr->clrC();
 	}
-#line 33236 "hcs12x.cc"
+#line 35098 "hcs12x.cc"
 }
 
 static Operation *DecodeOpClrw_idx(CodeType const& code, uint16_t addr)
@@ -33242,14 +35104,14 @@ static Operation *DecodeOpClrw_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33246 "hcs12x.cc"
+#line 35108 "hcs12x.cc"
 OpClr_ab::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33250 "hcs12x.cc"
+#line 35112 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33253 "hcs12x.cc"
+#line 35115 "hcs12x.cc"
 )
 {
 #line 140 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33260,18 +35122,18 @@ sink
 			sink << "CLRB";
 		}
 	}
-#line 33264 "hcs12x.cc"
+#line 35126 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33268 "hcs12x.cc"
+#line 35130 "hcs12x.cc"
 OpClr_ab::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33272 "hcs12x.cc"
+#line 35134 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33275 "hcs12x.cc"
+#line 35137 "hcs12x.cc"
 )
 {
 #line 148 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33288,7 +35150,7 @@ cpu
 		cpu->ccr->clrV();
 		cpu->ccr->clrC();
 	}
-#line 33292 "hcs12x.cc"
+#line 35154 "hcs12x.cc"
 }
 
 static Operation *DecodeOpClr_ab(CodeType const& code, uint16_t addr)
@@ -33298,14 +35160,14 @@ static Operation *DecodeOpClr_ab(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33302 "hcs12x.cc"
+#line 35164 "hcs12x.cc"
 OpClr_xy::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33306 "hcs12x.cc"
+#line 35168 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33309 "hcs12x.cc"
+#line 35171 "hcs12x.cc"
 )
 {
 #line 164 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33316,18 +35178,18 @@ sink
 			sink << "CLRY";
 		}
 	}
-#line 33320 "hcs12x.cc"
+#line 35182 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33324 "hcs12x.cc"
+#line 35186 "hcs12x.cc"
 OpClr_xy::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33328 "hcs12x.cc"
+#line 35190 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33331 "hcs12x.cc"
+#line 35193 "hcs12x.cc"
 )
 {
 #line 172 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33344,7 +35206,7 @@ cpu
 		cpu->ccr->clrV();
 		cpu->ccr->clrC();
 	}
-#line 33348 "hcs12x.cc"
+#line 35210 "hcs12x.cc"
 }
 
 static Operation *DecodeOpClr_xy(CodeType const& code, uint16_t addr)
@@ -33355,32 +35217,32 @@ static Operation *DecodeOpClr_xy(CodeType const& code, uint16_t addr)
 // COM: One's complement memory Location
 #line 69 "hcs12x.isa"
 void
-#line 33359 "hcs12x.cc"
+#line 35221 "hcs12x.cc"
 OpCom_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33363 "hcs12x.cc"
+#line 35225 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33366 "hcs12x.cc"
+#line 35228 "hcs12x.cc"
 )
 {
 #line 189 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "COM $" << std::hex << opr16a;
 	}
-#line 33373 "hcs12x.cc"
+#line 35235 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33377 "hcs12x.cc"
+#line 35239 "hcs12x.cc"
 OpCom_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33381 "hcs12x.cc"
+#line 35243 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33384 "hcs12x.cc"
+#line 35246 "hcs12x.cc"
 )
 {
 #line 193 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33394,7 +35256,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 	}
-#line 33398 "hcs12x.cc"
+#line 35260 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCom_ext(CodeType const& code, uint16_t addr)
@@ -33404,14 +35266,14 @@ static Operation *DecodeOpCom_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33408 "hcs12x.cc"
+#line 35270 "hcs12x.cc"
 OpCom_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33412 "hcs12x.cc"
+#line 35274 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33415 "hcs12x.cc"
+#line 35277 "hcs12x.cc"
 )
 {
 #line 206 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33419,18 +35281,18 @@ sink
 		sink << "COM ";
 		xb->disasm(sink);
 	}
-#line 33423 "hcs12x.cc"
+#line 35285 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33427 "hcs12x.cc"
+#line 35289 "hcs12x.cc"
 OpCom_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33431 "hcs12x.cc"
+#line 35293 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33434 "hcs12x.cc"
+#line 35296 "hcs12x.cc"
 )
 {
 #line 211 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33445,7 +35307,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 	}
-#line 33449 "hcs12x.cc"
+#line 35311 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCom_idx(CodeType const& code, uint16_t addr)
@@ -33455,14 +35317,14 @@ static Operation *DecodeOpCom_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33459 "hcs12x.cc"
+#line 35321 "hcs12x.cc"
 OpCom_ab::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33463 "hcs12x.cc"
+#line 35325 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33466 "hcs12x.cc"
+#line 35328 "hcs12x.cc"
 )
 {
 #line 225 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33473,18 +35335,18 @@ sink
 			sink << "COMB";
 		}
 	}
-#line 33477 "hcs12x.cc"
+#line 35339 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33481 "hcs12x.cc"
+#line 35343 "hcs12x.cc"
 OpCom_ab::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33485 "hcs12x.cc"
+#line 35347 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33488 "hcs12x.cc"
+#line 35350 "hcs12x.cc"
 )
 {
 #line 233 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33510,7 +35372,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 	}
-#line 33514 "hcs12x.cc"
+#line 35376 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCom_ab(CodeType const& code, uint16_t addr)
@@ -33520,32 +35382,32 @@ static Operation *DecodeOpCom_ab(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33524 "hcs12x.cc"
+#line 35386 "hcs12x.cc"
 OpComw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33528 "hcs12x.cc"
+#line 35390 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33531 "hcs12x.cc"
+#line 35393 "hcs12x.cc"
 )
 {
 #line 258 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "COMW $" << std::hex << opr16a;
 	}
-#line 33538 "hcs12x.cc"
+#line 35400 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33542 "hcs12x.cc"
+#line 35404 "hcs12x.cc"
 OpComw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33546 "hcs12x.cc"
+#line 35408 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33549 "hcs12x.cc"
+#line 35411 "hcs12x.cc"
 )
 {
 #line 262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33559,7 +35421,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 	}
-#line 33563 "hcs12x.cc"
+#line 35425 "hcs12x.cc"
 }
 
 static Operation *DecodeOpComw_ext(CodeType const& code, uint16_t addr)
@@ -33569,14 +35431,14 @@ static Operation *DecodeOpComw_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33573 "hcs12x.cc"
+#line 35435 "hcs12x.cc"
 OpComw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33577 "hcs12x.cc"
+#line 35439 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33580 "hcs12x.cc"
+#line 35442 "hcs12x.cc"
 )
 {
 #line 275 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33584,18 +35446,18 @@ sink
 		sink << "COMW ";
 		xb->disasm(sink);
 	}
-#line 33588 "hcs12x.cc"
+#line 35450 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33592 "hcs12x.cc"
+#line 35454 "hcs12x.cc"
 OpComw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33596 "hcs12x.cc"
+#line 35458 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33599 "hcs12x.cc"
+#line 35461 "hcs12x.cc"
 )
 {
 #line 280 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33610,7 +35472,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 	}
-#line 33614 "hcs12x.cc"
+#line 35476 "hcs12x.cc"
 }
 
 static Operation *DecodeOpComw_idx(CodeType const& code, uint16_t addr)
@@ -33620,14 +35482,14 @@ static Operation *DecodeOpComw_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33624 "hcs12x.cc"
+#line 35486 "hcs12x.cc"
 OpCom_xy::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33628 "hcs12x.cc"
+#line 35490 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33631 "hcs12x.cc"
+#line 35493 "hcs12x.cc"
 )
 {
 #line 294 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33638,18 +35500,18 @@ sink
 			sink << "COMY";
 		}
 	}
-#line 33642 "hcs12x.cc"
+#line 35504 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33646 "hcs12x.cc"
+#line 35508 "hcs12x.cc"
 OpCom_xy::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33650 "hcs12x.cc"
+#line 35512 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33653 "hcs12x.cc"
+#line 35515 "hcs12x.cc"
 )
 {
 #line 302 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33675,7 +35537,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
 	}
-#line 33679 "hcs12x.cc"
+#line 35541 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCom_xy(CodeType const& code, uint16_t addr)
@@ -33686,32 +35548,32 @@ static Operation *DecodeOpCom_xy(CodeType const& code, uint16_t addr)
 // NEG: Two's Complement Negate
 #line 69 "hcs12x.isa"
 void
-#line 33690 "hcs12x.cc"
+#line 35552 "hcs12x.cc"
 OpNeg_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33694 "hcs12x.cc"
+#line 35556 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33697 "hcs12x.cc"
+#line 35559 "hcs12x.cc"
 )
 {
 #line 328 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "NEG $" << std::hex << opr16a;
 	}
-#line 33704 "hcs12x.cc"
+#line 35566 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33708 "hcs12x.cc"
+#line 35570 "hcs12x.cc"
 OpNeg_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33712 "hcs12x.cc"
+#line 35574 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33715 "hcs12x.cc"
+#line 35577 "hcs12x.cc"
 )
 {
 #line 332 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33726,7 +35588,7 @@ cpu
 		if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 		if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();}
 	}
-#line 33730 "hcs12x.cc"
+#line 35592 "hcs12x.cc"
 }
 
 static Operation *DecodeOpNeg_ext(CodeType const& code, uint16_t addr)
@@ -33736,14 +35598,14 @@ static Operation *DecodeOpNeg_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33740 "hcs12x.cc"
+#line 35602 "hcs12x.cc"
 OpNeg_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33744 "hcs12x.cc"
+#line 35606 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33747 "hcs12x.cc"
+#line 35609 "hcs12x.cc"
 )
 {
 #line 346 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33751,18 +35613,18 @@ sink
 		sink << "NEG $";
 		xb->disasm(sink);
 	}
-#line 33755 "hcs12x.cc"
+#line 35617 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33759 "hcs12x.cc"
+#line 35621 "hcs12x.cc"
 OpNeg_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33763 "hcs12x.cc"
+#line 35625 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33766 "hcs12x.cc"
+#line 35628 "hcs12x.cc"
 )
 {
 #line 351 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33780,7 +35642,7 @@ cpu
 		if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();}
 
 	}
-#line 33784 "hcs12x.cc"
+#line 35646 "hcs12x.cc"
 }
 
 static Operation *DecodeOpNeg_idx(CodeType const& code, uint16_t addr)
@@ -33790,14 +35652,14 @@ static Operation *DecodeOpNeg_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33794 "hcs12x.cc"
+#line 35656 "hcs12x.cc"
 OpNeg_ab::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33798 "hcs12x.cc"
+#line 35660 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33801 "hcs12x.cc"
+#line 35663 "hcs12x.cc"
 )
 {
 #line 368 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33808,18 +35670,18 @@ sink
 			sink << "NEGB";
 		}
 	}
-#line 33812 "hcs12x.cc"
+#line 35674 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33816 "hcs12x.cc"
+#line 35678 "hcs12x.cc"
 OpNeg_ab::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33820 "hcs12x.cc"
+#line 35682 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33823 "hcs12x.cc"
+#line 35685 "hcs12x.cc"
 )
 {
 #line 376 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33845,7 +35707,7 @@ cpu
 		if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 		if ((result & 0x80) == 0x80) {cpu->ccr->setN();} else { cpu->ccr->clrN();}
 	}
-#line 33849 "hcs12x.cc"
+#line 35711 "hcs12x.cc"
 }
 
 static Operation *DecodeOpNeg_ab(CodeType const& code, uint16_t addr)
@@ -33855,32 +35717,32 @@ static Operation *DecodeOpNeg_ab(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33859 "hcs12x.cc"
+#line 35721 "hcs12x.cc"
 OpNegw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33863 "hcs12x.cc"
+#line 35725 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33866 "hcs12x.cc"
+#line 35728 "hcs12x.cc"
 )
 {
 #line 401 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "NEGW $" << std::hex << opr16a;
 	}
-#line 33873 "hcs12x.cc"
+#line 35735 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33877 "hcs12x.cc"
+#line 35739 "hcs12x.cc"
 OpNegw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33881 "hcs12x.cc"
+#line 35743 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33884 "hcs12x.cc"
+#line 35746 "hcs12x.cc"
 )
 {
 #line 405 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33898,7 +35760,7 @@ cpu
 		if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 		if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();}
 	}
-#line 33902 "hcs12x.cc"
+#line 35764 "hcs12x.cc"
 }
 
 static Operation *DecodeOpNegw_ext(CodeType const& code, uint16_t addr)
@@ -33908,14 +35770,14 @@ static Operation *DecodeOpNegw_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33912 "hcs12x.cc"
+#line 35774 "hcs12x.cc"
 OpNegw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33916 "hcs12x.cc"
+#line 35778 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33919 "hcs12x.cc"
+#line 35781 "hcs12x.cc"
 )
 {
 #line 422 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33923,18 +35785,18 @@ sink
 		sink << "NEGW $";
 		xb->disasm(sink);
 	}
-#line 33927 "hcs12x.cc"
+#line 35789 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33931 "hcs12x.cc"
+#line 35793 "hcs12x.cc"
 OpNegw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33935 "hcs12x.cc"
+#line 35797 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33938 "hcs12x.cc"
+#line 35800 "hcs12x.cc"
 )
 {
 #line 427 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33954,7 +35816,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();}
 
 	}
-#line 33958 "hcs12x.cc"
+#line 35820 "hcs12x.cc"
 }
 
 static Operation *DecodeOpNegw_idx(CodeType const& code, uint16_t addr)
@@ -33964,14 +35826,14 @@ static Operation *DecodeOpNegw_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 33968 "hcs12x.cc"
+#line 35830 "hcs12x.cc"
 OpNeg_xy::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 33972 "hcs12x.cc"
+#line 35834 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 33975 "hcs12x.cc"
+#line 35837 "hcs12x.cc"
 )
 {
 #line 446 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -33982,18 +35844,18 @@ sink
 			sink << "NEGY";
 		}
 	}
-#line 33986 "hcs12x.cc"
+#line 35848 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 33990 "hcs12x.cc"
+#line 35852 "hcs12x.cc"
 OpNeg_xy::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 33994 "hcs12x.cc"
+#line 35856 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 33997 "hcs12x.cc"
+#line 35859 "hcs12x.cc"
 )
 {
 #line 454 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34020,7 +35882,7 @@ cpu
 		if (result == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 		if ((result & 0x8000) == 0x8000) {cpu->ccr->setN();} else { cpu->ccr->clrN();}
 	}
-#line 34024 "hcs12x.cc"
+#line 35886 "hcs12x.cc"
 }
 
 static Operation *DecodeOpNeg_xy(CodeType const& code, uint16_t addr)
@@ -34032,32 +35894,32 @@ static Operation *DecodeOpNeg_xy(CodeType const& code, uint16_t addr)
 // BCLR: Clear bit(s) in memory
 #line 69 "hcs12x.isa"
 void
-#line 34036 "hcs12x.cc"
+#line 35898 "hcs12x.cc"
 OpBclr_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34040 "hcs12x.cc"
+#line 35902 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34043 "hcs12x.cc"
+#line 35905 "hcs12x.cc"
 )
 {
 #line 484 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BCLR $" << std::hex << dd << ", $" << std::hex << mm;
 	}
-#line 34050 "hcs12x.cc"
+#line 35912 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34054 "hcs12x.cc"
+#line 35916 "hcs12x.cc"
 OpBclr_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34058 "hcs12x.cc"
+#line 35920 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34061 "hcs12x.cc"
+#line 35923 "hcs12x.cc"
 )
 {
 #line 488 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34074,7 +35936,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	}
-#line 34078 "hcs12x.cc"
+#line 35940 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBclr_dir(CodeType const& code, uint16_t addr)
@@ -34084,32 +35946,32 @@ static Operation *DecodeOpBclr_dir(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34088 "hcs12x.cc"
+#line 35950 "hcs12x.cc"
 OpBclr_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34092 "hcs12x.cc"
+#line 35954 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34095 "hcs12x.cc"
+#line 35957 "hcs12x.cc"
 )
 {
 #line 504 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BCLR $" << std::hex << opr16a << ", $" << std::hex << mm;
 	}
-#line 34102 "hcs12x.cc"
+#line 35964 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34106 "hcs12x.cc"
+#line 35968 "hcs12x.cc"
 OpBclr_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34110 "hcs12x.cc"
+#line 35972 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34113 "hcs12x.cc"
+#line 35975 "hcs12x.cc"
 )
 {
 #line 508 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34126,7 +35988,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	}
-#line 34130 "hcs12x.cc"
+#line 35992 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBclr_ext(CodeType const& code, uint16_t addr)
@@ -34136,14 +35998,14 @@ static Operation *DecodeOpBclr_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34140 "hcs12x.cc"
+#line 36002 "hcs12x.cc"
 OpBclr_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34144 "hcs12x.cc"
+#line 36006 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34147 "hcs12x.cc"
+#line 36009 "hcs12x.cc"
 )
 {
 #line 524 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34152,18 +36014,18 @@ sink
 		xb->disasm(sink);
 		sink << ", $" << std::hex << mm;
 	}
-#line 34156 "hcs12x.cc"
+#line 36018 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34160 "hcs12x.cc"
+#line 36022 "hcs12x.cc"
 OpBclr_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34164 "hcs12x.cc"
+#line 36026 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34167 "hcs12x.cc"
+#line 36029 "hcs12x.cc"
 )
 {
 #line 530 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34181,7 +36043,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	}
-#line 34185 "hcs12x.cc"
+#line 36047 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBclr_idx(CodeType const& code, uint16_t addr)
@@ -34192,14 +36054,14 @@ static Operation *DecodeOpBclr_idx(CodeType const& code, uint16_t addr)
 // BITA or BITB: bit test A/B (Logical 'AND' A/B with Memory
 #line 69 "hcs12x.isa"
 void
-#line 34196 "hcs12x.cc"
+#line 36058 "hcs12x.cc"
 OpBit_ab_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34200 "hcs12x.cc"
+#line 36062 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34203 "hcs12x.cc"
+#line 36065 "hcs12x.cc"
 )
 {
 #line 548 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34211,18 +36073,18 @@ sink
 		}
 		sink << std::hex << ii;
 	}
-#line 34215 "hcs12x.cc"
+#line 36077 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34219 "hcs12x.cc"
+#line 36081 "hcs12x.cc"
 OpBit_ab_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34223 "hcs12x.cc"
+#line 36085 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34226 "hcs12x.cc"
+#line 36088 "hcs12x.cc"
 )
 {
 #line 557 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34240,7 +36102,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 	}
-#line 34244 "hcs12x.cc"
+#line 36106 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBit_ab_imm(CodeType const& code, uint16_t addr)
@@ -34250,14 +36112,14 @@ static Operation *DecodeOpBit_ab_imm(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34254 "hcs12x.cc"
+#line 36116 "hcs12x.cc"
 OpBit_ab_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34258 "hcs12x.cc"
+#line 36120 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34261 "hcs12x.cc"
+#line 36123 "hcs12x.cc"
 )
 {
 #line 574 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34269,18 +36131,18 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 34273 "hcs12x.cc"
+#line 36135 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34277 "hcs12x.cc"
+#line 36139 "hcs12x.cc"
 OpBit_ab_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34281 "hcs12x.cc"
+#line 36143 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34284 "hcs12x.cc"
+#line 36146 "hcs12x.cc"
 )
 {
 #line 583 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34299,7 +36161,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 	}
-#line 34303 "hcs12x.cc"
+#line 36165 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBit_ab_dir(CodeType const& code, uint16_t addr)
@@ -34309,14 +36171,14 @@ static Operation *DecodeOpBit_ab_dir(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34313 "hcs12x.cc"
+#line 36175 "hcs12x.cc"
 OpBit_ab_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34317 "hcs12x.cc"
+#line 36179 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34320 "hcs12x.cc"
+#line 36182 "hcs12x.cc"
 )
 {
 #line 601 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34328,18 +36190,18 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 34332 "hcs12x.cc"
+#line 36194 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34336 "hcs12x.cc"
+#line 36198 "hcs12x.cc"
 OpBit_ab_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34340 "hcs12x.cc"
+#line 36202 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34343 "hcs12x.cc"
+#line 36205 "hcs12x.cc"
 )
 {
 #line 610 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34358,7 +36220,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 	}
-#line 34362 "hcs12x.cc"
+#line 36224 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBit_ab_ext(CodeType const& code, uint16_t addr)
@@ -34368,14 +36230,14 @@ static Operation *DecodeOpBit_ab_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34372 "hcs12x.cc"
+#line 36234 "hcs12x.cc"
 OpBit_ab_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34376 "hcs12x.cc"
+#line 36238 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34379 "hcs12x.cc"
+#line 36241 "hcs12x.cc"
 )
 {
 #line 628 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34387,18 +36249,18 @@ sink
 		}
 		xb->disasm(sink);
 	}
-#line 34391 "hcs12x.cc"
+#line 36253 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34395 "hcs12x.cc"
+#line 36257 "hcs12x.cc"
 OpBit_ab_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34399 "hcs12x.cc"
+#line 36261 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34402 "hcs12x.cc"
+#line 36264 "hcs12x.cc"
 )
 {
 #line 637 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34417,7 +36279,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 	}
-#line 34421 "hcs12x.cc"
+#line 36283 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBit_ab_idx(CodeType const& code, uint16_t addr)
@@ -34428,14 +36290,14 @@ static Operation *DecodeOpBit_ab_idx(CodeType const& code, uint16_t addr)
 // BITX or BITY: bit test X/Y (Logical 'AND' X/Y with Memory
 #line 69 "hcs12x.isa"
 void
-#line 34432 "hcs12x.cc"
+#line 36294 "hcs12x.cc"
 OpBit_xy_imm::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34436 "hcs12x.cc"
+#line 36298 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34439 "hcs12x.cc"
+#line 36301 "hcs12x.cc"
 )
 {
 #line 656 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34447,18 +36309,18 @@ sink
 		}
 		sink << std::hex << opr16i;
 	}
-#line 34451 "hcs12x.cc"
+#line 36313 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34455 "hcs12x.cc"
+#line 36317 "hcs12x.cc"
 OpBit_xy_imm::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34459 "hcs12x.cc"
+#line 36321 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34462 "hcs12x.cc"
+#line 36324 "hcs12x.cc"
 )
 {
 #line 665 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34476,7 +36338,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 	}
-#line 34480 "hcs12x.cc"
+#line 36342 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBit_xy_imm(CodeType const& code, uint16_t addr)
@@ -34486,14 +36348,14 @@ static Operation *DecodeOpBit_xy_imm(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34490 "hcs12x.cc"
+#line 36352 "hcs12x.cc"
 OpBit_xy_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34494 "hcs12x.cc"
+#line 36356 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34497 "hcs12x.cc"
+#line 36359 "hcs12x.cc"
 )
 {
 #line 682 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34505,18 +36367,18 @@ sink
 		}
 		sink << std::hex << opr8a;
 	}
-#line 34509 "hcs12x.cc"
+#line 36371 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34513 "hcs12x.cc"
+#line 36375 "hcs12x.cc"
 OpBit_xy_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34517 "hcs12x.cc"
+#line 36379 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34520 "hcs12x.cc"
+#line 36382 "hcs12x.cc"
 )
 {
 #line 691 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34535,7 +36397,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 	}
-#line 34539 "hcs12x.cc"
+#line 36401 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBit_xy_dir(CodeType const& code, uint16_t addr)
@@ -34545,14 +36407,14 @@ static Operation *DecodeOpBit_xy_dir(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34549 "hcs12x.cc"
+#line 36411 "hcs12x.cc"
 OpBit_xy_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34553 "hcs12x.cc"
+#line 36415 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34556 "hcs12x.cc"
+#line 36418 "hcs12x.cc"
 )
 {
 #line 709 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34564,18 +36426,18 @@ sink
 		}
 		sink << std::hex << opr16a;
 	}
-#line 34568 "hcs12x.cc"
+#line 36430 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34572 "hcs12x.cc"
+#line 36434 "hcs12x.cc"
 OpBit_xy_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34576 "hcs12x.cc"
+#line 36438 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34579 "hcs12x.cc"
+#line 36441 "hcs12x.cc"
 )
 {
 #line 718 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34594,7 +36456,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 	}
-#line 34598 "hcs12x.cc"
+#line 36460 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBit_xy_ext(CodeType const& code, uint16_t addr)
@@ -34604,14 +36466,14 @@ static Operation *DecodeOpBit_xy_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34608 "hcs12x.cc"
+#line 36470 "hcs12x.cc"
 OpBit_xy_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34612 "hcs12x.cc"
+#line 36474 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34615 "hcs12x.cc"
+#line 36477 "hcs12x.cc"
 )
 {
 #line 736 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34623,18 +36485,18 @@ sink
 		}
 		xb->disasm(sink);
 	}
-#line 34627 "hcs12x.cc"
+#line 36489 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34631 "hcs12x.cc"
+#line 36493 "hcs12x.cc"
 OpBit_xy_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34635 "hcs12x.cc"
+#line 36497 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34638 "hcs12x.cc"
+#line 36500 "hcs12x.cc"
 )
 {
 #line 745 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34653,7 +36515,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 	}
-#line 34657 "hcs12x.cc"
+#line 36519 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBit_xy_idx(CodeType const& code, uint16_t addr)
@@ -34664,32 +36526,32 @@ static Operation *DecodeOpBit_xy_idx(CodeType const& code, uint16_t addr)
 // BSET: Set bits in memory
 #line 69 "hcs12x.isa"
 void
-#line 34668 "hcs12x.cc"
+#line 36530 "hcs12x.cc"
 OpBset_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34672 "hcs12x.cc"
+#line 36534 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34675 "hcs12x.cc"
+#line 36537 "hcs12x.cc"
 )
 {
 #line 764 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BSET $" << std::hex << dd << ", $" << std::hex << mm;
 	}
-#line 34682 "hcs12x.cc"
+#line 36544 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34686 "hcs12x.cc"
+#line 36548 "hcs12x.cc"
 OpBset_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34690 "hcs12x.cc"
+#line 36552 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34693 "hcs12x.cc"
+#line 36555 "hcs12x.cc"
 )
 {
 #line 768 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34705,7 +36567,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	}
-#line 34709 "hcs12x.cc"
+#line 36571 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBset_dir(CodeType const& code, uint16_t addr)
@@ -34715,32 +36577,32 @@ static Operation *DecodeOpBset_dir(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34719 "hcs12x.cc"
+#line 36581 "hcs12x.cc"
 OpBset_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34723 "hcs12x.cc"
+#line 36585 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34726 "hcs12x.cc"
+#line 36588 "hcs12x.cc"
 )
 {
 #line 783 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BSET $" << std::hex << opr16a << ", $" << std::hex << mm;
 	}
-#line 34733 "hcs12x.cc"
+#line 36595 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34737 "hcs12x.cc"
+#line 36599 "hcs12x.cc"
 OpBset_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34741 "hcs12x.cc"
+#line 36603 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34744 "hcs12x.cc"
+#line 36606 "hcs12x.cc"
 )
 {
 #line 787 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34756,7 +36618,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	}
-#line 34760 "hcs12x.cc"
+#line 36622 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBset_ext(CodeType const& code, uint16_t addr)
@@ -34766,14 +36628,14 @@ static Operation *DecodeOpBset_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34770 "hcs12x.cc"
+#line 36632 "hcs12x.cc"
 OpBset_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34774 "hcs12x.cc"
+#line 36636 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34777 "hcs12x.cc"
+#line 36639 "hcs12x.cc"
 )
 {
 #line 802 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34782,18 +36644,18 @@ sink
 		xb->disasm(sink);
 		sink << ", $" << std::hex << mm;
 	}
-#line 34786 "hcs12x.cc"
+#line 36648 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34790 "hcs12x.cc"
+#line 36652 "hcs12x.cc"
 OpBset_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34794 "hcs12x.cc"
+#line 36656 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34797 "hcs12x.cc"
+#line 36659 "hcs12x.cc"
 )
 {
 #line 808 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34810,7 +36672,7 @@ cpu
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	}
-#line 34814 "hcs12x.cc"
+#line 36676 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBset_idx(CodeType const& code, uint16_t addr)
@@ -34823,32 +36685,32 @@ static Operation *DecodeOpBset_idx(CodeType const& code, uint16_t addr)
 // ASL: Arithmetic Shift Left
 #line 69 "hcs12x.isa"
 void
-#line 34827 "hcs12x.cc"
+#line 36689 "hcs12x.cc"
 OpLsl_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34831 "hcs12x.cc"
+#line 36693 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34834 "hcs12x.cc"
+#line 36696 "hcs12x.cc"
 )
 {
 #line 828 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSL $" << std::hex << opr16a;
 	}
-#line 34841 "hcs12x.cc"
+#line 36703 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34845 "hcs12x.cc"
+#line 36707 "hcs12x.cc"
 OpLsl_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34849 "hcs12x.cc"
+#line 36711 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34852 "hcs12x.cc"
+#line 36714 "hcs12x.cc"
 )
 {
 #line 832 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34866,7 +36728,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 34870 "hcs12x.cc"
+#line 36732 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsl_ext(CodeType const& code, uint16_t addr)
@@ -34876,14 +36738,14 @@ static Operation *DecodeOpLsl_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34880 "hcs12x.cc"
+#line 36742 "hcs12x.cc"
 OpLsl_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34884 "hcs12x.cc"
+#line 36746 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34887 "hcs12x.cc"
+#line 36749 "hcs12x.cc"
 )
 {
 #line 849 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34891,18 +36753,18 @@ sink
 		sink << "LSL ";
 		xb->disasm(sink);
 	}
-#line 34895 "hcs12x.cc"
+#line 36757 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34899 "hcs12x.cc"
+#line 36761 "hcs12x.cc"
 OpLsl_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34903 "hcs12x.cc"
+#line 36765 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34906 "hcs12x.cc"
+#line 36768 "hcs12x.cc"
 )
 {
 #line 854 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34921,7 +36783,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 34925 "hcs12x.cc"
+#line 36787 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsl_idx(CodeType const& code, uint16_t addr)
@@ -34931,32 +36793,32 @@ static Operation *DecodeOpLsl_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34935 "hcs12x.cc"
+#line 36797 "hcs12x.cc"
 OpLsla::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34939 "hcs12x.cc"
+#line 36801 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34942 "hcs12x.cc"
+#line 36804 "hcs12x.cc"
 )
 {
 #line 872 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLA";
 	}
-#line 34949 "hcs12x.cc"
+#line 36811 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 34953 "hcs12x.cc"
+#line 36815 "hcs12x.cc"
 OpLsla::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 34957 "hcs12x.cc"
+#line 36819 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 34960 "hcs12x.cc"
+#line 36822 "hcs12x.cc"
 )
 {
 #line 876 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -34973,7 +36835,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 34977 "hcs12x.cc"
+#line 36839 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsla(CodeType const& code, uint16_t addr)
@@ -34983,32 +36845,32 @@ static Operation *DecodeOpLsla(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 34987 "hcs12x.cc"
+#line 36849 "hcs12x.cc"
 OpLslb::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 34991 "hcs12x.cc"
+#line 36853 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 34994 "hcs12x.cc"
+#line 36856 "hcs12x.cc"
 )
 {
 #line 892 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLB";
 	}
-#line 35001 "hcs12x.cc"
+#line 36863 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35005 "hcs12x.cc"
+#line 36867 "hcs12x.cc"
 OpLslb::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35009 "hcs12x.cc"
+#line 36871 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35012 "hcs12x.cc"
+#line 36874 "hcs12x.cc"
 )
 {
 #line 896 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35025,7 +36887,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35029 "hcs12x.cc"
+#line 36891 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLslb(CodeType const& code, uint16_t addr)
@@ -35035,32 +36897,32 @@ static Operation *DecodeOpLslb(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35039 "hcs12x.cc"
+#line 36901 "hcs12x.cc"
 OpLsld::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35043 "hcs12x.cc"
+#line 36905 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35046 "hcs12x.cc"
+#line 36908 "hcs12x.cc"
 )
 {
 #line 912 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLD";
 	}
-#line 35053 "hcs12x.cc"
+#line 36915 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35057 "hcs12x.cc"
+#line 36919 "hcs12x.cc"
 OpLsld::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35061 "hcs12x.cc"
+#line 36923 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35064 "hcs12x.cc"
+#line 36926 "hcs12x.cc"
 )
 {
 #line 916 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35077,7 +36939,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35081 "hcs12x.cc"
+#line 36943 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsld(CodeType const& code, uint16_t addr)
@@ -35089,32 +36951,32 @@ static Operation *DecodeOpLsld(CodeType const& code, uint16_t addr)
 // ASLW: Arithmetic Shift Left
 #line 69 "hcs12x.isa"
 void
-#line 35093 "hcs12x.cc"
+#line 36955 "hcs12x.cc"
 OpLslw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35097 "hcs12x.cc"
+#line 36959 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35100 "hcs12x.cc"
+#line 36962 "hcs12x.cc"
 )
 {
 #line 935 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLW $" << std::hex << opr16a;
 	}
-#line 35107 "hcs12x.cc"
+#line 36969 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35111 "hcs12x.cc"
+#line 36973 "hcs12x.cc"
 OpLslw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35115 "hcs12x.cc"
+#line 36977 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35118 "hcs12x.cc"
+#line 36980 "hcs12x.cc"
 )
 {
 #line 939 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35132,7 +36994,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35136 "hcs12x.cc"
+#line 36998 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLslw_ext(CodeType const& code, uint16_t addr)
@@ -35142,14 +37004,14 @@ static Operation *DecodeOpLslw_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35146 "hcs12x.cc"
+#line 37008 "hcs12x.cc"
 OpLslw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35150 "hcs12x.cc"
+#line 37012 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35153 "hcs12x.cc"
+#line 37015 "hcs12x.cc"
 )
 {
 #line 956 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35157,18 +37019,18 @@ sink
 		sink << "LSLW ";
 		xb->disasm(sink);
 	}
-#line 35161 "hcs12x.cc"
+#line 37023 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35165 "hcs12x.cc"
+#line 37027 "hcs12x.cc"
 OpLslw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35169 "hcs12x.cc"
+#line 37031 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35172 "hcs12x.cc"
+#line 37034 "hcs12x.cc"
 )
 {
 #line 961 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35187,7 +37049,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35191 "hcs12x.cc"
+#line 37053 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLslw_idx(CodeType const& code, uint16_t addr)
@@ -35197,32 +37059,32 @@ static Operation *DecodeOpLslw_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35201 "hcs12x.cc"
+#line 37063 "hcs12x.cc"
 OpLslx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35205 "hcs12x.cc"
+#line 37067 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35208 "hcs12x.cc"
+#line 37070 "hcs12x.cc"
 )
 {
 #line 979 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLX";
 	}
-#line 35215 "hcs12x.cc"
+#line 37077 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35219 "hcs12x.cc"
+#line 37081 "hcs12x.cc"
 OpLslx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35223 "hcs12x.cc"
+#line 37085 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35226 "hcs12x.cc"
+#line 37088 "hcs12x.cc"
 )
 {
 #line 983 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35239,7 +37101,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35243 "hcs12x.cc"
+#line 37105 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLslx(CodeType const& code, uint16_t addr)
@@ -35249,32 +37111,32 @@ static Operation *DecodeOpLslx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35253 "hcs12x.cc"
+#line 37115 "hcs12x.cc"
 OpLsly::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35257 "hcs12x.cc"
+#line 37119 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35260 "hcs12x.cc"
+#line 37122 "hcs12x.cc"
 )
 {
 #line 999 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLY";
 	}
-#line 35267 "hcs12x.cc"
+#line 37129 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35271 "hcs12x.cc"
+#line 37133 "hcs12x.cc"
 OpLsly::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35275 "hcs12x.cc"
+#line 37137 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35278 "hcs12x.cc"
+#line 37140 "hcs12x.cc"
 )
 {
 #line 1003 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35291,7 +37153,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35295 "hcs12x.cc"
+#line 37157 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsly(CodeType const& code, uint16_t addr)
@@ -35302,32 +37164,32 @@ static Operation *DecodeOpLsly(CodeType const& code, uint16_t addr)
 // ROL: Rotate Memory/Accumulator Left through carry
 #line 69 "hcs12x.isa"
 void
-#line 35306 "hcs12x.cc"
+#line 37168 "hcs12x.cc"
 OpRol_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35310 "hcs12x.cc"
+#line 37172 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35313 "hcs12x.cc"
+#line 37175 "hcs12x.cc"
 )
 {
 #line 1020 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROL $" << std::hex << opr16a;
 	}
-#line 35320 "hcs12x.cc"
+#line 37182 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35324 "hcs12x.cc"
+#line 37186 "hcs12x.cc"
 OpRol_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35328 "hcs12x.cc"
+#line 37190 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35331 "hcs12x.cc"
+#line 37193 "hcs12x.cc"
 )
 {
 #line 1024 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35346,7 +37208,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35350 "hcs12x.cc"
+#line 37212 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRol_ext(CodeType const& code, uint16_t addr)
@@ -35356,14 +37218,14 @@ static Operation *DecodeOpRol_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35360 "hcs12x.cc"
+#line 37222 "hcs12x.cc"
 OpRol_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35364 "hcs12x.cc"
+#line 37226 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35367 "hcs12x.cc"
+#line 37229 "hcs12x.cc"
 )
 {
 #line 1042 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35371,18 +37233,18 @@ sink
 		sink << "ROL ";
 		xb->disasm(sink);
 	}
-#line 35375 "hcs12x.cc"
+#line 37237 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35379 "hcs12x.cc"
+#line 37241 "hcs12x.cc"
 OpRol_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35383 "hcs12x.cc"
+#line 37245 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35386 "hcs12x.cc"
+#line 37248 "hcs12x.cc"
 )
 {
 #line 1047 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35402,7 +37264,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35406 "hcs12x.cc"
+#line 37268 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRol_idx(CodeType const& code, uint16_t addr)
@@ -35412,32 +37274,32 @@ static Operation *DecodeOpRol_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35416 "hcs12x.cc"
+#line 37278 "hcs12x.cc"
 OpRola::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35420 "hcs12x.cc"
+#line 37282 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35423 "hcs12x.cc"
+#line 37285 "hcs12x.cc"
 )
 {
 #line 1066 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLA";
 	}
-#line 35430 "hcs12x.cc"
+#line 37292 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35434 "hcs12x.cc"
+#line 37296 "hcs12x.cc"
 OpRola::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35438 "hcs12x.cc"
+#line 37300 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35441 "hcs12x.cc"
+#line 37303 "hcs12x.cc"
 )
 {
 #line 1070 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35455,7 +37317,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35459 "hcs12x.cc"
+#line 37321 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRola(CodeType const& code, uint16_t addr)
@@ -35465,32 +37327,32 @@ static Operation *DecodeOpRola(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35469 "hcs12x.cc"
+#line 37331 "hcs12x.cc"
 OpRolb::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35473 "hcs12x.cc"
+#line 37335 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35476 "hcs12x.cc"
+#line 37338 "hcs12x.cc"
 )
 {
 #line 1087 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLB";
 	}
-#line 35483 "hcs12x.cc"
+#line 37345 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35487 "hcs12x.cc"
+#line 37349 "hcs12x.cc"
 OpRolb::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35491 "hcs12x.cc"
+#line 37353 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35494 "hcs12x.cc"
+#line 37356 "hcs12x.cc"
 )
 {
 #line 1091 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35508,7 +37370,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35512 "hcs12x.cc"
+#line 37374 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRolb(CodeType const& code, uint16_t addr)
@@ -35519,32 +37381,32 @@ static Operation *DecodeOpRolb(CodeType const& code, uint16_t addr)
 // ROLW: Rotate word Memory/Accumulator Left through carry
 #line 69 "hcs12x.isa"
 void
-#line 35523 "hcs12x.cc"
+#line 37385 "hcs12x.cc"
 OpRolw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35527 "hcs12x.cc"
+#line 37389 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35530 "hcs12x.cc"
+#line 37392 "hcs12x.cc"
 )
 {
 #line 1110 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLw $" << std::hex << opr16a;
 	}
-#line 35537 "hcs12x.cc"
+#line 37399 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35541 "hcs12x.cc"
+#line 37403 "hcs12x.cc"
 OpRolw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35545 "hcs12x.cc"
+#line 37407 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35548 "hcs12x.cc"
+#line 37410 "hcs12x.cc"
 )
 {
 #line 1114 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35563,7 +37425,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35567 "hcs12x.cc"
+#line 37429 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRolw_ext(CodeType const& code, uint16_t addr)
@@ -35573,14 +37435,14 @@ static Operation *DecodeOpRolw_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35577 "hcs12x.cc"
+#line 37439 "hcs12x.cc"
 OpRolw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35581 "hcs12x.cc"
+#line 37443 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35584 "hcs12x.cc"
+#line 37446 "hcs12x.cc"
 )
 {
 #line 1132 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35588,18 +37450,18 @@ sink
 		sink << "ROLW ";
 		xb->disasm(sink);
 	}
-#line 35592 "hcs12x.cc"
+#line 37454 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35596 "hcs12x.cc"
+#line 37458 "hcs12x.cc"
 OpRolw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35600 "hcs12x.cc"
+#line 37462 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35603 "hcs12x.cc"
+#line 37465 "hcs12x.cc"
 )
 {
 #line 1137 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35619,7 +37481,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35623 "hcs12x.cc"
+#line 37485 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRolw_idx(CodeType const& code, uint16_t addr)
@@ -35629,32 +37491,32 @@ static Operation *DecodeOpRolw_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35633 "hcs12x.cc"
+#line 37495 "hcs12x.cc"
 OpRolx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35637 "hcs12x.cc"
+#line 37499 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35640 "hcs12x.cc"
+#line 37502 "hcs12x.cc"
 )
 {
 #line 1156 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLX";
 	}
-#line 35647 "hcs12x.cc"
+#line 37509 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35651 "hcs12x.cc"
+#line 37513 "hcs12x.cc"
 OpRolx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35655 "hcs12x.cc"
+#line 37517 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35658 "hcs12x.cc"
+#line 37520 "hcs12x.cc"
 )
 {
 #line 1160 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35672,7 +37534,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35676 "hcs12x.cc"
+#line 37538 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRolx(CodeType const& code, uint16_t addr)
@@ -35682,32 +37544,32 @@ static Operation *DecodeOpRolx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35686 "hcs12x.cc"
+#line 37548 "hcs12x.cc"
 OpRoly::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35690 "hcs12x.cc"
+#line 37552 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35693 "hcs12x.cc"
+#line 37555 "hcs12x.cc"
 )
 {
 #line 1177 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLY";
 	}
-#line 35700 "hcs12x.cc"
+#line 37562 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35704 "hcs12x.cc"
+#line 37566 "hcs12x.cc"
 OpRoly::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35708 "hcs12x.cc"
+#line 37570 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35711 "hcs12x.cc"
+#line 37573 "hcs12x.cc"
 )
 {
 #line 1181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35725,7 +37587,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35729 "hcs12x.cc"
+#line 37591 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRoly(CodeType const& code, uint16_t addr)
@@ -35736,32 +37598,32 @@ static Operation *DecodeOpRoly(CodeType const& code, uint16_t addr)
 // LSR: Logical Shift Right
 #line 69 "hcs12x.isa"
 void
-#line 35740 "hcs12x.cc"
+#line 37602 "hcs12x.cc"
 OpLsr_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35744 "hcs12x.cc"
+#line 37606 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35747 "hcs12x.cc"
+#line 37609 "hcs12x.cc"
 )
 {
 #line 1199 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSR $" << std::hex << opr16a;
 	}
-#line 35754 "hcs12x.cc"
+#line 37616 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35758 "hcs12x.cc"
+#line 37620 "hcs12x.cc"
 OpLsr_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35762 "hcs12x.cc"
+#line 37624 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35765 "hcs12x.cc"
+#line 37627 "hcs12x.cc"
 )
 {
 #line 1203 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35779,7 +37641,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35783 "hcs12x.cc"
+#line 37645 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsr_ext(CodeType const& code, uint16_t addr)
@@ -35789,14 +37651,14 @@ static Operation *DecodeOpLsr_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35793 "hcs12x.cc"
+#line 37655 "hcs12x.cc"
 OpLsr_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35797 "hcs12x.cc"
+#line 37659 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35800 "hcs12x.cc"
+#line 37662 "hcs12x.cc"
 )
 {
 #line 1220 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35804,18 +37666,18 @@ sink
 		sink << "LSR ";
 		xb->disasm(sink);
 	}
-#line 35808 "hcs12x.cc"
+#line 37670 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35812 "hcs12x.cc"
+#line 37674 "hcs12x.cc"
 OpLsr_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35816 "hcs12x.cc"
+#line 37678 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35819 "hcs12x.cc"
+#line 37681 "hcs12x.cc"
 )
 {
 #line 1225 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35834,7 +37696,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35838 "hcs12x.cc"
+#line 37700 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsr_idx(CodeType const& code, uint16_t addr)
@@ -35844,32 +37706,32 @@ static Operation *DecodeOpLsr_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35848 "hcs12x.cc"
+#line 37710 "hcs12x.cc"
 OpLsra::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35852 "hcs12x.cc"
+#line 37714 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35855 "hcs12x.cc"
+#line 37717 "hcs12x.cc"
 )
 {
 #line 1243 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRA";
 	}
-#line 35862 "hcs12x.cc"
+#line 37724 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35866 "hcs12x.cc"
+#line 37728 "hcs12x.cc"
 OpLsra::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35870 "hcs12x.cc"
+#line 37732 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35873 "hcs12x.cc"
+#line 37735 "hcs12x.cc"
 )
 {
 #line 1247 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35886,7 +37748,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35890 "hcs12x.cc"
+#line 37752 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsra(CodeType const& code, uint16_t addr)
@@ -35896,32 +37758,32 @@ static Operation *DecodeOpLsra(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35900 "hcs12x.cc"
+#line 37762 "hcs12x.cc"
 OpLsrb::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35904 "hcs12x.cc"
+#line 37766 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35907 "hcs12x.cc"
+#line 37769 "hcs12x.cc"
 )
 {
 #line 1263 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRB";
 	}
-#line 35914 "hcs12x.cc"
+#line 37776 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35918 "hcs12x.cc"
+#line 37780 "hcs12x.cc"
 OpLsrb::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35922 "hcs12x.cc"
+#line 37784 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35925 "hcs12x.cc"
+#line 37787 "hcs12x.cc"
 )
 {
 #line 1267 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35938,7 +37800,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35942 "hcs12x.cc"
+#line 37804 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsrb(CodeType const& code, uint16_t addr)
@@ -35948,32 +37810,32 @@ static Operation *DecodeOpLsrb(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 35952 "hcs12x.cc"
+#line 37814 "hcs12x.cc"
 OpLsrd::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 35956 "hcs12x.cc"
+#line 37818 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 35959 "hcs12x.cc"
+#line 37821 "hcs12x.cc"
 )
 {
 #line 1283 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRD";
 	}
-#line 35966 "hcs12x.cc"
+#line 37828 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 35970 "hcs12x.cc"
+#line 37832 "hcs12x.cc"
 OpLsrd::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 35974 "hcs12x.cc"
+#line 37836 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 35977 "hcs12x.cc"
+#line 37839 "hcs12x.cc"
 )
 {
 #line 1287 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -35990,7 +37852,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 35994 "hcs12x.cc"
+#line 37856 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsrd(CodeType const& code, uint16_t addr)
@@ -36001,32 +37863,32 @@ static Operation *DecodeOpLsrd(CodeType const& code, uint16_t addr)
 // LSRW: Logical Shift Right word
 #line 69 "hcs12x.isa"
 void
-#line 36005 "hcs12x.cc"
+#line 37867 "hcs12x.cc"
 OpLsrw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36009 "hcs12x.cc"
+#line 37871 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36012 "hcs12x.cc"
+#line 37874 "hcs12x.cc"
 )
 {
 #line 1304 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRW $" << std::hex << opr16a;
 	}
-#line 36019 "hcs12x.cc"
+#line 37881 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36023 "hcs12x.cc"
+#line 37885 "hcs12x.cc"
 OpLsrw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36027 "hcs12x.cc"
+#line 37889 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36030 "hcs12x.cc"
+#line 37892 "hcs12x.cc"
 )
 {
 #line 1308 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36044,7 +37906,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36048 "hcs12x.cc"
+#line 37910 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsrw_ext(CodeType const& code, uint16_t addr)
@@ -36054,14 +37916,14 @@ static Operation *DecodeOpLsrw_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36058 "hcs12x.cc"
+#line 37920 "hcs12x.cc"
 OpLsrw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36062 "hcs12x.cc"
+#line 37924 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36065 "hcs12x.cc"
+#line 37927 "hcs12x.cc"
 )
 {
 #line 1325 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36069,18 +37931,18 @@ sink
 		sink << "LSRW ";
 		xb->disasm(sink);
 	}
-#line 36073 "hcs12x.cc"
+#line 37935 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36077 "hcs12x.cc"
+#line 37939 "hcs12x.cc"
 OpLsrw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36081 "hcs12x.cc"
+#line 37943 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36084 "hcs12x.cc"
+#line 37946 "hcs12x.cc"
 )
 {
 #line 1330 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36099,7 +37961,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36103 "hcs12x.cc"
+#line 37965 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsrw_idx(CodeType const& code, uint16_t addr)
@@ -36109,32 +37971,32 @@ static Operation *DecodeOpLsrw_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36113 "hcs12x.cc"
+#line 37975 "hcs12x.cc"
 OpLsrx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36117 "hcs12x.cc"
+#line 37979 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36120 "hcs12x.cc"
+#line 37982 "hcs12x.cc"
 )
 {
 #line 1348 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRX";
 	}
-#line 36127 "hcs12x.cc"
+#line 37989 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36131 "hcs12x.cc"
+#line 37993 "hcs12x.cc"
 OpLsrx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36135 "hcs12x.cc"
+#line 37997 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36138 "hcs12x.cc"
+#line 38000 "hcs12x.cc"
 )
 {
 #line 1352 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36151,7 +38013,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36155 "hcs12x.cc"
+#line 38017 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsrx(CodeType const& code, uint16_t addr)
@@ -36161,32 +38023,32 @@ static Operation *DecodeOpLsrx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36165 "hcs12x.cc"
+#line 38027 "hcs12x.cc"
 OpLsry::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36169 "hcs12x.cc"
+#line 38031 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36172 "hcs12x.cc"
+#line 38034 "hcs12x.cc"
 )
 {
 #line 1368 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRY";
 	}
-#line 36179 "hcs12x.cc"
+#line 38041 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36183 "hcs12x.cc"
+#line 38045 "hcs12x.cc"
 OpLsry::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36187 "hcs12x.cc"
+#line 38049 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36190 "hcs12x.cc"
+#line 38052 "hcs12x.cc"
 )
 {
 #line 1372 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36203,7 +38065,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36207 "hcs12x.cc"
+#line 38069 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLsry(CodeType const& code, uint16_t addr)
@@ -36214,32 +38076,32 @@ static Operation *DecodeOpLsry(CodeType const& code, uint16_t addr)
 // ROR: Rotate Memory/Accumulator Right through Carry
 #line 69 "hcs12x.isa"
 void
-#line 36218 "hcs12x.cc"
+#line 38080 "hcs12x.cc"
 OpRor_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36222 "hcs12x.cc"
+#line 38084 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36225 "hcs12x.cc"
+#line 38087 "hcs12x.cc"
 )
 {
 #line 1389 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROR $" << std::hex << opr16a;
 	}
-#line 36232 "hcs12x.cc"
+#line 38094 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36236 "hcs12x.cc"
+#line 38098 "hcs12x.cc"
 OpRor_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36240 "hcs12x.cc"
+#line 38102 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36243 "hcs12x.cc"
+#line 38105 "hcs12x.cc"
 )
 {
 #line 1393 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36258,7 +38120,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36262 "hcs12x.cc"
+#line 38124 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRor_ext(CodeType const& code, uint16_t addr)
@@ -36268,14 +38130,14 @@ static Operation *DecodeOpRor_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36272 "hcs12x.cc"
+#line 38134 "hcs12x.cc"
 OpRor_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36276 "hcs12x.cc"
+#line 38138 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36279 "hcs12x.cc"
+#line 38141 "hcs12x.cc"
 )
 {
 #line 1411 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36283,18 +38145,18 @@ sink
 		sink << "ROR ";
 		xb->disasm(sink);
 	}
-#line 36287 "hcs12x.cc"
+#line 38149 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36291 "hcs12x.cc"
+#line 38153 "hcs12x.cc"
 OpRor_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36295 "hcs12x.cc"
+#line 38157 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36298 "hcs12x.cc"
+#line 38160 "hcs12x.cc"
 )
 {
 #line 1416 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36314,7 +38176,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36318 "hcs12x.cc"
+#line 38180 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRor_idx(CodeType const& code, uint16_t addr)
@@ -36324,32 +38186,32 @@ static Operation *DecodeOpRor_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36328 "hcs12x.cc"
+#line 38190 "hcs12x.cc"
 OpRora::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36332 "hcs12x.cc"
+#line 38194 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36335 "hcs12x.cc"
+#line 38197 "hcs12x.cc"
 )
 {
 #line 1435 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORA";
 	}
-#line 36342 "hcs12x.cc"
+#line 38204 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36346 "hcs12x.cc"
+#line 38208 "hcs12x.cc"
 OpRora::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36350 "hcs12x.cc"
+#line 38212 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36353 "hcs12x.cc"
+#line 38215 "hcs12x.cc"
 )
 {
 #line 1439 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36367,7 +38229,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36371 "hcs12x.cc"
+#line 38233 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRora(CodeType const& code, uint16_t addr)
@@ -36377,32 +38239,32 @@ static Operation *DecodeOpRora(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36381 "hcs12x.cc"
+#line 38243 "hcs12x.cc"
 OpRorb::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36385 "hcs12x.cc"
+#line 38247 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36388 "hcs12x.cc"
+#line 38250 "hcs12x.cc"
 )
 {
 #line 1456 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORB";
 	}
-#line 36395 "hcs12x.cc"
+#line 38257 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36399 "hcs12x.cc"
+#line 38261 "hcs12x.cc"
 OpRorb::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36403 "hcs12x.cc"
+#line 38265 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36406 "hcs12x.cc"
+#line 38268 "hcs12x.cc"
 )
 {
 #line 1460 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36420,7 +38282,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36424 "hcs12x.cc"
+#line 38286 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRorb(CodeType const& code, uint16_t addr)
@@ -36431,32 +38293,32 @@ static Operation *DecodeOpRorb(CodeType const& code, uint16_t addr)
 // RORW: Rotate word Memory/Accumulator Right through Carry
 #line 69 "hcs12x.isa"
 void
-#line 36435 "hcs12x.cc"
+#line 38297 "hcs12x.cc"
 OpRorw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36439 "hcs12x.cc"
+#line 38301 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36442 "hcs12x.cc"
+#line 38304 "hcs12x.cc"
 )
 {
 #line 1479 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORW $" << std::hex << opr16a;
 	}
-#line 36449 "hcs12x.cc"
+#line 38311 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36453 "hcs12x.cc"
+#line 38315 "hcs12x.cc"
 OpRorw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36457 "hcs12x.cc"
+#line 38319 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36460 "hcs12x.cc"
+#line 38322 "hcs12x.cc"
 )
 {
 #line 1483 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36475,7 +38337,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36479 "hcs12x.cc"
+#line 38341 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRorw_ext(CodeType const& code, uint16_t addr)
@@ -36485,14 +38347,14 @@ static Operation *DecodeOpRorw_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36489 "hcs12x.cc"
+#line 38351 "hcs12x.cc"
 OpRorw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36493 "hcs12x.cc"
+#line 38355 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36496 "hcs12x.cc"
+#line 38358 "hcs12x.cc"
 )
 {
 #line 1501 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36500,18 +38362,18 @@ sink
 		sink << "RORW ";
 		xb->disasm(sink);
 	}
-#line 36504 "hcs12x.cc"
+#line 38366 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36508 "hcs12x.cc"
+#line 38370 "hcs12x.cc"
 OpRorw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36512 "hcs12x.cc"
+#line 38374 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36515 "hcs12x.cc"
+#line 38377 "hcs12x.cc"
 )
 {
 #line 1506 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36531,7 +38393,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36535 "hcs12x.cc"
+#line 38397 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRorw_idx(CodeType const& code, uint16_t addr)
@@ -36541,32 +38403,32 @@ static Operation *DecodeOpRorw_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36545 "hcs12x.cc"
+#line 38407 "hcs12x.cc"
 OpRorx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36549 "hcs12x.cc"
+#line 38411 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36552 "hcs12x.cc"
+#line 38414 "hcs12x.cc"
 )
 {
 #line 1525 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORX";
 	}
-#line 36559 "hcs12x.cc"
+#line 38421 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36563 "hcs12x.cc"
+#line 38425 "hcs12x.cc"
 OpRorx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36567 "hcs12x.cc"
+#line 38429 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36570 "hcs12x.cc"
+#line 38432 "hcs12x.cc"
 )
 {
 #line 1529 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36584,7 +38446,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36588 "hcs12x.cc"
+#line 38450 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRorx(CodeType const& code, uint16_t addr)
@@ -36594,32 +38456,32 @@ static Operation *DecodeOpRorx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36598 "hcs12x.cc"
+#line 38460 "hcs12x.cc"
 OpRory::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36602 "hcs12x.cc"
+#line 38464 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36605 "hcs12x.cc"
+#line 38467 "hcs12x.cc"
 )
 {
 #line 1546 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORY";
 	}
-#line 36612 "hcs12x.cc"
+#line 38474 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36616 "hcs12x.cc"
+#line 38478 "hcs12x.cc"
 OpRory::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36620 "hcs12x.cc"
+#line 38482 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36623 "hcs12x.cc"
+#line 38485 "hcs12x.cc"
 )
 {
 #line 1550 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36637,7 +38499,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36641 "hcs12x.cc"
+#line 38503 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRory(CodeType const& code, uint16_t addr)
@@ -36648,32 +38510,32 @@ static Operation *DecodeOpRory(CodeType const& code, uint16_t addr)
 // ASR: Arithmetic Shift Right
 #line 69 "hcs12x.isa"
 void
-#line 36652 "hcs12x.cc"
+#line 38514 "hcs12x.cc"
 OpAsr_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36656 "hcs12x.cc"
+#line 38518 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36659 "hcs12x.cc"
+#line 38521 "hcs12x.cc"
 )
 {
 #line 1568 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASR $" << std::hex << opr16a;
 	}
-#line 36666 "hcs12x.cc"
+#line 38528 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36670 "hcs12x.cc"
+#line 38532 "hcs12x.cc"
 OpAsr_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36674 "hcs12x.cc"
+#line 38536 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36677 "hcs12x.cc"
+#line 38539 "hcs12x.cc"
 )
 {
 #line 1572 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36695,7 +38557,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36699 "hcs12x.cc"
+#line 38561 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAsr_ext(CodeType const& code, uint16_t addr)
@@ -36705,14 +38567,14 @@ static Operation *DecodeOpAsr_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36709 "hcs12x.cc"
+#line 38571 "hcs12x.cc"
 OpAsr_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36713 "hcs12x.cc"
+#line 38575 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36716 "hcs12x.cc"
+#line 38578 "hcs12x.cc"
 )
 {
 #line 1593 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36720,18 +38582,18 @@ sink
 		sink << "ASR ";
 		xb->disasm(sink);
 	}
-#line 36724 "hcs12x.cc"
+#line 38586 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36728 "hcs12x.cc"
+#line 38590 "hcs12x.cc"
 OpAsr_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36732 "hcs12x.cc"
+#line 38594 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36735 "hcs12x.cc"
+#line 38597 "hcs12x.cc"
 )
 {
 #line 1598 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36754,7 +38616,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36758 "hcs12x.cc"
+#line 38620 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAsr_idx(CodeType const& code, uint16_t addr)
@@ -36764,32 +38626,32 @@ static Operation *DecodeOpAsr_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36768 "hcs12x.cc"
+#line 38630 "hcs12x.cc"
 OpAsra::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36772 "hcs12x.cc"
+#line 38634 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36775 "hcs12x.cc"
+#line 38637 "hcs12x.cc"
 )
 {
 #line 1620 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRA";
 	}
-#line 36782 "hcs12x.cc"
+#line 38644 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36786 "hcs12x.cc"
+#line 38648 "hcs12x.cc"
 OpAsra::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36790 "hcs12x.cc"
+#line 38652 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36793 "hcs12x.cc"
+#line 38655 "hcs12x.cc"
 )
 {
 #line 1624 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36810,7 +38672,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36814 "hcs12x.cc"
+#line 38676 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAsra(CodeType const& code, uint16_t addr)
@@ -36820,32 +38682,32 @@ static Operation *DecodeOpAsra(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36824 "hcs12x.cc"
+#line 38686 "hcs12x.cc"
 OpAsrb::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36828 "hcs12x.cc"
+#line 38690 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36831 "hcs12x.cc"
+#line 38693 "hcs12x.cc"
 )
 {
 #line 1644 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRB";
 	}
-#line 36838 "hcs12x.cc"
+#line 38700 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36842 "hcs12x.cc"
+#line 38704 "hcs12x.cc"
 OpAsrb::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36846 "hcs12x.cc"
+#line 38708 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36849 "hcs12x.cc"
+#line 38711 "hcs12x.cc"
 )
 {
 #line 1648 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36866,7 +38728,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36870 "hcs12x.cc"
+#line 38732 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAsrb(CodeType const& code, uint16_t addr)
@@ -36877,32 +38739,32 @@ static Operation *DecodeOpAsrb(CodeType const& code, uint16_t addr)
 // ASRW: Arithmetic Shift Right word
 #line 69 "hcs12x.isa"
 void
-#line 36881 "hcs12x.cc"
+#line 38743 "hcs12x.cc"
 OpAsrw_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36885 "hcs12x.cc"
+#line 38747 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36888 "hcs12x.cc"
+#line 38750 "hcs12x.cc"
 )
 {
 #line 1669 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRW $" << std::hex << opr16a;
 	}
-#line 36895 "hcs12x.cc"
+#line 38757 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36899 "hcs12x.cc"
+#line 38761 "hcs12x.cc"
 OpAsrw_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36903 "hcs12x.cc"
+#line 38765 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36906 "hcs12x.cc"
+#line 38768 "hcs12x.cc"
 )
 {
 #line 1673 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36924,7 +38786,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36928 "hcs12x.cc"
+#line 38790 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAsrw_ext(CodeType const& code, uint16_t addr)
@@ -36934,14 +38796,14 @@ static Operation *DecodeOpAsrw_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36938 "hcs12x.cc"
+#line 38800 "hcs12x.cc"
 OpAsrw_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 36942 "hcs12x.cc"
+#line 38804 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 36945 "hcs12x.cc"
+#line 38807 "hcs12x.cc"
 )
 {
 #line 1694 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36949,18 +38811,18 @@ sink
 		sink << "ASRW ";
 		xb->disasm(sink);
 	}
-#line 36953 "hcs12x.cc"
+#line 38815 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 36957 "hcs12x.cc"
+#line 38819 "hcs12x.cc"
 OpAsrw_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 36961 "hcs12x.cc"
+#line 38823 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 36964 "hcs12x.cc"
+#line 38826 "hcs12x.cc"
 )
 {
 #line 1699 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -36983,7 +38845,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 36987 "hcs12x.cc"
+#line 38849 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAsrw_idx(CodeType const& code, uint16_t addr)
@@ -36993,32 +38855,32 @@ static Operation *DecodeOpAsrw_idx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 36997 "hcs12x.cc"
+#line 38859 "hcs12x.cc"
 OpAsrx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37001 "hcs12x.cc"
+#line 38863 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37004 "hcs12x.cc"
+#line 38866 "hcs12x.cc"
 )
 {
 #line 1721 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRX";
 	}
-#line 37011 "hcs12x.cc"
+#line 38873 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37015 "hcs12x.cc"
+#line 38877 "hcs12x.cc"
 OpAsrx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37019 "hcs12x.cc"
+#line 38881 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37022 "hcs12x.cc"
+#line 38884 "hcs12x.cc"
 )
 {
 #line 1725 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -37039,7 +38901,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 37043 "hcs12x.cc"
+#line 38905 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAsrx(CodeType const& code, uint16_t addr)
@@ -37049,32 +38911,32 @@ static Operation *DecodeOpAsrx(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 37053 "hcs12x.cc"
+#line 38915 "hcs12x.cc"
 OpAsry::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37057 "hcs12x.cc"
+#line 38919 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37060 "hcs12x.cc"
+#line 38922 "hcs12x.cc"
 )
 {
 #line 1745 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRY";
 	}
-#line 37067 "hcs12x.cc"
+#line 38929 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37071 "hcs12x.cc"
+#line 38933 "hcs12x.cc"
 OpAsry::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37075 "hcs12x.cc"
+#line 38937 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37078 "hcs12x.cc"
+#line 38940 "hcs12x.cc"
 )
 {
 #line 1749 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -37095,7 +38957,7 @@ cpu
 
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 	}
-#line 37099 "hcs12x.cc"
+#line 38961 "hcs12x.cc"
 }
 
 static Operation *DecodeOpAsry(CodeType const& code, uint16_t addr)
@@ -37106,32 +38968,32 @@ static Operation *DecodeOpAsry(CodeType const& code, uint16_t addr)
 // BTAS: Bit(s) Test and Set in Memory
 #line 69 "hcs12x.isa"
 void
-#line 37110 "hcs12x.cc"
+#line 38972 "hcs12x.cc"
 OpBtas_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37114 "hcs12x.cc"
+#line 38976 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37117 "hcs12x.cc"
+#line 38979 "hcs12x.cc"
 )
 {
 #line 1771 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BTAS $" << std::hex << opr8a << ", $" << std::hex << msk8;
 	}
-#line 37124 "hcs12x.cc"
+#line 38986 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37128 "hcs12x.cc"
+#line 38990 "hcs12x.cc"
 OpBtas_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37132 "hcs12x.cc"
+#line 38994 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37135 "hcs12x.cc"
+#line 38997 "hcs12x.cc"
 )
 {
 #line 1775 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -37154,7 +39016,7 @@ cpu
 
 		cpu->memWrite8(addr, opr8aVal | msk8);
 	}
-#line 37158 "hcs12x.cc"
+#line 39020 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBtas_dir(CodeType const& code, uint16_t addr)
@@ -37164,32 +39026,32 @@ static Operation *DecodeOpBtas_dir(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 37168 "hcs12x.cc"
+#line 39030 "hcs12x.cc"
 OpBtas_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37172 "hcs12x.cc"
+#line 39034 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37175 "hcs12x.cc"
+#line 39037 "hcs12x.cc"
 )
 {
 #line 1797 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BTAS $" << std::hex << opr16a << ", $" << std::hex << msk8;
 	}
-#line 37182 "hcs12x.cc"
+#line 39044 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37186 "hcs12x.cc"
+#line 39048 "hcs12x.cc"
 OpBtas_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37190 "hcs12x.cc"
+#line 39052 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37193 "hcs12x.cc"
+#line 39055 "hcs12x.cc"
 )
 {
 #line 1801 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -37205,7 +39067,7 @@ cpu
 
 		cpu->memWrite8(addr, opr16aVal | msk8);
 	}
-#line 37209 "hcs12x.cc"
+#line 39071 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBtas_ext(CodeType const& code, uint16_t addr)
@@ -37215,14 +39077,14 @@ static Operation *DecodeOpBtas_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 37219 "hcs12x.cc"
+#line 39081 "hcs12x.cc"
 OpBtas_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37223 "hcs12x.cc"
+#line 39085 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37226 "hcs12x.cc"
+#line 39088 "hcs12x.cc"
 )
 {
 #line 1816 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -37231,18 +39093,18 @@ sink
 		xb->disasm(sink);
 		sink << ", $" << std::hex << msk8;
 	}
-#line 37235 "hcs12x.cc"
+#line 39097 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37239 "hcs12x.cc"
+#line 39101 "hcs12x.cc"
 OpBtas_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37243 "hcs12x.cc"
+#line 39105 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37246 "hcs12x.cc"
+#line 39108 "hcs12x.cc"
 )
 {
 #line 1822 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
@@ -37258,7 +39120,7 @@ cpu
 
 		cpu->memWrite8(addr, xbVal | msk8);
 	}
-#line 37262 "hcs12x.cc"
+#line 39124 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBtas_idx(CodeType const& code, uint16_t addr)
@@ -37302,32 +39164,32 @@ static Operation *DecodeOpBtas_idx(CodeType const& code, uint16_t addr)
 // EMUL: 16 by 16 Bit Multiply (unsigned) (D) x (Y) => Y:D
 #line 69 "hcs12x.isa"
 void
-#line 37306 "hcs12x.cc"
+#line 39168 "hcs12x.cc"
 OpEmul::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37310 "hcs12x.cc"
+#line 39172 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37313 "hcs12x.cc"
+#line 39175 "hcs12x.cc"
 )
 {
 #line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EMUL";
 	}
-#line 37320 "hcs12x.cc"
+#line 39182 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37324 "hcs12x.cc"
+#line 39186 "hcs12x.cc"
 OpEmul::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37328 "hcs12x.cc"
+#line 39190 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37331 "hcs12x.cc"
+#line 39193 "hcs12x.cc"
 )
 {
 #line 43 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37341,7 +39203,7 @@ cpu
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	}
-#line 37345 "hcs12x.cc"
+#line 39207 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEmul(CodeType const& code, uint16_t addr)
@@ -37352,32 +39214,32 @@ static Operation *DecodeOpEmul(CodeType const& code, uint16_t addr)
 // EMULS: 16 by 16 Bit Multiply (signed) (D) x (Y) => Y:D
 #line 69 "hcs12x.isa"
 void
-#line 37356 "hcs12x.cc"
+#line 39218 "hcs12x.cc"
 OpEmuls::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37360 "hcs12x.cc"
+#line 39222 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37363 "hcs12x.cc"
+#line 39225 "hcs12x.cc"
 )
 {
 #line 57 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EMULS";
 	}
-#line 37370 "hcs12x.cc"
+#line 39232 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37374 "hcs12x.cc"
+#line 39236 "hcs12x.cc"
 OpEmuls::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37378 "hcs12x.cc"
+#line 39240 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37381 "hcs12x.cc"
+#line 39243 "hcs12x.cc"
 )
 {
 #line 61 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37404,7 +39266,7 @@ cpu
 
 
 	}
-#line 37408 "hcs12x.cc"
+#line 39270 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEmuls(CodeType const& code, uint16_t addr)
@@ -37415,32 +39277,32 @@ static Operation *DecodeOpEmuls(CodeType const& code, uint16_t addr)
 // MUL: 8 by 8 Bit Multiply (unsigned) (A) x (B) => A:B
 #line 69 "hcs12x.isa"
 void
-#line 37419 "hcs12x.cc"
+#line 39281 "hcs12x.cc"
 OpMul::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37423 "hcs12x.cc"
+#line 39285 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37426 "hcs12x.cc"
+#line 39288 "hcs12x.cc"
 )
 {
 #line 88 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "MUL";
 	}
-#line 37433 "hcs12x.cc"
+#line 39295 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37437 "hcs12x.cc"
+#line 39299 "hcs12x.cc"
 OpMul::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37441 "hcs12x.cc"
+#line 39303 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37444 "hcs12x.cc"
+#line 39306 "hcs12x.cc"
 )
 {
 #line 92 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37451,7 +39313,7 @@ cpu
 
 		if ((result & 0x0080) == 0x0080) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 	}
-#line 37455 "hcs12x.cc"
+#line 39317 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMul(CodeType const& code, uint16_t addr)
@@ -37462,32 +39324,32 @@ static Operation *DecodeOpMul(CodeType const& code, uint16_t addr)
 // EDIV: 32 by 16 bit to 16 bit divide (unsigned) (Y:D) div (X) => Y remainder => D
 #line 69 "hcs12x.isa"
 void
-#line 37466 "hcs12x.cc"
+#line 39328 "hcs12x.cc"
 OpEdiv::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37470 "hcs12x.cc"
+#line 39332 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37473 "hcs12x.cc"
+#line 39335 "hcs12x.cc"
 )
 {
 #line 103 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EDIV";
 	}
-#line 37480 "hcs12x.cc"
+#line 39342 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37484 "hcs12x.cc"
+#line 39346 "hcs12x.cc"
 OpEdiv::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37488 "hcs12x.cc"
+#line 39350 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37491 "hcs12x.cc"
+#line 39353 "hcs12x.cc"
 )
 {
 #line 107 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37531,7 +39393,7 @@ cpu
 		}
 
 	}
-#line 37535 "hcs12x.cc"
+#line 39397 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEdiv(CodeType const& code, uint16_t addr)
@@ -37542,32 +39404,32 @@ static Operation *DecodeOpEdiv(CodeType const& code, uint16_t addr)
 // EDIVS: 32 by 16 bit to 16 bit divide (signed)  (Y:D) div (X) => Y remainder => D
 #line 69 "hcs12x.isa"
 void
-#line 37546 "hcs12x.cc"
+#line 39408 "hcs12x.cc"
 OpEdivs::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37550 "hcs12x.cc"
+#line 39412 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37553 "hcs12x.cc"
+#line 39415 "hcs12x.cc"
 )
 {
 #line 151 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EDIVS";
 	}
-#line 37560 "hcs12x.cc"
+#line 39422 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37564 "hcs12x.cc"
+#line 39426 "hcs12x.cc"
 OpEdivs::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37568 "hcs12x.cc"
+#line 39430 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37571 "hcs12x.cc"
+#line 39433 "hcs12x.cc"
 )
 {
 #line 155 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37604,7 +39466,7 @@ cpu
 			}
 		}
 	}
-#line 37608 "hcs12x.cc"
+#line 39470 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEdivs(CodeType const& code, uint16_t addr)
@@ -37615,32 +39477,32 @@ static Operation *DecodeOpEdivs(CodeType const& code, uint16_t addr)
 // FDIV: 16 by 16 fractional divide
 #line 69 "hcs12x.isa"
 void
-#line 37619 "hcs12x.cc"
+#line 39481 "hcs12x.cc"
 OpFdiv::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37623 "hcs12x.cc"
+#line 39485 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37626 "hcs12x.cc"
+#line 39488 "hcs12x.cc"
 )
 {
 #line 192 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "FDIV";
 	}
-#line 37633 "hcs12x.cc"
+#line 39495 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37637 "hcs12x.cc"
+#line 39499 "hcs12x.cc"
 OpFdiv::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37641 "hcs12x.cc"
+#line 39503 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37644 "hcs12x.cc"
+#line 39506 "hcs12x.cc"
 )
 {
 #line 196 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37669,7 +39531,7 @@ cpu
 		cpu->setRegD(remind);
 		if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
 	}
-#line 37673 "hcs12x.cc"
+#line 39535 "hcs12x.cc"
 }
 
 static Operation *DecodeOpFdiv(CodeType const& code, uint16_t addr)
@@ -37680,32 +39542,32 @@ static Operation *DecodeOpFdiv(CodeType const& code, uint16_t addr)
 // IDIV: 16 by 16 integer divide (unsigned)
 #line 69 "hcs12x.isa"
 void
-#line 37684 "hcs12x.cc"
+#line 39546 "hcs12x.cc"
 OpIdiv::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37688 "hcs12x.cc"
+#line 39550 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37691 "hcs12x.cc"
+#line 39553 "hcs12x.cc"
 )
 {
 #line 225 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "IDIV";
 	}
-#line 37698 "hcs12x.cc"
+#line 39560 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37702 "hcs12x.cc"
+#line 39564 "hcs12x.cc"
 OpIdiv::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37706 "hcs12x.cc"
+#line 39568 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37709 "hcs12x.cc"
+#line 39571 "hcs12x.cc"
 )
 {
 #line 229 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37731,7 +39593,7 @@ cpu
 		cpu->setRegD(remind);
 		if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
 	}
-#line 37735 "hcs12x.cc"
+#line 39597 "hcs12x.cc"
 }
 
 static Operation *DecodeOpIdiv(CodeType const& code, uint16_t addr)
@@ -37742,32 +39604,32 @@ static Operation *DecodeOpIdiv(CodeType const& code, uint16_t addr)
 // IDIVS: 16 by 16 integer divide (signed)
 #line 69 "hcs12x.isa"
 void
-#line 37746 "hcs12x.cc"
+#line 39608 "hcs12x.cc"
 OpIdivs::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37750 "hcs12x.cc"
+#line 39612 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37753 "hcs12x.cc"
+#line 39615 "hcs12x.cc"
 )
 {
 #line 255 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "IDIVS";
 	}
-#line 37760 "hcs12x.cc"
+#line 39622 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37764 "hcs12x.cc"
+#line 39626 "hcs12x.cc"
 OpIdivs::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37768 "hcs12x.cc"
+#line 39630 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37771 "hcs12x.cc"
+#line 39633 "hcs12x.cc"
 )
 {
 #line 259 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37800,7 +39662,7 @@ cpu
 		if (quotion == 0) { cpu->ccr->setZ(); }  else { cpu->ccr->clrZ(); }
 		if ((quotion & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	}
-#line 37804 "hcs12x.cc"
+#line 39666 "hcs12x.cc"
 }
 
 static Operation *DecodeOpIdivs(CodeType const& code, uint16_t addr)
@@ -37812,32 +39674,32 @@ static Operation *DecodeOpIdivs(CodeType const& code, uint16_t addr)
 // EMACS: Multiply an Accumulate Instruction
 #line 69 "hcs12x.isa"
 void
-#line 37816 "hcs12x.cc"
+#line 39678 "hcs12x.cc"
 OpEmacs::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37820 "hcs12x.cc"
+#line 39682 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37823 "hcs12x.cc"
+#line 39685 "hcs12x.cc"
 )
 {
 #line 295 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EMACS $" << std::hex << opr16a;
 	}
-#line 37830 "hcs12x.cc"
+#line 39692 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37834 "hcs12x.cc"
+#line 39696 "hcs12x.cc"
 OpEmacs::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37838 "hcs12x.cc"
+#line 39700 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37841 "hcs12x.cc"
+#line 39703 "hcs12x.cc"
 )
 {
 #line 299 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
@@ -37884,7 +39746,7 @@ cpu
 		if (((accOpr & 0x00008000) & (inter & 0x00008000) | (inter & 0x00008000) & ~(result & 0x00008000) | ~(result & 0x00008000) & (accOpr & 0x00008000)) >> 15) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 
 	}
-#line 37888 "hcs12x.cc"
+#line 39750 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEmacs(CodeType const& code, uint16_t addr)
@@ -37931,14 +39793,14 @@ static Operation *DecodeOpEmacs(CodeType const& code, uint16_t addr)
 /* ********* Short Branch Instructions ******** */
 #line 69 "hcs12x.isa"
 void
-#line 37935 "hcs12x.cc"
+#line 39797 "hcs12x.cc"
 OpSbr::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 37939 "hcs12x.cc"
+#line 39801 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 37942 "hcs12x.cc"
+#line 39804 "hcs12x.cc"
 )
 {
 #line 44 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -37964,18 +39826,18 @@ sink
 		}
 		sink << std::dec << rel8;
 	}
-#line 37968 "hcs12x.cc"
+#line 39830 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 37972 "hcs12x.cc"
+#line 39834 "hcs12x.cc"
 OpSbr::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 37976 "hcs12x.cc"
+#line 39838 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 37979 "hcs12x.cc"
+#line 39841 "hcs12x.cc"
 )
 {
 #line 67 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38040,7 +39902,7 @@ cpu
 			// TODO: Refill the instruction queue with three program words from the new address
 		}
 	}
-#line 38044 "hcs12x.cc"
+#line 39906 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSbr(CodeType const& code, uint16_t addr)
@@ -38051,14 +39913,14 @@ static Operation *DecodeOpSbr(CodeType const& code, uint16_t addr)
 /* ******** Long Branch Instructions ******* */
 #line 69 "hcs12x.isa"
 void
-#line 38055 "hcs12x.cc"
+#line 39917 "hcs12x.cc"
 OpLbr::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38059 "hcs12x.cc"
+#line 39921 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38062 "hcs12x.cc"
+#line 39924 "hcs12x.cc"
 )
 {
 #line 133 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38084,18 +39946,18 @@ sink
 		}
 		sink << std::dec << rel16;
 	}
-#line 38088 "hcs12x.cc"
+#line 39950 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38092 "hcs12x.cc"
+#line 39954 "hcs12x.cc"
 OpLbr::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38096 "hcs12x.cc"
+#line 39958 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38099 "hcs12x.cc"
+#line 39961 "hcs12x.cc"
 )
 {
 #line 156 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38159,7 +40021,7 @@ cpu
 			// TODO: Refill the instruction queue with three program words from the new address
 		}
 	}
-#line 38163 "hcs12x.cc"
+#line 40025 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLbr(CodeType const& code, uint16_t addr)
@@ -38171,14 +40033,14 @@ static Operation *DecodeOpLbr(CodeType const& code, uint16_t addr)
 // if (b==1) BRCLR_instruction else BRSET_instruction;
 #line 69 "hcs12x.isa"
 void
-#line 38175 "hcs12x.cc"
+#line 40037 "hcs12x.cc"
 OpBr_clr_set_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38179 "hcs12x.cc"
+#line 40041 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38182 "hcs12x.cc"
+#line 40044 "hcs12x.cc"
 )
 {
 #line 223 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38191,18 +40053,18 @@ sink
 
 		sink << std::hex << opr8a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
-#line 38195 "hcs12x.cc"
+#line 40057 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38199 "hcs12x.cc"
+#line 40061 "hcs12x.cc"
 OpBr_clr_set_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38203 "hcs12x.cc"
+#line 40065 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38206 "hcs12x.cc"
+#line 40068 "hcs12x.cc"
 )
 {
 #line 233 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38220,7 +40082,7 @@ cpu
 			// TODO: Refill the instruction queue with three program words from the new address
 		}
 	}
-#line 38224 "hcs12x.cc"
+#line 40086 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBr_clr_set_dir(CodeType const& code, uint16_t addr)
@@ -38230,14 +40092,14 @@ static Operation *DecodeOpBr_clr_set_dir(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 38234 "hcs12x.cc"
+#line 40096 "hcs12x.cc"
 OpBr_clr_set_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38238 "hcs12x.cc"
+#line 40100 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38241 "hcs12x.cc"
+#line 40103 "hcs12x.cc"
 )
 {
 #line 250 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38250,18 +40112,18 @@ sink
 
 		sink << std::hex << opr16a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
-#line 38254 "hcs12x.cc"
+#line 40116 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38258 "hcs12x.cc"
+#line 40120 "hcs12x.cc"
 OpBr_clr_set_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38262 "hcs12x.cc"
+#line 40124 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38265 "hcs12x.cc"
+#line 40127 "hcs12x.cc"
 )
 {
 #line 260 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38279,7 +40141,7 @@ cpu
 			// TODO: Refill the instruction queue with three program words from the new address
 		}
 	}
-#line 38283 "hcs12x.cc"
+#line 40145 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBr_clr_set_ext(CodeType const& code, uint16_t addr)
@@ -38289,14 +40151,14 @@ static Operation *DecodeOpBr_clr_set_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 38293 "hcs12x.cc"
+#line 40155 "hcs12x.cc"
 OpBr_clr_set_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38297 "hcs12x.cc"
+#line 40159 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38300 "hcs12x.cc"
+#line 40162 "hcs12x.cc"
 )
 {
 #line 277 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38310,18 +40172,18 @@ sink
 		xb->disasm(sink);
 		sink << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
-#line 38314 "hcs12x.cc"
+#line 40176 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38318 "hcs12x.cc"
+#line 40180 "hcs12x.cc"
 OpBr_clr_set_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38322 "hcs12x.cc"
+#line 40184 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38325 "hcs12x.cc"
+#line 40187 "hcs12x.cc"
 )
 {
 #line 288 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38339,7 +40201,7 @@ cpu
 			// TODO: Refill the instruction queue with three program words from the new address
 		}
 	}
-#line 38343 "hcs12x.cc"
+#line 40205 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBr_clr_set_idx(CodeType const& code, uint16_t addr)
@@ -38351,32 +40213,32 @@ static Operation *DecodeOpBr_clr_set_idx(CodeType const& code, uint16_t addr)
 // BSR: Branch to subroutine
 #line 69 "hcs12x.isa"
 void
-#line 38355 "hcs12x.cc"
+#line 40217 "hcs12x.cc"
 OpBsr::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38359 "hcs12x.cc"
+#line 40221 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38362 "hcs12x.cc"
+#line 40224 "hcs12x.cc"
 )
 {
 #line 308 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "BSR " << std::dec << rel8;
 	}
-#line 38369 "hcs12x.cc"
+#line 40231 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38373 "hcs12x.cc"
+#line 40235 "hcs12x.cc"
 OpBsr::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38377 "hcs12x.cc"
+#line 40239 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38380 "hcs12x.cc"
+#line 40242 "hcs12x.cc"
 )
 {
 #line 312 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38400,7 +40262,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address
 	}
-#line 38404 "hcs12x.cc"
+#line 40266 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBsr(CodeType const& code, uint16_t addr)
@@ -38411,32 +40273,32 @@ static Operation *DecodeOpBsr(CodeType const& code, uint16_t addr)
 // CALL: Call subroutine in Expanded Memory
 #line 69 "hcs12x.isa"
 void
-#line 38415 "hcs12x.cc"
+#line 40277 "hcs12x.cc"
 OpCall_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38419 "hcs12x.cc"
+#line 40281 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38422 "hcs12x.cc"
+#line 40284 "hcs12x.cc"
 )
 {
 #line 336 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "CALL $" << std::hex << opr16a << ", $" << std::hex << page;
 	}
-#line 38429 "hcs12x.cc"
+#line 40291 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38433 "hcs12x.cc"
+#line 40295 "hcs12x.cc"
 OpCall_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38437 "hcs12x.cc"
+#line 40299 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38440 "hcs12x.cc"
+#line 40302 "hcs12x.cc"
 )
 {
 #line 340 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38470,7 +40332,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	}
-#line 38474 "hcs12x.cc"
+#line 40336 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCall_ext(CodeType const& code, uint16_t addr)
@@ -38483,14 +40345,14 @@ static Operation *DecodeOpCall_ext(CodeType const& code, uint16_t addr)
 // XB decoder return only one address
 #line 69 "hcs12x.isa"
 void
-#line 38487 "hcs12x.cc"
+#line 40349 "hcs12x.cc"
 OpCall_16offset_idx_ind::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38491 "hcs12x.cc"
+#line 40353 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38494 "hcs12x.cc"
+#line 40356 "hcs12x.cc"
 )
 {
 #line 377 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38499,18 +40361,18 @@ sink
 		sink << "CALL ";
 		sink << "[" << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr) << "]";
 	}
-#line 38503 "hcs12x.cc"
+#line 40365 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38507 "hcs12x.cc"
+#line 40369 "hcs12x.cc"
 OpCall_16offset_idx_ind::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38511 "hcs12x.cc"
+#line 40373 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38514 "hcs12x.cc"
+#line 40376 "hcs12x.cc"
 )
 {
 #line 383 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38547,7 +40409,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	}
-#line 38551 "hcs12x.cc"
+#line 40413 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCall_16offset_idx_ind(CodeType const& code, uint16_t addr)
@@ -38557,14 +40419,14 @@ static Operation *DecodeOpCall_16offset_idx_ind(CodeType const& code, uint16_t a
 
 #line 69 "hcs12x.isa"
 void
-#line 38561 "hcs12x.cc"
+#line 40423 "hcs12x.cc"
 OpCall_accD_offset_idx_ind::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38565 "hcs12x.cc"
+#line 40427 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38568 "hcs12x.cc"
+#line 40430 "hcs12x.cc"
 )
 {
 #line 419 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38573,18 +40435,18 @@ sink
 		sink << "CALL ";
 		sink << "[D," << CPU::xb_getAddrRegLabel(rr) << "]";
 	}
-#line 38577 "hcs12x.cc"
+#line 40439 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38581 "hcs12x.cc"
+#line 40443 "hcs12x.cc"
 OpCall_accD_offset_idx_ind::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38585 "hcs12x.cc"
+#line 40447 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38588 "hcs12x.cc"
+#line 40450 "hcs12x.cc"
 )
 {
 #line 425 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38621,7 +40483,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	}
-#line 38625 "hcs12x.cc"
+#line 40487 "hcs12x.cc"
 }
 
 static Operation *DecodeOpCall_accD_offset_idx_ind(CodeType const& code, uint16_t addr)
@@ -38632,32 +40494,32 @@ static Operation *DecodeOpCall_accD_offset_idx_ind(CodeType const& code, uint16_
 // JMP: JUMP
 #line 69 "hcs12x.isa"
 void
-#line 38636 "hcs12x.cc"
+#line 40498 "hcs12x.cc"
 OpJmp_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38640 "hcs12x.cc"
+#line 40502 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38643 "hcs12x.cc"
+#line 40505 "hcs12x.cc"
 )
 {
 #line 498 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "JMP $" << std::hex << opr16a;
 	}
-#line 38650 "hcs12x.cc"
+#line 40512 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38654 "hcs12x.cc"
+#line 40516 "hcs12x.cc"
 OpJmp_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38658 "hcs12x.cc"
+#line 40520 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38661 "hcs12x.cc"
+#line 40523 "hcs12x.cc"
 )
 {
 #line 502 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38666,7 +40528,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address
 	}
-#line 38670 "hcs12x.cc"
+#line 40532 "hcs12x.cc"
 }
 
 static Operation *DecodeOpJmp_ext(CodeType const& code, uint16_t addr)
@@ -38676,14 +40538,14 @@ static Operation *DecodeOpJmp_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 38680 "hcs12x.cc"
+#line 40542 "hcs12x.cc"
 OpJmp_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38684 "hcs12x.cc"
+#line 40546 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38687 "hcs12x.cc"
+#line 40549 "hcs12x.cc"
 )
 {
 #line 510 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38691,18 +40553,18 @@ sink
 		sink << "JMP ";
 		xb->disasm(sink);
 	}
-#line 38695 "hcs12x.cc"
+#line 40557 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38699 "hcs12x.cc"
+#line 40561 "hcs12x.cc"
 OpJmp_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38703 "hcs12x.cc"
+#line 40565 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38706 "hcs12x.cc"
+#line 40568 "hcs12x.cc"
 )
 {
 #line 515 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38711,7 +40573,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address
 	}
-#line 38715 "hcs12x.cc"
+#line 40577 "hcs12x.cc"
 }
 
 static Operation *DecodeOpJmp_idx(CodeType const& code, uint16_t addr)
@@ -38722,32 +40584,32 @@ static Operation *DecodeOpJmp_idx(CodeType const& code, uint16_t addr)
 // JSR: Jump to subroutine
 #line 69 "hcs12x.isa"
 void
-#line 38726 "hcs12x.cc"
+#line 40588 "hcs12x.cc"
 OpJsr_dir::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38730 "hcs12x.cc"
+#line 40592 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38733 "hcs12x.cc"
+#line 40595 "hcs12x.cc"
 )
 {
 #line 524 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "JSR $" << std::hex << opr8a;
 	}
-#line 38740 "hcs12x.cc"
+#line 40602 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38744 "hcs12x.cc"
+#line 40606 "hcs12x.cc"
 OpJsr_dir::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38748 "hcs12x.cc"
+#line 40610 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38751 "hcs12x.cc"
+#line 40613 "hcs12x.cc"
 )
 {
 #line 528 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38770,7 +40632,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address
 	}
-#line 38774 "hcs12x.cc"
+#line 40636 "hcs12x.cc"
 }
 
 static Operation *DecodeOpJsr_dir(CodeType const& code, uint16_t addr)
@@ -38780,32 +40642,32 @@ static Operation *DecodeOpJsr_dir(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 38784 "hcs12x.cc"
+#line 40646 "hcs12x.cc"
 OpJsr_ext::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38788 "hcs12x.cc"
+#line 40650 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38791 "hcs12x.cc"
+#line 40653 "hcs12x.cc"
 )
 {
 #line 550 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "JSR $" << std::hex << opr16a;
 	}
-#line 38798 "hcs12x.cc"
+#line 40660 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38802 "hcs12x.cc"
+#line 40664 "hcs12x.cc"
 OpJsr_ext::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38806 "hcs12x.cc"
+#line 40668 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38809 "hcs12x.cc"
+#line 40671 "hcs12x.cc"
 )
 {
 #line 554 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38822,7 +40684,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address
 	}
-#line 38826 "hcs12x.cc"
+#line 40688 "hcs12x.cc"
 }
 
 static Operation *DecodeOpJsr_ext(CodeType const& code, uint16_t addr)
@@ -38832,14 +40694,14 @@ static Operation *DecodeOpJsr_ext(CodeType const& code, uint16_t addr)
 
 #line 69 "hcs12x.isa"
 void
-#line 38836 "hcs12x.cc"
+#line 40698 "hcs12x.cc"
 OpJsr_idx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38840 "hcs12x.cc"
+#line 40702 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38843 "hcs12x.cc"
+#line 40705 "hcs12x.cc"
 )
 {
 #line 570 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38847,18 +40709,18 @@ sink
 		sink << "JSR ";
 		xb->disasm(sink);
 	}
-#line 38851 "hcs12x.cc"
+#line 40713 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38855 "hcs12x.cc"
+#line 40717 "hcs12x.cc"
 OpJsr_idx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38859 "hcs12x.cc"
+#line 40721 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38862 "hcs12x.cc"
+#line 40724 "hcs12x.cc"
 )
 {
 #line 575 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38875,7 +40737,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address
 	}
-#line 38879 "hcs12x.cc"
+#line 40741 "hcs12x.cc"
 }
 
 static Operation *DecodeOpJsr_idx(CodeType const& code, uint16_t addr)
@@ -38886,32 +40748,32 @@ static Operation *DecodeOpJsr_idx(CodeType const& code, uint16_t addr)
 // RTC: Return from call
 #line 69 "hcs12x.isa"
 void
-#line 38890 "hcs12x.cc"
+#line 40752 "hcs12x.cc"
 OpRtc::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38894 "hcs12x.cc"
+#line 40756 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38897 "hcs12x.cc"
+#line 40759 "hcs12x.cc"
 )
 {
 #line 592 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "RTC";
 	}
-#line 38904 "hcs12x.cc"
+#line 40766 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38908 "hcs12x.cc"
+#line 40770 "hcs12x.cc"
 OpRtc::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38912 "hcs12x.cc"
+#line 40774 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38915 "hcs12x.cc"
+#line 40777 "hcs12x.cc"
 )
 {
 #line 596 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38941,7 +40803,7 @@ cpu
 
 		// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	}
-#line 38945 "hcs12x.cc"
+#line 40807 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRtc(CodeType const& code, uint16_t addr)
@@ -38952,32 +40814,32 @@ static Operation *DecodeOpRtc(CodeType const& code, uint16_t addr)
 // RTS: Return from subroutine
 #line 69 "hcs12x.isa"
 void
-#line 38956 "hcs12x.cc"
+#line 40818 "hcs12x.cc"
 OpRts::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 38960 "hcs12x.cc"
+#line 40822 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 38963 "hcs12x.cc"
+#line 40825 "hcs12x.cc"
 )
 {
 #line 626 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "RTS";
 	}
-#line 38970 "hcs12x.cc"
+#line 40832 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 38974 "hcs12x.cc"
+#line 40836 "hcs12x.cc"
 OpRts::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 38978 "hcs12x.cc"
+#line 40840 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 38981 "hcs12x.cc"
+#line 40843 "hcs12x.cc"
 )
 {
 #line 630 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -38993,7 +40855,7 @@ cpu
 
 		cpu->setRegSP(cpu->getRegSP() + 2);
 	}
-#line 38997 "hcs12x.cc"
+#line 40859 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRts(CodeType const& code, uint16_t addr)
@@ -39004,14 +40866,14 @@ static Operation *DecodeOpRts(CodeType const& code, uint16_t addr)
 /* ************ Loop Primitive ********* */
 #line 69 "hcs12x.isa"
 void
-#line 39008 "hcs12x.cc"
+#line 40870 "hcs12x.cc"
 OpLoop::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39012 "hcs12x.cc"
+#line 40874 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39015 "hcs12x.cc"
+#line 40877 "hcs12x.cc"
 )
 {
 #line 648 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -39037,18 +40899,18 @@ sink
 
 		sink << EBLB::getRegName(b210) << " , " << std::dec << rel9;
 	}
-#line 39041 "hcs12x.cc"
+#line 40903 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39045 "hcs12x.cc"
+#line 40907 "hcs12x.cc"
 OpLoop::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39049 "hcs12x.cc"
+#line 40911 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39052 "hcs12x.cc"
+#line 40914 "hcs12x.cc"
 )
 {
 #line 671 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
@@ -39130,7 +40992,7 @@ cpu
 		}
 
 	}
-#line 39134 "hcs12x.cc"
+#line 40996 "hcs12x.cc"
 }
 
 static Operation *DecodeOpLoop(CodeType const& code, uint16_t addr)
@@ -39196,32 +41058,32 @@ static Operation *DecodeOpLoop(CodeType const& code, uint16_t addr)
 // PSHA: Push A
 #line 69 "hcs12x.isa"
 void
-#line 39200 "hcs12x.cc"
+#line 41062 "hcs12x.cc"
 OpPsha::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39204 "hcs12x.cc"
+#line 41066 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39207 "hcs12x.cc"
+#line 41069 "hcs12x.cc"
 )
 {
 #line 75 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHA";
 	}
-#line 39214 "hcs12x.cc"
+#line 41076 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39218 "hcs12x.cc"
+#line 41080 "hcs12x.cc"
 OpPsha::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39222 "hcs12x.cc"
+#line 41084 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39225 "hcs12x.cc"
+#line 41087 "hcs12x.cc"
 )
 {
 #line 79 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39230,7 +41092,7 @@ cpu
 		cpu->setRegSP(cpu->getRegSP()-1);
 		cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegA());
 	}
-#line 39234 "hcs12x.cc"
+#line 41096 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPsha(CodeType const& code, uint16_t addr)
@@ -39241,32 +41103,32 @@ static Operation *DecodeOpPsha(CodeType const& code, uint16_t addr)
 // PSHB: Push B
 #line 69 "hcs12x.isa"
 void
-#line 39245 "hcs12x.cc"
+#line 41107 "hcs12x.cc"
 OpPshb::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39249 "hcs12x.cc"
+#line 41111 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39252 "hcs12x.cc"
+#line 41114 "hcs12x.cc"
 )
 {
 #line 89 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHB";
 	}
-#line 39259 "hcs12x.cc"
+#line 41121 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39263 "hcs12x.cc"
+#line 41125 "hcs12x.cc"
 OpPshb::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39267 "hcs12x.cc"
+#line 41129 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39270 "hcs12x.cc"
+#line 41132 "hcs12x.cc"
 )
 {
 #line 93 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39274,7 +41136,7 @@ cpu
 		cpu->setRegSP(cpu->getRegSP()-1);
 		cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
 	}
-#line 39278 "hcs12x.cc"
+#line 41140 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPshb(CodeType const& code, uint16_t addr)
@@ -39285,32 +41147,32 @@ static Operation *DecodeOpPshb(CodeType const& code, uint16_t addr)
 // PSHC: Push CCR (8 lower bits)
 #line 69 "hcs12x.isa"
 void
-#line 39289 "hcs12x.cc"
+#line 41151 "hcs12x.cc"
 OpPshc::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39293 "hcs12x.cc"
+#line 41155 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39296 "hcs12x.cc"
+#line 41158 "hcs12x.cc"
 )
 {
 #line 102 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHC";
 	}
-#line 39303 "hcs12x.cc"
+#line 41165 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39307 "hcs12x.cc"
+#line 41169 "hcs12x.cc"
 OpPshc::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39311 "hcs12x.cc"
+#line 41173 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39314 "hcs12x.cc"
+#line 41176 "hcs12x.cc"
 )
 {
 #line 106 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39318,7 +41180,7 @@ cpu
 		cpu->setRegSP(cpu->getRegSP()-1);
 		cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCRLow());
 	}
-#line 39322 "hcs12x.cc"
+#line 41184 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPshc(CodeType const& code, uint16_t addr)
@@ -39329,32 +41191,32 @@ static Operation *DecodeOpPshc(CodeType const& code, uint16_t addr)
 // PSHCW: Push CCR word (16 bits)
 #line 69 "hcs12x.isa"
 void
-#line 39333 "hcs12x.cc"
+#line 41195 "hcs12x.cc"
 OpPshcw::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39337 "hcs12x.cc"
+#line 41199 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39340 "hcs12x.cc"
+#line 41202 "hcs12x.cc"
 )
 {
 #line 115 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHCW";
 	}
-#line 39347 "hcs12x.cc"
+#line 41209 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39351 "hcs12x.cc"
+#line 41213 "hcs12x.cc"
 OpPshcw::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39355 "hcs12x.cc"
+#line 41217 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39358 "hcs12x.cc"
+#line 41220 "hcs12x.cc"
 )
 {
 #line 119 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39362,7 +41224,7 @@ cpu
 		cpu->setRegSP(cpu->getRegSP()-2);
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
 	}
-#line 39366 "hcs12x.cc"
+#line 41228 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPshcw(CodeType const& code, uint16_t addr)
@@ -39373,32 +41235,32 @@ static Operation *DecodeOpPshcw(CodeType const& code, uint16_t addr)
 // PSHD: Push D
 #line 69 "hcs12x.isa"
 void
-#line 39377 "hcs12x.cc"
+#line 41239 "hcs12x.cc"
 OpPshd::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39381 "hcs12x.cc"
+#line 41243 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39384 "hcs12x.cc"
+#line 41246 "hcs12x.cc"
 )
 {
 #line 128 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHD";
 	}
-#line 39391 "hcs12x.cc"
+#line 41253 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39395 "hcs12x.cc"
+#line 41257 "hcs12x.cc"
 OpPshd::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39399 "hcs12x.cc"
+#line 41261 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39402 "hcs12x.cc"
+#line 41264 "hcs12x.cc"
 )
 {
 #line 132 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39406,7 +41268,7 @@ cpu
 		cpu->setRegSP(cpu->getRegSP()-2);
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegD());
 	}
-#line 39410 "hcs12x.cc"
+#line 41272 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPshd(CodeType const& code, uint16_t addr)
@@ -39417,32 +41279,32 @@ static Operation *DecodeOpPshd(CodeType const& code, uint16_t addr)
 // PSHX: Push X
 #line 69 "hcs12x.isa"
 void
-#line 39421 "hcs12x.cc"
+#line 41283 "hcs12x.cc"
 OpPshx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39425 "hcs12x.cc"
+#line 41287 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39428 "hcs12x.cc"
+#line 41290 "hcs12x.cc"
 )
 {
 #line 141 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHX";
 	}
-#line 39435 "hcs12x.cc"
+#line 41297 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39439 "hcs12x.cc"
+#line 41301 "hcs12x.cc"
 OpPshx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39443 "hcs12x.cc"
+#line 41305 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39446 "hcs12x.cc"
+#line 41308 "hcs12x.cc"
 )
 {
 #line 145 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39450,7 +41312,7 @@ cpu
 		cpu->setRegSP(cpu->getRegSP()-2);
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
 	}
-#line 39454 "hcs12x.cc"
+#line 41316 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPshx(CodeType const& code, uint16_t addr)
@@ -39461,32 +41323,32 @@ static Operation *DecodeOpPshx(CodeType const& code, uint16_t addr)
 // PSHY: Push Y
 #line 69 "hcs12x.isa"
 void
-#line 39465 "hcs12x.cc"
+#line 41327 "hcs12x.cc"
 OpPshy::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39469 "hcs12x.cc"
+#line 41331 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39472 "hcs12x.cc"
+#line 41334 "hcs12x.cc"
 )
 {
 #line 154 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHY";
 	}
-#line 39479 "hcs12x.cc"
+#line 41341 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39483 "hcs12x.cc"
+#line 41345 "hcs12x.cc"
 OpPshy::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39487 "hcs12x.cc"
+#line 41349 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39490 "hcs12x.cc"
+#line 41352 "hcs12x.cc"
 )
 {
 #line 158 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39494,7 +41356,7 @@ cpu
 		cpu->setRegSP(cpu->getRegSP()-2);
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
 	}
-#line 39498 "hcs12x.cc"
+#line 41360 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPshy(CodeType const& code, uint16_t addr)
@@ -39505,32 +41367,32 @@ static Operation *DecodeOpPshy(CodeType const& code, uint16_t addr)
 // PULA: Pull A
 #line 69 "hcs12x.isa"
 void
-#line 39509 "hcs12x.cc"
+#line 41371 "hcs12x.cc"
 OpPula::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39513 "hcs12x.cc"
+#line 41375 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39516 "hcs12x.cc"
+#line 41378 "hcs12x.cc"
 )
 {
 #line 167 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULA";
 	}
-#line 39523 "hcs12x.cc"
+#line 41385 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39527 "hcs12x.cc"
+#line 41389 "hcs12x.cc"
 OpPula::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39531 "hcs12x.cc"
+#line 41393 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39534 "hcs12x.cc"
+#line 41396 "hcs12x.cc"
 )
 {
 #line 171 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39538,7 +41400,7 @@ cpu
 		cpu->setRegA(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+1);
 	}
-#line 39542 "hcs12x.cc"
+#line 41404 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPula(CodeType const& code, uint16_t addr)
@@ -39549,32 +41411,32 @@ static Operation *DecodeOpPula(CodeType const& code, uint16_t addr)
 // PULB: Pull B
 #line 69 "hcs12x.isa"
 void
-#line 39553 "hcs12x.cc"
+#line 41415 "hcs12x.cc"
 OpPulb::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39557 "hcs12x.cc"
+#line 41419 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39560 "hcs12x.cc"
+#line 41422 "hcs12x.cc"
 )
 {
 #line 180 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULB";
 	}
-#line 39567 "hcs12x.cc"
+#line 41429 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39571 "hcs12x.cc"
+#line 41433 "hcs12x.cc"
 OpPulb::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39575 "hcs12x.cc"
+#line 41437 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39578 "hcs12x.cc"
+#line 41440 "hcs12x.cc"
 )
 {
 #line 184 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39582,7 +41444,7 @@ cpu
 		cpu->setRegB(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+1);
 	}
-#line 39586 "hcs12x.cc"
+#line 41448 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPulb(CodeType const& code, uint16_t addr)
@@ -39593,32 +41455,32 @@ static Operation *DecodeOpPulb(CodeType const& code, uint16_t addr)
 // PULC: Pull CCR (16 lower bits)
 #line 69 "hcs12x.isa"
 void
-#line 39597 "hcs12x.cc"
+#line 41459 "hcs12x.cc"
 OpPulc::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39601 "hcs12x.cc"
+#line 41463 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39604 "hcs12x.cc"
+#line 41466 "hcs12x.cc"
 )
 {
 #line 193 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULC";
 	}
-#line 39611 "hcs12x.cc"
+#line 41473 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39615 "hcs12x.cc"
+#line 41477 "hcs12x.cc"
 OpPulc::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39619 "hcs12x.cc"
+#line 41481 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39622 "hcs12x.cc"
+#line 41484 "hcs12x.cc"
 )
 {
 #line 197 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39626,7 +41488,7 @@ cpu
 		cpu->ccr->setCCRLow(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+1);
 	}
-#line 39630 "hcs12x.cc"
+#line 41492 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPulc(CodeType const& code, uint16_t addr)
@@ -39637,32 +41499,32 @@ static Operation *DecodeOpPulc(CodeType const& code, uint16_t addr)
 // PULCW: Pull CCR word
 #line 69 "hcs12x.isa"
 void
-#line 39641 "hcs12x.cc"
+#line 41503 "hcs12x.cc"
 OpPulcw::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39645 "hcs12x.cc"
+#line 41507 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39648 "hcs12x.cc"
+#line 41510 "hcs12x.cc"
 )
 {
 #line 206 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULCW";
 	}
-#line 39655 "hcs12x.cc"
+#line 41517 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39659 "hcs12x.cc"
+#line 41521 "hcs12x.cc"
 OpPulcw::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39663 "hcs12x.cc"
+#line 41525 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39666 "hcs12x.cc"
+#line 41528 "hcs12x.cc"
 )
 {
 #line 210 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39670,7 +41532,7 @@ cpu
 		cpu->ccr->setCCR(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+2);
 	}
-#line 39674 "hcs12x.cc"
+#line 41536 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPulcw(CodeType const& code, uint16_t addr)
@@ -39681,32 +41543,32 @@ static Operation *DecodeOpPulcw(CodeType const& code, uint16_t addr)
 // PULD: Pull D
 #line 69 "hcs12x.isa"
 void
-#line 39685 "hcs12x.cc"
+#line 41547 "hcs12x.cc"
 OpPuld::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39689 "hcs12x.cc"
+#line 41551 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39692 "hcs12x.cc"
+#line 41554 "hcs12x.cc"
 )
 {
 #line 219 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULD";
 	}
-#line 39699 "hcs12x.cc"
+#line 41561 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39703 "hcs12x.cc"
+#line 41565 "hcs12x.cc"
 OpPuld::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39707 "hcs12x.cc"
+#line 41569 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39710 "hcs12x.cc"
+#line 41572 "hcs12x.cc"
 )
 {
 #line 223 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39714,7 +41576,7 @@ cpu
 		cpu->setRegD(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+2);
 	}
-#line 39718 "hcs12x.cc"
+#line 41580 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPuld(CodeType const& code, uint16_t addr)
@@ -39725,32 +41587,32 @@ static Operation *DecodeOpPuld(CodeType const& code, uint16_t addr)
 // PULX: Pull X
 #line 69 "hcs12x.isa"
 void
-#line 39729 "hcs12x.cc"
+#line 41591 "hcs12x.cc"
 OpPulx::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39733 "hcs12x.cc"
+#line 41595 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39736 "hcs12x.cc"
+#line 41598 "hcs12x.cc"
 )
 {
 #line 232 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULX";
 	}
-#line 39743 "hcs12x.cc"
+#line 41605 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39747 "hcs12x.cc"
+#line 41609 "hcs12x.cc"
 OpPulx::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39751 "hcs12x.cc"
+#line 41613 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39754 "hcs12x.cc"
+#line 41616 "hcs12x.cc"
 )
 {
 #line 236 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39758,7 +41620,7 @@ cpu
 		cpu->setRegX(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+2);
 	}
-#line 39762 "hcs12x.cc"
+#line 41624 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPulx(CodeType const& code, uint16_t addr)
@@ -39769,32 +41631,32 @@ static Operation *DecodeOpPulx(CodeType const& code, uint16_t addr)
 // PULY: Pull Y
 #line 69 "hcs12x.isa"
 void
-#line 39773 "hcs12x.cc"
+#line 41635 "hcs12x.cc"
 OpPuly::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39777 "hcs12x.cc"
+#line 41639 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39780 "hcs12x.cc"
+#line 41642 "hcs12x.cc"
 )
 {
 #line 245 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULY";
 	}
-#line 39787 "hcs12x.cc"
+#line 41649 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39791 "hcs12x.cc"
+#line 41653 "hcs12x.cc"
 OpPuly::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39795 "hcs12x.cc"
+#line 41657 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39798 "hcs12x.cc"
+#line 41660 "hcs12x.cc"
 )
 {
 #line 249 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
@@ -39802,7 +41664,7 @@ cpu
 		cpu->setRegY(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+2);
 	}
-#line 39806 "hcs12x.cc"
+#line 41668 "hcs12x.cc"
 }
 
 static Operation *DecodeOpPuly(CodeType const& code, uint16_t addr)
@@ -39846,32 +41708,32 @@ static Operation *DecodeOpPuly(CodeType const& code, uint16_t addr)
 // MEM: Membership function
 #line 69 "hcs12x.isa"
 void
-#line 39850 "hcs12x.cc"
+#line 41712 "hcs12x.cc"
 OpMem::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39854 "hcs12x.cc"
+#line 41716 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39857 "hcs12x.cc"
+#line 41719 "hcs12x.cc"
 )
 {
 #line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "MEM";
 	}
-#line 39864 "hcs12x.cc"
+#line 41726 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 39868 "hcs12x.cc"
+#line 41730 "hcs12x.cc"
 OpMem::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39872 "hcs12x.cc"
+#line 41734 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39875 "hcs12x.cc"
+#line 41737 "hcs12x.cc"
 )
 {
 #line 43 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -39940,7 +41802,7 @@ cpu
 		cpu->setRegX(xVal + 4);
 
 	}
-#line 39944 "hcs12x.cc"
+#line 41806 "hcs12x.cc"
 }
 
 static Operation *DecodeOpMem(CodeType const& code, uint16_t addr)
@@ -39952,33 +41814,33 @@ static Operation *DecodeOpMem(CodeType const& code, uint16_t addr)
 // this instruction can be interrupted.
 #line 69 "hcs12x.isa"
 void
-#line 39956 "hcs12x.cc"
+#line 41818 "hcs12x.cc"
 OpRev::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 39960 "hcs12x.cc"
+#line 41822 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 39963 "hcs12x.cc"
+#line 41825 "hcs12x.cc"
 )
 {
 #line 113 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "REV";
 	}
-#line 39970 "hcs12x.cc"
+#line 41832 "hcs12x.cc"
 }
 // *** INTERRUPTIBLE ***
 #line 63 "hcs12x.isa"
 void
-#line 39975 "hcs12x.cc"
+#line 41837 "hcs12x.cc"
 OpRev::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 39979 "hcs12x.cc"
+#line 41841 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 39982 "hcs12x.cc"
+#line 41844 "hcs12x.cc"
 )
 {
 #line 118 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -40035,7 +41897,7 @@ cpu
 		cpu->setRegY(yVal);
 		if (ccrV) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	}
-#line 40039 "hcs12x.cc"
+#line 41901 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRev(CodeType const& code, uint16_t addr)
@@ -40047,33 +41909,33 @@ static Operation *DecodeOpRev(CodeType const& code, uint16_t addr)
 // this instruction can be interrupted.
 #line 69 "hcs12x.isa"
 void
-#line 40051 "hcs12x.cc"
+#line 41913 "hcs12x.cc"
 OpRevw::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40055 "hcs12x.cc"
+#line 41917 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40058 "hcs12x.cc"
+#line 41920 "hcs12x.cc"
 )
 {
 #line 176 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "REVW";
 	}
-#line 40065 "hcs12x.cc"
+#line 41927 "hcs12x.cc"
 }
 // *** INTERRUPTIBLE ***
 #line 63 "hcs12x.isa"
 void
-#line 40070 "hcs12x.cc"
+#line 41932 "hcs12x.cc"
 OpRevw::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40074 "hcs12x.cc"
+#line 41936 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40077 "hcs12x.cc"
+#line 41939 "hcs12x.cc"
 )
 {
 #line 181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -40139,7 +42001,7 @@ cpu
 		if (ccrV) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 	}
-#line 40143 "hcs12x.cc"
+#line 42005 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRevw(CodeType const& code, uint16_t addr)
@@ -40154,33 +42016,33 @@ New WAV instructions can be started and interrupted while a previous WAV instruc
 */
 #line 69 "hcs12x.isa"
 void
-#line 40158 "hcs12x.cc"
+#line 42020 "hcs12x.cc"
 OpWav::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40162 "hcs12x.cc"
+#line 42024 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40165 "hcs12x.cc"
+#line 42027 "hcs12x.cc"
 )
 {
 #line 252 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "WAV";
 	}
-#line 40172 "hcs12x.cc"
+#line 42034 "hcs12x.cc"
 }
 // *** INTERRUPTIBLE ***
 #line 63 "hcs12x.isa"
 void
-#line 40177 "hcs12x.cc"
+#line 42039 "hcs12x.cc"
 OpWav::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40181 "hcs12x.cc"
+#line 42043 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40184 "hcs12x.cc"
+#line 42046 "hcs12x.cc"
 )
 {
 #line 257 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -40248,7 +42110,7 @@ cpu
 
 		cpu->ccr->setZ();
 	}
-#line 40252 "hcs12x.cc"
+#line 42114 "hcs12x.cc"
 }
 
 static Operation *DecodeOpWav(CodeType const& code, uint16_t addr)
@@ -40259,32 +42121,32 @@ static Operation *DecodeOpWav(CodeType const& code, uint16_t addr)
 // WAVR pseudo instruction: Resume execution of interrupted WAV instruction
 #line 69 "hcs12x.isa"
 void
-#line 40263 "hcs12x.cc"
+#line 42125 "hcs12x.cc"
 OpWavr::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40267 "hcs12x.cc"
+#line 42129 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40270 "hcs12x.cc"
+#line 42132 "hcs12x.cc"
 )
 {
 #line 325 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "WAVR";
 	}
-#line 40277 "hcs12x.cc"
+#line 42139 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40281 "hcs12x.cc"
+#line 42143 "hcs12x.cc"
 OpWavr::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40285 "hcs12x.cc"
+#line 42147 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40288 "hcs12x.cc"
+#line 42150 "hcs12x.cc"
 )
 {
 #line 329 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -40308,7 +42170,7 @@ cpu
 			cpu->ccr->clrZ();
 		}
 	}
-#line 40312 "hcs12x.cc"
+#line 42174 "hcs12x.cc"
 }
 
 static Operation *DecodeOpWavr(CodeType const& code, uint16_t addr)
@@ -40320,14 +42182,14 @@ static Operation *DecodeOpWavr(CodeType const& code, uint16_t addr)
 // TBL: 8-bit Table lookup and Interpolate
 #line 69 "hcs12x.isa"
 void
-#line 40324 "hcs12x.cc"
+#line 42186 "hcs12x.cc"
 OpTbl::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40328 "hcs12x.cc"
+#line 42190 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40331 "hcs12x.cc"
+#line 42193 "hcs12x.cc"
 )
 {
 #line 355 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -40335,18 +42197,18 @@ sink
 		sink << "TBL ";
 		xb->disasm(sink);
 	}
-#line 40339 "hcs12x.cc"
+#line 42201 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40343 "hcs12x.cc"
+#line 42205 "hcs12x.cc"
 OpTbl::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40347 "hcs12x.cc"
+#line 42209 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40350 "hcs12x.cc"
+#line 42212 "hcs12x.cc"
 )
 {
 #line 360 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -40376,7 +42238,7 @@ cpu
 		if (msBits == 0x00) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ();}
 		if (lowBits > 0x7F) { cpu->ccr->setC(); } else { cpu->ccr->clrC();}
 	}
-#line 40380 "hcs12x.cc"
+#line 42242 "hcs12x.cc"
 }
 
 static Operation *DecodeOpTbl(CodeType const& code, uint16_t addr)
@@ -40387,14 +42249,14 @@ static Operation *DecodeOpTbl(CodeType const& code, uint16_t addr)
 // ETBL: 16-bit Table lookup and Interpolate
 #line 69 "hcs12x.isa"
 void
-#line 40391 "hcs12x.cc"
+#line 42253 "hcs12x.cc"
 OpEtlb::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40395 "hcs12x.cc"
+#line 42257 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40398 "hcs12x.cc"
+#line 42260 "hcs12x.cc"
 )
 {
 #line 391 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -40402,18 +42264,18 @@ sink
 		sink << "ETLB ";
 		xb->disasm(sink);
 	}
-#line 40406 "hcs12x.cc"
+#line 42268 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40410 "hcs12x.cc"
+#line 42272 "hcs12x.cc"
 OpEtlb::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40414 "hcs12x.cc"
+#line 42276 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40417 "hcs12x.cc"
+#line 42279 "hcs12x.cc"
 )
 {
 #line 396 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
@@ -40439,7 +42301,7 @@ cpu
 		if (result == 0x0000) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ();}
 		if (lowBits > 0x7F) { cpu->ccr->setC(); } else { cpu->ccr->clrC();}
 	}
-#line 40443 "hcs12x.cc"
+#line 42305 "hcs12x.cc"
 }
 
 static Operation *DecodeOpEtlb(CodeType const& code, uint16_t addr)
@@ -40483,39 +42345,39 @@ static Operation *DecodeOpEtlb(CodeType const& code, uint16_t addr)
 // NOP:
 #line 69 "hcs12x.isa"
 void
-#line 40487 "hcs12x.cc"
+#line 42349 "hcs12x.cc"
 OpNop::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40491 "hcs12x.cc"
+#line 42353 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40494 "hcs12x.cc"
+#line 42356 "hcs12x.cc"
 )
 {
 #line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "NOP";
 	}
-#line 40501 "hcs12x.cc"
+#line 42363 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40505 "hcs12x.cc"
+#line 42367 "hcs12x.cc"
 OpNop::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40509 "hcs12x.cc"
+#line 42371 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40512 "hcs12x.cc"
+#line 42374 "hcs12x.cc"
 )
 {
 #line 43 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		// This single-byte instruction increments the PC and does nothing else.
 	}
-#line 40519 "hcs12x.cc"
+#line 42381 "hcs12x.cc"
 }
 
 static Operation *DecodeOpNop(CodeType const& code, uint16_t addr)
@@ -40526,32 +42388,32 @@ static Operation *DecodeOpNop(CodeType const& code, uint16_t addr)
 // STOP:
 #line 69 "hcs12x.isa"
 void
-#line 40530 "hcs12x.cc"
+#line 42392 "hcs12x.cc"
 OpStop::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40534 "hcs12x.cc"
+#line 42396 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40537 "hcs12x.cc"
+#line 42399 "hcs12x.cc"
 )
 {
 #line 50 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "STOP";
 	}
-#line 40544 "hcs12x.cc"
+#line 42406 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40548 "hcs12x.cc"
+#line 42410 "hcs12x.cc"
 OpStop::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40552 "hcs12x.cc"
+#line 42414 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40555 "hcs12x.cc"
+#line 42417 "hcs12x.cc"
 )
 {
 #line 54 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
@@ -40604,7 +42466,7 @@ cpu
 			*/
 		}
 	}
-#line 40608 "hcs12x.cc"
+#line 42470 "hcs12x.cc"
 }
 
 static Operation *DecodeOpStop(CodeType const& code, uint16_t addr)
@@ -40615,32 +42477,32 @@ static Operation *DecodeOpStop(CodeType const& code, uint16_t addr)
 // WAIT
 #line 69 "hcs12x.isa"
 void
-#line 40619 "hcs12x.cc"
+#line 42481 "hcs12x.cc"
 OpWait::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40623 "hcs12x.cc"
+#line 42485 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40626 "hcs12x.cc"
+#line 42488 "hcs12x.cc"
 )
 {
 #line 107 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "WAI";
 	}
-#line 40633 "hcs12x.cc"
+#line 42495 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40637 "hcs12x.cc"
+#line 42499 "hcs12x.cc"
 OpWait::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40641 "hcs12x.cc"
+#line 42503 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40644 "hcs12x.cc"
+#line 42506 "hcs12x.cc"
 )
 {
 #line 111 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
@@ -40689,7 +42551,7 @@ cpu
 		* and execution continues with the next instruction after WAI.
 		*/
 	}
-#line 40693 "hcs12x.cc"
+#line 42555 "hcs12x.cc"
 }
 
 static Operation *DecodeOpWait(CodeType const& code, uint16_t addr)
@@ -40700,39 +42562,39 @@ static Operation *DecodeOpWait(CodeType const& code, uint16_t addr)
 // BGND: Enter Background debug mode
 #line 69 "hcs12x.isa"
 void
-#line 40704 "hcs12x.cc"
+#line 42566 "hcs12x.cc"
 OpBgnd::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40708 "hcs12x.cc"
+#line 42570 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40711 "hcs12x.cc"
+#line 42573 "hcs12x.cc"
 )
 {
 #line 161 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "BGND";
 	}
-#line 40718 "hcs12x.cc"
+#line 42580 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40722 "hcs12x.cc"
+#line 42584 "hcs12x.cc"
 OpBgnd::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40726 "hcs12x.cc"
+#line 42588 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40729 "hcs12x.cc"
+#line 42591 "hcs12x.cc"
 )
 {
 #line 165 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		// TODO
 	}
-#line 40736 "hcs12x.cc"
+#line 42598 "hcs12x.cc"
 }
 
 static Operation *DecodeOpBgnd(CodeType const& code, uint16_t addr)
@@ -40744,32 +42606,32 @@ static Operation *DecodeOpBgnd(CodeType const& code, uint16_t addr)
 // RTI: Return from interrupt
 #line 69 "hcs12x.isa"
 void
-#line 40748 "hcs12x.cc"
+#line 42610 "hcs12x.cc"
 OpRti::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40752 "hcs12x.cc"
+#line 42614 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40755 "hcs12x.cc"
+#line 42617 "hcs12x.cc"
 )
 {
 #line 175 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "RTI";
 	}
-#line 40762 "hcs12x.cc"
+#line 42624 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40766 "hcs12x.cc"
+#line 42628 "hcs12x.cc"
 OpRti::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40770 "hcs12x.cc"
+#line 42632 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40773 "hcs12x.cc"
+#line 42635 "hcs12x.cc"
 )
 {
 #line 179 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
@@ -40805,7 +42667,7 @@ cpu
 		addr = addr + 2;
 		cpu->setRegSP(addr);
 	}
-#line 40809 "hcs12x.cc"
+#line 42671 "hcs12x.cc"
 }
 
 static Operation *DecodeOpRti(CodeType const& code, uint16_t addr)
@@ -40816,32 +42678,32 @@ static Operation *DecodeOpRti(CodeType const& code, uint16_t addr)
 // SWI: Software Interrupt
 #line 69 "hcs12x.isa"
 void
-#line 40820 "hcs12x.cc"
+#line 42682 "hcs12x.cc"
 OpSwi::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40824 "hcs12x.cc"
+#line 42686 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40827 "hcs12x.cc"
+#line 42689 "hcs12x.cc"
 )
 {
 #line 216 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "SWI";
 	}
-#line 40834 "hcs12x.cc"
+#line 42696 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40838 "hcs12x.cc"
+#line 42700 "hcs12x.cc"
 OpSwi::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40842 "hcs12x.cc"
+#line 42704 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40845 "hcs12x.cc"
+#line 42707 "hcs12x.cc"
 )
 {
 #line 220 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
@@ -40881,7 +42743,7 @@ cpu
 
 		// TODO: (SWI Vector) => PC
 	}
-#line 40885 "hcs12x.cc"
+#line 42747 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSwi(CodeType const& code, uint16_t addr)
@@ -40893,32 +42755,32 @@ static Operation *DecodeOpSwi(CodeType const& code, uint16_t addr)
 // System call interrupt vector is $FF12:$FF13
 #line 69 "hcs12x.isa"
 void
-#line 40897 "hcs12x.cc"
+#line 42759 "hcs12x.cc"
 OpSys::disasm(
 #line 69 "hcs12x.isa"
 ostream&
-#line 40901 "hcs12x.cc"
+#line 42763 "hcs12x.cc"
 #line 69 "hcs12x.isa"
 sink
-#line 40904 "hcs12x.cc"
+#line 42766 "hcs12x.cc"
 )
 {
 #line 314 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "SYS";
 	}
-#line 40911 "hcs12x.cc"
+#line 42773 "hcs12x.cc"
 }
 #line 63 "hcs12x.isa"
 void
-#line 40915 "hcs12x.cc"
+#line 42777 "hcs12x.cc"
 OpSys::execute(
 #line 63 "hcs12x.isa"
 CPU *
-#line 40919 "hcs12x.cc"
+#line 42781 "hcs12x.cc"
 #line 63 "hcs12x.isa"
 cpu
-#line 40922 "hcs12x.cc"
+#line 42784 "hcs12x.cc"
 )
 {
 #line 318 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
@@ -40962,7 +42824,7 @@ cpu
 		// (Sys Vector) => PC
 		cpu->setRegPC(cpu->memRead16(CONFIG::SYS_VECTOR_ADDRESS));
 	}
-#line 40966 "hcs12x.cc"
+#line 42828 "hcs12x.cc"
 }
 
 static Operation *DecodeOpSys(CodeType const& code, uint16_t addr)
@@ -42822,74 +44684,114 @@ OpTst_xy::OpTst_xy(CodeType const& code, uint16_t addr) : Operation(code, addr, 
 	this->encoding.size -= _code_.size;
 }
 
-OpEmin_dm::OpEmin_dm(CodeType const& code, uint16_t addr) : Operation(code, addr, "emin_dm")
+OpEmind::OpEmind(CodeType const& code, uint16_t addr) : Operation(code, addr, "emind")
 {
 	CodeType _code_( code );
-	{
-		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		b = ((_subword_ >> 2) & 0x1ULL);
-	}
 	_code_.pop( 2 );
 	xb = unisim::component::cxx::processor::hcs12x::XB::sub_decode( addr, unisim::component::cxx::processor::hcs12x::XB::CodeType( _code_.str, _code_.size ) );
 	_code_.pop( xb->GetEncoding().size );
 	this->encoding.size -= _code_.size;
 }
 
-OpEmin_dm::~OpEmin_dm()
+OpEmind::~OpEmind()
 {
 	delete xb;
 }
 
-OpMin_am::OpMin_am(CodeType const& code, uint16_t addr) : Operation(code, addr, "min_am")
+OpEminm::OpEminm(CodeType const& code, uint16_t addr) : Operation(code, addr, "eminm")
 {
 	CodeType _code_( code );
-	{
-		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		b = ((_subword_ >> 2) & 0x1ULL);
-	}
 	_code_.pop( 2 );
 	xb = unisim::component::cxx::processor::hcs12x::XB::sub_decode( addr, unisim::component::cxx::processor::hcs12x::XB::CodeType( _code_.str, _code_.size ) );
 	_code_.pop( xb->GetEncoding().size );
 	this->encoding.size -= _code_.size;
 }
 
-OpMin_am::~OpMin_am()
+OpEminm::~OpEminm()
 {
 	delete xb;
 }
 
-OpEmax_dm::OpEmax_dm(CodeType const& code, uint16_t addr) : Operation(code, addr, "emax_dm")
+OpMina::OpMina(CodeType const& code, uint16_t addr) : Operation(code, addr, "mina")
 {
 	CodeType _code_( code );
-	{
-		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		b = ((_subword_ >> 2) & 0x1ULL);
-	}
 	_code_.pop( 2 );
 	xb = unisim::component::cxx::processor::hcs12x::XB::sub_decode( addr, unisim::component::cxx::processor::hcs12x::XB::CodeType( _code_.str, _code_.size ) );
 	_code_.pop( xb->GetEncoding().size );
 	this->encoding.size -= _code_.size;
 }
 
-OpEmax_dm::~OpEmax_dm()
+OpMina::~OpMina()
 {
 	delete xb;
 }
 
-OpMax_am::OpMax_am(CodeType const& code, uint16_t addr) : Operation(code, addr, "max_am")
+OpMinm::OpMinm(CodeType const& code, uint16_t addr) : Operation(code, addr, "minm")
 {
 	CodeType _code_( code );
-	{
-		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		b = ((_subword_ >> 2) & 0x1ULL);
-	}
 	_code_.pop( 2 );
 	xb = unisim::component::cxx::processor::hcs12x::XB::sub_decode( addr, unisim::component::cxx::processor::hcs12x::XB::CodeType( _code_.str, _code_.size ) );
 	_code_.pop( xb->GetEncoding().size );
 	this->encoding.size -= _code_.size;
 }
 
-OpMax_am::~OpMax_am()
+OpMinm::~OpMinm()
+{
+	delete xb;
+}
+
+OpEmaxd::OpEmaxd(CodeType const& code, uint16_t addr) : Operation(code, addr, "emaxd")
+{
+	CodeType _code_( code );
+	_code_.pop( 2 );
+	xb = unisim::component::cxx::processor::hcs12x::XB::sub_decode( addr, unisim::component::cxx::processor::hcs12x::XB::CodeType( _code_.str, _code_.size ) );
+	_code_.pop( xb->GetEncoding().size );
+	this->encoding.size -= _code_.size;
+}
+
+OpEmaxd::~OpEmaxd()
+{
+	delete xb;
+}
+
+OpEmaxm::OpEmaxm(CodeType const& code, uint16_t addr) : Operation(code, addr, "emaxm")
+{
+	CodeType _code_( code );
+	_code_.pop( 2 );
+	xb = unisim::component::cxx::processor::hcs12x::XB::sub_decode( addr, unisim::component::cxx::processor::hcs12x::XB::CodeType( _code_.str, _code_.size ) );
+	_code_.pop( xb->GetEncoding().size );
+	this->encoding.size -= _code_.size;
+}
+
+OpEmaxm::~OpEmaxm()
+{
+	delete xb;
+}
+
+OpMaxa::OpMaxa(CodeType const& code, uint16_t addr) : Operation(code, addr, "maxa")
+{
+	CodeType _code_( code );
+	_code_.pop( 2 );
+	xb = unisim::component::cxx::processor::hcs12x::XB::sub_decode( addr, unisim::component::cxx::processor::hcs12x::XB::CodeType( _code_.str, _code_.size ) );
+	_code_.pop( xb->GetEncoding().size );
+	this->encoding.size -= _code_.size;
+}
+
+OpMaxa::~OpMaxa()
+{
+	delete xb;
+}
+
+OpMaxm::OpMaxm(CodeType const& code, uint16_t addr) : Operation(code, addr, "maxm")
+{
+	CodeType _code_( code );
+	_code_.pop( 2 );
+	xb = unisim::component::cxx::processor::hcs12x::XB::sub_decode( addr, unisim::component::cxx::processor::hcs12x::XB::CodeType( _code_.str, _code_.size ) );
+	_code_.pop( xb->GetEncoding().size );
+	this->encoding.size -= _code_.size;
+}
+
+OpMaxm::~OpMaxm()
 {
 	delete xb;
 }
@@ -44871,10 +46773,14 @@ Decoder::Decoder()
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\xb4" ), 1 ), CodeType( (uint8_t*)( "\xbf" ), 1 ), DecodeOpAnd_ab_ext));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x94" ), 1 ), CodeType( (uint8_t*)( "\xbf" ), 1 ), DecodeOpAnd_ab_dir));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x84" ), 1 ), CodeType( (uint8_t*)( "\xbf" ), 1 ), DecodeOpAnd_ab_imm));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x18" ), 2 ), CodeType( (uint8_t*)( "\xff\xfb" ), 2 ), DecodeOpMax_am));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x1a" ), 2 ), CodeType( (uint8_t*)( "\xff\xfb" ), 2 ), DecodeOpEmax_dm));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x19" ), 2 ), CodeType( (uint8_t*)( "\xff\xfb" ), 2 ), DecodeOpMin_am));
-	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x1b" ), 2 ), CodeType( (uint8_t*)( "\xff\xfb" ), 2 ), DecodeOpEmin_dm));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x1c" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpMaxm));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x18" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpMaxa));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x1e" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpEmaxm));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x1a" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpEmaxd));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x1d" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpMinm));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x19" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpMina));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x1f" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpEminm));
+	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x1b" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpEmind));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\x97" ), 2 ), CodeType( (uint8_t*)( "\xff\xbf" ), 2 ), DecodeOpTst_xy));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\xe7" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpTstw_idx));
 	decode_table.push_back(DecodeTableEntry(CodeType( (uint8_t*)( "\x18\xf7" ), 2 ), CodeType( (uint8_t*)( "\xff\xff" ), 2 ), DecodeOpTstw_ext));
