@@ -269,6 +269,7 @@ ARMSetup() {
 	SetSyscallId(string("setrlimit"), 75);
 	SetSyscallId(string("getrusage"), 77);
 	SetSyscallId(string("munmap"), 91);
+    SetSyscallId(string("ftruncate"), 93);
 	SetSyscallId(string("socketcall"), 102);
 	SetSyscallId(string("stat"), 106);
 	SetSyscallId(string("fstat"), 108);
@@ -391,6 +392,7 @@ PPCSetup() {
     SetSyscallId(string("getrusage"), 77);
     SetSyscallId(string("mmap"), 90);
     SetSyscallId(string("munmap"), 91);
+    SetSyscallId(string("ftruncate"), 93);
     SetSyscallId(string("socketcall"), 102);
     SetSyscallId(string("stat"), 106);
     SetSyscallId(string("fstat"), 108);
@@ -1894,6 +1896,22 @@ LSC_kill() {
 			<< Endl << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)0, false);
 }
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_ftruncate() {
+	int ret;
+	
+	ret = ftruncate(GetSystemCallParam(0), GetSystemCallParam(1));
+
+	if(verbose && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)ret) << Dec 
+			<< Endl << EndDebugInfo;
+
+	SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
+}
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
@@ -1944,6 +1962,7 @@ SetSyscallNameMap() {
 	syscall_name_map[string("socketcall")] = &thistype::LSC_socketcall;
 	syscall_name_map[string("rt_sigprocmask")] = &thistype::LSC_rt_sigprocmask;
 	syscall_name_map[string("kill")] = &thistype::LSC_kill;
+	syscall_name_map[string("ftruncate")] = &thistype::LSC_ftruncate;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

@@ -222,6 +222,7 @@ private:
 	void LSC_socketcall();
 	void LSC_rt_sigprocmask();
 	void LSC_kill();
+	void LSC_ftruncate();
 	void SetSyscallNameMap();
 
     // state shared by all the systems
