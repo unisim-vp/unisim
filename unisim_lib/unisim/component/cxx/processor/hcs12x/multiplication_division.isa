@@ -36,6 +36,8 @@
 // EMUL: 16 by 16 Bit Multiply (unsigned) (D) x (Y) => Y:D
 op emul(0x13[8])
 
+emul.getCycles = { return 1; }
+
 emul.disasm = {
 	sink << "EMUL";
 }
@@ -53,6 +55,8 @@ emul.execute = {
 
 // EMULS: 16 by 16 Bit Multiply (signed) (D) x (Y) => Y:D
 op emuls(0x18[8]:0x13[8])
+
+emuls.getCycles = { return 3; }
 
 emuls.disasm = {
 	sink << "EMULS";
@@ -85,6 +89,8 @@ emuls.execute = {
 // MUL: 8 by 8 Bit Multiply (unsigned) (A) x (B) => A:B
 op mul(0x12[8])
 
+mul.getCycles = { return 1; }
+
 mul.disasm = {
 	sink << "MUL";
 }
@@ -99,6 +105,8 @@ mul.execute = {
 
 // EDIV: 32 by 16 bit to 16 bit divide (unsigned) (Y:D) div (X) => Y remainder => D
 op ediv(0x11[8])
+
+ediv.getCycles = { return 11; }
 
 ediv.disasm = {
 	sink << "EDIV";
@@ -148,6 +156,8 @@ ediv.execute = {
 // EDIVS: 32 by 16 bit to 16 bit divide (signed)  (Y:D) div (X) => Y remainder => D
 op edivs(0x18[8]:0x14[8])
 
+edivs.getCycles = { return 12; }
+
 edivs.disasm = {
 	sink << "EDIVS";
 }
@@ -189,6 +199,8 @@ edivs.execute = {
 // FDIV: 16 by 16 fractional divide
 op fdiv(0x18[8]:0x11[8])
 
+fdiv.getCycles = { return 12; }
+
 fdiv.disasm = {
 	sink << "FDIV";
 }
@@ -222,6 +234,8 @@ fdiv.execute = {
 // IDIV: 16 by 16 integer divide (unsigned)
 op idiv(0x18[8]:0x10[8])
 
+idiv.getCycles = { return 12; }
+
 idiv.disasm = {
 	sink << "IDIV";
 }
@@ -251,6 +265,8 @@ and the remainder is indeterminate. */
 
 // IDIVS: 16 by 16 integer divide (signed)
 op idivs(0x18[8]:0x15[8])
+
+idivs.getCycles = { return 12; }
 
 idivs.disasm = {
 	sink << "IDIVS";
@@ -291,6 +307,8 @@ and the remainder is indeterminate. */
 
 // EMACS: Multiply an Accumulate Instruction
 op emacs(0x18[8]:0x12[8]:opr16a[16])
+
+emacs.getCycles = { return 9; }
 
 emacs.disasm = {
 	sink << "EMACS $" << std::hex << opr16a;

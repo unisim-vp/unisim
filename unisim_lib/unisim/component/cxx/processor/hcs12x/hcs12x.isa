@@ -76,7 +76,7 @@ action {uint8_t} getCycles () {
  *   return XbModes::GetIDXCycles(xb->getXbMode(), <idx_cyles>, <idx1_cyles>, <idx2_cyles>, <idxd_ind_cyles>, <idx2_ind_cyles>);
  *
  */
-	return 1; 
+	return 0; 
 }
 
 include "load_store.isa"

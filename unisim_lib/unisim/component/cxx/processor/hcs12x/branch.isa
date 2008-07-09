@@ -41,6 +41,14 @@
 
 op sbr(0x2[4]:sel[4]:sext<8> rel8[8])
 
+sbr.var branch : { bool } = { false }
+
+sbr.getCycles = { 
+
+	if (branch) return 3; else return 1;
+
+}
+
 sbr.disasm = {
 	
 	switch (sel) {
@@ -65,7 +73,8 @@ sbr.disasm = {
 }
 
 sbr.execute = {
-	bool branch = false;
+	
+	branch = false;
 	
 	switch (sel) {
 		case 0x0: // BRA: branch always
@@ -73,6 +82,7 @@ sbr.execute = {
 			break;
 		case 0x1: // BRN: branch never
 			// Nothing to do
+			branch = false;
 			break;
 		case 0x2: // BHI: branch if higher (C+Z=0)
 			if ((cpu->ccr->getC() | cpu->ccr->getZ()) == 0) branch = true; 
@@ -130,6 +140,10 @@ sbr.execute = {
 
 op lbr(0x18[8]:0x2[4]:sel[4]:sext<16> rel16[16])
 
+lbr.var branch : { bool } = { false }
+
+lbr.getCycles = { if (branch) return 4; else return 3; }
+
 lbr.disasm = {
 	
 	switch (sel) {
@@ -154,7 +168,8 @@ lbr.disasm = {
 }
 
 lbr.execute = {
-	bool branch = false;
+	
+	branch = false;
 	
 	switch (sel) {
 		case 0x0: // LBRA: branch always
@@ -162,6 +177,7 @@ lbr.execute = {
 			break;
 		case 0x1: // LBRN: branch never
 			// Nothing to do
+			branch = false;
 			break;
 		case 0x2: // LBHI: branch if higher (C+Z=0)
 			if ((cpu->ccr->getC() | cpu->ccr->getZ()) == 0) branch = true; 
@@ -220,6 +236,8 @@ lbr.execute = {
 
 op br_clr_set_dir(0x27[7]:b[1]:opr8a[8]:msk8[8]:sext<8> rel8[8])
 
+br_clr_set_dir.getCycles = { return 4; }
+
 br_clr_set_dir.disasm = {
 	if (b==1) {
 		sink << "BRCLR $"; 
@@ -247,6 +265,8 @@ br_clr_set_dir.execute = {
 
 op br_clr_set_ext(0xF[7]:b[1]:> <:opr16a[16]:msk8[8]:sext<8> rel8[8])
 
+br_clr_set_ext.getCycles = { return 5; }
+
 br_clr_set_ext.disasm = {
 	if (b==1) {
 		sink << "BRCLR $"; 
@@ -273,6 +293,8 @@ br_clr_set_ext.execute = {
 }
 
 op br_clr_set_idx(0x07[7]:b[1]:> <:*xb[XB]:> <:msk8[8]:sext<8> rel8[8])
+
+br_clr_set_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 0, 0); }
 
 br_clr_set_idx.disasm = {
 	if (b==1) {
@@ -305,6 +327,8 @@ br_clr_set_idx.execute = {
 // BSR: Branch to subroutine
 op bsr(0x07[8]:rel8[8])
 
+bsr.getCycles = { return 4; }
+
 bsr.disasm = {
 	sink << "BSR " << std::dec << rel8;
 }
@@ -332,6 +356,8 @@ bsr.execute = {
 
 // CALL: Call subroutine in Expanded Memory
 op call_ext(0x4A[8]:opr16a[16]:page[8])
+
+call_ext.getCycles = { return 7; }
 
 call_ext.disasm = {
 	sink << "CALL $" << std::hex << opr16a << ", $" << std::hex << page;
@@ -373,6 +399,8 @@ call_ext.execute = {
 // XB decoder return only one address
 
 op call_16offset_idx_ind(0x4B[8]:> <:0b111[3]:rr[2]:0b0[1]:0b11[2]:> <:sext<16> n16[16])
+
+call_16offset_idx_ind.getCycles = { return 10; }
 
 call_16offset_idx_ind.disasm = {
 
@@ -416,6 +444,8 @@ call_16offset_idx_ind.execute = {
 
 op call_accD_offset_idx_ind(0x4B[8]:> <:0b111[3]:rr[2]:0b111[3])
 
+call_accD_offset_idx_ind.getCycles = { return 10; }
+
 call_accD_offset_idx_ind.disasm = {
 
 	sink << "CALL ";
@@ -458,6 +488,8 @@ call_accD_offset_idx_ind.execute = {
 
 op call_idx(0x4B[8]:> <:*xb[XB]:> <:page[8])
 
+call_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 7, 7, 8, 0, 0); }
+
 call_idx.disasm = {
 	sink << "CALL ";
 	xb->disasm(sink);
@@ -495,6 +527,8 @@ call_idx.execute = {
 // JMP: JUMP
 op jmp_ext(0x06[8]:> <:opr16a[16])
 
+jmp_ext.getCycles = { return 3; }
+
 jmp_ext.disasm = {
 	sink << "JMP $" << std::hex << opr16a;
 }
@@ -506,6 +540,8 @@ jmp_ext.execute = {
 }
 
 op jmp_idx(0x05[8]:> <:*xb[XB])
+
+jmp_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 jmp_idx.disasm = {
 	sink << "JMP ";
@@ -520,6 +556,8 @@ jmp_idx.execute = {
 
 // JSR: Jump to subroutine
 op jsr_dir(0x17[8]:opr8a[8])
+
+jsr_dir.getCycles = { return 4; }
 
 jsr_dir.disasm = {
 	sink << "JSR $" << std::hex << opr8a;
@@ -547,6 +585,8 @@ jsr_dir.execute = {
 
 op jsr_ext(0x16[8]:> <:opr16a[16])
 
+jsr_ext.getCycles = { return 4; }
+
 jsr_ext.disasm = {
 	sink << "JSR $" << std::hex << opr16a;
 }
@@ -566,6 +606,8 @@ jsr_ext.execute = {
 }
 
 op jsr_idx(0x15[8]:> <:*xb[XB])
+
+jsr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 jsr_idx.disasm = {
 	sink << "JSR ";
@@ -588,6 +630,8 @@ jsr_idx.execute = {
 
 // RTC: Return from call
 op rtc(0x0A[8])
+
+rtc.getCycles = { return 7; }
 
 rtc.disasm = {
 	sink << "RTC";
@@ -623,6 +667,8 @@ rtc.execute = {
 // RTS: Return from subroutine
 op rts(0x3D[8])
 
+rts.getCycles = { return 5; }
+
 rts.disasm = {
 	sink << "RTS";
 }
@@ -644,6 +690,10 @@ rts.execute = {
 /* ************ Loop Primitive ********* */
 
 op loop(0x04[8]:b765[3]:b4[1]:b3[1]:b210[3]:> <:sext<8> rel9[8])
+
+loop.var isBranch : { bool } = { false }
+
+loop.getCycles = { if (isBranch) return 3; else return 3; }
 
 loop.disasm = {
 /*
@@ -670,7 +720,8 @@ Bits 7 and 6 would be 0:0 for DBNE.
 
 loop.execute = {
 	address_t branchAddr;
-	bool		isBranch = false;
+	
+	isBranch = false;
 
 	branchAddr = cpu->getRegPC() + rel9;
 	

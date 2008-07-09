@@ -36,6 +36,8 @@
 // MEM: Membership function
 op mem(0x01[8])
 
+mem.getCycles = { return 5; }
+
 mem.disasm = {
 	sink << "MEM";
 }
@@ -110,6 +112,8 @@ by one.
 // this instruction can be interrupted.
 op rev(0x18[8]:0x3A[8])
 
+rev.getCycles = { return 0; /* TODO: take in account the fact that it may be interrupted */}
+
 rev.disasm = {
 	sink << "REV";
 }
@@ -172,6 +176,8 @@ rev.execute = {
 // REVW: (16bits) MIN-MAX rule evaluation
 // this instruction can be interrupted.
 op revw(0x18[8]:0x3B[8])
+
+revw.getCycles = { return 0; /* TODO: take in account the fact that it may be interrupted */}
 
 revw.disasm = {
 	sink << "REVW";
@@ -249,6 +255,8 @@ New WAV instructions can be started and interrupted while a previous WAV instruc
 
 op wav(0x18[8]:0x3C[8])
 
+wav.getCycles = { return 0; /* TODO: take in account the fact that it may be interrupted */}
+
 wav.disasm = {
 	sink << "WAV";
 }
@@ -322,6 +330,8 @@ wav.execute = {
 // WAVR pseudo instruction: Resume execution of interrupted WAV instruction
 op wavr(0x3C[8])
 
+wavr.getCycles = { return 0; /* TODO: linked to WAV instruction */}
+
 wavr.disasm = {
 	sink << "WAVR";
 }
@@ -351,6 +361,8 @@ wavr.execute = {
 
 // TBL: 8-bit Table lookup and Interpolate
 op tbl(0x18[8]:0x3D[8]:> <:*xb[XB])
+
+tbl.getCycles = { return 6; }
 
 tbl.disasm = {
 	sink << "TBL ";
@@ -387,6 +399,8 @@ tbl.execute = {
 
 // ETBL: 16-bit Table lookup and Interpolate
 op etlb(0x18[8]:0x3F[8]:> <:*xb[XB])
+
+etlb.getCycles = { return 10; }
 
 etlb.disasm = {
 	sink << "ETLB ";
