@@ -18,7 +18,7 @@ PATCHES_DIR=$(PWD)/patches
 ARCHIVE_DIR=$(PWD)/archives
 NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 
-all: notice $(INSTALL_DIR)/expat $(INSTALL_DIR)/zlib $(INSTALL_DIR)/gdb $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
+all: notice $(INSTALL_DIR)/expat $(INSTALL_DIR)/zlib $(INSTALL_DIR)/gdb $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/TLM-2008-06-09 $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
 	@echo "Your built is in $(INSTALL_DIR)"
 
 clean:
@@ -36,6 +36,7 @@ notice:
 	@echo "  - SDL (1.2.13)"
 	@echo "  - libxml2 (2.6.31)"
 	@echo "  - SystemC (2.2.0)"
+	@echo "  - TLM 2.0"
 	@echo "  - readline (5.0)"
 	@echo "  - boost (1.34.1)"
 	@echo "  - expat (2.0.1)"
@@ -138,10 +139,6 @@ $(SOURCE_DIR)/libxml2-2.6.31: $(ARCHIVE_DIR)/libxml2-2.6.31.tar.gz
 
 # systemc
 
-$(ARCHIVE_DIR)/systemc-2.2.0.tgz:
-	cd $(ARCHIVE_DIR) && \
-    wget "http://panoramis.free.fr/search.systemc.org/download/sc220/systemc-2.2.0.tgz"
-
 $(INSTALL_DIR)/systemc: $(SOURCE_DIR)/systemc-2.2.0
 	cd $(SOURCE_DIR)/systemc-2.2.0 && \
     mkdir -p objdir && \
@@ -156,6 +153,12 @@ $(SOURCE_DIR)/systemc-2.2.0: $(ARCHIVE_DIR)/systemc-2.2.0.tgz $(PATCHES_DIR)/pat
     tar zxvf $(ARCHIVE_DIR)/systemc-2.2.0.tgz && \
     cd $(SOURCE_DIR)/systemc-2.2.0 && \
     cat $(PATCHES_DIR)/patch-systemc-2.2.0 | patch -p1
+
+# TLM 2.0
+
+$(INSTALL_DIR)/TLM-2008-06-09: $(ARCHIVE_DIR)/TLM-2.0.tar.gz
+	cd $(INSTALL_DIR) && \
+    tar zxvf $<
 
 # readline
 

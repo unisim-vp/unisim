@@ -224,7 +224,7 @@ Download SDL-1.2.13 SDL-1.2.13.tar.gz http://www.libsdl.org/release/SDL-1.2.13.t
 Configure SDL-1.2.13 --host=i586-mingw32msvc
 Compile SDL-1.2.13
 Install SDL-1.2.13
-s
+
 # libxml2
 Download libxml2-2.6.31 libxml2-2.6.31.tar.gz ftp://xmlsoft.org/libxml2/libxml2-2.6.31.tar.gz
 Configure libxml2-2.6.31 --host=i586-mingw32msvc --without-python
@@ -258,29 +258,30 @@ cd ${INSTALL_DIR}/lib
 ln -s libboost_thread-mgw34-mt-1_34_1.a libboost_thread.a
 
 # SystemC
+# Note: for a licence issue, SystemC should not be included in that package
 
-Download systemc-2.2.0 systemc-2.2.0.tar.gz http://panoramis.free.fr/search.systemc.org/download/sc220/systemc-2.2.0.tgz
-cd ${TMP_DIR}/systemc-2.2.0
-cat ${MY_DIR}/patch-systemc-2.2.0-mingw32 | patch -p1
-mkdir -p objdir
-cd objdir
-../configure --prefix=${INSTALL_DIR} --host=i586-mingw32msvc CXX=i586-mingw32msvc-g++ AS=i586-mingw32msvc-as
-make -j ${NUM_PROCESSORS} all
-make install
-mv ${INSTALL_DIR}/lib-mingw32/* ${INSTALL_DIR}/lib/.
-rm -rf ${INSTALL_DIR}/lib-linux
-mkdir -p ${INSTALL_DIR}/share
-mkdir -p ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/AUTHORS ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/ChangeLog ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/COPYING ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/docs ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/examples ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/INSTALL ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/LICENSE ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/NEWS ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/README ${INSTALL_DIR}/share/systemc-2.2.0
-mv ${INSTALL_DIR}/RELEASENOTES ${INSTALL_DIR}/share/systemc-2.2.0
+# Download systemc-2.2.0 systemc-2.2.0.tar.gz http://panoramis.free.fr/search.systemc.org/download/sc220/systemc-2.2.0.tgz
+# cd ${TMP_DIR}/systemc-2.2.0
+# cat ${MY_DIR}/patch-systemc-2.2.0-mingw32 | patch -p1
+# mkdir -p objdir
+# cd objdir
+# ../configure --prefix=${INSTALL_DIR} --host=i586-mingw32msvc CXX=i586-mingw32msvc-g++ AS=i586-mingw32msvc-as
+# make -j ${NUM_PROCESSORS} all
+# make install
+# mv ${INSTALL_DIR}/lib-mingw32/* ${INSTALL_DIR}/lib/.
+# rm -rf ${INSTALL_DIR}/lib-linux
+# mkdir -p ${INSTALL_DIR}/share
+# mkdir -p ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/AUTHORS ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/ChangeLog ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/COPYING ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/docs ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/examples ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/INSTALL ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/LICENSE ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/NEWS ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/README ${INSTALL_DIR}/share/systemc-2.2.0
+# mv ${INSTALL_DIR}/RELEASENOTES ${INSTALL_DIR}/share/systemc-2.2.0
 
 # Install MSYS and MINGW
 mingw_url="http://downloads.sourceforge.net/mingw"

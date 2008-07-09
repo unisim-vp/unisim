@@ -36,15 +36,15 @@ INSTALLATION (Win32):
 First install a win32 crosscompiler for ubuntu with the following command:
 $ sudo apt-get install mingw32
 
-Second, patch you SystemC 2.2.0 with https://unisim.org/svn/projects/SystemC/patch-system-2.2.0-i586-mingw32msvc-g++
+Second, patch you SystemC 2.2.0 with https://unisim.org/svn/projects/SystemC/patch-system-2.2.0
 running the following command into SystemC root directory:
-$ cat path-to-patch-system-2.2.0-i586-mingw32msvc-g++ | patch -p1
+$ cat path-to-patch-system-2.2.0 | patch -p1
 
 Third, build the SystemC library using a win32 gcc compiler
 $ mkdir objdir
 $ cd objdir
 $ mkdir path-to-install-directory
-$ ../configure --prefix=path-to-install-directory CXX=i586-mingw32msvc-g++ RANLIB=i586-mingw32msvc-ranlib
+$ ../configure --host=i586-mingw32msvc --prefix=path-to-install-directory
 $ make
 $ make install
 

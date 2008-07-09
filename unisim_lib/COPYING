@@ -1,5 +1,8 @@
 The UNISIM Component Library is a collaborative work distributed under the BSD license from the following contributors:
 - Commissariat a l'Energie Atomique (CEA)
+- Institut National de Recherche en Informatique et en Automatique (INRIA)
+- Universite de Perpignan Via Domitia (UPVD)
+- Universite Paris-Sud 11
 - Universitat Politecnica de Catalunya (UPC).
 
 Some parts of this software library are derivative works and are covered by the license of the original programs:
@@ -7,6 +10,12 @@ Some parts of this software library are derivative works and are covered by the 
 - The M5 simulator is copyright The Regents of The University of Michigan and is distributed under its own license (see below)
 - CACTI 4.2 (cache/SRAM power consumption analytical model) is copyright Hewlett-Packard Development Corporation and distributed under its own license (see below)
 - FreeBSD (ELF headers) is copyright The FreeBSD Project (see below)
+
+In case you obtained the UNISIM Component Library in an "object" form (e.g as a package compiled with the SystemC 2.2.0 Library), you must be aware that:
+  i. the contributors of the UNISIM Component Library disclaim on behalf of all SystemC Contributors all warranties and conditions, express and implied, including warranties or conditions of title and non-infringement, and implied warranties or conditions of merchantability and fitness for a particular purpose
+  ii. the contributors of the UNISIM Component Library exclude on behalf of all SystemC Contributors all liability for damages, including, but not limited to, direct, indirect, special, incidental and consequential damages, such as lost profits;
+  iii. any provisions which differ from the SystemC Open Source License (Software Download and use license agreement version 2.3) available at http://www.systemc.org are offered by that the contributors of the UNISIM Component Library alone and not by any other party; and
+  iv. the UNISIM Component Library source code is available for download at http://www.unisim.org and the SystemC Library source code is available for download at http://www.systemc.org
 
 Using the UNISIM Component Library implies the acceptance of all terms and conditions of the following licenses.
 

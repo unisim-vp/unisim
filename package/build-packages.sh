@@ -3,16 +3,11 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 debian <version> [systemc]"
+	echo "  $0 debian <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
 	echo "  $0 redhat <version>"
-	echo "  $0 mingw32 <version> [unisim-bootstrap-mingw32]"
-	echo "  $0 powerpc-darwin <version> [unisim-bootstrap-powerpc-darwin]"
-	echo "  $0 i686-darwin <version> [unisim-bootstrap-i686-darwin]"
-	echo "  - version: version of UNISIM"
-	echo "  - systemc: SystemC installation directory (optional, debian/redhat only)"
-	echo "  - unisim-bootstrap-mingw32: UNISIM bootstrap for mingw32 directory (optional, mingw32 only)"
-	echo "  - unisim-bootstrap-powerpc-darwin: UNISIM bootstrap for powerpc-darwin directory (optional, powerpc-darwin only)"
-	echo "  - unisim-bootstrap-i686-darwin: UNISIM bootstrap for i686-darwin directory (optional, i686-darwin only)"
+	echo "  $0 mingw32 <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
+	echo "  $0 powerpc-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
+	echo "  $0 i686-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
 }
 
 if test "x$1" = x || test "x$2" = x; then
@@ -127,11 +122,51 @@ case ${TARGET} in
 esac
 
 case ${TARGET} in
-	*mingw32*)
-		UNISIM_BOOTSTRAP_MINGW32_SHORT_NAME=unisim-bootstrap-mingw32
-		UNISIM_BOOTSTRAP_MINGW32_LONG_NAME=${UNISIM_BOOTSTRAP_MINGW32_SHORT_NAME}-${VERSION}
+	*debian*)
 		if test "x$3" = x; then
-			UNISIM_BOOTSTRAP_MINGW32_DIR=${HOME}/tmp/${UNISIM_BOOTSTRAP_MINGW32_LONG_NAME}
+			Usage
+			echo "SystemC 2.2.0 install directory is needed."
+			exit
+		fi
+		SYSTEMC_INSTALL_DIR=$3
+
+		if test "x$4" = x; then
+			Usage
+			echo "TLM 2.0 install directory is needed."
+			exit
+		fi
+
+		TLM2_INSTALL_DIR=$4
+		;;
+	*mingw32* | powerpc*darwin* | *86*darwin*)
+		if test "x$3" = x; then
+			Usage
+			echo "SystemC 2.2.0 tarball is needed."
+			exit
+		fi
+		SYSTEMC_TARBALL=$3
+
+		if test "x$4" = x; then
+			Usage
+			echo "TLM 2.0 tarball is needed."
+			exit
+		fi
+
+		TLM2_TARBALL=$4
+		;;
+esac
+
+case ${TARGET} in
+	*mingw32*)
+		UNISIM_BOOTSTRAP_MINGW32_DIR=${HOME}/tmp/unisim-bootstrap-mingw32
+		if test -f ${UNISIM_BOOTSTRAP_MINGW32_DIR}; then
+			echo "${UNISIM_BOOTSTRAP_MINGW32_DIR} already exists. Do you want to reuse it ? (Y/n)"
+			read REUSE_UNISIM_BOOTSTRAP_MINGW32
+		else
+			REUSE_UNISIM_BOOTSTRAP_MINGW32="n"
+		fi
+
+		if test ! ${REUSE_UNISIM_BOOTSTRAP_MINGW32} = "y" && test ! ${REUSE_UNISIM_BOOTSTRAP_MINGW32} = "Y"; then
 			rm -rf ${UNISIM_BOOTSTRAP_MINGW32_DIR}
 			mkdir -p ${UNISIM_BOOTSTRAP_MINGW32_DIR}
 			cd ${UNISIM_BOOTSTRAP_MINGW32_DIR}
@@ -141,19 +176,25 @@ case ${TARGET} in
 			mkdir -p install
 			cp `dirname $0`/patch-systemc-2.2.0 patches/.
 			cp `dirname $0`/COPYING .
+			cp ${SYSTEMC_TARBALL} archives/.
+			cp ${TLM2_TARBALL} archives/.
 			`dirname $0`/compile-unisim-bootstrap-mingw32.sh || exit
 			`dirname $0`/compile-unisim-bootstrap-mingw32.sh clean || exit
 			rm -rf source
-		else
-			UNISIM_BOOTSTRAP_MINGW32_DIR=$3
 		fi
 		SYSTEMC_INSTALL_DIR=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/systemc
+		TLM2_INSTALL_DIR=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/TLM-2008-06-09
 		;;
 	*86*darwin*)
-		UNISIM_BOOTSTRAP_I686_DARWIN_SHORT_NAME=unisim-bootstrap-i686-darwin
-		UNISIM_BOOTSTRAP_I686_DARWIN_LONG_NAME=${UNISIM_BOOTSTRAP_I686_DARWIN_SHORT_NAME}-${VERSION}
-		if test "x$3" = x; then
-			UNISIM_BOOTSTRAP_I686_DARWIN_DIR=${HOME}/tmp/${UNISIM_BOOTSTRAP_I686_DARWIN_LONG_NAME}
+		UNISIM_BOOTSTRAP_I686_DARWIN_DIR=${HOME}/tmp/unisim-bootstrap-i686-darwin
+		if test -f ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}; then
+			echo "${UNISIM_BOOTSTRAP_I686_DARWIN_DIR} already exists. Do you want to reuse it ? (Y/n)"
+			read REUSE_UNISIM_BOOTSTRAP_I686_DARWIN
+		else
+			REUSE_UNISIM_BOOTSTRAP_I686_DARWIN="n"
+		fi
+
+		if test ! ${REUSE_UNISIM_BOOTSTRAP_I686_DARWIN} = "y" && test ! ${REUSE_UNISIM_BOOTSTRAP_I686_DARWIN} = "Y"; then
 			rm -rf ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}
 			mkdir -p ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}
 			cd ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}
@@ -163,19 +204,25 @@ case ${TARGET} in
 			mkdir -p install
 			cp `dirname $0`/patch-systemc-2.2.0 patches/.
 			cp `dirname $0`/COPYING .
+			cp ${SYSTEMC_TARBALL} archives/.
+			cp ${TLM2_TARBALL} archives/.
 			`dirname $0`/compile-unisim-bootstrap-i686-darwin.sh || exit
 			`dirname $0`/compile-unisim-bootstrap-i686-darwin.sh clean || exit
 			rm -rf source
-		else
-			UNISIM_BOOTSTRAP_I686_DARWIN_DIR=$3
 		fi
 		SYSTEMC_INSTALL_DIR=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/systemc
+		TLM2_INSTALL_DIR=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/TLM-2008-06-09
 		;;
 	*powerpc*darwin*)
-		UNISIM_BOOTSTRAP_POWERPC_DARWIN_SHORT_NAME=unisim-bootstrap-powerpc-darwin
-		UNISIM_BOOTSTRAP_POWERPC_DARWIN_LONG_NAME=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_SHORT_NAME}-${VERSION}
-		if test "x$3" = x; then
-			UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR=${HOME}/tmp/${UNISIM_BOOTSTRAP_POWERPC_DARWIN_LONG_NAME}
+		UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR=${HOME}/tmp/unisim-bootstrap-powerpc-darwin
+		if test -f ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}; then
+			echo "${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR} already exists. Do you want to reuse it ? (Y/n)"
+			read REUSE_UNISIM_BOOTSTRAP_POWERPC_DARWIN
+		else
+			REUSE_UNISIM_BOOTSTRAP_POWERPC_DARWIN="n"
+		fi
+
+		if test ! ${REUSE_UNISIM_BOOTSTRAP_POWERPC_DARWIN} = "y" && test ! ${REUSE_UNISIM_BOOTSTRAP_POWERPC_DARWIN} = "Y"; then
 			rm -rf ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}
 			mkdir -p ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}
 			cd ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}
@@ -185,13 +232,14 @@ case ${TARGET} in
 			mkdir -p install
 			cp `dirname $0`/patch-systemc-2.2.0 patches/.
 			cp `dirname $0`/COPYING .
+			cp ${SYSTEMC_TARBALL} archives/.
+			cp ${TLM2_TARBALL} archives/.
 			`dirname $0`/compile-unisim-bootstrap-powerpc-darwin.sh || exit
 			`dirname $0`/compile-unisim-bootstrap-powerpc-darwin.sh clean || exit
 			rm -rf source
-		else
-			UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR=$3
 		fi
 		SYSTEMC_INSTALL_DIR=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/systemc
+		TLM2_INSTALL_DIR=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/TLM-2008-06-09
 		;;
 	*debian*)
 		if test "x$3" = x; then
@@ -278,6 +326,8 @@ function Package {
 			;;
 		*debian*)
 			CONTROL_FILE=${INSTALL_DIR}/DEBIAN/control
+			PREINST_FILE=${INSTALL_DIR}/DEBIAN/preinst
+			TEMPLATES_FILE=${INSTALL_DIR}/DEBIAN/templates
 			MD5SUMS_FILE=${INSTALL_DIR}/DEBIAN/md5sums
 		
 			# compute the installed size
@@ -304,16 +354,100 @@ function Package {
 			echo "Section: devel" >> ${CONTROL_FILE}
 			echo "Priority: optional" >> ${CONTROL_FILE}
 			echo "Architecture: ${ARCH}" >> ${CONTROL_FILE}
+			echo "Pre-Depends: debconf (>= 0.5) | debconf-2.0" >> ${CONTROL_FILE}
 			echo "Depends: ${DEPS}" >> ${CONTROL_FILE}
 			echo "Installed-Size: ${installed_size}" >> ${CONTROL_FILE}
 			echo "Maintainer: ${MAINTAINER}" >> ${CONTROL_FILE}
 			echo "Description: ${DESCRIPTION}" >> ${CONTROL_FILE}
 			echo "" >> ${CONTROL_FILE}
+
+			# Fill-in DEBIAN/preinst
+			echo "#!/bin/sh -e" > ${PREINST_FILE}
+			echo "" >> ${PREINST_FILE}
+			echo "# Source debconf library." >> ${PREINST_FILE}
+			echo ". /usr/share/debconf/confmodule" >> ${PREINST_FILE}
+			echo "db_version 2.0" >> ${PREINST_FILE}
+			echo "# This conf script is capable of backing up" >> ${PREINST_FILE}
+			echo "db_capb backup" >> ${PREINST_FILE}
+			echo "" >> ${PREINST_FILE}
+			echo "STATE=1" >> ${PREINST_FILE}
+			echo "while true; do" >> ${PREINST_FILE}
+			echo "    case \"\${STATE}\" in" >> ${PREINST_FILE}
+			echo "        1) # present license" >> ${PREINST_FILE}
+			echo "            db_fset ${PACKAGE_NAME}/present_license seen false" >> ${PREINST_FILE}
+			echo "            if ! db_input critical ${PACKAGE_NAME}/present_license ; then" >> ${PREINST_FILE}
+			echo "                errmsg \"${PACKAGE_NAME} license could not be presented\"" >> ${PREINST_FILE}
+			echo "                exit 2" >> ${PREINST_FILE}
+			echo "            fi" >> ${PREINST_FILE}
+			echo "            db_fset ${PACKAGE_NAME}/accept_license seen false" >> ${PREINST_FILE}
+			echo "            if ! db_input critical ${PACKAGE_NAME}/accept_license ; then" >> ${PREINST_FILE}
+			echo "                errmsg \"${PACKAGE_NAME} license agree question could not be asked\"" >> ${PREINST_FILE}
+			echo "                exit 2" >> ${PREINST_FILE}
+			echo "            fi" >> ${PREINST_FILE}
+			echo "            ;;" >> ${PREINST_FILE}
+			echo "" >> ${PREINST_FILE}
+			echo "        2)  # determine users' choice" >> ${PREINST_FILE}
+			echo "            db_get ${PACKAGE_NAME}/accept_license" >> ${PREINST_FILE}
+			echo "            if [ \"\${RET}\" = \"true\" ]; then" >> ${PREINST_FILE}
+			echo "                # license accepted" >> ${PREINST_FILE}
+			echo "                exit 0" >> ${PREINST_FILE}
+			echo "            fi" >> ${PREINST_FILE}
+			echo "            # error on decline license (give user chance to back up)" >> ${PREINST_FILE}
+			echo "            db_input critical ${PACKAGE_NAME}/error_license" >> ${PREINST_FILE}
+			echo "            ;;" >> ${PREINST_FILE}
+			echo "        3)  # user has confirmed declining license" >> ${PREINST_FILE}
+			echo "            echo \"user did not accept the ${PACKAGE_NAME} license\" >&2" >> ${PREINST_FILE}
+			echo "            exit 1" >> ${PREINST_FILE}
+			echo "            ;;" >> ${PREINST_FILE}
+			echo "        *)  # unknown state" >> ${PREINST_FILE}
+			echo "            echo \"${PACKAGE_NAME} license state unknown: \${STATE}\" >&2" >> ${PREINST_FILE}
+			echo "            exit 2" >> ${PREINST_FILE}
+			echo "            ;;" >> ${PREINST_FILE}
+			echo "    esac" >> ${PREINST_FILE}
+			echo "" >> ${PREINST_FILE}
+			echo "    if db_go; then" >> ${PREINST_FILE}
+			echo "        STATE=\$((\${STATE} + 1))" >> ${PREINST_FILE}
+			echo "    else" >> ${PREINST_FILE}
+			echo "        STATE=\$((\${STATE} - 1))" >> ${PREINST_FILE}
+			echo "    fi" >> ${PREINST_FILE}
+			echo "" >> ${PREINST_FILE}
+			echo "done" >> ${PREINST_FILE}
+			chmod 0555 ${PREINST_FILE}
 			
+			# Fill-in DEBIAN/templates
+			echo "Template: ${PACKAGE_NAME}/accept_license" > ${TEMPLATES_FILE}
+			echo "Type: boolean" >> ${TEMPLATES_FILE}
+			echo "Default: false" >> ${TEMPLATES_FILE}
+			echo "Description: Do you agree with the terms of ${PACKAGE_NAME} license?" >> ${TEMPLATES_FILE}
+			echo " In order to install this package, you must agree to its license terms. Not accepting will cancel the installation." >> ${TEMPLATES_FILE}
+			echo "" >> ${TEMPLATES_FILE}
+			echo "Template: ${PACKAGE_NAME}/error_license" >> ${TEMPLATES_FILE}
+			echo "Type: error" >> ${TEMPLATES_FILE}
+			echo "Description: Declined ${PACKAGE_NAME} License" >> ${TEMPLATES_FILE}
+			echo " If you do not agree to the ${PACKAGE_NAME} license terms you cannot install this software." >> ${TEMPLATES_FILE}
+			echo " The installation of this package will be canceled." >> ${TEMPLATES_FILE}
+			echo "" >> ${TEMPLATES_FILE}
+			echo "Template: ${PACKAGE_NAME}/present_license" >> ${TEMPLATES_FILE}
+			echo "Type: note" >> ${TEMPLATES_FILE}
+			echo "Description: ${PACKAGE_NAME} License" >> ${TEMPLATES_FILE}
+			echo "  PLEASE READ CAREFULLY THE FOLLOWING LICENSE" >> ${TEMPLATES_FILE}
+			echo "  " >> ${TEMPLATES_FILE}
+			cat ${INSTALL_DIR}${UNISIM_PREFIX}/${LICENSE_FILE} | sed 's/^/  /' >> ${TEMPLATES_FILE}
+
 			echo "========================================="
 			echo "=            DEBIAN/control             ="
 			echo "========================================="
 			cat ${CONTROL_FILE}
+
+			echo "========================================="
+			echo "=            DEBIAN/preinst             ="
+			echo "========================================="
+			cat ${PREINST_FILE}
+
+			echo "========================================="
+			echo "=            DEBIAN/templates           ="
+			echo "========================================="
+			cat ${TEMPLATES_FILE}
 
 			echo "========================================="
 			echo "=            DEBIAN/md5sums             ="
@@ -461,6 +595,7 @@ case ${TARGET} in
           --host=i586-mingw32msvc \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          --with-tlm20=${TLM2_INSTALL_DIR} \
           CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/boost \
@@ -474,6 +609,7 @@ case ${TARGET} in
           --host=i686-apple-darwin8 \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          --with-tlm20=${TLM2_INSTALL_DIR} \
           CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/boost \
@@ -487,6 +623,7 @@ case ${TARGET} in
           --host=powerpc-apple-darwin8 \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          --with-tlm20=${TLM2_INSTALL_DIR} \
           CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/boost \
@@ -500,6 +637,7 @@ case ${TARGET} in
           --host=i686-pc-linux-gnu \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          --with-tlm20=${TLM2_INSTALL_DIR} \
           CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
           --enable-release
 		;;
@@ -517,6 +655,7 @@ case ${TARGET} in
           --host=i586-mingw32msvc \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          --with-tlm20=${TLM2_INSTALL_DIR} \
           CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/boost \
@@ -530,6 +669,7 @@ case ${TARGET} in
           --host=i686-apple-darwin8 \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          --with-tlm20=${TLM2_INSTALL_DIR} \
           CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/boost \
@@ -543,6 +683,7 @@ case ${TARGET} in
           --host=powerpc-apple-darwin8 \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          --with-tlm20=${TLM2_INSTALL_DIR} \
           CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/boost \
@@ -556,6 +697,7 @@ case ${TARGET} in
           --host=i686-pc-linux-gnu \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
+          --with-tlm20=${TLM2_INSTALL_DIR} \
           CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
           --enable-release
 		;;
