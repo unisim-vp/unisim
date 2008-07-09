@@ -1,5 +1,5 @@
-includedir = $(prefix)/include/unisim/kernel/tlm
-sharedir = $(prefix)/share/unisim_lib/unisim/kernel/tlm
+includedir = $(prefix)/include/unisim/kernel/tlm2
+sharedir = $(prefix)/share/unisim_lib/unisim/kernel/tlm2
 include_HEADERS = tlm.hh
 
 uninstall-hook:

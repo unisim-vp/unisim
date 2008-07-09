@@ -159,7 +159,7 @@ esac
 case ${TARGET} in
 	*mingw32*)
 		UNISIM_BOOTSTRAP_MINGW32_DIR=${HOME}/tmp/unisim-bootstrap-mingw32
-		if test -f ${UNISIM_BOOTSTRAP_MINGW32_DIR}; then
+		if test -d ${UNISIM_BOOTSTRAP_MINGW32_DIR}; then
 			echo "${UNISIM_BOOTSTRAP_MINGW32_DIR} already exists. Do you want to reuse it ? (Y/n)"
 			read REUSE_UNISIM_BOOTSTRAP_MINGW32
 		else
@@ -187,7 +187,7 @@ case ${TARGET} in
 		;;
 	*86*darwin*)
 		UNISIM_BOOTSTRAP_I686_DARWIN_DIR=${HOME}/tmp/unisim-bootstrap-i686-darwin
-		if test -f ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}; then
+		if test -d ${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}; then
 			echo "${UNISIM_BOOTSTRAP_I686_DARWIN_DIR} already exists. Do you want to reuse it ? (Y/n)"
 			read REUSE_UNISIM_BOOTSTRAP_I686_DARWIN
 		else
@@ -215,7 +215,7 @@ case ${TARGET} in
 		;;
 	*powerpc*darwin*)
 		UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR=${HOME}/tmp/unisim-bootstrap-powerpc-darwin
-		if test -f ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}; then
+		if test -d ${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}; then
 			echo "${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR} already exists. Do you want to reuse it ? (Y/n)"
 			read REUSE_UNISIM_BOOTSTRAP_POWERPC_DARWIN
 		else
