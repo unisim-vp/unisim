@@ -22703,7 +22703,7 @@ cpu
 			cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 
 			// (Trap Vector) => PC
-			cpu->setRegPC(cpu->memRead16(CONFIG::TRAP_VECTOR_ADDRESS));
+			cpu->setRegPC(cpu->memRead16(cpu->get_Trap_Vector()));
 		}
 	}
 #line 22710 "hcs12x.cc"
@@ -45118,7 +45118,7 @@ cpu
 		cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 
 		// (Sys Vector) => PC
-		cpu->setRegPC(cpu->memRead16(CONFIG::SYS_VECTOR_ADDRESS));
+		cpu->setRegPC(cpu->memRead16(cpu->get_Sys_Vector()));
 	}
 #line 45124 "hcs12x.cc"
 }

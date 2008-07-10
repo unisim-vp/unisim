@@ -107,8 +107,9 @@ CPU::CPU(const char *name, Object *parent):
 	verbose_dump_regs_end(true),
 //	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
 //	memory_interface(_memory_interface),
-	instruction_counter(0)
+	instruction_counter(0),
 //	running(true),
+	ivbr_value((address_t) IVBR_DEFAULT_VALUE << 8)
 	
 {
 	setRegA(0x00);
