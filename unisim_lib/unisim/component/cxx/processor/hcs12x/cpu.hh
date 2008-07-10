@@ -68,7 +68,6 @@
 #include <inttypes.h>
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
-#include <unisim/component/cxx/processor/hcs12x/vectors.hh>
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -448,6 +447,22 @@ public:
 
 	uint16_t xb_getAccRegValue(uint8_t rr);
 	/*************  END  XB  ***************/
+
+	//=====================================================================
+	//=              Interrupt Vectors and Access Routines                =
+	//=====================================================================
+
+	static const uint8_t IVBR_DEFAULT_VALUE				= 0xFF;		// IVBR is only one. 
+
+	static const address_t IVBR_ADDRESS					= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
+
+	static const address_t TRAP_VECTOR_ADDRESS 			= 0xFFF8;	// Shared interrupt vector for traps ($FFF8:$FFF9)
+	static const address_t SYS_VECTOR_ADDRESS			= 0xFF12;	// System call interrupt vector is $FF12:$FF13
+
+
+	void setIVBR(uint8_t val) {	memWrite8((physical_address_t&) IVBR_ADDRESS, val); }
+	uint8_t getIVBR() { return memRead8((physical_address_t&) IVBR_ADDRESS); }
+
 
 //protected:
     class MMC	*mmc;

@@ -71,6 +71,9 @@ struct CONFIG {
 	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
 	static const bool HAS_MASKABLE_INTERRUPT	= false;
 
+	static const address_t TRAP_VECTOR_ADDRESS 			= 0xFFF8;// Shared interrupt vector for traps ($FFF8:$FFF9)
+	static const address_t SYS_VECTOR_ADDRESS			= 0xFF12;// System call interrupt vector is $FF12:$FF13
+
 };
 
 

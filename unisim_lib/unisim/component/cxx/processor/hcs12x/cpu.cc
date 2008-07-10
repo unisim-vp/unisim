@@ -116,8 +116,6 @@ CPU::CPU(const char *name, Object *parent):
     setRegX(0x0000);
     setRegY(0x0000);
 
-	//TODO: intitialize segment register 
-//    setRegSP(0xFE00);
 
     ccr = new CCR_t();
     
