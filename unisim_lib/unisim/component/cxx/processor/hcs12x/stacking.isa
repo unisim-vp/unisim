@@ -72,6 +72,8 @@
 
 op psha(0x36[8])
 
+psha.getCycles = { return 2; }
+
 psha.disasm = {
 	sink << "PSHA";
 }
@@ -86,6 +88,8 @@ psha.execute = {
 
 op pshb(0x37[8])
 
+pshb.getCycles = { return 2; }
+
 pshb.disasm = {
 	sink << "PSHB";
 }
@@ -98,6 +102,8 @@ pshb.execute = {
 // PSHC: Push CCR (8 lower bits)
 
 op pshc(0x39[8])
+
+pshc.getCycles = { return 2; }
 
 pshc.disasm = {
 	sink << "PSHC";
@@ -112,6 +118,8 @@ pshc.execute = {
 
 op pshcw(0x18[8]:0x39[8])
 
+pshcw.getCycles = { return 3; }
+
 pshcw.disasm = {
 	sink << "PSHCW";
 }
@@ -124,6 +132,8 @@ pshcw.execute = {
 // PSHD: Push D
 
 op pshd(0x3B[8])
+
+pshd.getCycles = { return 2; }
 
 pshd.disasm = {
 	sink << "PSHD";
@@ -138,6 +148,8 @@ pshd.execute = {
 
 op pshx(0x34[8])
 
+pshx.getCycles = { return 2; }
+
 pshx.disasm = {
 	sink << "PSHX";
 }
@@ -150,6 +162,8 @@ pshx.execute = {
 // PSHY: Push Y
 
 op pshy(0x35[8])
+
+pshy.getCycles = { return 2; }
 
 pshy.disasm = {
 	sink << "PSHY";
@@ -164,6 +178,8 @@ pshy.execute = {
 
 op pula(0x32[8])
 
+pula.getCycles = { return 3; }
+
 pula.disasm = {
 	sink << "PULA";
 }
@@ -176,6 +192,8 @@ pula.execute = {
 // PULB: Pull B
 
 op pulb(0x33[8])
+
+pulb.getCycles = { return 3; }
 
 pulb.disasm = {
 	sink << "PULB";
@@ -190,6 +208,8 @@ pulb.execute = {
 
 op pulc(0x38[8])
 
+pulc.getCycles = { return 3; }
+
 pulc.disasm = {
 	sink << "PULC";
 }
@@ -202,6 +222,8 @@ pulc.execute = {
 // PULCW: Pull CCR word
 
 op pulcw(0x18[8]:0x38[8])
+
+pulcw.getCycles = { return 4; }
 
 pulcw.disasm = {
 	sink << "PULCW";
@@ -216,6 +238,8 @@ pulcw.execute = {
 
 op puld(0x3A[8])
 
+puld.getCycles = { return 3; }
+
 puld.disasm = {
 	sink << "PULD";
 }
@@ -229,6 +253,8 @@ puld.execute = {
 
 op pulx(0x30[8])
 
+pulx.getCycles = { return 3; }
+
 pulx.disasm = {
 	sink << "PULX";
 }
@@ -241,6 +267,8 @@ pulx.execute = {
 // PULY: Pull Y
 
 op puly(0x31[8])
+
+puly.getCycles = { return 3; }
 
 puly.disasm = {
 	sink << "PULY";
