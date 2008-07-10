@@ -68,6 +68,7 @@
 #include <inttypes.h>
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
+#include <unisim/component/cxx/processor/hcs12x/vectors.hh>
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>

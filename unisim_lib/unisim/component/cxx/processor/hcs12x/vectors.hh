@@ -33,8 +33,8 @@
  */
 
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONFIG_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_VECTORS_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_VECTORS_HH__
 
 #ifdef GCC_INLINE
 #undef GCC_INLINE
@@ -55,21 +55,11 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-struct CONFIG {
-	/*
-	 * static initialization may rise problems in SMP architectures !!!
-	 */
-	static const bool TIMING_ENABLE				= false;
-
-	static const bool DEBUG_ENABLE				= true;
-	static const bool DEBUG_EXCEPTION_ENABLE	= false;
-	static const bool REGISTERS_INFO			= true;
-	static const bool HAS_HARD_RESET			= false;
-	static const bool HAS_SOFT_RESET			= false;
-	static const bool HAS_SOFTWARE_INTERRUPT	= false;
-	static const bool HAS_SYS_CALL_INTERRUPT	= false;
-	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
-	static const bool HAS_MASKABLE_INTERRUPT	= false;
+class VECTORS {
+public:
+	static const address_t TRAP_VECTOR_ADDRESS 			= 0xFFF8;// Shared interrupt vector for traps ($FFF8:$FFF9)
+	static const address_t SYS_VECTOR_ADDRESS			= 0xFF12;// System call interrupt vector is $FF12:$FF13
+		
 
 };
 
@@ -80,5 +70,5 @@ struct CONFIG {
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CONFIG_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_VECTORS_HH__
 

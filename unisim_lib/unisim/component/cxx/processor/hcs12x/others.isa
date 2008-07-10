@@ -36,6 +36,8 @@
 // NOP:
 op nop(0xA7[8])
 
+nop.getCycles = { return 1; }
+
 nop.disasm = {
 	sink << "NOP";	
 }
@@ -47,6 +49,10 @@ nop.execute = {
 // STOP:
 op stop(0x18[8]:0x3E[8])
 
+stop.var stopDisabled : { bool } = { false }
+
+stop.getCycles = { if (stopDisabled) return 2; else return 16; }
+
 stop.disasm = {
 	sink << "STOP";
 }
@@ -54,11 +60,13 @@ stop.disasm = {
 stop.execute = {
 	
 	if (cpu->ccr->getS() == 1) {
+		stopDisabled = true;
 		/*
 		 * if S control bit = 1, the STOP instruction is disabled and acts like two-cycle NOP
 		 */
 		// TODO: consume two cycles	 
 	} else {
+		stopDisabled = false;
 		/*
 		 * (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
 		 * (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
@@ -102,13 +110,15 @@ stop.execute = {
 }
 
 // WAIT
-op wait(0x3E[8])
+op wai(0x3E[8])
 
-wait.disasm = {
+wai.getCycles = { return 13; }
+
+wai.disasm = {
 	sink << "WAI";
 }
 
-wait.execute = {
+wai.execute = {
 
 	/*
 	 * (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
@@ -158,6 +168,8 @@ wait.execute = {
 
 op bgnd(0x00[8])
 
+bgnd.getCycles = { return 5; }
+
 bgnd.disasm = {
 	sink << "BGND";
 }
@@ -172,11 +184,18 @@ bgnd.execute = {
 
 op rti(0x0B[8])
 
+rti.var isPending : { bool } = { false }
+
+rti.getCycles = { if (isPending) return 10; else return 8; }
+
 rti.disasm = {
 	sink << "RTI";
 }
 
+// TODO: check if there is interrupt pending and set "isPending"
+ 
 rti.execute = {
+
 	/*
 	 * (M(SP) : M(SP+1)) => CCRH : CCRL; (SP) + $0002 => SP
 	 * (M(SP) : M(SP+1)) => B : A; (SP) + $0002 => SP
@@ -212,6 +231,8 @@ rti.execute = {
 // SWI: Software Interrupt
 
 op swi(0x3F[8])
+
+swi.getCycles = { return 9; }
 
 swi.disasm = {
 	sink << "SWI";
@@ -259,6 +280,8 @@ swi.execute = {
 
 op trap(0x18[8]:trapnum[8])
 
+trap.getCycles = { return 10; }
+
 trap.disasm = {
 	sink << "TRAP $" << std::hex << trapnum;
 }
@@ -302,7 +325,7 @@ trap.execute = {
 		cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 		
 		// (Trap Vector) => PC
-		cpu->setRegPC(cpu->memRead16(CONFIG::TRAP_VECTOR_ADDRESS));
+		cpu->setRegPC(cpu->memRead16(VECTORS::TRAP_VECTOR_ADDRESS));
 	}
 }
 
@@ -310,6 +333,8 @@ trap.execute = {
 // System call interrupt vector is $FF12:$FF13
 
 op sys(0x18[8]:0xA7[8])
+
+sys.getCycles = { return 10; }
 
 sys.disasm = {
 	sink << "SYS";
@@ -353,5 +378,5 @@ sys.execute = {
 	cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 		
 	// (Sys Vector) => PC
-	cpu->setRegPC(cpu->memRead16(CONFIG::SYS_VECTOR_ADDRESS));
+	cpu->setRegPC(cpu->memRead16(VECTORS::SYS_VECTOR_ADDRESS));
 }
