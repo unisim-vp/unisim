@@ -7,11 +7,11 @@ AC_DEFUN([UNISIM_CHECK_WINSOCK2], [
 ])
 
 
-## UNISIM_CHECK_BOOST
+## UNISIM_WITH_BOOST
 ## Checks if the boost library is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN([UNISIM_CHECK_BOOST], [
+AC_DEFUN([UNISIM_WITH_BOOST], [
     # Check if boost path has been overloaded
     AC_ARG_WITH(boost,
 	AS_HELP_STRING([--with-boost=<path>], [boost library to use (will be completed with /include and /lib)]))
@@ -19,13 +19,59 @@ AC_DEFUN([UNISIM_CHECK_BOOST], [
 	AC_MSG_NOTICE([using boost at $with_boost])
 	CPPFLAGS=${CPPFLAGS}" -I$with_boost/include"
     fi
-	
+])
+
+## UNISIM_CHECK_BOOST_GRAPH
+## Checks if the boost library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_BOOST_GRAPH], [
     # Check for some boost graph headers
     AC_CHECK_HEADERS([boost/graph/adjacency_list.hpp boost/graph/topological_sort.hpp boost/graph/visitors.hpp],,\
 	AC_MSG_ERROR([boost graph headers not found. Please install the boost graph development library. Use --with-boost=<path> to overload default includes search path.]))
-    # Check for some boost thread headers
-    AC_CHECK_HEADERS([boost/thread/mutex.hpp],,\
+])
+
+## UNISIM_CHECK_BOOST_THREAD
+## Checks if the boost library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_BOOST_THREAD], [
+    # Check for boost thread headers
+    AC_CHECK_HEADERS([boost/thread/thread.hpp boost/thread/mutex.hpp boost/thread/xtime.hpp],,\
 	AC_MSG_ERROR([boost thread headers not found. Please install the boost thread development library. Use --with-boost=<path> to overload default includes search path.]))
+
+	# Note: we can't check libboost_thread functions from libboost_thread because it's a library of C++ classes with no C functions.
+	LIBS=${LIBS}" -lboost_thread"
+])
+
+## UNISIM_CHECK_BOOST_FUNCTION
+## Checks if the boost library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_BOOST_FUNCTION], [
+    # Check for boost function header
+    AC_CHECK_HEADERS([boost/function.hpp],,\
+	AC_MSG_ERROR([boost function header not found. Please install the boost development library. Use --with-boost=<path> to overload default includes search path.]))
+])
+
+## UNISIM_CHECK_BOOST_MEM_FN
+## Checks if the boost library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_BOOST_MEM_FN], [
+    # Check for mem_fn header
+    AC_CHECK_HEADERS([boost/mem_fn.hpp],,\
+	AC_MSG_ERROR([boost mem_fn header not found. Please install the boost development library. Use --with-boost=<path> to overload default includes search path.]))
+])
+
+## UNISIM_CHECK_BOOST_BIND
+## Checks if the boost library is installed
+## Does not take parameters
+#####################################################
+AC_DEFUN([UNISIM_CHECK_BOOST_BIND], [
+    # Check for boost bind
+    AC_CHECK_HEADERS([boost/bind.hpp],,\
+	AC_MSG_ERROR([boost bind header not found. Please install the boost development library. Use --with-boost=<path> to overload default includes search path.]))
 ])
 
 ## UNISIM_CHECK_UNISIM_TOOLS

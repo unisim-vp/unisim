@@ -59,6 +59,10 @@ AC_CHECK_HEADERS([map],,\
 
 UNISIM_CHECK_SYSTEMC
 UNISIM_CHECK_TLM20
+UNISIM_WITH_BOOST
+UNISIM_CHECK_BOOST_FUNCTION
+UNISIM_CHECK_BOOST_MEM_FN
+
 
 # files to generate
 #   this should include all the makefiles to generate

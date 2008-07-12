@@ -58,7 +58,9 @@ AC_CHECK_HEADERS([string],,\
     AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 ###### CHECK FOR BOOST ########################################################
-UNISIM_CHECK_BOOST
+UNISIM_WITH_BOOST
+UNISIM_CHECK_BOOST_THREAD
+UNISIM_CHECK_BOOST_BIND
 
 # files to generate
 #   this should include all the makefiles to generate

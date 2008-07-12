@@ -3,11 +3,11 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 debian <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
-	echo "  $0 redhat <version>"
+	echo "  $0 i386-debian <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
+	echo "  $0 i386-redhat <version>"
 	echo "  $0 mingw32 <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
 	echo "  $0 powerpc-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
-	echo "  $0 i686-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
+	echo "  $0 i386-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
 }
 
 if test "x$1" = x || test "x$2" = x; then
@@ -19,17 +19,27 @@ TARGET=$1
 VERSION=$2
 
 HERE=`pwd`
-ARCH=i386
 MAINTAINER="Gilles Mouchard <gilles.mouchard@cea.fr>"
 
 case ${TARGET} in
 	*mingw32*)
+		ARCH=i386
 		UNISIM_PREFIX=
 		;;
-	*debian*)
+	*86*debian*)
+		ARCH=i386
 		UNISIM_PREFIX=/usr
 		;;
-	*macosx*)
+	*86*redhat*)
+		ARCH=i386
+		UNISIM_PREFIX=/usr
+		;;
+	*powerpc*darwin*)
+		ARCH=POWERPC
+		UNISIM_PREFIX=/usr
+		;;
+	*86*darwin*)
+		ARCH=i386
 		UNISIM_PREFIX=/usr
 		;;
 esac
@@ -71,7 +81,7 @@ UNISIM_SIMULATORS_DESCRIPTION="UNISIM Simulators"
 UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
 
 case ${TARGET} in
-	*debian* | *mingw32* | powerpc*darwin* | *86*darwin*)
+	*86*debian* | *mingw32* | powerpc*darwin* | *86*darwin*)
 		if test ! -f ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME}; then
 			Usage
 			echo "File ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME} is needed. Use \"make dist\" to build it."
@@ -90,7 +100,7 @@ case ${TARGET} in
 			exit
 		fi
 		;;
-	*redhat*)
+	*86*redhat*)
 		if test ! -f ${HERE}/${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME}; then
 			Usage
 			echo "File ${HERE}/${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME} is needed. Build first a debian package ($0 debian ....)."
@@ -122,7 +132,7 @@ case ${TARGET} in
 esac
 
 case ${TARGET} in
-	*debian*)
+	*86*debian*)
 		if test "x$3" = x; then
 			Usage
 			echo "SystemC 2.2.0 install directory is needed."
@@ -241,7 +251,7 @@ case ${TARGET} in
 		SYSTEMC_INSTALL_DIR=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/systemc
 		TLM2_INSTALL_DIR=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/TLM-2008-06-09
 		;;
-	*debian*)
+	*86*debian*)
 		if test "x$3" = x; then
 			Usage
 			exit
@@ -324,7 +334,7 @@ function Package {
 			cd ${INSTALL_DIR}
 			tar zcvf ${HERE}/${PACKAGE_NAME}-${VERSION}-powerpc-darwin.tar.gz *
 			;;
-		*debian*)
+		*86*debian*)
 			CONTROL_FILE=${INSTALL_DIR}/DEBIAN/control
 			PREINST_FILE=${INSTALL_DIR}/DEBIAN/preinst
 			TEMPLATES_FILE=${INSTALL_DIR}/DEBIAN/templates
@@ -566,7 +576,7 @@ case ${TARGET} in
 			fi
 		fi
 		;;
-	*debian*)
+	*86*debian*)
 		;;
 esac
 
@@ -585,7 +595,7 @@ rm -rf ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR}
 cd ${HOME}/tmp
 tar zxvf ${HERE}/${UNISIM_SIMULATORS_LONG_NAME}.tar.gz || exit
 
-Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} CXXFLAGS="-m32 -O3 -g3"
+Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} CXXFLAGS="-m32 -O3"
 Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 
@@ -596,7 +606,7 @@ case ${TARGET} in
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
           --with-tlm20=${TLM2_INSTALL_DIR} \
-          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          CXXFLAGS="-m32 -O3 -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/zlib \
@@ -610,7 +620,7 @@ case ${TARGET} in
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
           --with-tlm20=${TLM2_INSTALL_DIR} \
-          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          CXXFLAGS="-m32 -O3 -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/zlib \
@@ -624,7 +634,7 @@ case ${TARGET} in
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
           --with-tlm20=${TLM2_INSTALL_DIR} \
-          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          CXXFLAGS="-m32 -O3 -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/zlib \
@@ -632,13 +642,13 @@ case ${TARGET} in
           --with-libxml2=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
-	*debian*)
+	*86*debian*)
 		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
           --host=i686-pc-linux-gnu \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
           --with-tlm20=${TLM2_INSTALL_DIR} \
-          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          CXXFLAGS="-m32 -O3 -DDEBUG_NETSTUB" \
           --enable-release
 		;;
 esac
@@ -656,7 +666,7 @@ case ${TARGET} in
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
           --with-tlm20=${TLM2_INSTALL_DIR} \
-          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          CXXFLAGS="-m32 -O3 -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/zlib \
@@ -670,7 +680,7 @@ case ${TARGET} in
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
           --with-tlm20=${TLM2_INSTALL_DIR} \
-          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          CXXFLAGS="-m32 -O3 -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/zlib \
@@ -684,7 +694,7 @@ case ${TARGET} in
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
           --with-tlm20=${TLM2_INSTALL_DIR} \
-          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          CXXFLAGS="-m32 -O3 -DDEBUG_NETSTUB" \
           --with-sdl=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/zlib \
@@ -692,13 +702,13 @@ case ${TARGET} in
           --with-libxml2=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
-	*debian*)
+	*86*debian*)
 		Configure ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR} ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} \
           --host=i686-pc-linux-gnu \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
           --with-tlm20=${TLM2_INSTALL_DIR} \
-          CXXFLAGS="-m32 -O3 -g3 -DSC_INCLUDE_DYNAMIC_PROCESSES -DDEBUG_NETSTUB" \
+          CXXFLAGS="-m32 -O3 -DDEBUG_NETSTUB" \
           --enable-release
 		;;
 esac
@@ -744,7 +754,7 @@ case ${TARGET} in
 		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		;;
-	*debian*)
+	*86*debian*)
 		;;
 esac
 

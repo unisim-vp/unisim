@@ -53,15 +53,9 @@ AC_PROG_LN_S
 
 AC_LANG([C++])
 
-###### CHECK FOR STANDARD C++ HEADERS #########################################
-AC_CHECK_HEADERS([iostream string list queue map iostream sstream],,\
+###### CHECK FOR STANDARD C/C++ HEADERS #########################################
+AC_CHECK_HEADERS([iostream string list map iostream sstream iomanip math.h stdarg.h stdio.h string.h csignal inttypes.h fstream stdint.h stdexcept time.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
-
-###### CHECK FOR BOOST ########################################################
-UNISIM_CHECK_BOOST
-
-###### CHECK FOR LIBXML2 ######################################################
-UNISIM_CHECK_LIBXML2
 
 ###### CHECK FOR PTHREAD ######################################################
 case $host in
