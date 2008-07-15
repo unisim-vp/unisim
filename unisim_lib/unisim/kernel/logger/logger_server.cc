@@ -9,10 +9,11 @@ static const char *XML_ENCODING = "UTF-8";
 
 LoggerServer *LoggerServer::singleton = 0;
 unsigned long long int LoggerServer::singleton_refs = 0;
+const char *LoggerServer::name = "kernel_logger";
 
 LoggerServer::
 LoggerServer() :
-	Object("kernel_logger", 0),
+	Object(LoggerServer::name, 0),
 	xml_writer(0),
 	opt_std_err(false),
 	opt_std_out(false),
@@ -66,7 +67,7 @@ Setup() {
 				<< "could not open output file for logging" << endl;
 			return false;
 		}
-		int rc = xmlTextWriterSetIndent(xml_writer, 0);
+		int rc = xmlTextWriterSetIndent(xml_writer, 1);
 		if(rc < 0) {
 			cerr << "Warning(LoggerServer::Setup): "
 				<< "could not set indentation" << endl;
@@ -123,6 +124,12 @@ RemoveInstance() {
 		delete singleton;
 		singleton = 0;
 	}
+}
+
+const char * 
+LoggerServer::
+GetObjectName() {
+	return name;
 }
 
 void 

@@ -49,6 +49,12 @@ public:
 	 * This method should be called by the different loggers when being destroyed.
 	 */
 	static void RemoveInstance();
+
+	/** Obtain the unique logger server object name
+	 *
+	 * @return the unique logger server object name
+	 */
+	static const char *GetObjectName();
 	
 	/** Message debug info log command
 	 * Loggers should call this method (using the handle obtained with GetInstance)
@@ -87,6 +93,10 @@ private:
 	 * This is a counter to the number of times the singleton is being used.
 	 */
 	static unsigned long long int singleton_refs;
+
+	/** The unique logger server name
+	 */
+	static const char *name;
 
 	/** XML file handler
 	 * The type of this file handler is provided by libxml2.

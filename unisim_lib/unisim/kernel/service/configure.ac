@@ -54,7 +54,7 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR STANDARD C++ HEADERS #########################################
-AC_CHECK_HEADERS([iostream string list queue map vector sstream fstream stdlib.h],,\
+AC_CHECK_HEADERS([iostream string list queue map vector sstream fstream stdlib.h string.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR BOOST ########################################################

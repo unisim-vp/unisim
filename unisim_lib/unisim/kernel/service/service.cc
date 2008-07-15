@@ -34,9 +34,11 @@
  */
  
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger_server.hh"
 #include <sstream>
 #include <fstream>
 #include <stdlib.h>
+#include <string.h>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/topological_sort.hpp>
@@ -840,7 +842,7 @@ bool ServiceManager::Setup()
 	{
 //		cerr << "Object: " << (*object_iter).second->GetName() << endl;
 		dependency_graph[(*object_iter).second->GetID()].obj = (*object_iter).second;
-		if(strcmp((*object_iter).second->GetName(), "kernel_logger") == 0)
+		if(strcmp((*object_iter).second->GetName(), unisim::kernel::logger::LoggerServer::GetObjectName()) == 0)
 			logger_obj = (*object_iter).second;
 	}
 
