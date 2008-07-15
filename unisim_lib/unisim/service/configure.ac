@@ -53,7 +53,6 @@ UNISIM_CONFIG_SUBDIR(unisim-service-sdl, sdl)
 UNISIM_CONFIG_SUBDIR(unisim-service-power, power)
 UNISIM_CONFIG_SUBDIR(unisim-service-time, time)
 UNISIM_CONFIG_SUBDIR(unisim-service-tee, tee)
-UNISIM_CONFIG_SUBDIR(unisim-service-statistic, statistic)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
