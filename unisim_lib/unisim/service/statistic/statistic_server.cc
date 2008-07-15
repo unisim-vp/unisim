@@ -49,7 +49,7 @@ using std::endl;
 using std::stringstream;
 using unisim::util::time::TU_FS;
 
-//class StatisticServer :
+//class StatisticServerX :
 //	public Client<StatisticControlReporting> {
 //private:
 //	static const unsigned int MAX_SOURCES = 1024;
@@ -61,8 +61,8 @@ using unisim::util::time::TU_FS;
 //		*statistic_import[MAX_SOURCES];
 //	
 
-StatisticServer::
-StatisticServer(const char *name, Object *parent) :
+StatisticServerX::
+StatisticServerX(const char *name, Object *parent) :
 	Object(name, parent),
 	refresh_time(1),
 	param_refresh_time("refresh-time", this, refresh_time, "statistics display refresh period (in seconds)"),
@@ -95,25 +95,25 @@ StatisticServer(const char *name, Object *parent) :
 	}
 }
 
-StatisticServer::
-~StatisticServer() {
+StatisticServerX::
+~StatisticServerX() {
 }
 
 bool 
-StatisticServer::
+StatisticServerX::
 Setup() {
 	if(report_frequency == (double)0) {
-		cerr << "ERROR(StatisticServer): Report frequency was not set (or set to 0). It should be bigger than 0" << endl;
+		cerr << "ERROR(StatisticServerX): Report frequency was not set (or set to 0). It should be bigger than 0" << endl;
 		return false;
 	}
 	if(refresh_time == 0) {
-		cerr << "ERROR(StatisticServer): Display refresh time was set to 0. It should be bigger than 0" << endl;
+		cerr << "ERROR(StatisticServerX): Display refresh time was set to 0. It should be bigger than 0" << endl;
 		return false;
 	}
 //	uint64_t time = refresh_time;
 //	for(unsigned int i = 0; i < 5; i++) time = time * 1000;
 //	time = time / 2;
-	boost::thread thrd(boost::bind(StatisticServer::Display, this));
+	boost::thread thrd(boost::bind(StatisticServerX::Display, this));
 //	cout << "Preferred Stat Reporting Period = " << time 
 //		<< " (" << ((double)time) << ")" << endl;
 	for(unsigned int i = 0; i < MAX_SOURCES; i++) {
@@ -125,7 +125,7 @@ Setup() {
 }
 
 StatisticReporting::stat_handle_t 
-StatisticServer::
+StatisticServerX::
 RegisterStat(unsigned int source_id, const char *source_name, const char *name) {
 	boost::mutex::scoped_lock lock(mutex);
 	unsigned int ret_id = 0;
@@ -147,7 +147,7 @@ RegisterStat(unsigned int source_id, const char *source_name, const char *name) 
 }
 
 void 
-StatisticServer::
+StatisticServerX::
 ReportStat(stat_handle_t handle,
 		uint64_t time,
 		uint64_t value) {
@@ -166,7 +166,7 @@ ReportStat(stat_handle_t handle,
 }
 
 void 
-StatisticServer::
+StatisticServerX::
 ReportStat(stat_handle_t handle,
 		uint64_t time,
 		int64_t value) {
@@ -185,7 +185,7 @@ ReportStat(stat_handle_t handle,
 }
 	
 void 
-StatisticServer::
+StatisticServerX::
 ReportStat(stat_handle_t handle,
 		uint64_t time,
 		double value) {
@@ -204,8 +204,8 @@ ReportStat(stat_handle_t handle,
 }
 
 void
-StatisticServer::
-Display(StatisticServer *server) {
+StatisticServerX::
+Display(StatisticServerX *server) {
 	boost::mutex::scoped_lock *lock;
 	while(1) {
 		boost::xtime xt;
@@ -239,7 +239,7 @@ Display(StatisticServer *server) {
 }
 
 StatisticClientIdentifier::
-StatisticClientIdentifier(StatisticServer *_server, unsigned int _source_id, const char *name, Object *parent) :
+StatisticClientIdentifier(StatisticServerX *_server, unsigned int _source_id, const char *name, Object *parent) :
 Object(name, parent),
 Service<StatisticReporting>(name,parent),
 statistic_reporting_export("statistic_reporting_export", this),

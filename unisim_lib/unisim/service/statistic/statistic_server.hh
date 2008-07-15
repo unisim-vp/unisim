@@ -63,7 +63,7 @@ class StatisticClientIdentifier;
 class Statistic;
 class TimedStatistic;
 
-class StatisticServer :
+class StatisticServerX :
 	public Object {
 private:
 	static const unsigned int MAX_SOURCES = 1024;
@@ -75,8 +75,8 @@ public:
 	ServiceImport<StatisticReportingControl> 
 		*statistic_reporting_control_import[MAX_SOURCES];
 	
-	StatisticServer(const char *name, Object *parent = 0);
-	~StatisticServer();
+	StatisticServerX(const char *name, Object *parent = 0);
+	~StatisticServerX();
 	
 	virtual bool Setup();
 	
@@ -92,7 +92,7 @@ public:
 		double value);
 
 private:
-	static void Display(StatisticServer *server);
+	static void Display(StatisticServerX *server);
 	
 	Parameter<uint32_t> param_refresh_time;
 	uint32_t refresh_time;
@@ -137,7 +137,7 @@ private:
 public:
 	ServiceExport<StatisticReporting> statistic_reporting_export;
 	
-	StatisticClientIdentifier(StatisticServer *server, unsigned int source_id, const char *name, Object *parent = 0);
+	StatisticClientIdentifier(StatisticServerX *server, unsigned int source_id, const char *name, Object *parent = 0);
 	~StatisticClientIdentifier();
 	
 	virtual bool Setup();
@@ -154,7 +154,7 @@ public:
 			double value);
 	
 private:
-	StatisticServer *server;
+	StatisticServerX *server;
 	unsigned int source_id;
 	string source_name;
 };
