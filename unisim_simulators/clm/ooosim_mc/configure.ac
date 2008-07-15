@@ -80,6 +80,7 @@ UNISIM_RELEASE
 
 UNISIM_LINK(unisim_kernel_clm_engine)
 UNISIM_LINK(unisim_kernel_service)
+UNISIM_LINK(unisim_kernel_logger)
 
 UNISIM_LINK(unisim_util_xml)
 UNISIM_LINK(unisim_util_debug)

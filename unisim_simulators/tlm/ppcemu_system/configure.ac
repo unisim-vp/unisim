@@ -76,6 +76,7 @@ UNISIM_CHECK_SYSTEMC
 UNISIM_CHECK_UNISIM_LIB
 UNISIM_RELEASE
 
+UNISIM_LINK(unisim_kernel_logger)
 UNISIM_LINK(unisim_kernel_service)
 
 UNISIM_LINK(unisim_util_xml)

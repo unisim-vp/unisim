@@ -55,7 +55,6 @@
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
 #include "unisim/service/logger/logger_server.hh"
-#include "unisim/service/statistic/statistic_server.hh"
 
 #include "unisim/service/debug/symbol_table/symbol_table.hh"
 
@@ -100,7 +99,6 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::logger::LoggerServer;
-using unisim::service::statistic::StatisticServer;
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
 using unisim::kernel::service::ServiceManager;
@@ -186,7 +184,6 @@ int main(int argc, char *argv[], char **envp) {
 	bool get_config = false;
 	bool set_config = false;
 	bool use_logger = false;
-	bool use_statistics = false;
 	bool use_gdb_server = false;
 	char *gdb_xml = 0;
 	int gdb_server_port = 0;
@@ -251,11 +248,6 @@ int main(int argc, char *argv[], char **envp) {
 	LoggerServer *logger = 0;
 	if(use_logger)
 		logger = new LoggerServer("logger");
-	
-	// Statistics
-	StatisticServer *statistic_server = 0;
-	if(use_statistics)
-		statistic_server = new StatisticServer("statistic-server");
 	
 	// Time
 	ScTime *time = new ScTime("time");
@@ -447,7 +439,6 @@ int main(int argc, char *argv[], char **envp) {
 	if(logger) delete logger;
 	if(bus_msg_spy) delete bus_msg_spy;
 	if(mem_msg_spy) delete mem_msg_spy;
-	if(statistic_server) delete statistic_server;
 
 #ifdef WIN32
 	// releases the winsock2 resources
