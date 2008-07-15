@@ -167,6 +167,7 @@ public:
   bool latex_rendering_fused;
 };
 
+/*
 class Signal_Status;
 
 template <class T> 
@@ -185,6 +186,7 @@ class Unisim_Prim_Out : public fsc_prim_out<T> {
     return *this;
   }
 };
+*/
 
 /**
  * \brief Data-less input port. Input ports inherits from this class 
@@ -192,7 +194,8 @@ class Unisim_Prim_Out : public fsc_prim_out<T> {
 class Unisim_Inport_Base : public unisim_port
 {public:
   fsc_prim_in < bool > enable;        ///< Enable signal
-  Unisim_Prim_Out < bool > accept;    ///< Accept signal
+  //  Unisim_Prim_Out < bool > accept;    ///< Accept signal
+  fsc_prim_out < bool > accept;    ///< Accept signal
 
   Unisim_Inport_Base();                 // Constructor
   virtual ~Unisim_Inport_Base() { }     // Destructor
@@ -218,7 +221,8 @@ class Unisim_Inport_Base : public unisim_port
  */
 class Unisim_Outport_Base : public unisim_port
 {public:
-  Unisim_Prim_Out < bool > enable;     ///< Enable signal
+  //  Unisim_Prim_Out < bool > enable;     ///< Enable signal
+  fsc_prim_out < bool > enable;     ///< Enable signal
   fsc_prim_in < bool > accept;         ///< Accept signal
 
   Unisim_Outport_Base();                 // Constructor
@@ -407,8 +411,10 @@ class unisim_module: public fsc_module
   enum category_t {category_UNKNOWN, category_INTERCONNECT, category_CACHE, category_MEMORY, category_PROCESSOR};
   category_t category;
  protected: 
-  std::list < Unisim_Inport_Base  * > module_inport_list;  ///< list of input ports in the module
-  std::list < Unisim_Outport_Base * > module_outport_list; ///< list of outports defined in the module
+  //  std::list < Unisim_Inport_Base  * > module_inport_list;  ///< list of input ports in the module
+  //  std::list < Unisim_Outport_Base * > module_outport_list; ///< list of outports defined in the module
+  std::list < unisim_port * > module_inport_list;  ///< list of input ports in the module
+  std::list < unisim_port * > module_outport_list; ///< list of outports defined in the module
   ModuleParameters parameters;
   list<unisim_port*> latex_left_ports;   ///< Ports to be put on the left of the module for latex rendering
   list<unisim_port*> latex_right_ports;  ///< Ports to be put on the right of the module for latex rendering
@@ -650,7 +656,8 @@ Direct acces tot the data value should be replaced by port.data
 template < class T > 
 class outport <T,true> : public Unisim_Outport_Base
 { public:
-  Unisim_Prim_Out < T > data;        ///< Data signal
+  //  Unisim_Prim_Out < T > data;        ///< Data signal
+  fsc_prim_out < T > data;        ///< Data signal
   outport<T, true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
   fsc_signal<T> signal;              ///< The 3-signals object connecting this output port to an input port
 
@@ -1164,7 +1171,8 @@ class Signal_Status
     return *this;
   }
 
-  friend class Unisim_Prim_Out<bool>;
+  //  friend class Unisim_Prim_Out<bool>;
+  friend class fsc_prim_out<bool>;
 };
 
 

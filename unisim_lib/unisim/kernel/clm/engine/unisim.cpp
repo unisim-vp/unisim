@@ -49,6 +49,7 @@ void fraternite_module::run_module_body()
 module *Unisim_Sensitive_Array::__current_array_module = NULL;
 int Unisim_Sensitive_Array::__current_array_size = 0;
 
+/*
 template <>
 Unisim_Prim_Out<bool>& Unisim_Prim_Out<bool>::operator =(Signal_Status &s)
 { if (s.known)
@@ -56,3 +57,4 @@ Unisim_Prim_Out<bool>& Unisim_Prim_Out<bool>::operator =(Signal_Status &s)
   }
   return *this;
 }
+*/

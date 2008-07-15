@@ -51,8 +51,9 @@
 #include <string.h>
 #include <inttypes.h>
 
-
-
+// DD
+//#define FSC_STAT
+//#define FFSC_STAT
 
 /***************************************
               LIBERTY CODE

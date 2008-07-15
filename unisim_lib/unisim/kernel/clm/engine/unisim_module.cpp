@@ -86,7 +86,7 @@ void unisim_module::dump_dot_nodes(ostream &os)
   string name = Name();
 
 
-  for(list<Unisim_Inport_Base*>::iterator p=module_inport_list.begin();p!=module_inport_list.end();p++)
+  for(list<unisim_port*>::iterator p=module_inport_list.begin();p!=module_inport_list.end();p++)
   { string pname = (*p)->get_name();
     if(pname.find("MEM")!=string::npos)
     { // MEM ports => to the right
@@ -96,7 +96,7 @@ void unisim_module::dump_dot_nodes(ostream &os)
     { left.push_back(pname);
     }
   }
-  for(list<Unisim_Outport_Base*>::iterator p=module_outport_list.begin();p!=module_outport_list.end();p++)
+  for(list<unisim_port*>::iterator p=module_outport_list.begin();p!=module_outport_list.end();p++)
   { string pname = (*p)->get_name();
     if(pname.find("MEM")!=string::npos)
     { // MEM ports => to the right
@@ -124,7 +124,7 @@ void unisim_module::dump_dot_nodes(ostream &os)
 
 void unisim_module::dump_dot_conns(ostream &os)
 { 
-  list<Unisim_Outport_Base*>::iterator o;
+  list<unisim_port*>::iterator o;
   for(o=module_outport_list.begin();o!=module_outport_list.end();o++)
   { string pname = (*o)->get_name();
     os << '"' << Name() << "\":\"" << pname << "\" -> \"";
@@ -158,12 +158,12 @@ void unisim_module::dump_latex_module(ostream &os, bool first)
 void unisim_module::compute_latex_ports()
 { if( latex_left_ports.empty() && latex_right_ports.empty() && latex_top_ports.empty() && latex_bottom_ports.empty() ) 
   { // No latex hints specified, let's guess a layout from port names
-    for(list<Unisim_Inport_Base*>::iterator p=module_inport_list.begin();p!=module_inport_list.end();p++)
+    for(list<unisim_port*>::iterator p=module_inport_list.begin();p!=module_inport_list.end();p++)
     { string pname = (*p)->get_name();
       if(pname.find("MEM")!=string::npos) latex_right_ports.push_back(*p);
       else                                latex_left_ports.push_back(*p);
     }
-    for(list<Unisim_Outport_Base*>::iterator p=module_outport_list.begin();p!=module_outport_list.end();p++)
+    for(list<unisim_port*>::iterator p=module_outport_list.begin();p!=module_outport_list.end();p++)
     { string pname = (*p)->get_name();
       if(pname.find("MEM")!=string::npos) latex_right_ports.push_back(*p);
       else                                latex_left_ports.push_back(*p);
@@ -246,7 +246,7 @@ void unisim_module::dump_latex_ports(ostream &os)
 }
 
 void unisim_module::dump_latex_conns(ostream &os)
-{ list<Unisim_Outport_Base*>::iterator o;
+{ list<unisim_port*>::iterator o;
   char link_from, link_to;
   os << "% --- connections ---------------------" << endl;
   for(o=module_outport_list.begin();o!=module_outport_list.end();o++)
