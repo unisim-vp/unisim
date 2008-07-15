@@ -834,10 +834,14 @@ bool ServiceManager::Setup()
 {
 	map<const char *, Object *, ltstr>::iterator object_iter;
 	DependencyGraph dependency_graph(objects.size());
+	Object *logger_obj = 0;
 	
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
+//		cerr << "Object: " << (*object_iter).second->GetName() << endl;
 		dependency_graph[(*object_iter).second->GetID()].obj = (*object_iter).second;
+		if(strcmp((*object_iter).second->GetName(), "kernel_logger") == 0)
+			logger_obj = (*object_iter).second;
 	}
 
 
@@ -845,6 +849,10 @@ bool ServiceManager::Setup()
 	{
 		list<ServiceImportBase *>& setup_dependencies = (*object_iter).second->GetSetupDependencies();
 		list<ServiceImportBase *>::iterator import_iter;
+
+		if(logger_obj && (*object_iter).second != logger_obj) {
+			add_edge(logger_obj->GetID(), (*object_iter).second->GetID(), dependency_graph);
+		}
 
 		for(import_iter = setup_dependencies.begin(); import_iter != setup_dependencies.end(); import_iter++)
 		{

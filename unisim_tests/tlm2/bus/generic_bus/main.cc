@@ -4,6 +4,7 @@
 
 using unisim::kernel::service::ServiceManager;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::logger::LoggerServer;
 
 int sc_main(int argv, char **argc) {
 	Top<true> top("top");
@@ -21,9 +22,15 @@ int sc_main(int argv, char **argc) {
 	*var = false;
 	var = ServiceManager::GetParameter("kernel_logger.std_err_color");
 	*var = false;
+	var = ServiceManager::GetParameter("kernel_logger.xml_file");
+	*var = true;
 	if(!ServiceManager::Setup()) {
+		cerr << "Setup error" << endl;
 		return 0;
 	}
 
 	sc_start();
+
+	cerr << "Bye, bye" << endl;
+
 }

@@ -9,20 +9,21 @@ Logger::Logger(const unisim::kernel::service::Object &_obj) : obj(_obj), buffer(
 	server = LoggerServer::GetInstance();
 }
 
-Logger&
-Logger::operator <<(ostream& (*f)(ostream &)) {
+Logger::~Logger() {
+	LoggerServer::RemoveInstance();
+}
+
+Logger& Logger::operator <<(ostream& (*f)(ostream &)) {
 	if(mode == NO_MODE) return *this;
 	buffer << f;
 	return *this;
 }
 
-Logger&
-Logger::operator <<(Logger& (*f)(Logger &)) {
+Logger& Logger::operator <<(Logger& (*f)(Logger &)) {
 	return f(*this);
 }
 
-void
-Logger::PrintMode() {
+void Logger::PrintMode() {
 	cerr << "Current mode (" << obj.GetName() << "): ";
 	switch(mode) {
 	case NO_MODE:
@@ -41,8 +42,7 @@ Logger::PrintMode() {
 	cerr << endl;
 }
 
-void
-Logger::DebugInfo() {
+void Logger::DebugInfo() {
 	if(mode != NO_MODE) {
 		return;
 	}
@@ -51,8 +51,7 @@ Logger::DebugInfo() {
 	buffer.str("");
 }
 
-void
-Logger::EndDebugInfo() {
+void Logger::EndDebugInfo() {
 	if(mode != INFO_MODE) {
 		return;
 	}
@@ -60,8 +59,7 @@ Logger::EndDebugInfo() {
 	server->DebugInfo(obj, buffer.str().c_str());
 }
 
-void
-Logger::DebugWarning() {
+void Logger::DebugWarning() {
 	if(mode != NO_MODE) return;
 	mode = WARNING_MODE;
 	buffer.clear();

@@ -60,7 +60,7 @@ AC_CHECK_HEADERS([sstream string iostream],,\
 ## UNISIM_CHECK_BOOST
 
 ###### CHECK FOR LIBXML2 ######################################################
-## UNISIM_CHECK_LIBXML2
+UNISIM_CHECK_LIBXML2
 
 # files to generate
 #   this should include all the makefiles to generate

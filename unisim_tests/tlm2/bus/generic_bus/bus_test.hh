@@ -29,8 +29,15 @@ public:
 		init_socket.bind(*this);
 	}
 
-	bool Setup() {
+	~Initiator() {
+	}
+
+	virtual bool Setup() {
 		return true;
+	}
+
+	virtual void OnDisconnect() {
+		cerr << this->GetName() << ": OnDisconnect" << endl;
 	}
 
 	void thread() {
@@ -138,6 +145,17 @@ public:
 		targ_socket.bind(*this);
 	}
 
+	~Target() {
+	}
+
+	virtual bool Setup() {
+		return true;
+	}
+
+	virtual void OnDisconnect() {
+		cerr << this->GetName() << ": OnDisconnect" << endl;
+	}
+
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload &trans, tlm::tlm_phase &phase, sc_core::sc_time &t) {
 		sc_time delay(10, SC_NS);
 		switch(phase) {
@@ -218,6 +236,13 @@ public:
 		bus->init_socket(targ->targ_socket);
 	}
 
+	~Top() {
+		delete init;
+		delete init2;
+		delete targ;
+		delete bus;
+	}
+	
 	bool Setup() {
 		return true;
 	}

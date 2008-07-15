@@ -14,6 +14,7 @@ using namespace std;
 class Logger {
 public:
 	Logger(const unisim::kernel::service::Object &_obj);
+	~Logger();
 
 	Logger& operator << (std::ostream& (*f)(std::ostream &));
 	Logger& operator << (Logger& (*f)(Logger &));
