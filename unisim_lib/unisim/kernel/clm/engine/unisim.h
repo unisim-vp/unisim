@@ -49,12 +49,11 @@
 
 #define USE_UNISIM_SIGNAL_ARRAY
 
-#ifdef USE_UNISIM_SIGNAL_ARRAY
-#include <boost/array.hpp>
+//#ifdef USE_UNISIM_SIGNAL_ARRAY
 
 //typedef boost::array signal_array;
 
-#endif
+//#endif
 
 /** 
  * @file unisim.h 
@@ -79,6 +78,8 @@
 #include <sstream>
 #include <iomanip>
 #include <time.h>
+
+#include <boost/array.hpp>
 
 extern bool unisim_terminated;     ///< True if the simulation loop is finished
 extern void terminate_now();
@@ -128,6 +129,7 @@ static inline void terminate_now() {
 #endif
 
 class unisim_module;
+
 #ifdef USE_UNISIM_SIGNAL_ARRAY
 template < class T, uint32_t NCONFIG=1, bool exists=true > class inport;
 template < class T, uint32_t NCONFIG=1, bool exists=true > class outport;
@@ -181,113 +183,6 @@ public:
   bool latex_rendering_fused;
 };
 
-/*
-class Signal_Status;
-
-template <class T> 
-class Unisim_Prim_Out : public fsc_prim_out<T> {
- public:
-  Unisim_Prim_Out(const char *n) : fsc_prim_out<T>(n) { }
-
-  Unisim_Prim_Out& operator=(Signal_Status &s)
-  { throw std::runtime_error("Cannot assign Signal_Status to non-boolean port");
-  }
-
-  Unisim_Prim_Out& operator=(const T& data)
-  { (*(fsc_prim_out<T>*)this)=data;
-  // DD DEBUG SIGNALS
-  //  cerr << "[signal: " << fsc_object::name() << "]" << "[data: "<<data<<"]\t\t\t("<<timestamp()<<")"<<endl; 
-    return *this;
-  }
-};
-*/
-
-/**
- * \brief Data-less input port. Input ports inherits from this class 
- */
-/*
-#ifdef USE_UNISIM_SIGNAL_ARRAY
-template <int NCONFIG>
-class Unisim_Inport_Base : public unisim_port
-{public:
-  fsc_prim_in < boost::array<bool,NCONFIG> > enable;        ///< Enable signal
-  //  Unisim_Prim_Out < bool > accept;    ///< Accept signal
-  fsc_prim_out < boost::array<bool,NCONFIG> > accept;    ///< Accept signal
-
-#else
-*/
-class Unisim_Inport_Base : public unisim_port
-{public:
-#ifdef USE_UNISIM_SIGNAL_ARRAY
-#else  
-  fsc_prim_in < bool > enable;        ///< Enable signal
-  //  Unisim_Prim_Out < bool > accept;    ///< Accept signal
-  fsc_prim_out < bool > accept;    ///< Accept signal
-#endif
-
-  Unisim_Inport_Base();                 // Constructor
-  virtual ~Unisim_Inport_Base() { }     // Destructor
-
-  /**
-   * \brief Returns true if the data is known
-   */
-  virtual bool is_data_known() = 0;
-
-  /**
-   * \brief Returns true if the data is nothing
-   */
-  virtual bool is_data_nothing() = 0;
-
-  /**
-   * \brief Returns true if the data is known and somethng
-   */
-  bool is_data_something() { return is_data_known() && !is_data_nothing(); }
-};
-
-/**
- * \brief Data-less output port. Output ports inherits from this class 
- */
-
-/*
-#ifdef USE_UNISIM_SYGNAL_ARRAY
-template <int NCONFIG>
-class Unisim_Outport_Base<NCONFIG> : public unisim_port
-{public:
-  //  Unisim_Prim_Out < bool > enable;     ///< Enable signal
-  fsc_prim_out < boost::array<bool,NCONFIG> > enable;     ///< Enable signal
-  fsc_prim_in < boost::array<bool,NCONFIG> > accept;         ///< Accept signal
-
-#else
-*/
-
-class Unisim_Outport_Base : public unisim_port
-{public:
-#ifdef USE_UNISIM_SIGNAL_ARRAY
-#else
-  //  Unisim_Prim_Out < bool > enable;     ///< Enable signal
-  fsc_prim_out < bool > enable;     ///< Enable signal
-  fsc_prim_in < bool > accept;         ///< Accept signal
-#endif
-
-
-  Unisim_Outport_Base();                 // Constructor
-  virtual ~Unisim_Outport_Base() { }     // Destructor
-
-  /**
-   * \brief Returns true if the data is known
-   */
-  virtual bool is_data_known() = 0;
-
-  /**
-   * \brief Returns true if the data is nothing
-   */
-  virtual bool is_data_nothing() = 0;
-
-  /**
-   * \brief Returns true if the data is known and somethng
-   */
-  bool is_data_something() { return is_data_known() && !is_data_nothing(); }
-};
 
 /**
  * \brief Port Sensitivity list
@@ -424,7 +319,8 @@ class unisim_module: public fsc_module
   //#ifdef USE_UNISIM_SIGNAL_ARRAY
   //  void register_port(Unisim_Inport_Base<NCONFIG> *p)
   //#else
-  void register_port(Unisim_Inport_Base *p)
+  //  void register_inport(Unisim_Inport_Base *p)
+  void register_inport(unisim_port *p)
     //#endif
   { module_inport_list.push_back(p);
   }
@@ -432,7 +328,8 @@ class unisim_module: public fsc_module
   /**
    * \brief add a new port to the output port list
    */
-  void register_port(Unisim_Outport_Base *p)
+  //  void register_outport(Unisim_Outport_Base *p)
+  void register_outport(unisim_port *p)
   { module_outport_list.push_back(p);
   }
 
@@ -471,42 +368,144 @@ class unisim_module: public fsc_module
   list<unisim_port*> latex_bottom_ports; ///< Ports to be put on the bottom of the module for latex rendering
 };
 
-#ifdef USE_UNISIM_SIGNAL_ARRAY
-template < uint32_t NCONFIG>
-class UIB: public Unisim_Inport_Base
-{
+
+
+/*
+class Signal_Status;
+
+template <class T> 
+class Unisim_Prim_Out : public fsc_prim_out<T> {
  public:
+  Unisim_Prim_Out(const char *n) : fsc_prim_out<T>(n) { }
+
+  Unisim_Prim_Out& operator=(Signal_Status &s)
+  { throw std::runtime_error("Cannot assign Signal_Status to non-boolean port");
+  }
+
+  Unisim_Prim_Out& operator=(const T& data)
+  { (*(fsc_prim_out<T>*)this)=data;
+  // DD DEBUG SIGNALS
+  //  cerr << "[signal: " << fsc_object::name() << "]" << "[data: "<<data<<"]\t\t\t("<<timestamp()<<")"<<endl; 
+    return *this;
+  }
+};
+*/
+
+/**
+ * \brief Data-less input port. Input ports inherits from this class 
+ */
+template < uint32_t NCONFIG>
+class Unisim_Inport_Base : public unisim_port
+{public:
   fsc_prim_in < boost::array<bool,NCONFIG> > enable;        ///< Enable signal
-  //  Unisim_Prim_Out < bool > accept;    ///< Accept signal
   fsc_prim_out < boost::array<bool,NCONFIG> > accept;    ///< Accept signal
 
+  //  Unisim_Inport_Base();                 // Constructor
+  Unisim_Inport_Base(): unisim_port(), enable("enable"), accept("accept")
+    { unisim_module::unisim_current_module->register_outport(this);
+    }
   
-  UIB():  Unisim_Inport_Base(), enable("enable"), accept("accept") {}
-  /*
-  virtual ~UIB() {}
-  */
+  virtual ~Unisim_Inport_Base() { }     // Destructor
+  /**
+   * \brief Returns true if the data is known
+   */
+  virtual bool is_data_known() = 0;
+  /**
+   * \brief Returns true if the data is nothing
+   */
+  virtual bool is_data_nothing() = 0;
+  /**
+   * \brief Returns true if the data is known and somethng
+   */
+  bool is_data_something() { return is_data_known() && !is_data_nothing(); }
 };
+
+template <>
+class Unisim_Inport_Base<1> : public unisim_port
+{public:
+  fsc_prim_in < bool > enable;        ///< Enable signal
+  fsc_prim_out < bool > accept;    ///< Accept signal
+
+  //  Unisim_Inport_Base();                 // Constructor
+  Unisim_Inport_Base(): unisim_port(), enable("enable"), accept("accept")
+    { unisim_module::unisim_current_module->register_outport(this);
+    }
+  virtual ~Unisim_Inport_Base() { }     // Destructor
+  /**
+   * \brief Returns true if the data is known
+   */
+  virtual bool is_data_known() = 0;
+  /**
+   * \brief Returns true if the data is nothing
+   */
+  virtual bool is_data_nothing() = 0;
+  /**
+   * \brief Returns true if the data is known and somethng
+   */
+  bool is_data_something() { return is_data_known() && !is_data_nothing(); }
+};
+
+/**
+ * \brief Data-less output port. Output ports inherits from this class 
+ */
+
 template < uint32_t NCONFIG>
-class UOB: public Unisim_Outport_Base
-{
- public:
-  //  Unisim_Prim_Out < bool > enable;     ///< Enable signal
+class Unisim_Outport_Base : public unisim_port
+{public:
   fsc_prim_out < boost::array<bool,NCONFIG> > enable;     ///< Enable signal
   fsc_prim_in < boost::array<bool,NCONFIG> > accept;         ///< Accept signal
 
-  
-  UOB():  Unisim_Outport_Base(), enable("enable"), accept("accept") {}
-  /*
-  virtual ~UOB() {}
-  */
+  //  Unisim_Outport_Base();                 // Constructor
+  Unisim_Outport_Base() : unisim_port(), enable("enable"), accept("accept")
+    { unisim_module::unisim_current_module->register_outport(this);
+    }
+  virtual ~Unisim_Outport_Base() { }     // Destructor
+  /**
+   * \brief Returns true if the data is known
+   */
+  virtual bool is_data_known() = 0;
+  /**
+   * \brief Returns true if the data is nothing
+   */
+  virtual bool is_data_nothing() = 0;
+  /**
+   * \brief Returns true if the data is known and somethng
+   */
+  bool is_data_something() { return is_data_known() && !is_data_nothing(); }
 };
-#endif
+
+template <>
+class Unisim_Outport_Base<1> : public unisim_port
+{public:
+  fsc_prim_out < bool > enable;     ///< Enable signal
+  fsc_prim_in < bool > accept;         ///< Accept signal
+
+  //  Unisim_Outport_Base();                 // Constructor
+  Unisim_Outport_Base() : unisim_port(), enable("enable"), accept("accept")
+    { unisim_module::unisim_current_module->register_outport(this);
+    }
+
+  virtual ~Unisim_Outport_Base() { }     // Destructor
+  /**
+   * \brief Returns true if the data is known
+   */
+  virtual bool is_data_known() = 0;
+  /**
+   * \brief Returns true if the data is nothing
+   */
+  virtual bool is_data_nothing() = 0;
+  /**
+   * \brief Returns true if the data is known and somethng
+   */
+  bool is_data_something() { return is_data_known() && !is_data_nothing(); }
+};
+
 /**
  * \brief UNISIM cycle-level input port class
  */
-#ifdef USE_UNISIM_SIGNAL_ARRAY
+//#ifdef USE_UNISIM_SIGNAL_ARRAY
 template < class T, uint32_t NCONFIG> 
-class inport <T, NCONFIG, true> : public UIB<NCONFIG> 
+class inport <T, NCONFIG, true> : public Unisim_Inport_Base<NCONFIG> 
 {public:
   fsc_prim_in < boost::array<T,NCONFIG> > data;           ///< Data signal
   inport<T, NCONFIG, true> *forwarded_port;   ///< Pointer to the aliased port, if aliased
@@ -514,7 +513,7 @@ class inport <T, NCONFIG, true> : public UIB<NCONFIG>
   /**
    * \brief Creates a new input port
    */ 
-  inport() : UIB<NCONFIG>(), data("data")
+  inport() : Unisim_Inport_Base<NCONFIG>(), data("data")
   { forwarded_port=NULL;
     this->unisim_inport_list << this;
   }
@@ -528,25 +527,25 @@ class inport <T, NCONFIG, true> : public UIB<NCONFIG>
     if(i!=-1)
     { ss << "[" << i << "]";
     }
-    UIB<NCONFIG>::name = ss.str();
-    UIB<NCONFIG>::parent_module = mod;
+    Unisim_Inport_Base<NCONFIG>::name = ss.str();
+    Unisim_Inport_Base<NCONFIG>::parent_module = mod;
     //Subsignal naming
     stringstream data_name;
     stringstream enable_name;
     stringstream accept_name;
-    data_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".data";
-    enable_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".enable";
-    accept_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".accept";
+    data_name << mod->name() << "___"  << Unisim_Inport_Base<NCONFIG>::name << ".data";
+    enable_name << mod->name() << "___"  << Unisim_Inport_Base<NCONFIG>::name << ".enable";
+    accept_name << mod->name() << "___"  << Unisim_Inport_Base<NCONFIG>::name << ".accept";
     data.SetName(data_name.str());
-    UIB<NCONFIG>::accept.SetName(accept_name.str());
-    UIB<NCONFIG>::enable.SetName(enable_name.str());
+    Unisim_Inport_Base<NCONFIG>::accept.SetName(accept_name.str());
+    Unisim_Inport_Base<NCONFIG>::enable.SetName(enable_name.str());
   }
 
   /**
    * \brief Connects this input port to another input port. Correspond to port aliasing.
    */
   void operator() (inport < T, true > & ip)
-  { UIB<NCONFIG>::forward = true;
+  { Unisim_Inport_Base<NCONFIG>::forward = true;
     forwarded_port = &ip;
   }
 
@@ -554,7 +553,7 @@ class inport <T, NCONFIG, true> : public UIB<NCONFIG>
    * \brief Connects the port to a 3-signals object
    */
   void operator() (fsc_signal < T > &sig)
-  { if (UIB<NCONFIG>::forward)
+  { if (Unisim_Inport_Base<NCONFIG>::forward)
     { (*forwarded_port)(sig);
     } 
     else 
@@ -564,69 +563,6 @@ class inport <T, NCONFIG, true> : public UIB<NCONFIG>
     }
     this->connected++;
   }
-
-#else
-template < class T> 
-class inport <T,true> : public Unisim_Inport_Base 
-{public:
-  fsc_prim_in < T > data;           ///< Data signal
-  inport<T,true> *forwarded_port;   ///< Pointer to the aliased port, if aliased
-
-  /**
-   * \brief Creates a new input port
-   */ 
-  inport() : Unisim_Inport_Base(), data("data")
-  { forwarded_port=NULL;
-    this->unisim_inport_list << this;
-  }
-
-  /**
-   * \brief Associate its name to a port
-   */
-  void set_unisim_name(unisim_module *mod, const string &_name, int i=-1)
-  { stringstream ss;
-    ss << _name;
-    if(i!=-1)
-    { ss << "[" << i << "]";
-    }
-    name = ss.str();
-    parent_module = mod;
-    //Subsignal naming
-    stringstream data_name;
-    stringstream enable_name;
-    stringstream accept_name;
-    data_name << mod->name() << "___"  << name << ".data";
-    enable_name << mod->name() << "___"  << name << ".enable";
-    accept_name << mod->name() << "___"  << name << ".accept";
-    data.SetName(data_name.str());
-    accept.SetName(accept_name.str());
-    enable.SetName(enable_name.str());
-  }
-
-  /**
-   * \brief Connects this input port to another input port. Correspond to port aliasing.
-   */
-  void operator() (inport < T, true > & ip)
-  { forward = true;
-    forwarded_port = &ip;
-  }
-
-  /**
-   * \brief Connects the port to a 3-signals object
-   */
-  void operator() (fsc_signal < T > &sig)
-  { if (forward)
-    { (*forwarded_port)(sig);
-    } 
-    else 
-    { data(sig.data);
-      enable(sig.enable);
-      accept(sig.accept);
-    }
-    this->connected++;
-  }
-
-#endif
 
 /*
 
@@ -793,19 +729,248 @@ Direct acces tot the data value should be replaced by port.data
   unisim_module *_module;   ///< Module this port belongs to
 };
 
+//#else
+template < class T> 
+class inport <T,1,true> : public Unisim_Inport_Base<1> 
+{public:
+  fsc_prim_in < T > data;           ///< Data signal
+  inport<T,true> *forwarded_port;   ///< Pointer to the aliased port, if aliased
+
+  /**
+   * \brief Creates a new input port
+   */ 
+  inport() : Unisim_Inport_Base<1>(), data("data")
+  { forwarded_port=NULL;
+    this->unisim_inport_list << this;
+  }
+
+  /**
+   * \brief Associate its name to a port
+   */
+  void set_unisim_name(unisim_module *mod, const string &_name, int i=-1)
+  { stringstream ss;
+    ss << _name;
+    if(i!=-1)
+    { ss << "[" << i << "]";
+    }
+    name = ss.str();
+    parent_module = mod;
+    //Subsignal naming
+    stringstream data_name;
+    stringstream enable_name;
+    stringstream accept_name;
+    data_name << mod->name() << "___"  << name << ".data";
+    enable_name << mod->name() << "___"  << name << ".enable";
+    accept_name << mod->name() << "___"  << name << ".accept";
+    data.SetName(data_name.str());
+    accept.SetName(accept_name.str());
+    enable.SetName(enable_name.str());
+  }
+
+  /**
+   * \brief Connects this input port to another input port. Correspond to port aliasing.
+   */
+  void operator() (inport < T, true > & ip)
+  { forward = true;
+    forwarded_port = &ip;
+  }
+
+  /**
+   * \brief Connects the port to a 3-signals object
+   */
+  void operator() (fsc_signal < T > &sig)
+  { if (forward)
+    { (*forwarded_port)(sig);
+    } 
+    else 
+    { data(sig.data);
+      enable(sig.enable);
+      accept(sig.accept);
+    }
+    this->connected++;
+  }
+
+
+/*
+
+Direct acces tot the data value should be replaced by port.data
+
+  //assign
+  operator const T & ()
+  { return data;
+  }
+
+*/
+
+  virtual bool is_data_known()
+  { return data.known();
+  }
+
+  virtual bool is_data_nothing()
+  { return data.nothing();
+  }
+
+  /**
+   * \brief Check that the 3 signals are known
+   */
+  virtual bool check_my_knowness()
+  { if(!this->data.was_known()) return false;
+    if(!this->accept.was_known()) return false;
+    if(!this->enable.was_known()) return false;
+    return true;
+  }
+  
+  /**
+   * \brief DD Dump the value of each signal (called when some signal are unkonwn)
+   */
+  void display_my_knowness(ostream &os)
+  { stringstream ss;
+    string parent_module_name;
+    if(this->parent_module) parent_module_name = this->parent_module->name();
+    else                    parent_module_name = "unknown_module";
+  
+    ss << parent_module_name << "." << this->name << ":";
+    os << "| " << left << setw(30) << ss.str() << "d";
+    if(data.was_known())
+    { if(data.something()) os << "\e[36mS\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    os << " a";
+    if(this->accept.was_known())
+    { if(this->accept) os << "\e[36mY\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    os << " e";
+    if(this->enable.was_known())
+    { if(this->enable) os << "\e[36mY\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    //#define DD_MY_SIGNAL_DEBUGGER
+#ifdef DD_MY_SIGNAL_DEBUGGER
+    if(data.was_known())
+      { if(data.something()) os << data;
+      }
+#endif   
+#undef DD_MY_SIGNAL_DEBUGGER
+
+    os << setw(15) << " " << "|";
+    if(data.was_known() && data.something()) os << data;
+
+    os << endl;
+  }
+  
+  /**
+   * \brief Dump the value of each signal (called when some signal are unkonwn)
+   */
+  void display_my_signal(ostream &os)
+  { stringstream ss;
+    string parent_module_name;
+    if(this->parent_module) parent_module_name = this->parent_module->name();
+    else                    parent_module_name = "unknown_module";
+  
+    ss << parent_module_name << "." << this->name << ":";
+    os << "| " << left << setw(30) << ss.str() << "d";
+    if(data.was_known())
+    { if(data.something()) os << "\e[36mS\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    os << " a";
+    if(this->accept.was_known())
+    { if(this->accept) os << "\e[36mY\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    os << " e";
+    if(this->enable.was_known())
+    { if(this->enable) os << "\e[36mY\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    //#define DD_MY_SIGNAL_DEBUGGER
+    //#ifdef DD_MY_SIGNAL_DEBUGGER
+    if(data.was_known())
+      { if(data.something()) os << " " << data;
+      }
+    //#endif   
+    //#undef DD_MY_SIGNAL_DEBUGGER
+
+    os << setw(15) << " " << "|" << endl;
+  }
+
+#ifdef LIBERTY_SUPPORT
+  /* This function is for LSE support */
+  LSE_signal_t port_get(LSE_dynid_t *id, T **dat)
+  { if (id)
+    { *id = NULL;
+    }
+    LSE_signal_t s = 0;
+
+    if (accept.known())
+    { if ((bool)accept) s |= LSE_signal_ack;
+      else              s |= LSE_signal_nack;
+    }
+    
+    if (enable.known())
+    { if ((bool)enable) s |= LSE_signal_enabled;
+      else              s |= LSE_signal_disabled;
+    }
+    
+    if (data.known())
+    { if (!data.nothing())
+      { s |= LSE_signal_something;
+        if (dat)
+        { // FIXME   
+          *dat = data.get_pointer();
+        }
+      } 
+      else 
+      { s |= LSE_signal_nothing;
+        if(dat) *dat = NULL;
+      }
+    }
+    else
+    { if (dat) *dat = NULL;
+    }
+    return s;
+  }
+  
+  /* ...ditto */
+  void port_set(LSE_signal_t s, LSE_dynid_t id, T* dat)
+  { /* set status */
+    if (LSE_signal_extract_ack(s) == LSE_signal_ack)
+    { Accept();
+    }
+    else if (LSE_signal_extract_ack(s) == LSE_signal_nack)
+    { Deny();
+    } 
+    else 
+    { // NOTE: THIS CASE IS NOT HANDLED BECAUSE YOU SHOULD ***NEVER*** TRANSITION FROM KNOWN TO UNKNOWN
+    }
+  }
+#endif
+ protected:
+  unisim_module *_module;   ///< Module this port belongs to
+};
+
+//#endif // end of ifdef USE_UNISIM_SIGNAL_ARRAY
+
 /**
  * \brief UNISIM cycle-level output port class
  */
-#ifdef USE_UNISIM_SIGNAL_ARRAY
+//#ifdef USE_UNISIM_SIGNAL_ARRAY
 template < class T, uint32_t NCONFIG> 
-class outport <T, NCONFIG, true> : public UOB<NCONFIG>
+class outport <T, NCONFIG, true> : public Unisim_Outport_Base<NCONFIG>
 { public:
   //  Unisim_Prim_Out < T > data;        ///< Data signal
   fsc_prim_out <  boost::array<T,NCONFIG> > data;        ///< Data signal
   outport< T,NCONFIG , true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
   fsc_signal< boost::array<T,NCONFIG> > signal;              ///< The 3-signals object connecting this output port to an input port
 
-  outport() : UOB<NCONFIG>(), data("data")
+  outport() : Unisim_Outport_Base<NCONFIG>(), data("data")
   { forwarded_port = NULL;
     this->unisim_outport_list << this;
   }
@@ -819,18 +984,18 @@ class outport <T, NCONFIG, true> : public UOB<NCONFIG>
     if(i!=-1)
     { ss << "[" << i << "]";
     }
-    UIB<NCONFIG>::name = ss.str();
-    UIB<NCONFIG>::parent_module = mod;
+    Unisim_Outport_Base<NCONFIG>::name = ss.str();
+    Unisim_Outport_Base<NCONFIG>::parent_module = mod;
     //Subsignal naming
     stringstream data_name;
     stringstream enable_name;
     stringstream accept_name;
-    data_name  << mod->name() << "___"   << UIB<NCONFIG>::name << ".data";
-    enable_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".enable";
-    accept_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".accept";
+    data_name  << mod->name() << "___"   << Unisim_Outport_Base<NCONFIG>::name << ".data";
+    enable_name << mod->name() << "___"  << Unisim_Outport_Base<NCONFIG>::name << ".enable";
+    accept_name << mod->name() << "___"  << Unisim_Outport_Base<NCONFIG>::name << ".accept";
     data.SetName(data_name.str());
-    UIB<NCONFIG>::accept.SetName(accept_name.str());
-    UIB<NCONFIG>::enable.SetName(enable_name.str());
+    Unisim_Outport_Base<NCONFIG>::accept.SetName(accept_name.str());
+    Unisim_Outport_Base<NCONFIG>::enable.SetName(enable_name.str());
   }
 
   /**
@@ -839,7 +1004,7 @@ class outport <T, NCONFIG, true> : public UOB<NCONFIG>
   void operator() (inport < T,true > & ip)
   { (*this)(signal);
     ip(signal);
-    UIB<NCONFIG>::connected_port = &ip;
+    Unisim_Outport_Base<NCONFIG>::connected_port = &ip;
     ip.connected_port = this;
   }
 
@@ -847,7 +1012,7 @@ class outport <T, NCONFIG, true> : public UOB<NCONFIG>
    * \brief Connect the output port to another output port, aliasing both ports.
    */
   void operator() (outport < T,true > & op)
-  { UIB<NCONFIG>::forward=true;
+  { Unisim_Outport_Base<NCONFIG>::forward=true;
     forwarded_port = &op;
   }
 
@@ -855,7 +1020,7 @@ class outport <T, NCONFIG, true> : public UOB<NCONFIG>
    * \brief Connects the port to a 3-signals object
    */
   void operator() (fsc_signal < T > &sig)
-  { if (UIB<NCONFIG>::forward) 
+  { if (Unisim_Outport_Base<NCONFIG>::forward) 
     { (*forwarded_port)(sig);
     } else 
     { data(sig.data);
@@ -865,17 +1030,184 @@ class outport <T, NCONFIG, true> : public UOB<NCONFIG>
     this->connected++;
   }
 
+/*
 
-#else
+direct setting of the output data assigniing directly to the port. 
+removed, should be replaced by port.data = ... instead of port = ...
+
+  outport < T,true > &operator = (const T & in)
+  { data = in;
+    return *this;
+  }
+*/  
+  
+  virtual bool is_data_known()
+  { return data.known();
+  }
+
+  virtual bool is_data_nothing()
+  { return data.is_nothing();
+  }
+
+  /**
+   * \brief Check that the 3 signals are known
+   */
+  virtual bool check_my_knowness()
+  { if(!this->data.was_known()) return false;
+    if(!this->accept.was_known()) return false;
+    if(!this->enable.was_known()) return false;
+    return true;
+  }
+
+  /**
+   * \brief Dump the value of each signal (called when some signal are unkonwn)
+   */
+  void display_my_knowness(ostream &os)
+  { stringstream ss;
+    string parent_module_name;
+    if(this->parent_module) parent_module_name = this->parent_module->name();
+    else                    parent_module_name = "unknown_module";
+  
+    ss << parent_module_name << "." << this->name << ":";
+    os << "| " << left << setw(30) << ss.str() << "d";
+    if(data.was_known())
+    { if(!data.is_nothing()) os << "\e[36mS\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    os << " a";
+    if(this->accept.was_known())
+    { if(this->accept) os << "\e[36mY\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    os << " e";
+    if(this->enable.was_known())
+    { if(this->enable) os << "\e[36mY\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    //#define DD_MY_SIGNAL_DEBUGGER
+#ifdef DD_MY_SIGNAL_DEBUGGER
+    if(data.was_known())
+      { if(!data.is_nothing()) os << data;
+      }
+#endif   
+#undef DD_MY_SIGNAL_DEBUGGER
+    os << setw(15) << " " << "|" << endl;
+  }
+
+  // DD used to debug signals...
+  /**
+   * \brief Dump the value of each signal (called when some signal are unkonwn)
+   */
+  void display_my_signal(ostream &os)
+  { stringstream ss;
+    string parent_module_name;
+    if(this->parent_module) parent_module_name = this->parent_module->name();
+    else                    parent_module_name = "unknown_module";
+  
+    ss << parent_module_name << "." << this->name << ":";
+    os << "| " << left << setw(30) << ss.str() << "d";
+    if(data.was_known())
+      //    { if(!data.is_nothing()) os << "\e[36mS\e[0m";
+    { if(!data.is_nothing()) os << "\e[36mS\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    os << " a";
+    if(this->accept.was_known())
+    { if(this->accept) os << "\e[36mY\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    os << " e";
+    if(this->enable.was_known())
+    { if(this->enable) os << "\e[36mY\e[0m";
+      else os << "\e[32mN\e[0m";
+    }
+    else os << "\e[1;31mU\e[0m";
+    //#define DD_MY_SIGNAL_DEBUGGER
+    //#ifdef DD_MY_SIGNAL_DEBUGGER
+    if(data.was_known())
+      { if(!data.is_nothing()) os << " " << data;
+      }
+    //#endif   
+    //#undef DD_MY_SIGNAL_DEBUGGER
+    os << setw(15) << " " << "|" << endl;
+  }
+
+#ifdef LIBERTY_SUPPORT
+  /* This function is for LSE support */
+  LSE_signal_t port_get(LSE_dynid_t *id, T **dat) 
+  { if(id) *id = NULL;
+    
+    LSE_signal_t s = 0;
+
+    if (accept.known()) 
+    { if ((bool)accept) s |= LSE_signal_ack;
+      else              s |= LSE_signal_nack;
+    }
+    
+    if (enable.known()) 
+    { if ((bool)enable) s |= LSE_signal_enabled;
+      else              s |= LSE_signal_disabled;
+    }
+    
+    if (data.known()) 
+    { if (!data.is_nothing()) 
+      { s |= LSE_signal_something;
+        if(dat) *dat = NULL;
+      } 
+      else 
+      { s |= LSE_signal_nothing;
+        if(dat) *dat = NULL;
+      }
+    } 
+    else 
+    { if(dat) *dat = NULL;
+    }
+    return s;
+  }
+
+
+  /* ...ditto */
+  void port_set(LSE_signal_t s, LSE_dynid_t id, T* dat) 
+  { if (LSE_signal_extract_enable(s) == LSE_signal_enabled) 
+    { Enable();
+    } 
+    else if (LSE_signal_extract_enable(s) == LSE_signal_disabled) 
+    { Disable();
+    } 
+    else 
+    { // NOTE: THIS CASE IS NOT HANDLED BECAUSE YOU SHOULD ***NEVER*** TRANSITION FROM KNOWN TO UNKNOWN      
+    }
+
+    if (LSE_signal_extract_data(s) == LSE_signal_something) 
+    { data = *dat;
+    } 
+    else if (LSE_signal_extract_data(s) == LSE_signal_nothing) 
+    { nothing();
+    } 
+    else 
+    { // NOTE: THIS CASE IS NOT HANDLED BECAUSE YOU SHOULD ***NEVER*** TRANSITION FROM KNOWN TO UNKNOWN
+    }
+  }
+#endif
+ protected:
+  unisim_module *_module;  ///< The module the port belongs to
+};
+
+//#else
 template < class T > 
-class outport <T,true> : public Unisim_Outport_Base
+class outport <T, 1, true> : public Unisim_Outport_Base<1>
 { public:
   //  Unisim_Prim_Out < T > data;        ///< Data signal
   fsc_prim_out < T > data;        ///< Data signal
   outport<T, true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
   fsc_signal<T> signal;              ///< The 3-signals object connecting this output port to an input port
 
-  outport() : Unisim_Outport_Base(), data("data")
+  outport() : Unisim_Outport_Base<1>(), data("data")
   { forwarded_port = NULL;
     this->unisim_outport_list << this;
   }
@@ -935,7 +1267,7 @@ class outport <T,true> : public Unisim_Outport_Base
     this->connected++;
   }
 
-#endif
+  //#endif
 
 /*
 
@@ -1110,7 +1442,7 @@ removed, should be replaced by port.data = ... instead of port = ...
  * \brief UNISIM cycle-level desactivated Input port
  */ 
 template < class T > 
-class inport <T,false> : public unisim_port
+class inport <T, false> : public unisim_port
 {public:
   unisim_desactivated_signal<T> data;            ///< Mimics data signal
   unisim_desactivated_signal<bool> accept;       ///< Mimics accept signal
@@ -1335,6 +1667,7 @@ class Signal_Status
     return *this;
   }
 
+  /*
   Signal_Status& operator &=(Unisim_Inport_Base &o)
   { known &= o.is_data_known();
     if (o.is_data_known()) value &= o.is_data_something();
@@ -1358,7 +1691,7 @@ class Signal_Status
     if (o.is_data_known()) value |= o.is_data_something();
     return *this;
   }
-
+  */
   bool operator ==(bool v)
   { if (!known) return false;
     return (value == v);
