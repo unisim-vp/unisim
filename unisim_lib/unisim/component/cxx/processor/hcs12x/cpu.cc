@@ -108,6 +108,7 @@ CPU::CPU(const char *name, Object *parent):
 //	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
 //	memory_interface(_memory_interface),
 	instruction_counter(0),
+	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFFFFFF),
 //	running(true),
 	ivbr_value((address_t) IVBR_DEFAULT_VALUE << 8)
 	
@@ -121,6 +122,8 @@ CPU::CPU(const char *name, Object *parent):
     ccr = new CCR_t();
     
     eblb = new EBLB(this);
+
+	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 
 }
 
@@ -229,8 +232,11 @@ uint8_t CPU::Step()
 {
 	address_t 	current_pc;
 	physical_address_t physical_pc;
-
-	uint8_t 	buffer[CodeType::maxsize]; 
+/*
+	uint8_t 	buffer[CodeType::maxsize];
+*/
+	uint8_t 	buffer[MAX_INS_SIZE];
+	 
 	Operation 	*op;
 	uint8_t	opCycles = 0;
 	
@@ -324,9 +330,13 @@ uint8_t CPU::Step()
 			<< Hex << physical_pc << Dec
 			<< Endl << EndDebugInfo;
 	}
-
+/*
 	BusRead(physical_pc, buffer, CodeType::maxsize);
 	CodeType 	insn( buffer, CodeType::maxsize);
+*/	
+
+	queueFetch(physical_pc, buffer, MAX_INS_SIZE);
+	CodeType 	insn( buffer, MAX_INS_SIZE);
 	
 	/* Decode current PC */
 	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
@@ -342,6 +352,8 @@ uint8_t CPU::Step()
 
 	op = this->Decode(current_pc, insn);
 	setRegPC(current_pc+op->GetEncoding().size);
+	
+	queueFlush(op->GetEncoding().size);
 		
 	/* Execute instruction */
 
@@ -410,6 +422,56 @@ uint8_t CPU::Step()
 	
 	return opCycles;
 }
+
+
+uint8_t* CPU::queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte)
+{
+	
+	if (nByte > QUEUE_SIZE) return NULL;
+
+	if (addr != queueCurrentAddress) 
+	{
+		queueFill(addr, 0, QUEUE_SIZE);
+		queueFirst = 0;
+		queueNElement = QUEUE_SIZE;
+		queueCurrentAddress = addr;
+	}
+	else if (nByte > queueNElement)
+	{
+		queueFill(addr+queueNElement, (queueFirst+queueNElement) % QUEUE_SIZE, QUEUE_SIZE-queueNElement);
+		queueNElement = QUEUE_SIZE;
+	}
+	
+	for (uint8_t i=0; i < nByte; i++) 
+	{
+		ins[i] = queueBuffer[(queueFirst + i) % QUEUE_SIZE];
+	}
+	
+	return ins;
+}
+	
+void CPU::queueFill(physical_address_t addr, int position, uint8_t nByte) 
+{
+	uint8_t* buff = (uint8_t*) malloc(nByte);
+	
+	BusRead(addr, buff, nByte);
+	
+	for (uint8_t i=0; i<nByte; i++) 
+	{
+		queueBuffer[position] = buff[i];
+		position = (position + 1) % QUEUE_SIZE;
+	}
+	
+	free(buff); buff = NULL;
+}
+
+void CPU::queueFlush(uint8_t nByte)
+{
+	queueFirst = (queueFirst + nByte) % QUEUE_SIZE;
+	queueNElement = queueNElement - nByte;
+	queueCurrentAddress = queueCurrentAddress + nByte;
+}
+
 
 void CPU::Stop(int ret)
 {

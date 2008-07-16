@@ -65,7 +65,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <inttypes.h>
+
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
@@ -205,6 +205,9 @@ private:
 	
 };	/***********   END EBLB  **********/
 
+#define MAX_INS_SIZE	6   
+#define QUEUE_SIZE		MAX_INS_SIZE
+
 class CPU : public Decoder,
 	public Client<DebugControl<physical_address_t> >,
 	public Client<MemoryAccessReporting<physical_address_t> >,
@@ -216,6 +219,19 @@ class CPU : public Decoder,
 	public Client<SymbolTableLookup<physical_address_t> >,
 	public Client<Logger> 
 {
+public:
+
+	void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
+	uint8_t* queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte);
+	
+private:
+	physical_address_t	queueCurrentAddress;
+	uint8_t		queueBuffer[QUEUE_SIZE];
+	
+	int		queueFirst, queueNElement;
+	
+	void queueFill(physical_address_t addr, int position, uint8_t nByte);
+	
 public:
 
 	//=====================================================================

@@ -49,11 +49,7 @@ namespace processor {
 namespace hcs12x {
 
 #define WO_GLOBAL_ADDRESS	false	// without global addressing (64KB address space)
-#define W_GLOBAL_ADDRESS	true	// with global addressung (8MB address space)
-
-// ToRemove: Used Tempory for development purposes to force MC9s12XDP512 
-#define MC9S12XDP512
-// *** end to remove ***
+#define W_GLOBAL_ADDRESS	true	// with global addressing (8MB address space)
 
 class MEMORY {
 public:
@@ -163,11 +159,11 @@ private:
 	MEMORY::MODE mmcMode;
 };
 
-}
-}
-}
-}
-} // end namespace hcs12x
+} // end of namespace hcs12x
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 #endif // __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_MMC_HH__
 

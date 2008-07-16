@@ -49,6 +49,11 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <inttypes.h>
 
+// ToRemove: Used Tempory for development purposes to force MC9S12XDP512 
+#define MC9S12XDP512
+// *** end to remove ***
+
+
 namespace unisim {
 namespace component {
 namespace cxx {
