@@ -308,17 +308,6 @@ uint8_t CPU::Step()
 					<< "Reporting memory acces for fetch at address 0x"
 					<< Hex << physical_pc << Dec
 					<< Endl << EndDebugInfo;
-/*
-			uint32_t insn_size;
-			if(GetCPSR_T())
-				insn_size = 2;
-			else
-				insn_size = 4;
-				
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, 
-					MemoryAccessReporting<address_t>::MT_INSN, 
-					physical_pc, insn_size);
-*/
 		}
 	}
 
@@ -381,9 +370,6 @@ uint8_t CPU::Step()
 			opCycles = op->getCycles();
 		} 
 		
-		
-	//	/* perform the memory load/store operations */
-	//	PerformLoadStoreAccesses();
 		VerboseDumpRegsEnd();
 		
 		instruction_counter++;
