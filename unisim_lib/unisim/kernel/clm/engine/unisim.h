@@ -47,6 +47,15 @@
 #define LIBRARY_CORE_libunisim 0
 #define LIBRARY_EXTRA_pthread 0
 
+#define USE_UNISIM_SIGNAL_ARRAY
+
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+#include <boost/array.hpp>
+
+//typedef boost::array signal_array;
+
+#endif
+
 /** 
  * @file unisim.h 
  * @brief UNISIM Library interface
@@ -119,8 +128,13 @@ static inline void terminate_now() {
 #endif
 
 class unisim_module;
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+template < class T, uint32_t NCONFIG=1, bool exists=true > class inport;
+template < class T, uint32_t NCONFIG=1, bool exists=true > class outport;
+#else
 template < class T, bool exists=true > class inport;
 template < class T, bool exists=true > class outport;
+#endif
 
 /**
  * \brief Signal-less port, both Input and Output port inherit from
@@ -191,11 +205,25 @@ class Unisim_Prim_Out : public fsc_prim_out<T> {
 /**
  * \brief Data-less input port. Input ports inherits from this class 
  */
+/*
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+template <int NCONFIG>
 class Unisim_Inport_Base : public unisim_port
 {public:
+  fsc_prim_in < boost::array<bool,NCONFIG> > enable;        ///< Enable signal
+  //  Unisim_Prim_Out < bool > accept;    ///< Accept signal
+  fsc_prim_out < boost::array<bool,NCONFIG> > accept;    ///< Accept signal
+
+#else
+*/
+class Unisim_Inport_Base : public unisim_port
+{public:
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+#else  
   fsc_prim_in < bool > enable;        ///< Enable signal
   //  Unisim_Prim_Out < bool > accept;    ///< Accept signal
   fsc_prim_out < bool > accept;    ///< Accept signal
+#endif
 
   Unisim_Inport_Base();                 // Constructor
   virtual ~Unisim_Inport_Base() { }     // Destructor
@@ -219,11 +247,28 @@ class Unisim_Inport_Base : public unisim_port
 /**
  * \brief Data-less output port. Output ports inherits from this class 
  */
+
+/*
+#ifdef USE_UNISIM_SYGNAL_ARRAY
+template <int NCONFIG>
+class Unisim_Outport_Base<NCONFIG> : public unisim_port
+{public:
+  //  Unisim_Prim_Out < bool > enable;     ///< Enable signal
+  fsc_prim_out < boost::array<bool,NCONFIG> > enable;     ///< Enable signal
+  fsc_prim_in < boost::array<bool,NCONFIG> > accept;         ///< Accept signal
+
+#else
+*/
+
 class Unisim_Outport_Base : public unisim_port
 {public:
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+#else
   //  Unisim_Prim_Out < bool > enable;     ///< Enable signal
   fsc_prim_out < bool > enable;     ///< Enable signal
   fsc_prim_in < bool > accept;         ///< Accept signal
+#endif
+
 
   Unisim_Outport_Base();                 // Constructor
   virtual ~Unisim_Outport_Base() { }     // Destructor
@@ -376,7 +421,11 @@ class unisim_module: public fsc_module
   /**
    * \brief add a new port to the input port list
    */
+  //#ifdef USE_UNISIM_SIGNAL_ARRAY
+  //  void register_port(Unisim_Inport_Base<NCONFIG> *p)
+  //#else
   void register_port(Unisim_Inport_Base *p)
+    //#endif
   { module_inport_list.push_back(p);
   }
 
@@ -422,9 +471,101 @@ class unisim_module: public fsc_module
   list<unisim_port*> latex_bottom_ports; ///< Ports to be put on the bottom of the module for latex rendering
 };
 
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+template < uint32_t NCONFIG>
+class UIB: public Unisim_Inport_Base
+{
+ public:
+  fsc_prim_in < boost::array<bool,NCONFIG> > enable;        ///< Enable signal
+  //  Unisim_Prim_Out < bool > accept;    ///< Accept signal
+  fsc_prim_out < boost::array<bool,NCONFIG> > accept;    ///< Accept signal
+
+  
+  UIB():  Unisim_Inport_Base(), enable("enable"), accept("accept") {}
+  /*
+  virtual ~UIB() {}
+  */
+};
+template < uint32_t NCONFIG>
+class UOB: public Unisim_Outport_Base
+{
+ public:
+  //  Unisim_Prim_Out < bool > enable;     ///< Enable signal
+  fsc_prim_out < boost::array<bool,NCONFIG> > enable;     ///< Enable signal
+  fsc_prim_in < boost::array<bool,NCONFIG> > accept;         ///< Accept signal
+
+  
+  UOB():  Unisim_Outport_Base(), enable("enable"), accept("accept") {}
+  /*
+  virtual ~UOB() {}
+  */
+};
+#endif
 /**
  * \brief UNISIM cycle-level input port class
  */
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+template < class T, uint32_t NCONFIG> 
+class inport <T, NCONFIG, true> : public UIB<NCONFIG> 
+{public:
+  fsc_prim_in < boost::array<T,NCONFIG> > data;           ///< Data signal
+  inport<T, NCONFIG, true> *forwarded_port;   ///< Pointer to the aliased port, if aliased
+
+  /**
+   * \brief Creates a new input port
+   */ 
+  inport() : UIB<NCONFIG>(), data("data")
+  { forwarded_port=NULL;
+    this->unisim_inport_list << this;
+  }
+
+  /**
+   * \brief Associate its name to a port
+   */
+  void set_unisim_name(unisim_module *mod, const string &_name, int i=-1)
+  { stringstream ss;
+    ss << _name;
+    if(i!=-1)
+    { ss << "[" << i << "]";
+    }
+    UIB<NCONFIG>::name = ss.str();
+    UIB<NCONFIG>::parent_module = mod;
+    //Subsignal naming
+    stringstream data_name;
+    stringstream enable_name;
+    stringstream accept_name;
+    data_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".data";
+    enable_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".enable";
+    accept_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".accept";
+    data.SetName(data_name.str());
+    UIB<NCONFIG>::accept.SetName(accept_name.str());
+    UIB<NCONFIG>::enable.SetName(enable_name.str());
+  }
+
+  /**
+   * \brief Connects this input port to another input port. Correspond to port aliasing.
+   */
+  void operator() (inport < T, true > & ip)
+  { UIB<NCONFIG>::forward = true;
+    forwarded_port = &ip;
+  }
+
+  /**
+   * \brief Connects the port to a 3-signals object
+   */
+  void operator() (fsc_signal < T > &sig)
+  { if (UIB<NCONFIG>::forward)
+    { (*forwarded_port)(sig);
+    } 
+    else 
+    { data(sig.data);
+      enable(sig.enable);
+      accept(sig.accept);
+    }
+    this->connected++;
+  }
+
+#else
 template < class T> 
 class inport <T,true> : public Unisim_Inport_Base 
 {public:
@@ -484,6 +625,8 @@ class inport <T,true> : public Unisim_Inport_Base
     }
     this->connected++;
   }
+
+#endif
 
 /*
 
@@ -653,6 +796,77 @@ Direct acces tot the data value should be replaced by port.data
 /**
  * \brief UNISIM cycle-level output port class
  */
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+template < class T, uint32_t NCONFIG> 
+class outport <T, NCONFIG, true> : public UOB<NCONFIG>
+{ public:
+  //  Unisim_Prim_Out < T > data;        ///< Data signal
+  fsc_prim_out <  boost::array<T,NCONFIG> > data;        ///< Data signal
+  outport< T,NCONFIG , true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
+  fsc_signal< boost::array<T,NCONFIG> > signal;              ///< The 3-signals object connecting this output port to an input port
+
+  outport() : UOB<NCONFIG>(), data("data")
+  { forwarded_port = NULL;
+    this->unisim_outport_list << this;
+  }
+
+  /**
+   * \brief Associate its name to a port
+   */
+  void set_unisim_name(unisim_module *mod, const string &_name, int i=-1)
+  { stringstream ss;
+    ss << _name;
+    if(i!=-1)
+    { ss << "[" << i << "]";
+    }
+    UIB<NCONFIG>::name = ss.str();
+    UIB<NCONFIG>::parent_module = mod;
+    //Subsignal naming
+    stringstream data_name;
+    stringstream enable_name;
+    stringstream accept_name;
+    data_name  << mod->name() << "___"   << UIB<NCONFIG>::name << ".data";
+    enable_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".enable";
+    accept_name << mod->name() << "___"  << UIB<NCONFIG>::name << ".accept";
+    data.SetName(data_name.str());
+    UIB<NCONFIG>::accept.SetName(accept_name.str());
+    UIB<NCONFIG>::enable.SetName(enable_name.str());
+  }
+
+  /**
+   * \brief Connects the output port to an input port
+   */
+  void operator() (inport < T,true > & ip)
+  { (*this)(signal);
+    ip(signal);
+    UIB<NCONFIG>::connected_port = &ip;
+    ip.connected_port = this;
+  }
+
+  /**
+   * \brief Connect the output port to another output port, aliasing both ports.
+   */
+  void operator() (outport < T,true > & op)
+  { UIB<NCONFIG>::forward=true;
+    forwarded_port = &op;
+  }
+
+  /**
+   * \brief Connects the port to a 3-signals object
+   */
+  void operator() (fsc_signal < T > &sig)
+  { if (UIB<NCONFIG>::forward) 
+    { (*forwarded_port)(sig);
+    } else 
+    { data(sig.data);
+      enable(sig.enable);
+      accept(sig.accept);
+    }
+    this->connected++;
+  }
+
+
+#else
 template < class T > 
 class outport <T,true> : public Unisim_Outport_Base
 { public:
@@ -720,6 +934,8 @@ class outport <T,true> : public Unisim_Outport_Base
     }
     this->connected++;
   }
+
+#endif
 
 /*
 

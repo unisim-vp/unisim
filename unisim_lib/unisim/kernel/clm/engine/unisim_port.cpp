@@ -288,6 +288,22 @@ unisim_module * unisim_port::get_connected_module()
   exit(1);
 }
 
+#ifdef USE_UNISIM_SIGNAL_ARRAY
+
+/**
+ * \brief Creates a new Unisim_Outport_Base
+ */
+Unisim_Outport_Base::Unisim_Outport_Base() : unisim_port()//, enable("enable"), accept("accept")
+{ unisim_module::unisim_current_module->register_port(this);
+}
+/**
+ * \brief Creates a new Unisim_Inport_Base
+ */
+Unisim_Inport_Base::Unisim_Inport_Base() : unisim_port()//, enable("enable"), accept("accept")
+{ unisim_module::unisim_current_module->register_port(this);
+}
+
+#else
 /**
  * \brief Creates a new Unisim_Outport_Base
  */
@@ -301,7 +317,7 @@ Unisim_Outport_Base::Unisim_Outport_Base() : unisim_port(), enable("enable"), ac
 Unisim_Inport_Base::Unisim_Inport_Base() : unisim_port(), enable("enable"), accept("accept")
 { unisim_module::unisim_current_module->register_port(this);
 }
-
+#endif
 /**
  * \brief For Latex Rendering set the signal has fused
  */
