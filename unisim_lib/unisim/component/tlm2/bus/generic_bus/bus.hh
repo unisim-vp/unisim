@@ -55,12 +55,10 @@ template<unsigned int BUSWIDTH = 32,
 	bool DEBUG = false>
 class Bus : 
 	public unisim::kernel::service::Object,
-	public sc_module { //,
-//	public tlm::tlm_bw_transport_if<TYPES>,
-//	public tlm::tlm_fw_transport_if<TYPES> {
+	public sc_module {
 public:
 	SC_HAS_PROCESS(Bus);
-	Bus(const sc_module_name& name, unisim::kernel::service::Object *parent);
+	Bus(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
 	~Bus();
 
 	virtual bool Setup();

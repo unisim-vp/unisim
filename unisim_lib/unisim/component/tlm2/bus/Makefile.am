@@ -9,6 +9,11 @@ SUBDIRS += generic_bus
 INCLUDE_SUBDIRS += generic_bus
 endif
 
+if COND_simple_router
+SUBDIRS += simple_router
+INCLUDE_SUBDIRS += simple_router
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:
