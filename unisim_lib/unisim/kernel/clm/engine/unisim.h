@@ -394,11 +394,40 @@ class Unisim_Prim_Out : public fsc_prim_out<T> {
 /**
  * \brief Data-less input port. Input ports inherits from this class 
  */
+
+template <class U, uint32_t NCONFIG>
+class unisim_prim_in: public fsc_prim_in< boost::array<U,NCONFIG> >
+{
+ public:
+  unisim_prim_in(const char *name=0) : fsc_prim_in< boost::array<U,NCONFIG> >(name) {}
+
+  U & operator[](int i) 
+    { return ( 
+	      ( (boost::array<U,NCONFIG>) 
+		( (fsc_prim_in<U>) (*this) ) )[i] ); 
+    }
+};
+
+template <class U, uint32_t NCONFIG>
+class unisim_prim_out: public fsc_prim_out< boost::array<U,NCONFIG> >
+{
+ public:
+  unisim_prim_out(const char *name=0) : fsc_prim_out< boost::array<U,NCONFIG> >(name) {}
+  U & operator[](int i) 
+    { return ( 
+	      ( (boost::array<U,NCONFIG>) 
+		( (fsc_prim_out<U>) (*this) ) )[i] ); 
+    }
+    
+};
+
 template < uint32_t NCONFIG>
 class Unisim_Inport_Base : public unisim_port
 {public:
-  fsc_prim_in < boost::array<bool,NCONFIG> > enable;        ///< Enable signal
-  fsc_prim_out < boost::array<bool,NCONFIG> > accept;    ///< Accept signal
+  //  fsc_prim_in < boost::array<bool,NCONFIG> > enable;        ///< Enable signal
+  unisim_prim_in < bool, NCONFIG > enable;        ///< Enable signal
+  //  fsc_prim_out < boost::array<bool,NCONFIG> > accept;    ///< Accept signal
+  unisim_prim_out < bool, NCONFIG > accept;    ///< Accept signal
 
   //  Unisim_Inport_Base();                 // Constructor
   Unisim_Inport_Base(): unisim_port(), enable("enable"), accept("accept")
@@ -452,8 +481,10 @@ class Unisim_Inport_Base<1> : public unisim_port
 template < uint32_t NCONFIG>
 class Unisim_Outport_Base : public unisim_port
 {public:
-  fsc_prim_out < boost::array<bool,NCONFIG> > enable;     ///< Enable signal
-  fsc_prim_in < boost::array<bool,NCONFIG> > accept;         ///< Accept signal
+  //  fsc_prim_out < boost::array<bool,NCONFIG> > enable;     ///< Enable signal
+  unisim_prim_out < bool, NCONFIG > enable;        ///< Enable signal
+  //  fsc_prim_in < boost::array<bool,NCONFIG> > accept;         ///< Accept signal
+  unisim_prim_in < bool, NCONFIG > accept;    ///< Accept signal
 
   //  Unisim_Outport_Base();                 // Constructor
   Unisim_Outport_Base() : unisim_port(), enable("enable"), accept("accept")
@@ -500,6 +531,23 @@ class Unisim_Outport_Base<1> : public unisim_port
   bool is_data_something() { return is_data_known() && !is_data_nothing(); }
 };
 
+template <typename T>
+class SuperData
+{
+ public:
+  SuperData(): someth(false) {}
+
+  operator const T& () { return data; }
+  SuperData<T>& operator=(const T& t) { data=t; someth=true; return *this; }
+
+  void nothing() { someth = false; }
+  void something() { return someth; }
+ protected:
+  T data;
+  bool someth;
+};
+
+
 /**
  * \brief UNISIM cycle-level input port class
  */
@@ -507,9 +555,13 @@ class Unisim_Outport_Base<1> : public unisim_port
 template < class T, uint32_t NCONFIG> 
 class inport <T, NCONFIG, true> : public Unisim_Inport_Base<NCONFIG> 
 {public:
-  fsc_prim_in < boost::array<T,NCONFIG> > data;           ///< Data signal
+  //typedef SuperData<T> U;
+  //  fsc_prim_in < boost::array<T,NCONFIG> > data;           ///< Data signal
+  unisim_prim_in < SuperData<T> , NCONFIG > data;           ///< Data signal
+  //  unisim_prim_in < U , NCONFIG > data;           ///< Data signal
   inport<T, NCONFIG, true> *forwarded_port;   ///< Pointer to the aliased port, if aliased
 
+  //  bool something[NCONFIG];
   /**
    * \brief Creates a new input port
    */ 
@@ -966,9 +1018,11 @@ template < class T, uint32_t NCONFIG>
 class outport <T, NCONFIG, true> : public Unisim_Outport_Base<NCONFIG>
 { public:
   //  Unisim_Prim_Out < T > data;        ///< Data signal
-  fsc_prim_out <  boost::array<T,NCONFIG> > data;        ///< Data signal
+  //  fsc_prim_out <  boost::array<T,NCONFIG> > data;        ///< Data signal
+  unisim_prim_out < SuperData<T>, NCONFIG > data;           ///< Data signal
   outport< T,NCONFIG , true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
-  fsc_signal< boost::array<T,NCONFIG> > signal;              ///< The 3-signals object connecting this output port to an input port
+  //  fsc_signal< boost::array<T,NCONFIG> > signal; ///< The 3-signals object connecting this output port to an input port
+  fsc_signal< boost::array<SuperData<T>,NCONFIG> > signal; ///< The 3-signals object connecting this output port to an input port
 
   outport() : Unisim_Outport_Base<NCONFIG>(), data("data")
   { forwarded_port = NULL;
