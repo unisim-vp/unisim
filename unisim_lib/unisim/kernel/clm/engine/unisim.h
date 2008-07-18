@@ -404,7 +404,7 @@ class unisim_prim_in: public fsc_prim_in< boost::array<U,NCONFIG> >
   U & operator[](int i) 
     { return ( 
 	      ( (boost::array<U,NCONFIG>) 
-		( (fsc_prim_in<U>) (*this) ) )[i] ); 
+		( (fsc_prim_in< boost::array<U,NCONFIG> >) (*this) ) ).operator[](i) ); 
     }
 };
 
@@ -416,7 +416,7 @@ class unisim_prim_out: public fsc_prim_out< boost::array<U,NCONFIG> >
   U & operator[](int i) 
     { return ( 
 	      ( (boost::array<U,NCONFIG>) 
-		( (fsc_prim_out<U>) (*this) ) )[i] ); 
+		( (fsc_prim_out< boost::array<U,NCONFIG> >) (*this) ) ).operator[](i) ); 
     }
     
 };
@@ -541,7 +541,7 @@ class SuperData
   SuperData<T>& operator=(const T& t) { data=t; someth=true; return *this; }
 
   void nothing() { someth = false; }
-  void something() { return someth; }
+  bool something() { return someth; }
  protected:
   T data;
   bool someth;
@@ -555,6 +555,8 @@ class SuperData
 template < class T, uint32_t NCONFIG> 
 class inport <T, NCONFIG, true> : public Unisim_Inport_Base<NCONFIG> 
 {public:
+  typedef boost::array< SuperData<T>, NCONFIG> unisim_type_array_t;
+
   //typedef SuperData<T> U;
   //  fsc_prim_in < boost::array<T,NCONFIG> > data;           ///< Data signal
   unisim_prim_in < SuperData<T> , NCONFIG > data;           ///< Data signal
@@ -596,7 +598,7 @@ class inport <T, NCONFIG, true> : public Unisim_Inport_Base<NCONFIG>
   /**
    * \brief Connects this input port to another input port. Correspond to port aliasing.
    */
-  void operator() (inport < T, true > & ip)
+  void operator() (inport < T, NCONFIG, true > & ip)
   { Unisim_Inport_Base<NCONFIG>::forward = true;
     forwarded_port = &ip;
   }
@@ -604,7 +606,8 @@ class inport <T, NCONFIG, true> : public Unisim_Inport_Base<NCONFIG>
   /**
    * \brief Connects the port to a 3-signals object
    */
-  void operator() (fsc_signal < T > &sig)
+  //  void operator() (fsc_signal < T > &sig)
+  void operator() (unisim_3_signals < boost::array< SuperData<T>, NCONFIG>, NCONFIG > &sig)
   { if (Unisim_Inport_Base<NCONFIG>::forward)
     { (*forwarded_port)(sig);
     } 
@@ -663,26 +666,28 @@ Direct acces tot the data value should be replaced by port.data
     else os << "\e[1;31mU\e[0m";
     os << " a";
     if(this->accept.was_known())
-    { if(this->accept) os << "\e[36mY\e[0m";
-      else os << "\e[32mN\e[0m";
+      { // TODO a for loop on accept[i]
+	//if(this->accept) os << "\e[36mY\e[0m";
+	//else os << "\e[32mN\e[0m";
     }
     else os << "\e[1;31mU\e[0m";
     os << " e";
     if(this->enable.was_known())
-    { if(this->enable) os << "\e[36mY\e[0m";
-      else os << "\e[32mN\e[0m";
+      { // TODO a for loop on enable[i]
+	//if(this->enable) os << "\e[36mY\e[0m";
+	//else os << "\e[32mN\e[0m";
     }
     else os << "\e[1;31mU\e[0m";
     //#define DD_MY_SIGNAL_DEBUGGER
 #ifdef DD_MY_SIGNAL_DEBUGGER
     if(data.was_known())
-      { if(data.something()) os << data;
+      { //if(data.something()) os << data;
       }
 #endif   
 #undef DD_MY_SIGNAL_DEBUGGER
 
     os << setw(15) << " " << "|";
-    if(data.was_known() && data.something()) os << data;
+    //if(data.was_known() && data.something()) os << data;
 
     os << endl;
   }
@@ -705,20 +710,20 @@ Direct acces tot the data value should be replaced by port.data
     else os << "\e[1;31mU\e[0m";
     os << " a";
     if(this->accept.was_known())
-    { if(this->accept) os << "\e[36mY\e[0m";
-      else os << "\e[32mN\e[0m";
+      { //if(this->accept) os << "\e[36mY\e[0m";
+	//else os << "\e[32mN\e[0m";
     }
     else os << "\e[1;31mU\e[0m";
     os << " e";
     if(this->enable.was_known())
-    { if(this->enable) os << "\e[36mY\e[0m";
-      else os << "\e[32mN\e[0m";
+      { //if(this->enable) os << "\e[36mY\e[0m";
+	//else os << "\e[32mN\e[0m";
     }
     else os << "\e[1;31mU\e[0m";
     //#define DD_MY_SIGNAL_DEBUGGER
     //#ifdef DD_MY_SIGNAL_DEBUGGER
     if(data.was_known())
-      { if(data.something()) os << " " << data;
+      { //if(data.something()) os << " " << data;
       }
     //#endif   
     //#undef DD_MY_SIGNAL_DEBUGGER
@@ -830,7 +835,7 @@ class inport <T,1,true> : public Unisim_Inport_Base<1>
   /**
    * \brief Connects the port to a 3-signals object
    */
-  void operator() (fsc_signal < T > &sig)
+  void operator() (unisim_3_signals < T, 1 > &sig)
   { if (forward)
     { (*forwarded_port)(sig);
     } 
@@ -1017,12 +1022,13 @@ Direct acces tot the data value should be replaced by port.data
 template < class T, uint32_t NCONFIG> 
 class outport <T, NCONFIG, true> : public Unisim_Outport_Base<NCONFIG>
 { public:
+  typedef boost::array<SuperData<T>,NCONFIG> unisim_type_array_t;
   //  Unisim_Prim_Out < T > data;        ///< Data signal
   //  fsc_prim_out <  boost::array<T,NCONFIG> > data;        ///< Data signal
   unisim_prim_out < SuperData<T>, NCONFIG > data;           ///< Data signal
   outport< T,NCONFIG , true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
   //  fsc_signal< boost::array<T,NCONFIG> > signal; ///< The 3-signals object connecting this output port to an input port
-  fsc_signal< boost::array<SuperData<T>,NCONFIG> > signal; ///< The 3-signals object connecting this output port to an input port
+  unisim_3_signals< boost::array<SuperData<T>,NCONFIG>, NCONFIG > signal; ///< The 3-signals object connecting this output port to an input port
 
   outport() : Unisim_Outport_Base<NCONFIG>(), data("data")
   { forwarded_port = NULL;
@@ -1055,8 +1061,9 @@ class outport <T, NCONFIG, true> : public Unisim_Outport_Base<NCONFIG>
   /**
    * \brief Connects the output port to an input port
    */
-  void operator() (inport < T,true > & ip)
-  { (*this)(signal);
+  void operator() (inport < T, NCONFIG, true > & ip)
+    { //(*this)(signal);
+      this->operator()(signal);
     ip(signal);
     Unisim_Outport_Base<NCONFIG>::connected_port = &ip;
     ip.connected_port = this;
@@ -1065,7 +1072,7 @@ class outport <T, NCONFIG, true> : public Unisim_Outport_Base<NCONFIG>
   /**
    * \brief Connect the output port to another output port, aliasing both ports.
    */
-  void operator() (outport < T,true > & op)
+  void operator() (outport < T, NCONFIG,true > & op)
   { Unisim_Outport_Base<NCONFIG>::forward=true;
     forwarded_port = &op;
   }
@@ -1073,9 +1080,11 @@ class outport <T, NCONFIG, true> : public Unisim_Outport_Base<NCONFIG>
   /**
    * \brief Connects the port to a 3-signals object
    */
-  void operator() (fsc_signal < T > &sig)
+
+  //  void operator() (fsc_signal < T > &sig)
+  void operator() (unisim_3_signals < boost::array<SuperData<T>,NCONFIG>, NCONFIG > &sig)
   { if (Unisim_Outport_Base<NCONFIG>::forward) 
-    { (*forwarded_port)(sig);
+    { forwarded_port->operator()(sig);
     } else 
     { data(sig.data);
       enable(sig.enable);
@@ -1131,20 +1140,20 @@ removed, should be replaced by port.data = ... instead of port = ...
     else os << "\e[1;31mU\e[0m";
     os << " a";
     if(this->accept.was_known())
-    { if(this->accept) os << "\e[36mY\e[0m";
-      else os << "\e[32mN\e[0m";
+      { //if(this->accept) os << "\e[36mY\e[0m";
+	//else os << "\e[32mN\e[0m";
     }
     else os << "\e[1;31mU\e[0m";
     os << " e";
     if(this->enable.was_known())
-    { if(this->enable) os << "\e[36mY\e[0m";
-      else os << "\e[32mN\e[0m";
+      { //if(this->enable) os << "\e[36mY\e[0m";
+	//else os << "\e[32mN\e[0m";
     }
     else os << "\e[1;31mU\e[0m";
     //#define DD_MY_SIGNAL_DEBUGGER
 #ifdef DD_MY_SIGNAL_DEBUGGER
     if(data.was_known())
-      { if(!data.is_nothing()) os << data;
+      { //if(!data.is_nothing()) os << data;
       }
 #endif   
 #undef DD_MY_SIGNAL_DEBUGGER
@@ -1171,20 +1180,20 @@ removed, should be replaced by port.data = ... instead of port = ...
     else os << "\e[1;31mU\e[0m";
     os << " a";
     if(this->accept.was_known())
-    { if(this->accept) os << "\e[36mY\e[0m";
-      else os << "\e[32mN\e[0m";
+      { //if(this->accept) os << "\e[36mY\e[0m";
+	//else os << "\e[32mN\e[0m";
     }
     else os << "\e[1;31mU\e[0m";
     os << " e";
     if(this->enable.was_known())
-    { if(this->enable) os << "\e[36mY\e[0m";
-      else os << "\e[32mN\e[0m";
+      { //if(this->enable) os << "\e[36mY\e[0m";
+	//else os << "\e[32mN\e[0m";
     }
     else os << "\e[1;31mU\e[0m";
     //#define DD_MY_SIGNAL_DEBUGGER
     //#ifdef DD_MY_SIGNAL_DEBUGGER
     if(data.was_known())
-      { if(!data.is_nothing()) os << " " << data;
+      { //if(!data.is_nothing()) os << " " << data;
       }
     //#endif   
     //#undef DD_MY_SIGNAL_DEBUGGER
@@ -1259,7 +1268,7 @@ class outport <T, 1, true> : public Unisim_Outport_Base<1>
   //  Unisim_Prim_Out < T > data;        ///< Data signal
   fsc_prim_out < T > data;        ///< Data signal
   outport<T, true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
-  fsc_signal<T> signal;              ///< The 3-signals object connecting this output port to an input port
+  unisim_3_signals<T, 1> signal;              ///< The 3-signals object connecting this output port to an input port
 
   outport() : Unisim_Outport_Base<1>(), data("data")
   { forwarded_port = NULL;
@@ -1293,7 +1302,8 @@ class outport <T, 1, true> : public Unisim_Outport_Base<1>
    * \brief Connects the output port to an input port
    */
   void operator() (inport < T,true > & ip)
-  { (*this)(signal);
+    { //(*this)(signal);
+      this->operator()(signal);
     ip(signal);
     connected_port = &ip;
     ip.connected_port = this;
@@ -1310,7 +1320,7 @@ class outport <T, 1, true> : public Unisim_Outport_Base<1>
   /**
    * \brief Connects the port to a 3-signals object
    */
-  void operator() (fsc_signal < T > &sig)
+  void operator() (unisim_3_signals < T, 1 > &sig)
   { if (forward) 
     { (*forwarded_port)(sig);
     } else 

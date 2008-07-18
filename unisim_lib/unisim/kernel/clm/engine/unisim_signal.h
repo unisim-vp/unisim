@@ -47,6 +47,7 @@
 #include "fsc.h"
 #include <stdarg.h>
 
+#include <boost/array.hpp>
 /**
  * \brief Fake signal class used to connect desactivated ports.
  *
@@ -100,8 +101,19 @@ class unisim_desactivated_signal
 /**
  * \brief Class for the 3-signal objects connecting ports together.
  */
+template < class T, uint32_t NCONFIG >
+class unisim_3_signals
+{public:
+  fsc_prim_signal < T > data;           ///< Data signal
+  fsc_prim_signal < boost::array<bool,NCONFIG> > enable;      ///< Enable signal
+  fsc_prim_signal < boost::array<bool,NCONFIG> > accept;      ///< Accept signal
+};
+
+/**
+ * \brief Class for the 3-signal objects connecting ports together.
+ */
 template < class T >
-class fsc_signal
+class unisim_3_signals<T,1>
 {public:
   fsc_prim_signal < T > data;           ///< Data signal
   fsc_prim_signal < bool > enable;      ///< Enable signal
