@@ -408,17 +408,53 @@ class unisim_prim_in: public fsc_prim_in< boost::array<U,NCONFIG> >
     }
 };
 
+/*
+template <class U>
+class dummy
+{
+ public:
+  dummy(U &t): tempU(t) {}
+  U &tempU;
+  void operator=(const U& t)
+    {
+
+    }
+};
+*/   
+
 template <class U, uint32_t NCONFIG>
 class unisim_prim_out: public fsc_prim_out< boost::array<U,NCONFIG> >
 {
  public:
-  unisim_prim_out(const char *name=0) : fsc_prim_out< boost::array<U,NCONFIG> >(name) {}
-  U & operator[](int i) 
-    { return ( 
-	      ( (boost::array<U,NCONFIG>) 
-		( (fsc_prim_out< boost::array<U,NCONFIG> >) (*this) ) ).operator[](i) ); 
+  unisim_prim_out(const char *name=0) : fsc_prim_out< boost::array<U,NCONFIG> >(name) 
+    {
+      /*
+	for (int i=0; i<NCONFIG; i++)
+	{
+	  written_value[i] = false;
+	} 
+      written_count = 0;
+      */
     }
-    
+  /*
+  dummy<U> & operator[](int i)
+    {   //return ( 
+	//      ( (boost::array<U,NCONFIG>) 
+	//	( (fsc_prim_out< boost::array<U,NCONFIG> >) (*this) ) ).operator[](i) );
+      return dummy<U>(temporary_array[i]);
+    }
+*/
+  U &operator[](int i) { temporary_array[i]; }
+
+  void send()
+    {
+      
+    }
+ protected:
+  boost::array<U,NCONFIG> temporary_array;
+  //  bool written_value[NCONFIG];
+  //  int written_count;
+
 };
 
 template < uint32_t NCONFIG>
