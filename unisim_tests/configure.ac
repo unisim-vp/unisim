@@ -43,6 +43,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
+UNISIM_CONFIG_SUBDIR(tests-clm, clm)
 UNISIM_CONFIG_SUBDIR(tests-tlm2, tlm2)
 
 # doxygen options
