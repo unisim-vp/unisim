@@ -50,7 +50,8 @@
 //#define DD_DEBUG_TIMESTAMP 82300
 //#define DD_DEBUG_TIMESTAMP 352320
 //#define DD_DEBUG_TIMESTAMP 381929
-//#define DD_DEBUG_TIMESTAMP 80000
+//#define DD_DEBUG_TIMESTAMP 70000
+//#define DD_DEBUG_TIMESTAMP 3552229
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -68,7 +69,7 @@
 #define DD_DEBUG_DCACHE
 //#define DD_DEBUG_SPLITTING
 #define DD_DEBUG_DCACHE_VERB2
-//#define DD_DEBUG_FPLOAD
+#define DD_DEBUG_FPLOAD
 //#define DD_DEBUG_LSQ
 //#define DD_DEBUG_BUS
 
