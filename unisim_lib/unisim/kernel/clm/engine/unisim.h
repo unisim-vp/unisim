@@ -47,13 +47,7 @@
 #define LIBRARY_CORE_libunisim 0
 #define LIBRARY_EXTRA_pthread 0
 
-//#define USE_UNISIM_SIGNAL_ARRAY
-
-//#ifdef USE_UNISIM_SIGNAL_ARRAY
-
-//typedef boost::array signal_array;
-
-//#endif
+//#define USE_AUTOMATIC_SEND
 
 /** 
  * @file unisim.h 
@@ -434,35 +428,74 @@ class unisim_prim_out: public fsc_prim_out< boost::array<U,NCONFIG> >
  public:
   unisim_prim_out(const char *name=0) : fsc_prim_out< boost::array<U,NCONFIG> >(name) 
     {
-      /*
+#ifdef USE_AUTOMATIC_SEND
 	for (int i=0; i<NCONFIG; i++)
 	{
 	  written_value[i] = false;
 	} 
       written_count = 0;
-      */
+#endif
     }
-  /*
-  dummy<U> & operator[](int i)
+#ifdef USE_AUTOMATIC_SEND
+  friend class dummy;
+  //  template <class V, uint32_t NCONF>
+  class dummy
+    {
+      friend class unisim_prim_out<U, NCONFIG>; 
+    private:
+      dummy(unisim_prim_out<U, NCONFIG> upo, int i): uni_out(upo), index(i) 
+	{ 
+	  cerr << "Debug info : into dummy constructor ..." << endl;
+	}
+      unisim_prim_out<U, NCONFIG> &uni_out;
+      int &index;
+    public:
+      void operator=(U& t)
+	{
+	  if (!uni_out.written_value[index])
+	    {
+	      uni_out.temporary[index] = t;
+	      written_value[index] = true;
+	      written_count++;
+	    }
+	  else
+	    {
+	      cerr << "Error array value already assigned !!!" << endl;
+	    }
+	  if (written_count>= NCONFIG)
+	    {
+	      uni_out.send();
+	      for (int i=0; i<NCONFIG; i++)
+		{
+		  uni_out.written_value[i] = false;
+		}
+	      uni_out.written_count = 0;
+	    }
+	}
+    };
+  dummy operator[](int i)
     {   //return ( 
 	//      ( (boost::array<U,NCONFIG>) 
 	//	( (fsc_prim_out< boost::array<U,NCONFIG> >) (*this) ) ).operator[](i) );
-      return dummy<U>(temporary_array[i]);
+      cerr << "Debug info : into dummy.operator[] ..." << endl;
+      return dummy(*this,i);
     }
-*/
+#else
   U &operator[](int i) { return temporary_array[i]; }
+#endif
 
   void send()
     {
       fsc_prim_out< boost::array<U,NCONFIG> >::operator=(temporary_array);
-      //      unisim_prim_out< boost::array<U,NCONFIG>, NCONFIG >::operator=(temporary_array);
     }
+  //#endif
 
  protected:
   boost::array<U,NCONFIG> temporary_array;
-  //  bool written_value[NCONFIG];
-  //  int written_count;
-
+#ifdef USE_AUTOMATIC_SEND
+  bool written_value[NCONFIG];
+  int written_count;
+#endif
 };
 
 template < uint32_t NCONFIG>
@@ -472,7 +505,6 @@ class Unisim_Inport_Base : public unisim_port
   unisim_prim_in < bool, NCONFIG > enable;        ///< Enable signal
   //  fsc_prim_out < boost::array<bool,NCONFIG> > accept;    ///< Accept signal
   unisim_prim_out < bool, NCONFIG > accept;    ///< Accept signal
-
   //  Unisim_Inport_Base();                 // Constructor
   Unisim_Inport_Base(): unisim_port(), enable("enable"), accept("accept")
     { unisim_module::unisim_current_module->register_outport(this);
@@ -581,7 +613,7 @@ class SuperData
  public:
   SuperData(): someth(false) {}
 
-  operator const T& () { return data; }
+  operator const T& () const { return data; }
   //  operator T& () { return data; }
 
   SuperData<T>& operator=(const T& t) { data=t; someth=true; return *this; }
