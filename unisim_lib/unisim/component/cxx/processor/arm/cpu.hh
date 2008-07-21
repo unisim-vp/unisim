@@ -120,6 +120,14 @@ using std::ostream;
 using std::vector;
 using std::queue;
 
+#ifdef PROFILE_ARM966
+class insn_profile_t {
+public:
+	uint64_t ex_time;
+	uint64_t num_times_executed;
+};
+#endif // PROFILE_ARM966
+
 #else
 
 using unisim::kernel::service::Object;
@@ -265,7 +273,11 @@ public:
 #ifdef SOCLIB
 	
 	CPU(CacheInterface<address_t> *memory_interface);
-	
+	~CPU();
+#ifdef PROFILE_ARM966
+	void EndProfile();
+#endif // PROFILE_ARM966
+
 #else
 	
 	CPU(const char *name, CacheInterface<address_t> *memory_interface, Object *parent = 0);
@@ -1287,6 +1299,13 @@ protected:
 	inline void VerboseDumpRegs() GCC_INLINE;
 	inline void VerboseDumpRegsStart() GCC_INLINE;
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
+
+#ifdef SOCLIB
+#ifdef PROFILE_ARM966
+private:
+	map<uint32_t, insn_profile_t *> insn_profile;
+#endif // PROFILE_ARM966
+#endif // SOCLIB
 };
 
 } // end of namespace arm

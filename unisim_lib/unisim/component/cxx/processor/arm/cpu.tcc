@@ -127,6 +127,9 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	verbose_step_insn(false),
 	verbose_dump_regs_start(false),
 	verbose_dump_regs_end(false)
+#ifdef PROFILE_ARM966
+	, insn_profile()
+#endif //PROFILE_ARM966
 	{
 	/* Reset all the registers */
 	InitGPR();
@@ -188,6 +191,27 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	CreateCpSystem();
 	
 	CreateMemorySystem();
+
+#ifdef PROFILE_ARM966
+
+
+
+#endif // PROFILE_ARM966
+}
+
+// Destructor
+template<class CONFIG> 
+CPU<CONFIG> ::
+~CPU() {
+#ifdef PROFILE_ARM966
+	map<uint32_t, insn_profile_t *>::iterator iter;
+
+	cerr << "Execution trace =============================================================== START" << endl;
+	for(iter = insn_profile.begin(); iter != insn_profile.end(); iter++) {
+		cerr << "0x" << hex << iter->first << dec << " " << iter->second->ex_time << " " << iter->second->num_times_executed << endl;
+	}
+	cerr << "Execution trace ===============================================================   END" << endl;
+#endif // PROFILE_ARM966
 }
 
 #else // SOCLIB

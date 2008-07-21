@@ -41,6 +41,7 @@
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include <inttypes.h>
+#include <map>
 
 #define SOCLIB_DEBUG
 
@@ -516,6 +517,21 @@ StepCycle() {
 	if(executeQueue != 0 &&
 			executeQueue->GetRemainingExecCycles() == 0 &&
 			lsQueue.empty()) {
+
+#ifdef PROFILE_ARM966
+		map<uint32_t, insn_profile_t *>::iterator iter;
+		iter = insn_profile.find(executeQueue->GetFetchAddress());
+		if(iter == insn_profile.end()) {
+			insn_profile_t *prof = new insn_profile_t();
+			prof->ex_time = 1;
+			prof->num_times_executed = 1;
+			insn_profile[executeQueue->GetFetchAddress()] = prof;
+		} else {
+			iter->second->num_times_executed++;
+			iter->second->ex_time++;
+		}
+#endif // PROFILE_ARM966
+
 		if(GetGPR(PC_reg) != executeQueue->GetPredictedNextFetchAddress()) {
 #ifdef SOCLIB_DEBUG
 			cerr << "    - misspredicted pc 0x" << hex << executeQueue->GetPredictedNextFetchAddress() << dec << " -> 0x" << hex << GetGPR(PC_reg) << dec << endl;
@@ -537,6 +553,21 @@ StepCycle() {
 		}	
 		//InstructionFactory<CONFIG>::Destroy(executeQueue);
 		//executeQueue = 0;
+	} else {
+#ifdef PROFILE_ARM966
+		if(executeQueue != 0) {
+			map<uint32_t, insn_profile_t *>::iterator iter;
+			iter = insn_profile.find(executeQueue->GetFetchAddress());
+			if(iter == insn_profile.end()) {
+				insn_profile_t *prof = new insn_profile_t();
+				prof->ex_time = 1;
+				prof->num_times_executed = 0;
+				insn_profile[executeQueue->GetFetchAddress()] = prof;
+			} else {
+				iter->second->ex_time++;
+			}
+		}
+#endif // PROFILE_ARM966
 	}
 
 	/* if execute queue is empty then move the decode queue entry to execute
