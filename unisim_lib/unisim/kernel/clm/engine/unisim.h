@@ -448,8 +448,9 @@ class unisim_prim_out: public fsc_prim_out< boost::array<U,NCONFIG> >
 
   void send()
     {
-      
+      fsc_prim_out< boost::array<U,NCONFIG> >::operator=(temporary_array);
     }
+
  protected:
   boost::array<U,NCONFIG> temporary_array;
   //  bool written_value[NCONFIG];
