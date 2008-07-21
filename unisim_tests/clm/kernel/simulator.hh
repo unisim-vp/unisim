@@ -68,9 +68,9 @@ public:
       { 
 	for (int i=0; i< NSIGNALS; i++) 
 	  //{ cerr << "source " << i << endl; }
-	  //	  { out.data[i] = (1000 + timestamp()); }
-	  { out.data[i] = 10; }
-	//out.data.send();
+	  { out.data[i] = (1000 + timestamp()); }
+	//{ out.data[i] = 10; }
+	out.data.send();
       }
     else
       { //terminate_now(); 
@@ -79,7 +79,10 @@ public:
   // ON ACCEPT
   void onAccept()
   {
-    for (int i=0; i<NSIGNALS; i++) { out.enable[i] = out.accept[i]; }
+    for (int i=0; i<NSIGNALS; i++) 
+      //{ out.enable[i] = out.accept[i]; }
+      { out.enable[i] = true; }
+    out.enable.send();
   }
 
   // EOC
@@ -87,11 +90,13 @@ public:
   {
     for (int i=0; i<NSIGNALS; i++)
       {
-	if (!out.enable[i])
+	/*
+	if (!out.accept[i])
 	  {
 	    cerr << "error sink didn't accepting !!!" << endl;
 	    abort();
 	  }
+	*/
       }
   }
 };
@@ -124,7 +129,9 @@ public:
   void onData()
   {
     for (int i=0; i<NSIGNALS; i++) 
-      { in.accept[i] = in.data[i].something(); }
+      //{ in.accept[i] = in.data[i].something(); }
+      { in.accept[i] = true; }
+    in.accept.send();
   }
 
   // EOC
@@ -136,7 +143,7 @@ public:
 	  {
 	    if ( true )//in.data[i].something() )
 	    cerr << "We recevied an integer from source : " 
-	      //<< in.data[i] 
+		 << in.data[i] 
 		 << endl;
 	  }
       }
