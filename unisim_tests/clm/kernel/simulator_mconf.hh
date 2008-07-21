@@ -67,13 +67,12 @@ public:
   {
     if (timestamp() < looptime)
       { 
-	for (int i=0; i< NSIGNALS/2; i++) 
-	  //{ cerr << "source " << i << endl; }
+	for (int i=0; i< NSIGNALS; i++)
 	  { 
-	    out.data[2*i] = (timestamp());
-	    out.data[2*i+1].nothing();// = (1000 + timestamp());
+	    out.data[i] = (timestamp());
+	    //	    out.data[2*i] = (timestamp());
+	    //	    out.data[2*i+1].nothing();
 	  }
-	//{ out.data[i] = 10; }
 	out.data.send();
       }
     else
@@ -85,7 +84,6 @@ public:
   {
     for (int i=0; i<NSIGNALS; i++) 
       { out.enable[i] = out.accept[i]; }
-    //{ out.enable[i] = true; }
     out.enable.send();
   }
 
@@ -142,22 +140,16 @@ public:
   {
     for (int i=0; i<NSIGNALS; i++)
       {
-	if (true)//in.enable[i])
+	if (in.enable[i])
 	  {
 	    if ( in.data[i].something() )
 	      {
 		//		cerr << "We recevied an integer from source : ";
-		//		cerr << in.data[i].Data();
+		//		cerr << in.data[i];
 		//		cerr << endl;
-		if ( in.data[i].Data() >= looptime - 1 ) { terminate_now(); }
+		//		int j = in.data[i];
+		if ( in.data[i] >= looptime - 1 ) { terminate_now(); }
 	      }
-	    /*
-	    else
-	      {
-		cerr << "We recevied nothing... ";
-		cerr << endl;
-	      }
-	    */
 	  }
       }
   }
@@ -168,7 +160,7 @@ public:
 class GeneratedSimulator : public Simulator{
 public:
 
-  static const int NBS = 128;
+  static const int NBS = 4;
   /**************************************************************************
    *                      DEFINITION OF CLM COMPONENTS                      *
    **************************************************************************/

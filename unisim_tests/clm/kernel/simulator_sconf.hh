@@ -67,14 +67,12 @@ public:
   {
     if (timestamp() < looptime)
       { 
-	for (int i=0; i< NSIGNALS/2; i++) 
-	  //{ cerr << "source " << i << endl; }
+	//	for (int i=0; i< NSIGNALS/2; i++) 
 	  { 
-	    out.data[2*i] = (timestamp());
-	    out.data[2*i+1].nothing();// = (1000 + timestamp());
+	    out.data = (timestamp());
+	    //	    out.data[2*i+1].nothing();// = (1000 + timestamp());
 	  }
-	//{ out.data[i] = 10; }
-	out.data.send();
+	//	out.data.send();
       }
     else
       { //terminate_now(); 
@@ -83,10 +81,9 @@ public:
   // ON ACCEPT
   void onAccept()
   {
-    for (int i=0; i<NSIGNALS; i++) 
-      { out.enable[i] = out.accept[i]; }
-    //{ out.enable[i] = true; }
-    out.enable.send();
+    //    for (int i=0; i<NSIGNALS; i++) 
+      { out.enable = out.accept; }
+      //    out.enable.send();
   }
 
   // EOC
@@ -94,7 +91,7 @@ public:
   {
     for (int i=0; i<NSIGNALS; i++)
       {
-	if (!out.accept[i])
+	if (!out.accept)
 	  {
 	    //cerr << "error sink didn't accepting !!!" << endl;
 	    //	    terminate_now();
@@ -131,25 +128,24 @@ public:
   // ON ACCEPT
   void onData()
   {
-    for (int i=0; i<NSIGNALS; i++) 
-      { in.accept[i] = in.data[i].something(); }
-      //      { in.accept[i] = true; }
-    in.accept.send();
+    //    for (int i=0; i<NSIGNALS; i++) 
+      { in.accept = in.data.something(); }
+      //    in.accept.send();
   }
 
   // EOC
   void end_of_cycle()
   {
-    for (int i=0; i<NSIGNALS; i++)
+    //    for (int i=0; i<NSIGNALS; i++)
       {
-	if (true)//in.enable[i])
+	if (in.enable)
 	  {
-	    if ( in.data[i].something() )
+	    if ( in.data.something() )
 	      {
 		//		cerr << "We recevied an integer from source : ";
 		//		cerr << in.data[i].Data();
 		//		cerr << endl;
-		if ( in.data[i].Data() >= looptime - 1 ) { terminate_now(); }
+		if ( in.data >= looptime - 1 ) { terminate_now(); }
 	      }
 	    /*
 	    else
@@ -168,7 +164,7 @@ public:
 class GeneratedSimulator : public Simulator{
 public:
 
-  static const int NBS = 128;
+  static const int NBS = 1;
   /**************************************************************************
    *                      DEFINITION OF CLM COMPONENTS                      *
    **************************************************************************/
