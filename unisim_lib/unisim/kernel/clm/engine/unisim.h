@@ -444,11 +444,12 @@ class unisim_prim_out: public fsc_prim_out< boost::array<U,NCONFIG> >
       return dummy<U>(temporary_array[i]);
     }
 */
-  U &operator[](int i) { temporary_array[i]; }
+  U &operator[](int i) { return temporary_array[i]; }
 
   void send()
     {
       fsc_prim_out< boost::array<U,NCONFIG> >::operator=(temporary_array);
+      //      unisim_prim_out< boost::array<U,NCONFIG>, NCONFIG >::operator=(temporary_array);
     }
 
  protected:
@@ -592,7 +593,7 @@ class SuperData
 template < class T, uint32_t NCONFIG> 
 class inport <T, NCONFIG, true> : public Unisim_Inport_Base<NCONFIG> 
 {public:
-  typedef boost::array< SuperData<T>, NCONFIG> unisim_type_array_t;
+  //  typedef boost::array< SuperData<T>, NCONFIG> unisim_type_array_t;
 
   //typedef SuperData<T> U;
   //  fsc_prim_in < boost::array<T,NCONFIG> > data;           ///< Data signal
@@ -1059,11 +1060,11 @@ Direct acces tot the data value should be replaced by port.data
 template < class T, uint32_t NCONFIG> 
 class outport <T, NCONFIG, true> : public Unisim_Outport_Base<NCONFIG>
 { public:
-  typedef boost::array<SuperData<T>,NCONFIG> unisim_type_array_t;
+  //  typedef boost::array<SuperData<T>,NCONFIG> unisim_type_array_t;
   //  Unisim_Prim_Out < T > data;        ///< Data signal
   //  fsc_prim_out <  boost::array<T,NCONFIG> > data;        ///< Data signal
   unisim_prim_out < SuperData<T>, NCONFIG > data;           ///< Data signal
-  outport< T,NCONFIG , true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
+  outport< T, NCONFIG , true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
   //  fsc_signal< boost::array<T,NCONFIG> > signal; ///< The 3-signals object connecting this output port to an input port
   unisim_3_signals< boost::array<SuperData<T>,NCONFIG>, NCONFIG > signal; ///< The 3-signals object connecting this output port to an input port
 
