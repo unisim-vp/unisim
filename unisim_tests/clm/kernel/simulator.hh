@@ -65,7 +65,12 @@ public:
   void start_of_cycle()
   {
     if (timestamp() < 10)
-      { for (int i=0; i< NSIGNALS; i++) { cerr << "source " << i << endl; }//out.data[i] = 1000 + timestamp(); }
+      { 
+	for (int i=0; i< NSIGNALS; i++) 
+	  //{ cerr << "source " << i << endl; }
+	  //	  { out.data[i] = (1000 + timestamp()); }
+	  { out.data[i] = 10; }
+	//out.data.send();
       }
     else
       { //terminate_now(); 
