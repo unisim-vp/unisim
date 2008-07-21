@@ -47,7 +47,7 @@
 #define LIBRARY_CORE_libunisim 0
 #define LIBRARY_EXTRA_pthread 0
 
-#define USE_UNISIM_SIGNAL_ARRAY
+//#define USE_UNISIM_SIGNAL_ARRAY
 
 //#ifdef USE_UNISIM_SIGNAL_ARRAY
 
@@ -130,13 +130,13 @@ static inline void terminate_now() {
 
 class unisim_module;
 
-#ifdef USE_UNISIM_SIGNAL_ARRAY
+//#ifdef USE_UNISIM_SIGNAL_ARRAY
 template < class T, uint32_t NCONFIG=1, bool exists=true > class inport;
 template < class T, uint32_t NCONFIG=1, bool exists=true > class outport;
-#else
-template < class T, bool exists=true > class inport;
-template < class T, bool exists=true > class outport;
-#endif
+//#else
+//template < class T, bool exists=true > class inport;
+//template < class T, bool exists=true > class outport;
+//#endif
 
 /**
  * \brief Signal-less port, both Input and Output port inherit from
@@ -401,10 +401,16 @@ class unisim_prim_in: public fsc_prim_in< boost::array<U,NCONFIG> >
  public:
   unisim_prim_in(const char *name=0) : fsc_prim_in< boost::array<U,NCONFIG> >(name) {}
 
-  U & operator[](int i) 
-    { return ( 
+  const U & operator[](int i) 
+    { /*
+      return ( 
 	      ( (boost::array<U,NCONFIG>) 
 		( (fsc_prim_in< boost::array<U,NCONFIG> >) (*this) ) ).operator[](i) ); 
+      */
+      fsc_prim_in< boost::array<U,NCONFIG> > &tmp = *this;
+      const boost::array<U,NCONFIG> &tmp2 = tmp;
+      //      cerr << "WARNING :  tmp2.size()= "  << tmp2.size() << endl;
+      return tmp2[i];
     }
 };
 
@@ -576,10 +582,13 @@ class SuperData
   SuperData(): someth(false) {}
 
   operator const T& () { return data; }
+  //  operator T& () { return data; }
+
   SuperData<T>& operator=(const T& t) { data=t; someth=true; return *this; }
 
+  const T &Data() const { return data; }
   void nothing() { someth = false; }
-  bool something() { return someth; }
+  bool something() const { return someth; }
  protected:
   T data;
   bool someth;
