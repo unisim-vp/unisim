@@ -58,6 +58,8 @@ AC_PROG_CC
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
+UNISIM_WITH_BOOST
+UNISIM_CHECK_BOOST_ARRAY
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
 

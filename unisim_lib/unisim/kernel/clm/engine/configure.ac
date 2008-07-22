@@ -57,6 +57,9 @@ AC_LANG([C++])
 AC_CHECK_HEADERS([iostream string list map iostream sstream iomanip math.h stdarg.h stdio.h string.h csignal inttypes.h fstream stdint.h stdexcept time.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
+UNISIM_WITH_BOOST
+UNISIM_CHECK_BOOST_ARRAY
+
 ###### CHECK FOR PTHREAD ######################################################
 case $host in
 	*linux*)   # linux host
