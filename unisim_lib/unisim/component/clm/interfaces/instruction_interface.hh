@@ -310,6 +310,7 @@ class Instruction
   bool replay_trap;              /*< true if instruction need a replay */
   int obq_tag;
 
+  bool valid;    //< Used with unisim signal array when something() can't be used
   uint32_t singleprecision;
   vector<Source> sources;
   //  Destination destination;
@@ -356,6 +357,8 @@ class Instruction
     may_need_replay=false;
     replay_trap = false;
     obq_tag = -1;
+
+    valid = false;
 
     singleprecision = 0;
     sources.clear();
@@ -485,6 +488,7 @@ class Instruction
     replay_trap = instruction.replay_trap;
     obq_tag = instruction.obq_tag;
     
+    valid = instruction.valid;
     singleprecision = instruction.singleprecision;
     sources = instruction.sources;
     //    destination = instruction.destination;
@@ -570,6 +574,7 @@ class Instruction
     replay_trap = instruction.replay_trap;
     obq_tag = instruction.obq_tag;
 
+    valid = instruction.valid;
     singleprecision = instruction.singleprecision;
     
     sources = instruction.sources;

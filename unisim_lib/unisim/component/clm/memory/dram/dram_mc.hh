@@ -67,13 +67,15 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "statistics/StatisticService.h"
 
 #include <boost/array.hpp>
-
+#include <boost/detail/iterator.hpp>
 
 namespace unisim {
 namespace component {
 namespace clm {
 namespace memory {
 namespace dram {
+
+  using std::iterator;
 
 // new usings
 using unisim::component::clm::interfaces::memreq;
@@ -138,6 +140,8 @@ template
   bool Snooping = false,
   bool VERBOSE = false,
   int nConfig = 1
+  //  const int nConfig = 1
+  //  std::size_t nConfig = 1
 >
 class DRAM : public module
 	     , public MI_Service
@@ -153,11 +157,13 @@ class DRAM : public module
   inclock inClock;                                                 ///< clock port
   /* ports */
   //  inport < memreq < INSTRUCTION, nDataPathSize >[nConfig] > in;             ///< Input port for memory requests
-  inport < boost::array< memreq < INSTRUCTION, nDataPathSize >,nConfig> > in;             ///< Input port for memory requests
+  inport < memreq < INSTRUCTION, nDataPathSize >, nConfig > in;             ///< Input port for memory requests
   //  outport < memreq < INSTRUCTION, nDataPathSize >[nConfig] > out;           ///< Output port for sending data toward CPU
-  outport < boost::array< memreq < INSTRUCTION, nDataPathSize >,nConfig> > out;           ///< Output port for sending data toward CPU
+  outport < memreq < INSTRUCTION, nDataPathSize > ,nConfig > out;           ///< Output port for sending data toward CPU
 
-  inport < boost::array<bool,nConfig> , Snooping > inShared;                              ///< Inport port for the shared bit of some CMP models
+  // DD : template < bool, nConfig, false > doesn't exist yet ...
+  //  inport < bool, nConfig , Snooping > inShared;             ///< Inport port for the shared bit of some CMP models
+  inport < bool, Snooping > inShared;             ///< Inport port for the shared bit of some CMP models
  //  inport < bool, Snooping > inDirty;
 
   /** The constructor
@@ -183,7 +189,7 @@ class DRAM : public module
     // Set sensitivity lists
     sensitive_pos_method(start_of_cycle) << inClock;
     sensitive_neg_method(end_of_cycle) << inClock;
-    if(Snooping) 
+    if(Snooping)
     { 
       sensitive_method(onInData) << in.data << inShared.data;
     }
@@ -962,13 +968,20 @@ INFO << "WriteMemory 0x" << hex << addr << dec << "," << size << endl;
     dump(cerr);
 #endif
 
+    //    boost::array< memreq <INSTRUCTION, nDataPathSize>, nConfig> memreq_array;
+    //    inport< memreq<INSTRUCTION, nDataPathSize>, nConfig>::unisim_type_array_t memreq_array;
+    boost::array< SuperData<memreq <INSTRUCTION, nDataPathSize> >, nConfig> memreq_array;
+
     bool valid = false;
+
+    for (int i=0; i<nConfig; i++)
+    {
     OoOQueuePointer<DRAMControlerQueueEntry<INSTRUCTION, nCacheLineSize>, nCtrlQueueSize> entry;
     /* Search for a read */
-    entry = queue.SeekAtHead();
+    entry = queue[i].SeekAtHead();
     while(entry)
     { /* Is it a read ? */
-      if(!entry->write && (!dataBusOwner || dataBusOwner == entry))
+      if(!entry->write && (!dataBusOwner[i] || dataBusOwner[i] == entry))
       { /* Is there some data to send to CPU ? */
         if(entry->read < entry->size)
         { valid = true;
@@ -981,11 +994,12 @@ INFO << "WriteMemory 0x" << hex << addr << dec << "," << size << endl;
           mr.instr = entry->instr;
           mr.size = nDataPathSize;
           mr.Write(entry->data + entry->read_offset, nDataPathSize);
-          dataBusOwner = entry;
+          dataBusOwner[i] = entry;
           mr.sender_type = memreq_types::sender_MEM;
           mr.sender = this;
           mr.req_sender = entry->req_sender;
           mr.cachable = entry->cachable;
+	  mr.valid = true;
 //INFO << "Sending  " << mr << endl;
 #ifdef DD_DEBUG_DRAM
 	  cerr << "[DD_DEBUG_DRAM] Sending : " << entry->req_sender << endl;
@@ -1000,14 +1014,16 @@ INFO << "WriteMemory 0x" << hex << addr << dec << "," << size << endl;
 	  }
         #endif
 
-          out.data = mr;
+	  //          out.data[i] = mr;
+	  memreq_array[i] = mr;
         }
         break;
       }
       entry++;
     }
+    }
+    if(valid) out.data = memreq_array;
     if(!valid) out.data.nothing();
-
     if(VERBOSE) dump();
     /*
       #ifdef DD_DEBUG_DRAM
@@ -1030,21 +1046,30 @@ INFO << "WriteMemory 0x" << hex << addr << dec << "," << size << endl;
     dump(cerr);
 #endif
 
+
     OoOQueuePointer<DRAMControlerQueueEntry<INSTRUCTION, nCacheLineSize>, nCtrlQueueSize> entry;
+
+    //    boost::array<bool, 0>::iterator iter;
+
+    //    iter = ((boost::array<bool, nConfig> *)(&out.accept))->begin();
+    //    for (int i=0;iter=)
+    // Foreach configuartion
+    for (int i=0; i<nConfig; i++)
+    {
     /* For each entry in the memory controler queue */
-    entry = queue.SeekAtHead();
+    entry = queue[i].SeekAtHead();
     if(entry)
     { do
       { if(!entry->write)
         { /* It is a read */
           /* Is there a data sended to CPU ? */
-          if(entry->read < entry->size && dataBusOwner == entry)
+          if(entry->read < entry->size && dataBusOwner[i] == entry)
           { /* Did the CPU accept the data ? */
-            if(out.accept)
+            if(out.accept[i])
             { entry->read += nDataPathSize;
               entry->read_offset += nDataPathSize;
               if(entry->read_offset >= nCacheLineSize) entry->read_offset = 0;
-              if(entry->read >= nCacheLineSize) dataBusOwner = 0;
+              if(entry->read >= nCacheLineSize) dataBusOwner[i] = 0;
             }
             else
             { ERROR << "L2 cache did not accept a response (" << *entry << ")" << endl;
@@ -1059,26 +1084,30 @@ INFO << "WriteMemory 0x" << hex << addr << dec << "," << size << endl;
     }
 
     /* Remove each served requests from the memory controler queue */
-    entry = queue.SeekAtHead();
+    entry = queue[i].SeekAtHead();
     if(entry)
     { do
       { /* A request is served if the whole burst was read either by CPU or DRAM banks */
         if(entry->read < nCacheLineSize) break;
         if(entry->time != (unsigned long long int)-1)
         { entry->time = (uint64_t)timestamp() - entry->time;
-          cumulative_load_time += entry->time;
-          if(entry->time < min_load_time) min_load_time = entry->time;
-          if(entry->time > max_load_time) max_load_time = entry->time;
-          num_read_requests++;
-          average_latency = cumulative_load_time / num_read_requests;
+          cumulative_load_time[i] += entry->time;
+          if(entry->time < min_load_time[i]) min_load_time[i] = entry->time;
+          if(entry->time > max_load_time[i]) max_load_time[i] = entry->time;
+          num_read_requests[i]++;
+          average_latency[i] = cumulative_load_time[i] / num_read_requests[i];
         }
-        queue.Remove(entry);
+        queue[i].Remove(entry);
       }
       while(entry);
     }
+    } // End of foreach configuration
+
+    for (int i=0; i<nConfig; i++)
+    {
 
     /* Is there a new memory request ? */
-    if(in.enable)
+    if(in.enable[i])
     { memreq<INSTRUCTION, nDataPathSize> mr = in.data;
 
 #ifdef DD_DEBUG_DRAM
@@ -1215,6 +1244,10 @@ INFO << "WriteMemory 0x" << hex << addr << dec << "," << size << endl;
       }
      }
     } //in.enable
+
+    } // End of foreach configuration
+
+
 
     /* Manage the DRAM control */
     DRAMControl();

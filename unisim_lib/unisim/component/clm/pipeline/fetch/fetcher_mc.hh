@@ -44,7 +44,6 @@
 
 #include <unisim/component/clm/interfaces/memreq.h>
 
-//#include <system/memory/cache/CacheCommon.h>
 #include <unisim/component/clm/cache/cache_common.hh>
 #include <unisim/component/clm/pipeline/fetch/branch_history_table.hh>
 #include <unisim/component/clm/pipeline/fetch/branch_target_buffer.hh>
@@ -53,7 +52,7 @@
 #include <unisim/component/clm/processor/ooosim/cpu_emulator.hh>
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 
-#include <boost/array.hpp>
+//#include <boost/array.hpp>
 
 
 namespace unisim {
@@ -65,7 +64,6 @@ namespace fetch {
 
 using unisim::component::clm::interfaces::memreq;
 using unisim::component::clm::interfaces::memreq_types;
-  //using unisim::service::interfaces::StatisticReporting;
 
 using unisim::component::clm::interfaces::Source;
 using unisim::component::clm::interfaces::Destination;
@@ -145,9 +143,6 @@ public:
 /** A SystemC module modeling the fetch stage and the branch prediction */
 template <class T, int nSources, int Width, int LineSize, int nCPUDataPathSize, int InstructionQueueSize, int InstructionSize, int BHT_Size, int BHT_nBits, int BHT_nHistorySize, int BTB_Size, int BTB_Associativity, int RAS_Size, int RetireWidth, int WriteBackWidth, int MaxPendingRequests, int MaxBranches, int nConfig = 1>
 class Fetcher : public module
-//, public StatisticService
-//                , public Client<StatisticReporting>
-//              , public Service<StatisticReportingControl>
 {
 public:
   /**************************************
@@ -156,9 +151,11 @@ public:
   // Nothing...
   //  ServiceImport<StatisticReporting> statistic_reporting_import;
 
+private:
   /**************************************
    * Module Statistics
    **************************************/
+  /*
   uint64_t fetched_instructions;
   uint64_t splitted_instructions;
 
@@ -171,28 +168,43 @@ public:
   uint64_t ras_capacity_misses;
   uint64_t instruction_queue_cumulative_occupancy;
   //  uint64_t flushed_instructions;
-  
+  */
+  StatisticArray<uint64_t> stat_fetched_instructions
+  StatisticArray<uint64_t> stat_splitted_instructions;
+
+  StatisticArray<uint64_t> stat_bht_accesses;
+  StatisticArray<uint64_t> stat_bht_misses;
+  StatisticArray<uint64_t> stat_btb_accesses;
+  StatisticArray<uint64_t> stat_btb_misses;
+  StatisticArray<uint64_t> stat_ras_accesses;
+  StatisticArray<uint64_t> stat_ras_misses;
+  StatisticArray<uint64_t> stat_ras_capacity_misses;
+  StatisticArray<uint64_t> stat_instruction_queue_cumulative_occupancy;
+  //  StatisticArray<uint64_t> flushed_instructions;
+public:
   /**************************************
    * Module ports 
    **************************************/
-  //	sc_in_clk inClock;
   inclock inClock;
 
   /* From/To L1 Instruction Cache */
-  outport < boost::array< memreq < InstructionPtr, nCPUDataPathSize >, nConfig>  > outIL1;   ///< To L1 Instruction Memory
+  outport < memreq < InstructionPtr, nCPUDataPathSize >, nConfig > outIL1;   ///< To L1 Instruction Memory
   
-  inport  < boost::array< memreq < InstructionPtr, nCPUDataPathSize >, nConfig>  > inIL1;    ///< From L1 Instruction Cache
+  inport  < memreq < InstructionPtr, nCPUDataPathSize >, nConfig > inIL1;    ///< From L1 Instruction Cache
   
   /* To the instruction decoder */
-  outport<boost::array< InstructionPtr, nConfig> > outInstruction[Width];
+  //  outport< InstructionPtr, nConfig > outInstruction[Width];
+  outport< InstructionPtr, nConfig*Width > outInstruction;
 
   /* From the reorder buffer */
-  inport<boost::array< bool, nConfig> > inFlush;
+  inport< bool, nConfig > inFlush;
 
-  inport<boost::array< InstructionPtr, nConfig> > inRetireInstruction[Width];
+  //  inport< InstructionPtr, nConfig > inRetireInstruction[Width];
+  inport< InstructionPtr, nConfig*Width > inRetireInstruction;
 
   /* From the common data bus */
-  inport<boost::array< InstructionPtr, nConfig> > inWriteBackInstruction[WriteBackWidth];
+  //  inport< InstructionPtr, nConfig* > inWriteBackInstruction[WriteBackWidth];
+  inport< InstructionPtr, nConfig*WriteBackWidth > inWriteBackInstruction;
 
   /** Constructor of the fetcher module
       @param name the module name
@@ -217,40 +229,40 @@ public:
 		outIL1.set_unisim_name(this,"outIL1");
 		inIL1.set_unisim_name(this,"inIL1");
 		inFlush.set_unisim_name(this,"inFlush");
-		for (i=0; i<Width; i++)
-		  {
-		    outInstruction[i].set_unisim_name(this,"outInstruction",i);
-		    //		    inRetireInstruction[i].set_unisim_name(this,"inRetireInstruction",i);
-		    //		    inWriteBackInstruction[i].set_unisim_name(this,"inWriteBackInstruction",i);
-		  }
+		//for (i=0; i<Width; i++)
+		//  {
+		outInstruction.set_unisim_name(this,"outInstruction");
+		//		    inRetireInstruction[i].set_unisim_name(this,"inRetireInstruction",i);
+		//		    inWriteBackInstruction[i].set_unisim_name(this,"inWriteBackInstruction",i);
+		//  }
 
-		for (i=0; i<WriteBackWidth; i++)
-		  {
-		    inWriteBackInstruction[i].set_unisim_name(this,"inWriteBackInstruction",i);
-		  }
+		//for (i=0; i<WriteBackWidth; i++)
+		//  {
+		inWriteBackInstruction.set_unisim_name(this,"inWriteBackInstruction");
+		//  }
 
-		for (i=0; i<RetireWidth; i++)
-		  {
-		    inRetireInstruction[i].set_unisim_name(this,"inRetireInstruction",i);
-		  }
+		//for (i=0; i<RetireWidth; i++)
+		//  {
+		inRetireInstruction.set_unisim_name(this,"inRetireInstruction");
+		//  }
 
 		sensitive_method(onFlushData) << inFlush.data;
-
+		
 		sensitive_method(onMEMData) << inIL1.data;
 		sensitive_method(onMEMAccept) << outIL1.accept;
 		
-		for(i = 0; i < Width; i++)
-		  {
-		    sensitive_method(onCPUAccept) << outInstruction[i].accept;
-		  }
-		for(i = 0; i < WriteBackWidth; i++)
-		  {
-		    sensitive_method(onCPUDataWriteBack) << inWriteBackInstruction[i].data;
-		  }
-		for(i = 0; i < RetireWidth; i++)
-		  {
-		    sensitive_method(onCPUDataRetire)<< inRetireInstruction[i].data;
-		  }
+		//for(i = 0; i < Width; i++)
+		//  {
+		sensitive_method(onCPUAccept) << outInstruction.accept;
+		//  }
+		//for(i = 0; i < WriteBackWidth; i++)
+		//  {
+		sensitive_method(onCPUDataWriteBack) << inWriteBackInstruction.data;
+		//  }
+		//for(i = 0; i < RetireWidth; i++)
+		//  {
+		sensitive_method(onCPUDataRetire)<< inRetireInstruction.data;
+		//  }
 
 		sensitive_pos_method(start_of_cycle) << inClock;
 		sensitive_neg_method(end_of_cycle) << inClock;
@@ -276,7 +288,19 @@ public:
 		//		state_init(&transient_emul_state);
 
 		/* statistics */
-		in_flight_branches = 0;
+
+		stat_in_flight_branches("in_flight_branches",this,0,nConfig);
+		stat_bht_accesses("bht_accesses",this,0,nConfig);
+		stat_bht_misses("bht_misses",this,0,nConfig);
+		stat_btb_accesses("btb_accesses",this,0,nConfig);
+		stat_btb_misses("btb_misses",this,0,nConfig);
+		stat_ras_accesses("ras_accesses",this,0,nConfig);
+		stat_ras_misses("ras_misses",this,0,nConfig);
+		stat_ras_capacity_misses("ras_capacity_misses",this,0,nConfig);
+		stat_instruction_queue_cumulative_occupacy("instruction_queue_cumulative_occupacy",this,0,nConfig);
+		stat_fetched_instructions("fetched_instructions",this,0,nConfig);
+		stat_splitted_instructions("splitted_instructions",this,0,nConfig);
+		/*
 		bht_accesses = 0;
 		bht_misses = 0;
 		btb_accesses = 0;
@@ -285,9 +309,11 @@ public:
 		ras_misses = 0;
 		ras_capacity_misses = 0;
 		instruction_queue_cumulative_occupancy = 0;
-		
+		*/
+		/*
 		fetched_instructions = 0;//flushed_instructions = 0;
 		splitted_instructions = 0;//flushed_instructions = 0;
+		*/
 		// ---  Registring statistics ----------------
 		/*
 		statistics.add("fetched_instructions",fetched_instructions);
@@ -305,9 +331,11 @@ public:
 		stall_counter = 0;
 
 		// --- Latex rendering hints -----------------
+		/*
 		latex_left_ports.push_back(&inIL1);
 		latex_left_ports.push_back(&outIL1);
 
+		
 		for(int i=0;i<Width-1;i++)
 		{ 
 		  outInstruction[i].set_fused();
@@ -327,13 +355,19 @@ public:
 		latex_top_ports.push_back(&inRetireInstruction[RetireWidth-1]);
 
 		latex_top_ports.push_back(&inFlush);
+		*/
 		//		latex_bottom_ports.push_back(&outFlush);
 	}
 
 
   void onFlushData()
   {
-    inFlush.accept = inFlush.data.something();
+    for (int cfg=0; cfg< nConfig; cfg++)
+      {
+	//inFlush.accept = inFlush.data.something();
+	inFlush.accept[cfg] = inFlush.data[cfg].something();
+      }
+    inFlush.accept.send();
     /*
       #ifdef DD_DEBUG_FETCH_VERB2
       if ( inFlush.data.something() )
@@ -371,77 +405,93 @@ public:
   */
         void onCPUDataWriteBack()
         { 
-	  bool areallknown(true);
-	  int i;
-	  for (i=0;i<WriteBackWidth;i++)
+	  //bool areallknown(true);
+	  //int i;
+	  //for (i=0;i<WriteBackWidth;i++)
+	  //  {
+	  //areallknown &= inWriteBackInstruction[i].data.known();
+	  //  }
+	  //if (areallknown)
+	  //  {
+	  for (int cfg=0; cfg<nConfig; cfg++)
 	    {
-	      areallknown &= inWriteBackInstruction[i].data.known();
-	    }
-	  if (areallknown)
-	    {
-	      for (i=0;i<WriteBackWidth;i++)
+	      for (int i=0;i<WriteBackWidth;i++)
 		{
-		  inWriteBackInstruction[i].accept = inWriteBackInstruction[i].data.something();
+		  inWriteBackInstruction.accept[nConfig*cfg+i] = inWriteBackInstruction.data[nConfig*cfg+i].something();
 		}
-	    }	  
+	    }
+	  inWriteBackInstruction.accept.send();
+	  //}
 	}
         void onCPUDataRetire()
         { 
-	  bool areallknown(true);
-	  int i;
-	  for (i=0;i<RetireWidth;i++)
-	    {
-	      areallknown &= inRetireInstruction[i].data.known();
-	    }
-	  if (areallknown)
+	  //  bool areallknown(true);
+	  //  int i;
+	  //  for (i=0;i<RetireWidth;i++)
+	  //   {
+	  //    areallknown &= inRetireInstruction[i].data.known();
+	  //  }
+	  //if (areallknown)
+	  //  {
+	  for (int cfg=0; cfg<nConfig; cfg++)
 	    {
 	      for (i=0;i<RetireWidth;i++)
 		{
-		  inRetireInstruction[i].accept = inRetireInstruction[i].data.something();
+		  inRetireInstruction.accept[nConfig*cfg+i] = inRetireInstruction.data[nConfig*cfg+i].something();
 		}
-	    }	  
+	    }
+	  inRetireInstruction.data.send();
+	  //  }
 	}
 	/** A SystemC process managing the valid, accept and enable hand-shaking */
 	//	void ExternalControl()
 	void onMEMAccept()
 	{
-	  outIL1.enable = outIL1.accept;
+	  for (int cfg=0; cfg< nConfig; cfg++)
+	    {
+	      outIL1.enable[cfg] = outIL1.accept[cfg];
+	    }
 	  //	  pending_instr_cache_requests++;
 	  //	  pending_instr_cache_access_size += accessSize;
 	}
 	void onMEMData()
 	{
-	  inIL1.accept = inIL1.data.something();
+	  for (int cfg=0; cfg< nConfig; cfg++)
+	    {
+	      inIL1.accept[cfg] = inIL1.data[cfg].something();
 #ifdef DD_DEBUG_FETCH_VERB2
 	  /// Mourad Modifs
 	  /////////////////
-
-	  if (DD_DEBUG_TIMESTAMP < timestamp())
- {	
-   if (inIL1.data.something())
-     {
-       cerr << "[FETCH] ==== We are accepting Data == ("<< inIL1.data <<") ======== ["<< timestamp()<<"]"<< endl;
-     }
- }
+	      if (DD_DEBUG_TIMESTAMP < timestamp())
+	      {	
+		if (inIL1.data[cfg].something())
+		{
+		  cerr << "[FETCH] ==== We are accepting Data == ("<< inIL1.data[cfg] <<") ======== ["<< timestamp()<<"]"<< endl;
+		}
+	      }
 #endif
+	    }
 	}
 	void onCPUAccept()
 	{
-	  bool areallknown(true);
-	  int i;
-	  for (i=0;i<Width;i++)
+	  //bool areallknown(true);
+	  //int i;
+	  //for (i=0;i<Width;i++)
+	  //  {
+	  //    areallknown &= outInstruction[i].accept.known();
+	  //& inRetireInstruction[i].data.known();
+	  //  }
+	  //if (areallknown)
+	  //  {
+	  /* Enable each accepted instructions */
+	  for (int cfg=0; cfg<nConfig; cfg++)
 	    {
-	      areallknown &= outInstruction[i].accept.known();
-		//& inRetireInstruction[i].data.known();
-	    }
-	  if (areallknown)
-	    {
-	      /* Enable each accepted instructions */
 	      for(i = 0; i < Width; i++)
 		{
-		  outInstruction[i].enable = outInstruction[i].accept;
+		  outInstruction.enable[nConfig*cfg+i] = outInstruction[nConfig*cfg+i].accept;
 		}
 	    }
+	  //  }
 	}
 
 	/** Computes the instruction cache access size
@@ -880,47 +930,42 @@ public:
 	//	void InternalControl()
         void end_of_cycle()
 	{
-		int i;
+	  for (int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    int i;
 
-		//#ifdef DD_DEBUG_FETCH_VERB1
+	    //#ifdef DD_DEBUG_FETCH_VERB1
 #ifdef DD_DEBUG_TEST_MOURAD
-	  if (DD_DEBUG_TIMESTAMP < timestamp())
+	    if (DD_DEBUG_TIMESTAMP < timestamp())
 	    {
-		  cerr << "===== DEBUG Fetcher (Begin) =====================" << "(" << timestamp() << ")" << endl;
-		  //  cerr << "   Instruction Queue Size : " << instructionQueue.Size() << endl;
-		  cerr << "   Instruction Queue  : " << endl;
-		  cerr << instructionQueue << endl;
-		  cerr << "===== DEBUG Fetcher (End) =======================" << "(" << timestamp() << ")" << endl;
+	      cerr << "===== DEBUG Fetcher (Begin) =====================" << "(" << timestamp() << ")" << endl;
+	      //  cerr << "   Instruction Queue Size : " << instructionQueue.Size() << endl;
+	      cerr << "   Instruction Queue  : " << endl;
+	      cerr << instructionQueue << endl;
+	      cerr << "===== DEBUG Fetcher (End) =======================" << "(" << timestamp() << ")" << endl;
 	    }
 #endif
-		instruction_queue_cumulative_occupancy += instructionQueue.Size();
-
-		/* return as soon as possible */
-		//		if(!inAccept[0] && !inL1Accept && !inL1Enable && !inRetireEnable[0] && !inWriteBackEnable[0] && !inFlush && !changed) return;
-		//		if(!inAccept[0] && !inL1Accept && !inL1Enable && !inRetireEnable[0] && !inWriteBackEnable[0] && !inFlush && !changed) return;
-
-		//changed = false;
+	        instruction_queue_cumulative_occupancy[i] += instructionQueue.Size();
 
 		/* Remove accepted instructions from the instruction queue */
 		for(i = 0; i < Width; i++)
 		{
-		  //DD			if(!inAccept[i] || instructionQueue.Empty()) break;
-			if(!outInstruction[i].accept || instructionQueue.Empty()) break;
-			instructionQueue.RemoveHead();
-			//			changed = true;
+		  //if(!outInstruction[i].accept || instructionQueue.Empty()) break;
+		  if(!outInstruction.accept[nConfig*cfg+i] || instructionQueue[cfg].Empty()) break;
+		  instructionQueue[cfg].RemoveHead();
 		}
 
 		/* If instruction cache accepted a request */
 		//DD		if(inL1Accept && waiting_instr_cache_accept)
 		//		if(outIL1.accept && waiting_instr_cache_accept)
-		if(outIL1.accept)
+		if(outIL1.accept[cfg])
 		{
 			/* increment the current instruction address of the sequential fetcher */
-			seq_cia += accessSize;
+			seq_cia[cfg] += accessSize[cfg];
 			//			waiting_instr_cache_accept = false;
 			//			changed = true;
-			pending_instr_cache_requests++;
-			pending_instr_cache_access_size += accessSize;
+			pending_instr_cache_requests[cfg]++;
+			pending_instr_cache_access_size[cfg] += accessSize[cfg];
 		}
 		
 		/* Update the branch predictors according to the retired branches */
@@ -930,18 +975,11 @@ public:
 		{
 			/* Is there a retired instruction ? */
 		  //DD			if(!inRetireEnable[i]) break;
-			if(!inRetireInstruction[i].enable) break;
-
-			/*
-			  #ifdef DD_DEBUG_FETCH_VERB2
-			  cerr << "[FETCH] ==== We are after the Break; (EOF) ========== ["<< timestamp()<<"]"<< endl;
-			  #endif
-			*/
-			//			changed = true;
+			if(!inRetireInstruction.enable[nConfig*cfg+i]) break;
 
 			/* Get the retired instruction */
 			//DD			const InstructionPtr<T, nSources>& instruction = inRetireInstruction[i];
-		        InstructionPtr instruction = inRetireInstruction[i].data;
+		        InstructionPtr instruction = inRetireInstruction.data[nConfig*cfg+i];
 			/*
 			  #ifdef DD_DEBUG_FETCH_VERB2
 			  cerr << "[FETCH] ["<< timestamp()<<"]  /// " << instruction << endl;
@@ -988,14 +1026,14 @@ public:
 				{
 				  /* It is a Mispredicted branch */
 				  /* Do a rollback on the return address stack */
-				  RAS.Rollback();
+				  RAS[cfg].Rollback();
 
 				  // If it's a conditional branch then Update BHT...
 				  if ( instruction->operation->branch_conditioned() )
 				    {
 				      /* Update the branch history table */
-				      bht_misses++;
-				      BHT.Update(instruction->cia, instruction->branch_direction);
+				      bht_misses[cfg]++;
+				      BHT[cfg].Update(instruction->cia, instruction->branch_direction);
 				    }
 				  
 				  // If it's a indirect branch (Link or Count)...
@@ -1007,10 +1045,10 @@ public:
 					   )
 					{
 					  /* Update the branch target buffer */
-					  btb_misses++;
-					  BTB.Update(instruction->cia, instruction->nia);
-					  btb_miss = false;
-					  cia = seq_cia = nia = instruction->nia;
+					  btb_misses[cfg]++;
+					  BTB[cfg].Update(instruction->cia, instruction->nia);
+					  btb_miss[cfg] = false;
+					  cia[cfg] = seq_cia[cfg] = nia[cfg] = instruction->nia;
 					}
 				      
 				      // If it's conditional and taken or unconditional then Update BTB
@@ -1021,13 +1059,13 @@ public:
 					  /* Update the branch target buffer */
 					  // If we predict an incorrect address it's a btb_miss too...
 					  // Thus increment btb_miss counter !!!
-					  btb_misses++;
-					  BTB.Update(instruction->cia, instruction->nia);
-					  cia = seq_cia = nia = instruction->nia;
+					  btb_misses[cfg]++;
+					  BTB[cfg].Update(instruction->cia, instruction->nia);
+					  cia[cfg] = seq_cia[cfg] = nia[cfg] = instruction->nia;
 					}
 
 				    }
-				  nia = instruction->nia;/* nia is used by flush to redirect fetch on the correct path */
+				  nia[cfg] = instruction->nia;/* nia is used by flush to redirect fetch on the correct path */
 				} // End of if NIA != PREDICTED_NIA 
 			      else
 				{
@@ -1076,7 +1114,7 @@ public:
 				  // If branch is a call or a return...
 				  // then if is conditioned, taken and well predicted
 				  // OR if is not conditioned and well predicted taken of course... 
-				  RAS.Retire();
+				  RAS[cfg].Retire();
 				}
 			      
 			      if( ( (instruction->nia != instruction->predicted_nia) &&
@@ -1089,8 +1127,8 @@ public:
 				  //				  RAS.Retire();
 				  // RAS.Pop();
 				  address_t addr;
-				  RAS.Pop(addr);
-				  ras_misses++;
+				  RAS[cfg].Pop(addr);
+				  ras_misses[cfg]++;
 				}
 			      
 			      if( ( (instruction->nia != instruction->predicted_nia) &&
@@ -1101,7 +1139,7 @@ public:
 				{ // if instruction is conditioned and well predicted
 				  // or instruction is not conditioned 
 				  //				  RAS.Retire();
-				  RAS.Push(instruction->cia + InstructionSize, instruction);
+				  RAS[cfg].Push(instruction->cia + InstructionSize, instruction);
 				}
 			      
 			      // In all case : if it's a "return" branch... pop RAS
@@ -1139,7 +1177,7 @@ public:
 				      cia = seq_cia = nia = instruction.nia;
 				}
 			      */
-			      in_flight_branches--;
+			      in_flight_branches[cfg]--;
 
 			    }//end of If ("It's a branch")
 			}//end of else
@@ -1152,9 +1190,9 @@ public:
 		/* Fill in the instruction queue */
 		/* Do we have an enable from the instruction cache ? */
 		//		if(inL1Enable && pending_instr_cache_requests > 0)
-		if(inIL1.enable)
+		if(inIL1.enable[cfg])
 		{
-		  if ( !(pending_instr_cache_requests > 0) )
+		  if ( !(pending_instr_cache_requests[cfg] > 0) )
 			  {
 			    cerr << " [DD BUG] Pending instruction cache request must be >0 !!!!" << endl;
 			    exit(-1);
@@ -1163,7 +1201,7 @@ public:
 			//			int accessSize = inL1Size;
 			//		        int accessSize = inIL1.data.size;
 
-			memreq < InstructionPtr, nCPUDataPathSize > tmpmemreq = inIL1.data;
+			memreq < InstructionPtr, nCPUDataPathSize > tmpmemreq = inIL1.data[cfg];
 			int accessSize = tmpmemreq.size;
 
 			pending_instr_cache_requests--;
@@ -1206,7 +1244,7 @@ public:
 				{
 					/* Allocate an instruction queue entry */
 					//DD//InstructionQueueEntry<T, nSources> *entry = instructionQueue.New();
-				  InstructionQueueEntry *entry = instructionQueue.New();
+				  InstructionQueueEntry *entry = instructionQueue[cfg].New();
 					//QueuePointer<InstructionQueueEntry, InstructionQueueSize > entry;
 				  //					entry = instructionQueue.New();
 
@@ -1245,9 +1283,9 @@ public:
 					else 
 					  cerr << " BUG no emulator !!!" << endl;
 					*/
-					entry->instruction->cia = cia;//emulator->GetCIA();
+					entry->instruction->cia = cia[cfg];//emulator->GetCIA();
 					entry->instruction->operation = 0;
-					entry->instruction->inum = inum++;
+					entry->instruction->inum = inum[cfg]++;
 					entry->predecoded = false;
 					vector.Read(entry->instruction->binary, offset, endianess);
 #ifdef DD_DEBUG_FETCH_VERB2
@@ -1285,14 +1323,14 @@ public:
 		  }
 		*/
 		//		for(entry = instructionQueue.SeekAtHead(); entry && !syscall_in_pipeline; entry++)
-		entry = instructionQueue.SeekAtHead();// entry && !syscall_in_pipeline; entry++)
-		while (entry && !syscall_in_pipeline)
+		entry = instructionQueue[cfg].SeekAtHead();// entry && !syscall_in_pipeline; entry++)
+		while (entry && !syscall_in_pipeline[cfg])
 		{
 		  //		  cerr << " ----->    BUG : \t QueueSize = " << instructionQueue.Size() << endl;
 			/* Was instruction predecoded ? */
 			if(!entry->predecoded)
 			{
-			  fetched_instructions++;
+			  fetched_instructions[cfg]++;
 			  //				changed = true;
 				/* Decode the instruction */
 				Decode(&(entry->instruction));
@@ -1302,13 +1340,13 @@ public:
 #endif				
 				if (entry->instruction->operation->is_splitted())
 				  {
-				    splitted_instructions++;
-				    if (!(instructionQueue.FreeSpace()>0))
+				    splitted_instructions[cfg]++;
+				    if (!(instructionQueue[cfg].FreeSpace()>0))
 				    //  if (!instructionQueue.Full())
 				      {
 					cerr << "INSTRUCTION SPLITTING: No FreeSpace!!!!!!!!!!!" << endl;
 					cerr << "Inst : " << (entry->instruction) << endl;
-					cerr << " FreeSpace = " << instructionQueue.FreeSpace() << endl;
+					cerr << " FreeSpace = " << instructionQueue[cfg].FreeSpace() << endl;
 					exit(-1);
 
 				      }
@@ -1318,14 +1356,14 @@ public:
 					cerr << "Splitted instruction: "<< (entry->instruction) << endl;
 					cerr << "INSTRUCTION WILL BE SPLITTED !!!!!!!!!!!" << endl;
 					//	cerr << "Inst : " << *(entry->instruction) << endl;
-					cerr << instructionQueue << endl;
+					cerr << instructionQueue[cfg] << endl;
 #endif
 					QueuePointer<InstructionQueueEntry, InstructionQueueSize > new_entry;
 					QueuePointer<InstructionQueueEntry, InstructionQueueSize > old_entry;
 					//InstructionQueueEntry *new_entry; 
 					//InstructionQueueEntry *old_entry; 
 					//new_entry = instructionQueue.New();
-					instructionQueue.New();
+					instructionQueue[cfg].New();
 					new_entry = QueuePointer<InstructionQueueEntry,InstructionQueueSize>(&instructionQueue,instructionQueue.GetIndex(0));
 					//	new_entry = new InstructionQueueEntry();
 					if (!new_entry)
@@ -1353,7 +1391,7 @@ public:
 #ifdef DD_DEBUG_SPLITTING
 					cerr << "INSTRUCTION WILL BE SPLITTED 2 !!!!!!!!!!!" << endl;
 					//	cerr << "Inst : " << *(entry->instruction) << endl;
-					cerr << instructionQueue << endl;
+					cerr << instructionQueue[cfg] << endl;
 #endif
 					//					inum;
 					//new_entry = entry;
@@ -1393,7 +1431,7 @@ public:
 #ifdef DD_DEBUG_SPLITTING
 					    cerr << "INSTRUCTION WILL BE SPLITTED 3 !!!!!!!!!!!" << endl;
 					    //	cerr << "Inst : " << *(entry->instruction) << endl;
-					    cerr << instructionQueue << endl;
+					    cerr << instructionQueue[cfg] << endl;
 #endif
 					  }
 					//delete newsplitted_instruction;
@@ -1404,7 +1442,7 @@ public:
 #ifdef DD_DEBUG_SPLITTING
 					cerr << "INSTRUCTION HAS BEEN SPLITTED !!!!!!!!!!!" << endl;
 					//	cerr << "Inst : " << *(entry->instruction) << endl;
-					cerr << instructionQueue << endl;
+					cerr << instructionQueue[cfg] << endl;
 #endif
 				      }
 				    /*
@@ -1454,9 +1492,9 @@ public:
 					if(entry->instruction->operation->branch_conditioned())
 					{
 						/* Get the branch direction from the branch history table */
-						entry->instruction->predicted_branch_direction = BHT.Read(entry->instruction->cia);
+						entry->instruction->predicted_branch_direction = BHT[cfg].Read(entry->instruction->cia);
 // 						entry->instruction->obq_tag = BHT.AllocateBranch();
-						bht_accesses++;
+						bht_accesses[cfg]++;
 					}
 					else
 					{
@@ -1515,9 +1553,9 @@ public:
 						//transient_emul_state.cia = entry->instruction->cia;
 						//transient_emul_state.nia = transient_emul_state.cia + InstructionSize;
 						/* Call the emulator */
-					  emulator->SetCIA(entry->instruction->cia);
-					  emulator->SetNIA(entry->instruction->cia+InstructionSize);
-					  entry->instruction->operation->execute(emulator);//, &transient_emul_state, NULL /* no memory */);
+					  emulator[cfg]->SetCIA(entry->instruction->cia);
+					  emulator[cfg]->SetNIA(entry->instruction->cia+InstructionSize);
+					  entry->instruction->operation->execute(emulator[cfg]);//, &transient_emul_state, NULL /* no memory */);
 					  
 						//entry->instruction->operation->execute(entry->instruction->operation, &transient_emul_state, NULL /* no memory */);
 					  if(entry->instruction->predicted_branch_direction == Taken) //;
@@ -1546,24 +1584,24 @@ public:
 						{
 							// Taken
 							// Get the target address from the Return Address Stack
-							ras_accesses++;
-							if(!RAS.SafePop(entry->instruction->predicted_nia))
+							ras_accesses[cfg]++;
+							if(!RAS[cfg].SafePop(entry->instruction->predicted_nia))
 							{
 								entry->instruction->nia = 0;
 								entry->instruction->ras_miss = true;
-								ras_misses++;
+								ras_misses[cfg]++;
 							}
 						}
 					      else if ( !entry->instruction->operation->branch_conditioned() )
 						{
 							// Taken
 							// Get the target address from the Return Address Stack
-							ras_accesses++;
-							if(!RAS.SafePop(entry->instruction->predicted_nia))
+							ras_accesses[cfg]++;
+							if(!RAS[cfg].SafePop(entry->instruction->predicted_nia))
 							{
 								entry->instruction->nia = 0;
 								entry->instruction->ras_miss = true;
-								ras_misses++;
+								ras_misses[cfg]++;
 							}
 						  
 						}
@@ -1589,10 +1627,10 @@ public:
 						{
 						  /* Taken */
 						  /* Get the target address from the Branch Target Buffer */
-						  btb_accesses++;
-						  if(!BTB.Read(entry->instruction->cia, entry->instruction->predicted_nia))
+						  btb_accesses[cfg]++;
+						  if(!BTB[cfg].Read(entry->instruction->cia, entry->instruction->predicted_nia))
 						    {
-						      btb_misses++;
+						      btb_misses[cfg]++;
 						      entry->instruction->predicted_nia = 0;
 						      entry->instruction->btb_miss = true;
 						    }
@@ -1602,10 +1640,10 @@ public:
 						{
 						  /* Taken */
 						  /* Get the target address from the Branch Target Buffer */
-						  btb_accesses++;
-						  if(!BTB.Read(entry->instruction->cia, entry->instruction->predicted_nia))
+						  btb_accesses[cfg]++;
+						  if(!BTB[cfg].Read(entry->instruction->cia, entry->instruction->predicted_nia))
 						    {
-						      btb_misses++;
+						      btb_misses[cfg]++;
 						      entry->instruction->predicted_nia = 0;
 						      entry->instruction->btb_miss = true;
 						    }
@@ -1632,7 +1670,7 @@ public:
 							{
 								/* Push on the return address stack the return address */
 							  //								RAS.SafePush(entry->instruction->cia + InstructionSize, entry->instruction);
-								RAS.SafePush(entry->instruction->cia + InstructionSize, entry->instruction);
+								RAS[cfg].SafePush(entry->instruction->cia + InstructionSize, entry->instruction);
 							}
 						}
 					}
@@ -1645,12 +1683,12 @@ public:
 						instructionQueue.FlushAfter(entry);
 
 						/* Correct the path */
-						cia = entry->instruction->predicted_nia;
-						seq_cia = cia;
+						cia[cfg] = entry->instruction->predicted_nia;
+						seq_cia[cfg] = cia[cfg];
 						//if(waiting_instr_cache_accept) pending_instr_cache_requests--;
 						//waiting_instr_cache_accept = false;
-						ignore_instr_cache_responses = pending_instr_cache_requests;
-						pending_instr_cache_access_size = 0;
+						ignore_instr_cache_responses[cfg] = pending_instr_cache_requests[cfg];
+						pending_instr_cache_access_size[cfg] = 0;
 
 #ifdef DD_DEBUG_FETCH_VERB2
 						cerr << "[FETCH] ==== Correct fetcher on Speculative path ======== ["<< timestamp()<<"]"<< endl;
@@ -1671,13 +1709,13 @@ public:
 					  cerr << " WE ARE SETTING BTB_MISS to TRUE !!!" << endl;
 #endif						  
 					  
-							btb_miss = true;
+							btb_miss[cfg] = true;
 						}
 					   //DD//if((entry->instruction->operation->function & FnReturnBranch) && entry->instruction->ras_miss)
 						if((entry->instruction->operation->function & FnBranchLinkReg)
 						   && entry->instruction->ras_miss)
 						{
-							ras_miss = true;
+							ras_miss[cfg] = true;
 						}
 					}
 					else
@@ -1714,13 +1752,13 @@ public:
 				/* If instruction is a SysCall */
 			        if( entry->instruction->operation->function == FnSysCall )
 				  { 
-				    syscall_in_pipeline = true;
+				    syscall_in_pipeline[cfg] = true;
 				    /* Flush the instruction after the branch */
 				    instructionQueue.FlushAfter(entry);
 
 				    /* Correct the path */
-				    cia = entry->instruction->nia;
-				    seq_cia = cia;
+				    cia[cfg] = entry->instruction->nia;
+				    seq_cia[cfg] = cia[cfg];
 				  }
 				
 			}// end of if (!predecoded) ...
@@ -1732,9 +1770,9 @@ public:
 
 		/* Flush ? */
 		//		if(inFlush.data)
-		if (inFlush.enable && inFlush.data.something())
+		if (inFlush.enable[cfg] && inFlush.data[cfg].something())
 		{
-		  if (inFlush.enable && inFlush.data)
+		  if (inFlush.enable[cfg] && inFlush.data[cfg])
 		  {
 		  
 #ifdef DD_DEBUG_FLUSH
@@ -1742,17 +1780,17 @@ public:
 #endif
 		  //			changed = true;
 			/* Flush the instruction queue */
-			instructionQueue.Flush();
+			instructionQueue[cfg].Flush();
 
 			//if(waiting_instr_cache_accept) pending_instr_cache_requests--;
-			ignore_instr_cache_responses = pending_instr_cache_requests;
+			ignore_instr_cache_responses[cfg] = pending_instr_cache_requests[cfg];
 			//waiting_instr_cache_accept = false;
-			pending_instr_cache_access_size = 0;
-			btb_miss = false;
-			ras_miss = false;
-			in_flight_branches = 0;
+			pending_instr_cache_access_size[cfg] = 0;
+			btb_miss[cfg] = false;
+			ras_miss[cfg] = false;
+			in_flight_branches[cfg] = 0;
 
-			syscall_in_pipeline = false;
+			syscall_in_pipeline[cfg] = false;
 
 #ifdef DD_DEBUG_FETCH_VERB2
 			if (DD_DEBUG_TIMESTAMP < timestamp())
@@ -1772,11 +1810,11 @@ public:
 			}
 			*/
 
-			RAS.FlushRollbackBuffer();
+			RAS[cfg].FlushRollbackBuffer();
 // 			BHT.Flush();
 
 			/* Continue fetch on the correct path */
-			seq_cia = cia = nia;
+			seq_cia[cfg] = cia[cfg] = nia[cfg];
 #ifdef DD_DEBUG_FETCH_VERB2
  if (DD_DEBUG_TIMESTAMP < timestamp())
 			    {
@@ -1789,7 +1827,7 @@ public:
 		  }
 		}
 		// Keep coherent CIA with emulator ...
-		emulator->SetCIA(cia);
+		emulator[cfg]->SetCIA(cia[cfg]);
 #ifdef DD_DEBUG_FETCH_VERB2
  if (DD_DEBUG_TIMESTAMP < timestamp())
 			    {
@@ -1800,7 +1838,7 @@ public:
 #ifdef DD_DEBUG_FETCH_VERB3
  if (DD_DEBUG_TIMESTAMP < timestamp())
 			    {
-		cerr << "["<<this->name()<<"("<<timestamp()<<")] instruction queue at EOC: " << instructionQueue << endl;
+		cerr << "["<<this->name()<<"("<<timestamp()<<")] instruction queue at EOC: " << instructionQueue[cfg] << endl;
 			    }
 #endif
 
@@ -1812,15 +1850,20 @@ public:
 		cerr << this << endl;
 			    }
 #endif
-			    } /* End of ENDOF_CYCLE */
+
+	  } // End of For each Config.
+	  } /* End of ENDOF_CYCLE */
 
 	void start_of_cycle()
 	{
+	  for (int cfg=0; cfg<nConfig; cfg++)
+	  {
+	  
 	  // Mourad modifs 
 #ifdef DD_DEBUG_FETCH_VERB3
 	  if (DD_DEBUG_TIMESTAMP < timestamp())
 	    {
-	  cerr << "["<<this->name()<<"("<<timestamp()<<")] instruction queue at SOC: " << instructionQueue << endl;
+	  cerr << "["<<this->name()<<"("<<timestamp()<<")] instruction queue at SOC: " << instructionQueue[cfg] << endl;
 	    }
 #endif
 
@@ -1828,15 +1871,15 @@ public:
 	  //		if(!waiting_instr_cache_accept)
 	  //	{
 			/* Do not continue fetch if there is a BTB miss or a RAS miss */
-	  if(!btb_miss && !ras_miss && !syscall_in_pipeline)
+	  if(!btb_miss[cfg] && !ras_miss[cfg] && !syscall_in_pipeline[cfg])
 	    {
 	      /* Do not continue if we already reach the maximum number of pending instruction cache requests */
-	      if(pending_instr_cache_requests < MaxPendingRequests)
+	      if(pending_instr_cache_requests[cfg] < MaxPendingRequests[cfg])
 		{
 		  /* Get the size of the instruction cache access */
-		  accessSize = GetMaximumAccessSize(seq_cia);
+		  accessSize[cfg] = GetMaximumAccessSize(seq_cia[cfg]);
 		  
-		  if(accessSize > 0)
+		  if(accessSize[cfg] > 0)
 		    {
 		      /* Do a request to the instruction cache */
 		      memreq < InstructionPtr, nCPUDataPathSize > tmp_memreq;
@@ -1850,7 +1893,7 @@ public:
 		      tmp_memreq.sender = this;
 		      tmp_memreq.req_sender = this;
 		      
-		      outIL1.data = tmp_memreq;
+		      outIL1.data[cfg] = tmp_memreq;
 		      //Mourad modifs 
 #ifdef DD_DEBUG_FETCH_VERB2
 		      if (DD_DEBUG_TIMESTAMP < timestamp()) 
@@ -1871,7 +1914,7 @@ public:
 #endif
 		      /* No request */
 		      //outL1Valid = false;
-		      outIL1.data.nothing();
+		      outIL1.data[cfg].nothing();
 		    }
 		}
 	      else
@@ -1885,7 +1928,7 @@ public:
 #endif
 		  /* No request */
 		  //outL1Valid = false;
-		  outIL1.data.nothing();
+		  outIL1.data[cfg].nothing();
 		}
 	    }
 	  else
@@ -1900,9 +1943,8 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 #endif
 	      /* No request */
 	      //outL1Valid = false;
-	      outIL1.data.nothing();
+	      outIL1.data[cfg].nothing();
 	    }
-
 	  
 	  int i;
 	  //InstructionQueueEntry *entry;
@@ -1911,7 +1953,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	  /* Do a request to the allocator/renamer for each instructions */
 	  for(i = 0, entry = instructionQueue.SeekAtHead(); entry && entry->predecoded && i < Width; entry++, i++)
 	    {
-	      outInstruction[i].data = entry->instruction;
+	      outInstruction.data[nConfig*cfg+i] = entry->instruction;
 	      //Mourad modifs
 #ifdef DD_DEBUG_FETCH_VERB3
 	      if (DD_DEBUG_TIMESTAMP < timestamp())
@@ -1924,7 +1966,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	  for(; i < Width; i++)
 	    {
 	      //			outValid[i] = false;
-	      outInstruction[i].data.nothing();
+	      outInstruction.data[nConfig*cfg+i].nothing();
 #ifdef DD_DEBUG_FETCH_VERB3
 	      if (DD_DEBUG_TIMESTAMP < timestamp())
 		{
@@ -1932,17 +1974,24 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 		}
 #endif
 	    }
-	  if (previous_cia == seq_cia) { stall_counter++; } else { stall_counter=0; }
+	  if (previous_cia[cfg] == seq_cia[cfg]) { stall_counter++; } else { stall_counter=0; }
 	  if (stall_counter > 10000) { cerr << "Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
-	  previous_cia = seq_cia;
+	  previous_cia[cfg] = seq_cia[cfg];
+
+	  } // End of foreach Config
+
+	  // We have to explicitly send signals when we are using array signals.
+	  outIL1.data.send();
+	  outInstruction.data.send();
+
  	} // End of "Start of Cycle"
 
 
   
-	void WriteCIA(address_t pc)
+	void WriteCIA(address_t pc, uint32_t cfg)
 	{
-		cia = pc;
-		seq_cia = pc;
+		cia[cfg] = pc;
+		seq_cia[cfg] = pc;
 	}
 
 	friend ostream& operator << (ostream& os, const Fetcher& fetcher)
@@ -1991,62 +2040,62 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	void WarmRestart()
 	{
 		/* Flush the instruction queue */
-		instructionQueue.Reset();
+		instructionQueue[cfg].Reset();
 
 		//		waiting_instr_cache_accept = false;
-		pending_instr_cache_requests = 0;
-		ignore_instr_cache_responses = 0;
-		pending_instr_cache_access_size = 0;
-		btb_miss = false;
-		ras_miss = false;
-		RAS.ResetRollbackBuffer();
-		in_flight_branches = 0;
+		pending_instr_cache_requests[cfg] = 0;
+		ignore_instr_cache_responses[cfg] = 0;
+		pending_instr_cache_access_size[cfg] = 0;
+		btb_miss[cfg] = false;
+		ras_miss[cfg] = false;
+		RAS[cfg].ResetRollbackBuffer();
+		in_flight_branches[cfg] = 0;
 		//		changed = true;
-		accessSize = 0;
-		inum = 0;
+		accessSize[cfg] = 0;
+		inum[cfg] = 0;
 		//		state_init(&transient_emul_state);
 	}
 	
 	void ResetStats()
 	{
-		bht_accesses = 0;
-		bht_misses = 0;
-		btb_accesses = 0;
-		btb_misses = 0;
-		ras_accesses = 0;
-		ras_misses = 0;
-		ras_capacity_misses = 0;
-		instruction_queue_cumulative_occupancy = 0;
+		bht_accesses[cfg] = 0;
+		bht_misses[cfg] = 0;
+		btb_accesses[cfg] = 0;
+		btb_misses[cfg] = 0;
+		ras_accesses[cfg] = 0;
+		ras_misses[cfg] = 0;
+		ras_capacity_misses[cfg] = 0;
+		instruction_queue_cumulative_occupancy[cfg] = 0;
 	}
   
   void Reset()
   {
-    cia = emulator->GetCIA();
+    cia[cfg] = emulator[cfg]->GetCIA();
   }
 
 private:
   //	bool waiting_instr_cache_accept;		/*< true if fetch is waiting for an instruction cache accept */
-	int pending_instr_cache_requests;		/*< number of pending instruction cache requests */
-	int pending_instr_cache_access_size;	/*< total size (in bytes) of the pending instruction cache requests */
-	int ignore_instr_cache_responses;		/*< number of instruction cache response to ignore (used for flush requests) */
-	address_t previous_cia;							/*< current instruction address */
-	address_t cia;							/*< current instruction address */
-	address_t nia;							/*< nia instruction address */
-	address_t seq_cia;						/*< sequential current instruction address (for sequential fetching) */
-	int accessSize;							/*< instruction cache access size */
+	int pending_instr_cache_requests[nConfig];		/*< number of pending instruction cache requests */
+	int pending_instr_cache_access_size[nConfig];	/*< total size (in bytes) of the pending instruction cache requests */
+	int ignore_instr_cache_responses[nConfig];		/*< number of instruction cache response to ignore (used for flush requests) */
+	address_t previous_cia[nConfig];							/*< current instruction address */
+	address_t cia[nConfig];							/*< current instruction address */
+	address_t nia[nConfig];							/*< nia instruction address */
+	address_t seq_cia[nConfig];						/*< sequential current instruction address (for sequential fetching) */
+	int accessSize[nConfig];							/*< instruction cache access size */
   //DD//	Queue<InstructionQueueEntry<T, nSources>, InstructionQueueSize> instructionQueue;	/* Instruction queue */
-	Queue<InstructionQueueEntry, InstructionQueueSize> instructionQueue;	/* Instruction queue */
-	endianess_t endianess;					/*< either little_endian or big_endian */
-	uint64_t inum;							/*< instruction number */
+	Queue<InstructionQueueEntry, InstructionQueueSize> instructionQueue[nConfig];	/* Instruction queue */
+	endianess_t endianess[nConfig];					/*< either little_endian or big_endian */
+	uint64_t inum[nConfig];							/*< instruction number */
 	//DD	Emulator *emulator;						/*< pointer to the emulator wrapper */
-	CPUSim *emulator;						/*< pointer to the emulator wrapper */
-	bool btb_miss;							/*< true if a BTB miss occured, used to stop fetching until branch resolution */
-	bool ras_miss;							/*< true if a RAS miss occured, used to stop fetching until branch resolution */
-	int in_flight_branches;
-	BranchHistoryTable<BHT_Size, BHT_nBits, BHT_nHistorySize, InstructionSize, MaxBranches> BHT;	/*< The branch history table */
-	BranchTargetBuffer<BTB_Size, BTB_Associativity, InstructionSize> BTB;				/*< The branch target buffer */
+	CPUSim *emulator[nConfig];						/*< pointer to the emulator wrapper */
+	bool btb_miss[nConfig];							/*< true if a BTB miss occured, used to stop fetching until branch resolution */
+	bool ras_miss[nConfig];							/*< true if a RAS miss occured, used to stop fetching until branch resolution */
+	int in_flight_branches[nConfig];
+	BranchHistoryTable<BHT_Size, BHT_nBits, BHT_nHistorySize, InstructionSize, MaxBranches> BHT[nConfig];	/*< The branch history table */
+	BranchTargetBuffer<BTB_Size, BTB_Associativity, InstructionSize> BTB[nConfig];				/*< The branch target buffer */
 	//DD	ReturnAddressStack<T, nSources, RAS_Size, MaxBranches> RAS;			/*< The return address stack */
-	ReturnAddressStack<RAS_Size, MaxBranches> RAS;			/*< The return address stack */
+	ReturnAddressStack<RAS_Size, MaxBranches> RAS[nConfig];			/*< The return address stack */
 	//	state_t transient_emul_state;
   //	bool changed;
 	
@@ -2062,9 +2111,9 @@ private:
   uint64_t ras_capacity_misses;
   */
   
-        bool syscall_in_pipeline;
+        bool syscall_in_pipeline[nConfig];
   //  bool stall_dueto_unknown_target_address;
-        int stall_counter;
+        int stall_counter[nConfig];
 };
 
 } // end of namespace fetch

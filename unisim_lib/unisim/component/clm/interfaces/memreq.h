@@ -184,6 +184,7 @@ class memreq_dataless : public memreq_types
   
   bool cachable;               ///< Wether the request address is cachable
 
+  bool valid;  //< Used with unisim signal array when something() can't be used
 #ifdef NOC_THREADS_DISTRIBUTION
   int dst_id;                  ///< destination tile id
   int src_id;                  ///< source tile id
@@ -203,6 +204,7 @@ class memreq_dataless : public memreq_types
     req_sender = NULL;
     cachable = true;
     memreq_id = memreq_id_max++;
+    valid = false;
 #ifdef NOC_THREADS_DISTRIBUTION
     dst_id = 0;
     src_id = 0;
