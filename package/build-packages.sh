@@ -3,14 +3,14 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 i386-debian <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
-	echo "  $0 i386-redhat <version>"
+	echo "  $0 i386-deb <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
+	echo "  $0 i386-rpm <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
 	echo "  $0 mingw32 <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
 	echo "  $0 powerpc-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
 	echo "  $0 i386-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
 }
 
-if test "x$1" = x || test "x$2" = x; then
+if test "x$1" = x || test "x$2" = x || test "x$3" = x || test "x$4" = x; then
 	Usage
 	exit
 fi
@@ -26,13 +26,19 @@ case ${TARGET} in
 		ARCH=i386
 		UNISIM_PREFIX=
 		;;
-	*86*debian*)
+	*86*deb*)
 		ARCH=i386
 		UNISIM_PREFIX=/usr
+		UNISIM_TOOLS_DEPS="libc6 (>= 2.5)"
+		UNISIM_LIB_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
+		UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
 		;;
-	*86*redhat*)
+	*86*rpm*)
 		ARCH=i386
 		UNISIM_PREFIX=/usr
+		UNISIM_TOOLS_DEPS="libc6 >= 2.5"
+		UNISIM_LIB_DEPS="libncurses5-devel >= 5.5, libreadline5-devel >= 5.2, libxml2-devel >= 2.6.27, libsdl1.2-devel >= 1.2.11,  libstdc++6 >= 4.1.2, libc6 >= 2.5, libgcc1 >= 4.1.2"
+		UNISIM_SIMULATORS_DEPS="libncurses5-devel >= 5.5, libreadline5-devel >= 5.2, libxml2-devel >= 2.6.27, libsdl1.2-devel >= 1.2.11,  libstdc++6 >= 4.1.2, libc6 >= 2.5, libgcc1 >= 4.1.2"
 		;;
 	*powerpc*darwin*)
 		ARCH=POWERPC
@@ -49,90 +55,57 @@ UNISIM_TOOLS_LONG_NAME=${UNISIM_TOOLS_SHORT_NAME}-${VERSION}
 UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME=${UNISIM_TOOLS_LONG_NAME}.tar.gz
 UNISIM_TOOLS_WINDOWS_PACKAGE_FILENAME=${UNISIM_TOOLS_LONG_NAME}.exe
 UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME=${UNISIM_TOOLS_SHORT_NAME}_${VERSION}_${ARCH}.deb
+UNISIM_TOOLS_REDHAT_PACKAGE_FILENAME=${UNISIM_TOOLS_SHORT_NAME}-${VERSION}.${ARCH}.rpm
 UNISIM_TOOLS_TEMPORARY_SOURCE_DIR=${HOME}/tmp/${UNISIM_TOOLS_LONG_NAME}
 UNISIM_TOOLS_TEMPORARY_INSTALL_DIR=${HOME}/tmp/${UNISIM_TOOLS_SHORT_NAME}_${VERSION}_${ARCH}
 UNISIM_TOOLS_TEMPORARY_CONFIG_DIR=${HOME}/tmp/${UNISIM_TOOLS_LONG_NAME}_config
 UNISIM_TOOLS_LICENSE_FILE="share/unisim_tools/COPYING"
 UNISIM_TOOLS_DESCRIPTION="UNISIM Tools"
-UNISIM_TOOLS_DEPS="libc6 (>= 2.5)"
 
 UNISIM_LIB_SHORT_NAME=unisim-lib
 UNISIM_LIB_LONG_NAME=${UNISIM_LIB_SHORT_NAME}-${VERSION}
 UNISIM_LIB_SOURCE_PACKAGE_FILENAME=${UNISIM_LIB_LONG_NAME}.tar.gz
 UNISIM_LIB_WINDOWS_PACKAGE_FILENAME=${UNISIM_LIB_LONG_NAME}.exe
 UNISIM_LIB_DEBIAN_PACKAGE_FILENAME=${UNISIM_LIB_SHORT_NAME}_${VERSION}_${ARCH}.deb
+UNISIM_LIB_REDHAT_PACKAGE_FILENAME=${UNISIM_LIB_SHORT_NAME}-${VERSION}.${ARCH}.rpm
 UNISIM_LIB_TEMPORARY_SOURCE_DIR=${HOME}/tmp/${UNISIM_LIB_LONG_NAME}
 UNISIM_LIB_TEMPORARY_INSTALL_DIR=${HOME}/tmp/${UNISIM_LIB_SHORT_NAME}_${VERSION}_${ARCH}
 UNISIM_LIB_TEMPORARY_CONFIG_DIR=${HOME}/tmp/${UNISIM_LIB_LONG_NAME}_config
 UNISIM_LIB_LICENSE_FILE="share/unisim_lib/COPYING"
 UNISIM_LIB_DESCRIPTION="UNISIM Library"
-UNISIM_LIB_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
 
 UNISIM_SIMULATORS_SHORT_NAME=unisim-simulators
 UNISIM_SIMULATORS_LONG_NAME=${UNISIM_SIMULATORS_SHORT_NAME}-${VERSION}
 UNISIM_SIMULATORS_SOURCE_PACKAGE_FILENAME=${UNISIM_SIMULATORS_LONG_NAME}.tar.gz
 UNISIM_SIMULATORS_WINDOWS_PACKAGE_FILENAME=${UNISIM_SIMULATORS_LONG_NAME}.exe
 UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME=${UNISIM_SIMULATORS_SHORT_NAME}_${VERSION}_${ARCH}.deb
+UNISIM_SIMULATORS_REDHAT_PACKAGE_FILENAME=${UNISIM_SIMULATORS_SHORT_NAME}-${VERSION}.${ARCH}.rpm
 UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR=${HOME}/tmp/${UNISIM_SIMULATORS_LONG_NAME}
 UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR=${HOME}/tmp/${UNISIM_SIMULATORS_SHORT_NAME}_${VERSION}_${ARCH}
 UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR=${HOME}/tmp/${UNISIM_SIMULATORS_LONG_NAME}_config
 UNISIM_SIMULATORS_LICENSE_FILE="share/unisim_simulators/COPYING"
 UNISIM_SIMULATORS_DESCRIPTION="UNISIM Simulators"
-UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
+
+if test ! -f ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME}; then
+	Usage
+	echo "File ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME} is needed. Use \"make dist\" to build it."
+	exit
+fi
+
+if test ! -f ${HERE}/${UNISIM_LIB_SOURCE_PACKAGE_FILENAME}; then
+	Usage
+	echo "File ${HERE}/${UNISIM_LIB_LONG_NAME}.tar.gz is needed. Use \"make dist\" to build it."
+	exit
+fi
+
+if test ! -f ${HERE}/${UNISIM_SIMULATORS_SOURCE_PACKAGE_FILENAME}; then
+	Usage
+	echo "File ${HERE}/${UNISIM_SIMULATORS_SOURCE_PACKAGE_FILENAME} is needed. Use \"make dist\" to build it."
+	exit
+fi
 
 case ${TARGET} in
-	*86*debian* | *mingw32* | powerpc*darwin* | *86*darwin*)
-		if test ! -f ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME}; then
-			Usage
-			echo "File ${HERE}/${UNISIM_TOOLS_SOURCE_PACKAGE_FILENAME} is needed. Use \"make dist\" to build it."
-			exit
-		fi
-		
-		if test ! -f ${HERE}/${UNISIM_LIB_SOURCE_PACKAGE_FILENAME}; then
-			Usage
-			echo "File ${HERE}/${UNISIM_LIB_LONG_NAME}.tar.gz is needed. Use \"make dist\" to build it."
-			exit
-		fi
-		
-		if test ! -f ${HERE}/${UNISIM_SIMULATORS_SOURCE_PACKAGE_FILENAME}; then
-			Usage
-			echo "File ${HERE}/${UNISIM_SIMULATORS_SOURCE_PACKAGE_FILENAME} is needed. Use \"make dist\" to build it."
-			exit
-		fi
-		;;
-	*86*redhat*)
-		if test ! -f ${HERE}/${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME}; then
-			Usage
-			echo "File ${HERE}/${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME} is needed. Build first a debian package ($0 debian ....)."
-			exit
-		fi
-		
-		if test ! -f ${HERE}/${UNISIM_LIB_DEBIAN_PACKAGE_FILENAME}; then
-			Usage
-			echo "File ${HERE}/${UNISIM_LIB_DEBIAN_PACKAGE_FILENAME} is needed. Build first a debian package ($0 debian ....)."
-			exit
-		fi
-		
-		if test ! -f ${HERE}/${UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME}; then
-			Usage
-			echo "File ${HERE}/${UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME} is needed. Build first a debian package ($0 debian ....)."
-			exit
-		fi
-
-		echo "========================================="
-		echo "=        Converting deb to rpm          ="
-		echo "========================================="
-
-		cd ${HERE}
-		fakeroot alien --to-rpm ${UNISIM_TOOLS_DEBIAN_PACKAGE_FILENAME} || exit
-		fakeroot alien --to-rpm ${UNISIM_LIB_DEBIAN_PACKAGE_FILENAME} || exit
-		fakeroot alien --to-rpm ${UNISIM_SIMULATORS_DEBIAN_PACKAGE_FILENAME}
-		exit
-		;;
-esac
-
-case ${TARGET} in
-	*86*debian*)
+	*86*deb* | *86*rpm* )
 		if test "x$3" = x; then
 			Usage
 			echo "SystemC 2.2.0 install directory is needed."
@@ -251,7 +224,7 @@ case ${TARGET} in
 		SYSTEMC_INSTALL_DIR=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/systemc
 		TLM2_INSTALL_DIR=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/TLM-2008-06-09
 		;;
-	*86*debian*)
+	*86*deb* | *86*rpm*)
 		if test "x$3" = x; then
 			Usage
 			exit
@@ -261,6 +234,22 @@ case ${TARGET} in
 esac
 
 NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
+
+function fill_rpm_files_section ()
+{
+	BASE=$1
+	local PARENT=$2
+	local FILE_LIST=`cd ${BASE}/${PARENT}; ls`
+	OUTPUT_FILE=$3
+	for FILE in ${FILE_LIST}; do
+		if [ -d "${BASE}/${PARENT}/${FILE}" ]; then
+			echo "%dir \"${PARENT}/${FILE}\"" >> ${OUTPUT_FILE}
+			fill_rpm_files_section "${BASE}" "${PARENT}/${FILE}" "${OUTPUT_FILE}"
+		else
+			echo "\"${PARENT}/${FILE}\"" >> ${OUTPUT_FILE}
+		fi
+	done
+}
 
 function Package {
 	PACKAGE_NAME=$1
@@ -334,7 +323,7 @@ function Package {
 			cd ${INSTALL_DIR}
 			tar zcvf ${HERE}/${PACKAGE_NAME}-${VERSION}-powerpc-darwin.tar.gz *
 			;;
-		*86*debian*)
+		*86*deb*)
 			CONTROL_FILE=${INSTALL_DIR}/DEBIAN/control
 			PREINST_FILE=${INSTALL_DIR}/DEBIAN/preinst
 			TEMPLATES_FILE=${INSTALL_DIR}/DEBIAN/templates
@@ -471,6 +460,47 @@ function Package {
 			fakeroot dpkg-deb --build ${INSTALL_DIR}
 			mv ${INSTALL_DIR}/../${PACKAGE_NAME}_${VERSION}_${ARCH}.deb ${HERE}/.
 			;;
+
+		*86*rpm*)
+			RPM_MACROS_FILE=${HOME}/tmp/rpmmacros
+			echo "%_rpmdir ${HOME}/tmp" > ${RPM_MACROS_FILE}
+
+			SPEC_FILE="${HOME}/tmp/${PACKAGE_NAME}.spec"
+			echo "Summary: ${DESCRIPTION}" > ${SPEC_FILE}
+			echo "Name: ${PACKAGE_NAME}" >> ${SPEC_FILE}
+			echo "Version: `echo ${VERSION} | cut -f 1 -d -`" >> ${SPEC_FILE}
+			echo "Release: `echo ${VERSION} | cut -f 2 -d -`" >> ${SPEC_FILE}
+			echo "License: BSD" >> ${SPEC_FILE}
+			echo "Packager: https://unisim.org/svn/devel/package/build-packages.sh" >> ${SPEC_FILE}
+			echo "Group: Development" >> ${SPEC_FILE}
+			echo "BuildRoot: ${INSTALL_DIR}" >> ${SPEC_FILE}
+			echo "Provides: ${PACKAGE_NAME}" >> ${SPEC_FILE}
+			echo "Requires: ${DEPS}" >> ${SPEC_FILE}
+			echo "" >> ${SPEC_FILE}
+			echo "%description"  >> ${SPEC_FILE}
+			echo "${DESCRIPTION}"  >> ${SPEC_FILE}
+			echo ""  >> ${SPEC_FILE}
+			echo "%files" >> ${SPEC_FILE}
+			fill_rpm_files_section ${INSTALL_DIR} "" ${SPEC_FILE}
+
+			echo "========================================="
+			echo "=               RPM Spec                ="
+			echo "========================================="
+			cat ${SPEC_FILE}
+
+			# no way to do license control with RPM, as no interaction with the user is allowed
+
+			# Build the package
+			echo "========================================="
+			echo "=            Package build              ="
+			echo "========================================="
+			fakeroot rpmbuild -bb ${SPEC_FILE} --macros=${RPM_MACROS_FILE} --target=i386-pc-linux || exit
+			# uncomment this line to dump informations about the package
+			# rpm -qpl --info --requires --provides ${HOME}/tmp/${ARCH}/${PACKAGE_NAME}-${VERSION}.${ARCH}.rpm
+			mv ${HOME}/tmp/${ARCH}/${PACKAGE_NAME}-${VERSION}.${ARCH}.rpm ${HERE}/.
+			rmdir ${HOME}/tmp/${ARCH} || true
+			rm -f ${RPM_MACROS_FILE}
+			;;
 	esac
 }
 
@@ -576,7 +606,7 @@ case ${TARGET} in
 			fi
 		fi
 		;;
-	*86*debian*)
+	*86*deb* | *86*rpm*)
 		;;
 esac
 
@@ -642,7 +672,7 @@ case ${TARGET} in
           --with-libxml2=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
-	*86*debian*)
+	*86*deb* | *86*rpm*)
 		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
           --host=i686-pc-linux-gnu \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
@@ -702,7 +732,7 @@ case ${TARGET} in
           --with-libxml2=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
-	*86*debian*)
+	*86*deb* | *86*rpm*)
 		Configure ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR} ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} \
           --host=i686-pc-linux-gnu \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
@@ -754,7 +784,7 @@ case ${TARGET} in
 		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		;;
-	*86*debian*)
+	*86*deb* | *86*rpm*)
 		;;
 esac
 

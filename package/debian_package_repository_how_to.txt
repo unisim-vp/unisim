@@ -5,7 +5,7 @@ This document is intended for the debian repository maintainers
 
 IMPORTANT: You must have the source tarballs in the current directory.
 
-$ <path-to-unisim-devel>/package/build-packages.sh debian <version>
+$ <path-to-unisim-devel>/package/build-packages.sh i386-deb <version> <path-to-systemc-install> <path-to-TLM2.0-install>
 
 You finally get unisim-tools*.deb, unisim-lib*.deb and unisim-simulators*.deb
 Move these packages to <path-to-unisim.org/distributions/binary/deb>/dists/stable/main/binary-i386
