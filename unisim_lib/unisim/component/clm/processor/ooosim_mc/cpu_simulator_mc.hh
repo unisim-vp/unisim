@@ -40,8 +40,8 @@
                             OooSimCpu.sim  -  description
  ***************************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_HH__
-#define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_HH__
+#ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_MC_HH__
+#define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_MC_HH__
 
 #define TAG_SEND_ON_MEMORY_REQUEST 0
 //#define __BYTE_ORDER __BIG_ENDIAN
@@ -72,7 +72,7 @@
 ////////////////////////////////////////////////////////////////////
 // Pipeline Stages
 ////////////////////////////////////////////////////////////////////
-#include <unisim/component/clm/pipeline/fetch/fetcher.hh>
+#include <unisim/component/clm/pipeline/fetch/fetcher_mc.hh>
 
 #include <unisim/component/clm/pipeline/decode/dispatcher.hh>
 #include <unisim/component/clm/pipeline/decode/allocator_renamer.hh>

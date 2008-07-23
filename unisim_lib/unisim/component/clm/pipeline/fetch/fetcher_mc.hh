@@ -89,6 +89,7 @@ using unisim::component::clm::interfaces::Destination;
   using unisim::component::cxx::processor::powerpc::INPUT_T;
   using unisim::component::cxx::processor::powerpc::OUTPUT_T;
 
+  using unisim::kernel::service::StatisticArray;
 /* An instruction queue entry */
 //template <class T, int nSources>
 class InstructionQueueEntry
@@ -151,25 +152,25 @@ public:
   // Nothing...
   //  ServiceImport<StatisticReporting> statistic_reporting_import;
 
-private:
+protected:
   /**************************************
    * Module Statistics
    **************************************/
-  /*
-  uint64_t fetched_instructions;
-  uint64_t splitted_instructions;
+  
+  uint64_t fetched_instructions[nConfig];
+  uint64_t splitted_instructions[nConfig];
 
-  uint64_t bht_accesses;
-  uint64_t bht_misses;
-  uint64_t btb_accesses;
-  uint64_t btb_misses;
-  uint64_t ras_accesses;
-  uint64_t ras_misses;
-  uint64_t ras_capacity_misses;
-  uint64_t instruction_queue_cumulative_occupancy;
-  //  uint64_t flushed_instructions;
-  */
-  StatisticArray<uint64_t> stat_fetched_instructions
+  uint64_t bht_accesses[nConfig];
+  uint64_t bht_misses[nConfig];
+  uint64_t btb_accesses[nConfig];
+  uint64_t btb_misses[nConfig];
+  uint64_t ras_accesses[nConfig];
+  uint64_t ras_misses[nConfig];
+  uint64_t ras_capacity_misses[nConfig];
+  uint64_t instruction_queue_cumulative_occupancy[nConfig];
+  //  uint64_t flushed_instructions;  
+private:
+  StatisticArray<uint64_t> stat_fetched_instructions;
   StatisticArray<uint64_t> stat_splitted_instructions;
 
   StatisticArray<uint64_t> stat_bht_accesses;
@@ -289,7 +290,7 @@ public:
 
 		/* statistics */
 
-		stat_in_flight_branches("in_flight_branches",this,0,nConfig);
+		stat_in_flight_branches("in_flight_branches",this,in_flight_branches,nConfig);
 		stat_bht_accesses("bht_accesses",this,0,nConfig);
 		stat_bht_misses("bht_misses",this,0,nConfig);
 		stat_btb_accesses("btb_accesses",this,0,nConfig);
@@ -297,7 +298,7 @@ public:
 		stat_ras_accesses("ras_accesses",this,0,nConfig);
 		stat_ras_misses("ras_misses",this,0,nConfig);
 		stat_ras_capacity_misses("ras_capacity_misses",this,0,nConfig);
-		stat_instruction_queue_cumulative_occupacy("instruction_queue_cumulative_occupacy",this,0,nConfig);
+		stat_instruction_queue_cumulative_occupacy("instruction_queue_cumulative_occupacy",this,instruction_queue_cumulative_occupacy,nConfig);
 		stat_fetched_instructions("fetched_instructions",this,0,nConfig);
 		stat_splitted_instructions("splitted_instructions",this,0,nConfig);
 		/*
@@ -435,7 +436,7 @@ public:
 	  //  {
 	  for (int cfg=0; cfg<nConfig; cfg++)
 	    {
-	      for (i=0;i<RetireWidth;i++)
+	      for (int i=0;i<RetireWidth;i++)
 		{
 		  inRetireInstruction.accept[nConfig*cfg+i] = inRetireInstruction.data[nConfig*cfg+i].something();
 		}
@@ -486,7 +487,7 @@ public:
 	  /* Enable each accepted instructions */
 	  for (int cfg=0; cfg<nConfig; cfg++)
 	    {
-	      for(i = 0; i < Width; i++)
+	      for(int i = 0; i < Width; i++)
 		{
 		  outInstruction.enable[nConfig*cfg+i] = outInstruction[nConfig*cfg+i].accept;
 		}
@@ -1874,7 +1875,7 @@ public:
 	  if(!btb_miss[cfg] && !ras_miss[cfg] && !syscall_in_pipeline[cfg])
 	    {
 	      /* Do not continue if we already reach the maximum number of pending instruction cache requests */
-	      if(pending_instr_cache_requests[cfg] < MaxPendingRequests[cfg])
+	      if(pending_instr_cache_requests[cfg] < MaxPendingRequests)
 		{
 		  /* Get the size of the instruction cache access */
 		  accessSize[cfg] = GetMaximumAccessSize(seq_cia[cfg]);
@@ -2039,6 +2040,8 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	
 	void WarmRestart()
 	{
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	  {
 		/* Flush the instruction queue */
 		instructionQueue[cfg].Reset();
 
@@ -2054,10 +2057,13 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 		accessSize[cfg] = 0;
 		inum[cfg] = 0;
 		//		state_init(&transient_emul_state);
+	  }
 	}
 	
 	void ResetStats()
 	{
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	  {
 		bht_accesses[cfg] = 0;
 		bht_misses[cfg] = 0;
 		btb_accesses[cfg] = 0;
@@ -2066,11 +2072,14 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 		ras_misses[cfg] = 0;
 		ras_capacity_misses[cfg] = 0;
 		instruction_queue_cumulative_occupancy[cfg] = 0;
-	}
-  
+	  }
+	}  
   void Reset()
   {
-    cia[cfg] = emulator[cfg]->GetCIA();
+    for(int cfg=0; cfg<nConfig; cfg++)
+      {
+	cia[cfg] = emulator[cfg]->GetCIA();
+      }
   }
 
 private:
