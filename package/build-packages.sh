@@ -29,16 +29,59 @@ case ${TARGET} in
 	*86*deb*)
 		ARCH=i386
 		UNISIM_PREFIX=/usr
-		UNISIM_TOOLS_DEPS="libc6 (>= 2.5)"
-		UNISIM_LIB_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
-		UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5), libreadline5 (>= 5.2), libxml2 (>= 2.6.27), libsdl1.2debian (>= 1.2.11),  libstdc++6 (>= 4.1.2), libc6 (>= 2.5), libgcc1 (>= 4.1.2)"
+		# UNISIM Tools package dependencies
+		UNISIM_TOOLS_DEPS="bash (>= 3.2)"
+		UNISIM_TOOLS_DEPS+=",libc6 (>= 2.5)"
+		UNISIM_TOOLS_DEPS+=",libgcc1 (>= 4.1.2)"
+
+		# UNISIM Library package dependencies
+		UNISIM_LIB_DEPS="libncurses5-dev (>= 5.5)"
+		UNISIM_LIB_DEPS+=",libreadline5-dev (>= 5.2)"
+		UNISIM_LIB_DEPS+=",libxml2-dev (>= 2.6.27)"
+		UNISIM_LIB_DEPS+=",libsdl1.2-dev (>= 1.2.11)"
+		UNISIM_LIB_DEPS+=",libstdc++6-dev (>= 4.1.2)"
+		UNISIM_LIB_DEPS+=",libc6-dev (>= 2.5)"
+		UNISIM_LIB_DEPS+=",libgcc1 (>= 4.1.2)"
+		UNISIM_LIB_DEPS+=",zlib1g (>= 1.2.3)"
+
+		# UNISIM Simulators package dependencies
+		UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5)"
+		UNISIM_SIMULATORS_DEPS+=",libreadline5 (>= 5.2)"
+		UNISIM_SIMULATORS_DEPS+=",libxml2 (>= 2.6.27)"
+		UNISIM_SIMULATORS_DEPS+=",libsdl1.2debian (>= 1.2.11)"
+		UNISIM_SIMULATORS_DEPS+=",libstdc++6 (>= 4.1.2)"
+		UNISIM_SIMULATORS_DEPS+=",libc6 (>= 2.5)"
+		UNISIM_SIMULATORS_DEPS+=",libgcc1 (>= 4.1.2)"
+		UNISIM_SIMULATORS_DEPS+=",zlib1g-dev (>= 1.2.3)"
 		;;
 	*86*rpm*)
 		ARCH=i386
 		UNISIM_PREFIX=/usr
-		UNISIM_TOOLS_DEPS="libc6 >= 2.5"
-		UNISIM_LIB_DEPS="libncurses5-devel >= 5.5, libreadline5-devel >= 5.2, libxml2-devel >= 2.6.27, libsdl1.2-devel >= 1.2.11,  libstdc++6 >= 4.1.2, libc6 >= 2.5, libgcc1 >= 4.1.2"
-		UNISIM_SIMULATORS_DEPS="libncurses5-devel >= 5.5, libreadline5-devel >= 5.2, libxml2-devel >= 2.6.27, libsdl1.2-devel >= 1.2.11,  libstdc++6 >= 4.1.2, libc6 >= 2.5, libgcc1 >= 4.1.2"
+
+		# UNISIM Tools package dependencies
+		UNISIM_TOOLS_DEPS="bash >= 3.2"
+		UNISIM_TOOLS_DEPS+=",glibc >= 2.5"
+		UNISIM_TOOLS_DEPS+=",libgcc1 >= 4.1.2"
+
+		# UNISIM Library package dependencies
+		UNISIM_LIB_DEPS="libncurses5-devel >= 5.5"
+		UNISIM_LIB_DEPS+=",libreadline5-devel >= 5.2"
+		UNISIM_LIB_DEPS+=",libxml2-devel >= 2.6.27"
+		UNISIM_LIB_DEPS+=",libsdl1.2-devel >= 1.2.11"
+		UNISIM_LIB_DEPS+=",libstdc++6-devel >= 4.1.2"
+		UNISIM_LIB_DEPS+=",glibc-devel >= 2.5"
+		UNISIM_LIB_DEPS+=",libgcc1 >= 4.1.2"
+		UNISIM_LIB_DEPS+=",zlib1 >= 1.2.3"
+
+		# UNISIM Simulators package dependencies
+		UNISIM_SIMULATORS_DEPS="libncurses5 >= 5.5"
+		UNISIM_SIMULATORS_DEPS+=",libreadline5 >= 5.2"
+		UNISIM_SIMULATORS_DEPS+=",libxml2 >= 2.6.27"
+		UNISIM_SIMULATORS_DEPS+=",libsdl1.2 >= 1.2.11"
+		UNISIM_SIMULATORS_DEPS+=",libstdc++6 >= 4.1.2"
+		UNISIM_SIMULATORS_DEPS+=",glibc >= 2.5"
+		UNISIM_SIMULATORS_DEPS+=",libgcc1 >= 4.1.2"
+		UNISIM_SIMULATORS_DEPS+=",zlib1-devel >= 1.2.3"
 		;;
 	*powerpc*darwin*)
 		ARCH=POWERPC
