@@ -90,6 +90,8 @@ using unisim::component::clm::interfaces::Destination;
   using unisim::component::cxx::processor::powerpc::OUTPUT_T;
 
   using unisim::kernel::service::StatisticArray;
+  using unisim::kernel::service::Object;
+
 /* An instruction queue entry */
 //template <class T, int nSources>
 class InstructionQueueEntry
@@ -142,8 +144,8 @@ public:
 };
 
 /** A SystemC module modeling the fetch stage and the branch prediction */
-template <class T, int nSources, int Width, int LineSize, int nCPUDataPathSize, int InstructionQueueSize, int InstructionSize, int BHT_Size, int BHT_nBits, int BHT_nHistorySize, int BTB_Size, int BTB_Associativity, int RAS_Size, int RetireWidth, int WriteBackWidth, int MaxPendingRequests, int MaxBranches, int nConfig = 1>
-class Fetcher : public module
+template <class T, int nSources, int Width, int LineSize, int nCPUDataPathSize, int InstructionQueueSize, int InstructionSize, int BHT_Size, int BHT_nBits, int BHT_nHistorySize, int BTB_Size, int BTB_Associativity, int RAS_Size, int RetireWidth, int WriteBackWidth, int MaxPendingRequests, int MaxBranches, int nConfig = 2>
+class Fetcher : public module, public Object
 {
 public:
   /**************************************
@@ -218,11 +220,22 @@ public:
   */
   //DD	Fetcher(const char *name, endianess_t endianess, Emulator *emulator) :
 	Fetcher(const char *name, endianess_t endianess, CPUSim *emulator) :
-               module(name)
-	  //	       , Object(name)
+	  module(name),
+	  Object(name),
 	  //	       , Client<StatisticReporting>(name, this)
 	  //	       , statistic_reporting_import("statistic", this)
 	  //	  ,StatisticService(name, this)
+	  //	  stat_in_flight_branches("in_flight_branches",this,in_flight_branches,nConfig),
+	  stat_bht_accesses("bht_accesses",this,bht_accesses,nConfig),
+	  stat_bht_misses("bht_misses",this,bht_misses,nConfig),
+	  stat_btb_accesses("btb_accesses",this,btb_accesses,nConfig),
+	  stat_btb_misses("btb_misses",this,btb_misses,nConfig),
+	  stat_ras_accesses("ras_accesses",this,ras_accesses,nConfig),
+	  stat_ras_misses("ras_misses",this,ras_misses,nConfig),
+	  stat_ras_capacity_misses("ras_capacity_misses",this,ras_capacity_misses,nConfig),
+	  stat_instruction_queue_cumulative_occupancy("instruction_queue_cumulative_occupancy",this,instruction_queue_cumulative_occupancy,nConfig),
+	  stat_fetched_instructions("fetched_instructions",this,fetched_instructions,nConfig),
+	  stat_splitted_instructions("splitted_instructions",this,splitted_instructions,nConfig)
 	{
 		int i;
 		class_name = " FetcherClass";
@@ -271,36 +284,29 @@ public:
  
 		/* Internal state */
 		//		waiting_instr_cache_accept = false;
-		cia = 0;
-
-		nia = 0;
-		seq_cia = 0;
-		previous_cia = 0;
-
-		accessSize = 0;
-		this->endianess = endianess;
-		inum = 0;
-		pending_instr_cache_requests = 0;
-		ignore_instr_cache_responses = 0;
-		pending_instr_cache_access_size = 0;
-		this->emulator = emulator;
-		btb_miss = false;
-		ras_miss = false;
-		//		state_init(&transient_emul_state);
-
+		for (int cfg=0; cfg<nConfig; cfg++)
+		{
+		  cia[cfg] = 0;
+		  
+		  nia[cfg] = 0;
+		  seq_cia[cfg] = 0;
+		  previous_cia[cfg] = 0;
+		  
+		  accessSize[cfg] = 0;
+		  this->endianess[cfg] = endianess;
+		  inum[cfg] = 0;
+		  pending_instr_cache_requests[cfg] = 0;
+		  ignore_instr_cache_responses[cfg] = 0;
+		  pending_instr_cache_access_size[cfg] = 0;
+		  this->emulator[cfg] = emulator;
+		  btb_miss[cfg] = false;
+		  ras_miss[cfg] = false;
+		  //		state_init(&transient_emul_state);
+		  syscall_in_pipeline[cfg] = false;
+		  stall_counter[cfg] = 0;
+		}
 		/* statistics */
 
-		stat_in_flight_branches("in_flight_branches",this,in_flight_branches,nConfig);
-		stat_bht_accesses("bht_accesses",this,0,nConfig);
-		stat_bht_misses("bht_misses",this,0,nConfig);
-		stat_btb_accesses("btb_accesses",this,0,nConfig);
-		stat_btb_misses("btb_misses",this,0,nConfig);
-		stat_ras_accesses("ras_accesses",this,0,nConfig);
-		stat_ras_misses("ras_misses",this,0,nConfig);
-		stat_ras_capacity_misses("ras_capacity_misses",this,0,nConfig);
-		stat_instruction_queue_cumulative_occupacy("instruction_queue_cumulative_occupacy",this,instruction_queue_cumulative_occupacy,nConfig);
-		stat_fetched_instructions("fetched_instructions",this,0,nConfig);
-		stat_splitted_instructions("splitted_instructions",this,0,nConfig);
 		/*
 		bht_accesses = 0;
 		bht_misses = 0;
@@ -328,9 +334,6 @@ public:
 		statistics.add("ras_capacity_misses",ras_capacity_misses);
 		//		statistics.add("flushed_instructions",flushed_instructions);
 		*/		
-		syscall_in_pipeline = false;
-		stall_counter = 0;
-
 		// --- Latex rendering hints -----------------
 		/*
 		latex_left_ports.push_back(&inIL1);
@@ -418,7 +421,7 @@ public:
 	    {
 	      for (int i=0;i<WriteBackWidth;i++)
 		{
-		  inWriteBackInstruction.accept[nConfig*cfg+i] = inWriteBackInstruction.data[nConfig*cfg+i].something();
+		  inWriteBackInstruction.accept[WriteBackWidth*cfg+i] = inWriteBackInstruction.data[WriteBackWidth*cfg+i].something();
 		}
 	    }
 	  inWriteBackInstruction.accept.send();
@@ -438,10 +441,10 @@ public:
 	    {
 	      for (int i=0;i<RetireWidth;i++)
 		{
-		  inRetireInstruction.accept[nConfig*cfg+i] = inRetireInstruction.data[nConfig*cfg+i].something();
+		  inRetireInstruction.accept[RetireWidth*cfg+i] = inRetireInstruction.data[RetireWidth*cfg+i].something();
 		}
 	    }
-	  inRetireInstruction.data.send();
+	  inRetireInstruction.accept.send();
 	  //  }
 	}
 	/** A SystemC process managing the valid, accept and enable hand-shaking */
@@ -452,6 +455,7 @@ public:
 	    {
 	      outIL1.enable[cfg] = outIL1.accept[cfg];
 	    }
+	  outIL1.enable.send();
 	  //	  pending_instr_cache_requests++;
 	  //	  pending_instr_cache_access_size += accessSize;
 	}
@@ -489,9 +493,10 @@ public:
 	    {
 	      for(int i = 0; i < Width; i++)
 		{
-		  outInstruction.enable[nConfig*cfg+i] = outInstruction[nConfig*cfg+i].accept;
+		  outInstruction.enable[Width*cfg+i] = outInstruction.accept[Width*cfg+i];
 		}
 	    }
+	  outInstruction.enable.send();
 	  //  }
 	}
 
@@ -952,7 +957,7 @@ public:
 		for(i = 0; i < Width; i++)
 		{
 		  //if(!outInstruction[i].accept || instructionQueue.Empty()) break;
-		  if(!outInstruction.accept[nConfig*cfg+i] || instructionQueue[cfg].Empty()) break;
+		  if(!outInstruction.accept[Width*cfg+i] || instructionQueue[cfg].Empty()) break;
 		  instructionQueue[cfg].RemoveHead();
 		}
 
@@ -976,11 +981,11 @@ public:
 		{
 			/* Is there a retired instruction ? */
 		  //DD			if(!inRetireEnable[i]) break;
-			if(!inRetireInstruction.enable[nConfig*cfg+i]) break;
+			if(!inRetireInstruction.enable[Width*cfg+i]) break;
 
 			/* Get the retired instruction */
 			//DD			const InstructionPtr<T, nSources>& instruction = inRetireInstruction[i];
-		        InstructionPtr instruction = inRetireInstruction.data[nConfig*cfg+i];
+		        InstructionPtr instruction = inRetireInstruction.data[Width*cfg+i];
 			/*
 			  #ifdef DD_DEBUG_FETCH_VERB2
 			  cerr << "[FETCH] ["<< timestamp()<<"]  /// " << instruction << endl;
@@ -1459,9 +1464,9 @@ public:
 				    (FnBranch | FnConditionalBranch | FnBranchCountReg | FnBranchLinkReg)
 				    )
 				{
-					if(in_flight_branches < MaxBranches)
+					if(in_flight_branches[cfg] < MaxBranches)
 					  {
-					    in_flight_branches++;
+					    in_flight_branches[cfg]++;
 					  }
 					else	
 					  {
@@ -1885,8 +1890,8 @@ public:
 		      /* Do a request to the instruction cache */
 		      memreq < InstructionPtr, nCPUDataPathSize > tmp_memreq;
 		      //tmp_memreq.instr = ...
-		      tmp_memreq.address = seq_cia;
-		      tmp_memreq.size = accessSize;
+		      tmp_memreq.address = seq_cia[cfg];
+		      tmp_memreq.size = accessSize[cfg];
 		      tmp_memreq.command = memreq_types::cmd_READ;
 		      //tmp_memreq.uid = ...;
 		      tmp_memreq.sender_type = memreq_types::sender_CPU;
@@ -1954,7 +1959,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	  /* Do a request to the allocator/renamer for each instructions */
 	  for(i = 0, entry = instructionQueue.SeekAtHead(); entry && entry->predecoded && i < Width; entry++, i++)
 	    {
-	      outInstruction.data[nConfig*cfg+i] = entry->instruction;
+	      outInstruction.data[Width*cfg+i] = entry->instruction;
 	      //Mourad modifs
 #ifdef DD_DEBUG_FETCH_VERB3
 	      if (DD_DEBUG_TIMESTAMP < timestamp())
@@ -1967,7 +1972,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	  for(; i < Width; i++)
 	    {
 	      //			outValid[i] = false;
-	      outInstruction.data[nConfig*cfg+i].nothing();
+	      outInstruction.data[Width*cfg+i].nothing();
 #ifdef DD_DEBUG_FETCH_VERB3
 	      if (DD_DEBUG_TIMESTAMP < timestamp())
 		{

@@ -74,8 +74,8 @@
 ////////////////////////////////////////////////////////////////////
 #include <unisim/component/clm/pipeline/fetch/fetcher_mc.hh>
 
-#include <unisim/component/clm/pipeline/decode/dispatcher.hh>
-#include <unisim/component/clm/pipeline/decode/allocator_renamer.hh>
+#include <unisim/component/clm/pipeline/decode/dispatcher_mc.hh>
+#include <unisim/component/clm/pipeline/decode/allocator_renamer_mc.hh>
 
 #include <unisim/component/clm/pipeline/issue/scheduler.hh>
 #include <unisim/component/clm/pipeline/issue/register_file.hh>
@@ -339,10 +339,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     outIL1Data >>  fetch->outIL1;
     */
     
+    // Fetch -> Allocator
+    fetch->outInstruction >> allocate->inInstruction;
+
     for (int i=0; i<Degree; i++)
       {
 	// Fetch -> Allocator
-	fetch->outInstruction[i] >> allocate->inInstruction[i];
+	//fetch->outInstruction[i] >> allocate->inInstruction[i];
 	// Allocator -> Dispatch
 	allocate->outInstructionIssue[i] >> dispatch->inInstruction[i];
 	// Allocator -> ROB
