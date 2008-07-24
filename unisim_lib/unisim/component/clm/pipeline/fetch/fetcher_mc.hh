@@ -1957,7 +1957,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	  QueuePointer<InstructionQueueEntry, InstructionQueueSize > entry;
 	  
 	  /* Do a request to the allocator/renamer for each instructions */
-	  for(i = 0, entry = instructionQueue.SeekAtHead(); entry && entry->predecoded && i < Width; entry++, i++)
+	  for(i = 0, entry = instructionQueue[cfg].SeekAtHead(); entry && entry->predecoded && i < Width; entry++, i++)
 	    {
 	      outInstruction.data[Width*cfg+i] = entry->instruction;
 	      //Mourad modifs
@@ -1980,8 +1980,8 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 		}
 #endif
 	    }
-	  if (previous_cia[cfg] == seq_cia[cfg]) { stall_counter++; } else { stall_counter=0; }
-	  if (stall_counter > 10000) { cerr << "Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
+	  if (previous_cia[cfg] == seq_cia[cfg]) { stall_counter[cfg]++; } else { stall_counter[cfg]=0; }
+	  if (stall_counter[cfg] > 10000) { cerr << "Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
 	  previous_cia[cfg] = seq_cia[cfg];
 
 	  } // End of foreach Config

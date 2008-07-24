@@ -64,6 +64,9 @@ using unisim::component::clm::processor::ooosim::nXERRegisters;
  
 using unisim::component::clm::interfaces::InstructionPtr;
 
+  using unisim::kernel::service::StatisticArray;
+  using unisim::kernel::service::Object;
+
 
 /* A mapping table */
 template <int nArchitecturalRegisters, int nRegisters>
@@ -414,7 +417,7 @@ public:
   	outport<bool, nConfig> outFlush;
 
 	/* Constructor */
-	AllocatorRenamer(const char *name, Object *parent) : module(name)
+	AllocatorRenamer(const char *name, Object *parent=0) : module(name)
 					     ,Object(name, parent)
 	{
 	  int i, j;
@@ -477,10 +480,13 @@ public:
 	  sensitive_method(onFlushAccept) << outFlush.accept;
 	  sensitive_method(onFlushEnable) << inFlush.enable;
 
-	  robHead = -1;
-	  robTail = -1;
-	  robSize = 0;
-	  lock = false;
+	  for (int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    robHead[cfg] = -1;
+	    robTail[cfg] = -1;
+	    robSize[cfg] = 0;
+	    lock[cfg] = false;
+	  }
 	  //		changed = true;
 	  // --- Latex rendering hints -----------------
 	  /*
@@ -513,13 +519,13 @@ public:
 	    //    inFlush.accept = inFlush.data.something();
 	    for (int cfg=0; cfg<nConfig; cfg++)
 	    {
-	      if ( inFlush.data[i].something() )
+	      if ( inFlush.data[cfg].something() )
 	      {
-		outFlush.data[i] = inFlush.data[i];
+		outFlush.data[cfg] = inFlush.data[cfg];
 	      }
 	      else
 	      {
-		outFlush.data[i].nothing();
+		outFlush.data[cfg].nothing();
 	      }
 	    }
 	    outFlush.data.send();
@@ -528,7 +534,7 @@ public:
 	  {
 	    for (int cfg=0; cfg<nConfig; cfg++)
 	    {
-	      inFlush.accept[i] = outFlush.accept[i];
+	      inFlush.accept[cfg] = outFlush.accept[cfg];
 	    }
 	    inFlush.accept.send();
 	  }
@@ -536,7 +542,7 @@ public:
 	  {
 	    for (int cfg=0; cfg<nConfig; cfg++)
 	    {
-	      outFlush.enable = inFlush.enable;
+	      outFlush.enable[cfg] = inFlush.enable[cfg];
 	    }
 	    outFlush.enable.send();
 	  }
@@ -556,7 +562,7 @@ public:
     for (int cfg=0; cfg<nConfig; cfg++)
       {
 	
-	for (i=0;i<WriteBackWidth;i++)
+	for (int i=0;i<WriteBackWidth;i++)
 	  {
 	    //	    if (inWriteBackInstruction.data[WriteBackWidth*cfg+i].something())
 	    //	      {
@@ -590,7 +596,7 @@ public:
     for (int cfg=0; cfg<nConfig; cfg++)
     {
 	
-      for (i=0;i<RetireWidth;i++)
+      for (int i=0;i<RetireWidth;i++)
 	{
 	  /*
 	  if (inRetireInstruction[i].data.something())
@@ -703,7 +709,6 @@ public:
 		
 		/* Return the number of enabled instructions */
 		return enabled;
-	  }
 	}
 
 	/** Allocate a reorder buffer tag and a physical registers for the destination of an instruction

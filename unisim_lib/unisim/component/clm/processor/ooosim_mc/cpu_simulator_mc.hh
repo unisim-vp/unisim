@@ -341,30 +341,49 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     
     // Fetch -> Allocator
     fetch->outInstruction >> allocate->inInstruction;
-
+    // Allocator -> Dispatch
+    allocate->outInstructionIssue >> dispatch->inInstruction;
+    // Allocator -> ROB
+    allocate->outInstructionReorder >> rob->inAllocateInstruction;
+    // Allocator -> LSQ
+    allocate->outLoadInstruction >> lsq->inAllocateLoadInstruction;
+    allocate->outStoreInstruction >> lsq->inAllocateStoreInstruction;
+    // Dispatch -> Scheduler
+    dispatch->outIntegerInstruction >> schedule->inIntegerInstruction;
+    dispatch->outFloatingPointInstruction >> schedule->inFloatingPointInstruction;
+    dispatch->outLoadStoreInstruction >> schedule->inLoadStoreInstruction;
+    // Scheduler -> RegisterFile
+    schedule->outIntegerInstruction >> registerfile->inIntegerInstruction;
+    schedule->outFloatingPointInstruction >> registerfile->inFloatingPointInstruction;
+    schedule->outLoadStoreInstruction >> registerfile->inLoadStoreInstruction;
+    // RegisterFile -> "Execution stage"
+    //    registerfile->outIntegerInstruction >> iu->inInstruction;
+    //    registerfile->outFloatingPointInstruction >> fpu->inInstruction;
+    //    registerfile->outLoadStoreInstruction >> agu->inInstruction;
+    
     for (int i=0; i<Degree; i++)
       {
 	// Fetch -> Allocator
-	//fetch->outInstruction[i] >> allocate->inInstruction[i];
+	//      fetch->outInstruction[i] >> allocate->inInstruction[i];
 	// Allocator -> Dispatch
-	allocate->outInstructionIssue[i] >> dispatch->inInstruction[i];
+	//	allocate->outInstructionIssue[i] >> dispatch->inInstruction[i];
 	// Allocator -> ROB
-	allocate->outInstructionReorder[i] >> rob->inAllocateInstruction[i];
+	//	allocate->outInstructionReorder[i] >> rob->inAllocateInstruction[i];
 	// Allocator -> LSQ
-	allocate->outLoadInstruction[i] >> lsq->inAllocateLoadInstruction[i];
-	allocate->outStoreInstruction[i] >> lsq->inAllocateStoreInstruction[i];
+	//	allocate->outLoadInstruction[i] >> lsq->inAllocateLoadInstruction[i];
+	//	allocate->outStoreInstruction[i] >> lsq->inAllocateStoreInstruction[i];
 	// Dispatch -> Scheduler
-	dispatch->outIntegerInstruction[i] >> schedule->inIntegerInstruction[i];
-	dispatch->outFloatingPointInstruction[i] >> schedule->inFloatingPointInstruction[i];
-	dispatch->outLoadStoreInstruction[i] >> schedule->inLoadStoreInstruction[i];
+	//	dispatch->outIntegerInstruction[i] >> schedule->inIntegerInstruction[i];
+	//	dispatch->outFloatingPointInstruction[i] >> schedule->inFloatingPointInstruction[i];
+	//	dispatch->outLoadStoreInstruction[i] >> schedule->inLoadStoreInstruction[i];
 	// Scheduler -> RegisterFile
-	schedule->outIntegerInstruction[i] >> registerfile->inIntegerInstruction[i];
-	schedule->outFloatingPointInstruction[i] >> registerfile->inFloatingPointInstruction[i];
-	schedule->outLoadStoreInstruction[i] >> registerfile->inLoadStoreInstruction[i];
+	//	schedule->outIntegerInstruction[i] >> registerfile->inIntegerInstruction[i];
+	//	schedule->outFloatingPointInstruction[i] >> registerfile->inFloatingPointInstruction[i];
+	//	schedule->outLoadStoreInstruction[i] >> registerfile->inLoadStoreInstruction[i];
 	// RegisterFile -> "Execution stage"
-	registerfile->outIntegerInstruction[i] >> iu[i]->inInstruction;
-	registerfile->outFloatingPointInstruction[i] >> fpu[i]->inInstruction;
-	registerfile->outLoadStoreInstruction[i] >> agu[i]->inInstruction;
+	//	registerfile->outIntegerInstruction[i] >> iu[i]->inInstruction;
+	//	registerfile->outFloatingPointInstruction[i] >> fpu[i]->inInstruction;
+	//	registerfile->outLoadStoreInstruction[i] >> agu[i]->inInstruction;
 	// AGU -> LSQ
 	agu[i]->outLSQInstruction >> lsq->inInstruction[i];
 	// "Execution stage" -> CDBA
