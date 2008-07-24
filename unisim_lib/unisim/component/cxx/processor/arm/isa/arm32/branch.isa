@@ -86,7 +86,7 @@ b.execute = {
 	typedef Operation<CONFIG> inherited;
 
 	typename CONFIG::reg_t new_PC;
-	  
+
 	if(!cpu.CheckCondition(inherited::cond_init)) {
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 		return;

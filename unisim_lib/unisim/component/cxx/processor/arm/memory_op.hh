@@ -61,6 +61,10 @@ public:
 	void SetReadToPCUpdateT(typename CONFIG::address_t address) {
 		type = READ_TO_PC_UPDATE_T;
 		this->address = address;
+		this->size = 4;
+		target_reg = 15; // the pc register
+		this->read_signed = false;
+		this->aligned = true;
 #ifdef SOCLIB
 		this->external = false;
 #endif // SOCLIB
@@ -69,6 +73,10 @@ public:
 	void SetReadToPC(typename CONFIG::address_t address) {
 		type = READ_TO_PC;
 		this->address = address;
+		this->size = 4;
+		target_reg = 15; // the pc register
+		this->read_signed = false;
+		this->aligned = true;
 #ifdef SOCLIB
 		this->external = false;
 #endif // SOCLIB

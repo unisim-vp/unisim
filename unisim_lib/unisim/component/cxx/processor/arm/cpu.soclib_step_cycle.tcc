@@ -785,9 +785,11 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 	switch(memop->GetType()) {
 	case MemoryOp<CONFIG>::READ:
 	case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
-	case MemoryOp<CONFIG>::READ_TO_PC:
 	case MemoryOp<CONFIG>::PREFETCH:
 		is_read = true;
+		break;
+	case MemoryOp<CONFIG>::READ_TO_PC:
+		size = 4;
 		break;
 	case MemoryOp<CONFIG>::WRITE:
 		is_read = false;
@@ -1193,6 +1195,23 @@ SetDataResponse(bool error, uint32_t rdata) {
 		break;
 	case MemoryOp<CONFIG>::READ_TO_PC:
 		cerr << " + type: read to pc" << endl;
+		cerr << " + dest: r" << memop->GetTargetReg() << endl;
+		cerr << " + addr: 0x" << hex << memop->GetAddress() << dec << endl;
+		cerr << " + size: " << memop->GetSize() << endl;
+		data = rdata;
+		switch(memop->GetSize()) {
+		case 1:
+			// do nothing
+			break;
+		case 2:
+			hdata = data;
+			data = Host2BigEndian(hdata);
+			break;
+		case 4:
+			data = Host2BigEndian(data);
+			break;
+		}
+		cerr << " + data: 0x" << hex << data << dec << " (0x" << hex << rdata << dec << ")" << endl;
 		break;
 	case MemoryOp<CONFIG>::PREFETCH:
 		cerr << " + type: prefetch" << endl;
