@@ -1709,6 +1709,21 @@ void operator >> (outport<T,false> &a, outport<U,false> &b)
   exit(1);
 }
 
+/**
+ * \brief Connects an array output port to an array input port, checking that connected data type match
+ */
+template <class T, class U, uint32_t NCONFIG>
+void operator >> (outport<T, NCONFIG,true> &a, inport<U, NCONFIG, true> &b) {
+#ifdef RUNTIME_TYPE_CHECKS
+  if (typeid(T) != typeid(U)) {
+    throw std::runtime_error(std::string("Port types do not match: ") + typeid(T).name() + " and " +typeid(U).name());
+  }
+#endif
+  a(b);
+}
+
+
+
 #define modulebody void module_body() 
 
 #define sensitive_method_array(x,w) { Unisim_Sensitive_Array::__current_array_module = this; Unisim_Sensitive_Array::__current_array_size = w; } unisim_sensitive_array
