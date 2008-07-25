@@ -147,6 +147,28 @@ const int L2_nStages = 10;
 const int L2_nMSHR = 8;
 const int L2_nMSHRRead = 8;
 */
+/* L2 Cache */
+const ReplacementPolicyType L2_replacementPolicy = randomReplacementPolicy;
+//const int L2_nPorts = 4;
+const int L2_nPorts = 1;
+const int L2_nCPUtoCacheDataPathSize = 32;
+const int L2_nCachetoCPUDataPathSize = 32;
+const int L2_nCPULineSize = 0;
+//const int L2_nMemtoCacheDataPathSize = 64;
+//const int L2_nCachetoMemDataPathSize = 64;
+const int L2_nMemtoCacheDataPathSize = 32;
+const int L2_nCachetoMemDataPathSize = 32;
+const int L2_nMSHR = 8;
+const int L2_nMSHRRead = 8;
+//const int L2_nLineSize = 64;
+  const int L2_nLineSize = 32; // ORIGINAL
+//  const int L2_nLineSize = 64; // BUGGED (Fetch is stalling)
+const int L2_nCacheLines = 4096;
+//const int L2_nCacheLines = 128;
+const int L2_nAssociativity = 8;
+const int L2_nDelay = 1;
+const int L2_nStages = 1;
+
 
 
 
