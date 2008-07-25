@@ -181,8 +181,8 @@ public:
     __snk->inClock(global_clock);
 
     // SIGNAL (or Module) connections
-    //__src->out >> __snk->in;
-    __src->out( __snk->in );
+    __src->out >> __snk->in;
+    //__src->out( __snk->in );
 
   } //GeneratedSimulator()
 
