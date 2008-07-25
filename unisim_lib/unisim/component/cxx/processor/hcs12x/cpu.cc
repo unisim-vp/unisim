@@ -749,15 +749,15 @@ Register* CPU::GetRegister(const char *name)
 string CPU::Disasm(physical_address_t addr, physical_address_t &next_addr)
 {
 	Operation *op = NULL;
+
+
 	uint8_t 	buffer[CodeType::maxsize];
-	 
+
 	ReadMemory(addr, buffer, CodeType::maxsize);
 	CodeType 	insn( buffer, CodeType::maxsize);
 	
 	op = this->Decode(addr, insn);
-	
-	
-	op = Decode(addr);
+
 	stringstream disasmBuffer;
 	op->disasm(disasmBuffer);
 

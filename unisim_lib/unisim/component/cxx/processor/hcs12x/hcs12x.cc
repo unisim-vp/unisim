@@ -91,7 +91,7 @@ class OpCall_idx : public Operation
 public:
 	OpCall_idx(CodeType const& code, uint16_t addr);
 	~OpCall_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 97 "hcs12x.cc"
 	* xb;
@@ -465,7 +465,7 @@ public:
 	OpLdaab_idx(CodeType const& code, uint16_t addr);
 	~OpLdaab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 471 "hcs12x.cc"
 	* xb;
@@ -765,7 +765,7 @@ public:
 	OpLd_dyxs_idx(CodeType const& code, uint16_t addr);
 	~OpLd_dyxs_idx();
 	uint32_t dyxs;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 771 "hcs12x.cc"
 	* xb;
@@ -842,7 +842,7 @@ class OpLeay : public Operation
 public:
 	OpLeay(CodeType const& code, uint16_t addr);
 	~OpLeay();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 848 "hcs12x.cc"
 	* xb;
@@ -919,7 +919,7 @@ class OpLeax : public Operation
 public:
 	OpLeax(CodeType const& code, uint16_t addr);
 	~OpLeax();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 925 "hcs12x.cc"
 	* xb;
@@ -996,7 +996,7 @@ class OpLeas : public Operation
 public:
 	OpLeas(CodeType const& code, uint16_t addr);
 	~OpLeas();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 1002 "hcs12x.cc"
 	* xb;
@@ -1222,7 +1222,7 @@ public:
 	OpStaab_idx(CodeType const& code, uint16_t addr);
 	~OpStaab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 1228 "hcs12x.cc"
 	* xb;
@@ -1448,7 +1448,7 @@ public:
 	OpSt_dyxs_idx(CodeType const& code, uint16_t addr);
 	~OpSt_dyxs_idx();
 	uint32_t dyxs;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 1454 "hcs12x.cc"
 	* xb;
@@ -1674,7 +1674,7 @@ public:
 	OpGldaab_idx(CodeType const& code, uint16_t addr);
 	~OpGldaab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 1680 "hcs12x.cc"
 	* xb;
@@ -1900,7 +1900,7 @@ public:
 	OpGld_dyxs_idx(CodeType const& code, uint16_t addr);
 	~OpGld_dyxs_idx();
 	uint32_t dyxs;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 1906 "hcs12x.cc"
 	* xb;
@@ -2126,7 +2126,7 @@ public:
 	OpGstaab_idx(CodeType const& code, uint16_t addr);
 	~OpGstaab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 2132 "hcs12x.cc"
 	* xb;
@@ -2352,7 +2352,7 @@ public:
 	OpGst_dyxs_idx(CodeType const& code, uint16_t addr);
 	~OpGst_dyxs_idx();
 	uint32_t dyxs;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 2358 "hcs12x.cc"
 	* xb;
@@ -2873,7 +2873,7 @@ class OpMovb_08 : public Operation
 public:
 	OpMovb_08(CodeType const& code, uint16_t addr);
 	~OpMovb_08();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 2879 "hcs12x.cc"
 	* xb;
@@ -3025,7 +3025,7 @@ class OpMovb_09 : public Operation
 public:
 	OpMovb_09(CodeType const& code, uint16_t addr);
 	~OpMovb_09();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3031 "hcs12x.cc"
 	* xb;
@@ -3103,7 +3103,7 @@ class OpMovb_0D : public Operation
 public:
 	OpMovb_0D(CodeType const& code, uint16_t addr);
 	~OpMovb_0D();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3109 "hcs12x.cc"
 	* xb;
@@ -3181,11 +3181,11 @@ class OpMovb_0A : public Operation
 public:
 	OpMovb_0A(CodeType const& code, uint16_t addr);
 	~OpMovb_0A();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3187 "hcs12x.cc"
 	* xbsrc;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3191 "hcs12x.cc"
 	* xbdst;
@@ -3410,7 +3410,7 @@ class OpMovw_00 : public Operation
 public:
 	OpMovw_00(CodeType const& code, uint16_t addr);
 	~OpMovw_00();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3416 "hcs12x.cc"
 	* xb;
@@ -3483,7 +3483,7 @@ class OpMovw_01 : public Operation
 public:
 	OpMovw_01(CodeType const& code, uint16_t addr);
 	~OpMovw_01();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3489 "hcs12x.cc"
 	* xb;
@@ -3561,7 +3561,7 @@ class OpMovw_05 : public Operation
 public:
 	OpMovw_05(CodeType const& code, uint16_t addr);
 	~OpMovw_05();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3567 "hcs12x.cc"
 	* xb;
@@ -3639,11 +3639,11 @@ class OpMovw_02 : public Operation
 public:
 	OpMovw_02(CodeType const& code, uint16_t addr);
 	~OpMovw_02();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3645 "hcs12x.cc"
 	* xbsrc;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 3649 "hcs12x.cc"
 	* xbdst;
@@ -4159,7 +4159,7 @@ public:
 	OpAdc_ab_idx(CodeType const& code, uint16_t addr);
 	~OpAdc_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 4165 "hcs12x.cc"
 	* xb;
@@ -4459,7 +4459,7 @@ public:
 	OpAdd_ab_idx(CodeType const& code, uint16_t addr);
 	~OpAdd_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 4465 "hcs12x.cc"
 	* xb;
@@ -4755,7 +4755,7 @@ class OpAded_idx : public Operation
 public:
 	OpAded_idx(CodeType const& code, uint16_t addr);
 	~OpAded_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 4761 "hcs12x.cc"
 	* xb;
@@ -5055,7 +5055,7 @@ public:
 	OpAde_xy_idx(CodeType const& code, uint16_t addr);
 	~OpAde_xy_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 5061 "hcs12x.cc"
 	* xb;
@@ -5355,7 +5355,7 @@ public:
 	OpAdd_xy_idx(CodeType const& code, uint16_t addr);
 	~OpAdd_xy_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 5361 "hcs12x.cc"
 	* xb;
@@ -5655,7 +5655,7 @@ public:
 	OpAdd_sub_d_idx(CodeType const& code, uint16_t addr);
 	~OpAdd_sub_d_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 5661 "hcs12x.cc"
 	* xb;
@@ -6027,7 +6027,7 @@ public:
 	OpSbc_ab_idx(CodeType const& code, uint16_t addr);
 	~OpSbc_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 6033 "hcs12x.cc"
 	* xb;
@@ -6323,7 +6323,7 @@ class OpSbed_idx : public Operation
 public:
 	OpSbed_idx(CodeType const& code, uint16_t addr);
 	~OpSbed_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 6329 "hcs12x.cc"
 	* xb;
@@ -6623,7 +6623,7 @@ public:
 	OpSbe_xy_idx(CodeType const& code, uint16_t addr);
 	~OpSbe_xy_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 6629 "hcs12x.cc"
 	* xb;
@@ -6923,7 +6923,7 @@ public:
 	OpSub_ab_idx(CodeType const& code, uint16_t addr);
 	~OpSub_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 6929 "hcs12x.cc"
 	* xb;
@@ -7223,7 +7223,7 @@ public:
 	OpSub_xy_idx(CodeType const& code, uint16_t addr);
 	~OpSub_xy_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 7229 "hcs12x.cc"
 	* xb;
@@ -7445,7 +7445,7 @@ class OpDec_idx : public Operation
 public:
 	OpDec_idx(CodeType const& code, uint16_t addr);
 	~OpDec_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 7451 "hcs12x.cc"
 	* xb;
@@ -7668,7 +7668,7 @@ class OpDecw_idx : public Operation
 public:
 	OpDecw_idx(CodeType const& code, uint16_t addr);
 	~OpDecw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 7674 "hcs12x.cc"
 	* xb;
@@ -8107,7 +8107,7 @@ class OpInc_idx : public Operation
 public:
 	OpInc_idx(CodeType const& code, uint16_t addr);
 	~OpInc_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 8113 "hcs12x.cc"
 	* xb;
@@ -8330,7 +8330,7 @@ class OpIncw_idx : public Operation
 public:
 	OpIncw_idx(CodeType const& code, uint16_t addr);
 	~OpIncw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 8336 "hcs12x.cc"
 	* xb;
@@ -8991,7 +8991,7 @@ public:
 	OpCmp_ab_idx(CodeType const& code, uint16_t addr);
 	~OpCmp_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 8997 "hcs12x.cc"
 	* xb;
@@ -9291,7 +9291,7 @@ public:
 	OpCp_dyxs_idx(CodeType const& code, uint16_t addr);
 	~OpCp_dyxs_idx();
 	uint32_t dyxs;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 9297 "hcs12x.cc"
 	* xb;
@@ -9591,7 +9591,7 @@ public:
 	OpCpe_dyxs_idx(CodeType const& code, uint16_t addr);
 	~OpCpe_dyxs_idx();
 	uint32_t dyxs;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 9597 "hcs12x.cc"
 	* xb;
@@ -9741,7 +9741,7 @@ class OpTst_idx : public Operation
 public:
 	OpTst_idx(CodeType const& code, uint16_t addr);
 	~OpTst_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 9747 "hcs12x.cc"
 	* xb;
@@ -9964,7 +9964,7 @@ class OpTstw_idx : public Operation
 public:
 	OpTstw_idx(CodeType const& code, uint16_t addr);
 	~OpTstw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 9970 "hcs12x.cc"
 	* xb;
@@ -10114,7 +10114,7 @@ class OpEmind : public Operation
 public:
 	OpEmind(CodeType const& code, uint16_t addr);
 	~OpEmind();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10120 "hcs12x.cc"
 	* xb;
@@ -10191,7 +10191,7 @@ class OpEminm : public Operation
 public:
 	OpEminm(CodeType const& code, uint16_t addr);
 	~OpEminm();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10197 "hcs12x.cc"
 	* xb;
@@ -10268,7 +10268,7 @@ class OpMina : public Operation
 public:
 	OpMina(CodeType const& code, uint16_t addr);
 	~OpMina();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10274 "hcs12x.cc"
 	* xb;
@@ -10345,7 +10345,7 @@ class OpMinm : public Operation
 public:
 	OpMinm(CodeType const& code, uint16_t addr);
 	~OpMinm();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10351 "hcs12x.cc"
 	* xb;
@@ -10422,7 +10422,7 @@ class OpEmaxd : public Operation
 public:
 	OpEmaxd(CodeType const& code, uint16_t addr);
 	~OpEmaxd();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10428 "hcs12x.cc"
 	* xb;
@@ -10499,7 +10499,7 @@ class OpEmaxm : public Operation
 public:
 	OpEmaxm(CodeType const& code, uint16_t addr);
 	~OpEmaxm();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10505 "hcs12x.cc"
 	* xb;
@@ -10576,7 +10576,7 @@ class OpMaxa : public Operation
 public:
 	OpMaxa(CodeType const& code, uint16_t addr);
 	~OpMaxa();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10582 "hcs12x.cc"
 	* xb;
@@ -10653,7 +10653,7 @@ class OpMaxm : public Operation
 public:
 	OpMaxm(CodeType const& code, uint16_t addr);
 	~OpMaxm();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10659 "hcs12x.cc"
 	* xb;
@@ -10953,7 +10953,7 @@ public:
 	OpAnd_ab_idx(CodeType const& code, uint16_t addr);
 	~OpAnd_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 10959 "hcs12x.cc"
 	* xb;
@@ -11326,7 +11326,7 @@ public:
 	OpAnd_xy_idx(CodeType const& code, uint16_t addr);
 	~OpAnd_xy_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 11332 "hcs12x.cc"
 	* xb;
@@ -11626,7 +11626,7 @@ public:
 	OpOra_ab_idx(CodeType const& code, uint16_t addr);
 	~OpOra_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 11632 "hcs12x.cc"
 	* xb;
@@ -11999,7 +11999,7 @@ public:
 	OpOr_xy_idx(CodeType const& code, uint16_t addr);
 	~OpOr_xy_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 12005 "hcs12x.cc"
 	* xb;
@@ -12299,7 +12299,7 @@ public:
 	OpEor_ab_idx(CodeType const& code, uint16_t addr);
 	~OpEor_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 12305 "hcs12x.cc"
 	* xb;
@@ -12599,7 +12599,7 @@ public:
 	OpEor_xy_idx(CodeType const& code, uint16_t addr);
 	~OpEor_xy_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 12605 "hcs12x.cc"
 	* xb;
@@ -12965,7 +12965,7 @@ class OpClr_idx : public Operation
 public:
 	OpClr_idx(CodeType const& code, uint16_t addr);
 	~OpClr_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 12971 "hcs12x.cc"
 	* xb;
@@ -13115,7 +13115,7 @@ class OpClrw_idx : public Operation
 public:
 	OpClrw_idx(CodeType const& code, uint16_t addr);
 	~OpClrw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 13121 "hcs12x.cc"
 	* xb;
@@ -13411,7 +13411,7 @@ class OpCom_idx : public Operation
 public:
 	OpCom_idx(CodeType const& code, uint16_t addr);
 	~OpCom_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 13417 "hcs12x.cc"
 	* xb;
@@ -13634,7 +13634,7 @@ class OpComw_idx : public Operation
 public:
 	OpComw_idx(CodeType const& code, uint16_t addr);
 	~OpComw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 13640 "hcs12x.cc"
 	* xb;
@@ -13857,7 +13857,7 @@ class OpNeg_idx : public Operation
 public:
 	OpNeg_idx(CodeType const& code, uint16_t addr);
 	~OpNeg_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 13863 "hcs12x.cc"
 	* xb;
@@ -14080,7 +14080,7 @@ class OpNegw_idx : public Operation
 public:
 	OpNegw_idx(CodeType const& code, uint16_t addr);
 	~OpNegw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 14086 "hcs12x.cc"
 	* xb;
@@ -14378,7 +14378,7 @@ class OpBclr_idx : public Operation
 public:
 	OpBclr_idx(CodeType const& code, uint16_t addr);
 	~OpBclr_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 14384 "hcs12x.cc"
 	* xb;
@@ -14679,7 +14679,7 @@ public:
 	OpBit_ab_idx(CodeType const& code, uint16_t addr);
 	~OpBit_ab_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 14685 "hcs12x.cc"
 	* xb;
@@ -14979,7 +14979,7 @@ public:
 	OpBit_xy_idx(CodeType const& code, uint16_t addr);
 	~OpBit_xy_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 14985 "hcs12x.cc"
 	* xb;
@@ -15204,7 +15204,7 @@ class OpBset_idx : public Operation
 public:
 	OpBset_idx(CodeType const& code, uint16_t addr);
 	~OpBset_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 15210 "hcs12x.cc"
 	* xb;
@@ -15355,7 +15355,7 @@ class OpLsl_idx : public Operation
 public:
 	OpLsl_idx(CodeType const& code, uint16_t addr);
 	~OpLsl_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 15361 "hcs12x.cc"
 	* xb;
@@ -15721,7 +15721,7 @@ class OpLslw_idx : public Operation
 public:
 	OpLslw_idx(CodeType const& code, uint16_t addr);
 	~OpLslw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 15727 "hcs12x.cc"
 	* xb;
@@ -16015,7 +16015,7 @@ class OpRol_idx : public Operation
 public:
 	OpRol_idx(CodeType const& code, uint16_t addr);
 	~OpRol_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 16021 "hcs12x.cc"
 	* xb;
@@ -16309,7 +16309,7 @@ class OpRolw_idx : public Operation
 public:
 	OpRolw_idx(CodeType const& code, uint16_t addr);
 	~OpRolw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 16315 "hcs12x.cc"
 	* xb;
@@ -16603,7 +16603,7 @@ class OpLsr_idx : public Operation
 public:
 	OpLsr_idx(CodeType const& code, uint16_t addr);
 	~OpLsr_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 16609 "hcs12x.cc"
 	* xb;
@@ -16969,7 +16969,7 @@ class OpLsrw_idx : public Operation
 public:
 	OpLsrw_idx(CodeType const& code, uint16_t addr);
 	~OpLsrw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 16975 "hcs12x.cc"
 	* xb;
@@ -17263,7 +17263,7 @@ class OpRor_idx : public Operation
 public:
 	OpRor_idx(CodeType const& code, uint16_t addr);
 	~OpRor_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 17269 "hcs12x.cc"
 	* xb;
@@ -17557,7 +17557,7 @@ class OpRorw_idx : public Operation
 public:
 	OpRorw_idx(CodeType const& code, uint16_t addr);
 	~OpRorw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 17563 "hcs12x.cc"
 	* xb;
@@ -17851,7 +17851,7 @@ class OpAsr_idx : public Operation
 public:
 	OpAsr_idx(CodeType const& code, uint16_t addr);
 	~OpAsr_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 17857 "hcs12x.cc"
 	* xb;
@@ -18145,7 +18145,7 @@ class OpAsrw_idx : public Operation
 public:
 	OpAsrw_idx(CodeType const& code, uint16_t addr);
 	~OpAsrw_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 18151 "hcs12x.cc"
 	* xb;
@@ -18514,7 +18514,7 @@ class OpBtas_idx : public Operation
 public:
 	OpBtas_idx(CodeType const& code, uint16_t addr);
 	~OpBtas_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 18520 "hcs12x.cc"
 	* xb;
@@ -19242,7 +19242,7 @@ public:
 	OpSbr(CodeType const& code, uint16_t addr);
 	uint32_t sel;
 	int32_t rel8;
-#line 44 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 44 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	bool  branch;
 #line 19248 "hcs12x.cc"
 	virtual
@@ -19319,7 +19319,7 @@ public:
 	OpLbr(CodeType const& code, uint16_t addr);
 	uint32_t sel;
 	int32_t rel16;
-#line 143 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 143 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	bool  branch;
 #line 19325 "hcs12x.cc"
 	virtual
@@ -19548,7 +19548,7 @@ public:
 	OpBr_clr_set_idx(CodeType const& code, uint16_t addr);
 	~OpBr_clr_set_idx();
 	uint32_t b;
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 19554 "hcs12x.cc"
 	* xb;
@@ -19994,7 +19994,7 @@ class OpJmp_idx : public Operation
 public:
 	OpJmp_idx(CodeType const& code, uint16_t addr);
 	~OpJmp_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 20000 "hcs12x.cc"
 	* xb;
@@ -20217,7 +20217,7 @@ class OpJsr_idx : public Operation
 public:
 	OpJsr_idx(CodeType const& code, uint16_t addr);
 	~OpJsr_idx();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 20223 "hcs12x.cc"
 	* xb;
@@ -20442,7 +20442,7 @@ public:
 	uint32_t b3;
 	uint32_t b210;
 	int32_t rel9;
-#line 694 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 694 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	bool  isBranch;
 #line 20448 "hcs12x.cc"
 	virtual
@@ -21886,7 +21886,7 @@ class OpTbl : public Operation
 public:
 	OpTbl(CodeType const& code, uint16_t addr);
 	~OpTbl();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 21892 "hcs12x.cc"
 	* xb;
@@ -21963,7 +21963,7 @@ class OpEtlb : public Operation
 public:
 	OpEtlb(CodeType const& code, uint16_t addr);
 	~OpEtlb();
-#line 1 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
+#line 1 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./xb_sub.isa"
 	unisim::component::cxx::processor::hcs12x::XB::Operation
 #line 21969 "hcs12x.cc"
 	* xb;
@@ -22111,7 +22111,7 @@ class OpStop : public Operation
 {
 public:
 	OpStop(CodeType const& code, uint16_t addr);
-#line 52 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 52 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	bool  stopDisabled;
 #line 22117 "hcs12x.cc"
 	virtual
@@ -22330,7 +22330,7 @@ class OpRti : public Operation
 {
 public:
 	OpRti(CodeType const& code, uint16_t addr);
-#line 187 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 187 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	bool  isPending;
 #line 22336 "hcs12x.cc"
 	virtual
@@ -22550,7 +22550,7 @@ uint8_t
 #line 22551 "hcs12x.cc"
 OpCall_idx::getCycles()
 {
-#line 491 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 491 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 7, 7, 8, 0, 0); }
 #line 22556 "hcs12x.cc"
 }
@@ -22566,11 +22566,11 @@ sink
 #line 22567 "hcs12x.cc"
 )
 {
-#line 493 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 493 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "CALL ";
 		xb->disasm(sink);
-		sink << ", $" << std::hex << page;
+		sink << ", 0x" << std::hex << page;
 	}
 #line 22576 "hcs12x.cc"
 }
@@ -22586,7 +22586,7 @@ cpu
 #line 22587 "hcs12x.cc"
 )
 {
-#line 499 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 499 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		/*
 		* (SP)-2 => SP
@@ -22623,13 +22623,13 @@ static Operation *DecodeOpCall_idx(CodeType const& code, uint16_t addr)
 }
 
 // TRAP: unimplemented opcode trap
-// trapnum: Trap number $30-$39 or $40-$FF
+// trapnum: Trap number 0x30-0x39 or 0x40-0xFF
 #line 73 "hcs12x.isa"
 uint8_t
 #line 22630 "hcs12x.cc"
 OpTrap::getCycles()
 {
-#line 283 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 283 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 10; }
 #line 22635 "hcs12x.cc"
 }
@@ -22645,9 +22645,9 @@ sink
 #line 22646 "hcs12x.cc"
 )
 {
-#line 285 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 285 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
-		sink << "TRAP $" << std::hex << trapnum;
+		sink << "TRAP 0x" << std::hex << trapnum;
 	}
 #line 22653 "hcs12x.cc"
 }
@@ -22663,19 +22663,19 @@ cpu
 #line 22664 "hcs12x.cc"
 )
 {
-#line 289 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 289 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 
 		if (((trapnum >= 0x30) && (trapnum <= 0x39)) || ((trapnum >= 0x40) && (trapnum <= 0xFF))) {
 			/*
-			* (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
-			* (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
-			* (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
-			* (SP) – $0002 => SP; B : A => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; YH : YL => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; XH : XL => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; B : A => (M(SP) : M(SP+1))
 			* In case of CPU12
-			* (SP) – $0001 => SP; CCR => (M(SP) )
+			* (SP) – 0x0001 => SP; CCR => (M(SP) )
 			* In case of CPU12X
-			* (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
 			* 1 => I; 0 => U
 			* (Trap Vector) => PC
 			*/
@@ -22753,7 +22753,7 @@ uint8_t
 #line 22754 "hcs12x.cc"
 OpLdaab_imm::getCycles()
 {
-#line 38 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 38 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 1; }
 #line 22759 "hcs12x.cc"
 }
@@ -22769,12 +22769,12 @@ sink
 #line 22770 "hcs12x.cc"
 )
 {
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 40 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		if (b==0) {
-			sink << "LDAA #$";
+			sink << "LDAA #0x";
 			} else {
-			sink << "LDAB #$";
+			sink << "LDAB #0x";
 		}
 		sink  << std::hex << opr8i;
 	}
@@ -22792,7 +22792,7 @@ cpu
 #line 22793 "hcs12x.cc"
 )
 {
-#line 49 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 49 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		if (b==0) {
 			cpu->setRegA(opr8i); // ldaa #<opr8i>
@@ -22818,7 +22818,7 @@ uint8_t
 #line 22819 "hcs12x.cc"
 OpLdaab_dir::getCycles()
 {
-#line 64 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 64 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
 #line 22824 "hcs12x.cc"
 }
@@ -22834,12 +22834,12 @@ sink
 #line 22835 "hcs12x.cc"
 )
 {
-#line 66 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 66 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		if (b==0) {
-			sink << "LDAA $";
+			sink << "LDAA 0x";
 			} else {
-			sink << "LDAB $";
+			sink << "LDAB 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -22857,7 +22857,7 @@ cpu
 #line 22858 "hcs12x.cc"
 )
 {
-#line 75 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 75 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -22885,7 +22885,7 @@ uint8_t
 #line 22886 "hcs12x.cc"
 OpLdaab_ext::getCycles()
 {
-#line 92 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 92 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
 #line 22891 "hcs12x.cc"
 }
@@ -22901,12 +22901,12 @@ sink
 #line 22902 "hcs12x.cc"
 )
 {
-#line 94 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 94 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		if (b==0) {
-			sink << "LDAA $";
+			sink << "LDAA 0x";
 			} else {
-			sink << "LDAB $";
+			sink << "LDAB 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -22924,7 +22924,7 @@ cpu
 #line 22925 "hcs12x.cc"
 )
 {
-#line 103 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 103 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 
@@ -22958,7 +22958,7 @@ uint8_t
 #line 22959 "hcs12x.cc"
 OpLdaab_idx::getCycles()
 {
-#line 126 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 126 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 22964 "hcs12x.cc"
 }
@@ -22974,7 +22974,7 @@ sink
 #line 22975 "hcs12x.cc"
 )
 {
-#line 128 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 128 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		if (b==0) {
 			sink << "LDAA ";
@@ -22997,7 +22997,7 @@ cpu
 #line 22998 "hcs12x.cc"
 )
 {
-#line 137 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 137 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -23029,7 +23029,7 @@ uint8_t
 #line 23030 "hcs12x.cc"
 OpLd_dyxs_imm::getCycles()
 {
-#line 158 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 158 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 2; }
 #line 23035 "hcs12x.cc"
 }
@@ -23045,14 +23045,14 @@ sink
 #line 23046 "hcs12x.cc"
 )
 {
-#line 160 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 160 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "LDD #$"; break;
-			case 1: sink << "LDY #$"; break;
-			case 2: sink << "LDX #$"; break;
-			case 3: sink << "LDS #$"; break;
+			case 0: sink << "LDD #0x"; break;
+			case 1: sink << "LDY #0x"; break;
+			case 2: sink << "LDX #0x"; break;
+			case 3: sink << "LDS #0x"; break;
 		}
 		sink << std::hex << opr16i;
 	}
@@ -23070,7 +23070,7 @@ cpu
 #line 23071 "hcs12x.cc"
 )
 {
-#line 171 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 171 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
@@ -23099,7 +23099,7 @@ uint8_t
 #line 23100 "hcs12x.cc"
 OpLd_dyxs_dir::getCycles()
 {
-#line 189 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 189 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
 #line 23105 "hcs12x.cc"
 }
@@ -23115,14 +23115,14 @@ sink
 #line 23116 "hcs12x.cc"
 )
 {
-#line 191 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 191 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "LDD $"; break;
-			case 1: sink << "LDY $"; break;
-			case 2: sink << "LDX $"; break;
-			case 3: sink << "LDS $"; break;
+			case 0: sink << "LDD 0x"; break;
+			case 1: sink << "LDY 0x"; break;
+			case 2: sink << "LDX 0x"; break;
+			case 3: sink << "LDS 0x"; break;
 		}
 		sink << std::hex << dd;
 	}
@@ -23140,7 +23140,7 @@ cpu
 #line 23141 "hcs12x.cc"
 )
 {
-#line 202 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(dd, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -23170,7 +23170,7 @@ uint8_t
 #line 23171 "hcs12x.cc"
 OpLd_dyxs_ext::getCycles()
 {
-#line 221 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 221 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
 #line 23176 "hcs12x.cc"
 }
@@ -23186,14 +23186,14 @@ sink
 #line 23187 "hcs12x.cc"
 )
 {
-#line 223 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 223 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "LDD $"; break;
-			case 1: sink << "LDY $"; break;
-			case 2: sink << "LDX $"; break;
-			case 3: sink << "LDS $"; break;
+			case 0: sink << "LDD 0x"; break;
+			case 1: sink << "LDY 0x"; break;
+			case 2: sink << "LDX 0x"; break;
+			case 3: sink << "LDS 0x"; break;
 		}
 
 		sink << std::hex << opr16a;
@@ -23212,7 +23212,7 @@ cpu
 #line 23213 "hcs12x.cc"
 )
 {
-#line 235 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 235 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 
@@ -23248,7 +23248,7 @@ uint8_t
 #line 23249 "hcs12x.cc"
 OpLd_dyxs_idx::getCycles()
 {
-#line 260 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 260 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 23254 "hcs12x.cc"
 }
@@ -23264,7 +23264,7 @@ sink
 #line 23265 "hcs12x.cc"
 )
 {
-#line 262 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
@@ -23290,7 +23290,7 @@ cpu
 #line 23291 "hcs12x.cc"
 )
 {
-#line 274 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 274 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -23325,7 +23325,7 @@ uint8_t
 #line 23326 "hcs12x.cc"
 OpLeay::getCycles()
 {
-#line 299 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 299 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
 #line 23331 "hcs12x.cc"
 }
@@ -23341,7 +23341,7 @@ sink
 #line 23342 "hcs12x.cc"
 )
 {
-#line 301 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 301 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		sink << "LEAY ";
@@ -23361,7 +23361,7 @@ cpu
 #line 23362 "hcs12x.cc"
 )
 {
-#line 307 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 307 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		address_t	addr = xb->getEAddr(cpu);
@@ -23385,7 +23385,7 @@ uint8_t
 #line 23386 "hcs12x.cc"
 OpLeax::getCycles()
 {
-#line 320 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 320 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
 #line 23391 "hcs12x.cc"
 }
@@ -23401,7 +23401,7 @@ sink
 #line 23402 "hcs12x.cc"
 )
 {
-#line 322 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 322 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		sink << "LEAX ";
@@ -23422,7 +23422,7 @@ cpu
 #line 23423 "hcs12x.cc"
 )
 {
-#line 329 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 329 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		address_t	addr = xb->getEAddr(cpu);
@@ -23446,7 +23446,7 @@ uint8_t
 #line 23447 "hcs12x.cc"
 OpLeas::getCycles()
 {
-#line 342 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 342 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
 #line 23452 "hcs12x.cc"
 }
@@ -23462,7 +23462,7 @@ sink
 #line 23463 "hcs12x.cc"
 )
 {
-#line 344 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 344 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		sink << "LEAS ";
@@ -23483,7 +23483,7 @@ cpu
 #line 23484 "hcs12x.cc"
 )
 {
-#line 351 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 351 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		address_t	addr = xb->getEAddr(cpu);
@@ -23505,7 +23505,7 @@ uint8_t
 #line 23506 "hcs12x.cc"
 OpStaab_dir::getCycles()
 {
-#line 362 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 362 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 2; }
 #line 23511 "hcs12x.cc"
 }
@@ -23521,13 +23521,13 @@ sink
 #line 23522 "hcs12x.cc"
 )
 {
-#line 364 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 364 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		if (b==0) {
-			sink << "STAA $";
+			sink << "STAA 0x";
 			} else {
-			sink << "STAB $";
+			sink << "STAB 0x";
 		}
 		sink << std::hex << opr8a;
 
@@ -23546,7 +23546,7 @@ cpu
 #line 23547 "hcs12x.cc"
 )
 {
-#line 375 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 375 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		uint8_t val;
@@ -23576,7 +23576,7 @@ uint8_t
 #line 23577 "hcs12x.cc"
 OpStaab_ext::getCycles()
 {
-#line 394 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 394 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
 #line 23582 "hcs12x.cc"
 }
@@ -23592,13 +23592,13 @@ sink
 #line 23593 "hcs12x.cc"
 )
 {
-#line 396 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 396 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		if (b==0) {
-			sink << "STAA $";
+			sink << "STAA 0x";
 			} else {
-			sink << "STAB $";
+			sink << "STAB 0x";
 		}
 		sink << std::hex << opr16a;
 
@@ -23617,7 +23617,7 @@ cpu
 #line 23618 "hcs12x.cc"
 )
 {
-#line 407 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 407 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		uint8_t	val;
@@ -23650,7 +23650,7 @@ uint8_t
 #line 23651 "hcs12x.cc"
 OpStaab_idx::getCycles()
 {
-#line 430 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 430 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 #line 23656 "hcs12x.cc"
 }
@@ -23666,7 +23666,7 @@ sink
 #line 23667 "hcs12x.cc"
 )
 {
-#line 432 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 432 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		if (b==0) {
@@ -23691,7 +23691,7 @@ cpu
 #line 23692 "hcs12x.cc"
 )
 {
-#line 443 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 443 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -23720,7 +23720,7 @@ uint8_t
 #line 23721 "hcs12x.cc"
 OpSt_dyxs_dir::getCycles()
 {
-#line 461 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 461 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 2; }
 #line 23726 "hcs12x.cc"
 }
@@ -23736,14 +23736,14 @@ sink
 #line 23737 "hcs12x.cc"
 )
 {
-#line 463 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 463 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "STD $"; break;
-			case 1: sink << "STY $"; break;
-			case 2: sink << "STX $"; break;
-			case 3: sink << "STS $"; break;
+			case 0: sink << "STD 0x"; break;
+			case 1: sink << "STY 0x"; break;
+			case 2: sink << "STX 0x"; break;
+			case 3: sink << "STS 0x"; break;
 		}
 
 		sink << std::hex << opr8a;
@@ -23762,7 +23762,7 @@ cpu
 #line 23763 "hcs12x.cc"
 )
 {
-#line 475 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 475 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		uint16_t val;
@@ -23797,7 +23797,7 @@ uint8_t
 #line 23798 "hcs12x.cc"
 OpSt_dyxs_ext::getCycles()
 {
-#line 499 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 499 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
 #line 23803 "hcs12x.cc"
 }
@@ -23813,14 +23813,14 @@ sink
 #line 23814 "hcs12x.cc"
 )
 {
-#line 501 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 501 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "STD $"; break;
-			case 1: sink << "STY $"; break;
-			case 2: sink << "STX $"; break;
-			case 3: sink << "STS $"; break;
+			case 0: sink << "STD 0x"; break;
+			case 1: sink << "STY 0x"; break;
+			case 2: sink << "STX 0x"; break;
+			case 3: sink << "STS 0x"; break;
 		}
 
 		sink << std::hex << opr16a;
@@ -23840,7 +23840,7 @@ cpu
 #line 23841 "hcs12x.cc"
 )
 {
-#line 514 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 514 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		uint16_t val = 0;
@@ -23879,7 +23879,7 @@ uint8_t
 #line 23880 "hcs12x.cc"
 OpSt_dyxs_idx::getCycles()
 {
-#line 543 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 543 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 #line 23885 "hcs12x.cc"
 }
@@ -23895,7 +23895,7 @@ sink
 #line 23896 "hcs12x.cc"
 )
 {
-#line 545 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 545 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
@@ -23922,7 +23922,7 @@ cpu
 #line 23923 "hcs12x.cc"
 )
 {
-#line 558 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 558 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -23958,7 +23958,7 @@ uint8_t
 #line 23959 "hcs12x.cc"
 OpGldaab_dir::getCycles()
 {
-#line 584 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 584 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
 #line 23964 "hcs12x.cc"
 }
@@ -23974,12 +23974,12 @@ sink
 #line 23975 "hcs12x.cc"
 )
 {
-#line 586 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 586 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		if (b==0) {
-			sink << "GLDAA $";
+			sink << "GLDAA 0x";
 			} else {
-			sink << "GLDAB $";
+			sink << "GLDAB 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -23997,7 +23997,7 @@ cpu
 #line 23998 "hcs12x.cc"
 )
 {
-#line 595 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 595 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, W_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -24025,7 +24025,7 @@ uint8_t
 #line 24026 "hcs12x.cc"
 OpGldaab_ext::getCycles()
 {
-#line 612 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 612 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
 #line 24031 "hcs12x.cc"
 }
@@ -24041,12 +24041,12 @@ sink
 #line 24042 "hcs12x.cc"
 )
 {
-#line 614 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 614 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		if (b==0) {
-			sink << "GLDAA $";
+			sink << "GLDAA 0x";
 			} else {
-			sink << "GLDAB $";
+			sink << "GLDAB 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -24064,7 +24064,7 @@ cpu
 #line 24065 "hcs12x.cc"
 )
 {
-#line 623 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 623 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
 
@@ -24098,7 +24098,7 @@ uint8_t
 #line 24099 "hcs12x.cc"
 OpGldaab_idx::getCycles()
 {
-#line 646 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 646 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 24104 "hcs12x.cc"
 }
@@ -24114,7 +24114,7 @@ sink
 #line 24115 "hcs12x.cc"
 )
 {
-#line 648 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 648 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		if (b==0) {
 			sink << "GLDAA ";
@@ -24137,7 +24137,7 @@ cpu
 #line 24138 "hcs12x.cc"
 )
 {
-#line 657 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 657 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
@@ -24169,7 +24169,7 @@ uint8_t
 #line 24170 "hcs12x.cc"
 OpGld_dyxs_dir::getCycles()
 {
-#line 678 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 678 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
 #line 24175 "hcs12x.cc"
 }
@@ -24185,14 +24185,14 @@ sink
 #line 24186 "hcs12x.cc"
 )
 {
-#line 680 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 680 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "GLDD $"; break;
-			case 1: sink << "GLDY $"; break;
-			case 2: sink << "GLDX $"; break;
-			case 3: sink << "GLDS $"; break;
+			case 0: sink << "GLDD 0x"; break;
+			case 1: sink << "GLDY 0x"; break;
+			case 2: sink << "GLDX 0x"; break;
+			case 3: sink << "GLDS 0x"; break;
 		}
 		sink << std::hex << dd;
 	}
@@ -24210,7 +24210,7 @@ cpu
 #line 24211 "hcs12x.cc"
 )
 {
-#line 691 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 691 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(dd, MEMORY::DIRECT, W_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -24240,7 +24240,7 @@ uint8_t
 #line 24241 "hcs12x.cc"
 OpGld_dyxs_ext::getCycles()
 {
-#line 710 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 710 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
 #line 24246 "hcs12x.cc"
 }
@@ -24256,14 +24256,14 @@ sink
 #line 24257 "hcs12x.cc"
 )
 {
-#line 712 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 712 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "GLDD $"; break;
-			case 1: sink << "GLDY $"; break;
-			case 2: sink << "GLDX $"; break;
-			case 3: sink << "GLDS $"; break;
+			case 0: sink << "GLDD 0x"; break;
+			case 1: sink << "GLDY 0x"; break;
+			case 2: sink << "GLDX 0x"; break;
+			case 3: sink << "GLDS 0x"; break;
 		}
 
 		sink << std::hex << opr16a;
@@ -24282,7 +24282,7 @@ cpu
 #line 24283 "hcs12x.cc"
 )
 {
-#line 724 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 724 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
 
@@ -24318,7 +24318,7 @@ uint8_t
 #line 24319 "hcs12x.cc"
 OpGld_dyxs_idx::getCycles()
 {
-#line 749 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 749 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 24324 "hcs12x.cc"
 }
@@ -24334,7 +24334,7 @@ sink
 #line 24335 "hcs12x.cc"
 )
 {
-#line 751 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 751 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
@@ -24360,7 +24360,7 @@ cpu
 #line 24361 "hcs12x.cc"
 )
 {
-#line 763 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 763 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
@@ -24393,7 +24393,7 @@ uint8_t
 #line 24394 "hcs12x.cc"
 OpGstaab_dir::getCycles()
 {
-#line 785 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 785 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
 #line 24399 "hcs12x.cc"
 }
@@ -24409,13 +24409,13 @@ sink
 #line 24410 "hcs12x.cc"
 )
 {
-#line 787 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 787 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		if (b==0) {
-			sink << "GSTAA $";
+			sink << "GSTAA 0x";
 			} else {
-			sink << "GSTAB $";
+			sink << "GSTAB 0x";
 		}
 		sink << std::hex << opr8a;
 
@@ -24434,7 +24434,7 @@ cpu
 #line 24435 "hcs12x.cc"
 )
 {
-#line 798 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 798 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		uint8_t val;
@@ -24464,7 +24464,7 @@ uint8_t
 #line 24465 "hcs12x.cc"
 OpGstaab_ext::getCycles()
 {
-#line 817 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 817 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
 #line 24470 "hcs12x.cc"
 }
@@ -24480,13 +24480,13 @@ sink
 #line 24481 "hcs12x.cc"
 )
 {
-#line 819 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 819 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		if (b==0) {
-			sink << "GSTAA $";
+			sink << "GSTAA 0x";
 			} else {
-			sink << "GSTAB $";
+			sink << "GSTAB 0x";
 		}
 		sink << std::hex << opr16a;
 
@@ -24505,7 +24505,7 @@ cpu
 #line 24506 "hcs12x.cc"
 )
 {
-#line 830 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 830 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		uint8_t	val;
@@ -24538,7 +24538,7 @@ uint8_t
 #line 24539 "hcs12x.cc"
 OpGstaab_idx::getCycles()
 {
-#line 853 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 853 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 #line 24544 "hcs12x.cc"
 }
@@ -24554,7 +24554,7 @@ sink
 #line 24555 "hcs12x.cc"
 )
 {
-#line 855 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 855 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		if (b==0) {
@@ -24579,7 +24579,7 @@ cpu
 #line 24580 "hcs12x.cc"
 )
 {
-#line 866 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 866 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
@@ -24608,7 +24608,7 @@ uint8_t
 #line 24609 "hcs12x.cc"
 OpGst_dyxs_dir::getCycles()
 {
-#line 884 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 884 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 3; }
 #line 24614 "hcs12x.cc"
 }
@@ -24624,14 +24624,14 @@ sink
 #line 24625 "hcs12x.cc"
 )
 {
-#line 886 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 886 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "GSTD $"; break;
-			case 1: sink << "GSTY $"; break;
-			case 2: sink << "GSTX $"; break;
-			case 3: sink << "GSTS $"; break;
+			case 0: sink << "GSTD 0x"; break;
+			case 1: sink << "GSTY 0x"; break;
+			case 2: sink << "GSTX 0x"; break;
+			case 3: sink << "GSTS 0x"; break;
 		}
 
 		sink << std::hex << opr8a;
@@ -24650,7 +24650,7 @@ cpu
 #line 24651 "hcs12x.cc"
 )
 {
-#line 898 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 898 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		uint16_t val;
@@ -24685,7 +24685,7 @@ uint8_t
 #line 24686 "hcs12x.cc"
 OpGst_dyxs_ext::getCycles()
 {
-#line 922 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 922 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return 4; }
 #line 24691 "hcs12x.cc"
 }
@@ -24701,14 +24701,14 @@ sink
 #line 24702 "hcs12x.cc"
 )
 {
-#line 924 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 924 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
-			case 0: sink << "GSTD $"; break;
-			case 1: sink << "GSTY $"; break;
-			case 2: sink << "GSTX $"; break;
-			case 3: sink << "GSTS $"; break;
+			case 0: sink << "GSTD 0x"; break;
+			case 1: sink << "GSTY 0x"; break;
+			case 2: sink << "GSTX 0x"; break;
+			case 3: sink << "GSTS 0x"; break;
 		}
 
 		sink << std::hex << opr16a;
@@ -24728,7 +24728,7 @@ cpu
 #line 24729 "hcs12x.cc"
 )
 {
-#line 937 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 937 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		uint16_t val = 0;
@@ -24767,7 +24767,7 @@ uint8_t
 #line 24768 "hcs12x.cc"
 OpGst_dyxs_idx::getCycles()
 {
-#line 966 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 966 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 #line 24773 "hcs12x.cc"
 }
@@ -24783,7 +24783,7 @@ sink
 #line 24784 "hcs12x.cc"
 )
 {
-#line 968 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 968 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		switch (dyxs) {
@@ -24810,7 +24810,7 @@ cpu
 #line 24811 "hcs12x.cc"
 )
 {
-#line 981 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
+#line 981 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, W_GLOBAL_ADDRESS);
@@ -24878,7 +24878,7 @@ uint8_t
 #line 24879 "hcs12x.cc"
 OpT_ab_ba::getCycles()
 {
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 2; }
 #line 24884 "hcs12x.cc"
 }
@@ -24894,7 +24894,7 @@ sink
 #line 24895 "hcs12x.cc"
 )
 {
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 		if (b == 0) { sink << "TAB"; } else { sink << "TBA";}
 	}
@@ -24912,7 +24912,7 @@ cpu
 #line 24913 "hcs12x.cc"
 )
 {
-#line 45 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 		uint8_t val;
 
@@ -24945,7 +24945,7 @@ uint8_t
 #line 24946 "hcs12x.cc"
 OpExg_hcs12::getCycles()
 {
-#line 68 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 68 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 1; }
 #line 24951 "hcs12x.cc"
 }
@@ -24965,7 +24965,7 @@ sink
 #line 24966 "hcs12x.cc"
 )
 {
-#line 74 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 74 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 
 		uint8_t rrSrc, rrDst;
@@ -25010,7 +25010,7 @@ cpu
 #line 25011 "hcs12x.cc"
 )
 {
-#line 105 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 105 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 		/* Legal "rr" value for EBLB::setter and EBLB::getter functions
 		* 0x00:A; 0x01:B;
@@ -25051,7 +25051,7 @@ cpu
 			}
 		}
 		else if (((srcSize == 8) || (lms == 2)) && (dstSize == 16)) {
-			// $00:(r1) => r2
+			// 0x00:(r1) => r2
 			// if r2 isn't D then && (r2[7:0]) => r1
 			uint16_t r1Val = 0x00FF & cpu->eblb->getter<uint8_t>(rrSrc);
 			uint8_t r2Val = (uint8_t) cpu->eblb->getter<uint16_t>(rrDst); // only low 8 bits
@@ -25062,7 +25062,7 @@ cpu
 		}
 		else if ((srcSize == 16) && (dstSize == 8)) {
 			// (r1[7:0]) => (r2)
-			// if r2 is A then $00:(r2) => r1 else $FF:(r2) => r1
+			// if r2 is A then 0x00:(r2) => r1 else 0xFF:(r2) => r1
 			uint8_t r1Val = cpu->eblb->getter<uint16_t>(rrSrc); // only low 8 bits
 			uint8_t r2Val = cpu->eblb->getter<uint8_t>(rrDst);
 
@@ -25090,7 +25090,7 @@ uint8_t
 #line 25091 "hcs12x.cc"
 OpTfr_hcs12::getCycles()
 {
-#line 175 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 175 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 1; }
 #line 25096 "hcs12x.cc"
 }
@@ -25110,7 +25110,7 @@ sink
 #line 25111 "hcs12x.cc"
 )
 {
-#line 181 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 
 		uint8_t rrSrc, rrDst;
@@ -25157,7 +25157,7 @@ cpu
 #line 25158 "hcs12x.cc"
 )
 {
-#line 215 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 215 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 		/* Legal "rr" value for EBLB::setter and EBLB::getter functions
 		* 0x00:A; 0x01:B;
@@ -25206,10 +25206,10 @@ cpu
 		else if (((srcSize == 8) || (lms == 2)) && (dstSize == 16)) {
 			// sex:r1 => r2
 			if ((cpu->eblb->getter<uint8_t>(rrSrc) & 0x80) == 0x80)
-			{ // if r1 bit 7 = 1 then $FF:(r1) => r2
+			{ // if r1 bit 7 = 1 then 0xFF:(r1) => r2
 				cpu->eblb->setter<uint16_t>(rrDst, ((uint16_t) cpu->eblb->getter<uint8_t>(rrSrc)) | 0xFF00);
 			} else
-			{ // if r1 bit 7 = 1 then $00:(r1) => r2
+			{ // if r1 bit 7 = 1 then 0x00:(r1) => r2
 				cpu->eblb->setter<uint16_t>(rrDst, ((uint16_t) cpu->eblb->getter<uint8_t>(rrSrc)) & 0x00FF);
 			}
 		}
@@ -25239,7 +25239,7 @@ uint8_t
 #line 25240 "hcs12x.cc"
 OpExg_hcs12x::getCycles()
 {
-#line 288 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 288 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 1; }
 #line 25245 "hcs12x.cc"
 }
@@ -25259,7 +25259,7 @@ sink
 #line 25260 "hcs12x.cc"
 )
 {
-#line 294 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 294 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 
 		uint8_t rrSrc, rrDst;
@@ -25370,7 +25370,7 @@ cpu
 #line 25371 "hcs12x.cc"
 )
 {
-#line 391 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 391 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 		/* Legal "rr" value for EBLB::setter and EBLB::getter functions
 		* 0x00:A; 0x01:B;
@@ -25418,7 +25418,7 @@ cpu
 		// Exchange register Contents. There is no sign extension
 		/*
 		if (sizeof(r1) && sizeof(r2) { (r1) <=> (r2)}
-		else if ( (sizeof(r1)==8) && (sizeof(r2)==16) ) {$00:(r1) => r2}
+		else if ( (sizeof(r1)==8) && (sizeof(r2)==16) ) {0x00:(r1) => r2}
 		else if ( (sizeof(r1)==16) && (sizeof(r2)==8) ) { (r1[7:0]) <=> (r2) }
 		*/
 
@@ -25436,8 +25436,8 @@ cpu
 		}
 		else if ((srcSize == 8) && (dstSize == 16))
 		{
-			// $00:(r1) => r2
-			/* if (r2 is D) $00:(r1) => D
+			// 0x00:(r1) => r2
+			/* if (r2 is D) 0x00:(r1) => D
 			* else
 			*  if (r1 is A) (r1) => r2H
 			*  else if (r1 is B) (r1) => r2L
@@ -25465,7 +25465,7 @@ cpu
 			/*
 			* if (r1 is D)
 			* 	 if (r2 is A) (B) <=> (A)
-			* 	 else $FF => A // r2 is B
+			* 	 else 0xFF => A // r2 is B
 			* else
 			* 	 if (r2 is A) (r1H) <=> A
 			* 	 else (r1L) <=> B
@@ -25515,7 +25515,7 @@ uint8_t
 #line 25516 "hcs12x.cc"
 OpTfr_hcs12x::getCycles()
 {
-#line 526 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 526 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{ return 1; }
 #line 25521 "hcs12x.cc"
 }
@@ -25535,7 +25535,7 @@ sink
 #line 25536 "hcs12x.cc"
 )
 {
-#line 532 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 532 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 
 		uint8_t rrSrc, rrDst;
@@ -25649,7 +25649,7 @@ cpu
 #line 25650 "hcs12x.cc"
 )
 {
-#line 632 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
+#line 632 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./transfer_exchange.isa"
 	{
 		/* Legal "rr" value for EBLB::setter and EBLB::getter functions
 		* 0x00:A; 0x01:B;
@@ -25813,7 +25813,7 @@ uint8_t
 #line 25814 "hcs12x.cc"
 OpMovb_0B::getCycles()
 {
-#line 38 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 38 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return 3;}
 #line 25819 "hcs12x.cc"
 }
@@ -25829,9 +25829,9 @@ sink
 #line 25830 "hcs12x.cc"
 )
 {
-#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 40 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
-		sink << "MOVB #$" << std::hex << ii << ",$" << std::hex << opr16a;
+		sink << "MOVB #0x" << std::hex << ii << ",0x" << std::hex << opr16a;
 	}
 #line 25837 "hcs12x.cc"
 }
@@ -25847,7 +25847,7 @@ cpu
 #line 25848 "hcs12x.cc"
 )
 {
-#line 44 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 44 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 
@@ -25866,7 +25866,7 @@ uint8_t
 #line 25867 "hcs12x.cc"
 OpMovb_08::getCycles()
 {
-#line 52 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 52 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 4, 5); }
 #line 25872 "hcs12x.cc"
 }
@@ -25882,10 +25882,10 @@ sink
 #line 25883 "hcs12x.cc"
 )
 {
-#line 54 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 54 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 
-		sink << "MOVB #$" << std::hex << ii << ",";
+		sink << "MOVB #0x" << std::hex << ii << ",";
 		xb->disasm(sink);
 	}
 #line 25892 "hcs12x.cc"
@@ -25902,7 +25902,7 @@ cpu
 #line 25903 "hcs12x.cc"
 )
 {
-#line 60 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 60 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 
@@ -25921,7 +25921,7 @@ uint8_t
 #line 25922 "hcs12x.cc"
 OpMovb_0C::getCycles()
 {
-#line 69 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 69 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return 5; }
 #line 25927 "hcs12x.cc"
 }
@@ -25937,9 +25937,9 @@ sink
 #line 25938 "hcs12x.cc"
 )
 {
-#line 71 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 71 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
-		sink << "MOVB $" << std::hex << opr16asrc << ",$" << std::hex << opr16adst;
+		sink << "MOVB 0x" << std::hex << opr16asrc << ",0x" << std::hex << opr16adst;
 	}
 #line 25945 "hcs12x.cc"
 }
@@ -25955,7 +25955,7 @@ cpu
 #line 25956 "hcs12x.cc"
 )
 {
-#line 75 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 75 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addrsrc = cpu->mmc->getPhysicalAddress(opr16asrc, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		physical_address_t addrdst = cpu->mmc->getPhysicalAddress(opr16adst, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -25976,7 +25976,7 @@ uint8_t
 #line 25977 "hcs12x.cc"
 OpMovb_09::getCycles()
 {
-#line 85 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 85 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 6); }
 #line 25982 "hcs12x.cc"
 }
@@ -25992,9 +25992,9 @@ sink
 #line 25993 "hcs12x.cc"
 )
 {
-#line 87 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 87 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
-		sink << "MOVB $" <<  std::hex << opr16asrc << ",";
+		sink << "MOVB 0x" <<  std::hex << opr16asrc << ",";
 		xb->disasm(sink);
 	}
 #line 26001 "hcs12x.cc"
@@ -26011,7 +26011,7 @@ cpu
 #line 26012 "hcs12x.cc"
 )
 {
-#line 92 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 92 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		uint16_t addr = xb->getEAddr(cpu);
 		uint8_t tmp = cpu->memRead8(opr16asrc);
@@ -26030,7 +26030,7 @@ uint8_t
 #line 26031 "hcs12x.cc"
 OpMovb_0D::getCycles()
 {
-#line 100 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 100 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 6, 7); }
 #line 26036 "hcs12x.cc"
 }
@@ -26046,11 +26046,11 @@ sink
 #line 26047 "hcs12x.cc"
 )
 {
-#line 102 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 102 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		sink << "MOVB ";
 		xb->disasm(sink);
-		sink << ",$" << std::hex << opr16a;
+		sink << ",0x" << std::hex << opr16a;
 	}
 #line 26056 "hcs12x.cc"
 }
@@ -26066,7 +26066,7 @@ cpu
 #line 26067 "hcs12x.cc"
 )
 {
-#line 108 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 108 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addrxb = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		physical_address_t addropr16a = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -26087,7 +26087,7 @@ uint8_t
 #line 26088 "hcs12x.cc"
 OpMovb_0A::getCycles()
 {
-#line 118 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 118 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 
 		switch (xbsrc->getXbMode())
@@ -26114,7 +26114,7 @@ sink
 #line 26115 "hcs12x.cc"
 )
 {
-#line 131 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 131 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		sink << "MOVB ";
 		xbsrc->disasm(sink);
@@ -26135,7 +26135,7 @@ cpu
 #line 26136 "hcs12x.cc"
 )
 {
-#line 138 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 138 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		uint16_t addrsrc = xbsrc->getEAddr(cpu);
 		uint16_t addrdst = xbdst->getEAddr(cpu);
@@ -26156,7 +26156,7 @@ uint8_t
 #line 26157 "hcs12x.cc"
 OpMovw_03::getCycles()
 {
-#line 149 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 149 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return 4; }
 #line 26162 "hcs12x.cc"
 }
@@ -26172,9 +26172,9 @@ sink
 #line 26173 "hcs12x.cc"
 )
 {
-#line 151 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 151 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
-		sink << "MOVW #$" << std::hex << opr16i << ",$" << std::hex << opr16a;
+		sink << "MOVW #0x" << std::hex << opr16i << ",0x" << std::hex << opr16a;
 	}
 #line 26180 "hcs12x.cc"
 }
@@ -26190,7 +26190,7 @@ cpu
 #line 26191 "hcs12x.cc"
 )
 {
-#line 155 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 155 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 
@@ -26209,7 +26209,7 @@ uint8_t
 #line 26210 "hcs12x.cc"
 OpMovw_04::getCycles()
 {
-#line 163 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 163 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return 5; }
 #line 26215 "hcs12x.cc"
 }
@@ -26225,9 +26225,9 @@ sink
 #line 26226 "hcs12x.cc"
 )
 {
-#line 165 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 165 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
-		sink << "MOVW $" << std::hex << opr16asrc << ",$" << std::hex << opr16adst;
+		sink << "MOVW 0x" << std::hex << opr16asrc << ",0x" << std::hex << opr16adst;
 	}
 #line 26233 "hcs12x.cc"
 }
@@ -26243,7 +26243,7 @@ cpu
 #line 26244 "hcs12x.cc"
 )
 {
-#line 169 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 169 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addrsrc = cpu->mmc->getPhysicalAddress(opr16asrc, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		physical_address_t addrdst = cpu->mmc->getPhysicalAddress(opr16adst, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -26272,10 +26272,10 @@ sink
 #line 26273 "hcs12x.cc"
 )
 {
-#line 181 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 
-		sink << "MOVW #$" << std::hex << opr16i << ",";
+		sink << "MOVW #0x" << std::hex << opr16i << ",";
 		xb->disasm(sink);
 	}
 #line 26282 "hcs12x.cc"
@@ -26292,7 +26292,7 @@ cpu
 #line 26293 "hcs12x.cc"
 )
 {
-#line 187 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 187 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 
@@ -26314,7 +26314,7 @@ uint8_t
 #line 26315 "hcs12x.cc"
 OpMovw_01::getCycles()
 {
-#line 200 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 200 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 6); }
 #line 26320 "hcs12x.cc"
 }
@@ -26330,9 +26330,9 @@ sink
 #line 26331 "hcs12x.cc"
 )
 {
-#line 202 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
-		sink << "MOVW $" <<  std::hex << opr16asrc << ",";
+		sink << "MOVW 0x" <<  std::hex << opr16asrc << ",";
 		xb->disasm(sink);
 	}
 #line 26339 "hcs12x.cc"
@@ -26349,7 +26349,7 @@ cpu
 #line 26350 "hcs12x.cc"
 )
 {
-#line 207 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 207 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		physical_address_t addrsrc = cpu->mmc->getPhysicalAddress(opr16asrc, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -26370,7 +26370,7 @@ uint8_t
 #line 26371 "hcs12x.cc"
 OpMovw_05::getCycles()
 {
-#line 218 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 218 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 6, 7); }
 #line 26376 "hcs12x.cc"
 }
@@ -26386,11 +26386,11 @@ sink
 #line 26387 "hcs12x.cc"
 )
 {
-#line 220 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 220 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		sink << "MOVW ";
 		xb->disasm(sink);
-		sink << ",$" << std::hex << opr16a;
+		sink << ",0x" << std::hex << opr16a;
 	}
 #line 26396 "hcs12x.cc"
 }
@@ -26406,7 +26406,7 @@ cpu
 #line 26407 "hcs12x.cc"
 )
 {
-#line 226 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 226 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addrxb = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		physical_address_t addrdst = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -26427,7 +26427,7 @@ uint8_t
 #line 26428 "hcs12x.cc"
 OpMovw_02::getCycles()
 {
-#line 236 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 236 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 
 		switch (xbsrc->getXbMode())
@@ -26454,7 +26454,7 @@ sink
 #line 26455 "hcs12x.cc"
 )
 {
-#line 249 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 249 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		sink << "MOVW ";
 		xbsrc->disasm(sink);
@@ -26475,7 +26475,7 @@ cpu
 #line 26476 "hcs12x.cc"
 )
 {
-#line 256 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
+#line 256 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./move.isa"
 	{
 		physical_address_t addrsrc = cpu->mmc->getPhysicalAddress(xbsrc->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		physical_address_t addrdst = cpu->mmc->getPhysicalAddress(xbdst->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -26531,7 +26531,7 @@ uint8_t
 #line 26532 "hcs12x.cc"
 OpAba::getCycles()
 {
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 2;}
 #line 26537 "hcs12x.cc"
 }
@@ -26547,7 +26547,7 @@ sink
 #line 26548 "hcs12x.cc"
 )
 {
-#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 43 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ABA";
 	}
@@ -26565,7 +26565,7 @@ cpu
 #line 26566 "hcs12x.cc"
 )
 {
-#line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 47 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -26605,7 +26605,7 @@ uint8_t
 #line 26606 "hcs12x.cc"
 OpAbx::getCycles()
 {
-#line 76 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 76 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 2;}
 #line 26611 "hcs12x.cc"
 }
@@ -26621,7 +26621,7 @@ sink
 #line 26622 "hcs12x.cc"
 )
 {
-#line 78 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 78 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ABX";
 	}
@@ -26639,7 +26639,7 @@ cpu
 #line 26640 "hcs12x.cc"
 )
 {
-#line 82 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 82 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 
 		uint16_t result;
@@ -26668,7 +26668,7 @@ uint8_t
 #line 26669 "hcs12x.cc"
 OpAby::getCycles()
 {
-#line 100 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 100 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 2;}
 #line 26674 "hcs12x.cc"
 }
@@ -26684,7 +26684,7 @@ sink
 #line 26685 "hcs12x.cc"
 )
 {
-#line 102 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 102 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ABY";
 	}
@@ -26702,7 +26702,7 @@ cpu
 #line 26703 "hcs12x.cc"
 )
 {
-#line 105 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 105 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint16_t result;
 		uint8_t carry_out, overflow;
@@ -26730,7 +26730,7 @@ uint8_t
 #line 26731 "hcs12x.cc"
 OpAdc_ab_imm::getCycles()
 {
-#line 122 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 122 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 1;}
 #line 26736 "hcs12x.cc"
 }
@@ -26746,7 +26746,7 @@ sink
 #line 26747 "hcs12x.cc"
 )
 {
-#line 124 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 124 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADCA #$";
@@ -26769,7 +26769,7 @@ cpu
 #line 26770 "hcs12x.cc"
 )
 {
-#line 133 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 133 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -26817,7 +26817,7 @@ uint8_t
 #line 26818 "hcs12x.cc"
 OpAdc_ab_dir::getCycles()
 {
-#line 170 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 170 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3;}
 #line 26823 "hcs12x.cc"
 }
@@ -26833,7 +26833,7 @@ sink
 #line 26834 "hcs12x.cc"
 )
 {
-#line 172 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 172 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADCA $";
@@ -26856,7 +26856,7 @@ cpu
 #line 26857 "hcs12x.cc"
 )
 {
-#line 181 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -26908,7 +26908,7 @@ uint8_t
 #line 26909 "hcs12x.cc"
 OpAdc_ab_ext::getCycles()
 {
-#line 222 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 222 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3;}
 #line 26914 "hcs12x.cc"
 }
@@ -26924,7 +26924,7 @@ sink
 #line 26925 "hcs12x.cc"
 )
 {
-#line 224 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 224 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADCA $";
@@ -26947,7 +26947,7 @@ cpu
 #line 26948 "hcs12x.cc"
 )
 {
-#line 233 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 233 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -26999,7 +26999,7 @@ uint8_t
 #line 27000 "hcs12x.cc"
 OpAdc_ab_idx::getCycles()
 {
-#line 274 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 274 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 27005 "hcs12x.cc"
 }
@@ -27015,7 +27015,7 @@ sink
 #line 27016 "hcs12x.cc"
 )
 {
-#line 276 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 276 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "ADCA ";
@@ -27039,7 +27039,7 @@ cpu
 #line 27040 "hcs12x.cc"
 )
 {
-#line 286 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 286 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27092,7 +27092,7 @@ uint8_t
 #line 27093 "hcs12x.cc"
 OpAdd_ab_imm::getCycles()
 {
-#line 328 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 328 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 1; }
 #line 27098 "hcs12x.cc"
 }
@@ -27108,7 +27108,7 @@ sink
 #line 27109 "hcs12x.cc"
 )
 {
-#line 330 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 330 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDA #$";
@@ -27131,7 +27131,7 @@ cpu
 #line 27132 "hcs12x.cc"
 )
 {
-#line 339 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 339 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27180,7 +27180,7 @@ uint8_t
 #line 27181 "hcs12x.cc"
 OpAdd_ab_dir::getCycles()
 {
-#line 377 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 377 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 27186 "hcs12x.cc"
 }
@@ -27196,7 +27196,7 @@ sink
 #line 27197 "hcs12x.cc"
 )
 {
-#line 379 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 379 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDA $";
@@ -27219,7 +27219,7 @@ cpu
 #line 27220 "hcs12x.cc"
 )
 {
-#line 388 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 388 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27271,7 +27271,7 @@ uint8_t
 #line 27272 "hcs12x.cc"
 OpAdd_ab_ext::getCycles()
 {
-#line 429 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 429 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 27277 "hcs12x.cc"
 }
@@ -27287,7 +27287,7 @@ sink
 #line 27288 "hcs12x.cc"
 )
 {
-#line 431 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 431 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDA $";
@@ -27310,7 +27310,7 @@ cpu
 #line 27311 "hcs12x.cc"
 )
 {
-#line 440 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 440 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27362,7 +27362,7 @@ uint8_t
 #line 27363 "hcs12x.cc"
 OpAdd_ab_idx::getCycles()
 {
-#line 481 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 481 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 27368 "hcs12x.cc"
 }
@@ -27378,7 +27378,7 @@ sink
 #line 27379 "hcs12x.cc"
 )
 {
-#line 483 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 483 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "ADDA ";
@@ -27402,7 +27402,7 @@ cpu
 #line 27403 "hcs12x.cc"
 )
 {
-#line 493 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 493 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -27455,7 +27455,7 @@ uint8_t
 #line 27456 "hcs12x.cc"
 OpAded_imm::getCycles()
 {
-#line 535 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 535 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 27461 "hcs12x.cc"
 }
@@ -27471,7 +27471,7 @@ sink
 #line 27472 "hcs12x.cc"
 )
 {
-#line 537 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 537 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ADED #$" << std::hex << opr16i;
 	}
@@ -27489,7 +27489,7 @@ cpu
 #line 27490 "hcs12x.cc"
 )
 {
-#line 541 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 541 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27522,7 +27522,7 @@ uint8_t
 #line 27523 "hcs12x.cc"
 OpAded_dir::getCycles()
 {
-#line 563 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 563 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 27528 "hcs12x.cc"
 }
@@ -27538,7 +27538,7 @@ sink
 #line 27539 "hcs12x.cc"
 )
 {
-#line 565 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 565 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ADED $" << std::hex << opr8a;
 	}
@@ -27556,7 +27556,7 @@ cpu
 #line 27557 "hcs12x.cc"
 )
 {
-#line 569 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 569 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27591,7 +27591,7 @@ uint8_t
 #line 27592 "hcs12x.cc"
 OpAded_ext::getCycles()
 {
-#line 593 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 593 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 27597 "hcs12x.cc"
 }
@@ -27607,7 +27607,7 @@ sink
 #line 27608 "hcs12x.cc"
 )
 {
-#line 595 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 595 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ADED $" << std::hex << opr16a;
 	}
@@ -27625,7 +27625,7 @@ cpu
 #line 27626 "hcs12x.cc"
 )
 {
-#line 599 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 599 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27662,7 +27662,7 @@ uint8_t
 #line 27663 "hcs12x.cc"
 OpAded_idx::getCycles()
 {
-#line 625 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 625 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 27668 "hcs12x.cc"
 }
@@ -27678,7 +27678,7 @@ sink
 #line 27679 "hcs12x.cc"
 )
 {
-#line 627 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 627 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "ADED ";
 		xb->disasm(sink);
@@ -27697,7 +27697,7 @@ cpu
 #line 27698 "hcs12x.cc"
 )
 {
-#line 632 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 632 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27733,7 +27733,7 @@ uint8_t
 #line 27734 "hcs12x.cc"
 OpAde_xy_imm::getCycles()
 {
-#line 657 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 657 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 27739 "hcs12x.cc"
 }
@@ -27749,7 +27749,7 @@ sink
 #line 27750 "hcs12x.cc"
 )
 {
-#line 659 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 659 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADEX #$";
@@ -27772,7 +27772,7 @@ cpu
 #line 27773 "hcs12x.cc"
 )
 {
-#line 668 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 668 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27814,7 +27814,7 @@ uint8_t
 #line 27815 "hcs12x.cc"
 OpAde_xy_dir::getCycles()
 {
-#line 699 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 699 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 27820 "hcs12x.cc"
 }
@@ -27830,7 +27830,7 @@ sink
 #line 27831 "hcs12x.cc"
 )
 {
-#line 701 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 701 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADEX $";
@@ -27853,7 +27853,7 @@ cpu
 #line 27854 "hcs12x.cc"
 )
 {
-#line 710 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 710 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27897,7 +27897,7 @@ uint8_t
 #line 27898 "hcs12x.cc"
 OpAde_xy_ext::getCycles()
 {
-#line 743 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 743 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 27903 "hcs12x.cc"
 }
@@ -27913,7 +27913,7 @@ sink
 #line 27914 "hcs12x.cc"
 )
 {
-#line 745 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 745 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADEX $";
@@ -27936,7 +27936,7 @@ cpu
 #line 27937 "hcs12x.cc"
 )
 {
-#line 754 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 754 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -27981,7 +27981,7 @@ uint8_t
 #line 27982 "hcs12x.cc"
 OpAde_xy_idx::getCycles()
 {
-#line 788 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 788 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 27987 "hcs12x.cc"
 }
@@ -27997,7 +27997,7 @@ sink
 #line 27998 "hcs12x.cc"
 )
 {
-#line 790 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 790 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "ADEX ";
@@ -28021,7 +28021,7 @@ cpu
 #line 28022 "hcs12x.cc"
 )
 {
-#line 800 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 800 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28066,7 +28066,7 @@ uint8_t
 #line 28067 "hcs12x.cc"
 OpAdd_xy_imm::getCycles()
 {
-#line 835 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 835 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 28072 "hcs12x.cc"
 }
@@ -28082,7 +28082,7 @@ sink
 #line 28083 "hcs12x.cc"
 )
 {
-#line 837 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 837 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDX #$";
@@ -28105,7 +28105,7 @@ cpu
 #line 28106 "hcs12x.cc"
 )
 {
-#line 846 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 846 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28147,7 +28147,7 @@ uint8_t
 #line 28148 "hcs12x.cc"
 OpAdd_xy_dir::getCycles()
 {
-#line 877 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 877 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 28153 "hcs12x.cc"
 }
@@ -28163,7 +28163,7 @@ sink
 #line 28164 "hcs12x.cc"
 )
 {
-#line 879 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 879 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDX $";
@@ -28186,7 +28186,7 @@ cpu
 #line 28187 "hcs12x.cc"
 )
 {
-#line 888 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 888 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28230,7 +28230,7 @@ uint8_t
 #line 28231 "hcs12x.cc"
 OpAdd_xy_ext::getCycles()
 {
-#line 921 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 921 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 28236 "hcs12x.cc"
 }
@@ -28246,7 +28246,7 @@ sink
 #line 28247 "hcs12x.cc"
 )
 {
-#line 923 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 923 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "ADDX $";
@@ -28269,7 +28269,7 @@ cpu
 #line 28270 "hcs12x.cc"
 )
 {
-#line 932 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 932 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28314,7 +28314,7 @@ uint8_t
 #line 28315 "hcs12x.cc"
 OpAdd_xy_idx::getCycles()
 {
-#line 966 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 966 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 28320 "hcs12x.cc"
 }
@@ -28330,7 +28330,7 @@ sink
 #line 28331 "hcs12x.cc"
 )
 {
-#line 968 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 968 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "ADDX ";
@@ -28354,7 +28354,7 @@ cpu
 #line 28355 "hcs12x.cc"
 )
 {
-#line 978 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 978 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28399,7 +28399,7 @@ uint8_t
 #line 28400 "hcs12x.cc"
 OpAdd_sub_d_imm::getCycles()
 {
-#line 1015 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1015 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 2; }
 #line 28405 "hcs12x.cc"
 }
@@ -28415,7 +28415,7 @@ sink
 #line 28416 "hcs12x.cc"
 )
 {
-#line 1017 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1017 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBD #$";
@@ -28438,7 +28438,7 @@ cpu
 #line 28439 "hcs12x.cc"
 )
 {
-#line 1026 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1026 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28474,7 +28474,7 @@ uint8_t
 #line 28475 "hcs12x.cc"
 OpAdd_sub_d_dir::getCycles()
 {
-#line 1051 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1051 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 28480 "hcs12x.cc"
 }
@@ -28490,7 +28490,7 @@ sink
 #line 28491 "hcs12x.cc"
 )
 {
-#line 1053 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1053 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBD $";
@@ -28513,7 +28513,7 @@ cpu
 #line 28514 "hcs12x.cc"
 )
 {
-#line 1062 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1062 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28552,7 +28552,7 @@ uint8_t
 #line 28553 "hcs12x.cc"
 OpAdd_sub_d_ext::getCycles()
 {
-#line 1090 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1090 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 28558 "hcs12x.cc"
 }
@@ -28568,7 +28568,7 @@ sink
 #line 28569 "hcs12x.cc"
 )
 {
-#line 1092 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1092 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBD $";
@@ -28593,7 +28593,7 @@ cpu
 #line 28594 "hcs12x.cc"
 )
 {
-#line 1103 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1103 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28632,7 +28632,7 @@ uint8_t
 #line 28633 "hcs12x.cc"
 OpAdd_sub_d_idx::getCycles()
 {
-#line 1131 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1131 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 28638 "hcs12x.cc"
 }
@@ -28648,7 +28648,7 @@ sink
 #line 28649 "hcs12x.cc"
 )
 {
-#line 1133 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1133 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBD ";
@@ -28672,7 +28672,7 @@ cpu
 #line 28673 "hcs12x.cc"
 )
 {
-#line 1143 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1143 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -28712,7 +28712,7 @@ uint8_t
 #line 28713 "hcs12x.cc"
 OpSba::getCycles()
 {
-#line 1173 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1173 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 2; }
 #line 28718 "hcs12x.cc"
 }
@@ -28728,7 +28728,7 @@ sink
 #line 28729 "hcs12x.cc"
 )
 {
-#line 1175 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1175 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBA";
 	}
@@ -28746,7 +28746,7 @@ cpu
 #line 28747 "hcs12x.cc"
 )
 {
-#line 1179 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1179 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -28778,7 +28778,7 @@ uint8_t
 #line 28779 "hcs12x.cc"
 OpSbc_ab_imm::getCycles()
 {
-#line 1200 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1200 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 1; }
 #line 28784 "hcs12x.cc"
 }
@@ -28794,7 +28794,7 @@ sink
 #line 28795 "hcs12x.cc"
 )
 {
-#line 1202 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBCA #$";
@@ -28817,7 +28817,7 @@ cpu
 #line 28818 "hcs12x.cc"
 )
 {
-#line 1211 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1211 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -28857,7 +28857,7 @@ uint8_t
 #line 28858 "hcs12x.cc"
 OpSbc_ab_dir::getCycles()
 {
-#line 1240 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1240 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 28863 "hcs12x.cc"
 }
@@ -28873,7 +28873,7 @@ sink
 #line 28874 "hcs12x.cc"
 )
 {
-#line 1242 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1242 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBCA $";
@@ -28896,7 +28896,7 @@ cpu
 #line 28897 "hcs12x.cc"
 )
 {
-#line 1251 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1251 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -28938,7 +28938,7 @@ uint8_t
 #line 28939 "hcs12x.cc"
 OpSbc_ab_ext::getCycles()
 {
-#line 1282 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1282 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 28944 "hcs12x.cc"
 }
@@ -28954,7 +28954,7 @@ sink
 #line 28955 "hcs12x.cc"
 )
 {
-#line 1284 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1284 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBCA $";
@@ -28977,7 +28977,7 @@ cpu
 #line 28978 "hcs12x.cc"
 )
 {
-#line 1293 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1293 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -29020,7 +29020,7 @@ uint8_t
 #line 29021 "hcs12x.cc"
 OpSbc_ab_idx::getCycles()
 {
-#line 1325 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1325 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 29026 "hcs12x.cc"
 }
@@ -29036,7 +29036,7 @@ sink
 #line 29037 "hcs12x.cc"
 )
 {
-#line 1327 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1327 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "SBCA ";
@@ -29060,7 +29060,7 @@ cpu
 #line 29061 "hcs12x.cc"
 )
 {
-#line 1337 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1337 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -29104,7 +29104,7 @@ uint8_t
 #line 29105 "hcs12x.cc"
 OpSbed_imm::getCycles()
 {
-#line 1370 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1370 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 29110 "hcs12x.cc"
 }
@@ -29120,7 +29120,7 @@ sink
 #line 29121 "hcs12x.cc"
 )
 {
-#line 1372 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1372 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBED #$" << std::hex << opr16i;
 	}
@@ -29138,7 +29138,7 @@ cpu
 #line 29139 "hcs12x.cc"
 )
 {
-#line 1376 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1376 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -29170,7 +29170,7 @@ uint8_t
 #line 29171 "hcs12x.cc"
 OpSbed_dir::getCycles()
 {
-#line 1397 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1397 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 29176 "hcs12x.cc"
 }
@@ -29186,7 +29186,7 @@ sink
 #line 29187 "hcs12x.cc"
 )
 {
-#line 1399 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1399 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBED $" << std::hex << opr8a;
 	}
@@ -29204,7 +29204,7 @@ cpu
 #line 29205 "hcs12x.cc"
 )
 {
-#line 1403 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1403 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -29239,7 +29239,7 @@ uint8_t
 #line 29240 "hcs12x.cc"
 OpSbed_ext::getCycles()
 {
-#line 1427 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1427 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 29245 "hcs12x.cc"
 }
@@ -29255,7 +29255,7 @@ sink
 #line 29256 "hcs12x.cc"
 )
 {
-#line 1429 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1429 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBED $" << std::hex << opr16a;
 	}
@@ -29273,7 +29273,7 @@ cpu
 #line 29274 "hcs12x.cc"
 )
 {
-#line 1433 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1433 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -29309,7 +29309,7 @@ uint8_t
 #line 29310 "hcs12x.cc"
 OpSbed_idx::getCycles()
 {
-#line 1458 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1458 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 29315 "hcs12x.cc"
 }
@@ -29325,7 +29325,7 @@ sink
 #line 29326 "hcs12x.cc"
 )
 {
-#line 1460 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1460 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "SBED ";
 		xb->disasm(sink);
@@ -29344,7 +29344,7 @@ cpu
 #line 29345 "hcs12x.cc"
 )
 {
-#line 1465 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1465 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -29380,7 +29380,7 @@ uint8_t
 #line 29381 "hcs12x.cc"
 OpSbe_xy_imm::getCycles()
 {
-#line 1490 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1490 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 29386 "hcs12x.cc"
 }
@@ -29396,7 +29396,7 @@ sink
 #line 29397 "hcs12x.cc"
 )
 {
-#line 1492 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1492 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBEX #$";
@@ -29419,7 +29419,7 @@ cpu
 #line 29420 "hcs12x.cc"
 )
 {
-#line 1501 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1501 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -29460,7 +29460,7 @@ uint8_t
 #line 29461 "hcs12x.cc"
 OpSbe_xy_dir::getCycles()
 {
-#line 1531 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1531 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 29466 "hcs12x.cc"
 }
@@ -29476,7 +29476,7 @@ sink
 #line 29477 "hcs12x.cc"
 )
 {
-#line 1533 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1533 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBEX $";
@@ -29499,7 +29499,7 @@ cpu
 #line 29500 "hcs12x.cc"
 )
 {
-#line 1542 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1542 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -29542,7 +29542,7 @@ uint8_t
 #line 29543 "hcs12x.cc"
 OpSbe_xy_ext::getCycles()
 {
-#line 1574 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1574 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 29548 "hcs12x.cc"
 }
@@ -29558,7 +29558,7 @@ sink
 #line 29559 "hcs12x.cc"
 )
 {
-#line 1576 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1576 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SBEX $";
@@ -29581,7 +29581,7 @@ cpu
 #line 29582 "hcs12x.cc"
 )
 {
-#line 1585 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1585 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -29625,7 +29625,7 @@ uint8_t
 #line 29626 "hcs12x.cc"
 OpSbe_xy_idx::getCycles()
 {
-#line 1618 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1618 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 29631 "hcs12x.cc"
 }
@@ -29641,7 +29641,7 @@ sink
 #line 29642 "hcs12x.cc"
 )
 {
-#line 1620 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1620 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "SBEX ";
@@ -29665,7 +29665,7 @@ cpu
 #line 29666 "hcs12x.cc"
 )
 {
-#line 1630 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1630 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -29710,7 +29710,7 @@ uint8_t
 #line 29711 "hcs12x.cc"
 OpSub_ab_imm::getCycles()
 {
-#line 1664 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1664 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 1; }
 #line 29716 "hcs12x.cc"
 }
@@ -29726,7 +29726,7 @@ sink
 #line 29727 "hcs12x.cc"
 )
 {
-#line 1666 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1666 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBA #$";
@@ -29749,7 +29749,7 @@ cpu
 #line 29750 "hcs12x.cc"
 )
 {
-#line 1675 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1675 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -29790,7 +29790,7 @@ uint8_t
 #line 29791 "hcs12x.cc"
 OpSub_ab_dir::getCycles()
 {
-#line 1705 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1705 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 29796 "hcs12x.cc"
 }
@@ -29806,7 +29806,7 @@ sink
 #line 29807 "hcs12x.cc"
 )
 {
-#line 1707 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1707 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBA $";
@@ -29829,7 +29829,7 @@ cpu
 #line 29830 "hcs12x.cc"
 )
 {
-#line 1716 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1716 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -29872,7 +29872,7 @@ uint8_t
 #line 29873 "hcs12x.cc"
 OpSub_ab_ext::getCycles()
 {
-#line 1748 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1748 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 29878 "hcs12x.cc"
 }
@@ -29888,7 +29888,7 @@ sink
 #line 29889 "hcs12x.cc"
 )
 {
-#line 1750 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1750 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBA $";
@@ -29911,7 +29911,7 @@ cpu
 #line 29912 "hcs12x.cc"
 )
 {
-#line 1759 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1759 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -29955,7 +29955,7 @@ uint8_t
 #line 29956 "hcs12x.cc"
 OpSub_ab_idx::getCycles()
 {
-#line 1792 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1792 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 29961 "hcs12x.cc"
 }
@@ -29971,7 +29971,7 @@ sink
 #line 29972 "hcs12x.cc"
 )
 {
-#line 1794 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1794 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "SUBA ";
@@ -29995,7 +29995,7 @@ cpu
 #line 29996 "hcs12x.cc"
 )
 {
-#line 1804 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1804 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t result, carry_out, overflow;
 
@@ -30040,7 +30040,7 @@ uint8_t
 #line 30041 "hcs12x.cc"
 OpSub_xy_imm::getCycles()
 {
-#line 1839 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1839 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 30046 "hcs12x.cc"
 }
@@ -30056,7 +30056,7 @@ sink
 #line 30057 "hcs12x.cc"
 )
 {
-#line 1841 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1841 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBX #$";
@@ -30079,7 +30079,7 @@ cpu
 #line 30080 "hcs12x.cc"
 )
 {
-#line 1850 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1850 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -30121,7 +30121,7 @@ uint8_t
 #line 30122 "hcs12x.cc"
 OpSub_xy_dir::getCycles()
 {
-#line 1881 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1881 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 30127 "hcs12x.cc"
 }
@@ -30137,7 +30137,7 @@ sink
 #line 30138 "hcs12x.cc"
 )
 {
-#line 1883 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1883 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBX $";
@@ -30160,7 +30160,7 @@ cpu
 #line 30161 "hcs12x.cc"
 )
 {
-#line 1892 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1892 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -30204,7 +30204,7 @@ uint8_t
 #line 30205 "hcs12x.cc"
 OpSub_xy_ext::getCycles()
 {
-#line 1925 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1925 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 4; }
 #line 30210 "hcs12x.cc"
 }
@@ -30220,7 +30220,7 @@ sink
 #line 30221 "hcs12x.cc"
 )
 {
-#line 1927 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1927 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0) {
 			sink << "SUBX $";
@@ -30243,7 +30243,7 @@ cpu
 #line 30244 "hcs12x.cc"
 )
 {
-#line 1936 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1936 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -30288,7 +30288,7 @@ uint8_t
 #line 30289 "hcs12x.cc"
 OpSub_xy_idx::getCycles()
 {
-#line 1970 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1970 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 30294 "hcs12x.cc"
 }
@@ -30304,7 +30304,7 @@ sink
 #line 30305 "hcs12x.cc"
 )
 {
-#line 1972 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1972 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		if (b==0){
 			sink << "SUBX ";
@@ -30328,7 +30328,7 @@ cpu
 #line 30329 "hcs12x.cc"
 )
 {
-#line 1982 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 1982 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -30374,7 +30374,7 @@ uint8_t
 #line 30375 "hcs12x.cc"
 OpDaa::getCycles()
 {
-#line 2019 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 2019 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{ return 3; }
 #line 30380 "hcs12x.cc"
 }
@@ -30390,7 +30390,7 @@ sink
 #line 30391 "hcs12x.cc"
 )
 {
-#line 2021 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 2021 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		sink << "DAA";
 	}
@@ -30408,7 +30408,7 @@ cpu
 #line 30409 "hcs12x.cc"
 )
 {
-#line 2025 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
+#line 2025 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./addition_substraction.isa"
 	{
 		uint8_t hBit = cpu->ccr->getH();
 		uint8_t cBit = cpu->ccr->getC();
@@ -30519,7 +30519,7 @@ uint8_t
 #line 30520 "hcs12x.cc"
 OpDec_ext::getCycles()
 {
-#line 6 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 6 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 4; }
 #line 30525 "hcs12x.cc"
 }
@@ -30535,9 +30535,9 @@ sink
 #line 30536 "hcs12x.cc"
 )
 {
-#line 8 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 8 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
-		sink << "DEC $" << std::hex << opr16a;
+		sink << "DEC 0x" << std::hex << opr16a;
 	}
 #line 30543 "hcs12x.cc"
 }
@@ -30553,7 +30553,7 @@ cpu
 #line 30554 "hcs12x.cc"
 )
 {
-#line 12 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 12 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t opr16aVal = cpu->memRead8(addr);
@@ -30582,7 +30582,7 @@ uint8_t
 #line 30583 "hcs12x.cc"
 OpDec_idx::getCycles()
 {
-#line 30 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 30 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 30588 "hcs12x.cc"
 }
@@ -30598,7 +30598,7 @@ sink
 #line 30599 "hcs12x.cc"
 )
 {
-#line 32 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 32 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DEC ";
 		xb->disasm(sink);
@@ -30617,7 +30617,7 @@ cpu
 #line 30618 "hcs12x.cc"
 )
 {
-#line 37 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 37 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -30648,7 +30648,7 @@ uint8_t
 #line 30649 "hcs12x.cc"
 OpDec_ab::getCycles()
 {
-#line 57 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 57 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 1; }
 #line 30654 "hcs12x.cc"
 }
@@ -30664,7 +30664,7 @@ sink
 #line 30665 "hcs12x.cc"
 )
 {
-#line 59 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 59 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		if (b == 0) {
 			sink << "DECA";
@@ -30686,7 +30686,7 @@ cpu
 #line 30687 "hcs12x.cc"
 )
 {
-#line 67 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 67 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 
 		uint8_t result, carry_out, overflow, carry_in;
@@ -30727,7 +30727,7 @@ uint8_t
 #line 30728 "hcs12x.cc"
 OpDecw_ext::getCycles()
 {
-#line 97 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 97 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 5; }
 #line 30733 "hcs12x.cc"
 }
@@ -30743,9 +30743,9 @@ sink
 #line 30744 "hcs12x.cc"
 )
 {
-#line 99 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 99 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
-		sink << "DECW $" << std::hex << opr16a;
+		sink << "DECW 0x" << std::hex << opr16a;
 	}
 #line 30751 "hcs12x.cc"
 }
@@ -30761,7 +30761,7 @@ cpu
 #line 30762 "hcs12x.cc"
 )
 {
-#line 103 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 103 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t opr16aVal = cpu->memRead16(addr);
@@ -30792,7 +30792,7 @@ uint8_t
 #line 30793 "hcs12x.cc"
 OpDecw_idx::getCycles()
 {
-#line 123 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 123 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 7, 7); }
 #line 30798 "hcs12x.cc"
 }
@@ -30808,7 +30808,7 @@ sink
 #line 30809 "hcs12x.cc"
 )
 {
-#line 125 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 125 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DECW ";
 		xb->disasm(sink);
@@ -30827,7 +30827,7 @@ cpu
 #line 30828 "hcs12x.cc"
 )
 {
-#line 130 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 130 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -30859,7 +30859,7 @@ uint8_t
 #line 30860 "hcs12x.cc"
 OpDec_xy::getCycles()
 {
-#line 151 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 151 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 2; }
 #line 30865 "hcs12x.cc"
 }
@@ -30875,7 +30875,7 @@ sink
 #line 30876 "hcs12x.cc"
 )
 {
-#line 153 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 153 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		if (b==0) {
 			sink << "DECX";
@@ -30897,7 +30897,7 @@ cpu
 #line 30898 "hcs12x.cc"
 )
 {
-#line 161 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 161 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 
 		uint16_t val;
@@ -30939,7 +30939,7 @@ uint8_t
 #line 30940 "hcs12x.cc"
 OpDes::getCycles()
 {
-#line 192 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 192 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 2; }
 #line 30945 "hcs12x.cc"
 }
@@ -30955,7 +30955,7 @@ sink
 #line 30956 "hcs12x.cc"
 )
 {
-#line 194 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 194 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DES";
 	}
@@ -30973,7 +30973,7 @@ cpu
 #line 30974 "hcs12x.cc"
 )
 {
-#line 198 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 198 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP() - 1);
 	}
@@ -30991,7 +30991,7 @@ uint8_t
 #line 30992 "hcs12x.cc"
 OpDex::getCycles()
 {
-#line 205 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 205 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 1; }
 #line 30997 "hcs12x.cc"
 }
@@ -31007,7 +31007,7 @@ sink
 #line 31008 "hcs12x.cc"
 )
 {
-#line 207 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 207 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DEX";
 	}
@@ -31025,7 +31025,7 @@ cpu
 #line 31026 "hcs12x.cc"
 )
 {
-#line 211 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 211 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		uint16_t val = cpu->getRegX();
 		val--;
@@ -31046,7 +31046,7 @@ uint8_t
 #line 31047 "hcs12x.cc"
 OpDey::getCycles()
 {
-#line 221 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 221 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 1; }
 #line 31052 "hcs12x.cc"
 }
@@ -31062,7 +31062,7 @@ sink
 #line 31063 "hcs12x.cc"
 )
 {
-#line 223 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 223 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "DEY";
 	}
@@ -31080,7 +31080,7 @@ cpu
 #line 31081 "hcs12x.cc"
 )
 {
-#line 227 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 227 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		uint16_t val = cpu->getRegY();
 		val--;
@@ -31102,7 +31102,7 @@ uint8_t
 #line 31103 "hcs12x.cc"
 OpInc_ext::getCycles()
 {
-#line 239 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 239 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 4; }
 #line 31108 "hcs12x.cc"
 }
@@ -31118,9 +31118,9 @@ sink
 #line 31119 "hcs12x.cc"
 )
 {
-#line 241 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 241 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
-		sink << "INC $" << std::hex << opr16a;
+		sink << "INC 0x" << std::hex << opr16a;
 	}
 #line 31126 "hcs12x.cc"
 }
@@ -31136,7 +31136,7 @@ cpu
 #line 31137 "hcs12x.cc"
 )
 {
-#line 245 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 245 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t opr16aVal = cpu->memRead8(addr);
@@ -31166,7 +31166,7 @@ uint8_t
 #line 31167 "hcs12x.cc"
 OpInc_idx::getCycles()
 {
-#line 264 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 264 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 31172 "hcs12x.cc"
 }
@@ -31182,7 +31182,7 @@ sink
 #line 31183 "hcs12x.cc"
 )
 {
-#line 266 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 266 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INC ";
 		xb->disasm(sink);
@@ -31201,7 +31201,7 @@ cpu
 #line 31202 "hcs12x.cc"
 )
 {
-#line 271 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 271 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -31232,7 +31232,7 @@ uint8_t
 #line 31233 "hcs12x.cc"
 OpInc_ab::getCycles()
 {
-#line 291 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 291 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 1; }
 #line 31238 "hcs12x.cc"
 }
@@ -31248,7 +31248,7 @@ sink
 #line 31249 "hcs12x.cc"
 )
 {
-#line 293 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 293 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		if (b == 0) {
 			sink << "INCA";
@@ -31270,7 +31270,7 @@ cpu
 #line 31271 "hcs12x.cc"
 )
 {
-#line 301 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 301 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 
 		uint8_t result, carry_out, overflow, carry_in;
@@ -31311,7 +31311,7 @@ uint8_t
 #line 31312 "hcs12x.cc"
 OpIncw_ext::getCycles()
 {
-#line 331 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 331 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 5; }
 #line 31317 "hcs12x.cc"
 }
@@ -31327,9 +31327,9 @@ sink
 #line 31328 "hcs12x.cc"
 )
 {
-#line 333 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 333 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
-		sink << "INCW $" << std::hex << opr16a;
+		sink << "INCW 0x" << std::hex << opr16a;
 	}
 #line 31335 "hcs12x.cc"
 }
@@ -31345,7 +31345,7 @@ cpu
 #line 31346 "hcs12x.cc"
 )
 {
-#line 337 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 337 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t opr16aVal = cpu->memRead16(addr);
@@ -31376,7 +31376,7 @@ uint8_t
 #line 31377 "hcs12x.cc"
 OpIncw_idx::getCycles()
 {
-#line 357 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 357 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 31382 "hcs12x.cc"
 }
@@ -31392,7 +31392,7 @@ sink
 #line 31393 "hcs12x.cc"
 )
 {
-#line 359 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 359 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INCW ";
 		xb->disasm(sink);
@@ -31411,7 +31411,7 @@ cpu
 #line 31412 "hcs12x.cc"
 )
 {
-#line 364 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 364 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -31443,7 +31443,7 @@ uint8_t
 #line 31444 "hcs12x.cc"
 OpInc_xy::getCycles()
 {
-#line 385 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 385 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 2; }
 #line 31449 "hcs12x.cc"
 }
@@ -31459,7 +31459,7 @@ sink
 #line 31460 "hcs12x.cc"
 )
 {
-#line 387 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 387 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		if (b==0) {
 			sink << "INCX";
@@ -31481,7 +31481,7 @@ cpu
 #line 31482 "hcs12x.cc"
 )
 {
-#line 395 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 395 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 
 		uint16_t val;
@@ -31523,7 +31523,7 @@ uint8_t
 #line 31524 "hcs12x.cc"
 OpIns::getCycles()
 {
-#line 426 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 426 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 2; }
 #line 31529 "hcs12x.cc"
 }
@@ -31539,7 +31539,7 @@ sink
 #line 31540 "hcs12x.cc"
 )
 {
-#line 428 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 428 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INS";
 	}
@@ -31557,7 +31557,7 @@ cpu
 #line 31558 "hcs12x.cc"
 )
 {
-#line 432 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 432 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP() + 1);
 	}
@@ -31575,7 +31575,7 @@ uint8_t
 #line 31576 "hcs12x.cc"
 OpInx::getCycles()
 {
-#line 439 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 439 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 1; }
 #line 31581 "hcs12x.cc"
 }
@@ -31591,7 +31591,7 @@ sink
 #line 31592 "hcs12x.cc"
 )
 {
-#line 441 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 441 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INX";
 	}
@@ -31609,7 +31609,7 @@ cpu
 #line 31610 "hcs12x.cc"
 )
 {
-#line 445 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 445 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		uint16_t val = cpu->getRegX();
 		val++;
@@ -31630,7 +31630,7 @@ uint8_t
 #line 31631 "hcs12x.cc"
 OpIny::getCycles()
 {
-#line 455 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 455 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{ return 1; }
 #line 31636 "hcs12x.cc"
 }
@@ -31646,7 +31646,7 @@ sink
 #line 31647 "hcs12x.cc"
 )
 {
-#line 457 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 457 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		sink << "INY";
 	}
@@ -31664,7 +31664,7 @@ cpu
 #line 31665 "hcs12x.cc"
 )
 {
-#line 461 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
+#line 461 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./decrement_increment.isa"
 	{
 		uint16_t val = cpu->getRegY();
 		val++;
@@ -31718,7 +31718,7 @@ uint8_t
 #line 31719 "hcs12x.cc"
 OpCba::getCycles()
 {
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 2; }
 #line 31724 "hcs12x.cc"
 }
@@ -31734,7 +31734,7 @@ sink
 #line 31735 "hcs12x.cc"
 )
 {
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		sink << "CBA";
 	}
@@ -31752,7 +31752,7 @@ cpu
 #line 31753 "hcs12x.cc"
 )
 {
-#line 45 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 
@@ -31778,7 +31778,7 @@ uint8_t
 #line 31779 "hcs12x.cc"
 OpCmp_ab_imm::getCycles()
 {
-#line 61 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 61 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 1; }
 #line 31784 "hcs12x.cc"
 }
@@ -31794,12 +31794,12 @@ sink
 #line 31795 "hcs12x.cc"
 )
 {
-#line 63 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 63 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
-			sink << "CMPA #$";
+			sink << "CMPA #0x";
 			} else {
-			sink << "CMPB #$";
+			sink << "CMPB #0x";
 		}
 		sink << std::hex << opr8i;
 	}
@@ -31817,7 +31817,7 @@ cpu
 #line 31818 "hcs12x.cc"
 )
 {
-#line 72 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 72 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -31850,7 +31850,7 @@ uint8_t
 #line 31851 "hcs12x.cc"
 OpCmp_ab_dir::getCycles()
 {
-#line 94 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 94 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 3; }
 #line 31856 "hcs12x.cc"
 }
@@ -31866,12 +31866,12 @@ sink
 #line 31867 "hcs12x.cc"
 )
 {
-#line 96 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 96 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
-			sink << "CMPA $";
+			sink << "CMPA 0x";
 			} else {
-			sink << "CMPB $";
+			sink << "CMPB 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -31889,7 +31889,7 @@ cpu
 #line 31890 "hcs12x.cc"
 )
 {
-#line 105 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 105 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -31924,7 +31924,7 @@ uint8_t
 #line 31925 "hcs12x.cc"
 OpCmp_ab_ext::getCycles()
 {
-#line 129 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 129 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 3; }
 #line 31930 "hcs12x.cc"
 }
@@ -31940,12 +31940,12 @@ sink
 #line 31941 "hcs12x.cc"
 )
 {
-#line 131 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 131 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
-			sink << "CMPA $";
+			sink << "CMPA 0x";
 			} else {
-			sink << "CMPB $";
+			sink << "CMPB 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -31963,7 +31963,7 @@ cpu
 #line 31964 "hcs12x.cc"
 )
 {
-#line 140 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 140 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -31999,7 +31999,7 @@ uint8_t
 #line 32000 "hcs12x.cc"
 OpCmp_ab_idx::getCycles()
 {
-#line 165 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 165 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 32005 "hcs12x.cc"
 }
@@ -32015,7 +32015,7 @@ sink
 #line 32016 "hcs12x.cc"
 )
 {
-#line 167 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 167 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
 			sink << "CMPA ";
@@ -32038,7 +32038,7 @@ cpu
 #line 32039 "hcs12x.cc"
 )
 {
-#line 176 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 176 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -32073,7 +32073,7 @@ uint8_t
 #line 32074 "hcs12x.cc"
 OpCp_dyxs_imm::getCycles()
 {
-#line 200 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 200 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 2; }
 #line 32079 "hcs12x.cc"
 }
@@ -32089,13 +32089,13 @@ sink
 #line 32090 "hcs12x.cc"
 )
 {
-#line 202 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
-			case 0: sink << "CPD #$"; break;
-			case 1: sink << "CPY #$"; break;
-			case 2: sink << "CPX #$"; break;
-			case 3: sink << "CPS #$";
+			case 0: sink << "CPD #0x"; break;
+			case 1: sink << "CPY #0x"; break;
+			case 2: sink << "CPX #0x"; break;
+			case 3: sink << "CPS #0x";
 		}
 		sink << std::hex << opr16i;
 	}
@@ -32113,7 +32113,7 @@ cpu
 #line 32114 "hcs12x.cc"
 )
 {
-#line 212 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 212 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -32148,7 +32148,7 @@ uint8_t
 #line 32149 "hcs12x.cc"
 OpCp_dyxs_dir::getCycles()
 {
-#line 236 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 236 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 3; }
 #line 32154 "hcs12x.cc"
 }
@@ -32164,13 +32164,13 @@ sink
 #line 32165 "hcs12x.cc"
 )
 {
-#line 238 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 238 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
-			case 0: sink << "CPD $"; break;
-			case 1: sink << "CPY $"; break;
-			case 2: sink << "CPX $"; break;
-			case 3: sink << "CPS $";
+			case 0: sink << "CPD 0x"; break;
+			case 1: sink << "CPY 0x"; break;
+			case 2: sink << "CPX 0x"; break;
+			case 3: sink << "CPS 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -32188,7 +32188,7 @@ cpu
 #line 32189 "hcs12x.cc"
 )
 {
-#line 248 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 248 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -32226,7 +32226,7 @@ uint8_t
 #line 32227 "hcs12x.cc"
 OpCp_dyxs_ext::getCycles()
 {
-#line 275 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 275 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 3; }
 #line 32232 "hcs12x.cc"
 }
@@ -32242,13 +32242,13 @@ sink
 #line 32243 "hcs12x.cc"
 )
 {
-#line 277 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 277 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
-			case 0: sink << "CPD $"; break;
-			case 1: sink << "CPY $"; break;
-			case 2: sink << "CPX $"; break;
-			case 3: sink << "CPS $";
+			case 0: sink << "CPD 0x"; break;
+			case 1: sink << "CPY 0x"; break;
+			case 2: sink << "CPX 0x"; break;
+			case 3: sink << "CPS 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -32266,7 +32266,7 @@ cpu
 #line 32267 "hcs12x.cc"
 )
 {
-#line 287 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 287 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -32302,7 +32302,7 @@ uint8_t
 #line 32303 "hcs12x.cc"
 OpCp_dyxs_idx::getCycles()
 {
-#line 312 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 312 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 32308 "hcs12x.cc"
 }
@@ -32318,7 +32318,7 @@ sink
 #line 32319 "hcs12x.cc"
 )
 {
-#line 314 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 314 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPD "; break;
@@ -32342,7 +32342,7 @@ cpu
 #line 32343 "hcs12x.cc"
 )
 {
-#line 324 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 324 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -32379,7 +32379,7 @@ uint8_t
 #line 32380 "hcs12x.cc"
 OpCpe_dyxs_imm::getCycles()
 {
-#line 351 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 351 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 3; }
 #line 32385 "hcs12x.cc"
 }
@@ -32395,13 +32395,13 @@ sink
 #line 32396 "hcs12x.cc"
 )
 {
-#line 353 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 353 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
-			case 0: sink << "CPED #$"; break;
-			case 1: sink << "CPEY #$"; break;
-			case 2: sink << "CPEX #$"; break;
-			case 3: sink << "CPES #$";
+			case 0: sink << "CPED #0x"; break;
+			case 1: sink << "CPEY #0x"; break;
+			case 2: sink << "CPEX #0x"; break;
+			case 3: sink << "CPES #0x";
 		}
 		sink << std::hex << opr16i;
 	}
@@ -32419,7 +32419,7 @@ cpu
 #line 32420 "hcs12x.cc"
 )
 {
-#line 363 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 363 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in, zeroBit;
 		uint16_t result, regVal;
@@ -32455,7 +32455,7 @@ uint8_t
 #line 32456 "hcs12x.cc"
 OpCpe_dyxs_dir::getCycles()
 {
-#line 388 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 388 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 4; }
 #line 32461 "hcs12x.cc"
 }
@@ -32471,13 +32471,13 @@ sink
 #line 32472 "hcs12x.cc"
 )
 {
-#line 390 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 390 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
-			case 0: sink << "CPED $"; break;
-			case 1: sink << "CPEY $"; break;
-			case 2: sink << "CPEX $"; break;
-			case 3: sink << "CPES $";
+			case 0: sink << "CPED 0x"; break;
+			case 1: sink << "CPEY 0x"; break;
+			case 2: sink << "CPEX 0x"; break;
+			case 3: sink << "CPES 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -32495,7 +32495,7 @@ cpu
 #line 32496 "hcs12x.cc"
 )
 {
-#line 400 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 400 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in, zeroBit;
 		uint16_t result, regVal;
@@ -32534,7 +32534,7 @@ uint8_t
 #line 32535 "hcs12x.cc"
 OpCpe_dyxs_ext::getCycles()
 {
-#line 428 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 428 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 4; }
 #line 32540 "hcs12x.cc"
 }
@@ -32550,13 +32550,13 @@ sink
 #line 32551 "hcs12x.cc"
 )
 {
-#line 430 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 430 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
-			case 0: sink << "CPED $"; break;
-			case 1: sink << "CPEY $"; break;
-			case 2: sink << "CPEX $"; break;
-			case 3: sink << "CPES $";
+			case 0: sink << "CPED 0x"; break;
+			case 1: sink << "CPEY 0x"; break;
+			case 2: sink << "CPEX 0x"; break;
+			case 3: sink << "CPES 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -32574,7 +32574,7 @@ cpu
 #line 32575 "hcs12x.cc"
 )
 {
-#line 440 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 440 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in, zeroBit;
 		uint16_t result, regVal;
@@ -32611,7 +32611,7 @@ uint8_t
 #line 32612 "hcs12x.cc"
 OpCpe_dyxs_idx::getCycles()
 {
-#line 466 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 466 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 32617 "hcs12x.cc"
 }
@@ -32627,7 +32627,7 @@ sink
 #line 32628 "hcs12x.cc"
 )
 {
-#line 468 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 468 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (dyxs) {
 			case 0: sink << "CPED "; break;
@@ -32651,7 +32651,7 @@ cpu
 #line 32652 "hcs12x.cc"
 )
 {
-#line 478 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 478 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in, zeroBit;
 		uint16_t result, regVal;
@@ -32689,7 +32689,7 @@ uint8_t
 #line 32690 "hcs12x.cc"
 OpTst_ext::getCycles()
 {
-#line 507 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 507 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 3; }
 #line 32695 "hcs12x.cc"
 }
@@ -32705,9 +32705,9 @@ sink
 #line 32706 "hcs12x.cc"
 )
 {
-#line 509 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 509 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
-		sink << "TST $" << std::hex << opr16a;
+		sink << "TST 0x" << std::hex << opr16a;
 	}
 #line 32713 "hcs12x.cc"
 }
@@ -32723,7 +32723,7 @@ cpu
 #line 32724 "hcs12x.cc"
 )
 {
-#line 513 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 513 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint8_t result;
@@ -32753,7 +32753,7 @@ uint8_t
 #line 32754 "hcs12x.cc"
 OpTst_idx::getCycles()
 {
-#line 532 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 532 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 32759 "hcs12x.cc"
 }
@@ -32769,7 +32769,7 @@ sink
 #line 32770 "hcs12x.cc"
 )
 {
-#line 534 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 534 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		sink << "TST ";
 		xb->disasm(sink);
@@ -32788,7 +32788,7 @@ cpu
 #line 32789 "hcs12x.cc"
 )
 {
-#line 539 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 539 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint8_t result;
@@ -32818,7 +32818,7 @@ uint8_t
 #line 32819 "hcs12x.cc"
 OpTst_ab::getCycles()
 {
-#line 558 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 558 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 1; }
 #line 32824 "hcs12x.cc"
 }
@@ -32834,7 +32834,7 @@ sink
 #line 32835 "hcs12x.cc"
 )
 {
-#line 560 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 560 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		if (b==0) {
 			sink << "TSTA ";
@@ -32856,7 +32856,7 @@ cpu
 #line 32857 "hcs12x.cc"
 )
 {
-#line 568 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 568 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t result, carry_out, overflow, carry_in;
 		uint8_t regVal;
@@ -32889,7 +32889,7 @@ uint8_t
 #line 32890 "hcs12x.cc"
 OpTstw_ext::getCycles()
 {
-#line 590 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 590 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 4; }
 #line 32895 "hcs12x.cc"
 }
@@ -32905,9 +32905,9 @@ sink
 #line 32906 "hcs12x.cc"
 )
 {
-#line 592 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 592 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
-		sink << "TSTW $" << std::hex << opr16a;
+		sink << "TSTW 0x" << std::hex << opr16a;
 	}
 #line 32913 "hcs12x.cc"
 }
@@ -32923,7 +32923,7 @@ cpu
 #line 32924 "hcs12x.cc"
 )
 {
-#line 596 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 596 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result;
@@ -32954,7 +32954,7 @@ uint8_t
 #line 32955 "hcs12x.cc"
 OpTstw_idx::getCycles()
 {
-#line 616 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 616 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 32960 "hcs12x.cc"
 }
@@ -32970,7 +32970,7 @@ sink
 #line 32971 "hcs12x.cc"
 )
 {
-#line 618 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 618 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		sink << "TSTW ";
 		xb->disasm(sink);
@@ -32989,7 +32989,7 @@ cpu
 #line 32990 "hcs12x.cc"
 )
 {
-#line 623 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 623 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result;
@@ -33019,7 +33019,7 @@ uint8_t
 #line 33020 "hcs12x.cc"
 OpTst_xy::getCycles()
 {
-#line 642 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 642 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return 2; }
 #line 33025 "hcs12x.cc"
 }
@@ -33035,7 +33035,7 @@ sink
 #line 33036 "hcs12x.cc"
 )
 {
-#line 644 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 644 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		switch (b) {
 			case 0: sink << "TSTX "; break;
@@ -33056,7 +33056,7 @@ cpu
 #line 33057 "hcs12x.cc"
 )
 {
-#line 651 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 651 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 		uint8_t carry_out, overflow, carry_in;
 		uint16_t result, regVal;
@@ -33090,7 +33090,7 @@ uint8_t
 #line 33091 "hcs12x.cc"
 OpEmind::getCycles()
 {
-#line 677 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 677 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 33096 "hcs12x.cc"
 }
@@ -33106,7 +33106,7 @@ sink
 #line 33107 "hcs12x.cc"
 )
 {
-#line 679 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 679 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		sink << "EMIND ";
@@ -33126,7 +33126,7 @@ cpu
 #line 33127 "hcs12x.cc"
 )
 {
-#line 685 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 685 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint16_t dVal = cpu->getRegD();
@@ -33142,7 +33142,7 @@ cpu
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-		// Z: Set if result is $0000; cleared otherwise
+		// Z: Set if result is 0x0000; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 		/*
@@ -33173,7 +33173,7 @@ uint8_t
 #line 33174 "hcs12x.cc"
 OpEminm::getCycles()
 {
-#line 722 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 722 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 33179 "hcs12x.cc"
 }
@@ -33189,7 +33189,7 @@ sink
 #line 33190 "hcs12x.cc"
 )
 {
-#line 724 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 724 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		sink << "EMINM ";
@@ -33209,7 +33209,7 @@ cpu
 #line 33210 "hcs12x.cc"
 )
 {
-#line 730 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 730 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint16_t dVal = cpu->getRegD();
@@ -33225,7 +33225,7 @@ cpu
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-		// Z: Set if result is $0000; cleared otherwise
+		// Z: Set if result is 0x0000; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 		/*
@@ -33256,7 +33256,7 @@ uint8_t
 #line 33257 "hcs12x.cc"
 OpMina::getCycles()
 {
-#line 768 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 768 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 33262 "hcs12x.cc"
 }
@@ -33272,7 +33272,7 @@ sink
 #line 33273 "hcs12x.cc"
 )
 {
-#line 770 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 770 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		sink << "MINA ";
@@ -33293,7 +33293,7 @@ cpu
 #line 33294 "hcs12x.cc"
 )
 {
-#line 777 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 777 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint8_t aVal = cpu->getRegA();
@@ -33309,7 +33309,7 @@ cpu
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-		// Z: Set if result is $00; cleared otherwise
+		// Z: Set if result is 0x00; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 		/*
@@ -33340,7 +33340,7 @@ uint8_t
 #line 33341 "hcs12x.cc"
 OpMinm::getCycles()
 {
-#line 814 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 814 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 33346 "hcs12x.cc"
 }
@@ -33356,7 +33356,7 @@ sink
 #line 33357 "hcs12x.cc"
 )
 {
-#line 816 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 816 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		sink << "MINM ";
@@ -33377,7 +33377,7 @@ cpu
 #line 33378 "hcs12x.cc"
 )
 {
-#line 823 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 823 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint8_t aVal = cpu->getRegA();
@@ -33393,7 +33393,7 @@ cpu
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-		// Z: Set if result is $00; cleared otherwise
+		// Z: Set if result is 0x00; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 		/*
@@ -33425,7 +33425,7 @@ uint8_t
 #line 33426 "hcs12x.cc"
 OpEmaxd::getCycles()
 {
-#line 863 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 863 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 33431 "hcs12x.cc"
 }
@@ -33441,7 +33441,7 @@ sink
 #line 33442 "hcs12x.cc"
 )
 {
-#line 865 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 865 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		sink << "EMAXD ";
@@ -33461,7 +33461,7 @@ cpu
 #line 33462 "hcs12x.cc"
 )
 {
-#line 871 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 871 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint16_t dVal = cpu->getRegD();
@@ -33478,7 +33478,7 @@ cpu
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-		// Z: Set if result is $0000; cleared otherwise
+		// Z: Set if result is 0x0000; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 		/*
@@ -33509,7 +33509,7 @@ uint8_t
 #line 33510 "hcs12x.cc"
 OpEmaxm::getCycles()
 {
-#line 909 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 909 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 33515 "hcs12x.cc"
 }
@@ -33525,7 +33525,7 @@ sink
 #line 33526 "hcs12x.cc"
 )
 {
-#line 911 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 911 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		sink << "EMAXM ";
@@ -33545,7 +33545,7 @@ cpu
 #line 33546 "hcs12x.cc"
 )
 {
-#line 917 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 917 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint16_t dVal = cpu->getRegD();
@@ -33562,7 +33562,7 @@ cpu
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-		// Z: Set if result is $0000; cleared otherwise
+		// Z: Set if result is 0x0000; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 		/*
@@ -33593,7 +33593,7 @@ uint8_t
 #line 33594 "hcs12x.cc"
 OpMaxa::getCycles()
 {
-#line 956 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 956 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 33599 "hcs12x.cc"
 }
@@ -33609,7 +33609,7 @@ sink
 #line 33610 "hcs12x.cc"
 )
 {
-#line 958 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 958 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		sink << "MAXA ";
@@ -33629,7 +33629,7 @@ cpu
 #line 33630 "hcs12x.cc"
 )
 {
-#line 964 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 964 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint8_t aVal = cpu->getRegA();
@@ -33645,7 +33645,7 @@ cpu
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-		// Z: Set if result is $00; cleared otherwise
+		// Z: Set if result is 0x00; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 		/*
@@ -33676,7 +33676,7 @@ uint8_t
 #line 33677 "hcs12x.cc"
 OpMaxm::getCycles()
 {
-#line 1001 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 1001 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 33682 "hcs12x.cc"
 }
@@ -33692,7 +33692,7 @@ sink
 #line 33693 "hcs12x.cc"
 )
 {
-#line 1003 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 1003 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		sink << "MAXM ";
@@ -33712,7 +33712,7 @@ cpu
 #line 33713 "hcs12x.cc"
 )
 {
-#line 1009 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
+#line 1009 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./compare_test.isa"
 	{
 
 		uint8_t aVal = cpu->getRegA();
@@ -33728,7 +33728,7 @@ cpu
 
 		// N: Set if MSB of result is set; cleared otherwise
 		if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-		// Z: Set if result is $00; cleared otherwise
+		// Z: Set if result is 0x00; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
 		/*
@@ -33791,7 +33791,7 @@ uint8_t
 #line 33792 "hcs12x.cc"
 OpAnd_ab_imm::getCycles()
 {
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 1; }
 #line 33797 "hcs12x.cc"
 }
@@ -33807,12 +33807,12 @@ sink
 #line 33808 "hcs12x.cc"
 )
 {
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ANDA #$";
+			sink << "ANDA #0x";
 			} else {
-			sink << "ANDB #$";
+			sink << "ANDB #0x";
 		}
 		sink << std::hex << opr8i;
 	}
@@ -33830,7 +33830,7 @@ cpu
 #line 33831 "hcs12x.cc"
 )
 {
-#line 50 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 50 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -33869,7 +33869,7 @@ uint8_t
 #line 33870 "hcs12x.cc"
 OpAnd_ab_dir::getCycles()
 {
-#line 78 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 78 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 33875 "hcs12x.cc"
 }
@@ -33885,12 +33885,12 @@ sink
 #line 33886 "hcs12x.cc"
 )
 {
-#line 80 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 80 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ANDA $";
+			sink << "ANDA 0x";
 			} else {
-			sink << "ANDB $";
+			sink << "ANDB 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -33908,7 +33908,7 @@ cpu
 #line 33909 "hcs12x.cc"
 )
 {
-#line 89 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 89 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -33948,7 +33948,7 @@ uint8_t
 #line 33949 "hcs12x.cc"
 OpAnd_ab_ext::getCycles()
 {
-#line 118 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 118 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 33954 "hcs12x.cc"
 }
@@ -33964,12 +33964,12 @@ sink
 #line 33965 "hcs12x.cc"
 )
 {
-#line 120 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 120 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ANDA $";
+			sink << "ANDA 0x";
 			} else {
-			sink << "ANDB $";
+			sink << "ANDB 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -33987,7 +33987,7 @@ cpu
 #line 33988 "hcs12x.cc"
 )
 {
-#line 129 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 129 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -34027,7 +34027,7 @@ uint8_t
 #line 34028 "hcs12x.cc"
 OpAnd_ab_idx::getCycles()
 {
-#line 158 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 158 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 34033 "hcs12x.cc"
 }
@@ -34043,7 +34043,7 @@ sink
 #line 34044 "hcs12x.cc"
 )
 {
-#line 160 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 160 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0){
 			sink << "ANDA ";
@@ -34067,7 +34067,7 @@ cpu
 #line 34068 "hcs12x.cc"
 )
 {
-#line 170 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 170 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -34108,7 +34108,7 @@ uint8_t
 #line 34109 "hcs12x.cc"
 OpAndcc_imm::getCycles()
 {
-#line 200 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 200 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 1; }
 #line 34114 "hcs12x.cc"
 }
@@ -34124,10 +34124,10 @@ sink
 #line 34125 "hcs12x.cc"
 )
 {
-#line 202 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
-		sink << "ANDCC #$" << std::hex << opr8i;
+		sink << "ANDCC #0x" << std::hex << opr8i;
 	}
 #line 34133 "hcs12x.cc"
 }
@@ -34143,7 +34143,7 @@ cpu
 #line 34144 "hcs12x.cc"
 )
 {
-#line 207 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 207 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -34168,7 +34168,7 @@ uint8_t
 #line 34169 "hcs12x.cc"
 OpAnd_xy_imm::getCycles()
 {
-#line 221 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 221 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 34174 "hcs12x.cc"
 }
@@ -34184,12 +34184,12 @@ sink
 #line 34185 "hcs12x.cc"
 )
 {
-#line 223 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 223 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ANDX #$";
+			sink << "ANDX #0x";
 			} else {
-			sink << "ANDY #$";
+			sink << "ANDY #0x";
 		}
 
 		sink << std::hex << opr16i;
@@ -34208,7 +34208,7 @@ cpu
 #line 34209 "hcs12x.cc"
 )
 {
-#line 233 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 233 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -34246,7 +34246,7 @@ uint8_t
 #line 34247 "hcs12x.cc"
 OpAnd_xy_dir::getCycles()
 {
-#line 260 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 260 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 4; }
 #line 34252 "hcs12x.cc"
 }
@@ -34262,12 +34262,12 @@ sink
 #line 34263 "hcs12x.cc"
 )
 {
-#line 262 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ANDX $";
+			sink << "ANDX 0x";
 			} else {
-			sink << "ANDY $";
+			sink << "ANDY 0x";
 		}
 
 		sink << std::hex << opr8a;
@@ -34286,7 +34286,7 @@ cpu
 #line 34287 "hcs12x.cc"
 )
 {
-#line 272 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 272 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -34326,7 +34326,7 @@ uint8_t
 #line 34327 "hcs12x.cc"
 OpAnd_xy_ext::getCycles()
 {
-#line 301 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 301 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 4; }
 #line 34332 "hcs12x.cc"
 }
@@ -34342,12 +34342,12 @@ sink
 #line 34343 "hcs12x.cc"
 )
 {
-#line 303 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 303 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ANDX $";
+			sink << "ANDX 0x";
 			} else {
-			sink << "ANDY $";
+			sink << "ANDY 0x";
 		}
 
 		sink << std::hex << opr16a;
@@ -34366,7 +34366,7 @@ cpu
 #line 34367 "hcs12x.cc"
 )
 {
-#line 313 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 313 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -34406,7 +34406,7 @@ uint8_t
 #line 34407 "hcs12x.cc"
 OpAnd_xy_idx::getCycles()
 {
-#line 342 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 342 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 34412 "hcs12x.cc"
 }
@@ -34422,7 +34422,7 @@ sink
 #line 34423 "hcs12x.cc"
 )
 {
-#line 344 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 344 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
 			sink << "ANDX ";
@@ -34446,7 +34446,7 @@ cpu
 #line 34447 "hcs12x.cc"
 )
 {
-#line 354 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 354 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -34486,7 +34486,7 @@ uint8_t
 #line 34487 "hcs12x.cc"
 OpOra_ab_imm::getCycles()
 {
-#line 384 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 384 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 1; }
 #line 34492 "hcs12x.cc"
 }
@@ -34502,12 +34502,12 @@ sink
 #line 34503 "hcs12x.cc"
 )
 {
-#line 386 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 386 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ORA #$";
+			sink << "ORA #0x";
 			} else {
-			sink << "ORB #$";
+			sink << "ORB #0x";
 		}
 		sink << std::hex << opr8i;
 	}
@@ -34525,7 +34525,7 @@ cpu
 #line 34526 "hcs12x.cc"
 )
 {
-#line 395 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 395 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -34564,7 +34564,7 @@ uint8_t
 #line 34565 "hcs12x.cc"
 OpOra_ab_dir::getCycles()
 {
-#line 423 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 423 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 34570 "hcs12x.cc"
 }
@@ -34580,12 +34580,12 @@ sink
 #line 34581 "hcs12x.cc"
 )
 {
-#line 425 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 425 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ORAA $";
+			sink << "ORAA 0x";
 			} else {
-			sink << "ORAB $";
+			sink << "ORAB 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -34603,7 +34603,7 @@ cpu
 #line 34604 "hcs12x.cc"
 )
 {
-#line 434 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 434 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -34643,7 +34643,7 @@ uint8_t
 #line 34644 "hcs12x.cc"
 OpOra_ab_ext::getCycles()
 {
-#line 463 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 463 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 34649 "hcs12x.cc"
 }
@@ -34659,12 +34659,12 @@ sink
 #line 34660 "hcs12x.cc"
 )
 {
-#line 465 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 465 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ORAA $";
+			sink << "ORAA 0x";
 			} else {
-			sink << "ORAB $";
+			sink << "ORAB 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -34682,7 +34682,7 @@ cpu
 #line 34683 "hcs12x.cc"
 )
 {
-#line 474 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 474 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -34722,7 +34722,7 @@ uint8_t
 #line 34723 "hcs12x.cc"
 OpOra_ab_idx::getCycles()
 {
-#line 503 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 503 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 34728 "hcs12x.cc"
 }
@@ -34738,7 +34738,7 @@ sink
 #line 34739 "hcs12x.cc"
 )
 {
-#line 505 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 505 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0){
 			sink << "ORAA ";
@@ -34762,7 +34762,7 @@ cpu
 #line 34763 "hcs12x.cc"
 )
 {
-#line 515 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 515 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -34803,7 +34803,7 @@ uint8_t
 #line 34804 "hcs12x.cc"
 OpOrcc_imm::getCycles()
 {
-#line 545 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 545 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 1; }
 #line 34809 "hcs12x.cc"
 }
@@ -34819,10 +34819,10 @@ sink
 #line 34820 "hcs12x.cc"
 )
 {
-#line 547 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 547 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
-		sink << "ORCC #$" << std::hex << opr8i;
+		sink << "ORCC #0x" << std::hex << opr8i;
 	}
 #line 34828 "hcs12x.cc"
 }
@@ -34838,7 +34838,7 @@ cpu
 #line 34839 "hcs12x.cc"
 )
 {
-#line 552 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 552 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result, xFlag;
 
@@ -34875,7 +34875,7 @@ uint8_t
 #line 34876 "hcs12x.cc"
 OpOr_xy_imm::getCycles()
 {
-#line 584 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 584 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 34881 "hcs12x.cc"
 }
@@ -34891,12 +34891,12 @@ sink
 #line 34892 "hcs12x.cc"
 )
 {
-#line 586 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 586 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ORX #$";
+			sink << "ORX #0x";
 			} else {
-			sink << "ORY #$";
+			sink << "ORY #0x";
 		}
 
 		sink << std::hex << opr16i;
@@ -34915,7 +34915,7 @@ cpu
 #line 34916 "hcs12x.cc"
 )
 {
-#line 596 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 596 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -34953,7 +34953,7 @@ uint8_t
 #line 34954 "hcs12x.cc"
 OpOr_xy_dir::getCycles()
 {
-#line 623 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 623 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 4; }
 #line 34959 "hcs12x.cc"
 }
@@ -34969,12 +34969,12 @@ sink
 #line 34970 "hcs12x.cc"
 )
 {
-#line 625 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 625 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ORX $";
+			sink << "ORX 0x";
 			} else {
-			sink << "ORY $";
+			sink << "ORY 0x";
 		}
 
 		sink << std::hex << opr8a;
@@ -34993,7 +34993,7 @@ cpu
 #line 34994 "hcs12x.cc"
 )
 {
-#line 635 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 635 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -35033,7 +35033,7 @@ uint8_t
 #line 35034 "hcs12x.cc"
 OpOr_xy_ext::getCycles()
 {
-#line 664 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 664 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 4; }
 #line 35039 "hcs12x.cc"
 }
@@ -35049,12 +35049,12 @@ sink
 #line 35050 "hcs12x.cc"
 )
 {
-#line 666 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 666 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ORX $";
+			sink << "ORX 0x";
 			} else {
-			sink << "ORY $";
+			sink << "ORY 0x";
 		}
 
 		sink << std::hex << opr16a;
@@ -35073,7 +35073,7 @@ cpu
 #line 35074 "hcs12x.cc"
 )
 {
-#line 676 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 676 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -35113,7 +35113,7 @@ uint8_t
 #line 35114 "hcs12x.cc"
 OpOr_xy_idx::getCycles()
 {
-#line 705 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 705 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 35119 "hcs12x.cc"
 }
@@ -35129,7 +35129,7 @@ sink
 #line 35130 "hcs12x.cc"
 )
 {
-#line 707 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 707 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
 			sink << "ORX ";
@@ -35153,7 +35153,7 @@ cpu
 #line 35154 "hcs12x.cc"
 )
 {
-#line 717 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 717 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -35193,7 +35193,7 @@ uint8_t
 #line 35194 "hcs12x.cc"
 OpEor_ab_imm::getCycles()
 {
-#line 747 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 747 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 1; }
 #line 35199 "hcs12x.cc"
 }
@@ -35209,12 +35209,12 @@ sink
 #line 35210 "hcs12x.cc"
 )
 {
-#line 749 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 749 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "EOR #$";
+			sink << "EOR #0x";
 			} else {
-			sink << "EOR #$";
+			sink << "EOR #0x";
 		}
 		sink << std::hex << opr8i;
 	}
@@ -35232,7 +35232,7 @@ cpu
 #line 35233 "hcs12x.cc"
 )
 {
-#line 758 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 758 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -35270,7 +35270,7 @@ uint8_t
 #line 35271 "hcs12x.cc"
 OpEor_ab_dir::getCycles()
 {
-#line 785 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 785 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 35276 "hcs12x.cc"
 }
@@ -35286,12 +35286,12 @@ sink
 #line 35287 "hcs12x.cc"
 )
 {
-#line 787 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 787 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "ORAA $";
+			sink << "ORAA 0x";
 			} else {
-			sink << "ORAB $";
+			sink << "ORAB 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -35309,7 +35309,7 @@ cpu
 #line 35310 "hcs12x.cc"
 )
 {
-#line 796 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 796 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -35349,7 +35349,7 @@ uint8_t
 #line 35350 "hcs12x.cc"
 OpEor_ab_ext::getCycles()
 {
-#line 825 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 825 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 35355 "hcs12x.cc"
 }
@@ -35365,12 +35365,12 @@ sink
 #line 35366 "hcs12x.cc"
 )
 {
-#line 827 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 827 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "EORA $";
+			sink << "EORA 0x";
 			} else {
-			sink << "EORB $";
+			sink << "EORB 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -35388,7 +35388,7 @@ cpu
 #line 35389 "hcs12x.cc"
 )
 {
-#line 836 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 836 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -35428,7 +35428,7 @@ uint8_t
 #line 35429 "hcs12x.cc"
 OpEor_ab_idx::getCycles()
 {
-#line 865 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 865 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 35434 "hcs12x.cc"
 }
@@ -35444,7 +35444,7 @@ sink
 #line 35445 "hcs12x.cc"
 )
 {
-#line 867 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 867 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0){
 			sink << "EORA ";
@@ -35468,7 +35468,7 @@ cpu
 #line 35469 "hcs12x.cc"
 )
 {
-#line 877 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 877 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		uint8_t result;
 
@@ -35509,7 +35509,7 @@ uint8_t
 #line 35510 "hcs12x.cc"
 OpEor_xy_imm::getCycles()
 {
-#line 907 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 907 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 3; }
 #line 35515 "hcs12x.cc"
 }
@@ -35525,12 +35525,12 @@ sink
 #line 35526 "hcs12x.cc"
 )
 {
-#line 909 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 909 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "EORX #$";
+			sink << "EORX #0x";
 			} else {
-			sink << "EORY #$";
+			sink << "EORY #0x";
 		}
 
 		sink << std::hex << opr16i;
@@ -35549,7 +35549,7 @@ cpu
 #line 35550 "hcs12x.cc"
 )
 {
-#line 919 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 919 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -35587,7 +35587,7 @@ uint8_t
 #line 35588 "hcs12x.cc"
 OpEor_xy_dir::getCycles()
 {
-#line 946 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 946 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 4; }
 #line 35593 "hcs12x.cc"
 }
@@ -35603,12 +35603,12 @@ sink
 #line 35604 "hcs12x.cc"
 )
 {
-#line 948 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 948 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "EORX $";
+			sink << "EORX 0x";
 			} else {
-			sink << "eORY $";
+			sink << "eORY 0x";
 		}
 
 		sink << std::hex << opr8a;
@@ -35627,7 +35627,7 @@ cpu
 #line 35628 "hcs12x.cc"
 )
 {
-#line 958 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 958 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -35667,7 +35667,7 @@ uint8_t
 #line 35668 "hcs12x.cc"
 OpEor_xy_ext::getCycles()
 {
-#line 987 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 987 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return 4; }
 #line 35673 "hcs12x.cc"
 }
@@ -35683,12 +35683,12 @@ sink
 #line 35684 "hcs12x.cc"
 )
 {
-#line 989 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 989 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
-			sink << "EORX $";
+			sink << "EORX 0x";
 			} else {
-			sink << "EORY $";
+			sink << "EORY 0x";
 		}
 
 		sink << std::hex << opr16a;
@@ -35707,7 +35707,7 @@ cpu
 #line 35708 "hcs12x.cc"
 )
 {
-#line 999 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 999 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -35747,7 +35747,7 @@ uint8_t
 #line 35748 "hcs12x.cc"
 OpEor_xy_idx::getCycles()
 {
-#line 1028 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 1028 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 35753 "hcs12x.cc"
 }
@@ -35763,7 +35763,7 @@ sink
 #line 35764 "hcs12x.cc"
 )
 {
-#line 1030 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 1030 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 		if (b==0) {
 			sink << "EORX ";
@@ -35787,7 +35787,7 @@ cpu
 #line 35788 "hcs12x.cc"
 )
 {
-#line 1040 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
+#line 1040 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./boolean-logic.isa"
 	{
 
 		uint16_t result, regVal;
@@ -35861,7 +35861,7 @@ uint8_t
 #line 35862 "hcs12x.cc"
 OpClc::getCycles()
 {
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 35867 "hcs12x.cc"
 }
@@ -35877,7 +35877,7 @@ sink
 #line 35878 "hcs12x.cc"
 )
 {
-#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 43 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLC";
 	}
@@ -35895,7 +35895,7 @@ cpu
 #line 35896 "hcs12x.cc"
 )
 {
-#line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 47 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		cpu->ccr->clrC();
 	}
@@ -35913,7 +35913,7 @@ uint8_t
 #line 35914 "hcs12x.cc"
 OpCli::getCycles()
 {
-#line 54 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 54 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 35919 "hcs12x.cc"
 }
@@ -35929,7 +35929,7 @@ sink
 #line 35930 "hcs12x.cc"
 )
 {
-#line 56 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 56 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLI";
 	}
@@ -35947,7 +35947,7 @@ cpu
 #line 35948 "hcs12x.cc"
 )
 {
-#line 60 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 60 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		cpu->ccr->clrI();
 	}
@@ -35965,7 +35965,7 @@ uint8_t
 #line 35966 "hcs12x.cc"
 OpClv::getCycles()
 {
-#line 67 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 67 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 35971 "hcs12x.cc"
 }
@@ -35981,7 +35981,7 @@ sink
 #line 35982 "hcs12x.cc"
 )
 {
-#line 69 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 69 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLV";
 	}
@@ -35999,7 +35999,7 @@ cpu
 #line 36000 "hcs12x.cc"
 )
 {
-#line 73 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 73 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		cpu->ccr->clrV();
 	}
@@ -36017,7 +36017,7 @@ uint8_t
 #line 36018 "hcs12x.cc"
 OpClr_ext::getCycles()
 {
-#line 80 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 80 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 3; }
 #line 36023 "hcs12x.cc"
 }
@@ -36033,9 +36033,9 @@ sink
 #line 36034 "hcs12x.cc"
 )
 {
-#line 82 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 82 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "CLR $" << std::hex << opr16a;
+		sink << "CLR 0x" << std::hex << opr16a;
 	}
 #line 36041 "hcs12x.cc"
 }
@@ -36051,7 +36051,7 @@ cpu
 #line 36052 "hcs12x.cc"
 )
 {
-#line 86 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 86 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		cpu->memWrite8(addr, 0);
@@ -36074,7 +36074,7 @@ uint8_t
 #line 36075 "hcs12x.cc"
 OpClr_idx::getCycles()
 {
-#line 98 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 98 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 #line 36080 "hcs12x.cc"
 }
@@ -36090,7 +36090,7 @@ sink
 #line 36091 "hcs12x.cc"
 )
 {
-#line 100 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 100 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLR ";
 		xb->disasm(sink);
@@ -36109,7 +36109,7 @@ cpu
 #line 36110 "hcs12x.cc"
 )
 {
-#line 105 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 105 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		cpu->memWrite8(addr, 0);
@@ -36132,7 +36132,7 @@ uint8_t
 #line 36133 "hcs12x.cc"
 OpClrw_ext::getCycles()
 {
-#line 117 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 117 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 36138 "hcs12x.cc"
 }
@@ -36148,9 +36148,9 @@ sink
 #line 36149 "hcs12x.cc"
 )
 {
-#line 119 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 119 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "CLRW $" << std::hex << opr16a;
+		sink << "CLRW 0x" << std::hex << opr16a;
 	}
 #line 36156 "hcs12x.cc"
 }
@@ -36166,7 +36166,7 @@ cpu
 #line 36167 "hcs12x.cc"
 )
 {
-#line 123 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 123 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		cpu->memWrite16(addr, 0);
@@ -36189,7 +36189,7 @@ uint8_t
 #line 36190 "hcs12x.cc"
 OpClrw_idx::getCycles()
 {
-#line 135 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 135 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 #line 36195 "hcs12x.cc"
 }
@@ -36205,7 +36205,7 @@ sink
 #line 36206 "hcs12x.cc"
 )
 {
-#line 137 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 137 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "CLRW ";
 		xb->disasm(sink);
@@ -36224,7 +36224,7 @@ cpu
 #line 36225 "hcs12x.cc"
 )
 {
-#line 142 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 142 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		cpu->memWrite16(addr, 0);
@@ -36247,7 +36247,7 @@ uint8_t
 #line 36248 "hcs12x.cc"
 OpClr_ab::getCycles()
 {
-#line 154 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 154 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 36253 "hcs12x.cc"
 }
@@ -36263,7 +36263,7 @@ sink
 #line 36264 "hcs12x.cc"
 )
 {
-#line 156 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 156 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
 			sink << "CLRA";
@@ -36285,7 +36285,7 @@ cpu
 #line 36286 "hcs12x.cc"
 )
 {
-#line 164 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 164 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		if (b==0) {
@@ -36312,7 +36312,7 @@ uint8_t
 #line 36313 "hcs12x.cc"
 OpClr_xy::getCycles()
 {
-#line 180 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 180 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 36318 "hcs12x.cc"
 }
@@ -36328,7 +36328,7 @@ sink
 #line 36329 "hcs12x.cc"
 )
 {
-#line 182 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 182 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
 			sink << "CLRX";
@@ -36350,7 +36350,7 @@ cpu
 #line 36351 "hcs12x.cc"
 )
 {
-#line 190 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 190 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		if (b==0) {
@@ -36378,7 +36378,7 @@ uint8_t
 #line 36379 "hcs12x.cc"
 OpCom_ext::getCycles()
 {
-#line 207 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 207 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 36384 "hcs12x.cc"
 }
@@ -36394,9 +36394,9 @@ sink
 #line 36395 "hcs12x.cc"
 )
 {
-#line 209 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 209 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "COM $" << std::hex << opr16a;
+		sink << "COM 0x" << std::hex << opr16a;
 	}
 #line 36402 "hcs12x.cc"
 }
@@ -36412,7 +36412,7 @@ cpu
 #line 36413 "hcs12x.cc"
 )
 {
-#line 213 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 213 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = ~cpu->memRead8(addr);
@@ -36436,7 +36436,7 @@ uint8_t
 #line 36437 "hcs12x.cc"
 OpCom_idx::getCycles()
 {
-#line 226 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 226 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 36442 "hcs12x.cc"
 }
@@ -36452,7 +36452,7 @@ sink
 #line 36453 "hcs12x.cc"
 )
 {
-#line 228 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 228 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "COM ";
 		xb->disasm(sink);
@@ -36471,7 +36471,7 @@ cpu
 #line 36472 "hcs12x.cc"
 )
 {
-#line 233 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 233 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -36496,7 +36496,7 @@ uint8_t
 #line 36497 "hcs12x.cc"
 OpCom_ab::getCycles()
 {
-#line 247 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 247 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 36502 "hcs12x.cc"
 }
@@ -36512,7 +36512,7 @@ sink
 #line 36513 "hcs12x.cc"
 )
 {
-#line 249 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 249 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
 			sink << "COMA";
@@ -36534,7 +36534,7 @@ cpu
 #line 36535 "hcs12x.cc"
 )
 {
-#line 257 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 257 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		uint8_t val;
@@ -36570,7 +36570,7 @@ uint8_t
 #line 36571 "hcs12x.cc"
 OpComw_ext::getCycles()
 {
-#line 282 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 282 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 36576 "hcs12x.cc"
 }
@@ -36586,9 +36586,9 @@ sink
 #line 36587 "hcs12x.cc"
 )
 {
-#line 284 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 284 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "COMW $" << std::hex << opr16a;
+		sink << "COMW 0x" << std::hex << opr16a;
 	}
 #line 36594 "hcs12x.cc"
 }
@@ -36604,7 +36604,7 @@ cpu
 #line 36605 "hcs12x.cc"
 )
 {
-#line 288 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 288 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = ~cpu->memRead16(addr);
@@ -36628,7 +36628,7 @@ uint8_t
 #line 36629 "hcs12x.cc"
 OpComw_idx::getCycles()
 {
-#line 301 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 301 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 36634 "hcs12x.cc"
 }
@@ -36644,7 +36644,7 @@ sink
 #line 36645 "hcs12x.cc"
 )
 {
-#line 303 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 303 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "COMW ";
 		xb->disasm(sink);
@@ -36663,7 +36663,7 @@ cpu
 #line 36664 "hcs12x.cc"
 )
 {
-#line 308 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 308 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -36688,7 +36688,7 @@ uint8_t
 #line 36689 "hcs12x.cc"
 OpCom_xy::getCycles()
 {
-#line 322 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 322 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 36694 "hcs12x.cc"
 }
@@ -36704,7 +36704,7 @@ sink
 #line 36705 "hcs12x.cc"
 )
 {
-#line 324 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 324 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
 			sink << "COMX";
@@ -36726,7 +36726,7 @@ cpu
 #line 36727 "hcs12x.cc"
 )
 {
-#line 332 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 332 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		uint16_t val;
@@ -36763,7 +36763,7 @@ uint8_t
 #line 36764 "hcs12x.cc"
 OpNeg_ext::getCycles()
 {
-#line 358 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 358 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 36769 "hcs12x.cc"
 }
@@ -36779,9 +36779,9 @@ sink
 #line 36780 "hcs12x.cc"
 )
 {
-#line 360 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 360 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "NEG $" << std::hex << opr16a;
+		sink << "NEG 0x" << std::hex << opr16a;
 	}
 #line 36787 "hcs12x.cc"
 }
@@ -36797,7 +36797,7 @@ cpu
 #line 36798 "hcs12x.cc"
 )
 {
-#line 364 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 364 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t result, carry_out, overflow;
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -36822,7 +36822,7 @@ uint8_t
 #line 36823 "hcs12x.cc"
 OpNeg_idx::getCycles()
 {
-#line 378 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 378 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 36828 "hcs12x.cc"
 }
@@ -36838,9 +36838,9 @@ sink
 #line 36839 "hcs12x.cc"
 )
 {
-#line 380 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 380 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "NEG $";
+		sink << "NEG 0x";
 		xb->disasm(sink);
 	}
 #line 36847 "hcs12x.cc"
@@ -36857,7 +36857,7 @@ cpu
 #line 36858 "hcs12x.cc"
 )
 {
-#line 385 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 385 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		uint8_t result, carry_out, overflow;
@@ -36885,7 +36885,7 @@ uint8_t
 #line 36886 "hcs12x.cc"
 OpNeg_ab::getCycles()
 {
-#line 402 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 402 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 36891 "hcs12x.cc"
 }
@@ -36901,7 +36901,7 @@ sink
 #line 36902 "hcs12x.cc"
 )
 {
-#line 404 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 404 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
 			sink << "NEGA";
@@ -36923,7 +36923,7 @@ cpu
 #line 36924 "hcs12x.cc"
 )
 {
-#line 412 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 412 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val, result, carry_out, overflow;
 
@@ -36959,7 +36959,7 @@ uint8_t
 #line 36960 "hcs12x.cc"
 OpNegw_ext::getCycles()
 {
-#line 437 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 437 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 36965 "hcs12x.cc"
 }
@@ -36975,9 +36975,9 @@ sink
 #line 36976 "hcs12x.cc"
 )
 {
-#line 439 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 439 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "NEGW $" << std::hex << opr16a;
+		sink << "NEGW 0x" << std::hex << opr16a;
 	}
 #line 36983 "hcs12x.cc"
 }
@@ -36993,7 +36993,7 @@ cpu
 #line 36994 "hcs12x.cc"
 )
 {
-#line 443 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 443 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t result;
@@ -37021,7 +37021,7 @@ uint8_t
 #line 37022 "hcs12x.cc"
 OpNegw_idx::getCycles()
 {
-#line 460 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 460 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 37027 "hcs12x.cc"
 }
@@ -37037,9 +37037,9 @@ sink
 #line 37038 "hcs12x.cc"
 )
 {
-#line 462 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 462 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "NEGW $";
+		sink << "NEGW 0x";
 		xb->disasm(sink);
 	}
 #line 37046 "hcs12x.cc"
@@ -37056,7 +37056,7 @@ cpu
 #line 37057 "hcs12x.cc"
 )
 {
-#line 467 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 467 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		uint8_t carry_out, overflow;
@@ -37086,7 +37086,7 @@ uint8_t
 #line 37087 "hcs12x.cc"
 OpNeg_xy::getCycles()
 {
-#line 486 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 486 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 37092 "hcs12x.cc"
 }
@@ -37102,7 +37102,7 @@ sink
 #line 37103 "hcs12x.cc"
 )
 {
-#line 488 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 488 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
 			sink << "NEGX";
@@ -37124,7 +37124,7 @@ cpu
 #line 37125 "hcs12x.cc"
 )
 {
-#line 496 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 496 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t carry_out, overflow;
 		uint16_t val, result;
@@ -37163,7 +37163,7 @@ uint8_t
 #line 37164 "hcs12x.cc"
 OpBclr_dir::getCycles()
 {
-#line 526 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 526 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 37169 "hcs12x.cc"
 }
@@ -37179,9 +37179,9 @@ sink
 #line 37180 "hcs12x.cc"
 )
 {
-#line 528 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 528 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "BCLR $" << std::hex << dd << ", $" << std::hex << mm;
+		sink << "BCLR 0x" << std::hex << dd << ", 0x" << std::hex << mm;
 	}
 #line 37187 "hcs12x.cc"
 }
@@ -37197,7 +37197,7 @@ cpu
 #line 37198 "hcs12x.cc"
 )
 {
-#line 532 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 532 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(dd, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
 		uint8_t ddVal = cpu->memRead8(addr);
@@ -37224,7 +37224,7 @@ uint8_t
 #line 37225 "hcs12x.cc"
 OpBclr_ext::getCycles()
 {
-#line 548 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 548 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 37230 "hcs12x.cc"
 }
@@ -37240,9 +37240,9 @@ sink
 #line 37241 "hcs12x.cc"
 )
 {
-#line 550 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 550 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "BCLR $" << std::hex << opr16a << ", $" << std::hex << mm;
+		sink << "BCLR 0x" << std::hex << opr16a << ", 0x" << std::hex << mm;
 	}
 #line 37248 "hcs12x.cc"
 }
@@ -37258,7 +37258,7 @@ cpu
 #line 37259 "hcs12x.cc"
 )
 {
-#line 554 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 554 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t opr16aVal = cpu->memRead8(addr);
@@ -37285,7 +37285,7 @@ uint8_t
 #line 37286 "hcs12x.cc"
 OpBclr_idx::getCycles()
 {
-#line 570 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 570 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 6, 0, 0); }
 #line 37291 "hcs12x.cc"
 }
@@ -37301,11 +37301,11 @@ sink
 #line 37302 "hcs12x.cc"
 )
 {
-#line 572 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 572 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BCLR ";
 		xb->disasm(sink);
-		sink << ", $" << std::hex << mm;
+		sink << ", 0x" << std::hex << mm;
 	}
 #line 37311 "hcs12x.cc"
 }
@@ -37321,7 +37321,7 @@ cpu
 #line 37322 "hcs12x.cc"
 )
 {
-#line 578 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 578 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -37350,7 +37350,7 @@ uint8_t
 #line 37351 "hcs12x.cc"
 OpBit_ab_imm::getCycles()
 {
-#line 596 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 596 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 37356 "hcs12x.cc"
 }
@@ -37366,12 +37366,12 @@ sink
 #line 37367 "hcs12x.cc"
 )
 {
-#line 598 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 598 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
-			sink << "BITA #$";
+			sink << "BITA #0x";
 			} else {
-			sink << "BITB #$";
+			sink << "BITB #0x";
 		}
 		sink << std::hex << ii;
 	}
@@ -37389,7 +37389,7 @@ cpu
 #line 37390 "hcs12x.cc"
 )
 {
-#line 607 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 607 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val;
 
@@ -37417,7 +37417,7 @@ uint8_t
 #line 37418 "hcs12x.cc"
 OpBit_ab_dir::getCycles()
 {
-#line 624 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 624 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 3; }
 #line 37423 "hcs12x.cc"
 }
@@ -37433,12 +37433,12 @@ sink
 #line 37434 "hcs12x.cc"
 )
 {
-#line 626 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 626 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
-			sink << "BITA $";
+			sink << "BITA 0x";
 			} else {
-			sink << "BITB $";
+			sink << "BITB 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -37456,7 +37456,7 @@ cpu
 #line 37457 "hcs12x.cc"
 )
 {
-#line 635 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 635 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
 		uint8_t val;
@@ -37485,7 +37485,7 @@ uint8_t
 #line 37486 "hcs12x.cc"
 OpBit_ab_ext::getCycles()
 {
-#line 653 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 653 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 3; }
 #line 37491 "hcs12x.cc"
 }
@@ -37501,12 +37501,12 @@ sink
 #line 37502 "hcs12x.cc"
 )
 {
-#line 655 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 655 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
-			sink << "BITA $";
+			sink << "BITA 0x";
 			} else {
-			sink << "BITB $";
+			sink << "BITB 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -37524,7 +37524,7 @@ cpu
 #line 37525 "hcs12x.cc"
 )
 {
-#line 664 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 664 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val;
@@ -37553,7 +37553,7 @@ uint8_t
 #line 37554 "hcs12x.cc"
 OpBit_ab_idx::getCycles()
 {
-#line 682 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 682 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 37559 "hcs12x.cc"
 }
@@ -37569,7 +37569,7 @@ sink
 #line 37570 "hcs12x.cc"
 )
 {
-#line 684 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 684 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
 			sink << "BITA ";
@@ -37592,7 +37592,7 @@ cpu
 #line 37593 "hcs12x.cc"
 )
 {
-#line 693 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 693 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val;
@@ -37622,7 +37622,7 @@ uint8_t
 #line 37623 "hcs12x.cc"
 OpBit_xy_imm::getCycles()
 {
-#line 712 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 712 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 3; }
 #line 37628 "hcs12x.cc"
 }
@@ -37638,12 +37638,12 @@ sink
 #line 37639 "hcs12x.cc"
 )
 {
-#line 714 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 714 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
-			sink << "BITX #$";
+			sink << "BITX #0x";
 			} else {
-			sink << "BITY #$";
+			sink << "BITY #0x";
 		}
 		sink << std::hex << opr16i;
 	}
@@ -37661,7 +37661,7 @@ cpu
 #line 37662 "hcs12x.cc"
 )
 {
-#line 723 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 723 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val;
 
@@ -37689,7 +37689,7 @@ uint8_t
 #line 37690 "hcs12x.cc"
 OpBit_xy_dir::getCycles()
 {
-#line 740 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 740 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 37695 "hcs12x.cc"
 }
@@ -37705,12 +37705,12 @@ sink
 #line 37706 "hcs12x.cc"
 )
 {
-#line 742 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 742 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
-			sink << "BITA $";
+			sink << "BITA 0x";
 			} else {
-			sink << "BITB $";
+			sink << "BITB 0x";
 		}
 		sink << std::hex << opr8a;
 	}
@@ -37728,7 +37728,7 @@ cpu
 #line 37729 "hcs12x.cc"
 )
 {
-#line 751 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 751 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
 		uint16_t val;
@@ -37757,7 +37757,7 @@ uint8_t
 #line 37758 "hcs12x.cc"
 OpBit_xy_ext::getCycles()
 {
-#line 769 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 769 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 37763 "hcs12x.cc"
 }
@@ -37773,12 +37773,12 @@ sink
 #line 37774 "hcs12x.cc"
 )
 {
-#line 771 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 771 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
-			sink << "BITX $";
+			sink << "BITX 0x";
 			} else {
-			sink << "BITY $";
+			sink << "BITY 0x";
 		}
 		sink << std::hex << opr16a;
 	}
@@ -37796,7 +37796,7 @@ cpu
 #line 37797 "hcs12x.cc"
 )
 {
-#line 780 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 780 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val;
@@ -37825,7 +37825,7 @@ uint8_t
 #line 37826 "hcs12x.cc"
 OpBit_xy_idx::getCycles()
 {
-#line 798 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 798 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 37831 "hcs12x.cc"
 }
@@ -37841,7 +37841,7 @@ sink
 #line 37842 "hcs12x.cc"
 )
 {
-#line 800 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 800 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		if (b==0) {
 			sink << "BITX ";
@@ -37864,7 +37864,7 @@ cpu
 #line 37865 "hcs12x.cc"
 )
 {
-#line 809 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 809 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val;
@@ -37894,7 +37894,7 @@ uint8_t
 #line 37895 "hcs12x.cc"
 OpBset_dir::getCycles()
 {
-#line 828 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 828 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 37900 "hcs12x.cc"
 }
@@ -37910,9 +37910,9 @@ sink
 #line 37911 "hcs12x.cc"
 )
 {
-#line 830 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 830 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "BSET $" << std::hex << dd << ", $" << std::hex << mm;
+		sink << "BSET 0x" << std::hex << dd << ", 0x" << std::hex << mm;
 	}
 #line 37918 "hcs12x.cc"
 }
@@ -37928,7 +37928,7 @@ cpu
 #line 37929 "hcs12x.cc"
 )
 {
-#line 834 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 834 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(dd, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
 		uint8_t ddVal = cpu->memRead8(addr);
@@ -37954,7 +37954,7 @@ uint8_t
 #line 37955 "hcs12x.cc"
 OpBset_ext::getCycles()
 {
-#line 849 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 849 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 37960 "hcs12x.cc"
 }
@@ -37970,9 +37970,9 @@ sink
 #line 37971 "hcs12x.cc"
 )
 {
-#line 851 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 851 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "BSET $" << std::hex << opr16a << ", $" << std::hex << mm;
+		sink << "BSET 0x" << std::hex << opr16a << ", 0x" << std::hex << mm;
 	}
 #line 37978 "hcs12x.cc"
 }
@@ -37988,7 +37988,7 @@ cpu
 #line 37989 "hcs12x.cc"
 )
 {
-#line 855 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 855 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t opr16aVal = cpu->memRead8(addr);
@@ -38014,7 +38014,7 @@ uint8_t
 #line 38015 "hcs12x.cc"
 OpBset_idx::getCycles()
 {
-#line 870 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 870 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 6, 0, 0); }
 #line 38020 "hcs12x.cc"
 }
@@ -38030,11 +38030,11 @@ sink
 #line 38031 "hcs12x.cc"
 )
 {
-#line 872 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 872 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BSET ";
 		xb->disasm(sink);
-		sink << ", $" << std::hex << mm;
+		sink << ", 0x" << std::hex << mm;
 	}
 #line 38040 "hcs12x.cc"
 }
@@ -38050,7 +38050,7 @@ cpu
 #line 38051 "hcs12x.cc"
 )
 {
-#line 878 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 878 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -38080,7 +38080,7 @@ uint8_t
 #line 38081 "hcs12x.cc"
 OpLsl_ext::getCycles()
 {
-#line 898 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 898 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 38086 "hcs12x.cc"
 }
@@ -38096,9 +38096,9 @@ sink
 #line 38097 "hcs12x.cc"
 )
 {
-#line 900 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 900 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "LSL $" << std::hex << opr16a;
+		sink << "LSL 0x" << std::hex << opr16a;
 	}
 #line 38104 "hcs12x.cc"
 }
@@ -38114,7 +38114,7 @@ cpu
 #line 38115 "hcs12x.cc"
 )
 {
-#line 904 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 904 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -38142,7 +38142,7 @@ uint8_t
 #line 38143 "hcs12x.cc"
 OpLsl_idx::getCycles()
 {
-#line 921 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 921 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 38148 "hcs12x.cc"
 }
@@ -38158,7 +38158,7 @@ sink
 #line 38159 "hcs12x.cc"
 )
 {
-#line 923 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 923 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSL ";
 		xb->disasm(sink);
@@ -38177,7 +38177,7 @@ cpu
 #line 38178 "hcs12x.cc"
 )
 {
-#line 928 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 928 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -38206,7 +38206,7 @@ uint8_t
 #line 38207 "hcs12x.cc"
 OpLsla::getCycles()
 {
-#line 946 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 946 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 38212 "hcs12x.cc"
 }
@@ -38222,7 +38222,7 @@ sink
 #line 38223 "hcs12x.cc"
 )
 {
-#line 948 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 948 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLA";
 	}
@@ -38240,7 +38240,7 @@ cpu
 #line 38241 "hcs12x.cc"
 )
 {
-#line 952 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 952 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegA();
 
@@ -38267,7 +38267,7 @@ uint8_t
 #line 38268 "hcs12x.cc"
 OpLslb::getCycles()
 {
-#line 968 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 968 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 38273 "hcs12x.cc"
 }
@@ -38283,7 +38283,7 @@ sink
 #line 38284 "hcs12x.cc"
 )
 {
-#line 970 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 970 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLB";
 	}
@@ -38301,7 +38301,7 @@ cpu
 #line 38302 "hcs12x.cc"
 )
 {
-#line 974 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 974 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegB();
 
@@ -38328,7 +38328,7 @@ uint8_t
 #line 38329 "hcs12x.cc"
 OpLsld::getCycles()
 {
-#line 990 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 990 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 38334 "hcs12x.cc"
 }
@@ -38344,7 +38344,7 @@ sink
 #line 38345 "hcs12x.cc"
 )
 {
-#line 992 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 992 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLD";
 	}
@@ -38362,7 +38362,7 @@ cpu
 #line 38363 "hcs12x.cc"
 )
 {
-#line 996 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 996 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegD();
 
@@ -38391,7 +38391,7 @@ uint8_t
 #line 38392 "hcs12x.cc"
 OpLslw_ext::getCycles()
 {
-#line 1015 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1015 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 38397 "hcs12x.cc"
 }
@@ -38407,9 +38407,9 @@ sink
 #line 38408 "hcs12x.cc"
 )
 {
-#line 1017 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1017 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "LSLW $" << std::hex << opr16a;
+		sink << "LSLW 0x" << std::hex << opr16a;
 	}
 #line 38415 "hcs12x.cc"
 }
@@ -38425,7 +38425,7 @@ cpu
 #line 38426 "hcs12x.cc"
 )
 {
-#line 1021 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1021 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -38453,7 +38453,7 @@ uint8_t
 #line 38454 "hcs12x.cc"
 OpLslw_idx::getCycles()
 {
-#line 1038 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1038 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 38459 "hcs12x.cc"
 }
@@ -38469,7 +38469,7 @@ sink
 #line 38470 "hcs12x.cc"
 )
 {
-#line 1040 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1040 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLW ";
 		xb->disasm(sink);
@@ -38488,7 +38488,7 @@ cpu
 #line 38489 "hcs12x.cc"
 )
 {
-#line 1045 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1045 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -38517,7 +38517,7 @@ uint8_t
 #line 38518 "hcs12x.cc"
 OpLslx::getCycles()
 {
-#line 1063 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1063 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 38523 "hcs12x.cc"
 }
@@ -38533,7 +38533,7 @@ sink
 #line 38534 "hcs12x.cc"
 )
 {
-#line 1065 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1065 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLX";
 	}
@@ -38551,7 +38551,7 @@ cpu
 #line 38552 "hcs12x.cc"
 )
 {
-#line 1069 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1069 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegX();
 
@@ -38578,7 +38578,7 @@ uint8_t
 #line 38579 "hcs12x.cc"
 OpLsly::getCycles()
 {
-#line 1085 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1085 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 38584 "hcs12x.cc"
 }
@@ -38594,7 +38594,7 @@ sink
 #line 38595 "hcs12x.cc"
 )
 {
-#line 1087 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1087 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSLY";
 	}
@@ -38612,7 +38612,7 @@ cpu
 #line 38613 "hcs12x.cc"
 )
 {
-#line 1091 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1091 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegY();
 
@@ -38640,7 +38640,7 @@ uint8_t
 #line 38641 "hcs12x.cc"
 OpRol_ext::getCycles()
 {
-#line 1108 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1108 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 38646 "hcs12x.cc"
 }
@@ -38656,9 +38656,9 @@ sink
 #line 38657 "hcs12x.cc"
 )
 {
-#line 1110 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1110 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "ROL $" << std::hex << opr16a;
+		sink << "ROL 0x" << std::hex << opr16a;
 	}
 #line 38664 "hcs12x.cc"
 }
@@ -38674,7 +38674,7 @@ cpu
 #line 38675 "hcs12x.cc"
 )
 {
-#line 1114 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1114 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -38703,7 +38703,7 @@ uint8_t
 #line 38704 "hcs12x.cc"
 OpRol_idx::getCycles()
 {
-#line 1132 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1132 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 38709 "hcs12x.cc"
 }
@@ -38719,7 +38719,7 @@ sink
 #line 38720 "hcs12x.cc"
 )
 {
-#line 1134 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1134 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROL ";
 		xb->disasm(sink);
@@ -38738,7 +38738,7 @@ cpu
 #line 38739 "hcs12x.cc"
 )
 {
-#line 1139 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1139 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -38768,7 +38768,7 @@ uint8_t
 #line 38769 "hcs12x.cc"
 OpRola::getCycles()
 {
-#line 1158 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1158 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 38774 "hcs12x.cc"
 }
@@ -38784,7 +38784,7 @@ sink
 #line 38785 "hcs12x.cc"
 )
 {
-#line 1160 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1160 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLA";
 	}
@@ -38802,7 +38802,7 @@ cpu
 #line 38803 "hcs12x.cc"
 )
 {
-#line 1164 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1164 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegA();
 
@@ -38830,7 +38830,7 @@ uint8_t
 #line 38831 "hcs12x.cc"
 OpRolb::getCycles()
 {
-#line 1181 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 38836 "hcs12x.cc"
 }
@@ -38846,7 +38846,7 @@ sink
 #line 38847 "hcs12x.cc"
 )
 {
-#line 1183 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1183 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLB";
 	}
@@ -38864,7 +38864,7 @@ cpu
 #line 38865 "hcs12x.cc"
 )
 {
-#line 1187 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1187 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegB();
 
@@ -38893,7 +38893,7 @@ uint8_t
 #line 38894 "hcs12x.cc"
 OpRolw_ext::getCycles()
 {
-#line 1206 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1206 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 38899 "hcs12x.cc"
 }
@@ -38909,9 +38909,9 @@ sink
 #line 38910 "hcs12x.cc"
 )
 {
-#line 1208 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1208 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "ROLw $" << std::hex << opr16a;
+		sink << "ROLw 0x" << std::hex << opr16a;
 	}
 #line 38917 "hcs12x.cc"
 }
@@ -38927,7 +38927,7 @@ cpu
 #line 38928 "hcs12x.cc"
 )
 {
-#line 1212 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1212 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -38956,7 +38956,7 @@ uint8_t
 #line 38957 "hcs12x.cc"
 OpRolw_idx::getCycles()
 {
-#line 1230 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1230 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 38962 "hcs12x.cc"
 }
@@ -38972,7 +38972,7 @@ sink
 #line 38973 "hcs12x.cc"
 )
 {
-#line 1232 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1232 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLW ";
 		xb->disasm(sink);
@@ -38991,7 +38991,7 @@ cpu
 #line 38992 "hcs12x.cc"
 )
 {
-#line 1237 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1237 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -39021,7 +39021,7 @@ uint8_t
 #line 39022 "hcs12x.cc"
 OpRolx::getCycles()
 {
-#line 1256 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1256 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 39027 "hcs12x.cc"
 }
@@ -39037,7 +39037,7 @@ sink
 #line 39038 "hcs12x.cc"
 )
 {
-#line 1258 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1258 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLX";
 	}
@@ -39055,7 +39055,7 @@ cpu
 #line 39056 "hcs12x.cc"
 )
 {
-#line 1262 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegX();
 
@@ -39083,7 +39083,7 @@ uint8_t
 #line 39084 "hcs12x.cc"
 OpRoly::getCycles()
 {
-#line 1279 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1279 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 39089 "hcs12x.cc"
 }
@@ -39099,7 +39099,7 @@ sink
 #line 39100 "hcs12x.cc"
 )
 {
-#line 1281 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1281 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROLY";
 	}
@@ -39117,7 +39117,7 @@ cpu
 #line 39118 "hcs12x.cc"
 )
 {
-#line 1285 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1285 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegY();
 
@@ -39146,7 +39146,7 @@ uint8_t
 #line 39147 "hcs12x.cc"
 OpLsr_ext::getCycles()
 {
-#line 1303 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1303 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 39152 "hcs12x.cc"
 }
@@ -39162,9 +39162,9 @@ sink
 #line 39163 "hcs12x.cc"
 )
 {
-#line 1305 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1305 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "LSR $" << std::hex << opr16a;
+		sink << "LSR 0x" << std::hex << opr16a;
 	}
 #line 39170 "hcs12x.cc"
 }
@@ -39180,7 +39180,7 @@ cpu
 #line 39181 "hcs12x.cc"
 )
 {
-#line 1309 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1309 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -39208,7 +39208,7 @@ uint8_t
 #line 39209 "hcs12x.cc"
 OpLsr_idx::getCycles()
 {
-#line 1326 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1326 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 39214 "hcs12x.cc"
 }
@@ -39224,7 +39224,7 @@ sink
 #line 39225 "hcs12x.cc"
 )
 {
-#line 1328 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1328 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSR ";
 		xb->disasm(sink);
@@ -39243,7 +39243,7 @@ cpu
 #line 39244 "hcs12x.cc"
 )
 {
-#line 1333 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1333 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -39272,7 +39272,7 @@ uint8_t
 #line 39273 "hcs12x.cc"
 OpLsra::getCycles()
 {
-#line 1351 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1351 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 39278 "hcs12x.cc"
 }
@@ -39288,7 +39288,7 @@ sink
 #line 39289 "hcs12x.cc"
 )
 {
-#line 1353 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1353 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRA";
 	}
@@ -39306,7 +39306,7 @@ cpu
 #line 39307 "hcs12x.cc"
 )
 {
-#line 1357 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1357 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegA();
 
@@ -39333,7 +39333,7 @@ uint8_t
 #line 39334 "hcs12x.cc"
 OpLsrb::getCycles()
 {
-#line 1373 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1373 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 39339 "hcs12x.cc"
 }
@@ -39349,7 +39349,7 @@ sink
 #line 39350 "hcs12x.cc"
 )
 {
-#line 1375 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1375 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRB";
 	}
@@ -39367,7 +39367,7 @@ cpu
 #line 39368 "hcs12x.cc"
 )
 {
-#line 1379 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1379 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegB();
 
@@ -39394,7 +39394,7 @@ uint8_t
 #line 39395 "hcs12x.cc"
 OpLsrd::getCycles()
 {
-#line 1395 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1395 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 39400 "hcs12x.cc"
 }
@@ -39410,7 +39410,7 @@ sink
 #line 39411 "hcs12x.cc"
 )
 {
-#line 1397 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1397 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRD";
 	}
@@ -39428,7 +39428,7 @@ cpu
 #line 39429 "hcs12x.cc"
 )
 {
-#line 1401 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1401 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegD();
 
@@ -39456,7 +39456,7 @@ uint8_t
 #line 39457 "hcs12x.cc"
 OpLsrw_ext::getCycles()
 {
-#line 1418 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1418 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 39462 "hcs12x.cc"
 }
@@ -39472,9 +39472,9 @@ sink
 #line 39473 "hcs12x.cc"
 )
 {
-#line 1420 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1420 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "LSRW $" << std::hex << opr16a;
+		sink << "LSRW 0x" << std::hex << opr16a;
 	}
 #line 39480 "hcs12x.cc"
 }
@@ -39490,7 +39490,7 @@ cpu
 #line 39491 "hcs12x.cc"
 )
 {
-#line 1424 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1424 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -39518,7 +39518,7 @@ uint8_t
 #line 39519 "hcs12x.cc"
 OpLsrw_idx::getCycles()
 {
-#line 1441 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1441 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 39524 "hcs12x.cc"
 }
@@ -39534,7 +39534,7 @@ sink
 #line 39535 "hcs12x.cc"
 )
 {
-#line 1443 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1443 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRW ";
 		xb->disasm(sink);
@@ -39553,7 +39553,7 @@ cpu
 #line 39554 "hcs12x.cc"
 )
 {
-#line 1448 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1448 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -39582,7 +39582,7 @@ uint8_t
 #line 39583 "hcs12x.cc"
 OpLsrx::getCycles()
 {
-#line 1466 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1466 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 39588 "hcs12x.cc"
 }
@@ -39598,7 +39598,7 @@ sink
 #line 39599 "hcs12x.cc"
 )
 {
-#line 1468 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1468 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRX";
 	}
@@ -39616,7 +39616,7 @@ cpu
 #line 39617 "hcs12x.cc"
 )
 {
-#line 1472 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1472 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegX();
 
@@ -39643,7 +39643,7 @@ uint8_t
 #line 39644 "hcs12x.cc"
 OpLsry::getCycles()
 {
-#line 1488 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1488 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 39649 "hcs12x.cc"
 }
@@ -39659,7 +39659,7 @@ sink
 #line 39660 "hcs12x.cc"
 )
 {
-#line 1490 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1490 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "LSRY";
 	}
@@ -39677,7 +39677,7 @@ cpu
 #line 39678 "hcs12x.cc"
 )
 {
-#line 1494 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1494 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegY();
 
@@ -39705,7 +39705,7 @@ uint8_t
 #line 39706 "hcs12x.cc"
 OpRor_ext::getCycles()
 {
-#line 1511 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1511 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 39711 "hcs12x.cc"
 }
@@ -39721,9 +39721,9 @@ sink
 #line 39722 "hcs12x.cc"
 )
 {
-#line 1513 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1513 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "ROR $" << std::hex << opr16a;
+		sink << "ROR 0x" << std::hex << opr16a;
 	}
 #line 39729 "hcs12x.cc"
 }
@@ -39739,7 +39739,7 @@ cpu
 #line 39740 "hcs12x.cc"
 )
 {
-#line 1517 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1517 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -39768,7 +39768,7 @@ uint8_t
 #line 39769 "hcs12x.cc"
 OpRor_idx::getCycles()
 {
-#line 1535 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1535 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 39774 "hcs12x.cc"
 }
@@ -39784,7 +39784,7 @@ sink
 #line 39785 "hcs12x.cc"
 )
 {
-#line 1537 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1537 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ROR ";
 		xb->disasm(sink);
@@ -39803,7 +39803,7 @@ cpu
 #line 39804 "hcs12x.cc"
 )
 {
-#line 1542 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1542 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -39833,7 +39833,7 @@ uint8_t
 #line 39834 "hcs12x.cc"
 OpRora::getCycles()
 {
-#line 1561 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1561 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 39839 "hcs12x.cc"
 }
@@ -39849,7 +39849,7 @@ sink
 #line 39850 "hcs12x.cc"
 )
 {
-#line 1563 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1563 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORA";
 	}
@@ -39867,7 +39867,7 @@ cpu
 #line 39868 "hcs12x.cc"
 )
 {
-#line 1567 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1567 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegA();
 
@@ -39895,7 +39895,7 @@ uint8_t
 #line 39896 "hcs12x.cc"
 OpRorb::getCycles()
 {
-#line 1584 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1584 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 39901 "hcs12x.cc"
 }
@@ -39911,7 +39911,7 @@ sink
 #line 39912 "hcs12x.cc"
 )
 {
-#line 1586 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1586 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORB";
 	}
@@ -39929,7 +39929,7 @@ cpu
 #line 39930 "hcs12x.cc"
 )
 {
-#line 1590 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1590 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegB();
 
@@ -39958,7 +39958,7 @@ uint8_t
 #line 39959 "hcs12x.cc"
 OpRorw_ext::getCycles()
 {
-#line 1609 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1609 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 39964 "hcs12x.cc"
 }
@@ -39974,9 +39974,9 @@ sink
 #line 39975 "hcs12x.cc"
 )
 {
-#line 1611 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1611 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "RORW $" << std::hex << opr16a;
+		sink << "RORW 0x" << std::hex << opr16a;
 	}
 #line 39982 "hcs12x.cc"
 }
@@ -39992,7 +39992,7 @@ cpu
 #line 39993 "hcs12x.cc"
 )
 {
-#line 1615 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1615 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -40021,7 +40021,7 @@ uint8_t
 #line 40022 "hcs12x.cc"
 OpRorw_idx::getCycles()
 {
-#line 1633 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1633 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 40027 "hcs12x.cc"
 }
@@ -40037,7 +40037,7 @@ sink
 #line 40038 "hcs12x.cc"
 )
 {
-#line 1635 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1635 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORW ";
 		xb->disasm(sink);
@@ -40056,7 +40056,7 @@ cpu
 #line 40057 "hcs12x.cc"
 )
 {
-#line 1640 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1640 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -40086,7 +40086,7 @@ uint8_t
 #line 40087 "hcs12x.cc"
 OpRorx::getCycles()
 {
-#line 1659 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1659 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 40092 "hcs12x.cc"
 }
@@ -40102,7 +40102,7 @@ sink
 #line 40103 "hcs12x.cc"
 )
 {
-#line 1661 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1661 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORX";
 	}
@@ -40120,7 +40120,7 @@ cpu
 #line 40121 "hcs12x.cc"
 )
 {
-#line 1665 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1665 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegX();
 
@@ -40148,7 +40148,7 @@ uint8_t
 #line 40149 "hcs12x.cc"
 OpRory::getCycles()
 {
-#line 1682 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1682 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 40154 "hcs12x.cc"
 }
@@ -40164,7 +40164,7 @@ sink
 #line 40165 "hcs12x.cc"
 )
 {
-#line 1684 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1684 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "RORY";
 	}
@@ -40182,7 +40182,7 @@ cpu
 #line 40183 "hcs12x.cc"
 )
 {
-#line 1688 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1688 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegY();
 
@@ -40211,7 +40211,7 @@ uint8_t
 #line 40212 "hcs12x.cc"
 OpAsr_ext::getCycles()
 {
-#line 1706 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1706 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 4; }
 #line 40217 "hcs12x.cc"
 }
@@ -40227,9 +40227,9 @@ sink
 #line 40228 "hcs12x.cc"
 )
 {
-#line 1708 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1708 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "ASR $" << std::hex << opr16a;
+		sink << "ASR 0x" << std::hex << opr16a;
 	}
 #line 40235 "hcs12x.cc"
 }
@@ -40245,7 +40245,7 @@ cpu
 #line 40246 "hcs12x.cc"
 )
 {
-#line 1712 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1712 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t val = cpu->memRead8(addr);
@@ -40277,7 +40277,7 @@ uint8_t
 #line 40278 "hcs12x.cc"
 OpAsr_idx::getCycles()
 {
-#line 1733 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1733 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 #line 40283 "hcs12x.cc"
 }
@@ -40293,7 +40293,7 @@ sink
 #line 40294 "hcs12x.cc"
 )
 {
-#line 1735 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1735 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASR ";
 		xb->disasm(sink);
@@ -40312,7 +40312,7 @@ cpu
 #line 40313 "hcs12x.cc"
 )
 {
-#line 1740 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1740 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -40345,7 +40345,7 @@ uint8_t
 #line 40346 "hcs12x.cc"
 OpAsra::getCycles()
 {
-#line 1762 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1762 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 40351 "hcs12x.cc"
 }
@@ -40361,7 +40361,7 @@ sink
 #line 40362 "hcs12x.cc"
 )
 {
-#line 1764 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1764 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRA";
 	}
@@ -40379,7 +40379,7 @@ cpu
 #line 40380 "hcs12x.cc"
 )
 {
-#line 1768 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1768 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegA();
 
@@ -40410,7 +40410,7 @@ uint8_t
 #line 40411 "hcs12x.cc"
 OpAsrb::getCycles()
 {
-#line 1788 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1788 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 1; }
 #line 40416 "hcs12x.cc"
 }
@@ -40426,7 +40426,7 @@ sink
 #line 40427 "hcs12x.cc"
 )
 {
-#line 1790 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1790 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRB";
 	}
@@ -40444,7 +40444,7 @@ cpu
 #line 40445 "hcs12x.cc"
 )
 {
-#line 1794 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1794 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint8_t val = cpu->getRegB();
 
@@ -40476,7 +40476,7 @@ uint8_t
 #line 40477 "hcs12x.cc"
 OpAsrw_ext::getCycles()
 {
-#line 1815 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1815 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 40482 "hcs12x.cc"
 }
@@ -40492,9 +40492,9 @@ sink
 #line 40493 "hcs12x.cc"
 )
 {
-#line 1817 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1817 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "ASRW $" << std::hex << opr16a;
+		sink << "ASRW 0x" << std::hex << opr16a;
 	}
 #line 40500 "hcs12x.cc"
 }
@@ -40510,7 +40510,7 @@ cpu
 #line 40511 "hcs12x.cc"
 )
 {
-#line 1821 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1821 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint16_t val = cpu->memRead16(addr);
@@ -40542,7 +40542,7 @@ uint8_t
 #line 40543 "hcs12x.cc"
 OpAsrw_idx::getCycles()
 {
-#line 1842 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1842 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 #line 40548 "hcs12x.cc"
 }
@@ -40558,7 +40558,7 @@ sink
 #line 40559 "hcs12x.cc"
 )
 {
-#line 1844 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1844 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRW ";
 		xb->disasm(sink);
@@ -40577,7 +40577,7 @@ cpu
 #line 40578 "hcs12x.cc"
 )
 {
-#line 1849 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1849 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -40610,7 +40610,7 @@ uint8_t
 #line 40611 "hcs12x.cc"
 OpAsrx::getCycles()
 {
-#line 1871 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1871 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 40616 "hcs12x.cc"
 }
@@ -40626,7 +40626,7 @@ sink
 #line 40627 "hcs12x.cc"
 )
 {
-#line 1873 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1873 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRX";
 	}
@@ -40644,7 +40644,7 @@ cpu
 #line 40645 "hcs12x.cc"
 )
 {
-#line 1877 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1877 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegX();
 
@@ -40675,7 +40675,7 @@ uint8_t
 #line 40676 "hcs12x.cc"
 OpAsry::getCycles()
 {
-#line 1897 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1897 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 2; }
 #line 40681 "hcs12x.cc"
 }
@@ -40691,7 +40691,7 @@ sink
 #line 40692 "hcs12x.cc"
 )
 {
-#line 1899 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1899 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "ASRY";
 	}
@@ -40709,7 +40709,7 @@ cpu
 #line 40710 "hcs12x.cc"
 )
 {
-#line 1903 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1903 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		uint16_t val = cpu->getRegY();
 
@@ -40741,7 +40741,7 @@ uint8_t
 #line 40742 "hcs12x.cc"
 OpBtas_dir::getCycles()
 {
-#line 1925 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1925 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 40747 "hcs12x.cc"
 }
@@ -40757,9 +40757,9 @@ sink
 #line 40758 "hcs12x.cc"
 )
 {
-#line 1927 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1927 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "BTAS $" << std::hex << opr8a << ", $" << std::hex << msk8;
+		sink << "BTAS 0x" << std::hex << opr8a << ", 0x" << std::hex << msk8;
 	}
 #line 40765 "hcs12x.cc"
 }
@@ -40775,14 +40775,14 @@ cpu
 #line 40776 "hcs12x.cc"
 )
 {
-#line 1931 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1931 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		/*
 		If (M) & (Mask) = 0, then set Z, else clear Z
 		(M) | (Mask) => M
 
 		N: Set if MSB of test is set; cleared otherwise
-		Z: Set if test is $00; cleared otherwise
+		Z: Set if test is 0x00; cleared otherwise
 		V: 0; cleared
 		*/
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
@@ -40808,7 +40808,7 @@ uint8_t
 #line 40809 "hcs12x.cc"
 OpBtas_ext::getCycles()
 {
-#line 1953 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1953 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return 5; }
 #line 40814 "hcs12x.cc"
 }
@@ -40824,9 +40824,9 @@ sink
 #line 40825 "hcs12x.cc"
 )
 {
-#line 1955 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1955 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
-		sink << "BTAS $" << std::hex << opr16a << ", $" << std::hex << msk8;
+		sink << "BTAS 0x" << std::hex << opr16a << ", 0x" << std::hex << msk8;
 	}
 #line 40832 "hcs12x.cc"
 }
@@ -40842,7 +40842,7 @@ cpu
 #line 40843 "hcs12x.cc"
 )
 {
-#line 1959 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1959 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -40868,7 +40868,7 @@ uint8_t
 #line 40869 "hcs12x.cc"
 OpBtas_idx::getCycles()
 {
-#line 1974 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1974 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 5, 5, 7, 0, 0); }
 #line 40874 "hcs12x.cc"
 }
@@ -40884,11 +40884,11 @@ sink
 #line 40885 "hcs12x.cc"
 )
 {
-#line 1976 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1976 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 		sink << "BTAS ";
 		xb->disasm(sink);
-		sink << ", $" << std::hex << msk8;
+		sink << ", 0x" << std::hex << msk8;
 	}
 #line 40894 "hcs12x.cc"
 }
@@ -40904,7 +40904,7 @@ cpu
 #line 40905 "hcs12x.cc"
 )
 {
-#line 1982 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
+#line 1982 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./bit.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -40964,7 +40964,7 @@ uint8_t
 #line 40965 "hcs12x.cc"
 OpEmul::getCycles()
 {
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 1; }
 #line 40970 "hcs12x.cc"
 }
@@ -40980,7 +40980,7 @@ sink
 #line 40981 "hcs12x.cc"
 )
 {
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EMUL";
 	}
@@ -40998,7 +40998,7 @@ cpu
 #line 40999 "hcs12x.cc"
 )
 {
-#line 45 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		uint32_t result = (uint32_t) cpu->getRegD() * cpu->getRegY();
 
@@ -41023,7 +41023,7 @@ uint8_t
 #line 41024 "hcs12x.cc"
 OpEmuls::getCycles()
 {
-#line 59 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 59 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 3; }
 #line 41029 "hcs12x.cc"
 }
@@ -41039,7 +41039,7 @@ sink
 #line 41040 "hcs12x.cc"
 )
 {
-#line 61 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 61 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EMULS";
 	}
@@ -41057,7 +41057,7 @@ cpu
 #line 41058 "hcs12x.cc"
 )
 {
-#line 65 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 65 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		uint32_t result = (uint32_t) cpu->getRegD() * cpu->getRegY();
 
@@ -41070,7 +41070,7 @@ cpu
 		if ((result & 0x8000) == 0x8000) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 
 		/*
-		* Z: Set if result is $00000000; cleared otherwise
+		* Z: Set if result is 0x00000000; cleared otherwise
 		*/
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
@@ -41095,7 +41095,7 @@ uint8_t
 #line 41096 "hcs12x.cc"
 OpMul::getCycles()
 {
-#line 92 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 92 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 1; }
 #line 41101 "hcs12x.cc"
 }
@@ -41111,7 +41111,7 @@ sink
 #line 41112 "hcs12x.cc"
 )
 {
-#line 94 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 94 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "MUL";
 	}
@@ -41129,7 +41129,7 @@ cpu
 #line 41130 "hcs12x.cc"
 )
 {
-#line 98 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 98 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		uint16_t result = cpu->getRegA() * cpu->getRegB();
 
@@ -41151,7 +41151,7 @@ uint8_t
 #line 41152 "hcs12x.cc"
 OpEdiv::getCycles()
 {
-#line 109 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 109 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 11; }
 #line 41157 "hcs12x.cc"
 }
@@ -41167,7 +41167,7 @@ sink
 #line 41168 "hcs12x.cc"
 )
 {
-#line 111 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 111 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EDIV";
 	}
@@ -41185,7 +41185,7 @@ cpu
 #line 41186 "hcs12x.cc"
 )
 {
-#line 115 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 115 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		// TODO
 		/*
@@ -41240,7 +41240,7 @@ uint8_t
 #line 41241 "hcs12x.cc"
 OpEdivs::getCycles()
 {
-#line 159 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 159 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 12; }
 #line 41246 "hcs12x.cc"
 }
@@ -41256,7 +41256,7 @@ sink
 #line 41257 "hcs12x.cc"
 )
 {
-#line 161 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 161 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "EDIVS";
 	}
@@ -41274,7 +41274,7 @@ cpu
 #line 41275 "hcs12x.cc"
 )
 {
-#line 165 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 165 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 
 		uint32_t dividend = ((uint32_t) cpu->getRegY() << 16) | (0x00FF & cpu->getRegD());
@@ -41322,7 +41322,7 @@ uint8_t
 #line 41323 "hcs12x.cc"
 OpFdiv::getCycles()
 {
-#line 202 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 12; }
 #line 41328 "hcs12x.cc"
 }
@@ -41338,7 +41338,7 @@ sink
 #line 41339 "hcs12x.cc"
 )
 {
-#line 204 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 204 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "FDIV";
 	}
@@ -41356,7 +41356,7 @@ cpu
 #line 41357 "hcs12x.cc"
 )
 {
-#line 208 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 208 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		/* FDIV is equivalent to multiplying the numerator by 2^16 and then performing 32 by 16-bit integer division. */
 
@@ -41396,7 +41396,7 @@ uint8_t
 #line 41397 "hcs12x.cc"
 OpIdiv::getCycles()
 {
-#line 237 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 237 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 12; }
 #line 41402 "hcs12x.cc"
 }
@@ -41412,7 +41412,7 @@ sink
 #line 41413 "hcs12x.cc"
 )
 {
-#line 239 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 239 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "IDIV";
 	}
@@ -41430,9 +41430,9 @@ cpu
 #line 41431 "hcs12x.cc"
 )
 {
-#line 243 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 243 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
-		/* In the case of division by zero, C is set, the quotient is set to $FFFF,
+		/* In the case of division by zero, C is set, the quotient is set to 0xFFFF,
 		and the remainder is indeterminate. */
 
 		uint16_t dividend = cpu->getRegD();
@@ -41467,7 +41467,7 @@ uint8_t
 #line 41468 "hcs12x.cc"
 OpIdivs::getCycles()
 {
-#line 269 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 269 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 12; }
 #line 41473 "hcs12x.cc"
 }
@@ -41483,7 +41483,7 @@ sink
 #line 41484 "hcs12x.cc"
 )
 {
-#line 271 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 271 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		sink << "IDIVS";
 	}
@@ -41501,9 +41501,9 @@ cpu
 #line 41502 "hcs12x.cc"
 )
 {
-#line 275 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 275 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
-		/* In the case of division by zero, C is set, the quotient is set to $FFFF,
+		/* In the case of division by zero, C is set, the quotient is set to 0xFFFF,
 		and the remainder is indeterminate. */
 
 		uint16_t dividend = cpu->getRegD();
@@ -41523,8 +41523,8 @@ cpu
 		cpu->setRegX(quotion);
 		cpu->setRegD(remind);
 		/*
-		* V: Set if the result was > $7FFF or < $8000; cleared otherwise
-		* V: Set for numerator $8000 (-32768) and denominator $FFFF (-1) result is (+32768)
+		* V: Set if the result was > 0x7FFF or < 0x8000; cleared otherwise
+		* V: Set for numerator 0x8000 (-32768) and denominator 0xFFFF (-1) result is (+32768)
 		* Undefined after division by zero
 		*/
 		if ((dividend == 0x8000) && (divisor == 0xFFFF)) { cpu->ccr->setV(); } else { cpu->ccr->clrV();}
@@ -41546,7 +41546,7 @@ uint8_t
 #line 41547 "hcs12x.cc"
 OpEmacs::getCycles()
 {
-#line 311 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 311 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{ return 9; }
 #line 41552 "hcs12x.cc"
 }
@@ -41562,9 +41562,9 @@ sink
 #line 41563 "hcs12x.cc"
 )
 {
-#line 313 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 313 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
-		sink << "EMACS $" << std::hex << opr16a;
+		sink << "EMACS 0x" << std::hex << opr16a;
 	}
 #line 41570 "hcs12x.cc"
 }
@@ -41580,7 +41580,7 @@ cpu
 #line 41581 "hcs12x.cc"
 )
 {
-#line 317 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
+#line 317 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./multiplication_division.isa"
 	{
 		/* operation: (M(X) : M(X+1)) × (M(Y) : M(Y+1)) + (M ~ M+3) ⇒ M ~ M+3 */
 
@@ -41602,7 +41602,7 @@ cpu
 		// N: Set if MSB of result is set; cleared otherwise
 		if (result & 0x80000000 == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
-		// Z: Set if result is $00000000; cleared otherwise
+		// Z: Set if result is 0x00000000; cleared otherwise
 		if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		/*
 		* I: Intermediate result
@@ -41611,7 +41611,7 @@ cpu
 		* */
 
 		/* V: M31 • I31 • !R31 + !M31 • !I31 • R31
-		* Set if result > $7FFFFFFF (+ overflow) or < $80000000 (– underflow)
+		* Set if result > 0x7FFFFFFF (+ overflow) or < 0x80000000 (– underflow)
 		* Indicates two’s complement overflow
 		*/
 		// if (result > 0x7FFFFFFF) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
@@ -41674,7 +41674,7 @@ uint8_t
 #line 41675 "hcs12x.cc"
 OpSbr::getCycles()
 {
-#line 46 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 46 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 
 		if (branch) return 3; else return 1;
@@ -41694,7 +41694,7 @@ sink
 #line 41695 "hcs12x.cc"
 )
 {
-#line 52 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 52 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 
 		switch (sel) {
@@ -41731,7 +41731,7 @@ cpu
 #line 41732 "hcs12x.cc"
 )
 {
-#line 75 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 75 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 
 		branch = false;
@@ -41809,7 +41809,7 @@ uint8_t
 #line 41810 "hcs12x.cc"
 OpLbr::getCycles()
 {
-#line 145 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 145 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ if (branch) return 4; else return 3; }
 #line 41815 "hcs12x.cc"
 }
@@ -41825,7 +41825,7 @@ sink
 #line 41826 "hcs12x.cc"
 )
 {
-#line 147 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 147 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 
 		switch (sel) {
@@ -41862,7 +41862,7 @@ cpu
 #line 41863 "hcs12x.cc"
 )
 {
-#line 170 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 170 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 
 		branch = false;
@@ -41940,7 +41940,7 @@ uint8_t
 #line 41941 "hcs12x.cc"
 OpBr_clr_set_dir::getCycles()
 {
-#line 239 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 239 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 4; }
 #line 41946 "hcs12x.cc"
 }
@@ -41956,15 +41956,15 @@ sink
 #line 41957 "hcs12x.cc"
 )
 {
-#line 241 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 241 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		if (b==1) {
-			sink << "BRCLR $";
+			sink << "BRCLR 0x";
 			} else {
-			sink << "BRSET $";
+			sink << "BRSET 0x";
 		}
 
-		sink << std::hex << opr8a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
+		sink << std::hex << opr8a << ", 0x" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
 #line 41970 "hcs12x.cc"
 }
@@ -41980,7 +41980,7 @@ cpu
 #line 41981 "hcs12x.cc"
 )
 {
-#line 251 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 251 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);
 		uint8_t opr8aVal = cpu->memRead8(addr);
@@ -42008,7 +42008,7 @@ uint8_t
 #line 42009 "hcs12x.cc"
 OpBr_clr_set_ext::getCycles()
 {
-#line 268 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 268 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 5; }
 #line 42014 "hcs12x.cc"
 }
@@ -42024,15 +42024,15 @@ sink
 #line 42025 "hcs12x.cc"
 )
 {
-#line 270 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 270 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		if (b==1) {
-			sink << "BRCLR $";
+			sink << "BRCLR 0x";
 			} else {
-			sink << "BRSET $";
+			sink << "BRSET 0x";
 		}
 
-		sink << std::hex << opr16a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
+		sink << std::hex << opr16a << ", 0x" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
 #line 42038 "hcs12x.cc"
 }
@@ -42048,7 +42048,7 @@ cpu
 #line 42049 "hcs12x.cc"
 )
 {
-#line 280 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 280 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t opr16aVal = cpu->memRead8(addr);
@@ -42076,7 +42076,7 @@ uint8_t
 #line 42077 "hcs12x.cc"
 OpBr_clr_set_idx::getCycles()
 {
-#line 297 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 297 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 0, 0); }
 #line 42082 "hcs12x.cc"
 }
@@ -42092,7 +42092,7 @@ sink
 #line 42093 "hcs12x.cc"
 )
 {
-#line 299 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 299 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		if (b==1) {
 			sink << "BRCLR ";
@@ -42101,7 +42101,7 @@ sink
 		}
 
 		xb->disasm(sink);
-		sink << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
+		sink << ", 0x" << std::hex << msk8 << ", " << std::dec << rel8;
 	}
 #line 42107 "hcs12x.cc"
 }
@@ -42117,7 +42117,7 @@ cpu
 #line 42118 "hcs12x.cc"
 )
 {
-#line 310 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 310 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
 		uint8_t xbVal = cpu->memRead8(addr);
@@ -42147,7 +42147,7 @@ uint8_t
 #line 42148 "hcs12x.cc"
 OpBsr::getCycles()
 {
-#line 330 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 330 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 4; }
 #line 42153 "hcs12x.cc"
 }
@@ -42163,7 +42163,7 @@ sink
 #line 42164 "hcs12x.cc"
 )
 {
-#line 332 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 332 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "BSR " << std::dec << rel8;
 	}
@@ -42181,7 +42181,7 @@ cpu
 #line 42182 "hcs12x.cc"
 )
 {
-#line 336 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 336 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		/*
 		* (SP)-2 => SP
@@ -42216,7 +42216,7 @@ uint8_t
 #line 42217 "hcs12x.cc"
 OpCall_ext::getCycles()
 {
-#line 360 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 360 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 7; }
 #line 42222 "hcs12x.cc"
 }
@@ -42232,9 +42232,9 @@ sink
 #line 42233 "hcs12x.cc"
 )
 {
-#line 362 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 362 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
-		sink << "CALL $" << std::hex << opr16a << ", $" << std::hex << page;
+		sink << "CALL 0x" << std::hex << opr16a << ", 0x" << std::hex << page;
 	}
 #line 42240 "hcs12x.cc"
 }
@@ -42250,7 +42250,7 @@ cpu
 #line 42251 "hcs12x.cc"
 )
 {
-#line 366 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 366 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		/*
 		* (SP)-2 => SP
@@ -42297,7 +42297,7 @@ uint8_t
 #line 42298 "hcs12x.cc"
 OpCall_16offset_idx_ind::getCycles()
 {
-#line 403 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 403 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 10; }
 #line 42303 "hcs12x.cc"
 }
@@ -42313,7 +42313,7 @@ sink
 #line 42314 "hcs12x.cc"
 )
 {
-#line 405 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 405 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 
 		sink << "CALL ";
@@ -42333,7 +42333,7 @@ cpu
 #line 42334 "hcs12x.cc"
 )
 {
-#line 411 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 411 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		/*
 		* (SP)-2 => SP
@@ -42380,7 +42380,7 @@ uint8_t
 #line 42381 "hcs12x.cc"
 OpCall_accD_offset_idx_ind::getCycles()
 {
-#line 447 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 447 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 10; }
 #line 42386 "hcs12x.cc"
 }
@@ -42396,7 +42396,7 @@ sink
 #line 42397 "hcs12x.cc"
 )
 {
-#line 449 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 449 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 
 		sink << "CALL ";
@@ -42416,7 +42416,7 @@ cpu
 #line 42417 "hcs12x.cc"
 )
 {
-#line 455 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 455 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		/*
 		* (SP)-2 => SP
@@ -42464,7 +42464,7 @@ uint8_t
 #line 42465 "hcs12x.cc"
 OpJmp_ext::getCycles()
 {
-#line 530 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 530 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 3; }
 #line 42470 "hcs12x.cc"
 }
@@ -42480,9 +42480,9 @@ sink
 #line 42481 "hcs12x.cc"
 )
 {
-#line 532 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 532 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
-		sink << "JMP $" << std::hex << opr16a;
+		sink << "JMP 0x" << std::hex << opr16a;
 	}
 #line 42488 "hcs12x.cc"
 }
@@ -42498,7 +42498,7 @@ cpu
 #line 42499 "hcs12x.cc"
 )
 {
-#line 536 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 536 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		cpu->setRegPC(opr16a);
 
@@ -42517,7 +42517,7 @@ uint8_t
 #line 42518 "hcs12x.cc"
 OpJmp_idx::getCycles()
 {
-#line 544 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 544 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 #line 42523 "hcs12x.cc"
 }
@@ -42533,7 +42533,7 @@ sink
 #line 42534 "hcs12x.cc"
 )
 {
-#line 546 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 546 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "JMP ";
 		xb->disasm(sink);
@@ -42552,7 +42552,7 @@ cpu
 #line 42553 "hcs12x.cc"
 )
 {
-#line 551 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 551 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		cpu->setRegPC(xb->getEAddr(cpu));
 
@@ -42572,7 +42572,7 @@ uint8_t
 #line 42573 "hcs12x.cc"
 OpJsr_dir::getCycles()
 {
-#line 560 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 560 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 4; }
 #line 42578 "hcs12x.cc"
 }
@@ -42588,9 +42588,9 @@ sink
 #line 42589 "hcs12x.cc"
 )
 {
-#line 562 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 562 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
-		sink << "JSR $" << std::hex << opr8a;
+		sink << "JSR 0x" << std::hex << opr8a;
 	}
 #line 42596 "hcs12x.cc"
 }
@@ -42606,7 +42606,7 @@ cpu
 #line 42607 "hcs12x.cc"
 )
 {
-#line 566 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 566 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		/*
 		* (SP)-2 => SP
@@ -42639,7 +42639,7 @@ uint8_t
 #line 42640 "hcs12x.cc"
 OpJsr_ext::getCycles()
 {
-#line 588 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 588 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 4; }
 #line 42645 "hcs12x.cc"
 }
@@ -42655,9 +42655,9 @@ sink
 #line 42656 "hcs12x.cc"
 )
 {
-#line 590 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 590 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
-		sink << "JSR $" << std::hex << opr16a;
+		sink << "JSR 0x" << std::hex << opr16a;
 	}
 #line 42663 "hcs12x.cc"
 }
@@ -42673,7 +42673,7 @@ cpu
 #line 42674 "hcs12x.cc"
 )
 {
-#line 594 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 594 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		physical_address_t addr;
 
@@ -42700,7 +42700,7 @@ uint8_t
 #line 42701 "hcs12x.cc"
 OpJsr_idx::getCycles()
 {
-#line 610 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 610 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 #line 42706 "hcs12x.cc"
 }
@@ -42716,7 +42716,7 @@ sink
 #line 42717 "hcs12x.cc"
 )
 {
-#line 612 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 612 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "JSR ";
 		xb->disasm(sink);
@@ -42735,7 +42735,7 @@ cpu
 #line 42736 "hcs12x.cc"
 )
 {
-#line 617 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 617 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		physical_address_t addr;
 
@@ -42763,7 +42763,7 @@ uint8_t
 #line 42764 "hcs12x.cc"
 OpRtc::getCycles()
 {
-#line 634 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 634 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 7; }
 #line 42769 "hcs12x.cc"
 }
@@ -42779,7 +42779,7 @@ sink
 #line 42780 "hcs12x.cc"
 )
 {
-#line 636 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 636 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "RTC";
 	}
@@ -42797,7 +42797,7 @@ cpu
 #line 42798 "hcs12x.cc"
 )
 {
-#line 640 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 640 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		/*
 		* (M[SP]) => PPage
@@ -42838,7 +42838,7 @@ uint8_t
 #line 42839 "hcs12x.cc"
 OpRts::getCycles()
 {
-#line 670 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 670 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ return 5; }
 #line 42844 "hcs12x.cc"
 }
@@ -42854,7 +42854,7 @@ sink
 #line 42855 "hcs12x.cc"
 )
 {
-#line 672 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 672 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		sink << "RTS";
 	}
@@ -42872,7 +42872,7 @@ cpu
 #line 42873 "hcs12x.cc"
 )
 {
-#line 676 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 676 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		uint8_t hByte, lByte;
 		physical_address_t addr;
@@ -42899,7 +42899,7 @@ uint8_t
 #line 42900 "hcs12x.cc"
 OpLoop::getCycles()
 {
-#line 696 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 696 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{ if (isBranch) return 3; else return 3; }
 #line 42905 "hcs12x.cc"
 }
@@ -42915,7 +42915,7 @@ sink
 #line 42916 "hcs12x.cc"
 )
 {
-#line 698 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 698 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		/*
 		Encoding for lb is summarized in the following table.
@@ -42952,7 +42952,7 @@ cpu
 #line 42953 "hcs12x.cc"
 )
 {
-#line 721 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 721 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 	{
 		address_t branchAddr;
 
@@ -43101,7 +43101,7 @@ uint8_t
 #line 43102 "hcs12x.cc"
 OpPsha::getCycles()
 {
-#line 75 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 75 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 2; }
 #line 43107 "hcs12x.cc"
 }
@@ -43117,7 +43117,7 @@ sink
 #line 43118 "hcs12x.cc"
 )
 {
-#line 77 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 77 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHA";
 	}
@@ -43135,7 +43135,7 @@ cpu
 #line 43136 "hcs12x.cc"
 )
 {
-#line 81 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 81 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 
 		cpu->setRegSP(cpu->getRegSP()-1);
@@ -43155,7 +43155,7 @@ uint8_t
 #line 43156 "hcs12x.cc"
 OpPshb::getCycles()
 {
-#line 91 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 91 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 2; }
 #line 43161 "hcs12x.cc"
 }
@@ -43171,7 +43171,7 @@ sink
 #line 43172 "hcs12x.cc"
 )
 {
-#line 93 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 93 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHB";
 	}
@@ -43189,7 +43189,7 @@ cpu
 #line 43190 "hcs12x.cc"
 )
 {
-#line 97 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 97 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP()-1);
 		cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
@@ -43208,7 +43208,7 @@ uint8_t
 #line 43209 "hcs12x.cc"
 OpPshc::getCycles()
 {
-#line 106 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 106 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 2; }
 #line 43214 "hcs12x.cc"
 }
@@ -43224,7 +43224,7 @@ sink
 #line 43225 "hcs12x.cc"
 )
 {
-#line 108 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 108 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHC";
 	}
@@ -43242,7 +43242,7 @@ cpu
 #line 43243 "hcs12x.cc"
 )
 {
-#line 112 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 112 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP()-1);
 		cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCRLow());
@@ -43261,7 +43261,7 @@ uint8_t
 #line 43262 "hcs12x.cc"
 OpPshcw::getCycles()
 {
-#line 121 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 121 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 3; }
 #line 43267 "hcs12x.cc"
 }
@@ -43277,7 +43277,7 @@ sink
 #line 43278 "hcs12x.cc"
 )
 {
-#line 123 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 123 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHCW";
 	}
@@ -43295,7 +43295,7 @@ cpu
 #line 43296 "hcs12x.cc"
 )
 {
-#line 127 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 127 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP()-2);
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
@@ -43314,7 +43314,7 @@ uint8_t
 #line 43315 "hcs12x.cc"
 OpPshd::getCycles()
 {
-#line 136 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 136 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 2; }
 #line 43320 "hcs12x.cc"
 }
@@ -43330,7 +43330,7 @@ sink
 #line 43331 "hcs12x.cc"
 )
 {
-#line 138 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 138 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHD";
 	}
@@ -43348,7 +43348,7 @@ cpu
 #line 43349 "hcs12x.cc"
 )
 {
-#line 142 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 142 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP()-2);
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegD());
@@ -43367,7 +43367,7 @@ uint8_t
 #line 43368 "hcs12x.cc"
 OpPshx::getCycles()
 {
-#line 151 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 151 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 2; }
 #line 43373 "hcs12x.cc"
 }
@@ -43383,7 +43383,7 @@ sink
 #line 43384 "hcs12x.cc"
 )
 {
-#line 153 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 153 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHX";
 	}
@@ -43401,7 +43401,7 @@ cpu
 #line 43402 "hcs12x.cc"
 )
 {
-#line 157 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 157 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP()-2);
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
@@ -43420,7 +43420,7 @@ uint8_t
 #line 43421 "hcs12x.cc"
 OpPshy::getCycles()
 {
-#line 166 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 166 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 2; }
 #line 43426 "hcs12x.cc"
 }
@@ -43436,7 +43436,7 @@ sink
 #line 43437 "hcs12x.cc"
 )
 {
-#line 168 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 168 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PSHY";
 	}
@@ -43454,7 +43454,7 @@ cpu
 #line 43455 "hcs12x.cc"
 )
 {
-#line 172 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 172 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegSP(cpu->getRegSP()-2);
 		cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
@@ -43473,7 +43473,7 @@ uint8_t
 #line 43474 "hcs12x.cc"
 OpPula::getCycles()
 {
-#line 181 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 181 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 3; }
 #line 43479 "hcs12x.cc"
 }
@@ -43489,7 +43489,7 @@ sink
 #line 43490 "hcs12x.cc"
 )
 {
-#line 183 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 183 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULA";
 	}
@@ -43507,7 +43507,7 @@ cpu
 #line 43508 "hcs12x.cc"
 )
 {
-#line 187 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 187 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegA(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+1);
@@ -43526,7 +43526,7 @@ uint8_t
 #line 43527 "hcs12x.cc"
 OpPulb::getCycles()
 {
-#line 196 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 196 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 3; }
 #line 43532 "hcs12x.cc"
 }
@@ -43542,7 +43542,7 @@ sink
 #line 43543 "hcs12x.cc"
 )
 {
-#line 198 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 198 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULB";
 	}
@@ -43560,7 +43560,7 @@ cpu
 #line 43561 "hcs12x.cc"
 )
 {
-#line 202 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 202 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegB(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+1);
@@ -43579,7 +43579,7 @@ uint8_t
 #line 43580 "hcs12x.cc"
 OpPulc::getCycles()
 {
-#line 211 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 211 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 3; }
 #line 43585 "hcs12x.cc"
 }
@@ -43595,7 +43595,7 @@ sink
 #line 43596 "hcs12x.cc"
 )
 {
-#line 213 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 213 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULC";
 	}
@@ -43613,7 +43613,7 @@ cpu
 #line 43614 "hcs12x.cc"
 )
 {
-#line 217 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 217 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->ccr->setCCRLow(cpu->memRead8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+1);
@@ -43632,7 +43632,7 @@ uint8_t
 #line 43633 "hcs12x.cc"
 OpPulcw::getCycles()
 {
-#line 226 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 226 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 4; }
 #line 43638 "hcs12x.cc"
 }
@@ -43648,7 +43648,7 @@ sink
 #line 43649 "hcs12x.cc"
 )
 {
-#line 228 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 228 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULCW";
 	}
@@ -43666,7 +43666,7 @@ cpu
 #line 43667 "hcs12x.cc"
 )
 {
-#line 232 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 232 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->ccr->setCCR(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+2);
@@ -43685,7 +43685,7 @@ uint8_t
 #line 43686 "hcs12x.cc"
 OpPuld::getCycles()
 {
-#line 241 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 241 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 3; }
 #line 43691 "hcs12x.cc"
 }
@@ -43701,7 +43701,7 @@ sink
 #line 43702 "hcs12x.cc"
 )
 {
-#line 243 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 243 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULD";
 	}
@@ -43719,7 +43719,7 @@ cpu
 #line 43720 "hcs12x.cc"
 )
 {
-#line 247 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 247 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegD(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+2);
@@ -43738,7 +43738,7 @@ uint8_t
 #line 43739 "hcs12x.cc"
 OpPulx::getCycles()
 {
-#line 256 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 256 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 3; }
 #line 43744 "hcs12x.cc"
 }
@@ -43754,7 +43754,7 @@ sink
 #line 43755 "hcs12x.cc"
 )
 {
-#line 258 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 258 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULX";
 	}
@@ -43772,7 +43772,7 @@ cpu
 #line 43773 "hcs12x.cc"
 )
 {
-#line 262 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 262 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegX(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+2);
@@ -43791,7 +43791,7 @@ uint8_t
 #line 43792 "hcs12x.cc"
 OpPuly::getCycles()
 {
-#line 271 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 271 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{ return 3; }
 #line 43797 "hcs12x.cc"
 }
@@ -43807,7 +43807,7 @@ sink
 #line 43808 "hcs12x.cc"
 )
 {
-#line 273 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 273 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		sink << "PULY";
 	}
@@ -43825,7 +43825,7 @@ cpu
 #line 43826 "hcs12x.cc"
 )
 {
-#line 277 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
+#line 277 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./stacking.isa"
 	{
 		cpu->setRegY(cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
 		cpu->setRegSP(cpu->getRegSP()+2);
@@ -43877,7 +43877,7 @@ uint8_t
 #line 43878 "hcs12x.cc"
 OpMem::getCycles()
 {
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{ return 5; }
 #line 43883 "hcs12x.cc"
 }
@@ -43893,7 +43893,7 @@ sink
 #line 43894 "hcs12x.cc"
 )
 {
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "MEM";
 	}
@@ -43911,7 +43911,7 @@ cpu
 #line 43912 "hcs12x.cc"
 )
 {
-#line 45 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		// The final state of CCR flags is not defined
 
@@ -43920,8 +43920,8 @@ cpu
 		Operation
 		---------
 		Grade of Membership ⇒ M(Y)
-		(Y) + $0001 ⇒ Y
-		(X) + $0004 ⇒ X
+		(Y) + 0x0001 ⇒ Y
+		(X) + 0x0004 ⇒ X
 
 		Description
 		-----------
@@ -43934,8 +43934,8 @@ cpu
 		Slope_1 — The slope of the leading side (at MX+2)
 		Slope_2—The slope of the trailing side (atMX+3); the right side slopes up and to the left from
 		Point_2
-		A Slope_1 or Slope_2 value of $00 is a special case in which the membership function either starts
-		with a grade of $FF at input = Point_1, or ends with a grade of $FF at input = Point_2 (infinite slope).
+		A Slope_1 or Slope_2 value of 0x00 is a special case in which the membership function either starts
+		with a grade of 0xFF at input = Point_1, or ends with a grade of 0xFF at input = Point_2 (infinite slope).
 		During execution, the value of A remains unchanged. X is incremented by four and Y is incremented
 		by one.
 
@@ -43970,10 +43970,10 @@ cpu
 			}
 		}
 
-		// (Y) + $0001 ⇒ Y
+		// (Y) + 0x0001 ⇒ Y
 		cpu->setRegY(yVal + 1);
 
-		// (X) + $0004 ⇒ X
+		// (X) + 0x0004 ⇒ X
 		cpu->setRegX(xVal + 4);
 
 	}
@@ -43992,7 +43992,7 @@ uint8_t
 #line 43993 "hcs12x.cc"
 OpRev::getCycles()
 {
-#line 115 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 115 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{ return 0; /* TODO: take in account the fact that it may be interrupted */}
 #line 43998 "hcs12x.cc"
 }
@@ -44008,7 +44008,7 @@ sink
 #line 44009 "hcs12x.cc"
 )
 {
-#line 117 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 117 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "REV";
 	}
@@ -44027,7 +44027,7 @@ cpu
 #line 44028 "hcs12x.cc"
 )
 {
-#line 122 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 122 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		/* The V flag is affected by operation.
 		* The final state for the others CCR flags is not defined.
@@ -44096,7 +44096,7 @@ uint8_t
 #line 44097 "hcs12x.cc"
 OpRevw::getCycles()
 {
-#line 180 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 180 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{ return 0; /* TODO: take in account the fact that it may be interrupted */}
 #line 44102 "hcs12x.cc"
 }
@@ -44112,7 +44112,7 @@ sink
 #line 44113 "hcs12x.cc"
 )
 {
-#line 182 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 182 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "REVW";
 	}
@@ -44131,7 +44131,7 @@ cpu
 #line 44132 "hcs12x.cc"
 )
 {
-#line 187 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 187 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		/* The V flag is affected by operation.
 		* The C flag is used for special purpose.
@@ -44212,7 +44212,7 @@ uint8_t
 #line 44213 "hcs12x.cc"
 OpWav::getCycles()
 {
-#line 258 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 258 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{ return 0; /* TODO: take in account the fact that it may be interrupted */}
 #line 44218 "hcs12x.cc"
 }
@@ -44228,7 +44228,7 @@ sink
 #line 44229 "hcs12x.cc"
 )
 {
-#line 260 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 260 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "WAV";
 	}
@@ -44247,7 +44247,7 @@ cpu
 #line 44248 "hcs12x.cc"
 )
 {
-#line 265 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 265 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		/* The Z flag is affected by operation.
 		* The final state for the others CCR flags is not defined.
@@ -44258,8 +44258,8 @@ cpu
 		*   Partial Product = (M pointed to by X) × (M pointed to by Y)
 		*   Sum-of-Products (24-bit SOP) = Previous SOP + Partial Product
 		*   Sum-of-Weights (16-bit SOW) = Previous SOW + (M pointed to by Y)
-		*   (X) + $0001 ⇒ X; (Y) + $0001 ⇒ Y
-		*   (B) – $01 ⇒ B
+		*   (X) + 0x0001 ⇒ X; (Y) + 0x0001 ⇒ Y
+		*   (B) – 0x01 ⇒ B
 		**/
 
 		uint8_t bVal, memX, memY;
@@ -44284,7 +44284,7 @@ cpu
 				*   Write word @ -2,SP (stack TMP3); SP = SP - 2;
 				*   Write word @ -2,SP (stack TMP2); SP = SP - 2;
 				*   Write word @ -2,SP (stack TMP1); SP = SP - 2;
-				*   Adjust PC to point at $3C wavr pseudo-opcode
+				*   Adjust PC to point at 0x3C wavr pseudo-opcode
 				* }
 			**/
 
@@ -44326,7 +44326,7 @@ uint8_t
 #line 44327 "hcs12x.cc"
 OpWavr::getCycles()
 {
-#line 333 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 333 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{ return 0; /* TODO: linked to WAV instruction */}
 #line 44332 "hcs12x.cc"
 }
@@ -44342,7 +44342,7 @@ sink
 #line 44343 "hcs12x.cc"
 )
 {
-#line 335 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 335 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "WAVR";
 	}
@@ -44360,7 +44360,7 @@ cpu
 #line 44361 "hcs12x.cc"
 )
 {
-#line 339 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 339 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		/* The Z flag is affected by operation.
 		* The final state for the others CCR flags is not defined.
@@ -44396,7 +44396,7 @@ uint8_t
 #line 44397 "hcs12x.cc"
 OpTbl::getCycles()
 {
-#line 365 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 365 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{ return 6; }
 #line 44402 "hcs12x.cc"
 }
@@ -44412,7 +44412,7 @@ sink
 #line 44413 "hcs12x.cc"
 )
 {
-#line 367 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 367 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "TBL ";
 		xb->disasm(sink);
@@ -44431,7 +44431,7 @@ cpu
 #line 44432 "hcs12x.cc"
 )
 {
-#line 372 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 372 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		/*
 		Operation: (M) + [(B) * ((M+1) - (M))] => A
@@ -44439,7 +44439,7 @@ cpu
 		with the radix point between bits 7 and 8.
 
 		N: Set if MSB of result is set; cleared otherwise
-		Z: Set if result is $00; cleared otherwise
+		Z: Set if result is 0x00; cleared otherwise
 		C: Set if result can be rounded up; cleared otherwise
 		*/
 
@@ -44472,7 +44472,7 @@ uint8_t
 #line 44473 "hcs12x.cc"
 OpEtlb::getCycles()
 {
-#line 403 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 403 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{ return 10; }
 #line 44478 "hcs12x.cc"
 }
@@ -44488,7 +44488,7 @@ sink
 #line 44489 "hcs12x.cc"
 )
 {
-#line 405 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 405 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		sink << "ETLB ";
 		xb->disasm(sink);
@@ -44507,7 +44507,7 @@ cpu
 #line 44508 "hcs12x.cc"
 )
 {
-#line 410 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
+#line 410 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
 		/*
 		Operation: D = M + [(B) * ((M+2) - (M))]
@@ -44577,7 +44577,7 @@ uint8_t
 #line 44578 "hcs12x.cc"
 OpNop::getCycles()
 {
-#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 39 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 1; }
 #line 44583 "hcs12x.cc"
 }
@@ -44593,7 +44593,7 @@ sink
 #line 44594 "hcs12x.cc"
 )
 {
-#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 41 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "NOP";
 	}
@@ -44611,7 +44611,7 @@ cpu
 #line 44612 "hcs12x.cc"
 )
 {
-#line 45 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 45 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		// This single-byte instruction increments the PC and does nothing else.
 	}
@@ -44629,7 +44629,7 @@ uint8_t
 #line 44630 "hcs12x.cc"
 OpStop::getCycles()
 {
-#line 54 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 54 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ if (stopDisabled) return 2; else return 16; }
 #line 44635 "hcs12x.cc"
 }
@@ -44645,7 +44645,7 @@ sink
 #line 44646 "hcs12x.cc"
 )
 {
-#line 56 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 56 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "STOP";
 	}
@@ -44663,7 +44663,7 @@ cpu
 #line 44664 "hcs12x.cc"
 )
 {
-#line 60 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 60 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 
 		if (cpu->ccr->getS() == 1) {
@@ -44675,11 +44675,11 @@ cpu
 			} else {
 			stopDisabled = false;
 			/*
-			* (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
-			* (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
-			* (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
-			* (SP) – $0002 => SP; B : A => (M(SP) : M(SP+1))
-			* (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; YH : YL => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; XH : XL => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; B : A => (M(SP) : M(SP+1))
+			* (SP) – 0x0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
 			* Stop All Clocks and puts the device in standby mode
 			*/
 
@@ -44729,7 +44729,7 @@ uint8_t
 #line 44730 "hcs12x.cc"
 OpWai::getCycles()
 {
-#line 115 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 115 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 13; }
 #line 44735 "hcs12x.cc"
 }
@@ -44745,7 +44745,7 @@ sink
 #line 44746 "hcs12x.cc"
 )
 {
-#line 117 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 117 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "WAI";
 	}
@@ -44763,15 +44763,15 @@ cpu
 #line 44764 "hcs12x.cc"
 )
 {
-#line 121 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 121 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 
 		/*
-		* (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; B : A => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; YH : YL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; XH : XL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; B : A => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
 		* The CPU12 then enters a wait state for an integer number of bus clock cycles.
 		* During the wait state, CPU12 clocks are stopped, but otherMCUclocks can continue to run.
 		* WAIT for not masked interrupt
@@ -44823,7 +44823,7 @@ uint8_t
 #line 44824 "hcs12x.cc"
 OpBgnd::getCycles()
 {
-#line 171 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 171 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 5; }
 #line 44829 "hcs12x.cc"
 }
@@ -44839,7 +44839,7 @@ sink
 #line 44840 "hcs12x.cc"
 )
 {
-#line 173 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 173 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "BGND";
 	}
@@ -44857,7 +44857,7 @@ cpu
 #line 44858 "hcs12x.cc"
 )
 {
-#line 177 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 177 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		// TODO
 	}
@@ -44876,7 +44876,7 @@ uint8_t
 #line 44877 "hcs12x.cc"
 OpRti::getCycles()
 {
-#line 189 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 189 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ if (isPending) return 10; else return 8; }
 #line 44882 "hcs12x.cc"
 }
@@ -44892,7 +44892,7 @@ sink
 #line 44893 "hcs12x.cc"
 )
 {
-#line 191 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 191 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "RTI";
 	}
@@ -44911,15 +44911,15 @@ cpu
 #line 44912 "hcs12x.cc"
 )
 {
-#line 197 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 197 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 
 		/*
-		* (M(SP) : M(SP+1)) => CCRH : CCRL; (SP) + $0002 => SP
-		* (M(SP) : M(SP+1)) => B : A; (SP) + $0002 => SP
-		* (M(SP) : M(SP+1)) => XH : XL; (SP) + $0004 => SP
-		* (M(SP) : M(SP+1)) => PCH : PCL; (SP) – $0002 => SP
-		* (M(SP) : M(SP+1)) => YH : YL; (SP) + $0004 => SP
+		* (M(SP) : M(SP+1)) => CCRH : CCRL; (SP) + 0x0002 => SP
+		* (M(SP) : M(SP+1)) => B : A; (SP) + 0x0002 => SP
+		* (M(SP) : M(SP+1)) => XH : XL; (SP) + 0x0004 => SP
+		* (M(SP) : M(SP+1)) => PCH : PCL; (SP) – 0x0002 => SP
+		* (M(SP) : M(SP+1)) => YH : YL; (SP) + 0x0004 => SP
 		* */
 
 		address_t addr = cpu->getRegSP();
@@ -44959,7 +44959,7 @@ uint8_t
 #line 44960 "hcs12x.cc"
 OpSwi::getCycles()
 {
-#line 235 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 235 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 9; }
 #line 44965 "hcs12x.cc"
 }
@@ -44975,7 +44975,7 @@ sink
 #line 44976 "hcs12x.cc"
 )
 {
-#line 237 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 237 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "SWI";
 	}
@@ -44993,16 +44993,16 @@ cpu
 #line 44994 "hcs12x.cc"
 )
 {
-#line 241 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 241 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
-		/* (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; B : A=> (M(SP) : M(SP+1))
+		/* (SP) – 0x0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; YH : YL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; XH : XL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; B : A=> (M(SP) : M(SP+1))
 		* In case of CPU12
-		* (SP) – $0001 => SP; CCR => (M(SP) )
+		* (SP) – 0x0001 => SP; CCR => (M(SP) )
 		* In case of CPU12X
-		* (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
 		* 1 => I; 0 => U
 		* (SWI Vector) => PC
 		*/
@@ -45039,13 +45039,13 @@ static Operation *DecodeOpSwi(CodeType const& code, uint16_t addr)
 }
 
 // SYS: System Call Interrupt
-// System call interrupt vector is $FF12:$FF13
+// System call interrupt vector is 0xFF12:0xFF13
 #line 73 "hcs12x.isa"
 uint8_t
 #line 45046 "hcs12x.cc"
 OpSys::getCycles()
 {
-#line 337 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 337 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{ return 10; }
 #line 45051 "hcs12x.cc"
 }
@@ -45061,7 +45061,7 @@ sink
 #line 45062 "hcs12x.cc"
 )
 {
-#line 339 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 339 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 		sink << "SYS";
 	}
@@ -45079,18 +45079,18 @@ cpu
 #line 45080 "hcs12x.cc"
 )
 {
-#line 343 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 343 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 	{
 
 		/*
-		* (SP) – $0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; YH : YL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; XH : XL => (M(SP) : M(SP+1))
-		* (SP) – $0002 => SP; B : A => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; RTNH : RTNL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; YH : YL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; XH : XL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; B : A => (M(SP) : M(SP+1))
 		* In case of CPU12
-		* (SP) – $0001 => SP; CCR => (M(SP) )
+		* (SP) – 0x0001 => SP; CCR => (M(SP) )
 		* In case of CPU12X
-		* (SP) – $0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
+		* (SP) – 0x0002 => SP; CCRH : CCRL => (M(SP) : M(SP+1))
 		* 1 => I; 0 => U
 		* (Trap Vector) => PC
 		*/
@@ -48447,7 +48447,7 @@ OpEmacs::OpEmacs(CodeType const& code, uint16_t addr) : Operation(code, addr, "e
 
 OpSbr::OpSbr(CodeType const& code, uint16_t addr) : Operation(code, addr, "sbr")
 ,branch(
-#line 44 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 44 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
 #line 48453 "hcs12x.cc"
 {
@@ -48463,7 +48463,7 @@ false )
 
 OpLbr::OpLbr(CodeType const& code, uint16_t addr) : Operation(code, addr, "lbr")
 ,branch(
-#line 143 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 143 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
 #line 48469 "hcs12x.cc"
 {
@@ -48664,7 +48664,7 @@ OpRts::OpRts(CodeType const& code, uint16_t addr) : Operation(code, addr, "rts")
 
 OpLoop::OpLoop(CodeType const& code, uint16_t addr) : Operation(code, addr, "loop")
 ,isBranch(
-#line 694 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
+#line 694 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./branch.isa"
 false )
 #line 48670 "hcs12x.cc"
 {
@@ -48855,7 +48855,7 @@ OpNop::OpNop(CodeType const& code, uint16_t addr) : Operation(code, addr, "nop")
 
 OpStop::OpStop(CodeType const& code, uint16_t addr) : Operation(code, addr, "stop")
 ,stopDisabled(
-#line 52 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 52 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 false )
 #line 48861 "hcs12x.cc"
 {
@@ -48880,7 +48880,7 @@ OpBgnd::OpBgnd(CodeType const& code, uint16_t addr) : Operation(code, addr, "bgn
 
 OpRti::OpRti(CodeType const& code, uint16_t addr) : Operation(code, addr, "rti")
 ,isPending(
-#line 187 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
+#line 187 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./others.isa"
 false )
 #line 48886 "hcs12x.cc"
 {

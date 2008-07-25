@@ -50,8 +50,8 @@ mem.execute = {
 Operation
 ---------
 Grade of Membership ⇒ M(Y)
-(Y) + $0001 ⇒ Y
-(X) + $0004 ⇒ X
+(Y) + 0x0001 ⇒ Y
+(X) + 0x0004 ⇒ X
 
 Description
 -----------
@@ -64,8 +64,8 @@ function. The data structure consists of:
 • Slope_1 — The slope of the leading side (at MX+2)
 • Slope_2—The slope of the trailing side (atMX+3); the right side slopes up and to the left from
 Point_2
-A Slope_1 or Slope_2 value of $00 is a special case in which the membership function either starts
-with a grade of $FF at input = Point_1, or ends with a grade of $FF at input = Point_2 (infinite slope).
+A Slope_1 or Slope_2 value of 0x00 is a special case in which the membership function either starts
+with a grade of 0xFF at input = Point_1, or ends with a grade of 0xFF at input = Point_2 (infinite slope).
 During execution, the value of A remains unchanged. X is incremented by four and Y is incremented
 by one.
 	
@@ -100,10 +100,10 @@ by one.
 		} 
 	}
 
-// (Y) + $0001 ⇒ Y
+// (Y) + 0x0001 ⇒ Y
 	cpu->setRegY(yVal + 1);
 
-// (X) + $0004 ⇒ X
+// (X) + 0x0004 ⇒ X
 	cpu->setRegX(xVal + 4);
 
 }
@@ -272,8 +272,8 @@ wav.execute = {
 	  *   Partial Product = (M pointed to by X) × (M pointed to by Y)
 	  *   Sum-of-Products (24-bit SOP) = Previous SOP + Partial Product
 	  *   Sum-of-Weights (16-bit SOW) = Previous SOW + (M pointed to by Y)
-	  *   (X) + $0001 ⇒ X; (Y) + $0001 ⇒ Y
-	  *   (B) – $01 ⇒ B
+	  *   (X) + 0x0001 ⇒ X; (Y) + 0x0001 ⇒ Y
+	  *   (B) – 0x01 ⇒ B
 	  **/
 	 
 	 uint8_t bVal, memX, memY;
@@ -298,7 +298,7 @@ wav.execute = {
 		 *   Write word @ -2,SP (stack TMP3); SP = SP - 2;
 		 *   Write word @ -2,SP (stack TMP2); SP = SP - 2;
 		 *   Write word @ -2,SP (stack TMP1); SP = SP - 2;
-		 *   Adjust PC to point at $3C wavr pseudo-opcode
+		 *   Adjust PC to point at 0x3C wavr pseudo-opcode
 		 * }
 		 **/
 
@@ -376,7 +376,7 @@ tbl.execute = {
  with the radix point between bits 7 and 8.
  
  N: Set if MSB of result is set; cleared otherwise
- Z: Set if result is $00; cleared otherwise
+ Z: Set if result is 0x00; cleared otherwise
  C: Set if result can be rounded up; cleared otherwise
 */
 

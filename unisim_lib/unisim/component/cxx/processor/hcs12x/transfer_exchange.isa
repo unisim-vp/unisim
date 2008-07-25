@@ -142,7 +142,7 @@ exg_hcs12.execute = {
 		}
 	} 
 	else if (((srcSize == 8) || (lms == 2)) && (dstSize == 16)) {
-		// $00:(r1) => r2 
+		// 0x00:(r1) => r2 
 		// if r2 isn't D then && (r2[7:0]) => r1
 		uint16_t r1Val = 0x00FF & cpu->eblb->getter<uint8_t>(rrSrc);
 		uint8_t r2Val = (uint8_t) cpu->eblb->getter<uint16_t>(rrDst); // only low 8 bits
@@ -153,7 +153,7 @@ exg_hcs12.execute = {
 	}
 	else if ((srcSize == 16) && (dstSize == 8)) {
 		// (r1[7:0]) => (r2)
-		// if r2 is A then $00:(r2) => r1 else $FF:(r2) => r1
+		// if r2 is A then 0x00:(r2) => r1 else 0xFF:(r2) => r1
 		uint8_t r1Val = cpu->eblb->getter<uint16_t>(rrSrc); // only low 8 bits
 		uint8_t r2Val = cpu->eblb->getter<uint8_t>(rrDst);
 		
@@ -260,10 +260,10 @@ tfr_hcs12.execute = {
 	else if (((srcSize == 8) || (lms == 2)) && (dstSize == 16)) {
 		// sex:r1 => r2
 		if ((cpu->eblb->getter<uint8_t>(rrSrc) & 0x80) == 0x80)  
-		{ // if r1 bit 7 = 1 then $FF:(r1) => r2
+		{ // if r1 bit 7 = 1 then 0xFF:(r1) => r2
 			cpu->eblb->setter<uint16_t>(rrDst, ((uint16_t) cpu->eblb->getter<uint8_t>(rrSrc)) | 0xFF00);
 		} else 
-		{ // if r1 bit 7 = 1 then $00:(r1) => r2
+		{ // if r1 bit 7 = 1 then 0x00:(r1) => r2
 			cpu->eblb->setter<uint16_t>(rrDst, ((uint16_t) cpu->eblb->getter<uint8_t>(rrSrc)) & 0x00FF);
 		}  
 	}
@@ -435,7 +435,7 @@ exg_hcs12x.execute = {
 	// Exchange register Contents. There is no sign extension
 	/*
 	if (sizeof(r1) && sizeof(r2) { (r1) <=> (r2)}
-	else if ( (sizeof(r1)==8) && (sizeof(r2)==16) ) {$00:(r1) => r2}
+	else if ( (sizeof(r1)==8) && (sizeof(r2)==16) ) {0x00:(r1) => r2}
 	else if ( (sizeof(r1)==16) && (sizeof(r2)==8) ) { (r1[7:0]) <=> (r2) }
 	*/
 	
@@ -453,8 +453,8 @@ exg_hcs12x.execute = {
 	} 
 	else if ((srcSize == 8) && (dstSize == 16)) 
 	{
-		// $00:(r1) => r2
-		/* if (r2 is D) $00:(r1) => D
+		// 0x00:(r1) => r2
+		/* if (r2 is D) 0x00:(r1) => D
 		 * else 
 		 *  if (r1 is A) (r1) => r2H
 		 *  else if (r1 is B) (r1) => r2L
@@ -482,7 +482,7 @@ exg_hcs12x.execute = {
 		/*
 		 * if (r1 is D)
 		 * 	 if (r2 is A) (B) <=> (A)
-		 * 	 else $FF => A // r2 is B  
+		 * 	 else 0xFF => A // r2 is B  
 		 * else
 		 * 	 if (r2 is A) (r1H) <=> A
 		 * 	 else (r1L) <=> B 

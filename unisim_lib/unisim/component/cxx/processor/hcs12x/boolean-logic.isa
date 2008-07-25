@@ -40,9 +40,9 @@ and_ab_imm.getCycles = { return 1; }
 
 and_ab_imm.disasm = {
 	if (b==0) {
-		sink << "ANDA #$";
+		sink << "ANDA #0x";
 	} else {
-		sink << "ANDB #$";
+		sink << "ANDB #0x";
 	}
 	sink << std::hex << opr8i;
 }
@@ -79,9 +79,9 @@ and_ab_dir.getCycles = { return 3; }
 
 and_ab_dir.disasm = {
 	if (b==0) {
-		sink << "ANDA $";
+		sink << "ANDA 0x";
 	} else {
-		sink << "ANDB $"; 
+		sink << "ANDB 0x"; 
 	}
 	sink << std::hex << opr8a;
 }
@@ -119,9 +119,9 @@ and_ab_ext.getCycles = { return 3; }
 
 and_ab_ext.disasm = {
 	if (b==0) {
-		sink << "ANDA $";
+		sink << "ANDA 0x";
 	} else {
-		sink << "ANDB $";		
+		sink << "ANDB 0x";		
 	}
 	sink << std::hex << opr16a;
 }
@@ -201,7 +201,7 @@ andcc_imm.getCycles = { return 1; }
 
 andcc_imm.disasm = {
 	
-	sink << "ANDCC #$" << std::hex << opr8i;
+	sink << "ANDCC #0x" << std::hex << opr8i;
 }
 
 andcc_imm.execute = {
@@ -222,9 +222,9 @@ and_xy_imm.getCycles = { return 3; }
 
 and_xy_imm.disasm = {
 	if (b==0) {
-		sink << "ANDX #$";
+		sink << "ANDX #0x";
 	} else {
-		sink << "ANDY #$";
+		sink << "ANDY #0x";
 	}
 
 	sink << std::hex << opr16i;
@@ -261,9 +261,9 @@ and_xy_dir.getCycles = { return 4; }
 
 and_xy_dir.disasm = {
 	if (b==0) {
-		sink << "ANDX $";
+		sink << "ANDX 0x";
 	} else {
-		sink << "ANDY $";
+		sink << "ANDY 0x";
 	}
 
 	sink << std::hex << opr8a;
@@ -302,9 +302,9 @@ and_xy_ext.getCycles = { return 4; }
 
 and_xy_ext.disasm = {
 	if (b==0) {
-		sink << "ANDX $";
+		sink << "ANDX 0x";
 	} else {
-		sink << "ANDY $";
+		sink << "ANDY 0x";
 	}
 
 	sink << std::hex << opr16a;
@@ -385,9 +385,9 @@ ora_ab_imm.getCycles = { return 1; }
 
 ora_ab_imm.disasm = {
 	if (b==0) {
-		sink << "ORA #$";
+		sink << "ORA #0x";
 	} else {
-		sink << "ORB #$";
+		sink << "ORB #0x";
 	}
 	sink << std::hex << opr8i;
 }
@@ -424,9 +424,9 @@ ora_ab_dir.getCycles = { return 3; }
 
 ora_ab_dir.disasm = {
 	if (b==0) {
-		sink << "ORAA $";
+		sink << "ORAA 0x";
 	} else {
-		sink << "ORAB $"; 
+		sink << "ORAB 0x"; 
 	}
 	sink << std::hex << opr8a;
 }
@@ -464,9 +464,9 @@ ora_ab_ext.getCycles = { return 3; }
 
 ora_ab_ext.disasm = {
 	if (b==0) {
-		sink << "ORAA $";
+		sink << "ORAA 0x";
 	} else {
-		sink << "ORAB $";		
+		sink << "ORAB 0x";		
 	}
 	sink << std::hex << opr16a;
 }
@@ -546,7 +546,7 @@ orcc_imm.getCycles = { return 1; }
 
 orcc_imm.disasm = {
 	
-	sink << "ORCC #$" << std::hex << opr8i;
+	sink << "ORCC #0x" << std::hex << opr8i;
 }
 
 orcc_imm.execute = {
@@ -585,9 +585,9 @@ or_xy_imm.getCycles = { return 3; }
 
 or_xy_imm.disasm = {
 	if (b==0) {
-		sink << "ORX #$";
+		sink << "ORX #0x";
 	} else {
-		sink << "ORY #$";
+		sink << "ORY #0x";
 	}
 
 	sink << std::hex << opr16i;
@@ -624,9 +624,9 @@ or_xy_dir.getCycles = { return 4; }
 
 or_xy_dir.disasm = {
 	if (b==0) {
-		sink << "ORX $";
+		sink << "ORX 0x";
 	} else {
-		sink << "ORY $";
+		sink << "ORY 0x";
 	}
 
 	sink << std::hex << opr8a;
@@ -665,9 +665,9 @@ or_xy_ext.getCycles = { return 4; }
 
 or_xy_ext.disasm = {
 	if (b==0) {
-		sink << "ORX $";
+		sink << "ORX 0x";
 	} else {
-		sink << "ORY $";
+		sink << "ORY 0x";
 	}
 
 	sink << std::hex << opr16a;
@@ -748,9 +748,9 @@ eor_ab_imm.getCycles = { return 1; }
 
 eor_ab_imm.disasm = {
 	if (b==0) {
-		sink << "EOR #$";
+		sink << "EOR #0x";
 	} else {
-		sink << "EOR #$";
+		sink << "EOR #0x";
 	}
 	sink << std::hex << opr8i;
 }
@@ -786,9 +786,9 @@ eor_ab_dir.getCycles = { return 3; }
 
 eor_ab_dir.disasm = {
 	if (b==0) {
-		sink << "ORAA $";
+		sink << "ORAA 0x";
 	} else {
-		sink << "ORAB $"; 
+		sink << "ORAB 0x"; 
 	}
 	sink << std::hex << opr8a;
 }
@@ -826,9 +826,9 @@ eor_ab_ext.getCycles = { return 3; }
 
 eor_ab_ext.disasm = {
 	if (b==0) {
-		sink << "EORA $";
+		sink << "EORA 0x";
 	} else {
-		sink << "EORB $";		
+		sink << "EORB 0x";		
 	}
 	sink << std::hex << opr16a;
 }
@@ -908,9 +908,9 @@ eor_xy_imm.getCycles = { return 3; }
 
 eor_xy_imm.disasm = {
 	if (b==0) {
-		sink << "EORX #$";
+		sink << "EORX #0x";
 	} else {
-		sink << "EORY #$";
+		sink << "EORY #0x";
 	}
 
 	sink << std::hex << opr16i;
@@ -947,9 +947,9 @@ eor_xy_dir.getCycles = { return 4; }
 
 eor_xy_dir.disasm = {
 	if (b==0) {
-		sink << "EORX $";
+		sink << "EORX 0x";
 	} else {
-		sink << "eORY $";
+		sink << "eORY 0x";
 	}
 
 	sink << std::hex << opr8a;
@@ -988,9 +988,9 @@ eor_xy_ext.getCycles = { return 4; }
 
 eor_xy_ext.disasm = {
 	if (b==0) {
-		sink << "EORX $";
+		sink << "EORX 0x";
 	} else {
-		sink << "EORY $";
+		sink << "EORY 0x";
 	}
 
 	sink << std::hex << opr16a;

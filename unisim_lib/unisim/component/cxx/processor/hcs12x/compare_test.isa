@@ -62,9 +62,9 @@ cmp_ab_imm.getCycles = { return 1; }
 
 cmp_ab_imm.disasm = {
 	if (b==0) {
-		sink << "CMPA #$";
+		sink << "CMPA #0x";
 	} else {
-		sink << "CMPB #$";
+		sink << "CMPB #0x";
 	}
 	sink << std::hex << opr8i;
 }
@@ -95,9 +95,9 @@ cmp_ab_dir.getCycles = { return 3; }
 
 cmp_ab_dir.disasm = {
 	if (b==0) {
-		sink << "CMPA $";
+		sink << "CMPA 0x";
 	} else {
-		sink << "CMPB $";
+		sink << "CMPB 0x";
 	}
 	sink << std::hex << opr8a;
 }
@@ -130,9 +130,9 @@ cmp_ab_ext.getCycles = { return 3; }
 
 cmp_ab_ext.disasm = {
 	if (b==0) {
-		sink << "CMPA $";
+		sink << "CMPA 0x";
 	} else {
-		sink << "CMPB $";
+		sink << "CMPB 0x";
 	}
 	sink << std::hex << opr16a;
 }
@@ -201,10 +201,10 @@ cp_dyxs_imm.getCycles = { return 2; }
 
 cp_dyxs_imm.disasm = {
 	switch (dyxs) {
-		case 0: sink << "CPD #$"; break;
-		case 1: sink << "CPY #$"; break;
-		case 2: sink << "CPX #$"; break;
-		case 3: sink << "CPS #$";  
+		case 0: sink << "CPD #0x"; break;
+		case 1: sink << "CPY #0x"; break;
+		case 2: sink << "CPX #0x"; break;
+		case 3: sink << "CPS #0x";  
 	}
 	sink << std::hex << opr16i;
 }
@@ -237,10 +237,10 @@ cp_dyxs_dir.getCycles = { return 3; }
 
 cp_dyxs_dir.disasm = {
 	switch (dyxs) {
-		case 0: sink << "CPD $"; break;
-		case 1: sink << "CPY $"; break;
-		case 2: sink << "CPX $"; break;
-		case 3: sink << "CPS $";  
+		case 0: sink << "CPD 0x"; break;
+		case 1: sink << "CPY 0x"; break;
+		case 2: sink << "CPX 0x"; break;
+		case 3: sink << "CPS 0x";  
 	}
 	sink << std::hex << opr8a;
 }
@@ -276,10 +276,10 @@ cp_dyxs_ext.getCycles = { return 3; }
 
 cp_dyxs_ext.disasm = {
 	switch (dyxs) {
-		case 0: sink << "CPD $"; break;
-		case 1: sink << "CPY $"; break;
-		case 2: sink << "CPX $"; break;
-		case 3: sink << "CPS $";  
+		case 0: sink << "CPD 0x"; break;
+		case 1: sink << "CPY 0x"; break;
+		case 2: sink << "CPX 0x"; break;
+		case 3: sink << "CPS 0x";  
 	}
 	sink << std::hex << opr16a;
 }
@@ -352,10 +352,10 @@ cpe_dyxs_imm.getCycles = { return 3; }
 
 cpe_dyxs_imm.disasm = {
 	switch (dyxs) {
-		case 0: sink << "CPED #$"; break;
-		case 1: sink << "CPEY #$"; break;
-		case 2: sink << "CPEX #$"; break;
-		case 3: sink << "CPES #$";  
+		case 0: sink << "CPED #0x"; break;
+		case 1: sink << "CPEY #0x"; break;
+		case 2: sink << "CPEX #0x"; break;
+		case 3: sink << "CPES #0x";  
 	}
 	sink << std::hex << opr16i;
 }
@@ -389,10 +389,10 @@ cpe_dyxs_dir.getCycles = { return 4; }
 
 cpe_dyxs_dir.disasm = {
 	switch (dyxs) {
-		case 0: sink << "CPED $"; break;
-		case 1: sink << "CPEY $"; break;
-		case 2: sink << "CPEX $"; break;
-		case 3: sink << "CPES $";  
+		case 0: sink << "CPED 0x"; break;
+		case 1: sink << "CPEY 0x"; break;
+		case 2: sink << "CPEX 0x"; break;
+		case 3: sink << "CPES 0x";  
 	}
 	sink << std::hex << opr8a;
 }
@@ -429,10 +429,10 @@ cpe_dyxs_ext.getCycles = { return 4; }
 
 cpe_dyxs_ext.disasm = {
 	switch (dyxs) {
-		case 0: sink << "CPED $"; break;
-		case 1: sink << "CPEY $"; break;
-		case 2: sink << "CPEX $"; break;
-		case 3: sink << "CPES $";  
+		case 0: sink << "CPED 0x"; break;
+		case 1: sink << "CPEY 0x"; break;
+		case 2: sink << "CPEX 0x"; break;
+		case 3: sink << "CPES 0x";  
 	}
 	sink << std::hex << opr16a;
 }
@@ -507,7 +507,7 @@ op tst_ext(0xF7[8]:> <:opr16a[16])
 tst_ext.getCycles = { return 3; }
 
 tst_ext.disasm = {
-	sink << "TST $" << std::hex << opr16a;
+	sink << "TST 0x" << std::hex << opr16a;
 }
 
 tst_ext.execute = {
@@ -590,7 +590,7 @@ op tstw_ext(0x18[8]:0xF7[8]:opr16a[16])
 tstw_ext.getCycles = { return 4; }
 
 tstw_ext.disasm = {
-	sink << "TSTW $" << std::hex << opr16a;
+	sink << "TSTW 0x" << std::hex << opr16a;
 }
 
 tstw_ext.execute = {
@@ -697,7 +697,7 @@ emind.execute = {
 	 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-	// Z: Set if result is $0000; cleared otherwise
+	// Z: Set if result is 0x0000; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
@@ -742,7 +742,7 @@ eminm.execute = {
 	 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-	// Z: Set if result is $0000; cleared otherwise
+	// Z: Set if result is 0x0000; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
@@ -789,7 +789,7 @@ mina.execute = {
 	 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-	// Z: Set if result is $00; cleared otherwise
+	// Z: Set if result is 0x00; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
@@ -835,7 +835,7 @@ minm.execute = {
 	 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-	// Z: Set if result is $00; cleared otherwise
+	// Z: Set if result is 0x00; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
@@ -884,7 +884,7 @@ emaxd.execute = {
 		 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-	// Z: Set if result is $0000; cleared otherwise
+	// Z: Set if result is 0x0000; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
@@ -930,7 +930,7 @@ emaxm.execute = {
 		 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-	// Z: Set if result is $0000; cleared otherwise
+	// Z: Set if result is 0x0000; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
@@ -976,7 +976,7 @@ maxa.execute = {
 		 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-	// Z: Set if result is $00; cleared otherwise
+	// Z: Set if result is 0x00; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
@@ -1021,7 +1021,7 @@ maxm.execute = {
 	 
 	// N: Set if MSB of result is set; cleared otherwise
 	if ((result & 0x80) == 0x80) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-	// Z: Set if result is $00; cleared otherwise
+	// Z: Set if result is 0x00; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 

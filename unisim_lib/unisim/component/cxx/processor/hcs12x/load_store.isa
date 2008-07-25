@@ -39,9 +39,9 @@ ldaab_imm.getCycles = { return 1; }
 
 ldaab_imm.disasm = {
     if (b==0) {
-	    sink << "LDAA #$";
+	    sink << "LDAA #0x";
     } else {
-	    sink << "LDAB #$";
+	    sink << "LDAB #0x";
     }
     sink  << std::hex << opr8i;    
 }
@@ -65,9 +65,9 @@ ldaab_dir.getCycles = { return 3; }
 
 ldaab_dir.disasm = {
 	if (b==0) {
-	    sink << "LDAA $";
+	    sink << "LDAA 0x";
 	} else {
-	    sink << "LDAB $";
+	    sink << "LDAB 0x";
 	}
 	sink << std::hex << opr8a;
 }
@@ -93,9 +93,9 @@ ldaab_ext.getCycles = { return 3; }
 
 ldaab_ext.disasm = {
 	if (b==0) {
-	    sink << "LDAA $";
+	    sink << "LDAA 0x";
 	} else {
-	    sink << "LDAB $";	
+	    sink << "LDAB 0x";	
 	}
 	sink << std::hex << opr16a; 
 }
@@ -160,10 +160,10 @@ ld_dyxs_imm.getCycles = { return 2; }
 ld_dyxs_imm.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "LDD #$"; break;
-	case 1: sink << "LDY #$"; break;
-	case 2: sink << "LDX #$"; break;
-	case 3: sink << "LDS #$"; break;
+	case 0: sink << "LDD #0x"; break;
+	case 1: sink << "LDY #0x"; break;
+	case 2: sink << "LDX #0x"; break;
+	case 3: sink << "LDS #0x"; break;
 	}
 	sink << std::hex << opr16i;
 }
@@ -191,10 +191,10 @@ ld_dyxs_dir.getCycles = { return 3; }
 ld_dyxs_dir.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "LDD $"; break;
-	case 1: sink << "LDY $"; break;
-	case 2: sink << "LDX $"; break;
-	case 3: sink << "LDS $"; break;
+	case 0: sink << "LDD 0x"; break;
+	case 1: sink << "LDY 0x"; break;
+	case 2: sink << "LDX 0x"; break;
+	case 3: sink << "LDS 0x"; break;
 	}
 	sink << std::hex << dd;
 }
@@ -223,10 +223,10 @@ ld_dyxs_ext.getCycles = { return 3; }
 ld_dyxs_ext.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "LDD $"; break;
-	case 1: sink << "LDY $"; break;
-	case 2: sink << "LDX $"; break;
-	case 3: sink << "LDS $"; break;
+	case 0: sink << "LDD 0x"; break;
+	case 1: sink << "LDY 0x"; break;
+	case 2: sink << "LDX 0x"; break;
+	case 3: sink << "LDS 0x"; break;
 	}
 
 	sink << std::hex << opr16a;
@@ -364,9 +364,9 @@ staab_dir.getCycles = { return 2; }
 staab_dir.disasm = {
 
 	if (b==0) {
-	    sink << "STAA $";
+	    sink << "STAA 0x";
 	} else {
-	    sink << "STAB $";
+	    sink << "STAB 0x";
 	}
 	sink << std::hex << opr8a;
 
@@ -396,9 +396,9 @@ staab_ext.getCycles = { return 3; }
 staab_ext.disasm = {
 
 	if (b==0) {
-	    sink << "STAA $";
+	    sink << "STAA 0x";
 	} else {
-	    sink << "STAB $";
+	    sink << "STAB 0x";
 	}
 	sink << std::hex << opr16a;
 
@@ -463,10 +463,10 @@ st_dyxs_dir.getCycles = { return 2; }
 st_dyxs_dir.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "STD $"; break;
-	case 1: sink << "STY $"; break;
-	case 2: sink << "STX $"; break;
-	case 3: sink << "STS $"; break;
+	case 0: sink << "STD 0x"; break;
+	case 1: sink << "STY 0x"; break;
+	case 2: sink << "STX 0x"; break;
+	case 3: sink << "STS 0x"; break;
 	}
 	
 	sink << std::hex << opr8a;
@@ -501,10 +501,10 @@ st_dyxs_ext.getCycles = { return 3; }
 st_dyxs_ext.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "STD $"; break;
-	case 1: sink << "STY $"; break;
-	case 2: sink << "STX $"; break;
-	case 3: sink << "STS $"; break;
+	case 0: sink << "STD 0x"; break;
+	case 1: sink << "STY 0x"; break;
+	case 2: sink << "STX 0x"; break;
+	case 3: sink << "STS 0x"; break;
 	}
 	
 	sink << std::hex << opr16a;
@@ -585,9 +585,9 @@ gldaab_dir.getCycles = { return 4; }
 
 gldaab_dir.disasm = {
 	if (b==0) {
-	    sink << "GLDAA $";
+	    sink << "GLDAA 0x";
 	} else {
-	    sink << "GLDAB $";
+	    sink << "GLDAB 0x";
 	}
 	sink << std::hex << opr8a;
 }
@@ -613,9 +613,9 @@ gldaab_ext.getCycles = { return 4; }
 
 gldaab_ext.disasm = {
 	if (b==0) {
-	    sink << "GLDAA $";
+	    sink << "GLDAA 0x";
 	} else {
-	    sink << "GLDAB $";	
+	    sink << "GLDAB 0x";	
 	}
 	sink << std::hex << opr16a; 
 }
@@ -680,10 +680,10 @@ gld_dyxs_dir.getCycles = { return 4; }
 gld_dyxs_dir.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "GLDD $"; break;
-	case 1: sink << "GLDY $"; break;
-	case 2: sink << "GLDX $"; break;
-	case 3: sink << "GLDS $"; break;
+	case 0: sink << "GLDD 0x"; break;
+	case 1: sink << "GLDY 0x"; break;
+	case 2: sink << "GLDX 0x"; break;
+	case 3: sink << "GLDS 0x"; break;
 	}
 	sink << std::hex << dd;
 }
@@ -712,10 +712,10 @@ gld_dyxs_ext.getCycles = { return 4; }
 gld_dyxs_ext.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "GLDD $"; break;
-	case 1: sink << "GLDY $"; break;
-	case 2: sink << "GLDX $"; break;
-	case 3: sink << "GLDS $"; break;
+	case 0: sink << "GLDD 0x"; break;
+	case 1: sink << "GLDY 0x"; break;
+	case 2: sink << "GLDX 0x"; break;
+	case 3: sink << "GLDS 0x"; break;
 	}
 
 	sink << std::hex << opr16a;
@@ -787,9 +787,9 @@ gstaab_dir.getCycles = { return 3; }
 gstaab_dir.disasm = {
 
 	if (b==0) {
-	    sink << "GSTAA $";
+	    sink << "GSTAA 0x";
 	} else {
-	    sink << "GSTAB $";
+	    sink << "GSTAB 0x";
 	}
 	sink << std::hex << opr8a;
 
@@ -819,9 +819,9 @@ gstaab_ext.getCycles = { return 4; }
 gstaab_ext.disasm = {
 
 	if (b==0) {
-	    sink << "GSTAA $";
+	    sink << "GSTAA 0x";
 	} else {
-	    sink << "GSTAB $";
+	    sink << "GSTAB 0x";
 	}
 	sink << std::hex << opr16a;
 
@@ -886,10 +886,10 @@ gst_dyxs_dir.getCycles = { return 3; }
 gst_dyxs_dir.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "GSTD $"; break;
-	case 1: sink << "GSTY $"; break;
-	case 2: sink << "GSTX $"; break;
-	case 3: sink << "GSTS $"; break;
+	case 0: sink << "GSTD 0x"; break;
+	case 1: sink << "GSTY 0x"; break;
+	case 2: sink << "GSTX 0x"; break;
+	case 3: sink << "GSTS 0x"; break;
 	}
 	
 	sink << std::hex << opr8a;
@@ -924,10 +924,10 @@ gst_dyxs_ext.getCycles = { return 4; }
 gst_dyxs_ext.disasm = {
 
 	switch (dyxs) {
-	case 0: sink << "GSTD $"; break;
-	case 1: sink << "GSTY $"; break;
-	case 2: sink << "GSTX $"; break;
-	case 3: sink << "GSTS $"; break;
+	case 0: sink << "GSTD 0x"; break;
+	case 1: sink << "GSTY 0x"; break;
+	case 2: sink << "GSTX 0x"; break;
+	case 3: sink << "GSTS 0x"; break;
 	}
 	
 	sink << std::hex << opr16a;

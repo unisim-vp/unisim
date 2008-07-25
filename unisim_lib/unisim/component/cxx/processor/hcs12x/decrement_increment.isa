@@ -6,7 +6,7 @@ op dec_ext(0x73[8]:opr16a[8])
 dec_ext.getCycles = { return 4; }
 
 dec_ext.disasm = {
-	sink << "DEC $" << std::hex << opr16a;
+	sink << "DEC 0x" << std::hex << opr16a;
 }
 
 dec_ext.execute = {
@@ -97,7 +97,7 @@ op decw_ext(0x18[8]:0x73[8]:opr16a[16])
 decw_ext.getCycles = { return 5; }
 
 decw_ext.disasm = {
-	sink << "DECW $" << std::hex << opr16a;
+	sink << "DECW 0x" << std::hex << opr16a;
 }
 
 decw_ext.execute = {
@@ -239,7 +239,7 @@ op inc_ext(0x72[8]:opr16a[8])
 inc_ext.getCycles = { return 4; }
 
 inc_ext.disasm = {
-	sink << "INC $" << std::hex << opr16a;
+	sink << "INC 0x" << std::hex << opr16a;
 }
 
 inc_ext.execute = {
@@ -331,7 +331,7 @@ op incw_ext(0x18[8]:0x72[8]:opr16a[16])
 incw_ext.getCycles = { return 5; }
 
 incw_ext.disasm = {
-	sink << "INCW $" << std::hex << opr16a;
+	sink << "INCW 0x" << std::hex << opr16a;
 }
 
 incw_ext.execute = {

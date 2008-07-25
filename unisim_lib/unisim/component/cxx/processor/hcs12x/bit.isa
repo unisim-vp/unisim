@@ -80,7 +80,7 @@ op clr_ext(0x79[8]:> <:opr16a[16])
 clr_ext.getCycles = { return 3; }
 
 clr_ext.disasm = {
-	sink << "CLR $" << std::hex << opr16a;
+	sink << "CLR 0x" << std::hex << opr16a;
 }
 
 clr_ext.execute = {
@@ -117,7 +117,7 @@ op clrw_ext(0x18[8]:0x79[8]:> <:opr16a[16])
 clrw_ext.getCycles = { return 4; }
 
 clrw_ext.disasm = {
-	sink << "CLRW $" << std::hex << opr16a;
+	sink << "CLRW 0x" << std::hex << opr16a;
 }
 
 clrw_ext.execute = {
@@ -207,7 +207,7 @@ op com_ext(0x71[8]:> <:opr16a[16])
 com_ext.getCycles = { return 4; }
 
 com_ext.disasm = {
-	sink << "COM $" << std::hex << opr16a;
+	sink << "COM 0x" << std::hex << opr16a;
 }
 
 com_ext.execute = {
@@ -282,7 +282,7 @@ op comw_ext(0x18[8]:0x71[8]:> <:opr16a[16])
 comw_ext.getCycles = { return 5; }
 
 comw_ext.disasm = {
-	sink << "COMW $" << std::hex << opr16a;
+	sink << "COMW 0x" << std::hex << opr16a;
 }
 
 comw_ext.execute = {
@@ -358,7 +358,7 @@ op neg_ext(0x70[8]:> <:opr16a[16])
 neg_ext.getCycles = { return 4; }
 
 neg_ext.disasm = {
-	sink << "NEG $" << std::hex << opr16a;
+	sink << "NEG 0x" << std::hex << opr16a;
 }
 
 neg_ext.execute = {
@@ -378,7 +378,7 @@ op neg_idx(0x60[8]:> <:*xb[XB])
 neg_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 neg_idx.disasm = {
-	sink << "NEG $";
+	sink << "NEG 0x";
 	xb->disasm(sink);
 }
 
@@ -437,7 +437,7 @@ op negw_ext(0x18[8]:0x70[8]:> <:opr16a[16])
 negw_ext.getCycles = { return 5; }
 
 negw_ext.disasm = {
-	sink << "NEGW $" << std::hex << opr16a;
+	sink << "NEGW 0x" << std::hex << opr16a;
 }
 
 negw_ext.execute = {
@@ -460,7 +460,7 @@ op negw_idx(0x18[8]:0x60[8]:> <:*xb[XB])
 negw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 negw_idx.disasm = {
-	sink << "NEGW $";
+	sink << "NEGW 0x";
 	xb->disasm(sink);
 }
 
@@ -526,7 +526,7 @@ op bclr_dir(0x4D[8]:> <:dd[8]:mm[8])
 bclr_dir.getCycles = { return 4; }
 
 bclr_dir.disasm = {
-	sink << "BCLR $" << std::hex << dd << ", $" << std::hex << mm;
+	sink << "BCLR 0x" << std::hex << dd << ", 0x" << std::hex << mm;
 }
 
 bclr_dir.execute = {
@@ -548,7 +548,7 @@ op bclr_ext(0x1D[8]:> <:opr16a[16]:> <:mm[8])
 bclr_ext.getCycles = { return 4; }
 
 bclr_ext.disasm = {
-	sink << "BCLR $" << std::hex << opr16a << ", $" << std::hex << mm;
+	sink << "BCLR 0x" << std::hex << opr16a << ", 0x" << std::hex << mm;
 }
 
 bclr_ext.execute = {
@@ -572,7 +572,7 @@ bclr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 6, 0,
 bclr_idx.disasm = {
 	sink << "BCLR ";
 	xb->disasm(sink);
-	sink << ", $" << std::hex << mm;
+	sink << ", 0x" << std::hex << mm;
 }
 
 bclr_idx.execute = {
@@ -597,9 +597,9 @@ bit_ab_imm.getCycles = { return 1; }
 
 bit_ab_imm.disasm = {
 	if (b==0) {
-		sink << "BITA #$";
+		sink << "BITA #0x";
 	} else {
-		sink << "BITB #$";
+		sink << "BITB #0x";
 	} 
 	sink << std::hex << ii;
 }
@@ -625,9 +625,9 @@ bit_ab_dir.getCycles = { return 3; }
 
 bit_ab_dir.disasm = {
 	if (b==0) {
-		sink << "BITA $";
+		sink << "BITA 0x";
 	} else {
-		sink << "BITB $";
+		sink << "BITB 0x";
 	} 
 	sink << std::hex << opr8a;
 }
@@ -654,9 +654,9 @@ bit_ab_ext.getCycles = { return 3; }
 
 bit_ab_ext.disasm = {
 	if (b==0) {
-		sink << "BITA $";
+		sink << "BITA 0x";
 	} else {
-		sink << "BITB $";
+		sink << "BITB 0x";
 	} 
 	sink << std::hex << opr16a;
 }
@@ -713,9 +713,9 @@ bit_xy_imm.getCycles = { return 3; }
 
 bit_xy_imm.disasm = {
 	if (b==0) {
-		sink << "BITX #$";
+		sink << "BITX #0x";
 	} else {
-		sink << "BITY #$";
+		sink << "BITY #0x";
 	} 
 	sink << std::hex << opr16i;
 }
@@ -741,9 +741,9 @@ bit_xy_dir.getCycles = { return 4; }
 
 bit_xy_dir.disasm = {
 	if (b==0) {
-		sink << "BITA $";
+		sink << "BITA 0x";
 	} else {
-		sink << "BITB $";
+		sink << "BITB 0x";
 	} 
 	sink << std::hex << opr8a;
 }
@@ -770,9 +770,9 @@ bit_xy_ext.getCycles = { return 4; }
 
 bit_xy_ext.disasm = {
 	if (b==0) {
-		sink << "BITX $";
+		sink << "BITX 0x";
 	} else {
-		sink << "BITY $";
+		sink << "BITY 0x";
 	} 
 	sink << std::hex << opr16a;
 }
@@ -828,7 +828,7 @@ op bset_dir(0x4C[8]:> <:dd[8]:mm[8])
 bset_dir.getCycles = { return 4; }
 
 bset_dir.disasm = {
-	sink << "BSET $" << std::hex << dd << ", $" << std::hex << mm;
+	sink << "BSET 0x" << std::hex << dd << ", 0x" << std::hex << mm;
 }
 
 bset_dir.execute = {
@@ -849,7 +849,7 @@ op bset_ext(0x1C[8]:> <:opr16a[16]:> <:mm[8])
 bset_ext.getCycles = { return 4; }
 
 bset_ext.disasm = {
-	sink << "BSET $" << std::hex << opr16a << ", $" << std::hex << mm;
+	sink << "BSET 0x" << std::hex << opr16a << ", 0x" << std::hex << mm;
 }
 
 bset_ext.execute = {
@@ -872,7 +872,7 @@ bset_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 6, 0,
 bset_idx.disasm = {
 	sink << "BSET ";
 	xb->disasm(sink);
-	sink << ", $" << std::hex << mm;
+	sink << ", 0x" << std::hex << mm;
 }
 
 bset_idx.execute = {
@@ -898,7 +898,7 @@ op lsl_ext(0x78[8]:> <:opr16a[16])
 lsl_ext.getCycles = { return 4; }
 
 lsl_ext.disasm = {
-	sink << "LSL $" << std::hex << opr16a;
+	sink << "LSL 0x" << std::hex << opr16a;
 }
 
 lsl_ext.execute = {
@@ -1015,7 +1015,7 @@ op lslw_ext(0x18[8]:0x78[8]:> <:opr16a[16])
 lslw_ext.getCycles = { return 5; }
 
 lslw_ext.disasm = {
-	sink << "LSLW $" << std::hex << opr16a;
+	sink << "LSLW 0x" << std::hex << opr16a;
 }
 
 lslw_ext.execute = {
@@ -1108,7 +1108,7 @@ op rol_ext(0x75[8]:> <:opr16a[16])
 rol_ext.getCycles = { return 4; }
 
 rol_ext.disasm = {
-	sink << "ROL $" << std::hex << opr16a;
+	sink << "ROL 0x" << std::hex << opr16a;
 }
 
 rol_ext.execute = {
@@ -1206,7 +1206,7 @@ op rolw_ext(0x18[8]:0x75[8]:> <:opr16a[16])
 rolw_ext.getCycles = { return 5; }
 
 rolw_ext.disasm = {
-	sink << "ROLw $" << std::hex << opr16a;
+	sink << "ROLw 0x" << std::hex << opr16a;
 }
 
 rolw_ext.execute = {
@@ -1303,7 +1303,7 @@ op lsr_ext(0x74[8]:> <:opr16a[16])
 lsr_ext.getCycles = { return 4; }
 
 lsr_ext.disasm = {
-	sink << "LSR $" << std::hex << opr16a;
+	sink << "LSR 0x" << std::hex << opr16a;
 }
 
 lsr_ext.execute = {
@@ -1418,7 +1418,7 @@ op lsrw_ext(0x18[8]:0x74[8]:> <:opr16a[16])
 lsrw_ext.getCycles = { return 5; }
 
 lsrw_ext.disasm = {
-	sink << "LSRW $" << std::hex << opr16a;
+	sink << "LSRW 0x" << std::hex << opr16a;
 }
 
 lsrw_ext.execute = {
@@ -1511,7 +1511,7 @@ op ror_ext(0x76[8]:> <:opr16a[16])
 ror_ext.getCycles = { return 4; }
 
 ror_ext.disasm = {
-	sink << "ROR $" << std::hex << opr16a;
+	sink << "ROR 0x" << std::hex << opr16a;
 }
 
 ror_ext.execute = {
@@ -1609,7 +1609,7 @@ op rorw_ext(0x18[8]:0x76[8]:> <:opr16a[16])
 rorw_ext.getCycles = { return 5; }
 
 rorw_ext.disasm = {
-	sink << "RORW $" << std::hex << opr16a;
+	sink << "RORW 0x" << std::hex << opr16a;
 }
 
 rorw_ext.execute = {
@@ -1706,7 +1706,7 @@ op asr_ext(0x77[8]:> <:opr16a[16])
 asr_ext.getCycles = { return 4; }
 
 asr_ext.disasm = {
-	sink << "ASR $" << std::hex << opr16a;
+	sink << "ASR 0x" << std::hex << opr16a;
 }
 
 asr_ext.execute = {
@@ -1815,7 +1815,7 @@ op asrw_ext(0x18[8]:0x77[8]:> <:opr16a[16])
 asrw_ext.getCycles = { return 5; }
 
 asrw_ext.disasm = {
-	sink << "ASRW $" << std::hex << opr16a;
+	sink << "ASRW 0x" << std::hex << opr16a;
 }
 
 asrw_ext.execute = {
@@ -1925,7 +1925,7 @@ op btas_dir(0x18[8]:0x35[8]:opr8a[8]:msk8[8])
 btas_dir.getCycles = { return 5; }
 
 btas_dir.disasm = {
-	sink << "BTAS $" << std::hex << opr8a << ", $" << std::hex << msk8;
+	sink << "BTAS 0x" << std::hex << opr8a << ", 0x" << std::hex << msk8;
 }
 
 btas_dir.execute = {
@@ -1934,7 +1934,7 @@ If (M) & (Mask) = 0, then set Z, else clear Z
 (M) | (Mask) => M
 
 N: Set if MSB of test is set; cleared otherwise
-Z: Set if test is $00; cleared otherwise
+Z: Set if test is 0x00; cleared otherwise
 V: 0; cleared
 */
 	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
@@ -1953,7 +1953,7 @@ op btas_ext(0x18[8]:> <:0x36[8]:opr16a[16]:msk8[8])
 btas_ext.getCycles = { return 5; }
 
 btas_ext.disasm = {
-	sink << "BTAS $" << std::hex << opr16a << ", $" << std::hex << msk8;
+	sink << "BTAS 0x" << std::hex << opr16a << ", 0x" << std::hex << msk8;
 }
 
 btas_ext.execute = {
@@ -1976,7 +1976,7 @@ btas_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 5, 5, 7, 0,
 btas_idx.disasm = {
 	sink << "BTAS ";
 	xb->disasm(sink);
-	sink << ", $" << std::hex << msk8;
+	sink << ", 0x" << std::hex << msk8;
 }
 
 btas_idx.execute = {

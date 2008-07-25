@@ -240,12 +240,12 @@ br_clr_set_dir.getCycles = { return 4; }
 
 br_clr_set_dir.disasm = {
 	if (b==1) {
-		sink << "BRCLR $"; 
+		sink << "BRCLR 0x"; 
 	} else {
-		sink << "BRSET $";
+		sink << "BRSET 0x";
 	}
 	
-	sink << std::hex << opr8a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
+	sink << std::hex << opr8a << ", 0x" << std::hex << msk8 << ", " << std::dec << rel8;
 }
 
 br_clr_set_dir.execute = {
@@ -269,12 +269,12 @@ br_clr_set_ext.getCycles = { return 5; }
 
 br_clr_set_ext.disasm = {
 	if (b==1) {
-		sink << "BRCLR $"; 
+		sink << "BRCLR 0x"; 
 	} else {
-		sink << "BRSET $";
+		sink << "BRSET 0x";
 	}
 	
-	sink << std::hex << opr16a << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
+	sink << std::hex << opr16a << ", 0x" << std::hex << msk8 << ", " << std::dec << rel8;
 }
 
 br_clr_set_ext.execute = {
@@ -304,7 +304,7 @@ br_clr_set_idx.disasm = {
 	}
 	
 	xb->disasm(sink);
-	sink << ", $" << std::hex << msk8 << ", " << std::dec << rel8;
+	sink << ", 0x" << std::hex << msk8 << ", " << std::dec << rel8;
 }
 
 br_clr_set_idx.execute = {
@@ -360,7 +360,7 @@ op call_ext(0x4A[8]:opr16a[16]:page[8])
 call_ext.getCycles = { return 7; }
 
 call_ext.disasm = {
-	sink << "CALL $" << std::hex << opr16a << ", $" << std::hex << page;
+	sink << "CALL 0x" << std::hex << opr16a << ", 0x" << std::hex << page;
 }
 
 call_ext.execute = {
@@ -493,7 +493,7 @@ call_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 7, 7, 8, 0,
 call_idx.disasm = {
 	sink << "CALL ";
 	xb->disasm(sink);
-	sink << ", $" << std::hex << page;
+	sink << ", 0x" << std::hex << page;
 }
 
 call_idx.execute = {
@@ -530,7 +530,7 @@ op jmp_ext(0x06[8]:> <:opr16a[16])
 jmp_ext.getCycles = { return 3; }
 
 jmp_ext.disasm = {
-	sink << "JMP $" << std::hex << opr16a;
+	sink << "JMP 0x" << std::hex << opr16a;
 }
 
 jmp_ext.execute = {
@@ -560,7 +560,7 @@ op jsr_dir(0x17[8]:opr8a[8])
 jsr_dir.getCycles = { return 4; }
 
 jsr_dir.disasm = {
-	sink << "JSR $" << std::hex << opr8a;
+	sink << "JSR 0x" << std::hex << opr8a;
 }
 
 jsr_dir.execute = {
@@ -588,7 +588,7 @@ op jsr_ext(0x16[8]:> <:opr16a[16])
 jsr_ext.getCycles = { return 4; }
 
 jsr_ext.disasm = {
-	sink << "JSR $" << std::hex << opr16a;
+	sink << "JSR 0x" << std::hex << opr16a;
 }
 
 jsr_ext.execute = {

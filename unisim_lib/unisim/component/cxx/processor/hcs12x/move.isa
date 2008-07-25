@@ -38,7 +38,7 @@ op movb_0B(0x18[8]:0x0B[8]:> <:ii[8]:> <:opr16a[16])
 movb_0B.getCycles = { return 3;}
 
 movb_0B.disasm = { 
-	sink << "MOVB #$" << std::hex << ii << ",$" << std::hex << opr16a;
+	sink << "MOVB #0x" << std::hex << ii << ",0x" << std::hex << opr16a;
 }
 
 movb_0B.execute = {
@@ -53,7 +53,7 @@ movb_08.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 4, 
 
 movb_08.disasm = {
 	
-	sink << "MOVB #$" << std::hex << ii << ",";
+	sink << "MOVB #0x" << std::hex << ii << ",";
 	xb->disasm(sink);
 }
 
@@ -69,7 +69,7 @@ op movb_0C(0x18[8]:0x0C[8]:> <:opr16asrc[16]:opr16adst[16])
 movb_0C.getCycles = { return 5; }
 
 movb_0C.disasm = {
-	sink << "MOVB $" << std::hex << opr16asrc << ",$" << std::hex << opr16adst;
+	sink << "MOVB 0x" << std::hex << opr16asrc << ",0x" << std::hex << opr16adst;
 }
 
 movb_0C.execute = {
@@ -85,7 +85,7 @@ op movb_09(0x18[8]:0x09[8]:> <:*xb[XB]:> <:opr16asrc[16])
 movb_09.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 6); }
 
 movb_09.disasm = {
-	sink << "MOVB $" <<  std::hex << opr16asrc << ",";
+	sink << "MOVB 0x" <<  std::hex << opr16asrc << ",";
 	xb->disasm(sink);
 }
 
@@ -102,7 +102,7 @@ movb_0D.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 6, 
 movb_0D.disasm = {
 	sink << "MOVB ";
 	xb->disasm(sink);
-	sink << ",$" << std::hex << opr16a;
+	sink << ",0x" << std::hex << opr16a;
 }
 
 movb_0D.execute = {
@@ -149,7 +149,7 @@ op movw_03(0x18[8]:0x03[8]:> <:opr16i[16]:> <:opr16a[16])
 movw_03.getCycles = { return 4; }
 
 movw_03.disasm = { 
-	sink << "MOVW #$" << std::hex << opr16i << ",$" << std::hex << opr16a;
+	sink << "MOVW #0x" << std::hex << opr16i << ",0x" << std::hex << opr16a;
 }
 
 movw_03.execute = {
@@ -163,7 +163,7 @@ op movw_04(0x18[8]:0x04[8]:> <:opr16asrc[16]:opr16adst[16])
 movw_04.getCycles = { return 5; }
 
 movw_04.disasm = {
-	sink << "MOVW $" << std::hex << opr16asrc << ",$" << std::hex << opr16adst;
+	sink << "MOVW 0x" << std::hex << opr16asrc << ",0x" << std::hex << opr16adst;
 }
 
 movw_04.execute = {
@@ -180,7 +180,7 @@ op movw_00(0x18[8]:0x00[8]:> <:*xb[XB]:> <:opr16i[16])
 
 movw_00.disasm = {
 	
-	sink << "MOVW #$" << std::hex << opr16i << ",";
+	sink << "MOVW #0x" << std::hex << opr16i << ",";
 	xb->disasm(sink);
 }
 
@@ -200,7 +200,7 @@ op movw_01(0x18[8]:0x01[8]:> <:*xb[XB]:> <:opr16asrc[16])
 movw_01.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 6); }
 
 movw_01.disasm = {
-	sink << "MOVW $" <<  std::hex << opr16asrc << ",";
+	sink << "MOVW 0x" <<  std::hex << opr16asrc << ",";
 	xb->disasm(sink);
 }
 
@@ -220,7 +220,7 @@ movw_05.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 6, 
 movw_05.disasm = {
 	sink << "MOVW ";
 	xb->disasm(sink);
-	sink << ",$" << std::hex << opr16a;
+	sink << ",0x" << std::hex << opr16a;
 }
 
 movw_05.execute = {

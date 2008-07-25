@@ -74,7 +74,7 @@ emuls.execute = {
 	if ((result & 0x8000) == 0x8000) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }	
 
 /*
- * Z: Set if result is $00000000; cleared otherwise
+ * Z: Set if result is 0x00000000; cleared otherwise
  */	
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 
@@ -241,7 +241,7 @@ idiv.disasm = {
 }
 
 idiv.execute = {
-/* In the case of division by zero, C is set, the quotient is set to $FFFF,
+/* In the case of division by zero, C is set, the quotient is set to 0xFFFF,
 and the remainder is indeterminate. */
 
 	uint16_t dividend = cpu->getRegD();
@@ -273,7 +273,7 @@ idivs.disasm = {
 }
 
 idivs.execute = {
-	/* In the case of division by zero, C is set, the quotient is set to $FFFF,
+	/* In the case of division by zero, C is set, the quotient is set to 0xFFFF,
 and the remainder is indeterminate. */
 
 	uint16_t dividend = cpu->getRegD();
@@ -293,8 +293,8 @@ and the remainder is indeterminate. */
 	cpu->setRegX(quotion);
 	cpu->setRegD(remind);
 /*
- * V: Set if the result was > $7FFF or < $8000; cleared otherwise
- * V: Set for numerator $8000 (-32768) and denominator $FFFF (-1) result is (+32768)
+ * V: Set if the result was > 0x7FFF or < 0x8000; cleared otherwise
+ * V: Set for numerator 0x8000 (-32768) and denominator 0xFFFF (-1) result is (+32768)
  * Undefined after division by zero
  */
 	if ((dividend == 0x8000) && (divisor == 0xFFFF)) { cpu->ccr->setV(); } else { cpu->ccr->clrV();}
@@ -311,7 +311,7 @@ op emacs(0x18[8]:0x12[8]:opr16a[16])
 emacs.getCycles = { return 9; }
 
 emacs.disasm = {
-	sink << "EMACS $" << std::hex << opr16a;
+	sink << "EMACS 0x" << std::hex << opr16a;
 }
 
 emacs.execute = {
@@ -335,7 +335,7 @@ emacs.execute = {
 	// N: Set if MSB of result is set; cleared otherwise
 	if (result & 0x80000000 == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	
-	// Z: Set if result is $00000000; cleared otherwise
+	// Z: Set if result is 0x00000000; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 /*
 	  * I: Intermediate result
@@ -344,7 +344,7 @@ emacs.execute = {
 	  * */
 	  
 	/* V: M31 • I31 • !R31 + !M31 • !I31 • R31
-	 * Set if result > $7FFFFFFF (+ overflow) or < $80000000 (– underflow)
+	 * Set if result > 0x7FFFFFFF (+ overflow) or < 0x80000000 (– underflow)
 	 * Indicates two’s complement overflow
 	 */
 	// if (result > 0x7FFFFFFF) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
