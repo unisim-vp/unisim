@@ -39,8 +39,8 @@
                        load_store_queue.hh  -  description
  ***************************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_LOAD_STORE_QUEUE_HH__
-#define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_LOAD_STORE_QUEUE_HH__
+#ifndef __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_LOAD_STORE_QUEUE_MC_HH__
+#define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_LOAD_STORE_QUEUE_MC_HH__
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
@@ -317,53 +317,33 @@ bool misaligned(InstructionPtr load)
   return res;
 }
 
-template <class T, int nSources, int LoadQueueSize, int StoreQueueSize, int Width, int AllocateWidth, int RetireWidth, int nCPUDataPathSize, int nDataCachePorts, int nCDBPorts>
+template <class T, int nSources, int LoadQueueSize, int StoreQueueSize, int Width, int AllocateWidth, int RetireWidth, int nCPUDataPathSize, int nDataCachePorts, int nCDBPorts, uint32_t nConfig=2 >
 class LoadStoreQueue : public module
 {
 public:
 	inclock inClock;
 
 	/* From/To Address Generator */
-	inport<InstructionPtr> inInstruction[Width];
+	inport<InstructionPtr, nConfig*Width> inInstruction;
 
 	/* From/To Allocator/Renamer */
-	inport<InstructionPtr> inAllocateLoadInstruction[AllocateWidth];
-	inport<InstructionPtr> inAllocateStoreInstruction[AllocateWidth];
+	inport<InstructionPtr, nConfig*AllocateWidth > inAllocateLoadInstruction;
+	inport<InstructionPtr, nConfig*AllocateWidth > inAllocateStoreInstruction;
 
 	/* From/To L1 Data Cache */
-	/*
-	ml_out_valid outL1Valid[nDataCachePorts];
-	ml_out_enable outL1Enable[nDataCachePorts];
-	ml_out_data<InstructionPtr<T, nSources> > outL1Instruction[nDataCachePorts]; //  (for tracing purposes) 
-	ml_out_cache_cmd outL1Command[nDataCachePorts];		        //< true if it is a store instruction 
-	ml_out_vector<nCPUDataPathSize> outL1Data[nDataCachePorts];	//< the data to write in the memory system 
-	ml_out_size outL1Size[nDataCachePorts];		 	       	//< the size of the data to read in bytes 
-	ml_out_addr outL1Address[nDataCachePorts]; //< the address of the load/store to execute 
-	ml_out_accept outL1Accept[nDataCachePorts];  //< true if load/store unit has accepted the data 
-	ml_out_data<int> outL1Tag[nDataCachePorts];
-
-	ml_in_accept inL1Accept[nDataCachePorts];    //< true if data has been accepted 
-	ml_in_data<InstructionPtr<T, nSources> > inL1Instruction[nDataCachePorts]; //< load/store instruction 
-	ml_in_vector<nCPUDataPathSize> inL1Data[nDataCachePorts]; //< load result 
-	ml_in_size inL1Size[nDataCachePorts]; //< the size of the data sent to the CPU 
-	ml_in_enable inL1Enable[nDataCachePorts]; //< true if cache has a data to be sent to the load/store unit and it has been accepted 
-	ml_in_valid inL1Valid[nDataCachePorts];   //< true if cache has a data to be sent to the load/store unit 
-	ml_in_addr inL1Address[nDataCachePorts];
-	ml_in_data<int> inL1Tag[nDataCachePorts];
-	*/
-        outport < memreq < InstructionPtr, nCPUDataPathSize > > outDL1[nDataCachePorts];   ///< To L1 Data Cache
-	inport  < memreq < InstructionPtr, nCPUDataPathSize > > inDL1[nDataCachePorts];    ///< From L1 Data Cache
+        outport < memreq < InstructionPtr, nCPUDataPathSize >, nConfig*nDataCachePorts > outDL1;   ///< To L1 Data Cache
+	inport  < memreq < InstructionPtr, nCPUDataPathSize >, nConfig*nDataCachePorts > inDL1;    ///< From L1 Data Cache
 
 
 	/* To the common data bus */
-	outport<InstructionPtr> outInstruction[nCDBPorts];
+	outport<InstructionPtr, nConfig*nCDBPorts> outInstruction;
 
 	/* From Reorder buffer */
-	inport<InstructionPtr> inRetireInstruction[RetireWidth];
+	inport<InstructionPtr, nConfig*RetireWidth> inRetireInstruction;
 
 	//	ml_in_flush inFlush;
-	inport<bool> inFlush;
-	outport<bool> outFlush;
+	inport<bool, nConfig> inFlush;
+	outport<bool, nConfig> outFlush;
 
 	/* To the reorder buffer */
 	//	ml_out_data<bool> outBusy;			/*< true there is a pending load/store operation into the load/store queue */
@@ -376,102 +356,67 @@ public:
 		class_name = " LoadStoreQueueClass";
 		
 		// Unisim port names ...
-		for (i=0; i<Width; i++)
-		  {
-		    inInstruction[i].set_unisim_name(this,"inInstruction",i);
-		  }		
-		for (i=0; i<AllocateWidth; i++)
-		  {
-		    inAllocateLoadInstruction[i].set_unisim_name(this,"inAllocateLoadInstruction",i);
-		  }		
-		for (i=0; i<AllocateWidth; i++)
-		  {
-		    inAllocateStoreInstruction[i].set_unisim_name(this,"inAllocateStoreInstruction",i);
-		  }		
-		for (i=0; i<nDataCachePorts; i++)
-		  {
-		    inDL1[i].set_unisim_name(this,"inDL1",i);
-		  }		
-		for (i=0; i<nDataCachePorts; i++)
-		  {
-		    outDL1[i].set_unisim_name(this,"outDL1",i);
-		  }		
-		for (i=0; i<nCDBPorts; i++)
-		  {
-		    outInstruction[i].set_unisim_name(this,"outInstruction",i);
-		  }		
-		for (i=0; i<RetireWidth; i++)
-		  {
-		    inRetireInstruction[i].set_unisim_name(this,"inRetireInstruction",i);
-		  }		
+		//for (i=0; i<Width; i++)
+		//  {
+		inInstruction.set_unisim_name(this,"inInstruction");
+		//  }		
+		//for (i=0; i<AllocateWidth; i++)
+		//  {
+		inAllocateLoadInstruction.set_unisim_name(this,"inAllocateLoadInstruction");
+		//  }		
+		//for (i=0; i<AllocateWidth; i++)
+		//  {
+		inAllocateStoreInstruction.set_unisim_name(this,"inAllocateStoreInstruction");
+		//  }		
+		//for (i=0; i<nDataCachePorts; i++)
+		//  {
+		inDL1.set_unisim_name(this,"inDL1");
+		//  }		
+		//for (i=0; i<nDataCachePorts; i++)
+		//  {
+		outDL1.set_unisim_name(this,"outDL1");
+		//  }		
+		//for (i=0; i<nCDBPorts; i++)
+		//  {
+		outInstruction.set_unisim_name(this,"outInstruction");
+		//  }		
+		//for (i=0; i<RetireWidth; i++)
+		//  {
+		inRetireInstruction.set_unisim_name(this,"inRetireInstruction");
+		//  }		
 		
 		inFlush.set_unisim_name(this,"inFlush");
 		outFlush.set_unisim_name(this,"outFlush");
-		//		outStateChanged(stateChanged);
-		//		inStateChanged(stateChanged);
-		/*
-		SC_HAS_PROCESS(LoadStoreQueue);
 
-		SC_METHOD(ExternalControl);
-		sensitive << inStateChanged;
-		for(i = 0; i < nDataCachePorts; i++)
-			sensitive << inL1Accept[i] << inL1Enable[i] << inL1Instruction[i] << inL1Data[i] << inL1Address[i] << inL1Valid[i];
-		for(i = 0; i < nCDBPorts; i++)
-			sensitive << inAccept[i];
-		for(i = 0; i < Width; i++)
-			sensitive << inValid[i];
-		for(i = 0; i < AllocateWidth; i++)
-			sensitive << inAllocateLoadValid[i] << inAllocateStoreValid[i];
+		//for (i=0; i<nDataCachePorts; i++) {
+		sensitive_method(on_outDL1_Accept) << outDL1.accept;
+		//}
+		//for (i=0; i<Width; i++) {
+		sensitive_method(on_AGU_Data) << inInstruction.data;
+		//}
+		//for (i=0; i<nDataCachePorts; i++) {
+		sensitive_method(on_inDL1_Data)  << inDL1.data;
+		//}
+		//for (i=0; i<nCDBPorts; i++) {
+		sensitive_method(on_CDBA_Accept) << outInstruction.accept;
+		//}
+		//for (i=0; i<RetireWidth; i++) {
+		sensitive_method(on_RetireData) << inRetireInstruction.data;
+		//}
 
-		SC_METHOD(InternalControl);
-		sensitive_pos << inClock;
-		*/
-
-		for (i=0; i<nDataCachePorts; i++) {
-		  sensitive_method(on_outDL1_Accept) << outDL1[i].accept;
-		}
-		for (i=0; i<Width; i++) {
-		  sensitive_method(on_AGU_Data) << inInstruction[i].data;
-		}
-		for (i=0; i<nDataCachePorts; i++) {
-		  sensitive_method(on_inDL1_Data)  << inDL1[i].data;
-		}
-		for (i=0; i<nCDBPorts; i++) {
-		  sensitive_method(on_CDBA_Accept) << outInstruction[i].accept;
-		}
-		/*
-		for (i=0; i<nDataCachePorts; i++) {
-		  sensitive_method(on_inDL1_Enable) << inDL1[i].enable;
-		}
-		*/
-		for (i=0; i<RetireWidth; i++) {
-		  sensitive_method(on_RetireData) << inRetireInstruction[i].data;
-		}
-		/*
-		for (i=0; i<RetireWidth; i++) {
-		  sensitive_method(on_Retire_enable_and_onAllocLDST) << inRetireInstruction[i].enable;
-		}
-		for (i=0; i<AllocateWidth; i++) {
-		  sensitive_method(on_Retire_enable_and_onAllocLDST) << inAllocateLoadInstruction[i].data;
-		  sensitive_method(on_Retire_enable_and_onAllocLDST) << inAllocateStoreInstruction[i].data;
-		}
-		*/
-
-		for (i=0; i<Width; i++) {
-		  sensitive_method(on_Enables_and_onAllocLDST) << inInstruction[i].enable;
-		}
-		for (i=0; i<nDataCachePorts; i++) {
-		  sensitive_method(on_Enables_and_onAllocLDST) << inDL1[i].enable;
-		}
-		for (i=0; i<RetireWidth; i++) {
-		  sensitive_method(on_Enables_and_onAllocLDST) << inRetireInstruction[i].enable;
-		}
-		for (i=0; i<AllocateWidth; i++) {
-		  sensitive_method(on_Enables_and_onAllocLDST) << inAllocateLoadInstruction[i].data;
-		  sensitive_method(on_Enables_and_onAllocLDST) << inAllocateStoreInstruction[i].data;
-		}
-		
-
+		//for (i=0; i<Width; i++) {
+		sensitive_method(on_Enables_and_onAllocLDST) << inInstruction.enable;
+		//}
+		//for (i=0; i<nDataCachePorts; i++) {
+		sensitive_method(on_Enables_and_onAllocLDST) << inDL1.enable;
+		//}
+		//for (i=0; i<RetireWidth; i++) {
+		sensitive_method(on_Enables_and_onAllocLDST) << inRetireInstruction.enable;
+		//}
+		//for (i=0; i<AllocateWidth; i++) {
+		sensitive_method(on_Enables_and_onAllocLDST) << inAllocateLoadInstruction.data;
+		sensitive_method(on_Enables_and_onAllocLDST) << inAllocateStoreInstruction.data;
+		//}
 
 		sensitive_method(onDataFlush) << inFlush.data;
 		sensitive_method(onAcceptFlush) << outFlush.accept;
@@ -479,6 +424,8 @@ public:
 
                 sensitive_pos_method(start_of_cycle) << inClock;
                 sensitive_neg_method(end_of_cycle) << inClock;
+
+		////////////////////
 
 		this->endianess = endianess;
 

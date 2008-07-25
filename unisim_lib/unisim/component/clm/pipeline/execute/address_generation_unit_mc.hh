@@ -135,7 +135,6 @@ class AddressGenerationUnit : public module
 		//		ml_out_accept outAccept;
 
 		/* To the load/store queue */
-		/*
 		outport<InstructionPtr, nConfig*nUnits > outLSQInstruction;
 
 		/* To the common data bus arbiter */

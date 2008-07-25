@@ -77,16 +77,16 @@
 #include <unisim/component/clm/pipeline/decode/dispatcher_mc.hh>
 #include <unisim/component/clm/pipeline/decode/allocator_renamer_mc.hh>
 
-#include <unisim/component/clm/pipeline/issue/scheduler.hh>
-#include <unisim/component/clm/pipeline/issue/register_file.hh>
+#include <unisim/component/clm/pipeline/issue/scheduler_mc.hh>
+#include <unisim/component/clm/pipeline/issue/register_file_mc.hh>
 
-#include <unisim/component/clm/pipeline/execute/functional_unit.hh>
-#include <unisim/component/clm/pipeline/execute/address_generation_unit.hh>
-#include <unisim/component/clm/pipeline/execute/load_store_queue.hh>
+#include <unisim/component/clm/pipeline/execute/functional_unit_mc.hh>
+#include <unisim/component/clm/pipeline/execute/address_generation_unit_mc.hh>
+#include <unisim/component/clm/pipeline/execute/load_store_queue_mc.hh>
 
-#include <unisim/component/clm/pipeline/common/simple_arbiter.hh>
+#include <unisim/component/clm/pipeline/common/simple_arbiter_mc.hh>
 
-#include <unisim/component/clm/pipeline/commit/reorder_buffer.hh>
+#include <unisim/component/clm/pipeline/commit/reorder_buffer_mc.hh>
 ////////////////////////////////////////////////////////////////////
 //#include <unisim/component/clm/pipeline/execute/DummyExecutionCore.hh>
 
@@ -161,7 +161,8 @@ template
   //int nDL1CachetoMemDataPathSize,
   //int nDL1MemtoCacheDataPathSize
   int nProg,
-  bool VERBOSE = false
+  bool VERBOSE = false,
+  uint32_t nConfig=2
 >
 class OooSimCpu : public module, public Object//, public MI_Client, public MI_Service
 {public:
@@ -251,23 +252,25 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     registerfile = new RegisterFileClass("registerfile");
 
     
-    for (int i=0; i<nIntegerUnits; i++)
-      { iu[i] = new IntegerUnitClass("iu",speculative_cpu_state);
-      }
+    //    for (int i=0; i<nIntegerUnits; i++)
+    //  { iu[i] = new IntegerUnitClass("iu",speculative_cpu_state);
+    //  }
+    iu = new IntegerUnitClass("iu",speculative_cpu_state);
     //	iu1_stage = new IntegerUnitClass("iu1_stage");
     //    iu2_stage = new IntegerUnitClass("iu2_stage");
     //    iu3_stage = new IntegerUnitClass("iu3_stage");
    
-    for (int i=0; i<nFloatingPointUnits; i++)
-      { fpu[i] = new FloatingPointUnitClass("fpu",speculative_cpu_state);
-      }
-
+    //for (int i=0; i<nFloatingPointUnits; i++)
+    //  { fpu[i] = new FloatingPointUnitClass("fpu",speculative_cpu_state);
+    //  }
+    fpu = new FloatingPointUnitClass("fpu",speculative_cpu_state);
     //    fpu1_stage = new FloatingPointUnitClass("fpu1_stage");
     
-    for (int i=0; i<nAddressGenerationUnits; i++)
-      { agu[i] = new AddressGenerationUnitClass("agu",speculative_cpu_state);
-      }
-    
+    //for (int i=0; i<nAddressGenerationUnits; i++)
+    //  { agu[i] = new AddressGenerationUnitClass("agu",speculative_cpu_state);
+    //  }
+    agu = new AddressGenerationUnitClass("agu",speculative_cpu_state);
+
     lsq = new LoadStoreQueueClass("lsq",this->endianess);
     
     cdba = new CommonDataBusArbiterClass("cdba");
@@ -288,18 +291,18 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     //    dispatch->inClock(inClock); //()
     schedule->inClock(inClock);
     registerfile->inClock(inClock);
-    for (int i=0; i<nIntegerUnits; i++)
-      {
-	iu[i]->inClock(inClock);
-      }
-    for (int i=0; i<nIntegerUnits; i++)
-      {
-	fpu[i]->inClock(inClock);
-      }
-    for (int i=0; i<nIntegerUnits; i++)
-      {
-	agu[i]->inClock(inClock);
-      }
+    //for (int i=0; i<nIntegerUnits; i++)
+    //  {
+    iu->inClock(inClock);
+    //  }
+    //for (int i=0; i<nIntegerUnits; i++)
+    //  {
+    fpu->inClock(inClock);
+    //  }
+    //for (int i=0; i<nIntegerUnits; i++)
+    //  {
+    agu->inClock(inClock);
+    //  }
     lsq->inClock(inClock);
     //    cdba->inClock(inClock);
     rob->inClock(inClock);
@@ -357,107 +360,42 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     schedule->outFloatingPointInstruction >> registerfile->inFloatingPointInstruction;
     schedule->outLoadStoreInstruction >> registerfile->inLoadStoreInstruction;
     // RegisterFile -> "Execution stage"
-    //    registerfile->outIntegerInstruction >> iu->inInstruction;
-    //    registerfile->outFloatingPointInstruction >> fpu->inInstruction;
-    //    registerfile->outLoadStoreInstruction >> agu->inInstruction;
-    
-    for (int i=0; i<Degree; i++)
-      {
-	// Fetch -> Allocator
-	//      fetch->outInstruction[i] >> allocate->inInstruction[i];
-	// Allocator -> Dispatch
-	//	allocate->outInstructionIssue[i] >> dispatch->inInstruction[i];
-	// Allocator -> ROB
-	//	allocate->outInstructionReorder[i] >> rob->inAllocateInstruction[i];
-	// Allocator -> LSQ
-	//	allocate->outLoadInstruction[i] >> lsq->inAllocateLoadInstruction[i];
-	//	allocate->outStoreInstruction[i] >> lsq->inAllocateStoreInstruction[i];
-	// Dispatch -> Scheduler
-	//	dispatch->outIntegerInstruction[i] >> schedule->inIntegerInstruction[i];
-	//	dispatch->outFloatingPointInstruction[i] >> schedule->inFloatingPointInstruction[i];
-	//	dispatch->outLoadStoreInstruction[i] >> schedule->inLoadStoreInstruction[i];
-	// Scheduler -> RegisterFile
-	//	schedule->outIntegerInstruction[i] >> registerfile->inIntegerInstruction[i];
-	//	schedule->outFloatingPointInstruction[i] >> registerfile->inFloatingPointInstruction[i];
-	//	schedule->outLoadStoreInstruction[i] >> registerfile->inLoadStoreInstruction[i];
-	// RegisterFile -> "Execution stage"
-	//	registerfile->outIntegerInstruction[i] >> iu[i]->inInstruction;
-	//	registerfile->outFloatingPointInstruction[i] >> fpu[i]->inInstruction;
-	//	registerfile->outLoadStoreInstruction[i] >> agu[i]->inInstruction;
-	// AGU -> LSQ
-	agu[i]->outLSQInstruction >> lsq->inInstruction[i];
-	// "Execution stage" -> CDBA
-	iu[i]->outInstruction >> cdba->inInstruction[i+0*Degree];
-	fpu[i]->outInstruction >> cdba->inInstruction[i+1*Degree];
-	agu[i]->outCDBInstruction >> cdba->inInstruction[i+2*Degree];
-	//	lsq->outInstruction[i] >> cdba->inInstruction[i+3*Degree];
-      }
-    for (int i=0; i<LSQ_nCDBPorts; i++)
-      {    
-	lsq->outInstruction[i] >> cdba->inInstruction[i+3*Degree];
-      }
-    // to CDBA
-    /*
-    for (int i=0; i<WriteBackWidth; i++)
-      {
-	// CDBA -> fetch
-	cdba->outInstruction[i+0*WriteBackWidth] >> fetch->inWriteBackInstruction[i];
-	// CDBA -> allocate
-	cdba->outInstruction[i+1*WriteBackWidth] >> allocate->inWriteBackInstruction[i];
-	// CDBA -> schedule
-	cdba->outInstruction[i+2*WriteBackWidth] >> schedule->inWriteBackInstruction[i];
-	// CDBA -> registerfile
-	cdba->outInstruction[i+3*WriteBackWidth] >> registerfile->inWriteBackInstruction[i];
-	// CDBA -> rob
-	cdba->outInstruction[i+4*WriteBackWidth] >> rob->inFinishInstruction[i];
-      }
-    */
-    for (int i=0; i<WriteBackWidth; i++)
-      {
-	// CDBA -> fetch
-	cdba->outInstruction[i][0] >> fetch->inWriteBackInstruction[i];
-	// CDBA -> allocate
-	cdba->outInstruction[i][1] >> allocate->inWriteBackInstruction[i];
-	// CDBA -> schedule
-	cdba->outInstruction[i][2] >> schedule->inWriteBackInstruction[i];
-	// CDBA -> registerfile
-	cdba->outInstruction[i][3] >> registerfile->inWriteBackInstruction[i];
-	// CDBA -> rob
-	cdba->outInstruction[i][4] >> rob->inFinishInstruction[i];
-      }
-    // rob -> RetBroadcaster
-    for (int i=0; i<retireWidth; i++)
-      {
-	rob->outRetireInstruction[i] >> retbroadcast->inInstruction[i];
-      }
+    registerfile->outIntegerInstruction >> iu->inInstruction;
+    registerfile->outFloatingPointInstruction >> fpu->inInstruction;
+    registerfile->outLoadStoreInstruction >> agu->inInstruction;
+    // AGU -> LSQ
+    agu->outLSQInstruction >> lsq->inInstruction;
+    // "Execution stage" -> CDBA
+    iu->outInstruction >> cdba->inInstruction[0];
+    fpu->outInstruction >> cdba->inInstruction[1];
+    agu->outCDBInstruction >> cdba->inInstruction[2];
+    //	lsq->outInstruction[i] >> cdba->inInstruction[i+3*Degree];
+ 
+    lsq->outInstruction >> cdba->inInstruction[3];
+
+    // CDBA -> fetch
+    cdba->outInstruction[0] >> fetch->inWriteBackInstruction;
+    // CDBA -> allocate
+    cdba->outInstruction[1] >> allocate->inWriteBackInstruction;
+    // CDBA -> schedule
+    cdba->outInstruction[2] >> schedule->inWriteBackInstruction;
+    // CDBA -> registerfile
+    cdba->outInstruction[3] >> registerfile->inWriteBackInstruction;
+    // CDBA -> rob
+    cdba->outInstruction[4] >> rob->inFinishInstruction;
+
+    rob->outRetireInstruction >> retbroadcast->inInstruction[0];
 
     // RetBroadcaster -> ...
-    /*
-    for (int i=0; i<retireWidth; i++)
-      {
 	// retbroadcast -> fetch
-	retbroadcast->outInstruction[i+0*retireWidth] >> fetch->inRetireInstruction[i];
+	retbroadcast->outInstruction[0] >> fetch->inRetireInstruction;
 	// rob -> allocate
-	retbroadcast->outInstruction[i+1*retireWidth] >> allocate->inRetireInstruction[i];
+	retbroadcast->outInstruction[1] >> allocate->inRetireInstruction;
 	// rob -> lsq
-	retbroadcast->outInstruction[i+2*retireWidth] >> lsq->inRetireInstruction[i];	
-      }
-    */
-    for (int i=0; i<retireWidth; i++)
-      {
-	// retbroadcast -> fetch
-	retbroadcast->outInstruction[i][0] >> fetch->inRetireInstruction[i];
-	// rob -> allocate
-	retbroadcast->outInstruction[i][1] >> allocate->inRetireInstruction[i];
-	// rob -> lsq
-	retbroadcast->outInstruction[i][2] >> lsq->inRetireInstruction[i];	
-      }
+	retbroadcast->outInstruction[2] >> lsq->inRetireInstruction;	
 
     // Loop back writeback ...
-    for (int i=0; i<WriteBackWidth; i++)
-      {
-	registerfile->outWriteBackReceived[i] >> rob->inWriteBackInstruction[i];
-      }
+	registerfile->outWriteBackReceived >> rob->inWriteBackInstruction;
 
     // CPU -> Cache (lsq->dcache) 
     //lsq->outDL1[0] >> outDL1Data;
@@ -469,18 +407,19 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 
     //// Flush signals
     rob->outFlush >> lsq->inFlush;
-    lsq->outFlush >> agu[Degree-1]->inFlush;
-    agu[0]->outFlush >> fpu[Degree-1]->inFlush;
-    fpu[0]->outFlush >> iu[Degree-1]->inFlush;
-    iu[0]->outFlush >> registerfile->inFlush;
+    lsq->outFlush >> agu->inFlush;
+    agu->outFlush >> fpu->inFlush;
+    fpu->outFlush >> iu->inFlush;
+    iu->outFlush >> registerfile->inFlush;
     
+    /*
     for (int i=1; i<Degree; i++)
       {
 	agu[i]->outFlush >> agu[i-1]->inFlush;
 	fpu[i]->outFlush >> fpu[i-1]->inFlush;
 	iu[i]->outFlush >> iu[i-1]->inFlush;
       }
-      
+    */
     registerfile->outFlush >> schedule->inFlush;
     schedule->outFlush >> allocate->inFlush;
     allocate->outFlush >> fetch->inFlush;
@@ -1452,19 +1391,19 @@ typedef RegisterFile<UInt64, nSources, nIntegerRegisters, nFloatingPointRegister
 
   //typedef InstructionBroadcaster<UInt64, nSources, LoadStoreReadRegisterWidth, nAddressGenerationUnits> LoadStoreInstructionBroadcasterClass;
 
-typedef FunctionalUnit<UInt64, nSources, integerPipelineDepth> IntegerUnitClass;
-  IntegerUnitClass *iu[nIntegerUnits];
+typedef FunctionalUnit<UInt64, nSources, integerPipelineDepth, nIntegerUnits, nConfig> IntegerUnitClass;
+  IntegerUnitClass *iu;
   /*
   IntegerUnitClass *iu1_stage;
   IntegerUnitClass *iu2_stage;
   IntegerUnitClass *iu3_stage;
   */
-typedef FunctionalUnit<UInt64, nSources, floatingPointPipelineDepth> FloatingPointUnitClass;
-  FloatingPointUnitClass *fpu[nFloatingPointUnits];
+typedef FunctionalUnit<UInt64, nSources, floatingPointPipelineDepth, nFloatingPointUnits, nConfig > FloatingPointUnitClass;
+  FloatingPointUnitClass *fpu;
   //  FloatingPointUnitClass *fpu1_stage;
 
-typedef AddressGenerationUnit<UInt64, nSources, addressGenerationPipelineDepth> AddressGenerationUnitClass;
-  AddressGenerationUnitClass *agu[nAddressGenerationUnits];
+typedef AddressGenerationUnit<UInt64, nSources, addressGenerationPipelineDepth, nAddressGenerationUnits, nConfig > AddressGenerationUnitClass;
+  AddressGenerationUnitClass *agu;
   //  AddressGenerationUnitClass *agu1_stage;
 
 typedef LoadStoreQueue<UInt64, nSources, loadQueueSize, storeQueueSize, nAddressGenerationUnits, allocateRenameWidth, retireWidth, DL1_nCPUtoCacheDataPathSize, DL1_nPorts, LSQ_nCDBPorts> LoadStoreQueueClass;
@@ -1473,11 +1412,13 @@ public: // Allow external connections with Inst. Cache.
 private:
 
   static const int nChannels = 5;
-typedef Arbiter<UInt64, nSources, commonDataBusArbiterPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
+  //typedef Arbiter<UInt64, nSources, commonDataBusArbiterPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
+typedef Arbiter<UInt64, nSources, 4, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
   CommonDataBusArbiterClass *cdba;
 
   static const int nRetireChannels = 3;
-typedef Arbiter<UInt64, nSources, retireWidth, retireWidth, nRetireChannels> RetireBroadcasterClass;
+  //typedef Arbiter<UInt64, nSources, retireWidth, retireWidth, nRetireChannels> RetireBroadcasterClass;
+typedef Arbiter<UInt64, nSources, 1, retireWidth, nRetireChannels> RetireBroadcasterClass;
   RetireBroadcasterClass *retbroadcast;
 
 typedef ReorderBuffer<UInt64, nSources, reorderBufferSize, allocateRenameWidth, WriteBackWidth, retireWidth> ReorderBufferClass;
