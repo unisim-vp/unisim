@@ -39,8 +39,8 @@
                            Arbiter.hh  -  description
  ***************************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CLM_PIPELINE_COMMIT_SIMPLE_ARBITER_MC_HH__
-#define __UNISIM_COMPONENT_CLM_PIPELINE_COMMIT_SIMPLE_ARBITER_MC_HH__
+#ifndef __UNISIM_COMPONENT_CLM_PIPELINE_COMMIT_SIMPLE_ARBITER_ONETOALL_MC_HH__
+#define __UNISIM_COMPONENT_CLM_PIPELINE_COMMIT_SIMPLE_ARBITER_ONETOALL_MC_HH__
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
@@ -56,26 +56,26 @@ namespace common {
 using unisim::component::clm::interfaces::InstructionPtr;
 
 /** A SystemC module to arbiter a bus access between several instructions. Oldest instructions have priority */
-template <class T, int nSources, int nInputs, int InputWidth, int OutputWidth, int nChannels, uint32_t nConfig=2 >
-class Arbiter : public module
+template <class T, int nSources, int InputWidth, int OutputWidth, int nChannels, uint32_t nConfig=2 >
+class ArbiterOnetoAll : public module
 {
 public:
-	inport<InstructionPtr, nConfig*InputWidth > inInstruction[nInputs];
+	inport<InstructionPtr, nConfig*InputWidth > inInstruction;
   	outport<InstructionPtr, nConfig*OutputWidth > outInstruction[nChannels];
   //	outport<Instruction> outInstruction[OutputWidth * nChannels];
 
 	/** The constructor.
 		@param name the module name
 	*/
-	Arbiter(const char *name) : module(name)
+	ArbiterOnetoAll(const char *name) : module(name)
 	{	  
 		int i, j;
 		class_name = " ArbiterClass";
 		// Unisim port names ...
-		for (i=0;i<nInputs;i++)
-		  {
-		    inInstruction[i].set_unisim_name(this,"inInstruction",i);
-		  }
+		//for (i=0;i<InputWidth;i++)
+		//  {
+		inInstruction.set_unisim_name(this,"inInstruction");
+		//  }
 		for (j = 0; j < nChannels; j++)
 		  {
 		    //  for(i = 0; i < OutputWidth; i++)
@@ -88,23 +88,23 @@ public:
 		  }
 		///////////////////////
 
-		for (i=0;i<nInputs;i++)
-		{
-		  sensitive_method(on_Data) << inInstruction.data;
-		}
+		//for (i=0;i<InputWidth;i++)
+		//{
+		sensitive_method(on_Data) << inInstruction.data;
+		//}
 
 		for (j = 0; j < nChannels; j++)
 		  {
-		    //  for(i = 0; i < nInputs; i++)
+		    //  for(i = 0; i < InputWidth; i++)
 		    //  {
 		    sensitive_method(on_Accept) << outInstruction[j].accept;
 		    //sensitive_method(on_Accept) << outInstruction[ j*OutputWidth+i ].accept;
 		    //  }
 		  }
-		for (i=0;i<nInputs;i++)
-		  {
-		    sensitive_method(on_Enable) << inInstruction[i].enable;
-		  }
+		//for (i=0;i<InputWidth;i++)
+		//  {
+		sensitive_method(on_Enable) << inInstruction.enable;
+		//  }
 
 		// --- Latex rendering hints -----------------
 		/*

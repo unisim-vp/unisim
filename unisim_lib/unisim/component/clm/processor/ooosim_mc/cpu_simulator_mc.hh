@@ -68,7 +68,7 @@
 #include <sstream>
 
 // Simulator parameters :
-#include <unisim/component/clm/processor/ooosim/parameters.hh>
+#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
 ////////////////////////////////////////////////////////////////////
 // Pipeline Stages
 ////////////////////////////////////////////////////////////////////
@@ -84,7 +84,9 @@
 #include <unisim/component/clm/pipeline/execute/address_generation_unit_mc.hh>
 #include <unisim/component/clm/pipeline/execute/load_store_queue_mc.hh>
 
-#include <unisim/component/clm/pipeline/common/simple_arbiter_mc.hh>
+//#include <unisim/component/clm/pipeline/common/simple_arbiter_mc.hh>
+#include <unisim/component/clm/pipeline/common/data_bus_arbiter_mc.hh>
+#include <unisim/component/clm/pipeline/common/simple_arbiter_onetoall_mc.hh>
 
 #include <unisim/component/clm/pipeline/commit/reorder_buffer_mc.hh>
 ////////////////////////////////////////////////////////////////////
@@ -112,7 +114,8 @@ using unisim::component::clm::pipeline::issue::RegisterFile;
 using unisim::component::clm::pipeline::execute::FunctionalUnit;
 using unisim::component::clm::pipeline::execute::AddressGenerationUnit;
 using unisim::component::clm::pipeline::execute::LoadStoreQueue;
-using unisim::component::clm::pipeline::common::Arbiter;
+using unisim::component::clm::pipeline::common::DataBusArbiter;
+using unisim::component::clm::pipeline::common::ArbiterOnetoAll;
 using unisim::component::clm::pipeline::commit::ReorderBuffer;
   //using unisim::component::clm::pipeline::fetch::;
   //using unisim::component::clm::pipeline::fetch::;
@@ -366,12 +369,15 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     // AGU -> LSQ
     agu->outLSQInstruction >> lsq->inInstruction;
     // "Execution stage" -> CDBA
-    iu->outInstruction >> cdba->inInstruction[0];
-    fpu->outInstruction >> cdba->inInstruction[1];
-    agu->outCDBInstruction >> cdba->inInstruction[2];
-    //	lsq->outInstruction[i] >> cdba->inInstruction[i+3*Degree];
+
+    iu->outInstruction >> cdba->inINTInstruction;
+    //iu->outInstruction(cdba->inInstruction[0]);
+
+    fpu->outInstruction >> cdba->inFPUInstruction;
+
+    agu->outCDBInstruction >> cdba->inAGUInstruction;
  
-    lsq->outInstruction >> cdba->inInstruction[3];
+    lsq->outInstruction >> cdba->inLSQInstruction;
 
     // CDBA -> fetch
     cdba->outInstruction[0] >> fetch->inWriteBackInstruction;
@@ -384,18 +390,22 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     // CDBA -> rob
     cdba->outInstruction[4] >> rob->inFinishInstruction;
 
-    rob->outRetireInstruction >> retbroadcast->inInstruction[0];
+    //    inport<InstructionPtr, nConfig > &tmpin = retbroadcast->inInstruction[0];
+    //rob->outRetireInstruction >> tmpin;
+    rob->outRetireInstruction >> retbroadcast->inInstruction;
+    //    rob->outRetireInstruction(retbroadcast->inInstruction[0]);
+    //    rob->outRetireInstruction(tmpin);
 
     // RetBroadcaster -> ...
-	// retbroadcast -> fetch
-	retbroadcast->outInstruction[0] >> fetch->inRetireInstruction;
-	// rob -> allocate
-	retbroadcast->outInstruction[1] >> allocate->inRetireInstruction;
-	// rob -> lsq
-	retbroadcast->outInstruction[2] >> lsq->inRetireInstruction;	
-
+    // retbroadcast -> fetch
+    retbroadcast->outInstruction[0] >> fetch->inRetireInstruction;
+    // rob -> allocate
+    retbroadcast->outInstruction[1] >> allocate->inRetireInstruction;
+    // rob -> lsq
+    retbroadcast->outInstruction[2] >> lsq->inRetireInstruction;	
+    
     // Loop back writeback ...
-	registerfile->outWriteBackReceived >> rob->inWriteBackInstruction;
+    registerfile->outWriteBackReceived >> rob->inWriteBackInstruction;
 
     // CPU -> Cache (lsq->dcache) 
     //lsq->outDL1[0] >> outDL1Data;
@@ -1413,12 +1423,12 @@ private:
 
   static const int nChannels = 5;
   //typedef Arbiter<UInt64, nSources, commonDataBusArbiterPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
-typedef Arbiter<UInt64, nSources, 4, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
+typedef DataBusArbiter<UInt64, nSources, nIntegerUnits, nFloatingPointUnits, nAddressGenerationUnits, LSQ_nCDBPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
   CommonDataBusArbiterClass *cdba;
 
   static const int nRetireChannels = 3;
   //typedef Arbiter<UInt64, nSources, retireWidth, retireWidth, nRetireChannels> RetireBroadcasterClass;
-typedef Arbiter<UInt64, nSources, 1, retireWidth, nRetireChannels> RetireBroadcasterClass;
+typedef ArbiterOnetoAll<UInt64, nSources, retireWidth, retireWidth, nRetireChannels> RetireBroadcasterClass;
   RetireBroadcasterClass *retbroadcast;
 
 typedef ReorderBuffer<UInt64, nSources, reorderBufferSize, allocateRenameWidth, WriteBackWidth, retireWidth> ReorderBufferClass;
