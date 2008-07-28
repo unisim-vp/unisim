@@ -133,14 +133,14 @@
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
 // Simulator paramters
-#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
-#include <unisim/component/clm/interfaces/instruction_interface.hh>
+#include <unisim/component/clm/processor/ooosim/parameters.hh>
+#include <unisim/component/clm/interface/instruction_interface.hh>
 
 
-#include <unisim/component/clm/cache/cache_wb_mc.hh>
-#include <unisim/component/clm/fsb/bus_multiqueue_mc.hh>
+#include <unisim/component/clm/cache/cache_wb.hh>
+#include <unisim/component/clm/fsb/bus.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
-#include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.hh>
+#include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
 #include <unisim/kernel/service/service.hh>
 
 // Includes for services
@@ -164,13 +164,14 @@
 #include <unisim/component/cxx/processor/powerpc/fpu.tcc>
 */
 
+
 // Using components
-using unisim::component::clm::fsb::BusMultiQueue;
+using unisim::component::clm::fsb::Bus;
 using unisim::component::clm::memory::dram::DRAM;
 using unisim::component::clm::cache::CacheWB;
 using unisim::component::clm::processor::ooosim::OooSimCpu;
 
-using unisim::component::clm::interfaces::InstructionPtr;
+using unisim::component::clm::interface::InstructionPtr;
 
 // Using Parameters
 using unisim::component::clm::processor::ooosim::nCPU;
@@ -213,16 +214,6 @@ using unisim::component::clm::processor::ooosim::IL1_nCacheLines;
 using unisim::component::clm::processor::ooosim::IL1_nAssociativity;
 using unisim::component::clm::processor::ooosim::IL1_nStages;
 using unisim::component::clm::processor::ooosim::IL1_nDelay;
-
-using unisim::component::clm::processor::ooosim::L2_nCPUtoCacheDataPathSize;
-using unisim::component::clm::processor::ooosim::L2_nCachetoCPUDataPathSize;
-using unisim::component::clm::processor::ooosim::L2_nMemtoCacheDataPathSize;
-using unisim::component::clm::processor::ooosim::L2_nCachetoMemDataPathSize;
-using unisim::component::clm::processor::ooosim::L2_nLineSize;
-using unisim::component::clm::processor::ooosim::L2_nCacheLines;
-using unisim::component::clm::processor::ooosim::L2_nAssociativity;
-using unisim::component::clm::processor::ooosim::L2_nStages;
-using unisim::component::clm::processor::ooosim::L2_nDelay;
 
 using unisim::component::clm::processor::ooosim::nIntegerRegisters;
 //using unisim::component::clm::processor::ooosim::IL1_nCachetoCPUDataPathSize;
@@ -279,11 +270,7 @@ public:
     #define RequestWidth 32
     #define Snooping 0
   */
-  //  typedef Bus<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
-  typedef BusMultiQueue<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> c1BUS;
-
-  typedef BusMultiQueue<InstructionPtr,nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> c2BUS;
-
+  typedef Bus<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
   /*
   // cDRAM
 #define INSTRUCTION Instruction
@@ -318,8 +305,7 @@ public:
 	       DRAM_nCacheLineSize,
 	       DRAM_nCtrlQueueSize,
 	       nProg,
-	       Snooping,
-	       false> cDRAM;
+	       Snooping> cDRAM;
 
   /*
   // cDCACHE
@@ -382,21 +368,6 @@ public:
 		  nProg,
 		  Snooping> cICACHE;
 
-
-  typedef CacheWB<InstructionPtr,
-		  L2_nCPUtoCacheDataPathSize,
-		  L2_nCachetoCPUDataPathSize,
-		  //		  L2_nCPULineSize,
-		  L2_nMemtoCacheDataPathSize,
-		  L2_nCachetoMemDataPathSize,
-		  L2_nLineSize,
-		  L2_nCacheLines,
-		  L2_nAssociativity,
-		  L2_nStages,
-		  L2_nDelay,
-		  nProg,
-		  Snooping> cL2CACHE;
-
   /*
   // cCPU
 #define nIntegerRegisters 32
@@ -412,17 +383,14 @@ public:
 #define nDL1CPUtoCacheDataPathSize 8
 #define nProg 1
   */
-  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg,2> cCPU;
+  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg> cCPU;
 
   // Unisim modules
   //  cSAC *__sac;
-  //  cBUS *__bus;
-  c1BUS *__bus;
-  c2BUS *__systembus;
+  cBUS *__bus;
   cDRAM *__dram;
   cDCACHE *__dcache;
   cICACHE *__icache;
-  cL2CACHE *__l2cache;
   cCPU *__cpu;
 
   /**************************************************************************
@@ -435,63 +403,34 @@ public:
 #endif
 
     // Module instantiactions
-    //    __bus = new cBUS("__bus");
-    __bus = new c1BUS("__bus");
-    __systembus = new c2BUS("__systembus");
+    __bus = new cBUS("__bus");
     __dram = new cDRAM("__dram");
     __dcache = new cDCACHE("__cache[0]");
     __icache = new cICACHE("__icache[0]");
-    __l2cache = new cL2CACHE("__l2cache");
     __cpu = new cCPU("__ppc[0]");
 
     // Clock connections
     __bus->clock(global_clock);
-    __systembus->clock(global_clock);
     __dram->inClock(global_clock);
     __dcache->inClock(global_clock);
     __icache->inClock(global_clock);
-    __l2cache->inClock(global_clock);
     __cpu->inClock(global_clock);
 
     // SIGNAL (or Module) connections
-    //    __dram->out >> __bus->inMEM;
-    //    __bus->outMEM >> __dram->in;
+    __dram->out >> __bus->inMEM;
+    __bus->outMEM >> __dram->in;
 
-    //    __dcache->outMEM >> __bus->inCPU[0];
-    //    __icache->outMEM >> __bus->inCPU[1];
-    //    __bus->outCPU[0] >> __dcache->inMEM;
-    //    __bus->outCPU[1] >> __icache->inMEM;
-
-    // SIGNAL (or Module) connections
-    __dram->out >> __systembus->inMEM;
-    __systembus->outMEM >> __dram->in;
-
-    //    __dram->out >> __bus->inMEM;
-    //    __bus->outMEM >> __l2cache->inCPU[0];
-
-    //    __dcache->outMEM >> __bus->inCPU[0];
-    __dcache->outMEM(__bus->inCPU[0]);
-    __icache->outMEM >> __bus->inCPU[1];
-    __bus->outCPU[0] >> __dcache->inMEM;
-    __bus->outCPU[1] >> __icache->inMEM;
-
-    /*
     __dcache->outMEM >> __bus->inCPU[0];
     __icache->outMEM >> __bus->inCPU[1];
     __bus->outCPU[0] >> __dcache->inMEM;
     __bus->outCPU[1] >> __icache->inMEM;
-    */
-
-    //    __dcache->outCPU >> __cpu->inDL1Data;
-    __dcache->outCPU >> __cpu->lsq->inDL1;
-    //    __icache->outCPU >> __cpu->inIL1Data;
-    __icache->outCPU >> __cpu->fetch->inIL1;
-    //    __cpu->outDL1Data >> __dcache->inCPU;
-    __icache->outCPU >> __cpu->fetch->inIL1;
-    __cpu->lsq->outDL1 >> __dcache->inCPU;
+    __dcache->outCPU >> __cpu->inDL1Data;
+    __icache->outCPU >> __cpu->inIL1Data;
+    __cpu->outDL1Data >> __dcache->inCPU;
     //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
-    //    __cpu->outIL1Data >> __icache->inCPU;
-    __cpu->fetch->outIL1 >> __icache->inCPU;
+    __cpu->outIL1Data >> __icache->inCPU;
+
+    
 
     // Service instantiations
     //    PPCLinux = new PowerPCLinux("my-ppclinux",0);
