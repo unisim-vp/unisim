@@ -46,6 +46,14 @@ AC_CONFIG_FILES([Makefile])
 
 #UNISIM_CONFIG_SUBDIR(unisim-component-cxx, cxx)
 #UNISIM_CONFIG_SUBDIR(unisim-component-clm, clm)
+UNISIM_CONFIG_SUBDIR(unisim-component-clm-cache, cache )
+UNISIM_CONFIG_SUBDIR(unisim-component-clm-debug, debug)
+UNISIM_CONFIG_SUBDIR(unisim-component-clm-fsb, fsb)
+UNISIM_CONFIG_SUBDIR(unisim-component-clm-interfaces, interfaces )
+UNISIM_CONFIG_SUBDIR(unisim-component-clm-memory, memory )
+UNISIM_CONFIG_SUBDIR(unisim-component-clm-pipeline, pipeline )
+UNISIM_CONFIG_SUBDIR(unisim-component-clm-processor, processor )
+UNISIM_CONFIG_SUBDIR(unisim-component-clm-utility, utility )
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
