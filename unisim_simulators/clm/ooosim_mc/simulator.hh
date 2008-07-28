@@ -134,14 +134,14 @@
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
 // Simulator paramters
-#include <unisim/component/clm/processor/ooosim/parameters.hh>
+#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 
-#include <unisim/component/clm/cache/cache_wb.hh>
-#include <unisim/component/clm/fsb/bus.hh>
+#include <unisim/component/clm/cache/cache_wb_mc.hh>
+#include <unisim/component/clm/fsb/bus_multiqueue_mc.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
-#include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
+#include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.hh>
 #include <unisim/kernel/service/service.hh>
 
 // Includes for services
@@ -166,7 +166,7 @@
 */
 
 // Using components
-using unisim::component::clm::fsb::Bus;
+using unisim::component::clm::fsb::BusMultiQueue;
 using unisim::component::clm::memory::dram::DRAM;
 using unisim::component::clm::cache::CacheWB;
 using unisim::component::clm::processor::ooosim::OooSimCpu;
@@ -273,7 +273,7 @@ public:
     #define RequestWidth 32
     #define Snooping 0
   */
-  typedef Bus<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
+  typedef BusMultiQueue<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
   /*
   // cDRAM
 #define INSTRUCTION Instruction
@@ -434,9 +434,9 @@ public:
     //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
     __cpu->outIL1Data >> __icache->inCPU;
     */
-    __dcache->outCPU >> __cpu->lsq->inDL1[0];
+    __dcache->outCPU >> __cpu->lsq->inDL1;
     __icache->outCPU >> __cpu->fetch->inIL1;
-    __cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    __cpu->lsq->outDL1 >> __dcache->inCPU;
     //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
     __cpu->fetch->outIL1 >> __icache->inCPU;
 
