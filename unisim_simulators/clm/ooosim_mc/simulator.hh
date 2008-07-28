@@ -139,7 +139,7 @@
 
 
 #include <unisim/component/clm/cache/cache_wb_mc.hh>
-#include <unisim/component/clm/fsb/bus_multiqueue_mc.hh>
+#include <unisim/component/clm/fsb/bus_multiqueue2_mc.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.hh>
 #include <unisim/kernel/service/service.hh>
@@ -423,10 +423,10 @@ public:
     __dram->out >> __bus->inMEM;
     __bus->outMEM >> __dram->in;
 
-    __dcache->outMEM >> __bus->inCPU[0];
-    __icache->outMEM >> __bus->inCPU[1];
-    __bus->outCPU[0] >> __dcache->inMEM;
-    __bus->outCPU[1] >> __icache->inMEM;
+    __dcache->outMEM >> __bus->inDataCPU;
+    __icache->outMEM >> __bus->inInstCPU;
+    __bus->outDataCPU >> __dcache->inMEM;
+    __bus->outInstCPU >> __icache->inMEM;
     /*
     __dcache->outCPU >> __cpu->inDL1Data;
     __icache->outCPU >> __cpu->inIL1Data;
