@@ -5,10 +5,10 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/memory
 #INCLUDE_SUBDIRS=
 
 nobase_include_HEADERS = \
-	memory/dram/dram_components.hh \
-	memory/dram/dram.hh \
-	memory/mem_common.h \
-	memory/memory_container.hh
+	dram/dram_components.hh \
+	dram/dram.hh \
+	mem_common.h \
+	memory_container.hh
 
 dist_share_DATA = COPYING
 
