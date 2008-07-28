@@ -35,7 +35,7 @@
 
 AC_INIT([UNISIM Out-of-order generic user level CLM simulator], [1.0],
 	[David Parello <david.parello@univ-perp.fr>],
-	[ooosim])
+	[ooosim_mc])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
