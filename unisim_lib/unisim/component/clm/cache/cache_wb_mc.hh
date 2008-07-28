@@ -79,7 +79,7 @@ namespace cache {
 
   // new usings for merge
 using unisim::component::clm::interfaces::memreq;
-using unisim::service::interfaces::StatisticReporting;
+  //using unisim::service::interfaces::StatisticReporting;
 using unisim::component::clm::utility::hexa;
 using unisim::component::clm::debug::SVGmemreqInterface;
 
@@ -141,7 +141,7 @@ class CacheWB : public module
               , public Client < SVGmemreqInterface<INSTRUCTION> >
 //              , public Service < PowerEstimatorInterface >
 //		, public StatisticService
-		, public Client<StatisticReporting>
+//		, public Client<StatisticReporting>
 //		, public Service<StatisticReportingControl>
 {private:
 
@@ -222,7 +222,8 @@ class CacheWB : public module
   inport  < memreq < INSTRUCTION, nMemtoCacheDataPathSize >, nConfig > inMEM;   ///< Input port for answers data
   outport < memreq < INSTRUCTION, nCachetoMemDataPathSize >, nConfig > outMEM;  ///< Output port for sending request toward memory hierarchy
 
-  outport <bool,Snooping, nConfig> outSharedMEM;                                ///< Output port for the shared bit used by some CMP models
+  //  outport <bool,Snooping, nConfig> outSharedMEM;   ///< Output port for the shared bit used by some CMP models
+  outport <bool, nConfig> outSharedMEM;   ///< Output port for the shared bit used by some CMP models
 
   /* --------------------------------------------------------------- */
   /*  Class constructor & destructor                                 */
@@ -1042,10 +1043,12 @@ class CacheWB : public module
   { // checks if there is something to be sent from the cache pipeline and 
     // the MSHR queue and send them to the cpu and memory system
     SendData();
-    
-    inMEM_was_a_hit = false;
-    inMEM_was_a_cacheQueue_hit = false;
 
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      inMEM_was_a_hit[cfg] = false;
+      inMEM_was_a_cacheQueue_hit[cfg] = false;
+    }
     if(VERBOSE) dump();
 #ifdef DD_DEBUG_DCACHE
     if (DD_DEBUG_TIMESTAMP < timestamp())
@@ -1115,97 +1118,100 @@ class CacheWB : public module
    * \brief Sends data to the cpu and the memory system if returnBuffer and/or requestBuffer are ready
    */
   void SendData()
-  { // If returnBuffer is empty, cacheQueue is not empty and its head is ready. Then copy from
-    // head to return buffer.
-#ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+  { 
+    for (int cfg=0; cfg<nConfig; cfg++)
     {
-    cerr << "["<<this->name()<<"("<<timestamp()<<")]: SendData, start..." << endl;
-    }
+      // If returnBuffer is empty, cacheQueue is not empty and its head is ready. Then copy from
+      // head to return buffer.
+#ifdef DD_DEBUG_DCACHE_VERB2
+      if (DD_DEBUG_TIMESTAMP < timestamp())
+      {
+	cerr << "["<<this->name()<<"("<<timestamp()<<")]: SendData, start..." << endl;
+      }
 #endif
-    // If returnBuffer is empty , cacheQueue is not empty and its head ready, copy from head to returnBuffer
-    if(!returnBuffer.ready) SendCacheDatatoCPU();
+      // If returnBuffer is empty , cacheQueue is not empty and its head ready, copy from head to returnBuffer
+      if(!returnBuffer[cfg].ready) SendCacheDatatoCPU();
 #ifdef DD_DEBUG_DCACHE_VERB2
-    else
-    {
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-    {
-      cerr << "["<<this->name()<<"("<<timestamp()<<")]: Warning: returnBuffer.ready == True (no call to SendCacheDatatoCPU) ..." << endl;
-    }
-    }
+      else
+      {
+	if (DD_DEBUG_TIMESTAMP < timestamp())
+	  {
+	    cerr << "["<<this->name()<<"("<<timestamp()<<")]: Warning: returnBuffer.ready == True (no call to SendCacheDatatoCPU) ..." << endl;
+	  }
+      }
 #endif
-    /* if there is nothing in the requestBuffer the cache can try to sent something
-     * to the memory system */
-    if(Snooping)
-    { if(!requestBuffer.ready) SendSnoopDatatoMem();
-    }
-    if(!requestBuffer.ready) SendCacheDatatoMem();
-
-//cerr << "\033[31mCACHE: SendData  returnBuffer.ready="<< returnBuffer.ready << " ,requestBuffer.ready=" << requestBuffer.ready << " \033[0m" << endl;  
-    /* if the returnBuffer is ready then set output ports to the cpu */
-    if(returnBuffer.ready)
-    { /* set the output signals */
-      memreq<INSTRUCTION, nCachetoCPUDataPathSize> req;
-      req.message_type = memreq_types::type_ANSWER;
-      req.instr = returnBuffer.instr;
-      req.size = returnBuffer.size > nCachetoCPUDataPathSize ? nCachetoCPUDataPathSize : returnBuffer.size;
-      req.address = returnBuffer.base + returnBuffer.index;
-      req.Write(&returnBuffer.data[returnBuffer.index], (returnBuffer.size > nCachetoCPUDataPathSize) ? nCachetoCPUDataPathSize : returnBuffer.size);
-      req.uid = returnBuffer.uid;
-      req.memreq_id = returnBuffer.memreq_id;
-      req.sender_type = memreq_types::sender_CACHE;
-      req.sender = this;
-      req.req_sender = returnBuffer.req_sender;
-      req.cachable = returnBuffer.cachable;
-      req.command = memreq_types::cmd_READ; // Only reads are sent back to the CPU
+      /* if there is nothing in the requestBuffer the cache can try to sent something
+       * to the memory system */
+      if(Snooping)
+      { if(!requestBuffer[cfg].ready) SendSnoopDatatoMem();
+      }
+      if(!requestBuffer[cfg].ready) SendCacheDatatoMem();
+      
+      //cerr << "\033[31mCACHE: SendData  returnBuffer.ready="<< returnBuffer.ready << " ,requestBuffer.ready=" << requestBuffer.ready << " \033[0m" << endl;  
+      /* if the returnBuffer is ready then set output ports to the cpu */
+      if(returnBuffer[cfg].ready)
+      { /* set the output signals */
+	memreq<INSTRUCTION, nCachetoCPUDataPathSize> req;
+	req.message_type = memreq_types::type_ANSWER;
+	req.instr = returnBuffer[cfg].instr;
+	req.size = returnBuffer[cfg].size > nCachetoCPUDataPathSize ? nCachetoCPUDataPathSize : returnBuffer[cfg].size;
+	req.address = returnBuffer[cfg].base + returnBuffer[cfg].index;
+	req.Write(&returnBuffer[cfg].data[returnBuffer[cfg].index], (returnBuffer[cfg].size > nCachetoCPUDataPathSize) ? nCachetoCPUDataPathSize : returnBuffer[cfg].size);
+	req.uid = returnBuffer[cfg].uid;
+	req.memreq_id = returnBuffer[cfg].memreq_id;
+	req.sender_type = memreq_types::sender_CACHE;
+	req.sender = this;
+	req.req_sender = returnBuffer[cfg].req_sender;
+	req.cachable = returnBuffer[cfg].cachable;
+	req.command = memreq_types::cmd_READ; // Only reads are sent back to the CPU
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-    {
-      cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Sending to CPU: "<< req << endl;
-    }
+	if (DD_DEBUG_TIMESTAMP < timestamp())
+	  {
+	    cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Sending to CPU: "<< req << endl;
+	  }
 #endif
 #ifdef DEBUG_TEST_UNCACHABLE_WRITE
-      //if( !req.cachable && req.command==memreq_types::cmd_WRITE ) 
-      INFO << "-CPU-> \e[1;31muncachable write\e[0m: " << req << endl;
+	//if( !req.cachable && req.command==memreq_types::cmd_WRITE ) 
+	INFO << "-CPU-> \e[1;31muncachable write\e[0m: " << req << endl;
 #endif
-      outCPU.data = req;
-    }
-    else outCPU.data.nothing();
-    
-    /* if the requestBuffer is ready then set output signals to the memory system */
-    if(requestBuffer.ready)
-    { memreq<INSTRUCTION, nCachetoMemDataPathSize> req;
-      req.message_type = requestBuffer.message_type;
-      req.instr = requestBuffer.instr;
+	outCPU.data[cfg] = req;
+      }
+      else outCPU.data[cfg].nothing();
+      
+      /* if the requestBuffer is ready then set output signals to the memory system */
+      if(requestBuffer[cfg].ready)
+      { memreq<INSTRUCTION, nCachetoMemDataPathSize> req;
+      req.message_type = requestBuffer[cfg].message_type;
+      req.instr = requestBuffer[cfg].instr;
 #ifdef NOC_THREADS_DISTRIBUTION
-      req.address = requestBuffer.address+ requestBuffer.index;
+      req.address = requestBuffer[cfg].address+ requestBuffer.index;
 #else
-      req.address = requestBuffer.address;
+      req.address = requestBuffer[cfg].address;
 
 #endif
-      req.command = requestBuffer.command;     
+      req.command = requestBuffer[cfg].command;     
       
-      int size = requestBuffer.size;
-      if(requestBuffer.write && size > nCachetoMemDataPathSize)
+      int size = requestBuffer[cfg].size;
+      if(requestBuffer[cfg].write && size > nCachetoMemDataPathSize)
       { size = nCachetoMemDataPathSize;
       }
       req.size = size;
-      if(requestBuffer.write)
-      { req.Write(requestBuffer.data + requestBuffer.index, size);
+      if(requestBuffer[cfg].write)
+      { req.Write(requestBuffer[cfg].data + requestBuffer[cfg].index, size);
       }
-      req.uid = requestBuffer.uid;
-      req.memreq_id = requestBuffer.memreq_id;
+      req.uid = requestBuffer[cfg].uid;
+      req.memreq_id = requestBuffer[cfg].memreq_id;
       req.sender_type = memreq_types::sender_CACHE;
-      req.cachable = requestBuffer.cachable;
+      req.cachable = requestBuffer[cfg].cachable;
       req.sender = this;
       
-      if(requestBuffer.message_type==memreq_types::type_REQUEST)
+      if(requestBuffer[cfg].message_type==memreq_types::type_REQUEST)
       { // This is a new request, set this module as the original sender
         req.req_sender = this;
       }
       else
       { // This is an answer to an existing request, forward the original sender value
-        req.req_sender = requestBuffer.req_sender;
+        req.req_sender = requestBuffer[cfg].req_sender;
       }
 #ifdef DD_DEBUG_DCACHE_VERB2
     if (DD_DEBUG_TIMESTAMP < timestamp())
@@ -1222,23 +1228,23 @@ class CacheWB : public module
 #endif
 
     #ifdef NOC_THREADS_DISTRIBUTION 
-      req.dst_id = requestBuffer.dst_id;
+      req.dst_id = requestBuffer[cfg].dst_id;
       if ( (req.command == memreq_types::cmd_WRITE) && (req.cachable == true) )
             req.dst_id = 0;
     #endif
 
 
-      outMEM.data = req;
+      outMEM.data[cfg] = req;
     }
-    else outMEM.data.nothing();
+    else outMEM.data[cfg].nothing();
 #ifdef DD_DEBUG_DCACHE_VERB2
     if (DD_DEBUG_TIMESTAMP < timestamp())
     {
     cerr << "["<<this->name()<<"("<<timestamp()<<")]: SendData, end..." << endl;
     }
 #endif
-  }
-
+    } // end of for each Config.
+  } // end of SendData()
   /**
    * \brief Process called upon receiving an accept from the CPU
    *
@@ -1252,7 +1258,11 @@ class CacheWB : public module
   { if(outCPU.accept.known())
     {
 //if(outCPU.accept) cerr << "\033[31mCACHE: recieved accept from CPU enabling CPU "<< outCPU.accept.known() <<" \033[0m" << endl;  
-      outCPU.enable = outCPU.accept;
+      for (int cfg=0; cfg<nConfig; cfg++)
+      {  
+	outCPU.enable[cfg] = outCPU.accept[cfg];
+      }
+      outCPU.enable.send();
     }
   }
 
@@ -1269,13 +1279,16 @@ class CacheWB : public module
   { if(outMEM.accept.known())
     {
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-    {
-      if(outMEM.accept) cerr << "["<<this->name()<<"("<<timestamp()<<"] Cache recieved accept from MEM enabling MEM" << endl;  
-      //      else cerr << "\033[31mCACHE: MEM didn't accept the previous request !!!!!!!!!!!! \033[0m" << endl; 
-    }
+      if (DD_DEBUG_TIMESTAMP < timestamp())
+      {
+	if(outMEM.accept) cerr << "["<<this->name()<<"("<<timestamp()<<"] Cache recieved accept from MEM enabling MEM" << endl;  
+	//      else cerr << "\033[31mCACHE: MEM didn't accept the previous request !!!!!!!!!!!! \033[0m" << endl; 
+      }
 #endif
-      outMEM.enable = outMEM.accept;
+      for (int cfg=0; cfg<nConfig; cfg++)
+      {
+	outMEM.enable[cfg] = outMEM.accept[cfg];
+      }
     }
   }
 
@@ -1350,8 +1363,8 @@ class CacheWB : public module
    * \brief Returns true if the address is a hit in the currently queued request. (If it target the same address as a pending
    * request.
    */
-  bool request_queue_hit(address_t addr)
-  { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheQueue.SeekAtHead();
+  bool request_queue_hit(address_t addr, int cfg)
+  { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheQueue[cfg].SeekAtHead();
     // If the cache queue is empty, it is not a queue hit
     if(!cacheit) return false;
     // Else compare address of the head of the queue and the provided address
@@ -1413,22 +1426,25 @@ class CacheWB : public module
   { if(inCPU.data.known() && outCPU.accept.known())
     { // Upon receiving a request, check if it can be serviced/accepted
       //      INFO << "[DD_DEBUG_DCACHE] <DCACHE> on_CPU_data() REQ: " << inCPU.data << endl;
-      if(inCPU.data.something()) 
+      for(int cfg=0; cfg<nConfig; cfg++)
       {
+	if(inCPU.data[cfg].something()) 
+	{
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-    {
-        INFO << "[DD_DEBUG_DCACHE] on_CPU_data() : REQ                  = " << inCPU.data << endl;
-        INFO << "[DD_DEBUG_DCACHE] on_CPU_data() : can_accept_request() = " << (can_accept_request(cacheQueue)?"True":"False") << endl;
-    }
+	  if (DD_DEBUG_TIMESTAMP < timestamp())
+	  {
+	    INFO << "[DD_DEBUG_DCACHE] on_CPU_data() : REQ                  = " << inCPU.data << endl;
+	    INFO << "[DD_DEBUG_DCACHE] on_CPU_data() : can_accept_request() = " << (can_accept_request(cacheQueue)?"True":"False") << endl;
+	  }
 #endif
-        inCPU.accept = can_accept_request(cacheQueue);
+	  inCPU.accept[cfg] = can_accept_request(cacheQueue[cfg]);
 //cerr <<"C ";
-      }
-      else 
-      { 
-	inCPU.accept = false;
-      }
+	}
+	else 
+	{ 
+	  inCPU.accept[cfg] = false;
+	}
+      }// end of foreach Config.
     }   
   }
 
@@ -1450,28 +1466,31 @@ class CacheWB : public module
     if(Snooping)
     { if(!outCPU.accept.known()) return;
     }
-    if(inMEM.data.something())
+    for(int cfg; cfg<nConfig; cfg++)
+    {
+    if(inMEM.data[cfg].something())
     { if(Snooping)
-      { memreq<INSTRUCTION, nMemtoCacheDataPathSize> mr = inMEM.data;
+      { memreq<INSTRUCTION, nMemtoCacheDataPathSize> mr = inMEM.data[cfg];
         if(mr.command == memreq_types::cmd_FLUSH)
         { // Flush requests are always accepted, no need to store the request.
-          inMEM.accept = true;
-          outSharedMEM.data = false;
-          return;
+          inMEM.accept[cfg] = true;
+          outSharedMEM.data[cfg] = false;
+          //return;
+	  continue;
         }
 
         switch(mr.message_type)
         { case memreq_types::type_REQUEST:
           { // Set the shared if the data seeked by the request is in this cache, 
             // or already requested by the cache
-            bool local_hit = cache.hit(mr.address);
+            bool local_hit = cache[cfg].hit(mr.address);
             bool can_accept = true;
 
 //zzz
             if(!local_hit)
-            { inMEM_was_a_cacheQueue_hit = request_queue_hit(mr.address);
-              if(inMEM_was_a_cacheQueue_hit)
-              { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheQueue.SeekAtHead();
+            { inMEM_was_a_cacheQueue_hit[cfg] = request_queue_hit(mr.address, cfg);
+              if(inMEM_was_a_cacheQueue_hit[cfg])
+              { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheQueue[cfg].SeekAtHead();
                 address_t line_addr = mr.address & ~(nLineSize - 1);
                 cerr << "[[[---------------------------------------------" << endl;
                 INFO << hex << "\e[1;31m" << line_addr << dec << "\e[0m non local hit: " << mr << endl;
@@ -1481,28 +1500,28 @@ class CacheWB : public module
                 local_hit = true;
               }
             }
-            inMEM_was_a_hit = local_hit;
+            inMEM_was_a_hit[cfg] = local_hit;
 
             if(local_hit)
             { // The request made a local cache hit, shared should be set to true.
               // The data can only be accepted if the pipeline has a free slot for
               // this new request.
-              outSharedMEM.data = true;
-              inMEM.accept = can_accept && can_accept_request(cacheSnoopQueue);
+              outSharedMEM.data[cfg] = true;
+              inMEM.accept[cfg] = can_accept && can_accept_request(cacheSnoopQueue[cfg]);
 //cerr <<"M ";
             }
             else
             { // Not a local cache hit, shared is to be set to false and 
               // the data can be accepted as it does not create any new request.
-              outSharedMEM.data = false;
-              inMEM.accept = true; 
+              outSharedMEM.data[cfg] = false;
+              inMEM.accept[cfg] = true; 
             }
           } break;
           case memreq_types::type_ANSWER:
             // Answers from memory should always be accepted, and shared should
             // not be set for memory answers.
-            outSharedMEM.data = false;
-            inMEM.accept = true;
+            outSharedMEM.data[cfg] = false;
+            inMEM.accept[cfg] = true;
 //INFO << "accepted an anwser, because i accept every answer." << endl;
             break;
           default:
@@ -1518,7 +1537,7 @@ class CacheWB : public module
         cerr << "["<<this->name()<<"("<<timestamp()<<")]: Accepting Data from Memory (Always)..." << endl;
     }
 #endif
-        inMEM.accept = true;
+        inMEM.accept[cfg] = true;
       }
     } // !Something
     else 
@@ -1529,10 +1548,11 @@ class CacheWB : public module
       cerr << "["<<this->name()<<"("<<timestamp()<<")]: Non-Accepting Data from Memory (!something)..." << endl;
     }
 #endif
-      inMEM.accept = false;
-      if(Snooping) outSharedMEM.data.nothing();
+      inMEM.accept[cfg] = false;
+      if(Snooping) outSharedMEM.data[cfg].nothing();
     }
-  }
+    } // end of foreach Config.
+  } // end of on_MEM_data()
   
   /**
    * \brief Process setting accept signals
@@ -1549,7 +1569,7 @@ class CacheWB : public module
     if(!inMEM.data.known()) return;
     if(Snooping)
     { if(!outCPU.accept.known()) return;
-    };
+    }
     // Everything has been received, deal with received values
     // if snnoping, higher priority is given to snooping hit reuests than to cpu requests
     on_MEM_data();
@@ -1560,7 +1580,12 @@ class CacheWB : public module
    * \brief Process lauched upon receiving an acept on the shared bit output port
    */
   void on_shared_accept()
-  { outSharedMEM.enable = outSharedMEM.accept;
+  {
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      outSharedMEM.enable[cfg] = outSharedMEM.accept[cfg];
+    }
+    outSharedMEM.enable.send();
   }
 
 // ------------------------------------------------------------------------------
@@ -2069,203 +2094,207 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
    * Called at end of cycle
    */
   void ReadMemData()
-  { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
-    // Update the writeBuffer if data is received from the memory system
-    UpdateWriteBuffer();
-    // Check if the requested data is ready without waiting that the complete line is received
-    UpdateCachePipelineWithWriteBuffer();
-
-    /* if writeBuffer has been completed write the cacheline to the cache */
-    if(writeBuffer.size == nLineSize || writeBuffer.size == nLineSize)
-    { /* check if the cache entry that made the request is a write
-       * and use it to update the contents of the writeBuffer before
-       * writing it to the cache */
-      cacheit = cacheQueue.SeekAtHead();
-      if(cacheit) 
-      /*
-      if (cacheit)
-      {
-	if (
+  {
+    for (int cfg=0; cfg<nConfig; cfg++)
+    {
+      QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
+      // Update the writeBuffer if data is received from the memory system
+      UpdateWriteBuffer();
+      // Check if the requested data is ready without waiting that the complete line is received
+      UpdateCachePipelineWithWriteBuffer();
+      
+      /* if writeBuffer has been completed write the cacheline to the cache */
+      if(writeBuffer[cfg].size == nLineSize || writeBuffer[cfg].size == nLineSize)
+      { /* check if the cache entry that made the request is a write
+	 * and use it to update the contents of the writeBuffer before
+	 * writing it to the cache */
+	cacheit = cacheQueue[cfg].SeekAtHead();
+	if(cacheit) 
+	  /*
+	    if (cacheit)
+	    {
+	    if (
 	    ( (cacheit->address&((address_t)nLineSize - 1) + cacheit->size) < nLineSize && writeBuffer.size == nLineSize ) 
 	    ||
 	    ( (cacheit->address&((address_t)nLineSize - 1) + cacheit->size) > nLineSize && writeBuffer.size == 2*nLineSize )
-	   )
-      */
-      { /* if the request was a write the update the data in the writeBuffer before updating the cache */
-        if(cacheit->write)
-        {
+	    )
+	  */
+	  { /* if the request was a write the update the data in the writeBuffer before updating the cache */
+	    if(cacheit->write)
+	      {
 #ifdef DEBUG_CACHEWB
-          /* check that the addresses match */
-          if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer.address)
-          { cerr << "Error(" << name() << "): the cache line request address does not correspond with the address in the "
-            << "writebuffer" << endl;
-            cerr << *this;
-            exit(-1);
-          }
+		/* check that the addresses match */
+		if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer[cfg].address)
+		  { cerr << "Error(" << name() << "): the cache line request address does not correspond with the address in the "
+			 << "writebuffer" << endl;
+		  cerr << *this;
+		  exit(-1);
+		  }
 #endif
-          /* calculate the index in the writeBuffer that is needed by the request */
-          unsigned int base_address = 0;
-          if(nCPULineSize > 0)
-          { base_address = cacheit->address&((address_t)nLineSize - 1);
-            base_address = base_address - (cacheit->address & ((address_t)nCPULineSize - 1));
-          }
-          else
-          { base_address = cacheit->address & ((address_t)nLineSize - 1);
-          }
-          /* modify the writeBuffer with the request data */
-          memcpy(&(writeBuffer.buffer[base_address]), cacheit->data, cacheit->size);
-        }
-        /* modify the state of the cache entry */
-
-//INFO << "\e[1;33m####\e[0m cacheit->state=" << cacheit->state << " shared_bit=" << writeBuffer.shared_bit<< endl;
-
-        switch(cacheit->state)
-        { /* write cases */
-          case WRITE_MISS_REQUESTED:
-          case WRITE_MISS_EVICTION_WRITE_DONE_REQUESTED:
-            /* write writeBuffer into the cache */
-            cache.setCacheLine(cacheit->set, cacheit->line, writeBuffer.address,
-                               (char *)writeBuffer.buffer,
-                               true,      /* valid bit */
-                               true);     /* write bit */
-
-            /* [DAVID] set MESI properly */
-            if(Snooping)
-            { // It's a miss (that may have been evicted). First set the current state to invalidate, as
-              // We'll replace the line.
-              cache.mesi_invalidate(cacheit->set, cacheit->line);
-              bool ret = cache.mesi_transition(cacheit->set, cacheit->line, MESI::transition_PrWr_BusRdX,__FILE__,__LINE__,nProg);
-              if(ret)
-              { ERROR << "Invalid MESI transition from " << *cacheit << endl;
-                exit(1);
-              }
+		/* calculate the index in the writeBuffer that is needed by the request */
+		unsigned int base_address = 0;
+		if(nCPULineSize > 0)
+		  { base_address = cacheit->address&((address_t)nLineSize - 1);
+		  base_address = base_address - (cacheit->address & ((address_t)nCPULineSize - 1));
+		  }
+		else
+		  { base_address = cacheit->address & ((address_t)nLineSize - 1);
+		  }
+		/* modify the writeBuffer with the request data */
+		memcpy(&(writeBuffer[cfg].buffer[base_address]), cacheit->data, cacheit->size);
+	      }
+	    /* modify the state of the cache entry */
+	    
+	    //INFO << "\e[1;33m####\e[0m cacheit->state=" << cacheit->state << " shared_bit=" << writeBuffer.shared_bit<< endl;
+	    
+	    switch(cacheit->state)
+	      { /* write cases */
+	      case WRITE_MISS_REQUESTED:
+	      case WRITE_MISS_EVICTION_WRITE_DONE_REQUESTED:
+		/* write writeBuffer into the cache */
+		cache[cfg].setCacheLine(cacheit->set, cacheit->line, writeBuffer[cfg].address,
+				   (char *)writeBuffer[cfg].buffer,
+				   true,      /* valid bit */
+				   true);     /* write bit */
+		
+		/* [DAVID] set MESI properly */
+		if(Snooping)
+		  { // It's a miss (that may have been evicted). First set the current state to invalidate, as
+		    // We'll replace the line.
+		    cache[cfg].mesi_invalidate(cacheit->set, cacheit->line);
+		    bool ret = cache[cfg].mesi_transition(cacheit->set, cacheit->line, MESI::transition_PrWr_BusRdX,__FILE__,__LINE__,nProg);
+		    if(ret)
+		      { ERROR << "Invalid MESI transition from " << *cacheit << endl;
+		      exit(1);
+		      }
             }
-    
-            /* the request can be removed */
-            cacheQueue.RemoveHead();
-            break;
-          case READ_UNCACHABLE_READY:
-            // Uncachable read is back from the memory and will be sent to the cpu. No cache line is modified.
-            break;
-          case WRITE_UNCACHABLE_REQUESTED:
-            // Received the cache line from memory. Now ready to put the new data in the line and to send
-            // back the line to the memory.
-            cacheit->state = WRITE_UNCACHABLE_READY;
-//            memcpy(cacheit->data, &(writeBuffer.buffer[base_address]), cacheit->size);
-
-            memcpy(cacheit->linedata,writeBuffer.buffer,writeBuffer.size);
+		
+		/* the request can be removed */
+		cacheQueue[cfg].RemoveHead();
+		break;
+	      case READ_UNCACHABLE_READY:
+		// Uncachable read is back from the memory and will be sent to the cpu. No cache line is modified.
+		break;
+	      case WRITE_UNCACHABLE_REQUESTED:
+		// Received the cache line from memory. Now ready to put the new data in the line and to send
+		// back the line to the memory.
+		cacheit->state = WRITE_UNCACHABLE_READY;
+		//            memcpy(cacheit->data, &(writeBuffer.buffer[base_address]), cacheit->size);
+		
+		memcpy(cacheit->linedata,writeBuffer[cfg].buffer,writeBuffer[cfg].size);
 #ifdef DEBUG_TEST_UNCACHABLE_WRITE
-//ZZZZZZZZZZZZZ
-cerr << endl;
-INFO << "HERE: " << *cacheit << endl;
-INFO << "writeBuffer " << writeBuffer << endl;
-cerr << endl;
+		//ZZZZZZZZZZZZZ
+		cerr << endl;
+		INFO << "HERE: " << *cacheit << endl;
+		INFO << "writeBuffer " << writeBuffer[cfg] << endl;
+		cerr << endl;
 #endif
-            break;
-          /* read cases */
-          case READ_MISS_READY:
-            /* write writeBuffer into the cache */
-            cache.setCacheLine(cacheit->set, cacheit->line, writeBuffer.address,
-                               (char *)writeBuffer.buffer,
-                               true,                   /* valid bit */
-                               false);                 /* write bit */
-
+		break;
+		/* read cases */
+	      case READ_MISS_READY:
+		/* write writeBuffer into the cache */
+		cache[cfg].setCacheLine(cacheit->set, cacheit->line, writeBuffer[cfg].address,
+                               (char *)writeBuffer[cfg].buffer,
+				   true,                   /* valid bit */
+				   false);                 /* write bit */
+		
             // A processor read miss implied a bus read that may be shared
-            if(Snooping)
-            { // It's a miss (that may have been evicted). First set the current state to invalidate, as
-              // We'll replace the line.
-              cache.mesi_invalidate(cacheit->set, cacheit->line);
-              bool ret=true;
-              if(writeBuffer.shared_bit) ret = cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_S,__FILE__,__LINE__,nProg);
-              else                       ret = cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_NS,__FILE__,__LINE__,nProg);
-              if(ret)
-              { ERROR << "Invalid MESI transition from " << *cacheit << endl;
-                exit(1);
+		if(Snooping)
+		  { // It's a miss (that may have been evicted). First set the current state to invalidate, as
+		    // We'll replace the line.
+		    cache[cfg].mesi_invalidate(cacheit->set, cacheit->line);
+		    bool ret=true;
+		    if(writeBuffer[cfg].shared_bit) ret = cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_S,__FILE__,__LINE__,nProg);
+		    else                       ret = cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_NS,__FILE__,__LINE__,nProg);
+		    if(ret)
+		      { ERROR << "Invalid MESI transition from " << *cacheit << endl;
+		      exit(1);
+		      }
+		  }
+		
+		/* change the state of the head of the pipeline */
+		cacheit->state = READ_MISS_LINE_READY;
+		break;
+	      case READ_MISS_EVICTION_WRITE_DONE_READY:
+		/* write writeBuffer into the cache */
+		cache[cfg].setCacheLine(cacheit->set, cacheit->line, writeBuffer[cfg].address,
+				   (char *)writeBuffer[cfg].buffer,
+				   true,                   /* valid bit */
+				   false);                 /* write bit */
+
+		//After the eviction is done, the new data is received. /* [DAVID] set MESI properly */
+		if(Snooping)
+		  { // It's a miss (that may have been evicted). First set the current state to invalidate, as
+		    // We'll replace the line.
+		    cache[cfg].mesi_invalidate(cacheit->set, cacheit->line);
+		    bool ret=true;
+		    if(writeBuffer[cfg].shared_bit) ret = cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_S,__FILE__,__LINE__,nProg);
+		    else                       ret = cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_NS,__FILE__,__LINE__,nProg);
+		    if(ret)
+		      { ERROR << "Invalid MESI transition from " << *cacheit << endl;
+		      exit(1);
               }
-            }
-
-            /* change the state of the head of the pipeline */
-            cacheit->state = READ_MISS_LINE_READY;
-            break;
-          case READ_MISS_EVICTION_WRITE_DONE_READY:
-            /* write writeBuffer into the cache */
-            cache.setCacheLine(cacheit->set, cacheit->line, writeBuffer.address,
-                               (char *)writeBuffer.buffer,
-                               true,                   /* valid bit */
-                               false);                 /* write bit */
-
-            //After the eviction is done, the new data is received. /* [DAVID] set MESI properly */
-            if(Snooping)
-            { // It's a miss (that may have been evicted). First set the current state to invalidate, as
-              // We'll replace the line.
-              cache.mesi_invalidate(cacheit->set, cacheit->line);
-              bool ret=true;
-              if(writeBuffer.shared_bit) ret = cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_S,__FILE__,__LINE__,nProg);
-              else                       ret = cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_NS,__FILE__,__LINE__,nProg);
+		  }
+		
+		/* change the state of the head of the pipeline */
+		cacheit->state = READ_MISS_LINE_READY;
+		break;
+	      case READ_MISS_SERVICED:
+	      case READ_MISS_EVICTION_WRITE_DONE_SERVICED:
+		/* write writeBuffer into the cache */
+		cache[cfg].setCacheLine(cacheit->set, cacheit->line, writeBuffer[cfg].address,
+				   (char *)writeBuffer[cfg].buffer,
+				   true,                   /* valid bit */
+				   false);                 /* write bit */
+		
+		/* [DAVID] set MESI properly */
+		if(Snooping)
+		  { cache[cfg].mesi_invalidate(cacheit->set, cacheit->line);
+		  bool ret=true;
+              if(writeBuffer[cfg].shared_bit) ret = cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_S,__FILE__,__LINE__,nProg);
+              else                       ret = cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_NS,__FILE__,__LINE__,nProg);
               if(ret)
-              { ERROR << "Invalid MESI transition from " << *cacheit << endl;
+		{ ERROR << "Invalid MESI transition from " << *cacheit << endl;
                 exit(1);
-              }
-            }
-    
-            /* change the state of the head of the pipeline */
-            cacheit->state = READ_MISS_LINE_READY;
-            break;
-          case READ_MISS_SERVICED:
-          case READ_MISS_EVICTION_WRITE_DONE_SERVICED:
-            /* write writeBuffer into the cache */
-            cache.setCacheLine(cacheit->set, cacheit->line, writeBuffer.address,
-                               (char *)writeBuffer.buffer,
-                               true,                   /* valid bit */
-                               false);                 /* write bit */
-
-            /* [DAVID] set MESI properly */
-            if(Snooping)
-            { cache.mesi_invalidate(cacheit->set, cacheit->line);
-              bool ret=true;
-              if(writeBuffer.shared_bit) ret = cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_S,__FILE__,__LINE__,nProg);
-              else                       ret = cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_NS,__FILE__,__LINE__,nProg);
-              if(ret)
-              { ERROR << "Invalid MESI transition from " << *cacheit << endl;
-                exit(1);
-              }
-            }
-    
-            /* the request can be removed */
-            cacheQueue.RemoveHead();
-            break;
-            /* prefetch cases */
-          case PREFETCH_MISS_REQUESTED:
-          case PREFETCH_MISS_EVICTION_WRITE_DONE_REQUESTED:
-            /* write writeBuffer into the cache */
-            cache.setCacheLine(cacheit->set, cacheit->line, writeBuffer.address,
-                               (char *)writeBuffer.buffer,
-                               true,      /* valid bit */
-                               false);    /* write bit */
-
-            /* [DAVID] set MESI properly 
-	     * if(Snooping)
-             * { if(writeBuffer.shared_bit) cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_S,__FILE__,__LINE__,nProg);
-             *   else                       cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_NS,__FILE__,__LINE__,nProg);
-	     * }
-	     */
-
-            /* the request can be removed */
-            cacheQueue.RemoveHead();
-            break;
-          default:
-            ERROR << "Don't know how to handle cacheit state " << cacheit->state << " when receiving answer from memory." << endl;
-            cerr << "cacheit: " << *cacheit << endl;
-            cerr << "writeBuffer " << writeBuffer << endl;
-            abort();
-        }
-        /* reset the writeBuffer */
-        writeBuffer.size = 0;
-        for(int i = 0; i < nLineSize; i++) writeBuffer.ready[i] = false;
+		}
+		  }
+		
+		/* the request can be removed */
+		cacheQueue[cfg].RemoveHead();
+		break;
+		/* prefetch cases */
+	      case PREFETCH_MISS_REQUESTED:
+	      case PREFETCH_MISS_EVICTION_WRITE_DONE_REQUESTED:
+		/* write writeBuffer into the cache */
+		cache[cfg].setCacheLine(cacheit->set, cacheit->line, writeBuffer[cfg].address,
+				   (char *)writeBuffer[cfg].buffer,
+				   true,      /* valid bit */
+				   false);    /* write bit */
+		
+		/* [DAVID] set MESI properly 
+		 * if(Snooping)
+		 * { if(writeBuffer.shared_bit) cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_S,__FILE__,__LINE__,nProg);
+		 *   else                       cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrRd_BusRd_NS,__FILE__,__LINE__,nProg);
+		 * }
+		 */
+		
+		/* the request can be removed */
+		cacheQueue[cfg].RemoveHead();
+		break;
+	      default:
+		ERROR << "Don't know how to handle cacheit state " << cacheit->state << " when receiving answer from memory." << endl;
+		cerr << "cacheit: " << *cacheit << endl;
+		cerr << "writeBuffer " << writeBuffer[cfg] << endl;
+		abort();
+	      }
+	    /* reset the writeBuffer */
+	    writeBuffer[cfg].size = 0;
+	    for(int i = 0; i < nLineSize; i++) writeBuffer[cfg].ready[i] = false;
+	  }
       }
-    }
-  }
-
+    } // end of for each Config
+  } // end of ReadMemData()
+  
   /**
    * \brief Advance the requests in a cache pipeline 
    */
@@ -2302,17 +2331,27 @@ cerr << endl;
    * \brief Advance the requests in the cache pipelines
    */
   void RunCachePipeline()
-  { RunCachePipeline(cacheQueue);
-    if(Snooping) RunCachePipeline(cacheSnoopQueue);
+  { 
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      RunCachePipeline(cacheQueue[cfg]);
+    }
+    if(Snooping)
+    { 
+      for(int cfg=0; cfg<nConfig; cfg++)
+      {
+	RunCachePipeline(cacheSnoopQueue[cfg]);
+      }
+    }
   }
 
   /**
    * \brief Enqueue a new request to the cacheQueue from CPU side
    */
-  void cacheQueue_enqueue(const memreq<INSTRUCTION, nCPUtoCacheDataPathSize> &mr)
+  void cacheQueue_enqueue(const memreq<INSTRUCTION, nCPUtoCacheDataPathSize> &mr, int cfg)
   { CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize> *entry;
     // check that the cache queue is not full, it should never happen
-    if(cacheQueue.Full())
+    if(cacheQueue[cfg].Full())
     { ERROR << "CPU request should not have been accepted, the cache is full !" << endl;
       cerr << *this;
       //      exit(-1);
@@ -2320,7 +2359,7 @@ cerr << endl;
     }
 
     /* create new entry in the cache pipeline and set stage and delay for each of the stages */
-    entry = cacheQueue.New();
+    entry = cacheQueue[cfg].New();
     entry->stage = 0;
     for(int i = 0; i < nStages; i++) entry->delay[i] = nDelay;
     if(entry->delay[0] > 0) entry->delay[0]--;
@@ -2332,26 +2371,26 @@ cerr << endl;
     switch(mr.command)
     { case memreq_types::cmd_WRITE:
         /* increment the number of write accesses */
-        accesses_write++;
+        accesses_write[cfg]++;
         entry->state = WRITE;
         break;
       case memreq_types::cmd_READ:
         /* increment the number of read accesses */
-        accesses_read++;
+        accesses_read[cfg]++;
         entry->state = READ;
         break;
       case memreq_types::cmd_PREFETCH:
         /* increment the number of prefetch accesses */
-        accesses_prefetch++;
+        accesses_prefetch[cfg]++;
         entry->state = PREFETCH;
         break;
       case memreq_types::cmd_EVICT:
         /* increment the number of evict accesses */
-        accesses_evict++;
+        accesses_evict[cfg]++;
         entry->state = EVICT;
         break;
       case memreq_types::cmd_READX:
-        accesses_read++;
+        accesses_read[cfg]++;
         entry->state = READ;
 //        ERROR << "Received a READX from the CPU !" << endl; // THIS WAS ONLY TRUE FOR L1 CACHE. L2 CACHES ARE RECEIVING READX FROM L1 CACHES
 //        abort();
@@ -2397,10 +2436,10 @@ cerr << endl;
    * \brief Enqueue a new request to the cacheQueue from the memory side
    */
 //  void cacheQueue_from_memory_enqueue(const memreq<INSTRUCTION, nCPUtoCacheDataPathSize> &mr)
-  void cacheQueue_from_memory_enqueue(const memreq<INSTRUCTION, nMemtoCacheDataPathSize> &mr)
+  void cacheQueue_from_memory_enqueue(const memreq<INSTRUCTION, nMemtoCacheDataPathSize> &mr, int cfg)
   { CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize> *entry;
     // check that the cache queue is not full, it should never happen
-    if(cacheSnoopQueue.Full())
+    if(cacheSnoopQueue[cfg].Full())
     { ERROR << "MEM request should not have been accepted, the cache is full !" << endl;
       cerr << "memreq: " << mr << endl;
       cerr << *this;
@@ -2408,7 +2447,7 @@ cerr << endl;
     }
 
     /* create new entry in the cache pipeline and set stage and delay for each of the stages */
-    entry = cacheSnoopQueue.New();
+    entry = cacheSnoopQueue[cfg].New();
     entry->stage = 0;
     for(int i = 0; i < nStages; i++) entry->delay[i] = nDelay;
     if(entry->delay[0] > 0) entry->delay[0]--;
@@ -2423,11 +2462,11 @@ cerr << endl;
     /* set the state of the entry */
     switch(mr.command)
     { case memreq_types::cmd_READ:
-        accesses_read++;
+        accesses_read[cfg]++;
         entry->state = READ;
         break;
       case memreq_types::cmd_READX:
-        accesses_read++;
+        accesses_read[cfg]++;
         entry->state = READX;
         break;
       case memreq_types::cmd_FLUSH:
@@ -2473,87 +2512,101 @@ cerr << endl;
    * \brief Read cpu requests to the cache and puts them in the pipeline 
    */
   void ReadCPUData()
-  { /* if there is a new request from the CPU it is added to the cache pipeline */
-    if(inCPU.enable)
-    { memreq<INSTRUCTION, nCPUtoCacheDataPathSize> mr = inCPU.data;
-#ifdef DEBUG_BUS_MQ
-INFO << "Receiving from C:   " << mr << endl;
-#endif
-      if(this==mr.sender)
-      { ERROR << "Receiving a request from myself on CPU port !\n" << mr << endl;
-        exit(1);
-      }
-#ifdef DD_DEBUG_DCACHE
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+  {
+    for(int cfg; cfg<nConfig; cfg++)
     {
-      cerr << "[DD_DEBUG_DCACHE] Stored   " << mr << " from CPU" << endl;
-    }
+      /* if there is a new request from the CPU it is added to the cache pipeline */
+      if(inCPU.enable[cfg])
+      { memreq<INSTRUCTION, nCPUtoCacheDataPathSize> mr = inCPU.data[cfg];
+#ifdef DEBUG_BUS_MQ
+	INFO << "Receiving from C:   " << mr << endl;
+#endif
+	if(this==mr.sender)
+	{ ERROR << "Receiving a request from myself on CPU port !\n" << mr << endl;
+        exit(1);
+	}
+#ifdef DD_DEBUG_DCACHE
+	if (DD_DEBUG_TIMESTAMP < timestamp())
+	{
+	  cerr << "[DD_DEBUG_DCACHE] Stored   " << mr << " from CPU" << endl;
+	}
 #endif
 #ifdef DEBUG_TEST_UNCACHABLE_WRITE
-      if( !mr.cachable && mr.command==memreq_types::cmd_WRITE ) INFO << "<-CPU- \e[1;31muncachable write\e[0m: " << mr << endl;
+	if( !mr.cachable && mr.command==memreq_types::cmd_WRITE ) INFO << "<-CPU- \e[1;31muncachable write\e[0m: " << mr << endl;
 #endif
-
+	
 #ifdef _CACHE_MESSAGES_SVG_H_
-      // Received a local request from the CPU, stored it.
-      stringstream ss1, ss2;
-      ss1 << "P" << nProg;
-      ss2 << "$" << nProg;
-      if(cache.hit(mr.address)) SVG.add(timestamp(),ss1.str(),ss2.str(),"H",mr);
-      else                      SVG.add(timestamp(),ss1.str(),ss2.str(),"M",mr);
+	// Received a local request from the CPU, stored it.
+	stringstream ss1, ss2;
+	ss1 << "P" << nProg;
+	ss2 << "$" << nProg;
+	if(cache[cfg].hit(mr.address)) SVG.add(timestamp(),ss1.str(),ss2.str(),"H",mr);
+	else                      SVG.add(timestamp(),ss1.str(),ss2.str(),"M",mr);
 #endif
-      if(svg)
-      { if(cache.hit(mr.address)) svg->add_cpu_to_cac(timestamp(),name(),"H",mr);
+	if(svg)
+	{ if(cache[cfg].hit(mr.address)) svg->add_cpu_to_cac(timestamp(),name(),"H",mr);
         else                      svg->add_cpu_to_cac(timestamp(),name(),"M",mr);
-      }
-
+	}
+	
       /* increment number of accesses to the cache */
-      accesses++;
-      if (!inCPU.data.something())
-      {
-	cerr << "[" << this->name() << "("<< timestamp() <<")"
-	     << "CACHE Error: how nothing may have been enabled ???" << endl;
-	abort();
+	accesses[cfg]++;
+	if (!inCPU.data[cfg].something())
+	{
+	  cerr << "[" << this->name() << "("<< timestamp() <<")"
+	       << "CACHE Error: how nothing may have been enabled ???" << endl;
+	  abort();
+	}
+	// TODO NOW !!!! 
+	//	cacheQueue_enqueue(mr);
+	cacheQueue_enqueue(mr,cfg);
+
+#ifdef NOC_THREADS_DISTRIBUTION
+	if( ((mr.address) & 0XFF000000) == 0XFF000000)
+	cout <<"CAC : receive thread request form CPU " << mr <<endl;
+#endif
+	
       }
-      cacheQueue_enqueue(mr);
-
-    #ifdef NOC_THREADS_DISTRIBUTION
-      if( ((mr.address) & 0XFF000000) == 0XFF000000)
-          cout <<"CAC : receive thread request form CPU " << mr <<endl;
-    #endif
-
-    }
-  }
-
+    } // end of foreach Config.
+  } // end of ReadCPUData()
+    
   /**
    * \brief Read memory snooped hit requests to the cache and puts them in the pipeline 
    */
   void ReadSnoopedData()
-  { if(!Snooping)
-    { ERROR << "This process should not be called if Snooping is desactivated" << endl;
-      exit(1);
-    }
-    // Check that data was received from the memory system
-    if(!inMEM.enable) return;
-
-    // Make sure the incoming data is a read to be handled by the snooper
-    memreq<INSTRUCTION, nMemtoCacheDataPathSize> mr = inMEM.data;
-    if(mr.message_type==memreq_types::type_ANSWER)
-    { // Write are handled by UpdateWriteBuffer
-      return;
-    }
-
+  { 
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      if(!Snooping)
+      { ERROR << "This process should not be called if Snooping is desactivated" << endl;
+	exit(1);
+      }
+      // Check that data was received from the memory system
+      //      if(!inMEM.enable[cfg]) return;
+      // Very Bad : return 
+      //      if(inMEM.enable[cfg])
+      //      {
+      if(!inMEM.enable[cfg]) continue;
+      
+      // Make sure the incoming data is a read to be handled by the snooper
+      memreq<INSTRUCTION, nMemtoCacheDataPathSize> mr = inMEM.data[cfg];
+      if(mr.message_type==memreq_types::type_ANSWER)
+      { // Write are handled by UpdateWriteBuffer
+	//	return;
+	continue;
+      }
+      
       if(mr.command == memreq_types::cmd_FLUSH)
       { // Flush received from memory are invalidating cache lines
-
-
+	
+	
         if(this==mr.req_sender)
-        { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheQueue.SeekAtHead();
+        { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheQueue[cfg].SeekAtHead();
           if(!cacheit)
           { ERROR << "Received a Flush request from this cache without the request being in the queue !" << endl;
-            exit(1);
+	  exit(1);
           }
-//INFO << "\e[1;35mGOT !!MY!! FLUSH :\e[0m " << mr << endl;
-//cerr << "\e[1;35mnon matching cacheit: " << hex << cacheit->address << dec << "\e[0m : " << *cacheit << endl;
+	  //INFO << "\e[1;35mGOT !!MY!! FLUSH :\e[0m " << mr << endl;
+	  //cerr << "\e[1;35mnon matching cacheit: " << hex << cacheit->address << dec << "\e[0m : " << *cacheit << endl;
           if(cacheit->state != WRITE_HIT_FLUSH_REQUESTED)
           { ERROR << "Received a Flush request from this cache without a WRITE_HIT_FLUSH_REQUESTED request being in the queue !" << endl;
             exit(1);
@@ -2561,27 +2614,28 @@ INFO << "Receiving from C:   " << mr << endl;
           // The "Flush on a Modified Write Hit" request being received is issued by this cache.
           // This does mean that other caches have also received such a request and that the write 
           // can be performed, and the WRITE_HIT_FLUSH_REQUESTED can be removed from the queue.
-          cache.setCacheLineIndexed(cacheit->set, cacheit->line, cacheit->data,
+          cache[cfg].setCacheLineIndexed(cacheit->set, cacheit->line, cacheit->data,
                                     cacheit->address & ((address_t)(nLineSize-1)), cacheit->size, true);
-          cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrWr_BusRdX,__FILE__,__LINE__,nProg);
-          cacheQueue.RemoveHead();
-          return;
+          cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrWr_BusRdX,__FILE__,__LINE__,nProg);
+          cacheQueue[cfg].RemoveHead();
+	  //          return;
+	  continue;
         }
-
+	
 
 #ifdef _CACHE_MESSAGES_SVG_H_
         stringstream ss;
         ss << "$" << nProg;
 #endif
+	
+	//INFO << "\e[1;35mGOT A FLUSH :\e[0m " << mr << endl;
 
-//INFO << "\e[1;35mGOT A FLUSH :\e[0m " << mr << endl;
-
-        if(cache.hit(mr.address))
+        if(cache[cfg].hit(mr.address))
         { // A cache hit on a flush, the line should be invalidated
-          int set = cache.getSet(mr.address);
-          int line = cache.getLine(mr.address);
-          cache.setValid(set, line, false);
-          cache.mesi_transition(set, line, MESI::transition_BusRdX_Flush,__FILE__,__LINE__,nProg);    
+          int set = cache[cfg].getSet(mr.address);
+          int line = cache[cfg].getLine(mr.address);
+          cache[cfg].setValid(set, line, false);
+          cache[cfg].mesi_transition(set, line, MESI::transition_BusRdX_Flush,__FILE__,__LINE__,nProg);    
 #ifdef _CACHE_MESSAGES_SVG_H_
         SVG.add(timestamp(),"BS",ss.str(),"F",mr);
 #endif
@@ -2598,47 +2652,50 @@ INFO << "Receiving from C:   " << mr << endl;
           { svg->add_bus_to_cac(timestamp(),name(),"M",mr);
           }
         }
-        return;
+        //return;
+	continue;
       } // FLUSH
-
-    if(this==mr.sender)
-    { ERROR << "Receiving a request from myself in ReadSnoopedData : " << mr << endl;
-      terminate_now() ;
-    }
-
-    // Not a flush, must be a read request answer that may be a local hit or miss
+      
+      if(this==mr.sender)
+      { ERROR << "Receiving a request from myself in ReadSnoopedData : " << mr << endl;
+	terminate_now() ;
+      }
+      
+      // Not a flush, must be a read request answer that may be a local hit or miss
 #ifdef _CACHE_MESSAGES_SVG_H_
-    // Received an answer for this cache
-    stringstream ss;
-    ss << "$" << nProg;
-    if(cache.hit(mr.address)) SVG.add(timestamp(),"BS",ss.str(),"H",mr);
-    else                      SVG.add(timestamp(),"BS",ss.str(),"M",mr);
+      // Received an answer for this cache
+      stringstream ss;
+      ss << "$" << nProg;
+      if(cache[cfg].hit(mr.address)) SVG.add(timestamp(),"BS",ss.str(),"H",mr);
+      else                      SVG.add(timestamp(),"BS",ss.str(),"M",mr);
 #endif
-    if(svg)
-    { if(cache.hit(mr.address)) svg->add_bus_to_cac(timestamp(),name(),"H",mr);
+      if(svg)
+      { if(cache[cfg].hit(mr.address)) svg->add_bus_to_cac(timestamp(),name(),"H",mr);
       else                      svg->add_bus_to_cac(timestamp(),name(),"M",mr);
-    }
-
+      }
+      
 //yyy
-if(inMEM_was_a_cacheQueue_hit)
-{ INFO << "\e[1;34menabling: " << mr << "\e[0m" << endl;
-}
-
-    // This is a read request, discard it if it makes a miss in the local cache
-    // and the request queue
-    if(!inMEM_was_a_hit) return;
-
-    // The request made a hit in the local cache
-    accesses++;
+      if(inMEM_was_a_cacheQueue_hit[cfg])
+      { INFO << "\e[1;34menabling: " << mr << "\e[0m" << endl;
+      }
+      
+      // This is a read request, discard it if it makes a miss in the local cache
+      // and the request queue
+      if(!inMEM_was_a_hit[cfg]) continue; //return;
+      
+      // The request made a hit in the local cache
+      accesses[cfg]++;
+      
+      // TODO NOW !!!
+      cacheQueue_from_memory_enqueue(mr, cfg); // Enqueue the snooped read hit request
+      
+      //INFO << "Enqueued " << mr << " from MEM" << endl;
+    } // end of foreach Config.
+  } // end of ReadSnoopedData()
     
-    cacheQueue_from_memory_enqueue(mr); // Enqueue the snooped read hit request
-
-//INFO << "Enqueued " << mr << " from MEM" << endl;
-  }
-
-  /**
-   * \brief Performs the read request to the cache checking if the access was a hit or a miss and setting the entry state correctly
-   */
+    /**
+     * \brief Performs the read request to the cache checking if the access was a hit or a miss and setting the entry state correctly
+     */
   void SetCacheHeadReadState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit, bool is_rdx)
   { if(!cacheit->cachable) 
     { // If the read request is non cachable store it as a non cachable request
@@ -2992,8 +3049,11 @@ if(inMEM_was_a_cacheQueue_hit)
    * \brief Sets the cache pipeline head state if it is on the last stage of the pipeline
    */
   void SetCacheHeadState()
-  { QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages> cacheit;
-    cacheit = cacheQueue.SeekAtHead();    // Get the head of the pipeline
+  { 
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+    QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages> cacheit;
+    cacheit = cacheQueue[cfg].SeekAtHead();    // Get the head of the pipeline
     if(cacheit)
     { /* check that the head of the pipeline is ready to be serviced (last stage, delay = 0) */
       if(cacheit->stage == nStages - 1 && cacheit->delay[nStages - 1] == 0)
@@ -3017,7 +3077,8 @@ if(inMEM_was_a_cacheQueue_hit)
         }
       }
     }
-  }
+    }// end of foreach Config.
+  } // end of SetCacheHeadState()
   
   /**
    * \brief Sets the cache pipeline head state if it is on the last stage of the snoop pipeline
@@ -3027,8 +3088,11 @@ if(inMEM_was_a_cacheQueue_hit)
     { ERROR << "Should never append. only called from end_of_cycle if snooping is enabled !" << endl;
       exit(1);
     }
+
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
     QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages> cacheit;
-    cacheit = cacheSnoopQueue.SeekAtHead(); // Get the head of the pipeline
+    cacheit = cacheSnoopQueue[cfg].SeekAtHead(); // Get the head of the pipeline
     if(cacheit)
     { /* check that the head of the pipeline is ready to be serviced (last stage, delay = 0) */
       if(cacheit->stage == nStages - 1 && cacheit->delay[nStages - 1] == 0)
@@ -3057,6 +3121,7 @@ if(inMEM_was_a_cacheQueue_hit)
         }
       }
     }
+    }// end of foreach Config.
   }
 
   /**
@@ -3238,8 +3303,6 @@ INFO << "delay..." << endl;
           ERROR << "Unexepected state for the head of cacheSnoopQueue: " << *cacheit << endl;
           exit(1);
       }
-      
-
     }
   }
 
@@ -3579,8 +3642,8 @@ INFO << "delay..." << endl;
  
   int nCPULineSize; ///< min data size that has to be sent towards the CPU, if 0 then the value is ignored (e.g. connected to the CPU), else the size of the cache line in level -1. it is used to set the base address of the requested data
  
-  bool inMEM_was_a_hit;
-  bool inMEM_was_a_cacheQueue_hit;
+  bool inMEM_was_a_hit[nConfig];
+  bool inMEM_was_a_cacheQueue_hit[nConfig];
   /**
    * \brief Dump some debugging information
    */
