@@ -5,8 +5,8 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/fsb
 #INCLUDE_SUBDIRS=
 
 include_HEADERS = \
-	fsb/bus.hh \
-	fsb/bus_multiqueue.hh
+	bus.hh \
+	bus_multiqueue.hh
 
 dist_share_DATA = COPYING
 
