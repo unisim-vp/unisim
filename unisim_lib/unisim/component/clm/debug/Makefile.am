@@ -1,5 +1,5 @@
-includedir = $(prefix)/include/unisim/component/clm
-sharedir = $(prefix)/share/unisim_lib/unisim/component/clm
+includedir = $(prefix)/include/unisim/component/clm/debug
+sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/debug
 
 #SUBDIRS=
 #INCLUDE_SUBDIRS=
