@@ -253,7 +253,7 @@ using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
-
+const int nConfig = nCPU;
 
 
 class GeneratedSimulator : public Simulator{
@@ -338,7 +338,8 @@ public:
 		  DL1_nStages,
 		  DL1_nDelay,
 		  nProg,
-		  Snooping> cDCACHE;
+		  Snooping,
+		  nConfig > cDCACHE;
 
   /*
   // cICACHE
@@ -369,7 +370,8 @@ public:
 		  IL1_nStages,
 		  IL1_nDelay,
 		  nProg,
-		  Snooping> cICACHE;
+		  Snooping,
+		  nConfig > cICACHE;
 
   /*
   // cCPU
@@ -386,7 +388,7 @@ public:
 #define nDL1CPUtoCacheDataPathSize 8
 #define nProg 1
   */
-  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg> cCPU;
+  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, nConfig> cCPU;
 
   // Unisim modules
   //  cSAC *__sac;
@@ -555,10 +557,13 @@ public:
 	//  - RAM
 	//	MEMORY *memory = new MEMORY("memory");
 
-	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator;
-
 	unisim::component::cxx::memory::ram::Memory<address_t> *memory = __dram->memory_emulator;
 
+	//	for(int cfg=0; cfg<nConfig; cfg++)
+	//	  { 
+	//	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator[cfg];
+	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator[0];
+	//	  }
 
 	//=========================================================================
 	//===            Debugging stuff: Transaction spy instantiations        ===
