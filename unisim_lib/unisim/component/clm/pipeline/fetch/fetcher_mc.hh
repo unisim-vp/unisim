@@ -298,7 +298,7 @@ public:
 		  pending_instr_cache_requests[cfg] = 0;
 		  ignore_instr_cache_responses[cfg] = 0;
 		  pending_instr_cache_access_size[cfg] = 0;
-		  this->emulator[cfg] = emulator;
+		  this->emulator = emulator;
 		  btb_miss[cfg] = false;
 		  ras_miss[cfg] = false;
 		  //		state_init(&transient_emul_state);
@@ -951,7 +951,7 @@ public:
 	      cerr << "===== DEBUG Fetcher (End) =======================" << "(" << timestamp() << ")" << endl;
 	    }
 #endif
-	        instruction_queue_cumulative_occupancy[i] += instructionQueue.Size();
+	        instruction_queue_cumulative_occupancy[cfg] += instructionQueue[cfg].Size();
 
 		/* Remove accepted instructions from the instruction queue */
 		for(i = 0; i < Width; i++)
@@ -992,13 +992,13 @@ public:
 			  #endif
 			*/
 			if (instruction->fn == FnSysCall)
-			  { syscall_in_pipeline = false; }
+			  { syscall_in_pipeline[cfg] = false; }
 
 			if(instruction->fn & FnLoad)
 			{
 				if(instruction->replay_trap)
 				{
-					nia = instruction->cia;	/* nia is used by flush to redirect fetch on the correct path (ie replay the load) */
+					nia[cfg] = instruction->cia;	/* nia is used by flush to redirect fetch on the correct path (ie replay the load) */
 // 					cerr << "!!!!! time stamp = " << sc_time_stamp() << ": got replay trap: must continue fetching along " << hexa(nia) << endl;
 #ifdef DD_DEBUG_FETCH_VERB2
 					if (DD_DEBUG_TIMESTAMP < timestamp())
@@ -1210,7 +1210,7 @@ public:
 			memreq < InstructionPtr, nCPUDataPathSize > tmpmemreq = inIL1.data[cfg];
 			int accessSize = tmpmemreq.size;
 
-			pending_instr_cache_requests--;
+			pending_instr_cache_requests[cfg]--;
 			//changed = true;
 
 #ifdef DD_DEBUG_FETCH_VERB2
@@ -1219,9 +1219,9 @@ public:
 			cerr << "[FETCH] =Fill=== We have recevied Data from IL1 (EOF) ======= ["<< timestamp()<<"]"<< endl;
 			  }
 #endif
-			if(ignore_instr_cache_responses > 0)
+			if(ignore_instr_cache_responses[cfg] > 0)
 			{
-			  ignore_instr_cache_responses--;
+			  ignore_instr_cache_responses[cfg]--;
 #ifdef DD_DEBUG_FETCH_VERB2
 			  if (DD_DEBUG_TIMESTAMP < timestamp())
 			    {
@@ -1231,7 +1231,7 @@ public:
 			}
 			else
 			{
-				pending_instr_cache_access_size -= accessSize;
+				pending_instr_cache_access_size[cfg] -= accessSize;
 				int n = accessSize / InstructionSize;
 				int offset;
 
@@ -1246,7 +1246,7 @@ public:
 				//				ByteArray<nCPUDataPathSize> vector = inIL1.data.Data;
 				ByteArray<nCPUDataPathSize> vector = tmpmemreq.data;
 
-				for(i = 0, offset = 0; i < n; i++, cia += InstructionSize, offset += InstructionSize)
+				for(i = 0, offset = 0; i < n; i++, cia[cfg] += InstructionSize, offset += InstructionSize)
 				{
 					/* Allocate an instruction queue entry */
 					//DD//InstructionQueueEntry<T, nSources> *entry = instructionQueue.New();
@@ -1293,7 +1293,7 @@ public:
 					entry->instruction->operation = 0;
 					entry->instruction->inum = inum[cfg]++;
 					entry->predecoded = false;
-					vector.Read(entry->instruction->binary, offset, endianess);
+					vector.Read(entry->instruction->binary, offset, endianess[cfg]);
 #ifdef DD_DEBUG_FETCH_VERB2
  if (DD_DEBUG_TIMESTAMP < timestamp())
 			    {
@@ -1370,7 +1370,7 @@ public:
 					//InstructionQueueEntry *old_entry; 
 					//new_entry = instructionQueue.New();
 					instructionQueue[cfg].New();
-					new_entry = QueuePointer<InstructionQueueEntry,InstructionQueueSize>(&instructionQueue,instructionQueue.GetIndex(0));
+					new_entry = QueuePointer<InstructionQueueEntry,InstructionQueueSize>(&instructionQueue[cfg],instructionQueue[cfg].GetIndex(0));
 					//	new_entry = new InstructionQueueEntry();
 					if (!new_entry)
 					  {
@@ -1559,9 +1559,9 @@ public:
 						//transient_emul_state.cia = entry->instruction->cia;
 						//transient_emul_state.nia = transient_emul_state.cia + InstructionSize;
 						/* Call the emulator */
-					  emulator[cfg]->SetCIA(entry->instruction->cia);
-					  emulator[cfg]->SetNIA(entry->instruction->cia+InstructionSize);
-					  entry->instruction->operation->execute(emulator[cfg]);//, &transient_emul_state, NULL /* no memory */);
+					  emulator->SetCIA(entry->instruction->cia);
+					  emulator->SetNIA(entry->instruction->cia+InstructionSize);
+					  entry->instruction->operation->execute(emulator);//, &transient_emul_state, NULL /* no memory */);
 					  
 						//entry->instruction->operation->execute(entry->instruction->operation, &transient_emul_state, NULL /* no memory */);
 					  if(entry->instruction->predicted_branch_direction == Taken) //;
@@ -1686,7 +1686,7 @@ public:
 					{
 						/* Taken */
 						/* Flush the instruction after the branch */
-						instructionQueue.FlushAfter(entry);
+						instructionQueue[cfg].FlushAfter(entry);
 
 						/* Correct the path */
 						cia[cfg] = entry->instruction->predicted_nia;
@@ -1760,7 +1760,7 @@ public:
 				  { 
 				    syscall_in_pipeline[cfg] = true;
 				    /* Flush the instruction after the branch */
-				    instructionQueue.FlushAfter(entry);
+				    instructionQueue[cfg].FlushAfter(entry);
 
 				    /* Correct the path */
 				    cia[cfg] = entry->instruction->nia;
@@ -1833,7 +1833,7 @@ public:
 		  }
 		}
 		// Keep coherent CIA with emulator ...
-		emulator[cfg]->SetCIA(cia[cfg]);
+		emulator->SetCIA(cia[cfg]);
 #ifdef DD_DEBUG_FETCH_VERB2
  if (DD_DEBUG_TIMESTAMP < timestamp())
 			    {
@@ -2079,12 +2079,15 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 		instruction_queue_cumulative_occupancy[cfg] = 0;
 	  }
 	}  
-  void Reset()
+  void Reset(int cfg)
   {
+    // No more usefull
+    /*
     for(int cfg=0; cfg<nConfig; cfg++)
       {
 	cia[cfg] = emulator[cfg]->GetCIA();
       }
+    */
   }
 
 private:
@@ -2102,7 +2105,7 @@ private:
 	endianess_t endianess[nConfig];					/*< either little_endian or big_endian */
 	uint64_t inum[nConfig];							/*< instruction number */
 	//DD	Emulator *emulator;						/*< pointer to the emulator wrapper */
-	CPUSim *emulator[nConfig];						/*< pointer to the emulator wrapper */
+	CPUSim *emulator;						/*< pointer to the emulator wrapper */
 	bool btb_miss[nConfig];							/*< true if a BTB miss occured, used to stop fetching until branch resolution */
 	bool ras_miss[nConfig];							/*< true if a RAS miss occured, used to stop fetching until branch resolution */
 	int in_flight_branches[nConfig];

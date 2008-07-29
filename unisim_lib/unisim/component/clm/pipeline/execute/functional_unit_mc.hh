@@ -162,25 +162,29 @@ class FunctionalUnit : public module
 			//			changed = true;
 			this->state = spec_state;
 			/* Statistics */
-			cumulative_occupancy = 0;
+			for (int cfg=0; cfg<nConfig; cfg++)
+			  {
+			    for(int unit=0; unit<nUnits; unit++)
+			      cumulative_occupancy[cfg][unit] = 0;
+			  }
 		}
 
 		/** Returns true if we can accept input instruction. Enable output instruction if it is accepted.
 			@return true if we can accept input instruction.
 		*/
-		bool Accept()
+		bool Accept(int cfg, int unit)
 		{
 			QueuePointer<FunctionalUnitPipelineEntry<T, nSources, nStages>, nStages> cur;
 			int stage;
 			//			bool enabled;
 			//			outEnable = enabled = inAccept;
-			if(inInstruction.data.something())
+			if(inInstruction.data[cfg*nUnits+unit].something())
 			{
 				/* if queue is empty then the pipeline is ready */
-				if(!queue.Empty())
+				if(!queue[cfg][unit].Empty())
 				{
 					/* Walk across the queue from the newest to the oldest entry */
-					for(stage = 0, cur = queue.SeekAtTail(); cur; cur--, stage++)
+					for(stage = 0, cur = queue[cfg][unit].SeekAtTail(); cur; cur--, stage++)
 					{
 						/* if there is a bubble into the pipeline then the pipeline is ready */
 						if(cur->stage > stage)
@@ -194,7 +198,7 @@ class FunctionalUnit : public module
 							/* it is ready if the last pipe stage has an instruction to issue and the next module is ready */
 							//return cur->delay[stage] == 0 && enabled;
 							//return cur->delay[stage] == 0 && outInstruction.enable;
-							return cur->delay[stage] == 0 && outInstruction.accept;
+							return cur->delay[stage] == 0 && outInstruction.accept[cfg*nUnits+unit];
 						}
 						else
 						{
@@ -213,9 +217,33 @@ class FunctionalUnit : public module
 		}
 
   //		void onFlushData() { outFlush.data = inFlush.data; }
-                void onFlushData() { if (inFlush.data.something()) outFlush.data = inFlush.data; else outFlush.data.nothing(); }
-		void onFlushAccept() { inFlush.accept = outFlush.accept; }
-		void onFlushEnable() { outFlush.enable = inFlush.enable; }
+                void onFlushData() 
+                {
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    if (inFlush.data[cfg].something())
+		      outFlush.data[cfg] = inFlush.data[cfg];
+		    else outFlush.data[cfg].nothing(); 
+		  }
+		  outFlush.data.send();
+		}
+		void onFlushAccept() 
+                {
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    inFlush.accept[cfg] = outFlush.accept[cfg]; 
+		  }
+		  inFlush.accept.send();
+		}
+
+		void onFlushEnable() 
+                { 
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    outFlush.enable[cfg] = inFlush.enable[cfg]; 
+		  }
+		  outFlush.enable.send();
+		}
 		/*
 		void onData()
 		{
@@ -225,21 +253,36 @@ class FunctionalUnit : public module
 		void onAccept()
 		{
 		  //		  outInstruction.enable = inInstruction.accept;
-		  outInstruction.enable = outInstruction.accept;
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		    {
+		      for(int unit=0; unit<nUnits; unit++)
+			{
+			  outInstruction.enable[cfg*nUnits+unit] = outInstruction.accept[cfg*nUnits+unit];
+			}
+		    }
+		  outInstruction.enable.send();
 		}
 	       
 		void onEnable()
 		{
 		  if (inInstruction.data.known() && outInstruction.accept.known())
 		    {
-		      if (inInstruction.data.something())
+		      
+		      for (int cfg=0; cfg<nConfig; cfg++)
 			{
-			  inInstruction.accept = Accept();
+			  for(int unit=0; unit<nUnits; unit++)
+			    {
+			      if (inInstruction.data[cfg*nUnits+unit].something())
+				{
+				  inInstruction.accept[cfg*nUnits+unit] = Accept(cfg,unit);
+				}
+			      else
+				{
+				  inInstruction.accept[cfg*nUnits+unit] = false;
+				}
+			    }
 			}
-		      else
-			{
-			  inInstruction.accept = false;
-			}
+		      inInstruction.accept.send();
 		    }
 		}
 
@@ -255,54 +298,61 @@ class FunctionalUnit : public module
 		//		void InternalControl()
 		void end_of_cycle()
 		{
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    for(int unit=0; unit<nUnits; unit++)
+		    {
+			cumulative_occupancy[cfg][unit] += queue[cfg][unit].Size();
+		    }
+
+		    /* Flush ? */
+		    if(inFlush.enable[cfg] && inFlush.data[cfg].something())
+		    {
+		      if(inFlush.data[cfg])
+		      {
+#ifdef DD_DEBUG_FLUSH
+			    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
+#endif
+			    for(int unit=0; unit<nUnits; unit++)
+			      {
+
+				/* Flush the functional unit pipeline */
+				queue[cfg][unit].Flush();
+				//return;
+				//continue;
+			      }
+			    return;
+		      }
+		    }
+		  
+		    for(int unit=0; unit<nUnits; unit++)
+		    {
 			FunctionalUnitPipelineEntry<T, nSources, nStages> *entry;
 
-			cumulative_occupancy += queue.Size();
 
 			//if(!inEnable && !inAccept && !inFlush && !changed) return;
 			//			changed = false;
 
-			/* Flush ? */
-			if(inFlush.enable && inFlush.data.something())
-			{
-			  if(inFlush.data)
-			  {
-#ifdef DD_DEBUG_FLUSH
-		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
-#endif
-			    //changed = true;
-				/* Flush the functional unit pipeline */
-				queue.Flush();
-
-				/* Reset all output ports */
-				/*
-				outValid = false;
-				outEnable = false;
-				outAccept = false;
-				*/
-				return;
-			  }
-			}
 			/* Remove accepted instructions */
-			if(outInstruction.accept)
+			if(outInstruction.accept[cfg*nUnits+unit])
 			{
-				queue.RemoveHead();
+				queue[cfg][unit].RemoveHead();
 				//changed = true;
 			}
 
 			/* Add incoming instructions */
-			if(inInstruction.enable)
+			if(inInstruction.enable[cfg*nUnits+unit])
 			{
 				/* Get the instruction */
 			  //		const InstructionPtr<T, nSources>& instruction = inInstruction;
-				InstructionPtr instruction = inInstruction.data;
+				InstructionPtr instruction = inInstruction.data[cfg*nUnits+unit];
 				
 				if(!instruction->must_reschedule)
 				{
 				  //changed = true;
 	
 					/* Allocate a pipeline entry */
-					entry = queue.New();
+					entry = queue[cfg][unit].New();
 	
 					if(!entry)
 					{
@@ -333,7 +383,7 @@ class FunctionalUnit : public module
 
 			/* Run */
 			/* For each entry into the pipeline */
-			for(cur = queue.SeekAtHead(); cur; cur++)
+			for(cur = queue[cfg][unit].SeekAtHead(); cur; cur++)
 			{
 				/* if the pipe stage work is not finished */
 				if(cur->delay[cur->stage] > 0)
@@ -345,7 +395,7 @@ class FunctionalUnit : public module
 			}
 
 			/* For each entry into the pipeline */
-			for(cur = queue.SeekAtHead(); cur; cur++)
+			for(cur = queue[cfg][unit].SeekAtHead(); cur; cur++)
 			{
 				/* if the pipe stage work is finished */
 				if(cur->delay[cur->stage] == 0)
@@ -377,25 +427,31 @@ class FunctionalUnit : public module
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ==== Pipeline Debug" << endl;
 		cerr << this << endl;
 #endif
+		    }//End of foreach Unit.
+		  }//End of foreach Config.
 		} // end of end_of_cycle
 
 		void start_of_cycle()
 		{
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    for(int unit=0; unit<nUnits; unit++)
+		    {
 			FunctionalUnitPipelineEntry<T, nSources, nStages> *entry;
 
 			// START_OF_CYCLE ...
 			/* Common data bus request */
-			entry = queue.GetHead();
+			entry = queue[cfg][unit].GetHead();
 			/* If instruction processing is finished */
 			if(entry && entry->stage == nStages - 1 && entry->delay[nStages - 1] == 0)
 			{
 				/* Do a request to the common data bus */
 				//outValid = true;
-				outInstruction.data = entry->instruction;
+				outInstruction.data[cfg*nUnits+unit] = entry->instruction;
 			}
 			else
 			{
-				outInstruction.data.nothing();
+				outInstruction.data[cfg*nUnits+unit].nothing();
 			}
 
 			/* If state changed then make the SystemC scheduler call
@@ -404,6 +460,9 @@ class FunctionalUnit : public module
 			if(changed)
 				outStateChanged = !inStateChanged;
 			*/
+		    }//Endof foreach Unit.
+		  }//Endof foreach Config.
+		  outInstruction.data.send();
 		}
 
 		/** A Method doing the computation for an instruction */
@@ -662,13 +721,21 @@ class FunctionalUnit : public module
 		
 		void WarmRestart()
 		{
-			queue.Reset();
-			//			changed = true;
+		  
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		    {
+		      for(int unit=0; unit<nUnits; unit++)
+			queue[cfg][unit].Reset();
+		    }
 		}
 		
 		void ResetStats()
 		{
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		    {
+		      for(int unit=0; unit<nUnits; unit++)
 			cumulative_occupancy = 0;
+		    }
 		}
 
 	private:
@@ -681,10 +748,10 @@ class FunctionalUnit : public module
 		ml_in_data<bool> inStateChanged;
 		*/
 		/* A queue modeling the functional unit pipeline */
-		Queue<FunctionalUnitPipelineEntry<T, nSources, nStages>, nStages> queue;
+		Queue<FunctionalUnitPipelineEntry<T, nSources, nStages>, nStages> queue[nConfig][nUnits];
 
 		//		bool changed;
-		uint64_t cumulative_occupancy;
+		uint64_t cumulative_occupancy[nConfig][nUnits];
 
                 CPUSim *state;
 };

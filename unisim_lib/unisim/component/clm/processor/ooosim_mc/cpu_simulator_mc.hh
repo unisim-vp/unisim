@@ -227,9 +227,12 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     sensitive_pos_method(start_of_cycle) << inClock;
     
     speculative_cpu_state = new CPUSim("speculative_cpu_state",this);
-    check_emulator = new CPUEmu("check_emulator",this);
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      check_emulator[cfg] = new CPUEmu("check_emulator",this);
+      // fetch_emulator[cfg] = new CPUSim("fetch_emulator",this);
+    }
     fetch_emulator = new CPUSim("fetch_emulator",this);
-    
     // For spec emu...
     //    mem_emu = new MyMemEmulator("mem_emu",this);
 
@@ -474,11 +477,8 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
   void start_of_cycle()
   {
 #ifdef DD_DEBUG_PIPELINE_VERB2
-
-
     if (DD_DEBUG_TIMESTAMP < timestamp())
       {
-	
 	//	cerr << "("<< timestamp() << ")" << *cache;
 	cerr << "("<< timestamp() << ")" << *fetch;
 	cerr << "("<< timestamp() << ")" << *allocate;
@@ -495,14 +495,9 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 	for (int i=0; i<nIntegerUnits; i++)
 	  { cerr << "("<< timestamp() << ")" << *agu[i];
       }
-	
 	cerr << "("<< timestamp() << ")" << *lsq;
-	//   cerr << *cdba;
 	cerr << "("<< timestamp() << ")" << *rob;
-	//    cerr << *retbroadcast;
-	
       }
-    
 #endif
     
     // executing in simulator has finished (theoreticaly, ie. effects will become visible
@@ -511,46 +506,28 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     //          if (instruction_wb->cia != cpu->GetCIA())
     
     //#ifdef DONT_CHECK_EACH_CYCLE 
-#if 0
-    if (speculative_cpu_state->GetCIA() != check_emulator->GetCIA())
-          {
-            cerr << "!! =================== Emulator disagrees with simulator ! ========================" << endl;
-            cerr << "!! SIM CIA: " << hexa(speculative_cpu_state->GetCIA()) << " =\\= ";
-            //            cerr << hexa(emulator->ReadCIA()) << " :EMUL CIA" << endl;
-            //            cerr << hexa(cpu->GetCIA()) << " :EMUL CIA" << endl;
-            cerr << hexa(check_emulator->GetCIA()) << " :EMUL CIA" << endl;
-            cerr << "!! ================================================================================" << endl;
-            exit(-1);
-          }
-      
-	  // Check Registers ...
-	  if (!check_emulator->compare_registers(speculative_cpu_state))
-	    { 
-	      //      cerr << pipeline << endl;
-	      DumpRegisters(cerr);
-	      cerr << "Timestamp: " << timestamp() << endl;
-	      exit(-1);
-	    }
-#endif
-	  if ( (timestamp()%CHECK_REGISTER_STEP) == 0 )
-	    {
-	      if (!rob->syscall_retired)
-		{
-		  Check();
-		}
-	    }
-
-	  if (rob->syscall_retired)
-	    {
-	      RepaireAfterSyscall();
-	      //cerr << "(" << timestamp() << ") REPAIRE AFTER SYSCALL !!!" << endl;
-	    }
-	  // Dumps
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+#ifdef DD_CHECK_WITH_EMULATOR
+      if ( (timestamp()%CHECK_REGISTER_STEP) == 0 )
+      {
+	if (!rob->syscall_retired)
+	{
+	  Check(cfg);
+	}
+      }
+#endif    
+      if (rob->syscall_retired)
+      {
+	RepaireAfterSyscall(cfg);
+	//cerr << "(" << timestamp() << ") REPAIRE AFTER SYSCALL !!!" << endl;
+      }
+    // Dumps
 #ifdef DD_DEBUG_CPUPPCSS_VERB1
 // Mourad modifs 
 ///////////////////////////////////
-if (DD_DEBUG_TIMESTAMP < timestamp())
-{
+      if (DD_DEBUG_TIMESTAMP < timestamp())
+	{
 	  //	  cerr <<"["<<this->name()<<"("<<timestamp()<<")]===== DEBUG OooSimCpu (Begin) =====================" << "(" << timestamp() << ")" << endl;
 	  cerr <<"["<<this->name()<<"("<<timestamp()<<")] Fetcher     CIA: " << hexa(fetch_emulator->GetCIA()) << endl;
 	  cerr <<"["<<this->name()<<"("<<timestamp()<<")] Speculative CIA: " << hexa(speculative_cpu_state->GetCIA()) << endl;
@@ -559,10 +536,10 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	  //DumpRegisters(cerr);
 	  //	  cerr << *fetch_stage << endl;
 	  //cerr << "===== DEBUG OooSimCpu (End) =======================" << "(" << timestamp() << ")" << endl;
-}
+	}
 #endif
-  }
-
+    } // End of foreach Config.
+  }// End of start_of_cycle()
   /**
    * \brief Automatic Setup of OooSimCpu
    */
@@ -655,156 +632,94 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
     // STF !!!!!
     }
   */
-  void WriteCIA(address_t pc)
+  void WriteCIA(address_t pc, int cfg)
   {
-    fetch->WriteCIA(pc);
-    rob->WriteCIA(pc);
+    fetch->WriteCIA(pc, cfg);
+    rob->WriteCIA(pc, cfg);
   }
   
-  address_t ReadCIA()
+  address_t ReadCIA(int cfg)
   {
-    return rob->ReadCIA();
+    return rob->ReadCIA(cfg);
   }
 
-  /*
-  void SuperScalarProcessor::Read(void *buffer, address_t address, int size)
-  {
-    memory->Read(buffer, address, size);
-    L2->Read(buffer, address, size);
-    DL1->Read(buffer, address, size);
-  }
-  
-  void SuperScalarProcessor::Write(address_t address, const void *buffer, int size)
-  {
-    DL1->Write(address, buffer, size);
-    L2->Write(address, buffer, size);
-    memory->Write(address, buffer, size);
-  }
-  
-  void SuperScalarProcessor::Set(address_t address, UInt8 data, int size)
-  {
-    DL1->Set(address, data, size);
-    L2->Set(address, data, size);
-	memory->Set(address, data, size);
-  }
-  
-  template <class T> void SuperScalarProcessor::Swap(T *destination, T *source)
-  {
-    int size = sizeof(T);
-    char *dst = (char *) destination + size - 1;
-	char *src = (char *) source;
-	do
-	  {
-	    *dst = *src;
-	  } while(dst--, src++, --size);
-  }
-  
-  template <class T> void SuperScalarProcessor::Read(T *data, address_t address, endianess_t target_endianess)
-  {
-    if(host_endianess != target_endianess)
-      {
-		T buffer;
-		Read(&buffer, address, sizeof(T));
-		Swap(data, &buffer);
-      }
-    else
-      {
-	Read(data, address, sizeof(T));
-      }
-  }
-
-  template <class T> void SuperScalarProcessor::Write(T *data, address_t address, endianess_t target_endianess)
-  {
-    if(host_endianess != target_endianess)
-      {
-	T buffer;
-	Swap(&buffer, data);
-	Write(address, &buffer, sizeof(T));
-      }
-    else
-	{
-	  Write(address, data, sizeof(T));
-	}
-  }
-  */
-
-
-  void WriteGPR(int regnum, uint32_t data)
+  ////////////////////// 
+  void WriteGPR(int regnum, uint32_t data, int cfg)
   {
     int tag = allocate->ReadIntegerMappingTable(regnum);
     registerfile->WriteGPR(tag, data);
   }
   
-  uint32_t ReadGPR(int regnum)
+  uint32_t ReadGPR(int regnum, int cfg)
   {
     int tag = allocate->ReadIntegerMappingTable(regnum);
     return registerfile->ReadGPR(tag);
   }
   
-  void WriteFPR(int regnum, uint32_t data)
+  void WriteFPR(int regnum, uint32_t data, int cfg)
   {
     int tag = allocate->ReadFloatingPointMappingTable(regnum);
     registerfile->WriteFPR(tag, data);
   }
   
   //  uint32_t ReadFPR(int regnum)
-  uint64_t ReadFPR(int regnum)
+  uint64_t ReadFPR(int regnum, int cfg)
   {
     int tag = allocate->ReadFloatingPointMappingTable(regnum);
     return registerfile->ReadFPR(tag);
   }
 
   // For other registers...
-  uint32_t ReadCR(int regnum)
+  uint32_t ReadCR(int regnum, int cfg)
   {
     int tag = allocate->ReadConditionMappingTable(regnum);
     return registerfile->ReadCR(tag);
   }
-  void WriteCR(int regnum, uint32_t data)
+  void WriteCR(int regnum, uint32_t data, int cfg)
   {
     int tag = allocate->ReadConditionMappingTable(regnum);
     registerfile->WriteCR(tag, data);
   }
   
-  uint32_t ReadFPSCR(int regnum)
+  uint32_t ReadFPSCR(int regnum, int cfg)
   {
     int tag = allocate->ReadFPSCRMappingTable(regnum);
     return registerfile->ReadFPSCR(tag);
   }
-  void WriteFPSCR(int regnum, uint32_t data)
+  void WriteFPSCR(int regnum, uint32_t data, int cfg)
   {
     int tag = allocate->ReadFPSCRMappingTable(regnum);
     registerfile->WriteFPSCR(tag, data);
   }
   
-  uint32_t ReadLR(int regnum)
+  uint32_t ReadLR(int regnum, int cfg)
   {
     int tag = allocate->ReadLinkMappingTable(regnum);
     return registerfile->ReadLR(tag);
   }
-  void WriteLR(int regnum, uint32_t data)
+  void WriteLR(int regnum, uint32_t data, int cfg)
   {
     int tag = allocate->ReadLinkMappingTable(regnum);
     registerfile->WriteLR(tag, data);
   }
   
-  uint32_t ReadCTR(int regnum)
+  uint32_t ReadCTR(int regnum, int cfg)
   {
     int tag = allocate->ReadCountMappingTable(regnum);
     return registerfile->ReadCTR(tag);
   }
-  void WriteCTR(int regnum, uint32_t data)
+  void WriteCTR(int regnum, uint32_t data, int cfg)
   {
     int tag = allocate->ReadCountMappingTable(regnum);
     registerfile->WriteCTR(tag, data);
   }
   
-  uint32_t ReadXER(int regnum)
+  uint32_t ReadXER(int regnum, int cfg)
   {
     int tag = allocate->ReadXERMappingTable(regnum);
     return registerfile->ReadXER(tag);
   }
-  void WriteXER(int regnum, uint32_t data)
+  void WriteXER(int regnum, uint32_t data, int cfg)
   {
     int tag = allocate->ReadXERMappingTable(regnum);
     registerfile->WriteXER(tag, data);
@@ -839,10 +754,10 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
   }
 */
 
-  void Check()
+  void Check(int cfg)
   {
-	address_t sim_pc = ReadCIA();
-	address_t emul_pc = check_emulator->GetCIA();
+	address_t sim_pc = ReadCIA(cfg);
+	address_t emul_pc = check_emulator[cfg]->GetCIA();
 	if(sim_pc != emul_pc)
 	{
 		cerr << *this;
@@ -850,7 +765,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		cerr << "Different value for PC:" << endl;
 		cerr << "simulator: " << hexa(sim_pc) << endl;
 		cerr << "emulator : " << hexa(emul_pc) << endl;
-		DumpRegistersCompare(cerr,check_emulator);
+		DumpRegistersCompare(cerr,check_emulator[cfg]);
 		exit(-1);
 	}
 
@@ -859,8 +774,8 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	    // At cycle 0, we need to set correct values into the RegisterFile.
 	    for(int i = 0; i < nIntegerArchitecturalRegisters; i++)
 	      {
-		UInt64 sim_value = ReadGPR(i);
-		UInt64 emul_value = check_emulator->GetGPR(i);
+		UInt64 sim_value = ReadGPR(i,cfg);
+		UInt64 emul_value = check_emulator[cfg]->GetGPR(i, cfg);
 		if(sim_value != emul_value)
 		  {
 		    WriteGPR(i,emul_value);
@@ -874,8 +789,8 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	      {
 		for(int i = 0; i < nIntegerArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadGPR(i);
-		    UInt64 emul_value = check_emulator->GetGPR(i);
+		    UInt64 sim_value = ReadGPR(i, cfg);
+		    UInt64 emul_value = check_emulator[cfg]->GetGPR(i);
 		    if(sim_value != emul_value)
 		      {
 			cerr << *this;
@@ -883,15 +798,15 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "Different value for GPR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator);
+			DumpRegistersCompare(cerr,check_emulator[cfg]);
 			exit(-1);
 		      }
 		  }
 		for(int i = 0; i < nFloatingPointArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadFPR(i);
-		    //    UInt64 emul_value = (check_emulator->GetFp64(i)).queryValue();
-		    UInt64 emul_value = check_emulator->GetFp64(i);
+		    UInt64 sim_value = ReadFPR(i, cfg);
+		    //    UInt64 emul_value = (check_emulator[cfg]->GetFp64(i, cfg)).queryValue();
+		    UInt64 emul_value = check_emulator[cfg]->GetFp64(i);
 		    if(sim_value != emul_value)
 		      {
 			cerr << *this;
@@ -899,15 +814,15 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "Different value for FPR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator);
+			DumpRegistersCompare(cerr,check_emulator[cfg]);
 			exit(-1);
 		      }
 		  }
 		// Check of control registers
 		for(int i = 0; i < nConditionArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadCR(i);
-		    UInt64 emul_value = (check_emulator->GetCRF(i) & 0x0000000f);
+		    UInt64 sim_value = ReadCR(i, cfg);
+		    UInt64 emul_value = (check_emulator[cfg]->GetCRF(i) & 0x0000000f);
 		    if ( sim_value != emul_value )
 		      {
 			cerr << *this;
@@ -915,14 +830,14 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "Different value for CR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator);
+			DumpRegistersCompare(cerr,check_emulator[cfg]);
 			exit(-1);
 		      }
 		  }
 		for(int i = 0; i < nFPSCArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadFPSCR(i);
-		    UInt64 emul_value = check_emulator->GetFPSCR();
+		    UInt64 sim_value = ReadFPSCR(i, cfg);
+		    UInt64 emul_value = check_emulator[cfg]->GetFPSCR();
 		    if ( sim_value != emul_value )
 		      {
 			cerr << *this;
@@ -930,14 +845,14 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "Different value for FPSCR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator);
+			DumpRegistersCompare(cerr,check_emulator[cfg]);
 			exit(-1);
 		      }
 		  }
 		for(int i = 0; i < nLinkArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadLR(i);
-		    UInt64 emul_value = check_emulator->GetLR();
+		    UInt64 sim_value = ReadLR(i, cfg);
+		    UInt64 emul_value = check_emulator[cfg]->GetLR();
 		    if ( sim_value != emul_value )
 		      {
 			cerr << *this;
@@ -945,14 +860,14 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "Different value for LR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator);
+			DumpRegistersCompare(cerr,check_emulator[cfg]);
 			exit(-1);
 		      }
 		  }
 		for(int i = 0; i < nCountArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadCTR(i);
-		    UInt64 emul_value = check_emulator->GetCTR();
+		    UInt64 sim_value = ReadCTR(i, cfg);
+		    UInt64 emul_value = check_emulator[cfg]->GetCTR();
 		    if ( sim_value != emul_value )
 		      {
 			cerr << *this;
@@ -960,21 +875,21 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "Different value for CTR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator);
+			DumpRegistersCompare(cerr,check_emulator[cfg]);
 			exit(-1);
 		      }
 		  }
 		for(int i = 0; i < nXERArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadXER(i);
-		    //UInt64 emul_value = check_emulator->GetXER();
+		    UInt64 sim_value = ReadXER(i, cfg);
+		    //UInt64 emul_value = check_emulator[cfg]->GetXER();
 		    UInt64 emul_value;
 		    switch(i)
 		      {
-		      case 0: emul_value = check_emulator->GetXER_SO(); break;
-		      case 1: emul_value = check_emulator->GetXER_OV(); break;
-		      case 2: emul_value = check_emulator->GetXER_CA(); break;
-		      case 3: emul_value = check_emulator->GetXER_BYTE_COUNT(); break;
+		      case 0: emul_value = check_emulator[cfg]->GetXER_SO(); break;
+		      case 1: emul_value = check_emulator[cfg]->GetXER_OV(); break;
+		      case 2: emul_value = check_emulator[cfg]->GetXER_CA(); break;
+		      case 3: emul_value = check_emulator[cfg]->GetXER_BYTE_COUNT(); break;
 		      default: break;
 		      }
 		    if ( sim_value != emul_value )
@@ -984,39 +899,21 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "Different value for XER" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator);
+			DumpRegistersCompare(cerr,check_emulator[cfg]);
 			exit(-1);
 		      }
 		  }
 	      }
 	  }
-	/*
-	for(int i = 0; i < nFloatingPointArchitecturalRegisters; i++)
-	{
-		UInt64 sim_value = ReadFPR(i);
-		UInt64 emul_value = check_emulator->GetFPR(i);
-		if(sim_value != emul_value)
-		{
-			cerr << *this;
-			cerr << "time stamp " << timestamp() << endl;
-			cerr << "Different value for FPR" << i << ":" << endl;
-			cerr << "simulator: " << hexa(sim_value) << endl;
-			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegisters(cerr);
-			exit(-1);
-		}
-	}
-	*/
-    
-  }
+  } // End of Check
 
-  void RepaireAfterSyscall()
+  void RepaireAfterSyscall(int cfg)
   {
-	address_t sim_pc = ReadCIA();
-	address_t emul_pc = check_emulator->GetCIA();
+	address_t sim_pc = ReadCIA(cfg);
+	address_t emul_pc = check_emulator[cfg]->GetCIA();
 	if(sim_pc != emul_pc)
 	{
-	  WriteCIA(emul_pc);
+	  WriteCIA(emul_pc, cfg);
 	}
 
 	if (timestamp() == 0)
@@ -1024,11 +921,11 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	    // At cycle 0, we need to set correct values into the RegisterFile.
 	    for(int i = 0; i < nIntegerArchitecturalRegisters; i++)
 	      {
-		UInt64 sim_value = ReadGPR(i);
-		UInt64 emul_value = check_emulator->GetGPR(i);
+		UInt64 sim_value = ReadGPR(i, cfg);
+		UInt64 emul_value = check_emulator[cfg]->GetGPR(i);
 		if(sim_value != emul_value)
 		  {
-		    WriteGPR(i,emul_value);
+		    WriteGPR(i,emul_value,cfg);
 		  }
 	      }	    
 	    
@@ -1039,19 +936,19 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	      {
 		for(int i = 0; i < nIntegerArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadGPR(i);
-		    UInt64 emul_value = check_emulator->GetGPR(i);
+		    UInt64 sim_value = ReadGPR(i, cfg);
+		    UInt64 emul_value = check_emulator[cfg]->GetGPR(i);
 		    if(sim_value != emul_value)
 		      {
-			WriteGPR(i,emul_value);
+			WriteGPR(i,emul_value, cfg);
 		      }
 		  }
 		// Check of FP registers
 		for(int i = 0; i < nFloatingPointArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadFPR(i);
-		    //   UInt64 emul_value = (check_emulator->GetFp64(i)).queryValue();
-		    UInt64 emul_value = check_emulator->GetFp64(i);
+		    UInt64 sim_value = ReadFPR(i, cfg);
+		    //   UInt64 emul_value = (check_emulator[cfg]->GetFp64(i, cfg)).queryValue();
+		    UInt64 emul_value = check_emulator[cfg]->GetFp64(i);
 		    if ( sim_value != emul_value )
 		      {
 			/*
@@ -1060,14 +957,14 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
 			*/
-			WriteFPR(i,emul_value);
+			WriteFPR(i,emul_value, cfg);
 		      }
 		  }
 		// Check of control registers
 		for(int i = 0; i < nConditionArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadCR(i);
-		    UInt64 emul_value = (check_emulator->GetCRF(i) & 0x0000000f);
+		    UInt64 sim_value = ReadCR(i, cfg);
+		    UInt64 emul_value = (check_emulator[cfg]->GetCRF(i) & 0x0000000f);
 		    if ( sim_value != emul_value )
 		      {
 			/*
@@ -1076,75 +973,57 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
 			*/
-			WriteCR(i,emul_value);
+			WriteCR(i,emul_value, cfg);
 		      }
 		  }
 		for(int i = 0; i < nFPSCArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadFPSCR(i);
-		    UInt64 emul_value = check_emulator->GetFPSCR();
+		    UInt64 sim_value = ReadFPSCR(i, cfg);
+		    UInt64 emul_value = check_emulator[cfg]->GetFPSCR();
 		    if ( sim_value != emul_value )
 		      {
-			WriteFPSCR(i,emul_value);
+			WriteFPSCR(i,emul_value, cfg);
 		      }
 		  }
 		for(int i = 0; i < nLinkArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadLR(i);
-		    UInt64 emul_value = check_emulator->GetLR();
+		    UInt64 sim_value = ReadLR(i, cfg);
+		    UInt64 emul_value = check_emulator[cfg]->GetLR();
 		    if ( sim_value != emul_value )
 		      {
-			WriteLR(i,emul_value);			
+			WriteLR(i,emul_value, cfg);			
 		      }
 		  }
 		for(int i = 0; i < nCountArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadCTR(i);
-		    UInt64 emul_value = check_emulator->GetCTR();
+		    UInt64 sim_value = ReadCTR(i, cfg);
+		    UInt64 emul_value = check_emulator[cfg]->GetCTR();
 		    if ( sim_value != emul_value )
 		      {
-			WriteCTR(i,emul_value);
+			WriteCTR(i,emul_value, cfg);
 		      }
 		  }
 		for(int i = 0; i < nXERArchitecturalRegisters; i++)
 		  {
-		    UInt64 sim_value = ReadXER(i);
-		    //UInt64 emul_value = check_emulator->GetXER();
+		    UInt64 sim_value = ReadXER(i, cfg);
+		    //UInt64 emul_value = check_emulator[cfg]->GetXER();
 		    UInt64 emul_value;
 		    switch(i)
 		      {
-		      case 0: emul_value = check_emulator->GetXER_SO(); break;
-		      case 1: emul_value = check_emulator->GetXER_OV(); break;
-		      case 2: emul_value = check_emulator->GetXER_CA(); break;
-		      case 3: emul_value = check_emulator->GetXER_BYTE_COUNT(); break;
+		      case 0: emul_value = check_emulator[cfg]->GetXER_SO(); break;
+		      case 1: emul_value = check_emulator[cfg]->GetXER_OV(); break;
+		      case 2: emul_value = check_emulator[cfg]->GetXER_CA(); break;
+		      case 3: emul_value = check_emulator[cfg]->GetXER_BYTE_COUNT(); break;
 		      default: break;
 		      }
 		    if ( sim_value != emul_value )
 		      {
-			WriteXER(i,emul_value);
+			WriteXER(i,emul_value, cfg);
 		      }
 		  }
 	      }
 	  }
-	/*
-	for(int i = 0; i < nFloatingPointArchitecturalRegisters; i++)
-	{
-		UInt64 sim_value = ReadFPR(i);
-		UInt64 emul_value = check_emulator->GetFPR(i);
-		if(sim_value != emul_value)
-		{
-			cerr << *this;
-			cerr << "time stamp " << timestamp() << endl;
-			cerr << "Different value for FPR" << i << ":" << endl;
-			cerr << "simulator: " << hexa(sim_value) << endl;
-			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegisters(cerr);
-			exit(-1);
-		}
-	}
-	*/
-    
-  }
+  } // End of RepaireAfterSyscall
 
   uint64_t GetRetiredInstructions();
 
@@ -1306,21 +1185,22 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 
     //    fetch_emulator->copy_register_values(check_emulator);
 
-    // Fetcher Reset will copy into fecth cia the fetch_emulator cia (a wrong cia : 0xfff00100)
-    fetch->Reset();
-
+    for(int cfg=0; cfg<nConfig; cfg++)
+    { 
+      // Fetcher Reset will copy into fecth cia the fetch_emulator cia (a wrong cia : 0xfff00100)
+      fetch->Reset(cfg);
+      
+      // WriteCIA will copy the correct starting cia (from check emulator) into fetch cia (0x10000100)
+      WriteCIA(check_emulator[cfg]->GetCIA(), cfg);
+    }
     speculative_cpu_state->SetMSR_FP();
     speculative_cpu_state->SetMSR_PR();
-
-    // WriteCIA will copy the correct starting cia (from check emulator) into fetch cia (0x10000100)
-    WriteCIA(check_emulator->GetCIA());
-
-    //    pipeline.next_fetch_address = check_emulator->GetCIA();
-    //Reset instruction cache
-    /*
-    icache.linefill.size = 0;
-    icache.memory_operation = MEMOP_NOTHING;
-    */
+      //    pipeline.next_fetch_address = check_emulator->GetCIA();
+      //Reset instruction cache
+      /*
+	icache.linefill.size = 0;
+	icache.memory_operation = MEMOP_NOTHING;
+      */
   }
 
   //  cpu_ppc405_sim_mem_obj_tpl memory_object;
@@ -1345,7 +1225,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
  //  ppc_cpu_t *speculative_cpu_state;
  public:
   CPUSim *speculative_cpu_state;
-  CPUEmu *check_emulator;
+  CPUEmu *check_emulator[nConfig];
   CPUSim *fetch_emulator;
 
   // For spec and fetch emu :

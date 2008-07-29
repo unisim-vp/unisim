@@ -433,17 +433,20 @@ public:
 		//		changed = true;
 		
 		/* Statistics */
-		load_queue_cumulative_occupancy = 0;
-		store_queue_cumulative_occupancy = 0;
-		total_spec_loads = 0;
+		for(int cfg=0; cfg<nConfig; cfg++)
+		  {
 
-		load_to_remove = 0;
-		store_to_remove = 0;
-		store_to_commit = 0;
-
-		for (int i=0; i<nDataCachePorts; i++)
-		  inDL1_flushed_ports[i] = false;
-
+		    load_queue_cumulative_occupancy[cfg] = 0;
+		    store_queue_cumulative_occupancy[cfg] = 0;
+		    total_spec_loads[cfg] = 0;
+		    
+		    load_to_remove[cfg] = 0;
+		    store_to_remove[cfg] = 0;
+		    store_to_commit[cfg] = 0;
+		    
+		    for (int i=0; i<nDataCachePorts; i++)
+		      inDL1_flushed_ports[cfg][i] = false;
+		  }
 	}
 
   /******************************************************************************
@@ -524,6 +527,7 @@ public:
 
   void on_Enables_and_onAllocLDST()
   {
+    /*
     bool areallknown(true);
     int i;
     // AGU known ?
@@ -547,9 +551,17 @@ public:
 	areallknown &= inAllocateLoadInstruction[i].data.known();
 	areallknown &= inAllocateStoreInstruction[i].data.known();
       }
-
-    if (areallknown)
+    */
+    //    if (areallknown)
+    if ( inInstruction.enable.known() &&
+	 inDL1.enable.known() &&
+	 inRetireInstruction.enable.known() &&
+	 inAllocateLoadInstruction.data.known() &&
+	 inAllocateStoreInstruction.data.known()
+	 )
       {	
+	for (int cfg=0; cfg<nConfig; cfg++)
+	{
 	//	Instruction *InvalidLoad = NULL;
 	OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> load;
 	QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> store;
@@ -567,41 +579,21 @@ public:
 
 	// Check for LoadStore Traps...
  	// -----------------------------
-	for(i = 0; i < Width; i++)
+	for(int i = 0; i < Width; i++)
 	  {
-	    if(!inInstruction[i].enable) break;
-	    InstructionPtr instruction = inInstruction[i].data;
+	    //	    if(!inInstruction[i].enable) break;
+	    if(!inInstruction.enable[cfg*Width+i]) break;
+	    InstructionPtr instruction = inInstruction.data[cfg*Width+i];
 	    //	    const Instruction *instruction = &inst;
 	
 	    if(instruction->fn & FnStore)
 	      {
-		StoreQueueEntry<T, nSources> *store = SearchStore(instruction);
+		StoreQueueEntry<T, nSources> *store = SearchStore(instruction, cfg);
 		
 		if(store)// && store->state == issued_store)
 		  {
-		    /*
-#ifdef DD_DEBUG_LSCONFLICT_VERB2
-	if (DD_DEBUG_TIMESTAMP < timestamp())
-	  { 
-	    cerr << "[---DD_DEBUG_LSCONFLICT_VERB2---(Enables)("<<timestamp()<<") Store Instruction : ]" << endl;
-	    //  cerr << "\t\t\t"<< store->instruction<<endl;
-	    cerr << "\t\t\t"<< *instruction<<endl;
-	  }
-#endif
-		    */
-		    for(load = loadQueue.SeekAtHead(); load; load++)
+		    for(load = loadQueue[cfg].SeekAtHead(); load; load++)
 		      {
-			/*
-#ifdef DD_DEBUG_LSCONFLICT_VERB2
-	if (DD_DEBUG_TIMESTAMP < timestamp())
-	  { 
-	    cerr << "[---DD_DEBUG_LSCONFLICT_VERB2---(Enables)("<<timestamp()<<") in For load loop...]" << endl;
-	    cerr << "[---DD_DEBUG_LSCONFLICT_VERB2---(Enables)("<<timestamp()<<") Load Instruction : ]" << endl;
-	    cerr << "\t\t\t"<< load->instruction<<endl;
-	  }
-#endif
-			*/
-			//			if(load->instruction.may_need_replay && (load->state == waiting_data_cache_load || load->state == finished_load))
 			if(  (load->state == waiting_data_cache_load) ||
 			     (load->state == finished_load) ||
 			     ( (load->state == issued_load) && (load->dcachePort > -1) ) 
@@ -625,12 +617,6 @@ public:
 
 				    if(load->state == finished_load)
 				      load->state = invalid_load;
-				    /*
-				    if (!InvalidLoad)
-				      {
-					InvalidLoad = &(load->instruction);
-				      }
-				    */
 				  }
 			      }
 			  }
@@ -669,19 +655,20 @@ public:
 	    //  {
 	    
 	    // Search for the first invalid load in load queue :
-	    for (first_invalid_load = loadQueue.SeekAtHead(); first_invalid_load; first_invalid_load++)
+	    for (first_invalid_load = loadQueue[cfg].SeekAtHead(); first_invalid_load; first_invalid_load++)
 	      {
 		if( (first_invalid_load->state == invalid_load) ) break;
 	      }
 	    //		if(inL1Valid[dataCachePort])
-	    if(inDL1[dataCachePort].data.something())
+	    //	    if(inDL1[dataCachePort].data.something())
+	    if(inDL1.data[cfg*nDataCachePorts+dataCachePort].something())
 	      {
 		/* Got a data cache response and a common data bus arbiter accept */
 		//load = SearchLoad(inL1Instruction[dataCachePort]);
-		memreq< InstructionPtr, nCPUDataPathSize > tmpreq = inDL1[dataCachePort].data;
+		memreq< InstructionPtr, nCPUDataPathSize > tmpreq = inDL1.data[cfg*nDataCachePorts+dataCachePort];
 		//		    Instruction inst = inDL1[dataCachePort].data.instr;
 		//		    load = SearchLoad(inDL1[dataCachePort].data.instruction);
-		load = SearchLoad(tmpreq.instr);
+		load = SearchLoad(tmpreq.instr, cfg);
 		
 		
 		if(load)// && first_invalid_load && (load->instruction < first_invalid_load->instruction))
@@ -690,12 +677,12 @@ public:
 		      {
 			if ( first_invalid_load )// && (load->instruction < first_invalid_load->instruction))
 			  {
-			    outInstruction[cdbPort].data = first_invalid_load->instruction;
+			    outInstruction.data[cfg*nCDBPorts+cdbPort] = first_invalid_load->instruction;
 			  }
 			else
 			  {
-			    inDL1_flushed_ports[dataCachePort] = true;
-			    outInstruction[cdbPort].data.nothing();
+			    inDL1_flushed_ports[cfg][dataCachePort] = true;
+			    outInstruction.data[cfg*nCDBPorts+cdbPort].nothing();
 			  }
 		      }
 		    else
@@ -708,7 +695,7 @@ public:
 			{ 
 			  if(load->state == waiting_data_cache_load)
 			  {
-			    memreq< InstructionPtr, nCPUDataPathSize > tmpreq = inDL1[dataCachePort].data;
+			    memreq< InstructionPtr, nCPUDataPathSize > tmpreq = inDL1.data[cfg*nDataCachePorts+dataCachePort];
 			    InstructionPtr instruction = tmpreq.instr;
 			    ByteArray<nCPUDataPathSize> vector = tmpreq.data;
 			    T data=0;
@@ -835,7 +822,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			      }
 			    }
 			    if(load->instruction->replay_trap) instruction->replay_trap = true;
-			    outInstruction[cdbPort].data = instruction;
+			    outInstruction.data[cfg*nCDBPorts+cdbPort] = instruction;
 			    load->cdbPort = cdbPort;
 #ifdef DD_DEBUG_LSQ_VERB3
 if (DD_DEBUG_TIMESTAMP < timestamp())
@@ -855,7 +842,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			}// end of "else" of "if is a flush"
 			else
 			{
-			  outInstruction[cdbPort].data = first_invalid_load->instruction;
+			  outInstruction.data[cfg*nCDBPorts+cdbPort] = first_invalid_load->instruction;
 			}
 		      }
 		  } // end of if(load)
@@ -877,11 +864,11 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	      {
 		if (first_invalid_load)
 		  {
-		    outInstruction[cdbPort].data = first_invalid_load->instruction;
+		    outInstruction.data[cfg*nCDBPorts+cdbPort] = first_invalid_load->instruction;
 		  }
 		else
 		  {
-		    outInstruction[cdbPort].data.nothing();
+		    outInstruction.data[cfg*nCDBPorts+cdbPort].nothing();
 		  }
 		// DD Debuging accept signal cycles... Always accept response from DL1 !!! 
 		//inDL1[dataCachePort].accept = false;
@@ -899,15 +886,15 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	*/
 	// Retire instruction ...
  	// -----------------------------
-	for (i=0;i<RetireWidth;i++)
+	for (int i=0;i<RetireWidth;i++)
 	  {
-	    if(!inRetireInstruction[i].enable) break;
-	    InstructionPtr instruction = inRetireInstruction[i].data;
+	    if(!inRetireInstruction.enable[cfg*RetireWidth+i]) break;
+	    InstructionPtr instruction = inRetireInstruction.data[cfg*RetireWidth+i];
 	    //	    const Instruction *instruction = &inst;
 	    
 	    if(instruction->fn & FnStore)
 	      {
-		StoreQueueEntry<T, nSources> *store = SearchStore(instruction);
+		StoreQueueEntry<T, nSources> *store = SearchStore(instruction, cfg);
 		
 		if(store && store->state == issued_store)
 		  {
@@ -932,19 +919,19 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			  }
 		      }
 		    */
-		    store_to_commit++;
+		    store_to_commit[cfg]++;
 		  }
 	      }
 	    else 
 	      {
 		if (instruction->fn & FnLoad)
 		  {
-		    LoadQueueEntry<T, nSources> *load = SearchLoad(instruction);
+		    LoadQueueEntry<T, nSources> *load = SearchLoad(instruction, cfg);
 		
 		    if(load && load->state == finished_load)
 		      {
 			// Remove the load
-			load_to_remove++;
+			load_to_remove[cfg]++;
 		      }
 		  }
 	      }
@@ -952,34 +939,36 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	//
 	// Now Compute number of ld/st to alloc...
 	//
-	int loadQueueFreeSpace = loadQueue.FreeSpace();
-	int storeQueueFreeSpace = storeQueue.FreeSpace();
+	int loadQueueFreeSpace = loadQueue[cfg].FreeSpace();
+	int storeQueueFreeSpace = storeQueue[cfg].FreeSpace();
 	int load_to_add = 0;
 	int store_to_add = 0;
 	
-	for (i=0;i<AllocateWidth;i++)
+	for (int i=0;i<AllocateWidth;i++)
 	  {
-	    if (inAllocateLoadInstruction[i].data.something())
+	    if (inAllocateLoadInstruction.data[cfg*AllocateWidth+i].something())
 	      load_to_add++;
-	    if (inAllocateStoreInstruction[i].data.something())
+	    if (inAllocateStoreInstruction.data[cfg*AllocateWidth+i].something())
 	      store_to_add++;
 	  }
 	
-	int load_to_accept = MIN(loadQueueFreeSpace + load_to_remove, load_to_add);
-	int store_to_accept = MIN(storeQueueFreeSpace + store_to_remove, store_to_add);
+	int load_to_accept = MIN(loadQueueFreeSpace + load_to_remove[cfg], load_to_add);
+	int store_to_accept = MIN(storeQueueFreeSpace + store_to_remove[cfg], store_to_add);
 	
 	//	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== LSQ ==== LD to accept = " << load_to_accept << endl;
 	//	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== LSQ ==== ST to accept = " << store_to_accept << endl;
-
+	int i;
 	for(i = 0; i < load_to_accept; i++)
-	  inAllocateLoadInstruction[i].accept = true;
+	  inAllocateLoadInstruction.accept[cfg*AllocateWidth+i] = true;
 	for(; i < AllocateWidth; i++)
-	  inAllocateLoadInstruction[i].accept = false;
+	  inAllocateLoadInstruction.accept[cfg*AllocateWidth+i] = false;
 	
 	for(i = 0; i < store_to_accept; i++)
-	  inAllocateStoreInstruction[i].accept = true;
+	  inAllocateStoreInstruction.accept[cfg*AllocateWidth+i] = true;
 	for(; i < AllocateWidth; i++)
-	  inAllocateStoreInstruction[i].accept = false;
+	  inAllocateStoreInstruction.accept[cfg*AllocateWidth+i] = false;
+
+	}//Endof foreach Config.
 
       } // end of : if (areallknow) ...
   } // end of : on_Enables_and_...
@@ -992,26 +981,33 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 
   void on_RetireData()
   {
+    /*
 	  bool areallknown(true);
 	  int i;
 	  for (i=0;i<RetireWidth;i++)
 	    {
 	      areallknown &= inRetireInstruction[i].data.known();
 	    }
-	  if (areallknown)
-	    {
-	      for (i=0;i<RetireWidth;i++)
+    */
+    //	  if (areallknown)
+      if( inRetireInstruction.data.known() )
+      {
+	  for (int cfg=0; cfg<nConfig; cfg++)
+	  {
+	      for (int i=0;i<RetireWidth;i++)
 		{
-		  if (inRetireInstruction[i].data.something())
+		  if (inRetireInstruction.data[cfg*RetireWidth+i].something())
 		    {
-		      inRetireInstruction[i].accept = true;
+		      inRetireInstruction.accept[cfg*RetireWidth+i] = true;
 		    }
 		  else
 		    {
-		      inRetireInstruction[i].accept = false;
+		      inRetireInstruction.accept[cfg*RetireWidth+i] = false;
 		    }
 		}
-	    }
+	  }
+	  inRetireInstruction.accept.send();
+      }
   }
 
   /************************************************************************************************************
@@ -1019,25 +1015,27 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
    ************************************************************************************************************/
   void start_of_cycle()
   {
-    //    int i;
-    //    int cdbPort;
-    int dataCachePort;
-    OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> load;
-    QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> store;
-    
-    load_to_remove = 0;
-    store_to_remove = 0;
-    store_to_commit = 0;
-
-    for (int i=0; i<nDataCachePorts; i++)
-      inDL1_flushed_ports[i] = false;
-    // SOC
-    /* Data Cache Access/Common Data Bus Access */
-    dataCachePort = 0;
-    if(!loadQueue.Empty() || !storeQueue.Empty())
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      //    int i;
+      //    int cdbPort;
+      int dataCachePort;
+      OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> load;
+      QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> store;
+      
+      load_to_remove[cfg] = 0;
+      store_to_remove[cfg] = 0;
+      store_to_commit[cfg] = 0;
+      
+      for (int i=0; i<nDataCachePorts; i++)
+	inDL1_flushed_ports[cfg][i] = false;
+      // SOC
+      /* Data Cache Access/Common Data Bus Access */
+      dataCachePort = 0;
+      if(!loadQueue[cfg].Empty() || !storeQueue[cfg].Empty())
       {
-	load = loadQueue.SeekAtHead();
-	store = storeQueue.SeekAtHead();
+	load = loadQueue[cfg].SeekAtHead();
+	store = storeQueue[cfg].SeekAtHead();
 	
 	do
 	  {
@@ -1055,7 +1053,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		    if(load->state == issued_load)
 		      {
 			//bool may_conflict = LoadStoreMayConflict(&(load->instruction));
-			load->conflicted = LoadStoreConflict(load->instruction);
+			load->conflicted = LoadStoreConflict(load->instruction, cfg);
 			//			if (!load->conflicted && !may_conflict)
 			if (!load->conflicted)
 			  {
@@ -1110,8 +1108,8 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		      }
 		  }
 		*/
-		load->instruction->may_need_replay = LoadStoreMayConflict(load->instruction);
-		if(load->instruction->may_need_replay) total_spec_loads++;
+		load->instruction->may_need_replay = LoadStoreMayConflict(load->instruction, cfg);
+		if(load->instruction->may_need_replay) total_spec_loads[cfg]++;
 		
 		// load can access to the data cache
 		/*
@@ -1136,7 +1134,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		    tmp_memreq.message_type = memreq_types::type_REQUEST;
 		    tmp_memreq.sender = this;
 		    tmp_memreq.req_sender = this;
-		    outDL1[dataCachePort].data = tmp_memreq;
+		    outDL1.data[cfg*nDataCachePorts+dataCachePort] = tmp_memreq;
 		    load->dcachePort = dataCachePort;
 		    dataCachePort++;
 
@@ -1252,14 +1250,9 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		    tmp_memreq.req_sender = this;
 		    		    tmp_memreq.data = data;		    
 		    //		    tmp_memreq.data.Write(data);
-		    outDL1[dataCachePort].data = tmp_memreq;
+		    outDL1.data[cfg*nDataCachePorts+dataCachePort] = tmp_memreq;
 		    store->dcachePort = dataCachePort;
-		    /*
-		      if(store->instruction->ea == 0x000000011ff96160LL)
-		      {
-		      cerr << "time stamp = " << sc_time_stamp() << " : store at 0x000000011ff96160" << endl;
-		      }
-		    */
+
 		    dataCachePort++;
 		    store++;
 		  }
@@ -1275,9 +1268,12 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
     while(dataCachePort < nDataCachePorts)
       {
 	//outL1Valid[dataCachePort] = false;
-	outDL1[dataCachePort].data.nothing();
+	outDL1.data[cfg*nDataCachePorts+dataCachePort].nothing();
 	dataCachePort++;
       }   
+
+    }// Endof foreach nConfig.
+    outDL1.data.send();
 
   }// end of : start_of_cycle
 
@@ -1286,6 +1282,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
    ************************************************************************************************************/
   void on_outDL1_Accept()
   {
+    /*
     bool areallknown(true);
     int i;
     for (i=0;i<nDataCachePorts;i++)
@@ -1293,6 +1290,10 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	areallknown &= outDL1[i].accept.known();
       }
     if (areallknown)
+    */
+    if ( outDL1.accept.known())
+    {
+      for(int cfg=0; cfg<nConfig; cfg++)
       {
 	int cdbPort;
 	int dataCachePort;
@@ -1304,8 +1305,8 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	// For stores compute the # of store to remove...
 	/* Data Cache Accept for a load/store */
 	dataCachePort = 0;
-	load = loadQueue.SeekAtHead();
-	store = storeQueue.SeekAtHead();
+	load = loadQueue[cfg].SeekAtHead();
+	store = storeQueue[cfg].SeekAtHead();
 	
 	do
 	  {
@@ -1315,7 +1316,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		  {
 		    if(load->state == issued_load && 
 		    //		    if(load->state == waiting_data_cache_accept_load && 
-		       ((load->instruction->fn & FnPrefetchLoad) || !LoadStoreConflict(load->instruction)))
+		       ((load->instruction->fn & FnPrefetchLoad) || !LoadStoreConflict(load->instruction, cfg)))
 		       //    ((load->instruction.fn & FnPrefetchLoad) || !load->conflicted))
 		      {
 			// found a load that accesses to the data cache
@@ -1335,22 +1336,22 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		    cerr << *load << endl;
 		    abort();
 		  }
-		if (outDL1[dataCachePort].accept)
+		if (outDL1.accept[cfg*nDataCachePorts+dataCachePort])
 		  {
 		    // data cache accepts the load
 		    //		    outL1Enable[dataCachePort] = true;
-		    outDL1[dataCachePort].enable = true;
+		    outDL1.enable[cfg*nDataCachePorts+dataCachePort] = true;
 		    if(load->instruction->fn == FnPrefetchLoad)
 		      {
 			// prefetch load will be removed from the load queue
-			load_to_remove++;
+			load_to_remove[cfg]++;
 		      }
 		  }
 		else
 		  {
 		    //		    outL1Enable[dataCachePort] = false;
 		    load->dcachePort = -1;
-		    outDL1[dataCachePort].enable = false;
+		    outDL1.enable[cfg*nDataCachePorts+dataCachePort] = false;
 		  }
 		dataCachePort++;
 		load++;
@@ -1367,16 +1368,16 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			cerr << *store << endl;
 			abort();
 		      }
-		    if (outDL1[dataCachePort].accept)
+		    if (outDL1.accept[cfg*nDataCachePorts+dataCachePort])
 		      {
 			// data cache accepts a committed store
-			store_to_remove++;
-			outDL1[dataCachePort].enable = true;
+			store_to_remove[cfg]++;
+			outDL1.enable[cfg*nDataCachePorts+dataCachePort] = true;
 		      }
 		    else
 		      {
 			store->dcachePort = -1;
-			outDL1[dataCachePort].enable = false;
+			outDL1.enable[cfg*nDataCachePorts+dataCachePort] = false;
 		      }
 		    dataCachePort++;
 		    store++;
@@ -1392,10 +1393,13 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	while(dataCachePort < nDataCachePorts)
 	  {
 	    //outL1Enable[dataCachePort] = false;
-	    outDL1[dataCachePort].enable = false;
+	    outDL1.enable[cfg*nDataCachePorts+dataCachePort] = false;
 	    dataCachePort++;
 	  }
-      } // end of: if (areallknow)
+      }//Endof foreach Config.
+      outDL1.enable.send();
+
+    } // end of: if (areallknow)
   } // end of: on_outDL1_Accept...
 
   /************************************************************************************************************
@@ -1403,6 +1407,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
    ************************************************************************************************************/
   void on_AGU_Data()
   {
+    /*
     bool areallknown(true);
     int i;
     for (i=0;i<Width;i++)
@@ -1410,13 +1415,19 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	areallknown &= inInstruction[i].data.known();
       }
     if (areallknown)
+    */
+    if ( inInstruction.data.known() ) 
       {
-	// Always accept data from AGU because entries in queues are already reserved.
-	// We will copy addresses at end of cycle.
-	for (i=0;i<Width;i++)
+	for(int cfg=0; cfg<nConfig; cfg++)
+	{
+	  // Always accept data from AGU because entries in queues are already reserved.
+	  // We will copy addresses at end of cycle.
+	  for (int i=0;i<Width;i++)
 	  {
-	    inInstruction[i].accept = inInstruction[i].data.something();
+	    inInstruction.accept[cfg*Width+i] = inInstruction.data[cfg*Width+i].something();
 	  }
+	}
+	inInstruction.accept.send();
       }
   }
 
@@ -1429,6 +1440,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
    ************************************************************************************************************/
   void on_inDL1_Data()
   {
+    /*
     bool areallknown(true);
     int i;
     for (i=0;i<nDataCachePorts;i++)
@@ -1436,274 +1448,19 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	areallknown &= inDL1[i].data.known();
       }
     if (areallknown)
+    */
+      if ( inDL1.data.known() )
       {
-	for (i=0;i<nDataCachePorts;i++)
+	for(int cfg=0; cfg<nConfig; cfg++)
+	{
+	  for (int i=0;i<nDataCachePorts;i++)
 	  {
-	    inDL1[i].accept = inDL1[i].data.something();
+	    inDL1.accept[cfg*nDataCachePorts+i] = inDL1.data[cfg*nDataCachePorts+i].something();
 	  }
+	}
+	inDL1.accept.send();
       }
   }
-
-  void on_inDL1_Data_Old()
-  {
-    bool areallknown(true);
-    int i;
-    for (i=0;i<nDataCachePorts;i++)
-      {
-	areallknown &= inDL1[i].data.known();
-      }
-    if (areallknown)
-      {
-	int cdbPort;
-	int dataCachePort;
-	OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> load;
-	//	QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> store;
-     
-	// Accept as many data from DL1 as available CDBA prots
-	for(dataCachePort = 0, cdbPort = 0; dataCachePort < nDataCachePorts && cdbPort < nCDBPorts; dataCachePort++, cdbPort++)
-	  {
-	    //	    if (inDL1[dataCachePort].data.something())
-	    //	      {
-	    // Converting data format from Memory interface to pipeline data format...
-	    //		outInstruction[cdbPort].data = inDL1[dataCachePort].data;
-	    //for(dataCachePort = 0; dataCachePort < nDataCachePorts && cdbPort < nCDBPorts; dataCachePort++, cdbPort++)
-	    //  {
-		bool valid = false;
-		bool enable = false;
-		bool L1Accept = false;
-		
-		//		if(inL1Valid[dataCachePort])
-		if(inDL1[dataCachePort].data.something())
-		  {
-		    /* Got a data cache response and a common data bus arbiter accept */
-		    //load = SearchLoad(inL1Instruction[dataCachePort]);
-		    memreq< InstructionPtr, nCPUDataPathSize > tmpreq = inDL1[dataCachePort].data;
-		    //		    Instruction inst = inDL1[dataCachePort].data.instr;
-		    //		    load = SearchLoad(inDL1[dataCachePort].data.instruction);
-		    load = SearchLoad(&(tmpreq.instr));
-		    //loadQueue.Retrieve(inL1Tag[dataCachePort]);
-		    
-		    if(load)
-		      {
-			if(load->state == flushed_load)
-			  {
-			    /*
-			    L1Accept = true;
-			    if(inL1Enable[dataCachePort])
-			      {
-				// flushed load will be removed from the load queue
-				load_to_remove++;
-			      }
-			    */
-			    //inDL1.accept = true;
-			    //		for (int i=0; i<nDataCachePorts; i++)
-			    inDL1_flushed_ports[dataCachePort] = true;
-			    outInstruction[cdbPort].data.nothing();
-	    
-
-			  }
-			else
-			  {
-			    if(load->state == waiting_data_cache_load)
-			      {
-				//InstructionPtr<T, nSources> instruction = inL1Instruction[dataCachePort];
-				//Instruction inst;
-				//Instruction *instruction = &inst;
-				memreq< InstructionPtr, nCPUDataPathSize > tmpreq = inDL1[dataCachePort].data;
-				//				Instruction inst= inDL1[dataCachePort].data.inst;
-				//				Instruction *instruction = &inst;
-				InstructionPtr instruction = &(tmpreq.instr);
-				// remove the load from the load queue */
-				//L1Accept = inAccept[cdbPort];
-				//				L1Accept = outInstruction[cdbPort].accept;
-				//				valid = true;
-				
-				//ByteArray<nCPUDataPathSize> vector = inDL1[dataCachePort].data.data;
-				ByteArray<nCPUDataPathSize> vector = tmpreq.data;
-				T data=0;
-				// DD: Becarefull when copying data !!!
-				// DD: Here everything have to be rewritten... we must check destination type... 
-				if(instruction->fn == FnLoadFloat)
-				  {
-				    switch(instruction->operation->memory_access_size())
-				      {
-					uint64_t tmp64;
-					uint32_t tmp32;
-				      case 4:
-					vector.Read(tmp32, 0, endianess);
-					data = tmp32 & 0xffffffff;
-					break;
-				      case 8:
-					vector.Read(tmp64, 0, endianess);
-					data = tmp64;
-					break;
-				      default:
-					cerr << "Warning unknow size !!!" << endl;
-					abort();
-					break;
-				      }
-				  }
-				else
-				  {
-				    //switch(tmpreq.size)
-				    switch(instruction->operation->memory_access_size())
-				      {
-					uint64_t tmp64;
-					uint32_t tmp32;
-					uint16_t tmp16;
-					uint8_t tmp8;
-					
-				      case 1:
-					//vector.Read(((uint8_t&)data), 0, endianess);
-					vector.Read(tmp8, 0, endianess);
-					data = tmp8 & 0x000000ff;
-					break;
-				      case 2:
-					//vector.Read(((uint16_t&)data), 0, endianess);
-					vector.Read(tmp16, 0, endianess);
-					data = tmp16 & 0x0000ffff;
-					break;
-				      case 4:
-					//vector.Read(((uint32_t&)data), 0, endianess);
-					vector.Read(tmp32, 0, endianess);
-					data = tmp32 & 0xffffffff;
-					break;
-				      case 8:
-					//vector.Read(((uint64_t&)data), 0, endianess);
-					vector.Read(tmp64, 0, endianess);
-					data = tmp64;
-					//data = data & 0x000000ff;
-					break;
-				      default:
-					cerr << "Warning unknow size !!!" << endl;
-					abort();
-					break;
-				      }
-				  }
-
-				//#define DD_DEBUG_LSQ
-#ifdef DD_DEBUG_LSQ
-				//Mourad Modifs
-				if (DD_DEBUG_TIMESTAMP < timestamp())
-				  {
-				cerr << "[DD_DEBUG_LSQ]: data: " << hexa(data) << endl;
-				  }
-#endif
-				//	if(instruction->fn & FnIntSextLoad)
-				//if(instruction->fn & FnIntExtended) // Faux !!!! // Creer une fonction booleene qui dit s'il faut faire une extension de signe...
-				//				if (0)
-				if (instruction->operation->is_sign_extended())
-				  {
-				    // do a sign extension
-				    instruction->destinations[0].data = SignExtension(data, instruction->operation->memory_access_size() * 8);
-				  }
-				//				else if(instruction->fn & FnFpLoad)
-				//			else if(instruction->fn & FnLoadFloat)
-				else if(instruction->fn == FnLoadFloat)
-				  {
-				    if(instruction->operation->memory_access_size() == 4)
-				      {
-					// do a single to double precision floating point conversion
-					double tmp = LongToF32((UInt32) data);
-					instruction->destinations[0].data = *(UInt64 *) &tmp;
-				      }
-				    else
-				      {
-					// no floating point conversion needed
-					instruction->destinations[0].data = data;
-				      }
-				  }
-				else
-				  {
-				    // no sign extension needed
-				    instruction->destinations[0].data = data;
-				    //#define DD_DEBUG_LSQ
-#ifdef DD_DEBUG_LSQ
-if (DD_DEBUG_TIMESTAMP < timestamp())
-				  {
-				    cerr << "[DD_DEBUG_LSQ]: In else: data           : " << hexa(data) << endl;
-				    cerr << "[DD_DEBUG_LSQ]: In else destination.data: " << hexa(instruction->destinations[0].data) << endl;
-				  }
-#endif
-				  }
-				
-				if(load->instruction->replay_trap) instruction->replay_trap = true;
-				outInstruction[cdbPort].data = *instruction;
-				load->cdbPort = cdbPort;
-				//#define DD_DEBUG_LSQ
-#ifdef DD_DEBUG_LSQ
-if (DD_DEBUG_TIMESTAMP < timestamp())
-				  {
-				cerr << "[DD_DEBUG_LSQ]: instruction sent: " << *instruction << endl;
-				cerr << "[DD_DEBUG_LSQ]: destination.data: " << hexa(instruction->destinations[0].data) << endl;
-				  }
-#endif
-				//if(inL1Enable[dataCachePort])
-				//  enable = true;
-				//inDL1.accept = true;
-			      }
-			    else
-			      {
-				cerr << *this;
-				cerr << "time stamp = " << timestamp() << endl;
-				cerr << "ExternalControl: Load (" << load->instruction << ";" 
-				  //<< inDL1[dataCachePort].data.instruction 
-				     << ") into Load Queue" << endl;
-				abort();//exit(-1); //<< ") does not wait for DL1 response" << endl;
-				//				exit(-1);
-			      }
-			  }
-		      } // end of if(load)
-		    else
-		      {
-			cerr << *this;
-			cerr << "In on_inDL1_Data ...." << endl;
-			cerr << "time stamp = " << timestamp() << endl;
-			cerr << "in Load Store External Control while getting response from Data Cache" << endl;
-			//cerr << "Can't find load (" << inDL1[dataCachePort].data.instruction << ") into Load Queue" << endl;
-			cerr << "Cache Response : " << tmpreq << endl;
-			cerr << "Guilty Inst : " << tmpreq.instr << endl;
-			exit(-1);
-		      }
-
-		    // DD Debuging accept signal cycles... Always accept response from DL1 !!! 
-		    //inDL1[dataCachePort].accept = true;
-		  }
-		else
-		  {
-		    outInstruction[cdbPort].data.nothing();
-		    // DD Debuging accept signal cycles... Always accept response from DL1 !!! 
-		    //inDL1[dataCachePort].accept = false;
-
-		  }
-		/*		
-			outL1Accept[dataCachePort] = L1Accept;
-			outValid[cdbPort] = valid;
-			outEnable[cdbPort] = enable;
-		*/
-	  } // end of For (data...)
-	/*
-	  while(dataCachePort < nDataCachePorts)
-	  {
-	  //		outL1Accept[dataCachePort] = false;
-	  inDL1[dataCachePort].data
-	  dataCachePort++;
-	  }
-	    while(cdbPort < nCDBPorts)
-	    {
-	    outValid[cdbPort] = false;
-	    outEnable[cdbPort] = false;
-	    cdbPort++;
-	    }
-	*/
-      } // end of if(areallknown)...
-    /*
-	else
-	{
-	outInstruction[cdbPort].data.nothing();
-	}
-    */
-} // end of on_inDL1_Data
 
 
   /************************************************************************************************************
@@ -1711,6 +1468,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
    ************************************************************************************************************/
   void on_CDBA_Accept()
   {
+    /*
     bool areallknown(true);
     int i;
     //    for (i=0;i<Width;i++)
@@ -1719,7 +1477,12 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	areallknown &= outInstruction[i].accept.known();
       }
     if (areallknown)
+    */
+    if ( outInstruction.accept.known() )
       {
+	
+	for(int cfg=0; cfg<nConfig; cfg++)
+	{
 	/*
 	for(int dataCachePort = 0, cdbPort = 0; dataCachePort < nDataCachePorts && cdbPort < nCDBPorts; dataCachePort++, cdbPort++)
 	  {
@@ -1737,10 +1500,12 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	    
 	  }
 	*/
-	for(int cdbPort = 0; cdbPort < nCDBPorts; cdbPort++)
+	  for(int cdbPort = 0; cdbPort < nCDBPorts; cdbPort++)
 	  {
-	    outInstruction[cdbPort].enable = outInstruction[cdbPort].accept;
+	    outInstruction.enable[cfg*nCDBPorts+cdbPort] = outInstruction.accept[cfg*nCDBPorts+cdbPort];
 	  }
+	}
+	outInstruction.enable.send();
       }
   }
 
@@ -1750,6 +1515,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
    ************************************************************************************************************/
   void on_inDL1_Enable()
   {
+    /*
     bool areallknown(true);
     int i;
     for (i=0;i<nDataCachePorts;i++)
@@ -1757,25 +1523,29 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	areallknown &= inDL1[i].enable.known();
       }
     if (areallknown)
+    */
+    if ( inDL1.enable.known() )
+    {
+      for(int cfg=0; cfg<nConfig; cfg++)
       {
 	for(int dataCachePort = 0, cdbPort = 0; dataCachePort < nDataCachePorts && cdbPort < nCDBPorts; dataCachePort++, cdbPort++)
 	  {
 	    //	    outInstruction[cdbPort].enable = inDL1[dataCachePort].enable;
-	    if (inDL1_flushed_ports[dataCachePort])
+	    if (inDL1_flushed_ports[cfg][dataCachePort])
 	      {
 		//		inDL1[dataCachePort].accept = true;
-		outInstruction[cdbPort].enable = false;
+		outInstruction.enable[cfg*nCDBPorts+cdbPort] = false;
 	      }
 	    else
 	      {
 		//		inDL1[dataCachePort].accept = outInstruction[cdbPort].accept;
-		outInstruction[cdbPort].enable = inDL1[dataCachePort].enable;
+		outInstruction.enable[cfg*nCDBPorts+cdbPort] = inDL1.enable[cfg*nDataCachePorts+dataCachePort];
 	      }
-	    
-
 	    
 	  }
       }
+      outInstruction.enable.send();
+    }
   }
 
 
@@ -1784,6 +1554,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
    ************************************************************************************************************/
   void on_Retire_enable_and_onAllocLDST()
   {
+    /*
     bool areallknown(true);
     int i;
     for (i=0;i<RetireWidth;i++)
@@ -1798,16 +1569,23 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
       }
 
     if (areallknown)
+    */
+    if ( inRetireInstruction.enable.known() &&
+	 inAllocateLoadInstruction.data.known() &&
+	 inAllocateStoreInstruction.data.known()
+	 )
       {
-	for (i=0;i<RetireWidth;i++)
+	for (int cfg=0; cfg<nConfig; cfg++)
+	{
+	  for (int i=0;i<RetireWidth;i++)
 	  {
-	    if(!inRetireInstruction[i].enable) break;
-	    InstructionPtr instruction = inRetireInstruction[i].data;
+	    if(!inRetireInstruction.enable[cfg*RetireWidth+i]) break;
+	    InstructionPtr instruction = inRetireInstruction.data[cfg*RetireWidth+i];
 	    //	    const Instruction *instruction = &inst;
 	    
 	    if(instruction->fn & FnStore)
 	      {
-		StoreQueueEntry<T, nSources> *store = SearchStore(instruction);
+		StoreQueueEntry<T, nSources> *store = SearchStore(instruction, cfg);
 		
 		if(store && store->state == issued_store)
 		  {
@@ -1832,19 +1610,19 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 			  }
 		      }
 		    */
-		    store_to_commit++;
+		    store_to_commit[cfg]++;
 		  }
 	      }
 	    else 
 	      {
 		if (instruction->fn & FnLoad)
 		  {
-		    LoadQueueEntry<T, nSources> *load = SearchLoad(instruction);
+		    LoadQueueEntry<T, nSources> *load = SearchLoad(instruction, cfg);
 		
 		    if(load && load->state == finished_load)
 		      {
 			// Remove the load
-			load_to_remove++;
+			load_to_remove[cfg]++;
 		      }
 		  }
 	      }
@@ -1852,35 +1630,38 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	//
 	// Now Compute number of ld/st to alloc...
 	//
-	int loadQueueFreeSpace = loadQueue.FreeSpace();
-	int storeQueueFreeSpace = storeQueue.FreeSpace();
+	int loadQueueFreeSpace = loadQueue[cfg].FreeSpace();
+	int storeQueueFreeSpace = storeQueue[cfg].FreeSpace();
 	int load_to_add = 0;
 	int store_to_add = 0;
 	
-	for (i=0;i<AllocateWidth;i++)
+	for (int i=0;i<AllocateWidth;i++)
 	  {
-	    if (inAllocateLoadInstruction[i].data.something())
+	    if (inAllocateLoadInstruction.data[cfg*AllocateWidth+i].something())
 	      load_to_add++;
-	    if (inAllocateStoreInstruction[i].data.something())
+	    if (inAllocateStoreInstruction.data[cfg*AllocateWidth+i].something())
 	      store_to_add++;
 	  }
 	
-	int load_to_accept = MIN(loadQueueFreeSpace + load_to_remove, load_to_add);
-	int store_to_accept = MIN(storeQueueFreeSpace + store_to_remove, store_to_add);
+	int load_to_accept = MIN(loadQueueFreeSpace + load_to_remove[cfg], load_to_add);
+	int store_to_accept = MIN(storeQueueFreeSpace + store_to_remove[cfg], store_to_add);
 	
 	//	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== LSQ ==== LD to accept = " << load_to_accept << endl;
 	//	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== LSQ ==== ST to accept = " << store_to_accept << endl;
-
+	int i;
 	for(i = 0; i < load_to_accept; i++)
-	  inAllocateLoadInstruction[i].accept = true;
+	  inAllocateLoadInstruction.accept[cfg*AllocateWidth+i] = true;
 	for(; i < AllocateWidth; i++)
-	  inAllocateLoadInstruction[i].accept = false;
+	  inAllocateLoadInstruction.accept[cfg*AllocateWidth+i] = false;
 	
 	for(i = 0; i < store_to_accept; i++)
-	  inAllocateStoreInstruction[i].accept = true;
+	  inAllocateStoreInstruction.accept[cfg*AllocateWidth+i] = true;
 	for(; i < AllocateWidth; i++)
-	  inAllocateStoreInstruction[i].accept = false;
+	  inAllocateStoreInstruction.accept[cfg*AllocateWidth+i] = false;
 
+	}//Endof foreach Config.
+	inAllocateLoadInstruction.accept.send();
+	inAllocateStoreInstruction.accept.send();
       } // end of : if (areallknow) ...
   } // end of : on_Retire_enable_and_...
 
@@ -1888,9 +1669,39 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 /************************************************************************************************************
  * 8 -- on Flush          : forward all flush signals...
  ************************************************************************************************************/
+/*
 void onDataFlush() { if (inFlush.data.something()) outFlush.data = inFlush.data; else outFlush.data.nothing(); }
 void onAcceptFlush() { inFlush.accept = outFlush.accept; }
 void onEnableFlush() { outFlush.enable = inFlush.enable; }
+*/ 
+                void onDataFlush() 
+                {
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    if (inFlush.data[cfg].something())
+		      outFlush.data[cfg] = inFlush.data[cfg];
+		    else outFlush.data[cfg].nothing(); 
+		  }
+		  outFlush.data.send();
+		}
+		void onAcceptFlush() 
+                {
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    inFlush.accept[cfg] = outFlush.accept[cfg]; 
+		  }
+		  inFlush.accept.send();
+		}
+
+		void onEnableFlush() 
+                { 
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    outFlush.enable[cfg] = inFlush.enable[cfg]; 
+		  }
+		  outFlush.enable.send();
+		}
+
 
 /************************************************************************************************************
  * 9 -- At end_of_cycle   :
@@ -1898,7 +1709,9 @@ void onEnableFlush() { outFlush.enable = inFlush.enable; }
  ************************************************************************************************************/
 void end_of_cycle()
   {
-    int i;
+    for (int cfg=0; cfg<nConfig; cfg++)
+    {
+      //int i;
     int cdbPort;
     int dataCachePort;
     OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> load;
@@ -1908,8 +1721,8 @@ void end_of_cycle()
     if (DD_DEBUG_TIMESTAMP < timestamp())
       {
 
-    cerr << "[DD_DEBUG_LSQ]: Begin of EOC: loadQueue: " <<  endl << loadQueue << endl;
-    cerr << "[DD_DEBUG_LSQ]: Begin of EOC: load_to_remove = " << load_to_remove << endl;
+    cerr << "[DD_DEBUG_LSQ]: Begin of EOC: loadQueue: " <<  endl << loadQueue[cfg] << endl;
+    cerr << "[DD_DEBUG_LSQ]: Begin of EOC: load_to_remove = " << load_to_remove[cfg] << endl;
       }
 #endif     
 
@@ -1917,14 +1730,14 @@ void end_of_cycle()
 #ifdef DD_DEBUG_LSQ_VERB2
 if (DD_DEBUG_TIMESTAMP < timestamp())
       {
-    cerr << "[DD_DEBUG_LSQ]: After Flsuh of EOC: loadQueue: " << endl << loadQueue << endl;
-    cerr << "[DD_DEBUG_LSQ]: After Flush of EOC: load_to_remove = " << load_to_remove << endl;
+    cerr << "[DD_DEBUG_LSQ]: After Flsuh of EOC: loadQueue: " << endl << loadQueue[cfg] << endl;
+    cerr << "[DD_DEBUG_LSQ]: After Flush of EOC: load_to_remove = " << load_to_remove[cfg] << endl;
       }
 #endif     
     /////////////////////////////////////////////////////////////////////////
     // Store to remove
     /////////////////////////////////////////////////////////////////////////
-    for (i=0; i<store_to_remove; i++)
+    for (int i=0; i<store_to_remove[cfg]; i++)
       {
 	// We want to remove splitted store information
 	//	store = storeQueue.SeekAtHead();
@@ -1941,22 +1754,22 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	  }
 	*/
 	// We may need to check the store to remove... 
-	storeQueue.RemoveHead();
+	storeQueue[cfg].RemoveHead();
       } 
     /////////////////////////////////////////////////////////////////////////
     // Load to remove
     /////////////////////////////////////////////////////////////////////////
-    for (i=0; i<load_to_remove; i++)
+    for (int i=0; i<load_to_remove[cfg]; i++)
       {
 	// We may need to check the load to remove... 
-	loadQueue.RemoveHead();
+	loadQueue[cfg].RemoveHead();
       }
 
 #ifdef DD_DEBUG_LSQ_VERB2
 if (DD_DEBUG_TIMESTAMP < timestamp())
       {
-    cerr << "[DD_DEBUG_LSQ]: After LS removing of EOC: loadQueue: " <<  endl << loadQueue << endl;
-    cerr << "[DD_DEBUG_LSQ]: After LS removing of EOC: load_to_remove = " << load_to_remove << endl;
+    cerr << "[DD_DEBUG_LSQ]: After LS removing of EOC: loadQueue: " <<  endl << loadQueue[cfg] << endl;
+    cerr << "[DD_DEBUG_LSQ]: After LS removing of EOC: load_to_remove = " << load_to_remove[cfg] << endl;
       }
 #endif     
 
@@ -1964,15 +1777,15 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
     // Commit stores
     /////////////////////////////////////////////////////////////////////////
     /* Retire */
-    for(i = 0; i < RetireWidth; i++)
+    for(int i = 0; i < RetireWidth; i++)
       {
-	if(!inRetireInstruction[i].enable) break;
-	InstructionPtr instruction = inRetireInstruction[i].data;
+	if(!inRetireInstruction.enable[cfg*RetireWidth+i]) break;
+	InstructionPtr instruction = inRetireInstruction.data[cfg*RetireWidth+i];
 	//	const Instruction *instruction = &inst;
 	
 	if(instruction->fn & FnStore)
 	  {
-	    StoreQueueEntry<T, nSources> *store = SearchStore(instruction);
+	    StoreQueueEntry<T, nSources> *store = SearchStore(instruction, cfg);
 	    
 	    if(store && store->state == issued_store)
 	      {
@@ -2024,20 +1837,20 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	
 	//		if(inL1Valid[dataCachePort])
 	//	    if(inDL1[dataCachePort].data.something())
-	if(inDL1[dataCachePort].enable)
+	if(inDL1.enable[cfg*nDataCachePorts+dataCachePort])
 	  {
 	    /* Got a data cache response and a common data bus arbiter accept */
 	    //load = SearchLoad(inL1Instruction[dataCachePort]);
 	    //	    load = SearchLoad(inDL1[dataCachePort].data.instr);
-	    memreq<InstructionPtr, nCPUDataPathSize> tmpreq = inDL1[dataCachePort].data;
-	    load = SearchLoad(tmpreq.instr);
+	    memreq<InstructionPtr, nCPUDataPathSize> tmpreq = inDL1.data[cfg*nDataCachePorts+dataCachePort];
+	    load = SearchLoad(tmpreq.instr, cfg);
 	    //loadQueue.Retrieve(inL1Tag[dataCachePort]);
 	    
 	    if(load)
 	      {
 		if(load->state == flushed_load)
 		  {
-		    loadQueue.Remove(load);
+		    loadQueue[cfg].Remove(load);
 		  }
 		else
 		  {
@@ -2153,8 +1966,8 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
     /////////////////////////////////////////////////////////////////////////
     /* Data Cache Accept for a load/store */
     dataCachePort = 0;
-    load = loadQueue.SeekAtHead();
-    store = storeQueue.SeekAtHead();
+    load = loadQueue[cfg].SeekAtHead();
+    store = storeQueue[cfg].SeekAtHead();
 
     // Here is a bug: we don't know if the selected load is the load which sent a request...
     // Maybe now, yes know with the intermediate waiting_data_cache_accept_load state...
@@ -2192,7 +2005,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	  {
 	    // load accesses to the data cache
 	    //		if(inL1Accept[dataCachePort])
-	    if (outDL1[dataCachePort].accept)
+	    if (outDL1.accept[cfg*nDataCachePorts+dataCachePort])
 	      {
 		// data cache accepts the load
 		//		    outL1Enable[dataCachePort] = true;
@@ -2261,12 +2074,12 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
     // Moving loads and stores from allocated state to issued state... 
     /////////////////////////////////////////////////////////////////////////
     /* Get the effective address of load/store instructions that have been issued */
-    for(i = 0; i < Width; i++)
+    for(int i = 0; i < Width; i++)
       {
 	//	if(inEnable[i])
-	if(inInstruction[i].enable)
+	if(inInstruction.enable[cfg*Width+i])
 	  {
-	    InstructionPtr instruction = inInstruction[i].data;
+	    InstructionPtr instruction = inInstruction.data[cfg*Width+i];
 	    //	    Instruction *instruction = &inst;
 	    
 	    if(!instruction->must_reschedule)
@@ -2275,7 +2088,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		  {
 		    //////////////////////////////////////////////////////////////////////////////
 		    
-		    LoadQueueEntry<T, nSources> *entry = SearchLoad(instruction);
+		    LoadQueueEntry<T, nSources> *entry = SearchLoad(instruction, cfg);
 
 		    if(entry)
 		      {
@@ -2320,7 +2133,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		  }
 		else if(instruction->fn & FnStore)
 		  {
-		    StoreQueueEntry<T, nSources> *entry = SearchStore(instruction);
+		    StoreQueueEntry<T, nSources> *entry = SearchStore(instruction, cfg);
 		    
 		    if(entry)
 		      {
@@ -2427,16 +2240,16 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
     // Get incoming allocate request and allocate load/store entries in queues...
     //////////////////////////////////////////////////////////
     /* Adding a load/store into the load queue/store queue */
-    for(i = 0; i < AllocateWidth; i++)
+    for(int i = 0; i < AllocateWidth; i++)
       {
-	if(!inAllocateLoadInstruction[i].enable) break;
-	InstructionPtr instruction = inAllocateLoadInstruction[i].data;
+	if(!inAllocateLoadInstruction.enable[cfg*AllocateWidth+i]) break;
+	InstructionPtr instruction = inAllocateLoadInstruction.data[cfg*AllocateWidth+i];
 	//	const Instruction *instruction = &inst; 
 	
 	if(instruction->fn & FnLoad)
 	  {
 	    // add a load into load queue
-	    LoadQueueEntry<T, nSources> *entry = loadQueue.New();
+	    LoadQueueEntry<T, nSources> *entry = loadQueue[cfg].New();
 	    
 	    entry->state = allocated_load;
 	    entry->instruction = instruction;
@@ -2447,16 +2260,16 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
       }
     
     /* Adding a load/store into the load queue/store queue */
-    for(i = 0; i < AllocateWidth; i++)
+    for(int i = 0; i < AllocateWidth; i++)
       {
-	if(!inAllocateStoreInstruction[i].enable) break;
-	InstructionPtr instruction = inAllocateStoreInstruction[i].data;
+	if(!inAllocateStoreInstruction.enable[cfg*AllocateWidth+i]) break;
+	InstructionPtr instruction = inAllocateStoreInstruction.data[cfg*AllocateWidth+i];
 	//	const Instruction *instruction = &inst;
 	
 	if(instruction->fn & FnStore)
 	  {
 	    // add a store into store queue
-	    StoreQueueEntry<T, nSources> *entry = storeQueue.New();
+	    StoreQueueEntry<T, nSources> *entry = storeQueue[cfg].New();
 	    entry->state = allocated_store;
 	    entry->instruction = instruction;
 	    entry->cdbPort = -1;
@@ -2470,21 +2283,21 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
     // 8 on Flush...
     /////////////////////////////////////////////////////////////////////////
     //    if (inFlush.data && inFlush.enable)
-    if (inFlush.enable && inFlush.data.something())
+    if (inFlush.enable[cfg] && inFlush.data[cfg].something())
     {
-      if (inFlush.data)
+      if (inFlush.data[cfg])
       {
 #ifdef DD_DEBUG_LSQ_VERB2
 if (DD_DEBUG_TIMESTAMP < timestamp())
       {
-    cerr << "[DD_DEBUG_LSQ]: We are FLUSHING !!! " <<  endl << loadQueue << endl;
+    cerr << "[DD_DEBUG_LSQ]: We are FLUSHING !!! " <<  endl << loadQueue[cfg] << endl;
       }
 #endif     
 #ifdef DD_DEBUG_FLUSH
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
 #endif
 	/* Flush loads */
-	for(load = loadQueue.SeekAtHead(); load;)
+	for(load = loadQueue[cfg].SeekAtHead(); load;)
 	  {
 	    //if(load->state == issued_load || load->state == waiting_data_cache_load || load->state == flushed_load)
 	    if(load->state == waiting_data_cache_load || load->state == flushed_load)
@@ -2494,22 +2307,22 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	      }
 	    else
 	      {
-		loadQueue.Remove(load);
+		loadQueue[cfg].Remove(load);
 	      }
 	  }
 	
 	/* Flush non-committed stores */
 	StoreQueueEntry<T, nSources> *store;
-	for(store = storeQueue.GetTail(); store; store = storeQueue.GetTail())
+	for(store = storeQueue[cfg].GetTail(); store; store = storeQueue[cfg].GetTail())
 	  {
 	    if(store->state == commited_store) break;
-	    storeQueue.RemoveTail();
+	    storeQueue[cfg].RemoveTail();
 	  }
       }
     }
 
 
-
+    }//Endof foreach Config.
 
   } // end of: enf_of_cycle
 
@@ -2533,11 +2346,11 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
   */
 
   //	OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> SearchLoad(const InstructionPtr<T, nSources>& instruction)
-	OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> SearchLoad(const InstructionPtr instruction)
+	OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> SearchLoad(const InstructionPtr instruction, int cfg)
 	{
 		OoOQueuePointer<LoadQueueEntry<T, nSources>, LoadQueueSize> entry;
 
-		for(entry = loadQueue.SeekAtHead(); entry; entry++)
+		for(entry = loadQueue[cfg].SeekAtHead(); entry; entry++)
 		{
 			if(entry->instruction->inum == instruction->inum)
 				return entry;
@@ -2546,11 +2359,11 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	}
 
   //	QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> SearchStore(const InstructionPtr<T, nSources>& instruction)
-	QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> SearchStore(const InstructionPtr instruction)
+	QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> SearchStore(const InstructionPtr instruction, int cfg)
 	{
 		QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> entry;
 
-		for(entry = storeQueue.SeekAtHead(); entry; entry++)
+		for(entry = storeQueue[cfg].SeekAtHead(); entry; entry++)
 		{
 			if(entry->instruction->inum == instruction->inum)
 				return entry;
@@ -2609,11 +2422,11 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		return false;
 	}
 
-	bool LoadStoreConflict(const InstructionPtr load)
+	bool LoadStoreConflict(const InstructionPtr load, int cfg)
 	{
 		QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> store;
 
-		for(store = storeQueue.SeekAtHead(); store; store++)
+		for(store = storeQueue[cfg].SeekAtHead(); store; store++)
 		{
 		  //			if(load > store->instruction)
 			if(load > store->instruction)
@@ -2633,11 +2446,11 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		return false;
 	}
 
-	bool LoadStoreMayConflict(const InstructionPtr load)
+	bool LoadStoreMayConflict(const InstructionPtr load, int cfg)
 	{
 		QueuePointer<StoreQueueEntry<T, nSources>, StoreQueueSize> store;
 
-		for(store = storeQueue.SeekAtHead(); store; store++)
+		for(store = storeQueue[cfg].SeekAtHead(); store; store++)
 		{
 		  //			if(load > store->instruction)
 			if(load > store->instruction)
@@ -2664,7 +2477,8 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 
 	bool Check()
 	{
-		return loadQueue.Check() && storeQueue.Check();
+	  //	return loadQueue.Check() && storeQueue.Check();
+	  return true;
 	}
 
 	/** Prints statistics into an output stream
@@ -2681,42 +2495,40 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	
 	void WarmRestart()
 	{
-		loadQueue.Reset();
-		storeQueue.Reset();
-		//		changed = true;
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	    {
+		loadQueue[cfg].Reset();
+		storeQueue[cfg].Reset();
+	    }
 	}
 	
 	void ResetStats()
 	{
-		executed_refs = 0;
-		executed_loads = 0;
-		load_queue_cumulative_occupancy = 0;
-		store_queue_cumulative_occupancy = 0;
-		total_spec_loads = 0;
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	    {
+		executed_refs[cfg] = 0;
+		executed_loads[cfg] = 0;
+		load_queue_cumulative_occupancy[cfg] = 0;
+		store_queue_cumulative_occupancy[cfg] = 0;
+		total_spec_loads[cfg] = 0;
+	    }
 	}
 
 private:
-	OoOQueue<LoadQueueEntry<T, nSources> , LoadQueueSize> loadQueue;
-	Queue<StoreQueueEntry<T, nSources>, StoreQueueSize> storeQueue;
+	OoOQueue<LoadQueueEntry<T, nSources> , LoadQueueSize> loadQueue[nConfig];
+	Queue<StoreQueueEntry<T, nSources>, StoreQueueSize> storeQueue[nConfig];
 	endianess_t endianess;
-	UInt64 executed_refs;
-	UInt64 executed_loads;
-	UInt64 load_queue_cumulative_occupancy;
-	UInt64 store_queue_cumulative_occupancy;
-	UInt64 total_spec_loads;
+	UInt64 executed_refs[nConfig];
+	UInt64 executed_loads[nConfig];
+	UInt64 load_queue_cumulative_occupancy[nConfig];
+	UInt64 store_queue_cumulative_occupancy[nConfig];
+	UInt64 total_spec_loads[nConfig];
 
-	/*
-	ml_out_data<bool> outStateChanged;
-	ml_signal_data<bool> stateChanged;
-	ml_in_data<bool> inStateChanged;
-	bool changed;
-	*/
+        bool inDL1_flushed_ports[nConfig][nDataCachePorts];
 
-  bool inDL1_flushed_ports[nDataCachePorts];
-
-        int load_to_remove;
-        int store_to_remove;
-	int store_to_commit;
+        int load_to_remove[nConfig];
+        int store_to_remove[nConfig];
+	int store_to_commit[nConfig];
 
 };
 

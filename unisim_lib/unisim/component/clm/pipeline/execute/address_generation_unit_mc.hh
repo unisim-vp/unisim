@@ -39,8 +39,8 @@
                     AddressGenerationUnit.h  -  description
  ***************************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_ADDRESS_GENERATION_UNIT_HH__
-#define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_ADDRESS_GENERATION_UNIT_HH__
+#ifndef __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_ADDRESS_GENERATION_UNIT_MC_HH__
+#define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_ADDRESS_GENERATION_UNIT_MC_HH__
 
 /*
 #include <systemc.h>
@@ -181,12 +181,17 @@ class AddressGenerationUnit : public module
 		  sensitive_neg_method(end_of_cycle) << inClock;
 
 		  
-		  cumulative_occupancy = 0;
-		  instruction_to_remove = 0;
-		  instruction_to_add = 0;
-
-		  Accept_have_been_seen = false;
-
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		    {
+		      for(int unit=0; unit<nUnits; unit++)
+			{
+			  cumulative_occupancy[cfg][unit] = 0;
+			  instruction_to_remove[cfg][unit] = 0;
+			  instruction_to_add[cfg][unit] = 0;
+			  
+			  Accept_have_been_seen[cfg][unit] = false;
+			}
+		    }
 		  this->state = spec_state;
 
 		}
@@ -194,23 +199,34 @@ class AddressGenerationUnit : public module
                 void on_LSQAccept()
                 {
 		  if (outLSQInstruction.accept.known())
-		    {
-		      outLSQInstruction.enable = outLSQInstruction.accept;
-		    }
+		  {
+		    for (int cfg=0; cfg<nConfig; cfg++)
+		      {
+			for(int unit=0; unit<nUnits; unit++)
+			  {
+			    
+			    outLSQInstruction.enable[cfg*nUnits+unit] = outLSQInstruction.accept[cfg*nUnits+unit];
+			  }
+		      }
+		    outLSQInstruction.enable.send();
+		  }
 		}
 		/** Returns void and enable an output instruction if it has been accepted
 			@return true and enable an output instruction if it has been accepted
 		*/ 
-                void on_Accept()
-		//void on_Accept_Data()
+                void on_Accept()  //void on_Accept_Data()
                 {
 		  if ( outLSQInstruction.accept.known() && outCDBInstruction.accept.known() )
-		    // && inInstruction.data.known() )
+		  {
+		    for (int cfg=0; cfg<nConfig; cfg++)
 		    {
+		      for(int unit=0; unit<nUnits; unit++)
+		      {
+		      
 		      /* Get the end of the pipeline */
-		      instruction_to_remove = 0;
+		      instruction_to_remove[cfg][unit] = 0;
 
-		      AddressGenerationUnitPipelineEntry<T, nSources> *entry = queue.GetHead();
+		      AddressGenerationUnitPipelineEntry<T, nSources> *entry = queue[cfg][unit].GetHead();
 		      
 		      if(entry)
 			{
@@ -224,32 +240,32 @@ class AddressGenerationUnit : public module
 			      if(instruction->exception == NONE_EXCEPTION)
 				{
 				  // if(inCDBAccept && inLSQAccept)
-				  if (outLSQInstruction.accept && outCDBInstruction.accept)
+				  if (outLSQInstruction.accept[cfg*nUnits+unit] && outCDBInstruction.accept[cfg*nUnits+unit])
 				    {
 				      //      outLSQInstruction.enable = true;
-				      outCDBInstruction.enable = true;
-				      instruction_to_remove = 1;
+				      outCDBInstruction.enable[cfg*nUnits+unit] = true;
+				      instruction_to_remove[cfg][unit] = 1;
 				    }
 				  else
 				    {
 				      //      outLSQInstruction.enable = false;
-				      outCDBInstruction.enable = false;
+				      outCDBInstruction.enable[cfg*nUnits+unit] = false;
 				    }
 				}
 			      else
 				{
 				  /* If store get an exception, then store just go to the common data bus */
 				  //				  if(inCDBAccept)
-				  if (outCDBInstruction.accept)
+				  if (outCDBInstruction.accept[cfg*nUnits+unit])
 				    {
 				      //      outLSQInstruction.enable = false;
-				      outCDBInstruction.enable = true;
-				      instruction_to_remove = 1;
+				      outCDBInstruction.enable[cfg*nUnits+unit] = true;
+				      instruction_to_remove[cfg][unit] = 1;
 				    }
 				  else
 				    {
 				      //      outLSQInstruction.enable = false;
-				      outCDBInstruction.enable = false;
+				      outCDBInstruction.enable[cfg*nUnits+unit] = false;
 				    }
 				}
 			    }
@@ -258,31 +274,31 @@ class AddressGenerationUnit : public module
 			      /* If instruction is not a store, it only goes to the load queue */
 			      if(instruction->exception == NONE_EXCEPTION)
 				{
-				  if (outLSQInstruction.accept)
+				  if (outLSQInstruction.accept[cfg*nUnits+unit])
 				    {
 				      //      outLSQInstruction.enable = true;
-				      outCDBInstruction.enable = false;
-				      instruction_to_remove = 1;
+				      outCDBInstruction.enable[cfg*nUnits+unit] = false;
+				      instruction_to_remove[cfg][unit] = 1;
 				    }
 				  else
 				    {
 				      //      outLSQInstruction.enable = false;
-				      outCDBInstruction.enable = false;
+				      outCDBInstruction.enable[cfg*nUnits+unit] = false;
 				    }
 				}
 			      else
 				{
 				  /* If instruction got an exception, it goes to the common data instead of the load queue */
-				  if (outCDBInstruction.accept)
+				  if (outCDBInstruction.accept[cfg*nUnits+unit])
 				    {
 				      //      outLSQInstruction.enable = false;
-				      outCDBInstruction.enable = true;
-				      instruction_to_remove = 1;
+				      outCDBInstruction.enable[cfg*nUnits+unit] = true;
+				      instruction_to_remove[cfg][unit] = 1;
 				    }
 				  else
 				    {
 				      //      outLSQInstruction.enable = false;
-				      outCDBInstruction.enable = false;				      
+				      outCDBInstruction.enable[cfg*nUnits+unit] = false;				      
 				    }
 				}
 			    }
@@ -290,41 +306,43 @@ class AddressGenerationUnit : public module
 		      else
 			{
 			  //  outLSQInstruction.enable = false;
-			  outCDBInstruction.enable = false;				      
+			  outCDBInstruction.enable[cfg*nUnits+unit] = false;				      
 			}
-		      /*
-			if (instruction_to_remove == 0)
-			{
-			  outLSQInstruction.enable = false;
-			  outCDBInstruction.enable = false;
-			}
-		      */
-		      
-		      //Accept_have_been_seen = true;
-		    } // end of: if (outLSQInstruction.accept.know() && outCDBInstruction.accept.know())
+		      }//Endof foreach Unit.      
+		    }//Endof foreach Config.      
+		    outCDBInstruction.enable.send();
+		  } // end of: if (outLSQInstruction.accept.know() && outCDBInstruction.accept.know())
 		  
-		  } // end of: on_Accept()
+		} // end of: on_Accept()
 		  
 		  void on_Data()
 		  {
 		  //		  if ( Accept_have_been_seen && inInstruction.data.known() )
 		  if ( inInstruction.data.known() )
 		    {
-		      /* Get the end of the pipeline */
-		      //		      instruction_to_remove = 0;
 
-			if ( inInstruction.data.something()
-			     //&& ( (instruction_to_remove == 1) || (!queue.Full()) ) 
-			     )
-			  {
-			    inInstruction.accept = true;
-			    instruction_to_add = 1;
-			  }
-			else
-			  {
-			    inInstruction.accept = false;
-			    instruction_to_add = 0;			    
-			  }
+		      for (int cfg=0; cfg<nConfig; cfg++)
+		      {
+			for(int unit=0; unit<nUnits; unit++)
+			{
+			  /* Get the end of the pipeline */
+			  //		      instruction_to_remove = 0;
+			  
+			  if ( inInstruction.data[cfg*nUnits+unit].something()
+			       //&& ( (instruction_to_remove == 1) || (!queue.Full()) ) 
+			       )
+			    {
+			      inInstruction.accept[cfg*nUnits+unit] = true;
+			      instruction_to_add[cfg][unit] = 1;
+			    }
+			  else
+			    {
+			      inInstruction.accept[cfg*nUnits+unit] = false;
+			      instruction_to_add[cfg][unit] = 0;			    
+			    }
+			}
+		      }
+		      inInstruction.accept.send();
 		    } // end of: if (outLSQInstruction.accept.know() && outCDBInstruction.accept.know())
 		} // end of: on_Accept()
 
@@ -363,9 +381,38 @@ class AddressGenerationUnit : public module
 		}
 		*/ //EODD
   //		void onDataFlush() { outFlush.data = inFlush.data; }
+  /*
                 void onDataFlush() { if (inFlush.data.something()) outFlush.data = inFlush.data; else outFlush.data.nothing(); }
 		void onAcceptFlush() { inFlush.accept = outFlush.accept; }
 		void onEnableFlush() { outFlush.enable = inFlush.enable; }
+  */
+                void onDataFlush() 
+                {
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    if (inFlush.data[cfg].something())
+		      outFlush.data[cfg] = inFlush.data[cfg];
+		    else outFlush.data[cfg].nothing(); 
+		  }
+		  outFlush.data.send();
+		}
+		void onAcceptFlush() 
+                {
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    inFlush.accept[cfg] = outFlush.accept[cfg]; 
+		  }
+		  inFlush.accept.send();
+		}
+
+		void onEnableFlush() 
+                { 
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    outFlush.enable[cfg] = inFlush.enable[cfg]; 
+		  }
+		  outFlush.enable.send();
+		}
 
 		/** Returns true if output instruction was accepted
 			@return true if output instruction was accepted
@@ -401,96 +448,78 @@ class AddressGenerationUnit : public module
 		//		void InternalControl()
 		void end_of_cycle()
 		{
+
+		    for (int cfg=0; cfg<nConfig; cfg++)
+		    {
+		      for(int unit=0; unit<nUnits; unit++)
+		      {
+			cumulative_occupancy[cfg][unit] += queue[cfg][unit].Size();
+		      }
+
+		      /* Flush ? */
+		      if(inFlush.enable[cfg] && inFlush.data[cfg].something())
+			{
+			  if(inFlush.data[cfg])
+			    {
+#ifdef DD_DEBUG_FLUSH
+			      cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
+#endif
+
+			      for(int unit=0; unit<nUnits; unit++)
+				{
+				  /* Flush the address generation unit pipeline */
+				  queue[cfg][unit].Flush();
+				  //return;
+				  //continue;
+				}
+			      return;
+			    }
+			}
+		      for(int unit=0; unit<nUnits; unit++)
+		      {
+
 			AddressGenerationUnitPipelineEntry<T, nSources> *entry;
 			QueuePointer<AddressGenerationUnitPipelineEntry<T, nSources>, nStages> cur;
-
-			cumulative_occupancy += queue.Size();
-
-			//if(!inCDBAccept && !inLSQAccept && !inEnable && !inFlush && !changed) return;
-			//changed = false;
-
-			/* Flush ? */
-			if(inFlush.enable && inFlush.data.something())
-			{
-			  if(inFlush.data)
-			  {
-#ifdef DD_DEBUG_FLUSH
-		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
-#endif
-			    //changed = true;
-				/* Flush the address generation unit pipeline */
-				queue.Flush();
-
-				/* Reset all output ports */
-				/*
-				outCDBValid = false;
-				outLSQValid = false;
-				outCDBEnable = false;
-				outLSQEnable = false;
-				outAccept = false;
-				*/
-				return;
-			  }
-			}
-
 			/* Remove accepted instructions */
-			/*
-			if(HasAccept())
-			{
-				queue.RemoveHead();
-				//changed = true;
-			}
-			*/
-			if (instruction_to_remove == 1)
-			  queue.RemoveHead();
+			if (instruction_to_remove[cfg][unit] == 1)
+			  queue[cfg][unit].RemoveHead();
 			  
 			/* Add incoming instructions */
 			//			if(inEnable)
 			// if (inInstruction.enable)
-			if (inInstruction.enable && instruction_to_add == 1) // Why ? Why not...
+			if (inInstruction.enable[cfg*nUnits+unit] && instruction_to_add[cfg][unit] == 1) // Why ? Why not...
 			{
-			  //changed = true;
-				/* Get the instruction */
-			  InstructionPtr instruction = inInstruction.data;
-			  //			  const Instruction *instruction = &inst;
+			  /* Get the instruction */
+			  InstructionPtr instruction = inInstruction.data[cfg*nUnits+unit];
 
-				if(!instruction->must_reschedule)
-				{
+			  if(!instruction->must_reschedule)
+			    {
 					/* Allocate a pipeline entry */
-					entry = queue.New();
+					entry = queue[cfg][unit].New();
 					if(!entry)
 					{
 						/* Throw an error if there is not enough space into the pipeline */
 						fprintf(stderr, "Panic");
 						exit(1);
 					}
-	
 					/* Store the instruction into the pipeline entry */
 					entry->instruction = instruction;
-	
 					/* Compute the results of the instruction */
 					Compute(&(entry->instruction));
-					
-/*					if(entry->instruction->fn & FnStore && entry->instruction->ea == 0x000000014036eee8ULL)
-					{
-						cerr << "!!!!!!! time stamp = " << sc_time_stamp() << ": store (" << entry->instruction << ") at 0x000000014036eee8" << endl;
-					}*/
-	
 					/* Set the processing delay of the instruction to the number of pipe stage */
 					entry->delay = nStages;
-				}
-				else
-				  {
+			    }
+			  else
+			    {
 				    cerr << "(" << timestamp() <<")" << "Instruction must rescheduled !!!" << endl;
 				    cerr << instruction << endl;
 				    abort();
-				  }
-
+			    }
 			}
 
 			/* Run */
 			/* For each entry into the pipeline */
-			for(cur = queue.SeekAtHead(); cur; cur++)
+			for(cur = queue[cfg][unit].SeekAtHead(); cur; cur++)
 			{
 				if(cur->delay > 0)
 				{
@@ -501,16 +530,23 @@ class AddressGenerationUnit : public module
 			}
 
 #ifdef DD_DEBUG_PIPELINE_VERB1
-		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ==== Pipeline Debug" << endl;
-		cerr << this << endl;
+			cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ==== Pipeline Debug" << endl;
+			cerr << this << endl;
 #endif
+		      }//Endof foreach Unit.
+		    }//Endof foreach Config..
+		    
 		}// end of end_of_cycle
 
 		void start_of_cycle()
 		{
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    for(int unit=0; unit<nUnits; unit++)
+		    {
 			AddressGenerationUnitPipelineEntry<T, nSources> *entry;
 			/* Common Data Bus request and load/store queue request */
-			entry = queue.GetHead();
+			entry = queue[cfg][unit].GetHead();
 			/* If instruction processing is finished */
 			if(entry && entry->delay == 0)
 			{
@@ -525,16 +561,16 @@ class AddressGenerationUnit : public module
 					{
 					  /* Do a request to the common data bus */
 					  //outCDBValid = true;
-					  outCDBInstruction.data = instruction;
+					  outCDBInstruction.data[cfg*nUnits+unit] = instruction;
 					}
 					else
 					{
 					  //outCDBValid = false;
-					  outCDBInstruction.data.nothing();
+					  outCDBInstruction.data[cfg*nUnits+unit].nothing();
 					}
 					/* For both load and load, do a request to the load/store queue */
 					//outLSQValid = true;
-					outLSQInstruction.data = instruction;
+					outLSQInstruction.data[cfg*nUnits+unit] = instruction;
 				}
 				else
 				{
@@ -543,16 +579,16 @@ class AddressGenerationUnit : public module
 					//outCDBInstruction = instruction;
 					//outCDBValid = true;
 					//outLSQValid = false;
-					outCDBInstruction.data = instruction;
-					outLSQInstruction.data.nothing();
+					outCDBInstruction.data[cfg*nUnits+unit] = instruction;
+					outLSQInstruction.data[cfg*nUnits+unit].nothing();
 				}
 			}
 			else
 			{
 			  //outCDBValid = false;
 			  //outLSQValid = false;
-			  outCDBInstruction.data.nothing();
-			  outLSQInstruction.data.nothing();
+			  outCDBInstruction.data[cfg*nUnits+unit].nothing();
+			  outLSQInstruction.data[cfg*nUnits+unit].nothing();
 			}
 
 			/* If state changed then make the SystemC scheduler call
@@ -561,6 +597,10 @@ class AddressGenerationUnit : public module
 			if(changed)
 				outStateChanged = !inStateChanged;
 			*/
+		    }//Endof foreach Unit.
+		  }//Endof foreach Config.
+		  outCDBInstruction.data.send();
+		  outLSQInstruction.data.send();
 		}
 
 		/** Check for misalignment memory accesses
@@ -740,13 +780,20 @@ class AddressGenerationUnit : public module
 
 		void WarmRestart()
 		{
-			queue.Reset();
-			//			changed = true;
+			for (int cfg=0; cfg<nConfig; cfg++)
+			  {
+			    for(int unit=0; unit<nUnits; unit++)
+			      queue[cfg][unit].Reset();
+			  }
 		}
 		
 		void ResetStats()
 		{
-			cumulative_occupancy = 0;
+			for (int cfg=0; cfg<nConfig; cfg++)
+			  {
+			    for(int unit=0; unit<nUnits; unit++)
+			      cumulative_occupancy[cfg][unit] = 0;
+			  }
 		}
 	
 	private:
@@ -757,15 +804,15 @@ class AddressGenerationUnit : public module
 		ml_in_data<bool> inStateChanged;
 		*/
 		/* A queue modeling the address generation unit pipeline */
-		Queue<AddressGenerationUnitPipelineEntry<T, nSources>, nStages> queue;
+		Queue<AddressGenerationUnitPipelineEntry<T, nSources>, nStages> queue[nConfig][nUnits];
 
 		//bool changed;
-		uint64_t cumulative_occupancy;
+		uint64_t cumulative_occupancy[nConfig][nUnits];
   
-                int instruction_to_remove;
-                int instruction_to_add;
+                int instruction_to_remove[nConfig][nUnits];
+                int instruction_to_add[nConfig][nUnits];
   
-  bool Accept_have_been_seen;
+                bool Accept_have_been_seen[nConfig][nUnits];
   
                 CPUSim *state;
 };

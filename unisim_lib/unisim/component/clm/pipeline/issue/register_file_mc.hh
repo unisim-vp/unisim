@@ -346,47 +346,59 @@ class RegisterFile : public module
 			sensitive_method(onFlushEnable) << inFlush.enable;
 
 
+			for(int cfg=0; cfg<nConfig; cfg++)
+			  {
+			    memset(integerValid[cfg], true, sizeof(integerValid[cfg]));
+			    memset(floatingPointValid[cfg], true, sizeof(floatingPointValid[cfg]));
+			    memset(conditionValid[cfg], true, sizeof(conditionValid[cfg]));
+			    memset(FPSCRValid[cfg], true, sizeof(FPSCRValid[cfg]));
+			    memset(linkValid[cfg], true, sizeof(linkValid[cfg]));
+			    memset(countValid[cfg], true, sizeof(countValid[cfg]));
+			    memset(XERValid[cfg], true, sizeof(XERValid[cfg]));
 
-			memset(integerValid, true, sizeof(integerValid));
-			memset(floatingPointValid, true, sizeof(floatingPointValid));
-			memset(conditionValid, true, sizeof(conditionValid));
-			memset(FPSCRValid, true, sizeof(FPSCRValid));
-			memset(linkValid, true, sizeof(linkValid));
-			memset(countValid, true, sizeof(countValid));
-			memset(XERValid, true, sizeof(XERValid));
+			    WriteBacksReceived[cfg] = false;
+			    integer_read_register_to_add[cfg] = 0;
+			    floating_point_read_register_to_add[cfg] = 0;
+			    load_store_read_register_to_add[cfg] = 0;
 
-
-			WriteBacksReceived = false;
-			integer_read_register_to_add = 0;
-			floating_point_read_register_to_add = 0;
-			load_store_read_register_to_add = 0;
-
-		    integer_data_received = false;
-		    floating_point_data_received = false;
-		    load_store_data_received = false;
-  
+			  }
+			integer_data_received = false;
+			floating_point_data_received = false;
+			load_store_data_received = false;
 
 		}
 
 	void onFlushData()
 	  {
-	    //    inFlush.accept = inFlush.data.something();
-	    if ( inFlush.data.something() )
+	    for(int cfg=0; cfg<nConfig; cfg++)
 	      {
-		outFlush.data = inFlush.data;
+		//    inFlush.accept = inFlush.data.something();
+		if ( inFlush.data[cfg].something() )
+		  {
+		    outFlush.data[cfg] = inFlush.data[cfg];
+		  }
+		else
+		  {
+		    outFlush.data[cfg].nothing();
+		  }
 	      }
-	    else
-	      {
-		outFlush.data.nothing();
-	      }
+	    outFlush.data.send();
 	  }
 	void onFlushAccept()
 	  {
-	    inFlush.accept = outFlush.accept;
+	    for(int cfg=0; cfg<nConfig; cfg++)
+	      {
+		inFlush.accept[cfg] = outFlush.accept[cfg];
+	      }
+	    inFlush.accept.send();
 	  }
 	void onFlushEnable()
 	  {
-	    outFlush.enable = inFlush.enable;
+	    for(int cfg=0; cfg<nConfig; cfg++)
+	      {
+		outFlush.enable[cfg] = inFlush.enable[cfg];
+	      }
+	    outFlush.enable.send();
 	  }
 
 
@@ -394,6 +406,7 @@ class RegisterFile : public module
 
   void onWBData()
   {
+    /*
     bool areallknown(true);
     int i;
     for(i = 0; i < WriteBackWidth; i++)
@@ -403,17 +416,24 @@ class RegisterFile : public module
 	    areallknown =false; break;
 	  }
       }
-    if (areallknown)
+    */
+    //    if (areallknown)
+    if ( inWriteBackInstruction.data.known() )
       {
-	for(i = 0; i < WriteBackWidth; i++)
+	for(int cfg=0; cfg<nConfig; cfg++)
+	{
+	  for(int i = 0; i < WriteBackWidth; i++)
 	  {
-	    inWriteBackInstruction[i].accept = inWriteBackInstruction[i].data.something();
+	    inWriteBackInstruction.accept[cfg*WriteBackWidth+i]
+	      = inWriteBackInstruction.data[cfg*WriteBackWidth+i].something();
 	  }
+	}
       }
   }
 
   void onWBEnable()
-		{
+  {
+    /*
 		    bool areallknown(true);
 		    int i;
 		    for(i = 0; i < WriteBackWidth; i++)
@@ -423,20 +443,27 @@ class RegisterFile : public module
 			    areallknown =false; break;
 			  }
 		      }
-		    if (areallknown)
-		      {
+    */
+    //		    if (areallknown)
+    if ( inWriteBackInstruction.enable.known() )
+      {
+	for (int cfg=0; cfg<nConfig; cfg++)
+	  {
 			int integerReadRegisterPort;
 			int floatingPointReadRegisterPort;
 			int loadStoreReadRegisterPort;
 
-			WriteBacksReceived = true;
+			WriteBacksReceived[cfg] = true;
 			//////////////////////////////////////
 			// We have to send all data ... 
 			//////////////////////////////////////
 			QueuePointer<ReadRegisterPipelineEntry<T, nSources>, IntegerReadRegisterWidth * nReadRegisterStages> integerReadRegisterPipelineEntry;
 
 			/* For each instructions which have reach the end of the read pipeline */
-			for(integerReadRegisterPort = 0, integerReadRegisterPipelineEntry = integerReadRegisterPipeline.SeekAtHead(); integerReadRegisterPort < IntegerReadRegisterWidth && integerReadRegisterPipelineEntry; integerReadRegisterPipelineEntry++, integerReadRegisterPort++)
+			for(integerReadRegisterPort = 0, 
+			      integerReadRegisterPipelineEntry = integerReadRegisterPipeline[cfg].SeekAtHead();
+			    integerReadRegisterPort < IntegerReadRegisterWidth && integerReadRegisterPipelineEntry;
+			    integerReadRegisterPipelineEntry++, integerReadRegisterPort++)
 			{
 				if(integerReadRegisterPipelineEntry->delay > 0) break;
 				/* Get the instruction in the pipeline entry */
@@ -446,18 +473,23 @@ class RegisterFile : public module
 				instruction->must_reschedule = !ByPass(integerReadRegisterPipelineEntry, &instruction);
 				/* request for a launch of the instruction */
 				//				outIntegerValid[integerReadRegisterPort] = true;
-				outIntegerInstruction[integerReadRegisterPort].data = instruction;
+				//  outIntegerInstruction[integerReadRegisterPort].data = instruction;
+				outIntegerInstruction.data[cfg*IntegerReadRegisterWidth+integerReadRegisterPort]
+				  = instruction;
 			}
 			/* Don't launch any instruction on the remaining ports */
 			for(; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
 			{
 			  //	outIntegerValid[integerReadRegisterPort] = false;
-				outIntegerInstruction[integerReadRegisterPort].data.nothing();
+				outIntegerInstruction.data[cfg*IntegerReadRegisterWidth+integerReadRegisterPort].nothing();
 			}
 			QueuePointer<ReadRegisterPipelineEntry<T, nSources>, FloatingPointReadRegisterWidth * nReadRegisterStages> floatingPointReadRegisterPipelineEntry;
 
 			/* For each instructions which have reach the end of the read pipeline */
-			for(floatingPointReadRegisterPort = 0, floatingPointReadRegisterPipelineEntry = floatingPointReadRegisterPipeline.SeekAtHead(); floatingPointReadRegisterPort < FloatingPointReadRegisterWidth && floatingPointReadRegisterPipelineEntry; floatingPointReadRegisterPipelineEntry++, floatingPointReadRegisterPort++)
+			for(floatingPointReadRegisterPort = 0,
+			      floatingPointReadRegisterPipelineEntry = floatingPointReadRegisterPipeline[cfg].SeekAtHead();
+			    floatingPointReadRegisterPort < FloatingPointReadRegisterWidth && floatingPointReadRegisterPipelineEntry;
+			    floatingPointReadRegisterPipelineEntry++, floatingPointReadRegisterPort++)
 			{
 				if(floatingPointReadRegisterPipelineEntry->delay > 0) break;
 				/* Get the instruction in the pipeline entry */
@@ -468,18 +500,19 @@ class RegisterFile : public module
 				
 				/* request for a launch of the instruction */
 				//				outFloatingPointValid[floatingPointReadRegisterPort] = true;
-				outFloatingPointInstruction[floatingPointReadRegisterPort].data = instruction;
+				outFloatingPointInstruction.data[cfg*FloatingPointReadRegisterWidth+floatingPointReadRegisterPort]
+				  = instruction;
 			}
 			/* Don't launch any instruction on the remaining ports */
 			for(; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
 			{
 			  //				outFloatingPointValid[floatingPointReadRegisterPort] = false;
-				outFloatingPointInstruction[floatingPointReadRegisterPort].data.nothing();
+				outFloatingPointInstruction.data[cfg*FloatingPointReadRegisterWidth+floatingPointReadRegisterPort].nothing();
 			}
 
 			QueuePointer<ReadRegisterPipelineEntry<T, nSources>, LoadStoreReadRegisterWidth * nReadRegisterStages> loadStoreReadRegisterPipelineEntry;
 			/* For each instructions which have reach the end of the read pipeline */
-			for(loadStoreReadRegisterPort = 0, loadStoreReadRegisterPipelineEntry = loadStoreReadRegisterPipeline.SeekAtHead(); loadStoreReadRegisterPort < LoadStoreReadRegisterWidth && loadStoreReadRegisterPipelineEntry; loadStoreReadRegisterPipelineEntry++, loadStoreReadRegisterPort++)
+			for(loadStoreReadRegisterPort = 0, loadStoreReadRegisterPipelineEntry = loadStoreReadRegisterPipeline[cfg].SeekAtHead(); loadStoreReadRegisterPort < LoadStoreReadRegisterWidth && loadStoreReadRegisterPipelineEntry; loadStoreReadRegisterPipelineEntry++, loadStoreReadRegisterPort++)
 			{
 				if(loadStoreReadRegisterPipelineEntry->delay > 0) break;
 				/* Get the instruction in the pipeline entry */
@@ -489,100 +522,26 @@ class RegisterFile : public module
 				instruction->must_reschedule = !ByPass(loadStoreReadRegisterPipelineEntry, &instruction);
 				/* request for a launch of the instruction */
 				//				outLoadStoreValid[loadStoreReadRegisterPort] = true;
-				outLoadStoreInstruction[loadStoreReadRegisterPort].data = instruction;
+				outLoadStoreInstruction.data[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort] = instruction;
 			}
 			/* Don't launch any instruction on the remaining ports */
 			for(; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
 			{
 			  //				outLoadStoreValid[loadStoreReadRegisterPort] = false;
-				outLoadStoreInstruction[loadStoreReadRegisterPort].data.nothing();
+				outLoadStoreInstruction.data[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort].nothing();
 			}
-
-		      }// end of if(areallknown)...
+	  }// End of foreach Config.
+	outIntegerInstruction.data.send();
+	outFloatingPointInstruction.data.send();
+	outLoadStoreInstruction.data.send();
+      }// end of if(areallknown)...
 		  
-		}
+}
 
-		/** A SystemC process handling valid, accept and enable hand-shaking for integer pipe */
-		//		void ExternalControlIntegerPipe()
-		void onIntegerData()
-		{
-		  bool areallknown(true);
-		  for(int i = 0; i < IntegerReadRegisterWidth; i++)
-		    {
-		      if (!inIntegerInstruction[i].data.known())
-			{
-			  areallknown =false; break;
-			}
-		    }
-		  if (areallknown)
-		    {
-			int integerReadRegisterPort;
-
-			/* Count the number of instruction to add into the read pipeline */
-			for(integerReadRegisterPort = 0; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
-			{
-				if(!inIntegerInstruction[integerReadRegisterPort].data.something()) break;
-				integer_read_register_to_add++;
-			}
-			integer_data_received = true;
-			//		    floating_point_data_received = false;
-			//		    load_store_data_received = false;
-  		    }
-		}
-
-		void onIntegerAccept()
-		{
-		  bool areallknown(true);
-		  for(int i = 0; i < IntegerReadRegisterWidth; i++)
-		    {
-		      if (!outIntegerInstruction[i].accept.known())
-			{
-			  areallknown =false; break;
-			}
-		    }
-		  if (areallknown && integer_data_received)
-		    {
-			int integerReadRegisterPort;
-			//			int integer_read_register_to_add = 0;
-			int integer_read_register_to_remove = 0;
-
-			/* Count the number of instruction to add into the read pipeline */
-			/* Enable accepted instructions */
-			for(integerReadRegisterPort = 0; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
-			{
-				if(!outIntegerInstruction[integerReadRegisterPort].accept) break;
-				outIntegerInstruction[integerReadRegisterPort].enable = true;
-				/* Count accepted instruction as being removed */
-				integer_read_register_to_remove++;
-			}
-			/* Don't enable any instruction on the remaing read ports */
-			for(; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
-			{
-				outIntegerInstruction[integerReadRegisterPort].enable = false;
-			}
-
-			/* Get the free space into the read pipeline */
-			int integer_read_register_free_space = integerReadRegisterPipeline.FreeSpace();
-
-			/* Compute the number of instructions to accept in the read pipeline, i.e., the minimum of the number of instructions to add and
-			the sum of free space into the pipeline and the number of instructions to remove */
-			int integer_read_register_to_accept = MIN(integer_read_register_free_space + integer_read_register_to_remove, integer_read_register_to_add);
-
-			/* Accepts instructions according to the number of instructions to accept */
-			for(integerReadRegisterPort = 0; integerReadRegisterPort < integer_read_register_to_accept; integerReadRegisterPort++)
-			{
-				inIntegerInstruction[integerReadRegisterPort].accept = true;
-			}
-			/* Reject instructions on the remaining read ports */
-			for(; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
-			{
-				inIntegerInstruction[integerReadRegisterPort].accept = false;
-			}
-		    }
-		}
 
 		void onInteger()
 		{
+		  /*
 		  bool areallknown(true);
 		  for(int i = 0; i < IntegerReadRegisterWidth; i++)
 		    {
@@ -591,15 +550,19 @@ class RegisterFile : public module
 			  areallknown =false; break;
 			}
 		    }
-		  if (areallknown)
+		  */
+		  //		  if (areallknown)
+		  if ( inIntegerInstruction.data.known() && outIntegerInstruction.accept.known() )
+		  {
+		    for(int cfg=0; cfg<nConfig; cfg++)
 		    {
 			int integerReadRegisterPort;
 
 			/* Count the number of instruction to add into the read pipeline */
 			for(integerReadRegisterPort = 0; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
 			{
-				if(!inIntegerInstruction[integerReadRegisterPort].data.something()) break;
-				integer_read_register_to_add++;
+				if(!inIntegerInstruction.data[cfg*IntegerReadRegisterWidth+integerReadRegisterPort].something()) break;
+				integer_read_register_to_add[cfg]++;
 			}
 			integer_data_received = true;
 			//		    floating_point_data_received = false;
@@ -614,119 +577,45 @@ class RegisterFile : public module
 			/* Enable accepted instructions */
 			for(integerReadRegisterPort = 0; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
 			{
-				if(!outIntegerInstruction[integerReadRegisterPort].accept) break;
-				outIntegerInstruction[integerReadRegisterPort].enable = true;
+				if(!outIntegerInstruction.accept[cfg*IntegerReadRegisterWidth+integerReadRegisterPort]) break;
+				outIntegerInstruction.enable[cfg*IntegerReadRegisterWidth+integerReadRegisterPort] = true;
 				/* Count accepted instruction as being removed */
 				integer_read_register_to_remove++;
 			}
 			/* Don't enable any instruction on the remaing read ports */
 			for(; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
 			{
-				outIntegerInstruction[integerReadRegisterPort].enable = false;
+				outIntegerInstruction.enable[cfg*IntegerReadRegisterWidth+integerReadRegisterPort] = false;
 			}
 
 			/* Get the free space into the read pipeline */
-			int integer_read_register_free_space = integerReadRegisterPipeline.FreeSpace();
+			int integer_read_register_free_space = integerReadRegisterPipeline[cfg].FreeSpace();
 
 			/* Compute the number of instructions to accept in the read pipeline, i.e., the minimum of the number of instructions to add and
 			the sum of free space into the pipeline and the number of instructions to remove */
-			int integer_read_register_to_accept = MIN(integer_read_register_free_space + integer_read_register_to_remove, integer_read_register_to_add);
+			int integer_read_register_to_accept = MIN(integer_read_register_free_space + integer_read_register_to_remove, integer_read_register_to_add[cfg]);
 
 			/* Accepts instructions according to the number of instructions to accept */
 			for(integerReadRegisterPort = 0; integerReadRegisterPort < integer_read_register_to_accept; integerReadRegisterPort++)
 			{
-				inIntegerInstruction[integerReadRegisterPort].accept = true;
+				inIntegerInstruction.accept[cfg*IntegerReadRegisterWidth+integerReadRegisterPort] = true;
 			}
 			/* Reject instructions on the remaining read ports */
 			for(; integerReadRegisterPort < IntegerReadRegisterWidth; integerReadRegisterPort++)
 			{
-				inIntegerInstruction[integerReadRegisterPort].accept = false;
+				inIntegerInstruction.accept[cfg*IntegerReadRegisterWidth+integerReadRegisterPort] = false;
 			}
 			// end Accept part
-  		    }
+		    }//Endof foreach Config.
+		    outIntegerInstruction.enable.send();
+		    inIntegerInstruction.accept.send();
+		  }//Endof areallknown
 		}
 
-
-		/** A SystemC process handling valid, accept and enable hand-shaking for floating point pipe */
-		//		void ExternalControlFloatingPointPipe()
-		void onFloatingData()
-		{
-		  bool areallknown(true);
-		  for(int i = 0; i < FloatingPointReadRegisterWidth; i++)
-		    {
-		      if (!inFloatingPointInstruction[i].data.known())
-			{
-			  areallknown =false; break;
-			}
-		    }
-		  if (areallknown)
-		    {
-			int floatingPointReadRegisterPort;
-
-			/* Count the number of instruction to add into the read pipeline */
-			for(floatingPointReadRegisterPort = 0; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
-			{
-				if(!inFloatingPointInstruction[floatingPointReadRegisterPort].data.something()) break;
-				/* Count accepted instruction as being removed */
-				floating_point_read_register_to_add++;
-			}
-			//		    integer_data_received = false;
-			floating_point_data_received = true;
-			//		    load_store_data_received = false;
-
-		    }
-		}
-
-		void onFloatingAccept()
-		{
-		  bool areallknown(true);
-		  for(int i = 0; i < FloatingPointReadRegisterWidth; i++)
-		    {
-		      if (!outFloatingPointInstruction[i].accept.known())
-			{
-			  areallknown = false; break;
-			}
-		    }
-		  if (areallknown && floating_point_data_received)
-		    {
-			int floatingPointReadRegisterPort;
-			int floating_point_read_register_to_remove = 0;
-
-			/* Enable accepted instructions */
-			for(floatingPointReadRegisterPort = 0; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
-			{
-				if(!outFloatingPointInstruction[floatingPointReadRegisterPort].accept) break;
-				outFloatingPointInstruction[floatingPointReadRegisterPort].enable = true;
-				floating_point_read_register_to_remove++;
-			}
-			/* Don't enable any instruction on the remaing read ports */
-			for(; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
-			{
-				outFloatingPointInstruction[floatingPointReadRegisterPort].enable = false;
-			}
-
-			/* Get the free space into the read pipeline */
-			int floating_point_read_register_free_space = floatingPointReadRegisterPipeline.FreeSpace();
-
-			/* Compute the number of instructions to accept in the read pipeline, i.e., the minimum of the number of instructions to add and
-			the sum of free space into the pipeline and the number of instructions to remove */
-			int floating_point_read_register_to_accept = MIN(floating_point_read_register_free_space + floating_point_read_register_to_remove, floating_point_read_register_to_add);
-
-			/* Accepts instructions according to the number of instructions to accept */
-			for(floatingPointReadRegisterPort = 0; floatingPointReadRegisterPort < floating_point_read_register_to_accept; floatingPointReadRegisterPort++)
-			{
-				inFloatingPointInstruction[floatingPointReadRegisterPort].accept = true;
-			}
-			/* Reject instructions on the remaining read ports */
-			for(; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
-			{
-				inFloatingPointInstruction[floatingPointReadRegisterPort].accept = false;
-			}
-		    }
-		}
 
 		void onFloatingPoint()
 		{
+		  /*
 		  bool areallknown(true);
 		  for(int i = 0; i < FloatingPointReadRegisterWidth; i++)
 		    {
@@ -735,16 +624,20 @@ class RegisterFile : public module
 			  areallknown =false; break;
 			}
 		    }
-		  if (areallknown)
+		  */
+		  //		  if (areallknown)
+		  if ( inFloatingPointInstruction.data.known() && outFloatingPointInstruction.accept.known())
+		  {
+		    for (int cfg=0; cfg<nConfig; cfg++)
 		    {
 			int floatingPointReadRegisterPort;
 
 			/* Count the number of instruction to add into the read pipeline */
 			for(floatingPointReadRegisterPort = 0; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
 			{
-				if(!inFloatingPointInstruction[floatingPointReadRegisterPort].data.something()) break;
+				if(!inFloatingPointInstruction.data[cfg*FloatingPointReadRegisterWidth+floatingPointReadRegisterPort].something()) break;
 				/* Count accepted instruction as being removed */
-				floating_point_read_register_to_add++;
+				floating_point_read_register_to_add[cfg]++;
 			}
 			//		    integer_data_received = false;
 			floating_point_data_received = true;
@@ -757,115 +650,43 @@ class RegisterFile : public module
 			/* Enable accepted instructions */
 			for(floatingPointReadRegisterPort = 0; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
 			{
-				if(!outFloatingPointInstruction[floatingPointReadRegisterPort].accept) break;
-				outFloatingPointInstruction[floatingPointReadRegisterPort].enable = true;
+				if(!outFloatingPointInstruction.accept[cfg*FloatingPointReadRegisterWidth+floatingPointReadRegisterPort]) break;
+				outFloatingPointInstruction.enable[cfg*FloatingPointReadRegisterWidth+floatingPointReadRegisterPort] = true;
 				floating_point_read_register_to_remove++;
 			}
 			/* Don't enable any instruction on the remaing read ports */
 			for(; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
 			{
-				outFloatingPointInstruction[floatingPointReadRegisterPort].enable = false;
+				outFloatingPointInstruction.enable[cfg*FloatingPointReadRegisterWidth+floatingPointReadRegisterPort] = false;
 			}
 
 			/* Get the free space into the read pipeline */
-			int floating_point_read_register_free_space = floatingPointReadRegisterPipeline.FreeSpace();
+			int floating_point_read_register_free_space = floatingPointReadRegisterPipeline[cfg].FreeSpace();
 
 			/* Compute the number of instructions to accept in the read pipeline, i.e., the minimum of the number of instructions to add and
 			the sum of free space into the pipeline and the number of instructions to remove */
-			int floating_point_read_register_to_accept = MIN(floating_point_read_register_free_space + floating_point_read_register_to_remove, floating_point_read_register_to_add);
+			int floating_point_read_register_to_accept = MIN(floating_point_read_register_free_space + floating_point_read_register_to_remove, floating_point_read_register_to_add[cfg]);
 
 			/* Accepts instructions according to the number of instructions to accept */
 			for(floatingPointReadRegisterPort = 0; floatingPointReadRegisterPort < floating_point_read_register_to_accept; floatingPointReadRegisterPort++)
 			{
-				inFloatingPointInstruction[floatingPointReadRegisterPort].accept = true;
+				inFloatingPointInstruction.accept[cfg*FloatingPointReadRegisterWidth+floatingPointReadRegisterPort] = true;
 			}
 			/* Reject instructions on the remaining read ports */
 			for(; floatingPointReadRegisterPort < FloatingPointReadRegisterWidth; floatingPointReadRegisterPort++)
 			{
-				inFloatingPointInstruction[floatingPointReadRegisterPort].accept = false;
+				inFloatingPointInstruction.accept[cfg*FloatingPointReadRegisterWidth+floatingPointReadRegisterPort] = false;
 			}
 			// End of Accept part
-		    }
-		}
-
-		/** A SystemC process handling valid, accept and enable hand-shaking for load/store pipe */
-		//		void ExternalControlLoadStorePipe()
-		void onLoadStoreData()
-		{
-		  bool areallknown(true);
-		  for(int i = 0; i < LoadStoreReadRegisterWidth; i++)
-		    {
-		      if (!inLoadStoreInstruction[i].data.known())
-			{
-			  areallknown =false; break;
-			}
-		    }
-		  if (areallknown)
-		    {
-			/* Count the number of instruction to add into the read pipeline */
-			for(int loadStoreReadRegisterPort = 0; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
-			{
-				if(!inLoadStoreInstruction[loadStoreReadRegisterPort].data.something()) break;
-				load_store_read_register_to_add++;
-			}
-			//		    integer_data_received = false;
-			//		    floating_point_data_received = false;
-			load_store_data_received = true;
-		    }
-		}
-
-		void onLoadStoreAccept()
-		{
-		  bool areallknown(true);
-		  for(int i = 0; i < LoadStoreReadRegisterWidth; i++)
-		    {
-		      if (!outLoadStoreInstruction[i].accept.known())
-			{
-			  areallknown =false; break;
-			}
-		    }
-		  //		  if (areallknown && load_store_data_received)
-		  if (areallknown && load_store_data_received)
-		    {
-			int loadStoreReadRegisterPort;
-			int load_store_read_register_to_remove = 0;
-
-			/* Enable accepted instructions */
-			for(loadStoreReadRegisterPort = 0; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
-			{
-				if(!outLoadStoreInstruction[loadStoreReadRegisterPort].accept) break;
-				outLoadStoreInstruction[loadStoreReadRegisterPort].enable = true;
-				/* Count accepted instruction as being removed */
-				load_store_read_register_to_remove++;
-			}
-			/* Don't enable any instruction on the remaing read ports */
-			for(; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
-			{
-				outLoadStoreInstruction[loadStoreReadRegisterPort].enable = false;
-			}
-
-			/* Get the free space into the read pipeline */
-			int load_store_read_register_free_space = loadStoreReadRegisterPipeline.FreeSpace();
-
-			/* Compute the number of instructions to accept in the read pipeline, i.e., the minimum of the number of instructions to add and
-			the sum of free space into the pipeline and the number of instructions to remove */
-			int load_store_read_register_to_accept = MIN(load_store_read_register_free_space + load_store_read_register_to_remove, load_store_read_register_to_add);
-
-			/* Accepts instructions according to the number of instructions to accept */
-			for(loadStoreReadRegisterPort = 0; loadStoreReadRegisterPort < load_store_read_register_to_accept; loadStoreReadRegisterPort++)
-			{
-				inLoadStoreInstruction[loadStoreReadRegisterPort].accept = true;
-			}
-			/* Reject instructions on the remaining read ports */
-			for(; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
-			{
-				inLoadStoreInstruction[loadStoreReadRegisterPort].accept = false;
-			}
-		    }
+		    }//Endof foreach Config.
+		    outFloatingPointInstruction.enable.send();
+		    inFloatingPointInstruction.accept.send();
+		  }//End of areallknown
 		}
 
 		void onLoadStore()
 		{
+		  /*
 		  bool areallknown(true);
 		  for(int i = 0; i < LoadStoreReadRegisterWidth; i++)
 		    {
@@ -874,13 +695,17 @@ class RegisterFile : public module
 			  areallknown =false; break;
 			}
 		    }
-		  if (areallknown)
+		  */
+		  //		  if (areallknown)
+		  if ( inLoadStoreInstruction.data.known() && outLoadStoreInstruction.accept.known() )
+		  {
+		    for (int cfg=0; cfg<nConfig; cfg++)
 		    {
 			/* Count the number of instruction to add into the read pipeline */
 			for(int loadStoreReadRegisterPort = 0; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
 			{
-				if(!inLoadStoreInstruction[loadStoreReadRegisterPort].data.something()) break;
-				load_store_read_register_to_add++;
+				if(!inLoadStoreInstruction.data[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort].something()) break;
+				load_store_read_register_to_add[cfg]++;
 			}
 			//		    integer_data_received = false;
 			//		    floating_point_data_received = false;
@@ -893,36 +718,37 @@ class RegisterFile : public module
 			/* Enable accepted instructions */
 			for(loadStoreReadRegisterPort = 0; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
 			{
-				if(!outLoadStoreInstruction[loadStoreReadRegisterPort].accept) break;
-				outLoadStoreInstruction[loadStoreReadRegisterPort].enable = true;
+				if(!outLoadStoreInstruction.accept[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort]) break;
+				outLoadStoreInstruction.enable[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort] = true;
 				/* Count accepted instruction as being removed */
 				load_store_read_register_to_remove++;
 			}
 			/* Don't enable any instruction on the remaing read ports */
 			for(; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
 			{
-				outLoadStoreInstruction[loadStoreReadRegisterPort].enable = false;
+				outLoadStoreInstruction.enable[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort] = false;
 			}
 
 			/* Get the free space into the read pipeline */
-			int load_store_read_register_free_space = loadStoreReadRegisterPipeline.FreeSpace();
+			int load_store_read_register_free_space = loadStoreReadRegisterPipeline[cfg].FreeSpace();
 
 			/* Compute the number of instructions to accept in the read pipeline, i.e., the minimum of the number of instructions to add and
 			the sum of free space into the pipeline and the number of instructions to remove */
-			int load_store_read_register_to_accept = MIN(load_store_read_register_free_space + load_store_read_register_to_remove, load_store_read_register_to_add);
+			int load_store_read_register_to_accept = MIN(load_store_read_register_free_space + load_store_read_register_to_remove, load_store_read_register_to_add[cfg]);
 
 			/* Accepts instructions according to the number of instructions to accept */
 			for(loadStoreReadRegisterPort = 0; loadStoreReadRegisterPort < load_store_read_register_to_accept; loadStoreReadRegisterPort++)
 			{
-				inLoadStoreInstruction[loadStoreReadRegisterPort].accept = true;
+				inLoadStoreInstruction.accept[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort] = true;
 			}
 			/* Reject instructions on the remaining read ports */
 			for(; loadStoreReadRegisterPort < LoadStoreReadRegisterWidth; loadStoreReadRegisterPort++)
 			{
-				inLoadStoreInstruction[loadStoreReadRegisterPort].accept = false;
+				inLoadStoreInstruction.accept[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort] = false;
 			}
 			// End of Accept Part
-		    }
+		    }//Endof foreach Config.
+		  }// Endof areallknown
 		}
 
 		/** A SystemC process for handling the valid, accept and enable hand-shaking for the write back pipe */
@@ -939,7 +765,7 @@ class RegisterFile : public module
 		*/
 
 		/** For each read pipe stage, bypass results being written back */
-		void ByPass()
+		void ByPass(int cfg)
 		{
 			QueuePointer<ReadRegisterPipelineEntry<T, nSources>, IntegerReadRegisterWidth * nReadRegisterStages> integerReadRegisterPipelineEntry;
 			QueuePointer<ReadRegisterPipelineEntry<T, nSources>, FloatingPointReadRegisterWidth * nReadRegisterStages> floatingPointReadRegisterPipelineEntry;
@@ -1114,8 +940,8 @@ class RegisterFile : public module
 		//		void InternalControl()
 		void end_of_cycle()
 		{
-			int i;
-
+		  //int i;
+		  
 			/*
 			if(!inFlush && !inIntegerEnable[0] && !inFloatingPointEnable[0] && !inLoadStoreEnable[0] &&
 			   !inWriteBackEnable[0] &&
@@ -1126,47 +952,26 @@ class RegisterFile : public module
 			loadStorePipeChanged = false;
 			changed = false;
 			*/
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		  {
 			/* Flush ? */
-			if(inFlush.enable && inFlush.data.something())
+			if(inFlush.enable[cfg] && inFlush.data[cfg].something())
 			{
-			  if(inFlush.data)
+			  if(inFlush.data[cfg])
 			  {
 			  //				changed = true;
 				/* Flush the write back pipeline */
-				writeBackPipeline.Flush();
+				writeBackPipeline[cfg].Flush();
 
 				/* Flush the integer read pipeline */
-				integerReadRegisterPipeline.Flush();
+				integerReadRegisterPipeline[cfg].Flush();
 
 				/* Flush the floating point read pipeline */
-				floatingPointReadRegisterPipeline.Flush();
+				floatingPointReadRegisterPipeline[cfg].Flush();
 
 				/* Flush the load/store read pipeline */
-				loadStoreReadRegisterPipeline.Flush();
+				loadStoreReadRegisterPipeline[cfg].Flush();
 
-				/* Reset all output ports */
-				/*
-				for(i = 0; i < WriteBackWidth; i++)
-				{
-					outWriteBackAccept[i] = false;
-					outWriteBackEnable[i] = false;
-				}
-				for(i = 0; i < IntegerReadRegisterWidth; i++)
-				{
-					outIntegerAccept[i] = false;
-					outIntegerValid[i] = false;
-				}
-				for(i = 0; i < FloatingPointReadRegisterWidth; i++)
-				{
-					outFloatingPointAccept[i] = false;
-					outFloatingPointValid[i] = false;
-				}
-				for(i = 0; i < LoadStoreReadRegisterWidth; i++)
-				{
-					outLoadStoreAccept[i] = false;
-					outLoadStoreValid[i] = false;
-				}
-				*/
 				/* Reset the valid bits */
 				memset(integerValid, true, sizeof(integerValid));
 				memset(floatingPointValid, true, sizeof(floatingPointValid));
@@ -1177,34 +982,27 @@ class RegisterFile : public module
 				memset(XERValid, true, sizeof(XERValid));
 				return;
 			  }
-			}
+			}//endof Flush...
 
 			/* Remove launched integer instructions from the integer read pipeline */
-			for(i = 0; i < IntegerReadRegisterWidth; i++)
+			for(int i = 0; i < IntegerReadRegisterWidth; i++)
 			{
-			  //				if(!inIntegerAccept[i]) break;
-			  //   	if(!inIntegerInstruction[i].accept) break;
-				if(!outIntegerInstruction[i].accept) break;
-				integerReadRegisterPipeline.RemoveHead();
-				//				integerPipeChanged = true;
+				if(!outIntegerInstruction.accept[cfg*IntegerReadRegisterWidth+i]) break;
+				integerReadRegisterPipeline[cfg].RemoveHead();
 			}
 
 			/* Remove launched floating point instructions from the floating point read pipeline */
-			for(i = 0; i < FloatingPointReadRegisterWidth; i++)
+			for(int i = 0; i < FloatingPointReadRegisterWidth; i++)
 			{
-			  //	if(!inFloatingPointInstruction[i].accept) break;
-				if(!outFloatingPointInstruction[i].accept) break;
-				floatingPointReadRegisterPipeline.RemoveHead();
-				//				floatingPointPipeChanged = true;
+				if(!outFloatingPointInstruction.accept[cfg*FloatingPointReadRegisterWidth+i]) break;
+				floatingPointReadRegisterPipeline[cfg].RemoveHead();
 			}
 
 			/* Remove launched load/store instructions from the load/store read pipeline */
-			for(i = 0; i < LoadStoreReadRegisterWidth; i++)
+			for(int i = 0; i < LoadStoreReadRegisterWidth; i++)
 			{
-			  //	if(!inLoadStoreInstruction[i].accept) break;
-				if(!outLoadStoreInstruction[i].accept) break;
-				loadStoreReadRegisterPipeline.RemoveHead();
-				//				loadStorePipeChanged = true;
+				if(!outLoadStoreInstruction.accept[cfg*LoadStoreReadRegisterWidth+i]) break;
+				loadStoreReadRegisterPipeline[cfg].RemoveHead();
 			}
 
 
@@ -1212,57 +1010,34 @@ class RegisterFile : public module
 			QueuePointer<WriteBackPipelineEntry<T, nSources>, WriteBackWidth * nWriteBackStages> writeBackPipelineEntry;
 
 			/* Remove instructions  which finished to write back their results from the write back pipeline */
-			for(writeBackPort = 0, writeBackPipelineEntry = writeBackPipeline.SeekAtHead(); writeBackPort < WriteBackWidth && writeBackPipelineEntry; writeBackPipelineEntry++, writeBackPort++)
+			for(writeBackPort = 0, writeBackPipelineEntry = writeBackPipeline[cfg].SeekAtHead(); writeBackPort < WriteBackWidth && writeBackPipelineEntry; writeBackPipelineEntry++, writeBackPort++)
 			{
 				if(writeBackPipelineEntry->delay > 0) break;
-				if (outWriteBackReceived[writeBackPort].accept)
+				if (outWriteBackReceived.accept[cfg*WriteBackWidth+writeBackPort])
 				  {
-				    WriteBack(writeBackPipelineEntry->instruction);
-				    writeBackPipeline.RemoveHead();
+				    WriteBack(writeBackPipelineEntry->instruction, cfg);
+				    writeBackPipeline[cfg].RemoveHead();
 				  }
 				//				changed = true;
 			}
 
 			/* For each integer read register port */
-			for(i = 0; i < IntegerReadRegisterWidth; i++)
+			for(int i = 0; i < IntegerReadRegisterWidth; i++)
 			{
 				/* Is there an instruction on the read port ? */
 				//if(!inIntegerEnable[i]) break;
-				if(!inIntegerInstruction[i].enable) break;
+				if(!inIntegerInstruction.enable[cfg*IntegerReadRegisterWidth+i]) break;
 				/* Allocate a pipeline entry */
-				ReadRegisterPipelineEntry<T, nSources> *entry = integerReadRegisterPipeline.New();
+				ReadRegisterPipelineEntry<T, nSources> *entry = integerReadRegisterPipeline[cfg].New();
 
 				if(entry)
 				{
 					/* Set the processing delay to the number of pipe stage */
 					entry->delay = nReadRegisterStages * IntegerReadRegisterWidth;
 					/* Records the instruction */
-					entry->Initialize(inIntegerInstruction[i].data);
+					entry->Initialize(inIntegerInstruction.data[cfg*IntegerReadRegisterWidth+i]);
 					/* Read the source operand of the instruction from the register file */
-					Read(entry);
-					//					if (timestamp()>380)
-					//					  cerr << "DDDD: " << *entry << endl;
-					/* Invalidate destination operand register of the instruction */
-					/*
-					if(entry->instruction->destination.tag >= 0)
-					{
-						switch(entry->instruction->destination.type)
-						{
-							case GPR_T:
-								integerValid[entry->instruction->destination.tag] = false;
-								break;
-
-							case FPR_T:
-								floatingPointValid[entry->instruction->destination.tag] = false;
-								break;
-
-							default:
-								cerr << "register is neither an integer nor a floating point register" << endl;
-								exit(-1);
-						}
-					}
-					*/
-					//integerPipeChanged = true;
+					Read(entry, cfg);
 				}
 				else
 				{
@@ -1275,43 +1050,21 @@ class RegisterFile : public module
 			}
 
 			/* For each floating point read register port */
-			for(i = 0; i < FloatingPointReadRegisterWidth; i++)
+			for(int i = 0; i < FloatingPointReadRegisterWidth; i++)
 			{
 				/* Is there an instruction on the read port ? */
-				if(!inFloatingPointInstruction[i].enable) break;
+				if(!inFloatingPointInstruction.enable[cfg*FloatingPointReadRegisterWidth+i]) break;
 				/* Allocate a pipeline entry */
-				ReadRegisterPipelineEntry<T, nSources> *entry = floatingPointReadRegisterPipeline.New();
+				ReadRegisterPipelineEntry<T, nSources> *entry = floatingPointReadRegisterPipeline[cfg].New();
 
 				if(entry)
 				{
 					/* Set the processing delay to the number of pipe stage */
 					entry->delay = nReadRegisterStages * FloatingPointReadRegisterWidth;
 					/* Records the instruction */
-					entry->Initialize(inFloatingPointInstruction[i].data);
+					entry->Initialize(inFloatingPointInstruction.data[cfg*FloatingPointReadRegisterWidth+i]);
 					/* Read the source operand of the instruction from the register file */
-					Read(entry);
-
-					/* Invalidate destination operand register of the instruction */
-					/*
-					if(entry->instruction->destination.tag >= 0)
-					{
-						switch(entry->instruction->destination.type)
-						{
-							case GPR_T:
-								integerValid[entry->instruction->destination.tag] = false;
-								break;
-
-							case FPR_T:
-								floatingPointValid[entry->instruction->destination.tag] = false;
-								break;
-
-							default:
-								cerr << "register is neither an integer nor a floating point register" << endl;
-								exit(-1);
-						}
-					}
-					*/
-					//floatingPointPipeChanged = true;
+					Read(entry, cfg);
 				}
 				else
 				{
@@ -1324,43 +1077,22 @@ class RegisterFile : public module
 			}
 
 			/* For each load/store read register port */
-			for(i = 0; i < LoadStoreReadRegisterWidth; i++)
+			for(int i = 0; i < LoadStoreReadRegisterWidth; i++)
 			{
 				/* Is there an instruction on the read port ? */
-				if(!inLoadStoreInstruction[i].enable) break;
+				if(!inLoadStoreInstruction.enable[cfg*LoadStoreReadRegisterWidth+i]) break;
 				/* Allocate a pipeline entry */
-				ReadRegisterPipelineEntry<T, nSources> *entry = loadStoreReadRegisterPipeline.New();
+				ReadRegisterPipelineEntry<T, nSources> *entry = loadStoreReadRegisterPipeline[cfg].New();
 
 				if(entry)
 				{
 					/* Set the processing delay to the number of pipe stage */
 					entry->delay = nReadRegisterStages * LoadStoreReadRegisterWidth;
 					/* Records the instruction */
-					entry->Initialize(inLoadStoreInstruction[i].data);
+					entry->Initialize(inLoadStoreInstruction.data[cfg*LoadStoreReadRegisterWidth+i]);
 					/* Read the source operand of the instruction from the register file */
-					Read(entry);
+					Read(entry, cfg);
 
-					/*
-					if(entry->instruction->destination.tag >= 0)
-					{
-						switch(entry->instruction->destination.type)
-						{
-							case GPR_T:
-								integerValid[entry->instruction->destination.tag] = false;
-								break;
-
-							case FPR_T:
-								floatingPointValid[entry->instruction->destination.tag] = false;
-								break;
-
-							default:
-								cerr << "register is neither an integer nor a floating point register" << endl;
-								exit(-1);
-						}
-					}
-					*/
-					//changed = true;
-					//loadStorePipeChanged = true;
 				}
 				else
 				{
@@ -1373,17 +1105,17 @@ class RegisterFile : public module
 
 			/* Adds the instructions on the common data bus into the write back pipeline */
 			/* For each write back port */
-			for(i = 0; i < WriteBackWidth; i++)
+			for(int i = 0; i < WriteBackWidth; i++)
 			{
 				/* Is there an instruction on the write back port ? */
 				//if(!inWriteBackInstruction[i].enable) break;
-			  if (inWriteBackInstruction[i].enable)
+			  if (inWriteBackInstruction.enable[cfg*WriteBackWidth+i])
 			    {
 				/* Get the instruction */
-				const InstructionPtr writeBackInstruction = inWriteBackInstruction[i].data;
+				const InstructionPtr writeBackInstruction = inWriteBackInstruction.data[cfg*WriteBackWidth+i];
 
 				/* Allocate a write back pipeline entry */
-				WriteBackPipelineEntry<T, nSources> *entry = writeBackPipeline.New();
+				WriteBackPipelineEntry<T, nSources> *entry = writeBackPipeline[cfg].New();
 
 				if(entry)
 				{
@@ -1408,7 +1140,7 @@ class RegisterFile : public module
 			QueuePointer<ReadRegisterPipelineEntry<T, nSources>, LoadStoreReadRegisterWidth * nReadRegisterStages> loadStoreReadRegisterPipelineEntry;
 
 			/* Decrement the processing delay in each integer read register pipeline entry */
-			for(integerReadRegisterPipelineEntry = integerReadRegisterPipeline.SeekAtHead(); integerReadRegisterPipelineEntry; integerReadRegisterPipelineEntry++)
+			for(integerReadRegisterPipelineEntry = integerReadRegisterPipeline[cfg].SeekAtHead(); integerReadRegisterPipelineEntry; integerReadRegisterPipelineEntry++)
 			{
 				if(integerReadRegisterPipelineEntry->delay > 0)
 				{
@@ -1417,7 +1149,7 @@ class RegisterFile : public module
 				}
 			}
 			/* Decrement the processing delay in each floating point read register pipeline entry */
-			for(floatingPointReadRegisterPipelineEntry = floatingPointReadRegisterPipeline.SeekAtHead(); floatingPointReadRegisterPipelineEntry; floatingPointReadRegisterPipelineEntry++)
+			for(floatingPointReadRegisterPipelineEntry = floatingPointReadRegisterPipeline[cfg].SeekAtHead(); floatingPointReadRegisterPipelineEntry; floatingPointReadRegisterPipelineEntry++)
 			{
 				if(floatingPointReadRegisterPipelineEntry->delay > 0)
 				{
@@ -1426,7 +1158,7 @@ class RegisterFile : public module
 				}
 			}
 			/* Decrement the processing delay in each load/store read register pipeline entry */
-			for(loadStoreReadRegisterPipelineEntry = loadStoreReadRegisterPipeline.SeekAtHead(); loadStoreReadRegisterPipelineEntry; loadStoreReadRegisterPipelineEntry++)
+			for(loadStoreReadRegisterPipelineEntry = loadStoreReadRegisterPipeline[cfg].SeekAtHead(); loadStoreReadRegisterPipelineEntry; loadStoreReadRegisterPipelineEntry++)
 			{
 				if(loadStoreReadRegisterPipelineEntry->delay > 0)
 				{
@@ -1436,7 +1168,7 @@ class RegisterFile : public module
 			}
 
 			/* Decrement the processing delay in each write back pipeline entry */
-			for(writeBackPipelineEntry = writeBackPipeline.SeekAtHead(); writeBackPipelineEntry; writeBackPipelineEntry++)
+			for(writeBackPipelineEntry = writeBackPipeline[cfg].SeekAtHead(); writeBackPipelineEntry; writeBackPipelineEntry++)
 			{
 				if(writeBackPipelineEntry->delay > 0)
 				{
@@ -1447,12 +1179,14 @@ class RegisterFile : public module
 			}
 
 			/* Bypass the result from the write back pipeline to the read register pipelines */
-			ByPass();
+			ByPass(cfg);
 
 #ifdef DD_DEBUG_PIPELINE_VERB1
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ==== Pipeline Debug" << endl;
 		cerr << this << endl;
 #endif
+
+		  }// Endof foreach Config.
 
 		} // End of end_of_cycle...
 		
@@ -1464,37 +1198,44 @@ class RegisterFile : public module
 		///////////////////////////////////
 		void start_of_cycle()
 		{
-		  // Just reset counters ...
-		  WriteBacksReceived = false;
-		  
-		  integer_read_register_to_add = 0;
-		  floating_point_read_register_to_add = 0;
-		  load_store_read_register_to_add = 0;
-		  
-		  int writeBackPort;
-		  QueuePointer<WriteBackPipelineEntry<T, nSources>, WriteBackWidth * nWriteBackStages> writeBackPipelineEntry;
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    // Just reset counters ...
+		    WriteBacksReceived[cfg] = false;
+		    
+		    integer_read_register_to_add[cfg] = 0;
+		    floating_point_read_register_to_add[cfg] = 0;
+		    load_store_read_register_to_add[cfg] = 0;
+		    
+		    int writeBackPort;
+		    QueuePointer<WriteBackPipelineEntry<T, nSources>, WriteBackWidth * nWriteBackStages> writeBackPipelineEntry;
+		    
+		    // Sending written back instruction from previous cycle ...
+		    /* Remove instructions  which finished to write back their results from the write back pipeline */
+		    for(writeBackPort = 0, writeBackPipelineEntry = writeBackPipeline[cfg].SeekAtHead(); writeBackPort < WriteBackWidth && writeBackPipelineEntry; writeBackPipelineEntry++, writeBackPort++)
+		      {
+			if(writeBackPipelineEntry->delay > 0) break;
+			outWriteBackReceived.data[cfg*WriteBackWidth+writeBackPort] = writeBackPipelineEntry->instruction;
+		      }
+		    while(writeBackPort<WriteBackWidth)
+		      {
+			outWriteBackReceived.data[cfg*WriteBackWidth+writeBackPort].nothing();
+			writeBackPort++;
+		      }
+		    
+		  }//Endof foreach Config.
 
-		  // Sending written back instruction from previous cycle ...
-		  /* Remove instructions  which finished to write back their results from the write back pipeline */
-		  for(writeBackPort = 0, writeBackPipelineEntry = writeBackPipeline.SeekAtHead(); writeBackPort < WriteBackWidth && writeBackPipelineEntry; writeBackPipelineEntry++, writeBackPort++)
-		    {
-		      if(writeBackPipelineEntry->delay > 0) break;
-		      outWriteBackReceived[writeBackPort].data = writeBackPipelineEntry->instruction;
-		    }
-		  while(writeBackPort<WriteBackWidth)
-		    {
-		      outWriteBackReceived[writeBackPort].data.nothing();
-		      writeBackPort++;
-		    }
-		  
-		    integer_data_received = false;
-		    floating_point_data_received = false;
-		    load_store_data_received = false;
-  
+		  outWriteBackReceived.data.send();
+
+		  integer_data_received = false;
+		  floating_point_data_received = false;
+		  load_store_data_received = false;
+		    
 		}// end of start_of_cycle
 
                 void onWriteBackReceivedAccept()
                 {
+		  /*
 		  bool areallknown(true);
 		  for(int i = 0; i < WriteBackWidth; i++)
 		    {
@@ -1503,10 +1244,15 @@ class RegisterFile : public module
 			  areallknown =false; break;
 			}
 		    }
-		  if (areallknown)
+		  */
+		  //		  if (areallknown)
+		  if (outWriteBackReceived.accept.known())
+		  {
+		    for(int cfg=0; cfg<nConfig; cfg++)
 		    {
 		      for(int i = 0; i < WriteBackWidth; i++)
 			{
+			  /*
 			  if (outWriteBackReceived[i].accept)
 			    {
 			      outWriteBackReceived[i].enable = true;
@@ -1515,9 +1261,13 @@ class RegisterFile : public module
 			    {
 			      outWriteBackReceived[i].enable = false;
 			    }
+			  */
+			  outWriteBackReceived.enable[cfg*WriteBackWidth+i]
+			    = outWriteBackReceived.accept[cfg*WriteBackWidth+i];
 			}
-		      
-		    }
+		    }//Endof foreach Config 
+		    outWriteBackReceived.enable.send();
+		  }//Endof areallknown
 		}
 
 		/** Reads an integer register (general purpose register)
@@ -1611,7 +1361,7 @@ class RegisterFile : public module
 		/** Reads the source operands of an instruction into the register files
 			@param instruction an instruction
 		*/
-		void Read(ReadRegisterPipelineEntry<T, nSources> *entry)
+		void Read(ReadRegisterPipelineEntry<T, nSources> *entry, int cfg)
 		{
 			int i;
 			InstructionPtr *instruction = &(entry->instruction);
@@ -1624,33 +1374,33 @@ class RegisterFile : public module
 				    {
 				    case GPR_T:
 				      /* If register is valid */
-				      if(integerValid[(*instruction)->sources[i].tag])
+				      if(integerValid[cfg][(*instruction)->sources[i].tag])
 					{
 					  /* then read the register value */
 					  (*instruction)->sources[i].valid = true;
 					  (*instruction)->sources[i].ready = true;
-					  (*instruction)->sources[i].data = integerRegisters.Read((*instruction)->sources[i].tag);
+					  (*instruction)->sources[i].data = integerRegisters[cfg].Read((*instruction)->sources[i].tag);
 					}
 				      break;
 				      
 				    case FPR_T:
 				      /* If register is valid */
-				      if(floatingPointValid[(*instruction)->sources[i].tag])
+				      if(floatingPointValid[cfg][(*instruction)->sources[i].tag])
 					{
 					  /* then read the register value */
 					  (*instruction)->sources[i].valid = true;
 					  (*instruction)->sources[i].ready = true;
-					  (*instruction)->sources[i].data = floatingPointRegisters.Read((*instruction)->sources[i].tag);
+					  (*instruction)->sources[i].data = floatingPointRegisters[cfg].Read((*instruction)->sources[i].tag);
 					}
 				      break;
 				    case CR_T:
 				      /* If register is valid */
-				      if(conditionValid[(*instruction)->sources[i].tag])
+				      if(conditionValid[cfg][(*instruction)->sources[i].tag])
 					{
 					  /* then read the register value */
 					  (*instruction)->sources[i].valid = true;
 					  (*instruction)->sources[i].ready = true;
-					  (*instruction)->sources[i].data = conditionRegisters.Read((*instruction)->sources[i].tag);
+					  (*instruction)->sources[i].data = conditionRegisters[cfg].Read((*instruction)->sources[i].tag);
 					}
 				      /*
 				      else
@@ -1664,42 +1414,42 @@ class RegisterFile : public module
 				      break;
 				    case FPSCR_T:
 				      /* If register is valid */
-				      if(FPSCRValid[(*instruction)->sources[i].tag])
+				      if(FPSCRValid[cfg][(*instruction)->sources[i].tag])
 					{
 					  /* then read the register value */
 					  (*instruction)->sources[i].valid = true;
 					  (*instruction)->sources[i].ready = true;
-					  (*instruction)->sources[i].data = FPSCRegisters.Read((*instruction)->sources[i].tag);
+					  (*instruction)->sources[i].data = FPSCRegisters[cfg].Read((*instruction)->sources[i].tag);
 					}
 				      break;
 				    case LR_T:
 				      /* If register is valid */
-				      if(linkValid[(*instruction)->sources[i].tag])
+				      if(linkValid[cfg][(*instruction)->sources[i].tag])
 					{
 					  /* then read the register value */
 					  (*instruction)->sources[i].valid = true;
 					  (*instruction)->sources[i].ready = true;
-					  (*instruction)->sources[i].data = linkRegisters.Read((*instruction)->sources[i].tag);
+					  (*instruction)->sources[i].data = linkRegisters[cfg].Read((*instruction)->sources[i].tag);
 					}
 				      break;
 				    case CTR_T:
 				      /* If register is valid */
-				      if(countValid[(*instruction)->sources[i].tag])
+				      if(countValid[cfg][(*instruction)->sources[i].tag])
 					{
 					  /* then read the register value */
 					  (*instruction)->sources[i].valid = true;
 					  (*instruction)->sources[i].ready = true;
-					  (*instruction)->sources[i].data = countRegisters.Read((*instruction)->sources[i].tag);
+					  (*instruction)->sources[i].data = countRegisters[cfg].Read((*instruction)->sources[i].tag);
 					}
 				      break;
 				    case XER_T:
 				      /* If register is valid */
-				      if(XERValid[(*instruction)->sources[i].tag])
+				      if(XERValid[cfg][(*instruction)->sources[i].tag])
 					{
 					  /* then read the register value */
 					  (*instruction)->sources[i].valid = true;
 					  (*instruction)->sources[i].ready = true;
-					  (*instruction)->sources[i].data = XERRegisters.Read((*instruction)->sources[i].tag);
+					  (*instruction)->sources[i].data = XERRegisters[cfg].Read((*instruction)->sources[i].tag);
 					}
 				      break;
 				      
@@ -1717,27 +1467,27 @@ class RegisterFile : public module
 				switch(entry->instruction->destinations[j].type)
 				{
 					case GPR_T:
-						integerValid[entry->instruction->destinations[j].tag] = false;
+						integerValid[cfg][entry->instruction->destinations[j].tag] = false;
 						break;
 
 					case FPR_T:
-						floatingPointValid[entry->instruction->destinations[j].tag] = false;
+						floatingPointValid[cfg][entry->instruction->destinations[j].tag] = false;
 						break;
 
 					case CR_T:
-						conditionValid[entry->instruction->destinations[j].tag] = false;
+						conditionValid[cfg][entry->instruction->destinations[j].tag] = false;
 						break;
 					case FPSCR_T:
-						FPSCRValid[entry->instruction->destinations[j].tag] = false;
+						FPSCRValid[cfg][entry->instruction->destinations[j].tag] = false;
 							break;
 					case LR_T:
-						linkValid[entry->instruction->destinations[j].tag] = false;
+						linkValid[cfg][entry->instruction->destinations[j].tag] = false;
 							break;
 					case CTR_T:
-						countValid[entry->instruction->destinations[j].tag] = false;
+						countValid[cfg][entry->instruction->destinations[j].tag] = false;
 							break;
 					case XER_T:
-						XERValid[entry->instruction->destinations[j].tag] = false;
+						XERValid[cfg][entry->instruction->destinations[j].tag] = false;
 							break;
 
 					default:
@@ -1751,7 +1501,7 @@ class RegisterFile : public module
 		/** Write back results of an instruction
 			@param instruction an instruction
 		*/
-		void WriteBack(InstructionPtr instruction)
+		void WriteBack(InstructionPtr instruction, int cfg)
 		{
 		  for (int j=0; j<instruction->destinations.size();j++)
 		  {
@@ -1765,32 +1515,32 @@ class RegisterFile : public module
 				{
 					case GPR_T:
 						/* Write back the value into the integer register file */
-						integerRegisters.Write(tag, instruction->destinations[j].data);
+						integerRegisters[cfg].Write(tag, instruction->destinations[j].data);
 						break;
 
 					case FPR_T:
 						/* Write back the value into the floating point register file */
-						floatingPointRegisters.Write(tag, instruction->destinations[j].data);
+						floatingPointRegisters[cfg].Write(tag, instruction->destinations[j].data);
 						break;
 					case CR_T:
 						/* Write back the value into the condition register file */
-						conditionRegisters.Write(tag, instruction->destinations[j].data);
+						conditionRegisters[cfg].Write(tag, instruction->destinations[j].data);
 						break;
 					case FPSCR_T:
 						/* Write back the value into the FPSC register file */
-						FPSCRegisters.Write(tag, instruction->destinations[j].data);
+						FPSCRegisters[cfg].Write(tag, instruction->destinations[j].data);
 						break;
 					case LR_T:
 						/* Write back the value into the link register file */
-						linkRegisters.Write(tag, instruction->destinations[j].data);
+						linkRegisters[cfg].Write(tag, instruction->destinations[j].data);
 						break;
 					case CTR_T:
 						/* Write back the value into the count register file */
-						countRegisters.Write(tag, instruction->destinations[j].data);
+						countRegisters[cfg].Write(tag, instruction->destinations[j].data);
 						break;
 					case XER_T:
 						/* Write back the value into the XER register file */
-						XERRegisters.Write(tag, instruction->destinations[j].data);
+						XERRegisters[cfg].Write(tag, instruction->destinations[j].data);
 						break;
 
 					default:
@@ -1845,26 +1595,26 @@ class RegisterFile : public module
 				switch(type)
 				{
 					case GPR_T:
-						integerValid[tag] = true;
+						integerValid[cfg][tag] = true;
 						break;
 
 					case FPR_T:
-						floatingPointValid[tag] = true;
+						floatingPointValid[cfg][tag] = true;
 						break;
 					case CR_T:
-						conditionValid[tag] = true;
+						conditionValid[cfg][tag] = true;
 							break;
 					case FPSCR_T:
-						FPSCRValid[tag] = true;
+						FPSCRValid[cfg][tag] = true;
 							break;
 					case LR_T:
-						linkValid[tag] = true;
+						linkValid[cfg][tag] = true;
 							break;
 					case CTR_T:
-						countValid[tag] = true;
+						countValid[cfg][tag] = true;
 							break;
 					case XER_T:
-						XERValid[tag] = true;
+						XERValid[cfg][tag] = true;
 							break;
 
 					default:
@@ -1959,62 +1709,62 @@ class RegisterFile : public module
 
 	private:
 		/* A queue modeling the write back pipeline */
-		Queue<WriteBackPipelineEntry<T, nSources>, nWriteBackStages * WriteBackWidth> writeBackPipeline;
+		Queue<WriteBackPipelineEntry<T, nSources>, nWriteBackStages * WriteBackWidth> writeBackPipeline[nConfig];
 
 		/* A queue modeling the integer read register pipe */
-		Queue<ReadRegisterPipelineEntry<T, nSources>, nReadRegisterStages * IntegerReadRegisterWidth> integerReadRegisterPipeline;
+		Queue<ReadRegisterPipelineEntry<T, nSources>, nReadRegisterStages * IntegerReadRegisterWidth> integerReadRegisterPipeline[nConfig];
 
 		/* A queue modeling the floating point read register pipe */
-		Queue<ReadRegisterPipelineEntry<T, nSources>, nReadRegisterStages * FloatingPointReadRegisterWidth> floatingPointReadRegisterPipeline;
+		Queue<ReadRegisterPipelineEntry<T, nSources>, nReadRegisterStages * FloatingPointReadRegisterWidth> floatingPointReadRegisterPipeline[nConfig];
 
 		/* A queue modeling the load/store read register pipe */
-		Queue<ReadRegisterPipelineEntry<T, nSources>, nReadRegisterStages * LoadStoreReadRegisterWidth> loadStoreReadRegisterPipeline;
+		Queue<ReadRegisterPipelineEntry<T, nSources>, nReadRegisterStages * LoadStoreReadRegisterWidth> loadStoreReadRegisterPipeline[nConfig];
 
 		/* The integer register file */
-		RegisterFileBase<T, nSources, nIntegerRegisters> integerRegisters;
+		RegisterFileBase<T, nSources, nIntegerRegisters> integerRegisters[nConfig];
 		/* Valid bits for each integer registers */
-		bool integerValid[nIntegerRegisters];
+		bool integerValid[nConfig][nIntegerRegisters];
 
 		/* The floating point register file */
-		RegisterFileBase<T, nSources, nFloatingPointRegisters> floatingPointRegisters;
+		RegisterFileBase<T, nSources, nFloatingPointRegisters> floatingPointRegisters[nConfig];
 		/* Valid bits for each floating point registers */
-		bool floatingPointValid[nIntegerRegisters];
+		bool floatingPointValid[nConfig][nIntegerRegisters];
 
 		/* The condition register file */
-		RegisterFileBase<T, nSources, nConditionRegisters> conditionRegisters;
+		RegisterFileBase<T, nSources, nConditionRegisters> conditionRegisters[nConfig];
 		/* Valid bits for each condition registers */
-		bool conditionValid[nConditionRegisters];
+		bool conditionValid[nConfig][nConditionRegisters];
 
 		/* The count register file */
-		RegisterFileBase<T, nSources, nCountRegisters> countRegisters;
+		RegisterFileBase<T, nSources, nCountRegisters> countRegisters[nConfig];
 		/* Valid bits for each count registers */
-		bool countValid[nCountRegisters];
+		bool countValid[nConfig][nCountRegisters];
 
 		/* The FPSCR register file */
-		RegisterFileBase<T, nSources, nFPSCRegisters> FPSCRegisters;
+		RegisterFileBase<T, nSources, nFPSCRegisters> FPSCRegisters[nConfig];
 		/* Valid bits for each FPSC registers */
-		bool FPSCRValid[nFPSCRegisters];
+		bool FPSCRValid[nConfig][nFPSCRegisters];
 
 		/* The Link register file */
-		RegisterFileBase<T, nSources, nLinkRegisters> linkRegisters;
+		RegisterFileBase<T, nSources, nLinkRegisters> linkRegisters[nConfig];
 		/* Valid bits for each Link registers */
-		bool linkValid[nLinkRegisters];
+		bool linkValid[nConfig][nLinkRegisters];
 
 		/* The XER register file */
-		RegisterFileBase<T, nSources, nXERRegisters> XERRegisters;
+		RegisterFileBase<T, nSources, nXERRegisters> XERRegisters[nConfig];
 		/* Valid bits for each XER registers */
-		bool XERValid[nXERRegisters];
+		bool XERValid[nConfig][nXERRegisters];
 
 
-		bool WriteBacksReceived;
+		bool WriteBacksReceived[nConfig];
 
-		int integer_read_register_to_add;
-		int floating_point_read_register_to_add;
-		int load_store_read_register_to_add;
+		int integer_read_register_to_add[nConfig];
+		int floating_point_read_register_to_add[nConfig];
+		int load_store_read_register_to_add[nConfig];
 
-  bool integer_data_received;
-  bool floating_point_data_received;
-  bool load_store_data_received;
+                bool integer_data_received;
+                bool floating_point_data_received;
+                bool load_store_data_received;
 		/* Some ports to make the SystemC scheduler call the ExternalControl process on state changes */
 		/*
 		ml_out_data<bool> outStateChangedIntegerPipe;

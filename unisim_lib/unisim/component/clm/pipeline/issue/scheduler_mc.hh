@@ -278,43 +278,45 @@ public:
 		sensitive_method(onFlushEnable) << inFlush.enable;
 
 
-		for(i = 0; i < nIntegerRegisters; i++)
-			integerRegisterTimeStamp[i] = 0;
+		for(int cfg=0; cfg<nConfig; cfg++)
+		{
+		  for(i = 0; i < nIntegerRegisters; i++)
+		    integerRegisterTimeStamp[cfg][i] = 0;
 
-		for(i = 0; i < nFloatingPointRegisters; i++)
-			floatingPointRegisterTimeStamp[i] = 0;
+		  for(i = 0; i < nFloatingPointRegisters; i++)
+		    floatingPointRegisterTimeStamp[cfg][i] = 0;
+		  
+		  for(i = 0; i < nConditionRegisters; i++)
+		    conditionRegisterTimeStamp[cfg][i] = 0;
+		  
+		  for(i = 0; i < nFPSCRegisters; i++)
+		    FPSCRegisterTimeStamp[cfg][i] = 0;
+		  
+		  for(i = 0; i < nLinkRegisters; i++)
+		    linkRegisterTimeStamp[cfg][i] = 0;
+		  
+		  for(i = 0; i < nCountRegisters; i++)
+		    countRegisterTimeStamp[cfg][i] = 0;
+		  
+		  for(i = 0; i < nXERRegisters; i++)
+		    XERRegisterTimeStamp[cfg][i] = 0;
+		  
+		  time_stamp[cfg] = 0;
 
-		for(i = 0; i < nConditionRegisters; i++)
-			conditionRegisterTimeStamp[i] = 0;
+		  // ...
+		  integer_to_remove[cfg] = 0;
+		  floating_point_to_remove[cfg] = 0;
+		  loadstore_to_remove[cfg] = 0;
+		  //		allAcceptRecevied = false;
+		  WriteBacksProcessed[cfg] = false;
 
-		for(i = 0; i < nFPSCRegisters; i++)
-			FPSCRegisterTimeStamp[i] = 0;
-
-		for(i = 0; i < nLinkRegisters; i++)
-			linkRegisterTimeStamp[i] = 0;
-
-		for(i = 0; i < nCountRegisters; i++)
-			countRegisterTimeStamp[i] = 0;
-
-		for(i = 0; i < nXERRegisters; i++)
-			XERRegisterTimeStamp[i] = 0;
-
-		time_stamp = 0;
-
-		// ...
-		integer_to_remove = 0;
-		floating_point_to_remove = 0;
-		loadstore_to_remove = 0;
-		//		allAcceptRecevied = false;
-		WriteBacksProcessed = false;
-
-		for(i = 0; i < IntegerIssueWidth; i++)
-		  { integerIssueBusy[i] = 0; }
-		for(i = 0; i < FloatingPointIssueWidth; i++)
-		  { floatingPointIssueBusy[i] = 0; }
-		for(i = 0; i < LoadStoreIssueWidth; i++)
-		  { loadStoreIssueBusy[i] = 0; }
-
+		  for(i = 0; i < IntegerIssueWidth; i++)
+		    { integerIssueBusy[cfg][i] = 0; }
+		  for(i = 0; i < FloatingPointIssueWidth; i++)
+		    { floatingPointIssueBusy[cfg][i] = 0; }
+		  for(i = 0; i < LoadStoreIssueWidth; i++)
+		    { loadStoreIssueBusy[cfg][i] = 0; }
+		}
 
 		// --- Latex rendering hints -----------------
 
@@ -387,7 +389,7 @@ public:
 		@param rs a reservation station
 		@return true if it will be issuable
 	*/
-	bool WillBeIssuable(ReservationStation<T, nSources> *rs)
+	bool WillBeIssuable(ReservationStation<T, nSources> *rs, int cfg)
 	{
 		/* If instruction is ready, it already is issuable */
 		if(rs->ready) return true;
@@ -456,33 +458,33 @@ public:
 						switch(rs->instruction->sources[i].type)
 						{
 							case GPR_T:
-								if(integerRegisterTimeStamp[tag] >= time_stamp) return false;
+								if(integerRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 								ready++;
 								break;
 
 							case FPR_T:
-								if(floatingPointRegisterTimeStamp[tag] >= time_stamp) return false;
+								if(floatingPointRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 								ready++;
 								break;
 
 							case CR_T:
-								if(conditionRegisterTimeStamp[tag] >= time_stamp) return false;
+								if(conditionRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 								ready++;
 								break;
 							case FPSCR_T:
-								if(FPSCRegisterTimeStamp[tag] >= time_stamp) return false;
+								if(FPSCRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 								ready++;
 								break;
 							case LR_T:
-								if(linkRegisterTimeStamp[tag] >= time_stamp) return false;
+								if(linkRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 								ready++;
 								break;
 							case CTR_T:
-								if(countRegisterTimeStamp[tag] >= time_stamp) return false;
+								if(countRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 								ready++;
 								break;
 							case XER_T:
-								if(XERRegisterTimeStamp[tag] >= time_stamp) return false;
+								if(XERRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 								ready++;
 								break;
 
@@ -500,84 +502,84 @@ public:
 	/** Search for the next integer instruction in the integer issue queue that will be issuable
 		@param integerRs a reservation station pointer
 	*/
-	void NextIntegerThatWillBeIssuable(OoOQueuePointer<ReservationStation<T, nSources>, IntegerIssueQueueSize>& integerRs)
+	void NextIntegerThatWillBeIssuable(OoOQueuePointer<ReservationStation<T, nSources>, IntegerIssueQueueSize>& integerRs, int cfg)
 	{
 		if(integerRs)
 		{
 			do
 			{
 				integerRs++;
-			} while(integerRs && !WillBeIssuable(integerRs));
+			} while(integerRs && !WillBeIssuable(integerRs,cfg));
 		}
 	}
 
 	/** Search for the next integer instruction in the integer issue queue that is issuable
 		@param integerRs a reservation station pointer
 	*/
-	void NextIssuableInteger(OoOQueuePointer<ReservationStation<T, nSources>, IntegerIssueQueueSize>& integerRs)
+	void NextIssuableInteger(OoOQueuePointer<ReservationStation<T, nSources>, IntegerIssueQueueSize>& integerRs, int cfg)
 	{
 		if(integerRs)
 		{
 			do
 			{
 				integerRs++;
-			} while(integerRs && !Issuable(integerRs));
+			} while(integerRs && !Issuable(integerRs,cfg));
 		}
 	}
 
 	/** Search for the next floating point instruction in the floating point issue queue that will be issuable
 		@param floating pointRs a reservation station pointer
 	*/
-	void NextFloatingPointThatWillBeIssuable(OoOQueuePointer<ReservationStation<T, nSources>, FloatingPointIssueQueueSize>& floatingPointRs)
+	void NextFloatingPointThatWillBeIssuable(OoOQueuePointer<ReservationStation<T, nSources>, FloatingPointIssueQueueSize>& floatingPointRs, int cfg)
 	{
 		if(floatingPointRs)
 		{
 			do
 			{
 				floatingPointRs++;
-			} while(floatingPointRs && !WillBeIssuable(floatingPointRs));
+			} while(floatingPointRs && !WillBeIssuable(floatingPointRs, cfg));
 		}
 	}
 
 	/** Search for the next floating point instruction in the floating point issue queue that is issuable
 		@param floating pointRs a reservation station pointer
 	*/
-	void NextIssuableFloatingPoint(OoOQueuePointer<ReservationStation<T, nSources>, FloatingPointIssueQueueSize>& floatingPointRs)
+	void NextIssuableFloatingPoint(OoOQueuePointer<ReservationStation<T, nSources>, FloatingPointIssueQueueSize>& floatingPointRs, int cfg)
 	{
 		if(floatingPointRs)
 		{
 			do
 			{
 				floatingPointRs++;
-			} while(floatingPointRs && !Issuable(floatingPointRs));
+			} while(floatingPointRs && !Issuable(floatingPointRs, cfg));
 		}
 	}
 
 	/** Search for the next load/store instruction in the load/store issue queue that will be issuable
 		@param load/storeRs a reservation station pointer
 	*/
-	void NextLoadStoreThatWillBeIssuable(OoOQueuePointer<ReservationStation<T, nSources>, LoadStoreIssueQueueSize>& loadStoreRs)
+	void NextLoadStoreThatWillBeIssuable(OoOQueuePointer<ReservationStation<T, nSources>, LoadStoreIssueQueueSize>& loadStoreRs, int cfg)
 	{
 		if(loadStoreRs)
 		{
 			do
 			{
 				loadStoreRs++;
-			} while(loadStoreRs && !WillBeIssuable(loadStoreRs));
+			} while(loadStoreRs && !WillBeIssuable(loadStoreRs, cfg));
 		}
 	}
 
 	/** Search for the next load/store instruction in the load/store issue queue that is issuable
 		@param load/storeRs a reservation station pointer
 	*/
-	void NextIssuableLoadStore(OoOQueuePointer<ReservationStation<T, nSources>, LoadStoreIssueQueueSize>& loadStoreRs)
+	void NextIssuableLoadStore(OoOQueuePointer<ReservationStation<T, nSources>, LoadStoreIssueQueueSize>& loadStoreRs, int cfg)
 	{
 		if(loadStoreRs)
 		{
 			do
 			{
 				loadStoreRs++;
-			} while(loadStoreRs && !Issuable(loadStoreRs));
+			} while(loadStoreRs && !Issuable(loadStoreRs, cfg));
 		}
 	}
 
@@ -585,7 +587,7 @@ public:
 		@param rs a reservation station
 		@return true if it is issuable
 	*/
-	bool Issuable(ReservationStation<T, nSources> *rs)
+	bool Issuable(ReservationStation<T, nSources> *rs, int cfg)
 	{
 		/* If it is already marked as issuable return true */
 		if(rs->issuable) return true;
@@ -610,27 +612,27 @@ public:
 					switch(rs->instruction->sources[i].type)
 					{
 						case GPR_T:
-							if(integerRegisterTimeStamp[tag] >= time_stamp) return false;
+							if(integerRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 							break;
 
 						case FPR_T:
-							if(floatingPointRegisterTimeStamp[tag] >= time_stamp) return false;
+							if(floatingPointRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 							break;
 
 						case CR_T:
-							if(conditionRegisterTimeStamp[tag] >= time_stamp) return false;
+							if(conditionRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 							break;
 						case FPSCR_T:
-							if(FPSCRegisterTimeStamp[tag] >= time_stamp) return false;
+							if(FPSCRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 							break;
 						case LR_T:
-							if(linkRegisterTimeStamp[tag] >= time_stamp) return false;
+							if(linkRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 							break;
 						case CTR_T:
-							if(countRegisterTimeStamp[tag] >= time_stamp) return false;
+							if(countRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 							break;
 						case XER_T:
-							if(XERRegisterTimeStamp[tag] >= time_stamp) return false;
+							if(XERRegisterTimeStamp[cfg][tag] >= time_stamp[cfg]) return false;
 							break;
 
 						default: ;
@@ -768,190 +770,7 @@ public:
 	/** Make an instruction issued, and monitor when result will be produced
 		@param instruction an instruction
 	*/
-	void Issued_Old(const InstructionPtr instruction)
-	{
-	  // DD we assume that the main destination which determine the pipeline flow in the first (destinations[0])...
-		/* Get the tag of the destination operand */
-	  
-	  //		int tag = instruction->destinations[0].tag;
-	  //		if(tag >= 0)
-	  if (instruction->destinations.size()>0)
-	  {
-	    for (int j=0; j <instruction->destinations.size(); j++)
-	    {
-	      int tag = instruction->destinations[j].tag;
-	      switch(instruction->destinations[j].type)
-	      {
-	      case GPR_T:
-		/* If instruction is a load then instruction depending
-		   on that result will be scheduled only when it will be actually written back */
-		if(instruction->fn & FnLoad)
-		  {
-		    integerRegisterTimeStamp[tag] = -1; // inf
-		  }
-		else
-		  {
-		    /* Get the instruction latency */
-		    int latency = GetLatency(instruction);
-		    //if(latency <= 0 && !instruction->execution_serialized)
-		    if(latency <= 0 && !instruction->execution_serialized)
-		      {
-			cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
-			cerr << "Nstages: " << instruction->operation->nstages << endl;
-			cerr << "Latency: " << latency << endl;
-			cerr << "Lat[]=(";
-			for (int i=0; i<8; i++)
-			  cerr  << instruction->operation->latencies[i] << ", ";
-			cerr << ")" << endl;
-			cerr << "Inst: " << *instruction << endl;
-			//abort();
-			exit(-1);
-		      }
-		    /*
-		      cerr << "Inst: " << *instruction << endl;
-		      cerr << "Latency: " << latency << endl; 
-		      cerr << "Lat[]=(";
-		      for (int i=0; i<8; i++)
-		      cerr  << instruction->operation->latencies[i] << ", ";
-		      cerr << ")" << endl;
-		    */
-		    /* Records when the operand will be produced */
-		    integerRegisterTimeStamp[tag] = time_stamp + latency;
-		  }
-		break;
-		
-	      case FPR_T:
-		/* If instruction is a load then instruction depending
-		   on that result will be scheduled only when it will be actually written back */
-		if(instruction->fn & FnLoad)
-		  {
-		    floatingPointRegisterTimeStamp[tag] = -1; // inf
-		  }
-		else
-		  {
-		    /* Get the instruction latency */
-		    int latency = GetLatency(instruction);
-		    if(latency <= 0 && !instruction->execution_serialized)
-		      {
-			cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
-			abort();
-		      }
-		    /* Records when the operand will be produced */
-		    floatingPointRegisterTimeStamp[tag] = time_stamp + latency;
-		  }
-		break;
-		
-	      case CR_T:
-		/* If instruction is a load then instruction depending
-		   on that result will be scheduled only when it will be actually written back */
-		if(instruction->fn & FnLoad)
-		  {
-		    conditionRegisterTimeStamp[tag] = -1; // inf
-		  }
-		else
-		  {
-		    /* Get the instruction latency */
-		    int latency = GetLatency(instruction);
-		    if(latency <= 0 && !instruction->execution_serialized)
-		      {
-			cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
-			abort();
-		      }
-		    /* Records when the operand will be produced */
-		    conditionRegisterTimeStamp[tag] = time_stamp + latency;
-		  }
-		break;
-		
-	      case FPSCR_T:
-		/* If instruction is a load then instruction depending
-		   on that result will be scheduled only when it will be actually written back */
-		if(instruction->fn & FnLoad)
-		  {
-		    FPSCRegisterTimeStamp[tag] = -1; // inf
-		  }
-		else
-		  {
-		    /* Get the instruction latency */
-		    int latency = GetLatency(instruction);
-		    if(latency <= 0 && !instruction->execution_serialized)
-		      {
-			cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
-			abort();
-		      }
-		    /* Records when the operand will be produced */
-		    FPSCRegisterTimeStamp[tag] = time_stamp + latency;
-		  }
-		break;
-		
-	      case LR_T:
-		/* If instruction is a load then instruction depending
-		   on that result will be scheduled only when it will be actually written back */
-		if(instruction->fn & FnLoad)
-		  {
-		    linkRegisterTimeStamp[tag] = -1; // inf
-		  }
-		else
-		  {
-		    /* Get the instruction latency */
-		    int latency = GetLatency(instruction);
-		    if(latency <= 0 && !instruction->execution_serialized)
-		      {
-			cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
-			abort();
-		      }
-		    /* Records when the operand will be produced */
-		    linkRegisterTimeStamp[tag] = time_stamp + latency;
-		  }
-		break;
-		
-	      case CTR_T:
-		/* If instruction is a load then instruction depending
-		   on that result will be scheduled only when it will be actually written back */
-		if(instruction->fn & FnLoad)
-		  {
-		    countRegisterTimeStamp[tag] = -1; // inf
-		  }
-		else
-		  {
-		    /* Get the instruction latency */
-		    int latency = GetLatency(instruction);
-		    if(latency <= 0 && !instruction->execution_serialized)
-		      {
-			cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
-			abort();
-		      }
-		    /* Records when the operand will be produced */
-		    countRegisterTimeStamp[tag] = time_stamp + latency;
-		  }
-		break;
-		
-	      case XER_T:
-		/* If instruction is a load then instruction depending
-		   on that result will be scheduled only when it will be actually written back */
-		if(instruction->fn & FnLoad)
-		  {
-		    XERRegisterTimeStamp[tag] = -1; // inf
-		  }
-		else
-		  {
-		    /* Get the instruction latency */
-		    int latency = GetLatency(instruction);
-		    if(latency <= 0 && !instruction->execution_serialized)
-		      {
-			cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
-			abort();
-		      }
-		    /* Records when the operand will be produced */
-		    XERRegisterTimeStamp[tag] = time_stamp + latency;
-		  }
-		break;
-		
-	      default: ;
-	      }
-	    }
-	  }
-	}
-	void Issued(const InstructionPtr &instruction)
+	void Issued(const InstructionPtr &instruction, int cfg)
 	{
 	  // DD we assume that the main destination which determine the pipeline flow in the first (destinations[0])...
 		/* Get the tag of the destination operand */
@@ -968,7 +787,7 @@ public:
 	      if (!(instruction->fn & FnLoad))
 		{
 		  latency = GetLatency(instruction);
-		  RegTimeStamp = time_stamp + latency;
+		  RegTimeStamp = time_stamp[cfg] + latency;
 		  if(latency <= 0 && !instruction->execution_serialized)
 		    {
 		      cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
@@ -997,49 +816,49 @@ public:
 		      }
 		  */
 		    /* Records when the operand will be produced */
-		  integerRegisterTimeStamp[tag] = RegTimeStamp;
+		  integerRegisterTimeStamp[cfg][tag] = RegTimeStamp;
 		  break;
 		
 		case FPR_T:
 		  /* If instruction is a load then instruction depending
 		     on that result will be scheduled only when it will be actually written back */
 		  /* Records when the operand will be produced */
-		  floatingPointRegisterTimeStamp[tag] = RegTimeStamp;
+		  floatingPointRegisterTimeStamp[cfg][tag] = RegTimeStamp;
 		  break;
 		  
 		case CR_T:
 		  /* If instruction is a load then instruction depending
 		     on that result will be scheduled only when it will be actually written back */
 		    /* Records when the operand will be produced */
-		    conditionRegisterTimeStamp[tag] = RegTimeStamp;
+		    conditionRegisterTimeStamp[cfg][tag] = RegTimeStamp;
 		break;
 		
 		case FPSCR_T:
 		  /* If instruction is a load then instruction depending
 		     on that result will be scheduled only when it will be actually written back */
 		  /* Records when the operand will be produced */
-		    FPSCRegisterTimeStamp[tag] = RegTimeStamp;
+		    FPSCRegisterTimeStamp[cfg][tag] = RegTimeStamp;
 		    break;
 		    
 		case LR_T:
 		  /* If instruction is a load then instruction depending
 		     on that result will be scheduled only when it will be actually written back */
 		  /* Records when the operand will be produced */
-		    linkRegisterTimeStamp[tag] = RegTimeStamp;
+		    linkRegisterTimeStamp[cfg][tag] = RegTimeStamp;
 		    break;
 		    
 		case CTR_T:
 		  /* If instruction is a load then instruction depending
 		     on that result will be scheduled only when it will be actually written back */
 		    /* Records when the operand will be produced */
-		  countRegisterTimeStamp[tag] = RegTimeStamp;
+		  countRegisterTimeStamp[cfg][tag] = RegTimeStamp;
 		  break;
 		  
 		case XER_T:
 		  /* If instruction is a load then instruction depending
 		     on that result will be scheduled only when it will be actually written back */
 		  /* Records when the operand will be produced */
-		  XERRegisterTimeStamp[tag] = RegTimeStamp;
+		  XERRegisterTimeStamp[cfg][tag] = RegTimeStamp;
 		  break;
 		  
 		default: ;
@@ -1050,6 +869,7 @@ public:
 	// START OF CYCLE
 	void start_of_cycle()
 	  {
+	    /*
 		OoOQueuePointer<ReservationStation<T, nSources>, IntegerIssueQueueSize> integerRs;
 		OoOQueuePointer<ReservationStation<T, nSources>, FloatingPointIssueQueueSize> floatingPointRs;
 		OoOQueuePointer<ReservationStation<T, nSources>, LoadStoreIssueQueueSize> loadStoreRs;
@@ -1058,19 +878,22 @@ public:
 		int integerIssuePort;
 		int floatingPointIssuePort;
 		int loadStoreIssuePort;
-		integer_to_remove = 0;
-		floating_point_to_remove = 0;
-		loadstore_to_remove = 0;
-		//		allAcceptRecevied = false;
-		WriteBacksProcessed = false;
-		
-		// At the beginning of the cycle, we don't send any signals 
-		// because we don't know which instruction we have to send 
-		// until the writeback complete ...
-		//
-		// So first signals are sent to next module into the onWriteBackEnable process...
-		allAcceptReceived = false;
-
+	    */
+		for(int cfg=0; cfg<nConfig; cfg++)
+		{
+		  integer_to_remove[cfg] = 0;
+		  floating_point_to_remove[cfg] = 0;
+		  loadstore_to_remove[cfg] = 0;
+		  //		allAcceptRecevied = false;
+		  WriteBacksProcessed[cfg] = false;
+		  
+		  // At the beginning of the cycle, we don't send any signals 
+		  // because we don't know which instruction we have to send 
+		  // until the writeback complete ...
+		  //
+		  // So first signals are sent to next module into the onWriteBackEnable process...
+		  allAcceptReceived[cfg] = false;
+		}
 	  }// end of start_of_cycle...
   /*
   void onData()
@@ -1261,6 +1084,7 @@ public:
     int writePort;
     
     //	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== onData ==== All Accept Received : YES !!!" << endl;
+    /*
     bool areallknown(true);
     
     // Are Accept known ?
@@ -1304,11 +1128,20 @@ public:
 	if(!inLoadStoreInstruction[i].data.known() || !areallknown)
 	  { areallknown=false; break; }
       }
-    
+    */
     
     // Are all known ?
-    if (areallknown)
+    //    if (areallknown)
+    if ( outIntegerInstruction.accept.known() &&
+	 outFloatingPointInstruction.accept.known() &&
+	 outLoadStoreInstruction.accept.known() &&
+	 inIntegerInstruction.data.known() &&
+	 inFloatingPointInstruction.data.known() &&
+	 inLoadStoreInstruction.data.known()
+	 ) 
       {
+	for (int cfg=0; cfg<nConfig; cfg++)
+	{
 #ifdef DD_DEBUG_SCHEDULER_VERB1
 	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== onDataAccept ====   Areallknown? YES!!!" << endl;
 #endif	
@@ -1316,32 +1149,32 @@ public:
 	for (int i=0; i<IntegerIssueWidth; i++)
 	  {
 	    //		    if (outIntegerInstruction[i].enable = outIntegerInstruction[i].accept) 
-	    if (outIntegerInstruction[i].accept) 
+	    if (outIntegerInstruction.accept[cfg*IntegerIssueWidth+i]) 
 	      {
-		outIntegerInstruction[i].enable = true;
-			integer_to_remove++;
+		outIntegerInstruction.enable[cfg*IntegerIssueWidth+i] = true;
+			integer_to_remove[cfg]++;
 	      }
-	    else { outIntegerInstruction[i].enable = false; }
+	    else { outIntegerInstruction.enable[cfg*IntegerIssueWidth+i] = false; }
 	  }
 	for (int i=0; i<FloatingPointIssueWidth; i++)
 	  {
 	    //		    if (outFloatingPointInstruction[i].enable = outFloatingPointInstruction[i].accept)
-	    if (outFloatingPointInstruction[i].accept)
+	    if (outFloatingPointInstruction.accept[cfg*FloatingPointIssueWidth+i])
 	      {
-		outFloatingPointInstruction[i].enable = true;
-		floating_point_to_remove++;
+		outFloatingPointInstruction.enable[cfg*FloatingPointIssueWidth+i] = true;
+		floating_point_to_remove[cfg]++;
 	      }
-	    else { outFloatingPointInstruction[i].enable = false; }
+	    else { outFloatingPointInstruction.enable[cfg*FloatingPointIssueWidth+i] = false; }
 	  }
 	for (int i=0; i<LoadStoreIssueWidth; i++)
 	  {
 	    //		    if (outLoadStoreInstruction[i].enable = outLoadStoreInstruction[i].accept)
-	    if (outLoadStoreInstruction[i].accept)
+	    if (outLoadStoreInstruction.accept[cfg*LoadStoreIssueWidth+i])
 	      {
-		outLoadStoreInstruction[i].enable = true;
-		loadstore_to_remove++;
+		outLoadStoreInstruction.enable[cfg*LoadStoreIssueWidth+i] = true;
+		loadstore_to_remove[cfg]++;
 	      }
-	    else { outLoadStoreInstruction[i].enable = false; }
+	    else { outLoadStoreInstruction.enable[cfg*LoadStoreIssueWidth+i] = false; }
 	  }
 	//	allAcceptReceived = true;
 	
@@ -1351,21 +1184,21 @@ public:
 	// Count the number of instruction to add into the integer issue queue //
 	for(integer_to_add = 0, writePort = 0; writePort < nIntegerWritePorts; writePort++)
 	  {
-	    if(!inIntegerInstruction[writePort].data.something()) break;
+	    if(!inIntegerInstruction.data[cfg*nIntegerWritePorts+writePort].something()) break;
 	    integer_to_add++;
 	  }
 	
 	// Count the number of instruction to add into the floating point issue queue //
 	for(floating_point_to_add = 0, writePort = 0; writePort < nFloatingPointWritePorts; writePort++)
 	  {
-	    if(!inFloatingPointInstruction[writePort].data.something()) break;
+	    if(!inFloatingPointInstruction.data[cfg*nFloatingPointWritePorts+writePort].something()) break;
 	    floating_point_to_add++;
 	  }
 	
 	// Count the number of instruction to add into the load/store issue queue //
 	for(loadstore_to_add = 0, writePort = 0; writePort < nLoadStoreWritePorts; writePort++)
 	  {
-	    if(!inLoadStoreInstruction[writePort].data.something()) break;
+	    if(!inLoadStoreInstruction.data[cfg*nLoadStoreWritePorts+writePort].something()) break;
 	    loadstore_to_add++;
 	  }
 	
@@ -1386,22 +1219,22 @@ public:
 #endif
 	
 	// Get the free space into the integer issue queue //
-	int integer_free_space = integerIssueQueue.FreeSpace();
+	int integer_free_space = integerIssueQueue[cfg].FreeSpace();
 	
 	// Get the free space into the floating point issue queue //
-	int floating_point_free_space = floatingPointIssueQueue.FreeSpace();
+	int floating_point_free_space = floatingPointIssueQueue[cfg].FreeSpace();
 	
 	// Get the free space into the load/store issue queue //
-	int loadstore_free_space = loadStoreIssueQueue.FreeSpace();
+	int loadstore_free_space = loadStoreIssueQueue[cfg].FreeSpace();
 	
 	// The number of integer instructions to accept is the minimum of the number of integer instruction to add and the sum of the free space into the integer issue queue and the number of integer instructions to remove
-	int integer_to_accept = MIN(integer_free_space + integer_to_remove, integer_to_add);
+	int integer_to_accept = MIN(integer_free_space + integer_to_remove[cfg], integer_to_add);
 	
 	// The number of floating point instructions to accept is the minimum of the number of floating point instruction to add and the sum of the free space into the floating point issue queue and the number of floating point instructions to remove
-	int floating_point_to_accept = MIN(floating_point_free_space + floating_point_to_remove, floating_point_to_add);
+	int floating_point_to_accept = MIN(floating_point_free_space + floating_point_to_remove[cfg], floating_point_to_add);
 	
 	// The number of load/store instructions to accept is the minimum of the number of load/store instruction to add and the sum of the free space into the load/store issue queue and the number of load/store instructions to remove
-	int loadstore_to_accept = MIN(loadstore_free_space + loadstore_to_remove, loadstore_to_add);
+	int loadstore_to_accept = MIN(loadstore_free_space + loadstore_to_remove[cfg], loadstore_to_add);
 	
 #ifdef DD_DEBUG_SCHEDULER_VERB1
 	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== onDataAccept ====   int_to_accept: "
@@ -1414,34 +1247,42 @@ public:
 	// Accept the integer instructions according to the number of accepted integer instructions
 	for(writePort = 0; integer_to_accept > 0 && writePort < nIntegerWritePorts; writePort++)
 	  {
-	    inIntegerInstruction[writePort].accept = true;
+	    inIntegerInstruction.accept[cfg*nIntegerWritePorts+writePort] = true;
 	    integer_to_accept--;
 	  }
 	// Reject all remaining integer instructions //
 	for(; writePort < nIntegerWritePorts; writePort++)
-	  inIntegerInstruction[writePort].accept = false;
+	  inIntegerInstruction.accept[cfg*nIntegerWritePorts+writePort] = false;
 	
 	// Accept the floating point instructions according to the number of accepted floating point instructions //
 	for(writePort = 0; floating_point_to_accept > 0 && writePort < nFloatingPointWritePorts; writePort++)
 	  {
-	    inFloatingPointInstruction[writePort].accept = true;
+	    inFloatingPointInstruction.accept[cfg*nFloatingPointWritePorts+writePort] = true;
 	    floating_point_to_accept--;
 	  }
 	// Reject all remaining floating point instructions //
 	for(; writePort < nFloatingPointWritePorts; writePort++)
-	  inFloatingPointInstruction[writePort].accept = false;
+	  inFloatingPointInstruction.accept[cfg*nFloatingPointWritePorts+writePort] = false;
 	
 	// Accept the load/store instructions according to the number of accepted load/store instructions //
 	for(writePort = 0; loadstore_to_accept > 0 && writePort < nLoadStoreWritePorts; writePort++)
 	  {
-	    inLoadStoreInstruction[writePort].accept = true;
+	    inLoadStoreInstruction.accept[cfg*nLoadStoreWritePorts+writePort] = true;
 	    loadstore_to_accept--;
 	  }
 	// Reject all remaining load/store instructions //
 	for(; writePort < nLoadStoreWritePorts; writePort++)
-	  inLoadStoreInstruction[writePort].accept = false;
+	  inLoadStoreInstruction.accept[cfg*nLoadStoreWritePorts+writePort] = false;
 	
-	
+
+
+	}// End of foreach Config.
+	outIntegerInstruction.enable.send();
+	outFloatingPointInstruction.enable.send();
+	outLoadStoreInstruction.enable.send();
+	inIntegerInstruction.accept.send();
+	inFloatingPointInstruction.accept.send();
+	inLoadStoreInstruction.accept.send();
       }// end of if(areallknown)...
   }// end of onAccept...
   
@@ -1467,26 +1308,40 @@ public:
 	void onFlushData()
 	  {
 	    //    inFlush.accept = inFlush.data.something();
-	    if ( inFlush.data.something() )
+	    for(int cfg=0; cfg<nConfig; cfg++)
 	      {
-		outFlush.data = inFlush.data;
+		if ( inFlush.data[cfg].something() )
+		  {
+		    outFlush.data[cfg] = inFlush.data[cfg];
+		  }
+		else
+		  {
+		    outFlush.data[cfg].nothing();
+		  }
 	      }
-	    else
-	      {
-		outFlush.data.nothing();
-	      }
+	    outFlush.data.send();
 	  }
 	void onFlushAccept()
 	  {
-	    inFlush.accept = outFlush.accept;
+	    for(int cfg=0; cfg<nConfig; cfg++)
+	      {
+		inFlush.accept[cfg] = outFlush.accept[cfg];
+	      }
+	    inFlush.accept.send();
 	  }
 	void onFlushEnable()
 	  {
-	    outFlush.enable = inFlush.enable;
+	    for(int cfg=0; cfg<nConfig; cfg++)
+	      {
+		outFlush.enable[cfg] = inFlush.enable[cfg];
+	      }
+	    outFlush.enable.send();
 	  }
 
 	void end_of_cycle()
 	  {
+	    for(int cfg=0; cfg<nConfig; cfg++)
+	    {
 		OoOQueuePointer<ReservationStation<T, nSources>, IntegerIssueQueueSize> integerRs;
 		OoOQueuePointer<ReservationStation<T, nSources>, FloatingPointIssueQueueSize> floatingPointRs;
 		OoOQueuePointer<ReservationStation<T, nSources>, LoadStoreIssueQueueSize> loadStoreRs;
@@ -1498,9 +1353,9 @@ public:
 
 	    // First check if a flush occured ...
 		/* Flush ? */
-	    if(inFlush.enable && inFlush.data.something())
+	    if(inFlush.enable[cfg] && inFlush.data[cfg].something())
 	    {
-	      if(inFlush.data)
+	      if(inFlush.data[cfg])
 	      {
 #ifdef DD_DEBUG_SCHEDULER_VERB1
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
@@ -1510,13 +1365,13 @@ public:
 #endif
 		int i;
 		/* Flush the integer issue queue */
-		integerIssueQueue.Flush();
+		integerIssueQueue[cfg].Flush();
 		
 		/* Flush the floating point issue queue */
-		floatingPointIssueQueue.Flush();
+		floatingPointIssueQueue[cfg].Flush();
 		
 		/* Flush the load/store issue queue */
-		loadStoreIssueQueue.Flush();
+		loadStoreIssueQueue[cfg].Flush();
 		
 		/* Reset all output ports */
 		// NO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1551,22 +1406,23 @@ public:
 		*/
 		// End of NO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		for(i = 0; i < nIntegerRegisters; i++)
-		  integerRegisterTimeStamp[i] = 0;
+		  integerRegisterTimeStamp[cfg][i] = 0;
 		
 		for(i = 0; i < nFloatingPointRegisters; i++)
-		  floatingPointRegisterTimeStamp[i] = 0;
+		  floatingPointRegisterTimeStamp[cfg][i] = 0;
 		
-		time_stamp++;
+		time_stamp[cfg]++;
 		/* Stop the process */
-		return;
+		//		return;
+		continue;
 	      }
 	    }
 
 #ifdef DD_DEBUG_SCHEDULER_VERB1
 	    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====   Start of IssuePipeline !!!" << endl;
-	    cerr << integerIssueQueue << endl;
-	    cerr << floatingPointIssueQueue << endl;
-	    cerr << loadStoreIssueQueue << endl;
+	    cerr << integerIssueQueue[cfg] << endl;
+	    cerr << floatingPointIssueQueue[cfg] << endl;
+	    cerr << loadStoreIssueQueue[cfg] << endl;
 	    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====   End of IssuePipeline !!!" << endl;
 #endif
 	    //	    if (WriteBacksProcessed)
@@ -1576,16 +1432,16 @@ public:
 	    /* Remove instructions that are issuable and accepted */
 	    // NO JUST ISSUE INSTRUCTIONS ...
 	    /* Peek an issuable integer instruction */
-	    integerRs = integerIssueQueue.SeekAtHead();
-	    if(integerRs && !Issuable(integerRs)) NextIssuableInteger(integerRs);
+	    integerRs = integerIssueQueue[cfg].SeekAtHead();
+	    if(integerRs && !Issuable(integerRs, cfg)) NextIssuableInteger(integerRs, cfg);
 	    
 	    /* Peek an issuable floating point instruction */
-	    floatingPointRs = floatingPointIssueQueue.SeekAtHead();
-	    if(floatingPointRs && !Issuable(floatingPointRs)) NextIssuableFloatingPoint(floatingPointRs);
+	    floatingPointRs = floatingPointIssueQueue[cfg].SeekAtHead();
+	    if(floatingPointRs && !Issuable(floatingPointRs, cfg)) NextIssuableFloatingPoint(floatingPointRs, cfg);
 	    
 	    /* Peek an issuable load/store instruction */
-	    loadStoreRs = loadStoreIssueQueue.SeekAtHead();
-	    if(loadStoreRs && !Issuable(loadStoreRs)) NextIssuableLoadStore(loadStoreRs);
+	    loadStoreRs = loadStoreIssueQueue[cfg].SeekAtHead();
+	    if(loadStoreRs && !Issuable(loadStoreRs,cfg)) NextIssuableLoadStore(loadStoreRs, cfg);
 	    
 	    integerIssuePort = 0;
 	    floatingPointIssuePort = 0;
@@ -1603,31 +1459,32 @@ public:
 		switch(s)
 		  {
 		  case 0:
-		  if (integerIssueBusy[integerIssuePort] == 0)
+		  if (integerIssueBusy[cfg][integerIssuePort] == 0)
 		    {
 		    /* The integer instruction was scheduled */
 		    //		    if(inIntegerInstruction[integerIssuePort].accept)
-		    if(outIntegerInstruction[integerIssuePort].accept)
+		      //		    if(outIntegerInstruction[integerIssuePort].accept)
+		    if(outIntegerInstruction.accept[cfg*IntegerIssueWidth+integerIssuePort])
 		      {
 			/* Instruction has been accepted */
 			/* Records when dependent instructions could be scheduled */
-			Issued(integerRs->instruction);
+			Issued(integerRs->instruction, cfg);
 
 			// DD if latency is greater than the pipeline depth then stall issue on this function unit
 			// Here in this case: we assume that FU pipeline depth is 1.
-			integerIssueBusy[integerIssuePort] = GetLatency(integerRs->instruction)-1 +1;
+			integerIssueBusy[cfg][integerIssuePort] = GetLatency(integerRs->instruction)-1 +1;
 			
 
 			/* Remove the instruction from the integer issue queue */
-			integerIssueQueue.Remove(integerRs);
+			integerIssueQueue[cfg].Remove(integerRs);
 			/* Peek another issuable integer instruction */
-			if(integerRs && !Issuable(integerRs)) NextIssuableInteger(integerRs);
+			if(integerRs && !Issuable(integerRs, cfg)) NextIssuableInteger(integerRs, cfg);
 			//			changed = true;
 		      }
 		    else
 		      {
 			/* Peek another issuable integer instruction */
-			NextIssuableInteger(integerRs);
+			NextIssuableInteger(integerRs, cfg);
 		      }
 		    integerIssuePort++;
 		    issuePort++;
@@ -1638,30 +1495,30 @@ public:
 		    }
 		    break;
 		  case 1:
-		  if (floatingPointIssueBusy[floatingPointIssuePort] == 0)
+		  if (floatingPointIssueBusy[cfg][floatingPointIssuePort] == 0)
 		    {
 		    /* The floating point instruction was scheduled */
 		    //		    if(inFloatingPointInstruction[floatingPointIssuePort].accept)
-		    if(outFloatingPointInstruction[floatingPointIssuePort].accept)
+		    if(outFloatingPointInstruction.accept[cfg*FloatingPointIssueWidth+floatingPointIssuePort])
 		      {
 			/* Instruction has been accepted */
 			/* Records when dependent instructions could be scheduled */
-			Issued(floatingPointRs->instruction);
+			Issued(floatingPointRs->instruction, cfg);
 
 			// DD if latency is greater than the pipeline depth then stall issue on this function unit
 			// Here in this case: we assume that FU pipeline depth is 1.
-			floatingPointIssueBusy[floatingPointIssuePort] = GetLatency(floatingPointRs->instruction)-1 +1;
+			floatingPointIssueBusy[cfg][floatingPointIssuePort] = GetLatency(floatingPointRs->instruction)-1 +1;
 
 			/* Remove the instruction from the floating point issue queue */
-			floatingPointIssueQueue.Remove(floatingPointRs);
+			floatingPointIssueQueue[cfg].Remove(floatingPointRs);
 			/* Peek another issuable floating point instruction */
-			if(floatingPointRs && !Issuable(floatingPointRs)) NextIssuableFloatingPoint(floatingPointRs);
+			if(floatingPointRs && !Issuable(floatingPointRs, cfg)) NextIssuableFloatingPoint(floatingPointRs,cfg);
 			//			changed = true;
 		      }
 		    else
 		      {
 			/* Peek another issuable floating point instruction */
-			NextIssuableFloatingPoint(floatingPointRs);
+			NextIssuableFloatingPoint(floatingPointRs, cfg);
 		      }
 		    floatingPointIssuePort++;
 		    issuePort++;
@@ -1672,28 +1529,28 @@ public:
 		    }
 		    break;
 		  case 2:
-		  if (loadStoreIssueBusy[loadStoreIssuePort] == 0)
+		  if (loadStoreIssueBusy[cfg][loadStoreIssuePort] == 0)
 		    {
 		    /* The load/store instruction was scheduled */
 		    //		    if(inLoadStoreInstruction[loadStoreIssuePort].accept)
-		    if(outLoadStoreInstruction[loadStoreIssuePort].accept)
+		    if(outLoadStoreInstruction.accept[cfg*LoadStoreIssueWidth+loadStoreIssuePort])
 		      {
 			/* Instruction has been accepted */
 			/* Records when dependent instructions could be scheduled */
-			Issued(loadStoreRs->instruction);
+			Issued(loadStoreRs->instruction, cfg);
 			// DD if latency is greater than the pipeline depth then stall issue on this function unit
 			// Here in this case: we assume that FU pipeline depth is 1.
-			loadStoreIssueBusy[loadStoreIssuePort] = GetLatency(loadStoreRs->instruction)-1 +1;
+			loadStoreIssueBusy[cfg][loadStoreIssuePort] = GetLatency(loadStoreRs->instruction)-1 +1;
 			/* Remove the instruction from the load/store issue queue */
-			loadStoreIssueQueue.Remove(loadStoreRs);
+			loadStoreIssueQueue[cfg].Remove(loadStoreRs);
 			/* Peek another issuable load/store instruction */
-			if(loadStoreRs && !Issuable(loadStoreRs)) NextIssuableLoadStore(loadStoreRs);
+			if(loadStoreRs && !Issuable(loadStoreRs, cfg)) NextIssuableLoadStore(loadStoreRs, cfg);
 			//			changed = true;
 		      }
 		    else
 		      {
 			/* Peek another issuable load/store instruction */
-			NextIssuableLoadStore(loadStoreRs);
+			NextIssuableLoadStore(loadStoreRs, cfg);
 		      }
 		    loadStoreIssuePort++;
 		    issuePort++;
@@ -1709,20 +1566,20 @@ public:
 	    
 
 	    for(int i = 0; i < IntegerIssueWidth; i++)
-	      { if (integerIssueBusy[i]>0) integerIssueBusy[i]--; }
+	      { if (integerIssueBusy[cfg][i]>0) integerIssueBusy[cfg][i]--; }
 	    for(int i = 0; i < FloatingPointIssueWidth; i++)
-	      { if(floatingPointIssueBusy[i]>0) floatingPointIssueBusy[i]--; }
+	      { if(floatingPointIssueBusy[cfg][i]>0) floatingPointIssueBusy[cfg][i]--; }
 	    for(int i = 0; i < LoadStoreIssueWidth; i++)
-	      { if(loadStoreIssueBusy[i]>0) loadStoreIssueBusy[i]--; }
+	      { if(loadStoreIssueBusy[cfg][i]>0) loadStoreIssueBusy[cfg][i]--; }
 
-	    time_stamp++; // Do not move above ! be careful about side effects on function Issuable
+	    time_stamp[cfg]++; // Do not move above ! be careful about side effects on function Issuable
 	    
 	    //	    int writeBackPort;
 	    for(int writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
 	      {
-		if(inWriteBackInstruction[writeBackPort].enable)
+		if(inWriteBackInstruction.enable[cfg*WriteBackWidth+writeBackPort])
 		  {
-		    InstructionPtr instruction = inWriteBackInstruction[writeBackPort].data;
+		    InstructionPtr instruction = inWriteBackInstruction.data[cfg*WriteBackWidth+writeBackPort];
 		    //		    const Instruction *instruction = &inst;
 		    
 		    //		    if(instruction->destination.tag >= 0)
@@ -1732,27 +1589,27 @@ public:
 			switch(instruction->destinations[j].type)
 			  {
 			  case GPR_T:
-			    integerRegisterTimeStamp[instruction->destinations[j].tag] = time_stamp;
+			    integerRegisterTimeStamp[cfg][instruction->destinations[j].tag] = time_stamp[cfg];
 			    break;
 			    
 			  case FPR_T:
-			    floatingPointRegisterTimeStamp[instruction->destinations[j].tag] = time_stamp;
+			    floatingPointRegisterTimeStamp[cfg][instruction->destinations[j].tag] = time_stamp[cfg];
 			    break;
 			    
 			  case CR_T:
-			    conditionRegisterTimeStamp[instruction->destinations[j].tag] = time_stamp;
+			    conditionRegisterTimeStamp[cfg][instruction->destinations[j].tag] = time_stamp[cfg];
 			    break;
 			  case FPSCR_T:
-			    FPSCRegisterTimeStamp[instruction->destinations[j].tag] = time_stamp;
+			    FPSCRegisterTimeStamp[cfg][instruction->destinations[j].tag] = time_stamp[cfg];
 			    break;
 			  case LR_T:
-			    linkRegisterTimeStamp[instruction->destinations[j].tag] = time_stamp;
+			    linkRegisterTimeStamp[cfg][instruction->destinations[j].tag] = time_stamp[cfg];
 			    break;
 			  case CTR_T:
-			    countRegisterTimeStamp[instruction->destinations[j].tag] = time_stamp;
+			    countRegisterTimeStamp[cfg][instruction->destinations[j].tag] = time_stamp[cfg];
 			    break;
 			  case XER_T:
-			    XERRegisterTimeStamp[instruction->destinations[j].tag] = time_stamp;
+			    XERRegisterTimeStamp[cfg][instruction->destinations[j].tag] = time_stamp[cfg];
 			    break;
 			    
 			  default:
@@ -1769,13 +1626,13 @@ public:
 	    for(int writePort = 0; writePort < nIntegerWritePorts; writePort++)
 	      {
 		/* Is there an instruction to write ? */
-		if(!inIntegerInstruction[writePort].enable) break;
+		if(!inIntegerInstruction.enable[cfg*nIntegerWritePorts+writePort]) break;
 		/* Get the instruction */
-		InstructionPtr instruction = inIntegerInstruction[writePort].data;
+		InstructionPtr instruction = inIntegerInstruction.data[cfg*nIntegerWritePorts+writePort];
 		//		const Instruction *instruction = &inst;
 		
 		/* Allocate a reservation station in the integer issue queue */
-		ReservationStation<T, nSources> *new_rs = integerIssueQueue.New();
+		ReservationStation<T, nSources> *new_rs = integerIssueQueue[cfg].New();
 		
 		if(new_rs)
 		  {
@@ -1794,25 +1651,25 @@ public:
 			switch(instruction->destinations[j].type)
 			  {
 			  case GPR_T:
-			    integerRegisterTimeStamp[tag] = (UInt64) -1; /* inf */
+			    integerRegisterTimeStamp[cfg][tag] = (UInt64) -1; /* inf */
 			    break;
 			  case FPR_T:
-			    floatingPointRegisterTimeStamp[tag] = (UInt64) -1;	/* inf */
+			    floatingPointRegisterTimeStamp[cfg][tag] = (UInt64) -1;	/* inf */
 			    break;
 			  case CR_T:
-			    conditionRegisterTimeStamp[tag] = (UInt64) -1; /* inf */
+			    conditionRegisterTimeStamp[cfg][tag] = (UInt64) -1; /* inf */
 			    break;
 			  case FPSCR_T:
-			    FPSCRegisterTimeStamp[tag] = (UInt64) -1; /* inf */
+			    FPSCRegisterTimeStamp[cfg][tag] = (UInt64) -1; /* inf */
 			    break;
 			  case LR_T:
-			    linkRegisterTimeStamp[tag] = (UInt64) -1; /* inf */
+			    linkRegisterTimeStamp[cfg][tag] = (UInt64) -1; /* inf */
 			    break;
 			  case CTR_T:
-			    countRegisterTimeStamp[tag] = (UInt64) -1; /* inf */
+			    countRegisterTimeStamp[cfg][tag] = (UInt64) -1; /* inf */
 			    break;
 			  case XER_T:
-			    XERRegisterTimeStamp[tag] = (UInt64) -1; /* inf */
+			    XERRegisterTimeStamp[cfg][tag] = (UInt64) -1; /* inf */
 			    break;
 			  default:
 			    cerr << "register is neither an integer nor a floating point register" << endl;
@@ -1837,13 +1694,13 @@ public:
 	    for(int writePort = 0; writePort < nFloatingPointWritePorts; writePort++)
 	      {
 		/* Is there an instruction to write ? */
-		if(!inFloatingPointInstruction[writePort].enable) break;
+		if(!inFloatingPointInstruction.enable[cfg*nFloatingPointWritePorts+writePort]) break;
 		/* Get the instruction */
-		InstructionPtr instruction = inFloatingPointInstruction[writePort].data;
+		InstructionPtr instruction = inFloatingPointInstruction.data[cfg*nFloatingPointWritePorts+writePort];
 		//		const Instruction *instruction = &inst;
 		
 		/* Allocate a reservation station in the floating point issue queue */
-		ReservationStation<T, nSources> *new_rs = floatingPointIssueQueue.New();
+		ReservationStation<T, nSources> *new_rs = floatingPointIssueQueue[cfg].New();
 		
 		if(new_rs)
 		  {
@@ -1859,25 +1716,25 @@ public:
 			switch(instruction->destinations[j].type)
 			  {
 			  case GPR_T:
-			    integerRegisterTimeStamp[tag] = (UInt64) -1;
+			    integerRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case FPR_T:
-			    floatingPointRegisterTimeStamp[tag] = (UInt64) -1;
+			    floatingPointRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case CR_T:
-			    conditionRegisterTimeStamp[tag] = (UInt64) -1;
+			    conditionRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case FPSCR_T:
-			    FPSCRegisterTimeStamp[tag] = (UInt64) -1;
+			    FPSCRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case LR_T:
-			    linkRegisterTimeStamp[tag] = (UInt64) -1;
+			    linkRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case CTR_T:
-			    countRegisterTimeStamp[tag] = (UInt64) -1;
+			    countRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case XER_T:
-			    XERRegisterTimeStamp[tag] = (UInt64) -1;
+			    XERRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  default:
 			    cerr << "register is neither an integer nor a floating point register" << endl;
@@ -1901,13 +1758,13 @@ public:
 	    for(int writePort = 0; writePort < nLoadStoreWritePorts; writePort++)
 	      {
 		/* Is there an instruction to write ? */
-		if(!inLoadStoreInstruction[writePort].enable) break;
+		if(!inLoadStoreInstruction.enable[cfg*nLoadStoreWritePorts+writePort]) break;
 		/* Get the instruction */
-		InstructionPtr instruction = inLoadStoreInstruction[writePort].data;
+		InstructionPtr instruction = inLoadStoreInstruction.data[cfg*nLoadStoreWritePorts+writePort];
 		//		const Instruction *instruction = &inst;
 		
 		/* Allocate a reservation station in the load/store issue queue */
-		ReservationStation<T, nSources> *new_rs = loadStoreIssueQueue.New();
+		ReservationStation<T, nSources> *new_rs = loadStoreIssueQueue[cfg].New();
 		
 		if(new_rs)
 		  {
@@ -1924,25 +1781,25 @@ public:
 			switch(instruction->destinations[j].type)
 			  {
 			  case GPR_T:
-			    integerRegisterTimeStamp[tag] = (UInt64) -1;
+			    integerRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case FPR_T:
-			    floatingPointRegisterTimeStamp[tag] = (UInt64) -1;
+			    floatingPointRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case CR_T:
-			    conditionRegisterTimeStamp[tag] = (UInt64) -1;
+			    conditionRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case FPSCR_T:
-			    FPSCRegisterTimeStamp[tag] = (UInt64) -1;
+			    FPSCRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case LR_T:
-			    linkRegisterTimeStamp[tag] = (UInt64) -1;
+			    linkRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case CTR_T:
-			    countRegisterTimeStamp[tag] = (UInt64) -1;
+			    countRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  case XER_T:
-			    XERRegisterTimeStamp[tag] = (UInt64) -1;
+			    XERRegisterTimeStamp[cfg][tag] = (UInt64) -1;
 			    break;
 			  default:
 			    cerr << "register is neither an integer nor a floating point register" << endl;
@@ -1966,19 +1823,24 @@ public:
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ==== Pipeline Debug" << endl;
 		cerr << this << endl;
 #endif
-	    
+	    }// Endof foreach Config.  
 	  }// end of end_of_cycle...
 
 	void onWriteBackData()
 	  {
+	    /*
 	    bool areallknown(true);
 	    // are WriteBack signals known ?
 	    for(int writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
 	      { if (!inWriteBackInstruction[writeBackPort].data.known())
 		{ areallknown = false; break; }
 	      }
-	    if (areallknown)
+	    */
+	    //	    if (areallknown)
+	    if( inWriteBackInstruction.data.known() )
 	      {
+		for(int cfg; cfg<nConfig; cfg++)
+		{
 		for(int writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
 		  { 
 		    /*
@@ -1987,15 +1849,17 @@ public:
 		    else
 		      outWriteBackInstruction[writeBackPort].data.nothing();
 		    */
-		    if (inWriteBackInstruction[writeBackPort].data.something())
+		    if (inWriteBackInstruction.data[cfg*WriteBackWidth+writeBackPort].something())
 		      { 
-			inWriteBackInstruction[writeBackPort].accept = true;
+			inWriteBackInstruction.accept[cfg*WriteBackWidth+writeBackPort] = true;
 		      }
 		    else
 		      { 
-			inWriteBackInstruction[writeBackPort].accept = false;
+			inWriteBackInstruction.accept[cfg*WriteBackWidth+writeBackPort] = false;
 		      }
 		  }
+		}// End of foreach Config.
+		inWriteBackInstruction.accept.send();
 	      }
 	  }
 
@@ -2024,30 +1888,34 @@ public:
 	    OoOQueuePointer<ReservationStation<T, nSources>, FloatingPointIssueQueueSize> floatingPointRs;
 	    OoOQueuePointer<ReservationStation<T, nSources>, LoadStoreIssueQueueSize> loadStoreRs;
 
-		int issuePort;
-		int integerIssuePort;
-		int floatingPointIssuePort;
-		int loadStoreIssuePort;
-
-
+	    int issuePort;
+	    int integerIssuePort;
+	    int floatingPointIssuePort;
+	    int loadStoreIssuePort;
+	    
+	    /*
 	    bool areallknown(true);
 	    // are WriteBack signals known ?
 	    for(int writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
 	      { if (!inWriteBackInstruction[writeBackPort].enable.known())
 		{ areallknown = false; break; }
 	      }
-	    if (areallknown)
+	    */
+	    //	    if (areallknown)
+	    if ( inWriteBackInstruction.enable.known() ) 
 	      {
+		for(int cfg=0; cfg<nConfig; cfg++)
+		{
 		/* Update the reservation stations */
 		/* Each write back port */
 		InstructionPtr instruction;
 		for(int writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
 		  { 
-		    if (inWriteBackInstruction[writeBackPort].enable)
+		    if (inWriteBackInstruction.enable[cfg*WriteBackWidth+writeBackPort])
 		      {
 			//	outWriteBackInstruction[writeBackPort].enable=true;
 			/* Get the instruction */
-			instruction = inWriteBackInstruction[writeBackPort].data;
+			instruction = inWriteBackInstruction.data[cfg*WriteBackWidth+writeBackPort];
 			//			const Instruction *instruction = &inst;
 			
 			/* Does that instruction produce a result ? */
@@ -2055,21 +1923,21 @@ public:
 			if (instruction->destinations.size()>0)
 			  {
 			    /* For each reservation in the integer issue queue */
-			    for(integerRs = integerIssueQueue.SeekAtHead(); integerRs; integerRs++)
+			    for(integerRs = integerIssueQueue[cfg].SeekAtHead(); integerRs; integerRs++)
 			      {
 				/* Update the reservation station */
 				if(!integerRs->ready)
 				  integerRs->Update(instruction, false);
 			      }
 			    /* For each reservation in the floating point issue queue */
-			    for(floatingPointRs = floatingPointIssueQueue.SeekAtHead(); floatingPointRs; floatingPointRs++)
+			    for(floatingPointRs = floatingPointIssueQueue[cfg].SeekAtHead(); floatingPointRs; floatingPointRs++)
 			      {
 				/* Update the reservation station */
 				if(!floatingPointRs->ready)
 				  floatingPointRs->Update(instruction, false);
 			      }
 			    /* For each reservation in the load/store issue queue */
-			    for(loadStoreRs = loadStoreIssueQueue.SeekAtHead(); loadStoreRs; loadStoreRs++)
+			    for(loadStoreRs = loadStoreIssueQueue[cfg].SeekAtHead(); loadStoreRs; loadStoreRs++)
 			      {
 				/* Update the reservation station */
 				if(!loadStoreRs->ready)
@@ -2085,16 +1953,16 @@ public:
 
 		/* Schedule the instructions */
 		/* Peek an issuable integer instruction */
-		integerRs = integerIssueQueue.SeekAtHead();
-		if(integerRs && !WillBeIssuable(integerRs)) NextIntegerThatWillBeIssuable(integerRs);
+		integerRs = integerIssueQueue[cfg].SeekAtHead();
+		if(integerRs && !WillBeIssuable(integerRs, cfg)) NextIntegerThatWillBeIssuable(integerRs, cfg);
 
 		/* Peek an issuable floating point instruction */
-		floatingPointRs = floatingPointIssueQueue.SeekAtHead();
-		if(floatingPointRs && !WillBeIssuable(floatingPointRs)) NextFloatingPointThatWillBeIssuable(floatingPointRs);
+		floatingPointRs = floatingPointIssueQueue[cfg].SeekAtHead();
+		if(floatingPointRs && !WillBeIssuable(floatingPointRs, cfg)) NextFloatingPointThatWillBeIssuable(floatingPointRs, cfg);
 
 		/* Peek an issuable load/store instruction */
-		loadStoreRs = loadStoreIssueQueue.SeekAtHead();
-		if(loadStoreRs && !WillBeIssuable(loadStoreRs)) NextLoadStoreThatWillBeIssuable(loadStoreRs);
+		loadStoreRs = loadStoreIssueQueue[cfg].SeekAtHead();
+		if(loadStoreRs && !WillBeIssuable(loadStoreRs, cfg)) NextLoadStoreThatWillBeIssuable(loadStoreRs, cfg);
 
 		integerIssuePort = 0;
 		floatingPointIssuePort = 0;
@@ -2113,17 +1981,18 @@ public:
 			case 0:
 			       /* The integer instruction has been selected */
 			       /* Request the issue of the instruction */
-			  if (integerIssueBusy[integerIssuePort] == 0)
+			  if (integerIssueBusy[cfg][integerIssuePort] == 0)
 			    {
-			       outIntegerInstruction[integerIssuePort].data = integerRs->instruction;
+			       outIntegerInstruction.data[cfg*IntegerIssueWidth+integerIssuePort]
+				 = integerRs->instruction;
 			       integerIssuePort++;
 			       issuePort++;
 			       /* Peek another issuable integer instruction */
-			       NextIntegerThatWillBeIssuable(integerRs);
+			       NextIntegerThatWillBeIssuable(integerRs, cfg);
 			    }
 			  else
 			    {
-			      outIntegerInstruction[integerIssuePort].data.nothing();
+			      outIntegerInstruction.data[cfg*IntegerIssueWidth+integerIssuePort].nothing();
 			      integerIssuePort++;			      
 			    }
 			       break;
@@ -2131,17 +2000,18 @@ public:
 			case 1:
 			      /* The floating point instruction has been selected */
 			      /* Request the issue of the instruction */
-			  if (floatingPointIssueBusy[floatingPointIssuePort] == 0)
+			  if (floatingPointIssueBusy[cfg][floatingPointIssuePort] == 0)
 			    {
-			      outFloatingPointInstruction[floatingPointIssuePort].data = floatingPointRs->instruction;
+			      outFloatingPointInstruction.data[cfg*FloatingPointIssueWidth+floatingPointIssuePort]
+				= floatingPointRs->instruction;
 			      floatingPointIssuePort++;
 			      issuePort++;
 			      /* Peek another issuable floating point instruction */
-			      NextFloatingPointThatWillBeIssuable(floatingPointRs);
+			      NextFloatingPointThatWillBeIssuable(floatingPointRs, cfg);
 			    }
 			  else
 			    {
-			      outFloatingPointInstruction[floatingPointIssuePort].data.nothing();
+			      outFloatingPointInstruction.data[cfg*FloatingPointIssueWidth+floatingPointIssuePort].nothing();
 			      floatingPointIssuePort++;			      
 			    }
 			      break;
@@ -2149,17 +2019,18 @@ public:
 			case 2:
 			      /* The load/store instruction has been selected */
 			      /* Request the issue of the instruction */
-			  if (loadStoreIssueBusy[loadStoreIssuePort] == 0)
+			  if (loadStoreIssueBusy[cfg][loadStoreIssuePort] == 0)
 			    {
-			      outLoadStoreInstruction[loadStoreIssuePort].data = loadStoreRs->instruction;
+			      outLoadStoreInstruction.data[cfg*LoadStoreIssueWidth+loadStoreIssuePort]
+				= loadStoreRs->instruction;
 			      loadStoreIssuePort++;
 			      issuePort++;
 			      /* Peek another issuable load/store instruction */
-			      NextLoadStoreThatWillBeIssuable(loadStoreRs);
+			      NextLoadStoreThatWillBeIssuable(loadStoreRs, cfg);
 			    }
 			  else
 			    {
-			      outLoadStoreInstruction[loadStoreIssuePort].data.nothing();
+			      outLoadStoreInstruction.data[cfg*LoadStoreIssueWidth+loadStoreIssuePort].nothing();
 			      loadStoreIssuePort++;			      
 			    }
 			      break;
@@ -2170,36 +2041,37 @@ public:
 		/* Reset the remaining integer issue ports */
 		while(integerIssuePort < IntegerIssueWidth)
 		{
-		        outIntegerInstruction[integerIssuePort].data.nothing();
+		        outIntegerInstruction.data[cfg*IntegerIssueWidth+integerIssuePort].nothing();
 			integerIssuePort++;
 		}
 		/* Reset the remaining floating point issue ports */
 		while(floatingPointIssuePort < FloatingPointIssueWidth)
 		{
-		        outFloatingPointInstruction[floatingPointIssuePort].data.nothing();
+		        outFloatingPointInstruction.data[cfg*FloatingPointIssueWidth+floatingPointIssuePort].nothing();
 			floatingPointIssuePort++;
 		}
 		/* Reset the remaining load/store issue ports */
 		while(loadStoreIssuePort < LoadStoreIssueWidth)
 		{
-		        outLoadStoreInstruction[loadStoreIssuePort].data.nothing();
+		        outLoadStoreInstruction.data[cfg*LoadStoreIssueWidth+loadStoreIssuePort].nothing();
 			loadStoreIssuePort++;
 		}
 
-
-	      }
+		}//End of foreach Config.
+		
+	      }//End of areallknown
 	    else
 	      {
 #ifdef DD_DEBUG_SCHEDULER_VERB1
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== onWriteBackEnable ==== areallknown : NO !!!" << endl;
 #endif
 	      }
-	  }
-
+	  }//Endof onWriteBackEnable()
+  
 	/** Performs sanity checks */
-	bool Check()
+	bool Check(int cfg)
 	{
-		return integerIssueQueue.Check() && floatingPointIssueQueue.Check() && loadStoreIssueQueue.Check();
+		return integerIssueQueue[cfg].Check() && floatingPointIssueQueue[cfg].Check() && loadStoreIssueQueue[cfg].Check();
 	}
 
   
@@ -2285,19 +2157,19 @@ public:
 */
 
 private:
-	OoOQueue<ReservationStation<T, nSources>, IntegerIssueQueueSize> integerIssueQueue;		/* A queue of reservation stations */
-	OoOQueue<ReservationStation<T, nSources>, FloatingPointIssueQueueSize> floatingPointIssueQueue;		/* A queue of reservation stations */
-	OoOQueue<ReservationStation<T, nSources>, LoadStoreIssueQueueSize> loadStoreIssueQueue;		/* A queue of reservation stations */
+	OoOQueue<ReservationStation<T, nSources>, IntegerIssueQueueSize> integerIssueQueue[nConfig];		/* A queue of reservation stations */
+	OoOQueue<ReservationStation<T, nSources>, FloatingPointIssueQueueSize> floatingPointIssueQueue[nConfig];		/* A queue of reservation stations */
+	OoOQueue<ReservationStation<T, nSources>, LoadStoreIssueQueueSize> loadStoreIssueQueue[nConfig];		/* A queue of reservation stations */
 
-	UInt64 time_stamp;											/*< the current date */
-	UInt64 integerRegisterTimeStamp[nIntegerRegisters];			/*< when dependent instruction could be scheduled ? */
-	UInt64 floatingPointRegisterTimeStamp[nIntegerRegisters];	/*< when dependent instruction could be scheduled ? */
+	UInt64 time_stamp[nConfig];											/*< the current date */
+	UInt64 integerRegisterTimeStamp[nConfig][nIntegerRegisters];			/*< when dependent instruction could be scheduled ? */
+	UInt64 floatingPointRegisterTimeStamp[nConfig][nIntegerRegisters];	/*< when dependent instruction could be scheduled ? */
 
-	UInt64 conditionRegisterTimeStamp[nConditionRegisters];
-	UInt64 FPSCRegisterTimeStamp[nFPSCRegisters];
-	UInt64 linkRegisterTimeStamp[nLinkRegisters];
-	UInt64 countRegisterTimeStamp[nCountRegisters];
-	UInt64 XERRegisterTimeStamp[nXERRegisters];
+	UInt64 conditionRegisterTimeStamp[nConfig][nConditionRegisters];
+	UInt64 FPSCRegisterTimeStamp[nConfig][nFPSCRegisters];
+	UInt64 linkRegisterTimeStamp[nConfig][nLinkRegisters];
+	UInt64 countRegisterTimeStamp[nConfig][nCountRegisters];
+	UInt64 XERRegisterTimeStamp[nConfig][nXERRegisters];
 	/* Some ports to make the SystemC scheduler call the ExternalControl process on state changes */
 	/*
 	ml_out_data<bool> outStateChanged;
@@ -2305,16 +2177,16 @@ private:
 	ml_in_data<bool> inStateChanged;
 	*/
 
-	int integer_to_remove;
-	int floating_point_to_remove;
-	int loadstore_to_remove;
+	int integer_to_remove[nConfig];
+	int floating_point_to_remove[nConfig];
+	int loadstore_to_remove[nConfig];
 	
-	bool allAcceptReceived;
-	bool WriteBacksProcessed;
+	bool allAcceptReceived[nConfig];
+	bool WriteBacksProcessed[nConfig];
 
-  int integerIssueBusy[IntegerIssueWidth];
-  int floatingPointIssueBusy[FloatingPointIssueWidth];
-  int loadStoreIssueBusy[LoadStoreIssueWidth];
+  int integerIssueBusy[nConfig][IntegerIssueWidth];
+  int floatingPointIssueBusy[nConfig][FloatingPointIssueWidth];
+  int loadStoreIssueBusy[nConfig][LoadStoreIssueWidth];
 
 };
 

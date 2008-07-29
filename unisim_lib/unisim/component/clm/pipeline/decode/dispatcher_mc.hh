@@ -197,53 +197,59 @@ public:
 	//	void ExternalControl()
 	void onData()
 	  {
+	    /*
 	    bool areallknown(true);
 
 	    for (int i=0; i<Width; i++)
 	      {
 		if (!inInstruction[i].data.known()) { areallknown = false; break; }
 	      }
-	    if (areallknown)
+	    */
+	    //if (areallknown)
+	    if (inInstruction.data.known())
 	      {
+		for(int cfg=0; cfg<nConfig; cfg++)
+		{
 		int i,j,k,l;
 
 		// Initialize the port mapping
 		for(i = 0; i < Width; i++)
 		{
-			InstructionMapping[i] = -1;
+			InstructionMapping[cfg][i] = -1;
 		}
 		for(i = 0; i < nIntegerIssueQueueWritePorts; i++)
 		  {
-		    IntegerMapping[i] = Width;
+		    IntegerMapping[cfg][i] = Width;
 		  }
 		for(i = 0; i < nFloatingPointIssueQueueWritePorts; i++)
 		  {
-		    FloatingMapping[i] = Width;
+		    FloatingMapping[cfg][i] = Width;
 		  }
 		for(i = 0; i < nLoadStoreIssueQueueWritePorts; i++)
 		  {
-		    LoadStoreMapping[i] = Width;
+		    LoadStoreMapping[cfg][i] = Width;
 		  }
 		//		for (int i=0; i<Width; i++)
 
 		for(i = j = k = l = 0; i < Width; i++)
 		{
 		  {
-		    if ( !inInstruction[i].data.something() )
+		    if ( !inInstruction.data[cfg*Width+i].something() )
 		      {
 			//Instruction[i].data.nothing();
 		      }
 		    else
 		      {
-			InstructionPtr instruction = inInstruction[i].data;
+			InstructionPtr instruction = inInstruction.data[cfg*Width+i];
 			//const Instruction *instruction = &inst;
 			if(instruction->fn & integerIssueQueueFunction)
 			  {
 			    if(j < nIntegerIssueQueueWritePorts)
 			      {
-				IntegerMapping[j] = i;
-				InstructionMapping[i] = j;
-				outIntegerInstruction[j].data = inInstruction[i].data;
+				IntegerMapping[cfg][j] = i;
+				InstructionMapping[cfg][i] = j;
+				outIntegerInstruction.data[cfg*nIntegerIssueQueueWritePorts+j]
+				  = inInstruction.data[cfg*Width+i];
 				j++;
 			      }
 			  }
@@ -251,9 +257,10 @@ public:
 			  {
 			    if(k < nFloatingPointIssueQueueWritePorts)
 			      {
-				FloatingMapping[k] = i;
-				InstructionMapping[i] = k+nIntegerIssueQueueWritePorts;
-				outFloatingPointInstruction[k].data = inInstruction[i].data;
+				FloatingMapping[cfg][k] = i;
+				InstructionMapping[cfg][i] = k+nIntegerIssueQueueWritePorts;
+				outFloatingPointInstruction.data[cfg*nFloatingPointIssueQueueWritePorts+k]
+				  = inInstruction.data[cfg*Width+i];
 				k++;
 			      }
 			  }
@@ -261,9 +268,10 @@ public:
 			  {
 			    if(l < nLoadStoreIssueQueueWritePorts)
 			      {
-				LoadStoreMapping[l] = i;
-				InstructionMapping[i] = l+nIntegerIssueQueueWritePorts+nFloatingPointIssueQueueWritePorts;
-				outLoadStoreInstruction[l].data = inInstruction[i].data;
+				LoadStoreMapping[cfg][l] = i;
+				InstructionMapping[cfg][i] = l+nIntegerIssueQueueWritePorts+nFloatingPointIssueQueueWritePorts;
+				outLoadStoreInstruction.data[cfg*nLoadStoreIssueQueueWritePorts+l] 
+				  = inInstruction.data[cfg*Width+i];
 				l++;
 			      }
 			  }
@@ -281,18 +289,22 @@ public:
 		}
 		for( ; j < nIntegerIssueQueueWritePorts; j++)
 		  {
-		    outIntegerInstruction[j].data.nothing();
+		    outIntegerInstruction.data[cfg*nIntegerIssueQueueWritePorts+j].nothing();
 		  }
 		for( ; k < nFloatingPointIssueQueueWritePorts; k++)
 		  {
-		    outFloatingPointInstruction[k].data.nothing();
+		    outFloatingPointInstruction.data[cfg*nFloatingPointIssueQueueWritePorts+k].nothing();
 		  }
 		for( ; l < nLoadStoreIssueQueueWritePorts; l++)
 		  {
-		    outLoadStoreInstruction[l].data.nothing();
+		    outLoadStoreInstruction.data[cfg*nLoadStoreIssueQueueWritePorts+l].nothing();
 		  }
-	      }
-	  }
+		}// endof foreach Config.
+		outIntegerInstruction.data.send();
+		outFloatingPointInstruction.data.send();
+		outLoadStoreInstruction.data.send();
+	      }// endof if(areallknown)
+	  } // endof onData()
 
 	void onAccept()
 	  {
@@ -303,6 +315,7 @@ public:
 	      {
 		if (!outInstruction[i].accept) { areallknown =false; break; }
 		}*/
+	    /*
 	    for(i = 0; i < nIntegerIssueQueueWritePorts; i++)
 	      {
 		areallknown &= outIntegerInstruction[i].accept.known();
@@ -315,58 +328,25 @@ public:
 	      {
 		areallknown &= outLoadStoreInstruction[i].accept.known();
 	      }
-	    if (areallknown)
+	    */
+	    //	    if (areallknown)
+	    if ( outIntegerInstruction.accept.known() &&
+		 outFloatingPointInstruction.accept.known() &&
+		 outLoadStoreInstruction.accept.known()
+		 )
 	      {
-		/*
-		int MaxMapping;
-		for(i = 0; i < nIntegerIssueQueueWritePorts; i++)
-		  {
-		    if (IntegerMapping[i] < Width)
-		      {
-			inInstruction[IntegerMapping[i]].accept = outIntegerInstruction[i].accept;
-			MaxMapping++;
-		      }
-		    else
-		      inInstruction[IntegerMapping[i]].accept = false;
-		  }
-		for(i = 0; i < nFloatingPointIssueQueueWritePorts; i++)
-		  {
-		    if (FloatingMapping[i] < Width)
-		      {
-			inInstruction[FloatingMapping[i]].accept = outFloatingPointInstruction[i].accept;
-			MaxMapping++;
-		      }
-		    else
-		      inInstruction[FloatingMapping[i]].accept = false;
-		  }
-		MaxMapping = MAX(MaxMapping,FloatingMapping[i]);
-		for(i = 0; i < nLoadStoreIssueQueueWritePorts; i++)
-		  {
-		    if (LoadStoreMapping[i] < Width)
-		      {
-			inInstruction[LoadStoreMapping[i]].accept = outLoadStoreInstruction[i].accept;
-			MaxMapping++;
-		      }
-		    else
-		      inInstruction[LoadStoreMapping[i]].accept = false;
-
-		  }
-		//		MaxMapping = MAX(MaxMapping,LoadStoreMapping[i]);
-
-		for (i = MaxMapping; i<Width; i++)
-		  {
-		    inInstruction[i].accept = false;
-		  }
-		*/
+		for(int cfg=0; cfg<nConfig; cfg++)
+		{
 		for (i = 0; i<Width; i++)
 		  {
 		    int j;
 		    bool isset = false;
 		    for (j=0; j<nIntegerIssueQueueWritePorts; j++)
 		    {
-		      if ( (IntegerMapping[j]==i) && outIntegerInstruction[j].accept )
+		      if ( (IntegerMapping[cfg][j]==i) && 
+			   outIntegerInstruction.accept[cfg*nIntegerIssueQueueWritePorts+j] )
 			{ 
-			  inInstruction[i].accept = true;
+			  inInstruction.accept[cfg*Width+i] = true;
 			  isset = true;
 			  break;
 			}
@@ -374,11 +354,13 @@ public:
 		    //		    if (!isset)
 		    //			{ inInstruction[i].accept = false; }
 		    //		    bool isset = false;
+		    if (!isset)
 		    for (j=0; j<nFloatingPointIssueQueueWritePorts; j++)
 		    {
-		      if ( (FloatingMapping[j]==i) && outFloatingPointInstruction[j].accept )
+		      if ( (FloatingMapping[cfg][j]==i) && 
+			   outFloatingPointInstruction.accept[cfg*nFloatingPointIssueQueueWritePorts+j] )
 			{
-			  inInstruction[i].accept = true;
+			  inInstruction.accept[cfg*Width+i] = true;
 			  isset = true;
 			  break;
 			}
@@ -386,18 +368,20 @@ public:
 		    //		    if (!isset)
 		    //			{ inInstruction[i].accept = false; }
 		    //		    bool isset = false;
+		    if (!isset)
 		    for (j=0; j<nLoadStoreIssueQueueWritePorts; j++)
 		    {
-		      if ( (LoadStoreMapping[j]==i) && outLoadStoreInstruction[j].accept )
+		      if ( (LoadStoreMapping[cfg][j]==i) &&
+			   outLoadStoreInstruction.accept[cfg*nLoadStoreIssueQueueWritePorts+j] )
 			{ 
-			  inInstruction[i].accept = true; 
+			  inInstruction.accept[cfg*Width+i] = true; 
 			  isset = true;
 			  break;
 			}
 		    }
 		    // 
 		    if (!isset)
-		      { inInstruction[i].accept = false; }
+		      { inInstruction.accept[cfg*Width+i] = false; }
 		  }
 		/*
 		for (int i=0; i<Width; i++)
@@ -405,36 +389,25 @@ public:
 		    inInstruction[i].enable = outInstruction[i].accept;
 		  }
 		*/
+		} //End of foreach Config.
+		inInstruction.accept.send();
 	      }// end of if(areallknown)
 	  }// end of onAccept()
 
 	void onEnable()
 	  {
+	    /*
 	    bool areallknown(true);
 	    for (int i=0; i<Width; i++)
 	      {
 		if (!inInstruction[i].enable.known()) { areallknown = false; break; }
 	      }
-	    if (areallknown)
+	    */
+	    //	    if (areallknown)
+	    if ( inInstruction.enable.known() )
 	      {
-		/*
-		for (int i=0; i<Width; i++)
-		  {
-		    if (InstructionMapping[i] < nIntegerIssueQueueWritePorts)
-		      {
-			outIntegerInstruction[InstructionMapping[i]].enable = inInstruction[i].enable;
-		      }
-		    else if (InstructionMapping[i] < nIntegerIssueQueueWritePorts+nFloatingPointIssueQueueWritePorts)
-		      {
-			outFloatingPointInstruction[InstructionMapping[i]-nIntegerIssueQueueWritePorts].enable = inInstruction[i].enable;
-		      }
-		    else
-		      {
-			outLoadStoreInstruction[InstructionMapping[i]-(nIntegerIssueQueueWritePorts+nFloatingPointIssueQueueWritePorts)].enable = inInstruction[i].enable;
-		      }
-		    
-		  }
-		*/
+		for(int cfg=0; cfg<nConfig; cfg++)
+		{
 		int i;
 		int j;
 		bool isset = false;
@@ -443,15 +416,16 @@ public:
 		    isset = false;
 		    for (j=0; j<Width; j++)
 		      {
-			if (InstructionMapping[j] == i)
+			if (InstructionMapping[cfg][j] == i)
 			  {
-			    outIntegerInstruction[i].enable = inInstruction[j].enable ;
+			    outIntegerInstruction.enable[cfg*nIntegerIssueQueueWritePorts+i]
+			      = inInstruction.enable[cfg*Width+j] ;
 			    isset = true;
 			    break;
 			  }
 		      }
 		    if (!isset)
-		      { outIntegerInstruction[i].enable = false ; }
+		      { outIntegerInstruction.enable[cfg*nIntegerIssueQueueWritePorts+i] = false ; }
 		  }
 		
 		for(i = 0; i < nFloatingPointIssueQueueWritePorts; i++)
@@ -459,15 +433,16 @@ public:
 		    isset = false;
 		    for (j=0; j<Width; j++)
 		      {
-			if (InstructionMapping[j] == (i + nIntegerIssueQueueWritePorts) )
+			if (InstructionMapping[cfg][j] == (i + nIntegerIssueQueueWritePorts) )
 			  {
-			    outFloatingPointInstruction[i].enable = inInstruction[j].enable ;
+			    outFloatingPointInstruction.enable[cfg*nFloatingPointIssueQueueWritePorts+i]
+			      = inInstruction.enable[cfg*Width+j] ;
 			    isset = true;
 			    break;
 			  }
 		      }
 		    if (!isset)
-		      { outFloatingPointInstruction[i].enable = false ; }
+		      { outFloatingPointInstruction.enable[cfg*nFloatingPointIssueQueueWritePorts+i] = false ; }
 		  }
 		
 		for(i = 0; i < nLoadStoreIssueQueueWritePorts; i++)
@@ -475,16 +450,21 @@ public:
 		    isset = false;
 		    for (j=0; j<Width; j++)
 		      {
-			if (InstructionMapping[j] == (i + nIntegerIssueQueueWritePorts + nFloatingPointIssueQueueWritePorts) )
+			if (InstructionMapping[cfg][j] == (i + nIntegerIssueQueueWritePorts + nFloatingPointIssueQueueWritePorts) )
 			  {
-			    outLoadStoreInstruction[i].enable = inInstruction[j].enable ;
+			    outLoadStoreInstruction.enable[cfg*nLoadStoreIssueQueueWritePorts+i]
+			      = inInstruction.enable[cfg*Width+j] ;
 			    isset = true;
 			    break;
 			  }
 		      }
 		    if (!isset)
-		      { outLoadStoreInstruction[i].enable = false ; }
+		      { outLoadStoreInstruction.enable[cfg*nLoadStoreIssueQueueWritePorts+i] = false ; }
 		  }
+		}// Endof foareach Config.
+		outIntegerInstruction.enable.send();
+		outFloatingPointInstruction.enable.send();
+		outLoadStoreInstruction.enable.send();
 	      }// end of if (areallknown)
 	  }// end of onEnable...
 

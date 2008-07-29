@@ -144,8 +144,8 @@ class ReorderBuffer : public module//, public StatisticService
   /**************************************
    * Module Statistics
    **************************************/
-  uint64_t retired_instructions;
-  uint64_t flushed_instructions;
+  uint64_t retired_instructions[nConfig];
+  uint64_t flushed_instructions[nConfig];
   
   /**************************************
    * Module ports 
@@ -187,7 +187,7 @@ class ReorderBuffer : public module//, public StatisticService
 			@param emulator a pointer to the emulator wrapper
 		*/
   //		ReorderBuffer(const char *name, Emulator *emulator) :
-		ReorderBuffer(const char *name, CPUEmu *emulator) :
+		ReorderBuffer(const char *name, CPUEmu *emulator[nConfig]) :
 		  module(name)
 		  //		  ,Object(name)
 		  //		  ,StatisticService(name, this)
@@ -236,34 +236,37 @@ class ReorderBuffer : public module//, public StatisticService
 			
 
 			/* internal state */
-			this->emulator = emulator;
-
-			head = -1;
-			tail = -1;
-			size = 0;
-			mispredicted_branch = false;
-			time_stamp = 0.0;
-			//			changed = true;
-			replay_trap = 0;
-			flush_previous_cycle = false;
-
-			for(i = 0; i < ReorderBufferSize; i++)
+			for(int cfg=0; cfg<nConfig; cfg++)
 			{
-				entries[i].state = unallocated_instruction;
+			  this->emulator[cfg] = emulator[cfg];
+			  head[cfg] = -1;
+			  tail[cfg] = -1;
+			  size[cfg] = 0;
+			  mispredicted_branch[cfg] = false;
+			  time_stamp[cfg] = 0.0;
+			  //			changed = true;
+			  replay_trap[cfg] = 0;
+			  flush_previous_cycle[cfg] = false;
+			  
+			  for(i = 0; i < ReorderBufferSize; i++)
+			    {
+			      entries[cfg][i].state = unallocated_instruction;
+			    }
+			  
+			  /* statistics */
+			  sim_num_insn[cfg] = 0;
+			  sim_num_loads[cfg] = 0;
+			  sim_num_refs[cfg] = 0;
+			  sim_num_replay_traps[cfg] = 0;
+			  rob_cumulative_occupancy[cfg] = 0;
+			  sim_num_spec_loads[cfg] = 0;
+			  
+			  skip_reg_checking[cfg] = false;
+			  syscall_retired[cfg] = false;
+
+			  retired_instructions[cfg] = flushed_instructions[cfg] = 0;
+			    
 			}
-			
-			/* statistics */
-			sim_num_insn = 0;
-			sim_num_loads = 0;
-			sim_num_refs = 0;
-			sim_num_replay_traps = 0;
-			rob_cumulative_occupancy = 0;
-			sim_num_spec_loads = 0;
-
-			skip_reg_checking = false;
-			syscall_retired = false;
-
-			retired_instructions = flushed_instructions = 0;
 			// ---  Registring statistics ----------------
 			/*
 			statistics.add("retired_instructions",retired_instructions);
@@ -318,93 +321,56 @@ class ReorderBuffer : public module//, public StatisticService
    ***********************************************************************************************************/
   void start_of_cycle()
   {
-    /////////////////////////////////////////////
-    // SOC
-    /////////////////////////////////////////////
-    int i=0;
-    int tag;
-    // Mourad MODIFS 
-    /////////////////////
-#ifdef DD_DEBUG_REORDERBUFFER_VERB2
-	
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-      {
-	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== SOC ==== " << endl;
-	cerr << *this << endl;
-      }
-#endif	
-    //   flush_previous_cycle = mispredicted_branch || replay_trap;
-    //    mispredicted_branch = false;
-    //    replay_trap = false;
-    /* For each written back instruction in the reorder buffer beginning by the oldest */
-    for(tag = head, i = 0; i < RetireWidth && i < size; tag = tag < ReorderBufferSize - 1 ? tag + 1 : 0, i++)
-      {
-	ReorderBufferEntry<T, nSources>& entry = entries[tag];
-	if(entry.state != committed_instruction) break;	
-	/* Make instruction as committed */
-	//entry.state = committed_instruction;
-	/* Tell to other module that the instruction is retired (for updating branch prediction, unblocking stores, releasing registers) */
-	//	outRetireEnable[i] = true;
-	//	outRetireInstruction[i] = entry.instruction;
-	//	if (!mispredicted_branch && !replay_trap)
-	//	if (!replay_trap)
-	outRetireInstruction[i].data = entry.instruction;
-	//Mourad Modifs
-#ifdef DD_DEBUG_REORDERBUFFER_VERB2
-	if (DD_DEBUG_TIMESTAMP < timestamp())
-	  {
-	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== SOC ==== " << endl;
-	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== Rob is sending a instruction: " << entry.instruction << endl;
-	  }
-#endif	
-      }
-    /* Send a flush signal if a branch misprediction occurs */
-    //    outFlush.data = mispredicted_branch || replay_trap;
-#ifdef DD_DEBUG_REORDERBUFFER_VERB1
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-      {
-	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== SOC ==== mispred: " 
-	     << ( (mispredicted_branch)?"True":"False" )
-	     << "   replay: " 
-	     << ( (replay_trap)?"True":"False" ) << endl;
-	//	  cerr << this << endl;
-      }
-#endif	
-    if (mispredicted_branch || replay_trap)
-      //    if (flush_previous_cycle)
-      {
-#ifdef DD_DEBUG_REORDERBUFFER_VERB2
-	if (DD_DEBUG_TIMESTAMP < timestamp())
-	  {
-	    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== SOC ==== " << endl;
-	    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== Rob is sending a flush !!! " << endl;
-	  }
-#endif	
-	outFlush.data = true;
-      }
-    else
-      {
-	outFlush.data.nothing();
-      }
-    /* No more instructions were retired at this clock cycle */
-    for(; i < RetireWidth; i++)
-      {
-#ifdef DD_DEBUG_REORDERBUFFER_VERB2
-	if (DD_DEBUG_TIMESTAMP < timestamp())
-	  {
-	    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== Rob is sending nothing... ==== i=" << i << endl;
-	  }
-#endif	
-	//      outRetireEnable[i] = false;
-	outRetireInstruction[i].data.nothing();
-      }
-  }
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      /////////////////////////////////////////////
+      // SOC
+      /////////////////////////////////////////////
+      int i=0;
+      int tag;
+      /////////////////////
+      //   flush_previous_cycle = mispredicted_branch || replay_trap;
+      //    mispredicted_branch = false;
+      //    replay_trap = false;
+      /* For each written back instruction in the reorder buffer beginning by the oldest */
+      for(tag = head[cfg], i = 0; i < RetireWidth && i < size[cfg]; tag = tag < ReorderBufferSize - 1 ? tag + 1 : 0, i++)
+	{
+	  ReorderBufferEntry<T, nSources>& entry = entries[cfg][tag];
+	  if(entry.state != committed_instruction) break;	
+	  /* Make instruction as committed */
+	  //entry.state = committed_instruction;
+	  /* Tell to other module that the instruction is retired (for updating branch prediction, unblocking stores, releasing registers) */
+	  outRetireInstruction.data[cfg*RetireWidth+i] = entry.instruction;
+	}
+      /* Send a flush signal if a branch misprediction occurs */
+      //    outFlush.data = mispredicted_branch || replay_trap;
+      if (mispredicted_branch[cfg] || replay_trap[cfg])
+	//    if (flush_previous_cycle)
+	{
+	  outFlush.data[cfg] = true;
+	}
+      else
+	{
+	  outFlush.data[cfg].nothing();
+	}
+      /* No more instructions were retired at this clock cycle */
+      for(; i < RetireWidth; i++)
+	{
+	  //      outRetireEnable[i] = false;
+	  outRetireInstruction.data[cfg*RetireWidth+i].nothing();
+	}
+
+    }//Endof foreach Config.
+    outRetireInstruction.data.send();
+    outFlush.data.send();
+  }//Endof start_of_cycle
 
   /***********************************************************************************************************
    * 1 -- onFinishData...
    ***********************************************************************************************************/
   void onFinishData()
   {
+    /*
     bool areallknown(true);
     int i;
     for (i=0;i<WriteBackWidth;i++)
@@ -412,12 +378,18 @@ class ReorderBuffer : public module//, public StatisticService
         areallknown &= inFinishInstruction[i].data.known();
       }
     if (areallknown)
+    */
+    if( inFinishInstruction.data.known() )
       {
-	// Always accept finished instructions...
-	for (i=0;i<WriteBackWidth;i++)
+      for(int cfg=0; cfg<nConfig; cfg++)
+	{
+	  // Always accept finished instructions...
+	  for (int i=0;i<WriteBackWidth;i++)
 	  {
-	     inFinishInstruction[i].accept = inFinishInstruction[i].data.something();
+	     inFinishInstruction.accept[cfg*WriteBackWidth+i] = inFinishInstruction.data[cfg*WriteBackWidth+i].something();
 	  }
+	}
+      inFinishInstruction.accept.send();
       }
   }
   
@@ -426,6 +398,7 @@ class ReorderBuffer : public module//, public StatisticService
    ***********************************************************************************************************/
   void onWriteBackData()
   {
+    /*
     bool areallknown(true);
     int i;
     for (i=0;i<WriteBackWidth;i++)
@@ -433,16 +406,22 @@ class ReorderBuffer : public module//, public StatisticService
         areallknown &= inWriteBackInstruction[i].data.known();
       }
     if (areallknown)
+    */
+    if ( inWriteBackInstruction.data.known() )
       {
-	// Always accept written back instructions...
-	for (i=0;i<WriteBackWidth;i++)
+	for(int cfg=0; cfg<nConfig; cfg++)
+	{
+	  // Always accept written back instructions...
+	  for (int i=0;i<WriteBackWidth;i++)
 	  {
-	    if (inWriteBackInstruction[i].data.something())
+	    if (inWriteBackInstruction.data[cfg*WriteBackWidth+i].something())
 	      //	     inWriteBackInstruction[i].accept = inWriteBackInstruction[i].data.something();
-	      inWriteBackInstruction[i].accept = true;
+	      inWriteBackInstruction.accept[cfg*WriteBackWidth+i] = true;
 	    else
-	      inWriteBackInstruction[i].accept = false;
+	      inWriteBackInstruction.accept[cfg*WriteBackWidth+i] = false;
 	  }
+	}
+	inWriteBackInstruction.accept.send();
       }
   }
  
@@ -451,6 +430,7 @@ class ReorderBuffer : public module//, public StatisticService
    ***********************************************************************************************************/
   void onRetireAcceptandonAllocData()
   {
+    /*
     bool areallknown(true);
     int i;
     for (i=0;i<RetireWidth;i++)
@@ -463,18 +443,23 @@ class ReorderBuffer : public module//, public StatisticService
       }
 
     if (areallknown)
+    */
+    if( outRetireInstruction.accept.known() && inAllocateInstruction.data.known() ) 
+    {
+      for(int cfg=0; cfg<nConfig; cfg++)
       {
+
 	int entry_to_remove=0;
 	// Con-piouteur # of futur removed ROB entries.
-	for (i=0;i<RetireWidth;i++)
+	for (int i=0;i<RetireWidth;i++)
 	  {
-	    if (outRetireInstruction[i].accept)
+	    if (outRetireInstruction.accept[cfg*RetireWidth+i])
 	      {
 #ifdef DD_DEBUG_SIGNALS
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: OnRetireAccept... >>> " << endl;
 		cerr << "Send outRetire.enable = True"<< endl; 
 #endif	
-		outRetireInstruction[i].enable = true;
+		outRetireInstruction.enable[cfg*RetireWidth+i] = true;
 		entry_to_remove++;
 	      }
 	    else
@@ -483,49 +468,46 @@ class ReorderBuffer : public module//, public StatisticService
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: OnRetireAccept... >>> " << endl;
 		cerr << "Send outRetire.enable = False"<< endl; 
 #endif	
-		outRetireInstruction[i].enable = false;
+		outRetireInstruction.enable[cfg*RetireWidth+i] = false;
 	      }
 	  }
 
-	int available_entries = ReorderBufferSize-size+entry_to_remove;
+	int available_entries = ReorderBufferSize-size[cfg]+entry_to_remove;
+	int i;
 	for (i=0; i<AllocateWidth && available_entries>0; i++)
 	  {
-	    if (inAllocateInstruction[i].data.something() && !flush_previous_cycle)
+	    if (inAllocateInstruction.data[cfg*AllocateWidth+i].something() && !flush_previous_cycle[cfg])
 	      {
-		inAllocateInstruction[i].accept = true;
+		inAllocateInstruction.accept[cfg*AllocateWidth+i] = true;
 		available_entries--;
 	      }
 	    else
 	      {
-		inAllocateInstruction[i].accept = false;
+		inAllocateInstruction.accept[cfg*AllocateWidth+i] = false;
 	      }
 	  }
 	// if no more entry is available then DON'T forget to not accept !!!
 	for (; i < AllocateWidth; i++)
-	  inAllocateInstruction[i].accept = false;
-	  
-      }
-  }
+	  inAllocateInstruction.accept[cfg*AllocateWidth+i] = false;
+
+      }//Endof foreach Config.
+      outRetireInstruction.enable.send();
+      inAllocateInstruction.accept.send();
+    }//End of if areallknown
+  }// 
 
   /***********************************************************************************************************
    * 3 -- end_of_cycle...
    ***********************************************************************************************************/
   void end_of_cycle()
   {
-#ifdef DD_DEBUG_SIGNALS
-	cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: Starting EOC >>> " << endl;
-#endif	
+
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+
     int i, j, tag, tag2;
     
-#ifdef DD_DEBUG_REORDERBUFFER_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-	  {
-	cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC Begining ==== " << endl;
-	cerr << *this << endl;
-	  }
-#endif	
-
-    rob_cumulative_occupancy += size;
+    rob_cumulative_occupancy[cfg] += size[cfg];
     
 
     /**********************************************
@@ -533,9 +515,9 @@ class ReorderBuffer : public module//, public StatisticService
      **********************************************/
     /* For each commited instruction in the reorder buffer beginning by the oldest */
     //    for(tag = head, i = 0; !mispredicted_branch && !replay_trap && !flush_previous_cycle && i < RetireWidth && i < size; tag = tag < ReorderBufferSize - 1 ? tag + 1 : 0, i++)
-    for(i = 0; /* running && */ size > 0; i++, size--, head = head < ReorderBufferSize - 1 ? head + 1 : 0)
+    for(i = 0; /* running && */ size[cfg] > 0; i++, size[cfg]--, head[cfg] = head[cfg] < ReorderBufferSize - 1 ? head[cfg] + 1 : 0)
       {
-	ReorderBufferEntry<T, nSources>& entry = entries[head];
+	ReorderBufferEntry<T, nSources>& entry = entries[cfg][head[cfg]];
 	if(entry.state != committed_instruction) break;
 
 
@@ -550,13 +532,13 @@ class ReorderBuffer : public module//, public StatisticService
 
 	//	if (entry.instruction->mustbechecked)
 	//	  {
-	    if(entry.instruction->cia != emulator->GetCIA())
+	    if(entry.instruction->cia != emulator[cfg]->GetCIA())
 	      {
 		/* throw an error */
 		cerr << "WARNING:" << endl;
 		cerr << "time stamp = " << timestamp() << endl;
 		cerr << entry.instruction << endl;
-		cerr << "Not on the right path (cia must be " << hexa(emulator->GetCIA()) << ")" << endl;
+		cerr << "Not on the right path (cia must be " << hexa(emulator[cfg]->GetCIA()) << ")" << endl;
 		//	    sc_stop();
 		exit(-1);
 		return;
@@ -571,28 +553,28 @@ class ReorderBuffer : public module//, public StatisticService
 		exit(-1);
 	      }
 	    
-	    retired_instructions++;
+	    retired_instructions[cfg]++;
 
-	    syscall_retired = false;
+	    syscall_retired[cfg] = false;
 	    
 	    //	if (entry.instruction->mustbechecked)
 	    if( !( (entry.instruction->fn & FnLoad) && (entry.instruction->replay_trap) )
 		&& (entry.instruction->mustbechecked) 
 		)
 	      {
-		skip_reg_checking = false;
+		skip_reg_checking[cfg] = false;
 #ifdef DD_DEBUG_EMULATOR
 		if (DD_DEBUG_TIMESTAMP<timestamp())
 		  {
-		    cerr << "DD_DEBUG_EMULATOR : Before Step... CIA: " << hexa(emulator->GetCIA()) << endl;
+		    cerr << "DD_DEBUG_EMULATOR : Before Step... CIA: " << hexa(emulator[cfg]->GetCIA()) << endl;
 		  }
 #endif	 
 		//	    cerr << "Emulator CIA: " << hexa(emulator->GetNIA()) << endl;
-		emulator->Step();
+		emulator[cfg]->Step();
 #ifdef DD_DEBUG_EMULATOR
 		if (DD_DEBUG_TIMESTAMP<timestamp())
 		  {
-		    cerr << "DD_DEBUG_EMULATOR : After Step...  CIA: " << hexa(emulator->GetCIA()) << endl;
+		    cerr << "DD_DEBUG_EMULATOR : After Step...  CIA: " << hexa(emulator[cfg]->GetCIA()) << endl;
 		  }
 #endif	 
 		// 				/* Stop if we got an exit system call */
@@ -602,13 +584,13 @@ class ReorderBuffer : public module//, public StatisticService
 		// 				}
 	    
 		/* If branch has not been correctly resolved */
-		if(entry.instruction->nia != emulator->GetNIA())
+		if(entry.instruction->nia != emulator[cfg]->GetNIA())
 		  {
 		    /* Throw an error */
 		    cerr << "WARNING:" << endl;
 		    cerr << "time stamp = " << timestamp() << endl;
 		    cerr << entry.instruction << endl;
-		    cerr << "Not on the right path (nia must be " << hexa(emulator->GetNIA()) << ")" << endl;
+		    cerr << "Not on the right path (nia must be " << hexa(emulator[cfg]->GetNIA()) << ")" << endl;
 		    //	    sc_stop();
 		    exit(-1);
 		    return;
@@ -617,22 +599,22 @@ class ReorderBuffer : public module//, public StatisticService
 		/* If load/store instruction has an incorrect effective address */
 		
 		if(( (entry.instruction->fn & FnLoad) || (entry.instruction->fn & FnStore) )
-		   && entry.instruction->ea != emulator->GetEA())
+		   && entry.instruction->ea != emulator[cfg]->GetEA())
 		  {
 		    // Throw an error
 		    cerr << "WARNING:" << endl;
 		    cerr << "time stamp = " << timestamp() << endl;
 		    cerr << entry.instruction << endl;
-		    cerr << "has an incorrect effective address (ea must be " << hexa(emulator->GetEA()) << ")" << endl;
+		    cerr << "has an incorrect effective address (ea must be " << hexa(emulator[cfg]->GetEA()) << ")" << endl;
 		    //	    sc_stop();
 		    exit(-1);
 		    return;
 		  }
 		
 		/* Update the (committed) current instruction address */
-		cia = entry.instruction->nia;
+		cia[cfg] = entry.instruction->nia;
 		/* Count the instruction as retired */
-		sim_num_insn++;
+		sim_num_insn[cfg]++;
 		/*
 		  #ifdef FASTSYSC
 		  time_stamp = timestamp();
@@ -640,21 +622,21 @@ class ReorderBuffer : public module//, public StatisticService
 		  time_stamp = timestamp().to_double();
 		  #endif
 		*/
-		time_stamp = timestamp();
+		time_stamp[cfg] = timestamp();
 		
 		/* If the instruction is a load/store */
 		if((entry.instruction->fn & FnLoad) || (entry.instruction->fn & FnStore))
 		  {
 		    /* Count the load/store as committed */
-		    sim_num_refs++;
+		    sim_num_refs[cfg]++;
 		    if(entry.instruction->fn & FnLoad)
-		      sim_num_loads++;
+		      sim_num_loads[cfg]++;
 		  }
 		
 		// If instruction is a Syscall we need to copy emulator registers into simulator...
 		// So we set a boolean to inform CpuPPC.sim
 		if (entry.instruction->fn == FnSysCall)
-		  { syscall_retired = true; }
+		  { syscall_retired[cfg] = true; }
 		
 		//	    else
 		//	      { syscall_retired = false; }
@@ -662,11 +644,11 @@ class ReorderBuffer : public module//, public StatisticService
 	      } // if(...mustbechecked)
 	else
 	  {
-	    skip_reg_checking = true;
+	    skip_reg_checking[cfg] = true;
 	  }
 	//      }
 	
-	if ( ! outRetireInstruction[i].accept )
+	if ( ! outRetireInstruction.accept[cfg*RetireWidth+i] )
 	  {
 	    cerr << "time stamp = " << timestamp() << endl;
 	    cerr << "A module didn't accept a committed instruction !!!" << endl;
@@ -678,14 +660,14 @@ class ReorderBuffer : public module//, public StatisticService
 	  }
       }
 
-    if (flush_previous_cycle)
+    if (flush_previous_cycle[cfg])
       {
-	for(; size > 0; size--, head = head < ReorderBufferSize - 1 ? head + 1 : 0)
+	for(; size[cfg] > 0; size[cfg]--, head[cfg] = head[cfg] < ReorderBufferSize - 1 ? head[cfg] + 1 : 0)
 	  {
-	    entries[head].state = unallocated_instruction;
-	    flushed_instructions++;
+	    entries[cfg][head[cfg]].state = unallocated_instruction;
+	    flushed_instructions[cfg]++;
 	  }
-	size = 0; head = -1; tail = -1; //flush = true;
+	size[cfg] = 0; head[cfg] = -1; tail[cfg] = -1; //flush = true;
       }
 
     /**********************************************************
@@ -694,13 +676,13 @@ class ReorderBuffer : public module//, public StatisticService
      **********************************************************/
     //     bool flush = false;
     //    flush_previous_cycle = false;
-    mispredicted_branch = false;
-    replay_trap = false;
+    mispredicted_branch[cfg] = false;
+    replay_trap[cfg] = false;
     /* Search for committed instructions beginning by the oldest */
     //    for(i = 0; /* running && */ size > 0; i++, size--, head = head < ReorderBufferSize - 1 ? head + 1 : 0)
-    for(tag = head, i = 0; !mispredicted_branch && !replay_trap && i < RetireWidth && i < size; tag = tag < ReorderBufferSize - 1 ? tag + 1 : 0, i++)
+    for(tag = head[cfg], i = 0; !mispredicted_branch[cfg] && !replay_trap[cfg] && i < RetireWidth && i < size[cfg]; tag = tag < ReorderBufferSize - 1 ? tag + 1 : 0, i++)
       {
-	ReorderBufferEntry<T, nSources>& entry = entries[tag];
+	ReorderBufferEntry<T, nSources>& entry = entries[cfg][tag];
 	
 	if(entry.state != written_back_instruction) break;
 		
@@ -711,13 +693,13 @@ class ReorderBuffer : public module//, public StatisticService
 	    /* If load must replay, flush the reorder buffer */
 	    if(entry.instruction->replay_trap)
 	      {
-		sim_num_replay_traps++;
+		sim_num_replay_traps[cfg]++;
 		/*
 		for(; size > 0; size--, head = head < ReorderBufferSize - 1 ? head + 1 : 0)
 		  entries[head].state = unallocated_instruction;
 		size = 0; head = -1; tail = -1; flush = true;
 		*/
-		replay_trap = true;
+		replay_trap[cfg] = true;
 		break;
 	      }
 	  }
@@ -739,7 +721,7 @@ class ReorderBuffer : public module//, public StatisticService
 		  entries[head].state = unallocated_instruction;
 		  size = 0; head = -1; tail = -1; flush = true;
 		*/
-		mispredicted_branch = true;
+		mispredicted_branch[cfg] = true;
 		break;
 	      }
 	  }
@@ -756,9 +738,9 @@ class ReorderBuffer : public module//, public StatisticService
 #endif	
 	    /* See whether a load after that store is already finished => load replay trap */
 	    for(tag2 = entry.instruction->tag < ReorderBufferSize - 1 ?  entry.instruction->tag + 1 : 0, j = i + 1;
-		j < size; tag2 = tag2 < ReorderBufferSize - 1 ? tag2 + 1 : 0, j++)
+		j < size[cfg]; tag2 = tag2 < ReorderBufferSize - 1 ? tag2 + 1 : 0, j++)
 	      {
-		ReorderBufferEntry<T, nSources>& entry2 = entries[tag2];
+		ReorderBufferEntry<T, nSources>& entry2 = entries[cfg][tag2];
 						
 		if(entry2.instruction->fn & FnLoad && entry2.instruction->may_need_replay)
 		  {
@@ -798,7 +780,7 @@ class ReorderBuffer : public module//, public StatisticService
 
     //    if(!inAllocateEnable[0] && !inWriteBackEnable[0] && !inFinishEnable[0] && !changed) return;
     //    changed = false;
-    if ( (!mispredicted_branch && !replay_trap) && !flush_previous_cycle )
+    if ( (!mispredicted_branch[cfg] && !replay_trap[cfg]) && !flush_previous_cycle[cfg] )
     {
     /**********************************************************
      * EOC-3 : Moving Finished to WrittenBack instructions
@@ -808,15 +790,15 @@ class ReorderBuffer : public module//, public StatisticService
     for(i = 0; i < WriteBackWidth; i++)
       {
 	/* Is there a finished instructions on the write back port */
-	if(inWriteBackInstruction[i].enable)
+	if(inWriteBackInstruction.enable[cfg*WriteBackWidth+i])
 	  {
 	    /* Get the instruction */
-	    InstructionPtr instruction=inWriteBackInstruction[i].data;
+	    InstructionPtr instruction=inWriteBackInstruction.data[cfg*WriteBackWidth+i];
 	    //	    const InstructionPtr<T, nSources>& instruction = inWriteBackInstruction[i];
 	    //	    const Instruction *instruction = &inst;
 	    
 	    /* Get the reorder buffer entry */
-	    ReorderBufferEntry<T, nSources>& entry = entries[instruction->tag];
+	    ReorderBufferEntry<T, nSources>& entry = entries[cfg][instruction->tag];
 	    
 	    /* If instruction is in reorder buffer and not finished */
 	    if(entry.state == finished_instruction)
@@ -837,7 +819,6 @@ class ReorderBuffer : public module//, public StatisticService
 		/* instruction is finished */
 		entry.state = written_back_instruction;
 		
-		//		changed = true;
 	      }
 	    else
 	      {
@@ -872,14 +853,14 @@ class ReorderBuffer : public module//, public StatisticService
     for(i = 0; i < WriteBackWidth; i++)
       {
 	/* Is there a finished instructions on the write back port */
-	if(inFinishInstruction[i].enable)
+	if(inFinishInstruction.enable[cfg*WriteBackWidth])
 	  {
 	    /* Get the instruction */
-	    InstructionPtr instruction = inFinishInstruction[i].data;
+	    InstructionPtr instruction = inFinishInstruction.data[cfg*WriteBackWidth];
 	    //	    const Instruction *instruction = &inst;
 	    
 	    /* Get the reorder buffer entry */
-	    ReorderBufferEntry<T, nSources>& entry = entries[instruction->tag];
+	    ReorderBufferEntry<T, nSources>& entry = entries[cfg][instruction->tag];
 
 	    /* If instruction is in reorder buffer and not finished */
 	    if(entry.state == allocated_instruction)
@@ -898,7 +879,6 @@ class ReorderBuffer : public module//, public StatisticService
 		
 		/* instruction is finished */
 		entry.state = finished_instruction;
-		//		changed = true;
 	      }
 	    else
 	      {
@@ -942,16 +922,16 @@ class ReorderBuffer : public module//, public StatisticService
     for(i = 0; i < AllocateWidth; i++)
       {
 	/* Is there an instruction on this allocate port ? */
-	if(!inAllocateInstruction[i].enable) break;
+	if(!inAllocateInstruction.enable[cfg*AllocateWidth+i]) break;
 	/* Get the instruction */
-	InstructionPtr instruction = inAllocateInstruction[i].data;
+	InstructionPtr instruction = inAllocateInstruction.data[cfg*AllocateWidth+i];
 	//	const Instruction *instruction = &inst;
 	
 	/* Allocate space in the reorder buffer */
-	tail = (tail < ReorderBufferSize - 1) ? tail + 1: 0;
+	tail[cfg] = (tail[cfg] < ReorderBufferSize - 1) ? tail[cfg] + 1: 0;
 	
 	/* If tag allocated by the allocator/renamer does not match the tail tag of the reorder buffer */
-	if(instruction->tag != tail)
+	if(instruction->tag != tail[cfg])
 	  {
 	    /* throw an error */
 	    cerr << "time stamp = " << timestamp() << endl;
@@ -961,10 +941,10 @@ class ReorderBuffer : public module//, public StatisticService
 	  }
 	
 	/* If reorder buffer was empty, update the head pointer */
-	if(head < 0) head = tail;
+	if(head[cfg] < 0) head[cfg] = tail[cfg];
 	
 	/* If reorder was already full */
-	if(size >= ReorderBufferSize)
+	if(size[cfg] >= ReorderBufferSize)
 	  {
 	    /* throw an error */
 	    cerr << "time stamp = " << timestamp() << endl;
@@ -972,10 +952,10 @@ class ReorderBuffer : public module//, public StatisticService
 	    exit(-1);
 	  }
 	/* Increment the number of instruction into the reorder buffer */
-	size++;
+	size[cfg]++;
 	//	    changed = true;
 	/* Get the reorder buffer entry identified by the reorder buffer tag */
-	ReorderBufferEntry<T, nSources>& entry = entries[instruction->tag];
+	ReorderBufferEntry<T, nSources>& entry = entries[cfg][instruction->tag];
 	
 	/* Store the instruction into the reorder buffer entry */
 	entry.instruction = instruction;
@@ -1026,12 +1006,19 @@ class ReorderBuffer : public module//, public StatisticService
 	cerr << *this << endl;
       }
 #endif	
-    flush_previous_cycle = mispredicted_branch || replay_trap;
+    flush_previous_cycle[cfg] = mispredicted_branch[cfg] || replay_trap[cfg];
+
+    }//Endof foreach Config.
+
   } // end of end_of_cycle
 
   void onFlushAccept()
   {
-    outFlush.enable = outFlush.accept;
+    for(int cfg=0; cfg<nConfig; cfg++)
+      {
+	outFlush.enable[cfg] = outFlush.accept[cfg];
+      }
+    outFlush.enable.send();
   }
   
   //////////////////////////////////////////////////////////
@@ -1064,16 +1051,16 @@ class ReorderBuffer : public module//, public StatisticService
 		/** Writes the current instruction address
 			@param pc the value to write
 		*/
-		void WriteCIA(address_t pc)
+		void WriteCIA(address_t pc, int cfg)
 		{
-			cia = pc;
+			cia[cfg] = pc;
 		}
 
 		/** Reads the current instruction address
 			@return the current instruction address */
-		address_t ReadCIA()
+		address_t ReadCIA(int cfg)
 		{
-			return cia;
+			return cia[cfg];
 		}
 
 		/** Prints the reorder buffer contents into an output stream
@@ -1110,6 +1097,7 @@ class ReorderBuffer : public module//, public StatisticService
 		/** Perform a sanity check of the reorder buffer
 			@return true if ok
 		*/
+  /*
 		bool Check()
 		{
 			int n, m;
@@ -1142,7 +1130,7 @@ class ReorderBuffer : public module//, public StatisticService
 			}
 			return true;
 		}
-
+  */
 		/** Return a time stamp
 			@return a time stamp
 		*/
@@ -1169,78 +1157,81 @@ class ReorderBuffer : public module//, public StatisticService
 
 		void WarmRestart()
 		{
-			int i;
-			head = -1;
-			tail = -1;
-			size = 0;
-			mispredicted_branch = false;
-			time_stamp = 0.0;
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		    {
+			head[cfg] = -1;
+			tail[cfg] = -1;
+			size[cfg] = 0;
+			mispredicted_branch[cfg] = false;
+			time_stamp[cfg] = 0.0;
 			//			changed = true;
-			replay_trap = false;
+			replay_trap[cfg] = false;
 
-			for(i = 0; i < ReorderBufferSize; i++)
+			for(int i = 0; i < ReorderBufferSize; i++)
 			{
-				entries[i].state = unallocated_instruction;
+				entries[cfg][i].state = unallocated_instruction;
 			}
+		    }
 		}
-		
 		void ResetStats()
 		{
-			sim_num_insn = 0;
-			rob_cumulative_occupancy = 0;
-			sim_num_spec_loads = 0;
-			sim_num_loads = 0;
-			sim_num_refs = 0;
-			sim_num_replay_traps = 0;
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		    {
+			sim_num_insn[cfg] = 0;
+			rob_cumulative_occupancy[cfg] = 0;
+			sim_num_spec_loads[cfg] = 0;
+			sim_num_loads[cfg] = 0;
+			sim_num_refs[cfg] = 0;
+			sim_num_replay_traps[cfg] = 0;
+		    }
 		}
-
 public:
 		/* Members for managing the reorder buffer tag with a fifo allocation policy */
-		int head;
-		int tail;
-		int size;
+		int head[nConfig];
+		int tail[nConfig];
+		int size[nConfig];
 
 		/* Reorder buffer content */
-		ReorderBufferEntry<T, nSources> entries[ReorderBufferSize];
+		ReorderBufferEntry<T, nSources> entries[nConfig][ReorderBufferSize];
 
 		/* Pointer to the emulator wrapper */
   //		Emulator *emulator;
-		CPUEmu *emulator;
+		CPUEmu *emulator[nConfig];
 
 		/* committed current instruction address */
-		address_t cia;
+		address_t cia[nConfig];
 
 		/* Does a mispredicted branch occur ? */
-		bool mispredicted_branch;
+		bool mispredicted_branch[nConfig];
 		
 		/* Does a replay trap occur ? */
-		bool replay_trap;
+		bool replay_trap[nConfig];
 
                 /* Does a Flush occur previous cycle */
-                bool flush_previous_cycle;
+                bool flush_previous_cycle[nConfig];
 
 		/* current time stamp */
-		double time_stamp;
+		double time_stamp[nConfig];
 		
 		/* Number of retired instructions */
-		uint64_t sim_num_insn;
+		uint64_t sim_num_insn[nConfig];
 
 		/* Number of committed loads */
-		uint64_t sim_num_loads;
+		uint64_t sim_num_loads[nConfig];
 
 		/* Number of commmitted memory accesses */
-		uint64_t sim_num_refs;
+		uint64_t sim_num_refs[nConfig];
 			
 		/* Number of replay traps */
-		uint64_t sim_num_replay_traps;
+		uint64_t sim_num_replay_traps[nConfig];
 		
-		uint64_t rob_cumulative_occupancy;
+		uint64_t rob_cumulative_occupancy[nConfig];
 		
-		uint64_t sim_num_spec_loads;
+		uint64_t sim_num_spec_loads[nConfig];
 
 	
-  bool skip_reg_checking;
-  bool syscall_retired;
+  bool skip_reg_checking[nConfig];
+  bool syscall_retired[nConfig];
 		/* Some ports to make the SystemC scheduler call the ExternalControl process on state changes */
   /*
 		ml_out_data<bool> outStateChanged;

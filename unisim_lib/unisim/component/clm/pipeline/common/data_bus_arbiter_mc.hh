@@ -188,7 +188,7 @@ public:
 		      //cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
 		      //cerr << " Sending instruction on out["<<i<<"]["<<j<<"]: "<< inInstruction[i].data << endl;
 #endif	
-		      outInstruction[j].data[cfg*INTWidth+i] = inINTInstruction[cfg*INTWidth+i].data;
+		      outInstruction[j].data[cfg*INTWidth+i] = inINTInstruction.data[cfg*INTWidth+i];
 		      //outInstruction[j*OutputWidth+i].data = inInstruction[i].data;
 		    }
 		}
@@ -215,7 +215,7 @@ public:
 		      //cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
 		      //cerr << " Sending instruction on out["<<i<<"]["<<j<<"]: "<< inInstruction[i].data << endl;
 #endif	
-		      outInstruction[j].data[cfg*OutputWidth+INTWidth+i] = inFPUInstruction[cfg*FPUWidth+i].data;
+		      outInstruction[j].data[cfg*OutputWidth+INTWidth+i] = inFPUInstruction.data[cfg*FPUWidth+i];
 		      //outInstruction[j*OutputWidth+i].data = inInstruction[i].data;
 		    }
 		}
@@ -242,7 +242,7 @@ public:
 		      //cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
 		      //cerr << " Sending instruction on out["<<i<<"]["<<j<<"]: "<< inInstruction[i].data << endl;
 #endif	
-		      outInstruction[j].data[cfg*OutputWidth+INTWidth+FPUWidth+i] = inINTInstruction[cfg*AGUWidth+i].data;
+		      outInstruction[j].data[cfg*OutputWidth+INTWidth+FPUWidth+i] = inINTInstruction.data[cfg*AGUWidth+i];
 		      //outInstruction[j*OutputWidth+i].data = inInstruction[i].data;
 		    }
 		}
@@ -269,7 +269,7 @@ public:
 		      //cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
 		      //cerr << " Sending instruction on out["<<i<<"]["<<j<<"]: "<< inInstruction[i].data << endl;
 #endif	
-		      outInstruction[j].data[cfg*OutputWidth+INTWidth+FPUWidth+AGUWidth+i] = inLSQInstruction[cfg*LSQWidth+i].data;
+		      outInstruction[j].data[cfg*OutputWidth+INTWidth+FPUWidth+AGUWidth+i] = inLSQInstruction.data[cfg*LSQWidth+i];
 		      //outInstruction[j*OutputWidth+i].data = inInstruction[i].data;
 		    }
 		}

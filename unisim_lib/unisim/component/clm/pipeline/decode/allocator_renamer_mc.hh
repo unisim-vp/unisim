@@ -973,6 +973,7 @@ public:
 	{
 	  bool areallknown(true);
 	  int i;
+	  /*
 	  for (i=0;i<Width;i++)
 	    {
 	      areallknown &= inInstruction[i].data.known() &&
@@ -981,39 +982,48 @@ public:
 		outLoadInstruction[i].accept.known() &&
 		outStoreInstruction[i].accept.known();
 	    }
+	  */
 	  //	  sensitive_method(onAccept) << inInstruction[i].data << outInstruction[i].accept << outLoadInstruction[i].accept << outStoreInstruction[i].accept;
-	  if (areallknown)
+	  //	  if (areallknown)
+	  if ( inInstruction.data.known() &&
+	       outInstructionIssue.accept.known() &&
+	       outInstructionReorder.accept.known() &&
+	       outLoadInstruction.accept.known() &&
+	       outStoreInstruction.accept.known()
+	       )
 	    {
+	      for(int cfg=0; cfg<nConfig; cfg++)
+	      {
 		int renamePort, rename_to_add;
 
 		/* Count the number of instruction to add into the rename pipeline */
 		for(rename_to_add = 0; rename_to_add < Width; rename_to_add++)
 		  //if(!inValid[rename_to_add]) break;
-			if(!inInstruction[rename_to_add].data.something()) break;
+			if(!inInstruction.data[cfg*Width+rename_to_add].something()) break;
 
 		/* Get the number of instructions to enable */
-		int rename_to_remove = Enabled();
+		int rename_to_remove = Enabled(cfg);
 		//		cerr << "    DDDD Enabled: " << rename_to_remove << endl;
 
 		/* Get the free space into the rename pipeline */
-		int rename_pipeline_free_space = renamePipeline.FreeSpace();
+		int rename_pipeline_free_space = renamePipeline[cfg].FreeSpace();
 
 		/* The number of instructions to accept from the fetcher is the minimal of the number of instructions to add
 		and the sum of the number of instructions to remove and the free space into the rename pipeline */
 		int rename_to_accept = MIN(rename_pipeline_free_space + rename_to_remove, rename_to_add);
 
 		// Compute requiered ressources
-		int GPR_FreeSpace=integerMappingTable.GetFreeSpace();
-		int FPR_FreeSpace=floatingPointMappingTable.GetFreeSpace();
-		int CR_FreeSpace=conditionMappingTable.GetFreeSpace();
-		int FPSCR_FreeSpace=FPSCRMappingTable.GetFreeSpace();
-		int LR_FreeSpace=linkMappingTable.GetFreeSpace();
-		int CTR_FreeSpace=countMappingTable.GetFreeSpace();
-		int XER_FreeSpace=XERMappingTable.GetFreeSpace();
+		int GPR_FreeSpace=integerMappingTable[cfg].GetFreeSpace();
+		int FPR_FreeSpace=floatingPointMappingTable[cfg].GetFreeSpace();
+		int CR_FreeSpace=conditionMappingTable[cfg].GetFreeSpace();
+		int FPSCR_FreeSpace=FPSCRMappingTable[cfg].GetFreeSpace();
+		int LR_FreeSpace=linkMappingTable[cfg].GetFreeSpace();
+		int CTR_FreeSpace=countMappingTable[cfg].GetFreeSpace();
+		int XER_FreeSpace=XERMappingTable[cfg].GetFreeSpace();
 		bool enough_ressources=true;
 
 		/* Get the free space into the reorder buffer */
-		int robFreeSpace = ReorderBufferSize - robSize;
+		int robFreeSpace = ReorderBufferSize - robSize[cfg];
 
 		if(robFreeSpace < rename_to_accept) rename_to_accept = robFreeSpace;
 
@@ -1023,7 +1033,7 @@ public:
 		while ((renamePort < rename_to_accept) && enough_ressources)
 		{
 		    
-		    InstructionPtr inInst = inInstruction[renamePort].data;
+		    InstructionPtr inInst = inInstruction.data[cfg*Width+renamePort];
 
 		    for (int j=0; j<inInst->destinations.size() && enough_ressources; j++)
 		      {
@@ -1062,10 +1072,10 @@ public:
 		    if (!enough_ressources) break;
 		    
 		    // Here we are sure that we have enought resources to allocate current instruction !!!
-		    inInstruction[renamePort].accept = true;
+		    inInstruction.accept[cfg*Width+renamePort] = true;
 		    renamePort++;
 
-		  }
+		}
 	
 		/* Get the number of free integer physical registers */
 		//		int integerFreeSpace = integerMappingTable.GetFreeSpace();
@@ -1091,17 +1101,21 @@ public:
 		/* Reject instructions on all remaining ports */
 		for(; renamePort < Width; renamePort++)
 		  //outAccept[renamePort] = false;
-		  inInstruction[renamePort].accept = false;
-
-	    }
-	}
+		  inInstruction.accept[cfg*Width+renamePort] = false;
+	      }// End of foreach Config.
+	      inInstruction.accept.send();
+	    }// endof if (areallknwon)
+	}//End of onAccept
 
 	/** Sequential process managing state changes on the rename pipeline and the mapping tables */
 	//	void InternalControl()
 	void end_of_cycle()
 	{
+
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	  {
 #ifdef DD_DEBUG_SIGNALS
-	cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: Starting EOC >>> " << endl;
+	    cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: Starting EOC >>> " << endl;
 #endif	
 		/* This is a boolean value indicating if change was performed on the module state */
 		int i;
@@ -1111,13 +1125,13 @@ public:
 		    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  BEGIN !!!" << endl;
 		for(i = 0; i < RetireWidth; i++)
 		{
-		  if (inRetireInstruction[i].data.something())
+		  if (inRetireInstruction.data[cfg*RetireWidth+i].something())
 		    {
-		      cerr << " Something : " << inRetireInstruction[i].data << endl;
+		      cerr << " Something : " << inRetireInstruction.data[cfg*RetireWidth+i] << endl;
 		    }
 		  else
 		    {
-		      cerr << " Nothing   : " << inRetireInstruction[i].data << endl;
+		      cerr << " Nothing   : " << inRetireInstruction.data[cfg*RetireWidth+i] << endl;
 		    }
 		}
 #endif
@@ -1130,9 +1144,9 @@ public:
 		for(i = 0; i < WriteBackWidth; i++)
 		{
 		  //			if(inWriteBackEnable[i])
-		  if (inWriteBackInstruction[i].enable)
+		  if (inWriteBackInstruction.enable[cfg*WriteBackWidth+i])
 		    {
-		      InstructionPtr tmpinst = inWriteBackInstruction[i].data;
+		      InstructionPtr tmpinst = inWriteBackInstruction.data[cfg*WriteBackWidth+i];
 		      WriteBack(&tmpinst);
 		      //changed = true;
 		    }
@@ -1145,15 +1159,15 @@ public:
 		  //			if(!inRetireEnable[i]) break;
 		  // DD : BUG : Comment nothing a pu etre Enabled ???
 #ifdef DD_DEBUG_ALLOCATOR_RETIRE_VERB1
-		  if ( (inRetireInstruction[i].enable) && !inRetireInstruction[i].data.something())
+		  if ( (inRetireInstruction.enable[cfg*RetireWidth+i]) && !inRetireInstruction.data[cfg*RetireWidth+i].something())
 		    {
 		      cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== ERROR Nothing have been enabled !!!" << endl;
 		      abort();
 		    }
 #endif
-		  if (inRetireInstruction[i].enable)// && inRetireInstruction[i].data.something())
+		  if (inRetireInstruction.enable[cfg*RetireWidth+i])// && inRetireInstruction[i].data.something())
 		    {
-		      InstructionPtr tmpinst = inRetireInstruction[i].data;
+		      InstructionPtr tmpinst = inRetireInstruction.data[cfg*RetireWidth+i];
 		      if ( !((tmpinst->fn & FnLoad) && (tmpinst->replay_trap)) )
 			{
 #ifdef DD_DEBUG_ALLOCATOR_RETIRE_VERB3
@@ -1180,9 +1194,9 @@ public:
 
 		/* Flush ? */
 		//		if(inFlush)
-		if(inFlush.enable && inFlush.data.something())
+		if(inFlush.enable[cfg] && inFlush.data[cfg].something())
 		{
-		  if(inFlush.data)
+		  if(inFlush.data[cfg])
 		  {
 #ifdef DD_DEBUG_ALLOCATOR_VERB1
 		    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
@@ -1192,49 +1206,39 @@ public:
 #endif
 	  //changed = true;
   		    /* Perform a roll back on the integer mapping table */
-		    integerMappingTable.Rollback();
+		    integerMappingTable[cfg].Rollback();
 
 			/* Perform a roll back on the floating point mapping table */
-			floatingPointMappingTable.Rollback();
+			floatingPointMappingTable[cfg].Rollback();
 
 			/* Perform a roll back on the condition mapping table */
-			conditionMappingTable.Rollback();
+			conditionMappingTable[cfg].Rollback();
 			/* Perform a roll back on the FPSCR mapping table */
-			FPSCRMappingTable.Rollback();
+			FPSCRMappingTable[cfg].Rollback();
 			/* Perform a roll back on the link mapping table */
-			linkMappingTable.Rollback();
+			linkMappingTable[cfg].Rollback();
 			/* Perform a roll back on the count mapping table */
-			countMappingTable.Rollback();
+			countMappingTable[cfg].Rollback();
 			/* Perform a roll back on the XER mapping table */
-			XERMappingTable.Rollback();
+			XERMappingTable[cfg].Rollback();
 
 
 			/* Reset the reorder buffer tag allocator */
-			robSize = 0;
-			robHead = -1;
-			robTail = -1;
+			robSize[cfg] = 0;
+			robHead[cfg] = -1;
+			robTail[cfg] = -1;
 
 			/* Reset the lock bit */
-			lock = false;
+			lock[cfg] = false;
 
 			/* Flush the rename pipeline */
-			renamePipeline.Flush();
+			renamePipeline[cfg].Flush();
 
 			/* Reset the valid, enable and accept ports */
-			/*
-			for(i = 0; i < Width; i++)
-			{
-				outValid[i] = false;
-				outEnable[i] = false;
-				outLoadValid[i] = false;
-				outLoadEnable[i] = false;
-				outStoreValid[i] = false;
-				outStoreEnable[i] = false;
-				outAccept[i] = false;
-			}
-			*/
 			/* Stop the process */
-			return;
+			//			return;
+			// Stop process for current config...
+			continue;
 		  }
 		}
 
@@ -1248,7 +1252,7 @@ public:
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====   End of RenamePipeline !!!" << endl;
 #endif
 		/* For each rename pipeline entry which processing is finished */
-		for(renamePipelineEntry = renamePipeline.SeekAtHead(), renamePort = loadPort = storePort = 0; renamePipelineEntry && renamePort < Width; renamePipelineEntry++, renamePort++)
+		for(renamePipelineEntry = renamePipeline[cfg].SeekAtHead(), renamePort = loadPort = storePort = 0; renamePipelineEntry && renamePort < Width; renamePipelineEntry++, renamePort++)
 		{
 			/* Is processing finished ? */
 			if(renamePipelineEntry->delay != 0) break;
@@ -1266,11 +1270,18 @@ public:
 			              (!(instruction->fn & (FnLoad | FnPrefetchLoad)) || inLoadAccept[loadPort]) &&
 			              (!(instruction->fn & FnStore) || inStoreAccept[storePort]);
 			*/
+			/*
 			bool accept = 
 			  outInstructionIssue[renamePort].accept &&
 			  outInstructionReorder[renamePort].accept &&
 			  (!(instruction->fn & (FnLoad | FnPrefetchLoad)) || outLoadInstruction[loadPort].accept) &&
 			  (!(instruction->fn & FnStore) || outStoreInstruction[storePort].accept);
+			*/
+			bool accept = 
+			  outInstructionIssue.accept[cfg*Width+renamePort] &&
+			  outInstructionReorder.accept[cfg*Width+renamePort] &&
+			  (!(instruction->fn & (FnLoad | FnPrefetchLoad)) || outLoadInstruction.accept[cfg*Width+loadPort]) &&
+			  (!(instruction->fn & FnStore) || outStoreInstruction.accept[cfg*Width+storePort]);
 			  
 			/* Instruction was rejected */
 			if(!accept) break;
@@ -1281,10 +1292,10 @@ public:
 
 			/* If instruction is execution serialized, set the lock bit */
 			/* This avoid starting new instruction until the lock bit is reseted */
-			if(instruction->execution_serialized) lock = true;
+			if(instruction->execution_serialized) lock[cfg] = true;
 
 			/* Remove the rename pipeline entry */
-			renamePipeline.RemoveHead();
+			renamePipeline[cfg].RemoveHead();
 			//			changed = true;
 		}
 
@@ -1293,9 +1304,9 @@ public:
 		for(renamePort = 0; renamePort < Width; renamePort++)
 		{
 			/* Is the instruction enabled ? */
-			if(!inInstruction[renamePort].enable) break;
+			if(!inInstruction.enable[cfg*Width+renamePort]) break;
 			/* Allocate a rename pipeline entry */
-			RenamePipelineEntry<T, nSources> *renamePipelineEntry = renamePipeline.New();
+			RenamePipelineEntry<T, nSources> *renamePipelineEntry = renamePipeline[cfg].New();
 
 			if(renamePipelineEntry)
 			{
@@ -1303,7 +1314,7 @@ public:
 				renamePipelineEntry->delay = nStages;
 
 				/* Store the instruction into the pipeline entry */
-				renamePipelineEntry->instruction = inInstruction[renamePort].data;
+				renamePipelineEntry->instruction = inInstruction.data[cfg*Width+renamePort];
 				
 				/* Rename the source operands of the instruction */
 				Rename(&(renamePipelineEntry->instruction));
@@ -1323,7 +1334,7 @@ public:
 
 		// SOF ???
 		/* For each rename pipeline entry */
-		for(renamePipelineEntry = renamePipeline.SeekAtHead(); renamePipelineEntry; renamePipelineEntry++)
+		for(renamePipelineEntry = renamePipeline[cfg].SeekAtHead(); renamePipelineEntry; renamePipelineEntry++)
 		{
 			/* Is processing finished ? */
 			if(renamePipelineEntry->delay > 0)
@@ -1337,11 +1348,13 @@ public:
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ==== Pipeline Debug" << endl;
 		cerr << this << endl;
 #endif
-
+	  }// End of foreach Config.
 	}// end of end_of_cycle
   
         void start_of_cycle()
         {
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	  {
 		bool execution_serialized = false;
 
 		QueuePointer<RenamePipelineEntry<T, nSources>, nStages * Width> renamePipelineEntry;
@@ -1349,7 +1362,7 @@ public:
 
 		// SOF
 		/* For each rename pipeline entry */
-		for(renamePipelineEntry = renamePipeline.SeekAtHead(), renamePort = 0, loadPort = 0, storePort = 0; renamePipelineEntry && renamePort < Width && !lock && !execution_serialized; renamePort++, renamePipelineEntry++)
+		for(renamePipelineEntry = renamePipeline[cfg].SeekAtHead(), renamePort = 0, loadPort = 0, storePort = 0; renamePipelineEntry && renamePort < Width && !lock && !execution_serialized; renamePort++, renamePipelineEntry++)
 		{
 			/* Get the instruction into the pipeline entry */
 			//const InstructionPtr<T, nSources>& instruction = renamePipelineEntry->instruction;
@@ -1360,7 +1373,7 @@ public:
 
 			/* If instruction is execution serialized and it is the last instruction
 			in the rename pipeline then stop dispatch of further instructions */
-			if(execution_serialized && (renamePort > 0 || robSize > renamePipeline.Size())) break;
+			if(execution_serialized && (renamePort > 0 || robSize[cfg] > renamePipeline[cfg].Size())) break;
 			
 			// If rob don't have enough free space then don't allocate !!!
 			//			if (robSize < )
@@ -1370,8 +1383,8 @@ public:
 
 			/* Write the instruction on output */
 			//			outInstruction[renamePort] = instruction;
-			outInstructionIssue[renamePort].data = instruction;
-			outInstructionReorder[renamePort].data = instruction;
+			outInstructionIssue.data[cfg*Width+renamePort] = instruction;
+			outInstructionReorder.data[cfg*Width+renamePort] = instruction;
 
 			/* If instruction is a store */
 			if(instruction->fn & FnStore)
@@ -1381,7 +1394,7 @@ public:
 
 				/* Output the instruction toward the store queue */
 			  //	outStoreInstruction[storePort] = instruction;
-			  outStoreInstruction[storePort].data = instruction;
+			  outStoreInstruction.data[cfg*Width+storePort] = instruction;
 				storePort++;
 			}
 			/* If instruction is a load/prefetch load */
@@ -1392,8 +1405,7 @@ public:
 
 				/* Output the instruction toward the load queue */
 			  //	outLoadInstruction[loadPort] = instruction;
-			  outLoadInstruction[loadPort].data = instruction;
-
+			  outLoadInstruction.data[cfg*Width+loadPort] = instruction;
 				loadPort++;
 			}
 		}
@@ -1401,20 +1413,25 @@ public:
 		/* Clear the remaining request ports */
 		for(; renamePort < Width; renamePort++)
 		  {
-			outInstructionIssue[renamePort].data.nothing();
-			outInstructionReorder[renamePort].data.nothing();
+			outInstructionIssue.data[cfg*Width+renamePort].nothing();
+			outInstructionReorder.data[cfg*Width+renamePort].nothing();
 		  }
 		for(; loadPort < Width; loadPort++)
-			outLoadInstruction[loadPort].data.nothing();
+			outLoadInstruction.data[cfg*Width+loadPort].nothing();
 		for(; storePort < Width; storePort++)
-			outStoreInstruction[storePort].data.nothing();
+			outStoreInstruction.data[cfg*Width+storePort].nothing();
 
 		/* If state changed then make the SystemC scheduler call
 		the ExternalControl process handling the valid, accept and enable hand-shaking */
 		/*		if(changed)
 			outStateChanged = !inStateChanged;
 		*/
-	}
+	  }// Endof foreach Config.
+	  outInstructionIssue.data.send();
+	  outInstructionReorder.data.send();
+	  outLoadInstruction.data.send();
+	  outStoreInstruction.data.send();
+	} // End of start_of_cycle
 
 	/** Read physical register tag of an integer architectural register in the integer mapping table
 		@param reg the number of the integer architectural register
