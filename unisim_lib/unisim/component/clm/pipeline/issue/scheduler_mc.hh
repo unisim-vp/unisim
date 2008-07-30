@@ -357,31 +357,31 @@ public:
 	/** Update a reservation
 		@param rs a reservation station
 	*/
-	void Update(ReservationStation<T, nSources> *rs)
+	void Update(ReservationStation<T, nSources> *rs, int cfg)
 	{
-		if(!rs->ready)
+	  if(!rs->ready)
+	  {
+	    int writeBackPort;
+	    /* Each write back port */
+	    for(writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
+	    {
+	      /* Is there an instruction being written back */
+	      if(inWriteBackInstruction.enable[cfg*WriteBackWidth+writeBackPort])
+	      {
+		/* Get the instruction */
+		InstructionPtr instruction = inWriteBackInstruction.data[cfg*WriteBackWidth+writeBackPort];
+		//					const Instruction *instruction = &inst;
+		
+		/* Does that instruction produce a result ? */
+		//if(instruction->destination.tag >= 0)
+		if(instruction->destinations.size() > 0)
 		{
-			int writeBackPort;
-			/* Each write back port */
-			for(writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
-			{
-				/* Is there an instruction being written back */
-				if(inWriteBackInstruction[writeBackPort].enable)
-				{
-					/* Get the instruction */
-				        InstructionPtr instruction = inWriteBackInstruction[writeBackPort].data;
-					//					const Instruction *instruction = &inst;
-
-					/* Does that instruction produce a result ? */
-					//if(instruction->destination.tag >= 0)
-					if(instruction->destinations.size() > 0)
-					{
-						/* Update the reservation station */
-						rs->Update(instruction, false);
-					}
-				}
-			}
+		  /* Update the reservation station */
+		  rs->Update(instruction, false);
 		}
+	      }
+	    }
+	  }
 	}
 
 
@@ -1678,7 +1678,7 @@ public:
 		      }
 		    
 		    /* Update the reservation station if needed */
-		    Update(new_rs);
+		    Update(new_rs, cfg);
 		    //		    changed = true;
 		  }
 		else
@@ -1742,7 +1742,7 @@ public:
 			  }
 		      }
 		    /* Update the reservation station if needed */
-		    Update(new_rs);
+		    Update(new_rs, cfg);
 		    //		    changed = true;
 		  }
 		else
@@ -1807,7 +1807,7 @@ public:
 			  }
 		      }
 		    /* Update the reservation station if needed */
-		    Update(new_rs);
+		    Update(new_rs, cfg);
 		    //		    changed = true;
 		  }
 		else

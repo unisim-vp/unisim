@@ -470,7 +470,8 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     cerr << "[CTRL-Z (OooSimCpu)] Hook !!! " << endl;
     cerr << "     Fetch CIA: "<< hexa(fetch_emulator->GetCIA()) << endl;
     cerr << "     CPU   CIA: "<< hexa(speculative_cpu_state->GetCIA()) << endl;
-    cerr << "     Emu   CIA: "<< hexa(check_emulator->GetCIA()) << endl;
+    //    for(int )
+    //    cerr << "     Emu   CIA: "<< hexa(check_emulator[cfg]->GetCIA()) << endl;
   }
 // Mourad Modifs 
 ////////////////////////////////
@@ -646,83 +647,83 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
   ////////////////////// 
   void WriteGPR(int regnum, uint32_t data, int cfg)
   {
-    int tag = allocate->ReadIntegerMappingTable(regnum);
-    registerfile->WriteGPR(tag, data);
+    int tag = allocate->ReadIntegerMappingTable(regnum, cfg);
+    registerfile->WriteGPR(tag, data, cfg);
   }
   
   uint32_t ReadGPR(int regnum, int cfg)
   {
-    int tag = allocate->ReadIntegerMappingTable(regnum);
-    return registerfile->ReadGPR(tag);
+    int tag = allocate->ReadIntegerMappingTable(regnum, cfg);
+    return registerfile->ReadGPR(tag, cfg);
   }
   
   void WriteFPR(int regnum, uint32_t data, int cfg)
   {
-    int tag = allocate->ReadFloatingPointMappingTable(regnum);
-    registerfile->WriteFPR(tag, data);
+    int tag = allocate->ReadFloatingPointMappingTable(regnum, cfg);
+    registerfile->WriteFPR(tag, data, cfg);
   }
   
   //  uint32_t ReadFPR(int regnum)
   uint64_t ReadFPR(int regnum, int cfg)
   {
-    int tag = allocate->ReadFloatingPointMappingTable(regnum);
-    return registerfile->ReadFPR(tag);
+    int tag = allocate->ReadFloatingPointMappingTable(regnum, cfg);
+    return registerfile->ReadFPR(tag, cfg);
   }
 
   // For other registers...
   uint32_t ReadCR(int regnum, int cfg)
   {
-    int tag = allocate->ReadConditionMappingTable(regnum);
-    return registerfile->ReadCR(tag);
+    int tag = allocate->ReadConditionMappingTable(regnum, cfg);
+    return registerfile->ReadCR(tag, cfg);
   }
   void WriteCR(int regnum, uint32_t data, int cfg)
   {
-    int tag = allocate->ReadConditionMappingTable(regnum);
-    registerfile->WriteCR(tag, data);
+    int tag = allocate->ReadConditionMappingTable(regnum, cfg);
+    registerfile->WriteCR(tag, data, cfg);
   }
   
   uint32_t ReadFPSCR(int regnum, int cfg)
   {
-    int tag = allocate->ReadFPSCRMappingTable(regnum);
-    return registerfile->ReadFPSCR(tag);
+    int tag = allocate->ReadFPSCRMappingTable(regnum, cfg);
+    return registerfile->ReadFPSCR(tag, cfg);
   }
   void WriteFPSCR(int regnum, uint32_t data, int cfg)
   {
-    int tag = allocate->ReadFPSCRMappingTable(regnum);
-    registerfile->WriteFPSCR(tag, data);
+    int tag = allocate->ReadFPSCRMappingTable(regnum, cfg);
+    registerfile->WriteFPSCR(tag, data, cfg);
   }
   
   uint32_t ReadLR(int regnum, int cfg)
   {
-    int tag = allocate->ReadLinkMappingTable(regnum);
-    return registerfile->ReadLR(tag);
+    int tag = allocate->ReadLinkMappingTable(regnum, cfg);
+    return registerfile->ReadLR(tag, cfg);
   }
   void WriteLR(int regnum, uint32_t data, int cfg)
   {
-    int tag = allocate->ReadLinkMappingTable(regnum);
-    registerfile->WriteLR(tag, data);
+    int tag = allocate->ReadLinkMappingTable(regnum, cfg);
+    registerfile->WriteLR(tag, data, cfg);
   }
   
   uint32_t ReadCTR(int regnum, int cfg)
   {
-    int tag = allocate->ReadCountMappingTable(regnum);
-    return registerfile->ReadCTR(tag);
+    int tag = allocate->ReadCountMappingTable(regnum, cfg);
+    return registerfile->ReadCTR(tag, cfg);
   }
   void WriteCTR(int regnum, uint32_t data, int cfg)
   {
-    int tag = allocate->ReadCountMappingTable(regnum);
-    registerfile->WriteCTR(tag, data);
+    int tag = allocate->ReadCountMappingTable(regnum, cfg);
+    registerfile->WriteCTR(tag, data, cfg);
   }
   
   uint32_t ReadXER(int regnum, int cfg)
   {
-    int tag = allocate->ReadXERMappingTable(regnum);
-    return registerfile->ReadXER(tag);
+    int tag = allocate->ReadXERMappingTable(regnum, cfg);
+    return registerfile->ReadXER(tag, cfg);
   }
   void WriteXER(int regnum, uint32_t data, int cfg)
   {
-    int tag = allocate->ReadXERMappingTable(regnum);
-    registerfile->WriteXER(tag, data);
+    int tag = allocate->ReadXERMappingTable(regnum, cfg);
+    registerfile->WriteXER(tag, data, cfg);
   }
   
 

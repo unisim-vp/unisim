@@ -340,34 +340,37 @@ class CacheWB : public module
   /**
    * \brief Memory interface : Flush
    */
+  // WARNING: The Flush will flush all caches !!!
   bool FlushMemory(address_t addr, uint32_t size)
   { // Flush the lines matching the addresses. Several lines may be flushed if size is big enough
-    for ( address_t word_addr=addr; word_addr<(addr+size); word_addr=((word_addr+nLineSize) & ~(nLineSize - 1)) )
-    { if (cache.hit(word_addr))
-      { uint32_t t_set = cache.getSet(word_addr);
-        uint32_t t_line = cache.getLine(word_addr);
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      for ( address_t word_addr=addr; word_addr<(addr+size); word_addr=((word_addr+nLineSize) & ~(nLineSize - 1)) )
+      { if (cache[cfg].hit(word_addr))
+	{ uint32_t t_set = cache[cfg].getSet(word_addr);
+	  uint32_t t_line = cache[cfg].getLine(word_addr);
 #ifdef DEBUG_CACHE_FLUSHMEMORY
-        if (cache.getWrite(t_set,t_line)) 
-        { cerr << "\e[1;36m" << timestamp() << ": " << name() << ": "<< "FlushMemory hit on \e[1;31mmodified\e[0m addr=0x" << hex << addr << dec << ", " << size << " word_addr=0x" << hex << word_addr << dec << endl;
-        }
-        else
-        { cerr << "\e[1;36m" << timestamp() << ": " << name() << ": "<< "FlushMemory hit \e[0m addr=0x" << hex << addr << dec << ", " << size << " word_addr=0x" << hex << word_addr << dec << endl;
-        }
+	  if (cache[cfg].getWrite(t_set,t_line)) 
+	  { cerr << "\e[1;36m" << timestamp() << ": " << name() << ": "<< "FlushMemory hit on \e[1;31mmodified\e[0m addr=0x" << hex << addr << dec << ", " << size << " word_addr=0x" << hex << word_addr << dec << endl;
+	  }
+	  else
+	  { cerr << "\e[1;36m" << timestamp() << ": " << name() << ": "<< "FlushMemory hit \e[0m addr=0x" << hex << addr << dec << ", " << size << " word_addr=0x" << hex << word_addr << dec << endl;
+	  }
 #endif
-        if (cache.getWrite(t_set,t_line)) 
-        { // The line to be flushed is modified, we should write back it to the memory first.
-          char buffer[nLineSize];
-          address_t line_address = cache.getAddress(t_set, t_line);
-          cache.getCacheLine(buffer, t_set, t_line);
-          //syscall_MemImp->WriteMemory(line_address,buffer,nLineSize);
-          memory_injection_import->InjectWriteMemory(line_address,buffer,nLineSize);
-        }
-        cache.mesi_invalidate(t_set, t_line);
-        cache.setValid(t_set, t_line, false);
-        cache.setWrite(t_set, t_line, false);
+	  if (cache[cfg].getWrite(t_set,t_line)) 
+	  { // The line to be flushed is modified, we should write back it to the memory first.
+	    char buffer[nLineSize];
+	    address_t line_address = cache[cfg].getAddress(t_set, t_line);
+	    cache[cfg].getCacheLine(buffer, t_set, t_line);
+	    //syscall_MemImp->WriteMemory(line_address,buffer,nLineSize);
+	    memory_injection_import->InjectWriteMemory(line_address,buffer,nLineSize);
+	  }
+	  cache[cfg].mesi_invalidate(t_set, t_line);
+	  cache[cfg].setValid(t_set, t_line, false);
+	  cache[cfg].setWrite(t_set, t_line, false);
+	}
       }
     }
-
   }
 
   /**
@@ -375,27 +378,30 @@ class CacheWB : public module
    */
   bool WriteAllBack()
   { // Instantly writeback all the modified lines to the memory
-  
+    for (int cfg=0; cfg<nConfig; cfg++)
+    {
+
     for(int t_set = 0; t_set < (nCacheLines / nAssociativity); t_set++)
     { for(int t_line = 0; t_line < nAssociativity; t_line++)
-      { if(cache.getValid(t_set,t_line)) 
+      { if(cache[cfg].getValid(t_set,t_line)) 
         { // The line is a local hit
-          if (cache.getWrite(t_set,t_line)) 
+          if (cache[cfg].getWrite(t_set,t_line)) 
           { // The line is modified, we should write back it to the memory
             char buffer[nLineSize];
-            address_t line_address = cache.getAddress(t_set, t_line);
-            cache.getCacheLine(buffer, t_set, t_line);
+            address_t line_address = cache[cfg].getAddress(t_set, t_line);
+            cache[cfg].getCacheLine(buffer, t_set, t_line);
             //syscall_MemImp->WriteMemory(line_address,buffer,nLineSize);
             memory_injection_import->InjectWriteMemory(line_address,buffer,nLineSize);
 
-            cache.setWrite(t_set, t_line, false);
-            cache.setMESI(t_set, t_line, MESI::state_EXCLUSIVE);
+            cache[cfg].setWrite(t_set, t_line, false);
+            cache[cfg].setMESI(t_set, t_line, MESI::state_EXCLUSIVE);
 
 //cerr << "Found a line to write back : " << t_set << ", " << t_line << endl;
 //exit(1);
           }
         }
       }
+    }
     }
 	//Taj temp
 	//cache.InvalidateAll();
@@ -451,31 +457,37 @@ class CacheWB : public module
     cerr << "\t * size: " << size << endl;
     cerr << "**********************************************************************************" << endl;
 #endif
-    for ( address_t word_addr=addr; word_addr<(addr+size); word_addr=((word_addr+nLineSize) & ~(nLineSize - 1)) )
-    { if (cache.hit(word_addr))
-      { uint32_t t_set = cache.getSet(word_addr);
-        uint32_t t_line = cache.getLine(word_addr);
-        if (cache.getValid(t_set,t_line))
-          if (cache.getWrite(t_set,t_line))
-          { uint32_t t_size = nLineSize;
-            address_t base_addr = (word_addr & ~(nLineSize - 1));
-            address_t write_offset = word_addr - addr;
-            if ( (base_addr+nLineSize) < (word_addr+t_size) ) 
-            { t_size = t_size - (word_addr - base_addr);
-            }
-            if ( (addr+size) < (word_addr+t_size) )
-            { t_size = t_size - ( (word_addr+t_size) - (addr+size) );
-            }
+    
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+    
+      for ( address_t word_addr=addr; word_addr<(addr+size); word_addr=((word_addr+nLineSize) & ~(nLineSize - 1)) )
+      { if (cache[cfg].hit(word_addr))
+	{ uint32_t t_set = cache[cfg].getSet(word_addr);
+          uint32_t t_line = cache[cfg].getLine(word_addr);
+	  if (cache[cfg].getValid(t_set,t_line))
+	    if (cache[cfg].getWrite(t_set,t_line))
+	    { uint32_t t_size = nLineSize;
+              address_t base_addr = (word_addr & ~(nLineSize - 1));
+	      address_t write_offset = word_addr - addr;
+	      if ( (base_addr+nLineSize) < (word_addr+t_size) ) 
+		{ t_size = t_size - (word_addr - base_addr);
+		}
+	      if ( (addr+size) < (word_addr+t_size) )
+		{ t_size = t_size - ( (word_addr+t_size) - (addr+size) );
+		}
 #ifdef DD_DEBUG_SYSCALL_DCACHE_RM
-            cerr << "\t * word addr    : " << hexa(word_addr) << endl;
-            cerr << "\t * base addr    : " << hexa(base_addr) << endl;
-            cerr << "\t * write_offset : " << write_offset << endl;
-            cerr << "\t * t_size       : " << t_size << endl;
+	      cerr << "\t * word addr    : " << hexa(word_addr) << endl;
+	      cerr << "\t * base addr    : " << hexa(base_addr) << endl;
+	      cerr << "\t * write_offset : " << write_offset << endl;
+	      cerr << "\t * t_size       : " << t_size << endl;
 #endif
-            cache.getCacheLineIndexed(((char *)buffer)+write_offset, t_set, t_line, word_addr-base_addr, t_size);
-          }
+	      cache[cfg].getCacheLineIndexed(((char *)buffer)+write_offset, t_set, t_line, word_addr-base_addr, t_size);
+	    }
+	}
       }
-    }
+
+    }// Endof foreach Config.
 #ifdef DD_DEBUG_SYSCALL_DCACHE_RM
     cerr << "**********************************************************************************" << endl;
     cerr << "[DD_DEBUG_SYSCALL_DCACHE_RM]: in ReadMemory() ... End" << endl;
@@ -509,6 +521,8 @@ class CacheWB : public module
     //    bool tmpres = syscall_MemImp->ReadMemory(addr,buffer,size);
     bool tmpres = memory_injection_import->InjectReadMemory(addr,buffer,size);
 
+    for (int cfg=0; cfg<nConfig; cfg++)
+    {
 	char line_bufferx[nLineSize]; //Taj -temp
 	address_t evicted_addrx;
 
@@ -522,15 +536,16 @@ class CacheWB : public module
     cerr << "**********************************************************************************" << endl;
 #endif
     for ( address_t word_addr=addr; word_addr<(addr+size); word_addr=((word_addr+nLineSize) & ~(nLineSize - 1)) )
-    { if (cache.hit(word_addr))
-      { uint32_t t_set = cache.getSet(word_addr);
-        uint32_t t_line = cache.getLine(word_addr);
+    { if (cache[cfg].hit(word_addr))
+      { uint32_t t_set = cache[cfg].getSet(word_addr);
+        uint32_t t_line = cache[cfg].getLine(word_addr);
 //Taj
 #ifdef DD_DEBUG_SYSCALL_DCACHE_RM
             cerr << "\t *cacheline read_hit       : " << endl;
 #endif
-        if (cache.getValid(t_set,t_line)){	// Taj - invalid case handled in else
-          if (cache.getWrite(t_set,t_line))
+        if (cache[cfg].getValid(t_set,t_line))
+	{	// Taj - invalid case handled in else
+          if (cache[cfg].getWrite(t_set,t_line))
           { uint32_t t_size = nLineSize;
             address_t base_addr = (word_addr & ~(nLineSize - 1));
             address_t write_offset = word_addr - addr;
@@ -546,7 +561,7 @@ class CacheWB : public module
             cerr << "\t * write_offset : " << write_offset << endl;
             cerr << "\t * t_size       : " << t_size << endl;
 #endif
-            cache.getCacheLineIndexed(((char *)buffer)+write_offset, t_set, t_line, word_addr-base_addr, t_size);
+            cache[cfg].getCacheLineIndexed(((char *)buffer)+write_offset, t_set, t_line, word_addr-base_addr, t_size);
 
 
           }
@@ -573,18 +588,18 @@ class CacheWB : public module
 		        }
 		
 //Taj #ifdef DD_DEBUG_SYSCALL_DCACHE_RM
-	    cerr << "\t READ invlid line, updating with data from memory" <<endl ;
-            cerr << "\t * word addr    : " << hexa(word_addr) << endl;
-            cerr << "\t * base addr    : " << hexa(base_addr) << endl;
-            cerr << "\t * write_offset : " << write_offset << endl;
-            cerr << "\t * t_size       : " << t_size << endl;
+			cerr << "\t READ invlid line, updating with data from memory" <<endl ;
+			cerr << "\t * word addr    : " << hexa(word_addr) << endl;
+			cerr << "\t * base addr    : " << hexa(base_addr) << endl;
+			cerr << "\t * write_offset : " << write_offset << endl;
+			cerr << "\t * t_size       : " << t_size << endl;
 //#endif
 
 			//cache.setCacheLineIndexed(t_set, t_line, ((char *)buffer)+write_offset, word_addr-base_addr, t_size, true);
-			cache.setCacheLine( t_set,t_line, base_addr, ((char*)buffer)+write_offset, true, false); //Taj - replce whole line 
+			cache[cfg].setCacheLine( t_set,t_line, base_addr, ((char*)buffer)+write_offset, true, false); //Taj - replce whole line 
 //	        	cache.setWrite(t_set, t_line, false); //u can also modify the last parameter in above set function, see later
 			// new state = E or S ?? when procerror reads  how do the other caches know about it ??
-			cache.setMESI(t_set, t_line,MESI::state_EXCLUSIVE);
+			cache[cfg].setMESI(t_set, t_line,MESI::state_EXCLUSIVE);
 	//Taj -temp
 /*			evicted_addrx = cache.getAddress( t_set, t_line);
 		        cache.getCacheLine(line_bufferx, t_set, t_line);
@@ -602,8 +617,8 @@ class CacheWB : public module
 
 	if( fastforwarding){      
 		//if there's place , update. handled below.
-		uint32_t t_set = cache.getReplaceSet(word_addr);
-	        uint32_t t_line = cache.getReplaceLine(word_addr);
+		uint32_t t_set = cache[cfg].getReplaceSet(word_addr);
+	        uint32_t t_line = cache[cfg].getReplaceLine(word_addr);
 
 		uint32_t t_size = nLineSize;
 	        address_t base_addr = (word_addr & ~(nLineSize - 1));
@@ -617,8 +632,8 @@ class CacheWB : public module
 
 
 		// else if( existing_line_modified)	
-		if( cache.getValid (t_set, t_line )){ //see that only valid modified lines are evicted
-		if( cache.getWrite(t_set, t_line) ){
+		if( cache[cfg].getValid (t_set, t_line )){ //see that only valid modified lines are evicted
+		if( cache[cfg].getWrite(t_set, t_line) ){
 
 #ifdef DD_DEBUG_SYSCALL_DCACHE_RM
 	    cerr << "\t cacheline miss Evicting, updating with data from memory" <<endl ;
@@ -629,9 +644,9 @@ class CacheWB : public module
 #endif
 
 			//write previous line to memory - eviction ??
-			address_t evicted_addr = cache.getAddress( t_set, t_line) ; //addr of prev line in cache
+			address_t evicted_addr = cache[cfg].getAddress( t_set, t_line) ; //addr of prev line in cache
 		        char line_buffer[nLineSize];
-	        	cache.getCacheLine(line_buffer, t_set, t_line);
+	        	cache[cfg].getCacheLine(line_buffer, t_set, t_line);
 		        //syscall_MemImp->WriteMemory(evicted_addr,line_buffer,nLineSize);
 		        memory_injection_import->InjectWriteMemory(evicted_addr,line_buffer,nLineSize);
 
@@ -664,7 +679,7 @@ class CacheWB : public module
 
 	    //syscall_MemImp->ReadMemory( base_addr, line_bufferx, nLineSize );
 		memory_injection_import->InjectReadMemory( base_addr, line_bufferx, nLineSize );
-		cache.setCacheLine( t_set,t_line, base_addr, line_bufferx, true, false); //Taj - get non-buffer data from memory 
+		cache[cfg].setCacheLine( t_set,t_line, base_addr, line_bufferx, true, false); //Taj - get non-buffer data from memory 
 		//update line with data from memory 
 	        //cache.setCacheLineIndexed(t_set, t_line, ((char *)buffer)+write_offset, word_addr-base_addr, t_size, true);
 		//cache.setCacheLine( t_set,t_line, base_addr, ((char*)buffer)+write_offset, true, true ); //Taj - replce whole line 
@@ -674,7 +689,7 @@ class CacheWB : public module
         	//cache.setWrite(t_set, t_line, false);  // see last param in above set() function
 
 		//newstate = modified, will be after update
-		cache.setMESI(t_set, t_line,MESI::state_EXCLUSIVE);
+		cache[cfg].setMESI(t_set, t_line,MESI::state_EXCLUSIVE);
 
 	//Taj -temp
 /*			evicted_addrx = cache.getAddress( t_set, t_line);
@@ -695,7 +710,8 @@ class CacheWB : public module
 #endif
 
     //bool tmpres2 = syscall_MemImp->ReadMemory(addr,buffer,size); //Taj testing - temp
-
+    }// End of foreach Config.
+    
     return tmpres;
   }
   
@@ -751,6 +767,8 @@ class CacheWB : public module
 #ifdef DEBUG_CACHE_WRITEMEMORY
 //  cerr << "\n---------------------------------------------------------------------------------------\n" << endl;
 #endif
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
 
     for ( address_t word_addr=addr; word_addr<(addr+size); word_addr=((word_addr+nLineSize) & ~(nLineSize - 1)) )
     { 
@@ -761,9 +779,9 @@ class CacheWB : public module
 //cerr << "... line_address=" << hex << base_addr << dec << endl;
 #endif
 
-      if (cache.hit(word_addr))
-      { uint32_t t_set = cache.getSet(word_addr);
-        uint32_t t_line = cache.getLine(word_addr);
+      if (cache[cfg].hit(word_addr))
+      { uint32_t t_set = cache[cfg].getSet(word_addr);
+        uint32_t t_line = cache[cfg].getLine(word_addr);
 
 
 #ifdef DEBUG_CACHE_WRITEMEMORY
@@ -791,12 +809,12 @@ class CacheWB : public module
         cerr << "\t * write_offset : " << write_offset << endl;
         cerr << "\t * t_size       : " << t_size << endl;
 #endif
-        cache.setCacheLineIndexed(t_set, t_line, ((char *)buffer)+write_offset, word_addr-base_addr, t_size, true);
+        cache[cfg].setCacheLineIndexed(t_set, t_line, ((char *)buffer)+write_offset, word_addr-base_addr, t_size, true);
         // setCacheLineIndexed mark the line as modified. As we'll also forward the MemoryWrite to the memory,
         // let's reset the Write field.
-        cache.setWrite(t_set, t_line, false);
+        cache[cfg].setWrite(t_set, t_line, false);
         // The mesi state goes to exclusive as other caches are flushed
-        cache.setMESI(t_set, t_line,MESI::state_EXCLUSIVE);
+        cache[cfg].setMESI(t_set, t_line,MESI::state_EXCLUSIVE);
 
 
 #ifdef DEBUG_CACHE_WRITEMEMORY
@@ -807,13 +825,13 @@ class CacheWB : public module
         //Send the modified cache line to the memory to ensure that line data not bellonging to the
         //buffer is also wrote-back.
         char line_buffer[nLineSize];
-        cache.getCacheLine(line_buffer, t_set, t_line);
+        cache[cfg].getCacheLine(line_buffer, t_set, t_line);
 	//        syscall_MemImp->WriteMemory(base_addr,line_buffer,nLineSize);
         memory_injection_import->InjectWriteMemory(base_addr,line_buffer,nLineSize);
       }
      
     }
-
+    }//Endof foreach Config.
 #ifdef DD_DEBUG_SYSCALL_DCACHE_WM
     cerr << "**********************************************************************************" << endl;
     cerr << "[DD_DEBUG_SYSCALL_DCACHE_WM]: in WriteMemory() ... End" << endl;
@@ -864,6 +882,8 @@ class CacheWB : public module
 #ifdef DEBUG_CACHE_WRITEMEMORY
 //  cerr << "\n---------------------------------------------------------------------------------------\n" << endl;
 #endif
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
 
     for ( address_t word_addr=addr; word_addr<(addr+size); word_addr=((word_addr+nLineSize) & ~(nLineSize - 1)) )
     { 
@@ -874,9 +894,9 @@ class CacheWB : public module
 //cerr << "... line_address=" << hex << base_addr << dec << endl;
 #endif
 
-      if (cache.hit(word_addr))
-      { uint32_t t_set = cache.getSet(word_addr);
-        uint32_t t_line = cache.getLine(word_addr);
+      if (cache[cfg].hit(word_addr))
+      { uint32_t t_set = cache[cfg].getSet(word_addr);
+        uint32_t t_line = cache[cfg].getLine(word_addr);
 
 
 #ifdef DEBUG_CACHE_WRITEMEMORY
@@ -904,12 +924,12 @@ class CacheWB : public module
         cerr << "\t * write_offset : " << write_offset << endl;
         cerr << "\t * t_size       : " << t_size << endl;
 #endif
-        cache.setCacheLineIndexed(t_set, t_line, ((char *)buffer)+write_offset, word_addr-base_addr, t_size, true);
+        cache[cfg].setCacheLineIndexed(t_set, t_line, ((char *)buffer)+write_offset, word_addr-base_addr, t_size, true);
         // setCacheLineIndexed mark the line as modified. As we'll also forward the MemoryWrite to the memory,
         // let's reset the Write field.
 //        cache.setWrite(t_set, t_line, false);
         // The mesi state goes to exclusive as other caches are flushed
-        cache.setMESI(t_set, t_line,MESI::state_MODIFIED);
+        cache[cfg].setMESI(t_set, t_line,MESI::state_MODIFIED);
 
 
 #ifdef DEBUG_CACHE_WRITEMEMORY
@@ -930,8 +950,8 @@ class CacheWB : public module
       else //Taj - cache miss
       {
 	if( fastforwarding){
-		uint32_t t_set = cache.getReplaceSet(word_addr);
-	        uint32_t t_line = cache.getReplaceLine(word_addr);
+		uint32_t t_set = cache[cfg].getReplaceSet(word_addr);
+	        uint32_t t_line = cache[cfg].getReplaceLine(word_addr);
 
 		uint32_t t_size = nLineSize;
 	        address_t write_offset = word_addr - addr;
@@ -946,14 +966,14 @@ class CacheWB : public module
 
 		// write into memory, shall we ???? as done above 
 		// if (place available)
-		if( cache.getValid( t_set, t_line) ){
+		if( cache[cfg].getValid( t_set, t_line) ){
 			//else if ( line_modified )
-			if( cache.getWrite(t_set, t_line) ){
+			if( cache[cfg].getWrite(t_set, t_line) ){
 
 			//write existing line to memory, eviction ??
 			char line_buffer[nLineSize];
-			address_t evicted_addr = cache.getAddress( t_set, t_line) ;//address-in-memory of line to be evicted
-	        	cache.getCacheLine(line_buffer, t_set, t_line);
+			address_t evicted_addr = cache[cfg].getAddress( t_set, t_line) ;//address-in-memory of line to be evicted
+	        	cache[cfg].getCacheLine(line_buffer, t_set, t_line);
 	        	//syscall_MemImp->WriteMemory(evicted_addr,line_buffer,nLineSize);
 	        	memory_injection_import->InjectWriteMemory(evicted_addr,line_buffer,nLineSize);
 
@@ -971,9 +991,9 @@ class CacheWB : public module
 		char line_bufferx[nLineSize];
 		//syscall_MemImp->ReadMemory( base_addr, line_bufferx, nLineSize );
 		memory_injection_import->InjectReadMemory( base_addr, line_bufferx, nLineSize );
-		cache.setCacheLine( t_set,t_line, base_addr, line_bufferx, true, false); //Taj - get non-buffer data from memory 
+		cache[cfg].setCacheLine( t_set,t_line, base_addr, line_bufferx, true, false); //Taj - get non-buffer data from memory 
 		//write data into cache line
-        	cache.setCacheLineIndexed(t_set, t_line, ((char *)buffer)+write_offset, word_addr-base_addr, t_size, true);
+        	cache[cfg].setCacheLineIndexed(t_set, t_line, ((char *)buffer)+write_offset, word_addr-base_addr, t_size, true);
 		//cache.setCacheLine( t_set,t_line, base_addr, ((char*)buffer)+write_offset, true, true ); //Taj - replce whole line 
 		
 		//new state = M, E if memory write thorugh
@@ -981,7 +1001,7 @@ class CacheWB : public module
 	        // let's reset the Write field. //see last param in above set() func
 //	        cache.setWrite(t_set, t_line, false); //Taj - why ?? the line content is different unless written to mem below.
 	        // The mesi state goes to exclusive as other caches are flushed
-	        cache.setMESI(t_set, t_line,MESI::state_MODIFIED);
+	        cache[cfg].setMESI(t_set, t_line,MESI::state_MODIFIED);
 
 
 	//Taj - writing modified line to memory(esp. to emulator_mem, so that emulator can see these changes next time it validates
@@ -1000,7 +1020,7 @@ class CacheWB : public module
 //#endif
      
     }
-
+    }//Endof foreach Config.
 #ifdef DD_DEBUG_SYSCALL_DCACHE_WM
     cerr << "**********************************************************************************" << endl;
     cerr << "[DD_DEBUG_SYSCALL_DCACHE_WM]: in WriteMemory() ... End" << endl;
@@ -3682,20 +3702,24 @@ INFO << "delay..." << endl;
   virtual void ctrlz_hook()
   { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
     cerr << fsc_object::name() << endl;
-    cacheit = cacheQueue.SeekAtHead();
-    cerr << " - cacheQueue.head = ";
-    if(cacheit) cerr << *cacheit << endl;
-    else cerr << "<none>" << endl;
-    cacheit = cacheSnoopQueue.SeekAtHead();
-    cerr << " - cacheQueue.head = ";
-    if(cacheit) cerr << *cacheit << endl;
-    else cerr << "<none>" << endl;    
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      cacheit = cacheQueue[cfg].SeekAtHead();
+      
+      cerr << " - cacheQueue.head = ";
+      if(cacheit) cerr << *cacheit << endl;
+      else cerr << "<none>" << endl;
+      cacheit = cacheSnoopQueue[cfg].SeekAtHead();
+      cerr << " - cacheQueue.head = ";
+      if(cacheit) cerr << *cacheit << endl;
+      else cerr << "<none>" << endl;
+    }    
   }
 
 // Taj- functions needed by power service
 public:
-  virtual long long int GetReadAccessCount () { return accesses_read; }     ///< Power estimation interface : Retunrs the number of read access so far
-  virtual long long int GetWriteAccessCount () { return  accesses_write; }  ///< Power estimation interface : Retunrs the number of write access so far
+  //  virtual long long int GetReadAccessCount () { return accesses_read; }     ///< Power estimation interface : Retunrs the number of read access so far
+  //  virtual long long int GetWriteAccessCount () { return  accesses_write; }  ///< Power estimation interface : Retunrs the number of write access so far
   /**
    * \brief Power estimation interface : provide the initialization parameters to cacti
    */
@@ -3732,6 +3756,7 @@ public:
   /**
    * \brief Module interface : Returns true if the module has some pending operations.
    */
+  /*
   bool has_pending_ops()
   { if(!cacheQueue.Empty())
     { //cout <<"CACHEWB: cacheQueue not empty "<<endl;
@@ -3743,6 +3768,7 @@ public:
     }
     return false;
   }
+  */
 
  int get_rank()
  { return inCPU.get_connected_module()->get_rank()+1;

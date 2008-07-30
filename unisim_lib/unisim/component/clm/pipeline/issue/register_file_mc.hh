@@ -470,7 +470,7 @@ class RegisterFile : public module
 				InstructionPtr instruction = integerReadRegisterPipelineEntry->instruction;
 				/* Bypass results being written back */
 				/* If instruction is not ready, don't launch it and stop */
-				instruction->must_reschedule = !ByPass(integerReadRegisterPipelineEntry, &instruction);
+				instruction->must_reschedule = !ByPass(integerReadRegisterPipelineEntry, &instruction, cfg);
 				/* request for a launch of the instruction */
 				//				outIntegerValid[integerReadRegisterPort] = true;
 				//  outIntegerInstruction[integerReadRegisterPort].data = instruction;
@@ -496,7 +496,7 @@ class RegisterFile : public module
 				InstructionPtr instruction = floatingPointReadRegisterPipelineEntry->instruction;
 				/* Bypass results being written back */
 				/* If instruction is not ready, don't launch it and stop */
-				instruction->must_reschedule = !ByPass(floatingPointReadRegisterPipelineEntry, &instruction);
+				instruction->must_reschedule = !ByPass(floatingPointReadRegisterPipelineEntry, &instruction, cfg);
 				
 				/* request for a launch of the instruction */
 				//				outFloatingPointValid[floatingPointReadRegisterPort] = true;
@@ -519,7 +519,7 @@ class RegisterFile : public module
 				InstructionPtr instruction = loadStoreReadRegisterPipelineEntry->instruction;
 				/* Bypass results being written back */
 				/* If instruction is not ready, don't launch it and stop */
-				instruction->must_reschedule = !ByPass(loadStoreReadRegisterPipelineEntry, &instruction);
+				instruction->must_reschedule = !ByPass(loadStoreReadRegisterPipelineEntry, &instruction, cfg);
 				/* request for a launch of the instruction */
 				//				outLoadStoreValid[loadStoreReadRegisterPort] = true;
 				outLoadStoreInstruction.data[cfg*LoadStoreReadRegisterWidth+loadStoreReadRegisterPort] = instruction;
@@ -780,7 +780,7 @@ class RegisterFile : public module
 			*/
 
 			/* For each read register pipeline entry, bypass results being written back */
-			for(integerReadRegisterPipelineEntry = integerReadRegisterPipeline.SeekAtHead(); integerReadRegisterPipelineEntry; integerReadRegisterPipelineEntry++)
+			for(integerReadRegisterPipelineEntry = integerReadRegisterPipeline[cfg].SeekAtHead(); integerReadRegisterPipelineEntry; integerReadRegisterPipelineEntry++)
 			{
 			  int i;
 			  if(!integerReadRegisterPipelineEntry->Ready())
@@ -791,7 +791,7 @@ class RegisterFile : public module
 				if(integerReadRegisterPipelineEntry->instruction->sources[i].tag >= 0 && !integerReadRegisterPipelineEntry->instruction->sources[i].valid)
 				{
 				  /* For each write back pipeline entry */
-				  for(writeBackPipelineEntry = writeBackPipeline.SeekAtHead(); writeBackPipelineEntry; writeBackPipelineEntry++)
+				  for(writeBackPipelineEntry = writeBackPipeline[cfg].SeekAtHead(); writeBackPipelineEntry; writeBackPipelineEntry++)
 				  {
 				    for (int j=0; j<writeBackPipelineEntry->instruction->destinations.size();j++)
 				    {
@@ -813,7 +813,7 @@ class RegisterFile : public module
 			}
 
 			/* For each read register pipeline entry, bypass results being written back */
-			for(floatingPointReadRegisterPipelineEntry = floatingPointReadRegisterPipeline.SeekAtHead(); floatingPointReadRegisterPipelineEntry; floatingPointReadRegisterPipelineEntry++)
+			for(floatingPointReadRegisterPipelineEntry = floatingPointReadRegisterPipeline[cfg].SeekAtHead(); floatingPointReadRegisterPipelineEntry; floatingPointReadRegisterPipelineEntry++)
 			{
 			  if(!floatingPointReadRegisterPipelineEntry->Ready())
 			  {
@@ -824,7 +824,7 @@ class RegisterFile : public module
 			      if(floatingPointReadRegisterPipelineEntry->instruction->sources[i].tag >= 0 && !floatingPointReadRegisterPipelineEntry->instruction->sources[i].valid)
 			      {
 				/* For each write back pipeline entry */
-				for(writeBackPipelineEntry = writeBackPipeline.SeekAtHead(); writeBackPipelineEntry; writeBackPipelineEntry++)
+				for(writeBackPipelineEntry = writeBackPipeline[cfg].SeekAtHead(); writeBackPipelineEntry; writeBackPipelineEntry++)
 				{
 				  for (int j=0; j<writeBackPipelineEntry->instruction->destinations.size();j++)
 				  {
@@ -845,7 +845,7 @@ class RegisterFile : public module
 			  }
 			}
 			/* For each read register pipeline entry, bypass results being written back */
-			for(loadStoreReadRegisterPipelineEntry = loadStoreReadRegisterPipeline.SeekAtHead(); loadStoreReadRegisterPipelineEntry; loadStoreReadRegisterPipelineEntry++)
+			for(loadStoreReadRegisterPipelineEntry = loadStoreReadRegisterPipeline[cfg].SeekAtHead(); loadStoreReadRegisterPipelineEntry; loadStoreReadRegisterPipelineEntry++)
 			{
 			  if(!loadStoreReadRegisterPipelineEntry->Ready())
 			  {
@@ -856,7 +856,7 @@ class RegisterFile : public module
 			      if(loadStoreReadRegisterPipelineEntry->instruction->sources[i].tag >= 0 && !loadStoreReadRegisterPipelineEntry->instruction->sources[i].valid)
 			      {
 				/* For each write back pipeline entry */
-				for(writeBackPipelineEntry = writeBackPipeline.SeekAtHead(); writeBackPipelineEntry; writeBackPipelineEntry++)
+				for(writeBackPipelineEntry = writeBackPipeline[cfg].SeekAtHead(); writeBackPipelineEntry; writeBackPipelineEntry++)
 				{
 				  for (int j=0; j<writeBackPipelineEntry->instruction->destinations.size();j++)
 				  {
@@ -885,54 +885,54 @@ class RegisterFile : public module
 			@param instruction a copy of the instruction in the pipeline entry
 			@return true if instruction can be launched
 		*/
-		bool ByPass(ReadRegisterPipelineEntry<T, nSources> *entry, InstructionPtr *instruction)
+		bool ByPass(ReadRegisterPipelineEntry<T, nSources> *entry, InstructionPtr *instruction, int cfg)
 		{
 		  if(entry->ready) return true;
 		  //		if(entry->Ready()) return true;
-			int i;
-			int needed = 0;
-			int ready = 0;
-			/* For each source operand */
-			for(i = 0; i < (*instruction)->sources.size(); i++)
+		  int i;
+		  int needed = 0;
+		  int ready = 0;
+		  /* For each source operand */
+		  for(i = 0; i < (*instruction)->sources.size(); i++)
+		  {
+		    if((*instruction)->sources[i].tag >= 0)
+		    {
+		      needed++;
+		      //if(!entry->instruction->sources[i].valid)
+		      if(!entry->instruction->sources[i].valid)
+		      {
+			int j;
+			/* For each write back port */
+			for(j = 0; j < WriteBackWidth; j++)
 			{
-			  if((*instruction)->sources[i].tag >= 0)
-			  {
-			    needed++;
-			    //if(!entry->instruction->sources[i].valid)
-			    if(!entry->instruction->sources[i].valid)
+			  /* Is an instruction being written back ? */
+			  //if(inWriteBackEnable[j])
+			  if(inWriteBackInstruction.enable[cfg*WriteBackWidth+j])
 			    {
-			      int j;
-			      /* For each write back port */
-			      for(j = 0; j < WriteBackWidth; j++)
-			      {
-				/* Is an instruction being written back ? */
-				//if(inWriteBackEnable[j])
-				if(inWriteBackInstruction[j].enable)
+			      /* Get the instruction */
+			      InstructionPtr writeBackInstruction = inWriteBackInstruction.data[cfg*WriteBackWidth+j];
+			      //    const Instruction *writeBackInstruction = &inst;
+			      /* Check if tags match */
+			      for (int k=0; k<writeBackInstruction->destinations.size();k++)
+				if((*instruction)->sources[i].tag == writeBackInstruction->destinations[k].tag &&
+				   (*instruction)->sources[i].type == writeBackInstruction->destinations[k].type)
 				  {
-				    /* Get the instruction */
-				    InstructionPtr writeBackInstruction = inWriteBackInstruction[j].data;
-				    //    const Instruction *writeBackInstruction = &inst;
-				    /* Check if tags match */
-				    for (int k=0; k<writeBackInstruction->destinations.size();k++)
-				    if((*instruction)->sources[i].tag == writeBackInstruction->destinations[k].tag &&
-				       (*instruction)->sources[i].type == writeBackInstruction->destinations[k].type)
-				    {
-				      /* Bypass the value */
-				      ready++;
-				      (*instruction)->sources[i].valid = true;
-				      (*instruction)->sources[i].ready = true;
-				      (*instruction)->sources[i].data = writeBackInstruction->destinations[k].data;
-				    }
+				    /* Bypass the value */
+				    ready++;
+				    (*instruction)->sources[i].valid = true;
+				    (*instruction)->sources[i].ready = true;
+				    (*instruction)->sources[i].data = writeBackInstruction->destinations[k].data;
 				  }
-			      }
 			    }
-			    else
-			      {
-				ready++;
-			      }
-			  }
 			}
-			return needed == ready;
+		      }
+		      else
+			{
+			  ready++;
+			}
+		    }
+		  }
+		  return needed == ready;
 		}
 
 
@@ -1274,84 +1274,84 @@ class RegisterFile : public module
 			@param tag the register number
 			@return the register value
 		*/
-		T ReadGPR(int tag)
+		T ReadGPR(int tag, int cfg)
 		{
-			return integerRegisters.Read(tag);
+			return integerRegisters[cfg].Read(tag);
 		}
 
 		/** Writes into an integer register (general purpose register)
 			@param tag the register number
 			@param value the value to write
 		*/
-		void WriteGPR(int tag, T value)
+		void WriteGPR(int tag, T value, int cfg)
 		{
-			integerRegisters.Write(tag, value);
+			integerRegisters[cfg].Write(tag, value);
 		}
 
 		/** Reads a floating point register
 			@param tag the register number
 			@return the register value
 		*/
-		T ReadFPR(int tag)
+		T ReadFPR(int tag, int cfg)
 		{
-			return floatingPointRegisters.Read(tag);
+			return floatingPointRegisters[cfg].Read(tag);
 		}
 
 		/** Writes into a floating point register
 			@param tag the register number
 			@param value the value to write
 		*/
-		void WriteFPR(int tag, T value)
+		void WriteFPR(int tag, T value, int cfg)
 		{
-			floatingPointRegisters.Write(tag, value);
+			floatingPointRegisters[cfg].Write(tag, value);
 		}
 
-		uint32_t ReadCR(int tag)
+		uint32_t ReadCR(int tag, int cfg)
 		{
-			return conditionRegisters.Read(tag);
+			return conditionRegisters[cfg].Read(tag);
 		}
-		void WriteCR(int tag, T value)
+		void WriteCR(int tag, T value, int cfg)
 		{
-			conditionRegisters.Write(tag, value);
-		}
-
-
-		uint32_t ReadFPSCR(int tag)
-		{
-			return FPSCRegisters.Read(tag);
-		}
-		void WriteFPSCR(int tag, T value)
-		{
-			FPSCRegisters.Write(tag, value);
-		}
-
-		uint32_t ReadLR(int tag)
-		{
-			return linkRegisters.Read(tag);
-		}
-		void WriteLR(int tag, T value)
-		{
-			linkRegisters.Write(tag, value);
+			conditionRegisters[cfg].Write(tag, value);
 		}
 
 
-		uint32_t ReadCTR(int tag)
+		uint32_t ReadFPSCR(int tag, int cfg)
 		{
-			return countRegisters.Read(tag);
+			return FPSCRegisters[cfg].Read(tag);
 		}
-		void WriteCTR(int tag, T value)
+		void WriteFPSCR(int tag, T value, int cfg)
 		{
-			countRegisters.Write(tag, value);
+			FPSCRegisters[cfg].Write(tag, value);
+		}
+
+		uint32_t ReadLR(int tag, int cfg)
+		{
+			return linkRegisters[cfg].Read(tag);
+		}
+		void WriteLR(int tag, T value, int cfg)
+		{
+			linkRegisters[cfg].Write(tag, value);
 		}
 
 
-		uint32_t ReadXER(int tag)
+		uint32_t ReadCTR(int tag, int cfg)
 		{
-			return XERRegisters.Read(tag);
+			return countRegisters[cfg].Read(tag);
 		}
-		void WriteXER(int tag, T value)
+		void WriteCTR(int tag, T value, int cfg)
 		{
-			XERRegisters.Write(tag, value);
+			countRegisters[cfg].Write(tag, value);
+		}
+
+
+		uint32_t ReadXER(int tag, int cfg)
+		{
+			return XERRegisters[cfg].Read(tag);
+		}
+		void WriteXER(int tag, T value, int cfg)
+		{
+			XERRegisters[cfg].Write(tag, value);
 		}
 
 

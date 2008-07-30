@@ -1449,39 +1449,39 @@ public:
 	/** Read physical register tag of an integer architectural register in the integer mapping table
 		@param reg the number of the integer architectural register
 		@return the tag of the integer physical register on which the integer architectural register is mapped */
-	int ReadIntegerMappingTable(int reg)
+	int ReadIntegerMappingTable(int reg, int cfg)
 	{
-		return integerMappingTable.Read(reg);
+		return integerMappingTable[cfg].Read(reg);
 	}
 
 	/** Read physical register tag of an floating point architectural register in the floating point mapping table
 		@param reg the number of the floating point architectural register
 		@return the tag of the floating point physical register on which the floating point architectural register is mapped */
-	int ReadFloatingPointMappingTable(int reg)
+	int ReadFloatingPointMappingTable(int reg, int cfg)
 	{
-		return floatingPointMappingTable.Read(reg);
+		return floatingPointMappingTable[cfg].Read(reg);
 	}
 
-	int ReadConditionMappingTable(int reg)
+	int ReadConditionMappingTable(int reg, int cfg)
 	{
-		return conditionMappingTable.Read(reg);
+		return conditionMappingTable[cfg].Read(reg);
 	}
-	int ReadFPSCRMappingTable(int reg)
+	int ReadFPSCRMappingTable(int reg, int cfg)
 	{
-		return FPSCRMappingTable.Read(reg);
+		return FPSCRMappingTable[cfg].Read(reg);
 	}
-	int ReadLinkMappingTable(int reg)
+	int ReadLinkMappingTable(int reg, int cfg)
 	{
-		return linkMappingTable.Read(reg);
+		return linkMappingTable[cfg].Read(reg);
 	}
-	int ReadCountMappingTable(int reg)
+	int ReadCountMappingTable(int reg, int cfg)
 	{
-		return countMappingTable.Read(reg);
+		return countMappingTable[cfg].Read(reg);
 	}
 
-	int ReadXERMappingTable(int reg)
+	int ReadXERMappingTable(int reg, int cfg)
 	{
-		return XERMappingTable.Read(reg);
+		return XERMappingTable[cfg].Read(reg);
 	}
 
 	/** Print the module state on an output stream
@@ -1523,28 +1523,36 @@ public:
 	/** Perform sanity checks on the module */
 	bool Check()
 	{
-		return renamePipeline.Check();
+	  bool result=true;
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+		result &= renamePipeline[cfg].Check();
+	  }
+	  return result;
 	}
 	
 	void WarmRestart()
 	{
-		robHead = -1;
-		robTail = -1;
-		robSize = 0;
-		lock = false;
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+		robHead[cfg] = -1;
+		robTail[cfg] = -1;
+		robSize[cfg] = 0;
+		lock[cfg] = false;
 		//changed = true;
 		
-		integerMappingTable.Reset();
-		floatingPointMappingTable.Reset();
+		integerMappingTable[cfg].Reset();
+		floatingPointMappingTable[cfg].Reset();
 
-		conditionMappingTable.Reset();
-		FPSCRMappingTable.Reset();
-		linkMappingTable.Reset();
-		countMappingTable.Reset();
-		XERMappingTable.Reset();
+		conditionMappingTable[cfg].Reset();
+		FPSCRMappingTable[cfg].Reset();
+		linkMappingTable[cfg].Reset();
+		countMappingTable[cfg].Reset();
+		XERMappingTable[cfg].Reset();
 
 		/* Reset the rename pipeline */
-		renamePipeline.Reset();
+		renamePipeline[cfg].Reset();
+	  }
 	}
 	
 	void ResetStats()
