@@ -504,14 +504,14 @@ public:
 		@param addr the address of the instruction cache access
 		@returns the instruction cache access size
 	*/
-	int GetMaximumAccessSize(address_t addr)
+	int GetMaximumAccessSize(address_t addr, int cfg)
 	{
 		int accessSize = LineSize - (addr % LineSize);
 		if(accessSize > nCPUDataPathSize) accessSize = nCPUDataPathSize;
 		// DD : To insure that each fetched instruction must be splitted we only fetch half freespace in fetch queue. 
 		//		int instructionQueueFreeSpace = instructionQueue.FreeSpace() * InstructionSize;
-		int instructionQueueFreeSpace = ( instructionQueue.FreeSpace()/2 ) * InstructionSize;
-		if(accessSize + pending_instr_cache_access_size > instructionQueueFreeSpace) accessSize = instructionQueueFreeSpace - pending_instr_cache_access_size;
+		int instructionQueueFreeSpace = ( instructionQueue[cfg].FreeSpace()/2 ) * InstructionSize;
+		if(accessSize + pending_instr_cache_access_size[cfg] > instructionQueueFreeSpace) accessSize = instructionQueueFreeSpace - pending_instr_cache_access_size[cfg];
 		if(accessSize < 0) accessSize = 0;
 		
 #ifdef DD_DEBUG_FETCH_VERB2
@@ -1883,7 +1883,7 @@ public:
 	      if(pending_instr_cache_requests[cfg] < MaxPendingRequests)
 		{
 		  /* Get the size of the instruction cache access */
-		  accessSize[cfg] = GetMaximumAccessSize(seq_cia[cfg]);
+		  accessSize[cfg] = GetMaximumAccessSize(seq_cia[cfg], cfg);
 		  
 		  if(accessSize[cfg] > 0)
 		    {

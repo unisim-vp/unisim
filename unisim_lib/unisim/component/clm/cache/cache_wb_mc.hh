@@ -40,8 +40,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   
 ***************************************************************************** */
 
-#ifndef __UNISIM_COMPONENT_CLM_CACHE_CACHE_WB_HH__
-#define __UNISIM_COMPONENT_CLM_CACHE_CACHE_WB_HH__
+#ifndef __UNISIM_COMPONENT_CLM_CACHE_CACHE_WB_MC_HH__
+#define __UNISIM_COMPONENT_CLM_CACHE_CACHE_WB_MC_HH__
 
 //#include "unisim/unisim.h"
 #include <unisim/kernel/clm/engine/unisim.h>
@@ -1066,7 +1066,12 @@ class CacheWB : public module
   void end_of_cycle()
   { // checks that the data sent in the previous cycle has been accepted and update the state of 
     // the cache pipeline and the MSHR queue if necessary
-    CheckAcceptedData();
+    //    CheckAcceptedData();
+    CheckCPUAcceptedData();
+    CheckMemAcceptedDatafromCache();
+    if(Snooping) 
+    { CheckSnoopMemAcceptedDatafromCache();
+    }
     // checks that the module has received something from the memory system and update the MSHR 
     // queue state and the cache state if necessary
     ReadMemData();
@@ -1130,7 +1135,7 @@ class CacheWB : public module
       }
 #endif
       // If returnBuffer is empty , cacheQueue is not empty and its head ready, copy from head to returnBuffer
-      if(!returnBuffer[cfg].ready) SendCacheDatatoCPU();
+      if(!returnBuffer[cfg].ready) SendCacheDatatoCPU(cfg);
 #ifdef DD_DEBUG_DCACHE_VERB2
       else
       {
@@ -1143,9 +1148,9 @@ class CacheWB : public module
       /* if there is nothing in the requestBuffer the cache can try to sent something
        * to the memory system */
       if(Snooping)
-      { if(!requestBuffer[cfg].ready) SendSnoopDatatoMem();
+      { if(!requestBuffer[cfg].ready) SendSnoopDatatoMem(cfg);
       }
-      if(!requestBuffer[cfg].ready) SendCacheDatatoMem();
+      if(!requestBuffer[cfg].ready) SendCacheDatatoMem(cfg);
       
       //cerr << "\033[31mCACHE: SendData  returnBuffer.ready="<< returnBuffer.ready << " ,requestBuffer.ready=" << requestBuffer.ready << " \033[0m" << endl;  
       /* if the returnBuffer is ready then set output ports to the cpu */
@@ -1298,7 +1303,7 @@ class CacheWB : public module
    * 
    * outCPU.accept should be known before calling this method 
    */
-  bool can_accept_request(Queue<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> &queue)
+  bool can_accept_request(Queue<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> &queue, int cfg)
   { // Accepts request if cache pipeline is empty
     if(queue.Empty()) return true;
     // the pipeline is not empty, then check the state of the pipeline to see if the request can be added
@@ -1328,7 +1333,7 @@ class CacheWB : public module
           { case WRITE:
               /* the head of the pipeline is a write into the cache, accept the new request if this access
                * hits the cache */
-              return cache.hit(cacheit->address);
+              return cache[cfg].hit(cacheit->address);
             default:
               /* if the head of the pipeline is a write that is not in the WRITE state (ex: being requested
                * to the memory system) the new request can not be accepted */
@@ -1342,7 +1347,7 @@ class CacheWB : public module
             case READ_MISS_EVICTION_WRITE_DONE_LINE_READY:
               /* the head of the pipeline is a read that is being replying to the cpu, accept the new request if the
                * cpu is accepting the reply and all the reply can be sent */
-              if(outCPU.accept) return (returnBuffer.size <= nCachetoCPUDataPathSize);
+              if(outCPU.accept[cfg]) return (returnBuffer[cfg].size <= nCachetoCPUDataPathSize);
               else              return false;
             default:
               /* if the head of the pipeline is a read that is not in one of the previous states (ex: it is a miss being
@@ -1437,7 +1442,7 @@ class CacheWB : public module
 	    INFO << "[DD_DEBUG_DCACHE] on_CPU_data() : can_accept_request() = " << (can_accept_request(cacheQueue)?"True":"False") << endl;
 	  }
 #endif
-	  inCPU.accept[cfg] = can_accept_request(cacheQueue[cfg]);
+	  inCPU.accept[cfg] = can_accept_request(cacheQueue[cfg], cfg);
 //cerr <<"C ";
 	}
 	else 
@@ -1445,6 +1450,7 @@ class CacheWB : public module
 	  inCPU.accept[cfg] = false;
 	}
       }// end of foreach Config.
+      inCPU.accept.send();
     }   
   }
 
@@ -1507,7 +1513,7 @@ class CacheWB : public module
               // The data can only be accepted if the pipeline has a free slot for
               // this new request.
               outSharedMEM.data[cfg] = true;
-              inMEM.accept[cfg] = can_accept && can_accept_request(cacheSnoopQueue[cfg]);
+              inMEM.accept[cfg] = can_accept && can_accept_request(cacheSnoopQueue[cfg], cfg);
 //cerr <<"M ";
             }
             else
@@ -1603,29 +1609,32 @@ class CacheWB : public module
    * Used at End of cycle
    */
   void CheckCPUAcceptedData()
-  { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
+  { 
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+    QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
 
     /* check if an accept from the cpu is being waited */
-    if(returnBuffer.ready)
+    if(returnBuffer[cfg].ready)
     { /* check if an accept is received */
-      if(outCPU.accept)
+      if(outCPU.accept[cfg])
       { /* decrement the size of the data being sent to the cpu */
-        returnBuffer.size = returnBuffer.size - nCachetoCPUDataPathSize;
+        returnBuffer[cfg].size = returnBuffer[cfg].size - nCachetoCPUDataPathSize;
         /* if there is still data to be sent set up the returnBuffer,
          * if all the data has been sent modify the state of the pipeline */
-        if(returnBuffer.size > 0)
+        if(returnBuffer[cfg].size > 0)
         { /* increment the index of the data being sent */
-          returnBuffer.index = returnBuffer.index + nCachetoCPUDataPathSize;
-          if(returnBuffer.index == nCPULineSize)
-            returnBuffer.index = 0;
+          returnBuffer[cfg].index = returnBuffer[cfg].index + nCachetoCPUDataPathSize;
+          if(returnBuffer[cfg].index == nCPULineSize)
+            returnBuffer[cfg].index = 0;
           /* set the address of the data being sent */
-          returnBuffer.address = returnBuffer.base + returnBuffer.index;
+          returnBuffer[cfg].address = returnBuffer[cfg].base + returnBuffer[cfg].index;
         }
         else
         { /* the returnBuffer is empty */
           /* the cache entry that made the request can be
            * removed, it must be the head the entry to remove */
-          cacheit = cacheQueue.SeekAtHead();
+          cacheit = cacheQueue[cfg].SeekAtHead();
           switch(cacheit->state)
           { case READ_HIT_READY:
               /* a read hit can be removed */
@@ -1635,7 +1644,7 @@ class CacheWB : public module
               /* if it is a miss (with eviction) which line has been completely received it can be removed */
             case READ_UNCACHABLE_READY:
               // If an uncachable read result has been sent back to the cpu, remove the request
-              cacheQueue.RemoveHead();
+              cacheQueue[cfg].RemoveHead();
               break;
             case READ_MISS_READY:
               /* a read miss which data is ready but has not received the complete line that caused
@@ -1649,10 +1658,11 @@ class CacheWB : public module
               break;
           }
           /* reset the returnBuffer */
-          returnBuffer.ready = false;
+          returnBuffer[cfg].ready = false;
         }
       }
     }
+    }//endof foreach Config.
   }
 
   /**
@@ -1661,27 +1671,30 @@ class CacheWB : public module
    * Used at End of cycle
    */
   void CheckMemAcceptedDatafromCache()
-  { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
+  { 
+    for (int cfg=0; cfg<nConfig; cfg++)
+    {
+    QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
     /* are we waiting for an accept from the memory? */
-    if(requestBuffer.ready)
+    if(requestBuffer[cfg].ready)
     { /* check if the memory accepted the request */
-      if(requestBuffer.cacheQueueIndex!=cacheQueueIndex) return;
-      if(outMEM.accept)
-      { if(requestBuffer.write)
+      if(requestBuffer[cfg].cacheQueueIndex!=cacheQueueIndex) return;
+      if(outMEM.accept[cfg])
+      { if(requestBuffer[cfg].write)
         { /* this request is a write */
           /* if last request was finished from the cache pipeline (a write request)
            * remove the request from the cache pipeline */
-          requestBuffer.size -= nCachetoMemDataPathSize;
-          if(requestBuffer.size > 0)
+          requestBuffer[cfg].size -= nCachetoMemDataPathSize;
+          if(requestBuffer[cfg].size > 0)
           { /* the request has not bben finished, the request has to be keeped,
              * the address has to be increased,
              * and the cache pipeline is not notified */
-            requestBuffer.index += nCachetoMemDataPathSize;
-            requestBuffer.address = requestBuffer.base + requestBuffer.index;
+            requestBuffer[cfg].index += nCachetoMemDataPathSize;
+            requestBuffer[cfg].address = requestBuffer[cfg].base + requestBuffer[cfg].index;
           }
           else
           { /* the request has been finished, the cache pipeline has to be updated */
-            cacheit = cacheQueue.SeekAtHead();
+            cacheit = cacheQueue[cfg].SeekAtHead();
             switch(cacheit->state)
             { /* write cases */
               case WRITE_MISS_EVICTION:
@@ -1701,18 +1714,18 @@ class CacheWB : public module
                 /* evict cases */
               case EVICT_READY:
                 /* the eviction has been completed, remove the head pipeline */
-                cacheQueue.RemoveHead();
+                cacheQueue[cfg].RemoveHead();
                 break;
 
               case WRITE_UNCACHABLE_READY:
                 // The uncachable write has been performed
-                cacheQueue.RemoveHead();
+                cacheQueue[cfg].RemoveHead();
                 break;
 
             #ifdef NOC_THREADS_DISTRIBUTION
               case WRITE_UNCACHABLE:
                 // The READX to get the uncachable write has been accepted from memory
-                cacheQueue.RemoveHead();
+                cacheQueue[cfg].RemoveHead();
             #endif     
                 break; 
 		
@@ -1725,11 +1738,11 @@ class CacheWB : public module
                   exit(1);
                 }
                 // A snooped read hit has been sent and accepted, i can remove it from the queue
-                cacheQueue.RemoveHead();
+                cacheQueue[cfg].RemoveHead();
                 break;
             }
             /* reset the request buffer */
-            requestBuffer.ready=false;
+            requestBuffer[cfg].ready=false;
           }
         }
         else // not a write
@@ -1737,7 +1750,7 @@ class CacheWB : public module
            * the cache entry (the head of the cache queue) 
            * is not removed from the cache pipeline (this is a blocking cache) */
           /* the request buffer is marked as not ready, to be used with the next memory request */
-          cacheit = cacheQueue.SeekAtHead();
+          cacheit = cacheQueue[cfg].SeekAtHead();
           switch(cacheit->state)
           { /* write cases */
             case WRITE_MISS:
@@ -1792,7 +1805,7 @@ class CacheWB : public module
               exit(1);
           }
           /* reset the request buffer */
-          requestBuffer.ready=false;
+          requestBuffer[cfg].ready=false;
         }
       }
     }
@@ -1800,13 +1813,14 @@ class CacheWB : public module
     {
 #ifdef DEBUG_CACHEWB
       /* if an accept from the memory system that was received that was not expected, error */
-      if(outMEM.accept)
+      if(outMEM.accept[cfg])
       { cerr << "Error(" << name() << "): an accept was received from the memory system that was not expected" << endl;
         cerr << *this;
         exit(-1);
       }
 #endif
     }
+    }//Endof foreach Config.
   }
 
   /**
@@ -1828,20 +1842,20 @@ class CacheWB : public module
    *
    * Called at end of cycle
    */
-  void UpdateWriteBuffer()
+  void UpdateWriteBuffer(int cfg)
   {/* check that data was received from the memory system */
-    if(inMEM.enable)
+    if(inMEM.enable[cfg])
     { 
 #ifdef DEBUG_BUS_MQ
-INFO << "Receiving from M:   " << inMEM.data << endl;
+      INFO << "Receiving from M:   " << inMEM.data[cfg] << endl;
 #endif
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-    {
-      cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning inMEM.enable == True ..." << endl;
-    }
+      if (DD_DEBUG_TIMESTAMP < timestamp())
+      {
+	cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning inMEM.enable == True ..." << endl;
+      }
 #endif
-      memreq<INSTRUCTION, nMemtoCacheDataPathSize> mr = inMEM.data;
+      memreq<INSTRUCTION, nMemtoCacheDataPathSize> mr = inMEM.data[cfg];
       if(Snooping)
       { if(mr.message_type==memreq_types::type_REQUEST)
         { // Snooped requests should not update the write buffer, ignore those
@@ -1892,8 +1906,8 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
  
 #ifdef DEBUG_CACHEWB
       /* check that it is not an incorrect line */
-      if(writeBuffer.address != (mr.address & ~((address_t)nLineSize-1)) && writeBuffer.size != 0)
-      { if(writeBuffer.size == nLineSize)
+      if(writeBuffer[cfg].address != (mr.address & ~((address_t)nLineSize-1)) && writeBuffer[cfg].size != 0)
+      { if(writeBuffer[cfg].size == nLineSize)
         { cerr << "Error(" << name() << "): writeBuffer was full and a memory access has been received" << endl;
           cerr << *this;
           exit(-1);
@@ -1910,27 +1924,27 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
       {
 #ifdef DEBUG_CACHEWB
         /* check that received bytes were not already received */
-        if(writeBuffer.ready[(int)(i + (mr.address & ((address_t)(nLineSize - 1))))])
+        if(writeBuffer[cfg].ready[(int)(i + (mr.address & ((address_t)(nLineSize - 1))))])
         { cerr << "Error(" << name() << "): writeBuffer has received two time the same address" << endl;
           cerr << *this;
           exit(-1);
         }
 #endif
-        writeBuffer.ready[i + (mr.address & ((address_t)(nLineSize - 1)))] = true;
+        writeBuffer[cfg].ready[i + (mr.address & ((address_t)(nLineSize - 1)))] = true;
       }
       // update writeBuffer address, size, address and uid fields with incomming data
-      memcpy(&(writeBuffer.buffer[mr.address&((address_t)(nLineSize - 1))]), mr.Read(), nMemtoCacheDataPathSize);
-      writeBuffer.size += nMemtoCacheDataPathSize;
-      writeBuffer.address = mr.address&(~((address_t)(nLineSize - 1)));
-      writeBuffer.uid = mr.uid;
-      writeBuffer.memreq_id = mr.memreq_id;
-      writeBuffer.cachable = mr.cachable;
+      memcpy(&(writeBuffer[cfg].buffer[mr.address&((address_t)(nLineSize - 1))]), mr.Read(), nMemtoCacheDataPathSize);
+      writeBuffer[cfg].size += nMemtoCacheDataPathSize;
+      writeBuffer[cfg].address = mr.address&(~((address_t)(nLineSize - 1)));
+      writeBuffer[cfg].uid = mr.uid;
+      writeBuffer[cfg].memreq_id = mr.memreq_id;
+      writeBuffer[cfg].cachable = mr.cachable;
 
      // If the shared bit was not set during the corresponding request, we will get the answer
      // from memory as a READ ANSWER.
      // If the shared bit was set, we will get the answer from a WRITE-BACK to memory of another
      // cache snooped on the bus.
-     if(Snooping) writeBuffer.shared_bit = (mr.command==memreq_types::cmd_WRITE);
+     if(Snooping) writeBuffer[cfg].shared_bit = (mr.command==memreq_types::cmd_WRITE);
 //      if(Snooping) writeBuffer.shared_bit = inSharedMEM.data;
 
 //INFO << "Stored   " << mr << " from MEM" << endl;
@@ -1948,7 +1962,7 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
     if (DD_DEBUG_TIMESTAMP < timestamp())
     {
       cerr << "["<<this->name()<<"("<<timestamp()<<")]: inMEM.enable == True WriteBuffer :" << endl;
-      cerr << writeBuffer << endl;
+      cerr << writeBuffer[cfg] << endl;
     }
 #endif
 
@@ -1968,22 +1982,22 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
    * \brief Updates the cache pipeline with data from the writeBuffer if the data requested by the
    * head of the pipeline is ready 
    */
-  void UpdateCachePipelineWithWriteBuffer()
+  void UpdateCachePipelineWithWriteBuffer(int cfg)
   { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
 
     /* the cache can return a requested data to the cpu if the cache line in the writeBuffer
      * already contains the data, this way the cpu has not to wait for the full line before
      * receiving a cache answer */
     /* does the writeBuffer have data? */
-    if(writeBuffer.size != 0)
-    { cacheit = cacheQueue.SeekAtHead();
+    if(writeBuffer[cfg].size != 0)
+    { cacheit = cacheQueue[cfg].SeekAtHead();
       /* the action is just performed if the cache request was a read */
       if(cacheit)
       { if(!cacheit->write)
         {
 #ifdef DEBUG_CACHEWB
           /* check that the head of the pipeline and the writeBuffer have the same address */
-          if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer.address)
+          if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer[cfg].address)
           { cerr << "Error(" << name() << "): the cache line request address does not correspond "
             << "with the address in the writeBuffer." << endl;
             cerr << "\t\t\tstate = " << cacheit->state
@@ -2016,7 +2030,7 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
           /* check that all the bytes requested by the head of the pipeline are ready */
           bool ok = true;
           for(unsigned int i = base_address; ok && i < base_address + cacheit->size; i++)
-          { if(!writeBuffer.ready[i]) ok = false;
+          { if(!writeBuffer[cfg].ready[i]) ok = false;
           }
           /* if all the data is ready, the prepare the head of the pipeline to reply to the cpu */
           if(ok)
@@ -2028,7 +2042,7 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
     }
 #endif
             /* copy the requested data */
-            memcpy(cacheit->data, &(writeBuffer.buffer[base_address]), cacheit->size);
+            memcpy(cacheit->data, &(writeBuffer[cfg].buffer[base_address]), cacheit->size);
             /* set the pipeline entry as ready */
             cacheit->ready=true;
             /* set up state */
@@ -2099,9 +2113,9 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
     {
       QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
       // Update the writeBuffer if data is received from the memory system
-      UpdateWriteBuffer();
+      UpdateWriteBuffer(cfg);
       // Check if the requested data is ready without waiting that the complete line is received
-      UpdateCachePipelineWithWriteBuffer();
+      UpdateCachePipelineWithWriteBuffer(cfg);
       
       /* if writeBuffer has been completed write the cacheline to the cache */
       if(writeBuffer[cfg].size == nLineSize || writeBuffer[cfg].size == nLineSize)
@@ -2696,10 +2710,11 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
     /**
      * \brief Performs the read request to the cache checking if the access was a hit or a miss and setting the entry state correctly
      */
-  void SetCacheHeadReadState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit, bool is_rdx)
-  { if(!cacheit->cachable) 
+  void SetCacheHeadReadState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit, bool is_rdx, int cfg)
+  { 
+    if(!cacheit->cachable) 
     { // If the read request is non cachable store it as a non cachable request
-      if(cache.hit(cacheit->address))
+      if(cache[cfg].hit(cacheit->address))
       {
 //        ERROR << "Cache hit on a NOT CACHABLE address on a READ !" << endl;
 //        exit(1);
@@ -2714,14 +2729,14 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
     }
   
     // The address is cachable, check for hit or miss
-    cacheit->hit = cache.hit(cacheit->address);
+    cacheit->hit = cache[cfg].hit(cacheit->address);
     /* the access was a hit */
     if(cacheit->hit)
     { /* modify the history of the cache (needed by the lru and pseudo lru replacement policies */
-      cache.historyAccess(cache.getSet(cacheit->address), cache.getLine(cacheit->address));
+      cache[cfg].historyAccess(cache[cfg].getSet(cacheit->address), cache[cfg].getLine(cacheit->address));
       /* increment the number of hits */
-      hits++;
-      hits_read++;
+      hits[cfg]++;
+      hits_read[cfg]++;
       /* set the state of the pipeline entry */
       cacheit->state = READ_HIT_READY;
       
@@ -2732,48 +2747,48 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
           exit(1);
         }
         // read hit from the cpu side.
-        cache.mesi_transition(cache.getSet(cacheit->address),cache.getLine(cacheit->address),MESI::transition_PrRd_XX,__FILE__,__LINE__,nProg);
+        cache[cfg].mesi_transition(cache[cfg].getSet(cacheit->address),cache[cfg].getLine(cacheit->address),MESI::transition_PrRd_XX,__FILE__,__LINE__,nProg);
       }
       
       /* copy the data from the cache to be sent to the cpu */
       if(nCPULineSize>0)
-      { cache.getCacheLineIndexed(cacheit->data,
-                                  cache.getSet(cacheit->address),
-                                  cache.getLine(cacheit->address),
+      { cache[cfg].getCacheLineIndexed(cacheit->data,
+                                  cache[cfg].getSet(cacheit->address),
+                                  cache[cfg].getLine(cacheit->address),
                                   (cacheit->address & (~(address_t)(nCPULineSize - 1))) & ((address_t)(nLineSize - 1)),
                                   cacheit->size);
       }
       else
-      { cache.getCacheLineIndexed(cacheit->data,
-                                  cache.getSet(cacheit->address),
-                                  cache.getLine(cacheit->address),
+      { cache[cfg].getCacheLineIndexed(cacheit->data,
+                                  cache[cfg].getSet(cacheit->address),
+                                  cache[cfg].getLine(cacheit->address),
                                   (cacheit->address & ((address_t)(nLineSize - 1))),
                                   cacheit->size);
       }
     }
     else
     { /* the access was a miss, increment the number of misses */
-      misses++;
-      misses_read++;
+      misses[cfg]++;
+      misses_read[cfg]++;
       /* get the set and line to place the requested line */
-      cacheit->set=cache.getReplaceSet(cacheit->address);
-      cacheit->line=cache.getReplaceLine(cacheit->address);
+      cacheit->set=cache[cfg].getReplaceSet(cacheit->address);
+      cacheit->line=cache[cfg].getReplaceLine(cacheit->address);
       /* modify the history of the cache (needed by the lru and pseudo lru replacement policies */
-      cache.historyAccess(cacheit->set, cacheit->line);
+      cache[cfg].historyAccess(cacheit->set, cacheit->line);
       /* check if the line that the access is removing needs to be evicted,
        * a line is evicted if it was valid and dirty */
-      if(cache.getValid(cacheit->set, cacheit->line))
+      if(cache[cfg].getValid(cacheit->set, cacheit->line))
       { /* the line is valid, check if the line is dirty */
-        cacheit->evicted = cache.getWrite(cacheit->set, cacheit->line);
+        cacheit->evicted = cache[cfg].getWrite(cacheit->set, cacheit->line);
         /* the line needs to be evicted */
         if(cacheit->evicted)
         {  /* get the address of the line to be evicted */
-          cacheit->evictedaddress = cache.getAddress(cacheit->set, cacheit->line);
+          cacheit->evictedaddress = cache[cfg].getAddress(cacheit->set, cacheit->line);
           /* increment the number of writebacks made by the cache */
-          writebacks++;
-          writebacks_read++;
+          writebacks[cfg]++;
+          writebacks_read[cfg]++;
           /* get the data needed to be sent to the memory system  */
-          cache.getCacheLine(cacheit->linedata, cacheit->set, cacheit->line);
+          cache[cfg].getCacheLine(cacheit->linedata, cacheit->set, cacheit->line);
           /* set the entry state */
           cacheit->state = READ_MISS_EVICTION;
         }
@@ -2788,15 +2803,15 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
         cacheit->state = READ_MISS;
       }
     }
-  }
+  }// Endof SetCacheHeadReadState 
 
   /**
    * \brief Performs the write request to the cache checking if the access was a hit or a miss and setting the entry state correctly 
    */
-  void SetCacheHeadWriteState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit)
+  void SetCacheHeadWriteState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit, int cfg)
   { if(!cacheit->cachable) 
     { // If the read request is non cachable store it as a non cachable request
-      if(cache.hit(cacheit->address))
+      if(cache[cfg].hit(cacheit->address))
       { ERROR << "Cache hit on a NOT CACHABLE address on a Write !" << endl;
         exit(1);
       }
@@ -2819,16 +2834,16 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
 #endif
     */
     // The address is cachable, check for hit or miss
-    cacheit->hit = cache.hit(cacheit->address);
+    cacheit->hit = cache[cfg].hit(cacheit->address);
     /* the access was a hit */
     if(cacheit->hit)
     { /* modify the history of the cache (needed by the lru and pseudo lru replacement policies */
-      cache.historyAccess(cache.getSet(cacheit->address), cache.getLine(cacheit->address));
+      cache[cfg].historyAccess(cache[cfg].getSet(cacheit->address), cache[cfg].getLine(cacheit->address));
       /* increment the number of hits */
-      hits++;
-      hits_write++;
-      cacheit->set = cache.getSet(cacheit->address);
-      cacheit->line = cache.getLine(cacheit->address);
+      hits[cfg]++;
+      hits_write[cfg]++;
+      cacheit->set = cache[cfg].getSet(cacheit->address);
+      cacheit->line = cache[cfg].getLine(cacheit->address);
 
       if(Snooping)
       { if(cacheit->sender_type==memreq_types::sender_MEM)
@@ -2836,15 +2851,15 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
           exit(1);
         }
 
-        switch(cache.getMESI(cacheit->set,cacheit->line).getState())
+        switch(cache[cfg].getMESI(cacheit->set,cacheit->line).getState())
         { case MESI::state_MODIFIED:
           case MESI::state_EXCLUSIVE:
             // A local write hit on M & E state does not imply any bus transaction, so the 
             // write hit request can be removed from the queue, once performed
-            cache.setCacheLineIndexed(cacheit->set, cacheit->line, cacheit->data,
+            cache[cfg].setCacheLineIndexed(cacheit->set, cacheit->line, cacheit->data,
                                       cacheit->address & ((address_t)(nLineSize-1)), cacheit->size, true);
-            cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrWr_XX,__FILE__,__LINE__,nProg);
-            cacheQueue.RemoveHead();
+            cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrWr_XX,__FILE__,__LINE__,nProg);
+            cacheQueue[cfg].RemoveHead();
 #ifdef DD_DEBUG_DCACHE
     if (DD_DEBUG_TIMESTAMP < timestamp())
     {
@@ -2889,35 +2904,35 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
 #endif
 	    
 	// Modify the contents of the cache with the write request data, set the cache line as dirty
-        cache.setCacheLineIndexed(cache.getSet(cacheit->address), cache.getLine(cacheit->address), cacheit->data,
+        cache[cfg].setCacheLineIndexed(cache[cfg].getSet(cacheit->address), cache[cfg].getLine(cacheit->address), cacheit->data,
                                   cacheit->address & ((address_t)(nLineSize-1)), cacheit->size, true);
         // Once performed, write hit can be removed from the queue.
-        cacheQueue.RemoveHead();
+        cacheQueue[cfg].RemoveHead();
       }
     }
     else
     { /* the access was a miss, increment the number of misses */
-      misses++;
-      misses_write++;
+      misses[cfg]++;
+      misses_write[cfg]++;
       /* get the set and line to place the requested line */
-      cacheit->set = cache.getReplaceSet(cacheit->address);
-      cacheit->line = cache.getReplaceLine(cacheit->address);
+      cacheit->set = cache[cfg].getReplaceSet(cacheit->address);
+      cacheit->line = cache[cfg].getReplaceLine(cacheit->address);
       /* modify the history of the cache (needed by the lru and pseudo lru replacement policies */
-      cache.historyAccess(cacheit->set, cacheit->line);
+      cache[cfg].historyAccess(cacheit->set, cacheit->line);
       /* check if the line that the access is removing needs to be evicted,
        * a line is evicted if it was valid and dirty */
-      if(cache.getValid(cacheit->set, cacheit->line))
+      if(cache[cfg].getValid(cacheit->set, cacheit->line))
       { /* the line is valid, check if the line is dirty */
-        cacheit->evicted = cache.getWrite(cacheit->set, cacheit->line);
+        cacheit->evicted = cache[cfg].getWrite(cacheit->set, cacheit->line);
         /* the line needs to be evicted */
         if(cacheit->evicted)
         { /* get the address of the line to be evicted */
-          cacheit->evictedaddress = cache.getAddress(cacheit->set, cacheit->line);
+          cacheit->evictedaddress = cache[cfg].getAddress(cacheit->set, cacheit->line);
           /* increment the number of writebacks made by the cache */
-          writebacks++;
-          writebacks_write++;
+          writebacks[cfg]++;
+          writebacks_write[cfg]++;
           /* get the data needed to be sent to the memory system */
-          cache.getCacheLine(cacheit->linedata, cacheit->set, cacheit->line);
+          cache[cfg].getCacheLine(cacheit->linedata, cacheit->set, cacheit->line);
           /* set the entry state */
           cacheit->state = WRITE_MISS_EVICTION;
         }
@@ -2937,42 +2952,42 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
   /** 
    * \brief Performs the prefetch request to the cache checking if the access was a hit or a miss and setting the entry state correctly
    */
-  void SetCacheHeadPrefetchState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit)
+  void SetCacheHeadPrefetchState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit, int cfg)
   { /* check if the request hits the cache or misses */
-    cacheit->hit = cache.hit(cacheit->address);
+    cacheit->hit = cache[cfg].hit(cacheit->address);
     /* the access was a hit */
     if(cacheit->hit)
     { /* modify the history of the cache (needed by the lru and pseudo lru replacement policies */
-      cache.historyAccess(cache.getSet(cacheit->address), cache.getLine(cacheit->address));
+      cache[cfg].historyAccess(cache[cfg].getSet(cacheit->address), cache[cfg].getLine(cacheit->address));
       /* increment the number of hits */
-      hits++;
-      hits_prefetch++;
+      hits[cfg]++;
+      hits_prefetch[cfg]++;
       /* the pipeline head can be removed */
-      cacheQueue.RemoveHead();
+      cacheQueue[cfg].RemoveHead();
     }
     else
     { /* the access was a miss, increment the number of misses */
-      misses++;
-      misses_prefetch++;
+      misses[cfg]++;
+      misses_prefetch[cfg]++;
       /* get the set and line to place the requested line */
-      cacheit->set = cache.getReplaceSet(cacheit->address);
-      cacheit->line = cache.getReplaceLine(cacheit->address);
+      cacheit->set = cache[cfg].getReplaceSet(cacheit->address);
+      cacheit->line = cache[cfg].getReplaceLine(cacheit->address);
       /* modify the history of the cache (needed by the lru and pseudo lru replacement policies) */
-      cache.historyAccess(cacheit->set, cacheit->line);
+      cache[cfg].historyAccess(cacheit->set, cacheit->line);
       /* check if the line that the access is removing needs to be evicted,
        * a line is evicted if it was valid and dirty */
-      if(cache.getValid(cacheit->set, cacheit->line))
+      if(cache[cfg].getValid(cacheit->set, cacheit->line))
       { /* the line is valid, check if the line is dirty */
-        cacheit->evicted = cache.getWrite(cacheit->set, cacheit->line);
+        cacheit->evicted = cache[cfg].getWrite(cacheit->set, cacheit->line);
         /* the line needs to be evicted */
         if(cacheit->evicted)
         { /* get the address of the line to be evicted */
-          cacheit->evictedaddress = cache.getAddress(cacheit->set, cacheit->line);
+          cacheit->evictedaddress = cache[cfg].getAddress(cacheit->set, cacheit->line);
           /* increment the number of writebacks made by the cache */
-          writebacks++;
-          writebacks_prefetch++;
+          writebacks[cfg]++;
+          writebacks_prefetch[cfg]++;
           /* get the data needed to be sent to the memory system */
-          cache.getCacheLine(cacheit->linedata, cacheit->set, cacheit->line);
+          cache[cfg].getCacheLine(cacheit->linedata, cacheit->set, cacheit->line);
           /*set the entry state */
           cacheit->state = PREFETCH_MISS_EVICTION;
         }
@@ -2992,20 +3007,20 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
   /**
    * \brief Performs the evict request to the cache checking if the access was a hit or a miss and setting the entry state correctly 
    */
-  void SetCacheHeadEvictState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit)
+  void SetCacheHeadEvictState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit, int cfg)
   { /* check if the request hits the cache or misses */
-    cacheit->hit = cache.hit(cacheit->address);
+    cacheit->hit = cache[cfg].hit(cacheit->address);
     /* the access was a hit */
     if(cacheit->hit)
     { /* increment the number of hits */
-      hits++;
-      hits_evict++;
+      hits[cfg]++;
+      hits_evict[cfg]++;
       /* no history access, we want to reuse the entry of the evicted line */
       /* get the set and line of the cache line to be evicted */
-      cacheit->set = cache.getSet(cacheit->address);
-      cacheit->line = cache.getLine(cacheit->address);
+      cacheit->set = cache[cfg].getSet(cacheit->address);
+      cacheit->line = cache[cfg].getLine(cacheit->address);
 #ifdef DEBUG_CACHEWB
-      if(!cache.getValid(cacheit->set, cacheit->line))
+      if(!cache[cfg].getValid(cacheit->set, cacheit->line))
       { /* why did we get a hit if the line is not valid???? */
         cerr << "Error(" << name() << "): trying to evict a line that is not valid" << endl;
         cerr << *this;
@@ -3014,34 +3029,34 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
 #endif
       /* the line needs to be evicted and not just removed if the line was valid and dirty */
       /* get the address of the line to be evicted */
-      cacheit->evictedaddress = cache.getAddress(cacheit->set, cacheit->line);
+      cacheit->evictedaddress = cache[cfg].getAddress(cacheit->set, cacheit->line);
       /* check if the line needs to be evicted */
-      cacheit->evicted = cache.getWrite(cacheit->set, cacheit->line);
+      cacheit->evicted = cache[cfg].getWrite(cacheit->set, cacheit->line);
       /* set the removed line as not valid and not dirty */
-      cache.setValid(cacheit->set, cacheit->line, false);
-      cache.setWrite(cacheit->set, cacheit->line, false);
+      cache[cfg].setValid(cacheit->set, cacheit->line, false);
+      cache[cfg].setWrite(cacheit->set, cacheit->line, false);
       /* if the line needs to be evicted */
       if(cacheit->evicted)
       { /* increment the number of writebacks */
-        writebacks++;
-        writebacks_evict++;
+        writebacks[cfg]++;
+        writebacks_evict[cfg]++;
         /* get the data needed to be sent to the memory system */
-        cache.getCacheLine(cacheit->linedata, cacheit->set, cacheit->line);
+        cache[cfg].getCacheLine(cacheit->linedata, cacheit->set, cacheit->line);
         /* set the entry state */
         cacheit->state = EVICT_READY;
       }
       else
       { /* no line needs to be evicted, the pipeline head can be removed */
-        cacheQueue.RemoveHead();
+        cacheQueue[cfg].RemoveHead();
       }
     }
     else
     { /* do nothing, eviction of a line that does not exist in cache */
       /* increment the number of misses */
-      misses++;
-      misses_evict++;
+      misses[cfg]++;
+      misses_evict[cfg]++;
       /* remove the pipeline head */
-      cacheQueue.RemoveHead();
+      cacheQueue[cfg].RemoveHead();
     }
   }
 
@@ -3060,19 +3075,19 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
       { /* set the state of the entry depending on its current state */
         switch(cacheit->state)
         { case READ:
-            SetCacheHeadReadState(cacheit,false);
+            SetCacheHeadReadState(cacheit,false, cfg);
             break;
           case WRITE:
-            SetCacheHeadWriteState(cacheit);
+            SetCacheHeadWriteState(cacheit, cfg);
             break;
           case PREFETCH:
-            SetCacheHeadPrefetchState(cacheit);
+            SetCacheHeadPrefetchState(cacheit, cfg);
             break;
           case EVICT:
-            SetCacheHeadEvictState(cacheit);
+            SetCacheHeadEvictState(cacheit, cfg);
             break;
           case READX:
-            SetCacheHeadReadState(cacheit,true);
+            SetCacheHeadReadState(cacheit,true, cfg);
             break;
         }
       }
@@ -3100,10 +3115,10 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
 //        INFO << "\e[1;34mGot something in my snoop queue: \e[0m" << *cacheit << endl;
         switch(cacheit->state)
         { case READ:
-            SetCacheSnoopHeadReadState(cacheit,false);
+            SetCacheSnoopHeadReadState(cacheit,false, cfg);
             break;
           case READX:
-            SetCacheSnoopHeadReadState(cacheit,true);
+            SetCacheSnoopHeadReadState(cacheit,true, cfg);
             break;
           case WRITE:
             ERROR << "Should not receive WRITE request from the memory side" << endl;
@@ -3127,12 +3142,12 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
   /**
    * \brief Performs the read request to the cache checking if the access was a hit or a miss and setting the entry state correctly
    */
-  void SetCacheSnoopHeadReadState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit, bool is_rdx)
+  void SetCacheSnoopHeadReadState(QueuePointer<CachePipeStage<INSTRUCTION,nLineSize,nStages,nCPUtoCacheDataPathSize>, nStages>& cacheit, bool is_rdx, int cfg)
   { if(!Snooping)
     { ERROR << "Should never append. only called from end_of_cycle if snooping is enabled !" << endl;
       exit(1);
     }
-    cacheit->hit = cache.hit(cacheit->address);
+    cacheit->hit = cache[cfg].hit(cacheit->address);
 
     if(!cacheit->hit)
     { // We are snooping Read request which are either performing a hit in the cache, or in the pending request queue.
@@ -3154,28 +3169,28 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
     // We snooped a request that has made a local read hit.
     
     /* modify the history of the cache (needed by the lru and pseudo lru replacement policies */
-    cache.historyAccess(cache.getSet(cacheit->address), cache.getLine(cacheit->address));
+    cache[cfg].historyAccess(cache[cfg].getSet(cacheit->address), cache[cfg].getLine(cacheit->address));
     /* increment the number of hits */
-    hits++;
-    hits_read++;
+    hits[cfg]++;
+    hits_read[cfg]++;
     /* set the state of the pipeline entry */
     cacheit->state = READ_HIT_READY;
       
     // read hit from the snooping side, data is wrote back to memory. This write back will also be used as the 
     // other cache answer
-    cacheit->set = cache.getSet(cacheit->address);
-    cacheit->line = cache.getLine(cacheit->address);
+    cacheit->set = cache[cfg].getSet(cacheit->address);
+    cacheit->line = cache[cfg].getLine(cacheit->address);
     
     if(is_rdx)
     { // If the read request is a READX, then the local copy should be invalidated
-      cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_BusRdX_Flush,__FILE__,__LINE__,nProg);
-      cache.setWrite(cacheit->set, cacheit->line, false);
-      cache.setValid(cacheit->set, cacheit->line, false);
+      cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_BusRdX_Flush,__FILE__,__LINE__,nProg);
+      cache[cfg].setWrite(cacheit->set, cacheit->line, false);
+      cache[cfg].setValid(cacheit->set, cacheit->line, false);
     }
     else
     { // If it is a simple read request: no invalidation but the data is no more modified (if it was)
-      cache.mesi_transition(cacheit->set,cacheit->line,MESI::transition_BusRd_Flush,__FILE__,__LINE__,nProg);
-      cache.setWrite(cacheit->set, cacheit->line, false);
+      cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_BusRd_Flush,__FILE__,__LINE__,nProg);
+      cache[cfg].setWrite(cacheit->set, cacheit->line, false);
     }
       
     if(nLineSize!=cacheit->size)
@@ -3193,7 +3208,7 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
     // Kept just in case of one of the previous if to be false.
 
     //Copy the local cache line to the cacheit data, for it to we write back.
-    cache.getCacheLine(cacheit->data, cacheit->set, cacheit->line);
+    cache[cfg].getCacheLine(cacheit->data, cacheit->set, cacheit->line);
   }
 
 
@@ -3252,14 +3267,14 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
   /** 
    * \brief Sets the requestBuffer if data can be sent or requested to the memory
    */
-  void SendSnoopDatatoMem()
+  void SendSnoopDatatoMem(int cfg)
   { if(!Snooping)
     { ERROR << "Should never append. only called from start_of_cycle if snooping is enabled !" << endl;
       exit(1);
     }
     QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
     /* get the head of the pipeline and checks its state to see if it has data to be sent to the memory system */
-    cacheit = cacheSnoopQueue.SeekAtHead();
+    cacheit = cacheSnoopQueue[cfg].SeekAtHead();
     if(cacheit)
     { if(cacheit->sender_type==memreq_types::sender_CPU)
       { ERROR << "A request from the CPU is in the snoop queue !" << endl;
@@ -3269,25 +3284,25 @@ INFO << "Receiving from M:   " << inMEM.data << endl;
       switch(cacheit->state)
       { case READ_HIT_READY:
           // A snooped hit read is ready to be sent back to the MEM
-          requestBuffer.command = memreq_types::cmd_WRITE; // This is a write back to memory
-          requestBuffer.write = true; // Perform a write-back to memory, this WB will be snooped.
-          requestBuffer.address = cacheit->address;
-          requestBuffer.base    = cacheit->base;
-          requestBuffer.index   = 0;
-          requestBuffer.size    = cacheit->size;
-          memcpy(requestBuffer.data, cacheit->data, requestBuffer.size);
+          requestBuffer[cfg].command = memreq_types::cmd_WRITE; // This is a write back to memory
+          requestBuffer[cfg].write = true; // Perform a write-back to memory, this WB will be snooped.
+          requestBuffer[cfg].address = cacheit->address;
+          requestBuffer[cfg].base    = cacheit->base;
+          requestBuffer[cfg].index   = 0;
+          requestBuffer[cfg].size    = cacheit->size;
+          memcpy(requestBuffer[cfg].data, cacheit->data, requestBuffer[cfg].size);
   
-          requestBuffer.instr = cacheit->instr;             // Instruction that generated the request
-          requestBuffer.size = nLineSize;                   // A full line is being sent
-          requestBuffer.req_sender = cacheit->req_sender;
-          requestBuffer.uid = cacheit->uid;                 // uid of the instruction
-          requestBuffer.memreq_id = cacheit->memreq_id;
-          requestBuffer.message_type = memreq_types::type_ANSWER;
-          requestBuffer.cacheQueueIndex = cacheSnoopQueueIndex;
-          requestBuffer.ready = true;                       // The request is ready to be sent
+          requestBuffer[cfg].instr = cacheit->instr;             // Instruction that generated the request
+          requestBuffer[cfg].size = nLineSize;                   // A full line is being sent
+          requestBuffer[cfg].req_sender = cacheit->req_sender;
+          requestBuffer[cfg].uid = cacheit->uid;                 // uid of the instruction
+          requestBuffer[cfg].memreq_id = cacheit->memreq_id;
+          requestBuffer[cfg].message_type = memreq_types::type_ANSWER;
+          requestBuffer[cfg].cacheQueueIndex = cacheSnoopQueueIndex;
+          requestBuffer[cfg].ready = true;                       // The request is ready to be sent
 
 //INFO << "SNOOPED READ HIT APPEND: 0x" << hex << cacheit->address << dec << ": ";
-//print_buffer(cerr, cacheit->data, requestBuffer.size);
+//print_buffer(cerr, cacheit->data, requestBuffer[cfg].size);
 
           return;
           break;
@@ -3321,42 +3336,44 @@ INFO << "delay..." << endl;
     { ERROR << "Should never append. only called from end_of_cycle if snooping is enabled !" << endl;
       exit(1);
     }
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
     QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
 
     /* are we waiting for an accept from the memory? */
-    if(requestBuffer.ready)
+    if(requestBuffer[cfg].ready)
     { /* check if the memory accepted the request */
-      if(requestBuffer.cacheQueueIndex!=cacheSnoopQueueIndex) return;
-      if(outMEM.accept)
-      { if(requestBuffer.write)
+      if(requestBuffer[cfg].cacheQueueIndex!=cacheSnoopQueueIndex) return;
+      if(outMEM.accept[cfg])
+      { if(requestBuffer[cfg].write)
         { /* this request is a write */
           /* if last request was finished from the cache pipeline (a write request)
            * remove the request from the cache pipeline */
-          requestBuffer.size -= nCachetoMemDataPathSize;
-          if(requestBuffer.size > 0)
+          requestBuffer[cfg].size -= nCachetoMemDataPathSize;
+          if(requestBuffer[cfg].size > 0)
           { /* the request has not bben finished, the request has to be keeped,
              * the address has to be increased,
              * and the cache pipeline is not notified */
-            requestBuffer.index += nCachetoMemDataPathSize;
-            requestBuffer.address = requestBuffer.base + requestBuffer.index;
+            requestBuffer[cfg].index += nCachetoMemDataPathSize;
+            requestBuffer[cfg].address = requestBuffer[cfg].base + requestBuffer[cfg].index;
           }
           else
           { /* the request has been finished, the cache pipeline has to be updated */
-            cacheit = cacheSnoopQueue.SeekAtHead();
+            cacheit = cacheSnoopQueue[cfg].SeekAtHead();
 
 //INFO << "cQI=" << requestBuffer.cacheQueueIndex << " state= " << cacheit->state << endl;
 
             switch(cacheit->state)
             { case READ_HIT_READY:
                 // A snooped read hit has been sent and accepted, i can remove it from the queue
-                cacheSnoopQueue.RemoveHead();
+                cacheSnoopQueue[cfg].RemoveHead();
                 break;
               default:
                 ERROR << "Don't know what to do when a writing request of state " << cacheit->state << " has been sent then accepted." << endl;
                 exit(1);
             }
             /* reset the request buffer */
-            requestBuffer.ready=false;
+            requestBuffer[cfg].ready=false;
           }
         }
         else // not a write
@@ -3364,7 +3381,7 @@ INFO << "delay..." << endl;
            * the cache entry (the head of the cache queue) 
            * is not removed from the cache pipeline (this is a blocking cache) */
           /* the request buffer is marked as not ready, to be used with the next memory request */
-          cacheit = cacheSnoopQueue.SeekAtHead();
+          cacheit = cacheSnoopQueue[cfg].SeekAtHead();
           switch(cacheit->state)
           { 
             default:
@@ -3372,7 +3389,7 @@ INFO << "delay..." << endl;
               exit(1);
           }
           /* reset the request buffer */
-          requestBuffer.ready=false;
+          requestBuffer[cfg].ready=false;
         }
       }
     }
@@ -3380,23 +3397,24 @@ INFO << "delay..." << endl;
     {
 #ifdef DEBUG_CACHEWB
       /* if an accept from the memory system that was received that was not expected, error */
-      if(outMEM.accept)
+      if(outMEM.accept[cfg])
       { cerr << "Error(" << name() << "): an accept was received from the memory system that was not expected" << endl;
         cerr << *this;
         exit(-1);
       }
 #endif
     }
+    }//Endof foreach Config.
   }
 
 
   /**
    * \brief Fill the returnBuffer from the cacheQueue if its head is non-empty and ready.
    */
-  void SendCacheDatatoCPU()
+  void SendCacheDatatoCPU(int cfg)
   { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
     // get the head of the pipeline and check its state to see if it has data to be sent to the cpu
-    cacheit = cacheQueue.SeekAtHead();
+    cacheit = cacheQueue[cfg].SeekAtHead();
     if(cacheit)
     { switch(cacheit->state)
       { case READ_HIT_READY:
@@ -3410,25 +3428,25 @@ INFO << "delay..." << endl;
           { ERROR << "Request in cacheQueue of state " << cacheit->state << " not coming from CPU !" << endl;
             exit(1);
           }
-          returnBuffer.port = cacheit->port;
-          returnBuffer.instr = cacheit->instr;
-          returnBuffer.base = cacheit->base;
-          returnBuffer.index = cacheit->index;
-          returnBuffer.address = cacheit->address;
-          returnBuffer.size = cacheit->size;
+          returnBuffer[cfg].port = cacheit->port;
+          returnBuffer[cfg].instr = cacheit->instr;
+          returnBuffer[cfg].base = cacheit->base;
+          returnBuffer[cfg].index = cacheit->index;
+          returnBuffer[cfg].address = cacheit->address;
+          returnBuffer[cfg].size = cacheit->size;
           // Copy the data to be returned
-          memcpy(returnBuffer.data, cacheit->data, returnBuffer.size);
-          returnBuffer.id = ID_CACHE; // Data sent from cache pipeline
-          returnBuffer.uid = cacheit->uid;
-          returnBuffer.memreq_id = cacheit->memreq_id;
-          returnBuffer.req_sender = cacheit->req_sender;
-          returnBuffer.cachable = cacheit->cachable;
+          memcpy(returnBuffer[cfg].data, cacheit->data, returnBuffer[cfg].size);
+          returnBuffer[cfg].id = ID_CACHE; // Data sent from cache pipeline
+          returnBuffer[cfg].uid = cacheit->uid;
+          returnBuffer[cfg].memreq_id = cacheit->memreq_id;
+          returnBuffer[cfg].req_sender = cacheit->req_sender;
+          returnBuffer[cfg].cachable = cacheit->cachable;
           // Set returnBuffer as ready (full)
-          returnBuffer.ready = true;
+          returnBuffer[cfg].ready = true;
 #ifdef DD_DEBUG_DCACHE_VERB2
     if (DD_DEBUG_TIMESTAMP < timestamp())
     {
-          cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Writting ReturnBuffer: " << returnBuffer << endl;
+          cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Writting ReturnBuffer: " << returnBuffer[cfg] << endl;
     }
 #endif
           break;
@@ -3440,7 +3458,7 @@ INFO << "delay..." << endl;
     if (DD_DEBUG_TIMESTAMP < timestamp())
     {
 
-      cerr <<"["<<this->name()<<"("<<timestamp()<<")]: No cache it!!! Not Writting ReturnBuffer: " << returnBuffer << endl;
+      cerr <<"["<<this->name()<<"("<<timestamp()<<")]: No cache it!!! Not Writting ReturnBuffer: " << returnBuffer[cfg] << endl;
     }
     }
 #endif
@@ -3449,67 +3467,67 @@ INFO << "delay..." << endl;
   /** 
    * \brief Sets the requestBuffer if data can be sent or requested to the memory
    */
-  void SendCacheDatatoMem()
+  void SendCacheDatatoMem(int cfg)
   { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
     /* get the head of the pipeline and checks its state to see if it has data to be sent to the memory system */
-    cacheit = cacheQueue.SeekAtHead();
+    cacheit = cacheQueue[cfg].SeekAtHead();
     if(cacheit)
     { switch(cacheit->state)
       { /***************/
         /* write cases */
         /***************/
         case WRITE_MISS: // A line is being requested to the memory system
-          requestBuffer.write = false; // Write miss first performs read
-          requestBuffer.command = memreq_types::cmd_READX; // Write miss first performs a read from memory
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.size = nLineSize; // A full line is being sent
-          requestBuffer.index = 0;
+          requestBuffer[cfg].write = false; // Write miss first performs read
+          requestBuffer[cfg].command = memreq_types::cmd_READX; // Write miss first performs a read from memory
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
+          requestBuffer[cfg].index = 0;
           break;
         case WRITE_MISS_EVICTION: // A line is being written to the memory system
-          requestBuffer.command = memreq_types::cmd_WRITE; // A line has to be written back to the memory
-          requestBuffer.write = true;
-          requestBuffer.address = cacheit->evictedaddress & (~(address_t)(nLineSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.index = 0;
-          requestBuffer.size = nLineSize; // A full line is being sent
-          memcpy(requestBuffer.data, cacheit->linedata, requestBuffer.size); // Copy the data to send
+          requestBuffer[cfg].command = memreq_types::cmd_WRITE; // A line has to be written back to the memory
+          requestBuffer[cfg].write = true;
+          requestBuffer[cfg].address = cacheit->evictedaddress & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].index = 0;
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
+          memcpy(requestBuffer[cfg].data, cacheit->linedata, requestBuffer[cfg].size); // Copy the data to send
           break;
         case WRITE_MISS_EVICTION_WRITE_DONE: // A line is being requested to the memory system
-          requestBuffer.command = memreq_types::cmd_READX; // Write miss first performs read
-          requestBuffer.write = false;
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.size = nLineSize; // A full line is being sent
-          requestBuffer.index = 0;
+          requestBuffer[cfg].command = memreq_types::cmd_READX; // Write miss first performs read
+          requestBuffer[cfg].write = false;
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
+          requestBuffer[cfg].index = 0;
           break;
         case WRITE_UNCACHABLE:
         #ifdef NOC_THREADS_DISTRIBUTION
-          requestBuffer.command = memreq_types::cmd_WRITE; // A line has to be written back to the memory
-          requestBuffer.write = true;
-          requestBuffer.address = cacheit->address;
-          requestBuffer.base = requestBuffer.address;
-          requestBuffer.index = 0;
-          requestBuffer.size =  cacheit->size;
-          memcpy(requestBuffer.data, cacheit->data, requestBuffer.size); // Copy the data to send
+          requestBuffer[cfg].command = memreq_types::cmd_WRITE; // A line has to be written back to the memory
+          requestBuffer[cfg].write = true;
+          requestBuffer[cfg].address = cacheit->address;
+          requestBuffer[cfg].base = requestBuffer[cfg].address;
+          requestBuffer[cfg].index = 0;
+          requestBuffer[cfg].size =  cacheit->size;
+          memcpy(requestBuffer[cfg].data, cacheit->data, requestBuffer[cfg].size); // Copy the data to send
 	  //cout<<"CAC : to request buffer uncachable write "<< requestBuffer <<endl <<endl;
         #else	  
-          requestBuffer.write = false; // Write uncachable first get the line from dram
-          requestBuffer.command = memreq_types::cmd_READX; // first performs a read from memory
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.size = nLineSize; // A full line is being sent
-          requestBuffer.index = 0;
+          requestBuffer[cfg].write = false; // Write uncachable first get the line from dram
+          requestBuffer[cfg].command = memreq_types::cmd_READX; // first performs a read from memory
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
+          requestBuffer[cfg].index = 0;
         #endif	 
           break;
         case WRITE_UNCACHABLE_READY:
-          requestBuffer.command = memreq_types::cmd_WRITE;
-          requestBuffer.write = true;
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.index = 0;
-          requestBuffer.size = nLineSize; // A full line is being sent
-          memcpy(requestBuffer.data, cacheit->linedata, requestBuffer.size); // Copy the data to send
+          requestBuffer[cfg].command = memreq_types::cmd_WRITE;
+          requestBuffer[cfg].write = true;
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].index = 0;
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
+          memcpy(requestBuffer[cfg].data, cacheit->linedata, requestBuffer[cfg].size); // Copy the data to send
 //#ifdef DEBUG_TEST_UNCACHABLE_WRITE
 //          INFO << "requestBuffer " << requestBuffer << endl;
 //          INFO << "cacheit       " << *cacheit << endl;
@@ -3519,70 +3537,70 @@ INFO << "delay..." << endl;
         /* read cases */
         /**************/
         case READ_MISS: // A line is being requested to the memory system
-          requestBuffer.command = memreq_types::cmd_READ;
-          requestBuffer.write = false;
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
-          requestBuffer.size = nLineSize; // A full line is being sent
+          requestBuffer[cfg].command = memreq_types::cmd_READ;
+          requestBuffer[cfg].write = false;
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
           break;
         case READ_UNCACHABLE:
 #ifdef DEBUG_TEST_UNCACHABLE_READ
           INFO << "read uncachable request ready" << endl;
 #endif
-          requestBuffer.command = memreq_types::cmd_READ;
-          requestBuffer.write = false;
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].command = memreq_types::cmd_READ;
+          requestBuffer[cfg].write = false;
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
         #ifdef NOC_THREADS_DISTRIBUTION
-          requestBuffer.size =  cacheit->size;
-	  requestBuffer.index = cacheit->address & ((address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].size =  cacheit->size;
+	  requestBuffer[cfg].index = cacheit->address & ((address_t)(nCachetoMemDataPathSize - 1));
 	#else
-          requestBuffer.size = nLineSize; // A full line is being sent
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
         #endif
           break;
         case READ_MISS_EVICTION: // A line is being written to the memory system
-          requestBuffer.command = memreq_types::cmd_WRITE; // First perform the eviction as a write to the memory
-          requestBuffer.write = true;
-          requestBuffer.address = cacheit->evictedaddress & (~(address_t)(nLineSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.index = 0;
-          requestBuffer.size = nLineSize; // A full line is being sent
-          memcpy(requestBuffer.data, cacheit->linedata, requestBuffer.size); // Copy the data to send
+          requestBuffer[cfg].command = memreq_types::cmd_WRITE; // First perform the eviction as a write to the memory
+          requestBuffer[cfg].write = true;
+          requestBuffer[cfg].address = cacheit->evictedaddress & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].index = 0;
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
+          memcpy(requestBuffer[cfg].data, cacheit->linedata, requestBuffer[cfg].size); // Copy the data to send
           break;
         case READ_MISS_EVICTION_WRITE_DONE:  // A line is being requested to the memory system
-          requestBuffer.command = memreq_types::cmd_READ;
-          requestBuffer.write = false;
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
-          requestBuffer.size = nLineSize; // A full line is being sent
+          requestBuffer[cfg].command = memreq_types::cmd_READ;
+          requestBuffer[cfg].write = false;
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
           break;
         /******************/
         /* prefetch cases */
         /******************/
         case PREFETCH_MISS:
         case PREFETCH_MISS_EVICTION_WRITE_DONE:  // A line is being requested to the memory system
-          requestBuffer.command = memreq_types::cmd_READ; // Prefetch performs read
-          requestBuffer.write = false;
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
-          requestBuffer.size = nLineSize; // A full line is being sent
+          requestBuffer[cfg].command = memreq_types::cmd_READ; // Prefetch performs read
+          requestBuffer[cfg].write = false;
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
           break;
         case PREFETCH_MISS_EVICTION: // A line is being written to the memory system
-          requestBuffer.command = memreq_types::cmd_WRITE; // First perform the eviction as a write
-          requestBuffer.write = true;
-          requestBuffer.address = cacheit->evictedaddress & (~(address_t)(nLineSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.index = 0;
-          requestBuffer.size = nLineSize; // A full line is being sent
-          memcpy(requestBuffer.data, cacheit->linedata, requestBuffer.size); // Copy the data to send
+          requestBuffer[cfg].command = memreq_types::cmd_WRITE; // First perform the eviction as a write
+          requestBuffer[cfg].write = true;
+          requestBuffer[cfg].address = cacheit->evictedaddress & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].index = 0;
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
+          memcpy(requestBuffer[cfg].data, cacheit->linedata, requestBuffer[cfg].size); // Copy the data to send
           break;
         /***************/
         /* evict cases */
         /***************/
         case EVICT_READY: // A line is being written to the memory system
-          requestBuffer.command = memreq_types::cmd_WRITE; // Evictions are forced write
-          requestBuffer.write = true;
-          requestBuffer.address = cacheit->evictedaddress & (~(address_t)(nLineSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.index = 0;
-          requestBuffer.size = nLineSize; // A full line is being sent
-          memcpy(requestBuffer.data, cacheit->linedata, requestBuffer.size); // Copy the data to send
+          requestBuffer[cfg].command = memreq_types::cmd_WRITE; // Evictions are forced write
+          requestBuffer[cfg].write = true;
+          requestBuffer[cfg].address = cacheit->evictedaddress & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].index = 0;
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
+          memcpy(requestBuffer[cfg].data, cacheit->linedata, requestBuffer[cfg].size); // Copy the data to send
           break;
 
         /*****************/
@@ -3590,12 +3608,12 @@ INFO << "delay..." << endl;
         /*****************/
         case WRITE_HIT_FLUSH:
           // Local write hit on shared data => Flush
-          requestBuffer.command = memreq_types::cmd_FLUSH;
-          requestBuffer.write = false; // Flush does not perform a memory write but some cache invalidations
-          requestBuffer.address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
-          requestBuffer.base = requestBuffer.address & (~(address_t)(nLineSize - 1));
-          requestBuffer.index = 0;
-          requestBuffer.size = nLineSize; // A full line is being sent
+          requestBuffer[cfg].command = memreq_types::cmd_FLUSH;
+          requestBuffer[cfg].write = false; // Flush does not perform a memory write but some cache invalidations
+          requestBuffer[cfg].address = cacheit->address & (~(address_t)(nCachetoMemDataPathSize - 1));
+          requestBuffer[cfg].base = requestBuffer[cfg].address & (~(address_t)(nLineSize - 1));
+          requestBuffer[cfg].index = 0;
+          requestBuffer[cfg].size = nLineSize; // A full line is being sent
           break;
 
         default:
@@ -3604,19 +3622,19 @@ INFO << "delay..." << endl;
       }
 
       // Fill the remaining fields of requestBuffer
-      requestBuffer.instr = cacheit->instr;             // Instruction that generated the request
+      requestBuffer[cfg].instr = cacheit->instr;             // Instruction that generated the request
     #ifdef NOC_THREADS_DISTRIBUTION
-      requestBuffer.dst_id = cacheit->dst_id;                   // A full line is being sent
+      requestBuffer[cfg].dst_id = cacheit->dst_id;                   // A full line is being sent
     #endif      
-      requestBuffer.req_sender = cacheit->req_sender;
-      requestBuffer.uid = cacheit->uid;                 // uid of the instruction
-      requestBuffer.memreq_id = cacheit->memreq_id;
-      requestBuffer.message_type = memreq_types::type_REQUEST;
-      requestBuffer.cachable = cacheit->cachable;
-      requestBuffer.cacheQueueIndex = cacheQueueIndex;
-      requestBuffer.ready = true;                       // The request is ready to be sent
+      requestBuffer[cfg].req_sender = cacheit->req_sender;
+      requestBuffer[cfg].uid = cacheit->uid;                 // uid of the instruction
+      requestBuffer[cfg].memreq_id = cacheit->memreq_id;
+      requestBuffer[cfg].message_type = memreq_types::type_REQUEST;
+      requestBuffer[cfg].cachable = cacheit->cachable;
+      requestBuffer[cfg].cacheQueueIndex = cacheQueueIndex;
+      requestBuffer[cfg].ready = true;                       // The request is ready to be sent
     }
-  }
+  }//End of SendCacheDatatoMem()
 
 #ifdef CACHE_CHECK_COHERENCY
   static void check_coherency()

@@ -634,7 +634,7 @@ public:
 		QueuePointer<RenamePipelineEntry<T, nSources>, nStages * Width> renamePipelineEntry;
 
 		/* For each rename pipeline entry which processing is finished, enable instructions that got an accept */
-		for(renamePipelineEntry = renamePipeline.SeekAtHead(), renamePort = loadPort = storePort = 0; renamePipelineEntry && renamePort < Width; renamePort++, renamePipelineEntry++)
+		for(renamePipelineEntry = renamePipeline[cfg].SeekAtHead(), renamePort = loadPort = storePort = 0; renamePipelineEntry && renamePort < Width; renamePort++, renamePipelineEntry++)
 		{
 			/* Is processing finished ? */
 			if(renamePipelineEntry->delay > 0) break;
@@ -653,10 +653,12 @@ public:
 			              (!(instruction->fn & FnStore) || inStoreAccept[storePort]);
 			*/
 			bool accept = 
-			  outInstructionIssue[renamePort].accept &&
-			  outInstructionReorder[renamePort].accept &&
-			  (!(instruction->fn & (FnLoad | FnPrefetchLoad)) || outLoadInstruction[loadPort].accept) &&
-			  (!(instruction->fn & FnStore) || outStoreInstruction[storePort].accept);
+			  outInstructionIssue.accept[cfg*Width+renamePort] &&
+			  outInstructionReorder.accept[cfg*Width+renamePort] &&
+			  (!(instruction->fn & (FnLoad | FnPrefetchLoad)) 
+			   || outLoadInstruction.accept[cfg*Width+loadPort]) &&
+			  (!(instruction->fn & FnStore) 
+			   || outStoreInstruction.accept[cfg*Width+storePort]);
 
 			/*
 			if (instruction->fn & FnStore)
@@ -675,18 +677,24 @@ public:
 			if(!accept) break;
 
 			/* Enable the instruction on the issue queues and the reorder buffer */
-			outInstructionIssue[renamePort].enable = true;
-			outInstructionReorder[renamePort].enable = true;
+			outInstructionIssue.enable[cfg*Width+renamePort] = true;
+			outInstructionReorder.enable[cfg*Width+renamePort] = true;
 
 			/* Count the instruction as enabled */
 			enabled++;
 
 			/* Enable the load/prefetch load on the load queue */
 			if(instruction->fn & (FnLoad | FnPrefetchLoad))
-				outLoadInstruction[loadPort++].enable = true;
+			  {
+				outLoadInstruction.enable[cfg*Width+loadPort] = true;
+				loadPort++;
+			  }
 			/* Enable the store on the store queue */
 			if(instruction->fn & FnStore)
-				outStoreInstruction[storePort++].enable = true;
+			  {
+				outStoreInstruction.enable[cfg*Width+storePort] = true;
+				storePort++;
+			  }
 		}
 		/* Don't enable instruction on the remaining ports */
 		/*
@@ -699,13 +707,13 @@ public:
 		*/
 		for(; renamePort < Width; renamePort++)
 		  {
-		    outInstructionIssue[renamePort].enable = false;
-		    outInstructionReorder[renamePort].enable = false;
+		    outInstructionIssue.enable[cfg*Width+renamePort] = false;
+		    outInstructionReorder.enable[cfg*Width+renamePort] = false;
 		  }
 		for(; loadPort < Width; loadPort++)
-			outLoadInstruction[loadPort].enable = false;
+			outLoadInstruction.enable[cfg*Width+loadPort] = false;
 		for(; storePort < Width; storePort++)
-			outStoreInstruction[storePort].enable = false;
+			outStoreInstruction.enable[cfg*Width+storePort] = false;
 		
 		/* Return the number of enabled instructions */
 		return enabled;
@@ -715,16 +723,16 @@ public:
 		@param instruction an instruction
 	*/
 	//	void Allocate(InstructionPtr<T, nSources>& instruction)
-	void Allocate(InstructionPtr *instruction)
+	void Allocate(InstructionPtr *instruction, int cfg)
 	{
 	  /* Reorder buffer tag are allocated in a first in/first out manner */
-	  robTail = robTail < ReorderBufferSize - 1 ? robTail + 1 : 0;
+	  robTail[cfg] = robTail[cfg] < ReorderBufferSize - 1 ? robTail[cfg] + 1 : 0;
 	  /* Allocate a reorder buffer tag */
-	  (*instruction)->tag = robTail;
+	  (*instruction)->tag = robTail[cfg];
 
 	  /* If reorder buffer was empty, update the head pointer */
-	  if (robHead < 0) robHead = robTail;
-	  robSize++;
+	  if (robHead[cfg] < 0) robHead[cfg] = robTail[cfg];
+	  robSize[cfg]++;
 	  
 	  /* Allocate a physical register tag for each destination operands */
 	  for (int i=0; i<(*instruction)->destinations.size(); i++)
@@ -733,32 +741,32 @@ public:
 		{
 		        case GPR_T:
 				/* if destination register is an integer register, allocate an integer register */
-				(*instruction)->destinations[i].tag = integerMappingTable.Allocate((*instruction)->destinations[i].reg);
+				(*instruction)->destinations[i].tag = integerMappingTable[cfg].Allocate((*instruction)->destinations[i].reg);
 				break;
 
 			case FPR_T:
 				/* if destination register is a floating point register, allocate a floating point register */
-				(*instruction)->destinations[i].tag = floatingPointMappingTable.Allocate((*instruction)->destinations[i].reg);
+				(*instruction)->destinations[i].tag = floatingPointMappingTable[cfg].Allocate((*instruction)->destinations[i].reg);
 				break;
 		        case CR_T:
 				/* if destination register is an condition register, allocate an integer register */
-				(*instruction)->destinations[i].tag = conditionMappingTable.Allocate((*instruction)->destinations[i].reg);
+				(*instruction)->destinations[i].tag = conditionMappingTable[cfg].Allocate((*instruction)->destinations[i].reg);
 				break;
 		        case FPSCR_T:
 				/* if destination register is an FPSCR register, allocate an FPSCR register */
-				(*instruction)->destinations[i].tag = FPSCRMappingTable.Allocate((*instruction)->destinations[i].reg);
+				(*instruction)->destinations[i].tag = FPSCRMappingTable[cfg].Allocate((*instruction)->destinations[i].reg);
 				break;
 		        case LR_T:
 				/* if destination register is an link register, allocate an link register */
-				(*instruction)->destinations[i].tag = linkMappingTable.Allocate((*instruction)->destinations[i].reg);
+				(*instruction)->destinations[i].tag = linkMappingTable[cfg].Allocate((*instruction)->destinations[i].reg);
 				break;
 		        case CTR_T:
 				/* if destination register is an count register, allocate an count register */
-				(*instruction)->destinations[i].tag = countMappingTable.Allocate((*instruction)->destinations[i].reg);
+				(*instruction)->destinations[i].tag = countMappingTable[cfg].Allocate((*instruction)->destinations[i].reg);
 				break;
 		        case XER_T:
 				/* if destination register is an XER register, allocate an XER register */
-				(*instruction)->destinations[i].tag = XERMappingTable.Allocate((*instruction)->destinations[i].reg);
+				(*instruction)->destinations[i].tag = XERMappingTable[cfg].Allocate((*instruction)->destinations[i].reg);
 				break;
 
 
@@ -786,7 +794,7 @@ public:
 		@param instruction an instruction
 	*/
 	//	void Rename(InstructionPtr<T, nSources>& instruction)
-	void Rename(InstructionPtr *instruction)
+	void Rename(InstructionPtr *instruction, int cfg)
 	{
 		int i;
 
@@ -804,43 +812,43 @@ public:
 				{
 					case GPR_T:
 						/* If source operand is an integer register, then read the integer mapping table */
-						(*instruction)->sources[i].tag = integerMappingTable.Rename(reg);
-						(*instruction)->sources[i].ready = integerMappingTable.IsValid((*instruction)->sources[i].tag) || integerMappingTable.IsCommitted((*instruction)->sources[i].tag);
+						(*instruction)->sources[i].tag = integerMappingTable[cfg].Rename(reg);
+						(*instruction)->sources[i].ready = integerMappingTable[cfg].IsValid((*instruction)->sources[i].tag) || integerMappingTable[cfg].IsCommitted((*instruction)->sources[i].tag);
 						break;
 
 					case FPR_T:
 						/* If source operand is a floating point register, then read the floating point mapping table */
-						(*instruction)->sources[i].tag = floatingPointMappingTable.Rename(reg);
-						(*instruction)->sources[i].ready = floatingPointMappingTable.IsValid((*instruction)->sources[i].tag) || floatingPointMappingTable.IsCommitted((*instruction)->sources[i].tag);
+						(*instruction)->sources[i].tag = floatingPointMappingTable[cfg].Rename(reg);
+						(*instruction)->sources[i].ready = floatingPointMappingTable[cfg].IsValid((*instruction)->sources[i].tag) || floatingPointMappingTable[cfg].IsCommitted((*instruction)->sources[i].tag);
 						break;
 
 					case CR_T:
 						/* If source operand is an condition register, then read the condition mapping table */
-						(*instruction)->sources[i].tag = conditionMappingTable.Rename(reg);
-						(*instruction)->sources[i].ready = conditionMappingTable.IsValid((*instruction)->sources[i].tag) || conditionMappingTable.IsCommitted((*instruction)->sources[i].tag);
+						(*instruction)->sources[i].tag = conditionMappingTable[cfg].Rename(reg);
+						(*instruction)->sources[i].ready = conditionMappingTable[cfg].IsValid((*instruction)->sources[i].tag) || conditionMappingTable[cfg].IsCommitted((*instruction)->sources[i].tag);
 						break;
 					case FPSCR_T:
 						/* If source operand is an FPSCR register, then read the FPSCR mapping table */
-						(*instruction)->sources[i].tag = FPSCRMappingTable.Rename(reg);
-						(*instruction)->sources[i].ready = FPSCRMappingTable.IsValid((*instruction)->sources[i].tag) || FPSCRMappingTable.IsCommitted((*instruction)->sources[i].tag);
+						(*instruction)->sources[i].tag = FPSCRMappingTable[cfg].Rename(reg);
+						(*instruction)->sources[i].ready = FPSCRMappingTable[cfg].IsValid((*instruction)->sources[i].tag) || FPSCRMappingTable[cfg].IsCommitted((*instruction)->sources[i].tag);
 						break;
 
 					case LR_T:
 						/* If source operand is an link register, then read the link mapping table */
-						(*instruction)->sources[i].tag = linkMappingTable.Rename(reg);
-						(*instruction)->sources[i].ready = linkMappingTable.IsValid((*instruction)->sources[i].tag) || linkMappingTable.IsCommitted((*instruction)->sources[i].tag);
+						(*instruction)->sources[i].tag = linkMappingTable[cfg].Rename(reg);
+						(*instruction)->sources[i].ready = linkMappingTable[cfg].IsValid((*instruction)->sources[i].tag) || linkMappingTable[cfg].IsCommitted((*instruction)->sources[i].tag);
 						break;
 
 					case CTR_T:
 						/* If source operand is an count register, then read the count mapping table */
-						(*instruction)->sources[i].tag = countMappingTable.Rename(reg);
-						(*instruction)->sources[i].ready = countMappingTable.IsValid((*instruction)->sources[i].tag) || countMappingTable.IsCommitted((*instruction)->sources[i].tag);
+						(*instruction)->sources[i].tag = countMappingTable[cfg].Rename(reg);
+						(*instruction)->sources[i].ready = countMappingTable[cfg].IsValid((*instruction)->sources[i].tag) || countMappingTable[cfg].IsCommitted((*instruction)->sources[i].tag);
 						break;
 
 					case XER_T:
 						/* If source operand is an XER register, then read the XER mapping table */
-						(*instruction)->sources[i].tag = XERMappingTable.Rename(reg);
-						(*instruction)->sources[i].ready = XERMappingTable.IsValid((*instruction)->sources[i].tag) || XERMappingTable.IsCommitted((*instruction)->sources[i].tag);
+						(*instruction)->sources[i].tag = XERMappingTable[cfg].Rename(reg);
+						(*instruction)->sources[i].ready = XERMappingTable[cfg].IsValid((*instruction)->sources[i].tag) || XERMappingTable[cfg].IsCommitted((*instruction)->sources[i].tag);
 						break;
 
 
@@ -853,7 +861,7 @@ public:
 	/** Perform changes on the mapping tables following an instruction retirement
 		@param retiredInstruction a retired instruction */
 	//	void Retire(const InstructionPtr<T, nSources>& retiredInstruction)
-	void Retire(const InstructionPtr *retiredInstruction)
+	void Retire(const InstructionPtr *retiredInstruction, int cfg)
 	{
 #ifdef DD_DEBUG_ALLOCATOR_RETIRE_VERB1
 		    cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== RETIRE ==== !!!" << endl;
@@ -863,8 +871,8 @@ public:
 		{
 			/* Free the reorder buffer tag */
 			/* As reorder buffer tag are allocated in a first in/first out manner, we just move the head of the fifo */
-			robHead = robHead < ReorderBufferSize - 1 ? robHead + 1 : 0;
-			robSize--;
+			robHead[cfg] = robHead[cfg] < ReorderBufferSize - 1 ? robHead[cfg] + 1 : 0;
+			robSize[cfg]--;
 	
 			/* Commit the destination operand */
 			for (int i=0; i<(*retiredInstruction)->destinations.size(); i++)
@@ -873,46 +881,46 @@ public:
 			  {
 				case GPR_T:
 					/* If destination operand is an integer register, then commit the register in the integer mapping table */
-					integerMappingTable.Commit((*retiredInstruction)->destinations[i].tag);
+					integerMappingTable[cfg].Commit((*retiredInstruction)->destinations[i].tag);
 					break;
 	
 				case FPR_T:
 					/* If destination operand is a floating point register, then commit the register in the floating point mapping table */
-					floatingPointMappingTable.Commit((*retiredInstruction)->destinations[i].tag);
+					floatingPointMappingTable[cfg].Commit((*retiredInstruction)->destinations[i].tag);
 					break;
 				case CR_T:
 					/* If destination operand is an condition register, then commit the register in the condition mapping table */
-					conditionMappingTable.Commit((*retiredInstruction)->destinations[i].tag);
+					conditionMappingTable[cfg].Commit((*retiredInstruction)->destinations[i].tag);
 					break;
 				case FPSCR_T:
 					/* If destination operand is an FPSCR register, then commit the register in the FPSCR mapping table */
-					FPSCRMappingTable.Commit((*retiredInstruction)->destinations[i].tag);
+					FPSCRMappingTable[cfg].Commit((*retiredInstruction)->destinations[i].tag);
 					break;
 				case LR_T:
 					/* If destination operand is an link register, then commit the register in the link mapping table */
-					linkMappingTable.Commit((*retiredInstruction)->destinations[i].tag);
+					linkMappingTable[cfg].Commit((*retiredInstruction)->destinations[i].tag);
 					break;
 				case CTR_T:
 					/* If destination operand is an count register, then commit the register in the count mapping table */
-					countMappingTable.Commit((*retiredInstruction)->destinations[i].tag);
+					countMappingTable[cfg].Commit((*retiredInstruction)->destinations[i].tag);
 					break;
 				case XER_T:
 					/* If destination operand is an XER register, then commit the register in the XER mapping table */
-					XERMappingTable.Commit((*retiredInstruction)->destinations[i].tag);
+					XERMappingTable[cfg].Commit((*retiredInstruction)->destinations[i].tag);
 					break;
 	
 				default: ;
 			  }
 			}
 			/* If instruction was execution serialized then clear the lock bit to allow new instruction to be dispatched */
-			if((*retiredInstruction)->execution_serialized) lock = false;
+			if((*retiredInstruction)->execution_serialized) lock[cfg] = false;
 		}
 	}
 	
 	/** Perform chnages on the mapping table following an instruction write back
 		@param writeBackInstruction instruction that was written back */
 	//	void WriteBack(const InstructionPtr<T, nSources>& writeBackInstruction)
-	void WriteBack(const InstructionPtr *writeBackInstruction)
+	void WriteBack(const InstructionPtr *writeBackInstruction, int cfg)
 	{
 	  for (int i=0; i<(*writeBackInstruction)->destinations.size(); i++)
 	  {
@@ -925,32 +933,32 @@ public:
 			{
 				case GPR_T:
 					/* If physical register is an integer register, make it valid into the integer mapping table */
-					integerMappingTable.Validate(tag);
+					integerMappingTable[cfg].Validate(tag);
 					break;
 
 				case FPR_T:
 					/* If physical register is a floating point register, make it valid into the floating point mapping table */
-					floatingPointMappingTable.Validate(tag);
+					floatingPointMappingTable[cfg].Validate(tag);
 					break;
 				case CR_T:
 					/* If physical register is an condition register, make it valid into the condition mapping table */
-					conditionMappingTable.Validate(tag);
+					conditionMappingTable[cfg].Validate(tag);
 					break;
 				case FPSCR_T:
 					/* If physical register is an FPSCR register, make it valid into the FPSCR mapping table */
-					FPSCRMappingTable.Validate(tag);
+					FPSCRMappingTable[cfg].Validate(tag);
 					break;
 				case LR_T:
 					/* If physical register is an link register, make it valid into the link mapping table */
-					linkMappingTable.Validate(tag);
+					linkMappingTable[cfg].Validate(tag);
 					break;
 				case CTR_T:
 					/* If physical register is an count register, make it valid into the count mapping table */
-					countMappingTable.Validate(tag);
+					countMappingTable[cfg].Validate(tag);
 					break;
 				case XER_T:
 					/* If physical register is an XER register, make it valid into the XER mapping table */
-					XERMappingTable.Validate(tag);
+					XERMappingTable[cfg].Validate(tag);
 					break;
 
 				default: ;
@@ -960,7 +968,7 @@ public:
 		QueuePointer<RenamePipelineEntry<T, nSources>, nStages * Width> renamePipelineEntry;
 
 		/* For each rename pipeline entry, update valid bit for each source operands */
-		for(renamePipelineEntry = renamePipeline.SeekAtHead(); renamePipelineEntry; renamePipelineEntry++)
+		for(renamePipelineEntry = renamePipeline[cfg].SeekAtHead(); renamePipelineEntry; renamePipelineEntry++)
 		{
 		  //	renamePipelineEntry->instruction->Validate(*writeBackInstruction);
 		  renamePipelineEntry->instruction->Validate(*writeBackInstruction);
@@ -1104,6 +1112,11 @@ public:
 		  inInstruction.accept[cfg*Width+renamePort] = false;
 	      }// End of foreach Config.
 	      inInstruction.accept.send();
+	      // Following signal have been set in Enabled function... but we have to send then here.
+	      outInstructionIssue.enable.send();
+	      outInstructionReorder.enable.send();
+	      outLoadInstruction.enable.send();
+	      outStoreInstruction.enable.send();
 	    }// endof if (areallknwon)
 	}//End of onAccept
 
@@ -1147,7 +1160,7 @@ public:
 		  if (inWriteBackInstruction.enable[cfg*WriteBackWidth+i])
 		    {
 		      InstructionPtr tmpinst = inWriteBackInstruction.data[cfg*WriteBackWidth+i];
-		      WriteBack(&tmpinst);
+		      WriteBack(&tmpinst, cfg);
 		      //changed = true;
 		    }
 		}
@@ -1177,7 +1190,7 @@ public:
 		      cerr << tmpinst << endl;
 	  }
 #endif
-			  Retire(&tmpinst);
+			  Retire(&tmpinst, cfg);
 			}
 		      else
 			{
@@ -1317,10 +1330,10 @@ public:
 				renamePipelineEntry->instruction = inInstruction.data[cfg*Width+renamePort];
 				
 				/* Rename the source operands of the instruction */
-				Rename(&(renamePipelineEntry->instruction));
+				Rename(&(renamePipelineEntry->instruction), cfg);
 
 				/* Allocate ressources for the instruction */
-				Allocate(&(renamePipelineEntry->instruction));
+				Allocate(&(renamePipelineEntry->instruction), cfg);
 				//changed = true;
 			}
 			else

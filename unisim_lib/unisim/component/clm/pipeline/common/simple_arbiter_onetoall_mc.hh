@@ -144,6 +144,7 @@ public:
 
   void on_Data()
   {
+    /*
     bool areallknown(true);
     int i;
     int j;
@@ -152,73 +153,87 @@ public:
         areallknown &= inInstruction[i].data.known();
       }
     if (areallknown)
+    */
+    if ( inInstruction.data.known() )
+    {
+      for (int cfg=0; cfg<nConfig; cfg++)
       {
-	for(i = 0; i < InputWidth; i++)
+	for(int i = 0; i < InputWidth; i++)
 	  {
-	    if(inInstruction[i].data.something())
+	    if(inInstruction.data[cfg*InputWidth+i].something())
 	      {
-		for (j = 0; j < nChannels; j++)
+		for (int j = 0; j < nChannels; j++)
 		  {
 #ifdef DD_DEBUG_SIGNALS
 		    cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
-		    cerr << " Sending instruction on out["<<i<<"]["<<j<<"]: "<< inInstruction[i].data << endl;
+		    cerr << " Sending instruction on out["<<i<<"]["<<j<<"]: "<< inInstruction.data[cfg*InputWidth+i] << endl;
 #endif	
-		    outInstruction[i][j].data = inInstruction[i].data;
+		    outInstruction[j].data[cfg*InputWidth+i] = inInstruction.data[cfg*InputWidth+i];
 		    //outInstruction[j*OutputWidth+i].data = inInstruction[i].data;
 		  }
 	      }
 	    else
 	      {
-		for (j = 0; j < nChannels; j++)
+		for (int j = 0; j < nChannels; j++)
 		  {
 #ifdef DD_DEBUG_SIGNALS
 		    cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
 		    cerr << " Sending Nothing on out["<<i<<"]["<<j<<"]" << endl;
 #endif	
-		    outInstruction[i][j].data.nothing();
+		    outInstruction[j].data[cfg*InputWidth+i].nothing();
 		    //outInstruction[ j*OutputWidth+i ].data.nothing();
 		  }
 	      }
 	  }
-      } //end of: if (areallknown)
+      } // endof foreach Config.
+      for (int j = 0; j < nChannels; j++)
+	{
+	  outInstruction[j].data.send();
+	}
+    } //end of: if (areallknown)
   } // end of: on_Data...
 
   void on_Accept()
   {
+    
     bool areallknown(true);
-    int i;
-    int j;
+    //int i;
+    //int j;
     bool allaccept(true);
-    for (i=0;i<InputWidth;i++)
+    //for (i=0;i<InputWidth;i++)
+    //  {
+    for (int j = 0; j < nChannels; j++)
       {
-	for (j = 0; j < nChannels; j++)
-	  {
-	    areallknown &= outInstruction[i][j].accept.known();
-	    //areallknown &= outInstruction[ j*OutputWidth+i ].accept.known();
-	  }
+	areallknown &= outInstruction[j].accept.known();
+	//areallknown &= outInstruction[ j*OutputWidth+i ].accept.known();
       }
+    //  }
     if (areallknown)
+    {
+      for (int cfg=0; cfg<nConfig; cfg++)
       {
-	for(i = 0; i < InputWidth; i++)
+	for(int i = 0; i < InputWidth; i++)
 	  {
 	    allaccept = true;
-	    for (j = 0; j < nChannels; j++)
+	    for (int j = 0; j < nChannels; j++)
 	      {
-		allaccept &= outInstruction[i][j].accept;
+		allaccept &= outInstruction[j].accept[cfg*InputWidth+i];
 		//allaccept &= outInstruction[ j*OutputWidth+i ].accept;
-
 	      }
 #ifdef DD_DEBUG_SIGNALS
 	    cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Accept >>> " << endl;
 	    cerr << " Sending accept="<< (allaccept?"True":"False") << " on in["<<i<<"]" << endl;
 #endif	
-	    inInstruction[i].accept = allaccept;
+	    inInstruction.accept[cfg*InputWidth+i] = allaccept;
 	  }
-      }//EO: if (areallknown) ...
+      }//Endof foreach Config.
+      inInstruction.accept.send();
+    }//EO: if (areallknown) ...
   } //EO: on_Accept
 
   void on_Enable()
   {
+    /*
     bool areallknown(true);
     int i;
     int j;
@@ -227,35 +242,44 @@ public:
         areallknown &= inInstruction[i].enable.known();
       }
     if (areallknown)
+    */
+    if ( inInstruction.enable.known() )
+    {
+      for(int cfg=0; cfg<nConfig; cfg++)
       {
-	for(i = 0; i < InputWidth; i++)
+	for(int i = 0; i < InputWidth; i++)
 	  {
-	    if(inInstruction[i].enable)
+	    if(inInstruction.enable[cfg*InputWidth+i])
 	      {
-		for (j = 0; j < nChannels; j++)
+		for (int j = 0; j < nChannels; j++)
 		  {
 #ifdef DD_DEBUG_SIGNALS
 		    cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Enable >>> " << endl;
 		    cerr << " Sending enable="<< "True" << " on out["<<i<<"]["<<j<<"]" << endl;
 #endif	
-		    outInstruction[i][j].enable = true;
+		    outInstruction[j].enable[cfg*InputWidth+i] = true;
 		    //outInstruction[ j*OutputWidth+i ].enable = true;
 		  }
 	      }
 	    else
 	      {
-		for (j = 0; j < nChannels; j++)
+		for (int j = 0; j < nChannels; j++)
 		  {
 #ifdef DD_DEBUG_SIGNALS
 		    cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Enable >>> " << endl;
 		    cerr << " Sending enable="<< "True" << " on out["<<i<<"]["<<j<<"]" << endl;
 #endif	
-		    outInstruction[i][j].enable = false;
+		    outInstruction[j].enable[cfg*InputWidth+i] = false;
 		    //outInstruction[ j*OutputWidth+i ].enable = false;
 		  }
 	      }
 	  }
       }
+      for (int j = 0; j < nChannels; j++)
+      {
+	outInstruction[j].enable.send();
+      }
+    }
   }
 
 
