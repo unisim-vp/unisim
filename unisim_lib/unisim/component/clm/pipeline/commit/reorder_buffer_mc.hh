@@ -1070,20 +1070,22 @@ class ReorderBuffer : public module//, public StatisticService
 		*/
 		friend ostream& operator << (ostream& os, const ReorderBuffer<T, nSources, ReorderBufferSize, AllocateWidth, WriteBackWidth, RetireWidth>& rob)
 		{
-			int i;
-			int tag;
-
-			os << "============= REORDERBUFFER =============" << endl;
-			os << "(rob)robSize=" << rob.size << endl;
-			os << "(rob)robHead=" << rob.head << endl;
-			os << "(rob)robTail=" << rob.tail << endl;
-			for(tag = rob.tail, i = 0; i < rob.size; tag = tag > 0 ? tag - 1 : ReorderBufferSize - 1, i++)
+		  int i;
+		  int tag;
+		  for(int cfg=0; cfg<nConfig; cfg++)
+		    {
+			os << "============= [Config::"<<cfg<<"] REORDERBUFFER =============" << endl;
+			os << "(rob)robSize=" << rob.size[cfg] << endl;
+			os << "(rob)robHead=" << rob.head[cfg] << endl;
+			os << "(rob)robTail=" << rob.tail[cfg] << endl;
+			for(tag = rob.tail[cfg], i = 0; i < rob.size[cfg]; tag = tag > 0 ? tag - 1 : ReorderBufferSize - 1, i++)
 			{
-				const ReorderBufferEntry<T, nSources>& entry = rob.entries[tag];
+				const ReorderBufferEntry<T, nSources>& entry = rob.entries[cfg][tag];
 				os << entry << endl;
 			}
 			os << "========================================" << endl;
-			return os;
+		    }
+		  return os;
 		}
 
 		/** Returns the number of retired instructions

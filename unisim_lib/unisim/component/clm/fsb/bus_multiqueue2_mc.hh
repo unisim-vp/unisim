@@ -119,7 +119,8 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
   inport  < memreq < INSTRUCTION, RequestWidth > > inMEM;        ///< CLM Port receiving answes from the memory
   outport < memreq < INSTRUCTION, RequestWidth > > outMEM;       ///< CLM Port sending requests to the memory
 
-  inport  <bool,nCPU> inSharedCPU;    ///< Optional CLM Port receiving the shared bits from the CPUs
+  inport  <bool,nCPU> inInstSharedCPU;    ///< Optional CLM Port receiving the shared bits from the CPUs
+  inport  <bool,nCPU> inDataSharedCPU;    ///< Optional CLM Port receiving the shared bits from the CPUs
   //  inport  <bool,Snooping> inSharedCPU[nCPU];    ///< Optional CLM Port receiving the shared bits from the CPUs
   outport <bool> outSharedMEM;         ///< Optional CLM Port sendiing the shared bit to the memory
   //  outport <bool,Snooping> outSharedMEM;         ///< Optional CLM Port sendiing the shared bit to the memory
@@ -161,7 +162,8 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
     //    {
       inInstCPU.set_unisim_name(this,"inInstCPU");
       inDataCPU.set_unisim_name(this,"inDataCPU");
-      inSharedCPU.set_unisim_name(this,"inSharedCPU");
+      inInstSharedCPU.set_unisim_name(this,"inInstSharedCPU");
+      inDataSharedCPU.set_unisim_name(this,"inDataSharedCPU");
       outInstCPU.set_unisim_name(this,"outInstCPU");
       outDataCPU.set_unisim_name(this,"outDataCPU");
       //    }
@@ -180,7 +182,8 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
     sensitive_method(on_accept) << outInstCPU.accept;
     sensitive_method(on_accept) << outDataCPU.accept;
     if(Snooping)
-      { sensitive_method(on_shared_data) << inSharedCPU.data;
+      { sensitive_method(on_shared_data) << inInstSharedCPU.data;
+        sensitive_method(on_shared_data) << inDataSharedCPU.data;
       }
       //    }
     sensitive_pos_method(begin_of_cycle) << clock;
@@ -245,11 +248,17 @@ INFO << "Sending (C) to all: " << head->req << endl;
       for(int i=0;i<nCPU;i++)
       { if((head->sender_id!=i) || is_cpu_flush())
 	{
+#ifdef DEBUG_BUS_MQ
+	  INFO << "Sending (C) to "<<i<<": " << head->req << endl;
+#endif	  
 	  outInstCPU.data[i] = head->req;
 	  outDataCPU.data[i] = head->req;
 	}
         else 
 	{
+#ifdef DEBUG_BUS_MQ
+	  INFO << "Sending Nothing to "<<i<<": " << head->req << endl;
+#endif	  
 	  outInstCPU.data[i].nothing();
 	  outDataCPU.data[i].nothing();
 	}
@@ -403,17 +412,35 @@ INFO << "\e[1;31mC" << i << "\e[0m: " << bl.req << endl;
     //{
 #ifdef DEBUG_BUS_MQ
       if(inMEM.data.something())
-	{ INFO << "Receiving(M):       " << inMEM.data << endl;
+	{ cerr << "Receiving(M):       " << inMEM.data << endl;
 	}
       for(int i=0;i<nCPU;i++)
 	{ 
 	  if(inInstCPU.data[i].something())
-	  { INFO << "Receiving(" << i << "):       " << inInstCPU.data[i] << endl;
+	  { cerr << "Receiving(" << i << "):       " << inInstCPU.data[i] << endl;
 	  }
 	  if(inDataCPU.data[i].something())
-	  { INFO << "Receiving(" << i << "):       " << inDataCPU.data[i] << endl;
+	  { cerr << "Receiving(" << i << "):       " << inDataCPU.data[i] << endl;
 	  }
 	}
+#endif
+#ifdef DD_DEBUG_BUS_MQ2_VERB100
+      if ( DD_DEBUG_TIMESTAMP <= timestamp() )
+      {
+      cerr << "DD_DEBUG_BUS_MQ2 ..." << endl;
+      if(inMEM.data.something())
+	{ cerr << "Receiving(M):       " << inMEM.data << endl;
+	}
+      for(int i=0;i<nCPU;i++)
+	{ 
+	  if(inInstCPU.data[i].something())
+	  { cerr << "Receiving(" << i << "):       " << inInstCPU.data[i] << endl;
+	  }
+	  if(inDataCPU.data[i].something())
+	  { cerr << "Receiving(" << i << "):       " << inDataCPU.data[i] << endl;
+	  }
+	}
+      }
 #endif
 
       // If an answer is received from memory side, try to put it in answer queue
@@ -458,7 +485,7 @@ INFO << "\e[1;31mC" << i << "\e[0m: " << bl.req << endl;
 		  else     inDataCPU.accept[j] = false;
 		  }
 		for(int j=0;j<nCPU;j++)
-		  inDataCPU.accept[j] =false;
+		  inInstCPU.accept[j] =false;
 		cpu_round_robin_index++;
 		if(cpu_round_robin_index==nCPU) cpu_round_robin_index = 0;
 		inInstCPU.accept.send();
@@ -552,24 +579,28 @@ INFO << "\e[1;31mC" << i << "\e[0m: " << bl.req << endl;
     { // Exit if one of the input signal is not known
       //      for(int i=0;i<nCPU;i++)
       //{
-      if(!inSharedCPU.data.known()) return;
+      if(!inInstSharedCPU.data.known() || !inDataSharedCPU.data.known()) return;
       //}
       //All the signal are known, check is a message has been sent
       if(!sent_cpu_data && !sent_mem_data)
       { // We did not send any data, we should have nothing on each shared input
         // and send nothing on each shared output
         for(int i=0;i<nCPU;i++)
-        { if(inSharedCPU.data[i].something())
-          { ERROR << "Every inSharedCPU should be nothing when no data is sent, and inSharedCPU[" << i << "] is " << (inSharedCPU.data[i]?"true":"false") << endl;
+        { if(inInstSharedCPU.data[i].something() || inDataSharedCPU.data[i].something())
+          { ERROR << "Every inSharedCPU should be nothing when no data is sent, and inSharedCPU[" << i << "] is " 
+	      //<< (inSharedCPU.data[i]?"true":"false") 
+		  << endl;
             exit(1);
           }
         }
         for(int i=0;i<nCPU;i++)
         { //outSharedCPU[i].data.nothing(); caches no more have a shared bit input
-          inSharedCPU.accept[i] = false;
+          inInstSharedCPU.accept[i] = false;
+          inDataSharedCPU.accept[i] = false;
         }
         outSharedMEM.data.nothing();
-	inSharedCPU.accept.send();
+	inInstSharedCPU.accept.send();
+	inDataSharedCPU.accept.send();
         return;
       }    
     
@@ -582,11 +613,13 @@ INFO << "\e[1;31mC" << i << "\e[0m: " << bl.req << endl;
 
       for(int i=0;i<nCPU;i++)
       { if(i!=head->sender_id)
-        { if(!inSharedCPU.data[i].something())
+        { if(!inDataSharedCPU.data[i].something() )
           { ERROR << "Every inSharedCPU should be someting when data is sent" << endl;
+	  cerr << " i=" << i << "    " << endl;
+	  cerr << *head << endl;
             exit(1);
           }
-          is_shared |= inSharedCPU.data[i];
+          is_shared |= inDataSharedCPU.data[i];
         }
       }
       //Send the shared information to the ouput ports
@@ -594,9 +627,11 @@ INFO << "\e[1;31mC" << i << "\e[0m: " << bl.req << endl;
       { if(is_shared) svg->add_box_info(timestamp(),name(),"S");
       }
       for(int j=0;j<nCPU;j++)
-      { inSharedCPU.accept[j] = true;
+      { inInstSharedCPU.accept[j] = true;
+        inDataSharedCPU.accept[j] = true;
       }
-      inSharedCPU.accept.send();
+      inInstSharedCPU.accept.send();
+      inDataSharedCPU.accept.send();
       outSharedMEM.data = is_shared;
     } // if(Snooping)
   }

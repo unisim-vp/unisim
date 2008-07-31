@@ -231,7 +231,7 @@ class CacheWB : public module
    * \brief Module constructor
    */
   CacheWB(const char *name, Object *parent = 0) : module(name)
-						,Object(name, 0)
+						,Object(name, parent)
 						,Client < MemoryInjection< address_t > >(name, this)
 						,Service < MemoryInjection< address_t > >(name, this)
     //						,syscall_MemExp("syscall_MemExp", this)
@@ -1033,7 +1033,15 @@ class CacheWB : public module
    * \brief Process called on clock rising edge.
    */
   void start_of_cycle()
-  { // checks if there is something to be sent from the cache pipeline and 
+  {
+#ifdef DD_DEBUG_DCACHE_VERB100
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")]  Begin of start_of_cycle..." << endl;
+    }
+#endif
+
+    // checks if there is something to be sent from the cache pipeline and 
     // the MSHR queue and send them to the cpu and memory system
     SendData();
     
@@ -1048,6 +1056,13 @@ class CacheWB : public module
       cerr << *this << endl;
     }
 #endif
+#ifdef DD_DEBUG_DCACHE_VERB100
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")]  End of start_of_cycle..." << endl;
+    }
+#endif
+
   }
 
 
@@ -1055,7 +1070,15 @@ class CacheWB : public module
    * \brief Process called on clock falling edge.
    */
   void end_of_cycle()
-  { // checks that the data sent in the previous cycle has been accepted and update the state of 
+  { 
+#ifdef DD_DEBUG_DCACHE_VERB100
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")]  Begin of end_of_cycle..." << endl;
+    }
+#endif
+
+    // checks that the data sent in the previous cycle has been accepted and update the state of 
     // the cache pipeline and the MSHR queue if necessary
     CheckAcceptedData();
     // checks that the module has received something from the memory system and update the MSHR 
@@ -1071,7 +1094,14 @@ class CacheWB : public module
     SetCacheHeadState();
     // set the cache snooped head state
     if(Snooping) SetSnoopedCacheHeadState();
-  }
+
+#ifdef DD_DEBUG_DCACHE_VERB100
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")]  End of end_of_cycle..." << endl;
+    }
+#endif
+ }
 
 
   /* --------------------------------------------------------------- */

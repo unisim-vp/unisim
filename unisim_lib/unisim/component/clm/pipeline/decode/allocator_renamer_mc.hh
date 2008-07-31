@@ -1492,30 +1492,30 @@ public:
 	friend ostream& operator << (ostream& os, const AllocatorRenamer<T, nSources, nIntegerArchitecturalRegisters, nFloatingPointArchitecturalRegisters, nIntegerRegisters, nFloatingPointRegisters, Width, WriteBackWidth, RetireWidth, ReorderBufferSize, nStages>& allocatorRenamer)
 	{
 		os << "========= ALLOCATE/RENAME ==========" << endl;
-		os << "lock=" << allocatorRenamer.lock << endl;
-		os << "(alloc)robSize=" << allocatorRenamer.robSize << endl;
-		os << allocatorRenamer.renamePipeline;
+		os << "lock=" << allocatorRenamer.lock[0] << endl;
+		os << "(alloc)robSize=" << allocatorRenamer.robSize[0] << endl;
+		os << allocatorRenamer.renamePipeline[0];
 		os << "------------------------------------------------------------------------" << endl;
 		os << "integer mapping table:" << endl;
-		os << allocatorRenamer.integerMappingTable;
+		os << allocatorRenamer.integerMappingTable[0];
 		os << "------------------------------------------------------------------------" << endl;
 		os << "floating point mapping table:" << endl;
-		os << allocatorRenamer.floatingPointMappingTable;
+		os << allocatorRenamer.floatingPointMappingTable[0];
 		os << "------------------------------------------------------------------------" << endl;
 		os << "condition mapping table:" << endl;
-		os << allocatorRenamer.conditionMappingTable;
+		os << allocatorRenamer.conditionMappingTable[0];
 		os << "------------------------------------------------------------------------" << endl;
 		os << "FPSCR mapping table:" << endl;
-		os << allocatorRenamer.FPSCRMappingTable;
+		os << allocatorRenamer.FPSCRMappingTable[0];
 		os << "------------------------------------------------------------------------" << endl;
 		os << "link mapping table:" << endl;
-		os << allocatorRenamer.linkMappingTable;
+		os << allocatorRenamer.linkMappingTable[0];
 		os << "------------------------------------------------------------------------" << endl;
 		os << "count mapping table:" << endl;
-		os << allocatorRenamer.countMappingTable;
+		os << allocatorRenamer.countMappingTable[0];
 		os << "------------------------------------------------------------------------" << endl;
 		os << "XER mapping table:" << endl;
-		os << allocatorRenamer.XERMappingTable;
+		os << allocatorRenamer.XERMappingTable[0];
 		os << "====================================" << endl;
 		return os;
 	}

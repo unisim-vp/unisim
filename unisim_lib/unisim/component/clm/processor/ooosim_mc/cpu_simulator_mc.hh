@@ -57,7 +57,7 @@
 
 #include <unisim/component/clm/utility/utility.h>
 
-#include <unisim/component/clm/processor/ooosim/cpu_emulator.hh>
+#include <unisim/component/clm/processor/ooosim_mc/cpu_emulator.hh>
 
 // To enable Emulator and Simulator communication ...
 //#include <generic/memory/memory_interface.hh>
@@ -229,7 +229,9 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     speculative_cpu_state = new CPUSim("speculative_cpu_state",this);
     for(int cfg=0; cfg<nConfig; cfg++)
     {
-      check_emulator[cfg] = new CPUEmu("check_emulator",this);
+      stringstream str;
+      str << "check_emulator[" << cfg << "]";
+      check_emulator[cfg] = new CPUEmu((str.str()).c_str(),this);
       // fetch_emulator[cfg] = new CPUSim("fetch_emulator",this);
     }
     fetch_emulator = new CPUSim("fetch_emulator",this);
@@ -292,29 +294,17 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     inClock >> fetch_stage->inClock;
     inClock >> execute_stage->inClock;
     */
+    
     fetch->inClock(inClock);
     allocate->inClock(inClock);
-    //    dispatch->inClock(inClock); //()
     schedule->inClock(inClock);
     registerfile->inClock(inClock);
-    //for (int i=0; i<nIntegerUnits; i++)
-    //  {
     iu->inClock(inClock);
-    //  }
-    //for (int i=0; i<nIntegerUnits; i++)
-    //  {
     fpu->inClock(inClock);
-    //  }
-    //for (int i=0; i<nIntegerUnits; i++)
-    //  {
     agu->inClock(inClock);
-    //  }
     lsq->inClock(inClock);
-    //    cdba->inClock(inClock);
     rob->inClock(inClock);
-    //    ->inClock(inClock);
-    //    execute_stage->inClock(inClock);
-
+    
     // Flush connections
     //    execute_stage->outFlush >> fetch_stage->inFlush;
 
@@ -477,6 +467,21 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 ////////////////////////////////
   void start_of_cycle()
   {
+    // Check if simulation is finished :
+    bool is_finished=true;
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      is_finished &= check_emulator[cfg]->program_ended;
+    }
+    if (is_finished)
+    {
+      cerr << "Simulation ended at cycle : " << timestamp() << endl;
+      for(int cfg=0; cfg<nConfig; cfg++)
+      {
+	cerr << "       Cpu[" << cfg << "] ended at cycle : " << check_emulator[cfg]->end_at_cycle << endl;
+      }
+    }
+
 #ifdef DD_DEBUG_PIPELINE_VERB2
     if (DD_DEBUG_TIMESTAMP < timestamp())
       {
@@ -487,20 +492,20 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 	cerr << "("<< timestamp() << ")" << *schedule;
 	cerr << "("<< timestamp() << ")" << *registerfile;
 	
-	for (int i=0; i<nIntegerUnits; i++)
-	  { cerr << "("<< timestamp() << ")" << *iu[i];
-	  }
-	for (int i=0; i<nIntegerUnits; i++)
-	  { cerr << "("<< timestamp() << ")" << *fpu[i];
-	  }
-	for (int i=0; i<nIntegerUnits; i++)
-	  { cerr << "("<< timestamp() << ")" << *agu[i];
-      }
+	//	for (int i=0; i<nIntegerUnits; i++)
+	{ cerr << "("<< timestamp() << ")" << *iu;//[i];
+	}
+	//	for (int i=0; i<nIntegerUnits; i++)
+	{ cerr << "("<< timestamp() << ")" << *fpu;//[i];
+	}
+	//	for (int i=0; i<nIntegerUnits; i++)
+	{ cerr << "("<< timestamp() << ")" << *agu;//[i];
+	}
 	cerr << "("<< timestamp() << ")" << *lsq;
 	cerr << "("<< timestamp() << ")" << *rob;
       }
 #endif
-    
+
     // executing in simulator has finished (theoreticaly, ie. effects will become visible
     // once the emulator executes), check correctness of CIA and execute in emulator:
     //          if (instruction_wb->cia != emulator->ReadCIA())
@@ -1233,16 +1238,16 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
   //  MyMemEmulator *mem_emu;
 
 
- private:
-
+  //private:
+public:
   // Pipeline Stages
   //   Fetch
   //  typedef Fetcher<UInt64, nSources, fetchWidth, IL1_nLineSize, IL1_nCachetoCPUDataPathSize, InstructionQueueSize, InstructionSize, BHT_Size, BHT_nLevels, BHT_nHistorySize, BTB_nlines, BTB_associativity, RAS_Size, retireWidth, WriteBackWidth,fetchMaxPendingRequests, MaxBranches> FetcherClass;
   typedef Fetcher<UInt64, nSources, fetchWidth, IL1_nLineSize, nIL1CachetoCPUDataPathSize, InstructionQueueSize, InstructionSize, BHT_Size, BHT_nLevels, BHT_nHistorySize, BTB_nlines, BTB_associativity, RAS_Size, retireWidth, WriteBackWidth,fetchMaxPendingRequests, MaxBranches> FetcherClass;
 public: // Allow external connections with Inst. Cache.
   FetcherClass *fetch;
-private:
-
+  //private:
+public:
 
   //typedef DummyExecutionCore<UInt64, nSources, Width, WriteBackWidth, retireWidth, nStages> DummyExecutionCore_stage;
   //  typedef DummyExecutionCore<UInt64, nSources, fetchWidth, WriteBackWidth, retireWidth, 1, nDL1CachetoCPUDataPathSize> DummyExecutionCoreClass;
@@ -1300,8 +1305,8 @@ typedef AddressGenerationUnit<UInt64, nSources, addressGenerationPipelineDepth, 
 typedef LoadStoreQueue<UInt64, nSources, loadQueueSize, storeQueueSize, nAddressGenerationUnits, allocateRenameWidth, retireWidth, DL1_nCPUtoCacheDataPathSize, DL1_nPorts, LSQ_nCDBPorts> LoadStoreQueueClass;
 public: // Allow external connections with Inst. Cache.
   LoadStoreQueueClass *lsq;
-private:
-
+  //private:
+public:
   static const int nChannels = 5;
   //typedef Arbiter<UInt64, nSources, commonDataBusArbiterPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
 typedef DataBusArbiter<UInt64, nSources, nIntegerUnits, nFloatingPointUnits, nAddressGenerationUnits, LSQ_nCDBPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
@@ -1315,7 +1320,8 @@ typedef ArbiterOnetoAll<UInt64, nSources, retireWidth, retireWidth, nRetireChann
 typedef ReorderBuffer<UInt64, nSources, reorderBufferSize, allocateRenameWidth, WriteBackWidth, retireWidth> ReorderBufferClass;
   ReorderBufferClass *rob;
  
-  
+private:
+ 
   /* Registers interface */
   static void write_gpr(void *, int, uint32_t);
   static uint32_t read_gpr(void *, int);

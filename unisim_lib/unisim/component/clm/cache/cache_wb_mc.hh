@@ -56,7 +56,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "system/CacheContainer.h"
 //#include "system/memory/cache/CacheCommon.h"
 #include <unisim/component/clm/cache/cache_container.hh>
-#include <unisim/component/clm/cache/cache_common.hh>
+#include <unisim/component/clm/cache/cache_common_mc.hh>
 
 //#include <generic/memory/memory_interface.hh>
 //#include <unisim/service/interfaces/memory.hh>
@@ -1060,7 +1060,15 @@ class CacheWB : public module
    * \brief Process called on clock rising edge.
    */
   void start_of_cycle()
-  { // checks if there is something to be sent from the cache pipeline and 
+  { 
+#ifdef DD_DEBUG_DCACHE_VERB100
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  Begin of start_of_cycle..." << endl;
+    }
+#endif
+
+    // checks if there is something to be sent from the cache pipeline and 
     // the MSHR queue and send them to the cpu and memory system
     SendData();
 
@@ -1070,13 +1078,20 @@ class CacheWB : public module
       inMEM_was_a_cacheQueue_hit[cfg] = false;
     }
     if(VERBOSE) dump();
-#ifdef DD_DEBUG_DCACHE
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+#ifdef DD_DEBUG_DCACHE_VERB101
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
-      cerr << "[DD_DEBUG_DCACHE] Cache Dump : " << endl; 
+      cerr << "[DD_DEBUG_DCACHE("<< this->name() <<")("<<timestamp()<<")] Cache Dump : " << endl; 
       cerr << *this << endl;
     }
 #endif
+#ifdef DD_DEBUG_DCACHE_VERB100
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  End of start_of_cycle..." << endl;
+    }
+#endif
+
   }
 
 
@@ -1084,7 +1099,14 @@ class CacheWB : public module
    * \brief Process called on clock falling edge.
    */
   void end_of_cycle()
-  { // checks that the data sent in the previous cycle has been accepted and update the state of 
+  {
+#ifdef DD_DEBUG_DCACHE_VERB101
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  Begin of end_of_cycle..." << endl;
+    }
+#endif
+      // checks that the data sent in the previous cycle has been accepted and update the state of 
     // the cache pipeline and the MSHR queue if necessary
     //    CheckAcceptedData();
     CheckCPUAcceptedData();
@@ -1105,6 +1127,12 @@ class CacheWB : public module
     SetCacheHeadState();
     // set the cache snooped head state
     if(Snooping) SetSnoopedCacheHeadState();
+#ifdef DD_DEBUG_DCACHE_VERB101
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  End of end_of_cycle..." << endl;
+    }
+#endif
   }
 
 
@@ -1116,22 +1144,26 @@ class CacheWB : public module
    * Module pretty printer
    */
   friend ostream& operator << (ostream& os, const this_class &cache)
-  { os << "==================== " << cache.fsc_object::name() << " =====================" << endl;
+  { 
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      os << "==================== [Config::"<<cfg<<"] " << cache.fsc_object::name() << " =====================" << endl;
     os << "Cache Pipeline:" << endl;
-    os << cache.cacheQueue;
+    os << cache.cacheQueue[cfg];
     os << "----------------------------------------------------------" << endl;
     if(Snooping)
     { os << "Cache Snoop Pipeline:" << endl;
-      os << cache.cacheSnoopQueue;
+      os << cache.cacheSnoopQueue[cfg];
       os << "----------------------------------------------------------" << endl;
     }
     os << "Delayed Write Buffer:" << endl;
-    os << cache.writeBuffer << endl;
+    os << cache.writeBuffer[cfg] << endl;
     os << "Return Buffer:" << endl;
-    os << cache.returnBuffer << endl;
+    os << cache.returnBuffer[cfg] << endl;
     os << "Request Buffer:" << endl;
-    os << cache.requestBuffer << endl;
+    os << cache.requestBuffer[cfg] << endl;
     os << "==========================================================" << endl;
+    } 
     return os;
   }
 
@@ -1149,7 +1181,7 @@ class CacheWB : public module
       // If returnBuffer is empty, cacheQueue is not empty and its head is ready. Then copy from
       // head to return buffer.
 #ifdef DD_DEBUG_DCACHE_VERB2
-      if (DD_DEBUG_TIMESTAMP < timestamp())
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
       {
 	cerr << "["<<this->name()<<"("<<timestamp()<<")]: SendData, start..." << endl;
       }
@@ -1159,7 +1191,7 @@ class CacheWB : public module
 #ifdef DD_DEBUG_DCACHE_VERB2
       else
       {
-	if (DD_DEBUG_TIMESTAMP < timestamp())
+	if (DD_DEBUG_TIMESTAMP <= timestamp())
 	  {
 	    cerr << "["<<this->name()<<"("<<timestamp()<<")]: Warning: returnBuffer.ready == True (no call to SendCacheDatatoCPU) ..." << endl;
 	  }
@@ -1185,12 +1217,13 @@ class CacheWB : public module
 	req.uid = returnBuffer[cfg].uid;
 	req.memreq_id = returnBuffer[cfg].memreq_id;
 	req.sender_type = memreq_types::sender_CACHE;
-	req.sender = this;
+	//	req.sender = this;
+	req.sender = this->name();
 	req.req_sender = returnBuffer[cfg].req_sender;
 	req.cachable = returnBuffer[cfg].cachable;
 	req.command = memreq_types::cmd_READ; // Only reads are sent back to the CPU
 #ifdef DD_DEBUG_DCACHE_VERB2
-	if (DD_DEBUG_TIMESTAMP < timestamp())
+	if (DD_DEBUG_TIMESTAMP <= timestamp())
 	  {
 	    cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Sending to CPU: "<< req << endl;
 	  }
@@ -1228,18 +1261,27 @@ class CacheWB : public module
       req.memreq_id = requestBuffer[cfg].memreq_id;
       req.sender_type = memreq_types::sender_CACHE;
       req.cachable = requestBuffer[cfg].cachable;
-      req.sender = this;
-      
+      //      req.sender = this;
+      {
+	stringstream sstr;
+	sstr << this->name() << cfg;
+	req.sender = sstr.str();
+      }
       if(requestBuffer[cfg].message_type==memreq_types::type_REQUEST)
       { // This is a new request, set this module as the original sender
-        req.req_sender = this;
+	//        req.req_sender = this;
+	{
+	  stringstream sstr;
+	  sstr << this->name() << cfg;
+	  req.req_sender = sstr.str();
+	}
       }
       else
       { // This is an answer to an existing request, forward the original sender value
         req.req_sender = requestBuffer[cfg].req_sender;
       }
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       cerr <<"["<<this->name()<<"("<<timestamp()<<")] Sending to MEM " << req << endl;
     }
@@ -1263,12 +1305,14 @@ class CacheWB : public module
     }
     else outMEM.data[cfg].nothing();
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
     cerr << "["<<this->name()<<"("<<timestamp()<<")]: SendData, end..." << endl;
     }
 #endif
     } // end of for each Config.
+    outCPU.data.send();
+    outMEM.data.send();
   } // end of SendData()
   /**
    * \brief Process called upon receiving an accept from the CPU
@@ -1304,9 +1348,15 @@ class CacheWB : public module
   { if(outMEM.accept.known())
     {
 #ifdef DD_DEBUG_DCACHE_VERB2
-      if (DD_DEBUG_TIMESTAMP < timestamp())
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
       {
-	if(outMEM.accept) cerr << "["<<this->name()<<"("<<timestamp()<<"] Cache recieved accept from MEM enabling MEM" << endl;  
+	cerr << "["<<this->name()<<"("<<timestamp()<<"] Cache recieved accept from MEM enabling MEM" << endl; 
+	//	if(outMEM.accept[]) cerr << "["<<this->name()<<"("<<timestamp()<<"] Cache recieved accept from MEM enabling MEM" << endl;  
+	for (int cfg=0; cfg<nConfig; cfg++)
+	{
+	  cerr << "[A(" << cfg << ")=" << ((outMEM.accept[cfg])?"t":"f") << "]"; 
+	}
+	cerr << endl;
 	//      else cerr << "\033[31mCACHE: MEM didn't accept the previous request !!!!!!!!!!!! \033[0m" << endl; 
       }
 #endif
@@ -1314,6 +1364,7 @@ class CacheWB : public module
       {
 	outMEM.enable[cfg] = outMEM.accept[cfg];
       }
+      outMEM.enable.send();
     }
   }
 
@@ -1451,15 +1502,21 @@ class CacheWB : public module
   { if(inCPU.data.known() && outCPU.accept.known())
     { // Upon receiving a request, check if it can be serviced/accepted
       //      INFO << "[DD_DEBUG_DCACHE] <DCACHE> on_CPU_data() REQ: " << inCPU.data << endl;
+#ifdef DD_DEBUG_DCACHE_VERB100
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  Begin of on_CPU_Data..." << endl;
+    }
+#endif
       for(int cfg=0; cfg<nConfig; cfg++)
       {
 	if(inCPU.data[cfg].something()) 
 	{
-#ifdef DD_DEBUG_DCACHE_VERB2
-	  if (DD_DEBUG_TIMESTAMP < timestamp())
+#ifdef DD_DEBUG_DCACHE_VERB101
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
 	  {
-	    INFO << "[DD_DEBUG_DCACHE] on_CPU_data() : REQ                  = " << inCPU.data << endl;
-	    INFO << "[DD_DEBUG_DCACHE] on_CPU_data() : can_accept_request() = " << (can_accept_request(cacheQueue)?"True":"False") << endl;
+	    cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")] on_CPU_data() : REQ                  = " << inCPU.data[cfg] << endl;
+	    cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")] on_CPU_data() : can_accept_request() = " << (can_accept_request(cacheQueue[cfg], cfg)?"True":"False") << endl;
 	  }
 #endif
 	  inCPU.accept[cfg] = can_accept_request(cacheQueue[cfg], cfg);
@@ -1467,10 +1524,22 @@ class CacheWB : public module
 	}
 	else 
 	{ 
+#ifdef DD_DEBUG_DCACHE_VERB101
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	  {
+	    cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")] on_CPU_data() : inCPU.accept = false " << endl;
+	  }
+#endif
 	  inCPU.accept[cfg] = false;
 	}
       }// end of foreach Config.
       inCPU.accept.send();
+#ifdef DD_DEBUG_DCACHE_VERB100
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  End of on_CPU_Data..." << endl;
+    }
+#endif
     }   
   }
 
@@ -1492,13 +1561,28 @@ class CacheWB : public module
     if(Snooping)
     { if(!outCPU.accept.known()) return;
     }
-    for(int cfg; cfg<nConfig; cfg++)
+#ifdef DD_DEBUG_DCACHE_VERB102
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[Config::all][DD_DEBUG_DCACHE("<<timestamp()
+		   <<")("<< this->name() <<")]  Begin onMEMdata..." << endl;
+	    }
+#endif
+    for(int cfg=0; cfg<nConfig; cfg++)
     {
     if(inMEM.data[cfg].something())
     { if(Snooping)
       { memreq<INSTRUCTION, nMemtoCacheDataPathSize> mr = inMEM.data[cfg];
         if(mr.command == memreq_types::cmd_FLUSH)
-        { // Flush requests are always accepted, no need to store the request.
+        { 
+#ifdef DD_DEBUG_DCACHE_VERB102
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[Config::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()
+		   <<")("<< this->name() <<")]  onMEMdata cmd_FLUSH..." << endl;
+	    }
+#endif
+	  // Flush requests are always accepted, no need to store the request.
           inMEM.accept[cfg] = true;
           outSharedMEM.data[cfg] = false;
           //return;
@@ -1535,12 +1619,26 @@ class CacheWB : public module
               outSharedMEM.data[cfg] = true;
               inMEM.accept[cfg] = can_accept && can_accept_request(cacheSnoopQueue[cfg], cfg);
 //cerr <<"M ";
+#ifdef DD_DEBUG_DCACHE_VERB102
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
+		{
+		  cerr << "[Config::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()
+		       <<")("<< this->name() <<")]  onMEMdata cmd_REQUEST LocalHit..." << endl;
+		}
+#endif
             }
             else
             { // Not a local cache hit, shared is to be set to false and 
               // the data can be accepted as it does not create any new request.
               outSharedMEM.data[cfg] = false;
               inMEM.accept[cfg] = true; 
+#ifdef DD_DEBUG_DCACHE_VERB102
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
+	      {
+		cerr << "[Config::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()
+		     <<")("<< this->name() <<")]  onMEMdata cmd_REQUEST No LocalHit..." << endl;
+	      }
+#endif
             }
           } break;
           case memreq_types::type_ANSWER:
@@ -1548,6 +1646,13 @@ class CacheWB : public module
             // not be set for memory answers.
             outSharedMEM.data[cfg] = false;
             inMEM.accept[cfg] = true;
+#ifdef DD_DEBUG_DCACHE_VERB102
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
+	      {
+		cerr << "[Config::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()
+		     <<")("<< this->name() <<")]  onMEMdata cmd_ANSWER..." << endl;
+	      }
+#endif
 //INFO << "accepted an anwser, because i accept every answer." << endl;
             break;
           default:
@@ -1558,26 +1663,49 @@ class CacheWB : public module
       else // !Snooping
       { // We are currently waiting for an answer from memory. Let's accept it.
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-    {
-        cerr << "["<<this->name()<<"("<<timestamp()<<")]: Accepting Data from Memory (Always)..." << endl;
-    }
+	if (DD_DEBUG_TIMESTAMP <= timestamp())
+	{
+	  cerr << "["<<this->name()<<"("<<timestamp()<<")]: Accepting Data from Memory (Always)..." << endl;
+	}
 #endif
         inMEM.accept[cfg] = true;
+#ifdef DD_DEBUG_DCACHE_VERB102
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
+	      {
+		cerr << "[Config::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()
+		     <<")("<< this->name() <<")]  onMEMdata No Snooping..." << endl;
+	      }
+#endif
       }
     } // !Something
     else 
     {
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
-    {
-      cerr << "["<<this->name()<<"("<<timestamp()<<")]: Non-Accepting Data from Memory (!something)..." << endl;
-    }
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
+      {
+	cerr << "["<<this->name()<<"("<<timestamp()<<")]: Non-Accepting Data from Memory (!something)..." << endl;
+      }
 #endif
       inMEM.accept[cfg] = false;
       if(Snooping) outSharedMEM.data[cfg].nothing();
+#ifdef DD_DEBUG_DCACHE_VERB102
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
+      {
+	cerr << "[Config::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()
+	     <<")("<< this->name() <<")]  onMEMdata received Nothing..." << endl;
+      }
+#endif
     }
     } // end of foreach Config.
+    inMEM.accept.send();
+    outSharedMEM.data.send();
+#ifdef DD_DEBUG_DCACHE_VERB102
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[Config::all][DD_DEBUG_DCACHE("<<timestamp()
+		   <<")("<< this->name() <<")]  End onMEMdata..." << endl;
+	    }
+#endif
   } // end of on_MEM_data()
   
   /**
@@ -1870,7 +1998,7 @@ class CacheWB : public module
       INFO << "Receiving from M:   " << inMEM.data[cfg] << endl;
 #endif
 #ifdef DD_DEBUG_DCACHE_VERB2
-      if (DD_DEBUG_TIMESTAMP < timestamp())
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
       {
 	cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning inMEM.enable == True ..." << endl;
       }
@@ -1884,7 +2012,10 @@ class CacheWB : public module
         else 
         { // The message type is not an request, it is an answer.
           // Discards answers form which request are not issued by this cache
-          if(mr.req_sender!=this) 
+	  stringstream sstr;
+	  sstr << this->name() << cfg;
+	  //          if(mr.req_sender!=this) 
+          if(mr.req_sender!=sstr.str()) 
           { 
             //INFO << "Discarded beacause it is not mine" << endl;
 #ifdef _CACHE_MESSAGES_SVG_H_
@@ -1907,15 +2038,17 @@ class CacheWB : public module
       
       // David Debug :
       // Do not update the write buffer with data not requested !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (mr.req_sender != this) return;
+      stringstream sstr;
+      sstr << this->name() << cfg;
+      if (mr.req_sender != sstr.str()) return;
 
-      if(this==mr.sender)
+      if(sstr.str()==mr.sender)
       { ERROR << "Receiving a request from myself in UpdateWriteBuffer : " << mr << endl;
         terminate_now() ;
       }
 
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       cerr << "["<<this->name()<<"("<<timestamp()<<")]: inMEM.enable == True, we are storing into writebuffer..." << endl;
     }
@@ -1979,7 +2112,7 @@ class CacheWB : public module
       }
 
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       cerr << "["<<this->name()<<"("<<timestamp()<<")]: inMEM.enable == True WriteBuffer :" << endl;
       cerr << writeBuffer[cfg] << endl;
@@ -1990,7 +2123,7 @@ class CacheWB : public module
     else
     {
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning inMEM.enable == False ..." << endl;
     }
@@ -2037,7 +2170,7 @@ class CacheWB : public module
           { base_address = cacheit->address & ((address_t)nLineSize - 1);
           }
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
           cerr <<"["<<this->name()<<"("<<timestamp()<<")]: " << endl;
           cerr <<"      address       ="<< hexa(cacheit->address) <<endl;
@@ -2056,7 +2189,7 @@ class CacheWB : public module
           if(ok)
           {
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
             cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Copy writeBuffer to pipeline entry ..." << endl;
     }
@@ -2084,7 +2217,7 @@ class CacheWB : public module
 #ifdef DD_DEBUG_DCACHE_VERB2
           else
           { 
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning: Not Ok !!!!! ..." << endl;
     }
@@ -2094,7 +2227,7 @@ class CacheWB : public module
 #ifdef DD_DEBUG_DCACHE_VERB2
       else
       {
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     { 
 	cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning: (!cacheit->write)==False ..." << endl;
     }
@@ -2104,7 +2237,7 @@ class CacheWB : public module
 #ifdef DD_DEBUG_DCACHE_VERB2
       else
       { 
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning: no cacheit ..." << endl;
     }
@@ -2114,7 +2247,7 @@ class CacheWB : public module
 #ifdef DD_DEBUG_DCACHE_VERB2
     else
     { 
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning writeBuffer.size == 0 ..." << endl;
     }
@@ -2547,7 +2680,14 @@ class CacheWB : public module
    */
   void ReadCPUData()
   {
-    for(int cfg; cfg<nConfig; cfg++)
+
+#ifdef DD_DEBUG_DCACHE_VERB101
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  Begin of ReadCPUData..." << endl;
+    }
+#endif
+    for(int cfg=0; cfg<nConfig; cfg++)
     {
       /* if there is a new request from the CPU it is added to the cache pipeline */
       if(inCPU.enable[cfg])
@@ -2555,14 +2695,18 @@ class CacheWB : public module
 #ifdef DEBUG_BUS_MQ
 	INFO << "Receiving from C:   " << mr << endl;
 #endif
-	if(this==mr.sender)
-	{ ERROR << "Receiving a request from myself on CPU port !\n" << mr << endl;
-        exit(1);
-	}
-#ifdef DD_DEBUG_DCACHE
-	if (DD_DEBUG_TIMESTAMP < timestamp())
 	{
-	  cerr << "[DD_DEBUG_DCACHE] Stored   " << mr << " from CPU" << endl;
+	  stringstream sstr;
+	  sstr << this->name() << cfg;
+	  if(sstr.str()==mr.sender)
+	    { ERROR << "Receiving a request from myself on CPU port !\n" << mr << endl;
+	    exit(1);
+	    }
+	}
+#ifdef DD_DEBUG_DCACHE_VERB101
+	if (DD_DEBUG_TIMESTAMP <= timestamp())
+	{
+	  cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] Stored   " << mr << " from CPU" << endl;
 	}
 #endif
 #ifdef DEBUG_TEST_UNCACHABLE_WRITE
@@ -2592,15 +2736,47 @@ class CacheWB : public module
 	}
 	// TODO NOW !!!! 
 	//	cacheQueue_enqueue(mr);
+	/*
+#ifdef DD_DEBUG_DCACHE_VERB101
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  Before cache enqueue..." << endl;
+      cerr << cacheQueue[cfg] << endl;
+    }
+#endif
+	*/
 	cacheQueue_enqueue(mr,cfg);
-
+	/*
+#ifdef DD_DEBUG_DCACHE_VERB101
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  After cache enqueue..." << endl;
+      cerr << cacheQueue[cfg] << endl;
+    }
+#endif
+	*/
 #ifdef NOC_THREADS_DISTRIBUTION
 	if( ((mr.address) & 0XFF000000) == 0XFF000000)
 	cout <<"CAC : receive thread request form CPU " << mr <<endl;
 #endif
 	
       }
+#ifdef DD_DEBUG_DCACHE_VERB101
+      else
+      {
+	if (DD_DEBUG_TIMESTAMP <= timestamp())
+	{
+	  cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] No data enabled !!! " << endl;	  
+	}
+      }
+#endif
     } // end of foreach Config.
+#ifdef DD_DEBUG_DCACHE_VERB101
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
+    {
+      cerr << "[Cnonfig::all][DD_DEBUG_DCACHE("<<timestamp()<<")("<< this->name() <<")]  End of ReadCPUData..." << endl;
+    }
+#endif
   } // end of ReadCPUData()
     
   /**
@@ -2633,7 +2809,9 @@ class CacheWB : public module
       { // Flush received from memory are invalidating cache lines
 	
 	
-        if(this==mr.req_sender)
+	stringstream sstr;
+	sstr << this->name() << cfg;
+        if(sstr.str()==mr.req_sender)
         { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheQueue[cfg].SeekAtHead();
           if(!cacheit)
           { ERROR << "Received a Flush request from this cache without the request being in the queue !" << endl;
@@ -2690,7 +2868,10 @@ class CacheWB : public module
 	continue;
       } // FLUSH
       
-      if(this==mr.sender)
+      stringstream sstr;
+      sstr << this->name() << cfg;
+      //     if(this==mr.sender)
+     if(sstr.str()==mr.sender)
       { ERROR << "Receiving a request from myself in ReadSnoopedData : " << mr << endl;
 	terminate_now() ;
       }
@@ -2881,7 +3062,7 @@ class CacheWB : public module
             cache[cfg].mesi_transition(cacheit->set,cacheit->line,MESI::transition_PrWr_XX,__FILE__,__LINE__,nProg);
             cacheQueue[cfg].RemoveHead();
 #ifdef DD_DEBUG_DCACHE
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
 	    cerr << "[DD_DEBUG_DCACHE] SetCacheHeadWriteState: writting in M.or E. state... cacheit:"
 		 << cacheit->data << endl; 
@@ -2899,7 +3080,7 @@ class CacheWB : public module
 */
             cacheit->state = WRITE_HIT_FLUSH;
 #ifdef DD_DEBUG_DCACHE
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
 	    cerr << "[DD_DEBUG_DCACHE] SetCacheHeadWriteState: not writting in SHARED state... cacheit:"
 		 << cacheit->data << endl; 
@@ -2915,7 +3096,7 @@ class CacheWB : public module
       else // !Snooping
       { 
 #ifdef DD_DEBUG_DCACHE
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
 	cerr << "[DD_DEBUG_DCACHE] SetCacheHeadWriteState: writting... cacheit:"
 	     << *cacheit << endl; 
@@ -3464,7 +3645,7 @@ INFO << "delay..." << endl;
           // Set returnBuffer as ready (full)
           returnBuffer[cfg].ready = true;
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
           cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Writting ReturnBuffer: " << returnBuffer[cfg] << endl;
     }
@@ -3475,7 +3656,7 @@ INFO << "delay..." << endl;
 #ifdef DD_DEBUG_DCACHE_VERB2
     else
     {
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
 
       cerr <<"["<<this->name()<<"("<<timestamp()<<")]: No cache it!!! Not Writting ReturnBuffer: " << returnBuffer[cfg] << endl;

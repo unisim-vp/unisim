@@ -467,7 +467,7 @@ public:
 #ifdef DD_DEBUG_FETCH_VERB2
 	  /// Mourad Modifs
 	  /////////////////
-	      if (DD_DEBUG_TIMESTAMP < timestamp())
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
 	      {	
 		if (inIL1.data[cfg].something())
 		{
@@ -476,6 +476,7 @@ public:
 	      }
 #endif
 	    }
+	  inIL1.accept.send();
 	}
 	void onCPUAccept()
 	{
@@ -515,7 +516,7 @@ public:
 		if(accessSize < 0) accessSize = 0;
 		
 #ifdef DD_DEBUG_FETCH_VERB2
-		if (DD_DEBUG_TIMESTAMP < timestamp())
+		if (DD_DEBUG_TIMESTAMP <= timestamp())
 		  {
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== GetMaximumAccessSize ==== " << endl;
 		cerr << "      addr               ="<< hexa(addr) << endl;
@@ -942,7 +943,7 @@ public:
 
 	    //#ifdef DD_DEBUG_FETCH_VERB1
 #ifdef DD_DEBUG_TEST_MOURAD
-	    if (DD_DEBUG_TIMESTAMP < timestamp())
+	    if (DD_DEBUG_TIMESTAMP <= timestamp())
 	    {
 	      cerr << "===== DEBUG Fetcher (Begin) =====================" << "(" << timestamp() << ")" << endl;
 	      //  cerr << "   Instruction Queue Size : " << instructionQueue.Size() << endl;
@@ -1001,7 +1002,7 @@ public:
 					nia[cfg] = instruction->cia;	/* nia is used by flush to redirect fetch on the correct path (ie replay the load) */
 // 					cerr << "!!!!! time stamp = " << sc_time_stamp() << ": got replay trap: must continue fetching along " << hexa(nia) << endl;
 #ifdef DD_DEBUG_FETCH_VERB2
-					if (DD_DEBUG_TIMESTAMP < timestamp())
+					if (DD_DEBUG_TIMESTAMP <= timestamp())
 					  {
 			  cerr << "[FETCH] ==== We are setting NIA in Replay (EOF) ========== ["<< timestamp()<<"]"<< endl;
 					  }
@@ -1214,7 +1215,7 @@ public:
 			//changed = true;
 
 #ifdef DD_DEBUG_FETCH_VERB2
-			if (DD_DEBUG_TIMESTAMP < timestamp())
+			if (DD_DEBUG_TIMESTAMP <= timestamp())
 			  {
 			cerr << "[FETCH] =Fill=== We have recevied Data from IL1 (EOF) ======= ["<< timestamp()<<"]"<< endl;
 			  }
@@ -1223,7 +1224,7 @@ public:
 			{
 			  ignore_instr_cache_responses[cfg]--;
 #ifdef DD_DEBUG_FETCH_VERB2
-			  if (DD_DEBUG_TIMESTAMP < timestamp())
+			  if (DD_DEBUG_TIMESTAMP <= timestamp())
 			    {
 			  cerr << "[FETCH] =Fill=== We are ignoring Data from IL1 (EOF) ======= ["<< timestamp()<<"]"<< endl;
 			    }
@@ -1237,7 +1238,7 @@ public:
 
 				/* Get the data response of the instruction cache */
 #ifdef DD_DEBUG_FETCH_VERB2
-				if (DD_DEBUG_TIMESTAMP < timestamp())
+				if (DD_DEBUG_TIMESTAMP <= timestamp())
 				  {
 				cerr << "[FETCH] =Fill=== We are getting Data from IL1 (EOF) ======= ["<< timestamp()<<"]"<< endl;
 				  }
@@ -1295,7 +1296,7 @@ public:
 					entry->predecoded = false;
 					vector.Read(entry->instruction->binary, offset, endianess[cfg]);
 #ifdef DD_DEBUG_FETCH_VERB2
- if (DD_DEBUG_TIMESTAMP < timestamp())
+ if (DD_DEBUG_TIMESTAMP <= timestamp())
 			    {
 					cerr << "[FETCH] ==== We are Storing Data == ("<< entry->instruction <<") ======== ["<< timestamp()<<"]"<< endl;
 
@@ -1471,7 +1472,7 @@ public:
 					else	
 					  {
 #ifdef DD_DEBUG_FETCH_PREDECODE
-  if (DD_DEBUG_TIMESTAMP < timestamp())
+  if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       cerr << "["<<this->name()<<"("<<timestamp()<<")] MAXIMUM INFLIGHT BRANCHES !!! " << instructionQueue << endl;
       cerr << *(entry->instruction) << endl;
@@ -1729,7 +1730,7 @@ public:
 						if(entry->instruction->predicted_branch_direction == NotTaken)
 						{
 #ifdef DD_DEBUG_FETCH_VERB2
-						  if (DD_DEBUG_TIMESTAMP < timestamp())
+						  if (DD_DEBUG_TIMESTAMP <= timestamp())
 						    {
 						  cerr << "[FETCH] ==== Do not Correct fetcher ... ======== ["<< timestamp()<<"]"<< endl;
 						  cerr << *this << endl;
@@ -1799,7 +1800,7 @@ public:
 			syscall_in_pipeline[cfg] = false;
 
 #ifdef DD_DEBUG_FETCH_VERB2
-			if (DD_DEBUG_TIMESTAMP < timestamp())
+			if (DD_DEBUG_TIMESTAMP <= timestamp())
 			    {
 		  cerr << "[FETCH] ==== Correct fetcher on Correct path ======== ["<< timestamp()<<"]"<< endl;
 		  //		  cerr << *this << endl;
@@ -1822,7 +1823,7 @@ public:
 			/* Continue fetch on the correct path */
 			seq_cia[cfg] = cia[cfg] = nia[cfg];
 #ifdef DD_DEBUG_FETCH_VERB2
- if (DD_DEBUG_TIMESTAMP < timestamp())
+ if (DD_DEBUG_TIMESTAMP <= timestamp())
 			    {
 			cerr << "!!!!! time stamp = " << timestamp() << ": got flush: continue fetching along " << hexa(nia) << endl;
 			cerr << "[FETCH] ==== We are Flushing ... (EOF) ========== ["<< timestamp()<<"]"<< endl;
@@ -1835,14 +1836,14 @@ public:
 		// Keep coherent CIA with emulator ...
 		emulator->SetCIA(cia[cfg]);
 #ifdef DD_DEBUG_FETCH_VERB2
- if (DD_DEBUG_TIMESTAMP < timestamp())
+ if (DD_DEBUG_TIMESTAMP <= timestamp())
 			    {
 		cerr << "[FETCH] ==== Fetch state at EOF ========== ["<< timestamp()<<"]"<< endl;
 		cerr << *this << endl;
 			    }
 #endif
 #ifdef DD_DEBUG_FETCH_VERB3
- if (DD_DEBUG_TIMESTAMP < timestamp())
+ if (DD_DEBUG_TIMESTAMP <= timestamp())
 			    {
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] instruction queue at EOC: " << instructionQueue[cfg] << endl;
 			    }
@@ -1850,7 +1851,7 @@ public:
 
 
 #ifdef DD_DEBUG_PIPELINE_VERB1
- if (DD_DEBUG_TIMESTAMP < timestamp())
+ if (DD_DEBUG_TIMESTAMP <= timestamp())
 			    {
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ==== Pipeline Debug" << endl;
 		cerr << this << endl;
@@ -1867,7 +1868,7 @@ public:
 	  
 	  // Mourad modifs 
 #ifdef DD_DEBUG_FETCH_VERB3
-	  if (DD_DEBUG_TIMESTAMP < timestamp())
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
 	    {
 	  cerr << "["<<this->name()<<"("<<timestamp()<<")] instruction queue at SOC: " << instructionQueue[cfg] << endl;
 	    }
@@ -1896,26 +1897,30 @@ public:
 		      //tmp_memreq.uid = ...;
 		      tmp_memreq.sender_type = memreq_types::sender_CPU;
 		      tmp_memreq.message_type = memreq_types::type_REQUEST;
-		      tmp_memreq.sender = this;
-		      tmp_memreq.req_sender = this;
+		      //      tmp_memreq.sender = this;
+		      //      tmp_memreq.req_sender = this;
+		      stringstream sstr;
+		      sstr << this->name() << cfg;
+		      tmp_memreq.sender = sstr.str();
+		      tmp_memreq.req_sender = sstr.str();
 		      
 		      outIL1.data[cfg] = tmp_memreq;
 		      //Mourad modifs 
-#ifdef DD_DEBUG_FETCH_VERB2
-		      if (DD_DEBUG_TIMESTAMP < timestamp()) 
+#ifdef DD_DEBUG_FETCH_VERB100
+		      if (DD_DEBUG_TIMESTAMP <= timestamp()) 
 			{
-		      cerr << "[FETCH] ==== We are accessing IL1 (SOF) ======= ["<< timestamp()<<"]"<< endl;
-		      cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== We are accessing IL1 (SOF) ==== address="<<hexa(tmp_memreq.address)<<" / accessSize="<< tmp_memreq.size << endl;
+			  cerr << "[Cnonfig::"<<cfg<<"][FETCH] ==== We are accessing IL1 (SOF) ======= ["<< timestamp()<<"]"<< endl;
+		      cerr << "[Cnonfig::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")] ==== We are accessing IL1 (SOF) ==== address="<<hexa(tmp_memreq.address)<<" / accessSize="<< tmp_memreq.size << endl;
 			}
 #endif
 		    }
 		  else
 		    {
 		      // Mourad modifs
-#ifdef DD_DEBUG_FETCH_VERB2
-		      if (DD_DEBUG_TIMESTAMP < timestamp())
+#ifdef DD_DEBUG_FETCH_VERB100
+		      if (DD_DEBUG_TIMESTAMP <= timestamp())
 			{
-		      cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: accessSize <=0 (SOF) ======= ["<< timestamp()<<"]"<< endl;
+		      cerr << "[Cnonfig::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: accessSize <=0 (SOF) ======= ["<< timestamp()<<"]"<< endl;
 			}
 #endif
 		      /* No request */
@@ -1927,7 +1932,7 @@ public:
 		{
 #ifdef DD_DEBUG_FETCH_VERB2
 		  //Mourad modifs
-		  if (DD_DEBUG_TIMESTAMP < timestamp())
+		  if (DD_DEBUG_TIMESTAMP <= timestamp())
 		    {		
   cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: pending_instr_cache_requests >= MaxPendingRequests (SOF) ======= ["<< timestamp()<<"]"<< endl;
 		    }
@@ -1941,7 +1946,7 @@ public:
 	    {
 #ifdef DD_DEBUG_FETCH_VERB2
 	      //Mourad modifs
-	      if (DD_DEBUG_TIMESTAMP < timestamp())
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
 		{	      
 cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !ras_miss) (SOF) ==== btb_miss: " << btb_miss <<" ras_miss: "<< ras_miss << endl;
 	      //	      cerr << "[FETCH] ==== No IL1: ! (!btb_miss && !ras_miss) (SOF) ======= ["<< timestamp()<<"]"<< endl;
@@ -1962,7 +1967,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	      outInstruction.data[Width*cfg+i] = entry->instruction;
 	      //Mourad modifs
 #ifdef DD_DEBUG_FETCH_VERB3
-	      if (DD_DEBUG_TIMESTAMP < timestamp())
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
 		{
 	      cerr << "["<<this->name()<<"("<<timestamp()<<")] instruction sent at SOC on outInst["<<i<<"]: " << *(entry->instruction) << endl;
 		}
@@ -1974,14 +1979,14 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 	      //			outValid[i] = false;
 	      outInstruction.data[Width*cfg+i].nothing();
 #ifdef DD_DEBUG_FETCH_VERB3
-	      if (DD_DEBUG_TIMESTAMP < timestamp())
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
 		{
 	      cerr << "["<<this->name()<<"("<<timestamp()<<")] Nothing sent at SOC on outInst["<<i<<"]: " << endl;
 		}
 #endif
 	    }
 	  if (previous_cia[cfg] == seq_cia[cfg]) { stall_counter[cfg]++; } else { stall_counter[cfg]=0; }
-	  if (stall_counter[cfg] > 10000) { cerr << "Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
+	  if (stall_counter[cfg] > 10000) { cerr << "[Config::"<< cfg <<"]Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
 	  previous_cia[cfg] = seq_cia[cfg];
 
 	  } // End of foreach Config
@@ -2002,24 +2007,27 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 
 	friend ostream& operator << (ostream& os, const Fetcher& fetcher)
 	{
-		os << "=============== FETCH ==============" << endl;
+	  for(int cfg=0; cfg<nConfig; cfg++)
+	    {
+	      os << "=============== [Config::"<<cfg<<"] FETCH ==============" << endl;
 		//		os << "waiting_instr_cache_accept=" << fetcher.waiting_instr_cache_accept << endl;
-		os << "   --> CIA: " << hexa(fetcher.cia) 
-		   << " \t / --> SeqCIA: " << hexa(fetcher.seq_cia) 
-		   << " \t / --> NIA: " << hexa(fetcher.nia) << endl;
-		os << "pending_instr_cache_requests=" << fetcher.pending_instr_cache_requests << endl;
-		os << "pending_instr_cache_access_size=" << fetcher.pending_instr_cache_access_size << endl;
-		os << "ignore_instr_cache_responses=" << fetcher.ignore_instr_cache_responses << endl;
-		os << "accessSize=" << fetcher.accessSize << endl;
-		os << "btb_miss=" << fetcher.btb_miss << endl;
-		os << "ras_miss=" << fetcher.ras_miss << endl;
-		os << "syscall_in=" << fetcher.syscall_in_pipeline << endl;
+		os << "   --> CIA: " << hexa(fetcher.cia[cfg]) 
+		   << " \t / --> SeqCIA: " << hexa(fetcher.seq_cia[cfg]) 
+		   << " \t / --> NIA: " << hexa(fetcher.nia[cfg]) << endl;
+		os << "pending_instr_cache_requests=" << fetcher.pending_instr_cache_requests[cfg] << endl;
+		os << "pending_instr_cache_access_size=" << fetcher.pending_instr_cache_access_size[cfg] << endl;
+		os << "ignore_instr_cache_responses=" << fetcher.ignore_instr_cache_responses[cfg] << endl;
+		os << "accessSize=" << fetcher.accessSize[cfg] << endl;
+		os << "btb_miss=" << fetcher.btb_miss[cfg] << endl;
+		os << "ras_miss=" << fetcher.ras_miss[cfg] << endl;
+		os << "syscall_in=" << fetcher.syscall_in_pipeline[cfg] << endl;
 		os << "Instruction Queue:" << endl;
-		os << fetcher.instructionQueue;
+		os << fetcher.instructionQueue[cfg];
 		os << "Return Address Stack:" << endl;
-		os << fetcher.RAS;
-		os << "====================================" << endl;
-		return os;
+		os << fetcher.RAS[cfg];
+		os << "=====================================================" << endl;
+	    }
+	  return os;
 	}
 
 	bool Check()

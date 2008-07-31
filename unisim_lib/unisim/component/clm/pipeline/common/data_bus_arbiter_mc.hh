@@ -463,6 +463,12 @@ public:
 	  }
 
 	} // end of foreach Config.
+
+	for (int j=0; j < nChannels; j++)
+	  {
+	    outInstruction[j].enable.send();
+	  }
+	
       } // end of if(areallknown)
   }
 

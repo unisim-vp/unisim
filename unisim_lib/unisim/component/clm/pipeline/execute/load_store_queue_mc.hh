@@ -969,7 +969,9 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 	  inAllocateStoreInstruction.accept[cfg*AllocateWidth+i] = false;
 
 	}//Endof foreach Config.
-
+	outInstruction.data.send();
+	inAllocateLoadInstruction.accept.send();
+	inAllocateStoreInstruction.accept.send();
       } // end of : if (areallknow) ...
   } // end of : on_Enables_and_...
 
@@ -1132,8 +1134,13 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		    tmp_memreq.uid = load->instruction->inum;
 		    tmp_memreq.sender_type = memreq_types::sender_CPU;
 		    tmp_memreq.message_type = memreq_types::type_REQUEST;
-		    tmp_memreq.sender = this;
-		    tmp_memreq.req_sender = this;
+		    //		    tmp_memreq.sender = this;
+		    //		    tmp_memreq.req_sender = this;
+		    stringstream sstr;
+		    sstr << this->name() << cfg;
+		    tmp_memreq.sender = sstr.str();
+		    tmp_memreq.req_sender = sstr.str();
+
 		    outDL1.data[cfg*nDataCachePorts+dataCachePort] = tmp_memreq;
 		    load->dcachePort = dataCachePort;
 		    dataCachePort++;
@@ -1246,8 +1253,13 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		    tmp_memreq.uid = store->instruction->inum;
 		    tmp_memreq.sender_type = memreq_types::sender_CPU;
 		    tmp_memreq.message_type = memreq_types::type_REQUEST;
-		    tmp_memreq.sender = this;
-		    tmp_memreq.req_sender = this;
+		    //		    tmp_memreq.sender = this;
+		    //		    tmp_memreq.req_sender = this;
+		    stringstream sstr;
+		    sstr << this->name() << cfg;
+		    tmp_memreq.sender = sstr.str();
+		    tmp_memreq.req_sender = sstr.str();
+
 		    		    tmp_memreq.data = data;		    
 		    //		    tmp_memreq.data.Write(data);
 		    outDL1.data[cfg*nDataCachePorts+dataCachePort] = tmp_memreq;

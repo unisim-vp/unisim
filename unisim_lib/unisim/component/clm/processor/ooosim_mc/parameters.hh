@@ -60,7 +60,8 @@ typedef UInt64 Word;
 const int nCPU = 1;
 const int nProg = 1;
 // Memory subsystem parameters
-const int Snooping = 0;
+//const int Snooping = 0;
+const int Snooping = 1;
 
 // BUS parameters
 const int BUS_BufferSize = 3;

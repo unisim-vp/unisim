@@ -1839,7 +1839,7 @@ public:
 	    //	    if (areallknown)
 	    if( inWriteBackInstruction.data.known() )
 	      {
-		for(int cfg; cfg<nConfig; cfg++)
+		for(int cfg=0; cfg<nConfig; cfg++)
 		{
 		for(int writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
 		  { 
@@ -2058,14 +2058,18 @@ public:
 		}
 
 		}//End of foreach Config.
-		
+		outIntegerInstruction.data.send();
+		outFloatingPointInstruction.data.send();
+		outLoadStoreInstruction.data.send();
 	      }//End of areallknown
+	    /*
 	    else
 	      {
-#ifdef DD_DEBUG_SCHEDULER_VERB1
-		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== onWriteBackEnable ==== areallknown : NO !!!" << endl;
-#endif
+	      #ifdef DD_DEBUG_SCHEDULER_VERB1
+	      cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== onWriteBackEnable ==== areallknown : NO !!!" << endl;
+	      #endif
 	      }
+	    */
 	  }//Endof onWriteBackEnable()
   
 	/** Performs sanity checks */

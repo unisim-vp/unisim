@@ -428,6 +428,7 @@ class RegisterFile : public module
 	      = inWriteBackInstruction.data[cfg*WriteBackWidth+i].something();
 	  }
 	}
+	inWriteBackInstruction.accept.send();
       }
   }
 
@@ -748,6 +749,8 @@ class RegisterFile : public module
 			}
 			// End of Accept Part
 		    }//Endof foreach Config.
+		    outLoadStoreInstruction.enable.send();
+		    inLoadStoreInstruction.accept.send();
 		  }// Endof areallknown
 		}
 

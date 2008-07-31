@@ -103,13 +103,17 @@ class CPUSim: public CPU<CPU_CONFIG>//, public MI_Client
 public:
 
   //  MI_ServiceImport syscall_MemImp;
+  bool program_ended;
+  uint64_t end_at_cycle;
 
   CPUSim(const char*cpu_name, Object *parent):
     Object(cpu_name,parent), 
     //    MI_Client(cpu_name, parent),
     //    CPU<MPC7447AConfig>(cpu_name, parent)
-    CPU<CPU_CONFIG>(cpu_name, parent)
+    CPU<CPU_CONFIG>(cpu_name, parent),
     //    syscall_MemImp("syscall_MemImp",this)
+    program_ended(false),
+    end_at_cycle(0)
   {}
 
   virtual ~CPUSim() {}
@@ -117,8 +121,10 @@ public:
   void Stop(int ret)
   {
     cerr << Object::GetName() << ": Program exited with code " << ret << endl;
-    cerr << Object::GetName() << ": Simulation TERMINATE NOW ..." << endl;
-    terminate_now();
+    //cerr << Object::GetName() << ": Simulation TERMINATE NOW ..." << endl;
+    //terminate_now();
+    program_ended = true;
+    end_at_cycle = timestamp();
   }
 
   void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CPU_CONFIG::WIMG_DEFAULT, bool rwitm = false) {}
@@ -184,6 +190,8 @@ public:
   //  MI_ServiceExport syscall_MemExp;
   ServiceImport<MemoryInjection<address_t> > memory_injection_import;
   
+  bool program_ended;
+  uint64_t end_at_cycle;
 
   CPUEmu(const char*cpu_name, unisim::kernel::service::Object *parent):
     Object(cpu_name,parent)
@@ -196,6 +204,8 @@ public:
     //    ,Client<MemoryInjection<CPU_CONFIG::address_t>(cpu_name, parent)
     , MJI_Client(cpu_name,parent)
     ,memory_injection_import("memory-injection-export", this)
+    ,program_ended(false)
+    ,end_at_cycle(0)
   {}
 
   virtual ~CPUEmu() {}
@@ -203,8 +213,10 @@ public:
   void Stop(int ret)
   {
     cerr << Object::GetName() << ": Program exited with code " << ret << endl;
-    cerr << Object::GetName() << ": Simulation TERMINATE NOW ..." << endl;
-    terminate_now();
+    //cerr << Object::GetName() << ": Simulation TERMINATE NOW ..." << endl;
+    //terminate_now();
+    program_ended = true;
+    end_at_cycle = timestamp();
   }
 
   //  using full_system::processors::powerpc::physical_address_t;
