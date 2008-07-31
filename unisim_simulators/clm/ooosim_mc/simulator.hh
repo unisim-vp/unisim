@@ -579,10 +579,14 @@ public:
 	int sim_argc_start[nConfig]; 
 	int sim_argc_stop[nConfig]; 
 	
+	for(int i=0; i<nConfig; i++) { sim_argc_start[i] = 0; }
 	for(int i=0; i<nConfig; i++) { sim_argc_stop[i] = 0; }
-	int i=0;
-	int cfg=-1;
-	while (i<command_line.count())
+	for(int i=0; i<nConfig; i++) { sim_argc[i] = 0; }
+
+	{
+	  int i=0;
+	  int cfg=-1;
+	  while (i<command_line.count())
 	  {
 	    if (strcmp(command_line[i],"bench")==0)
 	      {
@@ -604,7 +608,7 @@ public:
 	      }
 	    i++;
 	  }
-
+	}
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
