@@ -48,7 +48,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "mem_common.h"
 #include <unisim/component/clm/memory/mem_common.h>
 //#include "memreq.h"
-#include <unisim/component/clm/interfaces/memreq.h>
+#include <unisim/component/clm/interfaces/memreq_mc.h>
 //#include "common.h"
 #include <unisim/component/clm/utility/common.h>
 //#include "base/utility.h"
@@ -1218,7 +1218,11 @@ class CacheWB : public module
 	req.memreq_id = returnBuffer[cfg].memreq_id;
 	req.sender_type = memreq_types::sender_CACHE;
 	//	req.sender = this;
-	req.sender = this->name();
+	//	req.sender = this->name();
+	stringstream sstr;
+	sstr << this->name() << cfg;
+	req.sender = sstr.str();
+	//
 	req.req_sender = returnBuffer[cfg].req_sender;
 	req.cachable = returnBuffer[cfg].cachable;
 	req.command = memreq_types::cmd_READ; // Only reads are sent back to the CPU

@@ -196,8 +196,12 @@ class memreq_dataless : public memreq_types
   
   sender_type_t sender_type;   ///< Type of the sender (CPU, CACHE, MEMORY, ...)
   message_type_t message_type; ///< Type of the message (Request, Answser)
-  module *sender;              ///< Module that has sent this message
-  module *req_sender;          ///< Module that has sent the request this message is about
+  //  module *sender;              ///< Module that has sent this message
+  //  sender_uid_type_t sender;
+  string sender;
+  //  module *req_sender;          ///< Module that has sent the request this message is about
+  //  sender_uid_type_t req_sender;
+  string req_sender;
   bool cachable;               ///< Wether the request address is cachable
 
   bool valid;  //< Used with unisim signal array when something() can't be used
@@ -216,8 +220,10 @@ class memreq_dataless : public memreq_types
     uid=0;
     sender_type=sender_UNKNOWN;
     message_type=type_UNKNOWN;
-    sender = NULL;
-    req_sender = NULL;
+    //    sender = NULL;
+    //    req_sender = NULL;
+    sender = "";
+    req_sender = "";
     cachable = true;
     memreq_id = memreq_id_max++;
     valid = false;
@@ -235,10 +241,13 @@ class memreq_dataless : public memreq_types
     os << req.command << ", ";
     os << "sender_type=" << req.sender_type << ", ";
     os << "msg_type=" << req.message_type << ", ";
-    if(req.sender) os << "sender=" << setw(8) << req.sender->name() << ", ";
-    else           os << "sender=" << setw(8) << "NULL" << ", ";
-    if(req.req_sender) os << "req_sender=" << setw(8) << req.req_sender->name() << ", ";
-    else               os << "req_sender=" << setw(8) << "NULL" << ", ";
+    //    if(req.sender) os << "sender=" << setw(8) << req.sender->name() << ", ";
+    //    else           os << "sender=" << setw(8) << "NULL" << ", ";
+    os << "sender=" << setw(8) << req.sender << ", ";
+    //    if(req.req_sender) os << "req_sender=" << setw(8) << req.req_sender->name() << ", ";
+    //    else               os << "req_sender=" << setw(8) << "NULL" << ", ";
+    os << "req_sender=" << setw(8) << req.req_sender << ", ";
+
     os << "@=0x" << hex << req.address << dec << ", ";
     os << "sz=" << setw(2) << req.size << ", ";
     os << "uid=" << req.uid << ", ";
@@ -281,12 +290,12 @@ class memreq : public memreq_dataless <INSTRUCTION>
     os << req.command << ", ";
     os << "sndr_type=" << req.sender_type << ", ";
     os << "msg_type=" << req.message_type << ", ";
-        if(req.sender) os << "sndr=" << setw(8) << req.sender->name() << ", ";
-        else           os << "sndr=" << setw(8) << "NULL" << ", ";
-	//os << "sndr=" << setw(8) << req.sender << ", ";
-        if(req.req_sender) os << "req_sndr=" << setw(8) << req.req_sender->name() << ", ";
-        else               os << "req_sndr=" << setw(8) << "NULL" << ", ";
-	//os << "req_sndr=" << setw(8) << req.req_sender << ", ";
+    //    if(req.sender) os << "sndr=" << setw(8) << req.sender->name() << ", ";
+    //    else           os << "sndr=" << setw(8) << "NULL" << ", ";
+    os << "sndr=" << setw(8) << req.sender << ", ";
+    //    if(req.req_sender) os << "req_sndr=" << setw(8) << req.req_sender->name() << ", ";
+    //    else               os << "req_sndr=" << setw(8) << "NULL" << ", ";
+    os << "req_sndr=" << setw(8) << req.req_sender << ", ";
     os << "@=0x" << hex << setw(8) << req.address << dec << ", ";
     os << "sz=" << setw(2) << req.size << ", ";
 //    os << "memreq_id=" << req.memreq_id << ", ";
