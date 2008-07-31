@@ -39,7 +39,10 @@ op nop(0xA7[8])
 nop.getCycles = { return 1; }
 
 nop.disasm = {
-	sink << "NOP";	
+	string mnem = "NOP";
+	
+	sink << mnem;	
+	return mnem;
 }
 
 nop.execute = {
@@ -54,7 +57,10 @@ stop.var stopDisabled : { bool } = { false }
 stop.getCycles = { if (stopDisabled) return 2; else return 16; }
 
 stop.disasm = {
-	sink << "STOP";
+	string mnem = "STOP";
+	
+	sink << mnem;
+	return mnem;
 }
 
 stop.execute = {
@@ -115,7 +121,10 @@ op wai(0x3E[8])
 wai.getCycles = { return 13; }
 
 wai.disasm = {
-	sink << "WAI";
+	string mnem = "WAI";
+	
+	sink << mnem;
+	return mnem;
 }
 
 wai.execute = {
@@ -171,7 +180,10 @@ op bgnd(0x00[8])
 bgnd.getCycles = { return 5; }
 
 bgnd.disasm = {
-	sink << "BGND";
+	string mnem = "BGND";
+	
+	sink << mnem;
+	return mnem;
 }
 
 bgnd.execute = {
@@ -189,7 +201,10 @@ rti.var isPending : { bool } = { false }
 rti.getCycles = { if (isPending) return 10; else return 8; }
 
 rti.disasm = {
-	sink << "RTI";
+	string mnem = "RTI";
+	
+	sink << mnem;
+	return mnem;
 }
 
 // TODO: check if there is interrupt pending and set "isPending"
@@ -235,7 +250,10 @@ op swi(0x3F[8])
 swi.getCycles = { return 9; }
 
 swi.disasm = {
-	sink << "SWI";
+	string mnem = "SWI";
+	
+	sink << mnem;
+	return mnem;
 }
 
 swi.execute = {
@@ -283,7 +301,10 @@ op trap(0x18[8]:trapnum[8])
 trap.getCycles = { return 10; }
 
 trap.disasm = {
-	sink << "TRAP 0x" << std::hex << trapnum;
+	string mnem = "TRAP";
+	
+	sink << mnem << " 0x" << std::hex << trapnum;
+	return mnem;
 }
 
 trap.execute = {
@@ -337,7 +358,10 @@ op sys(0x18[8]:0xA7[8])
 sys.getCycles = { return 10; }
 
 sys.disasm = {
-	sink << "SYS";
+	string mnem = "SYS";
+	
+	sink << mnem;
+	return mnem;
 }
 
 sys.execute = {

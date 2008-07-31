@@ -39,7 +39,10 @@ op emul(0x13[8])
 emul.getCycles = { return 1; }
 
 emul.disasm = {
-	sink << "EMUL";
+	string mnem = "EMUL";
+	
+	sink << mnem;
+	return mnem;
 }
 
 emul.execute = {
@@ -59,7 +62,10 @@ op emuls(0x18[8]:0x13[8])
 emuls.getCycles = { return 3; }
 
 emuls.disasm = {
-	sink << "EMULS";
+	string mnem = "EMULS";
+	
+	sink << mnem;
+	return mnem;
 }
 
 emuls.execute = {
@@ -92,7 +98,10 @@ op mul(0x12[8])
 mul.getCycles = { return 1; }
 
 mul.disasm = {
-	sink << "MUL";
+	string mnem = "MUL";
+	
+	sink << mnem;
+	return mnem;
 }
 
 mul.execute = {
@@ -109,7 +118,10 @@ op ediv(0x11[8])
 ediv.getCycles = { return 11; }
 
 ediv.disasm = {
-	sink << "EDIV";
+	string mnem = "EDIV";
+	
+	sink << mnem;
+	return mnem;
 }
 
 ediv.execute = {
@@ -159,7 +171,10 @@ op edivs(0x18[8]:0x14[8])
 edivs.getCycles = { return 12; }
 
 edivs.disasm = {
-	sink << "EDIVS";
+	string mnem = "EDIVS";
+	
+	sink << mnem;
+	return mnem;
 }
 
 edivs.execute = {
@@ -202,7 +217,10 @@ op fdiv(0x18[8]:0x11[8])
 fdiv.getCycles = { return 12; }
 
 fdiv.disasm = {
-	sink << "FDIV";
+	string mnem = "FDIV";
+	
+	sink << mnem;
+	return mnem;
 }
 
 fdiv.execute = {
@@ -237,7 +255,10 @@ op idiv(0x18[8]:0x10[8])
 idiv.getCycles = { return 12; }
 
 idiv.disasm = {
-	sink << "IDIV";
+	string mnem = "IDIV";
+	
+	sink << mnem;
+	return mnem;
 }
 
 idiv.execute = {
@@ -269,7 +290,10 @@ op idivs(0x18[8]:0x15[8])
 idivs.getCycles = { return 12; }
 
 idivs.disasm = {
-	sink << "IDIVS";
+	string mnem = "IDIVS";
+	
+	sink << mnem;
+	return mnem;
 }
 
 idivs.execute = {
@@ -311,7 +335,10 @@ op emacs(0x18[8]:0x12[8]:opr16a[16])
 emacs.getCycles = { return 9; }
 
 emacs.disasm = {
-	sink << "EMACS 0x" << std::hex << opr16a;
+	string mnem = "EMACS";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 emacs.execute = {

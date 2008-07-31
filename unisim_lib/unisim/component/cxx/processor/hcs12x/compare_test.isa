@@ -39,7 +39,11 @@ op cba(0x18[8]:0x17[8])
 cba.getCycles = { return 2; }
 
 cba.disasm = {
-	sink << "CBA";
+	string mnem;
+	
+	mnem = "CBA";
+	
+	return mnem;
 }
 
 cba.execute = {
@@ -61,12 +65,16 @@ op cmp_ab_imm(0b1[1]:b[1]:0x01[6]:opr8i[8])
 cmp_ab_imm.getCycles = { return 1; }
 
 cmp_ab_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "CMPA #0x";
+		mnem = "CMPA";
 	} else {
-		sink << "CMPB #0x";
+		mnem = "CMPB";
 	}
-	sink << std::hex << opr8i;
+	sink << mnem << " #0x" << std::hex << opr8i;
+	
+	return mnem;
 }
 
 cmp_ab_imm.execute = {
@@ -94,12 +102,16 @@ op cmp_ab_dir(0b1[1]:b[1]:0x11[6]:opr8a[8])
 cmp_ab_dir.getCycles = { return 3; }
 
 cmp_ab_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "CMPA 0x";
+		mnem = "CMPA";
 	} else {
-		sink << "CMPB 0x";
+		mnem = "CMPB";
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 cmp_ab_dir.execute = {
@@ -129,12 +141,16 @@ op cmp_ab_ext(0b1[1]:b[1]:0x31[6]:opr16a[8])
 cmp_ab_ext.getCycles = { return 3; }
 
 cmp_ab_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "CMPA 0x";
+		mnem = "CMPA";
 	} else {
-		sink << "CMPB 0x";
+		mnem = "CMPB";
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 cmp_ab_ext.execute = {
@@ -165,12 +181,17 @@ op cmp_ab_idx(0b1[1]:b[1]:0x21[6]:> <:*xb[XB])
 cmp_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 cmp_ab_idx.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "CMPA ";
+		mnem = "CMPA";
 	} else {
-		sink << "CMPB ";
+		mnem = "CMPB";
 	}
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 cmp_ab_idx.execute = {
@@ -200,13 +221,17 @@ op cp_dyxs_imm(0x23[6]:dyxs[2]:> <:opr16i[16])
 cp_dyxs_imm.getCycles = { return 2; }
 
 cp_dyxs_imm.disasm = {
+	string mnem;
+	
 	switch (dyxs) {
-		case 0: sink << "CPD #0x"; break;
-		case 1: sink << "CPY #0x"; break;
-		case 2: sink << "CPX #0x"; break;
-		case 3: sink << "CPS #0x";  
+		case 0: mnem = "CPD"; break;
+		case 1: mnem = "CPY"; break;
+		case 2: mnem = "CPX"; break;
+		case 3: mnem = "CPS";  
 	}
-	sink << std::hex << opr16i;
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 cp_dyxs_imm.execute = {
@@ -236,13 +261,17 @@ op cp_dyxs_dir(0x27[6]:dyxs[2]:opr8a[8])
 cp_dyxs_dir.getCycles = { return 3; }
 
 cp_dyxs_dir.disasm = {
+	string mnem;
+	
 	switch (dyxs) {
-		case 0: sink << "CPD 0x"; break;
-		case 1: sink << "CPY 0x"; break;
-		case 2: sink << "CPX 0x"; break;
-		case 3: sink << "CPS 0x";  
+		case 0: mnem = "CPD"; break;
+		case 1: mnem = "CPY"; break;
+		case 2: mnem = "CPX"; break;
+		case 3: mnem = "CPS";  
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 cp_dyxs_dir.execute = {
@@ -275,13 +304,17 @@ op cp_dyxs_ext(0x2F[6]:dyxs[2]:> <:opr16a[16])
 cp_dyxs_ext.getCycles = { return 3; }
 
 cp_dyxs_ext.disasm = {
+	string mnem;
+	
 	switch (dyxs) {
-		case 0: sink << "CPD 0x"; break;
-		case 1: sink << "CPY 0x"; break;
-		case 2: sink << "CPX 0x"; break;
-		case 3: sink << "CPS 0x";  
+		case 0: mnem = "CPD"; break;
+		case 1: mnem = "CPY"; break;
+		case 2: mnem = "CPX"; break;
+		case 3: mnem = "CPS";  
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 cp_dyxs_ext.execute = {
@@ -312,13 +345,19 @@ op cp_dyxs_idx(0x2B[6]:dyxs[2]:> <:*xb[XB])
 cp_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 cp_dyxs_idx.disasm = {
+	string mnem;
+	
 	switch (dyxs) {
-		case 0: sink << "CPD "; break;
-		case 1: sink << "CPY "; break;
-		case 2: sink << "CPX "; break;
-		case 3: sink << "CPS ";  
+		case 0: mnem = "CPD"; break;
+		case 1: mnem = "CPY"; break;
+		case 2: mnem = "CPX"; break;
+		case 3: mnem = "CPS";  
 	}
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 cp_dyxs_idx.execute = {
@@ -351,13 +390,16 @@ op cpe_dyxs_imm(0x18[8]:0x23[6]:dyxs[2]:> <:opr16i[16])
 cpe_dyxs_imm.getCycles = { return 3; }
 
 cpe_dyxs_imm.disasm = {
+	string mnem;
+	
 	switch (dyxs) {
-		case 0: sink << "CPED #0x"; break;
-		case 1: sink << "CPEY #0x"; break;
-		case 2: sink << "CPEX #0x"; break;
-		case 3: sink << "CPES #0x";  
+		case 0: mnem = "CPED"; break;
+		case 1: mnem = "CPEY"; break;
+		case 2: mnem = "CPEX"; break;
+		case 3: mnem = "CPES";  
 	}
-	sink << std::hex << opr16i;
+	sink << mnem << " #0x" << std::hex << opr16i;
+	return mnem;
 }
 
 cpe_dyxs_imm.execute = {
@@ -388,13 +430,16 @@ op cpe_dyxs_dir(0x18[8]:> <:0x27[6]:dyxs[2]:opr8a[8])
 cpe_dyxs_dir.getCycles = { return 4; }
 
 cpe_dyxs_dir.disasm = {
+	string mnem;
+	
 	switch (dyxs) {
-		case 0: sink << "CPED 0x"; break;
-		case 1: sink << "CPEY 0x"; break;
-		case 2: sink << "CPEX 0x"; break;
-		case 3: sink << "CPES 0x";  
+		case 0: mnem = "CPED"; break;
+		case 1: mnem = "CPEY"; break;
+		case 2: mnem = "CPEX"; break;
+		case 3: mnem = "CPES";  
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	return mnem;
 }
 
 cpe_dyxs_dir.execute = {
@@ -428,13 +473,16 @@ op cpe_dyxs_ext(0x18[8]:0x2F[6]:dyxs[2]:> <:opr16a[16])
 cpe_dyxs_ext.getCycles = { return 4; }
 
 cpe_dyxs_ext.disasm = {
+	string mnem;
+	
 	switch (dyxs) {
-		case 0: sink << "CPED 0x"; break;
-		case 1: sink << "CPEY 0x"; break;
-		case 2: sink << "CPEX 0x"; break;
-		case 3: sink << "CPES 0x";  
+		case 0: mnem = "CPED"; break;
+		case 1: mnem = "CPEY"; break;
+		case 2: mnem = "CPEX"; break;
+		case 3: mnem = "CPES";  
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 cpe_dyxs_ext.execute = {
@@ -466,13 +514,17 @@ op cpe_dyxs_idx(0x18[8]:0x2B[6]:dyxs[2]:> <:*xb[XB])
 cpe_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 cpe_dyxs_idx.disasm = {
+	string mnem;
+	
 	switch (dyxs) {
-		case 0: sink << "CPED "; break;
-		case 1: sink << "CPEY "; break;
-		case 2: sink << "CPEX "; break;
-		case 3: sink << "CPES ";  
+		case 0: mnem = "CPED"; break;
+		case 1: mnem = "CPEY"; break;
+		case 2: mnem = "CPEX"; break;
+		case 3: mnem = "CPES";  
 	}
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 cpe_dyxs_idx.execute = {
@@ -507,7 +559,10 @@ op tst_ext(0xF7[8]:> <:opr16a[16])
 tst_ext.getCycles = { return 3; }
 
 tst_ext.disasm = {
-	sink << "TST 0x" << std::hex << opr16a;
+	string mnem = "TST";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 tst_ext.execute = {
@@ -532,8 +587,11 @@ op tst_idx(0xE7[8]:> <:*xb[XB])
 tst_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 tst_idx.disasm = {
-	sink << "TST ";
+	string mnem = "TST";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 tst_idx.execute = {
@@ -558,11 +616,16 @@ op tst_ab(0b1[1]:b[1]:0x17[6])
 tst_ab.getCycles = { return 1; }
 
 tst_ab.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "TSTA ";
+		mnem = "TSTA";
 	} else {
-		sink << "TSTB ";
+		mnem = "TSTB";
 	}
+	
+	sink << mnem << " ";
+	return mnem;
 }
 
 tst_ab.execute = {
@@ -590,7 +653,10 @@ op tstw_ext(0x18[8]:0xF7[8]:opr16a[16])
 tstw_ext.getCycles = { return 4; }
 
 tstw_ext.disasm = {
-	sink << "TSTW 0x" << std::hex << opr16a;
+	string mnem = "TSTW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 tstw_ext.execute = {
@@ -616,8 +682,11 @@ op tstw_idx(0x18[8]:0xE7[8]:> <:*xb[XB])
 tstw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 tstw_idx.disasm = {
-	sink << "TSTW ";
+	string mnem = "TSTW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 tstw_idx.execute = {
@@ -642,10 +711,15 @@ op tst_xy(0x18[8]:0b1[1]:b[1]:0x17[6])
 tst_xy.getCycles = { return 2; }
 
 tst_xy.disasm = {
+	string mnem;
+	
 	switch (b) {
-		case 0: sink << "TSTX "; break;
-		case 1: sink << "TSTY "; break;
+		case 0: mnem = "TSTX"; break;
+		case 1: mnem = "TSTY"; break;
 	}
+	
+	sink << mnem << " ";
+	return mnem;
 }
 
 tst_xy.execute = {
@@ -655,7 +729,7 @@ tst_xy.execute = {
 	carry_in = 0;
 	switch (b) {
 		case 0: regVal = cpu->getRegY(); break;
-		case 1: regVal = cpu->getRegY();; break;
+		case 1: regVal = cpu->getRegY(); break;
 	}
 	
 	Sub16(result, carry_out, overflow, regVal, 0, carry_in);
@@ -677,9 +751,11 @@ op emind(0x18[8]:0x1B[8]:> <:*xb[XB])
 emind.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 emind.disasm = {
+	string mnem = "EMIND";
 	
-	sink << "EMIND ";
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 emind.execute = {
@@ -722,9 +798,11 @@ op eminm(0x18[8]:0x1F[8]:> <:*xb[XB])
 eminm.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 eminm.disasm = {
+	string mnem = "EMINM";
 
-	sink << "EMINM ";
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 eminm.execute = {
@@ -768,10 +846,12 @@ op mina(0x18[8]:0x19[8]:> <:*xb[XB])
 mina.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 mina.disasm = {
+	string mnem = "MINA";
 
-	sink << "MINA ";
+	sink << mnem << " ";
 	
 	xb->disasm(sink);
+	return mnem;
 }
 
 mina.execute = {
@@ -814,10 +894,12 @@ op minm(0x18[8]:0x1D[8]:> <:*xb[XB])
 minm.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 minm.disasm = {
+	string mnem = "MINM";
 
-	sink << "MINM ";
+	sink << mnem << " ";
 	
 	xb->disasm(sink);
+	return mnem;
 }
 
 minm.execute = {
@@ -863,9 +945,11 @@ op emaxd(0x18[8]:0x1A[8]:> <:*xb[XB])
 emaxd.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 emaxd.disasm = {
+	string mnem = "EMAXD";
 
-	sink << "EMAXD ";	
+	sink << mnem << " ";	
 	xb->disasm(sink);
+	return mnem;
 }
 
 emaxd.execute = {
@@ -909,9 +993,11 @@ op emaxm(0x18[8]:0x1E[8]:> <:*xb[XB])
 emaxm.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 emaxm.disasm = {
+	string mnem = "EMAXM";
 
-	sink << "EMAXM ";	
+	sink << mnem << " ";	
 	xb->disasm(sink);
+	return mnem;
 }
 
 emaxm.execute = {
@@ -956,9 +1042,11 @@ op maxa(0x18[8]:0x18[8]:> <:*xb[XB])
 maxa.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 maxa.disasm = {
+	string mnem = "MAXA";
 
-	sink << "MAXA ";	
+	sink << mnem << " ";	
 	xb->disasm(sink);
+	return mnem;
 }
 
 maxa.execute = {
@@ -1001,9 +1089,11 @@ op maxm(0x18[8]:0x1C[8]:> <:*xb[XB])
 maxm.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 maxm.disasm = {
+	string mnem = "MAXM";
 
-	sink << "MAXM ";	
+	sink << mnem << " ";	
 	xb->disasm(sink);
+	return mnem;
 }
 
 maxm.execute = {
@@ -1037,4 +1127,3 @@ maxm.execute = {
 	 */
 	if (mVal > aVal) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 }
-

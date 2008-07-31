@@ -41,7 +41,11 @@ op aba(0x18[8]:0x06[8])
 aba.getCycles = { return 2;}
 
 aba.disasm = {
-	sink << "ABA";
+	string mnem = "ABA";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 aba.execute = {
@@ -76,7 +80,11 @@ op abx(0x1A[8]:0xE5[8])
 abx.getCycles = { return 2;}
 
 abx.disasm = {
-	sink << "ABX";
+	string mnem = "ABX";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 abx.execute = {
@@ -100,8 +108,13 @@ op aby(0x19[8]:0xED[8])
 aby.getCycles = { return 2;}
 
 aby.disasm = {
-	sink << "ABY";
+	string mnem = "ABY";
+	
+	sink << mnem;
+	
+	return mnem;
 }
+
 aby.execute = {
 	uint16_t result;
 	uint8_t carry_out, overflow;
@@ -122,12 +135,16 @@ op adc_ab_imm(0b1[1]:b[1]:0x09[6]:opr8i[8])
 adc_ab_imm.getCycles = { return 1;}
 
 adc_ab_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADCA #$";
+		mnem = "ADCA";
 	} else {
-		sink << "ADCB #$";
+		mnem = "ADCB";
 	}
-	sink << std::hex << opr8i;
+	sink << mnem << " #0x"<< std::hex << opr8i;
+	
+	return mnem;
 }
 
 adc_ab_imm.execute = {
@@ -170,12 +187,16 @@ op adc_ab_dir(0b1[1]:b[1]:0x19[6]:opr8a[8])
 adc_ab_dir.getCycles = { return 3;}
 
 adc_ab_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADCA $";
+		mnem = "ADCA";
 	} else {
-		sink << "ADCB $"; 
+		mnem = "ADCB"; 
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 adc_ab_dir.execute = {
@@ -222,12 +243,16 @@ op adc_ab_ext(0b1[1]:b[1]:0x39[6]:> <:opr16a[16])
 adc_ab_ext.getCycles = { return 3;}
 
 adc_ab_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADCA $";
+		mnem = "ADCA";
 	} else {
-		sink << "ADCB $";		
+		mnem = "ADCB";		
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 adc_ab_ext.execute = {
@@ -274,13 +299,18 @@ op adc_ab_idx(0b1[1]:b[1]:0x29[6]:> <:*xb[XB])
 adc_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 adc_ab_idx.disasm = {
+	string mnem;
+	
 	if (b==0){
-		sink << "ADCA ";
+		mnem = "ADCA";
 	} else {
-		sink << "ADCB ";
+		mnem = "ADCB";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 adc_ab_idx.execute = {
@@ -328,12 +358,16 @@ op add_ab_imm(0b1[1]:b[1]:0x0B[6]:opr8i[8])
 add_ab_imm.getCycles = { return 1; }
 
 add_ab_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADDA #$";
+		mnem = "ADDA";
 	} else {
-		sink << "ADDB #$";
+		mnem = "ADDB";
 	}
-	sink << std::hex << opr8i;
+	sink << mnem << " #0x" << std::hex << opr8i;
+	
+	return mnem;
 }
 
 add_ab_imm.execute = {
@@ -377,12 +411,16 @@ op add_ab_dir(0b1[1]:b[1]:0x1B[6]:opr8a[8])
 add_ab_dir.getCycles = { return 3; }
 
 add_ab_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADDA $";
+		mnem = "ADDA";
 	} else {
-		sink << "ADDB $"; 
+		mnem = "ADDB"; 
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 add_ab_dir.execute = {
@@ -429,12 +467,16 @@ op add_ab_ext(0b1[1]:b[1]:0x3B[6]:> <:opr16a[16])
 add_ab_ext.getCycles = { return 3; }
 
 add_ab_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADDA $";
+		mnem = "ADDA";
 	} else {
-		sink << "ADDB $";		
+		mnem = "ADDB";		
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 add_ab_ext.execute = {
@@ -481,13 +523,18 @@ op add_ab_idx(0b1[1]:b[1]:0x2B[6]:> <:*xb[XB])
 add_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 add_ab_idx.disasm = {
+	string mnem;
+	
 	if (b==0){
-		sink << "ADDA ";
+		mnem = "ADDA";
 	} else {
-		sink << "ADDB ";
+		mnem = "ADDB";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 add_ab_idx.execute = {
@@ -535,7 +582,11 @@ op aded_imm(0x18[8]:0xC3[8]:opr16i[16])
 aded_imm.getCycles = { return 3; }
 
 aded_imm.disasm = {
-	sink << "ADED #$" << std::hex << opr16i;
+	string mnem = "ADED";
+	
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 aded_imm.execute = {
@@ -563,7 +614,11 @@ op aded_dir(0x18[8]:> <:0xD3[8]:opr8a[8])
 aded_dir.getCycles = { return 4; }
 
 aded_dir.disasm = {
-	sink << "ADED $" << std::hex << opr8a;
+	string mnem = "ADED";
+	
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 aded_dir.execute = {
@@ -593,7 +648,11 @@ op aded_ext(0x18[8]:0xF3[8]:> <:opr16a[16])
 aded_ext.getCycles = { return 4; }
 
 aded_ext.disasm = {
-	sink << "ADED $" << std::hex << opr16a;
+	string mnem = "ADED";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 aded_ext.execute = {
@@ -625,8 +684,12 @@ op aded_idx(0x18[8]:0xE3[8]:> <:*xb[XB])
 aded_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 aded_idx.disasm = {
-	sink << "ADED ";
+	string mnem = "ADED";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 aded_idx.execute = {
@@ -657,12 +720,16 @@ op ade_xy_imm(0x18[8]:0b1[1]:b[1]:0x09[6]:opr16i[16])
 ade_xy_imm.getCycles = { return 3; }
 
 ade_xy_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADEX #$";
+		mnem = "ADEX";
 	} else {
-		sink << "ADEY #$";
+		mnem = "ADEY";
 	}
-	sink << std::hex << opr16i;
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 ade_xy_imm.execute = {
@@ -699,12 +766,16 @@ op ade_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x19[6]:opr8a[8])
 ade_xy_dir.getCycles = { return 4; }
 
 ade_xy_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADEX $";
+		mnem = "ADEX";
 	} else {
-		sink << "ADEY $"; 
+		mnem = "ADEY"; 
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 ade_xy_dir.execute = {
@@ -743,12 +814,16 @@ op ade_xy_ext(0x18[8]:0b1[1]:b[1]:0x39[6]:> <:opr16a[16])
 ade_xy_ext.getCycles = { return 4; }
 
 ade_xy_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADEX $";
+		mnem = "ADEX";
 	} else {
-		sink << "ADEY $";		
+		mnem = "ADEY";		
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 ade_xy_ext.execute = {
@@ -788,13 +863,18 @@ op ade_xy_idx(0x18[8]:0b1[1]:b[1]:0x29[6]:> <:*xb[XB])
 ade_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 ade_xy_idx.disasm = {
+	string mnem;
+	
 	if (b==0){
-		sink << "ADEX ";
+		mnem = "ADEX";
 	} else {
-		sink << "ADEY ";
+		mnem = "ADEY";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 ade_xy_idx.execute = {
@@ -835,12 +915,16 @@ op add_xy_imm(0x18[8]:0b1[1]:b[1]:0x0B[6]:opr16i[16])
 add_xy_imm.getCycles = { return 3; }
 
 add_xy_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADDX #$";
+		mnem = "ADDX";
 	} else {
-		sink << "ADDY #$";
+		mnem = "ADDY";
 	}
-	sink << std::hex << opr16i;
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 add_xy_imm.execute = {
@@ -877,12 +961,16 @@ op add_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x1B[6]:opr8a[8])
 add_xy_dir.getCycles = { return 4; }
 
 add_xy_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADDX $";
+		mnem = "ADDX";
 	} else {
-		sink << "ADDY $"; 
+		mnem = "ADDY"; 
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 add_xy_dir.execute = {
@@ -921,12 +1009,16 @@ op add_xy_ext(0x18[8]:0b1[1]:b[1]:0x3B[6]:> <:opr16a[16])
 add_xy_ext.getCycles = { return 4; }
 
 add_xy_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "ADDX $";
+		mnem = "ADDX";
 	} else {
-		sink << "ADDY $";		
+		mnem = "ADDY";		
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 add_xy_ext.execute = {
@@ -966,13 +1058,18 @@ op add_xy_idx(0x18[8]:0b1[1]:b[1]:0x2B[6]:> <:*xb[XB])
 add_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 add_xy_idx.disasm = {
+	string mnem;
+	
 	if (b==0){
-		sink << "ADDX ";
+		mnem = "ADDX";
 	} else {
-		sink << "ADDY ";
+		mnem = "ADDY";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 add_xy_idx.execute = {
@@ -1015,12 +1112,17 @@ op add_sub_d_imm(0b1[1]:b[1]:0x03[6]:> <:opr16i[16])
 add_sub_d_imm.getCycles = { return 2; }
 
 add_sub_d_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBD #$";
+		mnem = "SUBD";
 	} else {
-		sink << "ADDD #$";
+		mnem = "ADDD";
 	}
-	sink << std::hex << opr16i;
+	
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 add_sub_d_imm.execute = {
@@ -1051,12 +1153,16 @@ op add_sub_d_dir(0b1[1]:b[1]:0x13[6]:opr8a[8])
 add_sub_d_dir.getCycles = { return 3; }
 
 add_sub_d_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBD $";
+		mnem = "SUBD";
 	} else {
-		sink << "ADDD $";
+		mnem = "ADDD";
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 add_sub_d_dir.execute = {
@@ -1090,13 +1196,17 @@ op add_sub_d_ext(0b1[1]:b[1]:0x33[6]:> <:opr16a[16])
 add_sub_d_ext.getCycles = { return 3; }
 
 add_sub_d_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBD $";	
+		mnem = "SUBD";	
 	} else {
-		sink << "ADDD $";
+		mnem = "ADDD";
 	}
 	
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 
 }
 
@@ -1131,13 +1241,18 @@ op add_sub_d_idx(0b1[1]:b[1]:0x23[6]:> <:*xb[XB])
 add_sub_d_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 add_sub_d_idx.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBD ";
+		mnem = "SUBD";
 	} else {
-		sink << "ADDD ";
+		mnem = "ADDD";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 add_sub_d_idx.execute = {
@@ -1173,7 +1288,11 @@ op sba(0x18[8]:0x16[8])
 sba.getCycles = { return 2; }
 
 sba.disasm = {
-	sink << "SBA";
+	string mnem = "SBA";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 sba.execute = {
@@ -1200,12 +1319,16 @@ op sbc_ab_imm(0b1[1]:b[1]:0x02[6]:opr8i[8])
 sbc_ab_imm.getCycles = { return 1; }
 
 sbc_ab_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SBCA #$";
+		mnem = "SBCA";
 	} else {
-		sink << "SBCB #$";
+		mnem = "SBCB";
 	}
-	sink << std::hex << opr8i;
+	sink << mnem << " #0x" << std::hex << opr8i;
+	
+	return mnem;
 }
 
 sbc_ab_imm.execute = {
@@ -1240,12 +1363,16 @@ op sbc_ab_dir(0b1[1]:b[1]:0x12[6]:opr8a[8])
 sbc_ab_dir.getCycles = { return 3; }
 
 sbc_ab_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SBCA $";
+		mnem = "SBCA";
 	} else {
-		sink << "SBCB $"; 
+		mnem = "SBCB"; 
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 sbc_ab_dir.execute = {
@@ -1282,12 +1409,16 @@ op sbc_ab_ext(0b1[1]:b[1]:0x32[6]:> <:opr16a[16])
 sbc_ab_ext.getCycles = { return 3; }
 
 sbc_ab_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SBCA $";
+		mnem = "SBCA";
 	} else {
-		sink << "SBCB $";		
+		mnem = "SBCB";		
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 sbc_ab_ext.execute = {
@@ -1325,13 +1456,18 @@ op sbc_ab_idx(0b1[1]:b[1]:0x22[6]:> <:*xb[XB])
 sbc_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 sbc_ab_idx.disasm = {
+	string mnem;
+	
 	if (b==0){
-		sink << "SBCA ";
+		mnem = "SBCA";
 	} else {
-		sink << "SBCB ";
+		mnem = "SBCB";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 sbc_ab_idx.execute = {
@@ -1370,7 +1506,11 @@ op sbed_imm(0x18[8]:0x83[8]:opr16i[16])
 sbed_imm.getCycles = { return 3; }
 
 sbed_imm.disasm = {
-	sink << "SBED #$" << std::hex << opr16i;
+	string mnem = "SBED";
+	
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 sbed_imm.execute = {
@@ -1397,7 +1537,11 @@ op sbed_dir(0x18[8]:> <:0x93[8]:opr8a[8])
 sbed_dir.getCycles = { return 4; }
 
 sbed_dir.disasm = {
-	sink << "SBED $" << std::hex << opr8a;
+	string mnem = "SBED";
+	
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 sbed_dir.execute = {
@@ -1427,7 +1571,11 @@ op sbed_ext(0x18[8]:0xB3[8]:> <:opr16a[16])
 sbed_ext.getCycles = { return 4; }
 
 sbed_ext.disasm = {
-	sink << "SBED $" << std::hex << opr16a;
+	string mnem = "SBED";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 sbed_ext.execute = {
@@ -1458,8 +1606,12 @@ op sbed_idx(0x18[8]:0xA3[8]:> <:*xb[XB])
 sbed_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 sbed_idx.disasm = {
-	sink << "SBED ";
+	string mnem = "SBED";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 sbed_idx.execute = {
@@ -1490,12 +1642,16 @@ op sbe_xy_imm(0x18[8]:0b1[1]:b[1]:0x02[6]:opr16i[16])
 sbe_xy_imm.getCycles = { return 3; }
 
 sbe_xy_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SBEX #$";
+		mnem = "SBEX";
 	} else {
-		sink << "SBEY #$";
+		mnem = "SBEY";
 	}
-	sink << std::hex << opr16i;
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 sbe_xy_imm.execute = {
@@ -1531,12 +1687,16 @@ op sbe_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x12[6]:opr8a[8])
 sbe_xy_dir.getCycles = { return 4; }
 
 sbe_xy_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SBEX $";
+		mnem = "SBEX";
 	} else {
-		sink << "SBEY $"; 
+		mnem = "SBEY"; 
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 sbe_xy_dir.execute = {
@@ -1574,12 +1734,16 @@ op sbe_xy_ext(0x18[8]:0b1[1]:b[1]:0x32[6]:> <:opr16a[16])
 sbe_xy_ext.getCycles = { return 4; }
 
 sbe_xy_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SBEX $";
+		mnem = "SBEX";
 	} else {
-		sink << "SBEY $";		
+		mnem = "SBEY";		
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 sbe_xy_ext.execute = {
@@ -1618,13 +1782,18 @@ op sbe_xy_idx(0x18[8]:0b1[1]:b[1]:0x22[6]:> <:*xb[XB])
 sbe_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 sbe_xy_idx.disasm = {
+	string mnem;
+	
 	if (b==0){
-		sink << "SBEX ";
+		mnem = "SBEX";
 	} else {
-		sink << "SBEY ";
+		mnem = "SBEY";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 sbe_xy_idx.execute = {
@@ -1664,12 +1833,16 @@ op sub_ab_imm(0b1[1]:b[1]:0x00[6]:opr8i[8])
 sub_ab_imm.getCycles = { return 1; }
 
 sub_ab_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBA #$";
+		mnem = "SUBA";
 	} else {
-		sink << "SUBB #$";
+		mnem = "SUBB";
 	}
-	sink << std::hex << opr8i;
+	sink << mnem << " #0x" << std::hex << opr8i;
+	
+	return mnem;
 }
 
 sub_ab_imm.execute = {
@@ -1705,12 +1878,16 @@ op sub_ab_dir(0b1[1]:b[1]:0x10[6]:opr8a[8])
 sub_ab_dir.getCycles = { return 3; }
 
 sub_ab_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBA $";
+		mnem = "SUBA";
 	} else {
-		sink << "SUBB $"; 
+		mnem = "SUBB"; 
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem ;
 }
 
 sub_ab_dir.execute = {
@@ -1748,12 +1925,16 @@ op sub_ab_ext(0b1[1]:b[1]:0x30[6]:> <:opr16a[16])
 sub_ab_ext.getCycles = { return 3; }
 
 sub_ab_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBA $";
+		mnem = "SUBA";
 	} else {
-		sink << "SUBB $";		
+		mnem = "SUBB";		
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 sub_ab_ext.execute = {
@@ -1792,13 +1973,18 @@ op sub_ab_idx(0b1[1]:b[1]:0x20[6]:> <:*xb[XB])
 sub_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 sub_ab_idx.disasm = {
+	string mnem;
+	
 	if (b==0){
-		sink << "SUBA ";
+		mnem = "SUBA";
 	} else {
-		sink << "SUBB ";
+		mnem = "SUBB ";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 sub_ab_idx.execute = {
@@ -1839,12 +2025,16 @@ op sub_xy_imm(0x18[8]:0b1[1]:b[1]:0x00[6]:opr16i[16])
 sub_xy_imm.getCycles = { return 3; }
 
 sub_xy_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBX #$";
+		mnem = "SUBX";
 	} else {
-		sink << "SUBY #$";
+		mnem = "SUBY";
 	}
-	sink << std::hex << opr16i;
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 sub_xy_imm.execute = {
@@ -1881,12 +2071,16 @@ op sub_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x10[6]:opr8a[8])
 sub_xy_dir.getCycles = { return 4; }
 
 sub_xy_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBX $";
+		mnem = "SUBX";
 	} else {
-		sink << "SUBY $"; 
+		mnem = "SUBY"; 
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 sub_xy_dir.execute = {
@@ -1925,12 +2119,16 @@ op sub_xy_ext(0x18[8]:0b1[1]:b[1]:0x30[6]:> <:opr16a[16])
 sub_xy_ext.getCycles = { return 4; }
 
 sub_xy_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "SUBX $";
+		mnem = "SUBX";
 	} else {
-		sink << "SUBY $";		
+		mnem = "SUBY";		
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 sub_xy_ext.execute = {
@@ -1970,13 +2168,18 @@ op sub_xy_idx(0x18[8]:0b1[1]:b[1]:0x20[6]:> <:*xb[XB])
 sub_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 sub_xy_idx.disasm = {
+	string mnem;
+	
 	if (b==0){
-		sink << "SUBX ";
+		mnem = "SUBX";
 	} else {
-		sink << "SUBY ";
+		mnem = "SUBY";
 	}
 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 sub_xy_idx.execute = {
@@ -2019,7 +2222,11 @@ op daa(0x18[8]:0x07[8])
 daa.getCycles = { return 3; }
 
 daa.disasm = {
-	sink << "DAA";
+	string mnem = "DAA";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 daa.execute = {

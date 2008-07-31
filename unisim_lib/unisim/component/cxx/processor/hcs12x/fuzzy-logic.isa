@@ -39,7 +39,11 @@ op mem(0x01[8])
 mem.getCycles = { return 5; }
 
 mem.disasm = {
-	sink << "MEM";
+	string mnem = "MEM";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 mem.execute = {
@@ -115,7 +119,11 @@ op rev(0x18[8]:0x3A[8])
 rev.getCycles = { return 0; /* TODO: take in account the fact that it may be interrupted */}
 
 rev.disasm = {
-	sink << "REV";
+	string mnem = "REV";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 // *** INTERRUPTIBLE ***
@@ -180,7 +188,11 @@ op revw(0x18[8]:0x3B[8])
 revw.getCycles = { return 0; /* TODO: take in account the fact that it may be interrupted */}
 
 revw.disasm = {
-	sink << "REVW";
+	string mnem = "REVW";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 // *** INTERRUPTIBLE ***
@@ -258,7 +270,11 @@ op wav(0x18[8]:0x3C[8])
 wav.getCycles = { return 0; /* TODO: take in account the fact that it may be interrupted */}
 
 wav.disasm = {
-	sink << "WAV";
+	string mnem = "WAV";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 // *** INTERRUPTIBLE ***
@@ -333,7 +349,11 @@ op wavr(0x3C[8])
 wavr.getCycles = { return 0; /* TODO: linked to WAV instruction */}
 
 wavr.disasm = {
-	sink << "WAVR";
+	string mnem = "WAVR";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 wavr.execute = {
@@ -365,8 +385,12 @@ op tbl(0x18[8]:0x3D[8]:> <:*xb[XB])
 tbl.getCycles = { return 6; }
 
 tbl.disasm = {
-	sink << "TBL ";
+	string mnem = "TBL";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 tbl.execute = {
@@ -403,8 +427,12 @@ op etlb(0x18[8]:0x3F[8]:> <:*xb[XB])
 etlb.getCycles = { return 10; }
 
 etlb.disasm = {
-	sink << "ETLB ";
+	string mnem = "ETLB";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 etlb.execute = {

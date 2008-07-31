@@ -128,6 +128,9 @@ using std::map;
 using std::ostream;
 using std::vector;
 
+//#define MAX_INS_SIZE	CodeType::maxsize;
+#define MAX_INS_SIZE	8
+#define QUEUE_SIZE		MAX_INS_SIZE
 
 class CPU;
 
@@ -205,8 +208,6 @@ private:
 	
 };	/***********   END EBLB  **********/
 
-#define MAX_INS_SIZE	6   
-#define QUEUE_SIZE		MAX_INS_SIZE
 
 class CPU : public Decoder,
 	public Client<DebugControl<physical_address_t> >,

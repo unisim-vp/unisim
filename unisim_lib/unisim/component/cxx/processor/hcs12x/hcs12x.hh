@@ -105,13 +105,13 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 73 "hcs12x.isa"
+#line 75 "hcs12x.isa"
 	uint8_t
 #line 111 "hcs12x.hh"
 	getCycles( );
 	virtual
 #line 69 "hcs12x.isa"
-	void
+	string
 #line 116 "hcs12x.hh"
 	disasm(
 #line 69 "hcs12x.isa"

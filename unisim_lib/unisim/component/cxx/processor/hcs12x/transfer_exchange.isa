@@ -39,7 +39,12 @@ op t_ab_ba(0x18[8]:0x7[7]:b[1])
 t_ab_ba.getCycles = { return 2; }
 
 t_ab_ba.disasm = {
-	if (b == 0) { sink << "TAB"; } else { sink << "TBA";} 
+	string mnem;
+	
+	if (b == 0) { mnem = "TAB"; } else { mnem = "TBA";} 
+	sink << mnem;
+	
+	return mnem;
 }
 
 t_ab_ba.execute = {
@@ -72,6 +77,8 @@ exg_hcs12.getCycles = { return 1; }
  * lls destinationRegister index  
  * */
 exg_hcs12.disasm = {
+	string mnem;
+	
 
 	uint8_t rrSrc, rrDst;
 
@@ -93,13 +100,18 @@ exg_hcs12.disasm = {
 	
 	switch (eb) 
 	{
-		case 0xC5: sink << "XGDX "; break;
-		case 0xC6: sink << "XGDY "; break;
-		default: sink << "EXG ";
+		case 0xC5: mnem = "XGDX";  break;
+		case 0xC6: mnem = "XGDY"; break;
+		default: mnem = "EXG";
 	}
+	sink << mnem << " ";
 	
-	sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst); 
+	if ((eb != 0xC5) && (eb != 0xC6)) 
+	{
+		sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst); 
+	}
 
+	return mnem;
 }
 
 exg_hcs12.execute = {
@@ -179,6 +191,7 @@ tfr_hcs12.getCycles = { return 1; }
  * lls destinationRegister index  
  * */
 tfr_hcs12.disasm = {
+	string mnem;
 
 	uint8_t rrSrc, rrDst;
 
@@ -200,15 +213,16 @@ tfr_hcs12.disasm = {
 	
 	switch (eb) 
 	{
-		case 0x02: sink << "TAP "; break;
-		case 0x20: sink << "TPA "; break;
-		case 0x75: sink << "TSX "; break;
-		case 0x76: sink << "TSY "; break;
-		case 0x57: sink << "TXS "; break;
-		case 0x67: sink << "TYS "; break;
-		default: sink << "TFR " << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst);
+		case 0x02: mnem = "TAP"; sink << mnem; break;
+		case 0x20: mnem = "TPA"; sink << mnem; break;
+		case 0x75: mnem = "TSX"; sink << mnem; break;
+		case 0x76: mnem = "TSY"; sink << mnem; break;
+		case 0x57: mnem = "TXS"; sink << mnem; break;
+		case 0x67: mnem = "TYS"; sink << mnem; break;
+		default: mnem = "TFR"; sink << mnem << " " << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst);
 	}
 
+	return mnem;
 }
 
 
@@ -292,6 +306,7 @@ exg_hcs12x.getCycles = { return 1; }
  * lls destinationRegister index  
  * */
 exg_hcs12x.disasm = {
+	string mnem;
 
 	uint8_t rrSrc, rrDst;
 
@@ -379,12 +394,19 @@ exg_hcs12x.disasm = {
 	
 	switch (eb) 
 	{
-		case 0xC5: sink << "XGDX "; break;
-		case 0xC6: sink << "XGDY "; break;
-		default: sink << "EXG ";
+		case 0xC5: mnem = "XGDX"; break;
+		case 0xC6: mnem = "XGDY"; break;
+		default: mnem = "EXG";
 	}
 	
-	sink << srcName << "," << dstName;
+	sink << mnem << " ";
+	
+	if ((eb != 0xC5) && (eb != 0xC6)) 
+	{
+		sink << srcName << "," << dstName;
+	}
+	
+	return mnem;
 	
 }
 
@@ -530,6 +552,7 @@ tfr_hcs12x.getCycles = { return 1; }
  * lls destinationRegister index  
  * */
 tfr_hcs12x.disasm = {
+	string mnem;
 
 	uint8_t rrSrc, rrDst;
 
@@ -617,16 +640,16 @@ tfr_hcs12x.disasm = {
 	
 	switch (eb) 
 	{
-		case 0x02: sink << "TAP "; break;
-		case 0x20: sink << "TPA "; break;
-		case 0x75: sink << "TSX "; break;
-		case 0x76: sink << "TSY "; break;
-		case 0x57: sink << "TXS "; break;
-		case 0x67: sink << "TYS "; break;
-		default: sink << "TFR ";
+		case 0x02: mnem = "TAP"; sink << mnem; break;
+		case 0x20: mnem = "TPA"; sink << mnem; break;
+		case 0x75: mnem = "TSX"; sink << mnem; break;
+		case 0x76: mnem = "TSY"; sink << mnem; break;
+		case 0x57: mnem = "TXS"; sink << mnem; break;
+		case 0x67: mnem ="TYS"; sink << mnem; break;
+		default: mnem = "TFR"; sink << mnem << " " << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst); 
 	}
 	
-	sink << EBLB::getRegName(rrSrc) << "," << EBLB::getRegName(rrDst); 
+	return mnem;
 }
 
 tfr_hcs12x.execute = {

@@ -75,7 +75,10 @@ op psha(0x36[8])
 psha.getCycles = { return 2; }
 
 psha.disasm = {
-	sink << "PSHA";
+	string mnem = "PSHA";
+	
+	sink << mnem;
+	return mnem;
 }
 
 psha.execute = {
@@ -91,7 +94,10 @@ op pshb(0x37[8])
 pshb.getCycles = { return 2; }
 
 pshb.disasm = {
-	sink << "PSHB";
+	string mnem = "PSHB";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pshb.execute = {
@@ -106,7 +112,10 @@ op pshc(0x39[8])
 pshc.getCycles = { return 2; }
 
 pshc.disasm = {
-	sink << "PSHC";
+	string mnem = "PSHC";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pshc.execute = {
@@ -121,7 +130,10 @@ op pshcw(0x18[8]:0x39[8])
 pshcw.getCycles = { return 3; }
 
 pshcw.disasm = {
-	sink << "PSHCW";
+	string mnem = "PSHCW";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pshcw.execute = {
@@ -136,7 +148,10 @@ op pshd(0x3B[8])
 pshd.getCycles = { return 2; }
 
 pshd.disasm = {
-	sink << "PSHD";
+	string mnem = "PSHD";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pshd.execute = {
@@ -151,7 +166,10 @@ op pshx(0x34[8])
 pshx.getCycles = { return 2; }
 
 pshx.disasm = {
-	sink << "PSHX";
+	string mnem = "PSHX";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pshx.execute = {
@@ -166,7 +184,10 @@ op pshy(0x35[8])
 pshy.getCycles = { return 2; }
 
 pshy.disasm = {
-	sink << "PSHY";
+	string mnem = "PSHY";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pshy.execute = {
@@ -181,7 +202,10 @@ op pula(0x32[8])
 pula.getCycles = { return 3; }
 
 pula.disasm = {
-	sink << "PULA";
+	string mnem = "PULA";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pula.execute = {
@@ -196,7 +220,10 @@ op pulb(0x33[8])
 pulb.getCycles = { return 3; }
 
 pulb.disasm = {
-	sink << "PULB";
+	string mnem = "PULB";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pulb.execute = {
@@ -211,7 +238,10 @@ op pulc(0x38[8])
 pulc.getCycles = { return 3; }
 
 pulc.disasm = {
-	sink << "PULC";
+	string mnem = "PULC";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pulc.execute = {
@@ -226,7 +256,10 @@ op pulcw(0x18[8]:0x38[8])
 pulcw.getCycles = { return 4; }
 
 pulcw.disasm = {
-	sink << "PULCW";
+	string mnem = "PULCW";
+
+	sink << mnem;
+	return mnem;
 }
 
 pulcw.execute = {
@@ -241,7 +274,10 @@ op puld(0x3A[8])
 puld.getCycles = { return 3; }
 
 puld.disasm = {
-	sink << "PULD";
+	string mnem = "PULD";
+	
+	sink << mnem;
+	return mnem;
 }
 
 puld.execute = {
@@ -256,7 +292,10 @@ op pulx(0x30[8])
 pulx.getCycles = { return 3; }
 
 pulx.disasm = {
-	sink << "PULX";
+	string mnem = "PULX";
+	
+	sink << mnem;
+	return mnem;
 }
 
 pulx.execute = {
@@ -271,7 +310,10 @@ op puly(0x31[8])
 puly.getCycles = { return 3; }
 
 puly.disasm = {
-	sink << "PULY";
+	string mnem = "PULY";
+	
+	sink << mnem;
+	return mnem;
 }
 
 puly.execute = {

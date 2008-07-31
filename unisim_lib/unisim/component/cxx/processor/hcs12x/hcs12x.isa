@@ -66,8 +66,10 @@ action {void} execute({CPU *} {cpu}) {
 	exit(-1);
 }
 
-action {void} disasm({ostream&} {sink}) {
+action {string} disasm({ostream&} {sink}) {
 	sink << "?";
+	
+	return "?";
 }
 
 action {uint8_t} getCycles () {

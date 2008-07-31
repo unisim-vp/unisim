@@ -38,12 +38,15 @@ op ldaab_imm(0b1[1]:b[1]:0x6[6]:opr8i[8])
 ldaab_imm.getCycles = { return 1; }
 
 ldaab_imm.disasm = {
+	string mnem;
+	
     if (b==0) {
-	    sink << "LDAA #0x";
+	    mnem = "LDAA";
     } else {
-	    sink << "LDAB #0x";
+	    mnem = "LDAB";
     }
-    sink  << std::hex << opr8i;    
+    sink << mnem << " #0x" << std::hex << opr8i;    
+    return mnem;
 }
 
 ldaab_imm.execute = {
@@ -64,12 +67,15 @@ op ldaab_dir( 0b1[1]:b[1]:0x16[6]:opr8a[8] )
 ldaab_dir.getCycles = { return 3; }
 
 ldaab_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-	    sink << "LDAA 0x";
+	    mnem = "LDAA";
 	} else {
-	    sink << "LDAB 0x";
+	    mnem = "LDAB";
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	return mnem;
 }
 
 ldaab_dir.execute = {
@@ -92,12 +98,15 @@ op ldaab_ext(0b1[1]:b[1]:0x36[6]:> <:opr16a[16] )
 ldaab_ext.getCycles = { return 3; }
 
 ldaab_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-	    sink << "LDAA 0x";
+	    mnem = "LDAA";
 	} else {
-	    sink << "LDAB 0x";	
+	    mnem = "LDAB";	
 	}
-	sink << std::hex << opr16a; 
+	sink << mnem << " 0x" << std::hex << opr16a; 
+	return mnem;
 }
 
 ldaab_ext.execute = {
@@ -126,12 +135,16 @@ op ldaab_idx(0b1[1]:b[1]:0x26[6]:> <:*xb[XB])
 ldaab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 ldaab_idx.disasm = {
+	string mnem;
+	
 	if (b==0) {
-	    sink << "LDAA ";
+	    mnem = "LDAA";
 	} else {
-	    sink << "LDAB ";	
+	    mnem = "LDAB";	
 	}
+	sink << mnem << " ";
     xb->disasm(sink);
+    return mnem;
 }
 
 ldaab_idx.execute = {
@@ -158,14 +171,16 @@ op ld_dyxs_imm(0x33[6]:dyxs[2]:> <:opr16i[16])
 ld_dyxs_imm.getCycles = { return 2; }
 
 ld_dyxs_imm.disasm = {
-
+	string mnem;
+	
 	switch (dyxs) {
-	case 0: sink << "LDD #0x"; break;
-	case 1: sink << "LDY #0x"; break;
-	case 2: sink << "LDX #0x"; break;
-	case 3: sink << "LDS #0x"; break;
+	case 0: mnem = "LDD"; break;
+	case 1: mnem = "LDY"; break;
+	case 2: mnem = "LDX"; break;
+	case 3: mnem = "LDS"; break;
 	}
-	sink << std::hex << opr16i;
+	sink << mnem << " #0x" << std::hex << opr16i;
+	return mnem;
 }
 
 ld_dyxs_imm.execute = {
@@ -189,14 +204,16 @@ op ld_dyxs_dir(0x37[6]:dyxs[2]:dd[8])
 ld_dyxs_dir.getCycles = { return 3; }
 
 ld_dyxs_dir.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "LDD 0x"; break;
-	case 1: sink << "LDY 0x"; break;
-	case 2: sink << "LDX 0x"; break;
-	case 3: sink << "LDS 0x"; break;
+	case 0: mnem = "LDD"; break;
+	case 1: mnem = "LDY"; break;
+	case 2: mnem = "LDX"; break;
+	case 3: mnem = "LDS"; break;
 	}
-	sink << std::hex << dd;
+	sink << mnem << " 0x" << std::hex << dd;
+	return mnem;
 }
 
 ld_dyxs_dir.execute = {
@@ -221,15 +238,17 @@ op ld_dyxs_ext(0x3F[6]:dyxs[2]:> <:opr16a[16])
 ld_dyxs_ext.getCycles = { return 3; }
 
 ld_dyxs_ext.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "LDD 0x"; break;
-	case 1: sink << "LDY 0x"; break;
-	case 2: sink << "LDX 0x"; break;
-	case 3: sink << "LDS 0x"; break;
+	case 0: mnem = "LDD"; break;
+	case 1: mnem = "LDY"; break;
+	case 2: mnem = "LDX"; break;
+	case 3: mnem = "LDS"; break;
 	}
 
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 ld_dyxs_ext.execute = {
@@ -260,15 +279,18 @@ op ld_dyxs_idx(0x3B[6]:dyxs[2]:> <:*xb[XB])
 ld_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 ld_dyxs_idx.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "LDD "; break;
-	case 1: sink << "LDY "; break;
-	case 2: sink << "LDX "; break;
-	case 3: sink << "LDS "; break;
+	case 0: mnem = "LDD"; break;
+	case 1: mnem = "LDY"; break;
+	case 2: mnem = "LDX"; break;
+	case 3: mnem = "LDS"; break;
 	}
 
+	sink << mnem << " ";
     xb->disasm(sink);
+    return mnem;
 }
 
 ld_dyxs_idx.execute = {
@@ -299,9 +321,11 @@ op leay(0x19[8]:> <:*xb[XB])
 leay.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
 
 leay.disasm = {
+	string mnem = "LEAY";
 
-	sink << "LEAY ";
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 leay.execute = {
@@ -320,10 +344,11 @@ op leax(0x1A[8]:> <:*xb[XB])
 leax.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
 
 leax.disasm = {
+	string mnem = "LEAX";
 
-	sink << "LEAX ";
-	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 leax.execute = {
@@ -342,10 +367,11 @@ op leas(0x1B[8]:> <:*xb[XB])
 leas.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 2, 2, 2, 0, 0); }
 
 leas.disasm = {
+	string mnem = "LEAS";
 
-	sink << "LEAS ";
-	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 leas.execute = {
@@ -362,13 +388,15 @@ op staab_dir(0x2D[7]:b[1]:opr8a[8])
 staab_dir.getCycles = { return 2; }
 
 staab_dir.disasm = {
+	string mnem;
 
 	if (b==0) {
-	    sink << "STAA 0x";
+	    mnem = "STAA";
 	} else {
-	    sink << "STAB 0x";
+	    mnem = "STAB";
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	return mnem;
 
 }
 
@@ -394,13 +422,15 @@ op staab_ext(0x3D[7]:b[1]:> <:opr16a[16])
 staab_ext.getCycles = { return 3; }
 
 staab_ext.disasm = {
+	string mnem;
 
 	if (b==0) {
-	    sink << "STAA 0x";
+	    sink << "STAA";
 	} else {
-	    sink << "STAB 0x";
+	    sink << "STAB";
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 
 }
 
@@ -430,13 +460,16 @@ op staab_idx(0x35[7]:b[1]:> <:*xb[XB])
 staab_idx.getCycles = { XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 
 staab_idx.disasm = {
+	string mnem;
 
 	if (b==0) {
-	    sink << "STAA ";
+	    mnem = "STAA";
 	} else {
-	    sink << "STAB ";	
+	    mnem = "STAB";	
 	}
+	sink << mnem << " ";
     xb->disasm(sink);
+    return mnem;
 
 }
 
@@ -461,15 +494,17 @@ op st_dyxs_dir(0x17[6]:dyxs[2]:opr8a[8])
 st_dyxs_dir.getCycles = { return 2; }
 
 st_dyxs_dir.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "STD 0x"; break;
-	case 1: sink << "STY 0x"; break;
-	case 2: sink << "STX 0x"; break;
-	case 3: sink << "STS 0x"; break;
+	case 0: mnem = "STD"; break;
+	case 1: mnem = "STY"; break;
+	case 2: mnem = "STX"; break;
+	case 3: mnem = "STS"; break;
 	}
 	
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	return mnem;
 }
 
 st_dyxs_dir.execute = {
@@ -499,15 +534,17 @@ op st_dyxs_ext(0x1F[6]:dyxs[2]:> <:opr16a[16])
 st_dyxs_ext.getCycles = { return 3; }
 
 st_dyxs_ext.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "STD 0x"; break;
-	case 1: sink << "STY 0x"; break;
-	case 2: sink << "STX 0x"; break;
-	case 3: sink << "STS 0x"; break;
+	case 0: mnem = "STD"; break;
+	case 1: mnem = "STY"; break;
+	case 2: mnem = "STX"; break;
+	case 3: mnem = "STS"; break;
 	}
 	
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 
 }
 
@@ -543,15 +580,18 @@ op st_dyxs_idx(0x1B[6]:dyxs[2]:> <:*xb[XB])
 st_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 
 st_dyxs_idx.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "STD "; break;
-	case 1: sink << "STY "; break;
-	case 2: sink << "STX "; break;
-	case 3: sink << "STS "; break;
+	case 0: mnem = "STD"; break;
+	case 1: mnem = "STY"; break;
+	case 2: mnem = "STX"; break;
+	case 3: mnem = "STS"; break;
 	}
 
+	sink << mnem << " ";
     xb->disasm(sink);
+    return mnem;
 
 }
 
@@ -584,12 +624,15 @@ op gldaab_dir(0x18[8]:> <:0b1[1]:b[1]:0x16[6]:opr8a[8] )
 gldaab_dir.getCycles = { return 4; }
 
 gldaab_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-	    sink << "GLDAA 0x";
+	    mnem = "GLDAA";
 	} else {
-	    sink << "GLDAB 0x";
+	    mnem = "GLDAB";
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	return mnem;
 }
 
 gldaab_dir.execute = {
@@ -612,12 +655,15 @@ op gldaab_ext(0x18[8]:0b1[1]:b[1]:0x36[6]:> <:opr16a[16] )
 gldaab_ext.getCycles = { return 4; }
 
 gldaab_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-	    sink << "GLDAA 0x";
+	    mnem = "GLDAA";
 	} else {
-	    sink << "GLDAB 0x";	
+	    mnem = "GLDAB";
 	}
-	sink << std::hex << opr16a; 
+	sink << mnem << " 0x" << std::hex << opr16a; 
+	return mnem;
 }
 
 gldaab_ext.execute = {
@@ -646,12 +692,16 @@ op gldaab_idx(0x18[8]:0b1[1]:b[1]:0x26[6]:> <:*xb[XB])
 gldaab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 gldaab_idx.disasm = {
+	string mnem;
+	
 	if (b==0) {
-	    sink << "GLDAA ";
+	    mnem = "GLDAA";
 	} else {
-	    sink << "GLDAB ";	
+	    mnem = "GLDAB";
 	}
+	sink << mnem << " ";
     xb->disasm(sink);
+    return mnem;
 }
 
 gldaab_idx.execute = {
@@ -678,14 +728,16 @@ op gld_dyxs_dir(0x18[8]:> <:0x37[6]:dyxs[2]:dd[8])
 gld_dyxs_dir.getCycles = { return 4; }
 
 gld_dyxs_dir.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "GLDD 0x"; break;
-	case 1: sink << "GLDY 0x"; break;
-	case 2: sink << "GLDX 0x"; break;
-	case 3: sink << "GLDS 0x"; break;
+	case 0: mnem = "GLDD"; break;
+	case 1: mnem = "GLDY"; break;
+	case 2: mnem = "GLDX"; break;
+	case 3: mnem = "GLDS"; break;
 	}
-	sink << std::hex << dd;
+	sink << mnem << " 0x" << std::hex << dd;
+	return mnem;
 }
 
 gld_dyxs_dir.execute = {
@@ -710,15 +762,17 @@ op gld_dyxs_ext(0x18[8]:0x3F[6]:dyxs[2]:> <:opr16a[16])
 gld_dyxs_ext.getCycles = { return 4; }
 
 gld_dyxs_ext.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "GLDD 0x"; break;
-	case 1: sink << "GLDY 0x"; break;
-	case 2: sink << "GLDX 0x"; break;
-	case 3: sink << "GLDS 0x"; break;
+	case 0: mnem = "GLDD"; break;
+	case 1: mnem = "GLDY"; break;
+	case 2: mnem = "GLDX"; break;
+	case 3: mnem = "GLDS"; break;
 	}
 
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 gld_dyxs_ext.execute = {
@@ -749,15 +803,18 @@ op gld_dyxs_idx(0x18[8]:0x3B[6]:dyxs[2]:> <:*xb[XB])
 gld_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 gld_dyxs_idx.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "GLDD "; break;
-	case 1: sink << "GLDY "; break;
-	case 2: sink << "GLDX "; break;
-	case 3: sink << "GLDS "; break;
+	case 0: mnem = "GLDD"; break;
+	case 1: mnem = "GLDY"; break;
+	case 2: mnem = "GLDX"; break;
+	case 3: mnem = "GLDS"; break;
 	}
 
+	sink << mnem << " ";
     xb->disasm(sink);
+    return mnem;
 }
 
 gld_dyxs_idx.execute = {
@@ -785,13 +842,15 @@ op gstaab_dir(0x18[8]:> <:0x2D[7]:b[1]:opr8a[8])
 gstaab_dir.getCycles = { return 3; }
 
 gstaab_dir.disasm = {
+	string mnem;
 
 	if (b==0) {
-	    sink << "GSTAA 0x";
+	    mnem = "GSTAA";
 	} else {
-	    sink << "GSTAB 0x";
+	    mnem = "GSTAB";
 	}
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	return mnem;
 
 }
 
@@ -817,13 +876,15 @@ op gstaab_ext(0x18[8]:0x3D[7]:b[1]:> <:opr16a[16])
 gstaab_ext.getCycles = { return 4; }
 
 gstaab_ext.disasm = {
+	string mnem;
 
 	if (b==0) {
-	    sink << "GSTAA 0x";
+	    mnem = "GSTAA";
 	} else {
-	    sink << "GSTAB 0x";
+	    mnem = "GSTAB";
 	}
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 
 }
 
@@ -853,13 +914,16 @@ op gstaab_idx(0x18[8]:0x35[7]:b[1]:> <:*xb[XB])
 gstaab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 
 gstaab_idx.disasm = {
+	string mnem;
 
 	if (b==0) {
-	    sink << "GSTAA ";
+	    mnem = "GSTAA";
 	} else {
-	    sink << "GSTAB ";	
+	    mnem = "GSTAB";
 	}
+	sink << mnem << " ";
     xb->disasm(sink);
+    return mnem;
 
 }
 
@@ -884,15 +948,17 @@ op gst_dyxs_dir(0x18[8]:> <:0x17[6]:dyxs[2]:opr8a[8])
 gst_dyxs_dir.getCycles = { return 3; }
 
 gst_dyxs_dir.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "GSTD 0x"; break;
-	case 1: sink << "GSTY 0x"; break;
-	case 2: sink << "GSTX 0x"; break;
-	case 3: sink << "GSTS 0x"; break;
+	case 0: mnem = "GSTD"; break;
+	case 1: mnem = "GSTY"; break;
+	case 2: mnem = "GSTX"; break;
+	case 3: mnem = "GSTS"; break;
 	}
 	
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	return mnem;
 }
 
 gst_dyxs_dir.execute = {
@@ -922,15 +988,17 @@ op gst_dyxs_ext(0x18[8]:0x1F[6]:dyxs[2]:> <:opr16a[16])
 gst_dyxs_ext.getCycles = { return 4; }
 
 gst_dyxs_ext.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "GSTD 0x"; break;
-	case 1: sink << "GSTY 0x"; break;
-	case 2: sink << "GSTX 0x"; break;
-	case 3: sink << "GSTS 0x"; break;
+	case 0: mnem = "GSTD"; break;
+	case 1: mnem = "GSTY"; break;
+	case 2: mnem = "GSTX"; break;
+	case 3: mnem = "GSTS"; break;
 	}
 	
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 
 }
 
@@ -966,15 +1034,18 @@ op gst_dyxs_idx(0x18[8]:0x1B[6]:dyxs[2]:> <:*xb[XB])
 gst_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 
 gst_dyxs_idx.disasm = {
+	string mnem;
 
 	switch (dyxs) {
-	case 0: sink << "GSTD "; break;
-	case 1: sink << "GSTY "; break;
-	case 2: sink << "GSTX "; break;
-	case 3: sink << "GSTS "; break;
+	case 0: mnem = "GSTD"; break;
+	case 1: mnem = "GSTY"; break;
+	case 2: mnem = "GSTX"; break;
+	case 3: mnem = "GSTS"; break;
 	}
 
+	sink << mnem << " ";
     xb->disasm(sink);
+    return mnem;
 
 }
 

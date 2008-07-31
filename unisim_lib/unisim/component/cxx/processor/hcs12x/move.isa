@@ -38,7 +38,10 @@ op movb_0B(0x18[8]:0x0B[8]:> <:ii[8]:> <:opr16a[16])
 movb_0B.getCycles = { return 3;}
 
 movb_0B.disasm = { 
-	sink << "MOVB #0x" << std::hex << ii << ",0x" << std::hex << opr16a;
+	string mnem = "MOVB";
+	
+	sink << mnem << " #0x" << std::hex << ii << ",0x" << std::hex << opr16a;
+	return mnem;
 }
 
 movb_0B.execute = {
@@ -52,9 +55,11 @@ op movb_08(0x18[8]:0x08[8]:> <:*xb[XB]:> <:ii[8])
 movb_08.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 4, 5); }
 
 movb_08.disasm = {
+	string mnem = "MOVB";
 	
-	sink << "MOVB #0x" << std::hex << ii << ",";
+	sink << mnem << " #0x" << std::hex << ii << ",";
 	xb->disasm(sink);
+	return mnem;
 }
 
 movb_08.execute = {
@@ -69,7 +74,10 @@ op movb_0C(0x18[8]:0x0C[8]:> <:opr16asrc[16]:opr16adst[16])
 movb_0C.getCycles = { return 5; }
 
 movb_0C.disasm = {
-	sink << "MOVB 0x" << std::hex << opr16asrc << ",0x" << std::hex << opr16adst;
+	string mnem = "MOVB";
+	
+	sink << mnem << " 0x" << std::hex << opr16asrc << ",0x" << std::hex << opr16adst;
+	return mnem;
 }
 
 movb_0C.execute = {
@@ -85,8 +93,11 @@ op movb_09(0x18[8]:0x09[8]:> <:*xb[XB]:> <:opr16asrc[16])
 movb_09.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 6); }
 
 movb_09.disasm = {
-	sink << "MOVB 0x" <<  std::hex << opr16asrc << ",";
+	string mnem = "MOVB";
+	
+	sink << mnem << " 0x" <<  std::hex << opr16asrc << ",";
 	xb->disasm(sink);
+	return mnem;
 }
 
 movb_09.execute = {
@@ -100,9 +111,12 @@ op movb_0D(0x18[8]:0x0D[8]:> <:*xb[XB]:> <:opr16a[16])
 movb_0D.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 6, 7); }
 
 movb_0D.disasm = {
-	sink << "MOVB ";
+	string mnem = "MOVB";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
 	sink << ",0x" << std::hex << opr16a;
+	return mnem;
 }
 
 movb_0D.execute = {
@@ -129,10 +143,13 @@ movb_0A.getCycles = {
 }
 
 movb_0A.disasm = {
-	sink << "MOVB ";
+	string mnem = "MOVB";
+	
+	sink << mnem << " ";
 	xbsrc->disasm(sink);
 	sink << ",";
 	xbdst->disasm(sink);
+	return mnem;
 }
 
 movb_0A.execute = {
@@ -148,8 +165,11 @@ op movw_03(0x18[8]:0x03[8]:> <:opr16i[16]:> <:opr16a[16])
 
 movw_03.getCycles = { return 4; }
 
-movw_03.disasm = { 
-	sink << "MOVW #0x" << std::hex << opr16i << ",0x" << std::hex << opr16a;
+movw_03.disasm = {
+	string mnem = "MOVW";
+	 
+	sink << mnem << " #0x" << std::hex << opr16i << ",0x" << std::hex << opr16a;
+	return mnem;
 }
 
 movw_03.execute = {
@@ -163,7 +183,10 @@ op movw_04(0x18[8]:0x04[8]:> <:opr16asrc[16]:opr16adst[16])
 movw_04.getCycles = { return 5; }
 
 movw_04.disasm = {
-	sink << "MOVW 0x" << std::hex << opr16asrc << ",0x" << std::hex << opr16adst;
+	string mnem = "MOVW";
+	
+	sink << mnem << " 0x" << std::hex << opr16asrc << ",0x" << std::hex << opr16adst;
+	return mnem;
 }
 
 movw_04.execute = {
@@ -179,9 +202,11 @@ movw_04.execute = {
 op movw_00(0x18[8]:0x00[8]:> <:*xb[XB]:> <:opr16i[16])
 
 movw_00.disasm = {
+	string mnem = "MOVW";
 	
-	sink << "MOVW #0x" << std::hex << opr16i << ",";
+	sink << mnem << " #0x" << std::hex << opr16i << ",";
 	xb->disasm(sink);
+	return mnem;
 }
 
 movw_00.execute = {
@@ -200,8 +225,11 @@ op movw_01(0x18[8]:0x01[8]:> <:*xb[XB]:> <:opr16asrc[16])
 movw_01.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 6); }
 
 movw_01.disasm = {
-	sink << "MOVW 0x" <<  std::hex << opr16asrc << ",";
+	string mnem = "MOVW";
+	
+	sink << mnem << " 0x" <<  std::hex << opr16asrc << ",";
 	xb->disasm(sink);
+	return mnem;
 }
 
 movw_01.execute = {
@@ -218,9 +246,12 @@ op movw_05(0x18[8]:0x05[8]:> <:*xb[XB]:> <:opr16a[16])
 movw_05.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 6, 7); }
 
 movw_05.disasm = {
-	sink << "MOVW ";
+	string mnem = "MOVW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
 	sink << ",0x" << std::hex << opr16a;
+	return mnem;
 }
 
 movw_05.execute = {
@@ -247,10 +278,13 @@ movw_02.getCycles = {
 }
 
 movw_02.disasm = {
-	sink << "MOVW ";
+	string mnem = "MOVW";
+	
+	sink << mnem << " ";
 	xbsrc->disasm(sink);
 	sink << ",";
 	xbdst->disasm(sink);
+	return mnem;
 }
 
 movw_02.execute = {

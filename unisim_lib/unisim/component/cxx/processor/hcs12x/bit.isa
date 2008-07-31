@@ -41,7 +41,11 @@ op clc(0x10[8]:0xFE[8])
 clc.getCycles = { return 1; }
 
 clc.disasm = {
-	sink << "CLC";
+	string mnem("CLC");
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 clc.execute = {
@@ -54,7 +58,11 @@ op cli(0x10[8]:0xEF[8])
 cli.getCycles = { return 1; }
 
 cli.disasm = {
-	sink << "CLI";
+	string mnem = "CLI";
+	
+	sink << mnem;
+	
+	return  mnem;
 }
 
 cli.execute = {
@@ -67,7 +75,11 @@ op clv(0x10[8]:0xFD[8])
 clv.getCycles = { return 1; }
 
 clv.disasm = {
-	sink << "CLV";
+	string mnem = "CLV";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 clv.execute = {
@@ -80,7 +92,11 @@ op clr_ext(0x79[8]:> <:opr16a[16])
 clr_ext.getCycles = { return 3; }
 
 clr_ext.disasm = {
-	sink << "CLR 0x" << std::hex << opr16a;
+	string mnem = "CLR";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 clr_ext.execute = {
@@ -98,8 +114,12 @@ op clr_idx(0x69[8]:> <:*xb[XB])
 clr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 
 clr_idx.disasm = {
-	sink << "CLR ";
+	string mnem = "CLR";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 clr_idx.execute = {
@@ -117,7 +137,11 @@ op clrw_ext(0x18[8]:0x79[8]:> <:opr16a[16])
 clrw_ext.getCycles = { return 4; }
 
 clrw_ext.disasm = {
-	sink << "CLRW 0x" << std::hex << opr16a;
+	string mnem = "CLRW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 clrw_ext.execute = {
@@ -135,8 +159,12 @@ op clrw_idx(0x18[8]:0x69[8]:> <:*xb[XB])
 clrw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 
 clrw_idx.disasm = {
-	sink << "CLRW ";
+	string mnem = "CLRW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 clrw_idx.execute = {
@@ -154,11 +182,17 @@ op clr_ab(0b1[1]:b[1]:0x07[6])
 clr_ab.getCycles = { return 1; }
 
 clr_ab.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "CLRA";
+		mnem = "CLRA";
 	} else {
-		sink << "CLRB";
+		mnem = "CLRB";
 	}
+	
+	sink << "mnem";
+	
+	return mnem;
 }
 
 clr_ab.execute = {
@@ -180,11 +214,17 @@ op clr_xy(0x18[8]:0b1[1]:b[1]:0x07[6])
 clr_xy.getCycles = { return 2; }
 
 clr_xy.disasm = {
+	string mnem;
+
 	if (b==0) {
-		sink << "CLRX";
+		mnem = "CLRX";
 	} else {
-		sink << "CLRY";
+		mnem = "CLRY";
 	}
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 clr_xy.execute = {
@@ -207,7 +247,11 @@ op com_ext(0x71[8]:> <:opr16a[16])
 com_ext.getCycles = { return 4; }
 
 com_ext.disasm = {
-	sink << "COM 0x" << std::hex << opr16a;
+	string mnem = "COM";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 com_ext.execute = {
@@ -226,8 +270,12 @@ op com_idx(0x61[8]:> <:*xb[XB])
 com_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 com_idx.disasm = {
-	sink << "COM ";
+	string mnem = "COM";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 com_idx.execute = {
@@ -247,11 +295,17 @@ op com_ab(0b010[3]:b[1]:0x1[4])
 com_ab.getCycles = { return 1; }
 
 com_ab.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "COMA";
+		mnem = "COMA";
 	} else {
-		sink << "COMB";
+		mnem = "COMB";
 	}
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 com_ab.execute = {
@@ -282,7 +336,11 @@ op comw_ext(0x18[8]:0x71[8]:> <:opr16a[16])
 comw_ext.getCycles = { return 5; }
 
 comw_ext.disasm = {
-	sink << "COMW 0x" << std::hex << opr16a;
+	string mnem = "COMW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 comw_ext.execute = {
@@ -301,8 +359,12 @@ op comw_idx(0x18[8]:0x61[8]:> <:*xb[XB])
 comw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 comw_idx.disasm = {
-	sink << "COMW ";
+	string mnem = "COMW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 comw_idx.execute = {
@@ -322,11 +384,17 @@ op com_xy(0x18[8]:0b010[3]:b[1]:0x1[4])
 com_xy.getCycles = { return 2; }
 
 com_xy.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "COMX";
+		mnem = "COMX";
 	} else {
-		sink << "COMY";
+		mnem = "COMY";
 	}
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 com_xy.execute = {
@@ -358,7 +426,11 @@ op neg_ext(0x70[8]:> <:opr16a[16])
 neg_ext.getCycles = { return 4; }
 
 neg_ext.disasm = {
-	sink << "NEG 0x" << std::hex << opr16a;
+	string mnem = "NEG";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 neg_ext.execute = {
@@ -378,8 +450,12 @@ op neg_idx(0x60[8]:> <:*xb[XB])
 neg_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 neg_idx.disasm = {
-	sink << "NEG 0x";
+	string mnem = "NEG";
+	
+	sink << mnem << " 0x";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 neg_idx.execute = {
@@ -402,11 +478,15 @@ op neg_ab(0b010[3]:b[1]:0x0[4])
 neg_ab.getCycles = { return 1; }
 
 neg_ab.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "NEGA";
+		mnem = "NEGA";
 	} else {
-		sink << "NEGB";
+		mnem = "NEGB";
 	}
+	
+	return mnem;
 }
 
 neg_ab.execute = {
@@ -437,7 +517,11 @@ op negw_ext(0x18[8]:0x70[8]:> <:opr16a[16])
 negw_ext.getCycles = { return 5; }
 
 negw_ext.disasm = {
-	sink << "NEGW 0x" << std::hex << opr16a;
+	string mnem = "NEGW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 negw_ext.execute = {
@@ -460,8 +544,12 @@ op negw_idx(0x18[8]:0x60[8]:> <:*xb[XB])
 negw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 negw_idx.disasm = {
-	sink << "NEGW 0x";
+	string mnem = "NEGW";
+	
+	sink << mnem << " 0x";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 negw_idx.execute = {
@@ -486,11 +574,17 @@ op neg_xy(0x18[8]:0b010[3]:b[1]:0x0[4])
 neg_xy.getCycles = { return 2; }
 
 neg_xy.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "NEGX";
+		mnem = "NEGX";
 	} else {
-		sink << "NEGY";
+		mnem = "NEGY";
 	}
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 neg_xy.execute = {
@@ -526,7 +620,11 @@ op bclr_dir(0x4D[8]:> <:dd[8]:mm[8])
 bclr_dir.getCycles = { return 4; }
 
 bclr_dir.disasm = {
-	sink << "BCLR 0x" << std::hex << dd << ", 0x" << std::hex << mm;
+	string mnem = "BCLR";
+	
+	sink << mnem << " 0x" << std::hex << dd << ", 0x" << std::hex << mm;
+	
+	return mnem;
 }
 
 bclr_dir.execute = {
@@ -548,7 +646,11 @@ op bclr_ext(0x1D[8]:> <:opr16a[16]:> <:mm[8])
 bclr_ext.getCycles = { return 4; }
 
 bclr_ext.disasm = {
-	sink << "BCLR 0x" << std::hex << opr16a << ", 0x" << std::hex << mm;
+	string mnem = "BCLR";
+	
+	sink << mnem << " 0x" << std::hex << opr16a << ", 0x" << std::hex << mm;
+	
+	return mnem;
 }
 
 bclr_ext.execute = {
@@ -570,9 +672,13 @@ op bclr_idx(0x0D[8]:> <:*xb[XB]:> <:mm[8])
 bclr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 6, 0, 0); }
 
 bclr_idx.disasm = {
-	sink << "BCLR ";
+	string mnem = "BCLR";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
 	sink << ", 0x" << std::hex << mm;
+	
+	return mnem;
 }
 
 bclr_idx.execute = {
@@ -596,12 +702,16 @@ op bit_ab_imm(0b1[1]:b[1]:0x05[6]:ii[8])
 bit_ab_imm.getCycles = { return 1; }
 
 bit_ab_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "BITA #0x";
+		mnem = "BITA";
 	} else {
-		sink << "BITB #0x";
+		mnem = "BITB";
 	} 
-	sink << std::hex << ii;
+	sink << mnem << " #0x" << std::hex << ii;
+	
+	return mnem;
 }
 
 bit_ab_imm.execute = {
@@ -624,12 +734,16 @@ op bit_ab_dir(0b1[1]:b[1]:0x15[6]:opr8a[8])
 bit_ab_dir.getCycles = { return 3; }
 
 bit_ab_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "BITA 0x";
+		mnem = "BITA";
 	} else {
-		sink << "BITB 0x";
+		mnem = "BITB";
 	} 
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 bit_ab_dir.execute = {
@@ -653,12 +767,16 @@ op bit_ab_ext(0b1[1]:b[1]:0x35[6]:> <:opr16a[16])
 bit_ab_ext.getCycles = { return 3; }
 
 bit_ab_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "BITA 0x";
+		mnem = "BITA";
 	} else {
-		sink << "BITB 0x";
+		mnem = "BITB";
 	} 
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 bit_ab_ext.execute = {
@@ -682,12 +800,17 @@ op bit_ab_idx(0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
 bit_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 bit_ab_idx.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "BITA ";
+		mnem = "BITA";
 	} else {
-		sink << "BITB ";
+		mnem = "BITB";
 	} 
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 bit_ab_idx.execute = {
@@ -712,12 +835,17 @@ op bit_xy_imm(0x18[8]:0b1[1]:b[1]:0x05[6]:opr16i[16])
 bit_xy_imm.getCycles = { return 3; }
 
 bit_xy_imm.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "BITX #0x";
+		mnem = "BITX";
 	} else {
-		sink << "BITY #0x";
+		mnem = "BITY";
 	} 
-	sink << std::hex << opr16i;
+	
+	sink << mnem << " #0x" << std::hex << opr16i;
+	
+	return mnem;
 }
 
 bit_xy_imm.execute = {
@@ -740,12 +868,16 @@ op bit_xy_dir(0x18[8]:> <:0b1[1]:b[1]:0x15[6]:opr8a[8])
 bit_xy_dir.getCycles = { return 4; }
 
 bit_xy_dir.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "BITA 0x";
+		mnem = "BITA";
 	} else {
-		sink << "BITB 0x";
+		mnem = "BITB";
 	} 
-	sink << std::hex << opr8a;
+	sink << mnem << " 0x" << std::hex << opr8a;
+	
+	return mnem;
 }
 
 bit_xy_dir.execute = {
@@ -769,12 +901,16 @@ op bit_xy_ext(0x18[8]:0b1[1]:b[1]:0x35[6]:> <:opr16a[16])
 bit_xy_ext.getCycles = { return 4; }
 
 bit_xy_ext.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "BITX 0x";
+		mnem = "BITX";
 	} else {
-		sink << "BITY 0x";
+		mnem = "BITY";
 	} 
-	sink << std::hex << opr16a;
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 bit_xy_ext.execute = {
@@ -798,12 +934,18 @@ op bit_xy_idx(0x18[8]:0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
 bit_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 bit_xy_idx.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "BITX ";
+		mnem = "BITX";
 	} else {
-		sink << "BITY ";
+		mnem = "BITY";
 	} 
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 bit_xy_idx.execute = {
@@ -828,7 +970,11 @@ op bset_dir(0x4C[8]:> <:dd[8]:mm[8])
 bset_dir.getCycles = { return 4; }
 
 bset_dir.disasm = {
-	sink << "BSET 0x" << std::hex << dd << ", 0x" << std::hex << mm;
+	string mnem = "BSET";
+	
+	sink << mnem << " 0x" << std::hex << dd << ", 0x" << std::hex << mm;
+	
+	return mnem;
 }
 
 bset_dir.execute = {
@@ -849,7 +995,11 @@ op bset_ext(0x1C[8]:> <:opr16a[16]:> <:mm[8])
 bset_ext.getCycles = { return 4; }
 
 bset_ext.disasm = {
-	sink << "BSET 0x" << std::hex << opr16a << ", 0x" << std::hex << mm;
+	string mnem = "BSET";
+	
+	sink << mnem << " 0x" << std::hex << opr16a << ", 0x" << std::hex << mm;
+	
+	return mnem;
 }
 
 bset_ext.execute = {
@@ -870,9 +1020,13 @@ op bset_idx(0x0C[8]:> <:*xb[XB]:> <:mm[8])
 bset_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 6, 0, 0); }
 
 bset_idx.disasm = {
-	sink << "BSET ";
+	string mnem = "BSET";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
 	sink << ", 0x" << std::hex << mm;
+	
+	return mnem;
 }
 
 bset_idx.execute = {
@@ -898,7 +1052,11 @@ op lsl_ext(0x78[8]:> <:opr16a[16])
 lsl_ext.getCycles = { return 4; }
 
 lsl_ext.disasm = {
-	sink << "LSL 0x" << std::hex << opr16a;
+	string mnem = "LSL";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 lsl_ext.execute = {
@@ -921,8 +1079,12 @@ op lsl_idx(0x68[8]:> <:*xb[XB])
 lsl_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 lsl_idx.disasm = {
-	sink << "LSL ";
+	string mnem = "LSL";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 lsl_idx.execute = {
@@ -946,7 +1108,11 @@ op lsla(0x48[8])
 lsla.getCycles = { return 1; }
 
 lsla.disasm = {
-	sink << "LSLA";
+	string mnem = "LSLA";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lsla.execute = {
@@ -968,7 +1134,11 @@ op lslb(0x58[8])
 lslb.getCycles = { return 1; }
 
 lslb.disasm = {
-	sink << "LSLB";
+	string mnem = "LSLB";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lslb.execute = {
@@ -990,7 +1160,11 @@ op lsld(0x59[8])
 lsld.getCycles = { return 1; }
 
 lsld.disasm = {
-	sink << "LSLD";
+	string mnem = "LSLD";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lsld.execute = {
@@ -1015,7 +1189,11 @@ op lslw_ext(0x18[8]:0x78[8]:> <:opr16a[16])
 lslw_ext.getCycles = { return 5; }
 
 lslw_ext.disasm = {
-	sink << "LSLW 0x" << std::hex << opr16a;
+	string mnem = "LSLW";
+
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 lslw_ext.execute = {
@@ -1038,8 +1216,12 @@ op lslw_idx(0x18[8]:0x68[8]:> <:*xb[XB])
 lslw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 lslw_idx.disasm = {
-	sink << "LSLW ";
+	string mnem = "LSLW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 lslw_idx.execute = {
@@ -1063,7 +1245,11 @@ op lslx(0x18[8]:0x48[8])
 lslx.getCycles = { return 2; }
 
 lslx.disasm = {
-	sink << "LSLX";
+	string mnem = "LSLX";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lslx.execute = {
@@ -1085,7 +1271,11 @@ op lsly(0x18[8]:0x58[8])
 lsly.getCycles = { return 2; }
 
 lsly.disasm = {
-	sink << "LSLY";
+	string mnem = "LSLY";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lsly.execute = {
@@ -1108,7 +1298,11 @@ op rol_ext(0x75[8]:> <:opr16a[16])
 rol_ext.getCycles = { return 4; }
 
 rol_ext.disasm = {
-	sink << "ROL 0x" << std::hex << opr16a;
+	string mnem = "ROL";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 rol_ext.execute = {
@@ -1132,8 +1326,12 @@ op rol_idx(0x65[8]:> <:*xb[XB])
 rol_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 rol_idx.disasm = {
-	sink << "ROL ";
+	string mnem = "ROL";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 rol_idx.execute = {
@@ -1158,7 +1356,11 @@ op rola(0x45[8])
 rola.getCycles = { return 1; }
 
 rola.disasm = {
-	sink << "ROLA";
+	string mnem = "ROLA";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 rola.execute = {
@@ -1181,7 +1383,11 @@ op rolb(0x55[8])
 rolb.getCycles = { return 1; }
 
 rolb.disasm = {
-	sink << "ROLB";
+	string mnem = "ROLB";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 rolb.execute = {
@@ -1206,7 +1412,11 @@ op rolw_ext(0x18[8]:0x75[8]:> <:opr16a[16])
 rolw_ext.getCycles = { return 5; }
 
 rolw_ext.disasm = {
-	sink << "ROLw 0x" << std::hex << opr16a;
+	string mnem = "ROLW";
+	
+	sink <<  mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 rolw_ext.execute = {
@@ -1230,8 +1440,12 @@ op rolw_idx(0x18[8]:0x65[8]:> <:*xb[XB])
 rolw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 rolw_idx.disasm = {
-	sink << "ROLW ";
+	string mnem = "ROLW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 rolw_idx.execute = {
@@ -1256,7 +1470,11 @@ op rolx(0x18[8]:0x45[8])
 rolx.getCycles = { return 2; }
 
 rolx.disasm = {
-	sink << "ROLX";
+	string mnem = "ROLX";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 rolx.execute = {
@@ -1279,7 +1497,11 @@ op roly(0x18[8]:0x55[8])
 roly.getCycles = { return 2; }
 
 roly.disasm = {
-	sink << "ROLY";
+	string mnem = "ROLY";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 roly.execute = {
@@ -1303,7 +1525,11 @@ op lsr_ext(0x74[8]:> <:opr16a[16])
 lsr_ext.getCycles = { return 4; }
 
 lsr_ext.disasm = {
-	sink << "LSR 0x" << std::hex << opr16a;
+	string mnem = "LSR";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 lsr_ext.execute = {
@@ -1326,8 +1552,12 @@ op lsr_idx(0x64[8]:> <:*xb[XB])
 lsr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 lsr_idx.disasm = {
-	sink << "LSR ";
+	string mnem = "LSR";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 lsr_idx.execute = {
@@ -1351,7 +1581,11 @@ op lsra(0x44[8])
 lsra.getCycles = { return 1; }
 
 lsra.disasm = {
-	sink << "LSRA";
+	string mnem = "LSRA";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lsra.execute = {
@@ -1373,7 +1607,11 @@ op lsrb(0x54[8])
 lsrb.getCycles = { return 1; }
 
 lsrb.disasm = {
-	sink << "LSRB";
+	string mnem = "LSRB";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lsrb.execute = {
@@ -1395,7 +1633,11 @@ op lsrd(0x49[8])
 lsrd.getCycles = { return 1; }
 
 lsrd.disasm = {
-	sink << "LSRD";
+	string mnem = "LSRD";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lsrd.execute = {
@@ -1418,7 +1660,11 @@ op lsrw_ext(0x18[8]:0x74[8]:> <:opr16a[16])
 lsrw_ext.getCycles = { return 5; }
 
 lsrw_ext.disasm = {
-	sink << "LSRW 0x" << std::hex << opr16a;
+	string mnem = "LSRW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 lsrw_ext.execute = {
@@ -1441,8 +1687,12 @@ op lsrw_idx(0x18[8]:0x64[8]:> <:*xb[XB])
 lsrw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 lsrw_idx.disasm = {
-	sink << "LSRW ";
+	string mnem = "LSRW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 lsrw_idx.execute = {
@@ -1466,7 +1716,11 @@ op lsrx(0x18[8]:0x44[8])
 lsrx.getCycles = { return 2; }
 
 lsrx.disasm = {
-	sink << "LSRX";
+	string mnem = "LSRX";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lsrx.execute = {
@@ -1488,7 +1742,11 @@ op lsry(0x18[8]:0x54[8])
 lsry.getCycles = { return 2; }
 
 lsry.disasm = {
-	sink << "LSRY";
+	string mnem = "LSRY";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 lsry.execute = {
@@ -1511,7 +1769,11 @@ op ror_ext(0x76[8]:> <:opr16a[16])
 ror_ext.getCycles = { return 4; }
 
 ror_ext.disasm = {
-	sink << "ROR 0x" << std::hex << opr16a;
+	string mnem = "ROR";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 ror_ext.execute = {
@@ -1535,8 +1797,12 @@ op ror_idx(0x66[8]:> <:*xb[XB])
 ror_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 ror_idx.disasm = {
-	sink << "ROR ";
+	string mnem = "ROR";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 ror_idx.execute = {
@@ -1561,7 +1827,11 @@ op rora(0x46[8])
 rora.getCycles = { return 1; }
 
 rora.disasm = {
-	sink << "RORA";
+	string mnem = "RORA";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 rora.execute = {
@@ -1584,7 +1854,11 @@ op rorb(0x56[8])
 rorb.getCycles = { return 1; }
 
 rorb.disasm = {
-	sink << "RORB";
+	string mnem = "RORB";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 rorb.execute = {
@@ -1609,7 +1883,11 @@ op rorw_ext(0x18[8]:0x76[8]:> <:opr16a[16])
 rorw_ext.getCycles = { return 5; }
 
 rorw_ext.disasm = {
-	sink << "RORW 0x" << std::hex << opr16a;
+	string mnem = "RORW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 rorw_ext.execute = {
@@ -1633,8 +1911,12 @@ op rorw_idx(0x18[8]:0x66[8]:> <:*xb[XB])
 rorw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 rorw_idx.disasm = {
-	sink << "RORW ";
+	string mnem = "RORW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 rorw_idx.execute = {
@@ -1659,7 +1941,11 @@ op rorx(0x18[8]:0x46[8])
 rorx.getCycles = { return 2; }
 
 rorx.disasm = {
-	sink << "RORX";
+	string mnem = "RORX";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 rorx.execute = {
@@ -1682,7 +1968,11 @@ op rory(0x18[8]:0x56[8])
 rory.getCycles = { return 2; }
 
 rory.disasm = {
-	sink << "RORY";
+	string mnem = "RORY";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 rory.execute = {
@@ -1706,7 +1996,11 @@ op asr_ext(0x77[8]:> <:opr16a[16])
 asr_ext.getCycles = { return 4; }
 
 asr_ext.disasm = {
-	sink << "ASR 0x" << std::hex << opr16a;
+	string mnem = "ASR";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 asr_ext.execute = {
@@ -1733,8 +2027,12 @@ op asr_idx(0x67[8]:> <:*xb[XB])
 asr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 asr_idx.disasm = {
-	sink << "ASR ";
+	string mnem = "ASR";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 asr_idx.execute = {
@@ -1762,7 +2060,11 @@ op asra(0x47[8])
 asra.getCycles = { return 1; }
 
 asra.disasm = {
-	sink << "ASRA";
+	string mnem = "ASRA";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 asra.execute = {
@@ -1788,7 +2090,11 @@ op asrb(0x57[8])
 asrb.getCycles = { return 1; }
 
 asrb.disasm = {
-	sink << "ASRB";
+	string mnem = "ASRB";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 asrb.execute = {
@@ -1815,7 +2121,11 @@ op asrw_ext(0x18[8]:0x77[8]:> <:opr16a[16])
 asrw_ext.getCycles = { return 5; }
 
 asrw_ext.disasm = {
-	sink << "ASRW 0x" << std::hex << opr16a;
+	string mnem = "ASRW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	
+	return mnem;
 }
 
 asrw_ext.execute = {
@@ -1842,8 +2152,12 @@ op asrw_idx(0x18[8]:0x67[8]:> <:*xb[XB])
 asrw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 asrw_idx.disasm = {
-	sink << "ASRW ";
+	string mnem= "ASRW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	
+	return mnem;
 }
 
 asrw_idx.execute = {
@@ -1871,7 +2185,11 @@ op asrx(0x18[8]:0x47[8])
 asrx.getCycles = { return 2; }
 
 asrx.disasm = {
-	sink << "ASRX";
+	string mnem = "ASRX";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 asrx.execute = {
@@ -1897,7 +2215,11 @@ op asry(0x18[8]:0x57[8])
 asry.getCycles = { return 2; }
 
 asry.disasm = {
-	sink << "ASRY";
+	string mnem = "ASRY";
+	
+	sink << mnem;
+	
+	return mnem;
 }
 
 asry.execute = {
@@ -1925,7 +2247,11 @@ op btas_dir(0x18[8]:0x35[8]:opr8a[8]:msk8[8])
 btas_dir.getCycles = { return 5; }
 
 btas_dir.disasm = {
-	sink << "BTAS 0x" << std::hex << opr8a << ", 0x" << std::hex << msk8;
+	string mnem = "BTAS";
+	
+	sink << mnem << " 0x" << std::hex << opr8a << ", 0x" << std::hex << msk8;
+	
+	return mnem;
 }
 
 btas_dir.execute = {
@@ -1953,7 +2279,11 @@ op btas_ext(0x18[8]:> <:0x36[8]:opr16a[16]:msk8[8])
 btas_ext.getCycles = { return 5; }
 
 btas_ext.disasm = {
-	sink << "BTAS 0x" << std::hex << opr16a << ", 0x" << std::hex << msk8;
+	string mnem = "BTAS";
+	
+	sink << mnem << " 0x" << std::hex << opr16a << ", 0x" << std::hex << msk8;
+	
+	return mnem;
 }
 
 btas_ext.execute = {
@@ -1974,9 +2304,13 @@ op btas_idx(0x18[8]:0x37[8]:> <:*xb[XB]:> <:msk8[8])
 btas_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 5, 5, 7, 0, 0); }
 
 btas_idx.disasm = {
-	sink << "BTAS ";
+	string mnem = "BTAS";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
 	sink << ", 0x" << std::hex << msk8;
+	
+	return mnem;
 }
 
 btas_idx.execute = {

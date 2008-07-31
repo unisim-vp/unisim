@@ -6,7 +6,10 @@ op dec_ext(0x73[8]:opr16a[8])
 dec_ext.getCycles = { return 4; }
 
 dec_ext.disasm = {
-	sink << "DEC 0x" << std::hex << opr16a;
+	string mnem = "DEC";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 dec_ext.execute = {
@@ -30,8 +33,11 @@ op dec_idx(0x63[8]:> <:*xb[XB])
 dec_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 dec_idx.disasm = {
-	sink << "DEC ";
+	string mnem = "DEC";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 dec_idx.execute = {
@@ -57,11 +63,16 @@ op dec_ab(0b010[3]:b[1]:0x3[4])
 dec_ab.getCycles = { return 1; }
 
 dec_ab.disasm = {
+	string mnem;
+	
 	if (b == 0) {
-		sink << "DECA";
+		mnem = "DECA";
 	} else {
-		sink << "DECB";
+		mnem = "DECB";
 	}
+	
+	sink << mnem;
+	return mnem;
 }
 
 dec_ab.execute = {
@@ -97,7 +108,10 @@ op decw_ext(0x18[8]:0x73[8]:opr16a[16])
 decw_ext.getCycles = { return 5; }
 
 decw_ext.disasm = {
-	sink << "DECW 0x" << std::hex << opr16a;
+	string mnem = "DECW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 decw_ext.execute = {
@@ -123,8 +137,11 @@ op decw_idx(0x18[8]:0x63[8]:> <:*xb[XB])
 decw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 7, 7); }
 
 decw_idx.disasm = {
-	sink << "DECW ";
+	string mnem = "DECW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 decw_idx.execute = {
@@ -151,11 +168,15 @@ op dec_xy(0x18[8]:0b010[3]:b[1]:0x3[4])
 dec_xy.getCycles = { return 2; }
 
 dec_xy.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "DECX";
+		mnem = "DECX";
 	} else {
-		sink << "DECY";
+		mnem = "DECY";
 	}
+	sink << mnem;
+	return mnem;
 }
 
 dec_xy.execute = {
@@ -192,7 +213,10 @@ op des(0x1B[8]:0x9F[8])
 des.getCycles = { return 2; }
 
 des.disasm = {
-	sink << "DES";
+	string mnem = "DES";
+	
+	sink << mnem;
+	return mnem;
 }
 
 des.execute = {
@@ -205,7 +229,10 @@ op dex(0x09[8])
 dex.getCycles = { return 1; }
 
 dex.disasm = {
-	sink << "DEX";
+	string mnem = "DEX";
+	
+	sink << mnem;
+	return mnem;
 }
 
 dex.execute = {
@@ -221,7 +248,10 @@ op dey(0x03[8])
 dey.getCycles = { return 1; }
 
 dey.disasm = {
-	sink << "DEY";
+	string mnem = "DEY";
+	
+	sink << mnem;
+	return mnem;
 }
 
 dey.execute = {
@@ -239,7 +269,10 @@ op inc_ext(0x72[8]:opr16a[8])
 inc_ext.getCycles = { return 4; }
 
 inc_ext.disasm = {
-	sink << "INC 0x" << std::hex << opr16a;
+	string mnem = "INC";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 inc_ext.execute = {
@@ -264,8 +297,11 @@ op inc_idx(0x62[8]:> <:*xb[XB])
 inc_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 inc_idx.disasm = {
-	sink << "INC ";
+	string mnem = "INC";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 inc_idx.execute = {
@@ -291,11 +327,15 @@ op inc_ab(0b010[3]:b[1]:0x2[4])
 inc_ab.getCycles = { return 1; }
 
 inc_ab.disasm = {
+	string mnem;
+	
 	if (b == 0) {
-		sink << "INCA";
+		mnem = "INCA";
 	} else {
-		sink << "INCB";
+		mnem = "INCB";
 	}
+	sink << mnem;
+	return mnem;
 }
 
 inc_ab.execute = {
@@ -331,7 +371,10 @@ op incw_ext(0x18[8]:0x72[8]:opr16a[16])
 incw_ext.getCycles = { return 5; }
 
 incw_ext.disasm = {
-	sink << "INCW 0x" << std::hex << opr16a;
+	string mnem = "INCW";
+	
+	sink << mnem << " 0x" << std::hex << opr16a;
+	return mnem;
 }
 
 incw_ext.execute = {
@@ -357,8 +400,11 @@ op incw_idx(0x18[8]:0x62[8]:> <:*xb[XB])
 incw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 incw_idx.disasm = {
-	sink << "INCW ";
+	string mnem = "INCW";
+	
+	sink << mnem << " ";
 	xb->disasm(sink);
+	return mnem;
 }
 
 incw_idx.execute = {
@@ -385,11 +431,15 @@ op inc_xy(0x18[8]:0b010[3]:b[1]:0x2[4])
 inc_xy.getCycles = { return 2; }
 
 inc_xy.disasm = {
+	string mnem;
+	
 	if (b==0) {
-		sink << "INCX";
+		mnem = "INCX";
 	} else {
-		sink << "INCY";
+		mnem = "INCY";
 	}
+	sink << mnem;
+	return mnem;
 }
 
 inc_xy.execute = {
@@ -426,7 +476,10 @@ op ins(0x1B[8]:0x81[8])
 ins.getCycles = { return 2; }
 
 ins.disasm = {
-	sink << "INS";
+	string mnem = "INS";
+	
+	sink << mnem;
+	return mnem;
 }
 
 ins.execute = {
@@ -439,7 +492,10 @@ op inx(0x08[8])
 inx.getCycles = { return 1; }
 
 inx.disasm = {
-	sink << "INX";
+	string mnem = "INX";
+	
+	sink << mnem;
+	return mnem;
 }
 
 inx.execute = {
@@ -455,7 +511,10 @@ op iny(0x02[8])
 iny.getCycles = { return 1; }
 
 iny.disasm = {
-	sink << "INY";
+	string mnem = "INY";
+	
+	sink << mnem;
+	return mnem;
 }
 
 iny.execute = {
