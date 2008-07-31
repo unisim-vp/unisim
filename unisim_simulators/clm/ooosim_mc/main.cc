@@ -6,7 +6,7 @@
 ///////////// For Emulator ... //////////////////
 
 #include <stdio.h>
-#include <getopt.h>
+//#include <getopt.h>
 
 #include "simulator.hh"
 
@@ -80,10 +80,10 @@ int main(int argc, char **argv, char **envp)
   if(command_line["max:inst"])
     { maxinst = strtoull(command_line["max:inst"], 0, 0);
     }
-  
+  /*  
   const char *filename = command_line[0];
   unsigned int sim_argc = command_line.count();
-  
+  */
   
   GeneratedSimulator s;
   
@@ -136,6 +136,9 @@ int main(int argc, char **argv, char **envp)
 #if !defined(WIN32) && !defined(WIN64)
   signal(SIGTSTP,GeneratedSimulator::at_ctrlz);
 #endif
+  // Debuging kernel engine
+  fsc_debug(0,100);
+
   while(!unisim_terminated)
   { 
     fsc_phase();
@@ -152,7 +155,7 @@ int main(int argc, char **argv, char **envp)
 	  if(check_sig) unisim_port::check_signals(s.stream_knowness(),s._unknown_fatal);
 	*/
 #ifdef DD_DISPLAY_SIGNALS    
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
       if (command_line["display-signals"])
       { cerr << "---------------------------- DISPLAY 1 -----------------------------------" << endl;

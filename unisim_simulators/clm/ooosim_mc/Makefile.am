@@ -1,8 +1,8 @@
 sharedir = $(prefix)/share/unisim_simulators/clm/ooosim
 INCLUDES=-I$(top_srcdir)/../../include -I$(top_builddir)/../..
-bin_PROGRAMS = ooosim
-ooosim_SOURCES = main.cc
-ooosim_CPPFLAGS =
+bin_PROGRAMS = ooosim_mc
+ooosim_mc_SOURCES = main.cc
+ooosim_mc_CPPFLAGS =
 
 include_HEADERS = simulator.hh
 noinst_HEADERS = simulator.hh

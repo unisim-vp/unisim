@@ -40,9 +40,9 @@
 
 // -------- COMMANDS ------------------------------
 #define USE_REF
-#define DD_UNSAFE_OPTIMIZATION
+//#define DD_UNSAFE_OPTIMIZATION
 //#define STOP
-
+// Must be define in kernel files //#define DEBUG_FSC
 // --------- CYCLE FOR DEBUGING -----------------------------
 //#define DD_DEBUG_TIMESTAMP 438300
 //#define DD_DEBUG_TIMESTAMP 9450
@@ -52,11 +52,13 @@
 //#define DD_DEBUG_TIMESTAMP 381929
 //#define DD_DEBUG_TIMESTAMP 70000
 //#define DD_DEBUG_TIMESTAMP 3552229
+//#define DD_DEBUG_TIMESTAMP 0
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
 // ------------------------------------------------
 // -------- MEMORY SUBSYSTEM ----------------------
+
 
 #ifdef DD_DEBUG_TIMESTAMP
 /*
@@ -64,12 +66,24 @@
 #define DD_DEBUG_OPERATIONREFCOUNT
 */
 
-#define DD_DEBUG_PIPELINE_VERB2
+#define DD_DISPLAY_SIGNALS
+
+#define DEBUG_BUS_MQ
+
+//#define DD_DEBUG_PIPELINE_VERB2
+//#define DD_DEBUG_FETCH_VERB100
+//#define DD_DEBUG_DCACHE_VERB101
+#define DD_DEBUG_DCACHE_VERB102
+
+//#define DD_DEBUG_BUS_MQ2_VERB100
+//#define DD_DEBUG_DCACHE_VERB2
+
 //#define DEBUG_CACHEWB
-#define DD_DEBUG_DCACHE
+
+//#define DD_DEBUG_DCACHE
 //#define DD_DEBUG_SPLITTING
-#define DD_DEBUG_DCACHE_VERB2
-#define DD_DEBUG_FPLOAD
+//#define DD_DEBUG_DCACHE_VERB2
+//#define DD_DEBUG_FPLOAD
 //#define DD_DEBUG_LSQ
 //#define DD_DEBUG_BUS
 
@@ -140,7 +154,7 @@
 
 #include <unisim/component/clm/cache/cache_wb_mc.hh>
 #include <unisim/component/clm/fsb/bus_multiqueue2_mc.hh>
-#include <unisim/component/clm/memory/dram/dram.hh>
+#include <unisim/component/clm/memory/dram/dram2.hh>
 #include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.hh>
 #include <unisim/kernel/service/service.hh>
 
@@ -253,7 +267,7 @@ using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
-const int nConfig = nCPU;
+const int nConfig = 2;
 
 
 class GeneratedSimulator : public Simulator{
@@ -410,9 +424,9 @@ public:
     // Module instantiactions
     __bus = new cBUS("__bus");
     __dram = new cDRAM("__dram");
-    __dcache = new cDCACHE("__cache[0]");
-    __icache = new cICACHE("__icache[0]");
-    __cpu = new cCPU("__ppc[0]");
+    __dcache = new cDCACHE("__cache_mc");
+    __icache = new cICACHE("__icache_mc");
+    __cpu = new cCPU("__ppc_mc");
 
     // Clock connections
     __bus->clock(global_clock);
@@ -420,8 +434,19 @@ public:
     __dcache->inClock(global_clock);
     __icache->inClock(global_clock);
     __cpu->inClock(global_clock);
+    /*
+    __cpu->fetch->inClock(global_clock);
+    __cpu->allocate->inClock(global_clock);
+    __cpu->schedule->inClock(global_clock);
+    __cpu->registerfile->inClock(global_clock);
+    __cpu->iu->inClock(global_clock);
+    __cpu->fpu->inClock(global_clock);
+    __cpu->agu->inClock(global_clock);
+    __cpu->lsq->inClock(global_clock);
+    __cpu->rob->inClock(global_clock);
+    */
 
-    // SIGNAL (or Module) connections
+   // SIGNAL (or Module) connections
     __dram->out >> __bus->inMEM;
     __bus->outMEM >> __dram->in;
 
@@ -442,7 +467,10 @@ public:
     //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
     __cpu->fetch->outIL1 >> __icache->inCPU;
 
-    
+    // Shared signal connexions
+    __icache->outSharedMEM >> __bus->inInstSharedCPU;
+    __dcache->outSharedMEM >> __bus->inDataSharedCPU;
+    __bus->outSharedMEM >> __dram->inShared;
 
     // Service instantiations
     //    PPCLinux = new PowerPCLinux("my-ppclinux",0);
@@ -541,8 +569,41 @@ public:
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
 
+	/*
 	const char *filename =  command_line[0];
 	int sim_argc = command_line.count();
+	*/
+	const char *filenames[nConfig];
+	int sim_argc[nConfig]; 
+
+	int sim_argc_start[nConfig]; 
+	int sim_argc_stop[nConfig]; 
+	
+	for(int i=0; i<nConfig; i++) { sim_argc_stop[i] = 0; }
+	int i=0;
+	int cfg=-1;
+	while (i<command_line.count())
+	  {
+	    if (strcmp(command_line[i],"bench")==0)
+	      {
+		if(cfg>=0)
+		  {
+		    sim_argc_stop[cfg] = i-1;
+		  }
+		i++;
+		cfg++;
+		filenames[cfg] = command_line[i];
+		sim_argc_start[cfg] = i+1;
+	      }
+	    else
+	      {
+		if(cfg>=0)
+		  {
+		    sim_argc[cfg]++;
+		  }
+	      }
+	    i++;
+	  }
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -562,51 +623,50 @@ public:
 	//	for(int cfg=0; cfg<nConfig; cfg++)
 	//	  { 
 	//	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator[cfg];
-	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator[0];
-	//	  }
+	unisim::component::clm::processor::ooosim::CPUEmu *cpu[nConfig];// = __cpu->check_emulator[0];
+
+	for(int cfg=0; cfg<nConfig; cfg++)
+	  { 
+	    cpu[cfg] = __cpu->check_emulator[cfg];
+	  }
 
 	//=========================================================================
 	//===            Debugging stuff: Transaction spy instantiations        ===
 	//=========================================================================
-	//	BusMsgSpyType *bus_msg_spy[MAX_BUS_TRANSACTION_SPY];
-	//	MemMsgSpyType *mem_msg_spy[MAX_MEM_TRANSACTION_SPY];
-
-	/*
-	if(logger_on && logger_messages)
-	{
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
-		{
-			stringstream sstr;
-			sstr << "bus_msg_spy[" << i << "]";
-			string name = sstr.str();
-			bus_msg_spy[i] = new BusMsgSpyType(name.c_str());
-		}
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++)
-		{
-			stringstream sstr;
-			sstr << "mem_msg_spy[" << i << "]";
-			string name = sstr.str();
-			mem_msg_spy[i] = new MemMsgSpyType(name.c_str());
-		}
-	}
-	else
-	{
-		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++) bus_msg_spy[i] = 0;
-		for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++) mem_msg_spy[i] = 0;
-	}
-	*/
-
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
-	Elf32Loader *elf32_loader = new Elf32Loader("elf32-loader");
+	//	Elf32Loader *elf32_loader = new Elf32Loader("elf32-loader");
+	Elf32Loader *elf32_loader[nConfig];
+	for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    stringstream str;
+	    str << "elf32-loader[" << cfg << "]";
+	    elf32_loader[cfg] = new Elf32Loader(str.str().c_str());
+	  }
 	//  - Linux loader
-	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("linux-loader");
+	//	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("linux-loader");
+	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader[nConfig];
+	for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    stringstream str;
+	    str << "linux-loader[" << cfg << "]";
+	    linux_loader[cfg] = new LinuxLoader<FSB_ADDRESS_TYPE>(str.str().c_str());
+	  }
+
 	//  - Symbol table
 	SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol-table");
 	//  - Linux OS
-	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("linux_os");
+	//	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("linux_os");
+	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *linux_os[nConfig];
+	for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    stringstream str;
+	    str << "linux_os[" << cfg << "]";
+	    linux_os[cfg] = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>(str.str().c_str());
+	  }
+
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -664,26 +724,35 @@ public:
 		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
 	}
 	//  - ELF32 Loader run-time configuration
-	(*elf32_loader)["filename"] = filename;
+	//	(*elf32_loader)["filename"] = filename;
+	for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    (*elf32_loader[cfg])["filename"] = filenames[cfg];
+	  }
 
 	//  - Linux loader run-time configuration
-	(*linux_loader)["endianess"] = E_BIG_ENDIAN;
-	(*linux_loader)["stack-base"] = 0xc0000000;
-	(*linux_loader)["max-environ"] = 16 * 1024;
-	//	(*linux_loader)["argc"] = sim_argc;
-	(*linux_loader)["argc"] = sim_argc;//command_line.count();
-	for(unsigned int i = 0; i < sim_argc; i++)
-	{
-	  //	(*linux_loader)["argv"][i] = sim_argv[i];
-		(*linux_loader)["argv"][i] = command_line[i];
-	}
-	(*linux_loader)["envc"] = 0;
+	for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    (*linux_loader[cfg])["endianess"] = E_BIG_ENDIAN;
+	    (*linux_loader[cfg])["stack-base"] = 0xc0000000;
+	    (*linux_loader[cfg])["max-environ"] = 16 * 1024;
+	    //	(*linux_loader)["argc"] = sim_argc;
+	    (*linux_loader[cfg])["argc"] = sim_argc;//command_line.count();
+	    for(unsigned int i = 0; i < sim_argc[cfg]; i++)
+	      {
+		//	(*linux_loader)["argv"][i] = sim_argv[i];
+		(*linux_loader[cfg])["argv"][i] = command_line[sim_argc_start[cfg]+i];
+	      }
+	    (*linux_loader[cfg])["envc"] = 0;
+	  }
 
 	//  - Linux OS run-time configuration
-	(*linux_os)["system"] = "powerpc";
-	(*linux_os)["endianess"] = E_BIG_ENDIAN;
-	(*linux_os)["verbose"] = false;
-
+	for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    (*linux_os[cfg])["system"] = "powerpc";
+	    (*linux_os[cfg])["endianess"] = E_BIG_ENDIAN;
+	    (*linux_os[cfg])["verbose"] = false;
+	  }
 	//  - Loggers
 	if(logger_on)
 	{
@@ -828,13 +897,17 @@ public:
 	//	cpu->memory_import >> bus->memory_export;
 	//	cpu->memory_import >> memory->memory_export;
 	//	cpu->memory_import >> memory->memory_export;
-	cpu->memory_import >> memory->memory_export;
-
-	//	cpu->memory_import >> __dcache->syscall_MemExp;
-	//	__dcache->syscall_MemImp >> __dram->syscall_MemExp;
-	cpu->memory_injection_import >> __dcache->memory_injection_export;
+	for (int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    cpu[cfg]->memory_import >> memory->memory_export;
+	    
+	    //	cpu->memory_import >> __dcache->syscall_MemExp;
+	    //	__dcache->syscall_MemImp >> __dram->syscall_MemExp;
+	    cpu[cfg]->memory_injection_import >> __dcache->memory_injection_export;
+	  }
 	__dcache->memory_injection_import >> __dram->memory_injection_export;
 
+	/*
 	if(inline_debugger)
 	{
 		// Connect inline-debugger to CPU
@@ -872,7 +945,7 @@ public:
 		cpu->itlb_power_mode_import >> itlb_power_estimator->power_mode_export;
 		cpu->dtlb_power_estimator_import >> dtlb_power_estimator->power_estimator_export;
 		cpu->dtlb_power_mode_import >> dtlb_power_estimator->power_mode_export;
-
+	*/
 		/*
 		il1_power_estimator->time_import >> time->time_export;
 		dl1_power_estimator->time_import >> time->time_export;
@@ -880,23 +953,27 @@ public:
 		itlb_power_estimator->time_import >> time->time_export;
 		dtlb_power_estimator->time_import >> time->time_export;
 		*/
-	}
+	//	}
 
 	//	elf32_loader->memory_import >> memory->memory_export;
 	//	elf32_loader->memory_import >> __dram->syscall_MemExp;
-	elf32_loader->memory_import >> __dram->memory_export;
-	elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
-	//	linux_loader->memory_import >> memory->memory_export;
-	linux_loader->memory_import >> __dram->memory_export;
-	linux_loader->loader_import >> elf32_loader->loader_export;
-	cpu->linux_os_import >> linux_os->linux_os_export;
-	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
-	linux_os->memory_import >> cpu->memory_export;
-	linux_os->memory_injection_import >> cpu->memory_injection_export;
-	linux_os->registers_import >> cpu->registers_export;
-	linux_os->loader_import >> linux_loader->loader_export;
-	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+        for (int cfg=0; cfg<nConfig; cfg++)
+        {
+	  elf32_loader[cfg]->memory_import >> __dram->memory_export;
+	  elf32_loader[cfg]->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+	  //	linux_loader->memory_import >> memory->memory_export;
+	  linux_loader[cfg]->memory_import >> __dram->memory_export;
+	  linux_loader[cfg]->loader_import >> elf32_loader[cfg]->loader_export;
+	  cpu[cfg]->linux_os_import >> linux_os[cfg]->linux_os_export;
 
+	  linux_os[cfg]->cpu_linux_os_import >> cpu[cfg]->cpu_linux_os_export;
+	  linux_os[cfg]->memory_import >> cpu[cfg]->memory_export;
+	  linux_os[cfg]->memory_injection_import >> cpu[cfg]->memory_injection_export;
+	  linux_os[cfg]->registers_import >> cpu[cfg]->registers_export;
+	  linux_os[cfg]->loader_import >> linux_loader[cfg]->loader_export;
+
+	  cpu[cfg]->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+	}
 	//	linux_os->cpu_linux_os_import >> __cpu->fetch_emulator->cpu_linux_os_export;
 
 	//	bus->memory_import >> fsb_to_mem_bridge->memory_export;
@@ -908,6 +985,7 @@ public:
 	}
 	
 	/* logger connections */
+  /*
 	if(logger_on) {
 		unsigned int logger_index = 0;
 		//		logger->time_import >> time->time_export;
@@ -919,6 +997,7 @@ public:
 		//		memory->logger_import >> *logger->logger_export[logger_index++];
 		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
 		linux_os->logger_import >> *logger->logger_export[logger_index++];
+  */
 		/*
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)
@@ -927,8 +1006,9 @@ public:
 			if(mem_msg_spy[i] != NULL)
 				mem_msg_spy[i]->logger_import >> *logger->logger_export[logger_index++];
 		*/
+  /*
 	}
-
+  */
 #ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
 #endif
