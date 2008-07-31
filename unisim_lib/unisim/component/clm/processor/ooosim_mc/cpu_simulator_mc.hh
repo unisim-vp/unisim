@@ -473,6 +473,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     {
       is_finished &= check_emulator[cfg]->program_ended;
     }
+    is_finished = check_emulator[0]->program_ended;
     if (is_finished)
     {
       cerr << "Simulation ended at cycle : " << timestamp() << endl;
@@ -480,6 +481,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
       {
 	cerr << "       Cpu[" << cfg << "] ended at cycle : " << check_emulator[cfg]->end_at_cycle << endl;
       }
+      terminate_now();
     }
 
 #ifdef DD_DEBUG_PIPELINE_VERB2
