@@ -105,33 +105,57 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 75 "hcs12x.isa"
+#line 85 "hcs12x.isa"
 	uint8_t
 #line 111 "hcs12x.hh"
 	getCycles( );
 	virtual
+#line 79 "hcs12x.isa"
+	bool
+#line 116 "hcs12x.hh"
+	post_execute(
+#line 79 "hcs12x.isa"
+	CPU *
+#line 120 "hcs12x.hh"
+#line 79 "hcs12x.isa"
+	cpu
+#line 123 "hcs12x.hh"
+	);
+	virtual
+#line 75 "hcs12x.isa"
+	void
+#line 128 "hcs12x.hh"
+	pre_execute(
+#line 75 "hcs12x.isa"
+	ostream&
+#line 132 "hcs12x.hh"
+#line 75 "hcs12x.isa"
+	sink
+#line 135 "hcs12x.hh"
+	);
+	virtual
 #line 69 "hcs12x.isa"
 	string
-#line 116 "hcs12x.hh"
+#line 140 "hcs12x.hh"
 	disasm(
 #line 69 "hcs12x.isa"
 	ostream&
-#line 120 "hcs12x.hh"
+#line 144 "hcs12x.hh"
 #line 69 "hcs12x.isa"
 	sink
-#line 123 "hcs12x.hh"
+#line 147 "hcs12x.hh"
 	);
 	virtual
 #line 63 "hcs12x.isa"
 	void
-#line 128 "hcs12x.hh"
+#line 152 "hcs12x.hh"
 	execute(
 #line 63 "hcs12x.isa"
 	CPU *
-#line 132 "hcs12x.hh"
+#line 156 "hcs12x.hh"
 #line 63 "hcs12x.isa"
 	cpu
-#line 135 "hcs12x.hh"
+#line 159 "hcs12x.hh"
 	);
 protected:
 	CodeType encoding;

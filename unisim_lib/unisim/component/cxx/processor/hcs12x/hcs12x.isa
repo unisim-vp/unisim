@@ -68,8 +68,18 @@ action {void} execute({CPU *} {cpu}) {
 
 action {string} disasm({ostream&} {sink}) {
 	sink << "?";
-	
+
 	return "?";
+}
+
+action {void} pre_execute({ostream&} {sink}) {
+	sink << "NOP\n";
+}
+
+action {bool} post_execute({CPU *} {cpu}) {
+	printf("Default PostExecute Action (return true) \n");
+	
+	return true;
 }
 
 action {uint8_t} getCycles () {

@@ -425,9 +425,9 @@ staab_ext.disasm = {
 	string mnem;
 
 	if (b==0) {
-	    sink << "STAA";
+	    mnem = "STAA";
 	} else {
-	    sink << "STAB";
+	    mnem = "STAB";
 	}
 	sink << mnem << " 0x" << std::hex << opr16a;
 	return mnem;
