@@ -695,10 +695,16 @@ class FunctionalUnit : public module
 		*/
 		friend ostream& operator << (ostream& os, const FunctionalUnit& fu)
 		{
-			os << "=========" << fu.name() << "==========" << endl;
-			os << "pipeline:" << endl;
-			os << fu.queue << endl;
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    os << "========= [Config::"<<cfg<<"] " << fu.name() << "==========" << endl;
+		    for (int unit=0; unit<nUnits; unit++)
+		    {
+		      os << "pipeline["<<unit<<"]:" << endl;
+		      os << fu.queue[cfg][unit] << endl;
+		    }
 			os << "===================================" << endl;
+		  }
 			return os;
 		}
 

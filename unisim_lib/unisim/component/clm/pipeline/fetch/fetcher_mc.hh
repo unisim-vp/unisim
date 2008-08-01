@@ -1986,7 +1986,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 #endif
 	    }
 	  if (previous_cia[cfg] == seq_cia[cfg]) { stall_counter[cfg]++; } else { stall_counter[cfg]=0; }
-	  if (stall_counter[cfg] > 100000) { cerr << "[Config::"<< cfg <<"]Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
+	  if (stall_counter[cfg] > 5000) { cerr << "[Config::"<< cfg <<"]Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
 	  previous_cia[cfg] = seq_cia[cfg];
 
 	  } // End of foreach Config

@@ -1375,7 +1375,7 @@ public:
 
 		// SOF
 		/* For each rename pipeline entry */
-		for(renamePipelineEntry = renamePipeline[cfg].SeekAtHead(), renamePort = 0, loadPort = 0, storePort = 0; renamePipelineEntry && renamePort < Width && !lock && !execution_serialized; renamePort++, renamePipelineEntry++)
+		for(renamePipelineEntry = renamePipeline[cfg].SeekAtHead(), renamePort = 0, loadPort = 0, storePort = 0; renamePipelineEntry && renamePort < Width && !lock[cfg] && !execution_serialized; renamePort++, renamePipelineEntry++)
 		{
 			/* Get the instruction into the pipeline entry */
 			//const InstructionPtr<T, nSources>& instruction = renamePipelineEntry->instruction;
@@ -1491,11 +1491,14 @@ public:
 	*/
 	friend ostream& operator << (ostream& os, const AllocatorRenamer<T, nSources, nIntegerArchitecturalRegisters, nFloatingPointArchitecturalRegisters, nIntegerRegisters, nFloatingPointRegisters, Width, WriteBackWidth, RetireWidth, ReorderBufferSize, nStages>& allocatorRenamer)
 	{
-		os << "========= ALLOCATE/RENAME ==========" << endl;
-		os << "lock=" << allocatorRenamer.lock[0] << endl;
-		os << "(alloc)robSize=" << allocatorRenamer.robSize[0] << endl;
-		os << allocatorRenamer.renamePipeline[0];
+	  for (int cfg=0; cfg<nConfig; cfg++)
+	    {
+		os << "========= [Config::"<<cfg<<"] ALLOCATE/RENAME ==========" << endl;
+		os << "lock=" << allocatorRenamer.lock[cfg] << endl;
+		os << "(alloc)robSize=" << allocatorRenamer.robSize[cfg] << endl;
+		os << allocatorRenamer.renamePipeline[cfg];
 		os << "------------------------------------------------------------------------" << endl;
+		/*
 		os << "integer mapping table:" << endl;
 		os << allocatorRenamer.integerMappingTable[0];
 		os << "------------------------------------------------------------------------" << endl;
@@ -1516,7 +1519,9 @@ public:
 		os << "------------------------------------------------------------------------" << endl;
 		os << "XER mapping table:" << endl;
 		os << allocatorRenamer.XERMappingTable[0];
+		*/
 		os << "====================================" << endl;
+	    }
 		return os;
 	}
 

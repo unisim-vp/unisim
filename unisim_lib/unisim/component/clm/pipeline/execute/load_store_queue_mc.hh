@@ -2478,13 +2478,17 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 
 	friend ostream& operator << (ostream& os, const LoadStoreQueue& lsq)
 	{
-		os << "============ LOADSTOREQUEUE ===========" << endl;
+	  for (int cfg=0; cfg<nConfig; cfg++)
+	    {
+	  
+		os << "============ [Config::"<<cfg<<"] LOADSTOREQUEUE ===========" << endl;
 		os << "load queue:" << endl;
-		os << lsq.loadQueue;
+		os << lsq.loadQueue[cfg];
 		os << "store queue:" << endl;
-		os << lsq.storeQueue;
+		os << lsq.storeQueue[cfg];
 		os << "=======================================" << endl;
-		return os;
+	    }
+	  return os;
 	}
 
 	bool Check()

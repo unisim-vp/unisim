@@ -1649,19 +1649,22 @@ class RegisterFile : public module
 		*/
 		friend ostream& operator << (ostream& os, const RegisterFile& registerFile)
 		{
-			os << "============= REGISTERFILE ============" << endl;
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		    {
+			os << "============= [Config::"<<cfg<<"] REGISTERFILE ============" << endl;
 			os << "Integer Pipe:" << endl;
-			os << registerFile.integerReadRegisterPipeline;
+			os << registerFile.integerReadRegisterPipeline[cfg];
 			os << "Floating Point Pipe:" << endl;
-			os << registerFile.floatingPointReadRegisterPipeline;
+			os << registerFile.floatingPointReadRegisterPipeline[cfg];
 			os << "Load/Store Pipe:" << endl;
-			os << registerFile.loadStoreReadRegisterPipeline;
+			os << registerFile.loadStoreReadRegisterPipeline[cfg];
 			os << "WriteBack:" << endl;
-			os << registerFile.writeBackPipeline;
+			os << registerFile.writeBackPipeline[cfg];
 			//	os << "Integer Registers:" << endl;
 			//	os << registerFile.integerRegisters;
 			//	os << "Floating Point Registers:" << endl;
 			//	os << registerFile.floatingPointRegisters;
+			/*
 			os << "Integer RegisterFile:" << endl;
 			os << registerFile.integerRegisters << endl;
 			os << "Floating Point RegisterFile:" << endl;
@@ -1676,7 +1679,9 @@ class RegisterFile : public module
 			os << registerFile.countRegisters << endl;
 			os << "XER RegisterFile:" << endl;
 			os << registerFile.XERRegisters << endl;
+			*/
 			os << "=======================================" << endl;
+		    }
 			return os;
 		}
 

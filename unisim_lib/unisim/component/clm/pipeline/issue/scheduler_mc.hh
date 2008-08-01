@@ -2081,26 +2081,28 @@ public:
   
   void _print(ostream& os) const
   {
-		os << "============ Integer Issue Queue =============" << endl;
-		os << integerIssueQueue;
+    for (int cfg=0; cfg<nConfig; cfg++)
+      {
+		os << "============ [Config::"<<cfg<<"] Integer Issue Queue =============" << endl;
+		os << integerIssueQueue[cfg];
 		os << "=========================================" << endl;
 		os << "integerBusy: ";
 		for (int i=0; i<IntegerIssueWidth; i++) 
-		  { os << "  iuB[" << i << "]="<<integerIssueBusy[i]; }
+		  { os << "  iuB[" << i << "]="<<integerIssueBusy[cfg][i]; }
 		os << endl;
 		os << "============ Floating Point Issue Queue =============" << endl;
-		os << floatingPointIssueQueue;
+		os << floatingPointIssueQueue[cfg];
 		os << "=========================================" << endl;
 		os << "floatingPointBusy: ";
 		for (int i=0; i<FloatingPointIssueWidth; i++) 
-		  { os << " fpuB[" << i << "] "<<floatingPointIssueBusy[i]; }
+		  { os << " fpuB[" << i << "] "<<floatingPointIssueBusy[cfg][i]; }
 		os << endl;
 		os << "============ Load/Store Issue Queue =============" << endl;
-		os << loadStoreIssueQueue;
+		os << loadStoreIssueQueue[cfg];
 		os << "=========================================" << endl;
 		os << "loadStoreBusy: ";
 		for (int i=0; i<LoadStoreIssueWidth; i++) 
-		  { os << "  lsB[" << i << "] "<<loadStoreIssueBusy[i]; }
+		  { os << "  lsB[" << i << "] "<<loadStoreIssueBusy[cfg][i]; }
 		os << endl;
   
 		/*
@@ -2116,6 +2118,7 @@ public:
 		os << endl;
 		os << "=========================================" << endl;
 		//		return os;
+      }
   }
   
 	/** Print the scheduler state into an output stream

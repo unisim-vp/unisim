@@ -754,11 +754,17 @@ class AddressGenerationUnit : public module
 		*/
 		friend ostream& operator << (ostream& os, const AddressGenerationUnit& agu)
 		{
-			os << "=====" << agu.name() << "=====" << endl;
-			os << "pipeline:" << endl;
-			os << agu.queue << endl;
-			os << "==========================" << endl;
-			return os;
+		  for (int cfg=0; cfg<nConfig; cfg++)
+		  {
+		    os << "========= [Config::"<<cfg<<"] " << agu.name() << "==========" << endl;
+		    for (int unit=0; unit<nUnits; unit++)
+		      {
+			os << "pipeline["<<unit<<"]:" << endl;
+			os << agu.queue[cfg][unit] << endl;
+		      }
+		    os << "==========================" << endl;
+		  }
+		  return os;
 		}
 
 		/** Performs a sanity check on the address generation unit
