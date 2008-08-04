@@ -42,6 +42,7 @@ cba.disasm = {
 	string mnem;
 	
 	mnem = "CBA";
+	sink << mnem;
 	
 	return mnem;
 }

@@ -41,7 +41,7 @@ op clc(0x10[8]:0xFE[8])
 clc.getCycles = { return 1; }
 
 clc.disasm = {
-	string mnem("CLC");
+	string mnem = "CLC";
 	
 	sink << mnem;
 	
@@ -485,6 +485,8 @@ neg_ab.disasm = {
 	} else {
 		mnem = "NEGB";
 	}
+	
+	sink << mnem;
 	
 	return mnem;
 }

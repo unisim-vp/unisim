@@ -778,7 +778,7 @@ Bits 7 and 6 would be 0:0 for DBNE.
 		case 0x03: mnem = "TBNE"; break;
 		case 0x04: mnem = "IBEQ"; break;
 		case 0x05: mnem = "IBNE"; break;
-		default: mnem = "???";
+		default: mnem = "?";
 	}
 	
 	sink << mnem << " " << EBLB::getRegName(b210) << " , " << std::dec << rel9;
@@ -857,7 +857,7 @@ loop.execute = {
 		} break;
 		default: /*???*/;
 	}
-	
+		
 	if (isBranch) {
 		cpu->setRegPC(branchAddr);
 
