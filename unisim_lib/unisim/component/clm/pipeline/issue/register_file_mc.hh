@@ -962,7 +962,6 @@ class RegisterFile : public module
 			{
 			  if(inFlush.data[cfg])
 			  {
-			  //				changed = true;
 				/* Flush the write back pipeline */
 				writeBackPipeline[cfg].Flush();
 
@@ -976,6 +975,7 @@ class RegisterFile : public module
 				loadStoreReadRegisterPipeline[cfg].Flush();
 
 				/* Reset the valid bits */
+				/*
 				memset(integerValid, true, sizeof(integerValid));
 				memset(floatingPointValid, true, sizeof(floatingPointValid));
 				memset(conditionValid, true, sizeof(conditionValid));
@@ -983,7 +983,16 @@ class RegisterFile : public module
 				memset(linkValid, true, sizeof(linkValid));
 				memset(countValid, true, sizeof(countValid));
 				memset(XERValid, true, sizeof(XERValid));
-				return;
+				*/
+				memset(integerValid[cfg], true, sizeof(integerValid[cfg]));
+				memset(floatingPointValid[cfg], true, sizeof(floatingPointValid[cfg]));
+				memset(conditionValid[cfg], true, sizeof(conditionValid[cfg]));
+				memset(FPSCRValid[cfg], true, sizeof(FPSCRValid[cfg]));
+				memset(linkValid[cfg], true, sizeof(linkValid[cfg]));
+				memset(countValid[cfg], true, sizeof(countValid[cfg]));
+				memset(XERValid[cfg], true, sizeof(XERValid[cfg]));
+				//return;
+				continue;
 			  }
 			}//endof Flush...
 
@@ -1664,9 +1673,10 @@ class RegisterFile : public module
 			//	os << registerFile.integerRegisters;
 			//	os << "Floating Point Registers:" << endl;
 			//	os << registerFile.floatingPointRegisters;
-			/*
+			
 			os << "Integer RegisterFile:" << endl;
-			os << registerFile.integerRegisters << endl;
+			os << registerFile.integerRegisters[cfg] << endl;
+			/*
 			os << "Floating Point RegisterFile:" << endl;
 			os << registerFile.floatingPointRegisters << endl;
 			os << "Conditon RegisterFile:" << endl;

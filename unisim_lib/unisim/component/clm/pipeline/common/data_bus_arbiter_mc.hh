@@ -188,7 +188,7 @@ public:
 		      //cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
 		      //cerr << " Sending instruction on out["<<i<<"]["<<j<<"]: "<< inInstruction[i].data << endl;
 #endif	
-		      outInstruction[j].data[cfg*INTWidth+i] = inINTInstruction.data[cfg*INTWidth+i];
+		      outInstruction[j].data[cfg*OutputWidth+i] = inINTInstruction.data[cfg*INTWidth+i];
 		      //outInstruction[j*OutputWidth+i].data = inInstruction[i].data;
 		    }
 		}
@@ -200,7 +200,7 @@ public:
 		      //cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
 		      //cerr << " Sending Nothing on out["<<i<<"]["<<j<<"]" << endl;
 #endif	
-		      outInstruction[j].data[cfg*INTWidth+i].nothing();
+		      outInstruction[j].data[cfg*OutputWidth+i].nothing();
 		      //outInstruction[ j*OutputWidth+i ].data.nothing();
 		    }
 		}
@@ -242,7 +242,7 @@ public:
 		      //cerr << "["<<this->name()<<"("<<timestamp()<<")] <<< DEBUG SIGNALS: on_Data >>> " << endl;
 		      //cerr << " Sending instruction on out["<<i<<"]["<<j<<"]: "<< inInstruction[i].data << endl;
 #endif	
-		      outInstruction[j].data[cfg*OutputWidth+INTWidth+FPUWidth+i] = inINTInstruction.data[cfg*AGUWidth+i];
+		      outInstruction[j].data[cfg*OutputWidth+INTWidth+FPUWidth+i] = inAGUInstruction.data[cfg*AGUWidth+i];
 		      //outInstruction[j*OutputWidth+i].data = inInstruction[i].data;
 		    }
 		}

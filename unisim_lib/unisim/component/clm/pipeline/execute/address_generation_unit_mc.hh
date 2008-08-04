@@ -472,7 +472,8 @@ class AddressGenerationUnit : public module
 				  //return;
 				  //continue;
 				}
-			      return;
+			      //return;
+			      continue;
 			    }
 			}
 		      for(int unit=0; unit<nUnits; unit++)

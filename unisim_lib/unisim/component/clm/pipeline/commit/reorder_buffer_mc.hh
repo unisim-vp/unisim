@@ -541,7 +541,7 @@ class ReorderBuffer : public module//, public StatisticService
 		cerr << "Not on the right path (cia must be " << hexa(emulator[cfg]->GetCIA()) << ")" << endl;
 		//	    sc_stop();
 		exit(-1);
-		return;
+		//return;
 	      }
 
 	    /* If the instruction got an exception */
@@ -593,7 +593,7 @@ class ReorderBuffer : public module//, public StatisticService
 		    cerr << "Not on the right path (nia must be " << hexa(emulator[cfg]->GetNIA()) << ")" << endl;
 		    //	    sc_stop();
 		    exit(-1);
-		    return;
+		    //return;
 		  }
 		
 		/* If load/store instruction has an incorrect effective address */
@@ -602,13 +602,13 @@ class ReorderBuffer : public module//, public StatisticService
 		   && entry.instruction->ea != emulator[cfg]->GetEA())
 		  {
 		    // Throw an error
-		    cerr << "WARNING:" << endl;
+		    cerr << "[Config::"<<cfg<<"]WARNING:" << endl;
 		    cerr << "time stamp = " << timestamp() << endl;
 		    cerr << entry.instruction << endl;
 		    cerr << "has an incorrect effective address (ea must be " << hexa(emulator[cfg]->GetEA()) << ")" << endl;
 		    //	    sc_stop();
 		    exit(-1);
-		    return;
+		    //return;
 		  }
 		
 		/* Update the (committed) current instruction address */
@@ -789,6 +789,12 @@ class ReorderBuffer : public module//, public StatisticService
     /* For each write back port */
     for(i = 0; i < WriteBackWidth; i++)
       {
+#ifdef DD_DEBUG_REORDER_VERB100
+	if (DD_DEBUG_TIMESTAMP <= timestamp()) 
+	  {
+	    cerr << "[Cnonfig::"<<cfg<<"][REORDER(loop:"<<i<<")] ==== WriteBack loop ======= ["<< timestamp()<<"]"<< endl;
+	  }
+#endif
 	/* Is there a finished instructions on the write back port */
 	if(inWriteBackInstruction.enable[cfg*WriteBackWidth+i])
 	  {
@@ -800,6 +806,13 @@ class ReorderBuffer : public module//, public StatisticService
 	    /* Get the reorder buffer entry */
 	    ReorderBufferEntry<T, nSources>& entry = entries[cfg][instruction->tag];
 	    
+#ifdef DD_DEBUG_REORDER_VERB100
+		if (DD_DEBUG_TIMESTAMP <= timestamp()) 
+		  {
+		    cerr << "[Cnonfig::"<<cfg<<"][REORDER(loop:"<<i<<")] ==== WriteBack inst ======= ["<< timestamp()<<"]"<< endl;
+		    cerr << "[Cnonfig::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")] "<< entry << endl;
+		  }
+#endif
 	    /* If instruction is in reorder buffer and not finished */
 	    if(entry.state == finished_instruction)
 	      {
@@ -852,11 +865,17 @@ class ReorderBuffer : public module//, public StatisticService
     /* For each write back port */
     for(i = 0; i < WriteBackWidth; i++)
       {
+#ifdef DD_DEBUG_REORDER_VERB100
+	if (DD_DEBUG_TIMESTAMP <= timestamp()) 
+	  {
+	    cerr << "[Cnonfig::"<<cfg<<"][REORDER(loop:"<<i<<")] ==== Finish loop ======= ["<< timestamp()<<"]"<< endl;
+	  }
+#endif
 	/* Is there a finished instructions on the write back port */
-	if(inFinishInstruction.enable[cfg*WriteBackWidth])
+	if(inFinishInstruction.enable[cfg*WriteBackWidth+i])
 	  {
 	    /* Get the instruction */
-	    InstructionPtr instruction = inFinishInstruction.data[cfg*WriteBackWidth];
+	    InstructionPtr instruction = inFinishInstruction.data[cfg*WriteBackWidth+i];
 	    //	    const Instruction *instruction = &inst;
 	    
 	    /* Get the reorder buffer entry */
@@ -879,6 +898,13 @@ class ReorderBuffer : public module//, public StatisticService
 		
 		/* instruction is finished */
 		entry.state = finished_instruction;
+#ifdef DD_DEBUG_REORDER_VERB100
+		if (DD_DEBUG_TIMESTAMP <= timestamp()) 
+		  {
+		    cerr << "[Cnonfig::"<<cfg<<"][REORDER(loop:"<<i<<")] ==== Finishing inst ======= ["<< timestamp()<<"]"<< endl;
+		    cerr << "[Cnonfig::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")] "<< entry << endl;
+		  }
+#endif
 	      }
 	    else
 	      {
@@ -906,7 +932,6 @@ class ReorderBuffer : public module//, public StatisticService
 			     <<") which is not into the reorder buffer" << endl;
 			cerr << "Inst: " << instruction << endl;
 			cerr << "Entry: " << entry << endl;
-			
 			exit(-1);
 		      }
 		  }

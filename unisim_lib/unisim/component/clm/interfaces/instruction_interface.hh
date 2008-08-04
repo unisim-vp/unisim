@@ -638,8 +638,8 @@ class Instruction
 
     if (instruction.operation_refcount != NULL)
       os << " ,OpRefCount=" << *(instruction.operation_refcount);
-    else
-      os << "OpRefCount=NULL";
+    //    else
+    //      os << " ,OpRefCount=NULL";
 
     os << " ],bin=" << hexa(instruction.binary);
     os << ",nia=" << hexa(instruction.nia);

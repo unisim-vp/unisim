@@ -1834,7 +1834,8 @@ public:
 		  }
 		}
 		// Keep coherent CIA with emulator ...
-		emulator->SetCIA(cia[cfg]);
+		//		emulator->SetCIA(cia[cfg]);
+		// Now emulator is common for all configuration...
 #ifdef DD_DEBUG_FETCH_VERB2
  if (DD_DEBUG_TIMESTAMP <= timestamp())
 			    {

@@ -321,7 +321,8 @@ class FunctionalUnit : public module
 				//return;
 				//continue;
 			      }
-			    return;
+			    //return;
+			    continue;
 		      }
 		    }
 		  

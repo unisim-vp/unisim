@@ -473,7 +473,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     {
       is_finished &= check_emulator[cfg]->program_ended;
     }
-    is_finished = check_emulator[0]->program_ended;
+    //is_finished = check_emulator[0]->program_ended;
     if (is_finished)
     {
       cerr << "Simulation ended at cycle : " << timestamp() << endl;
@@ -485,7 +485,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     }
 
 #ifdef DD_DEBUG_PIPELINE_VERB2
-    if (DD_DEBUG_TIMESTAMP < timestamp())
+    if (DD_DEBUG_TIMESTAMP <= timestamp())
       {
 	//	cerr << "("<< timestamp() << ")" << *cache;
 	cerr << "("<< timestamp() << ")" << *fetch;
@@ -519,13 +519,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 #ifdef DD_CHECK_WITH_EMULATOR
       if ( (timestamp()%CHECK_REGISTER_STEP) == 0 )
       {
-	if (!rob->syscall_retired)
+	if (!rob->syscall_retired[cfg])
 	{
 	  Check(cfg);
 	}
       }
 #endif    
-      if (rob->syscall_retired)
+      if (rob->syscall_retired[cfg] || timestamp() == 0)
       {
 	RepaireAfterSyscall(cfg);
 	//cerr << "(" << timestamp() << ") REPAIRE AFTER SYSCALL !!!" << endl;
@@ -534,7 +534,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 #ifdef DD_DEBUG_CPUPPCSS_VERB1
 // Mourad modifs 
 ///////////////////////////////////
-      if (DD_DEBUG_TIMESTAMP < timestamp())
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
 	{
 	  //	  cerr <<"["<<this->name()<<"("<<timestamp()<<")]===== DEBUG OooSimCpu (Begin) =====================" << "(" << timestamp() << ")" << endl;
 	  cerr <<"["<<this->name()<<"("<<timestamp()<<")] Fetcher     CIA: " << hexa(fetch_emulator->GetCIA()) << endl;
@@ -640,7 +640,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     // STF !!!!!
     }
   */
-  void WriteCIA(address_t pc, int cfg)
+  void WriteCIA(address_t pc, uint32_t cfg)
   {
     fetch->WriteCIA(pc, cfg);
     rob->WriteCIA(pc, cfg);
@@ -773,7 +773,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		cerr << "Different value for PC:" << endl;
 		cerr << "simulator: " << hexa(sim_pc) << endl;
 		cerr << "emulator : " << hexa(emul_pc) << endl;
-		DumpRegistersCompare(cerr,check_emulator[cfg]);
+		DumpRegistersCompare(cerr,check_emulator[cfg], cfg);
 		exit(-1);
 	}
 
@@ -783,17 +783,17 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 	    for(int i = 0; i < nIntegerArchitecturalRegisters; i++)
 	      {
 		UInt64 sim_value = ReadGPR(i,cfg);
-		UInt64 emul_value = check_emulator[cfg]->GetGPR(i, cfg);
+		UInt64 emul_value = check_emulator[cfg]->GetGPR(i);
 		if(sim_value != emul_value)
 		  {
-		    WriteGPR(i,emul_value);
+		    WriteGPR(i,emul_value, cfg);
 		  }
 	      }	    
 	    
 	  }
 	else
 	  {
-	    if (!rob->skip_reg_checking)
+	    if (!rob->skip_reg_checking[cfg])
 	      {
 		for(int i = 0; i < nIntegerArchitecturalRegisters; i++)
 		  {
@@ -801,12 +801,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		    UInt64 emul_value = check_emulator[cfg]->GetGPR(i);
 		    if(sim_value != emul_value)
 		      {
+			cerr << " ==== CONFIGURATION ["<<cfg<<"] ====" << endl;
 			cerr << *this;
 			cerr << "time stamp " << timestamp() << endl;
 			cerr << "Different value for GPR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator[cfg]);
+			DumpRegistersCompare(cerr,check_emulator[cfg], cfg);
 			exit(-1);
 		      }
 		  }
@@ -817,12 +818,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		    UInt64 emul_value = check_emulator[cfg]->GetFp64(i);
 		    if(sim_value != emul_value)
 		      {
+			cerr << " ==== CONFIGURATION ["<<cfg<<"] ====" << endl;
 			cerr << *this;
 			cerr << "time stamp " << timestamp() << endl;
 			cerr << "Different value for FPR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator[cfg]);
+			DumpRegistersCompare(cerr,check_emulator[cfg], cfg);
 			exit(-1);
 		      }
 		  }
@@ -833,12 +835,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		    UInt64 emul_value = (check_emulator[cfg]->GetCRF(i) & 0x0000000f);
 		    if ( sim_value != emul_value )
 		      {
+			cerr << " ==== CONFIGURATION ["<<cfg<<"] ====" << endl;
 			cerr << *this;
 			cerr << "time stamp " << timestamp() << endl;
 			cerr << "Different value for CR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator[cfg]);
+			DumpRegistersCompare(cerr,check_emulator[cfg], cfg);
 			exit(-1);
 		      }
 		  }
@@ -848,12 +851,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		    UInt64 emul_value = check_emulator[cfg]->GetFPSCR();
 		    if ( sim_value != emul_value )
 		      {
+			cerr << " ==== CONFIGURATION ["<<cfg<<"] ====" << endl;
 			cerr << *this;
 			cerr << "time stamp " << timestamp() << endl;
 			cerr << "Different value for FPSCR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator[cfg]);
+			DumpRegistersCompare(cerr,check_emulator[cfg], cfg);
 			exit(-1);
 		      }
 		  }
@@ -863,12 +867,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		    UInt64 emul_value = check_emulator[cfg]->GetLR();
 		    if ( sim_value != emul_value )
 		      {
+			cerr << " ==== CONFIGURATION ["<<cfg<<"] ====" << endl;
 			cerr << *this;
 			cerr << "time stamp " << timestamp() << endl;
 			cerr << "Different value for LR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator[cfg]);
+			DumpRegistersCompare(cerr,check_emulator[cfg], cfg);
 			exit(-1);
 		      }
 		  }
@@ -878,12 +883,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		    UInt64 emul_value = check_emulator[cfg]->GetCTR();
 		    if ( sim_value != emul_value )
 		      {
+			cerr << " ==== CONFIGURATION ["<<cfg<<"] ====" << endl;
 			cerr << *this;
 			cerr << "time stamp " << timestamp() << endl;
 			cerr << "Different value for CTR" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator[cfg]);
+			DumpRegistersCompare(cerr,check_emulator[cfg], cfg);
 			exit(-1);
 		      }
 		  }
@@ -902,12 +908,13 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		      }
 		    if ( sim_value != emul_value )
 		      {
+			cerr << " ==== CONFIGURATION ["<<cfg<<"] ====" << endl;
 			cerr << *this;
 			cerr << "time stamp " << timestamp() << endl;
 			cerr << "Different value for XER" << i << ":" << endl;
 			cerr << "simulator: " << hexa(sim_value) << endl;
 			cerr << "emulator : " << hexa(emul_value) << endl;
-			DumpRegistersCompare(cerr,check_emulator[cfg]);
+			DumpRegistersCompare(cerr,check_emulator[cfg], cfg);
 			exit(-1);
 		      }
 		  }
@@ -923,7 +930,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 	{
 	  WriteCIA(emul_pc, cfg);
 	}
-
+	/*
 	if (timestamp() == 0)
 	  {
 	    // At cycle 0, we need to set correct values into the RegisterFile.
@@ -939,8 +946,9 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 	    
 	  }
 	else
+	*/
 	  {
-	    if (!rob->skip_reg_checking)
+	    if (!rob->skip_reg_checking[cfg])
 	      {
 		for(int i = 0; i < nIntegerArchitecturalRegisters; i++)
 		  {
@@ -1038,7 +1046,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
   /**
    * Dump the simulator registers for debugging purpose
    */
-  void DumpRegistersCompare(ostream& os, CPUEmu *another_cpu)
+  void DumpRegistersCompare(ostream& os, CPUEmu *another_cpu, int cfg)
   { 
     os << "------ Simulator registers ---------------------------------------------" << endl;
     //    speculative_cpu_state->dump_registers_compare(os,check_emulator);
@@ -1060,14 +1068,14 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
       }
     */
     //////
-    os << "PC=" << hexa(ReadCIA()) << endl;
+    os << "PC=" << hexa(ReadCIA(cfg)) << endl;
     //    for(int i = 0; i < 32; i++)
     for(int i = 0; i < nIntegerArchitecturalRegisters; i++)
       { 
 	os << "r" << i;
 	if (i < 10) os << " ";
-	os << "=" << hexa(ReadGPR(i));
-	if (ReadGPR(i) != another_cpu->GetGPR(i)) os << "* ";
+	os << "=" << hexa(ReadGPR(i, cfg));
+	if (ReadGPR(i, cfg) != another_cpu->GetGPR(i)) os << "* ";
 	else os << "  ";
 	if ((i % 8) == 7) os << endl;
       }
@@ -1076,8 +1084,8 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
       { 
 	os << "cr" << i;
 	if (i < 10) os << " ";
-	os << "=" << hexa(ReadCR(i));
-	if (ReadCR(i) != another_cpu->GetCRF(i)) os << "* ";
+	os << "=" << hexa(ReadCR(i, cfg));
+	if (ReadCR(i, cfg) != another_cpu->GetCRF(i)) os << "* ";
 	else os << "  ";
 	if ((i % 8) == 7) os << endl;
       }
@@ -1086,8 +1094,8 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
       { 
 	os << "fpscr" << i;
 	if (i < 10) os << " ";
-	os << "=" << hexa(ReadFPSCR(i));
-	if (ReadFPSCR(i) != another_cpu->GetFPSCR()) os << "* ";
+	os << "=" << hexa(ReadFPSCR(i, cfg));
+	if (ReadFPSCR(i, cfg) != another_cpu->GetFPSCR()) os << "* ";
 	else os << "  ";
 	if ((i % 8) == 7) os << endl;
       }
@@ -1095,8 +1103,8 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
       { 
 	os << "lr" << i;
 	if (i < 10) os << " ";
-	os << "=" << hexa(ReadLR(i));
-	if (ReadLR(i) != another_cpu->GetLR()) os << "* ";
+	os << "=" << hexa(ReadLR(i, cfg));
+	if (ReadLR(i, cfg) != another_cpu->GetLR()) os << "* ";
 	else os << "  ";
 	if ((i % 8) == 7) os << endl;
       }
@@ -1104,8 +1112,8 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
       { 
 	os << "ctr" << i;
 	if (i < 10) os << " ";
-	os << "=" << hexa(ReadCTR(i));
-	if (ReadCTR(i) != another_cpu->GetCTR()) os << "* ";
+	os << "=" << hexa(ReadCTR(i, cfg));
+	if (ReadCTR(i, cfg) != another_cpu->GetCTR()) os << "* ";
 	else os << "  ";
 	if ((i % 8) == 7) os << endl;
       }    
@@ -1113,8 +1121,8 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
       { 
 	os << "xer" << i;
 	if (i < 10) os << " ";
-	os << "=" << hexa(ReadXER(i));
-	if (ReadXER(i) != another_cpu->GetXER()) os << "* ";
+	os << "=" << hexa(ReadXER(i, cfg));
+	if (ReadXER(i, cfg) != another_cpu->GetXER()) os << "* ";
 	else os << "  ";
 	if ((i % 8) == 7) os << endl;
       }
@@ -1137,7 +1145,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     { 
       os << "------ Emulator registers ---------------------------------------------" << endl;
       //      check_emulator->dump_registers_compare(os,speculative_cpu_state);
-      check_emulator->dump_registers(os);
+      check_emulator[cfg]->dump_registers(os);
     }
   }
 

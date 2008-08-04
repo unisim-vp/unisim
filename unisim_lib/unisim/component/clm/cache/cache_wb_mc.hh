@@ -1606,11 +1606,13 @@ class CacheWB : public module
               if(inMEM_was_a_cacheQueue_hit[cfg])
               { QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheQueue[cfg].SeekAtHead();
                 address_t line_addr = mr.address & ~(nLineSize - 1);
+		/*
                 cerr << "[[[---------------------------------------------" << endl;
                 INFO << hex << "\e[1;31m" << line_addr << dec << "\e[0m non local hit: " << mr << endl;
                 INFO << hex << "\e[1;31m" << line_addr << dec << "\e[0m cacheit: " << *cacheit << endl;
                 cerr << " ==>\e[1;32m local hit\e[0m" << endl;
                 cerr << "---------------------------------------------]]]" << endl;
+		*/
                 local_hit = true;
               }
             }
@@ -2895,7 +2897,7 @@ class CacheWB : public module
       
 //yyy
       if(inMEM_was_a_cacheQueue_hit[cfg])
-      { INFO << "\e[1;34menabling: " << mr << "\e[0m" << endl;
+      { //INFO << "\e[1;34menabling: " << mr << "\e[0m" << endl;
       }
       
       // This is a read request, discard it if it makes a miss in the local cache
@@ -3516,7 +3518,7 @@ class CacheWB : public module
         case READX:
         { // The snooped request was a hit in the request queue, but is not a hit in the cache yet.
           // The request is currently delayed until it is a hit.
-INFO << "delay..." << endl;
+	  //INFO << "delay..." << endl;
 //xxx
         } break;
         default:
