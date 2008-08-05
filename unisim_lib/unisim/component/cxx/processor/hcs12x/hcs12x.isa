@@ -73,7 +73,7 @@ action {string} disasm({ostream&} {sink}) {
 }
 
 action {void} pre_execute({ostream&} {sink}) {
-	sink << "NOP\n";
+	sink << "asm(\"NOP\");\n";
 }
 
 action {bool} post_execute({CPU *} {cpu}) {

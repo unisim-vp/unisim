@@ -82,7 +82,7 @@ sink
 {
 #line 75 "hcs12x.isa"
 	{
-		sink << "NOP\n";
+		sink << "asm(\"NOP\");\n";
 	}
 #line 88 "hcs12x.cc"
 }
