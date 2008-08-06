@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_DECODE_ALLOCATOR_RENAMER_MC_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_DECODE_ALLOCATOR_RENAMER_MC_HH__
 
-#include <unisim/component/clm/processor/ooosim/parameters.hh>
+//#include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 namespace unisim {
@@ -1489,7 +1489,7 @@ public:
 		@param allocatorRenamer a allocatorRenamer module
 		@return the output stream
 	*/
-	friend ostream& operator << (ostream& os, const AllocatorRenamer<T, nSources, nIntegerArchitecturalRegisters, nFloatingPointArchitecturalRegisters, nIntegerRegisters, nFloatingPointRegisters, Width, WriteBackWidth, RetireWidth, ReorderBufferSize, nStages>& allocatorRenamer)
+	friend ostream& operator << (ostream& os, const AllocatorRenamer<T, nSources, nIntegerArchitecturalRegisters, nFloatingPointArchitecturalRegisters, nIntegerRegisters, nFloatingPointRegisters, Width, WriteBackWidth, RetireWidth, ReorderBufferSize, nStages, nConfig>& allocatorRenamer)
 	{
 	  for (int cfg=0; cfg<nConfig; cfg++)
 	    {
@@ -1498,28 +1498,31 @@ public:
 		os << "(alloc)robSize=" << allocatorRenamer.robSize[cfg] << endl;
 		os << allocatorRenamer.renamePipeline[cfg];
 		os << "------------------------------------------------------------------------" << endl;
+		
+		os << "[CFG::"<<cfg<<"]integer mapping table:" << endl;
+		os << allocatorRenamer.integerMappingTable[cfg];
 		/*
-		os << "integer mapping table:" << endl;
-		os << allocatorRenamer.integerMappingTable[0];
 		os << "------------------------------------------------------------------------" << endl;
 		os << "floating point mapping table:" << endl;
 		os << allocatorRenamer.floatingPointMappingTable[0];
+		*/
 		os << "------------------------------------------------------------------------" << endl;
-		os << "condition mapping table:" << endl;
-		os << allocatorRenamer.conditionMappingTable[0];
+		os << "[CFG::"<<cfg<<"]condition mapping table:" << endl;
+		os << allocatorRenamer.conditionMappingTable[cfg];
+		/*
 		os << "------------------------------------------------------------------------" << endl;
 		os << "FPSCR mapping table:" << endl;
 		os << allocatorRenamer.FPSCRMappingTable[0];
-		os << "------------------------------------------------------------------------" << endl;
-		os << "link mapping table:" << endl;
-		os << allocatorRenamer.linkMappingTable[0];
-		os << "------------------------------------------------------------------------" << endl;
-		os << "count mapping table:" << endl;
-		os << allocatorRenamer.countMappingTable[0];
-		os << "------------------------------------------------------------------------" << endl;
-		os << "XER mapping table:" << endl;
-		os << allocatorRenamer.XERMappingTable[0];
 		*/
+		os << "------------------------------------------------------------------------" << endl;
+		os << "[CFG::"<<cfg<<"]link mapping table:" << endl;
+		os << allocatorRenamer.linkMappingTable[cfg];
+		os << "------------------------------------------------------------------------" << endl;
+		os << "[CFG::"<<cfg<<"]count mapping table:" << endl;
+		os << allocatorRenamer.countMappingTable[cfg];
+		os << "------------------------------------------------------------------------" << endl;
+		os << "[CFG::"<<cfg<<"]XER mapping table:" << endl;
+		os << allocatorRenamer.XERMappingTable[cfg];
 		os << "====================================" << endl;
 	    }
 		return os;

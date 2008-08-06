@@ -1679,17 +1679,19 @@ class RegisterFile : public module
 			/*
 			os << "Floating Point RegisterFile:" << endl;
 			os << registerFile.floatingPointRegisters << endl;
+			*/
 			os << "Conditon RegisterFile:" << endl;
-			os << registerFile.conditionRegisters << endl;
+			os << registerFile.conditionRegisters[cfg] << endl;
+			/*
 			os << "FPSC RegisterFile:" << endl;
 			os << registerFile.FPSCRegisters << endl;
-			os << "Link RegisterFile:" << endl;
-			os << registerFile.linkRegisters << endl;
-			os << "Count RegisterFile:" << endl;
-			os << registerFile.countRegisters << endl;
-			os << "XER RegisterFile:" << endl;
-			os << registerFile.XERRegisters << endl;
 			*/
+			os << "Link RegisterFile:" << endl;
+			os << registerFile.linkRegisters[cfg] << endl;
+			os << "Count RegisterFile:" << endl;
+			os << registerFile.countRegisters[cfg] << endl;
+			os << "XER RegisterFile:" << endl;
+			os << registerFile.XERRegisters[cfg] << endl;
 			os << "=======================================" << endl;
 		    }
 			return os;

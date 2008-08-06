@@ -1093,7 +1093,7 @@ class ReorderBuffer : public module//, public StatisticService
 			@param rob a reorder buffer module
 			@return the output stream
 		*/
-		friend ostream& operator << (ostream& os, const ReorderBuffer<T, nSources, ReorderBufferSize, AllocateWidth, WriteBackWidth, RetireWidth>& rob)
+		friend ostream& operator << (ostream& os, const ReorderBuffer<T, nSources, ReorderBufferSize, AllocateWidth, WriteBackWidth, RetireWidth, nConfig>& rob)
 		{
 		  int i;
 		  int tag;

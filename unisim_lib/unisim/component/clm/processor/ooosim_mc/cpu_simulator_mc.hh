@@ -68,7 +68,7 @@
 #include <sstream>
 
 // Simulator parameters :
-#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
+//#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
 ////////////////////////////////////////////////////////////////////
 // Pipeline Stages
 ////////////////////////////////////////////////////////////////////
@@ -1253,7 +1253,7 @@ public:
   // Pipeline Stages
   //   Fetch
   //  typedef Fetcher<UInt64, nSources, fetchWidth, IL1_nLineSize, IL1_nCachetoCPUDataPathSize, InstructionQueueSize, InstructionSize, BHT_Size, BHT_nLevels, BHT_nHistorySize, BTB_nlines, BTB_associativity, RAS_Size, retireWidth, WriteBackWidth,fetchMaxPendingRequests, MaxBranches> FetcherClass;
-  typedef Fetcher<UInt64, nSources, fetchWidth, IL1_nLineSize, nIL1CachetoCPUDataPathSize, InstructionQueueSize, InstructionSize, BHT_Size, BHT_nLevels, BHT_nHistorySize, BTB_nlines, BTB_associativity, RAS_Size, retireWidth, WriteBackWidth,fetchMaxPendingRequests, MaxBranches> FetcherClass;
+  typedef Fetcher<UInt64, nSources, fetchWidth, IL1_nLineSize, nIL1CachetoCPUDataPathSize, InstructionQueueSize, InstructionSize, BHT_Size, BHT_nLevels, BHT_nHistorySize, BTB_nlines, BTB_associativity, RAS_Size, retireWidth, WriteBackWidth,fetchMaxPendingRequests, MaxBranches, nConfig> FetcherClass;
 public: // Allow external connections with Inst. Cache.
   FetcherClass *fetch;
   //private:
@@ -1263,12 +1263,12 @@ public:
   //  typedef DummyExecutionCore<UInt64, nSources, fetchWidth, WriteBackWidth, retireWidth, 1, nDL1CachetoCPUDataPathSize> DummyExecutionCoreClass;
   //  DummyExecutionCoreClass *execute_stage;
   
-typedef AllocatorRenamer<UInt64, nSources, nIntegerArchitecturalRegisters, nFloatingPointArchitecturalRegisters, nIntegerRegisters, nFloatingPointRegisters, allocateRenameWidth, WriteBackWidth, retireWidth, reorderBufferSize, nAllocateRenameStages> AllocatorRenamerClass;
+typedef AllocatorRenamer<UInt64, nSources, nIntegerArchitecturalRegisters, nFloatingPointArchitecturalRegisters, nIntegerRegisters, nFloatingPointRegisters, allocateRenameWidth, WriteBackWidth, retireWidth, reorderBufferSize, nAllocateRenameStages, nConfig> AllocatorRenamerClass;
   AllocatorRenamerClass *allocate;
 
   //typedef Dispatcher<UInt64, nSources, allocateRenameWidth, nIntegerIssueQueueWritePorts, nFloatingPointIssueQueueWritePorts, nLoadStoreIssueQueueWritePorts> DispatcherClass;
 
-typedef Dispatcher<allocateRenameWidth, nIntegerIssueQueueWritePorts, nFloatingPointIssueQueueWritePorts, nLoadStoreIssueQueueWritePorts> DispatcherClass;
+typedef Dispatcher<allocateRenameWidth, nIntegerIssueQueueWritePorts, nFloatingPointIssueQueueWritePorts, nLoadStoreIssueQueueWritePorts, nConfig> DispatcherClass;
   DispatcherClass *dispatch;
 
 typedef Scheduler<UInt64,
@@ -1285,10 +1285,11 @@ typedef Scheduler<UInt64,
                 nLoadStoreIssueQueueWritePorts,
                 WriteBackWidth,
                 nIntegerRegisters,
-                nFloatingPointRegisters> SchedulerClass;
+                nFloatingPointRegisters,
+		  nConfig> SchedulerClass;
   SchedulerClass *schedule;
 
-typedef RegisterFile<UInt64, nSources, nIntegerRegisters, nFloatingPointRegisters, nReadRegisterStages, IntegerReadRegisterWidth, FloatingPointReadRegisterWidth, LoadStoreReadRegisterWidth, nWriteBackStages, WriteBackWidth> RegisterFileClass;
+typedef RegisterFile<UInt64, nSources, nIntegerRegisters, nFloatingPointRegisters, nReadRegisterStages, IntegerReadRegisterWidth, FloatingPointReadRegisterWidth, LoadStoreReadRegisterWidth, nWriteBackStages, WriteBackWidth, nConfig> RegisterFileClass;
   RegisterFileClass *registerfile;
 
   //typedef InstructionBroadcaster<UInt64, nSources, IntegerReadRegisterWidth, nIntegerUnits> IntegerInstructionBroadcasterClass;
@@ -1312,22 +1313,22 @@ typedef AddressGenerationUnit<UInt64, nSources, addressGenerationPipelineDepth, 
   AddressGenerationUnitClass *agu;
   //  AddressGenerationUnitClass *agu1_stage;
 
-typedef LoadStoreQueue<UInt64, nSources, loadQueueSize, storeQueueSize, nAddressGenerationUnits, allocateRenameWidth, retireWidth, DL1_nCPUtoCacheDataPathSize, DL1_nPorts, LSQ_nCDBPorts> LoadStoreQueueClass;
+typedef LoadStoreQueue<UInt64, nSources, loadQueueSize, storeQueueSize, nAddressGenerationUnits, allocateRenameWidth, retireWidth, DL1_nCPUtoCacheDataPathSize, DL1_nPorts, LSQ_nCDBPorts, nConfig> LoadStoreQueueClass;
 public: // Allow external connections with Inst. Cache.
   LoadStoreQueueClass *lsq;
   //private:
 public:
   static const int nChannels = 5;
   //typedef Arbiter<UInt64, nSources, commonDataBusArbiterPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
-typedef DataBusArbiter<UInt64, nSources, nIntegerUnits, nFloatingPointUnits, nAddressGenerationUnits, LSQ_nCDBPorts, WriteBackWidth, nChannels> CommonDataBusArbiterClass;
+typedef DataBusArbiter<UInt64, nSources, nIntegerUnits, nFloatingPointUnits, nAddressGenerationUnits, LSQ_nCDBPorts, WriteBackWidth, nChannels, nConfig> CommonDataBusArbiterClass;
   CommonDataBusArbiterClass *cdba;
 
   static const int nRetireChannels = 3;
   //typedef Arbiter<UInt64, nSources, retireWidth, retireWidth, nRetireChannels> RetireBroadcasterClass;
-typedef ArbiterOnetoAll<UInt64, nSources, retireWidth, retireWidth, nRetireChannels> RetireBroadcasterClass;
+typedef ArbiterOnetoAll<UInt64, nSources, retireWidth, retireWidth, nRetireChannels, nConfig> RetireBroadcasterClass;
   RetireBroadcasterClass *retbroadcast;
 
-typedef ReorderBuffer<UInt64, nSources, reorderBufferSize, allocateRenameWidth, WriteBackWidth, retireWidth> ReorderBufferClass;
+typedef ReorderBuffer<UInt64, nSources, reorderBufferSize, allocateRenameWidth, WriteBackWidth, retireWidth, nConfig> ReorderBufferClass;
   ReorderBufferClass *rob;
  
 private:

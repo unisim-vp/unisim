@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_COMMIT_SIMPLE_ARBITER_MC_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_COMMIT_SIMPLE_ARBITER_MC_HH__
 
-#include <unisim/component/clm/processor/ooosim/parameters.hh>
+//#include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 

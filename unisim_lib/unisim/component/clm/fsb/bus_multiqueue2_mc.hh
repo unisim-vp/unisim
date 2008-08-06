@@ -227,6 +227,12 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
 #ifdef DEBUG_BUS_MQ
 INFO << "Sending (M) to all: " << head->req << endl;
 #endif
+#ifdef DD_DEBUG_BUS_MQ2_VERB100
+      if ( DD_DEBUG_TIMESTAMP <= timestamp() )
+      {
+	cerr << "Sending (M) to all: " << head->req << endl;
+      }
+#endif
       outMEM.data.nothing();
       for(int i=0;i<nCPU;i++)
       { 
@@ -244,6 +250,7 @@ INFO << "Sending (M) to all: " << head->req << endl;
 #ifdef DEBUG_BUS_MQ
 INFO << "Sending (C) to all: " << head->req << endl;
 #endif
+
       outMEM.data = head->req;
       for(int i=0;i<nCPU;i++)
       { if((head->sender_id!=i) || is_cpu_flush())
@@ -251,6 +258,12 @@ INFO << "Sending (C) to all: " << head->req << endl;
 #ifdef DEBUG_BUS_MQ
 	  INFO << "Sending (C) to "<<i<<": " << head->req << endl;
 #endif	  
+#ifdef DD_DEBUG_BUS_MQ2_VERB100
+	  if ( DD_DEBUG_TIMESTAMP <= timestamp() )
+	    {
+	      cerr << "Sending (C) to "<<i<<": " << head->req << endl;
+	    }
+#endif
 	  outInstCPU.data[i] = head->req;
 	  outDataCPU.data[i] = head->req;
 	}
@@ -259,6 +272,12 @@ INFO << "Sending (C) to all: " << head->req << endl;
 #ifdef DEBUG_BUS_MQ
 	  INFO << "Sending Nothing to "<<i<<": " << head->req << endl;
 #endif	  
+#ifdef DD_DEBUG_BUS_MQ2_VERB100
+	  if ( DD_DEBUG_TIMESTAMP <= timestamp() )
+	    {
+	      cerr << "Sending Nothing to "<<i<<": " << head->req << endl;
+	    }
+#endif
 	  outInstCPU.data[i].nothing();
 	  outDataCPU.data[i].nothing();
 	}

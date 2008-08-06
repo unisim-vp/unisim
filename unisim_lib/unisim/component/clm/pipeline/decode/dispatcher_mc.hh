@@ -42,11 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_DECODE_DISPATCHER_MC_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_DECODE_DISPATCHER_MC_HH__
 
-//#include <utility.h>
-//#include <types.h>
-//#include <common.h>
-//#include <systemc.h>
-#include <unisim/component/clm/processor/ooosim/parameters.hh>
+//#include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 

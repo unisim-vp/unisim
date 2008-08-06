@@ -2000,8 +2000,11 @@ class CacheWB : public module
   {/* check that data was received from the memory system */
     if(inMEM.enable[cfg])
     { 
-#ifdef DEBUG_BUS_MQ
-      INFO << "Receiving from M:   " << inMEM.data[cfg] << endl;
+#ifdef DEBUG_BUS_MQ_VERB100
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
+      {
+	INFO << "[CFG::"<<cfg<<"]Receiving from M:   " << inMEM.data[cfg] << endl;
+      }
 #endif
 #ifdef DD_DEBUG_DCACHE_VERB2
       if (DD_DEBUG_TIMESTAMP <= timestamp())
@@ -2013,7 +2016,13 @@ class CacheWB : public module
       if(Snooping)
       { if(mr.message_type==memreq_types::type_REQUEST)
         { // Snooped requests should not update the write buffer, ignore those
-          return;
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE Return: message_type = REQUEST..." << endl;
+	    }
+#endif
+         return;
         }
         else 
         { // The message type is not an request, it is an answer.
@@ -2036,6 +2045,12 @@ class CacheWB : public module
 
 
 /* STF: should invalidate on hitting write backs ! */
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE Return: I'm not the req_sender..." << endl;
+	    }
+#endif
 
             return;
           }
@@ -2046,18 +2061,20 @@ class CacheWB : public module
       // Do not update the write buffer with data not requested !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       stringstream sstr;
       sstr << this->name() << cfg;
-      if (mr.req_sender != sstr.str()) return;
-
+      if (mr.req_sender != sstr.str()) 
+      {
+	return;
+      }
       if(sstr.str()==mr.sender)
       { ERROR << "Receiving a request from myself in UpdateWriteBuffer : " << mr << endl;
         terminate_now() ;
       }
 
 #ifdef DD_DEBUG_DCACHE_VERB2
-    if (DD_DEBUG_TIMESTAMP <= timestamp())
-    {
-      cerr << "["<<this->name()<<"("<<timestamp()<<")]: inMEM.enable == True, we are storing into writebuffer..." << endl;
-    }
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
+      {
+	cerr << "["<<this->name()<<"("<<timestamp()<<")]: inMEM.enable == True, we are storing into writebuffer..." << endl;
+      }
 #endif
 #ifdef DEBUG_TEST_UNCACHABLE_WRITE
       if( !mr.cachable ) INFO << "<-MEM- \e[1;31muncachable write\e[0m: " << mr << endl;
@@ -2099,6 +2116,13 @@ class CacheWB : public module
       writeBuffer[cfg].memreq_id = mr.memreq_id;
       writeBuffer[cfg].cachable = mr.cachable;
 
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE Here we have updated WriteBuffer:" << endl;
+	      cerr << writeBuffer[cfg] << endl;
+	    }
+#endif
      // If the shared bit was not set during the corresponding request, we will get the answer
      // from memory as a READ ANSWER.
      // If the shared bit was set, we will get the answer from a WRITE-BACK to memory of another
@@ -2154,18 +2178,18 @@ class CacheWB : public module
       if(cacheit)
       { if(!cacheit->write)
         {
-#ifdef DEBUG_CACHEWB
+	  //#ifdef DEBUG_CACHEWB
           /* check that the head of the pipeline and the writeBuffer have the same address */
           if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer[cfg].address)
-          { cerr << "Error(" << name() << "): the cache line request address does not correspond "
+          { cerr << "[CONFIG::"<<cfg<<"]Error(" << name() << "): the cache line request address does not correspond "
             << "with the address in the writeBuffer." << endl;
             cerr << "\t\t\tstate = " << cacheit->state
             << " (" << hexa(cacheit->address & (~(address_t)(nLineSize - 1)))
-            << " -- " << hexa(writeBuffer.address) << ")" << endl;
+            << " -- " << hexa(writeBuffer[cfg].address) << ")" << endl;
             cerr <<  *this;
             exit(-1);
           }
-#endif
+	  //#endif
           /* get the index of the data in the writeBuffer */
           unsigned int base_address = 0;
           if(nCPULineSize > 0)
@@ -2175,10 +2199,10 @@ class CacheWB : public module
           else
           { base_address = cacheit->address & ((address_t)nLineSize - 1);
           }
-#ifdef DD_DEBUG_DCACHE_VERB2
+#ifdef DD_DEBUG_DCACHE_VERB101
     if (DD_DEBUG_TIMESTAMP <= timestamp())
     {
-          cerr <<"["<<this->name()<<"("<<timestamp()<<")]: " << endl;
+      cerr <<"[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]: " << endl;
           cerr <<"      address       ="<< hexa(cacheit->address) <<endl;
           cerr <<"      size          ="<< cacheit->size << endl;
           cerr <<"      base_address  ="<< hexa(base_address) << endl;
@@ -2272,7 +2296,19 @@ class CacheWB : public module
     {
       QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit;
       // Update the writeBuffer if data is received from the memory system
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE Before UpdateWriteBuffer()..." << endl;
+	    }
+#endif
       UpdateWriteBuffer(cfg);
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE After UpdateWriteBuffer()..." << endl;
+	    }
+#endif
       // Check if the requested data is ready without waiting that the complete line is received
       UpdateCachePipelineWithWriteBuffer(cfg);
       
@@ -2295,7 +2331,7 @@ class CacheWB : public module
 	  { /* if the request was a write the update the data in the writeBuffer before updating the cache */
 	    if(cacheit->write)
 	      {
-#ifdef DEBUG_CACHEWB
+		//#ifdef DEBUG_CACHEWB
 		/* check that the addresses match */
 		if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer[cfg].address)
 		  { cerr << "Error(" << name() << "): the cache line request address does not correspond with the address in the "
@@ -2303,7 +2339,7 @@ class CacheWB : public module
 		  cerr << *this;
 		  exit(-1);
 		  }
-#endif
+		//#endif
 		/* calculate the index in the writeBuffer that is needed by the request */
 		unsigned int base_address = 0;
 		if(nCPULineSize > 0)
@@ -2455,9 +2491,11 @@ class CacheWB : public module
 		cacheQueue[cfg].RemoveHead();
 		break;
 	      default:
-		ERROR << "Don't know how to handle cacheit state " << cacheit->state << " when receiving answer from memory." << endl;
+		ERROR << "[Config::"<<cfg<<"]Don't know how to handle cacheit state " << cacheit->state << " when receiving answer from memory." << endl;
 		cerr << "cacheit: " << *cacheit << endl;
 		cerr << "writeBuffer " << writeBuffer[cfg] << endl;
+		cerr << *this << endl;
+		
 		abort();
 	      }
 	    /* reset the writeBuffer */
