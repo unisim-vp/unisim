@@ -111,6 +111,19 @@ clr_ext.execute = {
 
 op clr_idx(0x69[8]:> <:*xb[XB])
 
+clr_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+clr_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
+
 clr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 
 clr_idx.disasm = {
@@ -155,6 +168,19 @@ clrw_ext.execute = {
 }
 
 op clrw_idx(0x18[8]:0x69[8]:> <:*xb[XB])
+
+clrw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+clrw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 
 clrw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 
@@ -267,6 +293,19 @@ com_ext.execute = {
 
 op com_idx(0x61[8]:> <:*xb[XB])
 
+com_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+com_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
+
 com_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 com_idx.disasm = {
@@ -355,6 +394,18 @@ comw_ext.execute = {
 }
 
 op comw_idx(0x18[8]:0x61[8]:> <:*xb[XB])
+
+comw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+comw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 comw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
@@ -446,6 +497,18 @@ neg_ext.execute = {
 }
 
 op neg_idx(0x60[8]:> <:*xb[XB])
+
+neg_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+neg_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 neg_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
@@ -542,6 +605,18 @@ negw_ext.execute = {
 }
 
 op negw_idx(0x18[8]:0x60[8]:> <:*xb[XB])
+
+negw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+negw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 negw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
@@ -671,6 +746,18 @@ bclr_ext.execute = {
 
 op bclr_idx(0x0D[8]:> <:*xb[XB]:> <:mm[8])
 
+bclr_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+bclr_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 bclr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 6, 0, 0); }
 
 bclr_idx.disasm = {
@@ -798,6 +885,18 @@ bit_ab_ext.execute = {
 }
 
 op bit_ab_idx(0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
+
+bit_ab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+bit_ab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 bit_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
@@ -933,6 +1032,18 @@ bit_xy_ext.execute = {
 
 op bit_xy_idx(0x18[8]:0b1[1]:b[1]:0x25[6]:> <:*xb[XB])
 
+bit_xy_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+bit_xy_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 bit_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 bit_xy_idx.disasm = {
@@ -1019,6 +1130,18 @@ bset_ext.execute = {
 
 op bset_idx(0x0C[8]:> <:*xb[XB]:> <:mm[8])
 
+bset_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+bset_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 bset_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 6, 0, 0); }
 
 bset_idx.disasm = {
@@ -1077,6 +1200,18 @@ lsl_ext.execute = {
 }
 
 op lsl_idx(0x68[8]:> <:*xb[XB])
+
+lsl_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+lsl_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 lsl_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
@@ -1215,6 +1350,18 @@ lslw_ext.execute = {
 
 op lslw_idx(0x18[8]:0x68[8]:> <:*xb[XB])
 
+lslw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+lslw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 lslw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 lslw_idx.disasm = {
@@ -1324,6 +1471,18 @@ rol_ext.execute = {
 }
 
 op rol_idx(0x65[8]:> <:*xb[XB])
+
+rol_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+rol_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 rol_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
@@ -1439,6 +1598,18 @@ rolw_ext.execute = {
 
 op rolw_idx(0x18[8]:0x65[8]:> <:*xb[XB])
 
+rolw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+rolw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 rolw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 rolw_idx.disasm = {
@@ -1550,6 +1721,18 @@ lsr_ext.execute = {
 }
 
 op lsr_idx(0x64[8]:> <:*xb[XB])
+
+lsr_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+lsr_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 lsr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
@@ -1686,6 +1869,18 @@ lsrw_ext.execute = {
 
 op lsrw_idx(0x18[8]:0x64[8]:> <:*xb[XB])
 
+lsrw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+lsrw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 lsrw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
 lsrw_idx.disasm = {
@@ -1795,6 +1990,18 @@ ror_ext.execute = {
 }
 
 op ror_idx(0x66[8]:> <:*xb[XB])
+
+ror_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+ror_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 ror_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
@@ -1909,6 +2116,18 @@ rorw_ext.execute = {
 }
 
 op rorw_idx(0x18[8]:0x66[8]:> <:*xb[XB])
+
+rorw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+rorw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 rorw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
@@ -2025,6 +2244,18 @@ asr_ext.execute = {
 }
 
 op asr_idx(0x67[8]:> <:*xb[XB])
+
+asr_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+asr_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 asr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
@@ -2150,6 +2381,18 @@ asrw_ext.execute = {
 }
 
 op asrw_idx(0x18[8]:0x67[8]:> <:*xb[XB])
+
+asrw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+asrw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 asrw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 
@@ -2302,6 +2545,18 @@ btas_ext.execute = {
 }
 
 op btas_idx(0x18[8]:0x37[8]:> <:*xb[XB]:> <:msk8[8])
+
+btas_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+btas_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 btas_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 5, 5, 7, 0, 0); }
 

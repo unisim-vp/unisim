@@ -132,6 +132,18 @@ ldaab_ext.execute = {
 // LDAA or LDAB [oprx16,xysp]
 op ldaab_idx(0b1[1]:b[1]:0x26[6]:> <:*xb[XB]) 
 
+ldaab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+ldaab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 ldaab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 ldaab_idx.disasm = {
@@ -275,6 +287,18 @@ ld_dyxs_ext.execute = {
 // LDD or LDY or LDX or LDS [D,xysp]
 // LDD or LDY or LDX or LDS [oprx16,xysp]
 op ld_dyxs_idx(0x3B[6]:dyxs[2]:> <:*xb[XB]) 
+
+ld_dyxs_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+ld_dyxs_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 ld_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
@@ -457,6 +481,18 @@ staab_ext.execute = {
 
 op staab_idx(0x35[7]:b[1]:> <:*xb[XB])
 
+staab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+staab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 staab_idx.getCycles = { XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 
 staab_idx.disasm = {
@@ -577,6 +613,18 @@ st_dyxs_ext.execute = {
 
 op st_dyxs_idx(0x1B[6]:dyxs[2]:> <:*xb[XB])
 
+st_dyxs_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+st_dyxs_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 st_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 2, 3, 3, 4, 4); }
 
 st_dyxs_idx.disasm = {
@@ -689,6 +737,18 @@ gldaab_ext.execute = {
 // GLDAA or GLDAB [oprx16,xysp]
 op gldaab_idx(0x18[8]:0b1[1]:b[1]:0x26[6]:> <:*xb[XB]) 
 
+gldaab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+gldaab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 gldaab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 gldaab_idx.disasm = {
@@ -800,6 +860,18 @@ gld_dyxs_ext.execute = {
 // GLDD or GLDY or GLDX or GLDS [oprx16,xysp]
 op gld_dyxs_idx(0x18[8]:0x3B[6]:dyxs[2]:> <:*xb[XB]) 
 
+gld_dyxs_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+gld_dyxs_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 gld_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 gld_dyxs_idx.disasm = {
@@ -910,6 +982,18 @@ gstaab_ext.execute = {
 // GSTAA or GSTAB [oprx16,xysp]
 
 op gstaab_idx(0x18[8]:0x35[7]:b[1]:> <:*xb[XB])
+
+gstaab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+gstaab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 gstaab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 
@@ -1030,6 +1114,18 @@ gst_dyxs_ext.execute = {
 // GSTD or GSTY or GSTX or GSTS [oprx16,xysp]
 
 op gst_dyxs_idx(0x18[8]:0x1B[6]:dyxs[2]:> <:*xb[XB])
+
+gst_dyxs_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+gst_dyxs_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 gst_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 4, 5, 5); }
 

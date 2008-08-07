@@ -39,12 +39,10 @@ big_endian	/* instruction endian */
 
 decoder( cisc )
 
-// subdecoder XB
 include "xb_sub.isa"
 subdecoder unisim::component::cxx::processor::hcs12x::XB XB
 
 address {uint16_t}
-//subdecoder XB {unisim::component::cxx::processor::hcs12x::XB} [8;24]
 
 decl {
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
@@ -76,10 +74,9 @@ action {void} pre_execute({ostream&} {sink}) {
 	sink << "asm(\"NOP\");\n";
 }
 
-action {bool} post_execute({CPU *} {cpu}) {
-	printf("Default PostExecute Action (return true) \n");
+action {void} post_execute({ostream&} {sink}) {
 	
-	return true;
+	sink << "asm(\"NOP\");\n";
 }
 
 action {uint8_t} getCycles () {

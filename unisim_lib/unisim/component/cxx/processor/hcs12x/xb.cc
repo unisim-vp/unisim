@@ -2,7 +2,7 @@
 #include <cassert>
 #include <ostream>
 #include <cstring>
-#line 75 "xb.isa"
+#line 76 "xb.isa"
 
 using namespace std;
 
@@ -30,50 +30,122 @@ Operation::~Operation()
 {
 }
 
-#line 89 "xb.isa"
-uint16_t
+#line 109 "xb.isa"
+void
 #line 36 "xb.cc"
-Operation::getEAddr(
-#line 89 "xb.isa"
-CPU *
+Operation::post_execute(
+#line 109 "xb.isa"
+ostream&
 #line 40 "xb.cc"
-#line 89 "xb.isa"
-cpu
+#line 109 "xb.isa"
+sink
 #line 43 "xb.cc"
 )
 {
-#line 89 "xb.isa"
-	{ assert( false ); return 0; }
-#line 48 "xb.cc"
+#line 109 "xb.isa"
+	{
+
+		vector<string> vect;
+		getRegsLabel(vect);
+
+		vector<string>::iterator iter1 = vect.end();
+
+		while( iter1 != vect.begin()) {
+			iter1--;
+			sink << "asm(\"" << "PUL " << *iter1 << "\");\n";
+		}
+
+	}
+#line 60 "xb.cc"
 }
-#line 85 "xb.isa"
+#line 95 "xb.isa"
 void
-#line 52 "xb.cc"
-Operation::disasm(
-#line 85 "xb.isa"
+#line 64 "xb.cc"
+Operation::pre_execute(
+#line 95 "xb.isa"
 ostream&
-#line 56 "xb.cc"
-#line 85 "xb.isa"
+#line 68 "xb.cc"
+#line 95 "xb.isa"
 sink
-#line 59 "xb.cc"
+#line 71 "xb.cc"
 )
 {
-#line 85 "xb.isa"
+#line 95 "xb.isa"
+	{
+
+		vector<string> vect;
+		getRegsLabel(vect);
+
+		vector<string>::iterator iter1 = vect.begin();
+
+		while( iter1 != vect.end()) {
+			sink << "asm(\"" << "PUSH " << *iter1 << "\");\n";
+			iter1++;
+		}
+
+	}
+#line 88 "xb.cc"
+}
+#line 92 "xb.isa"
+void
+#line 92 "xb.cc"
+Operation::getRegsLabel(
+#line 92 "xb.isa"
+vector<string>
+#line 96 "xb.cc"
+#line 92 "xb.isa"
+&vect
+#line 99 "xb.cc"
+)
+{
+#line 92 "xb.isa"
+	{ return; }
+#line 104 "xb.cc"
+}
+#line 90 "xb.isa"
+uint16_t
+#line 108 "xb.cc"
+Operation::getEAddr(
+#line 90 "xb.isa"
+CPU *
+#line 112 "xb.cc"
+#line 90 "xb.isa"
+cpu
+#line 115 "xb.cc"
+)
+{
+#line 90 "xb.isa"
+	{ assert( false ); return 0; }
+#line 120 "xb.cc"
+}
+#line 86 "xb.isa"
+void
+#line 124 "xb.cc"
+Operation::disasm(
+#line 86 "xb.isa"
+ostream&
+#line 128 "xb.cc"
+#line 86 "xb.isa"
+sink
+#line 131 "xb.cc"
+)
+{
+#line 86 "xb.isa"
 	{
 		sink << "?";
 	}
-#line 66 "xb.cc"
+#line 138 "xb.cc"
 }
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 uint8_t
-#line 70 "xb.cc"
+#line 142 "xb.cc"
 Operation::getXbMode()
 {
-#line 81 "xb.isa"
+#line 82 "xb.isa"
 	{
 		return XbModes::Unknown;
 	}
-#line 77 "xb.cc"
+#line 149 "xb.cc"
 }
 class OpXb_auto : public Operation
 {
@@ -116,33 +188,45 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 	uint8_t
-#line 122 "xb.cc"
+#line 194 "xb.cc"
 	getXbMode();
 	virtual
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	uint16_t
-#line 127 "xb.cc"
+#line 199 "xb.cc"
 	getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	CPU *
-#line 131 "xb.cc"
-#line 89 "xb.isa"
+#line 203 "xb.cc"
+#line 90 "xb.isa"
 	cpu
-#line 134 "xb.cc"
+#line 206 "xb.cc"
 	);
 	virtual
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	void
-#line 139 "xb.cc"
+#line 211 "xb.cc"
 	disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	ostream&
-#line 143 "xb.cc"
-#line 85 "xb.isa"
+#line 215 "xb.cc"
+#line 86 "xb.isa"
 	sink
-#line 146 "xb.cc"
+#line 218 "xb.cc"
+	);
+	virtual
+#line 92 "xb.isa"
+	void
+#line 223 "xb.cc"
+	getRegsLabel(
+#line 92 "xb.isa"
+	vector<string>
+#line 227 "xb.cc"
+#line 92 "xb.isa"
+	&vect
+#line 230 "xb.cc"
 	);
 private:
 };
@@ -187,33 +271,45 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 	uint8_t
-#line 193 "xb.cc"
+#line 277 "xb.cc"
 	getXbMode();
 	virtual
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	uint16_t
-#line 198 "xb.cc"
+#line 282 "xb.cc"
 	getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	CPU *
-#line 202 "xb.cc"
-#line 89 "xb.isa"
+#line 286 "xb.cc"
+#line 90 "xb.isa"
 	cpu
-#line 205 "xb.cc"
+#line 289 "xb.cc"
 	);
 	virtual
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	void
-#line 210 "xb.cc"
+#line 294 "xb.cc"
 	disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	ostream&
-#line 214 "xb.cc"
-#line 85 "xb.isa"
+#line 298 "xb.cc"
+#line 86 "xb.isa"
 	sink
-#line 217 "xb.cc"
+#line 301 "xb.cc"
+	);
+	virtual
+#line 92 "xb.isa"
+	void
+#line 306 "xb.cc"
+	getRegsLabel(
+#line 92 "xb.isa"
+	vector<string>
+#line 310 "xb.cc"
+#line 92 "xb.isa"
+	&vect
+#line 313 "xb.cc"
 	);
 private:
 };
@@ -259,33 +355,45 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 	uint8_t
-#line 265 "xb.cc"
+#line 361 "xb.cc"
 	getXbMode();
 	virtual
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	uint16_t
-#line 270 "xb.cc"
+#line 366 "xb.cc"
 	getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	CPU *
-#line 274 "xb.cc"
-#line 89 "xb.isa"
+#line 370 "xb.cc"
+#line 90 "xb.isa"
 	cpu
-#line 277 "xb.cc"
+#line 373 "xb.cc"
 	);
 	virtual
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	void
-#line 282 "xb.cc"
+#line 378 "xb.cc"
 	disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	ostream&
-#line 286 "xb.cc"
-#line 85 "xb.isa"
+#line 382 "xb.cc"
+#line 86 "xb.isa"
 	sink
-#line 289 "xb.cc"
+#line 385 "xb.cc"
+	);
+	virtual
+#line 92 "xb.isa"
+	void
+#line 390 "xb.cc"
+	getRegsLabel(
+#line 92 "xb.isa"
+	vector<string>
+#line 394 "xb.cc"
+#line 92 "xb.isa"
+	&vect
+#line 397 "xb.cc"
 	);
 private:
 };
@@ -330,33 +438,45 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 	uint8_t
-#line 336 "xb.cc"
+#line 444 "xb.cc"
 	getXbMode();
 	virtual
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	uint16_t
-#line 341 "xb.cc"
+#line 449 "xb.cc"
 	getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	CPU *
-#line 345 "xb.cc"
-#line 89 "xb.isa"
+#line 453 "xb.cc"
+#line 90 "xb.isa"
 	cpu
-#line 348 "xb.cc"
+#line 456 "xb.cc"
 	);
 	virtual
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	void
-#line 353 "xb.cc"
+#line 461 "xb.cc"
 	disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	ostream&
-#line 357 "xb.cc"
-#line 85 "xb.isa"
+#line 465 "xb.cc"
+#line 86 "xb.isa"
 	sink
-#line 360 "xb.cc"
+#line 468 "xb.cc"
+	);
+	virtual
+#line 92 "xb.isa"
+	void
+#line 473 "xb.cc"
+	getRegsLabel(
+#line 92 "xb.isa"
+	vector<string>
+#line 477 "xb.cc"
+#line 92 "xb.isa"
+	&vect
+#line 480 "xb.cc"
 	);
 private:
 };
@@ -401,33 +521,45 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 	uint8_t
-#line 407 "xb.cc"
+#line 527 "xb.cc"
 	getXbMode();
 	virtual
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	uint16_t
-#line 412 "xb.cc"
+#line 532 "xb.cc"
 	getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	CPU *
-#line 416 "xb.cc"
-#line 89 "xb.isa"
+#line 536 "xb.cc"
+#line 90 "xb.isa"
 	cpu
-#line 419 "xb.cc"
+#line 539 "xb.cc"
 	);
 	virtual
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	void
-#line 424 "xb.cc"
+#line 544 "xb.cc"
 	disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	ostream&
-#line 428 "xb.cc"
-#line 85 "xb.isa"
+#line 548 "xb.cc"
+#line 86 "xb.isa"
 	sink
-#line 431 "xb.cc"
+#line 551 "xb.cc"
+	);
+	virtual
+#line 92 "xb.isa"
+	void
+#line 556 "xb.cc"
+	getRegsLabel(
+#line 92 "xb.isa"
+	vector<string>
+#line 560 "xb.cc"
+#line 92 "xb.isa"
+	&vect
+#line 563 "xb.cc"
 	);
 private:
 };
@@ -472,33 +604,45 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 	uint8_t
-#line 478 "xb.cc"
+#line 610 "xb.cc"
 	getXbMode();
 	virtual
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	uint16_t
-#line 483 "xb.cc"
+#line 615 "xb.cc"
 	getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	CPU *
-#line 487 "xb.cc"
-#line 89 "xb.isa"
+#line 619 "xb.cc"
+#line 90 "xb.isa"
 	cpu
-#line 490 "xb.cc"
+#line 622 "xb.cc"
 	);
 	virtual
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	void
-#line 495 "xb.cc"
+#line 627 "xb.cc"
 	disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	ostream&
-#line 499 "xb.cc"
-#line 85 "xb.isa"
+#line 631 "xb.cc"
+#line 86 "xb.isa"
 	sink
-#line 502 "xb.cc"
+#line 634 "xb.cc"
+	);
+	virtual
+#line 92 "xb.isa"
+	void
+#line 639 "xb.cc"
+	getRegsLabel(
+#line 92 "xb.isa"
+	vector<string>
+#line 643 "xb.cc"
+#line 92 "xb.isa"
+	&vect
+#line 646 "xb.cc"
 	);
 private:
 };
@@ -542,59 +686,71 @@ public:
 	* Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
 	*/
 	virtual
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 	uint8_t
-#line 548 "xb.cc"
+#line 692 "xb.cc"
 	getXbMode();
 	virtual
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	uint16_t
-#line 553 "xb.cc"
+#line 697 "xb.cc"
 	getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 	CPU *
-#line 557 "xb.cc"
-#line 89 "xb.isa"
+#line 701 "xb.cc"
+#line 90 "xb.isa"
 	cpu
-#line 560 "xb.cc"
+#line 704 "xb.cc"
 	);
 	virtual
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	void
-#line 565 "xb.cc"
+#line 709 "xb.cc"
 	disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 	ostream&
-#line 569 "xb.cc"
-#line 85 "xb.isa"
+#line 713 "xb.cc"
+#line 86 "xb.isa"
 	sink
-#line 572 "xb.cc"
+#line 716 "xb.cc"
+	);
+	virtual
+#line 92 "xb.isa"
+	void
+#line 721 "xb.cc"
+	getRegsLabel(
+#line 92 "xb.isa"
+	vector<string>
+#line 725 "xb.cc"
+#line 92 "xb.isa"
+	&vect
+#line 728 "xb.cc"
 	);
 private:
 };
 
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 uint8_t
-#line 579 "xb.cc"
+#line 735 "xb.cc"
 OpXb_auto::getXbMode()
 {
-#line 169 "xb.isa"
+#line 227 "xb.isa"
 	{ return XbModes::IDX; }
-#line 584 "xb.cc"
+#line 740 "xb.cc"
 }
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 uint16_t
-#line 588 "xb.cc"
+#line 744 "xb.cc"
 OpXb_auto::getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 CPU *
-#line 592 "xb.cc"
-#line 89 "xb.isa"
+#line 748 "xb.cc"
+#line 90 "xb.isa"
 cpu
-#line 595 "xb.cc"
+#line 751 "xb.cc"
 )
 {
-#line 171 "xb.isa"
+#line 229 "xb.isa"
 	{
 
 		address_t regOldVal = cpu->xb_getAddrRegValue(rr);
@@ -618,21 +774,21 @@ cpu
 			return regOldVal;
 		}
 	}
-#line 622 "xb.cc"
+#line 778 "xb.cc"
 }
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 void
-#line 626 "xb.cc"
+#line 782 "xb.cc"
 OpXb_auto::disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 ostream&
-#line 630 "xb.cc"
-#line 85 "xb.isa"
+#line 786 "xb.cc"
+#line 86 "xb.isa"
 sink
-#line 633 "xb.cc"
+#line 789 "xb.cc"
 )
 {
-#line 195 "xb.isa"
+#line 253 "xb.isa"
 	{
 
 		string	regLabel = CPU::xb_getAddrRegLabel(rr);
@@ -657,7 +813,27 @@ sink
 			sink << regLabel << sign;
 		}
 	}
-#line 661 "xb.cc"
+#line 817 "xb.cc"
+}
+#line 92 "xb.isa"
+void
+#line 821 "xb.cc"
+OpXb_auto::getRegsLabel(
+#line 92 "xb.isa"
+vector<string>
+#line 825 "xb.cc"
+#line 92 "xb.isa"
+&vect
+#line 828 "xb.cc"
+)
+{
+#line 278 "xb.isa"
+	{
+
+		string	regLabel(CPU::xb_getAddrRegLabel(rr));
+		vect.push_back(regLabel);
+	}
+#line 837 "xb.cc"
 }
 
 static Operation *DecodeOpXb_auto(CodeType const& code, uint16_t addr)
@@ -665,55 +841,78 @@ static Operation *DecodeOpXb_auto(CodeType const& code, uint16_t addr)
 	return new OpXb_auto(code, addr);
 }
 
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 uint8_t
-#line 671 "xb.cc"
+#line 847 "xb.cc"
 OpXb_5bit_cst::getXbMode()
 {
-#line 94 "xb.isa"
+#line 126 "xb.isa"
 	{ return XbModes::IDX; }
-#line 676 "xb.cc"
+#line 852 "xb.cc"
 }
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 uint16_t
-#line 680 "xb.cc"
+#line 856 "xb.cc"
 OpXb_5bit_cst::getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 CPU *
-#line 684 "xb.cc"
-#line 89 "xb.isa"
+#line 860 "xb.cc"
+#line 90 "xb.isa"
 cpu
-#line 687 "xb.cc"
+#line 863 "xb.cc"
 )
 {
-#line 96 "xb.isa"
+#line 128 "xb.isa"
 	{
 
 		address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + nnnnn;
 
 		return addr;
 
-		//    return cpu->xb_getAddrRegValue(rr) + nnnnn;
 	}
-#line 699 "xb.cc"
+#line 874 "xb.cc"
 }
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 void
-#line 703 "xb.cc"
+#line 878 "xb.cc"
 OpXb_5bit_cst::disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 ostream&
-#line 707 "xb.cc"
-#line 85 "xb.isa"
+#line 882 "xb.cc"
+#line 86 "xb.isa"
 sink
-#line 710 "xb.cc"
+#line 885 "xb.cc"
 )
 {
-#line 105 "xb.isa"
+#line 136 "xb.isa"
 	{
-		sink << std::dec << nnnnn << "," << CPU::xb_getAddrRegLabel(rr);
+
+		string regLabel = CPU::xb_getAddrRegLabel(rr);
+
+		sink << std::dec << nnnnn << "," << regLabel;
+
 	}
-#line 717 "xb.cc"
+#line 896 "xb.cc"
+}
+#line 92 "xb.isa"
+void
+#line 900 "xb.cc"
+OpXb_5bit_cst::getRegsLabel(
+#line 92 "xb.isa"
+vector<string>
+#line 904 "xb.cc"
+#line 92 "xb.isa"
+&vect
+#line 907 "xb.cc"
+)
+{
+#line 144 "xb.isa"
+	{
+
+		string regLabel(CPU::xb_getAddrRegLabel(rr));
+		vect.push_back(regLabel);
+	}
+#line 916 "xb.cc"
 }
 
 static Operation *DecodeOpXb_5bit_cst(CodeType const& code, uint16_t addr)
@@ -722,56 +921,76 @@ static Operation *DecodeOpXb_5bit_cst(CodeType const& code, uint16_t addr)
 }
 
 // TODO: 20080417 - a revoir
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 uint8_t
-#line 728 "xb.cc"
+#line 927 "xb.cc"
 OpXb_9_cst_z0::getXbMode()
 {
-#line 113 "xb.isa"
+#line 153 "xb.isa"
 	{ return XbModes::IDX1; }
-#line 733 "xb.cc"
+#line 932 "xb.cc"
 }
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 uint16_t
-#line 737 "xb.cc"
+#line 936 "xb.cc"
 OpXb_9_cst_z0::getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 CPU *
-#line 741 "xb.cc"
-#line 89 "xb.isa"
+#line 940 "xb.cc"
+#line 90 "xb.isa"
 cpu
-#line 744 "xb.cc"
+#line 943 "xb.cc"
 )
 {
-#line 115 "xb.isa"
+#line 155 "xb.isa"
 	{
 
 		address_t addr = (int16_t) cpu->xb_getAddrRegValue(rr) + n8;
 
 		return addr;
 
-		//	return cpu->xb_getAddrRegValue(rr) + n8;
 	}
-#line 756 "xb.cc"
+#line 954 "xb.cc"
 }
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 void
-#line 760 "xb.cc"
+#line 958 "xb.cc"
 OpXb_9_cst_z0::disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 ostream&
-#line 764 "xb.cc"
-#line 85 "xb.isa"
+#line 962 "xb.cc"
+#line 86 "xb.isa"
 sink
-#line 767 "xb.cc"
+#line 965 "xb.cc"
 )
 {
-#line 124 "xb.isa"
+#line 163 "xb.isa"
 	{
 
-		sink << std::dec << n8 << "," << CPU::xb_getAddrRegLabel(rr);
+		string regLabel = CPU::xb_getAddrRegLabel(rr);
+		sink << std::dec << n8 << "," << regLabel;
 	}
-#line 775 "xb.cc"
+#line 974 "xb.cc"
+}
+#line 92 "xb.isa"
+void
+#line 978 "xb.cc"
+OpXb_9_cst_z0::getRegsLabel(
+#line 92 "xb.isa"
+vector<string>
+#line 982 "xb.cc"
+#line 92 "xb.isa"
+&vect
+#line 985 "xb.cc"
+)
+{
+#line 169 "xb.isa"
+	{
+
+		string regLabel(CPU::xb_getAddrRegLabel(rr));
+		vect.push_back(regLabel);
+	}
+#line 994 "xb.cc"
 }
 
 static Operation *DecodeOpXb_9_cst_z0(CodeType const& code, uint16_t addr)
@@ -779,28 +998,28 @@ static Operation *DecodeOpXb_9_cst_z0(CodeType const& code, uint16_t addr)
 	return new OpXb_9_cst_z0(code, addr);
 }
 
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 uint8_t
-#line 785 "xb.cc"
+#line 1004 "xb.cc"
 OpXb_16bit_cst_z1_s0::getXbMode()
 {
-#line 132 "xb.isa"
+#line 177 "xb.isa"
 	{ return XbModes::IDX2; }
-#line 790 "xb.cc"
+#line 1009 "xb.cc"
 }
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 uint16_t
-#line 794 "xb.cc"
+#line 1013 "xb.cc"
 OpXb_16bit_cst_z1_s0::getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 CPU *
-#line 798 "xb.cc"
-#line 89 "xb.isa"
+#line 1017 "xb.cc"
+#line 90 "xb.isa"
 cpu
-#line 801 "xb.cc"
+#line 1020 "xb.cc"
 )
 {
-#line 134 "xb.isa"
+#line 179 "xb.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -808,27 +1027,48 @@ cpu
 		// Constant offset 16-bit signed
 		return addr;
 	}
-#line 812 "xb.cc"
+#line 1031 "xb.cc"
 }
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 void
-#line 816 "xb.cc"
+#line 1035 "xb.cc"
 OpXb_16bit_cst_z1_s0::disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 ostream&
-#line 820 "xb.cc"
-#line 85 "xb.isa"
+#line 1039 "xb.cc"
+#line 86 "xb.isa"
 sink
-#line 823 "xb.cc"
+#line 1042 "xb.cc"
 )
 {
-#line 142 "xb.isa"
+#line 187 "xb.isa"
 	{
 
 		// constant offset 16-bit signed
-		sink << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr);
+		string regLabel = CPU::xb_getAddrRegLabel(rr);
+		sink << std::dec << n16 << "," << regLabel;
 	}
-#line 832 "xb.cc"
+#line 1052 "xb.cc"
+}
+#line 92 "xb.isa"
+void
+#line 1056 "xb.cc"
+OpXb_16bit_cst_z1_s0::getRegsLabel(
+#line 92 "xb.isa"
+vector<string>
+#line 1060 "xb.cc"
+#line 92 "xb.isa"
+&vect
+#line 1063 "xb.cc"
+)
+{
+#line 194 "xb.isa"
+	{
+
+		string regLabel(CPU::xb_getAddrRegLabel(rr));
+		vect.push_back(regLabel);
+	}
+#line 1072 "xb.cc"
 }
 
 static Operation *DecodeOpXb_16bit_cst_z1_s0(CodeType const& code, uint16_t addr)
@@ -836,28 +1076,28 @@ static Operation *DecodeOpXb_16bit_cst_z1_s0(CodeType const& code, uint16_t addr
 	return new OpXb_16bit_cst_z1_s0(code, addr);
 }
 
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 uint8_t
-#line 842 "xb.cc"
+#line 1082 "xb.cc"
 OpXb_16bit_cst_z1_s1::getXbMode()
 {
-#line 150 "xb.isa"
+#line 202 "xb.isa"
 	{ return XbModes::IDX2_Ind; }
-#line 847 "xb.cc"
+#line 1087 "xb.cc"
 }
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 uint16_t
-#line 851 "xb.cc"
+#line 1091 "xb.cc"
 OpXb_16bit_cst_z1_s1::getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 CPU *
-#line 855 "xb.cc"
-#line 89 "xb.isa"
+#line 1095 "xb.cc"
+#line 90 "xb.isa"
 cpu
-#line 858 "xb.cc"
+#line 1098 "xb.cc"
 )
 {
-#line 152 "xb.isa"
+#line 204 "xb.isa"
 	{
 
 		physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
@@ -865,27 +1105,48 @@ cpu
 		// 16-bit offset indexed-indirect
 		return cpu->memRead16(addr);
 	}
-#line 869 "xb.cc"
+#line 1109 "xb.cc"
 }
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 void
-#line 873 "xb.cc"
+#line 1113 "xb.cc"
 OpXb_16bit_cst_z1_s1::disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 ostream&
-#line 877 "xb.cc"
-#line 85 "xb.isa"
+#line 1117 "xb.cc"
+#line 86 "xb.isa"
 sink
-#line 880 "xb.cc"
+#line 1120 "xb.cc"
 )
 {
-#line 160 "xb.isa"
+#line 212 "xb.isa"
 	{
 
 		// 16-bit offset index-indirect
-		sink << "[" << std::dec << n16 << "," << CPU::xb_getAddrRegLabel(rr) << "]";
+		string regLabel = CPU::xb_getAddrRegLabel(rr);
+		sink << "[" << std::dec << n16 << "," << regLabel << "]";
 	}
-#line 889 "xb.cc"
+#line 1130 "xb.cc"
+}
+#line 92 "xb.isa"
+void
+#line 1134 "xb.cc"
+OpXb_16bit_cst_z1_s1::getRegsLabel(
+#line 92 "xb.isa"
+vector<string>
+#line 1138 "xb.cc"
+#line 92 "xb.isa"
+&vect
+#line 1141 "xb.cc"
+)
+{
+#line 219 "xb.isa"
+	{
+
+		string regLabel(CPU::xb_getAddrRegLabel(rr));
+		vect.push_back(regLabel);
+	}
+#line 1150 "xb.cc"
 }
 
 static Operation *DecodeOpXb_16bit_cst_z1_s1(CodeType const& code, uint16_t addr)
@@ -893,53 +1154,80 @@ static Operation *DecodeOpXb_16bit_cst_z1_s1(CodeType const& code, uint16_t addr
 	return new OpXb_16bit_cst_z1_s1(code, addr);
 }
 
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 uint8_t
-#line 899 "xb.cc"
+#line 1160 "xb.cc"
 OpXb_acc_offset::getXbMode()
 {
-#line 223 "xb.isa"
+#line 286 "xb.isa"
 	{ return XbModes::IDX; }
-#line 904 "xb.cc"
+#line 1165 "xb.cc"
 }
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 uint16_t
-#line 908 "xb.cc"
+#line 1169 "xb.cc"
 OpXb_acc_offset::getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 CPU *
-#line 912 "xb.cc"
-#line 89 "xb.isa"
+#line 1173 "xb.cc"
+#line 90 "xb.isa"
 cpu
-#line 915 "xb.cc"
+#line 1176 "xb.cc"
 )
 {
-#line 225 "xb.isa"
+#line 288 "xb.isa"
 	{
 		uint16_t addrRegVal = cpu->xb_getAddrRegValue(rr);
 		uint16_t accRegVal = cpu->xb_getAccRegValue(aa);
 
 		return addrRegVal + accRegVal;
 	}
-#line 925 "xb.cc"
+#line 1186 "xb.cc"
 }
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 void
-#line 929 "xb.cc"
+#line 1190 "xb.cc"
 OpXb_acc_offset::disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 ostream&
-#line 933 "xb.cc"
-#line 85 "xb.isa"
+#line 1194 "xb.cc"
+#line 86 "xb.isa"
 sink
-#line 936 "xb.cc"
+#line 1197 "xb.cc"
 )
 {
-#line 232 "xb.isa"
+#line 295 "xb.isa"
 	{
-		sink << CPU::xb_getAccRegLabel(aa) << "," << CPU::xb_getAddrRegLabel(rr);
+
+		string addrRegLabel = CPU::xb_getAddrRegLabel(rr);
+		string accRegLabel = CPU::xb_getAccRegLabel(aa);
+
+		sink << accRegLabel << "," << addrRegLabel;
 	}
-#line 943 "xb.cc"
+#line 1208 "xb.cc"
+}
+#line 92 "xb.isa"
+void
+#line 1212 "xb.cc"
+OpXb_acc_offset::getRegsLabel(
+#line 92 "xb.isa"
+vector<string>
+#line 1216 "xb.cc"
+#line 92 "xb.isa"
+&vect
+#line 1219 "xb.cc"
+)
+{
+#line 303 "xb.isa"
+	{
+
+		string addrRegLabel(CPU::xb_getAddrRegLabel(rr));
+		string accRegLabel(CPU::xb_getAccRegLabel(aa));
+
+		vect.push_back(accRegLabel);
+		vect.push_back(addrRegLabel);
+	}
+#line 1231 "xb.cc"
 }
 
 static Operation *DecodeOpXb_acc_offset(CodeType const& code, uint16_t addr)
@@ -947,51 +1235,71 @@ static Operation *DecodeOpXb_acc_offset(CodeType const& code, uint16_t addr)
 	return new OpXb_acc_offset(code, addr);
 }
 
-#line 80 "xb.isa"
+#line 81 "xb.isa"
 uint8_t
-#line 953 "xb.cc"
+#line 1241 "xb.cc"
 OpXb_accD_offset_idx_ind::getXbMode()
 {
-#line 239 "xb.isa"
+#line 314 "xb.isa"
 	{ return XbModes::IDXD_Ind; }
-#line 958 "xb.cc"
+#line 1246 "xb.cc"
 }
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 uint16_t
-#line 962 "xb.cc"
+#line 1250 "xb.cc"
 OpXb_accD_offset_idx_ind::getEAddr(
-#line 89 "xb.isa"
+#line 90 "xb.isa"
 CPU *
-#line 966 "xb.cc"
-#line 89 "xb.isa"
+#line 1254 "xb.cc"
+#line 90 "xb.isa"
 cpu
-#line 969 "xb.cc"
+#line 1257 "xb.cc"
 )
 {
-#line 241 "xb.isa"
+#line 316 "xb.isa"
 	{
 
 		return cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegD() + cpu->xb_getAddrRegValue(rr), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
 	}
-#line 977 "xb.cc"
+#line 1265 "xb.cc"
 }
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 void
-#line 981 "xb.cc"
+#line 1269 "xb.cc"
 OpXb_accD_offset_idx_ind::disasm(
-#line 85 "xb.isa"
+#line 86 "xb.isa"
 ostream&
-#line 985 "xb.cc"
-#line 85 "xb.isa"
+#line 1273 "xb.cc"
+#line 86 "xb.isa"
 sink
-#line 988 "xb.cc"
+#line 1276 "xb.cc"
 )
 {
-#line 246 "xb.isa"
+#line 321 "xb.isa"
 	{
-		sink << "[D," << CPU::xb_getAddrRegLabel(rr) << "]";
+		string regLabel = CPU::xb_getAddrRegLabel(rr);
+		sink << "[D," << regLabel << "]";
 	}
-#line 995 "xb.cc"
+#line 1284 "xb.cc"
+}
+#line 92 "xb.isa"
+void
+#line 1288 "xb.cc"
+OpXb_accD_offset_idx_ind::getRegsLabel(
+#line 92 "xb.isa"
+vector<string>
+#line 1292 "xb.cc"
+#line 92 "xb.isa"
+&vect
+#line 1295 "xb.cc"
+)
+{
+#line 326 "xb.isa"
+	{
+		string regLabel(CPU::xb_getAddrRegLabel(rr));
+		vect.push_back(regLabel);
+	}
+#line 1303 "xb.cc"
 }
 
 static Operation *DecodeOpXb_accD_offset_idx_ind(CodeType const& code, uint16_t addr)

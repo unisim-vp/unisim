@@ -72,6 +72,7 @@ Operation *sub_decode(uint16_t addr, CodeType const& code) {
 
 #include <iosfwd>
 #include <iostream>
+#include <vector>
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 
@@ -98,7 +99,7 @@ namespace unisim { namespace component { namespace cxx { namespace processor { n
 
 } } } } } }  // end namespaces
 
-#line 102 "xb.hh"
+#line 103 "xb.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
 class Operation
 {
@@ -109,33 +110,69 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 89 "xb.isa"
-	uint16_t
-#line 115 "xb.hh"
-	getEAddr(
-#line 89 "xb.isa"
-	CPU *
-#line 119 "xb.hh"
-#line 89 "xb.isa"
-	cpu
-#line 122 "xb.hh"
-	);
-	virtual
-#line 85 "xb.isa"
+#line 109 "xb.isa"
 	void
-#line 127 "xb.hh"
-	disasm(
-#line 85 "xb.isa"
+#line 116 "xb.hh"
+	post_execute(
+#line 109 "xb.isa"
 	ostream&
-#line 131 "xb.hh"
-#line 85 "xb.isa"
+#line 120 "xb.hh"
+#line 109 "xb.isa"
 	sink
-#line 134 "xb.hh"
+#line 123 "xb.hh"
 	);
 	virtual
-#line 80 "xb.isa"
+#line 95 "xb.isa"
+	void
+#line 128 "xb.hh"
+	pre_execute(
+#line 95 "xb.isa"
+	ostream&
+#line 132 "xb.hh"
+#line 95 "xb.isa"
+	sink
+#line 135 "xb.hh"
+	);
+	virtual
+#line 92 "xb.isa"
+	void
+#line 140 "xb.hh"
+	getRegsLabel(
+#line 92 "xb.isa"
+	vector<string>
+#line 144 "xb.hh"
+#line 92 "xb.isa"
+	&vect
+#line 147 "xb.hh"
+	);
+	virtual
+#line 90 "xb.isa"
+	uint16_t
+#line 152 "xb.hh"
+	getEAddr(
+#line 90 "xb.isa"
+	CPU *
+#line 156 "xb.hh"
+#line 90 "xb.isa"
+	cpu
+#line 159 "xb.hh"
+	);
+	virtual
+#line 86 "xb.isa"
+	void
+#line 164 "xb.hh"
+	disasm(
+#line 86 "xb.isa"
+	ostream&
+#line 168 "xb.hh"
+#line 86 "xb.isa"
+	sink
+#line 171 "xb.hh"
+	);
+	virtual
+#line 81 "xb.isa"
 	uint8_t
-#line 139 "xb.hh"
+#line 176 "xb.hh"
 	getXbMode( );
 protected:
 	CodeType encoding;

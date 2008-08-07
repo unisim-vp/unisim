@@ -30,6 +30,18 @@ dec_ext.execute = {
 // DEC IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op dec_idx(0x63[8]:> <:*xb[XB])
 
+dec_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+dec_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 dec_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 dec_idx.disasm = {
@@ -133,6 +145,18 @@ decw_ext.execute = {
 
 // DECW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op decw_idx(0x18[8]:0x63[8]:> <:*xb[XB])
+
+decw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+decw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 decw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 7, 7); }
 
@@ -294,6 +318,18 @@ inc_ext.execute = {
 // INC IDX or IDX or IDX2 or [D,IDX] or [IDX2]
 op inc_idx(0x62[8]:> <:*xb[XB])
 
+inc_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+inc_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 inc_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 4, 5, 6, 6); }
 
 inc_idx.disasm = {
@@ -396,6 +432,18 @@ incw_ext.execute = {
 
 // INCW  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op incw_idx(0x18[8]:0x62[8]:> <:*xb[XB])
+
+incw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+incw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 incw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 7, 7); }
 

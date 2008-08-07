@@ -308,6 +308,18 @@ br_clr_set_ext.execute = {
 
 op br_clr_set_idx(0x07[7]:b[1]:> <:*xb[XB]:> <:msk8[8]:sext<8> rel8[8])
 
+br_clr_set_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+br_clr_set_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 br_clr_set_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 6, 0, 0); }
 
 br_clr_set_idx.disasm = {
@@ -519,6 +531,18 @@ call_accD_offset_idx_ind.execute = {
 
 op call_idx(0x4B[8]:> <:*xb[XB]:> <:page[8])
 
+call_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+call_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 call_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 7, 7, 8, 0, 0); }
 
 call_idx.disasm = {
@@ -580,6 +604,18 @@ jmp_ext.execute = {
 }
 
 op jmp_idx(0x05[8]:> <:*xb[XB])
+
+jmp_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+jmp_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 jmp_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
@@ -658,6 +694,18 @@ jsr_ext.execute = {
 }
 
 op jsr_idx(0x15[8]:> <:*xb[XB])
+
+jsr_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+jsr_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 jsr_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 

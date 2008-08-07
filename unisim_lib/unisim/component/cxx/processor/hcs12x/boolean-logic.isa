@@ -167,6 +167,18 @@ and_ab_ext.execute = {
 // ANDA/ANDB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB & mem[xb->addrE] => regAB)
 op and_ab_idx(0b1[1]:b[1]:0x24[6]:> <:*xb[XB])
 
+and_ab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+and_ab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 and_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 and_ab_idx.disasm = {
@@ -371,6 +383,18 @@ and_xy_ext.execute = {
 // ANDX/ANDY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY & mem[xb->addrE]:mem[xb->addrE+1] => regXY)
 op and_xy_idx(0x18[8]:0b1[1]:b[1]:0x24[6]:> <:*xb[XB])
 
+and_xy_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+and_xy_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 and_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 and_xy_idx.disasm = {
@@ -548,6 +572,18 @@ ora_ab_ext.execute = {
 
 // ORAA/ORAB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB | mem[xb->addrE] => regAB)
 op ora_ab_idx(0b1[1]:b[1]:0x2A[6]:> <:*xb[XB])
+
+ora_ab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+ora_ab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 ora_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
@@ -771,6 +807,18 @@ or_xy_ext.execute = {
 // ORX/ORY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY | mem[xb->addrE]:mem[xb->addrE+1] => regXY)
 op or_xy_idx(0x18[8]:0b1[1]:b[1]:0x2A[6]:> <:*xb[XB])
 
+or_xy_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+or_xy_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 or_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 or_xy_idx.disasm = {
@@ -947,6 +995,18 @@ eor_ab_ext.execute = {
 
 // EORA/EORB  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regAB ^ mem[xb->addrE] => regAB)
 op eor_ab_idx(0b1[1]:b[1]:0x28[6]:> <:*xb[XB])
+
+eor_ab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+eor_ab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 eor_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
@@ -1127,6 +1187,18 @@ eor_xy_ext.execute = {
 
 // EORX/EORY IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] (regXY ^ mem[xb->addrE]:mem[xb->addrE+1] => regXY)
 op eor_xy_idx(0x18[8]:0b1[1]:b[1]:0x28[6]:> <:*xb[XB])
+
+eor_xy_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+eor_xy_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 eor_xy_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 

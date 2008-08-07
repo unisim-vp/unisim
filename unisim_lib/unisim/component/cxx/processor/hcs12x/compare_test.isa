@@ -179,6 +179,18 @@ cmp_ab_ext.execute = {
 // CMPab  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2] 
 op cmp_ab_idx(0b1[1]:b[1]:0x21[6]:> <:*xb[XB])
 
+cmp_ab_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+cmp_ab_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 cmp_ab_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
 cmp_ab_idx.disasm = {
@@ -342,6 +354,18 @@ cp_dyxs_ext.execute = {
 
 // CPdyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op cp_dyxs_idx(0x2B[6]:dyxs[2]:> <:*xb[XB])
+
+cp_dyxs_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+cp_dyxs_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 cp_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
@@ -512,6 +536,18 @@ cpe_dyxs_ext.execute = {
 // CPE_dyxs  IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op cpe_dyxs_idx(0x18[8]:0x2B[6]:dyxs[2]:> <:*xb[XB])
 
+cpe_dyxs_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+cpe_dyxs_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
+
 cpe_dyxs_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
 cpe_dyxs_idx.disasm = {
@@ -584,6 +620,18 @@ tst_ext.execute = {
 
 // TST IDX or IDX1 or IDX2 or [D,IDX] or [IDX2]
 op tst_idx(0xE7[8]:> <:*xb[XB])
+
+tst_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+tst_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 tst_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 3, 3, 4, 6, 6); }
 
@@ -679,6 +727,18 @@ tstw_ext.execute = {
 
 // TSTW IDX or IDX1 or IDX2 or [D, IDX] or [IDX2]
 op tstw_idx(0x18[8]:0xE7[8]:> <:*xb[XB])
+
+tstw_idx.pre_execute = {
+	
+	xb->pre_execute(sink);
+	// after: other specific actions
+}
+
+tstw_idx.post_execute = {
+
+	// before: other specific actions
+	xb->post_execute(sink);
+}
 
 tstw_idx.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 4, 5, 7, 7); }
 
