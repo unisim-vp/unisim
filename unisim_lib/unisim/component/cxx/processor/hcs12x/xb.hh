@@ -110,14 +110,14 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 109 "xb.isa"
+#line 131 "xb.isa"
 	void
 #line 116 "xb.hh"
 	post_execute(
-#line 109 "xb.isa"
+#line 131 "xb.isa"
 	ostream&
 #line 120 "xb.hh"
-#line 109 "xb.isa"
+#line 131 "xb.isa"
 	sink
 #line 123 "xb.hh"
 	);

@@ -100,7 +100,29 @@ action {void} pre_execute({ostream&} {sink}) {
 	vector<string>::iterator iter1 = vect.begin();
 
 	while( iter1 != vect.end()) {
-		sink << "asm(\"" << "PUSH " << *iter1 << "\");\n";
+
+		if (((string) *iter1).compare("X") == 0) {
+			sink << "asm(\"" << "PSHX \");\n";
+		}
+		if (((string) *iter1).compare("Y") == 0) {
+			sink << "asm(\"" << "PSHY \");\n";
+		}
+		if (((string) *iter1).compare("SP") == 0) {
+			sink << "asm(\"" << "LDX SP \");\n";
+		}
+		if (((string) *iter1).compare("PC") == 0) {
+			sink << "asm(\"" << "LDY PC \");\n";
+		}
+		if (((string) *iter1).compare("A") == 0) {
+			sink << "asm(\"" << "PSHA \");\n";
+		}
+		if (((string) *iter1).compare("B") == 0) {
+			sink << "asm(\"" << "PSHB \");\n";
+		}
+		if (((string) *iter1).compare("D") == 0) {
+			sink << "asm(\"" << "PSHD \");\n";
+		}
+		
 		iter1++;
 	}    
 	
@@ -115,7 +137,28 @@ action {void} post_execute({ostream&} {sink}) {
 
 	while( iter1 != vect.begin()) {
 		iter1--;
-		sink << "asm(\"" << "PUL- " << *iter1 << "\");\n";
+
+		if (((string) *iter1).compare("X") == 0) {
+			sink << "asm(\"" << "PULX \");\n";
+		}
+		if (((string) *iter1).compare("Y") == 0) {
+			sink << "asm(\"" << "PULY \");\n";
+		}
+		if (((string) *iter1).compare("SP") == 0) {
+			sink << "asm(\"" << "STX SP \");\n";
+		}
+		if (((string) *iter1).compare("PC") == 0) {
+			sink << "asm(\"" << "JMP Y \");\n";
+		}
+		if (((string) *iter1).compare("A") == 0) {
+			sink << "asm(\"" << "PULA \");\n";
+		}
+		if (((string) *iter1).compare("B") == 0) {
+			sink << "asm(\"" << "PULB \");\n";
+		}
+		if (((string) *iter1).compare("D") == 0) {
+			sink << "asm(\"" << "PULD \");\n";
+		}
 	}    
 
 }
