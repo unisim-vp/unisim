@@ -487,6 +487,12 @@ class unisim_prim_out: public fsc_prim_out< boost::array<U,NCONFIG> >
   void send()
     {
       fsc_prim_out< boost::array<U,NCONFIG> >::operator=(temporary_array);
+      /* Work with data but do not work with accept and enable...
+      for(int cfg=0; cfg<NCONFIG; cfg++)
+	{
+	  temporary_array[cfg].nothing();
+	}
+      */
     }
   //#endif
 
@@ -789,20 +795,30 @@ Direct acces tot the data value should be replaced by port.data
     else os << "\e[1;31mU\e[0m";
     os << " a";
     if(this->accept.was_known())
-      { //if(this->accept) os << "\e[36mY\e[0m";
-	//else os << "\e[32mN\e[0m";
+      { os << "[";
+	for(int cfg=0; cfg<NCONFIG; cfg++)
+	  if(this->accept[cfg]) os << "\e[36mY\e[0m";
+	  else os << "\e[32mN\e[0m";
+	os << "]";
     }
     else os << "\e[1;31mU\e[0m";
     os << " e";
     if(this->enable.was_known())
-      { //if(this->enable) os << "\e[36mY\e[0m";
-	//else os << "\e[32mN\e[0m";
+      { os << "[";
+	for(int cfg=0; cfg<NCONFIG; cfg++)
+	  if(this->enable[cfg]) os << "\e[36mY\e[0m";
+	  else os << "\e[32mN\e[0m";
+	os << "]";
     }
     else os << "\e[1;31mU\e[0m";
     //#define DD_MY_SIGNAL_DEBUGGER
     //#ifdef DD_MY_SIGNAL_DEBUGGER
     if(data.was_known())
-      { //if(data.something()) os << " " << data;
+      { 
+	os << "[";
+	for(int cfg=0; cfg<NCONFIG; cfg++)
+	  if(data[cfg].something()) os << " [" << data[cfg] << "]";
+	//	os
       }
     //#endif   
     //#undef DD_MY_SIGNAL_DEBUGGER

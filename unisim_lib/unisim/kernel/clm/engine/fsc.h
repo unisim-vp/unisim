@@ -54,6 +54,7 @@
 // DD
 //#define FSC_STAT
 //#define FFSC_STAT
+//#define DEBUG_FSC
 
 /***************************************
               LIBERTY CODE
@@ -777,7 +778,7 @@ INLINE fsc_prim_in<T>::operator const T& ()
 #ifdef DEBUG_FSC
 
   if(fsc_simcontext::debug)
-    cerr << "FraternitéSysC: reading (value = " << value << ") on port " << Name() << endl;
+    //DD//    cerr << "FraternitéSysC: reading (value = " << value << ") on port " << Name() << endl;
 #endif
 
   return value;
@@ -833,7 +834,7 @@ INLINE fsc_prim_out<T>& fsc_prim_out<T>::operator = (const T& data)
   {
 #ifdef DEBUG_FSC
     if(fsc_simcontext::debug)
-      cerr << "FraternitéSysC: writing on port " << Name() << "(value = " << data << ")" << endl;
+      //DD//      cerr << "FraternitéSysC: writing on port " << Name() << "(value = " << data << ")" << endl;
 #endif
 
     typed_signal->time_stamp[typed_signal->read_buf ^ 1] = simc_time_stamp;
@@ -844,7 +845,7 @@ INLINE fsc_prim_out<T>& fsc_prim_out<T>::operator = (const T& data)
 #ifdef DEBUG_FSC
 
     if(fsc_simcontext::debug)
-      cerr << "FraternitéSysC: submiting an update (new value = " << data << ", old value = " << typed_signal->buffer[typed_signal->read_buf] << ") for signal " << typed_signal->Name() << endl;
+      //DD//      cerr << "FraternitéSysC: submiting an update (new value = " << data << ", old value = " << typed_signal->buffer[typed_signal->read_buf] << ") for signal " << typed_signal->Name() << endl;
 #endif
 
     simcontext->SubmitUpdate(signal);
