@@ -261,7 +261,8 @@ unisim_commandline_parameter & unisim_commandline::operator[](const string &name
  */
 const char* unisim_commandline::operator[](unsigned int index)
 { list<string>::iterator p = extras.begin();
-  if(index<parameters.size())
+// DD //  if(index<parameters.size())
+  if(index<extras.size())
   { for(unsigned int i=0;i<index;i++)
     { p++;
     }
