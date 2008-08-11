@@ -152,7 +152,7 @@
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
 // Simulator paramters
-#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
+#include <unisim/component/clm/processor/ooosim_mc/parameters_mc_32core.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 
@@ -271,7 +271,7 @@ using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
-const int nConfig = 2;
+const int nConfig = 32;
 
 
 class GeneratedSimulator : public Simulator{
@@ -291,7 +291,7 @@ public:
     #define RequestWidth 32
     #define Snooping 0
   */
-  typedef BusMultiQueue<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
+  typedef BusMultiQueue<InstructionPtr,nConfig,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
   /*
   // cDRAM
 #define INSTRUCTION Instruction

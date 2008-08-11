@@ -52,6 +52,7 @@ AC_CONFIG_FILES([Makefile])
 # Note: ooosim only supports linux, macosx/darwin, and windows/mingw.
 
 UNISIM_CONFIG_SUBDIR(simulator-clm-ooosim, ooosim, *linux*, *macosx*, *darwin*, *mingw*)
+UNISIM_CONFIG_SUBDIR(simulator-clm-ooosim_mc, ooosim_mc, *linux*, *macosx*, *darwin*, *mingw*)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

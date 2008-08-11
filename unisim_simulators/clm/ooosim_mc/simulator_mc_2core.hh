@@ -67,7 +67,7 @@
 #define DD_DEBUG_OPERATIONREFCOUNT
 */
 
-//#define DD_DISPLAY_SIGNALS
+#define DD_DISPLAY_SIGNALS
 
 //#define DEBUG_BUS_MQ
 
@@ -144,7 +144,7 @@
 #endif
 
 // --------- TO USED !!!
-//#define DD_CHECK_WITH_EMULATOR
+#define DD_CHECK_WITH_EMULATOR
 
 //#define CHECK_REGISTER_STEP 10000000
 #define CHECK_REGISTER_STEP 1
@@ -152,7 +152,7 @@
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
 // Simulator paramters
-#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
+#include <unisim/component/clm/processor/ooosim_mc/parameters_mc_2core.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 
@@ -291,7 +291,7 @@ public:
     #define RequestWidth 32
     #define Snooping 0
   */
-  typedef BusMultiQueue<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
+  typedef BusMultiQueue<InstructionPtr,nConfig,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
   /*
   // cDRAM
 #define INSTRUCTION Instruction
@@ -357,6 +357,7 @@ public:
 		  DL1_nDelay,
 		  nProg,
 		  Snooping,
+		  false,
 		  nConfig > cDCACHE;
 
   /*
@@ -389,6 +390,7 @@ public:
 		  IL1_nDelay,
 		  nProg,
 		  Snooping,
+		  false,
 		  nConfig > cICACHE;
 
   /*
@@ -406,7 +408,7 @@ public:
 #define nDL1CPUtoCacheDataPathSize 8
 #define nProg 1
   */
-  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, nConfig> cCPU;
+  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, false, nConfig> cCPU;
 
   // Unisim modules
   //  cSAC *__sac;
@@ -742,7 +744,7 @@ public:
 	for(int cfg=0; cfg<nConfig; cfg++)
 	  {
 	    (*linux_loader[cfg])["endianess"] = E_BIG_ENDIAN;
-	    (*linux_loader[cfg])["stack-base"] = 0xc0000000+cfg*0x01000000;
+	    (*linux_loader[cfg])["stack-base"] = 0xa0000000+cfg*0x10000000;
 	    (*linux_loader[cfg])["max-environ"] = 16 * 1024;
 	    //	(*linux_loader)["argc"] = sim_argc;
 	    (*linux_loader[cfg])["argc"] = sim_argc;//command_line.count();
