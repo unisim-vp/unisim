@@ -272,7 +272,7 @@ class CacheWB : public module
 //stf      sensitive_method(on_MEM_data) << outCPU.accept;
       sensitive_method(on_shared_accept) << outSharedMEM.accept;
     }
-    sensitive_method(on_MEM_accept) << outMEM.accept;
+    sensitive_method(on_MEM_accept) << outMEM.accept << inMEM.enable;
     
     // Module state initialization
     for(int cfg=0; cfg<nConfig; cfg++)
@@ -1349,7 +1349,7 @@ class CacheWB : public module
    * Previously called CheckMemAccept()
    */
   void on_MEM_accept()
-  { if(outMEM.accept.known())
+  { if(outMEM.accept.known() && inMEM.enable.known())
     {
 #ifdef DD_DEBUG_DCACHE_VERB2
       if (DD_DEBUG_TIMESTAMP <= timestamp())
@@ -1364,10 +1364,50 @@ class CacheWB : public module
 	//      else cerr << "\033[31mCACHE: MEM didn't accept the previous request !!!!!!!!!!!! \033[0m" << endl; 
       }
 #endif
+      // DD: before enabling outMEM data we have to check if a another processor just answer the same request.
       for (int cfg=0; cfg<nConfig; cfg++)
       {
-	outMEM.enable[cfg] = outMEM.accept[cfg];
-      }
+	// DD: before enabling outMEM data we have to check if a another processor just answer the same request.
+	if (!inMEM.enable[cfg])
+	{
+	  outMEM.enable[cfg] = outMEM.accept[cfg];
+	}
+	else
+	{
+	  // We check outMEM.accept is true to be sure that outMEMdata is not an older value sent previous cylce.
+	  if (outMEM.accept[cfg])
+	  {
+	    // Make sure the incoming data is a read to be handled by the snooper
+	    memreq<INSTRUCTION, nMemtoCacheDataPathSize> mrin = inMEM.data[cfg];
+	    memreq<INSTRUCTION, nMemtoCacheDataPathSize> mrout = outMEM.data[cfg];
+	    // DD...
+	    // If the answer is for another cache but if we are currently trying to answer to
+	    // this cache we have to discard this answer.
+	    if ( 
+		(mrin.message_type==memreq_types::type_ANSWER) && // is in req. an answer ?
+		(mrin.req_sender == mrout.req_sender) &&          // is in req_sender equal to out req_sender ?
+		(mrin.address == mrout.address)                   // are req. on the same addresses ?
+		)
+	    {
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
+		{
+		  cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Not ENABLING outMEM because another cache is answering !!!!" << mrin << endl;
+		}
+#endif		    
+	      outMEM.enable[cfg] = false;	
+	    }
+	    else
+	    {
+	      outMEM.enable[cfg] = outMEM.accept[cfg];
+	    }
+	  }
+	  else
+	  {
+	    outMEM.enable[cfg] = outMEM.accept[cfg];
+	  }
+	}
+      }// end of Foreach Config.
       outMEM.enable.send();
     }
   }
@@ -1422,7 +1462,11 @@ class CacheWB : public module
             case READ_MISS_EVICTION_WRITE_DONE_LINE_READY:
               /* the head of the pipeline is a read that is being replying to the cpu, accept the new request if the
                * cpu is accepting the reply and all the reply can be sent */
-              if(outCPU.accept[cfg]) return (returnBuffer[cfg].size <= nCachetoCPUDataPathSize);
+
+	      // DD: here is a bug because return buffer is also used to return data on the bus (snooping)
+	      //     and in these case we must check inMEM.accept[cfg] !!!
+	      //     Any way, the returnBuffer is not up to date until end_of_cycle...
+              if(outCPU.accept[cfg]) return false; //(returnBuffer[cfg].size <= nCachetoCPUDataPathSize);
               else              return false;
             default:
               /* if the head of the pipeline is a read that is not in one of the previous states (ex: it is a miss being
@@ -1832,7 +1876,7 @@ class CacheWB : public module
     /* are we waiting for an accept from the memory? */
     if(requestBuffer[cfg].ready)
     { /* check if the memory accepted the request */
-      if(requestBuffer[cfg].cacheQueueIndex!=cacheQueueIndex) return;
+      if(requestBuffer[cfg].cacheQueueIndex!=cacheQueueIndex) continue;//return;
       if(outMEM.accept[cfg])
       { if(requestBuffer[cfg].write)
         { /* this request is a write */
@@ -2063,6 +2107,12 @@ class CacheWB : public module
       sstr << this->name() << cfg;
       if (mr.req_sender != sstr.str()) 
       {
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	if (DD_DEBUG_TIMESTAMP <= timestamp())
+	  {
+	    cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE Return: I'm not the req_sender..." << endl;
+	  }
+#endif
 	return;
       }
       if(sstr.str()==mr.sender)
@@ -2181,7 +2231,7 @@ class CacheWB : public module
 	  //#ifdef DEBUG_CACHEWB
           /* check that the head of the pipeline and the writeBuffer have the same address */
           if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer[cfg].address)
-          { cerr << "[CONFIG::"<<cfg<<"]Error(" << name() << "): the cache line request address does not correspond "
+	    { cerr << "[CONFIG::"<<cfg<<"][TS("<<timestamp()<<")]Error(" << name() << "): the cache line request address does not correspond "
             << "with the address in the writeBuffer." << endl;
             cerr << "\t\t\tstate = " << cacheit->state
             << " (" << hexa(cacheit->address & (~(address_t)(nLineSize - 1)))
@@ -2310,10 +2360,22 @@ class CacheWB : public module
 	    }
 #endif
       // Check if the requested data is ready without waiting that the complete line is received
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE Before UpdateCachePipe()..." << endl;
+	    }
+#endif
       UpdateCachePipelineWithWriteBuffer(cfg);
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE After UpdateCachePipe()..." << endl;
+	    }
+#endif
       
       /* if writeBuffer has been completed write the cacheline to the cache */
-      if(writeBuffer[cfg].size == nLineSize || writeBuffer[cfg].size == nLineSize)
+      if(writeBuffer[cfg].size == nLineSize)// || writeBuffer[cfg].size == nLineSize)
       { /* check if the cache entry that made the request is a write
 	 * and use it to update the contents of the writeBuffer before
 	 * writing it to the cache */
@@ -2334,7 +2396,7 @@ class CacheWB : public module
 		//#ifdef DEBUG_CACHEWB
 		/* check that the addresses match */
 		if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer[cfg].address)
-		  { cerr << "Error(" << name() << "): the cache line request address does not correspond with the address in the "
+		  { cerr << "[TS("<<timestamp()<<")]Error(" << name() << "): the cache line request address does not correspond with the address in the "
 			 << "writebuffer" << endl;
 		  cerr << *this;
 		  exit(-1);
@@ -2376,7 +2438,7 @@ class CacheWB : public module
 		      { ERROR << "Invalid MESI transition from " << *cacheit << endl;
 		      exit(1);
 		      }
-            }
+		  }
 		
 		/* the request can be removed */
 		cacheQueue[cfg].RemoveHead();
@@ -2442,7 +2504,7 @@ class CacheWB : public module
 		    if(ret)
 		      { ERROR << "Invalid MESI transition from " << *cacheit << endl;
 		      exit(1);
-              }
+		      }
 		  }
 		
 		/* change the state of the head of the pipeline */
@@ -2501,8 +2563,32 @@ class CacheWB : public module
 	    /* reset the writeBuffer */
 	    writeBuffer[cfg].size = 0;
 	    for(int i = 0; i < nLineSize; i++) writeBuffer[cfg].ready[i] = false;
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE Just after Reseting WriteBuffer()..." << endl;
+	    }
+#endif
+	  } // end of if cacheit
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+	else
+	{
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	  {
+	      cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE WRANING No cacheit..." << endl;
 	  }
+	}
+#endif
+      } // end of if writeBuffer[cfg].size == ...
+#ifdef DD_DEBUG_DCACHE_UPDATES_VERB100 
+      else
+      {
+	if (DD_DEBUG_TIMESTAMP <= timestamp())
+	{
+	  cerr << "[CFG::"<<cfg<<"]["<<this->name()<<"("<<timestamp()<<")]UPDATE WRANING WriteBuffer Not full..." << endl;
+	}
       }
+#endif
     } // end of for each Config
   } // end of ReadMemData()
   
@@ -2651,7 +2737,7 @@ class CacheWB : public module
   { CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize> *entry;
     // check that the cache queue is not full, it should never happen
     if(cacheSnoopQueue[cfg].Full())
-    { ERROR << "MEM request should not have been accepted, the cache is full !" << endl;
+    { ERROR << "[CFG::"<<cfg<<"]"<< "MEM request should not have been accepted, the cache is full !" << endl;
       cerr << "memreq: " << mr << endl;
       cerr << *this;
       exit(-1);
@@ -2846,6 +2932,56 @@ class CacheWB : public module
       if(mr.message_type==memreq_types::type_ANSWER)
       { // Write are handled by UpdateWriteBuffer
 	//	return;
+	// DD...
+	// If the answer is for another cache but if we are currently trying to answer to
+	// this cache we have to discard this answer.
+	QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheSnoopQueue[cfg].SeekAtHead();
+	if (cacheit) 
+	  {
+	    if (cacheit->req_sender == mr.req_sender)
+	      {
+		if (cacheit->address == mr.address)
+		  {
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+	   if (DD_DEBUG_TIMESTAMP <= timestamp())
+	     {
+	       cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Removing request from Snooping queue !!!!" << mr << " from CPU" << endl;
+	     }
+#endif		    
+ 		    cacheSnoopQueue[cfg].RemoveHead();
+		    
+		  }
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+		else
+		  {
+		    if (DD_DEBUG_TIMESTAMP <= timestamp())
+		      {
+			cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Not removing because addresses are different !!!!" << mr << " from CPU" << endl;
+		      }
+		  }
+#endif		   
+	      }
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+	    else
+	      {
+		if (DD_DEBUG_TIMESTAMP <= timestamp())
+		  {
+		    cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Not removing because req_sender are different !!!!" << mr << " from CPU" << endl;
+		  }
+	      }
+#endif		    
+	  }
+	if (requestBuffer[cfg].req_sender == mr.req_sender)
+	  if (requestBuffer[cfg].address == mr.address)
+	    {
+	      requestBuffer[cfg].ready = false;
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+	   if (DD_DEBUG_TIMESTAMP <= timestamp())
+	     {
+	       cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Removing request from RequestBuffer !!!!" << endl;
+	     }
+#endif		    
+	    }
 	continue;
       }
       
@@ -3588,7 +3724,7 @@ class CacheWB : public module
     /* are we waiting for an accept from the memory? */
     if(requestBuffer[cfg].ready)
     { /* check if the memory accepted the request */
-      if(requestBuffer[cfg].cacheQueueIndex!=cacheSnoopQueueIndex) return;
+      if(requestBuffer[cfg].cacheQueueIndex!=cacheSnoopQueueIndex) continue;//return;
       if(outMEM.accept[cfg])
       { if(requestBuffer[cfg].write)
         { /* this request is a write */
@@ -3606,18 +3742,21 @@ class CacheWB : public module
           { /* the request has been finished, the cache pipeline has to be updated */
             cacheit = cacheSnoopQueue[cfg].SeekAtHead();
 
-//INFO << "cQI=" << requestBuffer.cacheQueueIndex << " state= " << cacheit->state << endl;
-
-            switch(cacheit->state)
-            { case READ_HIT_READY:
-                // A snooped read hit has been sent and accepted, i can remove it from the queue
-                cacheSnoopQueue[cfg].RemoveHead();
-                break;
-              default:
-                ERROR << "Don't know what to do when a writing request of state " << cacheit->state << " has been sent then accepted." << endl;
-                exit(1);
-            }
-            /* reset the request buffer */
+	    //INFO << "cQI=" << requestBuffer.cacheQueueIndex << " state= " << cacheit->state << endl;
+	    // DD Check cacheit because cache entry may have been removed if another cache answer before
+	    if (cacheit)
+	      {
+		switch(cacheit->state)
+		  { case READ_HIT_READY:
+		      // A snooped read hit has been sent and accepted, i can remove it from the queue
+		      cacheSnoopQueue[cfg].RemoveHead();
+		      break;
+		  default:
+		    ERROR << "Don't know what to do when a writing request of state " << cacheit->state << " has been sent then accepted." << endl;
+		    exit(1);
+		  }
+	      }
+	    /* reset the request buffer */
             requestBuffer[cfg].ready=false;
           }
         }

@@ -304,6 +304,8 @@ public:
 		  //		state_init(&transient_emul_state);
 		  syscall_in_pipeline[cfg] = false;
 		  stall_counter[cfg] = 0;
+
+		  in_flight_branches[cfg] = 0;
 		}
 		/* statistics */
 
