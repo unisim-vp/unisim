@@ -147,7 +147,7 @@
 //#define DD_CHECK_WITH_EMULATOR
 
 //#define CHECK_REGISTER_STEP 10000000
-#define CHECK_REGISTER_STEP 1
+//#define CHECK_REGISTER_STEP 1
 
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
@@ -157,7 +157,7 @@
 
 
 #include <unisim/component/clm/cache/cache_wb_mc.hh>
-#include <unisim/component/clm/fsb/bus_multiqueue2_mc.hh>
+#include <unisim/component/clm/fsb/bus_multiqueue3_mc.hh>
 #include <unisim/component/clm/memory/dram/dram2.hh>
 #include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.hh>
 #include <unisim/kernel/service/service.hh>
@@ -357,6 +357,7 @@ public:
 		  DL1_nDelay,
 		  nProg,
 		  Snooping,
+		  false,
 		  nConfig > cDCACHE;
 
   /*
@@ -389,6 +390,7 @@ public:
 		  IL1_nDelay,
 		  nProg,
 		  Snooping,
+		  false,
 		  nConfig > cICACHE;
 
   /*
@@ -406,7 +408,7 @@ public:
 #define nDL1CPUtoCacheDataPathSize 8
 #define nProg 1
   */
-  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, nConfig> cCPU;
+  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, false, nConfig> cCPU;
 
   // Unisim modules
   //  cSAC *__sac;
@@ -745,7 +747,7 @@ public:
 	    (*linux_loader[cfg])["stack-base"] = 0xc0000000+cfg*0x01000000;
 	    (*linux_loader[cfg])["max-environ"] = 16 * 1024;
 	    //	(*linux_loader)["argc"] = sim_argc;
-	    (*linux_loader[cfg])["argc"] = sim_argc;//command_line.count();
+	    (*linux_loader[cfg])["argc"] = sim_argc[cfg];//command_line.count();
 	    for(unsigned int i = 0; i < sim_argc[cfg]; i++)
 	      {
 		//	(*linux_loader)["argv"][i] = sim_argv[i];

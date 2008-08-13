@@ -54,6 +54,7 @@
 //#define DD_DEBUG_TIMESTAMP 3552229
 //#define DD_DEBUG_TIMESTAMP 0
 //#define DD_DEBUG_TIMESTAMP 1000
+//#define DD_DEBUG_TIMESTAMP 300
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -72,6 +73,11 @@
 //#define DEBUG_BUS_MQ
 
 #define DD_DEBUG_PIPELINE_VERB2
+#define DD_DEBUG_DCACHE_VERB101
+#define DEBUG_BUS_MQ_VERB100
+#define DD_DEBUG_BUS_MQ2_VERB100
+#define DD_DEBUG_DCACHE_UPDATES_VERB100
+#define DD_DEBUG_DCACHE_SNOOPING_VERB100
 //#define DD_DEBUG_REORDER_VERB100
 //#define DD_DEBUG_FETCH_VERB100
 //#define DD_DEBUG_DCACHE_VERB101
@@ -147,7 +153,7 @@
 //#define DD_CHECK_WITH_EMULATOR
 
 //#define CHECK_REGISTER_STEP 10000000
-#define CHECK_REGISTER_STEP 1
+//#define CHECK_REGISTER_STEP 1
 
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
@@ -157,7 +163,7 @@
 
 
 #include <unisim/component/clm/cache/cache_wb_mc.hh>
-#include <unisim/component/clm/fsb/bus_multiqueue2_mc.hh>
+#include <unisim/component/clm/fsb/bus_multiqueue3_mc.hh>
 #include <unisim/component/clm/memory/dram/dram2.hh>
 #include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.hh>
 #include <unisim/kernel/service/service.hh>
@@ -744,10 +750,10 @@ public:
 	for(int cfg=0; cfg<nConfig; cfg++)
 	  {
 	    (*linux_loader[cfg])["endianess"] = E_BIG_ENDIAN;
-	    (*linux_loader[cfg])["stack-base"] = 0xa0000000+cfg*0x10000000;
+	    (*linux_loader[cfg])["stack-base"] = 0xc0000000+cfg*0x01000000;
 	    (*linux_loader[cfg])["max-environ"] = 16 * 1024;
 	    //	(*linux_loader)["argc"] = sim_argc;
-	    (*linux_loader[cfg])["argc"] = sim_argc;//command_line.count();
+	    (*linux_loader[cfg])["argc"] = sim_argc[cfg];//command_line.count();
 	    for(unsigned int i = 0; i < sim_argc[cfg]; i++)
 	      {
 		//	(*linux_loader)["argv"][i] = sim_argv[i];
