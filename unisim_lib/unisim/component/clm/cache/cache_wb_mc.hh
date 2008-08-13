@@ -2307,30 +2307,30 @@ class CacheWB : public module
 #ifdef DD_DEBUG_DCACHE_VERB2
       else
       {
-    if (DD_DEBUG_TIMESTAMP <= timestamp())
-    { 
-	cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning: (!cacheit->write)==False ..." << endl;
-    }
+	if (DD_DEBUG_TIMESTAMP <= timestamp())
+	  { 
+	    cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning: (!cacheit->write)==False ..." << endl;
+	  }
       }
 #endif
       } // if (cacheit)
 #ifdef DD_DEBUG_DCACHE_VERB2
       else
-      { 
-    if (DD_DEBUG_TIMESTAMP <= timestamp())
-    {
-      cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning: no cacheit ..." << endl;
-    }
-      }
+	{ 
+	  if (DD_DEBUG_TIMESTAMP <= timestamp())
+	    {
+	      cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning: no cacheit ..." << endl;
+	    }
+	}
 #endif
     } // if(writeBuffer.size != 0)
 #ifdef DD_DEBUG_DCACHE_VERB2
     else
     { 
-    if (DD_DEBUG_TIMESTAMP <= timestamp())
-    {
-      cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning writeBuffer.size == 0 ..." << endl;
-    }
+      if (DD_DEBUG_TIMESTAMP <= timestamp())
+      {
+	cerr <<"["<<this->name()<<"("<<timestamp()<<")]: Warning writeBuffer.size == 0 ..." << endl;
+      }
     }
 #endif
   }
@@ -2396,8 +2396,11 @@ class CacheWB : public module
 		//#ifdef DEBUG_CACHEWB
 		/* check that the addresses match */
 		if((cacheit->address & (~(address_t)(nLineSize - 1))) != writeBuffer[cfg].address)
-		  { cerr << "[TS("<<timestamp()<<")]Error(" << name() << "): the cache line request address does not correspond with the address in the "
+		  { cerr << "[CFG::"<<cfg<<"][TS("<<timestamp()<<")]Error(" << name() << "): the cache line request address does not correspond with the address in the "
 			 << "writebuffer" << endl;
+		  cerr << "\t\t\tstate = " << cacheit->state
+		       << " (" << hexa(cacheit->address & (~(address_t)(nLineSize - 1)))
+		       << " -- " << hexa(writeBuffer[cfg].address) << ")" << endl;
 		  cerr << *this;
 		  exit(-1);
 		  }

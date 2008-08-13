@@ -64,7 +64,7 @@ const int nProg = 1;
 const int Snooping = 1;
 
 // BUS parameters
-const int BUS_BufferSize = 3;
+const int BUS_BufferSize = 1;
 const int BUS_RequestWidth = 32;
 //const int BUS_RequestWidth = 64;
 //const int BUS_Snooping = 0;
