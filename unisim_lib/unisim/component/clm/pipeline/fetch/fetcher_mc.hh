@@ -306,6 +306,7 @@ public:
 		  stall_counter[cfg] = 0;
 
 		  in_flight_branches[cfg] = 0;
+		  is_terminated[cfg] = false;
 		}
 		/* statistics */
 
@@ -364,7 +365,10 @@ public:
 		*/
 		//		latex_bottom_ports.push_back(&outFlush);
 	}
-
+  void set_terminated(int cfg)
+  {
+    is_terminated[cfg] = true;
+  }
 
   void onFlushData()
   {
@@ -1881,7 +1885,7 @@ public:
 	  //		if(!waiting_instr_cache_accept)
 	  //	{
 			/* Do not continue fetch if there is a BTB miss or a RAS miss */
-	  if(!btb_miss[cfg] && !ras_miss[cfg] && !syscall_in_pipeline[cfg])
+	  if(!btb_miss[cfg] && !ras_miss[cfg] && !syscall_in_pipeline[cfg] && !is_terminated[cfg])
 	    {
 	      /* Do not continue if we already reach the maximum number of pending instruction cache requests */
 	      if(pending_instr_cache_requests[cfg] < MaxPendingRequests)
@@ -1989,7 +1993,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 #endif
 	    }
 	  if (previous_cia[cfg] == seq_cia[cfg]) { stall_counter[cfg]++; } else { stall_counter[cfg]=0; }
-	  if (stall_counter[cfg] > 50000) { cerr << "[Config::"<< cfg <<"]Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
+	  if ((!is_terminated) && (stall_counter[cfg] > 50000)) { cerr << "[Config::"<< cfg <<"]Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
 	  previous_cia[cfg] = seq_cia[cfg];
 
 	  } // End of foreach Config
@@ -2142,6 +2146,8 @@ private:
         bool syscall_in_pipeline[nConfig];
   //  bool stall_dueto_unknown_target_address;
         int stall_counter[nConfig];
+  bool is_terminated[nConfig];
+  
 };
 
 } // end of namespace fetch

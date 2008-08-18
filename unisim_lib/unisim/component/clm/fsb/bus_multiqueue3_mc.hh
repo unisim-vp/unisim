@@ -707,7 +707,7 @@ INFO << "\e[1;31mC" << i << "\e[0m: " << bl.req << endl;
           }
         }
         for(int i=0;i<nCPU;i++)
-        { //outSharedCPU[i].data.nothing(); caches no more have a shared bit input
+	{ //outSharedCPU[i].data.nothing(); caches no more have a shared bit input
           inInstSharedCPU.accept[i] = false;
           inDataSharedCPU.accept[i] = false;
         }
@@ -727,12 +727,13 @@ INFO << "\e[1;31mC" << i << "\e[0m: " << bl.req << endl;
 
       for(int i=0;i<nCPU;i++)
       { if(i!=head->sender_id)
-        { if(!inDataSharedCPU.data[i].something() )
+        { if(!inDataSharedCPU.data[i].something() || !inInstSharedCPU.data[i].something())
           { ERROR << "Every inSharedCPU should be someting when data is sent" << endl;
 	  cerr << " i=" << i << "    " << endl;
 	  cerr << *head << endl;
             exit(1);
           }
+          is_shared |= inInstSharedCPU.data[i];
           is_shared |= inDataSharedCPU.data[i];
         }
       }

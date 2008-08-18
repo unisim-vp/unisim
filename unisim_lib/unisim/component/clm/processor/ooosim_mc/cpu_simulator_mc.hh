@@ -472,6 +472,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     for(int cfg=0; cfg<nConfig; cfg++)
     {
       is_finished &= check_emulator[cfg]->program_ended;
+      if(check_emulator[cfg]->program_ended) fetch->set_terminated(cfg);
     }
     //is_finished = check_emulator[0]->program_ended;
     if (is_finished)

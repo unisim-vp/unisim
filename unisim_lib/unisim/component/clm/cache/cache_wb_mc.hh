@@ -2007,17 +2007,17 @@ class CacheWB : public module
         }
       }
     }
+#ifdef DEBUG_CACHEWB
     else
     {
-#ifdef DEBUG_CACHEWB
       /* if an accept from the memory system that was received that was not expected, error */
       if(outMEM.accept[cfg])
       { cerr << "Error(" << name() << "): an accept was received from the memory system that was not expected" << endl;
         cerr << *this;
         exit(-1);
       }
-#endif
     }
+#endif
     }//Endof foreach Config.
   }
 
