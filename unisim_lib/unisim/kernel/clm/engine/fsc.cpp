@@ -1862,35 +1862,55 @@ void fsc_phase()
   if(fsc_simcontext::debug)
     cerr << "FastSysC: Returning from fsc_start" << endl;
 #endif
-#ifdef FFSC_STAT
 
+#ifdef FFSC_STAT
+  // DD
+  static unsigned long long total_time = 0;//stop - start;
+  //  static unsigned long long total_process_time = 0;//0;
+
+  //  if(unisim_terminated)
+  //  {
   unsigned long long stop;
   RDTSC(stop);
-  cout << "c = " << c << endl;
-  cout << "nw = " << nw << endl;
+  //  cout << "c = " << c << endl;
+  //  cout << "nw = " << nw << endl;
 
-  ListPointer<fsc_process> process;
-  for(process = fsc_process::process_list.Begin(); process; process++)
+  total_time += stop - start;
+
+  if(unisim_terminated)
   {
-    if(!process->port_list.Empty())
-    {
-      cout << process->mod->Name() << "::" << process->Name();
-      for(i = 0; i < 32; i++)
+    ListPointer<fsc_process> process;
+
+    for(process = fsc_process::process_list.Begin(); process; process++)
       {
-        cout << " " << simc->ncycles[32 * process->GetId() + i];
+	if(!process->port_list.Empty())
+	  {
+	    cout << process->mod->Name() << "::" << process->Name();
+	    for(i = 0; i < 32; i++)
+	      {
+		cout << " " << simc->ncycles[32 * process->GetId() + i];
+	      }
+	    cout << endl;
+	  }
       }
-      cout << endl;
-    }
+    //  }
+
+  //  unsigned long long total_time = stop - start;
+    unsigned long long total_process_time = 0;
+
+    //  total_process_time += 0;
+    for(process = fsc_process::process_list.Begin(); process; process++)
+      total_process_time += process->time;
+    for(process = fsc_process::process_list.Begin(); process; process++)
+      {
+	cout << process->mod->Name() << "::" << process->Name() << "\t\t\t t: " << process->time << "\t\t\t" << (((double) process->time * 100.0) / (double) total_process_time) << " %" << endl;
+      }
+    cout << "FastSysC scheduler : " << (((double)(total_time - total_process_time) * 100.0)/ (double) total_time) << " %" << endl;
+    cout << " Total time         : " << total_time << endl;
+    cout << " Total process time : " << total_process_time << endl;
+    cout << " Scheduler time     : " << total_time - total_process_time << endl;
   }
-  unsigned long long total_time = stop - start;
-  unsigned long long total_process_time = 0;
-  for(process = fsc_process::process_list.Begin(); process; process++)
-    total_process_time += process->time;
-  for(process = fsc_process::process_list.Begin(); process; process++)
-  {
-    cout << process->mod->Name() << "::" << process->Name() << " : " << (((double) process->time * 100.0) / (double) total_process_time) << " %" << endl;
-  }
-  cout << "FastSysC scheduler : " << (((double)(total_time - total_process_time) * 100.0)/ (double) total_time) << " %" << endl;
+
 #endif
 }
 
