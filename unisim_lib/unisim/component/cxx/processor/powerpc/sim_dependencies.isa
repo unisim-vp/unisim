@@ -380,6 +380,7 @@ instr_to_ra_rb.initialize_operands = {
 group instr_crfd_ra(cmpi, cmpli)
 instr_crfd_ra.initialize_operands = {
   INPUT(GPR_T, ra);
+  INPUT(XER_T,0);
 //  OUTPUT(CRF_T, crfD);
   OUTPUT(CR_T, crfD);
 }
@@ -748,6 +749,7 @@ group instr_crfd_ra_rb(cmp, cmpl)
 instr_crfd_ra_rb.initialize_operands = {
   INPUT(GPR_T, ra);
   INPUT(GPR_T, rb);
+  INPUT(XER_T,0);
 //  OUTPUT(CRF_T, crfD);
   OUTPUT(CR_T, crfD);
 }
