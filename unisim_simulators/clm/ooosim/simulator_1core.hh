@@ -133,9 +133,9 @@
 #endif
 
 // --------- TO USED !!!
-#define DD_CHECK_WITH_EMULATOR
+//#define DD_CHECK_WITH_EMULATOR
 //#define CHECK_REGISTER_STEP 10000000
-#define CHECK_REGISTER_STEP 1
+//#define CHECK_REGISTER_STEP 1
 
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
@@ -146,7 +146,7 @@
 
 #include <unisim/component/clm/cache/cache_wb.hh>
 #include <unisim/component/clm/fsb/bus.hh>
-#include <unisim/component/clm/memory/dram/dram.hh>
+#include <unisim/component/clm/memory/dram/dram2.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
 #include <unisim/kernel/service/service.hh>
 
