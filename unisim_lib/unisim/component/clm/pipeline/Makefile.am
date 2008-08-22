@@ -9,6 +9,8 @@ nobase_include_HEADERS = \
 	commit/reorder_buffer_mc.hh \
 	common/simple_arbiter.hh \
 	common/simple_arbiter_mc.hh \
+	common/data_bus_arbiter_mc.hh \
+	common/simple_arbiter_onetoall_mc.hh \
 	decode/allocator_renamer.hh \
 	decode/allocator_renamer_mc.hh \
 	decode/dispatcher.hh \
