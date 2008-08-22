@@ -7,6 +7,7 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/memory
 nobase_include_HEADERS = \
 	dram/dram_components.hh \
 	dram/dram.hh \
+	dram/dram2.hh \
 	mem_common.h \
 	memory_container.hh
 

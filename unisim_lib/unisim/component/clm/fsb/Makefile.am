@@ -6,7 +6,9 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/fsb
 
 include_HEADERS = \
 	bus.hh \
-	bus_multiqueue.hh
+	bus_multiqueue.hh \
+	bus_multiqueue2_mc.hh \
+	bus_multiqueue3_mc.hh
 
 dist_share_DATA = COPYING
 
