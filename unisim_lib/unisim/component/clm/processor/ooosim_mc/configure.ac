@@ -45,8 +45,7 @@ AC_PROG_INSTALL
 AC_CONFIG_FILES([Makefile])
 
 #UNISIM_CONFIG_SUBDIR(unisim-component-cxx, cxx)
-UNISIM_CONFIG_SUBDIR(unisim-component-clm-processor-ooosim, ooosim)
-UNISIM_CONFIG_SUBDIR(unisim-component-clm-processor-ooosim_mc, ooosim_mc)
+#UNISIM_CONFIG_SUBDIR(unisim-component-clm, clm)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

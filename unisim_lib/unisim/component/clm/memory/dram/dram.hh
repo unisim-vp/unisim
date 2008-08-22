@@ -1039,7 +1039,7 @@ INFO << "WriteMemory 0x" << hex << addr << dec << "," << size << endl;
             }
             else
             { ERROR << "L2 cache did not accept a response (" << *entry << ")" << endl;
-        //      exit(-1);
+	    //      exit(-1);
             }
           }
           break;
