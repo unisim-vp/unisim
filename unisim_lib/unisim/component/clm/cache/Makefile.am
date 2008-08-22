@@ -7,6 +7,7 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/cache
 include_HEADERS = \
 	cache_coherency_protocol.hh \
 	cache_common.hh \
+	cache_common_mc.hh \
 	cache_container_counter.hh \
 	cache_container.hh \
 	cache_wb.hh \
