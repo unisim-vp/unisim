@@ -26,7 +26,7 @@ nobase_include_HEADERS = \
 	fetch/return_address_stack.hh \
 	issue/register_file.hh \
 	issue/register_file_mc.hh \
-	issue/scheduler.hh
+	issue/scheduler.hh \
 	issue/scheduler_mc.hh
 
 dist_share_DATA = COPYING
