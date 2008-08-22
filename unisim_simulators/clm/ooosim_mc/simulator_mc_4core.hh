@@ -160,7 +160,8 @@
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
 // Simulator paramters
-#include <unisim/component/clm/processor/ooosim_mc/parameters_mc_4core.hh>
+//#include <unisim/component/clm/processor/ooosim_mc/parameters_mc_4core.hh>
+#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 

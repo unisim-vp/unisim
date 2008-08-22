@@ -54,6 +54,7 @@
 //#define DD_DEBUG_TIMESTAMP 3552229
 //#define DD_DEBUG_TIMESTAMP 0
 //#define DD_DEBUG_TIMESTAMP 1000
+//#define DD_DEBUG_TIMESTAMP 8900
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -74,10 +75,10 @@
 #define DD_DEBUG_PIPELINE_VERB2
 //#define DD_DEBUG_REORDER_VERB100
 //#define DD_DEBUG_FETCH_VERB100
-//#define DD_DEBUG_DCACHE_VERB101
-//#define DD_DEBUG_DCACHE_VERB102
+#define DD_DEBUG_DCACHE_VERB101
+#define DD_DEBUG_DCACHE_VERB102
 
-//#define DD_DEBUG_BUS_MQ2_VERB100
+#define DD_DEBUG_BUS_MQ2_VERB100
 //#define DD_DEBUG_DCACHE_VERB2
 
 //#define DEBUG_CACHEWB
@@ -152,7 +153,8 @@
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
 // Simulator paramters
-#include <unisim/component/clm/processor/ooosim_mc/parameters_mc_2core.hh>
+//#include <unisim/component/clm/processor/ooosim_mc/parameters_mc_2core.hh>
+#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 
