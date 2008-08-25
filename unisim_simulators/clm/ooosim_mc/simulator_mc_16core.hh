@@ -40,7 +40,7 @@
 
 // -------- COMMANDS ------------------------------
 #define USE_REF
-//#define DD_UNSAFE_OPTIMIZATION
+#define DD_UNSAFE_OPTIMIZATION
 //#define STOP
 // Must be define in kernel files //#define DEBUG_FSC
 // --------- CYCLE FOR DEBUGING -----------------------------
