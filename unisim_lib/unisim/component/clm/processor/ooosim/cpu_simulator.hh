@@ -195,7 +195,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
   /**
    * \brief Creates a new OooSimCpu
    */
-  OooSimCpu(char *name, Object *parent=0) : module(name)
+  OooSimCpu(const char *name, Object *parent=0) : module(name)
 					,Object(name, parent)
     //			  ,MI_Client(name, this)
     //			  ,MI_Service(name, this)
@@ -561,6 +561,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 	      exit(-1);
 	    }
 #endif
+#ifdef DD_CHECK_WITH_EMULATOR
 	  if ( (timestamp()%CHECK_REGISTER_STEP) == 0 )
 	    {
 	      if (!rob->syscall_retired)
@@ -568,7 +569,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		  Check();
 		}
 	    }
-
+#endif
 	  if (rob->syscall_retired)
 	    {
 	      RepaireAfterSyscall();

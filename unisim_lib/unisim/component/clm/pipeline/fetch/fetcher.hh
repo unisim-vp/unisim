@@ -143,7 +143,7 @@ public:
 template <class T, int nSources, int Width, int LineSize, int nCPUDataPathSize, int InstructionQueueSize, int InstructionSize, int BHT_Size, int BHT_nBits, int BHT_nHistorySize, int BTB_Size, int BTB_Associativity, int RAS_Size, int RetireWidth, int WriteBackWidth, int MaxPendingRequests, int MaxBranches>
 class Fetcher : public module
 //, public StatisticService
-                , public Client<StatisticReporting>
+//                , public Client<StatisticReporting>
 //              , public Service<StatisticReportingControl>
 {
 public:
@@ -151,7 +151,7 @@ public:
    * Service ports 
    **************************************/
   // Nothing...
-  ServiceImport<StatisticReporting> statistic_reporting_import;
+  //  ServiceImport<StatisticReporting> statistic_reporting_import;
 
   /**************************************
    * Module Statistics
@@ -212,9 +212,9 @@ public:
 	//DD	Fetcher(const char *name, endianess_t endianess, Emulator *emulator) :
 	Fetcher(const char *name, endianess_t endianess, CPUSim *emulator) :
                module(name)
-	       , Object(name)
-	       , Client<StatisticReporting>(name, this)
-	       , statistic_reporting_import("statistic", this)
+	  //	       , Object(name)
+	  //	       , Client<StatisticReporting>(name, this)
+	  //	       , statistic_reporting_import("statistic", this)
 	  //	  ,StatisticService(name, this)
 	{
 		int i;
