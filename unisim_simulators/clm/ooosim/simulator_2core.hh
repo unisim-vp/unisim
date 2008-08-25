@@ -133,9 +133,9 @@
 #endif
 
 // --------- TO USED !!!
-#define DD_CHECK_WITH_EMULATOR
+//#define DD_CHECK_WITH_EMULATOR
 //#define CHECK_REGISTER_STEP 10000000
-#define CHECK_REGISTER_STEP 1
+//#define CHECK_REGISTER_STEP 1
 
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
@@ -724,7 +724,7 @@ public:
 	for(int cfg=0; cfg<nConfig; cfg++)
 	  {
 	    (*linux_loader[cfg])["endianess"] = E_BIG_ENDIAN;
-	    (*linux_loader[cfg])["stack-base"] = 0xa0000000+cfg*0x10000000;
+	    (*linux_loader[cfg])["stack-base"] = 0xc0000000+cfg*0x01000000;
 	    (*linux_loader[cfg])["max-environ"] = 16 * 1024;
 	    //	(*linux_loader)["argc"] = sim_argc;
 	    (*linux_loader[cfg])["argc"] = sim_argc[cfg];//command_line.count();
