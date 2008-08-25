@@ -364,7 +364,10 @@ VerbosePrWrite() {
 	
 #ifdef SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE;
+#ifdef SOCLIB_DEBUG
+	return true;
+#endif
+	return false;
 	
 #else // SOCLIB
 	
@@ -381,8 +384,10 @@ TCM<CONFIG, DATA_TCM> ::
 VerbosePrRead() {
 	
 #ifdef SOCLIB
-	
-	return CONFIG::DEBUG_ENABLE;
+#ifdef SOCLIB_DEBUG
+	return true;
+#endif
+	return false;
 	
 #else // SOCLIB
 	
@@ -400,7 +405,10 @@ VerboseDebugWrite() {
 	
 #ifdef SOCLIB
 	
-	return CONFIG::DEBUG_ENABLE;
+#ifdef SOCLIB_DEBUG
+	return true;
+#endif
+	return false;
 	
 #else // SOCLIB
 	

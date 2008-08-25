@@ -43,7 +43,7 @@
 #include <inttypes.h>
 #include <map>
 
-#define SOCLIB_DEBUG
+// #define SOCLIB_DEBUG
 
 namespace unisim {
 namespace component {
@@ -631,7 +631,9 @@ StepCycle() {
 				external_memory_request = false;
 				ReadInsn(fetchQueue->GetFetchAddress(), insn);
 				if(!external_memory_request) {
+#ifdef SOCLIB_DEBUG
 					cerr << "    - instruction found in internal memory" << endl;
+#endif
 					insn = BigEndian2Host(insn);
 					fetchQueue->SetThumbEncoding(insn);
 					fetchQueue->SetRequested(true);
@@ -647,7 +649,9 @@ StepCycle() {
 				external_memory_request = false;
 				ReadInsn(fetchQueue->GetFetchAddress(), insn);
 				if(!external_memory_request) {
+#ifdef SOCLIB_DEBUG
 					cerr << "   - instruction found in internal memory" << endl;
+#endif
 					insn = BigEndian2Host(insn);
 					fetchQueue->SetArm32Encoding(insn);
 					fetchQueue->SetRequested(true);
@@ -784,11 +788,22 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 	addr = memop->GetAddress();
 	switch(memop->GetType()) {
 	case MemoryOp<CONFIG>::READ:
+#ifdef __ARM_ADDRESS_MUNGING__
+		switch(memop->GetSize()) {
+		case 1:
+			addr = addr ^ munged_address_mask8;
+			break;
+		case 2:
+			addr = addr ^ munged_address_mask16;
+			break;
+		}
+#endif
 	case MemoryOp<CONFIG>::READ_TO_PC_UPDATE_T:
 	case MemoryOp<CONFIG>::PREFETCH:
 		is_read = true;
 		break;
 	case MemoryOp<CONFIG>::READ_TO_PC:
+		is_read = true;
 		size = 4;
 		break;
 	case MemoryOp<CONFIG>::WRITE:
@@ -796,9 +811,14 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 		data = memop->GetWriteValue();
 		switch(size) {
 		case 1:
-			// do nothing
+#ifdef __ARM_ADDRESS_MUNGING__
+			addr = addr ^ munged_address_mask8;
+#endif
 			break;
 		case 2:
+#ifdef __ARM_ADDRESS_MUNGING__
+			addr = addr ^ munged_address_mask16;
+#endif
 			hdata = data;
 			data = Host2BigEndian(hdata);
 			break;
@@ -825,6 +845,8 @@ PerformLoadStoreAccesses() {
 	external_memory_request = false;
 	// while the lsQueue is not empty process entries
 	MemoryOp<CONFIG> *memop = lsQueue.front();
+	// if the request has been already handled, the IsExternal method should return true
+	if(memop->IsExternal()) return;
 	// by default we set a memory request as internal
 	switch(memop->GetType()) {
 	case MemoryOp<CONFIG>::PREFETCH:
@@ -883,14 +905,48 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 	uint8_t val8;
 	uint16_t val16;
 	uint32_t val32;
-	
+
+//	if(address & UINT32_C(0xffff0000) == UINT32_C(0xc0200000)) 
+#if 0
+	{
+		uint32_t new_addr;
+		uint32_t munged;
+		uint32_t value;
+		cerr << "++ write" << endl;
+		cerr << " - size = " << memop->GetSize() << endl;
+		cerr << " - address        = 0x" << hex << address << dec << endl;
+		switch(memop->GetSize()) {
+		case 1:
+			value = (uint8_t)memop->GetWriteValue();
+			new_addr = address ^ munged_address_mask8;
+			munged = munged_address_mask8;
+			break;
+		case 2:
+			value = (uint32_t)memop->GetWriteValue();
+			new_addr = address ^ munged_address_mask16;
+			munged = munged_address_mask16;
+			break;
+		case 4:
+			value = (uint32_t)memop->GetWriteValue();
+			new_addr = address;
+			munged = 0;
+			break;
+		}
+		cerr << " - munged_address = 0x" << hex << new_addr << dec << endl;
+		cerr << " - munged_value   = 0x" << hex << munged << dec << endl;
+		cerr << " - value = 0x" << hex << value << dec << " (" << value << ")" << endl;
+	}
+#endif 
 	if(CONFIG::MODEL == ARM7TDMI) {
 		external_memory_request = true;
 		return;
 	}
 	switch(memop->GetSize()) {
 	case 1:
+#ifdef __ARM_ADDRESS_MUNGING__
 		address = address ^ munged_address_mask8;
+#endif
+		MemProfile(false, address, 1);
 
 		val8 = (uint8_t)memop->GetWriteValue();
 		if(CONFIG::MODEL == ARM966E_S) {
@@ -901,13 +957,17 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 		val16 = (uint16_t)memop->GetWriteValue();
 		val16 = Host2BigEndian(val16);
 
+#ifdef __ARM_ADDRESS_MUNGING__
 		address = address ^ munged_address_mask16;
+#endif
+		MemProfile(false, address, 2);
 
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrWrite(address, (uint8_t *)&val16, 2);
 		}
 		break;
 	case 4:
+		MemProfile(false, address, 4);
 		val32 = memop->GetWriteValue();
 		val32 = Host2BigEndian(val32);
 
@@ -937,7 +997,10 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 	
 	switch(size) {
 	case 1:
+#ifdef __ARM_ADDRESS_MUNGING__
 		read_address = read_address ^ munged_address_mask8;
+#endif
+		MemProfile(true, read_address, 1);
 
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrRead(read_address, &val8, 1);
@@ -950,7 +1013,10 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 		break;
 	case 2:
 		/* NOTE: 16bits reads are always aligned */
+#ifdef __ARM_ADDRESS_MUNGING__
 		read_address = read_address ^ munged_address_mask16;
+#endif
+		MemProfile(true, read_address, 2);
 
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrRead(read_address, (uint8_t *)&val16, 2);
@@ -965,6 +1031,7 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 			value = val16;
 		break;
 	case 4:
+		MemProfile(true, read_address, 1);
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrRead(read_address, (uint8_t *)&val32, 4);
 			if(external_memory_request) return;
@@ -1399,6 +1466,34 @@ void
 CPU<CONFIG> ::
 SetDCacheInfo( size_t line_size, size_t assoc, size_t n_lines ) {
 	// TODO
+}
+
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+MemProfile(bool read, uint32_t addr, uint32_t size) {
+	uint32_t cur_addr = addr;
+	for(uint32_t i = 0; i < size; i++) {
+		map<uint32_t, mem_profile_t *>::iterator iter;
+		cur_addr = addr + i;
+		iter = mem_profile.find(cur_addr);
+		if(iter == mem_profile.end()) {
+			mem_profile_t *prof = new mem_profile_t();
+			if(read) {
+				prof->num_read = 1;
+				prof->num_write = 0;
+			} else {
+				prof->num_read = 0;
+				prof->num_write = 1;
+			}
+			mem_profile[cur_addr] = prof;
+		} else {
+			if(read)
+				iter->second->num_read++;
+			else
+				iter->second->num_write++;
+		}
+	}
 }
 
 } // end of namespace arm

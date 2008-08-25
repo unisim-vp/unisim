@@ -204,13 +204,19 @@ template<class CONFIG>
 CPU<CONFIG> ::
 ~CPU() {
 #ifdef PROFILE_ARM966
-	map<uint32_t, insn_profile_t *>::iterator iter;
+	map<uint32_t, insn_profile_t *>::iterator i_iter;
+	map<uint32_t, mem_profile_t *>::iterator m_iter;
 
 	cerr << "Execution trace =============================================================== START" << endl;
-	for(iter = insn_profile.begin(); iter != insn_profile.end(); iter++) {
-		cerr << "0x" << hex << iter->first << dec << " " << iter->second->ex_time << " " << iter->second->num_times_executed << endl;
+	for(i_iter = insn_profile.begin(); i_iter != insn_profile.end(); i_iter++) {
+		cerr << "0x" << hex << i_iter->first << dec << " " << i_iter->second->ex_time << " " << i_iter->second->num_times_executed << endl;
 	}
 	cerr << "Execution trace ===============================================================   END" << endl;
+	cerr << "Memory trace =============================================================== START" << endl;
+	for(m_iter = mem_profile.begin(); m_iter != mem_profile.end(); m_iter++) {
+		cerr << "0x" << hex << m_iter->first << dec << " " << m_iter->second->num_read << " " << m_iter->second->num_write << endl;
+	}
+	cerr << "Memory trace ===============================================================   END" << endl;
 #endif // PROFILE_ARM966
 }
 

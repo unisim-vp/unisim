@@ -126,6 +126,11 @@ public:
 	uint64_t ex_time;
 	uint64_t num_times_executed;
 };
+class mem_profile_t {
+public:
+	uint64_t num_read;
+	uint64_t num_write;
+};
 #endif // PROFILE_ARM966
 
 #else
@@ -1304,6 +1309,9 @@ protected:
 #ifdef PROFILE_ARM966
 private:
 	map<uint32_t, insn_profile_t *> insn_profile;
+	map<uint32_t, mem_profile_t *> mem_profile;
+
+	void MemProfile(bool read, uint32_t addr, uint32_t size);
 #endif // PROFILE_ARM966
 #endif // SOCLIB
 };
