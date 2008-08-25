@@ -270,7 +270,8 @@ class CacheWB : public module
 //stf      sensitive_method(on_MEM_data) << outCPU.accept;
       sensitive_method(on_shared_accept) << outSharedMEM.accept;
     }
-    sensitive_method(on_MEM_accept) << outMEM.accept;
+    // DD: for Snooping
+    sensitive_method(on_MEM_accept) << outMEM.accept << inMEM.enable;
     
     // Module state initialization
     accesses = accesses_read = accesses_write = accesses_prefetch = accesses_evict = 0;
@@ -1290,7 +1291,7 @@ class CacheWB : public module
    * Previously called CheckMemAccept()
    */
   void on_MEM_accept()
-  { if(outMEM.accept.known())
+  { if(outMEM.accept.known() && inMEM.enable.known())
     {
 #ifdef DD_DEBUG_DCACHE_VERB2
     if (DD_DEBUG_TIMESTAMP < timestamp())
@@ -1299,7 +1300,49 @@ class CacheWB : public module
       //      else cerr << "\033[31mCACHE: MEM didn't accept the previous request !!!!!!!!!!!! \033[0m" << endl; 
     }
 #endif
-      outMEM.enable = outMEM.accept;
+    // DD : for Snooping
+    //      outMEM.enable = outMEM.accept;
+	// DD: before enabling outMEM data we have to check if a another processor just answer the same request.
+	if (!inMEM.enable)
+	{
+	  outMEM.enable = outMEM.accept;
+	}
+	else
+	{
+	  // We check outMEM.accept is true to be sure that outMEMdata is not an older value sent previous cylce.
+	  if (outMEM.accept)
+	  {
+	    // Make sure the incoming data is a read to be handled by the snooper
+	    memreq<INSTRUCTION, nMemtoCacheDataPathSize> mrin = inMEM.data;
+	    memreq<INSTRUCTION, nMemtoCacheDataPathSize> mrout = outMEM.data;
+	    // DD...
+	    // If the answer is for another cache but if we are currently trying to answer to
+	    // this cache we have to discard this answer.
+	    if ( 
+		(mrin.message_type==memreq_types::type_ANSWER) && // is in req. an answer ?
+		(mrin.req_sender == mrout.req_sender) &&          // is in req_sender equal to out req_sender ?
+		(mrin.address == mrout.address)                   // are req. on the same addresses ?
+		)
+	    {
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+	      if (DD_DEBUG_TIMESTAMP <= timestamp())
+		{
+		  cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Not ENABLING outMEM because another cache is answering !!!!" << mrin << endl;
+		}
+#endif		    
+	      outMEM.enable = false;	
+	    }
+	    else
+	    {
+	      outMEM.enable = outMEM.accept;
+	    }
+	  }
+	  else
+	  {
+	    outMEM.enable = outMEM.accept;
+	  }
+	}
+    //
     }
   }
 
