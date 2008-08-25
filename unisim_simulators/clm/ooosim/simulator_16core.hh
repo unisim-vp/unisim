@@ -133,9 +133,9 @@
 #endif
 
 // --------- TO USED !!!
-#define DD_CHECK_WITH_EMULATOR
+//#define DD_CHECK_WITH_EMULATOR
 //#define CHECK_REGISTER_STEP 10000000
-#define CHECK_REGISTER_STEP 1
+//#define CHECK_REGISTER_STEP 1
 
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
@@ -259,7 +259,7 @@ using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
-const int nConfig = 2;
+const int nConfig = 16;
 
 
 class GeneratedSimulator : public Simulator{

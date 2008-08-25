@@ -8,7 +8,7 @@
 #include <stdio.h>
 //#include <getopt.h>
 
-#include "simulator_2core.hh"
+#include "simulator_32core.hh"
 
 int main(int argc, char **argv, char **envp)
 { 
