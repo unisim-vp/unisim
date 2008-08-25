@@ -540,27 +540,6 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     //          if (instruction_wb->cia != cpu->GetCIA())
     
     //#ifdef DONT_CHECK_EACH_CYCLE 
-#if 0
-    if (speculative_cpu_state->GetCIA() != check_emulator->GetCIA())
-          {
-            cerr << "!! =================== Emulator disagrees with simulator ! ========================" << endl;
-            cerr << "!! SIM CIA: " << hexa(speculative_cpu_state->GetCIA()) << " =\\= ";
-            //            cerr << hexa(emulator->ReadCIA()) << " :EMUL CIA" << endl;
-            //            cerr << hexa(cpu->GetCIA()) << " :EMUL CIA" << endl;
-            cerr << hexa(check_emulator->GetCIA()) << " :EMUL CIA" << endl;
-            cerr << "!! ================================================================================" << endl;
-            exit(-1);
-          }
-      
-	  // Check Registers ...
-	  if (!check_emulator->compare_registers(speculative_cpu_state))
-	    { 
-	      //      cerr << pipeline << endl;
-	      DumpRegisters(cerr);
-	      cerr << "Timestamp: " << timestamp() << endl;
-	      exit(-1);
-	    }
-#endif
 #ifdef DD_CHECK_WITH_EMULATOR
 	  if ( (timestamp()%CHECK_REGISTER_STEP) == 0 )
 	    {
@@ -570,7 +549,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		}
 	    }
 #endif
-	  if (rob->syscall_retired)
+	  if (rob->syscall_retired || timestamp() == 0)
 	    {
 	      RepaireAfterSyscall();
 	      //cerr << "(" << timestamp() << ") REPAIRE AFTER SYSCALL !!!" << endl;
