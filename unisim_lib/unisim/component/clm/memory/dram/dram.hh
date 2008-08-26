@@ -1038,8 +1038,9 @@ INFO << "WriteMemory 0x" << hex << addr << dec << "," << size << endl;
               if(entry->read >= nCacheLineSize) dataBusOwner = 0;
             }
             else
-            { ERROR << "L2 cache did not accept a response (" << *entry << ")" << endl;
-	    //      exit(-1);
+            {
+	      // ERROR << "L2 cache did not accept a response (" << *entry << ")" << endl;
+	      //      exit(-1);
             }
           }
           break;
