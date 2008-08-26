@@ -145,7 +145,7 @@
 
 
 #include <unisim/component/clm/cache/cache_wb.hh>
-#include <unisim/component/clm/fsb/bus.hh>
+#include <unisim/component/clm/fsb/bus_multiqueue3.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
 #include <unisim/kernel/service/service.hh>
@@ -172,7 +172,7 @@
 */
 
 // Using components
-using unisim::component::clm::fsb::Bus;
+using unisim::component::clm::fsb::BusMultiQueue;
 using unisim::component::clm::memory::dram::DRAM;
 using unisim::component::clm::cache::CacheWB;
 using unisim::component::clm::processor::ooosim::OooSimCpu;
@@ -280,7 +280,7 @@ public:
     #define Snooping 0
   */
   //  typedef Bus<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
-  typedef Bus<InstructionPtr,2*nConfig,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
+  typedef BusMultiQueue<InstructionPtr,2*nConfig,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
   /*
   // cDRAM
 #define INSTRUCTION Instruction
