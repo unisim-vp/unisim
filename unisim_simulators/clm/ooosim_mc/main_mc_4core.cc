@@ -137,7 +137,7 @@ int main(int argc, char **argv, char **envp)
   signal(SIGTSTP,GeneratedSimulator::at_ctrlz);
 #endif
   // Debuging kernel engine
-  fsc_debug(0,100);
+  //fsc_debug(0,100);
 
   while(!unisim_terminated)
   { 
