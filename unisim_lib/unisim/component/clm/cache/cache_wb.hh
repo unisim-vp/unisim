@@ -2606,7 +2606,58 @@ INFO << "Receiving from C:   " << mr << endl;
     memreq<INSTRUCTION, nMemtoCacheDataPathSize> mr = inMEM.data;
     if(mr.message_type==memreq_types::type_ANSWER)
     { // Write are handled by UpdateWriteBuffer
-      return;
+      //      return;
+	// DD...
+	// If the answer is for another cache but if we are currently trying to answer to
+	// this cache we have to discard this answer.
+	QueuePointer<CachePipeStage<INSTRUCTION, nLineSize, nStages, nCPUtoCacheDataPathSize>, nStages> cacheit = cacheSnoopQueue.SeekAtHead();
+	if (cacheit) 
+	  {
+	    if (cacheit->req_sender == mr.req_sender)
+	      {
+		if (cacheit->address == mr.address)
+		  {
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+	   if (DD_DEBUG_TIMESTAMP <= timestamp())
+	     {
+	       cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Removing request from Snooping queue !!!!" << mr << " from CPU" << endl;
+	     }
+#endif		    
+ 		    cacheSnoopQueue.RemoveHead();
+		    
+		  }
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+		else
+		  {
+		    if (DD_DEBUG_TIMESTAMP <= timestamp())
+		      {
+			cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Not removing because addresses are different !!!!" << mr << " from CPU" << endl;
+		      }
+		  }
+#endif		   
+	      }
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+	    else
+	      {
+		if (DD_DEBUG_TIMESTAMP <= timestamp())
+		  {
+		    cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Not removing because req_sender are different !!!!" << mr << " from CPU" << endl;
+		  }
+	      }
+#endif		    
+	  }
+	if (requestBuffer.req_sender == mr.req_sender)
+	  if (requestBuffer.address == mr.address)
+	    {
+	      requestBuffer.ready = false;
+#ifdef DD_DEBUG_DCACHE_SNOOPING_VERB100
+	   if (DD_DEBUG_TIMESTAMP <= timestamp())
+	     {
+	       cerr << "[Cnonfig::"<<cfg<<"][DD_DEBUG_DCACHE("<< this->name() <<")] SNOOPING Removing request from RequestBuffer !!!!" << endl;
+	     }
+#endif		    
+	    }
+
     }
 
       if(mr.command == memreq_types::cmd_FLUSH)
