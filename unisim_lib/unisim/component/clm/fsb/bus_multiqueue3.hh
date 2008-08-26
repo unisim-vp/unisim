@@ -96,9 +96,13 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
       return os;
     }
   };
-  bool sent_cpu_data;
+  //  bool sent_cpu_data;
+  bool sent_cpu_req_data;
+  bool sent_cpu_ans_data;
   bool sent_mem_data;
-  bool enabled_cpu_data;
+  //  bool enabled_cpu_data;
+  bool enabled_cpu_req_data;
+  bool enabled_cpu_ans_data;
   bool enabled_mem_data;
 
  public:
@@ -125,7 +129,9 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
   /* State Information */
   /*********************/
 
-  Queue <BufferLine,BufferSize> cpu_queue;  ///< Bufferized mesages to be sent by the bus from the CPUs
+  //  Queue <BufferLine,BufferSize> cpu_queue;  ///< Bufferized mesages to be sent by the bus from the CPUs
+  Queue <BufferLine,BufferSize> cpu_req_queue;  ///< Bufferized mesages to be sent by the bus from the CPUs
+  Queue <BufferLine,BufferSize> cpu_ans_queue;  ///< Bufferized mesages to be sent by the bus from the CPUs
   Queue <BufferLine,BufferSize> mem_queue;  ///< Bufferized mesages to be sent by the bus from the MEMs
   int cpu_round_robin_index;                ///< Index for the round robin algorithm on the CPU side
 
@@ -177,16 +183,26 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
     parameters.add("RequestWidth",RequestWidth);
     parameters.add("Snooping",Snooping);
     // --- Latex rendering hints -----------------
+    /*
     for(int i=0;i<nCPU;i++)
     { latex_left_ports.push_back(&inCPU[i]);
       latex_left_ports.push_back(&outCPU[i]);
     }
     latex_right_ports.push_back(&outMEM);
     latex_right_ports.push_back(&inMEM);
+    */
     // -------------------------------------------
+    /*
     sent_cpu_data = false;
     sent_mem_data = false;
     enabled_cpu_data = false;
+    enabled_mem_data = false;
+    */
+    sent_cpu_req_data = false;
+    sent_cpu_ans_data = false;
+    sent_mem_data = false;
+    enabled_cpu_req_data = false;
+    enabled_cpu_ans_data = false;
     enabled_mem_data = false;
   }
 
@@ -197,10 +213,19 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
    */
   void begin_of_cycle()
   {
+    /*
     sent_cpu_data = false;
     sent_mem_data = false;
     enabled_cpu_data = false;
     enabled_mem_data = false;
+    */
+    sent_cpu_req_data = false;
+    sent_cpu_ans_data = false;
+    sent_mem_data = false;
+    enabled_cpu_req_data = false;
+    enabled_cpu_ans_data = false;
+    enabled_mem_data = false;
+
     if(!mem_queue.Empty())
     { // Try to send an answer from the memory side to every cpu port
       BufferLine *head = mem_queue.GetHead();
@@ -214,6 +239,7 @@ INFO << "Sending (M) to all: " << head->req << endl;
       }  
       sent_mem_data = true;
     }
+    /*
     else if(!cpu_queue.Empty())
     { // Try to send a new cpu request / answer to every other cpu & memory
       BufferLine *head = cpu_queue.GetHead();
@@ -227,6 +253,65 @@ INFO << "Sending (C) to all: " << head->req << endl;
         else outCPU[i].data.nothing();
       }  
       sent_cpu_data = true;
+    }
+    */
+    else if( (!cpu_ans_queue.Empty()) || (!cpu_req_queue.Empty()) )
+    { // Try to send a new cpu request / answer to every other cpu & memory
+      BufferLine *head;
+      bool cpu_flush;
+      if( !cpu_ans_queue.Empty() )
+	{ 
+	  head = cpu_ans_queue.GetHead();
+	  sent_cpu_ans_data = true;
+	  cpu_flush = is_cpu_ans_flush();
+	}
+      else
+	{ 
+	  head = cpu_req_queue.GetHead();
+	  sent_cpu_req_data = true;
+	  cpu_flush = is_cpu_req_flush();
+	}
+//INFO << "Sending to all cpu + mem: " << head->req << endl;
+#ifdef DEBUG_BUS_MQ
+INFO << "Sending (C) to all: " << head->req << endl;
+#endif
+
+      outMEM.data = head->req;
+      for(int i=0;i<nCPU;i++)
+      { if((head->sender_id!=i) || cpu_flush)
+	{
+#ifdef DEBUG_BUS_MQ
+	  INFO << "Sending (C) to "<<i<<": " << head->req << endl;
+#endif	  
+#ifdef DD_DEBUG_BUS_MQ2_VERB100
+	  if ( DD_DEBUG_TIMESTAMP <= timestamp() )
+	    {
+	      cerr << "Sending (C) to "<<i<<": " << head->req << endl;
+	    }
+#endif
+	  //	  outInstCPU.data[i] = head->req;
+	  //	  outDataCPU.data[i] = head->req;
+	  outCPU[i].data = head->req;
+	}
+        else 
+	{
+#ifdef DEBUG_BUS_MQ
+	  INFO << "Sending Nothing to "<<i<<": " << head->req << endl;
+#endif	  
+#ifdef DD_DEBUG_BUS_MQ2_VERB100
+	  if ( DD_DEBUG_TIMESTAMP <= timestamp() )
+	    {
+	      cerr << "Sending Nothing to "<<i<<": " << head->req << endl;
+	    }
+#endif
+	  //	  outInstCPU.data[i].nothing();
+	  //	  outDataCPU.data[i].nothing();
+	  outCPU[i].data.nothing();
+	}
+      }
+      //      outInstCPU.data.send();      
+      //      outDataCPU.data.send();      
+      //      sent_cpu_data = true;
     }
     else
     { // Else sends nothing to every output
@@ -257,7 +342,7 @@ INFO << "Sending (C) to all: " << head->req << endl;
     {
       mem_queue.RemoveHead();
     }
-    else if(enabled_cpu_data)
+    else if(enabled_cpu_ans_data)
     {
 #ifdef DATA_ROUTING_DEBUG
       // zheng tmp test 
@@ -266,7 +351,19 @@ INFO << "Sending (C) to all: " << head->req << endl;
         cout<<name() <<"remove :" <<head->req <<endl;
       // zheng tmp test end
 #endif
-      cpu_queue.RemoveHead();
+      cpu_ans_queue.RemoveHead();
+
+    }
+    else if(enabled_cpu_req_data)
+    {
+#ifdef DATA_ROUTING_DEBUG
+      // zheng tmp test 
+      BufferLine *head = cpu_queue.GetHead();
+      if(head->req.address == 0x1007d4e0)
+        cout<<name() <<"remove :" <<head->req <<endl;
+      // zheng tmp test end
+#endif
+      cpu_req_queue.RemoveHead();
 
     }
     else
@@ -300,7 +397,15 @@ INFO << "\e[1;31mMM\e[0m: " << bl.req << endl;
 	    cout<<name() <<" receive thread request : " <<bl.req<<" dst :"<<bl.req.dst_id <<endl;
         #endif
       #endif
-        cpu_queue << bl;
+	//        cpu_queue << bl;
+	if (bl.req.message_type == memreq_types::type_REQUEST)
+	  {
+	    cpu_req_queue << bl;
+	  }
+	else if (bl.req.message_type == memreq_types::type_ANSWER)
+	  {
+	    cpu_ans_queue << bl;	    
+	  }
 
 #ifdef DATA_ROUTING_DEBUG
         // zheng test
@@ -354,20 +459,32 @@ for(int i=0;i<nCPU;i++)
     inMEM.accept = false;
 
     // Nothing from memory, not a full cpu queue => 
-    if(!cpu_queue.Full())
-    { for(int k=0+cpu_round_robin_index;k<nCPU+cpu_round_robin_index;k++)
-      { int i = k % nCPU;
+    //    if(!cpu_queue.Full())
+    //    { 
+    for(int k=0+cpu_round_robin_index;k<nCPU+cpu_round_robin_index;k++)
+    { int i = k % nCPU;
+    
         if(inCPU[i].data.something())
-        { for(int j=0;j<nCPU;j++)
-          { if(i==j) inCPU[j].accept = true;
-            else     inCPU[j].accept = false;
-          }
-          cpu_round_robin_index++;
-          if(cpu_round_robin_index==nCPU) cpu_round_robin_index = 0;
-          return;
-        }
-      }
+        {
+	  memreq < INSTRUCTION, RequestWidth > req = inCPU[i].data;
+	  if( ( (req.message_type == memreq_types::type_REQUEST) && (!cpu_req_queue.Full())
+		)
+	      ||
+	      ( (req.message_type ==memreq_types:: type_ANSWER) && (!cpu_ans_queue.Full())
+		)
+	      )
+	  {
+	    for(int j=0;j<nCPU;j++)
+	      { if(i==j) inCPU[j].accept = true;
+	      else     inCPU[j].accept = false;
+	      }
+	    cpu_round_robin_index++;
+	    if(cpu_round_robin_index==nCPU) cpu_round_robin_index = 0;
+	    return;
+	  }
+	}
     }
+    //    }
     //Every signal is set to nothing, refuse every signal
     for(int j=0;j<nCPU;j++)
     { inCPU[j].accept = false;
@@ -384,7 +501,7 @@ for(int i=0;i<nCPU;i++)
     for(int i=0;i<nCPU;i++)
     { if(!outCPU[i].accept.known()) return;
     }
-
+    /*
     if(sent_cpu_data)
     { BufferLine *head = cpu_queue.GetHead();
 //      INFO << "data was sent from cpu: " << head->req << endl;
@@ -398,6 +515,48 @@ for(int i=0;i<nCPU;i++)
         else outCPU[i].enable = false;
       }
       enabled_cpu_data = all_accept;
+    }
+    */
+    if(sent_cpu_ans_data || sent_cpu_req_data)
+    {
+      BufferLine *head;
+      bool cpu_flush;
+      if (sent_cpu_ans_data)
+	{
+	  head = cpu_ans_queue.GetHead();
+	  cpu_flush = is_cpu_ans_flush();
+	}
+      else
+	{
+	  head = cpu_req_queue.GetHead();
+	  cpu_flush = is_cpu_req_flush();
+	}
+//      INFO << "data was sent from cpu: " << head->req << endl;
+      bool all_accept = outMEM.accept;
+      for(int i=0;i<nCPU;i++)
+      { if((head->sender_id!=i) || cpu_flush) all_accept &= outCPU[i].accept;
+      }
+      outMEM.enable = all_accept;
+      for(int i=0;i<nCPU;i++)
+      { if((head->sender_id!=i) || cpu_flush) 
+	{
+	  outCPU[i].enable = all_accept;
+	}
+      else
+	{
+	  outCPU[i].enable = false;
+	}
+      }
+
+      if (sent_cpu_ans_data)
+	{
+	  enabled_cpu_ans_data = all_accept;
+	}
+      else
+	{
+	  enabled_cpu_req_data = all_accept;
+	}
+      //      enabled_cpu_data = all_accept;
     }
     else if(sent_mem_data)
     { //INFO << "data was sent from mem" << endl;
@@ -431,7 +590,8 @@ for(int i=0;i<nCPU;i++)
       { if(!inSharedCPU[i].data.known()) return;
       }
       //All the signal are known, check is a message has been sent
-      if(!sent_cpu_data && !sent_mem_data)
+      //      if(!sent_cpu_data && !sent_mem_data)
+      if(!sent_cpu_ans_data && !sent_cpu_req_data && !sent_mem_data)
       { // We did not send any data, we should have nothing on each shared input
         // and send nothing on each shared output
         for(int i=0;i<nCPU;i++)
@@ -451,7 +611,9 @@ for(int i=0;i<nCPU;i++)
       // A message was sent at start of cycle, check inShared of each CPU it has been sent to
       // None of thoe outShared should be nothing.
       BufferLine *head;
-      if(sent_cpu_data) head = cpu_queue.GetHead();
+      //      if(sent_cpu_data) head = cpu_queue.GetHead();
+      if(sent_cpu_ans_data) head = cpu_ans_queue.GetHead();
+      if(sent_cpu_req_data) head = cpu_req_queue.GetHead();
       if(sent_mem_data) head = mem_queue.GetHead();
       bool is_shared = false;
 
@@ -488,7 +650,10 @@ for(int i=0;i<nCPU;i++)
    * \brief Module interface : Returns true if the module has some pending operations.
    */
   bool has_pending_ops()
-  { if (!cpu_queue.Empty()) return true;
+  { //if (!cpu_queue.Empty()) return true;
+    if (!cpu_ans_queue.Empty()) return true;
+    if (!cpu_req_queue.Empty()) return true;
+
     if (!mem_queue.Empty()) return true;
     return false;
   }
@@ -510,10 +675,26 @@ for(int i=0;i<nCPU;i++)
     return true;
   }
   
+/*
   inline bool is_cpu_flush()
   { BufferLine *head = cpu_queue.GetHead();
     return (head->req.command == memreq_types::cmd_FLUSH);
   }
+*/
+  inline bool is_cpu_ans_flush()
+  {
+    //    BufferLine *head = cpu_queue.GetHead();
+    BufferLine *head = cpu_ans_queue.GetHead();
+    return (head->req.command == memreq_types::cmd_FLUSH);
+  }
+  
+  inline bool is_cpu_req_flush()
+  {
+    //    BufferLine *head = cpu_queue.GetHead();
+    BufferLine *head = cpu_req_queue.GetHead();
+    return (head->req.command == memreq_types::cmd_FLUSH);
+  }
+  
   
  #ifdef DISTRIBUTED_SHARED_SYSTEM
   //the 8 hight bits of the address is used to identify the routing destination
@@ -535,9 +716,13 @@ for(int i=0;i<nCPU;i++)
 
  virtual void ctrlz_hook()
   { cerr << "\e[1;37;44m" << name() << "\e[0m" << endl;
-    cerr << " - cpu_queue: " << cpu_queue.Size() << endl;
+  //    cerr << " - cpu_queue: " << cpu_queue.Size() << endl;
+    cerr << " - cpu_req_queue: " << cpu_req_queue.Size() << endl;
+    cerr << " - cpu_ans_queue: " << cpu_ans_queue.Size() << endl;
     cerr << " - mem_queue: " << mem_queue.Size() << endl;
-    cerr << " - cpu_queue:\n" << cpu_queue << endl;
+    //    cerr << " - cpu_queue:\n" << cpu_queue << endl;
+    cerr << " - cpu_req_queue:\n" << cpu_req_queue << endl;
+    cerr << " - cpu_ans_queue:\n" << cpu_ans_queue << endl;
     cerr << " - mem_queue:\n" << mem_queue << endl;
 //  Queue <BufferLine,BufferSize> cpu_queue;  ///< Bufferized mesages to be sent by the bus from the CPUs
 //  Queue <BufferLine,BufferSize> mem_queue;  ///< Bufferized mesages to be sent by the bus from the MEMs
