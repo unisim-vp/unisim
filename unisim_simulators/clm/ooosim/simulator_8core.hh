@@ -403,6 +403,24 @@ public:
   cICACHE *__icache[nConfig];
   cCPU *__cpu[nConfig];
 
+  bool is_terminated()
+  {
+    bool res=true;
+    for (int cfg=0; cfg<nConfig; cfg++)
+      {
+	res &= __cpu[cfg]->is_terminated();
+      }
+    return res;
+  }
+
+  void printend()
+  {
+    
+    for(int cfg=0; cfg<nConfig; cfg++)
+      {
+	cerr << "       Cpu[" << cfg << "] ended at cycle : " << __cpu[cfg]->check_emulator->end_at_cycle << endl;
+      }
+  }
   /**************************************************************************
    *                      CLM COMPONENT GENERATION and CONNECTION           *
    **************************************************************************/

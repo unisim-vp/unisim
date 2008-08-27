@@ -6,7 +6,7 @@
 ///////////// For Emulator ... //////////////////
 
 #include <stdio.h>
-#include <getopt.h>
+//#include <getopt.h>
 
 #include "simulator.hh"
 
@@ -55,7 +55,7 @@ int main(int argc, char **argv, char **envp)
 	uint32_t mem_cycle_time = fsb_cycle_time;
   */
 
- 
+
 
   ///////////////////////////////////////// "From Emulator" Start ///////////////////////
   int c;
@@ -84,10 +84,11 @@ int main(int argc, char **argv, char **envp)
   if(command_line["max:inst"])
     { maxinst = strtoull(command_line["max:inst"], 0, 0);
     }
-  
+
+  /*
   const char *filename = command_line[0];
   unsigned int sim_argc = command_line.count();
-  
+  */
   
   GeneratedSimulator s;
   
@@ -157,10 +158,7 @@ int main(int argc, char **argv, char **envp)
     if(s._unknown_display) unisim_port::check_knowness(s.stream_knowness(),s._unknown_fatal);
     //if(s._signal_display) unisim_port::check_signals(s.stream_knowness(),s._unknown_fatal);
 #endif
-    // DD Check not longer implemented...
-	/*
-	  if(check_sig) unisim_port::check_signals(s.stream_knowness(),s._unknown_fatal);
-	*/
+
 #ifdef DD_DISPLAY_SIGNALS    
     if (DD_DEBUG_TIMESTAMP < timestamp())
     {
@@ -169,7 +167,20 @@ int main(int argc, char **argv, char **envp)
 	unisim_port::check_signals(s.stream_knowness(),s._unknown_fatal);
       }
     }
-#endif     
+#endif
+    if(s.is_terminated())
+      {
+	//	cerr << "Simulation ended at cycle : " << timestamp() << endl;
+	/*
+	for(int cfg=0; cfg<nConfig; cfg++)
+	  {
+	    cerr << "       Cpu[" << cfg << "] ended at cycle : " << check_emulator[cfg]->end_at_cycle << endl;
+	  }
+	*/
+	s.printend();
+	cerr << "Simulation ended at cycle : " << timestamp() << endl;
+	terminate_now();
+      }
   }
 
   /* 

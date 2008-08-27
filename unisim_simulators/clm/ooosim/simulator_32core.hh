@@ -145,7 +145,7 @@
 
 
 #include <unisim/component/clm/cache/cache_wb.hh>
-#include <unisim/component/clm/fsb/bus_multiqueue.hh>
+#include <unisim/component/clm/fsb/bus_multiqueue3.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
 #include <unisim/kernel/service/service.hh>
@@ -403,6 +403,24 @@ public:
   cICACHE *__icache[nConfig];
   cCPU *__cpu[nConfig];
 
+  bool is_terminated()
+  {
+    bool res=true;
+    for (int cfg=0; cfg<nConfig; cfg++)
+      {
+	res &= __cpu[cfg]->is_terminated();
+      }
+    return res;
+  }
+
+  void printend()
+  {
+    
+    for(int cfg=0; cfg<nConfig; cfg++)
+      {
+	cerr << "       Cpu[" << cfg << "] ended at cycle : " << __cpu[cfg]->check_emulator->end_at_cycle << endl;
+      }
+  }
   /**************************************************************************
    *                      CLM COMPONENT GENERATION and CONNECTION           *
    **************************************************************************/
