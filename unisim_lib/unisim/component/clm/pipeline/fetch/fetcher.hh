@@ -281,6 +281,8 @@ public:
 		ras_miss = false;
 		//		state_init(&transient_emul_state);
 
+		is_terminated = false;
+
 		/* statistics */
 		in_flight_branches = 0;
 		bht_accesses = 0;
@@ -335,6 +337,11 @@ public:
 		latex_top_ports.push_back(&inFlush);
 		//		latex_bottom_ports.push_back(&outFlush);
 	}
+
+  void set_terminated()
+  {
+    is_terminated = true;
+  }
 
 
   void onFlushData()
@@ -1834,7 +1841,7 @@ public:
 	  //		if(!waiting_instr_cache_accept)
 	  //	{
 			/* Do not continue fetch if there is a BTB miss or a RAS miss */
-	  if(!btb_miss && !ras_miss && !syscall_in_pipeline)
+	  if(!btb_miss && !ras_miss && !syscall_in_pipeline && !is_terminated)
 	    {
 	      /* Do not continue if we already reach the maximum number of pending instruction cache requests */
 	      if(pending_instr_cache_requests < MaxPendingRequests)
@@ -1939,7 +1946,7 @@ cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== No IL1: ! (!btb_miss && !r
 #endif
 	    }
 	  if (previous_cia == seq_cia) { stall_counter++; } else { stall_counter=0; }
-	  if (stall_counter > 10000) { cerr << "Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
+	  if ((!is_terminated) && (stall_counter > 10000)) { cerr << "Fetch is stalling at cycle: ("<< timestamp() <<")" << endl;exit(-1); }
 	  previous_cia = seq_cia;
  	} // End of "Start of Cycle"
 
@@ -2071,6 +2078,7 @@ private:
         bool syscall_in_pipeline;
   //  bool stall_dueto_unknown_target_address;
         int stall_counter;
+  bool is_terminated;
 };
 
 } // end of namespace fetch

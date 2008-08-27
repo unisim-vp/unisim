@@ -498,10 +498,38 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
     cerr << "     CPU   CIA: "<< hexa(speculative_cpu_state->GetCIA()) << endl;
     cerr << "     Emu   CIA: "<< hexa(check_emulator->GetCIA()) << endl;
   }
-// Mourad Modifs 
+
+
+  bool is_terminated()
+  {
+    return check_emulator->program_ended;
+  }
+
 ////////////////////////////////
   void start_of_cycle()
   {
+    // Check if simulation is finished :
+    /*
+    bool is_finished=true;
+    for(int cfg=0; cfg<nConfig; cfg++)
+    {
+      is_finished &= check_emulator[cfg]->program_ended;
+      if(check_emulator[cfg]->program_ended) fetch->set_terminated(cfg);
+    }
+    //is_finished = check_emulator[0]->program_ended;
+    if (is_finished)
+    {
+      cerr << "Simulation ended at cycle : " << timestamp() << endl;
+      for(int cfg=0; cfg<nConfig; cfg++)
+      {
+	cerr << "       Cpu[" << cfg << "] ended at cycle : " << check_emulator[cfg]->end_at_cycle << endl;
+      }
+      terminate_now();
+    }
+    */
+    //    bool is_finished=true;
+    //    is_finished &= check_emulator[cfg]->program_ended;
+    if(check_emulator->program_ended) fetch->set_terminated();
 #ifdef DD_DEBUG_PIPELINE_VERB2
 
 
