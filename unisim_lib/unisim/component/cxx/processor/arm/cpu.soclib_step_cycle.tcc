@@ -67,9 +67,9 @@ Reset() {
 	InitGPR();
 
 	/* we are running in system mode */
-	/* currently supported: arm966e_s
+	/* currently supported: arm966e_s and arm7tdmi
 	 * if different report error */
-	if(CONFIG::MODEL != ARM966E_S) {
+	if(CONFIG::MODEL != ARM966E_S && CONFIG::MODEL != ARM7TDMI) {
 		cerr << "Error(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 			<< "):" << endl
 			<< "Running arm in system mode"

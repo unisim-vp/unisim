@@ -137,11 +137,11 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	/* we are running in system mode */
 	/* currently supported: arm966e_s
 	 * if different report error */
-	if(CONFIG::MODEL != ARM966E_S) {
+	if(CONFIG::MODEL != ARM966E_S && CONFIG::MODEL != ARM7TDMI) {
 		cerr << "Error(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 			<< "):" << endl
 			<< "Running arm in system mode"
-			<< ". Only arm966e_s can run under this mode"
+			<< ". Only arm966e_s and arm7tdmi can run under this mode"
 			<< endl;
 		exit(-1);
 	}
