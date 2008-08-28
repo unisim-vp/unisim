@@ -405,20 +405,22 @@ public:
   bool is_terminated()
   {
     bool res=true;
-    for (int cfg=0; cfg<nConfig; cfg++)
-      {
-	res &= __cpu[cfg]->is_terminated();
-      }
+    //    for (int cfg=0; cfg<nConfig; cfg++)
+    //      {
+    //    	res &= __cpu[cfg]->is_terminated();
+    //      }
+    res = __cpu->is_terminated();
     return res;
   }
 
   void printend()
   {
     
-    for(int cfg=0; cfg<nConfig; cfg++)
-      {
-	cerr << "       Cpu[" << cfg << "] ended at cycle : " << __cpu[cfg]->check_emulator->end_at_cycle << endl;
-      }
+    //    for(int cfg=0; cfg<nConfig; cfg++)
+    //      {
+    //	cerr << "       Cpu[" << cfg << "] ended at cycle : " << __cpu[cfg]->check_emulator->end_at_cycle << endl;
+    //      }
+    cerr << "       Cpu[" << 0 << "] ended at cycle : " << __cpu->check_emulator->end_at_cycle << endl;
   }
   /**************************************************************************
    *                      CLM COMPONENT GENERATION and CONNECTION           *
