@@ -568,6 +568,75 @@ public:
 	static const bool HAS_ICTRL_EICP = false;
 	static const bool HAS_ICTRL_ICWL = false;
 
+	typedef enum operand_type_t
+	{
+		GPR_T,   // General Purpose Register
+		FPR_T,   // Floating Point Register
+		CR_T,    // Condition Register
+		CRF_T,   // Condition Register Bit field
+		CRB_T,   // Condition Register Bit
+		CRM_T,   // Condition Register Bit Mask
+		FPSCR_T, // Floating Point Status and Control Register
+		XER_T,   // XER Register
+		LR_T,    // Link Register
+		CTR_T    // Count Register
+	} operand_type_t;
+
+	typedef enum operand_direction_t
+	{
+		INPUT_T, // Input Operand
+		OUTPUT_T // Output Operand
+	} operand_direction_t;
+
+	typedef enum execution_unit_type_t
+	{
+		NO_UNIT_T, // No Unit
+		LSU_T,     // Load/Store Unit
+		IU1_T,     // Simple Integer Unit
+		IU2_T,     // Complex Integer Unit
+		FPU_T,     // Floating Point Unit
+		BPU_T,     // Branch Processing Unit
+		VFPU_T,    // Vector Floating Point Unit
+		VPU_T,     // vector Processing Unit
+		VIU1_T,    // Simple Vector Integer
+		VIU2_T     // Complex Vector Integer
+	} execution_unit_type_t;
+
+	typedef enum xer_field_t
+	{
+		XER_ALL_T = 0,       // WER as a whole
+		XER_CA_T = 1,        // Carry
+		XER_OV_T = 2,        // Overflow
+		XER_SO_T = 4,        // Summary Overflow
+		XER_BYTE_COUNT_T = 8 // Byte Count
+	} xer_field_t;
+
+	typedef enum serialization_t
+	{
+		NO_SERIALIZATION = 0,
+		EXECUTION_SERIALIZATION = 1,
+		REFETCH_SERIALIZATION = 2,
+		STORE_SERIALIZATION = 4
+	} serialization_t;
+
+	typedef struct operand_t
+	{
+		operand_type_t type;
+		operand_direction_t dir;
+
+		union
+		{
+			unsigned int reg_num; // when type is GPR_T or FPR_T
+			uint32_t crm;         // when type is CRM_T
+			unsigned int crb;     // when type is CRB_T
+			unsigned int crf;     // when type is CRF_T
+			xer_field_t xerf;     // when type is XER_T
+		} extra;
+	} operand_t;
+
+	static const unsigned int MAX_OPERANDS = 8;
+
+	typedef operand_t operands_t[MAX_OPERANDS];
 };
 
 //=====================================================================

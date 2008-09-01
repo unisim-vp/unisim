@@ -5889,7 +5889,7 @@ void CPU<CONFIG>::Fetch()
 		uint32_t insn = prefetch_buffer[offset];
 		Operation<CONFIG> *operation = Decoder<CONFIG>::Decode(cia, insn);
 		Instruction<CONFIG> *instruction = iw.Allocate();
-		instruction->operation = operation;
+		instruction->SetOperation(operation);
 		iq.Push(instruction);
 	}
 }
@@ -5897,6 +5897,7 @@ void CPU<CONFIG>::Fetch()
 template <class CONFIG>
 void CPU<CONFIG>::DecodeDispatch()
 {
+	int num_load_stores = 0;
 	unsigned int i;
 	for(i = 0; i < DECODE_WIDTH; i++)
 	{
@@ -5904,26 +5905,36 @@ void CPU<CONFIG>::DecodeDispatch()
 
 		Instruction<CONFIG> *instruction = iq.Front();
 
-/*
-		InsnType insn_type = operation->GetType();
-		switch(insn_type)
-		{
-			case VEC_INSN:
-				if(viq.Full()) return;
+		const typename CONFIG::execution_unit_type_t execution_unit = instruction->GetExecutionUnit();
 
-				
-				viq.Push(operation);
+		switch(execution_unit)
+		{
+			case CONFIG::NO_UNIT_T: // No Unit
 				break;
-			case GP_INSN:
+			case CONFIG::LSU_T:     // Load/Store Unit
+				if(num_load_stores >= MAX_DISPATCHED_LOAD_STORES_PER_CYCLE) return;
+				num_load_stores++;
+			case CONFIG::IU1_T:     // Simple Integer Unit
+			case CONFIG::IU2_T:     // Complex Integer Unit
 				if(giq.Full()) return;
-				giq.Push(operation);
+				giq.Push(instruction);
 				break;
-			case FP_INSN:
+			case CONFIG::FPU_T:     // Floating Point Unit
 				if(fiq.Full()) return;
-				fiq.Push(operation);
+				fiq.Push(instruction);
+				break;
+			case CONFIG::BPU_T:     // Branch Processing Unit
+				// Branches don't go to an issue queue
+				break;
+			case CONFIG::VFPU_T:    // Vector Floating Point Unit
+			case CONFIG::VPU_T:     // vector Processing Unit
+			case CONFIG::VIU1_T:    // Simple Vector Integer
+			case CONFIG::VIU2_T:    // Complex Vector Integer
+				if(viq.Full()) return;
+				viq.Push(instruction);
 				break;
 		}
-*/
+
 		cq.Push(instruction);
 		iq.Pop();
 	}
@@ -5932,6 +5943,28 @@ void CPU<CONFIG>::DecodeDispatch()
 template <class CONFIG>
 void CPU<CONFIG>::GPRIssue()
 {
+	// Issue is Out-of-order
+	unsigned int i;
+	for(i = 0; i < GPR_ISSUE_WIDTH; i++)
+	{
+		Instruction<CONFIG> *instruction = giq[i];
+
+		const typename CONFIG::execution_unit_type_t execution_unit = instruction->GetExecutionUnit();
+
+		switch(execution_unit)
+		{
+			case CONFIG::NO_UNIT_T: // No Unit
+				break;
+			case CONFIG::LSU_T:     // Load/Store Unit
+				break;
+			case CONFIG::IU1_T:     // Simple Integer Unit
+				break;
+			case CONFIG::IU2_T:     // Complex Integer Unit
+				break;
+		}
+		
+	}
+	
 }
 
 template <class CONFIG>
@@ -5960,6 +5993,17 @@ void CPU<CONFIG>::VRIssue()
 		}
 	}
 */
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetOperation(Operation<CONFIG> *operation)
+{
+	
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Execute()
+{
 }
 
 

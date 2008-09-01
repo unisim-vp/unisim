@@ -174,17 +174,50 @@ template <class CONFIG>
 class Instruction
 {
 public:
-	Operation<CONFIG> *operation;
-	Register<uint32_t> *gpr[32];
-	Register<SoftDouble> *fpr[32];
-	Register<uint32_t> *cr;
-	Register<uint32_t> *ctr;
-	Register<uint32_t> *lr;
+	void SetOperation(Operation<CONFIG> *operation);
+	Operation<CONFIG> GetOperation() { return operation; }
+	typename CONFIG::execution_unit_type_t GetExecutionUnit() const { return operation->execution_unit; }
+	typename CONFIG::serialization_t GetSerialization() const { return operation->serialization; }
+	unsigned int GetLatency() const { return operation->insn_latency; }
+	unsigned int GetThroughput() const { return operation->insn_throughput; }
+	unsigned int GetNumOperands() const { return operation->num_insn_operands; }
+	const typename CONFIG::operand_t& GetOperand(unsigned int num_operand) const { return operation->insn_operands[num_operand]; }
+	void Execute();
 	
 	Instruction();
 	~Instruction();
-	
+private:
+	Operation<CONFIG> *operation;
 };
+
+// template <class CONFIG>
+// class MappingTable
+// {
+// public:
+// 	MappingTable();
+// 	~MappingTable();
+// 	unsigned int Allocate(unsigned int reg_num);
+// 	unsigned int Lookup(unsigned int reg_num);
+// 	void Free(unsigned int reg_num);
+// private:
+// 	typedef struct
+// 	{
+// 		bool valid;
+// 		unsigned int tag;
+// 	}  MappingTableEntry;
+// 
+// 	MappingTableEntry mapping_table[CONFIG::SIZE];
+// 
+// 	class FreeListConfig
+// 	{
+// 	public:
+// 		static const bool DEBUG = true;
+// 		typedef unsigned int ELEMENT;
+// 		static const unsigned int SIZE = CONFIG::SIZE;
+// 	};
+// 
+// 	Queue<FreeListConfig> free_list;
+// };
 
 template <class CONFIG>
 class CacheAccess
@@ -1724,9 +1757,13 @@ protected:
 
 	static const uint32_t FETCH_WIDTH = 4;
 	static const uint32_t DECODE_WIDTH = 3;
+	static const uint32_t MAX_DISPATCHED_LOAD_STORES_PER_CYCLE = 1;
+	static const uint32_t MAX_GPR_RENAMES_PER_CYCLE = 4;
+	static const uint32_t MAX_FPR_RENAMES_PER_CYCLE = 2;
+	static const uint32_t MAX_VPR_RENAMES_PER_CYCLE = 3;
 	static const uint32_t VR_ISSUE_WIDTH = 2;
 	static const uint32_t GPR_ISSUE_WIDTH = 3;
-	static const uint32_t FPR_ISSUE_WIDTH = 2;
+	static const uint32_t FPR_ISSUE_WIDTH = 1;
 	static const uint32_t NUM_IU1 = 3;
 	static const uint32_t NUM_IU2 = 1;
 	static const uint32_t NUM_FPU = 1;
@@ -1737,7 +1774,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> ELEMENT;
 		static const unsigned int SIZE = 256;
-		static const unsigned int BUFFER_SIZE = 256; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 
 	class InstructionQueueConfig
@@ -1746,7 +1782,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 12;
-		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 	
 	class VRIssueQueueConfig
@@ -1755,7 +1790,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 4;
-		static const unsigned int BUFFER_SIZE = 4; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 	
 	class GPRIssueQueueConfig
@@ -1764,7 +1798,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 6;
-		static const unsigned int BUFFER_SIZE = 8; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 	
 	class FPRIssueQueueConfig
@@ -1773,7 +1806,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 2;
-		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 	
 	class CompletionQueueConfig
@@ -1782,7 +1814,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 16;
-		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 
 	class GPRRenameBuffersConfig
@@ -1791,7 +1822,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef Register<uint32_t> *ELEMENT;
 		static const unsigned int SIZE = 16;
-		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 	
 	class FPRRenameBuffersConfig
@@ -1800,7 +1830,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef Register<SoftDouble> *ELEMENT;
 		static const unsigned int SIZE = 16;
-		static const unsigned int BUFFER_SIZE = 16; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 	
 	class CRRenameBuffersConfig
@@ -1809,7 +1838,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef Register<uint32_t> *ELEMENT;
 		static const unsigned int SIZE = 1;
-		static const unsigned int BUFFER_SIZE = 1; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 	
 	class LRRenameBuffersConfig
@@ -1818,7 +1846,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef Register<uint32_t> *ELEMENT;
 		static const unsigned int SIZE = 1;
-		static const unsigned int BUFFER_SIZE = 1; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 	
 	class CTRRenameBuffersConfig
@@ -1827,7 +1854,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef Register<uint32_t> *ELEMENT;
 		static const unsigned int SIZE = 1;
-		static const unsigned int BUFFER_SIZE = 1; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 
 	class IU1ReservationStationConfig
@@ -1836,7 +1862,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 1;
-		static const unsigned int BUFFER_SIZE = 1; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 
 	class IU2ReservationStationConfig
@@ -1845,7 +1870,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 2;
-		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 
 	class FPRReservationStationConfig
@@ -1854,7 +1878,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 2;
-		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 
 	class LSReservationStationConfig
@@ -1863,7 +1886,6 @@ protected:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 2;
-		static const unsigned int BUFFER_SIZE = 2; // BUFFER_SIZE *must* be >= SIZE and a power of two
 	};
 
 	Queue<InstructionWindowConfig> iw;

@@ -65,14 +65,33 @@ public:
 	static const bool DEBUG = true;
 	typedef int *ELEMENT;
 	static const unsigned int SIZE = 6;
-	static const unsigned int BUFFER_SIZE = 8; // BUFFER_SIZE *must* be >= SIZE and a power of two
 };
 #endif
+
+template <unsigned long long N>
+struct Log2
+{
+    static const unsigned int value = Log2<N / 2>::value + 1;
+};
+
+template <>
+struct Log2<1>
+{
+    static const unsigned int value = 0;
+};
+
+template <unsigned long long N>
+struct CeilLog2
+{
+    static const unsigned int value = (N > (1 << Log2<N>::value)) ? Log2<N>::value + 1 : Log2<N>::value;
+};
 
 template <class CONFIG>
 class Queue
 {
 public:
+	static const unsigned int BUFFER_SIZE = 1 << CeilLog2<CONFIG::SIZE>::value;
+
 	Queue();
 	~Queue();
 
@@ -92,7 +111,7 @@ private:
 	unsigned int front_idx;
 	unsigned int back_idx;
 
-	typename CONFIG::ELEMENT buffer[CONFIG::BUFFER_SIZE];
+	typename CONFIG::ELEMENT buffer[BUFFER_SIZE];
 
 	inline uint32_t Max(uint32_t a, uint32_t b) { return (a > b) ? a : b; }
 	inline uint32_t Min(uint32_t a, uint32_t b) { return (a < b) ? a : b; }

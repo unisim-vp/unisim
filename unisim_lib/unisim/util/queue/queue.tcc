@@ -56,7 +56,7 @@ template <class CONFIG>
 typename CONFIG::ELEMENT& Queue<CONFIG>::operator [] (unsigned int idx)
 {
 	if(CONFIG::DEBUG && idx >= size) throw QueueException("out of range access", __FILE__, __FUNCTION__, __LINE__);
-	return buffer[(front_idx + idx) & (CONFIG::BUFFER_SIZE - 1)];
+	return buffer[(front_idx + idx) & (BUFFER_SIZE - 1)];
 }
 
 template <class CONFIG>
@@ -64,7 +64,7 @@ typename CONFIG::ELEMENT *Queue<CONFIG>::Allocate()
 {
 	if(CONFIG::DEBUG && size >= CONFIG::SIZE) throw QueueException("overflow", __FILE__, __FUNCTION__, __LINE__);
 	typename CONFIG::ELEMENT *elt = &buffer[back_idx];
-	back_idx = (back_idx + 1) & (CONFIG::BUFFER_SIZE - 1);
+	back_idx = (back_idx + 1) & (BUFFER_SIZE - 1);
 	size++;
 	return elt;
 }
@@ -74,7 +74,7 @@ void Queue<CONFIG>::Push(typename CONFIG::ELEMENT& elt)
 {
 	if(CONFIG::DEBUG && size >= CONFIG::SIZE) throw QueueException("overflow", __FILE__, __FUNCTION__, __LINE__);
 	buffer[back_idx] = elt;
-	back_idx = (back_idx + 1) & (CONFIG::BUFFER_SIZE - 1);
+	back_idx = (back_idx + 1) & (BUFFER_SIZE - 1);
 	size++;
 }
 
@@ -88,7 +88,7 @@ template <class CONFIG>
 void Queue<CONFIG>::Pop()
 {
 	if(CONFIG::DEBUG && size == 0) throw QueueException("underflow", __FILE__, __FUNCTION__, __LINE__);
-	front_idx = (front_idx + 1) & (CONFIG::BUFFER_SIZE - 1);
+	front_idx = (front_idx + 1) & (BUFFER_SIZE - 1);
 	size++;
 }
 
@@ -117,11 +117,11 @@ void Queue<CONFIG>::Remove(unsigned int idx)
 	
 	if(CONFIG::DEBUG && idx >= size) throw QueueException("out of range access", __FILE__, __FUNCTION__, __LINE__);
 	if(CONFIG::DEBUG && size == 0) throw QueueException("underflow", __FILE__, __FUNCTION__, __LINE__);
-	for(i = (front_idx + idx) & (CONFIG::BUFFER_SIZE - 1), j = (i + 1) & (CONFIG::BUFFER_SIZE - 1); j != back_idx; i = (i + 1) & (CONFIG::BUFFER_SIZE - 1), j = (j + 1) & (CONFIG::BUFFER_SIZE - 1))
+	for(i = (front_idx + idx) & (BUFFER_SIZE - 1), j = (i + 1) & (BUFFER_SIZE - 1); j != back_idx; i = (i + 1) & (BUFFER_SIZE - 1), j = (j + 1) & (BUFFER_SIZE - 1))
 	{
 		buffer[i] = buffer[j];
 	}
-	back_idx = (back_idx - 1) & (CONFIG::BUFFER_SIZE - 1);
+	back_idx = (back_idx - 1) & (BUFFER_SIZE - 1);
 	size--;
 }
 
@@ -129,7 +129,7 @@ template <class CONFIG>
 std::ostream& operator << (std::ostream& os, Queue<CONFIG>& q)
 {
 	unsigned int idx;
-	for(idx = q.front_idx; idx != q.back_idx; idx = (idx + 1) & (CONFIG::BUFFER_SIZE - 1))
+	for(idx = q.front_idx; idx != q.back_idx; idx = (idx + 1) & (Queue<CONFIG>::BUFFER_SIZE - 1))
 	{
 		os << q.buffer[idx] << " ";
 	}

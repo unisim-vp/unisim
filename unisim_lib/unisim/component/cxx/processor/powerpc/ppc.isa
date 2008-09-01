@@ -56,7 +56,7 @@ include "condition.isa"
 include "loadstore.isa"
 include "misc.isa"
 include "altivec.isa"
-//include "perf.isa"
+include "perf.isa"
 
 include "sim_ppc.isa"
 include "sim_latencies.isa"

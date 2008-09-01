@@ -32,55 +32,16 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-{
-
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace powerpc {
-
-typedef enum operand_type_t { GPR_T, FPR_T, CR_T, CRF_T, CRB_T, CRM_T, FPSCR_T, XER_T, LR_T, CTR_T } operand_type_t;
-typedef enum operand_direction_t { INPUT_T, OUTPUT_T } operand_direction_t;
-typedef enum unit_type_t { NO_UNIT_T, LSU_T, IU1_T, IU2_T, FPU_T, BPU_T, VFPU_T, VPU_T, VIU1_T, VIU2_T } unit_type_t;
-typedef enum xer_field_t { XER_ALL_T = 0, XER_CA_T = 1, XER_OV_T = 2, XER_SO_T = 4, XER_BYTE_COUNT_T = 5 } xer_field_t;
-
-typedef struct operand_t
-{
-	operand_type_t type;
-	operand_direction_t dir;
-	int value;
-} operand_t;
-
-#define INPUT(_type, _value) \
-(\
-	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].type = _type,\
-	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].dir = INPUT_T,\
-	Operation<CONFIG>::operands[Operation<CONFIG>::noperands++].value = _value\
-)
-
-#define OUTPUT(_type, _value) \
-(\
-	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].type = _type,\
-	Operation<CONFIG>::operands[Operation<CONFIG>::noperands].dir = OUTPUT_T,\
-	Operation<CONFIG>::operands[Operation<CONFIG>::noperands++].value = _value\
-)
-
-typedef operand_t operands_t[8];
-
-} // end of namespace powerpc
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
-
-}
-
-var noperands : {int} = {0}
-var operands : {operands_t}
-var unit : {unit_type_t} = {NO_UNIT_T}
+var num_insn_operands : {int} = {0}
+var insn_operands : {typename CONFIG::operands_t}
+var execution_unit : {typename CONFIG::execution_unit_type_t} = {CONFIG::NO_UNIT_T}
+var serialization : {typename CONFIG::serialization_t} = {CONFIG::NO_SERIALIZATION}
+var insn_latency : {int} = {1}
+var insn_throughput : {int} = {1}
 
 constructor action initialize_unit() {}
+
+constructor action initialize_serialization() {}
 
 constructor action initialize_read_ra() {}
 
@@ -200,74 +161,316 @@ group group_viu1(vaddcuw, vaddsbs, vaddshs, vaddsws, vaddubm, vaddubs, vadduhm, 
 
 group group_viu2(vmhaddshs, vmhraddshs, vmladduhm, vmsummbm, vmsumshm, vmsumshs, vmsumubm, vmsumuhm, vmsumuhs, vmulesb, vmulesh, vmuleub, vmuleuh, vmulosb, vmulosh, vmuloub, vmulouh, vsumsws, vsum2sws, vsum4sbs, vsum4shs, vsum4ubs)
 
-group_iu1.initialize_unit = { Operation<CONFIG>::unit = IU1_T; }
+group group_execution_serialization(mtsr, mtsrin, mftb, crand, crandc, creqv, crnand, crnor, cror, crorc, crxor, mfcr, adde, addme, addze, subfe, subfme, subfze, mcrfs, mffs, mtfsb0, mtfsb1, mtfsfi, mtfsf, lwarx, tlbld, tlbli, mfvscr, mtvscr)
 
-group_iu2.initialize_unit = { Operation<CONFIG>::unit = IU2_T; }
+group group_store_serialization(eieio, tlbsync, dcba, dcbf, dcbst, dcbz, icbi, stb, stbu, stbux, stbx, stfd, stfdu, stfdux, stfdx, stfiwx, stfs, stfsu, stfsux, stfsx, sth, sthbrx, sthu, stmw, stswi, stswx, stvebx, stvehx, stvewx, stvx, stvxl, stw, stwbrx, stwcx_, stwu, stwux, stwx, tlbie)
 
-group_fpu.initialize_unit = { Operation<CONFIG>::unit = FPU_T; }
+group group_refetch_serialization(isync)
 
-group_bpu.initialize_unit = { Operation<CONFIG>::unit = BPU_T; }
+group_iu1.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::IU1_T; }
 
-group_lsu.initialize_unit = { Operation<CONFIG>::unit = LSU_T; }
+group_iu2.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::IU2_T; }
 
-group_vfpu.initialize_unit = { Operation<CONFIG>::unit = VFPU_T; }
+group_fpu.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::FPU_T; }
 
-group_vpu.initialize_unit = { Operation<CONFIG>::unit = VPU_T; }
+group_bpu.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::BPU_T; }
 
-group_viu1.initialize_unit = { Operation<CONFIG>::unit = VIU1_T; }
+group_lsu.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::LSU_T; }
 
-group_viu2.initialize_unit = { Operation<CONFIG>::unit = VIU2_T; }
+group_vfpu.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::VFPU_T; }
 
-group_read_ra.initialize_read_ra = { INPUT(GPR_T, ra); }
+group_vpu.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::VPU_T; }
 
-group_read_rb.initialize_read_rb = { INPUT(GPR_T, rb); }
+group_viu1.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::VIU1_T; }
 
-group_read_rs.initialize_read_rs = { INPUT(GPR_T, rs); }
+group_viu2.initialize_unit = { Operation<CONFIG>::execution_unit = CONFIG::VIU2_T; }
 
-group_read_fa.initialize_read_fa = { INPUT(FPR_T, fa); }
+mfspr.initialize_serialization = {
+	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	switch(n)
+	{
+		case 528: // IBAT0U
+		case 529: // IBAT0L
+		case 530: // IBAT1U
+		case 531: // IBAT1L
+		case 532: // IBAT2U
+		case 533: // IBAT2L
+		case 534: // IBAT3U
+		case 535: // IBAT3L
+			Operation<CONFIG>::serialization = CONFIG::NO_SERIALIZATION;
+			return;
+	}
 
-group_read_fb.initialize_read_fb = { INPUT(FPR_T, fb); }
+	if(CPU<CONFIG>::IsMPC7X5() || CPU<CONFIG>::IsMPC7XXX())
+	{
+		switch(n)
+		{
+			case 560: // IBAT4U
+			case 561: // IBAT4L
+			case 562: // IBAT5U
+			case 563: // IBAT5L
+			case 564: // IBAT6U
+			case 565: // IBAT6L
+			case 566: // IBAT7U
+			case 567: // IBAT7L
+				Operation<CONFIG>::serialization = CONFIG::NO_SERIALIZATION;
+				return;
+		}
+	}
 
-group_read_fc.initialize_read_fc = { INPUT(FPR_T, fc); }
+	if(CPU<CONFIG>::IsMPC7XXX())
+	{
+		switch(n)
+		{
+			case 256: // VRSAVE
+				Operation<CONFIG>::serialization = CONFIG::NO_SERIALIZATION;
+				return;
+		}
+	}
 
-group_read_fs.initialize_read_fs = { INPUT(FPR_T, fs); }
+	// mtspr (DBAT, MSS, Time Base, other)
+	Operation<CONFIG>::serialization = CONFIG::EXECUTION_SERIALIZATION;
+}
 
-group_read_xer_ca.initialize_read_xer = { INPUT(XER_T, XER_CA_T); }
+mtspr.initialize_serialization = {
+	uint32_t n = ((spr & 0x1f) << 5) | ((spr >> 5) & 0x1f);
+	switch(n)
+	{
+		case 1: // XER
+			Operation<CONFIG>::serialization = (typename CONFIG::serialization_t)(CONFIG::EXECUTION_SERIALIZATION | CONFIG::REFETCH_SERIALIZATION);
+			return;
+	}
+	// mtspr (DBATs, IBATs, MSS, other)
+	Operation<CONFIG>::serialization = CONFIG::EXECUTION_SERIALIZATION;
+}
 
-group_read_lr.initialize_read_lr = { INPUT(LR_T, 0); }
+sync.initialize_serialization = {
+	Operation<CONFIG>::serialization = (typename CONFIG::serialization_t)(CONFIG::EXECUTION_SERIALIZATION | CONFIG::STORE_SERIALIZATION);
+}
 
-group_read_ctr.initialize_read_ctr = { INPUT(CTR_T, 0); }
+group_execution_serialization.initialize_serialization = {
+	Operation<CONFIG>::serialization = CONFIG::EXECUTION_SERIALIZATION;
+}
 
-group_read_ctr_if_not_bo4.initialize_read_ctr = { if((bo & 4) == 0) INPUT(CTR_T, 0); }
+group_store_serialization.initialize_serialization = {
+	Operation<CONFIG>::serialization = CONFIG::STORE_SERIALIZATION;
+}
 
-group_read_cr_bi_if_not_bo16.initialize_read_cr = { if((bo & 16) == 0) INPUT(CRB_T, bi); }
+group_refetch_serialization.initialize_serialization = {
+	Operation<CONFIG>::serialization = CONFIG::REFETCH_SERIALIZATION;
+}
 
-group_read_crba.initialize_read_crba = { INPUT(CRB_T, crbA); }
+group_read_ra.initialize_read_ra = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::GPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = ra;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_read_crbb.initialize_read_crbb = { INPUT(CRB_T, crbB); }
+group_read_rb.initialize_read_rb = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::GPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = rb;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_read_crfs.initialize_read_cr = { INPUT(CRF_T, crfS); }
+group_read_rs.initialize_read_rs = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::GPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = rs;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_rd.initialize_write_rd = { OUTPUT(GPR_T, rd); }
+group_read_fa.initialize_read_fa = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::FPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = fa;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_ra.initialize_write_ra = { OUTPUT(GPR_T, ra); }
+group_read_fb.initialize_read_fb = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::FPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = fb;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_fd.initialize_write_fd = { OUTPUT(FPR_T, fd); }
+group_read_fc.initialize_read_fc = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::FPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = fc;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_fpscr.initialize_write_fpscr = { OUTPUT(FPSCR_T, 0); }
+group_read_fs.initialize_read_fs = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::FPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = fs;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_lr_if_lk.initialize_write_lr = { if(lk) OUTPUT(LR_T, 0); }
+group_read_xer_ca.initialize_read_xer = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::XER_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.xerf = CONFIG::XER_CA_T;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_ctr_if_not_bo4.initialize_write_ctr = { if((bo & 4) == 0) OUTPUT(CTR_T, 0); }
+group_read_lr.initialize_read_lr = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::LR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_crbd.initialize_write_crbd = { OUTPUT(CRB_T, crbD); }
+group_read_ctr.initialize_read_ctr = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CTR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_xer_ca.initialize_write_xer = { OUTPUT(XER_T, XER_CA_T); }
+group_read_ctr_if_not_bo4.initialize_read_ctr = {
+	if((bo & 4) == 0)
+	{
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CTR_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+		Operation<CONFIG>::num_insn_operands++;
+	}
+}
 
-group_write_cr0_if_rc.initialize_write_cr = { if(rc) { INPUT(XER_T, XER_SO_T); OUTPUT(CRF_T, 0); } }
+group_read_cr_bi_if_not_bo16.initialize_read_cr = {
+	if((bo & 16) == 0)
+	{
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CRB_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.crb = bi;
+		Operation<CONFIG>::num_insn_operands++;
+	}
+}
 
-group_write_xer_ca_and_ov_so_if_oe.initialize_write_xer = { if(oe) OUTPUT(XER_T, XER_OV_T | XER_SO_T | XER_CA_T); else OUTPUT(XER_T, XER_CA_T); }
+group_read_crba.initialize_read_crba = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CRB_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.crb = crbA;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_cr1_if_rc.initialize_write_cr = { if(rc) OUTPUT(CRF_T, 1); }
+group_read_crbb.initialize_read_crbb = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CRB_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.crb = crbB;
+	Operation<CONFIG>::num_insn_operands++;
+}
 
-group_write_crfd.initialize_write_cr = { OUTPUT(CRF_T, crfD); }
+group_read_crfs.initialize_read_cr = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CRF_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.crf = crfS;
+	Operation<CONFIG>::num_insn_operands++;
+}
+
+group_write_rd.initialize_write_rd = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::GPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = rd;
+	Operation<CONFIG>::num_insn_operands++;
+}
+
+group_write_ra.initialize_write_ra = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::GPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = ra;
+	Operation<CONFIG>::num_insn_operands++;
+}
+
+group_write_fd.initialize_write_fd = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::FPR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.reg_num = fd;
+	Operation<CONFIG>::num_insn_operands++;
+}
+
+group_write_fpscr.initialize_write_fpscr = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::FPSCR_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+	Operation<CONFIG>::num_insn_operands++;
+}
+
+group_write_lr_if_lk.initialize_write_lr = {
+	if(lk)
+	{
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::LR_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+		Operation<CONFIG>::num_insn_operands++;
+	}
+}
+
+group_write_ctr_if_not_bo4.initialize_write_ctr = {
+	if((bo & 4) == 0)
+	{
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CTR_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+		Operation<CONFIG>::num_insn_operands++;
+	}
+}
+
+group_write_crbd.initialize_write_crbd = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CRB_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.crb = crbD;
+	Operation<CONFIG>::num_insn_operands++;
+}
+
+group_write_xer_ca.initialize_write_xer = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::XER_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.xerf = CONFIG::XER_CA_T;
+	Operation<CONFIG>::num_insn_operands++;
+}
+
+group_write_cr0_if_rc.initialize_write_cr = {
+	if(rc)
+	{
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::XER_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::INPUT_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.xerf = CONFIG::XER_SO_T;
+		Operation<CONFIG>::num_insn_operands++;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CRF_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.crf = 0;
+		Operation<CONFIG>::num_insn_operands++;
+	}
+}
+
+group_write_xer_ca_and_ov_so_if_oe.initialize_write_xer = {
+	if(oe)
+	{
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::XER_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.xerf = (typename CONFIG::xer_field_t) (CONFIG::XER_OV_T | CONFIG::XER_SO_T | CONFIG::XER_CA_T);
+		Operation<CONFIG>::num_insn_operands++;
+	}
+	else
+	{
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::XER_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.xerf = CONFIG::XER_CA_T;
+		Operation<CONFIG>::num_insn_operands++;
+	}
+}
+
+group_write_cr1_if_rc.initialize_write_cr = {
+	if(rc)
+	{
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CRF_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+		Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.crf = 1;
+		Operation<CONFIG>::num_insn_operands++;
+	}
+}
+
+group_write_crfd.initialize_write_cr = {
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].type = CONFIG::CRF_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].dir = CONFIG::OUTPUT_T;
+	Operation<CONFIG>::insn_operands[Operation<CONFIG>::num_insn_operands].extra.crf = crfD;
+	Operation<CONFIG>::num_insn_operands++;
+}
