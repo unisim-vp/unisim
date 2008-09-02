@@ -95,8 +95,9 @@ movb_09.getCycles = { return XbModes::GetIDXCycles(xb->getXbMode(), 4, 5, 5, 5, 
 movb_09.disasm = {
 	string mnem = "MOVB";
 	
-	sink << mnem << " 0x" <<  std::hex << opr16asrc << ",";
+	sink << mnem << " ";
 	xb->disasm(sink);
+	sink << ", 0x" <<  std::hex << opr16asrc;
 	return mnem;
 }
 
@@ -115,7 +116,7 @@ movb_0D.disasm = {
 	
 	sink << mnem << " ";
 	xb->disasm(sink);
-	sink << ",0x" << std::hex << opr16a;
+	sink << ", 0x" << std::hex << opr16a;
 	return mnem;
 }
 
