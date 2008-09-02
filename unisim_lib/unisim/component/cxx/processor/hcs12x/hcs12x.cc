@@ -63,7 +63,7 @@ sink
 #line 77 "hcs12x.isa"
 	{
 
-		sink << "asm(\"NOP\");\n";
+		//	sink << "asm(\"NOP\");\n";
 	}
 #line 69 "hcs12x.cc"
 }
@@ -81,7 +81,7 @@ sink
 {
 #line 73 "hcs12x.isa"
 	{
-		sink << "asm(\"NOP\");\n";
+		//	sink << "asm(\"NOP\");\n";
 	}
 #line 87 "hcs12x.cc"
 }
@@ -31905,7 +31905,7 @@ sink
 		if (b==0){
 			mnem = "SUBA";
 			} else {
-			mnem = "SUBB ";
+			mnem = "SUBB";
 		}
 
 		sink << mnem << " ";
@@ -37127,9 +37127,9 @@ sink
 		string mnem;
 
 		if (b==0) {
-			mnem = "ORA";
+			mnem = "ORAA";
 			} else {
-			mnem = "ORB";
+			mnem = "ORAB";
 		}
 		sink << mnem << " #0x" << std::hex << opr8i;
 
@@ -37951,9 +37951,9 @@ sink
 		string mnem;
 
 		if (b==0) {
-			mnem = "EOR";
+			mnem = "EORA";
 			} else {
-			mnem = "EOR";
+			mnem = "EORB";
 		}
 		sink << mnem << " #0x" << std::hex << opr8i;
 
@@ -39232,7 +39232,7 @@ sink
 			mnem = "CLRB";
 		}
 
-		sink << "mnem";
+		sink << mnem;
 
 		return mnem;
 	}
@@ -48793,7 +48793,7 @@ sink
 {
 #line 429 "/export/is010125/rnouacer/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./fuzzy-logic.isa"
 	{
-		string mnem = "ETLB";
+		string mnem = "ETBL";
 
 		sink << mnem << " ";
 		xb->disasm(sink);

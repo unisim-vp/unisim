@@ -455,7 +455,7 @@ public:
 		case 2:
        		return "D";
        	default:
-       		return "unknown";	
+       		return "unknown"; // rr=11 see accumulator D offset indexed-indirect 	
 		}
 	}
 

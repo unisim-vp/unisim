@@ -427,7 +427,7 @@ op etlb(0x18[8]:0x3F[8]:> <:*xb[XB])
 etlb.getCycles = { return 10; }
 
 etlb.disasm = {
-	string mnem = "ETLB";
+	string mnem = "ETBL";
 	
 	sink << mnem << " ";
 	xb->disasm(sink);

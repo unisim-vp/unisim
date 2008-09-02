@@ -216,7 +216,7 @@ clr_ab.disasm = {
 		mnem = "CLRB";
 	}
 	
-	sink << "mnem";
+	sink << mnem;
 	
 	return mnem;
 }

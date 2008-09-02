@@ -448,9 +448,9 @@ ora_ab_imm.disasm = {
 	string mnem;
 	
 	if (b==0) {
-		mnem = "ORA";
+		mnem = "ORAA";
 	} else {
-		mnem = "ORB";
+		mnem = "ORAB";
 	}
 	sink << mnem << " #0x" << std::hex << opr8i;
 	
@@ -872,9 +872,9 @@ eor_ab_imm.disasm = {
 	string mnem;
 	
 	if (b==0) {
-		mnem = "EOR";
+		mnem = "EORA";
 	} else {
-		mnem = "EOR";
+		mnem = "EORB";
 	}
 	sink << mnem << " #0x" << std::hex << opr8i;
 	

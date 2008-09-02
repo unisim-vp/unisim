@@ -2098,7 +2098,7 @@ sub_ab_idx.disasm = {
 	if (b==0){
 		mnem = "SUBA";
 	} else {
-		mnem = "SUBB ";
+		mnem = "SUBB";
 	}
 
 	sink << mnem << " ";

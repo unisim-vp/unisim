@@ -60,10 +60,10 @@ sink
 				sink << "asm(\"" << "PULY \");\n";
 			}
 			if (((string) *iter1).compare("SP") == 0) {
-				sink << "asm(\"" << "STX SP \");\n";
+				//			sink << "asm(\"" << "STX SP \");\n";
 			}
 			if (((string) *iter1).compare("PC") == 0) {
-				sink << "asm(\"" << "JMP Y \");\n";
+				//			sink << "asm(\"" << "JMP Y \");\n";
 			}
 			if (((string) *iter1).compare("A") == 0) {
 				sink << "asm(\"" << "PULA \");\n";
@@ -108,10 +108,10 @@ sink
 				sink << "asm(\"" << "PSHY \");\n";
 			}
 			if (((string) *iter1).compare("SP") == 0) {
-				sink << "asm(\"" << "LDX SP \");\n";
+				//			sink << "asm(\"" << "LDX SP \");\n";
 			}
 			if (((string) *iter1).compare("PC") == 0) {
-				sink << "asm(\"" << "LDY PC \");\n";
+				//			sink << "asm(\"" << "LDY PC \");\n";
 			}
 			if (((string) *iter1).compare("A") == 0) {
 				sink << "asm(\"" << "PSHA \");\n";

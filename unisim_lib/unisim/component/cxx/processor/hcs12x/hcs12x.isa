@@ -71,12 +71,12 @@ action {string} disasm({ostream&} {sink}) {
 }
 
 action {void} pre_execute({ostream&} {sink}) {
-	sink << "asm(\"NOP\");\n";
+//	sink << "asm(\"NOP\");\n";
 }
 
 action {void} post_execute({ostream&} {sink}) {
 	
-	sink << "asm(\"NOP\");\n";
+//	sink << "asm(\"NOP\");\n";
 }
 
 action {uint8_t} getCycles () {
