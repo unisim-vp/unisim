@@ -27317,9 +27317,9 @@ sink
 	{
 		string mnem = "MOVB";
 
-		sink << mnem << " ";
+		sink << mnem << " 0x" <<  std::hex << opr16asrc << ", ";
 		xb->disasm(sink);
-		sink << ", 0x" <<  std::hex << opr16asrc;
+
 		return mnem;
 	}
 #line 27326 "hcs12x.cc"
