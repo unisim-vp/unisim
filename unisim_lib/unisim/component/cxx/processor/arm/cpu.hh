@@ -337,8 +337,8 @@ public:
     uint32_t GetDebugPC() const;
     void SetDebugPC(uint32_t);
 
-	void SetICacheInfo( size_t line_size, size_t assoc, size_t n_lines );
-    void SetDCacheInfo( size_t line_size, size_t assoc, size_t n_lines );
+//	void SetICacheInfo( size_t line_size, size_t assoc, size_t n_lines );
+//	void SetDCacheInfo( size_t line_size, size_t assoc, size_t n_lines );
 
 private:
 	void StepExecute();

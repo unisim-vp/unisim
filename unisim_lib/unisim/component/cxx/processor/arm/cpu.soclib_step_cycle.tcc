@@ -1435,38 +1435,36 @@ template<class CONFIG>
 size_t 
 CPU<CONFIG> ::
 GetDebugRegisterSize(unsigned int reg) const {
-	// TODO
-	return 0;
+	return 32;
 }
 	
 template<class CONFIG>
 uint32_t 
 CPU<CONFIG> ::
 GetDebugPC() const {
-	// TODO
-	return 0;
+	return fetch_pc;
 }
  
 template<class CONFIG>
 void 
 CPU<CONFIG> ::
 SetDebugPC(uint32_t new_pc) {
-	// TODO
+	fetch_pc = new_pc;
 }
 
-template<class CONFIG>
-void 
-CPU<CONFIG> ::
-SetICacheInfo( size_t line_size, size_t assoc, size_t n_lines ) {
+// template<class CONFIG>
+// void 
+// CPU<CONFIG> ::
+// SetICacheInfo( size_t line_size, size_t assoc, size_t n_lines ) {
 	// TODO
-}
+// }
  
-template<class CONFIG>
-void 
-CPU<CONFIG> ::
-SetDCacheInfo( size_t line_size, size_t assoc, size_t n_lines ) {
+// template<class CONFIG>
+// void 
+// CPU<CONFIG> ::
+// SetDCacheInfo( size_t line_size, size_t assoc, size_t n_lines ) {
 	// TODO
-}
+// }
 
 template<class CONFIG>
 void
