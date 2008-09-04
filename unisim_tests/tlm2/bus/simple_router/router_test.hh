@@ -36,7 +36,61 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
+#include <vector>
+#include <map>
 
+#define TRANS(L,X) \
+{ \
+	(L) << " - trans = " << &(X) << endl \
+		<< "   - " << ((X).is_read()?"read":"write") << endl \
+		<< "   - address = 0x" << hex << (X).get_address() << dec << endl \
+		<< "   - data_length = " << (X).get_data_length(); \
+	if((X).is_write()) { \
+		(L) << endl << "   - data ="; \
+		for(unsigned int _trans_i = 0; _trans_i < (X).get_data_length(); _trans_i++) { \
+			(L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
+		} \
+	} \
+}
+
+#define ETRANS(L,X) \
+{ \
+	(L) << " - trans = " << &(X) << endl \
+		<< "   - " << ((X).is_read()?"read":"write") << endl \
+		<< "   - address = 0x" << hex << (X).get_address() << dec << endl \
+		<< "   - data_length = " << (X).get_data_length() << endl \
+	    << "   - response_status = "; \
+	switch((X).get_response_status()) { \
+	case tlm::TLM_OK_RESPONSE: \
+		(L) << "TLM_OK_RESPONSE"; \
+		break; \
+	case tlm::TLM_INCOMPLETE_RESPONSE: \
+		(L) << "TLM_INCOMPLETE_RESPONSE"; \
+		break; \
+	case tlm::TLM_GENERIC_ERROR_RESPONSE: \
+		(L) << "TLM_GENERIC_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_ADDRESS_ERROR_RESPONSE: \
+		(L) << "TLM_ADDRESS_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_COMMAND_ERROR_RESPONSE: \
+		(L) << "TLM_COMMAND_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_BURST_ERROR_RESPONSE: \
+		(L) << "TLM_BURST_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: \
+		(L) << "TLM_BYTE_ENABLE_ERROR_RESPONSE"; \
+		break; \
+	} \
+	(L) << endl; \
+	if((X).get_response_status() == tlm::TLM_OK_RESPONSE) { \
+		(L) << "   - data ="; \
+		for(unsigned int _trans_i = 0; _trans_i < (X).get_data_length(); _trans_i++) { \
+			(L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
+		} \
+	} \
+}
 
 using namespace unisim::kernel::logger;
 
@@ -45,12 +99,25 @@ class Initiator :
 public sc_module,
 public unisim::kernel::service::Object,
 public tlm::tlm_bw_transport_if<> {
+private:
+	struct InitiatorAccess {
+		bool read;
+		uint64_t addr;
+		unsigned char data[4];
+		unsigned int size;
+	};
+
 public:
 	tlm::tlm_initiator_socket<> init_socket;
 	sc_event end_req_event;
 	sc_event end_resp_event;
 	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	Logger logger;	
+	uint64_t base_address;
+	unisim::kernel::service::Parameter<uint64_t> param_base_address;
+	uint64_t num_accesses;
+	unisim::kernel::service::Parameter<uint64_t> param_num_accesses;
+	vector<InitiatorAccess> access_vector;
 
 	SC_HAS_PROCESS(Initiator);
 
@@ -58,6 +125,11 @@ public:
 	sc_module(name),
 	unisim::kernel::service::Object(name, parent),
 	init_socket("init_socket"),
+	base_address(0),
+	param_base_address("base_address", this, base_address, "Memory accesses base address"),
+	num_accesses(10),
+	param_num_accesses("num_accesses", this, num_accesses, "Number of accesses to do"),
+	access_vector(),
 	logger(*this) {
 		SC_THREAD(thread);
 		init_socket.bind(*this);
@@ -67,6 +139,28 @@ public:
 	}
 
 	virtual bool Setup() {
+		if(num_accesses == 0) {
+			logger << DebugError << "num_accesses should be bigger than 0" << EndDebug;
+			return false;
+		}
+		access_vector.resize(num_accesses * 2);
+		for(unsigned int i = 0; i < num_accesses * 2; i++) {
+			access_vector[i].size = 4;
+			if(i % 2 == 0) {
+				access_vector[i].read = false;
+				access_vector[i].addr = base_address + (i * 4);
+				for(unsigned int j = 0; j < 4; j++) {
+					unsigned char data = i % 0xff;
+					access_vector[i].data[j] = data;
+				}
+			} else {
+				access_vector[i].read = true;
+				access_vector[i].addr = base_address + ((i - 1) * 4);
+				for(unsigned int j = 0; j < 4; j++) {
+					access_vector[i].data[j] = 0;
+				}
+			}
+		}
 		return true;
 	}
 
@@ -76,39 +170,36 @@ public:
 
 	void thread() {
 		tlm::tlm_generic_payload *trans;
-		unsigned int i = 0;
 
-		while(i < 10) {
-			unsigned char data[4];
+		for(unsigned int i = 0; i < access_vector.size(); i++) {
 			trans = payload_fabric.allocate();
-			trans->set_address(i*4);
-			if(i % 2) {
+			trans->set_address(access_vector[i].addr);
+			if(access_vector[i].read) {
 				trans->set_read();
 			} else {
 				trans->set_write();
-				for(unsigned int j = 0; j < 4; j++)
-					data[j] = i;
 			}
-			trans->set_data_ptr(data);
-			trans->set_data_length(4);
+			trans->set_data_ptr(access_vector[i].data);
+			trans->set_data_length(access_vector[i].size);
 			sc_time time(1.0, SC_NS);
 			if(DEBUG) {
 				logger << DebugInfo << "Sending transaction" << endl
-					<< " - time = " << sc_time_stamp() + time << endl
-					<< " - trans = " << trans << endl
-					<< "   - address = 0x" << hex << trans->get_address() << dec << endl;
-				logger << "   - data_ptr = " << (void *)trans->get_data_ptr() << endl;
-				logger << "   - size = " << trans->get_data_length() << endl;
-				if(trans->is_read()) {
-					logger << "   - command = read" << endl;
-				} else {
-					logger << "   - command = write" << endl;
-					logger << "   - data = ";
-					unsigned char *tdata = trans->get_data_ptr();
-					for(unsigned int i = 0; i < trans->get_data_length(); i++) {
-						logger << hex << tdata[i] << dec << endl;
-					}
-				}
+					<< " - time = " << sc_time_stamp() + time << endl;
+				TRANS(logger, *trans);
+//					<< " - trans = " << trans << endl
+//					<< "   - address = 0x" << hex << trans->get_address() << dec << endl;
+//				logger << "   - data_ptr = " << (void *)trans->get_data_ptr() << endl;
+//				logger << "   - size = " << trans->get_data_length() << endl;
+//				if(trans->is_read()) {
+//					logger << "   - command = read" << endl;
+//				} else {
+//					logger << "   - command = write" << endl;
+//					logger << "   - data =";
+//					unsigned char *tdata = trans->get_data_ptr();
+//					for(unsigned int i = 0; i < trans->get_data_length(); i++) {
+//						logger << " " << hex << (unsigned int)(tdata[i]) << dec;
+//					}
+//				}
 				logger << EndDebug;
 			}
 			tlm::tlm_phase phase = tlm::BEGIN_REQ;
@@ -144,8 +235,15 @@ public:
 						<< " - trans = " << trans << EndDebug;
 				trans->release();
 			}
+			if(trans->is_read()) {
+				if(DEBUG) {
+					logger << DebugInfo << "Transaction answer received" << endl
+						<< " - time = " << sc_time_stamp() + time << endl;
+					ETRANS(logger, *trans);
+					logger << EndDebug;
+				}
+			}
 			wait(time);
-			i++;
 		}
 	}
 
@@ -196,6 +294,9 @@ class Target :
 public sc_module,
 public unisim::kernel::service::Object,
 public tlm::tlm_fw_transport_if<> {
+private:
+	map<uint64_t, unsigned char> mem;
+
 public:
 	tlm::tlm_target_socket<> targ_socket;
 	Logger logger;
@@ -206,6 +307,7 @@ public:
 	sc_module(name),
 	unisim::kernel::service::Object(name, parent),
 	targ_socket("targ_socket"),
+	mem(),
 	logger(*this) {
 		targ_socket.bind(*this);
 	}
@@ -260,11 +362,35 @@ public:
 
 	virtual void b_transport(tlm::tlm_generic_payload &trans, sc_time &delay) {
 		sc_time my_delay(1.0, SC_NS);
-		if(DEBUG)
+		if(DEBUG) {
 			logger << DebugInfo << "Received blocking transaction, returning with a delay of " << my_delay << endl
-				<< " - time = " << sc_time_stamp() + delay << endl
-				<< " - trans = " << &trans << EndDebug;
+				<< " - time = " << sc_time_stamp() + delay << endl;
+			TRANS(logger, trans);
+			logger << EndDebug;
+		}
+		unsigned char *data = trans.get_data_ptr();
+		unsigned int size = trans.get_data_length();
+		uint64_t addr = trans.get_address();
+		map<uint64_t, unsigned char>::iterator it;
+		if(trans.is_read()) {
+			for(unsigned int i = 0; i < size; i++) {
+				it = mem.find(addr + i);
+				if(it != mem.end())
+					data[i] = it->second;
+				else
+					data[i] = 0;
+			}
+		} else {
+			for(unsigned int i = 0; i < size; i++) {
+				mem[addr + i] = data[i];
+			}
+		}
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
 		delay += my_delay;
+		logger << DebugInfo << "Responding to blocking transaction:" << endl
+			<< " - time = " << sc_time_stamp() + delay << endl;
+		ETRANS(logger, trans);
+		logger << EndDebug;
 	}
 
 	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload &trans, tlm::tlm_dmi &dmi_data) {
@@ -281,8 +407,8 @@ class Top :
 public sc_module,
 public unisim::kernel::service::Object {
 public:
-	Initiator<DEBUG> *init;
-	Initiator<DEBUG> *init2;
+	Initiator<true, DEBUG> *init;
+	Initiator<true, DEBUG> *init2;
 	Target<DEBUG> *targ;
 	Target<DEBUG> *targ2;
 	unisim::component::tlm2::bus::simple_router::Router<unisim::component::tlm2::bus::simple_router::DebugConfig> *drouter;
@@ -293,8 +419,8 @@ public:
 	Top(const sc_module_name &name, unisim::kernel::service::Object *parent = 0) :
 	sc_module(name),
 	unisim::kernel::service::Object(name, parent) {
-		init = new Initiator<DEBUG>("init", this);
-		init2 = new Initiator<DEBUG>("init2", this);
+		init = new Initiator<true, DEBUG>("init", this);
+		init2 = new Initiator<true, DEBUG>("init2", this);
 		targ = new Target<DEBUG>("targ", this);
 		targ2 = new Target<DEBUG>("targ2", this);
 		drouter = 0;

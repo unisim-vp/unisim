@@ -44,8 +44,20 @@ int sc_main(int argv, char **argc) {
 	Top<true> top("top");
 
 
- 	VariableBase *var = ServiceManager::GetParameter("top.router.cycle_time");
+	VariableBase *var = ServiceManager::GetParameter("top.router.cycle_time");
 	*var = 10.0;
+	var = ServiceManager::GetParameter("top.router.mapping_0");
+	*var = "range_start=\"0x0000\" range_end=\"0x1000\" output_port=\"0\"";
+	var = ServiceManager::GetParameter("top.router.mapping_1");
+	*var = "range_start=\"0x1000\" range_end=\"0x2000\" output_port=\"1\"";
+	var = ServiceManager::GetParameter("top.init.base_address");
+	*var = 0;
+	var = ServiceManager::GetParameter("top.init2.base_address");
+	*var = 0x1000;
+	var = ServiceManager::GetParameter("top.init.num_accesses");
+	*var = 2;
+	var = ServiceManager::GetParameter("top.init2.num_accesses");
+	*var = 2;
  	var = ServiceManager::GetParameter("top.router.verbose_all");
  	*var = true;
  	var = ServiceManager::GetParameter("kernel_logger.std_out");
@@ -56,10 +68,6 @@ int sc_main(int argv, char **argc) {
  	*var = false;
  	var = ServiceManager::GetParameter("kernel_logger.std_err_color");
  	*var = false;
-	var = ServiceManager::GetParameter("top.router.mapping_0");
-	*var = "range_start=\"0x0000\" range_end=\"0x1000\" output_port=\"0\"";
-	var = ServiceManager::GetParameter("top.router.mapping_1");
-	*var = "range_start=\"0x1000\" range_end=\"0x2000\" output_port=\"1\"";
 // 	var = ServiceManager::GetParameter("kernel_logger.xml_file");
 // 	*var = true;
 	if(!ServiceManager::Setup()) {
