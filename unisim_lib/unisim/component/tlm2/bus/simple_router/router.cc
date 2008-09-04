@@ -34,6 +34,7 @@
  
 #include "unisim/kernel/service/service.hh"
 #include "unisim/component/tlm2/bus/simple_router/router.hh"
+#include "unisim/component/tlm2/bus/simple_router/router.tcc"
 #include <sstream>
 #include <string>
 
@@ -41,27 +42,27 @@ namespace unisim {
 namespace kernel {
 namespace service {
 
-template <> Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::Variable(const char *_name, Object *_object, unisim::component::tlm2::bus::simple_router::mapping_type &_storage, Type type, const char *_description) :
+template <> Variable<unisim::component::tlm2::bus::simple_router::Mapping>::Variable(const char *_name, Object *_object, unisim::component::tlm2::bus::simple_router::Mapping &_storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage) {
 }
 
-template <> Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator bool () const { return false; }
-template <> Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator long long () const { return 0; }
-template <> Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator unsigned long long () const { return 0; }
-template <> Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator double () const { return 0; }
-template <> Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator string () const { 
+template <> Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator bool () const { return false; }
+template <> Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator long long () const { return 0; }
+template <> Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator unsigned long long () const { return 0; }
+template <> Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator double () const { return 0; }
+template <> Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator string () const { 
 	std::stringstream buf;
-	buf << "<unisim::component::tlm2::bus::simple_router::mapping range_start=0x" << std::hex << storage->range_start << std::dec
-		<< " range_end=0x" << std::hex << storage->range_end << std::dec
-		<< " output_port=" << storage->output_port << "/>";
+	buf << "<unisim::component::tlm2::bus::simple_router::mapping range_start=\"0x" << std::hex << storage->range_start << std::dec
+		<< "\" range_end=\"0x" << std::hex << storage->range_end << std::dec
+		<< "\" output_port=\"" << storage->output_port << "\"/>";
 	return buf.str();
 }
 
-template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator = (bool value) { return *this;}
-template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator = (long long value) { return *this;}
-template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator = (unsigned long long value) { return *this;}
-template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator = (double value) { return *this;}
-template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::mapping_type>::operator = (const char *value) { 
+template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator = (bool value) { return *this;}
+template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator = (long long value) { return *this;}
+template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator = (unsigned long long value) { return *this;}
+template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator = (double value) { return *this;}
+template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::Mapping>::operator = (const char *value) { 
 	uint64_t range_start;
 	uint64_t range_end;
 	unsigned int output_port;
@@ -96,31 +97,26 @@ template <> VariableBase& Variable<unisim::component::tlm2::bus::simple_router::
 	stringstream output_port_str;
 	output_port_str << str;
 	output_port_str >> output_port;
+	storage->used = true;
 	storage->range_start = range_start;
 	storage->range_end = range_end;
 	storage->output_port = output_port;
 	return *this;
 }
 
-template class Variable<unisim::component::tlm2::bus::simple_router::mapping_type>;
+template <> const char *Variable<unisim::component::tlm2::bus::simple_router::Mapping>::GetDataTypeName() const {
+	return "unisim::component::tlm2::bus::simple_router::Mapping";
+}
+
+template class Variable<unisim::component::tlm2::bus::simple_router::Mapping>;
 
 } // end of namespace unisim
 } // end of namespace kernel
 } // namespace service
 
-
-namespace unisim {
-namespace component {
-namespace tlm2 {
-namespace bus {
-namespace simple_router {
+template
+class unisim::component::tlm2::bus::simple_router::Router<>;
 
 template
-class Router<>;
-
-} // end of namespace simple_router
-} // end of namespace bus
-} // end of namespace tlm2
-} // end of namespace component
-} // end of namespace unisim
+class unisim::component::tlm2::bus::simple_router::Router<unisim::component::tlm2::bus::simple_router::DebugConfig>;
 
