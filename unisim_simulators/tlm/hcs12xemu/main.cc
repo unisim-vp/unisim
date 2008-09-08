@@ -232,7 +232,7 @@ int sc_main(int argc, char *argv[])
 	bool logger_on = false;
 	bool logger_messages = false;
 	double cpu_frequency = 40.0; // in Mhz
-	uint32_t cpu_clock_multiplier = 1; // REDA: I think that clock_multipier =2 
+	uint32_t cpu_clock_multiplier = 1;  
 //	double cpu_ipc = 1.0; // in instructions per cycle
 	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
