@@ -605,7 +605,8 @@ public:
 		i++;
 		cfg++;
 		filenames[cfg] = command_line[i];
-		sim_argc_start[cfg] = i+1;
+		sim_argc_start[cfg] = i;
+		sim_argc[cfg]++;
 	      }
 	    else
 	      {
