@@ -689,28 +689,204 @@ bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size
 uint8_t CPU::memRead8(physical_address_t addr) {
 
 	uint8_t data;
-	BusRead(addr, &data, 1);
+	if (addr < 0x800) // Register address space is 2 KBytes 
+	{
+		regRead(addr, &data, 1);
+	}
+	else
+	{ 
+		BusRead(addr, &data, 1);
+	}
 	return data;
 }
 
 uint16_t CPU::memRead16(physical_address_t addr) {
 
 	uint16_t data;
-	BusRead(addr, &data, 2);
+	if (addr < 0x800) // Register address space is 2 KBytes 
+	{
+		regRead(addr, (uint8_t*)&data, 2);
+	}
+	else
+	{ 
+		BusRead(addr, &data, 2);
+		data = BigEndian2Host(data); 
+	}
 
-	return BigEndian2Host(data);
+	return data;
 }
 
 void CPU::memWrite8(physical_address_t addr, uint8_t val) {
 
-	BusWrite( addr, &val, 1); 
+	if (addr < 0x800) // Register address space is 2 KBytes 
+	{
+		regWrite(addr, &val, 1);
+	}
+	else
+	{
+		BusWrite( addr, &val, 1);
+	} 
 }
 
 void CPU::memWrite16(physical_address_t addr, uint16_t val) {
 
-	val = Host2BigEndian(val);
+	if (addr < 0x800) // Register address space is 2 KBytes 
+	{
+		regWrite(addr, (uint8_t*) &val, 2);
+	}
+	else
+	{
+		val = Host2BigEndian(val);
+		BusWrite(addr, &val, 2);
+	}
+}
+
+void CPU::regRead(physical_address_t addr, uint8_t *data, uint8_t size)
+{
+	int i= size;
 	
-	BusWrite(addr, &val, 2);
+	while (i > 0)
+	{
+		switch (addr) {
+			case MMC::MMCCTL0_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getMmcctl0();
+				}
+				break;
+			case MMC::MODE_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getMode();
+				}
+				break;
+			case MMC::GPAGE_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getGpage();
+				}
+				break;
+			case MMC::DIRECT_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getDirect();
+				}
+				break;
+			case MMC::MMCCTL1_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getMmcctl1();
+				}
+				break;
+			case MMC::RPAGE_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getRpage();
+				}
+				break;
+			case MMC::EPAGE_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getEpage();
+				}
+				break;
+			case MMC::PPAGE_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getPpage();
+				}
+				break;
+			case MMC::RAMWPC_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getRamwpc(); 
+				}
+				break;
+			case MMC::RAMXGU_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getRamxgu();
+				}
+				break;
+			case MMC::RAMSHL_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getRamshl();
+				}
+				break;
+			case MMC::RAMSHU_REG_ADDRESS: 
+				{
+					data[i-1] = mmc->getRamshu();
+				}
+				break;
+			default: data[i-1] = 0;
+		}
+		
+		i = i - 1;
+	}
+}
+
+void CPU::regWrite(physical_address_t addr, uint8_t *data, uint8_t size)
+{
+	int i = size;
+	
+	while (i > 0)
+	{
+		switch (addr) {
+			case MMC::MMCCTL0_REG_ADDRESS: 
+				{
+					mmc->setMmcctl0(data[i-1]);
+				}
+				break;
+			case MMC::MODE_REG_ADDRESS: 
+				{
+					mmc->setMode(data[i-1]);
+				}
+				break;
+			case MMC::GPAGE_REG_ADDRESS: 
+				{
+					mmc->setGpage(data[i-1]);
+				}
+				break;
+			case MMC::DIRECT_REG_ADDRESS: 
+				{
+					mmc->setDirect(data[i-1]);
+				}
+				break;
+			case MMC::MMCCTL1_REG_ADDRESS: 
+				{
+					mmc->setMmcctl1(data[i-1]);
+				}
+				break;
+			case MMC::RPAGE_REG_ADDRESS: 
+				{
+					mmc->setRpage(data[i-1]);
+				}
+				break;
+			case MMC::EPAGE_REG_ADDRESS: 
+				{
+					mmc->setEpage(data[i-1]);
+				}
+				break;
+			case MMC::PPAGE_REG_ADDRESS: 
+				{
+					mmc->setPpage(data[i-1]);
+				}
+				break;
+			case MMC::RAMWPC_REG_ADDRESS: 
+				{
+					mmc->setRamwpc(data[i-1]); 
+				}
+				break;
+			case MMC::RAMXGU_REG_ADDRESS: 
+				{
+					mmc->setRamxgu(data[i-1]);
+				}
+				break;
+			case MMC::RAMSHL_REG_ADDRESS: 
+				{
+					mmc->setRamshl(data[i-1]);
+				}
+				break;
+			case MMC::RAMSHU_REG_ADDRESS: 
+				{
+					mmc->setRamshu(data[i-1]);
+				}
+				break;
+			default: ;
+		}
+		
+		i = i - 1;
+	}
 }
 
 /* ********** END MEM ACCESS ROUTINES ****** */

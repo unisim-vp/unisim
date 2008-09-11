@@ -48,7 +48,14 @@ MMC::MMC(MEMORY::MODE mode) :
     _direct(DIRECT_RESET_PAGE),
     _rpage(RAM_RESET_PAGE),      
     _epage(EEPROM_RESET_PAGE),      
-    _ppage(FLASH_RESET_PAGE) 
+    _ppage(FLASH_RESET_PAGE),
+    _mmcctl0(0),
+	_mode(0),
+	_mmcctl1(0),
+	_ramwpc(0),
+	_ramxgu(0),
+	_ramshl(0),
+	_ramshu(0)
 {    
 }
 
@@ -98,6 +105,27 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 
 	return address;
 }
+
+void MMC::setMmcctl0 (uint8_t val) { _mmcctl0 = val; }
+uint8_t MMC::getMmcctl0 () { return _mmcctl0; }
+
+void MMC::setMode (uint8_t val) { _mode = val; }
+uint8_t MMC::getMode () { return _mode; }
+	
+void MMC::setMmcctl1 (uint8_t val) { _mmcctl1 = val; }
+uint8_t MMC::getMmcctl1 () { return _mmcctl1; }
+	
+void MMC::setRamwpc (uint8_t val) { _ramwpc = val; }
+uint8_t MMC::getRamwpc () { return _ramwpc; }
+
+void MMC::setRamxgu (uint8_t val) { _ramxgu = val; }
+uint8_t MMC::getRamxgu () { return _ramxgu; }
+
+void MMC::setRamshl (uint8_t val) { _ramshl = val; }
+uint8_t MMC::getRamshl () { return _ramshl; }
+
+void MMC::setRamshu (uint8_t val) { _ramshu = val; }
+uint8_t MMC::getRamshu () { return _ramshu; }
 
 void MMC::setGpage (uint8_t val) { _gpage = val;}
 uint8_t MMC::getGpage () { return _gpage; }

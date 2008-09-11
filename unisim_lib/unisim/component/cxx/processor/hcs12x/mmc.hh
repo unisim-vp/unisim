@@ -60,6 +60,77 @@ public:
 
 class MMC 
 {
+public:
+
+    MMC(MEMORY::MODE mode);
+       
+	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
+
+
+    void setMmcctl0 (uint8_t val);
+    uint8_t getMmcctl0 ();
+
+	void setMode (uint8_t val);
+	uint8_t getMode ();
+	
+    void    setGpage (uint8_t val);
+    uint8_t getGpage ();
+	
+    void    setDirect (uint8_t val);
+    uint8_t getDirect ();
+
+	void setMmcctl1 (uint8_t val);
+	uint8_t getMmcctl1 ();
+	
+    void    setRpage (uint8_t val);
+    uint8_t getRpage ();
+
+    void    setEpage (uint8_t val);
+    uint8_t getEpage ();
+
+    void    setPpage (uint8_t val);
+    uint8_t getPpage ();
+
+	void setRamwpc (uint8_t val);
+	uint8_t getRamwpc ();
+
+	void setRamxgu (uint8_t val);
+	uint8_t getRamxgu ();
+
+	void setRamshl (uint8_t val);
+	uint8_t getRamshl ();
+
+	void setRamshu (uint8_t val);
+	uint8_t getRamshu ();
+
+protected:
+	physical_address_t getDirectAddress(uint8_t lowByte);
+	physical_address_t getRamAddress(address_t logicalAddress);
+	physical_address_t getEepromAddress(address_t logicalAddress);
+	physical_address_t getFlashAddress(address_t logicalAddress);
+
+private:
+	
+	//=============================================
+	//=            MMC REGISTERS                  =
+	//=============================================
+    uint8_t _mmcctl0;
+	uint8_t _mode;
+	uint8_t _gpage;      // The truth size of GPage is 0x07bits. MAX_VAL(gpage) == 0x7F
+    uint8_t _direct;
+	uint8_t _mmcctl1;
+    uint8_t _rpage;      
+    uint8_t _epage;      
+    uint8_t _ppage;      
+	uint8_t _ramwpc;
+	uint8_t _ramxgu;
+	uint8_t _ramshl;
+	uint8_t _ramshu;
+
+    bool        _isDirectSet;
+
+	MEMORY::MODE mmcMode;
+
 public: 
 
 	static const uint8_t DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
@@ -87,15 +158,23 @@ public:
 	static const address_t RAM_HIGH_OFFSET	= 0x3FFF;
 	static const address_t FLASH_LOW_OFFSET	= 0x4000;
 	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
+
+	static const address_t MMCCTL0_REG_ADDRESS	= 0x000A;
+	static const address_t MODE_REG_ADDRESS		= 0x000B;
+	static const address_t GPAGE_REG_ADDRESS	= 0x0010;
+	static const address_t DIRECT_REG_ADDRESS	= 0x0011;
+	static const address_t MMCCTL1_REG_ADDRESS	= 0x0013;
+	static const address_t RPAGE_REG_ADDRESS	= 0x0016;
+	static const address_t EPAGE_REG_ADDRESS	= 0x0017;
+	static const address_t PPAGE_REG_ADDRESS	= 0x0030;
+	static const address_t RAMWPC_REG_ADDRESS	= 0x011C;
+	static const address_t RAMXGU_REG_ADDRESS	= 0x011D;
+	static const address_t RAMSHL_REG_ADDRESS	= 0x011E;
+	static const address_t RAMSHU_REG_ADDRESS	= 0x011F;
+	
 	 
 #ifdef MC9S12XDP512
 
-	static const uint8_t GPAGE_REG_ADDRESS	= 0x0010;
-	static const uint8_t DIRECT_REG_ADDRESS	= 0x0011;
-	static const uint8_t RPAGE_REG_ADDRESS	= 0x0016;
-	static const uint8_t EPAGE_REG_ADDRESS	= 0x0017;
-	static const uint8_t PPAGE_REG_ADDRESS	= 0x0030;
-	
 	static const uint8_t GPAGE_LOW			= 0x00;		// low gpage register value
 	static const uint8_t GPAGE_HIGH			= 0x7F;		// high gpage register value
 
@@ -117,46 +196,7 @@ public:
 
 #endif
 	
-public:
 
-    MMC(MEMORY::MODE mode);
-       
-	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
-	
-    void    setGpage (uint8_t val);
-    uint8_t getGpage ();
-	
-    void    setDirect (uint8_t val);
-    uint8_t getDirect ();
-	
-    void    setRpage (uint8_t val);
-    uint8_t getRpage ();
-
-    void    setEpage (uint8_t val);
-    uint8_t getEpage ();
-
-    void    setPpage (uint8_t val);
-    uint8_t getPpage ();
-
-protected:
-	physical_address_t getDirectAddress(uint8_t lowByte);
-	physical_address_t getRamAddress(address_t logicalAddress);
-	physical_address_t getEepromAddress(address_t logicalAddress);
-	physical_address_t getFlashAddress(address_t logicalAddress);
-
-private:
-	// The truth size of {GPage, RPage, EPage, PPage, Direct} is 0x07bits. 
-	
-    uint8_t     _gpage;      // MAX_VAL(gpage) == 0x7F
-    uint8_t     _direct;
-
-    bool        _isDirectSet;
-
-    uint8_t     _rpage;      
-    uint8_t     _epage;      
-    uint8_t     _ppage;      
-
-	MEMORY::MODE mmcMode;
 };
 
 } // end of namespace hcs12x

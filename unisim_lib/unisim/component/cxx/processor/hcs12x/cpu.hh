@@ -309,6 +309,8 @@ public:
 	void memWrite8(physical_address_t addr,uint8_t val);
 	uint16_t memRead16(physical_address_t addr);
 	void memWrite16(physical_address_t addr,uint16_t val);
+	void regRead(physical_address_t addr, uint8_t *data, uint8_t size);
+	void regWrite(physical_address_t addr, uint8_t *data, uint8_t size);
 	
 	/* ******** END MEM ACCESS ROUTINES ****** */
 
