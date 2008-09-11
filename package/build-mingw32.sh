@@ -17,6 +17,7 @@ function Package {
 	PACKAGE_NAME=$1
 	START=$2
 	START_ICON=$3
+	START_PARAMS=$4
 
 	cd ${INSTALL_DIR}
 	rm -rf ${INSTALL_DIR}/dist
@@ -62,8 +63,8 @@ function Package {
 	if test "x${START}" != x && test "x${START_ICON}" != x; then
 		echo "" >> ${ISS_FILENAME}
 		echo "[Icons]" >> ${ISS_FILENAME}
-		echo "Name: \"{group}\\${PACKAGE_NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"" >> ${ISS_FILENAME}
-		echo "Name: \"{commondesktop}\\${PACKAGE_NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Tasks: desktopicon" >> ${ISS_FILENAME}
+		echo "Name: \"{group}\\${PACKAGE_NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Parameters: \"${START_PARAMS}\"" >> ${ISS_FILENAME}
+		echo "Name: \"{commondesktop}\\${PACKAGE_NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Parameters: \"${START_PARAMS}\"; Tasks: desktopicon" >> ${ISS_FILENAME}
 #		echo "Name: \"{userappdata}\\${PACKAGE_NAME}\"; Filename: \"{app}\\${START}\"; IconFilename: \"{app}\\${START_ICON}\"; Tasks: quicklaunchicon" >> ${ISS_FILENAME}
 	fi
 	
@@ -301,17 +302,14 @@ lzma-4.43-MSYS-1.0.11-1-bin.tar.gz \
 make-3.81-MSYS-1.0.11-2.tar.bz2 \
 MSYS-1.0.11-20071204.tar.bz2 \
 msysCORE-1.0.11-2007.01.19-1.tar.bz2 \
-tar-1.13.19-MSYS-2005.06.08.tar.bz2 \
 tar-1.19.90-MSYS-1.0.11-1-bin.tar.gz \
 texinfo-4.11-MSYS-1.0.11-1.tar.bz2 \
-autoconf2.1-2.13-3-bin.tar.bz2 \
 autoconf2.5-2.61-1-bin.tar.bz2 \
 autoconf-4-1-bin.tar.bz2 \
 autogen-5.9.2-MSYS-1.0.11-1-bin.tar.gz \
 autogen-5.9.2-MSYS-1.0.11-1-dev.tar.gz \
 autogen-5.9.2-MSYS-1.0.11-1-dll25.tar.gz \
 automake1.10-1.10-1-bin.tar.bz2 \
-automake1.9-1.9.6-2-bin.tar.bz2 \
 automake-3-1-bin.tar.bz2 \
 bison-2.3-MSYS-1.0.11-1.tar.bz2 \
 crypt-1.1-1-MSYS-1.0.11-1.tar.bz2 \
@@ -345,7 +343,9 @@ perl-5.6.1-MSYS-1.0.11-1.tar.bz2 \
 perl-man-5.6.1-MSYS-1.0.11-1.tar.bz2 \
 regex-0.12-MSYS-1.0.11-1.tar.bz2 \
 vim-7.1-MSYS-1.0.11-1-bin.tar.gz \
-zlib-1.2.3-MSYS-1.0.11-1.tar.bz2"
+zlib-1.2.3-MSYS-1.0.11-1.tar.bz2 \
+gawk-3.1.5-MSYS-1.0.11-1.tar.bz2 \
+m4-1.4.7-MSYS.tar.bz2"
 
 for file in ${mingw_file_list}
 do
@@ -377,8 +377,12 @@ do
 	fi
 done
 
-cp -rf ${INSTALL_DIR}/usr/local/* ${INSTALL_DIR}/.
-cp -rf ${INSTALL_DIR}/usr/spool ${INSTALL_DIR}/.
+# cp -rf ${INSTALL_DIR}/usr/local ${INSTALL_DIR}/.
+# cp -rf ${INSTALL_DIR}/usr/spool ${INSTALL_DIR}/.
+# cp -rf ${INSTALL_DIR}/coreutils-5.97/* ${INSTALL_DIR}/.
+# rm -rf ${INSTALL_DIR}/usr
+# rm -rf ${INSTALL_DIR}/coreutils-5.97
+cp -rf ${INSTALL_DIR}/usr/* ${INSTALL_DIR}/.
 cp -rf ${INSTALL_DIR}/coreutils-5.97/* ${INSTALL_DIR}/.
 rm -rf ${INSTALL_DIR}/usr
 rm -rf ${INSTALL_DIR}/coreutils-5.97
@@ -392,6 +396,11 @@ InstallBinArchive unzip-bin.zip http://gnuwin32.sourceforge.net/downlinks/unzip-
 InstallBinArchive zip-bin.zip http://gnuwin32.sourceforge.net/downlinks/zip-bin-zip.php
 InstallBinArchive wget-bin.zip http://gnuwin32.sourceforge.net/downlinks/wget-bin-zip.php
 
+# Install subversion client
+InstallBinArchive svn-win32-1.3.2.zip http://subversion.tigris.org/files/documents/15/32473/svn-win32-1.3.2.zip
+cp -rf ${INSTALL_DIR}/svn-win32-1.3.2/* ${INSTALL_DIR}/.
+rm -rf ${INSTALL_DIR}/svn-win32-1.3.2
+
 # Package everything into a single .EXE installer
-Package mingw32-unisim-pack msys.bat m.ico
+Package mingw32-unisim-pack msys.bat m.ico "--norxvt"
 
