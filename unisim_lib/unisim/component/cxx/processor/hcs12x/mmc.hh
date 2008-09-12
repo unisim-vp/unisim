@@ -55,14 +55,13 @@ class MEMORY {
 public:
 
 	enum MAP {DIRECT=0, EXTENDED=1};
-	enum MODE {NORMAL=0, GLOBAL=1};
 };
 
 class MMC 
 {
 public:
 
-    MMC(MEMORY::MODE mode);
+    MMC();
        
 	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
 
@@ -128,8 +127,6 @@ private:
 	uint8_t _ramshu;
 
     bool        _isDirectSet;
-
-	MEMORY::MODE mmcMode;
 
 public: 
 

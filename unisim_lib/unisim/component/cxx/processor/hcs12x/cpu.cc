@@ -138,15 +138,9 @@ void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 {
 	
 	setRegPC(cpu_address);
-	
-	if (page==0) 
-	{
-		mmc = new MMC(MEMORY::NORMAL);
-	} else
-	{
-		mmc = new MMC(MEMORY::GLOBAL);
-		mmc->setPpage(page);  
-	}
+
+	mmc = new MMC();
+	mmc->setPpage(page);  
   
 }
 
@@ -200,7 +194,7 @@ bool CPU::Setup()
 	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);	
 	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
 	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
-	registers_registry["CCR"] = new SimpleRegister<CCR_t>("CCR", ccr);		// ici il faut une <class BitFieldRegister>
+	registers_registry["CCR"] = new SimpleRegister<CCR_t>("CCR", ccr);
 
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
@@ -643,8 +637,8 @@ inline INLINE
 void CPU::RegistersInfo() {
 
 	if (CONFIG::REGISTERS_INFO) {
-		cout << "CCR=0x" << std::hex << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
-		cout << "D  =0x" << getRegD()     << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << "\n";
+		cout << std::hex << "CCR=0x" << ccr->getCCR() << "PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
+		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";
 	}
 }
 

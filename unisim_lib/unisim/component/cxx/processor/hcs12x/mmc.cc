@@ -42,8 +42,7 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 	
-MMC::MMC(MEMORY::MODE mode) : 
-	mmcMode(mode),
+MMC::MMC() : 
 	_gpage(GLOBAL_RESET_PAGE),
     _direct(DIRECT_RESET_PAGE),
     _rpage(RAM_RESET_PAGE),      
@@ -140,7 +139,7 @@ void MMC::setDirect (uint8_t val) {
 uint8_t MMC::getDirect () { return _direct; }
 
 physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
-	if (mmcMode == MEMORY::GLOBAL)
+	if (_direct != 0)
 	{
 		return (((address_t) getDirect()) << DIRECT_ADDRESS_SIZE) | ((address_t) lowByte & 0x00FF);
 	} else 
@@ -154,40 +153,37 @@ physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
 void MMC::setRpage (uint8_t val) { _rpage = val;}
 uint8_t MMC::getRpage () { return _rpage; }
 physical_address_t MMC::getRamAddress(address_t logicalAddress) {
-	if (mmcMode == MEMORY::GLOBAL)
+	if (_rpage != 0)
 	{
 		return RAM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getRpage() << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
 	} else 
 	{
 		return logicalAddress;
 	}
-
 }
 
 void MMC::setEpage (uint8_t val) { _epage = val;}
 uint8_t MMC::getEpage () { return _epage; }
 physical_address_t MMC::getEepromAddress(address_t logicalAddress) {
-	if (mmcMode == MEMORY::GLOBAL)
+	if (_epage != 0)
 	{
 		return EEPROM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getEpage() << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
 	} else 
 	{
 		return logicalAddress;
 	}
-
 }
 
 void MMC::setPpage (uint8_t val) { _ppage = val;}
 uint8_t MMC::getPpage () { return _ppage; }
 physical_address_t MMC::getFlashAddress(address_t logicalAddress) {
-	if (mmcMode == MEMORY::GLOBAL)
+	if (_ppage != 0)
 	{
 		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getPpage() << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
 	} else 
 	{
 		return logicalAddress;
 	}
-
 }
 
 }
