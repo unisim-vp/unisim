@@ -32,7 +32,7 @@
  * Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr) 
  */
 
-#include "unisim/component/tlm2/bus/generic_bus/bus.hh"
+#include "unisim/component/tlm2/interconnect/generic_bus/bus.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
@@ -253,7 +253,7 @@ public:
 	Initiator<DEBUG> *init;
 	Initiator<DEBUG> *init2;
 	Target<DEBUG> *targ;
-	unisim::component::tlm2::bus::generic_bus::Bus<32, tlm::tlm_base_protocol_types, DEBUG> *bus;
+	unisim::component::tlm2::interconnect::generic_bus::Bus<32, tlm::tlm_base_protocol_types, DEBUG> *bus;
 
 	SC_HAS_PROCESS(Top);
 
@@ -263,7 +263,7 @@ public:
 		init = new Initiator<DEBUG>("init", this);
 		init2 = new Initiator<DEBUG>("init2", this);
 		targ = new Target<DEBUG>("targ", this);
-		bus = new unisim::component::tlm2::bus::generic_bus::Bus<32, tlm::tlm_base_protocol_types, DEBUG>("bus", this);
+		bus = new unisim::component::tlm2::interconnect::generic_bus::Bus<32, tlm::tlm_base_protocol_types, DEBUG>("bus", this);
 
 		init->init_socket(bus->targ_socket);
 		init2->init_socket(bus->targ_socket);

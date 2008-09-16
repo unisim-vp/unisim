@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM TLM2 Bus Test Programs], [1.0])
+AC_INIT([UNISIM TLM2 Interconnect Test Programs], [1.0])
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -50,7 +50,7 @@ AC_CONFIG_FILES([Makefile])
 ###### CHECK FOR HOST ######################
 
 UNISIM_CONFIG_SUBDIR(tests-tlm2-bus-generic-bus, generic_bus)
-UNISIM_CONFIG_SUBDIR(tests-tlm2-bus-simple-router, simple_router)
+UNISIM_CONFIG_SUBDIR(tests-tlm2-bus-generic-router, generic_router)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

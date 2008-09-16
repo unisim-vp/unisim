@@ -32,7 +32,7 @@
  * Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr) 
  */
 
-#include "unisim/component/tlm2/bus/simple_router/router.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
@@ -411,8 +411,8 @@ public:
 	Initiator<true, DEBUG> *init2;
 	Target<DEBUG> *targ;
 	Target<DEBUG> *targ2;
-	unisim::component::tlm2::bus::simple_router::Router<unisim::component::tlm2::bus::simple_router::DebugConfig> *drouter;
-	unisim::component::tlm2::bus::simple_router::Router<> *router;
+	unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig> *drouter;
+	unisim::component::tlm2::interconnect::generic_router::Router<> *router;
 
 	SC_HAS_PROCESS(Top);
 
@@ -426,9 +426,9 @@ public:
 		drouter = 0;
 		router = 0;
 		if(DEBUG)
-			drouter = new unisim::component::tlm2::bus::simple_router::Router<unisim::component::tlm2::bus::simple_router::DebugConfig>("router", this);
+			drouter = new unisim::component::tlm2::interconnect::generic_router::Router<unisim::component::tlm2::interconnect::generic_router::DebugConfig>("router", this);
 		else
-			router = new unisim::component::tlm2::bus::simple_router::Router<>("router", this);
+			router = new unisim::component::tlm2::interconnect::generic_router::Router<>("router", this);
 
 		if(DEBUG) {
 			init->init_socket(drouter->targ_socket);

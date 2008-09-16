@@ -33,9 +33,9 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM TLM2 Generic Bus Test Program], [1.0],
+AC_INIT([UNISIM TLM2 Generic Router Interconnect Test Program], [1.0],
 	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
-	[generic_bus_test])
+	[generic_router_test])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
@@ -129,7 +129,7 @@ UNISIM_LINK(unisim_component_tlm_pci_ide)
 UNISIM_LINK(unisim_component_tlm_pci_macio)
 UNISIM_LINK(unisim_component_tlm_pci_debug)
 
-UNISIM_LINK(unisim_component_tlm2_bus_generic_bus)
+UNISIM_LINK(unisim_component_tlm2_interconnect_generic_router)
 
 # files to generate
 #   this should include all the makefiles to generate

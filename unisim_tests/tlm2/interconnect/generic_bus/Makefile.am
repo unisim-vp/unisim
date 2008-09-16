@@ -1,4 +1,4 @@
-sharedir = $(prefix)/share/unisim_tests/tlm2/bus/generic_bus
+sharedir = $(prefix)/share/unisim_tests/tlm2/interconnect/generic_bus
 INCLUDES=-I$(top_srcdir)/../../.. -I$(top_builddir)/../../..
 bin_PROGRAMS = generic_bus_test
 
