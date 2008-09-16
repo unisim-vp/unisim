@@ -108,6 +108,10 @@ protected:
 	physical_address_t getEepromAddress(address_t logicalAddress);
 	physical_address_t getFlashAddress(address_t logicalAddress);
 
+	physical_address_t computePhysicalAddress (address_t logicalAddress, uint16_t pageSize, uint8_t lowRegVal, uint8_t highRegVal,
+												address_t lowOffset, physical_address_t gMask, uint8_t memAddressSize,
+												address_t cpuAddressMask, uint8_t pageReg);
+
 private:
 	
 	//=============================================
@@ -135,6 +139,11 @@ public:
 	static const uint8_t EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
 	static const uint8_t FLASH_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address FLASH (max=16)
 
+	static const uint16_t DIRECT_PAGE_SIZE	= 0x100;
+	static const uint16_t RAM_PAGE_SIZE		= 0x1000;
+	static const uint16_t EEPROM_PAGE_SIZE	= 0x400;
+	static const uint16_t FLASH_PAGE_SIZE	= 0x4000; 
+	
 	static const address_t RAM_CPU_ADDRESS_BITS		= 0x0FFF;
 	static const address_t EEPROM_CPU_ADDRESS_BITS	= 0x03FF;
 	static const address_t FLASH_CPU_ADDRESS_BITS	= 0x3FFF;
@@ -175,11 +184,11 @@ public:
 	static const uint8_t GPAGE_LOW			= 0x00;		// low gpage register value
 	static const uint8_t GPAGE_HIGH			= 0x7F;		// high gpage register value
 
-	static const uint8_t RPAGE_LOW			= 0xF8;		// low rpage (ram page) register value
+	static const uint8_t RPAGE_LOW			= 0xFD;		// low rpage (ram page) register value
 	static const uint8_t RPAGE_HIGH			= 0xFF;		// high rpage register value
-	static const uint8_t EPAGE_LOW			= 0xFC;		// low epage (eeprom page) register value
+	static const uint8_t EPAGE_LOW			= 0xFE;		// low epage (eeprom page) register value
 	static const uint8_t EPAGE_HIGH			= 0xFF;		// high epage register value 
-	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
+	static const uint8_t PPAGE_LOW			= 0xFD;		// low ppage (flash page) register value
 	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
 
 	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value 
