@@ -14,6 +14,16 @@ SUBDIRS += memory
 INCLUDE_SUBDIRS += memory
 endif
 
+# if COND_processor
+# SUBDIRS += processor
+# INCLUDE_SUBDIRS += processor
+# endif
+
+if COND_interconnect
+SUBDIRS += interconnect
+INCLUDE_SUBDIRS += interconnect
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

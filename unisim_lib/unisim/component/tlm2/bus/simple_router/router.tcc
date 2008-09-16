@@ -39,6 +39,8 @@ init_socket("init_socket"),
 cycle_time(SC_ZERO_TIME),
 cycle_time_double(0.0),
 param_cycle_time_double("cycle_time", this, cycle_time_double),
+port_buffer_size(0),
+param_port_buffer_size("port_buffer_size", this, port_buffer_size, "Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)"),
 logger(*this),
 verbose_all(false),
 param_verbose_all("verbose_all", this, verbose_all, "Activate all the verbose options"),
@@ -102,6 +104,8 @@ Setup() {
 		}
 	}
 	cycle_time = sc_time(cycle_time_double, SC_PS);
+
+	/* display the configuration of the router */
 	if(VerboseSetup()) {
 		logger << DebugInfo << "Setting cycle_time to " << cycle_time << endl;
 		logger << "Mappings (MAX_NUM_MAPPINGS = " << num_mappings << "): ";
@@ -147,6 +151,13 @@ template<class CONFIG>
 tlm::tlm_sync_enum
 Router<CONFIG>::
 T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core::sc_time &time) {
+	if(VerboseNonBlocking()) {
+		logger << DebugInfo << "Received nb_transport_fw on port " << id << ", checking if it can be queued" << endl
+			<< TIME(time) << endl;
+		TRANS(logger, trans);
+		logger << EndDebug;
+	}
+	/* the request will be queued into the port queue and sent once the routing engine is available */
 	return tlm::TLM_ACCEPTED;
 }
 

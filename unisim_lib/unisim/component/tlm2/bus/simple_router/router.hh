@@ -146,6 +146,8 @@ private:
 	unisim::kernel::service::Parameter<double> param_cycle_time_double;
 	Mapping mapping[MAX_NUM_MAPPINGS];
 	unisim::kernel::service::Parameter<Mapping> *param_mapping[MAX_NUM_MAPPINGS];
+	unsigned int port_buffer_size;
+	unisim::kernel::service::Parameter<unsigned int> param_port_buffer_size;
 
 	/*************************************************************************
 	 * Parameters                                                        END *

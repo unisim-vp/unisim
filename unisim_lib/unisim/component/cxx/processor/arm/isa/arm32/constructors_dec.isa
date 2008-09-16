@@ -72,4 +72,3 @@ constructor action initialize_rdlo_init() {
 constructor action initialize_rdp1_init() {
   rdp1_init = 0;
 }
-

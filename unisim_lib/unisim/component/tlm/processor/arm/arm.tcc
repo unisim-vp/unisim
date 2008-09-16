@@ -48,15 +48,6 @@ namespace tlm {
 namespace processor {
 namespace arm {
 
-//using namespace full_system::processors::arm;
-//using full_system::generic::bus::BS_OK;
-//using full_system::generic::bus::CS_SHARED;
-//using full_system::generic::bus::CS_MISS;
-//using full_system::tlm::TlmMessage;
-//using full_system::tlm::TlmSendIf;
-//using full_system::utils::garbage_collector::Pointer;
-//using full_system::utils::services::Parameter;
-//using unisim::service::interfaces::operator<<;
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
 using unisim::service::interfaces::Endl;
@@ -69,22 +60,11 @@ using unisim::service::interfaces::EndDebugError;
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Line;
-using unisim::util::time::TU_FS;
-using unisim::util::time::TU_PS;
-using unisim::util::time::TU_NS;
-using unisim::util::time::TU_US;
-using unisim::util::time::TU_MS;
-using unisim::util::time::TU_SEC;
-
 
 template<class CONFIG>
 ARM<CONFIG> :: 
 ARM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
-	Client<StatisticReporting>(name, parent),
-	Service<StatisticReportingControl>(name, parent),
-	statistic_reporting_import("statistic_reporting_import", this),
-	statistic_reporting_control_export("statistic_reporting_control_export", this),
 	sc_module(name),
 	CPU<CONFIG>(name, this, parent),
 	master_port("master-port"),
@@ -99,9 +79,6 @@ ARM(const sc_module_name& name, Object *parent) :
 	ipc(1.0),
 	cpu_cycle_time_int(0),
 	bus_cycle_time_int(0),
-	stat_reporting_period(),
-	last_stat_reporting_time(),
-	last_instruction_counter(0),
 	param_nice_time("nice-time", this, nice_time_int),
 	param_ipc("ipc", this, ipc),
 	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),
@@ -111,13 +88,7 @@ ARM(const sc_module_name& name, Object *parent) :
 	verbose_tlm_run_thread(false),
 	param_verbose_tlm_run_thread("verbose-tlm-run-thread", this, verbose_tlm_run_thread),
 	verbose_tlm_commands(false),
-	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands),
-	stat_name_instruction_counter("instruction-counter"),
-	stat_requires_instruction_counter(true),
-	stat_name_diff_instruction_counter("diff-instruction-counter"),
-	stat_requires_diff_instruction_counter(true),
-	stat_name_ipc("ipc"),
-	stat_requires_ipc(true) {
+	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands) {
 	SC_HAS_PROCESS(ARM);
 	
 	SC_THREAD(Run);
@@ -183,8 +154,6 @@ Setup() {
 	
 	cpu_cycle_time = sc_time((double)cpu_cycle_time_int, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
-	if(stat_reporting_period.value() == 0) 
-		stat_reporting_period = sc_time((double)nice_time_int, SC_PS);
 	nice_time = sc_time((double)nice_time_int, SC_PS);
 	if(CONFIG::DEBUG_ENABLE && inherited::verbose_setup && inherited::logger_import) {
 		(*inherited::logger_import) << DebugInfo << LOCATION
@@ -195,61 +164,7 @@ Setup() {
 			<< EndDebugInfo;
 	}
 	
-	/* setup statistic reporting */
-	if(statistic_reporting_import) {
-		stat_handler_instruction_counter = 
-			statistic_reporting_import->RegisterStat(stat_name_instruction_counter.c_str());
-		stat_handler_diff_instruction_counter =
-			statistic_reporting_import->RegisterStat(stat_name_diff_instruction_counter.c_str());
-		stat_handler_ipc =
-			statistic_reporting_import->RegisterStat(stat_name_ipc.c_str());
-	}
 	return true;
-}
-
-template<class CONFIG>
-void 
-ARM<CONFIG> ::
-SetPreferredStatReportingPeriod(double time_hint, time_unit_type time_unit) {
-	switch(time_unit) {
-	case TU_PS:
-		stat_reporting_period = sc_time(time_hint, SC_PS);
-		break;
-	case TU_NS:
-		stat_reporting_period = sc_time(time_hint, SC_NS);
-		break;
-	case TU_US:
-		stat_reporting_period = sc_time(time_hint, SC_US);
-		break;
-	case TU_MS:
-		stat_reporting_period = sc_time(time_hint, SC_MS);
-		break;
-	case TU_SEC:
-		stat_reporting_period = sc_time(time_hint, SC_SEC);
-		break;
-	case TU_FS:
-	default:
-		stat_reporting_period = sc_time(time_hint, SC_SEC);
-		break;
-	}
-}
-
-template<class CONFIG>
-void 
-ARM<CONFIG> ::
-RequiresStatReporting(const char *name, bool required) {
-	if(stat_name_instruction_counter.compare(name) == 0) {
-		stat_requires_instruction_counter = required;
-		return;
-	}
-	if(stat_name_diff_instruction_counter.compare(name) == 0) {
-		stat_requires_diff_instruction_counter = required;
-		return;
-	}
-	if(stat_name_ipc.compare(name) == 0) {
-		stat_requires_ipc = required;
-		return;
-	}
 }
 
 template<class CONFIG>
@@ -326,7 +241,6 @@ ARM<CONFIG>::Synchronize()
 	last_cpu_time = cpu_time;
 	wait(time_spent);
 	cpu_time = sc_time_stamp();
-	SendStats();
 //	next_nice_sctime = sc_time_stamp() + nice_sctime;
 }
 
@@ -730,39 +644,6 @@ PrZeroBlock(address_t addr) {
 			<< Endl << EndDebugError;
 	sc_stop();
 	wait();
-}
-
-template<class CONFIG>
-void
-ARM<CONFIG>::
-SendStats() {
-	if(!statistic_reporting_import) return;
-	if(sc_time_stamp() <= stat_refresh_time) return;
-
-	stat_refresh_time = sc_time_stamp() + stat_reporting_period;
-
-	sc_time cur_sc_time = sc_time_stamp();
-	uint64_t cur_time = cur_sc_time.value();
-	uint64_t diff_instruction_counter =
-		inherited::instruction_counter - last_instruction_counter;
-	sc_time diff_stat_reporting_time =
-		cur_sc_time - last_stat_reporting_time;
-	last_stat_reporting_time = cur_sc_time;
-	double cycle_count = diff_stat_reporting_time/cpu_cycle_time;
-	last_instruction_counter = inherited::instruction_counter;
-	double ipc = (double)diff_instruction_counter/cycle_count;
-	if(stat_requires_instruction_counter)
-		statistic_reporting_import->ReportStat(stat_handler_instruction_counter,
-				cur_time,
-				inherited::instruction_counter);
-	if(stat_requires_ipc)
-		statistic_reporting_import->ReportStat(stat_handler_ipc,
-				cur_time,
-				ipc);
-	if(stat_requires_diff_instruction_counter)
-		statistic_reporting_import->ReportStat(stat_handler_diff_instruction_counter,
-				cur_time,
-				diff_instruction_counter);
 }
 
 } // end of namespace arm
