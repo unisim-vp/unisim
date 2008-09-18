@@ -120,6 +120,7 @@ CPU::CPU(const char *name, Object *parent):
 
 
     ccr = new CCR_t();
+    ccr->setCCR(0x00D0); // S=1 X=1 I=1 
     
     eblb = new EBLB(this);
 
@@ -637,7 +638,7 @@ inline INLINE
 void CPU::RegistersInfo() {
 
 	if (CONFIG::REGISTERS_INFO) {
-		cout << std::hex << "CCR=0x" << ccr->getCCR() << "PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
+		cout << std::hex << "CCR=0x" << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
 		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";
 	}
 }

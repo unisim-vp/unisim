@@ -43,6 +43,7 @@ namespace processor {
 namespace hcs12x {
 	
 MMC::MMC() : 
+	_isDirectSet(false),
 	_gpage(GLOBAL_RESET_PAGE),
     _direct(DIRECT_RESET_PAGE),
     _rpage(RAM_RESET_PAGE),      
