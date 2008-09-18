@@ -302,12 +302,13 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 			}
 			
 			sscanf(srec+2+(cnt*2), "%2x", &tchksum);
+/*
 			if ((tchksum + (chksum & 0xff)) != 0xff)  {
 				cerr << "check sum " << chksum << "\n";
 				ShowError(ERR_BADCHKSUM,linenum,srec);
 				return false;
 			}
-			
+*/			
 			if (isFirstDataRec) {
 				isFirstDataRec = false;
 				entry_point = s19_addr;
