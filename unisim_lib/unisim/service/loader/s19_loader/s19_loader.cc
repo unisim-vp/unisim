@@ -159,19 +159,50 @@ void S19_Loader::GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t
 	
 }
 
-physical_address_t S19_Loader::GetFlashAddress(page_t page, address_t cpu_address)
+// TODO: This function is a duplicate of once in MMC class.
+//       I have to see how to rearange the project to remove this duplication !!!
+physical_address_t S19_Loader::GetFlashAddress(page_t page, address_t logicalAddress)
 {
 	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS = 0x00400000;
 	static const uint8_t FLASH_ADDRESS_SIZE = 14;
 	static const address_t FLASH_CPU_ADDRESS_BITS = 0x3FFF;
-	 
-	if (page != 0x00)
+	static const uint8_t PPAGE_LOW			= 0xFD;		// low ppage (flash page) register value
+	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
+	static const address_t FLASH_LOW_OFFSET	= 0x4000;
+	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
+	static const uint16_t FLASH_PAGE_SIZE	= 0x4000; 
+
+// ************************************************
+
+	physical_address_t gMask = FLASH_PHYSICAL_ADDRESS_FIXED_BITS;
+	uint8_t memAddressSize = FLASH_ADDRESS_SIZE;
+	address_t cpuAddressMask = FLASH_CPU_ADDRESS_BITS;
+
+	uint16_t pageSize = FLASH_PAGE_SIZE;
+	uint8_t lowRegVal = PPAGE_LOW;
+	uint8_t highRegVal = PPAGE_HIGH;
+	address_t lowOffset = FLASH_LOW_OFFSET;
+	uint8_t pageReg = page;
+	
+	uint8_t numberPage = (highRegVal - lowRegVal + 1);
+	
+	for (uint8_t i = 0; i < numberPage; i++)
 	{
-		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) page << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & cpu_address);
-	} else 
-	{
-		return cpu_address;
+		if (pageReg == lowRegVal+i) {
+			if (logicalAddress < (lowOffset + pageSize * (i+1)))
+			{
+				return gMask |
+						((physical_address_t) pageReg << memAddressSize) |
+						((address_t) cpuAddressMask & logicalAddress);
+			}
+		} 
+		
 	}
+	
+	return logicalAddress;
+
+// ************************************************	
+	
 }
 
 bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
@@ -184,7 +215,7 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 	s19_address_t s19_addr;
 	address_t cpu_address;
 	page_t page;
-	int     n, sdataIndex;
+	int     n, sdataIndex, nDataByte;
 	int		addrSize;
 
 	if (srec[0] == '\0')  return true;           /* just in case */
@@ -262,14 +293,14 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 		
 			switch (srec[1]) {
 				case S1: { /* A record containing code/data and the 2-byte address (offset) at which the code/data is reside */
-					addrSize = 4;	// S1: address is coded on 4 hex digits (2 bytes)
+					addrSize = 2;	// S1: address is coded on 4 hex digits (2 bytes)
 					sscanf(srec+4, "%4x", &s19_addr);           /* get addr of this rec */
 					chksum += (s19_addr >> 8);
 					chksum += (s19_addr & 0xff);
 				} break;
 				
 				case S2: { /* A record containing code/data and the 3-byte address (offset) at which the code/data is reside */
-					addrSize = 6;	// S2: address is coded on 6 hex digits (3 bytes)
+					addrSize = 3;	// S2: address is coded on 6 hex digits (3 bytes)
 					sscanf(srec+4, "%6x", &s19_addr);           /* get addr of this rec */
 					chksum += (s19_addr >> 16);
 					chksum += ((s19_addr >> 8) & 0xff);			
@@ -277,7 +308,7 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 				} break;
 				
 				case S3: { /* A record containing code/data and the 4-byte address (offset) at which the code/data is reside */
-					addrSize = 8;	// S3: address is coded on 8 hex digits (4 bytes)		
+					addrSize = 4;	// S3: address is coded on 8 hex digits (4 bytes)		
 					sscanf(srec+4, "%8x", &s19_addr);           /* get addr of this rec */
 					chksum += (s19_addr >> 24);
 					chksum += ((s19_addr >> 16) & 0xff);			
@@ -292,23 +323,23 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 					return false;
 				}
 			}
-		
-			sdataIndex = 0;
-			for (n=2; n<(cnt-2); n++)  {
-				sscanf(srec+addrSize+(n*2), "%2x", &sdata[sdataIndex]);
+
+			nDataByte = (cnt-addrSize-1); 
+			for (sdataIndex=0; sdataIndex<nDataByte; sdataIndex++)  {
+				sscanf(srec+(addrSize+2+sdataIndex)*2, "%2x", &sdata[sdataIndex]);
 				chksum += sdata[sdataIndex];
-				
-				sdataIndex++;
+
 			}
+
 			
 			sscanf(srec+2+(cnt*2), "%2x", &tchksum);
-/*
+
 			if ((tchksum + (chksum & 0xff)) != 0xff)  {
 				cerr << "check sum " << chksum << "\n";
 				ShowError(ERR_BADCHKSUM,linenum,srec);
 				return false;
 			}
-*/			
+		
 			if (isFirstDataRec) {
 				isFirstDataRec = false;
 				entry_point = s19_addr;
