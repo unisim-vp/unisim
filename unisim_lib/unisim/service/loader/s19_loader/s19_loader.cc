@@ -345,6 +345,10 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 				entry_point = s19_addr;
 			}
 			
+			if (s19_addr == 0xFFFE) {
+				entry_point = (uint16_t)(sdata[0] << 8) + sdata[1];
+			}
+			
 			top_addr = s19_addr;
 			
 			GetPagedAddress(s19_addr, page, cpu_address);
