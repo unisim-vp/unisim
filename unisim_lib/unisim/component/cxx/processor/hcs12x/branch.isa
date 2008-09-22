@@ -356,7 +356,7 @@ br_clr_set_idx.execute = {
 /* ********** Jump and subroutine instructions ******** */
 
 // BSR: Branch to subroutine
-op bsr(0x07[8]:rel8[8])
+op bsr(0x07[8]:sext<8> rel8[8])
 
 bsr.getCycles = { return 4; }
 

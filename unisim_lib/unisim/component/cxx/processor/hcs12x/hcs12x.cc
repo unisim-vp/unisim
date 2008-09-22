@@ -20509,7 +20509,7 @@ class OpBsr : public Operation
 {
 public:
 	OpBsr(CodeType const& code, uint16_t addr);
-	uint32_t rel8;
+	int32_t rel8;
 	virtual
 #line 82 "hcs12x.isa"
 	uint8_t
@@ -52872,7 +52872,7 @@ OpBsr::OpBsr(CodeType const& code, uint16_t addr) : Operation(code, addr, "bsr")
 	CodeType _code_( code );
 	{
 		uint16_t _subword_ = (uint16_t( _code_.str[0] ) << 8) | (uint16_t( _code_.str[1] ) << 0);
-		rel8 = ((_subword_ >> 0) & 0xffULL);
+		rel8 = (((int32_t((_subword_ >> 0) & 0xffLL)) << 24) >> 24);
 	}
 	_code_.pop( 2 );
 	this->encoding.size -= _code_.size;
