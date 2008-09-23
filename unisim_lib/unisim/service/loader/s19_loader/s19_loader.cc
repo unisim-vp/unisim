@@ -166,44 +166,23 @@ physical_address_t S19_Loader::GetFlashAddress(page_t page, address_t logicalAdd
 	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS = 0x00400000;
 	static const uint8_t FLASH_ADDRESS_SIZE = 14;
 	static const address_t FLASH_CPU_ADDRESS_BITS = 0x3FFF;
-//	static const uint8_t PPAGE_LOW			= 0xFD;		// low ppage (flash page) register value
-	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
-	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
-	static const address_t FLASH_LOW_OFFSET	= 0x4000;
-	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
-	static const uint16_t FLASH_PAGE_SIZE	= 0x4000; 
+	static const uint8_t PPAGE_LOW	= 0xE0;		// low ppage (flash page) register value
 
-// ************************************************
-
-	physical_address_t gMask = FLASH_PHYSICAL_ADDRESS_FIXED_BITS;
-	uint8_t memAddressSize = FLASH_ADDRESS_SIZE;
-	address_t cpuAddressMask = FLASH_CPU_ADDRESS_BITS;
-
-	uint16_t pageSize = FLASH_PAGE_SIZE;
-	uint8_t lowRegVal = PPAGE_LOW;
-	uint8_t highRegVal = PPAGE_HIGH;
-	address_t lowOffset = FLASH_LOW_OFFSET;
-	uint8_t pageReg = page;
-	
-	uint8_t numberPage = (highRegVal - lowRegVal + 1);
-	
-	for (uint8_t i = 0; i < numberPage; i++)
-	{
-		if (pageReg == lowRegVal+i) {
-			if (logicalAddress < (lowOffset + pageSize * (i+1)))
-			{
-				return gMask |
-						((physical_address_t) pageReg << memAddressSize) |
-						((address_t) cpuAddressMask & logicalAddress);
-			}
-		} 
-		
+	if (page < PPAGE_LOW) {
+		// throw "non-valid accesses to memory"
 	}
-	
-	return logicalAddress;
 
-// ************************************************	
-	
+	if (((page == 0xFD) && (logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) ||
+		((page == 0xFF) && (logicalAddress > 0xBFFF)) ||
+		((logicalAddress > 0x7FFF) && (logicalAddress < 0xC000)))
+	{
+		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) page << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
+	}
+	else
+	{
+		return logicalAddress;
+	}
+
 }
 
 bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
