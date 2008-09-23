@@ -154,75 +154,61 @@ physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
 void MMC::setRpage (uint8_t val) { _rpage = val;}
 uint8_t MMC::getRpage () { return _rpage; }
 physical_address_t MMC::getRamAddress(address_t logicalAddress) {
-/*
-	if (_rpage != 0)
+
+	if ((_rpage > 0x00) && (_rpage < RPAGE_LOW)) {
+		// throw "non-valid accesses to memory"
+	}
+	
+	if (((_rpage == 0x00) && (logicalAddress < 0x0800)) ||
+		((_rpage == 0xFE) && (logicalAddress > 0x1FFF) && (logicalAddress < 0x3000)) ||
+		((_rpage == 0xFF) && (logicalAddress > 0x2FFF) && (logicalAddress < 0x4000)) ||
+		((logicalAddress > 0x0FFF) && (logicalAddress < 0x2000))) 
 	{
 		return RAM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getRpage() << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
-	} else 
+	}
+	else
 	{
 		return logicalAddress;
 	}
-*/	
-	return computePhysicalAddress(logicalAddress, RAM_PAGE_SIZE, RPAGE_LOW, RPAGE_HIGH, RAM_LOW_OFFSET,
-								 RAM_PHYSICAL_ADDRESS_FIXED_BITS, RAM_ADDRESS_SIZE, RAM_CPU_ADDRESS_BITS, _rpage);
-	
 }
 
 void MMC::setEpage (uint8_t val) { _epage = val;}
 uint8_t MMC::getEpage () { return _epage; }
 physical_address_t MMC::getEepromAddress(address_t logicalAddress) {
-/*
-	if (_epage != 0)
+
+	if (_epage < EPAGE_LOW) {
+		// throw "non-valid accesses to memory"
+	}
+	 
+	if (((_epage == 0xFF) && (logicalAddress > 0x0BFF) && (logicalAddress < 0x1000)) ||
+		((logicalAddress > 0x07FF) && (logicalAddress < 0x0C00))) 
 	{
 		return EEPROM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getEpage() << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
-	} else 
+	}
+	else
 	{
 		return logicalAddress;
 	}
-*/
-	return computePhysicalAddress(logicalAddress, EEPROM_PAGE_SIZE, EPAGE_LOW, EPAGE_HIGH, EEPROM_LOW_OFFSET,
-								 EEPROM_PHYSICAL_ADDRESS_FIXED_BITS, EEPROM_ADDRESS_SIZE, EEPROM_CPU_ADDRESS_BITS, _epage);
-
 }
 
 void MMC::setPpage (uint8_t val) { _ppage = val;}
 uint8_t MMC::getPpage () { return _ppage; }
 physical_address_t MMC::getFlashAddress(address_t logicalAddress) {
-/*
-	if (_ppage != 0)
+
+	if (_ppage < PPAGE_LOW) {
+		// throw "non-valid accesses to memory"
+	}
+
+	if (((_ppage == 0xFD) && (logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) ||
+		((_ppage == 0xFF) && (logicalAddress > 0xBFFF)) ||
+		((logicalAddress > 0x7FFF) && (logicalAddress < 0xC000)))
 	{
 		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) getPpage() << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
-	} else 
+	}
+	else
 	{
 		return logicalAddress;
 	}
-*/
-
-	return computePhysicalAddress(logicalAddress, FLASH_PAGE_SIZE, PPAGE_LOW, PPAGE_HIGH, FLASH_LOW_OFFSET,
-								 FLASH_PHYSICAL_ADDRESS_FIXED_BITS, FLASH_ADDRESS_SIZE, FLASH_CPU_ADDRESS_BITS, _ppage);
-}
-
-physical_address_t MMC::computePhysicalAddress (address_t logicalAddress, uint16_t pageSize, uint8_t lowRegVal, uint8_t highRegVal,
-												address_t lowOffset, physical_address_t gMask, uint8_t memAddressSize,
-												address_t cpuAddressMask, uint8_t pageReg)
-{
-	
-	uint8_t numberPage = (highRegVal - lowRegVal + 1);
-	
-	for (uint8_t i = 0; i < numberPage; i++)
-	{
-		if (pageReg == lowRegVal+i) {
-			if (logicalAddress < (lowOffset + pageSize * (i+1)))
-			{
-				return gMask |
-						((physical_address_t) pageReg << memAddressSize) |
-						((address_t) cpuAddressMask & logicalAddress);
-			}
-		} 
-		
-	}
-	
-	return logicalAddress;
 	
 }
 

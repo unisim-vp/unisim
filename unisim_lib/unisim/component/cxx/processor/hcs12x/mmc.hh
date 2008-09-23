@@ -108,10 +108,6 @@ protected:
 	physical_address_t getEepromAddress(address_t logicalAddress);
 	physical_address_t getFlashAddress(address_t logicalAddress);
 
-	physical_address_t computePhysicalAddress (address_t logicalAddress, uint16_t pageSize, uint8_t lowRegVal, uint8_t highRegVal,
-												address_t lowOffset, physical_address_t gMask, uint8_t memAddressSize,
-												address_t cpuAddressMask, uint8_t pageReg);
-
 private:
 	
 	//=============================================
