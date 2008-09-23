@@ -166,7 +166,8 @@ physical_address_t S19_Loader::GetFlashAddress(page_t page, address_t logicalAdd
 	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS = 0x00400000;
 	static const uint8_t FLASH_ADDRESS_SIZE = 14;
 	static const address_t FLASH_CPU_ADDRESS_BITS = 0x3FFF;
-	static const uint8_t PPAGE_LOW			= 0xFD;		// low ppage (flash page) register value
+//	static const uint8_t PPAGE_LOW			= 0xFD;		// low ppage (flash page) register value
+	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
 	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
 	static const address_t FLASH_LOW_OFFSET	= 0x4000;
 	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
