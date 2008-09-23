@@ -184,11 +184,14 @@ public:
 	static const uint8_t GPAGE_LOW			= 0x00;		// low gpage register value
 	static const uint8_t GPAGE_HIGH			= 0x7F;		// high gpage register value
 
-	static const uint8_t RPAGE_LOW			= 0xFD;		// low rpage (ram page) register value
+//	static const uint8_t RPAGE_LOW			= 0xFD;		// low rpage (ram page) register value
+	static const uint8_t RPAGE_LOW			= 0xF8;		// low rpage (ram page) register value
 	static const uint8_t RPAGE_HIGH			= 0xFF;		// high rpage register value
-	static const uint8_t EPAGE_LOW			= 0xFE;		// low epage (eeprom page) register value
+//	static const uint8_t EPAGE_LOW			= 0xFE;		// low epage (eeprom page) register value
+	static const uint8_t EPAGE_LOW			= 0xFC;		// low epage (eeprom page) register value
 	static const uint8_t EPAGE_HIGH			= 0xFF;		// high epage register value 
-	static const uint8_t PPAGE_LOW			= 0xFD;		// low ppage (flash page) register value
+//	static const uint8_t PPAGE_LOW			= 0xFD;		// low ppage (flash page) register value
+	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
 	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
 
 	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value 
