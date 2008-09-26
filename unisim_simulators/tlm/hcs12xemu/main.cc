@@ -42,6 +42,12 @@
 #include <getopt.h>
 #include <unisim/kernel/service/service.hh>
 #include <stdlib.h>
+
+// *************
+#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
+#include <unisim/component/cxx/processor/hcs12x/hc_registers.hh>
+// *************
+
 #include <unisim/component/tlm/processor/hcs12x/hcs12x.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
 //#include <unisim/component/tlm/fsb/snooping_bus/bus.hh>
@@ -91,7 +97,8 @@ void SigIntHandler(int signum)
 	sc_stop();
 }
 
-
+using unisim::component::cxx::processor::hcs12x::MMC;
+using unisim::component::cxx::processor::hcs12x::HC_Registers;
 
 using namespace std;
 
@@ -305,7 +312,14 @@ int sc_main(int argc, char *argv[])
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - 68HCS12X processor
+	HC_Registers *hc_registers = new HC_Registers();
+	
+	MMC *mmc = 	new MMC(hc_registers);
+	
 	CPU *cpu =new CPU("cpu");
+	cpu->setMMC(mmc);
+	cpu->setRegisters(hc_registers);
+	
 	//  - Front side bus
 	FRONT_SIDE_BUS *bus = new FRONT_SIDE_BUS("bus");
 	//  - Front side bus to memory bridge
@@ -597,6 +611,8 @@ int sc_main(int argc, char *argv[])
 	for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++) if(bus_msg_spy[i]) delete bus_msg_spy[i];
 	for(unsigned int i = 0; i < MAX_MEM_TRANSACTION_SPY; i++) if(mem_msg_spy[i]) delete mem_msg_spy[i];
 
+	if (mmc) { delete mmc; mmc = NULL; }
+	if (hc_registers) { delete hc_registers; hc_registers = NULL; }
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
