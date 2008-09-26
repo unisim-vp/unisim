@@ -43,6 +43,7 @@ namespace hcs12x {
 HC_Registers::HC_Registers() :
  	_isDirectSet(false) 
 {
+	write(CONFIG::IVBR_ADDRESS, CONFIG::IVBR_DEFAULT_VALUE);
 }
 
 HC_Registers::~HC_Registers() {

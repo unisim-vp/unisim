@@ -91,20 +91,7 @@ private:
 	//=============================================
 	//=            MMC REGISTERS                  =
 	//=============================================
-/*
-    uint8_t _mmcctl0;
-	uint8_t _mode;
-	uint8_t _gpage;      // The truth size of GPage is 0x07bits. MAX_VAL(gpage) == 0x7F
-    uint8_t _direct;
-	uint8_t _mmcctl1;
-    uint8_t _rpage;      
-    uint8_t _epage;      
-    uint8_t _ppage;      
-	uint8_t _ramwpc;
-	uint8_t _ramxgu;
-	uint8_t _ramshl;
-	uint8_t _ramshu;
-*/
+
 	HC_Registers	*registers;		// registers is a reference to registers address space
 
 
