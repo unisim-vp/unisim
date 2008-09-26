@@ -32,16 +32,16 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_MMC_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_MMC_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_REGISTERS_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_REGISTERS_HH__
 
-#include <inttypes.h>
-#include <iostream>
-#include <cmath>
+#if (defined(__GNUC__) && (__GNUC__ >= 3))
+#define INLINE __attribute__((always_inline))
+#else
+#define INLINE
+#endif
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
-#include <unisim/component/cxx/processor/hcs12x/types.hh>
-#include <unisim/component/cxx/processor/hcs12x/hc_registers.hh>
 
 namespace unisim {
 namespace component {
@@ -49,65 +49,18 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-#define WO_GLOBAL_ADDRESS	false	// without global addressing (64KB address space)
-#define W_GLOBAL_ADDRESS	true	// with global addressing (8MB address space)
-
-class MEMORY {
+class HC_Registers {
 public:
-
-	enum MAP {DIRECT=0, EXTENDED=1};
-};
-
-class MMC 
-{
-public:
-
-    MMC(HC_Registers *regs);
-    void reset();
-       
-	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
-
-    uint8_t getMmcctl0 ();
-	uint8_t getMode ();
-    uint8_t getGpage ();
-    uint8_t getDirect ();
-	uint8_t getMmcctl1 ();
-    uint8_t getRpage ();
-    uint8_t getEpage ();
-    uint8_t getPpage ();
-    void setPpage(uint8_t page);
-	uint8_t getRamwpc ();
-	uint8_t getRamxgu ();
-	uint8_t getRamshl ();
-	uint8_t getRamshu ();
-
-private:
-
-	physical_address_t getDirectAddress(uint8_t lowByte);
-	physical_address_t getRamAddress(address_t logicalAddress);
-	physical_address_t getEepromAddress(address_t logicalAddress);
-	physical_address_t getFlashAddress(address_t logicalAddress);
+	HC_Registers();
+	~HC_Registers();
 	
-	//=============================================
-	//=            MMC REGISTERS                  =
-	//=============================================
-/*
-    uint8_t _mmcctl0;
-	uint8_t _mode;
-	uint8_t _gpage;      // The truth size of GPage is 0x07bits. MAX_VAL(gpage) == 0x7F
-    uint8_t _direct;
-	uint8_t _mmcctl1;
-    uint8_t _rpage;      
-    uint8_t _epage;      
-    uint8_t _ppage;      
-	uint8_t _ramwpc;
-	uint8_t _ramxgu;
-	uint8_t _ramshl;
-	uint8_t _ramshu;
-*/
-	HC_Registers	*registers;		// registers is a reference to registers address space
-
-
+	uint8_t read(address_t addr);
+	void write(address_t addr, uint8_t val);
+	
+private:
+	uint8_t regArray[CONFIG::REGISTERS_SPACE_SIZE];
+	bool        _isDirectSet;
+	
 };
 
 } // end of namespace hcs12x
@@ -116,6 +69,5 @@ private:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_MMC_HH__
 
-
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_REGISTERS_HH__*/

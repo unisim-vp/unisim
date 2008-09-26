@@ -72,7 +72,7 @@
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
-
+#include <unisim/component/cxx/processor/hcs12x/hc_registers.hh>
 
 
 namespace unisim {
@@ -257,6 +257,9 @@ public:
 
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
+	
+	void setMMC(MMC *_mmc);
+	void setRegisters(HC_Registers *regs);
 	void SetEntryPoint(uint8_t page, address_t cpu_address);
 
 	//=====================================================================
@@ -309,8 +312,6 @@ public:
 	void memWrite8(physical_address_t addr,uint8_t val);
 	uint16_t memRead16(physical_address_t addr);
 	void memWrite16(physical_address_t addr,uint16_t val);
-	void regRead(physical_address_t addr, uint8_t *data, uint8_t size);
-	void regWrite(physical_address_t addr, uint8_t *data, uint8_t size);
 	
 	/* ******** END MEM ACCESS ROUTINES ****** */
 
@@ -571,7 +572,7 @@ public:
     class MMC	*mmc;
     class CCR_t *ccr;   
 	class EBLB	*eblb;
-		 
+
 protected:
 	//=====================================================================
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
@@ -609,6 +610,8 @@ private:
 	uint8_t		regA, regB;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
+    
+    HC_Registers	*registers;
 
 	address_t	ivbr_value; // Interrupt Vector Base Register Value
 	
