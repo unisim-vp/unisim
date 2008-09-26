@@ -47208,11 +47208,11 @@ cpu
 				uint16_t val;
 				if (b210 < 0x4) {
 					val = cpu->eblb->getter<uint8_t>(b210);
-					if (val != 0) { val = val - 1;}
+					val = val - 1;
 					cpu->eblb->setter<uint8_t>(b210, val);
 					} else {
 					val = cpu->eblb->getter<uint16_t>(b210);
-					if (val != 0) { val = val - 1;}
+					val = val - 1;
 					cpu->eblb->setter<uint16_t>(b210, val);
 				}
 				isBranch = (val == 0);
@@ -47221,11 +47221,11 @@ cpu
 				uint16_t val;
 				if (b210 < 0x4) {
 					val = cpu->eblb->getter<uint8_t>(b210);
-					if (val != 0) { val = val - 1;}
+					val = val - 1;
 					cpu->eblb->setter<uint8_t>(b210, val);
 					} else {
 					val = cpu->eblb->getter<uint16_t>(b210);
-					if (val != 0) { val = val - 1;}
+					val = val - 1;
 					cpu->eblb->setter<uint16_t>(b210, val);
 				}
 				isBranch = (val != 0);
@@ -47241,11 +47241,11 @@ cpu
 				uint16_t val;
 				if (b210 < 0x4) {
 					val = cpu->eblb->getter<uint8_t>(b210);
-					if (val != 0) { val = val + 1;}
+					val = val + 1;
 					cpu->eblb->setter<uint8_t>(b210, val);
 					} else {
 					val = cpu->eblb->getter<uint16_t>(b210);
-					if (val != 0) { val = val + 1;}
+					val = val + 1;
 					cpu->eblb->setter<uint16_t>(b210, val);
 				}
 				isBranch = (val == 0);
@@ -47255,11 +47255,11 @@ cpu
 				uint16_t val;
 				if (b210 < 0x4) {
 					val = cpu->eblb->getter<uint8_t>(b210);
-					if (val != 0) { val = val + 1;}
+					val = val + 1;
 					cpu->eblb->setter<uint8_t>(b210, val);
 					} else {
 					val = cpu->eblb->getter<uint16_t>(b210);
-					if (val != 0) { val = val + 1;}
+					val = val + 1;
 					cpu->eblb->setter<uint16_t>(b210, val);
 				}
 				isBranch = (val != 0);
