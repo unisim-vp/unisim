@@ -76,12 +76,42 @@ struct CONFIG {
 	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
 	static const bool HAS_MASKABLE_INTERRUPT	= false;
 
-	//==============================================================
-	//=   Interrupt Vector Base Register Offset and Default value  =
-	//==============================================================
+	//=======================================
+	//=   XINT Registers and Reset Values   =
+	//=======================================
 
-	static const uint8_t IVBR_DEFAULT_VALUE	= 0xFF;		// IVBR is only one. 
-	static const address_t IVBR_ADDRESS		= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
+	static const address_t	IVBR_ADDRESS			= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
+	static const uint8_t	IVBR_RESET_VALUE		= 0xFF;		// IVBR is only one. 
+
+	static const address_t	INT_XGPRIO				= 0x0126;
+	static const uint8_t	INT_XGPRIO_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFADDR				= 0x0127;
+	static const uint8_t	INT_CFADDR_RESET_VALUE	= 0x10;
+
+	static const address_t	INT_CFDATA0				= 0x0128;
+	static const uint8_t	INT_CFDATA0_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA1				= 0x0129;
+	static const uint8_t	INT_CFDATA1_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA2				= 0x012A;
+	static const uint8_t	INT_CFDATA2_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA3				= 0x012B;
+	static const uint8_t	INT_CFDATA3_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA4				= 0x012C;
+	static const uint8_t	INT_CFDATA4_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA5				= 0x012D;
+	static const uint8_t	INT_CFDATA5_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA6				= 0x012E;
+	static const uint8_t	INT_CFDATA6_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA7				= 0x012F;
+	static const uint8_t	INT_CFDATA7_RESET_VALUE	= 0x01; 
 
 	//==============================================================================
 	//=   MEMORY MAP (Logical Memories Offsets) and RESET VALUES OF MMC REGISTERS  =
