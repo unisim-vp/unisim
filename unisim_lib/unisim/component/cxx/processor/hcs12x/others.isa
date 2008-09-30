@@ -346,7 +346,7 @@ trap.execute = {
 		cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 		
 		// (Trap Vector) => PC
-		cpu->setRegPC(cpu->memRead16(cpu->get_Trap_Vector()));
+//		cpu->setRegPC(cpu->memRead16(cpu->get_Trap_Vector()));
 	}
 }
 
@@ -402,5 +402,5 @@ sys.execute = {
 	cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
 		
 	// (Sys Vector) => PC
-	cpu->setRegPC(cpu->memRead16(cpu->get_Sys_Vector()));
+//	cpu->setRegPC(cpu->memRead16(cpu->get_Sys_Vector()));
 }
