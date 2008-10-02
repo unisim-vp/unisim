@@ -289,7 +289,7 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
 			fi
 			AC_MSG_NOTICE([xml2-config found])
 			libxml2_cflags="`xml2-config --cflags`"
-			libxml2_libs="`$with_libxml2/bin/xml2-config --libs`"
+			libxml2_libs="`xml2-config --libs`"
 			AC_MSG_NOTICE([xml2-config says compiler needs option ${libxml2_cflags} ${libxml2_libs} to compile and link with libxml2])
 			CPPFLAGS=${CPPFLAGS}" ${libxml2_cflags}"
 			LDFLAGS=${LDFLAGS}" ${libxml2_libs}"
