@@ -54,7 +54,7 @@ AC_LANG([C++])
 #     AC_MSG_ERROR([Some standard C headers are missing.]))
 
 ###### CHECK FOR C++ HEADERS ##################################################
-AC_CHECK_HEADERS([map],,\
+AC_CHECK_HEADERS([map queue],,\
     AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 UNISIM_CHECK_LIBXML2

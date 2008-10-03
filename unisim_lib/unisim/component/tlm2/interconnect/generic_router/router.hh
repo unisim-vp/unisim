@@ -40,8 +40,13 @@
 #include <tlm_utils/multi_passthrough_initiator_socket.h>
 #include <tlm_utils/multi_passthrough_target_socket.h>
 #include <inttypes.h>
+#include <queue>
+#include <vector>
+#include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/config.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh"
 
 namespace unisim {
 namespace component {
@@ -64,20 +69,40 @@ public:
 	}
 };
 
-class Config {
+class RouterPayloadExtension :
+	public tlm::tlm_extension<RouterPayloadExtension> {
 public:
-	static const unsigned int MAX_NUM_MAPPINGS = 10;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool DEBUG = false;
-};
+	RouterPayloadExtension() : fifo() {}
 
-class DebugConfig {
-public:
-	static const unsigned int MAX_NUM_MAPPINGS = 10;
-	static const unsigned int BUSWIDTH = 32;
-	typedef tlm::tlm_base_protocol_types TYPES;
-	static const bool DEBUG = true;
+	virtual tlm_extension_base *clone() const {
+		RouterPayloadExtension *clone = new RouterPayloadExtension(fifo);
+		return clone;
+	}
+
+	virtual void copy_from(tlm_extension_base const &ext) {
+		fifo = static_cast<RouterPayloadExtension const &>(ext).fifo;
+	}
+
+	void Push(unsigned int id) {
+		fifo.push(id);
+	}
+
+	bool Empty() const {
+		return fifo.empty();
+	}
+
+	unsigned int Front() const {
+		return fifo.front();
+	}
+
+	void Pop() {
+		fifo.pop();
+	}
+
+private:
+	std::queue<unsigned int> fifo;
+
+	RouterPayloadExtension(std::queue<unsigned int> const &fifo_clone) : fifo(fifo_clone) {}
 };
 
 template<class CONFIG = unisim::component::tlm2::interconnect::generic_router::Config>
@@ -114,6 +139,16 @@ private:
 	typedef tlm::tlm_sync_enum               sync_enum_type;
 
 	/*************************************************************************
+	 * Payload fabric                                                  START *
+	 *************************************************************************/
+
+	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
+
+	/*************************************************************************
+	 * Payload fabric                                                    END *
+	 *************************************************************************/
+
+	/*************************************************************************
 	 * Multi passtrough initiator socket callbacks                     START *
 	 *************************************************************************/
 
@@ -136,7 +171,75 @@ private:
 	/*************************************************************************
 	 * Multi passthrough target socket callbacks                         END *
 	 *************************************************************************/
-	
+
+	/*************************************************************************
+	 * Ready times for each incomming queue                            START *
+	 *************************************************************************/
+
+	std::vector<sc_time> m_targ_req_ready;
+	std::vector<sc_time> m_init_rsp_ready;
+
+	/*************************************************************************
+	 * Ready times for each incomming queue                              END *
+	 *************************************************************************/
+
+	/*************************************************************************
+	 * Dispatch handlers                                               START *
+	 *************************************************************************/
+
+	std::vector<RouterDispatcher<Router<CONFIG>, CONFIG> *> m_req_dispatcher;
+	std::vector<RouterDispatcher<Router<CONFIG>, CONFIG> *> m_rsp_dispatcher;
+	void SendReq(unsigned int id, transaction_type &trans);
+	void SendRsp(unsigned int id, transaction_type &trans);
+
+	/*************************************************************************
+	 * Dispatch handlers                                                 END *
+	 *************************************************************************/
+
+	/*************************************************************************
+	 * Helper methods                                                  START *
+	 *************************************************************************/
+
+	/**
+	 * Synchronize the dispatcher with the given time
+	 *
+	 * @param  time   the delay against sc_time_stamp
+	 * @return        the delay against sc_time_stamp once synchronized
+	 */
+	sc_time Sync(const sc_time &time);
+
+	/** 
+	 * Apply mapping function over the given transaction
+	 *
+	 * @param  trans  the transaction to apply the mapping over
+	 * @param  port   the port that maps that transaction
+	 * @return        true if a map was found, false otherwise
+	 */
+	bool ApplyMap(const transaction_type &trans, unsigned int &port);
+
+	/**
+	 * Set the incomming port into the transaction using the tlm2.0 extension
+	 *   mechanism.
+	 *
+	 * @param  trans  the transaction to mark
+	 * @param  port   the incomming port
+	 */
+	void SetRouterExtension(transaction_type &trans, unsigned int port);
+
+	/**
+	 * Get the incomming port from the transaction using the tlm2.0 extension
+	 *   mechanism. It removes the port from the transaction.
+	 *
+	 * @param  trans  the transaction to handle
+	 * @param  port   the incomming port found in the transaction extension
+	 * @return        true if a transaction extension was found, false otherwise
+	 */
+	bool GetRouterExtension(transaction_type &trans, unsigned int &port);
+
+	/*************************************************************************
+	 * Helper methods                                                    END *
+	 *************************************************************************/
+
 	/*************************************************************************
 	 * Parameters                                                      START *
 	 *************************************************************************/

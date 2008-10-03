@@ -50,19 +50,19 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR C HEADERS ####################################################
-# AC_CHECK_HEADERS([string.h],,\
-#     AC_MSG_ERROR([Some standard C headers are missing.]))
+AC_CHECK_HEADERS([inttypes.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
 
 ###### CHECK FOR C++ HEADERS ##################################################
-AC_CHECK_HEADERS([map],,\
+AC_CHECK_HEADERS([cmath map queue vector sstream string],,\
     AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 UNISIM_CHECK_SYSTEMC
 UNISIM_CHECK_TLM20
+UNISIM_CHECK_LIBXML2
 UNISIM_WITH_BOOST
 UNISIM_CHECK_BOOST_FUNCTION
 UNISIM_CHECK_BOOST_MEM_FN
-
 
 # files to generate
 #   this should include all the makefiles to generate

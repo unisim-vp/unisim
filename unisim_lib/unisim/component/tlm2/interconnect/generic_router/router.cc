@@ -35,6 +35,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
+#include "unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc"
 #include <sstream>
 #include <string>
 
