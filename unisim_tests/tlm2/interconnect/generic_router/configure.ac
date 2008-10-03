@@ -30,7 +30,6 @@
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
-#          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
 AC_INIT([UNISIM TLM2 Generic Router Interconnect Test Program], [1.0],
@@ -52,9 +51,9 @@ AC_PROG_LN_S
 
 AC_LANG([C++])
 
-###### CHECK FOR STANDARD C HEADERS ###########################################
-AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
-                  AC_MSG_ERROR([Some standard headers are missing.]))
+###### CHECK FOR C++ HEADERS ##################################################
+AC_CHECK_HEADERS([vector map],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
 

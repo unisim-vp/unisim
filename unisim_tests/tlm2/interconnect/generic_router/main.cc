@@ -41,7 +41,11 @@ using unisim::kernel::service::VariableBase;
 using unisim::kernel::logger::LoggerServer;
 
 int sc_main(int argv, char **argc) {
-	Top<true> top("top");
+#ifdef USE_BLOCKING
+	Top<true, true> top("top");
+#else
+	Top<false, true> top("top");
+#endif
 
 
 	VariableBase *var = ServiceManager::GetParameter("top.router.cycle_time");

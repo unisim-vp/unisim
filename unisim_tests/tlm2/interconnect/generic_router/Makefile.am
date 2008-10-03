@@ -1,9 +1,12 @@
 sharedir = $(prefix)/share/unisim_tests/tlm2/interconnect/generic_router
 INCLUDES=-I$(top_srcdir)/../../.. -I$(top_builddir)/../../..
-bin_PROGRAMS = generic_router_test
+bin_PROGRAMS = generic_router_blocking_test generic_router_test
 
 generic_router_test_SOURCES = main.cc router_test.hh
 generic_router_test_CPPFLAGS =
+
+generic_router_blocking_test_SOURCES = main.cc router_test.hh
+generic_router_blocking_test_CPPFLAGS = -DUSE_BLOCKING
 
 dist_share_DATA = COPYING
 
