@@ -19,7 +19,10 @@ its ability to combine cycle level and transactional level modeling, and now its
 large use by the community.
 
 UNISIM is a joint open source initiative of CEA List, INRIA Futurs and Princeton
-University to develop a complete simulation environment based on SystemC.
+University to develop a complete simulation environment based on SystemC. Other
+institutions have also participated: Brigham Young University, Universitat Politecnica
+de Catalunya, Barcelona Supercomputing Center, Ghent University, University of 
+Perpignan, ARM and ST Microelectronics.
 
 UNISIM brings:
   (1) A methodology for developing the hardware models;
@@ -27,12 +30,14 @@ UNISIM brings:
   (3) Several tools to facilitate hardware model development/debugging/exploitation.
 
 It is freely available on the web at http://www.unisim.org and through subversion
-at https://www.unisim.org/svn (use "guest" as login and no passworg).
+at https://www.unisim.org/svn (use "guest" as login and no password).
 
-UNISIM softwares are composed of three packages:
+UNISIM softwares are composed of three main packages:
 - UNISIM Tools (located in sub-directory unisim_tools)
 - UNISIM Library (located in sub-directory unisim_lib)
 - UNISIM Simulators (located in sub-directory unisim_simulators)
+And an optional package for unit module tests:
+- UNISIM Tests (located in sub-directory unisim_tests)
 
 See file README in each subdirectory for information on a particular package of UNISIM
 See file COPYING of each package for license information.
