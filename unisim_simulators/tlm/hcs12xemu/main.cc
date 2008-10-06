@@ -37,6 +37,7 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
+#include <unisim/service/loader/s19_loader/s19_loader.cc>
 #include <unisim/service/debug/symbol_table/symbol_table.hh>
 #include <iostream>
 #include <getopt.h>
@@ -245,7 +246,7 @@ int sc_main(int argc, char *argv[])
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
 
-	int memoryMode = S19_Loader::BANKED;
+	int memoryMode = S19_Loader<physical_address_t>::BANKED;
 	
 	// Parse the command line arguments
 	while((c = getopt_long (argc, argv, "c:dg:a:hi:l:zeom", long_options, 0)) != -1)
@@ -370,7 +371,7 @@ int sc_main(int argc, char *argv[])
 	Service<Loader<physical_address_t> > *loader = NULL;
 	
 	if (isS19) {
-		loader = new S19_Loader("S19_Loader", (S19_Loader::MODE) memoryMode);
+		loader = new S19_Loader<physical_address_t>("S19_Loader", (S19_Loader<physical_address_t>::MODE) memoryMode);
 	} else {
 		loader = new Elf32Loader("elf32-loader");
 	}
@@ -512,8 +513,8 @@ int sc_main(int argc, char *argv[])
 	}
 
 	if (isS19) {
-		((S19_Loader *) loader)->memory_import >> memory->memory_export;
-		((S19_Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+		((S19_Loader<physical_address_t> *) loader)->memory_import >> memory->memory_export;
+		((S19_Loader<physical_address_t> *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	} else {
 		((Elf32Loader *) loader)->memory_import >> memory->memory_export;
 		((Elf32Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
@@ -557,7 +558,7 @@ int sc_main(int argc, char *argv[])
 		uint8_t page = 0;
 		
 		if (isS19) {
-			((S19_Loader *) loader)->GetPagedAddress(entry_point, page, cpu_address); 
+			((S19_Loader<physical_address_t> *) loader)->GetPagedAddress(entry_point, page, cpu_address); 
 		} else {
 			cpu_address = (address_t) entry_point;
 		} 
