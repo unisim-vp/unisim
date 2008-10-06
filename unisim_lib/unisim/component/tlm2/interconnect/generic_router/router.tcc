@@ -56,12 +56,15 @@
 			(L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
 		} \
 	} \
-	RouterPayloadExtension *_extension; \
+	RouterPayloadExtension *_extension = 0; \
 	(X).get_extension(_extension); \
 	if(_extension) { \
 		(L) << endl; \
 		(L) << "   - extension(" << _extension << "):" << endl; \
-		(L) << "     - input port = " << _extension->Front(); \
+		if(_extension->Empty()) \
+			(L) << "     - empty" << endl; \
+		else \
+			(L) << "     - input port = " << _extension->Front(); \
 	} \
 }
 
@@ -102,12 +105,15 @@
 			(L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
 		} \
 	} \
-	RouterPayloadExtension *_extension; \
+	RouterPayloadExtension *_extension = 0; \
 	(X).get_extension(_extension); \
 	if(_extension) { \
 		(L) << endl; \
 		(L) << "   - extension(" << _extension << "):" << endl; \
-		(L) << "     - input port = " << _extension->Front(); \
+		if(_extension->Empty()) \
+			(L) << "     - empty" << endl; \
+		else \
+			(L) << "     - input port = " << _extension->Front(); \
 	} \
 }
 
@@ -316,76 +322,6 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			return tlm::TLM_COMPLETED;
 			break;
 	}
-//	switch (phase) {
-//	case tlm::BEGIN_REQ:
-//	case tlm::END_RESP:
-//		logger << DebugError << "Received nb_transport_bw on port " << id << ", with unexpected phase" << endl
-//			<< TIME(time) << endl
-//			<< PHASE(phase) << endl;
-//		TRANS(logger, trans);
-//		logger << EndDebug;
-//		sc_stop();
-//		wait();
-//		break;
-//	case tlm::BEGIN_RESP:
-//		{
-//		if(VerboseNonBlocking()) {
-//			logger << DebugInfo << "Received nb_transport_bw on port " << id << ", queueing it for future dispatching" << endl
-//				<< TIME(time) << endl;
-//			TRANS(logger, trans);
-//			logger << EndDebug;
-//		}
-//		/* the response will be queued into the port queue and sent once the routing engine is available */
-//		init_rsp_fifo[id].push(&trans);
-//		/* send an event for the dispatcher */
-//		sc_core::sc_time wait_time;
-//		if (cycle_time > time) {
-//			wait_time = cycle_time;
-//		} else {
-//			double div = time / cycle_time;
-//			wait_time = cycle_time * (std::floor(div) + 1);
-//		}
-//		dispatch_event.notify(wait_time);
-//
-//		/* increment the cumulated time and change the phase */
-//		phase = tlm::END_RESP;
-//		time = wait_time;
-//		return tlm::TLM_COMPLETED;
-//		}
-//		break;
-//	case tlm::END_REQ:
-//		{
-//		if (VerboseNonBlocking()) {
-//			logger << DebugInfo << "Received nb_transport_bw on port " << id << ", checking if a transaction can be removed" << endl
-//				<< TIME(time) << endl;
-//			TRANS(logger, trans);
-//			logger << EndDebug;
-//		}
-//		/* check that there is an item in the targ_rsp_fifo to remove */
-//		if(init_req_fifo[id].size() == 0 || !init_req_fifo_busy[id]) {
-//			logger << DebugError << "Received unexpected nb_transport_bw on port " << id << endl
-//				<< TIME(time) << endl
-//				<< PHASE(phase) << endl;
-//			TRANS(logger, trans);
-//			logger << EndDebug;
-//			sc_stop();
-//			wait();
-//			break;
-//		}
-//		/* remove the head of the init_req_fifo */
-//		init_req_fifo[id].pop();
-//		/* and unlock the fifo */
-//		init_req_fifo_busy[id] = false;
-//		return tlm::TLM_COMPLETED;
-//		}
-//		break;
-//	}
-//	/* this code should never be reached */
-//	logger << DebugWarning << "Received nb_transport_bw on port " << id << " and reaching dead code zone, returning tlm::TLM_ACCEPTED" << endl
-//		<< TIME(time) << endl
-//		<< PHASE(phase) << endl;
-//	TRANS(logger, trans);
-//	logger << EndDebug;
 	return tlm::TLM_ACCEPTED;
 }
 
