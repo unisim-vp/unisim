@@ -39,7 +39,7 @@
  ***************************************************************************/
 
 // -------- COMMANDS ------------------------------
-const int looptime = 100000001;
+const int looptime = 5;
 
 
 template <int NSIGNALS>
@@ -65,6 +65,7 @@ public:
   // SOC
   void start_of_cycle()
   {
+    cerr << "[SRC("<<timestamp()<<")] Begin of soc" << endl;
     if (timestamp() < looptime)
       { 
 	for (int i=0; i< NSIGNALS; i++)
@@ -78,6 +79,7 @@ public:
     else
       { //terminate_now(); 
       }
+    cerr << "[SRC("<<timestamp()<<")] End of soc" << endl;
   }
   // ON ACCEPT
   void onAccept()
@@ -90,6 +92,7 @@ public:
   // EOC
   void end_of_cycle()
   {
+    cerr << "[SRC("<<timestamp()<<")] Begin of eoc" << endl;
     for (int i=0; i<NSIGNALS; i++)
       {
 	if (!out.accept[i])
@@ -99,6 +102,7 @@ public:
 	    //	    abort();
 	  }
       }
+    cerr << "[SRC("<<timestamp()<<")] End of eoc" << endl;
   }
 };
 
@@ -125,6 +129,8 @@ public:
   // SOC
   void start_of_cycle()
   {
+    cerr << "[SNK("<<timestamp()<<")] Begin of soc" << endl;
+    cerr << "[SNK("<<timestamp()<<")] End of soc" << endl;
   }
   // ON ACCEPT
   void onData()
@@ -138,6 +144,7 @@ public:
   // EOC
   void end_of_cycle()
   {
+    cerr << "[SNK("<<timestamp()<<")] Begin of eoc" << endl;
     for (int i=0; i<NSIGNALS; i++)
       {
 	if (in.enable[i])
@@ -152,6 +159,48 @@ public:
 	      }
 	  }
       }
+    cerr << "[SNK("<<timestamp()<<")] End of eoc" << endl;
+ }
+
+};
+
+template <int NSIGNALS>
+class SuperSink: public module
+{
+public:
+  /* clock */
+  inclock inClock;                                                 ///< clock port
+  //  inport<int, NSIGNALS> in;
+  Sink<NSIGNALS> *sink;
+
+  SuperSink(const char *name): module(name)
+    //			       ,sink(name)
+  {
+    class_name = " SUPERSINK";
+    //    in.set_unisim_name(this, "in");
+
+    sensitive_pos_method(start_of_cycle) << inClock;
+    sensitive_neg_method(end_of_cycle) << inClock;
+
+    //    sensitive_method(onData) << in.data;
+    sink = new Sink<NSIGNALS>("__snk__");
+
+    sink->inClock(inClock);
+
+  }
+
+  // SOC
+  void start_of_cycle()
+  {
+    cerr << "[SUPERSNK("<<timestamp()<<")] Begin of soc" << endl;
+    cerr << "[SUPERSNK("<<timestamp()<<")] End of soc" << endl;
+  }
+
+  // EOC
+  void end_of_cycle()
+  {
+    cerr << "[SUPERSNK("<<timestamp()<<")] Begin of eoc" << endl;
+    cerr << "[SUPERSNK("<<timestamp()<<")] End of eoc" << endl;
   }
 
 };
@@ -165,7 +214,8 @@ public:
    *                      DEFINITION OF CLM COMPONENTS                      *
    **************************************************************************/
   Source<NBS> *__src;
-  Sink<NBS> *__snk;
+  //  Sink<NBS> *__snk;
+  SuperSink<NBS> *__supersnk;
 
   /**************************************************************************
    *                      CLM COMPONENT GENERATION and CONNECTION           *
@@ -174,14 +224,16 @@ public:
 
     // Module instantiactions
     __src = new Source<NBS>("__src__");
-    __snk = new Sink<NBS>("__snk__");
-
+    //    __snk = new Sink<NBS>("__snk__");
+    __supersnk = new SuperSink<NBS>("__supersnk__");
     // Clock connections
     __src->inClock(global_clock);
-    __snk->inClock(global_clock);
+    //    __snk->inClock(global_clock);
+    __supersnk->inClock(global_clock);
+    //   __supersnk->sink->inClock(global_clock);
 
     // SIGNAL (or Module) connections
-    __src->out >> __snk->in;
+    __src->out >> __supersnk->sink->in;
     //__src->out( __snk->in );
 
   } //GeneratedSimulator()
