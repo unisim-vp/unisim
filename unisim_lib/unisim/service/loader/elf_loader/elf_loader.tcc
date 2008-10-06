@@ -42,12 +42,12 @@ namespace service {
 namespace loader {
 namespace elf_loader {
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent) :
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent) :
 	Object(name, parent),
-	Client<Memory<T> >(name, parent),
-	Client<SymbolTableBuild<T> >(name, parent),
-	Service<Loader<T> >(name, parent),
+	Client<Memory<MEMORY_ADDR> >(name, parent),
+	Client<SymbolTableBuild<MEMORY_ADDR> >(name, parent),
+	Service<Loader<MEMORY_ADDR> >(name, parent),
 	memory_import("memory-import", this),
 	symbol_table_build_import("symbol-table-build-import", this),
 	loader_export("loader-export", this),
@@ -64,36 +64,36 @@ ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImp
 	Object::SetupDependsOn(symbol_table_build_import);
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::~ElfLoaderImpl()
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::~ElfLoaderImpl()
 {
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::OnDisconnect()
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::OnDisconnect()
 {
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetEntryPoint() const
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetEntryPoint() const
 {
-	return entry_point;
+	return (MEMORY_ADDR) entry_point;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetTopAddr() const
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetTopAddr() const
 {
-	return top_addr;
+	return (MEMORY_ADDR) top_addr;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetStackBase() const
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetStackBase() const
 {
   return 0;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup()
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup()
 {
 	//memory->Reset();
 	if(symbol_table_build_import) symbol_table_build_import->Reset();
@@ -321,16 +321,16 @@ bool ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup()
 	return success;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Reset()
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Reset()
 {
 	if(memory_import) memory_import->Reset();
 /*	ClientIndependentSetup();
 	ClientDependentSetup();*/
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapElfHeader(Elf_Ehdr *hdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapElfHeader(Elf_Ehdr *hdr)
 {
 	BSwap(hdr->e_type);
 	BSwap(hdr->e_machine);
@@ -348,8 +348,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapElf
 }
 
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapProgramHeader(Elf_Phdr *phdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapProgramHeader(Elf_Phdr *phdr)
 {
 	BSwap(phdr->p_type);
 	BSwap(phdr->p_offset);
@@ -362,8 +362,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapPro
 }
 
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapSectionHeader(Elf_Shdr *shdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapSectionHeader(Elf_Shdr *shdr)
 {
 	BSwap(shdr->sh_name);
 	BSwap(shdr->sh_type);
@@ -377,8 +377,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapSec
 	BSwap(shdr->sh_entsize);
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapSymbolEntry(Elf_Sym *sym)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapSymbolEntry(Elf_Sym *sym)
 {
 	BSwap(sym->st_name);
 	BSwap(sym->st_value);
@@ -386,8 +386,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SwapSym
 	BSwap(sym->st_shndx);
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustElfHeader(Elf_Ehdr *hdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustElfHeader(Elf_Ehdr *hdr)
 {
 	switch(hdr->e_ident[EI_DATA])
 	{
@@ -405,8 +405,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustE
 }
 
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustProgramHeader(Elf_Ehdr *hdr, Elf_Phdr *phdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustProgramHeader(Elf_Ehdr *hdr, Elf_Phdr *phdr)
 {
 	switch(hdr->e_ident[EI_DATA])
 	{
@@ -423,8 +423,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustP
 	}
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSectionHeader(Elf_Ehdr *hdr, Elf_Shdr *shdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSectionHeader(Elf_Ehdr *hdr, Elf_Shdr *shdr)
 {
 	switch(hdr->e_ident[EI_DATA])
 	{
@@ -442,8 +442,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustS
 }
 
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSymbolEntry(Elf_Ehdr *hdr, Elf_Sym *sym)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSymbolEntry(Elf_Ehdr *hdr, Elf_Sym *sym)
 {
 	switch(hdr->e_ident[EI_DATA])
 	{
@@ -460,8 +460,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustS
 	}
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSymbolTable(Elf_Ehdr *hdr, Elf_Shdr *shdr, Elf_Sym *sym)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSymbolTable(Elf_Ehdr *hdr, Elf_Shdr *shdr, Elf_Sym *sym)
 {
 	int nsymbols = shdr->sh_size / sizeof(Elf_Sym);
 	int i;
@@ -472,8 +472,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustS
 	}
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Ehdr *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadElfHeader(istream& is)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+Elf_Ehdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadElfHeader(istream& is)
 {
 	if(is.seekg(0, ios::beg).fail())
 	{
@@ -503,8 +503,8 @@ Elf_Ehdr *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Re
 }
 
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Phdr *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadProgramHeaders(Elf_Ehdr *hdr, istream& is)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadProgramHeaders(Elf_Ehdr *hdr, istream& is)
 {
 	if(hdr->e_phnum > 0)
 	{
@@ -533,8 +533,8 @@ Elf_Phdr *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Re
 	return 0;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Shdr *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadSectionHeaders(Elf_Ehdr *hdr, istream& is)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadSectionHeaders(Elf_Ehdr *hdr, istream& is)
 {
 	int i;
 	if(hdr->e_shnum)
@@ -561,14 +561,14 @@ Elf_Shdr *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Re
 	return 0;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Shdr *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetNextSectionHeader(Elf_Ehdr *hdr, Elf_Shdr *shdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetNextSectionHeader(Elf_Ehdr *hdr, Elf_Shdr *shdr)
 {
 	return (Elf_Shdr *)((char *) shdr + hdr->e_shentsize);
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-char *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSectionHeaderStringTable(Elf_Ehdr *hdr, Elf_Shdr *shdr_table, istream& is)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+char *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSectionHeaderStringTable(Elf_Ehdr *hdr, Elf_Shdr *shdr_table, istream& is)
 {
 	Elf_Shdr *shdr = (Elf_Shdr *)((char *) shdr_table + hdr->e_shentsize * hdr->e_shstrndx);
 	char *string_table;
@@ -587,8 +587,8 @@ char *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSe
 	return string_table;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpElfHeader(Elf_Ehdr *hdr, ostream& os)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpElfHeader(Elf_Ehdr *hdr, ostream& os)
 {
 	os << "--- Elf Header ---";
 	os << endl << "File Class : ";
@@ -736,8 +736,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpElf
 	os << endl;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpProgramHeader(Elf_Phdr *phdr, ostream& os)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpProgramHeader(Elf_Phdr *phdr, ostream& os)
 {
 	os << "--- Program Header ---";
 	os << endl << "Segment type : ";
@@ -777,8 +777,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpPro
 	os << endl;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSectionHeader(Elf_Shdr *shdr, char *string_table, ostream& os)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSectionHeader(Elf_Shdr *shdr, char *string_table, ostream& os)
 {
 	os << "--- Section header ---";
 	os << endl << "Section name : \"" << (string_table + shdr->sh_name) << "\"";
@@ -841,8 +841,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSec
 	os << endl;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbol(Elf_Sym *sym, char *string_table, ostream& os)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbol(Elf_Sym *sym, char *string_table, ostream& os)
 {
 	os << "---- Symbol ---";
 	os << endl << "Name : \"" << (string_table + sym->st_name) << "\"";
@@ -881,8 +881,8 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSym
 	os << endl;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbolTable(Elf_Shdr *shdr, char *content, char *string_table, ostream& os)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbolTable(Elf_Shdr *shdr, char *content, char *string_table, ostream& os)
 {
 	int nsymbols = shdr->sh_size / sizeof(Elf_Sym);
 	int i;
@@ -894,26 +894,26 @@ void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSym
 }
 
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionSize(Elf_Shdr *shdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionSize(Elf_Shdr *shdr)
 {
 	return shdr->sh_size;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionAddr(Elf_Shdr *shdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionAddr(Elf_Shdr *shdr)
 {
 	return shdr->sh_addr;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionType(Elf_Shdr *shdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionType(Elf_Shdr *shdr)
 {
 	return shdr->sh_type;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSection(Elf_Ehdr *hdr, Elf_Shdr *shdr, void *buffer, istream& is)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSection(Elf_Ehdr *hdr, Elf_Shdr *shdr, void *buffer, istream& is)
 {
 	if(is.seekg(shdr->sh_offset, ios::beg).fail()) return false;
 	if(is.read((char *) buffer, shdr->sh_size).fail()) return false;
@@ -924,28 +924,28 @@ bool ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSec
 	return true;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSegment(Elf_Ehdr *hdr, Elf_Phdr *phdr, void *buffer, istream& is)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSegment(Elf_Ehdr *hdr, Elf_Phdr *phdr, void *buffer, istream& is)
 {
 	if(is.seekg(phdr->p_offset, ios::beg).fail()) return false;
 	if(is.read((char *) buffer, phdr->p_filesz).fail()) return false;
 	return true;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionFlags(Elf_Shdr *shdr)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionFlags(Elf_Shdr *shdr)
 {
 	return shdr->sh_flags;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-char *ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionName(Elf_Shdr *shdr, char *string_table)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+char *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionName(Elf_Shdr *shdr, char *string_table)
 {
 	return string_table + shdr->sh_name;
 }
 
-template <class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BuildSymbolTable(Elf_Shdr *shdr, void *content, char *string_table)
+template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BuildSymbolTable(Elf_Shdr *shdr, void *content, char *string_table)
 {
 	if(symbol_table_build_import)
 	{

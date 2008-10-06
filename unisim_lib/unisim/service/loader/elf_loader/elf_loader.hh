@@ -66,16 +66,16 @@ using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
-template <class T, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+template <class MEMORY_ADDR, class T, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
-	public Client<Memory<T> >,
-	public Service<Loader<T> >,
-	public Client<SymbolTableBuild<T> >
+	public Client<Memory<MEMORY_ADDR> >,
+	public Service<Loader<MEMORY_ADDR> >,
+	public Client<SymbolTableBuild<MEMORY_ADDR> >
 {
 public:
-	ServiceImport<Memory<T> > memory_import;
-	ServiceImport<SymbolTableBuild<T> > symbol_table_build_import;
-	ServiceExport<Loader<T> > loader_export;
+	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
+	ServiceImport<SymbolTableBuild<MEMORY_ADDR> > symbol_table_build_import;
+	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
 
 	ElfLoaderImpl(const char *name, Object *parent = 0);
 	virtual ~ElfLoaderImpl();
@@ -84,9 +84,9 @@ public:
 	virtual bool Setup();
 
 	virtual void Reset();
-	virtual T GetEntryPoint() const;
-	virtual T GetTopAddr() const;
-	virtual T GetStackBase() const;
+	virtual MEMORY_ADDR GetEntryPoint() const;
+	virtual MEMORY_ADDR GetTopAddr() const;
+	virtual MEMORY_ADDR GetStackBase() const;
 
 private:
 	string filename;
@@ -127,8 +127,8 @@ private:
 	void BuildSymbolTable(Elf_Shdr *shdr, void *content, char *string_table);
 };
 
-typedef ElfLoaderImpl<uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
-typedef ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
+typedef ElfLoaderImpl<uint32_t, uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+typedef ElfLoaderImpl<uint64_t, uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
 
 } // end of namespace elf_loader
 } // end of namespace loader
