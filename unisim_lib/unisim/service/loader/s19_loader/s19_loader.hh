@@ -74,11 +74,12 @@ using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
 #define S_RECORD_SIZE	515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
-	
+
+template <class MEMORY_ADDR>	
 class S19_Loader :
-	public Client<Memory<physical_address_t> >,
-	public Service<Loader<physical_address_t> >,
-	public Client<SymbolTableBuild<physical_address_t> > 
+	public Client<Memory<MEMORY_ADDR> >,
+	public Service<Loader<MEMORY_ADDR> >,
+	public Client<SymbolTableBuild<MEMORY_ADDR> > 
 {
 public:
 

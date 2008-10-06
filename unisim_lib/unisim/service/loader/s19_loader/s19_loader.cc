@@ -44,8 +44,8 @@ namespace service {
 namespace loader {
 namespace s19_loader {
 
-
-S19_Loader::S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent) :
+template <class MEMORY_ADDR>	
+S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent) :
 	Object(name,parent),
 	Client<Memory<physical_address_t> >(name, parent),
 	Client<SymbolTableBuild<physical_address_t> >(name, parent),
@@ -69,35 +69,42 @@ S19_Loader::S19_Loader(char const *name, S19_Loader::MODE memMode, Object *paren
 	Object::SetupDependsOn(symbol_table_build_import); 
 }
 
-S19_Loader::~S19_Loader() 
+template <class MEMORY_ADDR>
+S19_Loader<MEMORY_ADDR>::~S19_Loader() 
 { 
 }
 
-void S19_Loader::OnDisconnect()
+template <class MEMORY_ADDR>
+void S19_Loader<MEMORY_ADDR>::OnDisconnect()
 {
 }
 
-void S19_Loader::Reset() 
+template <class MEMORY_ADDR>
+void S19_Loader<MEMORY_ADDR>::Reset() 
 {
 	if(memory_import) memory_import->Reset();
 }
 
-physical_address_t S19_Loader::GetEntryPoint() const
+template <class MEMORY_ADDR>
+physical_address_t S19_Loader<MEMORY_ADDR>::GetEntryPoint() const
 { 
 	return entry_point;
 }
 
-physical_address_t S19_Loader::GetTopAddr() const
+template <class MEMORY_ADDR>
+physical_address_t S19_Loader<MEMORY_ADDR>::GetTopAddr() const
 {  
 	return top_addr;
 }
 
-physical_address_t S19_Loader::GetStackBase() const
+template <class MEMORY_ADDR>
+physical_address_t S19_Loader<MEMORY_ADDR>::GetStackBase() const
 {  // TODO
 	return 0;
 }
 
-bool S19_Loader::Setup() {
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::Setup() {
 	 
 	int             linenum;            /* tracks line number in bootstrap file */
 	char            srec[S_RECORD_SIZE];          /* holds S-record from bootstrap file */
@@ -134,7 +141,8 @@ bool S19_Loader::Setup() {
 	return success;
 }
 
-void S19_Loader::GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t &cpu_address)
+template <class MEMORY_ADDR>
+void S19_Loader<MEMORY_ADDR>::GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t &cpu_address)
 {
 	if (memoryMode == GNUGCC) 
 	{
@@ -161,7 +169,8 @@ void S19_Loader::GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t
 
 // TODO: This function is a duplicate of once in MMC class.
 //       I have to see how to rearange the project to remove this duplication !!!
-physical_address_t S19_Loader::GetFlashAddress(page_t page, address_t logicalAddress)
+template <class MEMORY_ADDR>
+physical_address_t S19_Loader<MEMORY_ADDR>::GetFlashAddress(page_t page, address_t logicalAddress)
 {
 	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS = 0x00400000;
 	static const uint8_t FLASH_ADDRESS_SIZE = 14;
@@ -185,7 +194,8 @@ physical_address_t S19_Loader::GetFlashAddress(page_t page, address_t logicalAdd
 
 }
 
-bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
+template <class MEMORY_ADDR>
+bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 {
 	int     cnt, s5cnt;
 	int     chksum;
@@ -340,7 +350,8 @@ bool  S19_Loader::ProcessRecord(int linenum, char srec[S_RECORD_SIZE])
 	
 }
 
-bool S19_Loader::memWrite(physical_address_t addr, const void *buffer, uint32_t size) {
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::memWrite(physical_address_t addr, const void *buffer, uint32_t size) {
 
 	bool success = false;
 	
@@ -363,8 +374,8 @@ bool S19_Loader::memWrite(physical_address_t addr, const void *buffer, uint32_t 
 	return success;
 }
 
-
-void  S19_Loader::ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE])
+template <class MEMORY_ADDR>
+void  S19_Loader<MEMORY_ADDR>::ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE])
 {
 	cerr << Object::GetName() << ": ";
 	switch (errnum) {
