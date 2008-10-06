@@ -340,6 +340,11 @@ public:
 	}
 
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload &trans, tlm::tlm_phase &phase, sc_core::sc_time &t) {
+		unsigned char *data = trans.get_data_ptr();
+		unsigned int size = trans.get_data_length();
+		uint64_t addr = trans.get_address();
+		map<uint64_t, unsigned char>::iterator it;
+
 		sc_time rd_time(10, SC_NS);
 		sc_time wr_time(10, SC_NS);
 		sc_time delay;
@@ -358,6 +363,14 @@ public:
 				}
 				t = t + delay;
 				m_time = t;
+				for(unsigned int i = 0; i < size; i++) {
+					it = mem.find(addr + i);
+					if(it != mem.end())
+						data[i] = it->second;
+					else
+						data[i] = 0;
+				}
+				trans.set_response_status(tlm::TLM_OK_RESPONSE);
 				trans.release();
 				return tlm::TLM_COMPLETED;
 			} else {
@@ -371,6 +384,10 @@ public:
 				}
 				t = t + delay;
 				m_time = t + wr_time;
+				for(unsigned int i = 0; i < size; i++) {
+					mem[addr + i] = data[i];
+				}
+				trans.set_response_status(tlm::TLM_OK_RESPONSE);
 				trans.release();
 				return tlm::TLM_COMPLETED;
 			}
