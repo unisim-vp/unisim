@@ -68,7 +68,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Interface to Cacti 4
 //#include "power_estimation2/CactiCachePowerEstimator.h"
 //#include "statistics/StatisticService.h"
-#include <unisim/service/interfaces/statistic_reporting.hh>
+//#include <unisim/service/interfaces/statistic_reporting.hh>
 
 #include <sstream>
 
