@@ -41,6 +41,7 @@
 #include <tlm_utils/peq_with_get.h>
 #include "unisim/component/cxx/memory/ram/memory.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
@@ -67,11 +68,11 @@ const bool DEFAULT_DEBUG = false; // no debug
 template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class Memory :
 	public sc_module,
-	public unisim::component::cxx::memory::ram::Memory<sc_dt::uint64, PAGE_SIZE>,
+	public unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE>,
 	public tlm::tlm_fw_transport_if<>
 {
 public:
-	typedef unisim::component::cxx::memory::ram::Memory<sc_dt::uint64, PAGE_SIZE> inherited;
+	typedef unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE> inherited;
 	/**
 	 * TLM2 Target socket
 	 */
