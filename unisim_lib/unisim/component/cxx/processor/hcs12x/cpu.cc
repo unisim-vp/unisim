@@ -83,7 +83,7 @@ CPU::CPU(const char *name, Object *parent):
 	memory_export("memory_export", this),
 	debug_control_import("debug_control_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
-	symbol_table_lookup_import("symbol_table_lookup_import", this),
+//	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
 	logger_import("logger_import", this),
 //	itcm_logger_import("itcm_logger_import", this),

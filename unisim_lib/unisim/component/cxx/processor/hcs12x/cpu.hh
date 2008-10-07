@@ -246,7 +246,7 @@ public:
 
 	ServiceImport<DebugControl<physical_address_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<physical_address_t> > memory_access_reporting_import;
-	ServiceImport<SymbolTableLookup<physical_address_t> > symbol_table_lookup_import;
+//	ServiceImport<SymbolTableLookup<physical_address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 	
