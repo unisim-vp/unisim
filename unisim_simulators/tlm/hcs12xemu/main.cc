@@ -520,7 +520,7 @@ int sc_main(int argc, char *argv[])
 		((Elf32Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	}
 	
-	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
+//	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	bus->memory_import >> fsb_to_mem_bridge->memory_export;
 	fsb_to_mem_bridge->memory_import >> memory->memory_export;
 
