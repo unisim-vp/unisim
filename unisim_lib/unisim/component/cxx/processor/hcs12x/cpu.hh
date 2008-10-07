@@ -514,8 +514,6 @@ private:
     
     HC_Registers	*registers;
 
-//	address_t	ivbr_value; // Interrupt Vector Base Register Value
-	
 	//=====================================================================
 	//=                   68HCS12X interrupt signals                      =
 	//=====================================================================

@@ -86,30 +86,16 @@ CPU::CPU(const char *name, Object *parent):
 //	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
 	logger_import("logger_import", this),
-//	itcm_logger_import("itcm_logger_import", this),
-//	dtcm_logger_import("dtcm_logger_import", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
-//	default_endianess(E_BIG_ENDIAN),
-//	param_default_endianess("default-endianess", this, default_endianess),
-//	verbose_all(true),
 	verbose_all(false),
 	verbose_exception(false),
-//	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
-//	param_verbose_setup("verbose-setup", this, verbose_setup),
 	verbose_step(true),
-//	param_verbose_step("verbose-step", this, verbose_step),
-//	verbose_step_insn(false),
-//	param_verbose_step_insn("verbose-step-insn", this, verbose_step_insn),
 	verbose_dump_regs_start(true),
-//	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
 	verbose_dump_regs_end(true),
-//	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
-//	memory_interface(_memory_interface),
 	instruction_counter(0),
 	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFFFFFF)
-//	running(true),
 	
 {
 	setRegA(0x00);
@@ -202,12 +188,7 @@ bool CPU::Setup()
 		requires_finished_instruction_reporting = false;
 	}
 	
-//	if(statistics_import) {
-//		statistics_import->AddSource(Object::GetName(), statistics_id);
-//		statistics_import->AddStatistic(statistics_id, "instruction-counter", 
-//				&instruction_counter);
-//	}
-	
+
 	return true;
 }
 
@@ -227,9 +208,7 @@ uint8_t CPU::Step()
 {
 	address_t 	current_pc;
 	physical_address_t physical_pc;
-/*
-	uint8_t 	buffer[CodeType::maxsize];
-*/
+
 	uint8_t 	buffer[MAX_INS_SIZE];
 	 
 	Operation 	*op;
@@ -291,7 +270,6 @@ uint8_t CPU::Step()
 						<< "Received debug DBG_RESET command (PC = 0x"
 						<< Hex << physical_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
-				// TODO : memory_interface->Reset(); 
 			}
 		} while(1);
 	}
@@ -314,10 +292,6 @@ uint8_t CPU::Step()
 			<< Hex << physical_pc << Dec
 			<< Endl << EndDebugInfo;
 	}
-/*
-	BusRead(physical_pc, buffer, CodeType::maxsize);
-	CodeType 	insn( buffer, CodeType::maxsize);
-*/	
 
 	queueFetch(physical_pc, buffer, MAX_INS_SIZE);
 	CodeType 	insn( buffer, MAX_INS_SIZE);
@@ -371,11 +345,6 @@ uint8_t CPU::Step()
 
 		RegistersInfo();
 	
-	/*		
-		if(requires_finished_instruction_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportFinishedInstruction(GetGPR(PC_reg));
-	*/	
 
 		if(requires_finished_instruction_reporting)
 			if(memory_access_reporting_import)
