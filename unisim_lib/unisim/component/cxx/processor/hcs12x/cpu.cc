@@ -132,73 +132,37 @@ void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 }
 
 
-//=====================================================================
-//=                  Client/Service setup methods                     =
-//=====================================================================
-
-bool CPU::Setup()
+void CPU::Reset()
 {
-	/* check verbose settings */
-	if(CONFIG::DEBUG_ENABLE && verbose_all) {
-		verbose_setup = true;
-		verbose_step = true;
-		verbose_dump_regs_start = true;
-		verbose_dump_regs_end = true;
-	}
-	if(CONFIG::DEBUG_ENABLE && verbose_all && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "verbose-all = true"
-			<< Endl << EndDebugInfo;
-	} else {
-		if(CONFIG::DEBUG_ENABLE && verbose_setup && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "verbose-setup = true"
-				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "verbose-step = true"
-				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "verbose-dump-regs-end = true"
-				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "verbose-dump-regs-start = true"
-				<< Endl << EndDebugInfo;
-	}
+	mmc->reset();
 	
-	/* setting debugging registers */
-	if(verbose_setup && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Initializing debugging registers"
-			<< Endl << EndDebugInfo;
+	//TODO
+	bus_cycle = 0;
+	cpu_cycle = 0;
+	instruction_counter = 0;
 
-	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
-	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
-	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
-	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
-	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);	
-	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
-	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
-	registers_registry["CCR"] = new SimpleRegister<CCR_t>("CCR", ccr);
-
-	if(!memory_access_reporting_import) {
-		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
-	}
+	soft_reset = false;
+	hard_reset = false;
+	nonMaskableXIRQ_interrupt = false;
+	maskable_interrupt = false;
 	
-
-	return true;
-}
-
-void CPU::OnDisconnect()
-{
+	asynchronous_interrupt = false;
 }
 
 //=====================================================================
 //=                    execution handling methods                     =
 //=====================================================================
+
+
+void CPU::Stop(int ret)
+{
+	exit(ret);
+}
+
+void CPU::Sync()
+{
+
+}
 
 void CPU::OnBusCycle()
 {
@@ -373,6 +337,9 @@ uint8_t CPU::Step()
 	return opCycles;
 }
 
+//=====================================================================
+//=              HCS12X (CPU12X) Queue Handling                       =
+//=====================================================================
 
 uint8_t* CPU::queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte)
 {
@@ -422,17 +389,67 @@ void CPU::queueFlush(uint8_t nByte)
 	queueCurrentAddress = queueCurrentAddress + nByte;
 }
 
+// ==============================================
+// =          MEMORY ACCESS ROUTINES            =
+// ==============================================
 
-void CPU::Stop(int ret)
-{
-	exit(ret);
+uint8_t CPU::memRead8(physical_address_t addr) {
+
+	uint8_t data;
+	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
+	{
+		data = registers->read(addr);
+	}
+	else
+	{ 
+		BusRead(addr, &data, 1);
+	}
+	return data;
 }
 
-void CPU::Sync()
-{
+uint16_t CPU::memRead16(physical_address_t addr) {
 
+	uint16_t data;
+	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
+	{
+		data = (uint16_t) (registers->read(addr) << 8) || registers->read(addr+1);
+	}
+	else
+	{ 
+		BusRead(addr, &data, 2);
+	}
+
+	data = BigEndian2Host(data); 
+
+	return data;
 }
 
+void CPU::memWrite8(physical_address_t addr, uint8_t val) {
+
+	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
+	{
+		registers->write(addr, val);
+	}
+	else
+	{
+		BusWrite( addr, &val, 1);
+	} 
+}
+
+void CPU::memWrite16(physical_address_t addr, uint16_t val) {
+
+	val = Host2BigEndian(val);
+
+	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
+	{
+		registers->write(addr, val >> 8);
+		registers->write(addr+1, val);
+	}
+	else
+	{
+		BusWrite(addr, &val, 2);
+	}
+}
 
 //=====================================================================
 //=                    Exception handling methods                     =
@@ -538,231 +555,6 @@ void CPU::AckMaskableInterrupt()
 	// TODO
 }
 
-
-//=====================================================================
-//=             memory access reporting control interface methods     =
-//=====================================================================
-
-void CPU::RequiresMemoryAccessReporting(bool report)
-{
-	requires_memory_access_reporting = report;
-}
-
-void CPU::RequiresFinishedInstructionReporting(bool report)
-{
-	requires_finished_instruction_reporting = report;
-}
-
-/**************************************************************/
-/* Verbose methods (protected)                          START */
-/**************************************************************/
-
-inline INLINE 
-bool CPU::VerboseSetup() {
-	return CONFIG::DEBUG_ENABLE && verbose_setup && logger_import;
-}
-
-inline INLINE
-bool CPU::VerboseStep() {
-	return CONFIG::DEBUG_ENABLE && verbose_step && logger_import;
-}
-
-inline INLINE
-void CPU::VerboseDumpRegs() {
-
-	(*logger_import) << "\t- A" << " = 0x" << Hex << getRegA() << Dec;
-	(*logger_import) << "\t- B" << " = 0x" << Hex << getRegB() << Dec;
-	(*logger_import) << "\t- D" << " = 0x" << Hex << getRegD() << Dec;
-	(*logger_import) << Endl;
-	(*logger_import) << "\t- X" << " = 0x" << Hex << getRegX() << Dec;
-	(*logger_import) << "\t- Y" << " = 0x" << Hex << getRegY() << Dec;
-	(*logger_import) << Endl;
-	(*logger_import) << "\t- SP" << " = 0x" << Hex << getRegSP() << Dec;
-	(*logger_import) << "\t- PC" << " = 0x" << Hex << getRegPC() << Dec;
-	(*logger_import) << Endl;
-
-}
-
-inline INLINE
-void CPU::VerboseDumpRegsStart() {
-	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Register dump before starting instruction execution: " << Endl;
-		VerboseDumpRegs();
-		(*logger_import) << EndDebugInfo;
-	}
-}
-
-inline INLINE
-void CPU::VerboseDumpRegsEnd() {
-	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Register dump at the end of instruction execution: " << Endl;
-		VerboseDumpRegs();
-		(*logger_import) << EndDebugInfo;
-	}
-}
-
-inline INLINE
-void CPU::RegistersInfo() {
-
-	if (CONFIG::REGISTERS_INFO) {
-		cout << std::hex << "CCR=0x" << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
-		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";
-	}
-}
-
-//=====================================================================
-//=             memory interface methods                              =
-//=====================================================================
-void CPU::Reset()
-{
-	mmc->reset();
-	
-	//TODO
-	bus_cycle = 0;
-	cpu_cycle = 0;
-	instruction_counter = 0;
-
-	soft_reset = false;
-	hard_reset = false;
-	nonMaskableXIRQ_interrupt = false;
-	maskable_interrupt = false;
-	
-	asynchronous_interrupt = false;
-}
-
-bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)
-{
-	if (memory_import) {
-		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
-	}
-	
-	return false;
-}
-
-bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size)
-{
-	if (memory_import) {
-		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
-	}
-	
-	return false;
-}
-
-/* ********** MEMORY ACCESS ROUTINES ******* */
-
-uint8_t CPU::memRead8(physical_address_t addr) {
-
-	uint8_t data;
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
-	{
-		data = registers->read(addr);
-	}
-	else
-	{ 
-		BusRead(addr, &data, 1);
-	}
-	return data;
-}
-
-uint16_t CPU::memRead16(physical_address_t addr) {
-
-	uint16_t data;
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
-	{
-		data = (uint16_t) (registers->read(addr) << 8) || registers->read(addr+1);
-	}
-	else
-	{ 
-		BusRead(addr, &data, 2);
-	}
-
-	data = BigEndian2Host(data); 
-
-	return data;
-}
-
-void CPU::memWrite8(physical_address_t addr, uint8_t val) {
-
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
-	{
-		registers->write(addr, val);
-	}
-	else
-	{
-		BusWrite( addr, &val, 1);
-	} 
-}
-
-void CPU::memWrite16(physical_address_t addr, uint16_t val) {
-
-	val = Host2BigEndian(val);
-
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
-	{
-		registers->write(addr, val >> 8);
-		registers->write(addr+1, val);
-	}
-	else
-	{
-		BusWrite(addr, &val, 2);
-	}
-}
-
-
-/* ********** END MEM ACCESS ROUTINES ****** */
-
-//=====================================================================
-//=             CPURegistersInterface interface methods               =
-//=====================================================================
-
-/**
- * Gets a register interface to the register specified by name.
- *
- * @param name The name of the requested register.
- * @return A pointer to the RegisterInterface corresponding to name.
- */
-Register* CPU::GetRegister(const char *name)
-{
-	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
-	else 
-		return NULL;
-
-}
-
-//=====================================================================
-//=                   DebugDisasmInterface methods                    =
-//=====================================================================
-
-/**
- * Returns a string with the disassembling of the instruction found 
- *   at address addr.
- * 
- * @param addr The address of the instruction to disassemble.
- * @param next_addr The address following the requested instruction.
- * @return The disassembling of the requested instruction address.
- */
-string CPU::Disasm(physical_address_t addr, physical_address_t &next_addr)
-{
-	Operation *op = NULL;
-
-
-	uint8_t 	buffer[CodeType::maxsize];
-
-	ReadMemory(addr, buffer, CodeType::maxsize);
-	CodeType 	insn( buffer, CodeType::maxsize);
-	
-	op = this->Decode(addr, insn);
-
-	stringstream disasmBuffer;
-	op->disasm(disasmBuffer);
-
-	next_addr = addr + op->GetEncoding().size;
-	return disasmBuffer.str();
-}
-
 	//======================================================================
 	//=                  Registers Acces Routines                          =
 	//======================================================================
@@ -842,6 +634,10 @@ uint16_t CPU::getRegPC() { return regPC; }
 
 void CPU::setRegTMP(uint8_t index, uint16_t val) { regTMP[index] = val; }
 uint16_t CPU::getRegTMP(uint8_t index) { return regTMP[index]; }
+
+// ======================================================
+// =    Transfer/Exchange: Registers setters/getters    =
+// ======================================================
 
 template <class T>
 void EBLB::setter(uint8_t rr, T val) // setter function
@@ -956,6 +752,214 @@ void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
 	setter<T>(rrDst, tmp);
 }
 
+//=====================================================================
+//=                  Client/Service setup methods                     =
+//=====================================================================
+
+bool CPU::Setup()
+{
+	/* check verbose settings */
+	if(CONFIG::DEBUG_ENABLE && verbose_all) {
+		verbose_setup = true;
+		verbose_step = true;
+		verbose_dump_regs_start = true;
+		verbose_dump_regs_end = true;
+	}
+	if(CONFIG::DEBUG_ENABLE && verbose_all && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "verbose-all = true"
+			<< Endl << EndDebugInfo;
+	} else {
+		if(CONFIG::DEBUG_ENABLE && verbose_setup && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-setup = true"
+				<< Endl << EndDebugInfo;
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-step = true"
+				<< Endl << EndDebugInfo;
+		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-dump-regs-end = true"
+				<< Endl << EndDebugInfo;
+		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "verbose-dump-regs-start = true"
+				<< Endl << EndDebugInfo;
+	}
+	
+	/* setting debugging registers */
+	if(verbose_setup && logger_import) 
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Initializing debugging registers"
+			<< Endl << EndDebugInfo;
+
+	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
+	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
+	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
+	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
+	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);	
+	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
+	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
+	registers_registry["CCR"] = new SimpleRegister<CCR_t>("CCR", ccr);
+
+	if(!memory_access_reporting_import) {
+		requires_memory_access_reporting = false;
+		requires_finished_instruction_reporting = false;
+	}
+	
+
+	return true;
+}
+
+void CPU::OnDisconnect()
+{
+}
+
+//=====================================================================
+//=             memory access reporting control interface methods     =
+//=====================================================================
+
+void CPU::RequiresMemoryAccessReporting(bool report)
+{
+	requires_memory_access_reporting = report;
+}
+
+void CPU::RequiresFinishedInstructionReporting(bool report)
+{
+	requires_finished_instruction_reporting = report;
+}
+
+/**************************************************************/
+/* Verbose methods (protected)                          START */
+/**************************************************************/
+
+inline INLINE 
+bool CPU::VerboseSetup() {
+	return CONFIG::DEBUG_ENABLE && verbose_setup && logger_import;
+}
+
+inline INLINE
+bool CPU::VerboseStep() {
+	return CONFIG::DEBUG_ENABLE && verbose_step && logger_import;
+}
+
+inline INLINE
+void CPU::VerboseDumpRegs() {
+
+	(*logger_import) << "\t- A" << " = 0x" << Hex << getRegA() << Dec;
+	(*logger_import) << "\t- B" << " = 0x" << Hex << getRegB() << Dec;
+	(*logger_import) << "\t- D" << " = 0x" << Hex << getRegD() << Dec;
+	(*logger_import) << Endl;
+	(*logger_import) << "\t- X" << " = 0x" << Hex << getRegX() << Dec;
+	(*logger_import) << "\t- Y" << " = 0x" << Hex << getRegY() << Dec;
+	(*logger_import) << Endl;
+	(*logger_import) << "\t- SP" << " = 0x" << Hex << getRegSP() << Dec;
+	(*logger_import) << "\t- PC" << " = 0x" << Hex << getRegPC() << Dec;
+	(*logger_import) << Endl;
+
+}
+
+inline INLINE
+void CPU::VerboseDumpRegsStart() {
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Register dump before starting instruction execution: " << Endl;
+		VerboseDumpRegs();
+		(*logger_import) << EndDebugInfo;
+	}
+}
+
+inline INLINE
+void CPU::VerboseDumpRegsEnd() {
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import) {
+		(*logger_import) << DebugInfo << LOCATION
+			<< "Register dump at the end of instruction execution: " << Endl;
+		VerboseDumpRegs();
+		(*logger_import) << EndDebugInfo;
+	}
+}
+
+inline INLINE
+void CPU::RegistersInfo() {
+
+	if (CONFIG::REGISTERS_INFO) {
+		cout << std::hex << "CCR=0x" << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
+		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";
+	}
+}
+
+//=====================================================================
+//=             memory interface methods                              =
+//=====================================================================
+
+bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)
+{
+	if (memory_import) {
+		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
+	}
+	
+	return false;
+}
+
+bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size)
+{
+	if (memory_import) {
+		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
+	}
+	
+	return false;
+}
+
+//=====================================================================
+//=             CPURegistersInterface interface methods               =
+//=====================================================================
+
+/**
+ * Gets a register interface to the register specified by name.
+ *
+ * @param name The name of the requested register.
+ * @return A pointer to the RegisterInterface corresponding to name.
+ */
+Register* CPU::GetRegister(const char *name)
+{
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else 
+		return NULL;
+
+}
+
+//=====================================================================
+//=                   DebugDisasmInterface methods                    =
+//=====================================================================
+
+/**
+ * Returns a string with the disassembling of the instruction found 
+ *   at address addr.
+ * 
+ * @param addr The address of the instruction to disassemble.
+ * @param next_addr The address following the requested instruction.
+ * @return The disassembling of the requested instruction address.
+ */
+string CPU::Disasm(physical_address_t addr, physical_address_t &next_addr)
+{
+	Operation *op = NULL;
+
+
+	uint8_t 	buffer[CodeType::maxsize];
+
+	ReadMemory(addr, buffer, CodeType::maxsize);
+	CodeType 	insn( buffer, CodeType::maxsize);
+	
+	op = this->Decode(addr, insn);
+
+	stringstream disasmBuffer;
+	op->disasm(disasmBuffer);
+
+	next_addr = addr + op->GetEncoding().size;
+	return disasmBuffer.str();
+}
 
 } // end namespace
 }

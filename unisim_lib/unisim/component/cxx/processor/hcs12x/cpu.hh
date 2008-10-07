@@ -262,12 +262,14 @@ public:
 	void setRegisters(HC_Registers *regs);
 	void SetEntryPoint(uint8_t page, address_t cpu_address);
 
-	//=====================================================================
-	//=                  Client/Service setup methods                     =
-	//=====================================================================
+	//==========================================
+	//=     ISA - MEMORY ACCESS ROUTINES       =
+	//==========================================
 	
-	virtual bool Setup();
-	virtual void OnDisconnect();
+	uint8_t memRead8(physical_address_t addr);
+	void memWrite8(physical_address_t addr,uint8_t val);
+	uint16_t memRead16(physical_address_t addr);
+	void memWrite16(physical_address_t addr,uint16_t val);
 	
 	//=====================================================================
 	//=                    execution handling methods                     =
@@ -279,6 +281,7 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 	
+	virtual void Reset();
 	
 	/* TODO:
 	 * Stop All Clocks and puts the device in standby mode.
@@ -293,66 +296,6 @@ public:
 	 */
 	virtual void Wait() = 0;
 
-	//=====================================================================
-	//=             memory access reporting control interface methods     =
-	//=====================================================================
-
-	virtual void RequiresMemoryAccessReporting(bool report);
-	virtual void RequiresFinishedInstructionReporting(bool report) ;
-
-	//=====================================================================
-	//=             memory interface methods                              =
-	//=====================================================================
-	virtual void Reset();
-	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
-
-	/* ******** MEMORY ACCESS ROUTINES ******* */
-	uint8_t memRead8(physical_address_t addr);
-	void memWrite8(physical_address_t addr,uint8_t val);
-	uint16_t memRead16(physical_address_t addr);
-	void memWrite16(physical_address_t addr,uint16_t val);
-	
-	/* ******** END MEM ACCESS ROUTINES ****** */
-
-	//=====================================================================
-	//=             bus interface methods                              =
-	//=====================================================================
-	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size) = 0;
-	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size) = 0;
-	
-	//=====================================================================
-	//=             CPURegistersInterface interface methods               =
-	//=====================================================================
-
-	/**
-	 * Gets a register interface to the register specified by name.
-	 *
-	 * @param name The name of the requested register.
-	 * @return A pointer to the RegisterInterface corresponding to name.
-	 */
-    virtual Register *GetRegister(const char *name);
-
-	//=====================================================================
-	//=                   DebugDisasmInterface methods                    =
-	//=====================================================================
-
-    /**
-	 * Returns a string with the disassembling of the instruction found 
-	 *   at address addr.
-	 * 
-	 * @param addr The address of the instruction to disassemble.
-	 * @param next_addr The address following the requested instruction.
-	 * @return The disassembling of the requested instruction address.
-	 */
-    virtual string Disasm(physical_address_t addr, physical_address_t &next_addr);
-
-	//=====================================================================
-	//=                   Debugging methods                               =
-	//=====================================================================
-
-    inline uint64_t GetInstructionCounter() const { return instruction_counter; }
-	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 
 	//=====================================================================
 	//=                    Interface with outside                         =
@@ -467,6 +410,66 @@ public:
 
 	uint16_t xb_getAccRegValue(uint8_t rr);
 	/*************  END  XB  ***************/
+	
+	//=====================================================================
+	//=                  Client/Service setup methods                     =
+	//=====================================================================
+	
+	virtual bool Setup();
+	virtual void OnDisconnect();
+
+	//=====================================================================
+	//=             memory access reporting control interface methods     =
+	//=====================================================================
+
+	virtual void RequiresMemoryAccessReporting(bool report);
+	virtual void RequiresFinishedInstructionReporting(bool report) ;
+
+	//=====================================================================
+	//=             memory interface methods                              =
+	//=====================================================================
+
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
+
+	//=====================================================================
+	//=             bus interface methods                              =
+	//=====================================================================
+	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size) = 0;
+	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size) = 0;
+	
+	//=====================================================================
+	//=             CPURegistersInterface interface methods               =
+	//=====================================================================
+
+	/**
+	 * Gets a register interface to the register specified by name.
+	 *
+	 * @param name The name of the requested register.
+	 * @return A pointer to the RegisterInterface corresponding to name.
+	 */
+    virtual Register *GetRegister(const char *name);
+
+	//=====================================================================
+	//=                   DebugDisasmInterface methods                    =
+	//=====================================================================
+
+    /**
+	 * Returns a string with the disassembling of the instruction found 
+	 *   at address addr.
+	 * 
+	 * @param addr The address of the instruction to disassemble.
+	 * @param next_addr The address following the requested instruction.
+	 * @return The disassembling of the requested instruction address.
+	 */
+    virtual string Disasm(physical_address_t addr, physical_address_t &next_addr);
+
+	//=====================================================================
+	//=                   Debugging methods                               =
+	//=====================================================================
+
+    inline uint64_t GetInstructionCounter() const { return instruction_counter; }
+	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 
 	
 //protected:
