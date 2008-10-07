@@ -58,7 +58,7 @@ Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::
 Memory(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	unisim::component::cxx::memory::ram::Memory<sc_dt::uint64, PAGE_SIZE>(name, parent),
+	unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE>(name, parent),
 	slave_sock("slave-sock"),
 	verbose(false),
 	cycle_time(0),
@@ -91,7 +91,7 @@ Setup() {
 		return false;
 	}
 	cycle_sctime = sc_time(cycle_time, SC_PS);
-	return unisim::component::cxx::memory::ram::Memory<sc_dt::uint64, PAGE_SIZE>::Setup();
+	return unisim::component::cxx::memory::ram::Memory<uint64_t, PAGE_SIZE>::Setup();
 }
 
 /* TLM2 Slave methods */
@@ -121,7 +121,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 	}
 
 	tlm::tlm_command cmd = payload.get_command();
-	sc_dt::uint64 addr = payload.get_address();
+	uint64_t addr = payload.get_address();
 	unsigned char *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
@@ -193,7 +193,7 @@ template <unsigned int BUSWIDTH, uint32_t PAGE_SIZE, bool DEBUG>
 void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	tlm::tlm_command cmd = payload.get_command();
-	sc_dt::uint64 addr = payload.get_address();
+	uint64_t addr = payload.get_address();
 	unsigned char *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
