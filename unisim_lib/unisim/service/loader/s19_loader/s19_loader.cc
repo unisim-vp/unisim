@@ -47,9 +47,9 @@ namespace s19_loader {
 template <class MEMORY_ADDR>	
 S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent) :
 	Object(name,parent),
-	Client<Memory<physical_address_t> >(name, parent),
-	Client<SymbolTableBuild<physical_address_t> >(name, parent),
-	Service<Loader<physical_address_t> >(name, parent),
+	Client<Memory<MEMORY_ADDR> >(name, parent),
+	Client<SymbolTableBuild<MEMORY_ADDR> >(name, parent),
+	Service<Loader<MEMORY_ADDR> >(name, parent),
 	memory_import("memory-import", this),
 	symbol_table_build_import("symbol-table-build-import", this),
 	loader_export("loader-export", this),
@@ -86,19 +86,19 @@ void S19_Loader<MEMORY_ADDR>::Reset()
 }
 
 template <class MEMORY_ADDR>
-physical_address_t S19_Loader<MEMORY_ADDR>::GetEntryPoint() const
+MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetEntryPoint() const
 { 
-	return entry_point;
+	return (MEMORY_ADDR) entry_point;
 }
 
 template <class MEMORY_ADDR>
-physical_address_t S19_Loader<MEMORY_ADDR>::GetTopAddr() const
+MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetTopAddr() const
 {  
-	return top_addr;
+	return (MEMORY_ADDR) top_addr;
 }
 
 template <class MEMORY_ADDR>
-physical_address_t S19_Loader<MEMORY_ADDR>::GetStackBase() const
+MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetStackBase() const
 {  // TODO
 	return 0;
 }

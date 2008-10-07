@@ -101,16 +101,16 @@ public:
  */
 	enum {S0='0', S1='1', S2='2', S3='3', S5='5', S7='7', S8='8', S9='9'};
 
-	ServiceImport<Memory<physical_address_t> > memory_import;
-	ServiceImport<SymbolTableBuild<physical_address_t> > symbol_table_build_import;
-	ServiceExport<Loader<physical_address_t> > loader_export;
+	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
+	ServiceImport<SymbolTableBuild<MEMORY_ADDR> > symbol_table_build_import;
+	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
 
 	virtual void OnDisconnect();
 	virtual bool Setup();
 	virtual void Reset();
-	virtual physical_address_t GetEntryPoint() const;
-	virtual physical_address_t GetTopAddr() const;
-	virtual physical_address_t GetStackBase() const;
+	virtual MEMORY_ADDR GetEntryPoint() const;
+	virtual MEMORY_ADDR GetTopAddr() const;
+	virtual MEMORY_ADDR GetStackBase() const;
 
 	S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent = 0);
 	virtual ~S19_Loader();	
