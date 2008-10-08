@@ -46,6 +46,7 @@ namespace hcs12x {
 typedef uint16_t address_t;
 typedef uint32_t physical_address_t;
 typedef uint16_t reg_t;
+typedef uint64_t service_address_t;
 
 
 } // end hcs12x namespace

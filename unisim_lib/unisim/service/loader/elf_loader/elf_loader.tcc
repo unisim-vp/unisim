@@ -955,27 +955,28 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 	
 		for(sym = (Elf_Sym *) content, i = 0; i < nsymbols; sym++, i++)
 		{
-			typename Symbol<T>::Type type;
+			typename Symbol<MEMORY_ADDR>::Type type;
 	
 			switch(ELF32_ST_TYPE(sym->st_info))
 			{
-				case STT_NOTYPE: type = Symbol<T>::SYM_NOTYPE; break;
-				case STT_OBJECT: type = Symbol<T>::SYM_OBJECT; break;
-				case STT_FUNC: type = Symbol<T>::SYM_FUNC; break;
-				case STT_SECTION: type = Symbol<T>::SYM_SECTION; break;
-				case STT_FILE: type = Symbol<T>::SYM_FILE; break;
-				case STT_COMMON: type = Symbol<T>::SYM_COMMON; break;
-				case STT_TLS: type = Symbol<T>::SYM_TLS; break;
-				case STT_NUM: type = Symbol<T>::SYM_NUM; break;
-				case STT_LOOS: type = Symbol<T>::SYM_LOOS; break;
-				case STT_HIOS: type = Symbol<T>::SYM_HIOS; break;
-				case STT_LOPROC: type = Symbol<T>::SYM_LOPROC; break;
-				case STT_HIPROC: type = Symbol<T>::SYM_HIPROC; break;
-				default: type = Symbol<T>::SYM_NOTYPE;
+				case STT_NOTYPE: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE; break;
+				case STT_OBJECT: type = Symbol<MEMORY_ADDR>::SYM_OBJECT; break;
+				case STT_FUNC: type = Symbol<MEMORY_ADDR>::SYM_FUNC; break;
+				case STT_SECTION: type = Symbol<MEMORY_ADDR>::SYM_SECTION; break;
+				case STT_FILE: type = Symbol<MEMORY_ADDR>::SYM_FILE; break;
+				case STT_COMMON: type = Symbol<MEMORY_ADDR>::SYM_COMMON; break;
+				case STT_TLS: type = Symbol<MEMORY_ADDR>::SYM_TLS; break;
+				case STT_NUM: type = Symbol<MEMORY_ADDR>::SYM_NUM; break;
+				case STT_LOOS: type = Symbol<MEMORY_ADDR>::SYM_LOOS; break;
+				case STT_HIOS: type = Symbol<MEMORY_ADDR>::SYM_HIOS; break;
+				case STT_LOPROC: type = Symbol<MEMORY_ADDR>::SYM_LOPROC; break;
+				case STT_HIPROC: type = Symbol<MEMORY_ADDR>::SYM_HIPROC; break;
+				default: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE;
 			}
 	
 			string symbol_name(string_table + sym->st_name);
-			symbol_table_build_import->AddSymbol(symbol_name.c_str(), sym->st_value, sym->st_size, type);
+
+			symbol_table_build_import->AddSymbol(symbol_name.c_str(), (MEMORY_ADDR) sym->st_value, (MEMORY_ADDR) sym->st_size, type);
 		}
 		//symbol_table->Dump(cerr);
 	}
