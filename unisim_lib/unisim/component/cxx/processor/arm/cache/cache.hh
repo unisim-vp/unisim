@@ -50,7 +50,6 @@
 #ifndef SOCLIB
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/memory.hh"
 
 #endif // SOCLIB
@@ -71,7 +70,6 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
 
 #endif // SOCLIB
 

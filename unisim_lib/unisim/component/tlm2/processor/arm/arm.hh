@@ -39,9 +39,8 @@
 #include <tlm.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
-//#include "unisim/component/tlm/message/simple_fsb.hh"
-//#include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/util/garbage_collector/garbage_collector.hh"
+#include "unisim/kernel/tlm2/tlm.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include <inttypes.h>
 #include <string>
 
@@ -58,15 +57,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
-using unisim::kernel::tlm::TlmMessage;
-using unisim::kernel::tlm::TlmSendIf;
-using unisim::util::garbage_collector::Pointer;
-using unisim::component::tlm::message::SimpleFSBRequest;
-using unisim::component::tlm::message::SimpleFSBResponse;
 using unisim::component::cxx::processor::arm::CacheInterface;
-using unisim::service::interfaces::StatisticReporting;
-using unisim::service::interfaces::StatisticReportingControl;
-using unisim::util::time::time_unit_type;
 
 using std::string;
 
@@ -74,25 +65,15 @@ template <class CONFIG>
 class ARM :
 	public sc_module,
 	public CPU<CONFIG>,
-	public CacheInterface<typename CONFIG::address_t>,
-	public Client<StatisticReporting>,
-	public Service<StatisticReportingControl> {
-private:
-	typedef StatisticReporting::stat_handle_t stat_handle_t;
+	public CacheInterface<typename CONFIG::address_t> {
 public:
 	typedef typename CONFIG::address_t address_t;
 	typedef CPU<CONFIG> inherited;
 	
-	// Statistics service ports
-	ServiceImport<StatisticReporting> statistic_reporting_import;
-	ServiceExport<StatisticReportingControl> statistic_reporting_control_export;
-	// StatisticReportingControl service
-	virtual void SetPreferredStatReportingPeriod(double time_hint, time_unit_type time_unit);
-	virtual void RequiresStatReporting(const char *name, bool required);
-	
 	// Bus port
-	sc_port<TlmSendIf<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE>, SimpleFSBResponse<CONFIG::FSB_BURST_SIZE> > > master_port;
+	tlm::tlm_initiator_socket<CONFIG::FSB_BURST_SIZE> master_port;
 	
+	SC_HAS_PROCESS(ARM);
 	ARM(const sc_module_name& name, Object *parent = 0);
 	virtual ~ARM();
 	
@@ -131,7 +112,6 @@ public:
 
 private:
 	void Synchronize();
-	bool DebugEnable();
 	
 	sc_time cpu_cycle_time;
 	sc_time bus_cycle_time;
@@ -150,30 +130,34 @@ private:
 	Parameter<uint64_t> param_cpu_cycle_time;
 	Parameter<uint64_t> param_bus_cycle_time;
 	
-	// verbose parameters
-	bool verbose_tlm_bus_synchronize;
-	Parameter<bool> param_verbose_tlm_bus_synchronize;
-	bool verbose_tlm_run_thread;
-	Parameter<bool> param_verbose_tlm_run_thread;
-	bool verbose_tlm_commands;
-	Parameter<bool> param_verbose_tlm_commands;
+	/*************************************************************************
+	 * Logger and verbose parameters/methods                           START *
+	 *************************************************************************/
+
+	unisim::kernel::logger::Logger logger;
+	bool verbose_all;
+	unisim::kernel::service::Parameter<bool> param_verbose_all;
+	bool verbose_setup;
+	unisim::kernel::service::Parameter<bool> param_verbose_setup;
+	bool verbose_non_blocking;
+	unisim::kernel::service::Parameter<bool> param_verbose_non_blocking;
+	bool verbose_blocking;
+	unisim::kernel::service::Parameter<bool> param_verbose_blocking;
+	inline bool VerboseSetup();
+	inline bool VerboseNonBlocking();
+	inline bool VerboseBlocking();
+
+
+	// bool verbose_tlm_bus_synchronize;
+	// Parameter<bool> param_verbose_tlm_bus_synchronize;
+	// bool verbose_tlm_run_thread;
+	// Parameter<bool> param_verbose_tlm_run_thread;
+	// bool verbose_tlm_commands;
+	// Parameter<bool> param_verbose_tlm_commands;
 	
-	// statistic handlers and variables
-	sc_time stat_reporting_period;
-	sc_time stat_reporting_time;
-	sc_time stat_refresh_time;
-	sc_time last_stat_reporting_time;
-	string stat_name_instruction_counter;
-	stat_handle_t stat_handler_instruction_counter;
-	bool stat_requires_instruction_counter;
-	uint64_t last_instruction_counter;
-	string stat_name_diff_instruction_counter;
-	stat_handle_t stat_handler_diff_instruction_counter;
-	bool stat_requires_diff_instruction_counter;
-	string stat_name_ipc;
-	stat_handle_t stat_handler_ipc;
-	bool stat_requires_ipc;
-	void SendStats();
+	/*************************************************************************
+	 * Logger and verbose parameters/methods                             END *
+	 *************************************************************************/
 };
 
 } // end of namespace arm

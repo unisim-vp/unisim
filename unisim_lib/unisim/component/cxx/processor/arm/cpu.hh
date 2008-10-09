@@ -60,6 +60,7 @@
 #else // SOCLIB
 
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/cpu_linux_os.hh"
@@ -71,7 +72,6 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/logger.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
@@ -152,22 +152,9 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
-using unisim::service::interfaces::Logger;
 //using unisim::service::interfaces::StatisticReporting;
 //using unisim::service::interfaces::StatisticReportingControl;
 //using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
 using unisim::util::debug::Register;
 using unisim::util::arithmetic::Add32;
 // using unisim::component::cxx::cache::CacheInterface;
@@ -203,8 +190,7 @@ class CPU :
 	public Service<Disassembly<typename CONFIG::address_t> >,
     public Service<Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
-	public Client<Memory<typename CONFIG::address_t> >,
-	public Client<Logger>
+	public Client<Memory<typename CONFIG::address_t> >
 	
 #endif // SOCLIB
 
@@ -257,17 +243,21 @@ public:
 	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<address_t> > memory_import;
 	ServiceImport<LinuxOS> linux_os_import;
-//	ServiceImport<Statistics> statistics_import;
-	ServiceImport<Logger> logger_import;
-	
-	ServiceImport<Logger> cache_l1_logger_import;
-	ServiceImport<Logger> cache_il1_logger_import;
-	ServiceImport<Logger> cache_l2_logger_import;
 
-	ServiceImport<Logger> cp15_logger_import;
+	// the kernel logger
+	unisim::kernel::logger::Logger logger;
 	
-	ServiceImport<Logger> itcm_logger_import;
-	ServiceImport<Logger> dtcm_logger_import;
+//	ServiceImport<Statistics> statistics_import;
+//	ServiceImport<Logger> logger_import;
+	
+//	ServiceImport<Logger> cache_l1_logger_import;
+//	ServiceImport<Logger> cache_il1_logger_import;
+//	ServiceImport<Logger> cache_l2_logger_import;
+
+//	ServiceImport<Logger> cp15_logger_import;
+	
+//	ServiceImport<Logger> itcm_logger_import;
+//	ServiceImport<Logger> dtcm_logger_import;
 	
 #endif // SOCLIB
 	

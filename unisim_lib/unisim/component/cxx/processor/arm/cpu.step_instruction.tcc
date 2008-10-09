@@ -83,55 +83,55 @@ StepInstruction() {
 
 	VerboseDumpRegsStart();
 
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_step) 
+		logger << DebugInfo
 			<< "Starting step at PC = 0x"
-			<< Hex << current_pc << Dec
-			<< Endl << EndDebugInfo;
+			<< hex << current_pc << dec
+			<< EndDebugInfo;
 	
 	if(debug_control_import) {
 		typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
 
 		do {
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
+			if(CONFIG::DEBUG_ENABLE && verbose_step)
+				logger << DebugInfo
 					<< "Fetching debug command (PC = 0x"
-					<< Hex << current_pc << Dec << ")"
-					<< Endl << EndDebugInfo;
+					<< hex << current_pc << dec << ")"
+					<< EndDebugInfo;
 			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 	
 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(CONFIG::DEBUG_ENABLE && verbose_step)
+					logger << DebugInfo
 						<< "Received debug DBG_STEP command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
+						<< hex << current_pc << dec << ")"
+						<< EndDebugInfo;
 				break;
 			}
 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(CONFIG::DEBUG_ENABLE && verbose_step)
+					logger << DebugInfo
 						<< "Received debug DBG_SYNC command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
+						<< hex << current_pc << dec << ")"
+						<< EndDebugInfo;
 				Sync();
 				continue;
 			}
 
 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(CONFIG::DEBUG_ENABLE && verbose_step)
+					logger << DebugInfo
 						<< "Received debug DBG_KILL command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
+						<< hex << current_pc << dec << ")"
+						<< EndDebugInfo;
 				Stop(0);
 			}
 			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
+				if(CONFIG::DEBUG_ENABLE && verbose_step)
+					logger << DebugInfo
 						<< "Received debug DBG_RESET command (PC = 0x"
-						<< Hex << current_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
+						<< hex << current_pc << dec << ")"
+						<< EndDebugInfo;
 				// TODO : memory_interface->Reset(); 
 			}
 		} while(1);
@@ -139,11 +139,11 @@ StepInstruction() {
 
 	if(requires_memory_access_reporting) {
 		if(memory_access_reporting_import) {
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
+			if(CONFIG::DEBUG_ENABLE && verbose_step)
+				logger << DebugInfo
 					<< "Reporting memory acces for fetch at address 0x"
-					<< Hex << current_pc << Dec
-					<< Endl << EndDebugInfo;
+					<< hex << current_pc << dec
+					<< EndDebugInfo;
 			uint32_t insn_size;
 			if(GetCPSR_T())
 				insn_size = 2;
@@ -161,11 +161,11 @@ StepInstruction() {
 			/* THUMB state */
 			typename isa::thumb::Operation<CONFIG> *op = NULL;
 			thumb_insn_t insn;
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
+			if(CONFIG::DEBUG_ENABLE && verbose_step)
+				logger << DebugInfo
 					<< "Fetching (reading) instruction at address 0x"
-					<< Hex << current_pc << Dec
-					<< Endl << EndDebugInfo;
+					<< hex << current_pc << dec
+					<< EndDebugInfo;
 
 			ReadInsn(current_pc, insn);
 			/* 
@@ -185,25 +185,25 @@ StepInstruction() {
 			insn = BigEndian2Host(insn);
 			
 			/* Decode current PC */
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
+			if(CONFIG::DEBUG_ENABLE && verbose_step)
+				logger << DebugInfo
 					<< "Decoding instruction at 0x"
-					<< Hex << current_pc << Dec
-					<< " (0x" << Hex << insn << Dec << ")"
-					<< Endl << EndDebugInfo;
+					<< hex << current_pc << dec
+					<< " (0x" << hex << insn << dec << ")"
+					<< EndDebugInfo;
 			op = thumb_decoder.Decode(current_pc, insn);
 			/* Execute instruction */
 			if(CONFIG::DEBUG_ENABLE && (verbose_step 
-				|| verbose_step_insn) && logger_import) {
+				|| verbose_step_insn)) {
 				stringstream disasm_str;
 				op->disasm(*this, disasm_str);
-				(*logger_import) << DebugInfo << LOCATION
+				logger << DebugInfo
 					<< "Executing instruction "
 					<< disasm_str.str()
-					<< " at 0x" << Hex << current_pc << Dec
-					<< " (0x" << Hex << insn << Dec 
+					<< " at 0x" << hex << current_pc << dec
+					<< " (0x" << hex << insn << dec 
 					<< ", " << instruction_counter << ")"
-					<< Endl << EndDebugInfo;
+					<< EndDebugInfo;
 			}
 			op->execute(*this);
 			//op->profile(profile);
@@ -211,11 +211,11 @@ StepInstruction() {
 			/* ARM state */
 			typename isa::arm32::Operation<CONFIG> *op = NULL;
 			insn_t insn;
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
+			if(CONFIG::DEBUG_ENABLE && verbose_step)
+				logger << DebugInfo
 					<< "Fetching (reading) instruction at address 0x"
-					<< Hex << current_pc << Dec
-					<< Endl << EndDebugInfo;
+					<< hex << current_pc << dec
+					<< EndDebugInfo;
 
 			ReadInsn(current_pc, insn);
 			/*
@@ -235,25 +235,25 @@ StepInstruction() {
 			insn = BigEndian2Host(insn);
 			
 			/* Decode current PC */
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
+			if(CONFIG::DEBUG_ENABLE && verbose_step)
+				logger << DebugInfo 
 					<< "Decoding instruction at 0x"
-					<< Hex << current_pc << Dec
-					<< " (0x" << Hex << insn << Dec << ")"
-					<< Endl << EndDebugInfo;
+					<< hex << current_pc << dec
+					<< " (0x" << hex << insn << dec << ")"
+					<< EndDebugInfo;
 			op = arm32_decoder.Decode(current_pc, insn);
 			/* Execute instruction */
 			if(CONFIG::DEBUG_ENABLE && 
-				(verbose_step || verbose_step_insn) && logger_import) {
+				(verbose_step || verbose_step_insn)) {
 				stringstream disasm_str;
 				op->disasm(*this, disasm_str);
-				(*logger_import) << DebugInfo << LOCATION
+				logger << DebugInfo 
 					<< "Executing instruction "
 					<< disasm_str.str()
-					<< " at 0x" << Hex << current_pc << Dec
-					<< " (0x" << Hex << insn << Dec 
+					<< " at 0x" << hex << current_pc << dec
+					<< " (0x" << hex << insn << dec 
 					<< ", " << instruction_counter << ")"
-					<< Endl << EndDebugInfo;
+					<< EndDebugInfo;
 			}
 			op->execute(*this);
 			//op->profile(profile);
@@ -265,61 +265,55 @@ StepInstruction() {
 		instruction_counter++;
 	} 
 	catch(ResetException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
+		logger << DebugError 
 				<< "Received processor reset exception :" << exc.what() 
-				<< Endl << EndDebugError;
+				<< EndDebugError;
 		PerformResetException();
 	}
 	catch(UndefinedInstructionException<CONFIG> &exc) {
 		if(VerboseStep()) {
-			(*logger_import) << DebugInfo << LOCATION
+			logger << DebugInfo 
 				<< "Received undefined instruction exception: " << exc.what()
-				<< Endl << EndDebugInfo;
+				<< EndDebugInfo;
 		}
 		PerformUndefInsnException();
 	}
 	catch(SoftwareInterruptException<CONFIG> &exc) {
 		if(VerboseStep()) {
-			(*logger_import) << DebugInfo << LOCATION
+			logger << DebugInfo 
 				<< "Received software interrupt exception: " << exc.what()
-				<< Endl << EndDebugInfo;
+				<< EndDebugInfo;
 		}
 		PerformSWIException();
 	}
 	catch(PrefetchAbortException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "Received processor prefetch abort exception :" << exc.what()
-				<< Endl << EndDebugError;
+		logger << DebugError 
+			<< "Received processor prefetch abort exception :" << exc.what() << endl
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		PerformPrefetchAbortException();
 	}
 	catch(DataAbortException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "Received processor data abort exception :" << exc.what() 
-				<< Endl << EndDebugError;
+		logger << DebugError 
+			<< "Received processor data abort exception :" << exc.what() 
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		PerformDataAbortException();
 	}
 	catch(IRQException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "Received processor IRQ exception :" << exc.what() 
-				<< Endl << EndDebugError;
+		logger << DebugError 
+			<< "Received processor IRQ exception :" << exc.what() 
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		PerformIRQException();
 	}
 	catch(FIQException<CONFIG> &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "Received processor FIQ exception :" << exc.what() 
-				<< Endl << EndDebugError;
+		logger << DebugError
+			<< "Received processor FIQ exception :" << exc.what() 
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		PerformFIQException();
 	}
 	catch(Exception &exc) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION 
-				<< "Received unhandled processor exception :" << exc.what() 
-				<< Endl << EndDebugError;
+		logger << DebugError 
+			<< "Received unhandled processor exception :" << exc.what() 
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugError;
 		Stop(1);
 	}
 	

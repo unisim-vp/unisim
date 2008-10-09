@@ -87,11 +87,9 @@ using std::ostringstream;
 
 #ifndef SOCLIB
 
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
+using namespace unisim::kernel::logger;
 
 #endif // SOCLIB
 
@@ -126,7 +124,8 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	verbose_step(false),
 	verbose_step_insn(false),
 	verbose_dump_regs_start(false),
-	verbose_dump_regs_end(false)
+	verbose_dump_regs_end(false),
+	logger(*this)
 #ifdef PROFILE_ARM966
 	, insn_profile()
 #endif //PROFILE_ARM966
@@ -138,11 +137,10 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	/* currently supported: arm966e_s
 	 * if different report error */
 	if(CONFIG::MODEL != ARM966E_S && CONFIG::MODEL != ARM7TDMI) {
-		cerr << "Error(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-			<< "):" << endl
-			<< "Running arm in system mode"
-			<< ". Only arm966e_s and arm7tdmi can run under this mode"
-			<< endl;
+		logger << DebugError
+			<< "Running arm in system mode. Only arm966e_s and arm7tdmi can run under this mode" << endl
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+			<< EndDebug;
 		exit(-1);
 	}
 	// set CPSR to system mode
@@ -240,7 +238,6 @@ CPU(const char *name,
 	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
-	Client<Logger>(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_injection_export("memory_injection_export", this),
@@ -254,13 +251,14 @@ CPU(const char *name,
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
 	linux_os_import("linux_os_import", this),
-	logger_import("logger_import", this),
-	cache_l1_logger_import("cache_l1_logger_import", this),
-	cache_il1_logger_import("cache_il1_logger_import", this),
-	cache_l2_logger_import("cache_l2_logger_import", this),
-	cp15_logger_import("cp15_logger_import", this),
-	itcm_logger_import("itcm_logger_import", this),
-	dtcm_logger_import("dtcm_logger_import", this),
+	logger(*this),
+//	logger_import("logger_import", this),
+//	cache_l1_logger_import("cache_l1_logger_import", this),
+//	cache_il1_logger_import("cache_il1_logger_import", this),
+//	cache_l2_logger_import("cache_l2_logger_import", this),
+//	cp15_logger_import("cp15_logger_import", this),
+//	itcm_logger_import("itcm_logger_import", this),
+//	dtcm_logger_import("dtcm_logger_import", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
 	default_endianess(E_BIG_ENDIAN),
@@ -299,8 +297,6 @@ CPU(const char *name,
 	param_arm966es_vinithi("arm966es-vinithi", this, arm966es_vinithi) 
 	/* initialization of parameters for the 966es  END */
 	{
-	/* setting setup dependencies */
-	Object::SetupDependsOn(logger_import);
 	
 	/* Reset all the registers */
 	InitGPR();
@@ -373,33 +369,25 @@ bool
 CPU<CONFIG> ::
 Setup() {
 	/* check verbose settings */
-	if(CONFIG::DEBUG_ENABLE && verbose_all) {
+	if (CONFIG::DEBUG_ENABLE && verbose_all) {
 		verbose_setup = true;
 		verbose_step = true;
 		verbose_dump_regs_start = true;
 		verbose_dump_regs_end = true;
 	}
-	if(CONFIG::DEBUG_ENABLE && verbose_all && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "verbose-all = true"
-			<< Endl << EndDebugInfo;
+	if( CONFIG::DEBUG_ENABLE && verbose_all) {
+		logger << DebugInfo << "verbose-all = true" << EndDebug;
 	} else {
-		if(CONFIG::DEBUG_ENABLE && verbose_setup && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "verbose-setup = true"
-				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "verbose-step = true"
-				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "verbose-dump-regs-end = true"
-				<< Endl << EndDebugInfo;
-		if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
-				<< "verbose-dump-regs-start = true"
-				<< Endl << EndDebugInfo;
+		if (CONFIG::DEBUG_ENABLE) {
+			if (verbose_setup) 
+				logger << DebugInfo << "verbose-setup = true" << EndDebug;
+			if (verbose_step)
+				logger << DebugInfo << "verbose-step = true" << EndDebug;
+			if (verbose_dump_regs_start)
+				logger << DebugInfo << "verbose-dump-regs-start = true" << EndDebug;
+			if (verbose_dump_regs_end)
+				logger << DebugInfo << "verbose-dump-regs-end = true" << EndDebug;
+		}
 	}
 	
 	/* check if the emulator is running in user or system mode and perform
@@ -407,7 +395,7 @@ Setup() {
 	 * if linux_os_import is connected then we are running in user mode,
 	 *   otherwise we are running in system mode
 	 */ 
-	if(linux_os_import) {
+	if (linux_os_import) {
 		/* we are running in user mode:
 		 * - set CPSR to user mode
 		 * - initialize the cache system
@@ -415,10 +403,9 @@ Setup() {
 		 */
 		// set CPSR to user mode
 		SetCPSR_Mode(USER_MODE);
-		if(VerboseSetup()) {
-			(*logger_import) << DebugInfo << LOCATION
-				<< "Running \"" << GetName() << "\" in user mode"
-				<< Endl << EndDebugInfo;
+		if (VerboseSetup()) {
+			logger << DebugInfo << "Running \"" << GetName() << "\" in user mode"
+				<< EndDebugInfo;
 		}
 		// initialize the cache system
 		if(cache_l1 != 0) cache_l1->Enable();
@@ -435,12 +422,10 @@ Setup() {
 		 * if different report error */
 		if(CONFIG::MODEL != ARM966E_S &&
 				CONFIG::MODEL != ARM7TDMI) {
-			if(logger_import) {
-				(*logger_import) << DebugError << LOCATION
-					<< "Running \"" << GetName() << "\" in system mode"
-					<< ". Only arm966e_s and arm7tdmi can run under this mode"
-					<< Endl << EndDebugError;
-			}
+			logger << DebugError
+				<< "Running \"" << GetName() << "\" in system mode. "
+				<< "Only arm966e_s and arm7tdmi can run under this mode."
+				<< EndDebug;
 			return false;
 		}
 		// set CPSR to system mode
@@ -475,10 +460,11 @@ Setup() {
 	}
 
 	/* setting debugging registers */
-	if(verbose_setup && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose_setup) 
+		logger << DebugInfo
 			<< "Initializing debugging registers"
-			<< Endl << EndDebugInfo;
+			<< EndDebug;
+
 	for(int i = 0; i < 13; i++) {
 		stringstream str;
 	    str << "r" << i;
@@ -1200,12 +1186,11 @@ LSWUBReg(const uint32_t u,
 			<< "): unknow shift value (" << shift << ")" << endl;
 		
 #else // SOCLIB
-		
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "unknow shift value (" << shift << ")" 
-				<< Endl << EndDebugError;
-		
+	
+		logger << DebugError
+			<< "unknown shift value (" << shift << ")" << endl
+			<< LOCATION << EndDebug;
+
 #endif // SOCLIB
 		exit(-1);
 	}
@@ -2549,9 +2534,9 @@ GetSPSRIndex() {
 			<< "Trying to modify SPSR under USER_MODE" << endl;
 		exit(-1);
 #else // SOCLIB
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
+		logger << DebugError
 				<< "Trying to modify SPSR under USER_MODE" << Endl
+				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 				<< EndDebugError;
 		Stop(-1);
 #endif // SOCLIB
@@ -2562,10 +2547,10 @@ GetSPSRIndex() {
 			<< "Trying to modify SPSR under SYSTEM_MODE" << endl;
 		exit(-1);
 #else // ifndef SOCLIB
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "Trying to modify SPSR under SYSTEM_MODE" << Endl
-				<< EndDebugError;
+		logger << DebugError
+			<< "Trying to modify SPSR under SYSTEM_MODE" << Endl
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+			<< EndDebugError;
 		Stop(-1);
 #endif // SOCLIB
 		break;
@@ -2590,10 +2575,10 @@ GetSPSRIndex() {
 		cerr << "unknown running mode." << endl;
 		exit(-1);
 #else // SOCLIB
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "unkonwn running mode." << Endl
-				<< EndDebugError;
+		logger << DebugError
+			<< "unkonwn running mode." << Endl
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+			<< EndDebugError;
 		Stop(-1);
 #endif // SOCLIB
 		break;
@@ -3469,11 +3454,10 @@ CPU<CONFIG> ::
 CoprocessorLoad(uint32_t cp_num, address_t address) {
 	
 #ifndef SOCLIB
-	
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
+	logger << DebugError
+		<< "TODO" << endl
+		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -3489,10 +3473,10 @@ CoprocessorLoad(uint32_t cp_num, address_t address, uint32_t option) {
 	
 #ifndef SOCLIB
 	
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
+	logger << DebugError
+		<< "TODO" << endl
+		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -3508,10 +3492,10 @@ CoprocessorStore(uint32_t cp_num, address_t address) {
 	
 #ifndef SOCLIB
 	
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
+	logger << DebugError
+		<< "TODO" << endl
+		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+		<< EndDebugError;
 	
 #endif // SOCLIB
 
@@ -3527,10 +3511,10 @@ CoprocessorStore(uint32_t cp_num, address_t address, uint32_t option) {
 	
 #ifndef SOCLIB
 	
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
+	logger << DebugError
+		<< "TODO" << endl
+		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -3547,10 +3531,10 @@ CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
 	
 #ifndef SOCLIB
 	
-	if(logger_import)
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
+	logger << DebugError
+		<< "TODO" << endl
+		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+		<< EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -3566,10 +3550,10 @@ MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		
 #ifndef SOCLIB
 	
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "TODO"
-				<< Endl << EndDebugError;
+		logger << DebugError
+			<< "TODO" << endl
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+			<< EndDebugError;
 
 #endif // SOCLIB
 		Stop(-1);
@@ -3586,10 +3570,10 @@ MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		
 #ifndef SOCLIB
 	
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "TODO"
-				<< Endl << EndDebugError;
+		logger << DebugError
+			<< "TODO" << endl
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+			<< EndDebugError;
 		
 #endif // SOCLIB
 		
@@ -3784,12 +3768,11 @@ GetExceptionVectorAddr() {
 		
 #else // SOCLIB
 		
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
-			<< "TODO: exception vector address reporting is not implemented "
-			<< "for this architecture" << Endl
-			<< EndDebugError;
-	}
+	logger << DebugError
+		<< "TODO: exception vector address reporting is not implemented "
+		<< "for this architecture" << endl
+		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+		<< EndDebugError;
 		
 #endif // SOCLIB
 		
@@ -4075,11 +4058,6 @@ CreateCpSystem() {
 		
 		cp[15] = cp15_966es;
 		
-#ifndef SOCLIB
-		
-		cp[15]->logger_import >> cp15_logger_import;
-		
-#endif // SOCLIB
 	}
 }
 
@@ -4108,7 +4086,6 @@ CreateTCMSystem() {
 #else // SOCLIB
 		
 		dtcm = new dtcm_t("dtcm", this);
-		dtcm->logger_import >> dtcm_logger_import;
 		
 #endif // SOCLIB
 		
@@ -4122,7 +4099,6 @@ CreateTCMSystem() {
 #else // SOCLIB
 
 		itcm = new itcm_t("itcm", this);
-		itcm->logger_import >> itcm_logger_import;
 		
 #endif // SOCLIB
 		
@@ -4156,18 +4132,15 @@ CreateMemorySystem() {
 		cerr << "Configuring cache level 2" << endl;
 		cache_l2 = new Cache<typename CONFIG::cache_l2_t>("cache_l2", memory_interface, this);
 		cache_l2->memory_import >> memory_import;
-		cache_l2->logger_import >> cache_l2_logger_import;
 		if(CONFIG::HAS_INSN_CACHE_L1) {
 			cerr << "Configuring instruction cache level 1" << endl;
 			cache_il1 = new Cache<typename CONFIG::insn_cache_l1_t>("cache_il1", cache_l2, this);
-			cache_il1->logger_import >> cache_il1_logger_import;
 			cache_il1->memory_import >> cache_l2->memory_export;
 			if(CONFIG::HAS_DATA_CACHE_L1) {
 				cerr << "Configuring data cache level 1" << endl;
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", cache_l2, this);
 				cache_l1->memory_import >> cache_l2->memory_export;
 				memory_export >> cache_l1->memory_export;
-				cache_l1->logger_import >> cache_l1_logger_import;
 			} else {
 				cerr << "No data data cache level 1" << endl;
 				cache_l1 = cache_l2;
@@ -4179,20 +4152,17 @@ CreateMemorySystem() {
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_l1", cache_l2, this);
 				cache_l1->memory_import >> cache_l2->memory_export;
 				memory_export >> cache_l1->memory_export;
-				cache_l1->logger_import >> cache_l1_logger_import;
 			}
 		}
 	} else {
 		if(CONFIG::HAS_INSN_CACHE_L1) {
 			cache_il1 = new Cache<typename CONFIG::insn_cache_l1_t>("cache_il1", memory_interface, this);
 			cerr << "Configuring instruction cache level 1" << endl;
-			cache_il1->logger_import >> cache_il1_logger_import;
 			if(CONFIG::HAS_DATA_CACHE_L1) {
 				cerr << "Configuring data cache level 1" << endl;
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", memory_interface, this);
 				cache_l1->memory_import >> memory_import;
 				memory_export >> cache_l1->memory_export;
-				cache_l1->logger_import >> cache_l1_logger_import;
 			}
 		} else {
 			if(CONFIG::HAS_DATA_CACHE_L1) {
@@ -4200,7 +4170,6 @@ CreateMemorySystem() {
 				cache_l1 = new Cache<typename CONFIG::cache_l1_t>("cache_dl1", memory_interface, this);
 				cache_l1->memory_import >> memory_import;
 				memory_export >> cache_l1->memory_export;
-				cache_l1->logger_import >> cache_l1_logger_import;
 			} else {
 				cerr << "No caches present in this system" << endl;
 				//			cache_l1 = memory_interface;
@@ -4545,12 +4514,10 @@ Unpredictable() {
 	
 #else // SOCLIB
 	
-	if(logger_import) {
-		(*logger_import) << DebugError << LOCATION
-			<< "Trying to execute unpredictable behavior instruction"
-			<< Endl
-			<< EndDebugError;
-	}
+	logger << DebugError
+		<< "Trying to execute unpredictable behavior instruction"
+		<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
+		<< EndDebugError;
 	
 #endif // SOCLIB
 }
@@ -4568,15 +4535,7 @@ bool
 CPU<CONFIG> ::
 VerboseSetup() {
 	
-#ifdef SOCLIB
-	
 	return CONFIG::DEBUG_ENABLE && verbose_setup;
-	
-#else // SOCLIB
-	
-	return CONFIG::DEBUG_ENABLE && verbose_setup && logger_import;
-	
-#endif // SOCLIB
 	
 }
 
@@ -4586,15 +4545,7 @@ bool
 CPU<CONFIG> ::
 VerboseStep() {
 	
-#ifdef SOCLIB
-	
 	return CONFIG::DEBUG_ENABLE && verbose_step;
-	
-#else // SOCLIB
-	
-	return CONFIG::DEBUG_ENABLE && verbose_step && logger_import;
-	
-#endif // SOCLIB
 	
 }
 
@@ -4624,17 +4575,17 @@ VerboseDumpRegs() {
 	
 	for(unsigned int i = 0; i < 4; i++) {
 		for(unsigned int j = 0; j < 4; j++)
-			(*logger_import)
-				<< "\t- r" << ((i*4) + j) << " = 0x" << Hex << GetGPR((i*4) + j) << Dec;
-		(*logger_import) << Endl;
+			logger
+				<< "\t- r" << ((i*4) + j) << " = 0x" << hex << GetGPR((i*4) + j) << dec;
+		logger << endl;
 	}
-	(*logger_import) << "\t- cpsr = (" << Hex << GetCPSR() << Dec << ") ";
+	logger << "\t- cpsr = (" << hex << GetCPSR() << dec << ") ";
 	typename CONFIG::reg_t mask;
 	for(mask = 0x80000000; mask != 0; mask = mask >> 1) {
-		if((mask & GetCPSR()) != 0) (*logger_import) << "1";
-		else (*logger_import) << "0";
+		if((mask & GetCPSR()) != 0) logger << "1";
+		else logger << "0";
 	}
-	(*logger_import) << Endl;
+	logger << endl;
 	
 #endif // SOCLIB
 }
@@ -4656,11 +4607,11 @@ VerboseDumpRegsStart() {
 	
 #else // SOCLIB
 	
-	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Register dump before starting instruction execution: " << Endl;
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_start) {
+		logger << DebugInfo
+			<< "Register dump before starting instruction execution: " << endl;
 		VerboseDumpRegs();
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 	
 #endif // SOCLIB
@@ -4683,11 +4634,11 @@ VerboseDumpRegsEnd() {
 	
 #else // SOCLIB
 	
-	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Register dump at the end of instruction execution: " << Endl;
+	if(CONFIG::DEBUG_ENABLE && verbose_dump_regs_end) {
+		logger << DebugInfo
+			<< "Register dump at the end of instruction execution: " << endl;
 		VerboseDumpRegs();
-		(*logger_import) << EndDebugInfo;
+		logger << EndDebugInfo;
 	}
 	
 #endif // SOCLIB

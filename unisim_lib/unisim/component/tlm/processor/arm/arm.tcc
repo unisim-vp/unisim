@@ -38,9 +38,9 @@
 #include <systemc.h>
 #include "unisim/kernel/tlm/tlm.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
-#include "unisim/service/interfaces/logger.hh"
+#include "unisim/kernel/logger/logger.hh"
 
-#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+#define LOCATION "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 
 namespace unisim {
 namespace component {
@@ -48,18 +48,7 @@ namespace tlm {
 namespace processor {
 namespace arm {
 
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
+using namespace unisim::kernel::logger;
 
 template<class CONFIG>
 ARM<CONFIG> :: 
@@ -103,7 +92,7 @@ template<class CONFIG>
 bool
 ARM<CONFIG> ::
 DebugEnable() {
-	return CONFIG::DEBUG_ENABLE && inherited::logger_import;
+	return CONFIG::DEBUG_ENABLE;
 }
 	
 template<class CONFIG>
@@ -130,10 +119,9 @@ bool
 ARM<CONFIG> :: 
 Setup() {
 	if(!inherited::Setup()) {
-		if(inherited::logger_import)
-			(*inherited::logger_import) << DebugError << LOCATION
+		inherited::logger << DebugError << LOCATION << endl
 				<< "Error while trying to set up the ARM cpu"
-				<< Endl << EndDebugError;
+				<< endl << EndDebugError;
 		return false;
 	}
 	
@@ -142,25 +130,25 @@ Setup() {
 		verbose_tlm_bus_synchronize = true;
 		verbose_tlm_run_thread = true;
 	} else {
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize)
+			inherited::logger << DebugInfo
 				<< "verbose-tlm-bus-synchronize = true"
-				<< Endl << EndDebugInfo;		
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+				<< endl << EndDebugInfo;		
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread )
+			inherited::logger << DebugInfo
 				<< "verbose-tlm-run-thread = true"
-				<< Endl << EndDebugInfo;		
+				<< endl << EndDebugInfo;		
 	}
 	
 	cpu_cycle_time = sc_time((double)cpu_cycle_time_int, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 	nice_time = sc_time((double)nice_time_int, SC_PS);
-	if(CONFIG::DEBUG_ENABLE && inherited::verbose_setup && inherited::logger_import) {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Setting CPU cycle time to " << cpu_cycle_time.to_string() << Endl
-			<< "Setting Bus cycle time to " << bus_cycle_time.to_string() << Endl
-			<< "Setting nice time to " << nice_time.to_string() << Endl
-			<< "Setting IPC to " << ipc << Endl
+	if(CONFIG::DEBUG_ENABLE && inherited::verbose_setup ) {
+		inherited::logger << DebugInfo
+			<< "Setting CPU cycle time to " << cpu_cycle_time.to_string() << endl
+			<< "Setting Bus cycle time to " << bus_cycle_time.to_string() << endl
+			<< "Setting nice time to " << nice_time.to_string() << endl
+			<< "Setting IPC to " << ipc << endl
 			<< EndDebugInfo;
 	}
 	
@@ -192,45 +180,45 @@ BusSynchronize() {
 	bus_time = sc_time_stamp();
 	return;
 
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize )
+		inherited::logger << DebugInfo
 			<< "Bus synchro START" 
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
 	sc_dt::uint64 time_spent_tu = time_spent.value();
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize )
+		inherited::logger << DebugInfo
 			<< "time_spent_tu = " << time_spent_tu 
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	sc_dt::uint64 next_time_tu = current_time_tu + time_spent_tu;
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize )
+		inherited::logger << DebugInfo
 			<< "next_time_tu = " << next_time_tu 
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize )
+		inherited::logger << DebugInfo
 			<< "bus_cycle_time_tu = " << bus_cycle_time_tu 
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	sc_dt::uint64 bus_time_phase_tu = next_time_tu % bus_cycle_time_tu;
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize )
+		inherited::logger << DebugInfo
 			<< "bus_time_phase_tu = " << bus_time_phase_tu
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	if(time_spent_tu || bus_time_phase_tu) {
 		sc_dt::uint64 delay_tu = next_time_tu - current_time_tu + (bus_cycle_time_tu - bus_time_phase_tu);
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize )
+			inherited::logger << DebugInfo
 				<< "delay_tu = " << delay_tu
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 		wait(sc_time(delay_tu, false));
 		cpu_time = sc_time_stamp();
 		bus_time = cpu_time + bus_cycle_time;
 	}
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_bus_synchronize )
+		inherited::logger << DebugInfo
 			<< "Bus synchro END" 
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 }
 	
 template<class CONFIG>
@@ -265,15 +253,15 @@ Run() {
 				Synchronize();
 			}
 		}
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread )
+			inherited::logger << DebugInfo
 				<< "Executing step"
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 		CPU<CONFIG>::StepInstruction();
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_run_thread )
+			inherited::logger << DebugInfo
 				<< "Finished executing step"
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 		cpu_time += time_per_instruction;
 	}
 }
@@ -290,10 +278,10 @@ ARM<CONFIG> ::
 PrRead(address_t addr, 
 	uint8_t *buffer, 
 	uint32_t size) {
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 			<< "Performing PrRead"
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	// synchonize with bus cycle time
 	BusSynchronize();
 
@@ -318,31 +306,31 @@ PrRead(address_t addr,
 	req->size = size;
 			
 	// loop until the request succeeds
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 			<< "PrRead: loop until bus transaction request is accepted" 
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	while(!master_port->Send(msg)) {
 		// if bus transaction request is not accepted then retry later
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+			inherited::logger << DebugInfo
 				<< "PrRead: retry transaction request"
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 		wait(bus_cycle_time);
 		cpu_time += bus_cycle_time;
 		bus_time += bus_cycle_time;
 		inherited::OnBusCycle();
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+			inherited::logger << DebugInfo
 				<< "PrRead: retrying transaction request"
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 	}
 			
 	// bus transaction request has been accepted at this point
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 			<< "PrRead: transaction request accepted, waiting for response"
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	
 	// wait for the bus transaction response
 	sc_time prev_cpu_time = cpu_time;
@@ -357,23 +345,23 @@ PrRead(address_t addr,
 		bus_time += bus_cycle_time;
 	}
 	rsp = msg->GetResponse();
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 		 	<< "PrRead: response received"
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	
 	// bus transaction response has been received at this point
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 		 	<< "PrRead: copying response data"
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	// copy the data from the response
 	memcpy(buffer, rsp->read_data, size);
 	
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 			<< "PrRead finished"
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 }
 
 template<class CONFIG> 
@@ -382,10 +370,10 @@ ARM<CONFIG> ::
 PrWrite(address_t addr, 
 	const uint8_t *buffer, 
 	uint32_t size) {
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 			<< "Performing PrWrite"
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	// synchonize with bus cycle time
 	BusSynchronize();
 
@@ -408,40 +396,39 @@ PrWrite(address_t addr,
 	memcpy(req->write_data, buffer, size);
 
 	// loop until the request succeeds
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 			<< "PrWrite: loop until bus transaction request is accepted" 
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 	while(!master_port->Send(msg)) {
 		// if bus transaction request is not accepted then retry later
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+			inherited::logger << DebugInfo
 				<< "PrWrite: retry transaction request"
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 		wait(bus_cycle_time);
 		cpu_time += bus_cycle_time;
 		bus_time += bus_cycle_time;
 		inherited::OnBusCycle();
-		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-			(*inherited::logger_import) << DebugInfo << LOCATION
+		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+			inherited::logger << DebugInfo
 				<< "PrWrite: retrying transaction request"
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 	}
 			
-	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands && inherited::logger_import)
-		(*inherited::logger_import) << DebugInfo << LOCATION
+	if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands )
+		inherited::logger << DebugInfo
 			<< "PrWrite finished"
-			<< Endl << EndDebugInfo;
+			<< endl << EndDebugInfo;
 }
 
 template<class CONFIG>
 void 
 ARM<CONFIG>::
 SetLock(uint32_t lock, uint32_t set) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command SetLock"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command SetLock"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -450,10 +437,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrInvalidateBlock(uint32_t set, uint32_t way) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrInvalidateBlock"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrInvalidateBlock"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -462,10 +448,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrFlushBlock(uint32_t set, uint32_t way) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrFlushBlock"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrFlushBlock"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -474,10 +459,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrCleanBlock(uint32_t set, uint32_t way) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrCleanBlock"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrCleanBlock"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -486,10 +470,9 @@ template<class CONFIG>
 uint32_t 
 ARM<CONFIG>::
 GetCacheSize() {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command GetCacheSize"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command GetCacheSize"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 	
@@ -500,10 +483,9 @@ template<class CONFIG>
 uint32_t 
 ARM<CONFIG>::
 GetCacheAssociativity() {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command GetCacheAssociativity"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command GetCacheAssociativity"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 	
@@ -514,10 +496,9 @@ template<class CONFIG>
 uint32_t 
 ARM<CONFIG>::
 GetCacheBlockSize() {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command GetCacheBlockSize"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command GetCacheBlockSize"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 	
@@ -528,10 +509,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 Enable() {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command Enable"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command Enable"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -540,10 +520,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 Disable() {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command Disable"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command Disable"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -552,10 +531,9 @@ template<class CONFIG>
 bool
 ARM<CONFIG>::
 IsEnabled() {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command IsEnabled"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command IsEnabled"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 	
@@ -566,10 +544,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrReset() {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrReset"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrReset"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -578,10 +555,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrInvalidate() {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrInvalidate"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrInvalidate"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -590,10 +566,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrInvalidateSet(uint32_t set) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrInvalideSet"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrInvalideSet"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -602,10 +577,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrInvalidateBlock(address_t addr) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrInvalidateBlock"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrInvalidateBlock"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -614,10 +588,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrFlushBlock(address_t addr) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrFlushBlock"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrFlushBlock"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -626,10 +599,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrCleanBlock(address_t addr) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrCleanBlock"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrCleanBlock"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }
@@ -638,10 +610,9 @@ template<class CONFIG>
 void 
 ARM<CONFIG>::
 PrZeroBlock(address_t addr) {
-	if(inherited::logger_import) 
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "Unsupported command PrZeroBlock"
-			<< Endl << EndDebugError;
+	inherited::logger << DebugError << LOCATION << endl
+		<< "Unsupported command PrZeroBlock"
+		<< endl << EndDebugError;
 	sc_stop();
 	wait();
 }

@@ -59,6 +59,7 @@ AC_CHECK_HEADERS([iostream],,\
     AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 UNISIM_CHECK_UNISIM_TOOLS
+UNISIM_CHECK_LIBXML2
 UNISIM_RELEASE
 
 # files to generate

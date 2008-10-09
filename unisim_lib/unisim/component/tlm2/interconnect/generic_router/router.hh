@@ -287,10 +287,10 @@ private:
 	 *************************************************************************/
 };
 
-} // end of namespace generic_router
-} // end of namespace interconnect
-} // end of namespace tlm2
-} // end of namespace component
 } // end of namespace unisim
+} // end of namespace component
+} // end of namespace tlm2
+} // end of namespace interconnect
+} // end of namespace generic_router
 
 #endif // __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_HH__

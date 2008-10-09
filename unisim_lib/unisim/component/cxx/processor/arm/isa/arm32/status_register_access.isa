@@ -85,17 +85,13 @@ mrs.execute = {
 
 #else // SOCLIB
 			
-			if(cpu.logger_import) {
-				(*cpu.logger_import) << DebugWarning
-					<< Function << __FUNCTION__
-					<< File << __FILE__
-					<< Line << __LINE__
-					<< "trying to access SPSR while running in "
-					<< ((run_mode == cpu.USER_MODE)?"user":"system")
-					<< " mode with the following instruction: " 
-					<< Endl;
-				(*cpu.logger_import) << str.str() << Endl << EndDebugWarning;
-			}
+			cpu.logger << DebugWarning
+				<< "trying to access SPSR while running in "
+				<< ((run_mode == cpu.USER_MODE)?"user":"system")
+				<< " mode with the following instruction: " 
+				<< endl;
+			cpu.logger << str.str() << endl 
+				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugWarning;
 				
 #endif // SOCLIB
 				
@@ -163,18 +159,13 @@ msr_imm.execute = {
 
 #else // SOCLIB
 
-			if(cpu.logger_import) {
-				(*cpu.logger_import) << DebugWarning
-					<< Function << __FUNCTION__
-					<< File << __FILE__
-					<< Line << __LINE__
-					<< "trying to access SPSR while running in "
-					<< ((run_mode == cpu.USER_MODE)?"user":"system")
-					<< " mode with the following instruction: " 
-					<< Endl;
-				(*cpu.logger_import) << str.str() 
-					<< Endl << EndDebugWarning;
-			}
+			cpu.logger << DebugWarning
+				<< "trying to access SPSR while running in "
+				<< ((run_mode == cpu.USER_MODE)?"user":"system")
+				<< " mode with the following instruction: " 
+				<< endl;
+			cpu.logger << str.str() << endl 
+				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugWarning;
 			
 #endif // SOCLIB
 			
@@ -201,17 +192,13 @@ msr_imm.execute = {
 
 #else // SOCLIB
 			
-			if(cpu.logger_import) {
-				(*cpu.logger_import) << DebugWarning
-					<< Function << __FUNCTION__
-					<< File << __FILE__
-					<< Line << __LINE__
-					<< "Warning: trying to execute msr instruction  while running in "
-					<< "user"
-					<< " mode: " << Endl;
-				(*cpu.logger_import) << str.str() 
-					<< Endl << EndDebugWarning;
-			}
+			cpu.logger << DebugWarning
+				<< "trying to execute msr instruction  while running in "
+				<< "user"
+				<< " mode: " << endl;
+			cpu.logger << str.str() << endl
+				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+				<< EndDebugWarning;
 			
 #endif // SOCLIB
 			
@@ -291,18 +278,14 @@ msr_reg.execute = {
 
 #else // SOCLIB
 			
-			if(cpu.logger_import) {
-				(*cpu.logger_import) << DebugWarning 
-					<< Function << __FUNCTION__
-					<< File << __FILE__
-					<< Line << __LINE__
-					<< "Warning: trying to access SPSR while running in "
-					<< ((run_mode == cpu.USER_MODE)?"user":"system")
-					<< " mode with the following instruction: " 
-					<< Endl;
-				(*cpu.logger_import) << str.str() 
-					<< Endl << EndDebugWarning;
-			}
+			cpu.logger << DebugWarning 
+				<< "trying to access SPSR while running in "
+				<< ((run_mode == cpu.USER_MODE)?"user":"system")
+				<< " mode with the following instruction: " 
+				<< endl;
+			cpu.logger << str.str() << endl
+				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+				<< EndDebugWarning;
 			
 #endif // SOCLIB
 			
@@ -329,17 +312,13 @@ msr_reg.execute = {
 			
 #else // SOCLIB
 			
-			if(cpu.logger_import) {
-				(*cpu.logger_import) << DebugWarning
-					<< Function << __FUNCTION__
-					<< File << __FILE__
-					<< Line << __LINE__
-					<< "Warning: trying to execute msr instruction  while running in "
-					<< "user"
-					<< " mode: " << Endl;
-				(*cpu.logger_import) << str.str() 
-					<< Endl << EndDebugWarning;
-			}
+			cpu.logger << DebugWarning
+				<< "trying to execute msr instruction  while running in "
+				<< "user"
+				<< " mode: " << endl;
+			cpu.logger << str.str() << endl
+				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
+				<< EndDebugWarning;
 			
 #endif // SOCLIB
 			

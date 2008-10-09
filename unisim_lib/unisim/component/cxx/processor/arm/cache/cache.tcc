@@ -42,6 +42,12 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CACHE_CACHE_TCC__
 
+#ifndef SOCLIB
+
+#include "unisim/kernel/logger/logger.hh"
+
+#endif
+
 #include "unisim/component/cxx/processor/arm/cache/set.tcc"
 
 namespace unisim {
@@ -51,22 +57,11 @@ namespace processor {
 namespace arm {
 namespace cache {
 
+using namespace unisim::kernel::logger;
+
 #ifndef SOCLIB
 
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-
-#define LOCATION File << __FILE__ << Function << __FUNCTION__ \
-	<< unisim::service::interfaces::Line << __LINE__
+#define LOCATION "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ 
 
 #endif // SOCLIB
 
@@ -118,7 +113,6 @@ Cache(const char *name,
 	next_mem_level(_next_mem_level),
 	lock(0),
 	lock_index(0) {
-	Object::SetupDependsOn(inherited::logger_import);
 	PrReset();
 }
 	
@@ -133,7 +127,7 @@ Setup() {
 		verbose_write_memory = true;
 	}
 	
-	if(CONFIG::DEBUG_ENABLE && HasVerbose() && !inherited::logger_import) {
+	if(CONFIG::DEBUG_ENABLE && HasVerbose()) {
 		cerr << "WARNING("
 			<< __FUNCTION__ << ":"
 			<< __FILE__ << ":"
@@ -142,20 +136,16 @@ Setup() {
 	}
 	
 	if(CONFIG::NSETS != CONFIG::SIZE / CONFIG::LINELEN / CONFIG::ASSOCIATIVITY) {
-		if(inherited::logger_import) {
-			(*inherited::logger_import) << DebugError << LOCATION
-				<< "Invalid configuration (NSETS)"
-				<< Endl << EndDebugError;
-		}
+		inherited::logger << DebugError
+				<< "Invalid configuration (NSETS)" << endl
+				<< LOCATION << EndDebugError;
 		return false;
 	}
 	
 	if(next_mem_level == NULL) {
-		if(inherited::logger_import) {
-			(*inherited::logger_import) << DebugError << LOCATION
-				<< "No pointer to the next memory level was given"
-				<< Endl << EndDebugError;
-		}
+		inherited::logger << DebugError
+				<< "No pointer to the next memory level was given" << endl
+				<< LOCATION << EndDebugError;
 		return false;
 	}
 	return true;
@@ -165,11 +155,9 @@ template <class CONFIG>
 void 
 Cache<CONFIG> ::
 OnDisconnect() {
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugWarning << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugWarning
+		<< "TODO" << endl
+		<< LOCATION << EndDebugError;
 	// TODO
 }
 
@@ -266,11 +254,9 @@ PrReset() {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+			<< "TODO" << endl
+			<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 	
@@ -294,11 +280,9 @@ PrInvalidate() {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+		<< "TODO" << endl
+		<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 	exit(-1);
@@ -317,11 +301,9 @@ PrInvalidateSet(uint32_t index) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError
+		<< "TODO" << endl
+		<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 
@@ -342,11 +324,9 @@ PrInvalidateBlock(address_t addr) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+			<< "TODO" << endl
+			<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 
@@ -359,7 +339,7 @@ PrInvalidateBlock(address_t addr) {
 //
 //	if(enabled){
 //		//find index for set, and tag for block
-//		decodeAddress(addr, base_addr, index, offset);
+//		DecodeAddress(addr, base_addr, index, offset);
 //		cache[index].GetBlock(base_addr, way, (const void**)&buffer);
 //
 //		// range of way is checked in cache_set
@@ -382,11 +362,9 @@ PrInvalidateBlock(uint32_t index, uint32_t way) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+			<< "TODO" << endl
+			<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 
@@ -414,11 +392,9 @@ PrFlushBlock(address_t addr) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+			<< "TODO" << endl
+			<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 
@@ -431,7 +407,7 @@ PrFlushBlock(address_t addr) {
 //
 //	if(enabled){
 //		//find index for set, and tag for block
-//		decodeAddress(addr, base_addr, index, offset);
+//		DecodeAddress(addr, base_addr, index, offset);
 //
 //		// get block index in set and data to be written into memory
 //		// if block not in cache (miss) way = ASSOCIATIVITY and buffer = NULL
@@ -467,11 +443,9 @@ PrFlushBlock(uint32_t index, uint32_t way) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+			<< "TODO" << endl
+			<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 
@@ -507,11 +481,9 @@ PrCleanBlock(address_t addr) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+			<< "TODO" << endl
+			<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 
@@ -524,7 +496,7 @@ PrCleanBlock(address_t addr) {
 //
 //	if(enabled){
 //		//find index for set, and tag for block
-//		decodeAddress(addr, base_addr, index, offset);
+//		DecodeAddress(addr, base_addr, index, offset);
 //		cache[index].GetBlock(base_addr, way, (const void**)&buffer);
 //
 //		if(buffer){ // cache hit
@@ -550,11 +522,9 @@ PrCleanBlock(uint32_t index, uint32_t way) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+			<< "TODO" << endl
+			<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 
@@ -587,11 +557,9 @@ PrZeroBlock(address_t addr) {
 	
 #else // SOCLIB
 	
-	if(inherited::logger_import) {
-		(*inherited::logger_import) << DebugError << LOCATION
-			<< "TODO"
-			<< Endl << EndDebugError;
-	}
+	inherited::logger << DebugError 
+			<< "TODO" << endl
+			<< LOCATION << EndDebugError;
 	
 #endif // SOCLIB
 
@@ -648,17 +616,17 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 
 #else // SOCLIB
 			
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "Write on 0x" << Hex << addr << Dec
-				<< " of size " << size << Endl
-				<< " - write data = " << Hex;
+			inherited::logger << DebugInfo
+				<< "Write on 0x" << hex << addr << dec
+				<< " of size " << size << endl
+				<< " - write data = " << hex;
 			for(unsigned int i = 0; i < size; i++) 
-				(*inherited::logger_import) << (unsigned int)(((uint8_t *)data)[i]) << " ";
-			(*inherited::logger_import)
-				<< Endl 
-				<< " - tag = 0x" << Hex << tag << Dec << Endl
-				<< " - set = " << set << Endl
-				<< " - pos = " << pos << Endl 
+				inherited::logger << (unsigned int)(((uint8_t *)data)[i]) << " ";
+			inherited::logger
+				<< endl 
+				<< " - tag = 0x" << hex << tag << dec << endl
+				<< " - set = " << set << endl
+				<< " - pos = " << pos 
 				<< EndDebugInfo;
 			
 #endif // SOCLIB
@@ -666,31 +634,33 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 		}
 		if(pos + size > CONFIG::LINELEN) {
 
+			unsigned int linelen = CONFIG::LINELEN;
 #ifndef SOCLIB
 			
-			if(CONFIG::DEBUG_ENABLE && inherited::logger_import) 
-				(*inherited::logger_import) << DebugError << LOCATION
-					<< "Trying to read out of the cache line bounds" << Endl
-					<< "- address = 0x" << Hex << addr << Dec << Endl
-					<< "- tag = 0x" << Hex << tag << Dec << Endl
-					<< "- set = 0x" << Hex << set << Dec << "(" << set << ")" << Endl
-					<< "- pos = 0x" << Hex << pos << Dec << "(" << pos << ")" << Endl
-					<< "- size = " << size << Endl
-					<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << CONFIG::LINELEN << ")" << Endl
-					<< EndDebugError;
-			else
+			inherited::logger << DebugError 
+				<< "Trying to read out of the cache line bounds" << endl
+				<< "- address = 0x" << hex << addr << dec << endl
+				<< "- tag = 0x" << hex << tag << dec << endl
+				<< "- set = 0x" << hex << set << dec << "(" << set << ")" << endl
+				<< "- pos = 0x" << hex << pos << dec << "(" << pos << ")" << endl
+				<< "- size = " << size << endl
+				<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << linelen << ")" << endl
+				<< LOCATION
+				<< EndDebugError;
 				
+#else // SOCLIB
+
+			cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":"
+				<< __LINE__ << "): "
+				<< "Trying to read out of the cache line bounds" << endl
+				<< "- address = 0x" << hex << addr << dec << endl
+				<< "- tag = 0x" << hex << tag << dec << endl
+				<< "- set = 0x" << hex << set << dec << "(" << set << ")" << endl
+				<< "- pos = 0x" << hex << pos << dec << "(" << pos << ")" << endl
+				<< "- size = " << size << endl;
+				<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << linelen << ")" << endl;
+
 #endif // SOCLIB
-				cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":"
-					<< __LINE__ << "): "
-					<< "Trying to read out of the cache line bounds" << endl
-					<< "- address = 0x" << hex << addr << dec << endl
-					<< "- tag = 0x" << hex << tag << dec << endl
-					<< "- set = 0x" << hex << set << dec << "(" << set << ")" << endl
-					<< "- pos = 0x" << hex << pos << dec << "(" << pos << ")" << endl
-					<< "- size = " << size << endl
-					<< "- pos + size > line_lenght"
-					<< " (" << pos << " + " << size << " > " << CONFIG::LINELEN << ")" << endl;
 			exit(-1);
 		}
 		cache[set].GetLine(tag, way, hit);
@@ -708,10 +678,10 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 
 #else // SOCLIB
 					
-					(*inherited::logger_import) << DebugInfo << LOCATION
-						<< "Write access to 0x" << Hex << addr << Dec
+					inherited::logger << DebugInfo 
+						<< "Write access to 0x" << hex << addr << dec
 						<< " missed, sending write to the following memory level"
-						<< Endl << EndDebugInfo;
+						<< EndDebugInfo;
 
 #endif // SOCLIB
 					
@@ -728,10 +698,10 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 				
 #else // SOCLIB
 				
-					(*inherited::logger_import) << DebugInfo << LOCATION
-						<< "Write access to 0x" << Hex << addr << Dec
+					inherited::logger << DebugInfo 
+						<< "Write access to 0x" << hex << addr << dec
 						<< " missed, refetching cache line"
-						<< Endl << EndDebugInfo;
+						<< EndDebugInfo;
 					
 #endif // SOCLIB
 					
@@ -759,15 +729,15 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 
 #else // SOCLIB
 						
-						(*inherited::logger_import) << DebugInfo << LOCATION
+						inherited::logger << DebugInfo 
 							<< "Replacing cache line with address 0x"
-							<< Hex << replace_address << Dec << " with: " << Endl
-							<< " - tag = 0x" << Hex << replace_tag << Dec << Endl
-							<< " - set = " << set << Endl
-							<< " - way = " << way << Endl
-							<< " - valid = " << valid << Endl
+							<< hex << replace_address << dec << " with: " << endl
+							<< " - tag = 0x" << hex << replace_tag << dec << endl
+							<< " - set = " << set << endl
+							<< " - way = " << way << endl
+							<< " - valid = " << valid << endl
 							<< " - modified = " << modified
-							<< Endl << EndDebugInfo;
+							<< EndDebugInfo;
 
 #endif // SOCLIB
 					
@@ -790,15 +760,15 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 							
 #else // SOCLIB
 						
-						(*inherited::logger_import) << DebugInfo << LOCATION
+						inherited::logger << DebugInfo 
 							<< "Replacing cache line with address 0x"
-							<< Hex << replace_address << Dec << " with: " << Endl
-							<< " - tag = 0x" << Hex << replace_tag << Dec << Endl
-							<< " - set = " << set << Endl
-							<< " - way = " << way << Endl
-							<< " - valid = " << valid << Endl
+							<< hex << replace_address << dec << " with: " << endl
+							<< " - tag = 0x" << hex << replace_tag << dec << endl
+							<< " - set = " << set << endl
+							<< " - way = " << way << endl
+							<< " - valid = " << valid << endl
 							<< " - modified = " << modified
-							<< Endl << EndDebugInfo;
+							<< endl << EndDebugInfo;
 						
 #endif // SOCLIB
 						
@@ -817,10 +787,10 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 					
 #else // SOCLIB
 					
-					(*inherited::logger_import) << DebugInfo << LOCATION
+					inherited::logger << DebugInfo
 						<< "Refetching cache line with address 0x"
-						<< Hex << addr << Dec
-						<< Endl << EndDebugInfo;
+						<< hex << addr << dec
+						<< endl << EndDebugInfo;
 
 #endif // SOCLIB
 
@@ -841,13 +811,13 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 					
 #else // SOCLIB
 					
-					(*inherited::logger_import) << DebugInfo << LOCATION
-						<< "Fetched cache line:" << Endl
-						<< " - addr = 0x" << Hex << addr << Dec << Endl
-						<< " - data = " << Hex;
+					inherited::logger << DebugInfo 
+						<< "Fetched cache line:" << endl
+						<< " - addr = 0x" << hex << addr << dec << endl
+						<< " - data = " << hex;
 					for(unsigned int i = 0; i < CONFIG::LINELEN; i++) 
-						(*inherited::logger_import) << (unsigned int)(buffer[i]) << " ";
-					(*inherited::logger_import) << Dec << Endl
+						inherited::logger << (unsigned int)(buffer[i]) << " ";
+					inherited::logger << dec << endl
 						<< EndDebugInfo;
 					
 #endif // SOCLIB
@@ -876,20 +846,20 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 			for(unsigned int i = 0; i < size; i++)
 				cerr << (unsigned int)(((uint8_t *)data)[i])
 					<< " ";
-			(*inherited::logger_import) << Dec << Endl;
+			inherited::logger << dec << endl;
 			
 #else // SOCLIB
 			
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "Write addr = 0x" << Hex << addr << Dec
+			inherited::logger << DebugInfo 
+				<< "Write addr = 0x" << hex << addr << dec
 				<< " with size = " << size
 				<< " (hit = " << hit << ", set = " << set 
-				<< ", way = " << way << ", pos = " << pos << ")" << Endl
-				<< " - data = " << Hex;
+				<< ", way = " << way << ", pos = " << pos << ")" << endl
+				<< " - data = " << hex;
 			for(unsigned int i = 0; i < size; i++)
-				(*inherited::logger_import) << (unsigned int)(((uint8_t *)data)[i])
+				inherited::logger << (unsigned int)(((uint8_t *)data)[i])
 					<< " ";
-			(*inherited::logger_import) << Dec << Endl;
+			inherited::logger << dec << endl;
 			
 #endif // SOCLIB
 			
@@ -902,19 +872,19 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 
 #ifdef SOCLIB
 			
-			cerr << " - modified line = " << Hex;
+			cerr << " - modified line = " << hex;
 			for(unsigned int i = 0; i < CONFIG::LINELEN; i++)
 				cerr << (unsigned int)(buffer[i]) << " ";
 			cerr << dec << endl;
 			
 #else // SOCLIB
 			
-			(*inherited::logger_import) 
-				<< " - modified line = " << Hex;
+			inherited::logger 
+				<< " - modified line = " << hex;
 			for(unsigned int i = 0; i < CONFIG::LINELEN; i++)
-				(*inherited::logger_import) << (unsigned int)(buffer[i])
+				inherited::logger << (unsigned int)(buffer[i])
 					<< " ";
-			(*inherited::logger_import) << Dec << Endl
+			inherited::logger << dec << endl
 				<< EndDebugInfo;
 			
 #endif // SOCLIB
@@ -935,10 +905,10 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 
 #else // SOCLIB
 				
-				(*inherited::logger_import) << DebugInfo << LOCATION
+				inherited::logger << DebugInfo 
 					<< "Applying write through policy, sending write to the next"
-					<< " memory level (addr = 0x" << Hex << addr << Dec
-					<< ", size = " << size << ")" << Endl
+					<< " memory level (addr = 0x" << hex << addr << dec
+					<< ", size = " << size << ")" << endl
 					<< EndDebugInfo;
 				
 #endif // SOCLIB
@@ -960,11 +930,11 @@ PrWrite(address_t addr, const uint8_t *data, uint32_t size) {
 			
 #else // SOCLIB
 			
-			(*inherited::logger_import) << DebugInfo << LOCATION
+			inherited::logger << DebugInfo 
 				<< "Cache disabled, forwarding "
-				<< "write on 0x" << Hex << addr << Dec
+				<< "write on 0x" << hex << addr << dec
 				<< " of size " << size
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 			
 #endif // SOCLIB
 			
@@ -1012,46 +982,48 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 			
 #else // SOCLIB
 			
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "Read on 0x" << Hex << addr << Dec
+			inherited::logger << DebugInfo 
+				<< "Read on 0x" << hex << addr << dec
 				<< " of size " << size
-				<< Endl 
-				<< " - tag = 0x" << Hex << tag << Dec << Endl
-				<< " - set = " << set << Endl
-				<< " - pos = " << pos << Endl 
+				<< endl 
+				<< " - tag = 0x" << hex << tag << dec << endl
+				<< " - set = " << set << endl
+				<< " - pos = " << pos << endl 
 				<< EndDebugInfo;
 
 #endif // SOCLIB
 			
 		}
 		if(pos + size > CONFIG::LINELEN) {
+			unsigned int linelen = CONFIG::LINELEN;
 			
 #ifndef SOCLIB
 			
-			if(CONFIG::DEBUG_ENABLE && inherited::logger_import)
-				(*inherited::logger_import) << DebugError << LOCATION
-					<< "Trying to read out of the cache line bounds" << Endl
-					<< "- address = 0x" << Hex << addr << Dec << Endl
-					<< "- tag = 0x" << Hex << tag << Dec << Endl
-					<< "- set = 0x" << Hex << set << Dec << "(" << set << ")" << Endl
-					<< "- pos = 0x" << Hex << pos << Dec << "(" << pos << ")" << Endl
-					<< "- size = " << size << Endl
-					<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << CONFIG::LINELEN << ")" << Endl
-					<< EndDebugError;
-			else
+			inherited::logger << DebugError 
+				<< "Trying to read out of the cache line bounds" << endl
+				<< "- address = 0x" << hex << addr << dec << endl
+				<< "- tag = 0x" << hex << tag << dec << endl
+				<< "- set = 0x" << hex << set << dec << "(" << set << ")" << endl
+				<< "- pos = 0x" << hex << pos << dec << "(" << pos << ")" << endl
+				<< "- size = " << size << endl
+				<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << linelen << ")" << endl
+				<< LOCATION
+				<< EndDebugError;
 				
+#else // SOCLIB
+			
+			cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__
+				<< ":" << __LINE__ << "): " << endl
+				<< "Trying to read out of the cache line bounds" << endl
+				<< "- address = 0x" << hex << addr << dec << endl
+				<< "- tag = 0x" << hex << tag << dec << endl
+				<< "- set = 0x" << hex << set << dec << "(" << set << ")" << endl
+				<< "- pos = 0x" << hex << pos << dec << "(" << pos << ")" << endl
+				<< "- size = " << size << endl;
+				<< "- pos + size > line_lenght (" << pos << " + " << size << " > " << linelen << ")" << endl;
+
 #endif // SOCLIB
-				
-				cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__
-					<< ":" << __LINE__ << "): " << endl
-					<< "Trying to read out of the cache line bounds" << endl
-					<< "- address = 0x" << hex << addr << dec << endl
-					<< "- tag = 0x" << hex << tag << dec << endl
-					<< "- set = 0x" << hex << set << dec << "(" << set << ")" << endl
-					<< "- pos = 0x" << hex << pos << dec << "(" << pos << ")" << endl
-					<< "- size = " << size << endl
-					<< "- pos + size > line_lenght"
-					<< " (" << pos << " + " << size << " > " << CONFIG::LINELEN << ")" << endl;
+
 			exit(-1);
 		}
 		cache[set].GetLine(tag, way, hit);
@@ -1067,10 +1039,10 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 				
 #else // SOCLIB
 				
-				(*inherited::logger_import) << DebugInfo << LOCATION
-					<< "Read access to 0x" << Hex << addr << Dec
+				inherited::logger << DebugInfo
+					<< "Read access to 0x" << hex << addr << dec
 					<< " missed, refetching cache line"
-					<< Endl << EndDebugInfo;
+					<< endl << EndDebugInfo;
 			
 #endif // SOCLIB
 			// read operations always allocate
@@ -1097,15 +1069,15 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 					
 #else // SOCLIB
 					
-					(*inherited::logger_import) << DebugInfo << LOCATION
+					inherited::logger << DebugInfo
 						<< "Replacing cache line with address 0x"
-						<< Hex << replace_address << Dec << " with: " << Endl
-						<< " - tag = 0x" << Hex << replace_tag << Dec << Endl
-						<< " - set = " << set << Endl
-						<< " - way = " << way << Endl
-						<< " - valid = " << valid << Endl
+						<< hex << replace_address << dec << " with: " << endl
+						<< " - tag = 0x" << hex << replace_tag << dec << endl
+						<< " - set = " << set << endl
+						<< " - way = " << way << endl
+						<< " - valid = " << valid << endl
 						<< " - modified = " << modified
-						<< Endl << EndDebugInfo;
+						<< endl << EndDebugInfo;
 
 #endif // SOCLIB
 					
@@ -1128,15 +1100,15 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 					
 #else // SOCLIB
 					
-					(*inherited::logger_import) << DebugInfo << LOCATION
+					inherited::logger << DebugInfo
 						<< "Replacing cache line with address 0x"
-						<< Hex << replace_address << Dec << " with: " << Endl
-						<< " - tag = 0x" << Hex << replace_tag << Dec << Endl
-						<< " - set = " << set << Endl
-						<< " - way = " << way << Endl
-						<< " - valid = " << valid << Endl
+						<< hex << replace_address << dec << " with: " << endl
+						<< " - tag = 0x" << hex << replace_tag << dec << endl
+						<< " - set = " << set << endl
+						<< " - way = " << way << endl
+						<< " - valid = " << valid << endl
 						<< " - modified = " << modified
-						<< Endl << EndDebugInfo;
+						<< endl << EndDebugInfo;
 					
 #endif // SOCLIB
 					
@@ -1156,10 +1128,10 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 				
 #else // SOCLIB
 				
-				(*inherited::logger_import) << DebugInfo << LOCATION
+				inherited::logger << DebugInfo
 					<< "Refetching cache line with address 0x"
-					<< Hex << (addr & ~(typename CONFIG::address_t)(CONFIG::LINELEN - 1)) << Dec
-					<< Endl << EndDebugInfo;
+					<< hex << (addr & ~(typename CONFIG::address_t)(CONFIG::LINELEN - 1)) << dec
+					<< endl << EndDebugInfo;
 			
 #endif // SOCLIB
 			
@@ -1180,13 +1152,13 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 				
 #else // SOCLIB
 				
-				(*inherited::logger_import) << DebugInfo << LOCATION
-					<< "Fetched cache line:" << Endl
-					<< " - addr = 0x" << Hex << addr << Dec << Endl
-					<< " - data = " << Hex;
+				inherited::logger << DebugInfo
+					<< "Fetched cache line:" << endl
+					<< " - addr = 0x" << hex << addr << dec << endl
+					<< " - data = " << hex;
 				for(unsigned int i = 0; i < CONFIG::LINELEN; i++) 
-					(*inherited::logger_import) << (unsigned int)(buffer[i]) << " ";
-				(*inherited::logger_import) << Dec << Endl
+					inherited::logger << (unsigned int)(buffer[i]) << " ";
+				inherited::logger << dec << endl
 					<< EndDebugInfo;
 				
 #endif // SOCLIB
@@ -1214,20 +1186,20 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 			for(unsigned int i = 0; i < size; i++)
 				cerr << (unsigned int)(((uint8_t *)data)[i])
 					<< " ";
-			cerr << Dec << endl;
+			cerr << dec << endl;
 			
 #else // SOCLIB
 			
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "Read addr = 0x" << Hex << addr << Dec
+			inherited::logger << DebugInfo
+				<< "Read addr = 0x" << hex << addr << dec
 				<< " with size = " << size
 				<< " (hit = " << hit << ", set = " << set 
-				<< ", way = " << way << ", pos = " << pos << ")" << Endl
-				<< " - data = " << Hex;
+				<< ", way = " << way << ", pos = " << pos << ")" << endl
+				<< " - data = " << hex;
 			for(unsigned int i = 0; i < size; i++)
-				(*inherited::logger_import) << (unsigned int)(((uint8_t *)data)[i])
+				inherited::logger << (unsigned int)(((uint8_t *)data)[i])
 					<< " ";
-			(*inherited::logger_import) << Dec << Endl
+			inherited::logger << dec << endl
 				<< EndDebugInfo;
 
 #endif // SOCLIB
@@ -1246,11 +1218,11 @@ PrRead(address_t addr, uint8_t *data, uint32_t size) {
 		
 #else // SOCLIB
 			
-			(*inherited::logger_import) << DebugInfo << LOCATION
+			inherited::logger << DebugInfo
 				<< "Cache disabled, forwarding "
-				<< "read on 0x" << Hex << addr << Dec
+				<< "read on 0x" << hex << addr << dec
 				<< " of size " << size
-				<< Endl << EndDebugInfo;
+				<< endl << EndDebugInfo;
 
 #endif // SOCLIB
 			
@@ -1361,12 +1333,12 @@ ReadMemory(address_t addr, void *data, uint32_t size) {
 
 	if(VerboseReadMemory()) {
 		DecodeAddress(addr, tag, set, pos);
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Read memory on address 0x" << Hex << addr << Dec
-			<< " of size = " << size << Endl
-			<< " - tag = 0x" << Hex << tag << Dec << Endl
-			<< " - set = " << set << Endl
-			<< " - pos = " << pos << Endl
+		inherited::logger << DebugInfo
+			<< "Read memory on address 0x" << hex << addr << dec
+			<< " of size = " << size << endl
+			<< " - tag = 0x" << hex << tag << dec << endl
+			<< " - set = " << set << endl
+			<< " - pos = " << pos << endl
 			<< EndDebugInfo;
 	}
 	if(enabled) {
@@ -1377,20 +1349,20 @@ ReadMemory(address_t addr, void *data, uint32_t size) {
 				if(inherited::memory_import) {
 					if(!inherited::memory_import->ReadMemory(addr + i, &(((uint8_t *)data)[i]), 1)) {
 						if(VerboseReadMemory()) {
-							(*inherited::logger_import) << DebugInfo << LOCATION
-								<< "Failed read memory on address 0x" << Hex << addr << Dec
+							inherited::logger << DebugInfo
+								<< "Failed read memory on address 0x" << hex << addr << dec
 								<< " of size = " << size 
-								<< ", because of error when performing ReadMemory on memory_import" << Endl
+								<< ", because of error when performing ReadMemory on memory_import" << endl
 								<< EndDebugInfo;
 						}
 						return false;
 					}
 				} else {
 					if(VerboseReadMemory()) {
-						(*inherited::logger_import) << DebugInfo << LOCATION
-							<< "Read memory on address 0x" << Hex << addr << Dec
+						inherited::logger << DebugInfo
+							<< "Read memory on address 0x" << hex << addr << dec
 							<< " of size = " << size 
-							<< ", because memory_import is not connected" << Endl
+							<< ", because memory_import is not connected" << endl
 							<< EndDebugInfo;
 					}
 					return false;
@@ -1404,10 +1376,10 @@ ReadMemory(address_t addr, void *data, uint32_t size) {
 		if(inherited::memory_import) {
 			if(!inherited::memory_import->ReadMemory(addr, data, size)) {
 				if(VerboseReadMemory()) {
-					(*inherited::logger_import) << DebugInfo << LOCATION
-						<< "Failed read memory on address 0x" << Hex << addr << Dec
+					inherited::logger << DebugInfo
+						<< "Failed read memory on address 0x" << hex << addr << dec
 						<< " of size = " << size
-						<< ", because of error when performing ReadMemory on memory_import" << Endl
+						<< ", because of error when performing ReadMemory on memory_import" << endl
 						<< EndDebugInfo;
 				}
 				return false;
@@ -1415,13 +1387,13 @@ ReadMemory(address_t addr, void *data, uint32_t size) {
 		}
 	}
 	if(VerboseReadMemory()) {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Succeded read memory on address 0x" << Hex << addr << Dec
-			<< " of size = " << size << " :" << Endl
-			<< " - data =" << Hex;
+		inherited::logger << DebugInfo
+			<< "Succeded read memory on address 0x" << hex << addr << dec
+			<< " of size = " << size << " :" << endl
+			<< " - data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*inherited::logger_import) << " " << (unsigned int)(((uint8_t *)data)[i]);
-		(*inherited::logger_import) << Dec << Endl << EndDebugInfo;
+			inherited::logger << " " << (unsigned int)(((uint8_t *)data)[i]);
+		inherited::logger << dec << endl << EndDebugInfo;
 	}
 	return true;
 }
@@ -1438,16 +1410,16 @@ WriteMemory(address_t addr, const void *buffer, uint32_t size) {
 
 	if(VerboseWriteMemory()) {
 		DecodeAddress(addr, tag, set, pos);
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Write memory on address 0x" << Hex << addr << Dec
-			<< " of size = " << size << " :" << Endl
-			<< " - tag = 0x" << Hex << tag << Dec << Endl
-			<< " - set = " << set << Endl
-			<< " - pos = " << pos << Endl
-			<< " -data =" << Hex;
+		inherited::logger << DebugInfo
+			<< "Write memory on address 0x" << hex << addr << dec
+			<< " of size = " << size << " :" << endl
+			<< " - tag = 0x" << hex << tag << dec << endl
+			<< " - set = " << set << endl
+			<< " - pos = " << pos << endl
+			<< " -data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*inherited::logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
-		(*inherited::logger_import) << Dec << Endl << EndDebugInfo;
+			inherited::logger << " " << (unsigned int)(((uint8_t *)buffer)[i]);
+		inherited::logger << dec << endl << EndDebugInfo;
 	}
 	if(enabled) {
 		for(uint32_t i = 0; i < size; i++) {
@@ -1460,31 +1432,31 @@ WriteMemory(address_t addr, const void *buffer, uint32_t size) {
 	if(inherited::memory_import) {
 		if(!inherited::memory_import->WriteMemory(addr, buffer, size)) {
 			if(VerboseWriteMemory())
-				(*inherited::logger_import) << DebugInfo << LOCATION
-					<< "Failed write memory on address 0x" << Hex << addr << Dec
+				inherited::logger << DebugInfo
+					<< "Failed write memory on address 0x" << hex << addr << dec
 					<< " of size = " << size
-					<< ", because of error when performing WriteMemory on memory_import" << Endl
+					<< ", because of error when performing WriteMemory on memory_import" << endl
 					<< EndDebugInfo;
 			return false;
 		}
 	} else {
 		if(VerboseWriteMemory())
-			(*inherited::logger_import) << DebugInfo << LOCATION
-				<< "Failed write memory on address 0x" << Hex << addr << Dec
+			inherited::logger << DebugInfo
+				<< "Failed write memory on address 0x" << hex << addr << dec
 				<< " of size = " << size
-				<< ", because memory_import is not connected" << Endl
+				<< ", because memory_import is not connected" << endl
 				<< EndDebugInfo;
 		return false;		
 	}
 	
 	if(VerboseWriteMemory()) {
-		(*inherited::logger_import) << DebugInfo << LOCATION
-			<< "Succeded write memory on address 0x" << Hex << addr << Dec
-			<< " of size = " << size << " :" << Endl
-			<< " -data =" << Hex;
+		inherited::logger << DebugInfo
+			<< "Succeded write memory on address 0x" << hex << addr << dec
+			<< " of size = " << size << " :" << endl
+			<< " -data =" << hex;
 		for(unsigned int i = 0; i < size; i++)
-			(*inherited::logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
-		(*inherited::logger_import) << Dec << Endl << EndDebugInfo;
+			inherited::logger << " " << (unsigned int)(((uint8_t *)buffer)[i]);
+		inherited::logger << dec << endl << EndDebugInfo;
 	}
 
 	return true;
@@ -1501,17 +1473,7 @@ inline INLINE
 bool 
 Cache<CONFIG> ::
 VerbosePrRead() {
-	
-#ifdef SOCLIB
-	
 	return CONFIG::DEBUG_ENABLE && verbose_pr_read;
-	
-#else // SOCLIB
-	
-	return CONFIG::DEBUG_ENABLE && verbose_pr_read && inherited::logger_import;
-
-#endif // SOCLIB
-	
 }
 
 template <class CONFIG>
@@ -1519,17 +1481,7 @@ inline INLINE
 bool 
 Cache<CONFIG> ::
 VerbosePrWrite() {
-
-#ifdef SOCLIB
-	
 	return CONFIG::DEBUG_ENABLE && verbose_pr_write;
-	
-#else // SOCLIB
-	
-	return CONFIG::DEBUG_ENABLE && verbose_pr_write && inherited::logger_import;
-
-#endif // SOCLIB
-
 }
 
 template <class CONFIG>
@@ -1537,17 +1489,7 @@ inline INLINE
 bool 
 Cache<CONFIG> ::
 VerboseReadMemory() {
-
-#ifdef SOCLIB
-	
 	return CONFIG::DEBUG_ENABLE && verbose_read_memory;
-	
-#else // SOCLIB
-	
-	return CONFIG::DEBUG_ENABLE && verbose_read_memory && inherited::logger_import;
-
-#endif // SOCLIB
-
 }
 
 template <class CONFIG>
@@ -1555,17 +1497,7 @@ inline INLINE
 bool 
 Cache<CONFIG> ::
 VerboseWriteMemory() {
-
-#ifdef SOCLIB
-	
 	return CONFIG::DEBUG_ENABLE && verbose_write_memory;
-	
-#else // SOCLIB
-	
-	return CONFIG::DEBUG_ENABLE && verbose_write_memory && inherited::logger_import;
-
-#endif // SOCLIB
-
 }
 
 template <class CONFIG>

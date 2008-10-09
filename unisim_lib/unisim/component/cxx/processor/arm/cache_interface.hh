@@ -42,6 +42,7 @@
 #ifndef SOCLIB
 
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/memory.hh"
 
@@ -86,7 +87,6 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::Logger;
 
 #endif // SOCLIB
 
@@ -134,8 +134,7 @@ template <class address_t>
 class CacheInterfaceWithMemoryService :
 	public CacheInterface<address_t>,
 	public Service<Memory<address_t> >,
-	public Client<Memory<address_t> >,
-	public Client<Logger> {
+	public Client<Memory<address_t> > {
 		
 #endif // SOCLIB
 		
@@ -152,10 +151,9 @@ public:
 		Object(name, parent),
 		Service<Memory<address_t> >(name, parent),
 		Client<Memory<address_t> >(name, parent),
-		Client<Logger>(name, parent),
+		logger(*this),
 		memory_export("memory_export", this),
-		memory_import("memory_import", this),
-		logger_import("logger_import", this) {}
+		memory_import("memory_import", this) {}
 	
 #endif // SOCLIB
 
@@ -175,7 +173,7 @@ public:
 	
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceImport<Memory<address_t> > memory_import;
-	ServiceImport<Logger> logger_import;
+	unisim::kernel::logger::Logger logger;
 
 #endif // SOCLIB
 	
