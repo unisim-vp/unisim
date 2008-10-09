@@ -142,7 +142,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 					<< EndDebugInfo;
 			}
 
-			if(byte_enable_length || streaming_width)
+			if(byte_enable_length ||(streaming_width && (streaming_width != data_length)))
 				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
@@ -158,7 +158,7 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
-			if(byte_enable_length || streaming_width)
+			if(byte_enable_length ||(streaming_width && (streaming_width != data_length)))
 				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::WriteMemory(addr, data_ptr, data_length);
@@ -214,7 +214,7 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 					<< EndDebugInfo;
 			}
 
-			if(byte_enable_length || streaming_width)
+			if(byte_enable_length ||(streaming_width && (streaming_width != data_length)) )
 				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
@@ -229,7 +229,7 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 					<< " of " << data_length << " bytes in length" << std::endl
 					<< EndDebugInfo;
 			}
-			if(byte_enable_length || streaming_width)
+			if(byte_enable_length ||(streaming_width && (streaming_width != data_length)) )
 				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::WriteMemory(addr, data_ptr, data_length);
