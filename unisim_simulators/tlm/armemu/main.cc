@@ -384,10 +384,6 @@ int main(int argc, char *argv[], char **envp) {
 	
 	if(logger_on) {
 		unsigned int logger_index = 0;
-		cpu->logger_import >> *logger->logger_export[logger_index++];
-		cpu->cache_l1_logger_import >> *logger->logger_export[logger_index++];
-		cpu->cache_il1_logger_import >> *logger->logger_export[logger_index++];
-		cpu->cache_l2_logger_import >> *logger->logger_export[logger_index++];
 		bridge->logger_import >> *logger->logger_export[logger_index++];
 		linux_os->logger_import >> *logger->logger_export[logger_index++];
 		memory->logger_import >> *logger->logger_export[logger_index++];

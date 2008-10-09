@@ -301,13 +301,6 @@ int main(int argc, char *argv[], char **envp) {
 
 	if(use_logger) {
 		unsigned int logger_index = 0;
-		cpu->logger_import >> *logger->logger_export[logger_index++];
-		cpu->cache_l1_logger_import >> *logger->logger_export[logger_index++];
-		cpu->cache_il1_logger_import >> *logger->logger_export[logger_index++];
-		cpu->cache_l2_logger_import >> *logger->logger_export[logger_index++];
-		cpu->cp15_logger_import >> *logger->logger_export[logger_index++];
-		cpu->itcm_logger_import >> *logger->logger_export[logger_index++];
-		cpu->dtcm_logger_import >> *logger->logger_export[logger_index++];
 		bridge->logger_import >> *logger->logger_export[logger_index++];
 		if(use_message_spy) {
 			bus_msg_spy->logger_import >> *logger->logger_export[logger_index++];
