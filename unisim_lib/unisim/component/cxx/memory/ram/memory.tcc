@@ -111,7 +111,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 
 	if(physical_addr < lo_addr || (physical_addr + (size - 1)) > hi_addr || (physical_addr + size) < physical_addr) return false;
 	// the third condition is for testing overwrapping (gdb did it !)
-	
+
 	PHYSICAL_ADDR key;
 	MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page;
 	copied = 0;
