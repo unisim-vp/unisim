@@ -172,6 +172,7 @@ physical_address_t MMC::getEepromAddress(address_t logicalAddress) {
 	
 	if (_epage < CONFIG::EPAGE_LOW) {
 		// throw "non-valid accesses to memory"
+		return logicalAddress;
 	}
 	 
 	if (((_epage == 0xFF) && (logicalAddress > 0x0BFF) && (logicalAddress < 0x1000)) ||
@@ -194,6 +195,7 @@ physical_address_t MMC::getFlashAddress(address_t logicalAddress) {
 	
 	if (_ppage < CONFIG::PPAGE_LOW) {
 		// throw "non-valid accesses to memory"
+		return logicalAddress;
 	}
 
 	if (((_ppage == 0xFD) && (logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) ||
