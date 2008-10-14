@@ -68,7 +68,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Interface to Cacti 4
 //#include "power_estimation2/CactiCachePowerEstimator.h"
 //#include "statistics/StatisticService.h"
-#include <unisim/service/interfaces/statistic_reporting.hh>
+//#include <unisim/service/interfaces/statistic_reporting.hh>
 
 #include <sstream>
 
@@ -79,7 +79,7 @@ namespace cache {
 
   // new usings for merge
 using unisim::component::clm::interfaces::memreq;
-using unisim::service::interfaces::StatisticReporting;
+  //using unisim::service::interfaces::StatisticReporting;
 using unisim::component::clm::utility::hexa;
 using unisim::component::clm::debug::SVGmemreqInterface;
 
@@ -3578,7 +3578,7 @@ class CacheWB : public module
               , public Client < SVGmemreqInterface<INSTRUCTION> >
 //              , public Service < PowerEstimatorInterface >
 //		, public StatisticService
-		, public Client<StatisticReporting>
+//		, public Client<StatisticReporting>
 //		, public Service<StatisticReportingControl>
 {private:
 
@@ -3614,7 +3614,7 @@ class CacheWB : public module
   //  ServiceImport < Memory< address_t > > syscall_MemImp;   ///< Service port to memory
   ServiceImport < SVGmemreqInterface<INSTRUCTION> > svg;                         ///< Service port to SVG builder
   //  ServiceExport < PowerEstimatorInterface > cache_powerport;        ///< Service port from Power Estimator
-  ServiceImport<StatisticReporting> statistic_reporting_import;
+  //  ServiceImport<StatisticReporting> statistic_reporting_import;
   //ServiceExport<StatisticReportingControl> statistic_reporting_control_export;
   //// StatisticReportingControl service
   //virtual void SetPreferredStatReportingPeriod(double time_hint, time_unit_type time_unit);
@@ -3681,8 +3681,8 @@ class CacheWB : public module
     //                        Service<PowerEstimatorInterface>(name, this),
     //cache_powerport ("cache_powerport", this),
     //                        StatisticService(name, this),
-						,Client<StatisticReporting>(name, this)
-						,statistic_reporting_import("statistic", this)
+    //						,Client<StatisticReporting>(name, this)
+    //						,statistic_reporting_import("statistic", this)
 						,fastforwarding(false)
   { // Naming the interface ot enhance debugging
     class_name = " CacheWB";

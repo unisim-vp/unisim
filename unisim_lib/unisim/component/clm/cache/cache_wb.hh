@@ -243,8 +243,8 @@ class CacheWB : public module
     //                        Service<PowerEstimatorInterface>(name, this),
     //cache_powerport ("cache_powerport", this),
     //                        StatisticService(name, this),
-						,Client<StatisticReporting>(name, this)
-						,statistic_reporting_import("statistic", this)
+    //						,Client<StatisticReporting>(name, this)
+    //						,statistic_reporting_import("statistic", this)
 						,fastforwarding(false)
   { // Naming the interface ot enhance debugging
     class_name = " CacheWB";

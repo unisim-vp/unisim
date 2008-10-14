@@ -62,7 +62,7 @@ namespace fetch {
 
 using unisim::component::clm::interfaces::memreq;
 using unisim::component::clm::interfaces::memreq_types;
-using unisim::service::interfaces::StatisticReporting;
+  //using unisim::service::interfaces::StatisticReporting;
 
 using unisim::component::clm::interfaces::Source;
 using unisim::component::clm::interfaces::Destination;

@@ -52,8 +52,8 @@
 #include <inttypes.h>
 
 // DD
-//#define FSC_STAT
-//#define FFSC_STAT
+#define FSC_STAT
+#define FFSC_STAT
 //#define DEBUG_FSC
 
 /***************************************
