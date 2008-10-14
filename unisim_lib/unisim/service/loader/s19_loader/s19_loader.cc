@@ -42,6 +42,7 @@ namespace loader {
 namespace s19_loader {
 
 template class S19_Loader<physical_address_t>;
+template class S19_Loader<service_address_t>;
 
 } // end UNISIM namespace
 } // end SERVICE namespace
