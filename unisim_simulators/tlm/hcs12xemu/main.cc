@@ -37,7 +37,6 @@
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
-#include <unisim/service/loader/s19_loader/s19_loader.cc>
 #include <unisim/service/debug/symbol_table/symbol_table.hh>
 #include <iostream>
 #include <getopt.h>
