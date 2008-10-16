@@ -42,6 +42,7 @@
 #include <inttypes.h>
 #include <queue>
 #include <vector>
+#include <map>
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
@@ -215,7 +216,15 @@ private:
 	 * @param  port   the port that maps that transaction
 	 * @return        true if a map was found, false otherwise
 	 */
-	bool ApplyMap(const transaction_type &trans, unsigned int &port);
+	bool ApplyMap(const transaction_type &trans, unsigned int &port) const;
+
+	/**
+	 * Apply mapping function over a given transaction and return the mapping division
+	 *
+	 * @param trans   the transaction to apply the mapping over
+	 * @param ports   the ports that map the transaction
+	 */
+	void ApplyMap(const transaction_type &trans, std::vector<unsigned int> &mappings) const;
 
 	/**
 	 * Set the incomming port into the transaction using the tlm2.0 extension
@@ -238,6 +247,32 @@ private:
 
 	/*************************************************************************
 	 * Helper methods                                                    END *
+	 *************************************************************************/
+
+	/*************************************************************************
+	 * Transport debugging helper methods                              START *
+	 *************************************************************************/
+
+	/**
+	 * Transport debugging method to handle read requests.
+	 *
+	 * @param  id    the incomming port identifier
+	 * @param  trans the read transaction to handle
+	 * @return       the total number of bytes that were read
+	 */
+	inline unsigned int ReadTransportDbg(unsigned int id, transaction_type &trans);
+	
+	/**
+	 * Transport debugging method to handle read requests.
+	 *
+	 * @param  id    the incomming port identifier
+	 * @param  trans the read transaction to handle
+	 * @return       the total number of bytes that were read
+	 */
+	inline unsigned int WriteTransportDbg(unsigned int id, transaction_type &trans);
+
+	/*************************************************************************
+	 * Transport debugging helper methods                                END *
 	 *************************************************************************/
 
 	/*************************************************************************

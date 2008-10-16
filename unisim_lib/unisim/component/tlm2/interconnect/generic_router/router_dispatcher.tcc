@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_ROUTER_DISPATCHER_TCC__
 #define __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_ROUTER_DISPATCHER_TCC__
 
+#include <string.h>
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -44,39 +46,182 @@ namespace generic_router {
 template<typename OWNER, class CONFIG>
 RouterDispatcher<OWNER, CONFIG>::
 RouterDispatcher(const sc_module_name &name, unsigned int id, const sc_core::sc_time &cycle_time, OWNER *owner, cb_t cb) :
-	sc_module(name),
-	m_id(id),
-	m_cycle_time(cycle_time),
-	m_queue(this, &RouterDispatcher<OWNER, CONFIG>::QueueCB),
-	m_owner(owner),
-	m_cb(cb),
-	ready_queue() {
+sc_module(name),
+m_id(id),
+m_cycle_time(cycle_time),
+m_queue(),
+// m_queue(this, &RouterDispatcher<OWNER, CONFIG>::QueueCB),
+m_owner(owner),
+m_cb(cb)
+{
+	SC_THREAD(Run);
 }
 
 template<typename OWNER, class CONFIG>
 RouterDispatcher<OWNER, CONFIG>::
-~RouterDispatcher() {
-}
-
-template<typename OWNER, class CONFIG>
-void
-RouterDispatcher<OWNER, CONFIG>::
-Push(transaction_type &trans, const sc_core::sc_time &time) {
-	phase_type phase = tlm::BEGIN_REQ;
-	m_queue.notify(trans, phase, time);
+~RouterDispatcher() 
+{
 }
 
 template<typename OWNER, class CONFIG>
 void
 RouterDispatcher<OWNER, CONFIG>::
-Completed(const sc_core::sc_time &time) {
+Push(transaction_type &trans, const sc_core::sc_time &time) 
+{
+	m_queue.insert(pair_t(sc_core::sc_time_stamp() + time, &trans));
+	m_event.notify(time);
+	//phase_type phase = tlm::BEGIN_REQ;
+	//m_queue.notify(trans, phase, time);
 }
 
 template<typename OWNER, class CONFIG>
 void
 RouterDispatcher<OWNER, CONFIG>::
-QueueCB(transaction_type &trans, const phase_type &phase) {
+Completed(const sc_core::sc_time &time) 
+{
+	m_complete_event.notify(time);
+}
+
+template<typename OWNER, class CONFIG>
+void
+RouterDispatcher<OWNER, CONFIG>::
+QueueCB(transaction_type &trans, const phase_type &phase) 
+{
 	(m_owner->*m_cb)(m_id, trans);
+}
+
+template<typename OWNER, class CONFIG>
+void
+RouterDispatcher<OWNER, CONFIG>::
+Run() 
+{
+	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
+
+	while(1) {
+		wait(m_event);
+		sc_core::sc_time now = sc_core::sc_time_stamp();
+		transaction_type *trans;
+
+		it = m_queue.begin();
+		if (it == m_queue.end()) continue;
+		if (it->first > now) {
+			m_event.notify(it->first - now);
+			continue;
+		}
+		trans = it->second;
+		m_queue.erase(it);
+		(m_owner->*m_cb)(m_id, *trans);
+		wait(m_complete_event);
+		now = sc_core::sc_time_stamp();
+		it = m_queue.begin();
+		if (it == m_queue.end()) continue;
+		if (it->first > now) {
+			m_event.notify(it->first - now);
+			continue;
+		}
+		// we need to synchronize
+		uint64_t val = now.value() / m_cycle_time.value();
+		val = val + 1;
+		sc_core::sc_time fut = m_cycle_time * val;
+		fut += m_cycle_time;
+		m_event.notify(fut - now);
+	}
+}
+
+template<typename OWNER, class CONFIG>
+unsigned int
+RouterDispatcher<OWNER, CONFIG>::
+ReadTransportDbg(unsigned int input_port, transaction_type &trans) const
+{
+	// check all the write transactions in the queue, starting by the oldest ones
+	typename std::multimap<const sc_core::sc_time, transaction_type *>::const_iterator it;
+	// min_base and max_top keep the number of bytes modified, found is used to know if any match happened
+	bool found = false;
+	sc_dt::uint64 min_base = 0;
+	sc_dt::uint64 max_top = 0;
+	for (it = m_queue.begin(); it != m_queue.end(); it++) {
+		sc_dt::uint64 base = 0;
+		sc_dt::uint64 top = 0;
+		sc_dt::uint64 size = 0;
+		if (!it->second->is_write()) continue;
+		if (it->second->get_address() >= trans.get_address() + trans.get_data_length() ||
+				trans.get_address() >= it->second->get_address() + it->second->get_data_length()) 
+			continue;
+
+		// get the base address
+		if (trans.get_address() < it->second->get_address()) base = it->second->get_address();
+		else base = trans.get_address();
+
+		// get the top address
+		if (trans.get_address() + trans.get_data_length() > it->second->get_address() + it->second->get_data_length()) top = it->second->get_address() + it->second->get_data_length();
+		else top = trans.get_address() + trans.get_data_length();
+		
+		// compute the amount of data that can be read
+		size = top - base;
+
+		// copy the available data into the transaction
+		unsigned char *trans_buffer = trans.get_data_ptr() + (top - trans.get_address());
+		unsigned char *cur_buffer = it->second->get_data_ptr() + (top - it->second->get_address());
+		memcpy(trans_buffer, cur_buffer, size);
+
+		// update min_base and max_top
+		if (!found) {
+			min_base = base;
+			max_top = top;
+		} else {
+			if (base < min_base) min_base = base;
+			if (top > max_top) max_top = top;
+		}
+	}
+	return max_top - min_base;
+}
+
+template<typename OWNER, class CONFIG>
+unsigned int
+RouterDispatcher<OWNER, CONFIG>::
+WriteTransportDbg(unsigned int input_port, transaction_type &trans)
+{
+	// modify all the transactions
+	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
+	// min_base and max_top keep the number of bytes modified, found is used to know if any match happened
+	bool found = false;
+	sc_dt::uint64 min_base = 0;
+	sc_dt::uint64 max_top = 0;
+	for (it = m_queue.begin(); it != m_queue.end(); it++) {
+		sc_dt::uint64 base = 0;
+		sc_dt::uint64 top = 0;
+		sc_dt::uint64 size = 0;
+		if (!it->second->is_write() || !it->second->is_read()) continue;
+		if (it->second->get_address() >= trans.get_address() + trans.get_data_length() ||
+				trans.get_address() >= it->second->get_address() + it->second->get_data_length()) 
+			continue;
+
+		// get the base address
+		if (trans.get_address() < it->second->get_address()) base = it->second->get_address();
+		else base = trans.get_address();
+		
+		// get the top address
+		if (trans.get_address() + trans.get_data_length() > it->second->get_address() + it->second->get_data_length()) top = it->second->get_address() + it->second->get_data_length();
+		else top = trans.get_address() + trans.get_data_length();
+		
+		// compute the amount of data that can be modified
+		size = top - base;
+
+		// copy the available data into the transaction
+		unsigned char *trans_buffer = trans.get_data_ptr() + (top - trans.get_address());
+		unsigned char *cur_buffer = it->second->get_data_ptr() + (top - it->second->get_address());
+		memcpy(cur_buffer, trans_buffer, size);
+		
+		// update min_base and max_top
+		if (!found) {
+			min_base = base;
+			max_top = top;
+		} else {
+			if (base < min_base) min_base = base;
+			if (top > max_top) max_top = top;
+		}
+	}
+	return max_top - min_base;
 }
 
 } // end of namespace generic_router

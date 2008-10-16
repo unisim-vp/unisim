@@ -226,7 +226,8 @@ param_verbose_setup("verbose_setup", this, verbose_setup, "Display Object setup 
 verbose_non_blocking(false),
 param_verbose_non_blocking("verbose_non_blocking", this, verbose_non_blocking, "Display non_blocking transactions handling"),
 verbose_blocking(false),
-param_verbose_blocking("verbose_blocking", this, verbose_blocking, "Display blocking transactions handling") {
+param_verbose_blocking("verbose_blocking", this, verbose_blocking, "Display blocking transactions handling") 
+{
 	/* instantiate the mapping parameters */
 	for(unsigned int i = 0; i < MAX_NUM_MAPPINGS; i++) {
 		std::stringstream buf;
@@ -254,7 +255,8 @@ Router<CONFIG>::
 template<class CONFIG>
 bool
 Router<CONFIG>::
-Setup() {
+Setup()
+{
 	const unsigned int num_mappings = CONFIG::MAX_NUM_MAPPINGS;
 	
 	if(cycle_time_double == 0.0) {
@@ -407,7 +409,8 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 template<class CONFIG>
 void
 Router<CONFIG>::
-I_invalidate_direct_mem_ptr_cb(int id, sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
+I_invalidate_direct_mem_ptr_cb(int id, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
 	/* nothing to do */
 }
 
@@ -520,7 +523,8 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 template<class CONFIG>
 void
 Router<CONFIG>::
-T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time) {
+T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
+{
 	/* the first thing that must be done is the translation from the mapping table */
 	if(VerboseBlocking()) {
 		logger << DebugInfo << "Received b_transport on port " << id << ", forwarding it" << endl
@@ -578,9 +582,137 @@ T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time) {
 template<class CONFIG>
 unsigned int
 Router<CONFIG>::
-T_transport_dbg_cb(int id, transaction_type &trans) {
-	/* nothing to do */
-	return 0;
+T_transport_dbg_cb(int id, transaction_type &trans) 
+{
+	// only handle reads and writes
+	if (!trans.is_read() && !trans.is_write()) return 0;
+
+	// modify request queues and send the transaction trhough the init_sockets
+	unsigned int counter = 0;
+	unsigned char *trans_buffer = trans.get_data_ptr();
+	unsigned int trans_size = trans.get_data_length();
+	sc_dt::uint64 trans_addr = trans.get_address();
+	std::vector<unsigned int> mappings;
+	std::vector<unsigned int>::iterator it;
+	ApplyMap(trans, mappings);
+	for(it = mappings.begin(); it != mappings.end(); it++)  {
+		sc_dt::uint64 buffer_index;
+		sc_dt::uint64 buffer_addr;
+		unsigned int buffer_size;
+		if (mapping[*it].range_start > trans_addr) {
+			buffer_addr = mapping[*it].range_start;
+			buffer_index = mapping[*it].range_start - trans_addr;
+			if (mapping[*it].range_end > trans_addr + trans_size)
+				buffer_size = (trans_addr + trans_size) - mapping[*it].range_start;
+			else
+				buffer_size = mapping[*it].range_end - mapping[*it].range_start;
+		} else {
+			buffer_addr = trans_addr;
+			buffer_index = 0;
+			if (mapping[*it].range_end > trans_addr + trans_size)
+				buffer_size = trans_size;
+			else
+				buffer_size = mapping[*it].range_end - trans_addr;
+		}
+		trans.set_data_ptr(trans_buffer + buffer_index);
+		trans.set_data_length(buffer_size);
+		trans.set_address(buffer_addr);
+		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
+		if (trans.is_read())
+			m_req_dispatcher[mapping[*it].output_port]->ReadTransportDbg(id, trans);
+		else
+			m_req_dispatcher[mapping[*it].output_port]->WriteTransportDbg(id, trans);
+	}
+	// if the request is a write then be sure to modify the response queue
+	if (trans.is_write())
+		m_rsp_dispatcher[id]->WriteTransportDbg(id, trans);
+	return counter;
+
+//	if (trans.is_read())
+//		return ReadTransportDbg(id, trans);
+//	else
+//		if (trans.is_write())
+//			return WriteTransportDbg(id, trans);
+//	
+//	return 0;
+}
+
+template<class CONFIG>
+unsigned int
+Router<CONFIG>::
+ReadTransportDbg(unsigned int id, transaction_type &trans) {
+	unsigned int counter = 0;
+	unsigned char *trans_buffer = trans.get_data_ptr();
+	unsigned int trans_size = trans.get_data_length();
+	sc_dt::uint64 trans_addr = trans.get_address();
+	std::vector<unsigned int> mappings;
+	std::vector<unsigned int>::iterator it;
+	ApplyMap(trans, mappings);
+	for(it = mappings.begin(); it != mappings.end(); it++) {
+		sc_dt::uint64 buffer_index;
+		sc_dt::uint64 buffer_addr;
+		unsigned int buffer_size;
+		if (mapping[*it].range_start > trans_addr) {
+			buffer_addr = mapping[*it].range_start;
+			buffer_index = mapping[*it].range_start - trans_addr;
+			if (mapping[*it].range_end > trans_addr + trans_size)
+				buffer_size = (trans_addr + trans_size) - mapping[*it].range_start;
+			else
+				buffer_size = mapping[*it].range_end - mapping[*it].range_start;
+		} else {
+			buffer_addr = trans_addr;
+			buffer_index = 0;
+			if (mapping[*it].range_end > trans_addr + trans_size)
+				buffer_size = trans_size;
+			else
+				buffer_size = mapping[*it].range_end - trans_addr;
+		}
+		trans.set_data_ptr(trans_buffer + buffer_index);
+		trans.set_data_length(buffer_size);
+		trans.set_address(buffer_addr);
+		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
+		m_req_dispatcher[mapping[*it].output_port]->ReadTransportDbg(id, trans);	
+	}
+	return counter;
+}
+
+template<class CONFIG>
+unsigned int
+Router<CONFIG>::
+WriteTransportDbg(unsigned int id, transaction_type &trans) {
+	unsigned int counter = 0;
+	unsigned char *trans_buffer = trans.get_data_ptr();
+	unsigned int trans_size = trans.get_data_length();
+	sc_dt::uint64 trans_addr = trans.get_address();
+	std::vector<unsigned int> mappings;
+	std::vector<unsigned int>::iterator it;
+	ApplyMap(trans, mappings);
+	for(it = mappings.begin(); it != mappings.end(); it++) {
+		sc_dt::uint64 buffer_index;
+		sc_dt::uint64 buffer_addr;
+		unsigned int buffer_size;
+		if (mapping[*it].range_start > trans_addr) {
+			buffer_addr = mapping[*it].range_start;
+			buffer_index = mapping[*it].range_start - trans_addr;
+			if (mapping[*it].range_end > trans_addr + trans_size)
+				buffer_size = (trans_addr + trans_size) - mapping[*it].range_start;
+			else
+				buffer_size = mapping[*it].range_end - mapping[*it].range_start;
+		} else {
+			buffer_addr = trans_addr;
+			buffer_index = 0;
+			if (mapping[*it].range_end > trans_addr + trans_size)
+				buffer_size = trans_size;
+			else
+				buffer_size = mapping[*it].range_end - trans_addr;
+		}
+		trans.set_data_ptr(trans_buffer + buffer_index);
+		trans.set_data_length(buffer_size);
+		trans.set_address(buffer_addr);
+		counter += init_socket[mapping[*it].output_port]->transport_dbg(trans);
+		m_req_dispatcher[mapping[*it].output_port]->WriteTransportDbg(id, trans);	
+	}
+	return counter;
 }
 
 template<class CONFIG>
@@ -872,12 +1004,14 @@ Sync(const sc_time &time) {
 template<class CONFIG>
 inline bool
 Router<CONFIG>::
-ApplyMap(const transaction_type &trans, unsigned int &port) {
+ApplyMap(const transaction_type &trans, unsigned int &port) const
+{
 	bool found = false;
 	uint64_t address = trans.get_address();
+	unsigned int size = trans.get_data_length();
 	for(unsigned int i = 0; !found && i < MAX_NUM_MAPPINGS; i++) {
 		if(mapping[i].used) {
-			if(address >= mapping[i].range_start && trans.get_address() < mapping[i].range_end) {
+			if(address >= mapping[i].range_start && (address + size) < mapping[i].range_end) {
 				found = true;
 				port = mapping[i].output_port;
 			}
@@ -890,7 +1024,55 @@ ApplyMap(const transaction_type &trans, unsigned int &port) {
 template<class CONFIG>
 inline void
 Router<CONFIG>::
-SetRouterExtension(transaction_type &trans, unsigned int port) {
+ApplyMap(const transaction_type &trans, std::vector<unsigned int> &mappings) const
+{
+	sc_dt::uint64 addr = trans.get_address();
+	unsigned int size = trans.get_data_length();
+	sc_dt::uint64 cur_addr = addr;
+	unsigned int cur_size = size;
+	while (cur_addr < addr + size) {
+		unsigned int index = 0;
+		bool found = false;
+		for (; !found && index < MAX_NUM_MAPPINGS; index++) {
+			if (mapping[index].used) {
+				if (cur_addr >= mapping[index].range_start && cur_addr < mapping[index].range_end) {
+					found = true;
+					mappings.push_back(index);
+					if (cur_size <= mapping[index].range_end - cur_addr) {
+						cur_addr = mapping[index].range_end;
+						cur_size = size - (mapping[index].range_end - addr);
+					} else 
+						cur_addr = addr + size;
+				}
+			}
+		}
+		if (!found) {
+			found = false;
+			sc_dt::uint64 closest_range_start = 0;
+			for (index = 0; index < MAX_NUM_MAPPINGS; index++) {
+				if (mapping[index].used) {
+					if (cur_addr < mapping[index].range_start && cur_addr + cur_size > mapping[index].range_start) {
+						if (!found)
+							closest_range_start = mapping[index].range_start;
+						else
+							if (closest_range_start > mapping[index].range_start)
+								closest_range_start = mapping[index].range_start;
+						found = true;
+					}
+				}
+			}
+			if (!found) return;
+			cur_size = size - (closest_range_start - cur_addr);
+			cur_addr = closest_range_start;
+		}
+	}
+}
+
+template<class CONFIG>
+inline void
+Router<CONFIG>::
+SetRouterExtension(transaction_type &trans, unsigned int port) 
+{
 	RouterPayloadExtension *router_extension;
 	trans.get_extension(router_extension);
 	if(!router_extension) {

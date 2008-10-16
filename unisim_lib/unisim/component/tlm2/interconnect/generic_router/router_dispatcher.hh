@@ -38,7 +38,7 @@
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/peq_with_cb_and_phase.h>
-#include <queue>
+#include <map>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/interconnect/generic_router/config.hh"
@@ -62,6 +62,7 @@ private:
 	typedef typename TYPES::tlm_phase_type   phase_type;
 	typedef tlm::tlm_sync_enum               sync_enum_type;
     typedef void (OWNER::*cb_t)(unsigned int, transaction_type &);
+	typedef std::pair<const sc_core::sc_time, transaction_type *> pair_t;
 
 public:
 	SC_HAS_PROCESS(RouterDispatcher);
@@ -70,15 +71,19 @@ public:
 
 	void Push(transaction_type &trans, const sc_core::sc_time &time);
 	void Completed(const sc_core::sc_time &time);
+	inline unsigned int ReadTransportDbg(unsigned int input_port, transaction_type &trans) const;
+	inline unsigned int WriteTransportDbg(unsigned int input_port, transaction_type &trans);
 
 private:
 	OWNER *m_owner;
 	cb_t m_cb;
 	unsigned int m_id;
 	sc_core::sc_time m_cycle_time;
-	tlm_utils::peq_with_cb_and_phase<RouterDispatcher<OWNER, CONFIG>, TYPES> m_queue;
-	std::queue<transaction_type *> ready_queue;
+//	tlm_utils::peq_with_cb_and_phase<RouterDispatcher<OWNER, CONFIG>, TYPES> m_queue;
+	std::multimap<sc_core::sc_time, transaction_type *> m_queue;
+	sc_core::sc_event m_event, m_complete_event;
 
+	void Run();
 	void QueueCB(transaction_type &trans, const phase_type &phase);
 };
 
