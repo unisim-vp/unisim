@@ -231,7 +231,7 @@ fdiv.execute = {
 	uint32_t dividend = (uint32_t) cpu->getRegD() << 16;
 	uint16_t divisor = cpu->getRegX();
 	uint16_t quotion = 0xFFFF;
-	uint16_t remind = dividend;
+	uint16_t remind = cpu->getRegD();
 	
 	if (divisor == 0) { 
 		cpu->ccr->setC(); 
