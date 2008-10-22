@@ -21,6 +21,7 @@
 #include <cassert>
 #include <cctype>
 //#include <iostream>
+#include <stdio.h>
 
 namespace Str {
   Buf::Buf( Policy_t _policy )

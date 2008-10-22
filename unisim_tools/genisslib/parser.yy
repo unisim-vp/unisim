@@ -33,6 +33,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <stdlib.h>
   
 int yylex();
 int yyerror( char const* _err );

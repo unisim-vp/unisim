@@ -23,6 +23,7 @@
 #include <referencecounting.hh>
 #include <errtools.hh>
 #include <vect.hh>
+#include <iostream>
 
 /** An action implementation object */
 struct Action_t : virtual ReferenceCounter {

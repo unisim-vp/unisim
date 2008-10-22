@@ -24,6 +24,7 @@
 #include <errtools.hh>
 #include <referencecounting.hh>
 #include <vect.hh>
+#include <iostream>
 
 /** An operation object */
 struct Operation_t : virtual ReferenceCounter {
