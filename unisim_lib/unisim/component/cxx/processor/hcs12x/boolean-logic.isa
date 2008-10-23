@@ -103,7 +103,7 @@ and_ab_dir.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
 	uint8_t opr8aVal = cpu->memRead8(addr);
 
 	result = regVal & opr8aVal;
@@ -147,7 +147,7 @@ and_ab_ext.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = opr16a;		
 	uint8_t opr16aVal = cpu->memRead8(addr);
 
 	result = regVal & opr16aVal;	
@@ -206,7 +206,7 @@ and_ab_idx.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t xbVal = cpu->memRead8(addr);
 
 	result = regVal & xbVal;
@@ -312,7 +312,7 @@ and_xy_dir.disasm = {
 and_xy_dir.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
 	uint16_t opr8aVal = cpu->memRead16(addr);
 	
 	if (b==0) {
@@ -357,7 +357,7 @@ and_xy_ext.disasm = {
 and_xy_ext.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = opr16a;	
 	uint16_t opr16aVal = cpu->memRead16(addr);
 	
 	if (b==0) {
@@ -415,7 +415,7 @@ and_xy_idx.disasm = {
 and_xy_idx.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = xb->getEAddr(cpu);		
 	uint16_t xbVal = cpu->memRead16(addr);
 	
 	if (b==0) {
@@ -509,7 +509,7 @@ ora_ab_dir.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
 	uint8_t opr8aVal = cpu->memRead8(addr);
 
 	result = regVal | opr8aVal;
@@ -553,7 +553,7 @@ ora_ab_ext.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = opr16a;		
 	uint8_t opr16aVal = cpu->memRead8(addr);
 
 	result = regVal | opr16aVal;	
@@ -612,7 +612,7 @@ ora_ab_idx.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t xbVal = cpu->memRead8(addr);
 
 	result = regVal | xbVal;
@@ -736,7 +736,7 @@ or_xy_dir.disasm = {
 or_xy_dir.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
 	uint16_t opr8aVal = cpu->memRead16(addr);
 	
 	if (b==0) {
@@ -781,7 +781,7 @@ or_xy_ext.disasm = {
 or_xy_ext.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = opr16a;		
 	uint16_t opr16aVal = cpu->memRead16(addr);
 	
 	if (b==0) {
@@ -839,7 +839,7 @@ or_xy_idx.disasm = {
 or_xy_idx.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = xb->getEAddr(cpu);	
 	uint16_t xbVal = cpu->memRead16(addr);
 	
 	if (b==0) {
@@ -932,7 +932,7 @@ eor_ab_dir.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
 	uint8_t opr8aVal = cpu->memRead8(addr);
 
 	result = regVal ^ opr8aVal;
@@ -976,7 +976,7 @@ eor_ab_ext.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = opr16a;		
 	uint8_t opr16aVal = cpu->memRead8(addr);
 
 	result = regVal ^ opr16aVal;	
@@ -1035,7 +1035,7 @@ eor_ab_idx.execute = {
 	} else {
 		regVal = cpu->getRegB();
 	}
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = xb->getEAddr(cpu);		
 	uint8_t xbVal = cpu->memRead8(addr);
 
 	result = regVal ^ xbVal;
@@ -1117,7 +1117,7 @@ eor_xy_dir.disasm = {
 eor_xy_dir.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
 	uint16_t opr8aVal = cpu->memRead16(addr);
 	
 	if (b==0) {
@@ -1162,7 +1162,7 @@ eor_xy_ext.disasm = {
 eor_xy_ext.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);		
+	physical_address_t addr = opr16a;		
 	uint16_t opr16aVal = cpu->memRead16(addr);
 	
 	if (b==0) {
@@ -1220,7 +1220,7 @@ eor_xy_idx.disasm = {
 eor_xy_idx.execute = {
 
 	uint16_t result, regVal;
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);	
+	physical_address_t addr = xb->getEAddr(cpu);	
 	uint16_t xbVal = cpu->memRead16(addr);
 	
 	if (b==0) {

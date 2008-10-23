@@ -127,7 +127,9 @@ void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 	
 	setRegPC(cpu_address);
 
-	registers->write(CONFIG::PPAGE_REG_ADDRESS, page);  
+	if (page != 0x00) {
+		registers->write(CONFIG::PPAGE_REG_ADDRESS, page);
+	}  
   
 }
 
@@ -181,7 +183,7 @@ uint8_t CPU::Step()
 	current_pc = getRegPC();
 	physical_pc = current_pc;
 	
-	physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED);
 
 	VerboseDumpRegsStart();
 	

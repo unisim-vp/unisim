@@ -45,7 +45,7 @@ movb_0B.disasm = {
 }
 
 movb_0B.execute = {
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addr = opr16a;
 
 	cpu->memWrite8(addr,ii);
 }
@@ -63,7 +63,7 @@ movb_08.disasm = {
 }
 
 movb_08.execute = {
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addr = xb->getEAddr(cpu);
 
 	cpu->memWrite8(addr,ii);
 }
@@ -81,8 +81,8 @@ movb_0C.disasm = {
 }
 
 movb_0C.execute = {
-	physical_address_t addrsrc = cpu->mmc->getPhysicalAddress(opr16asrc, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
-	physical_address_t addrdst = cpu->mmc->getPhysicalAddress(opr16adst, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addrsrc = opr16asrc;
+	physical_address_t addrdst = opr16adst;
 
 	uint8_t tmp = cpu->memRead8(addrsrc);
 	cpu->memWrite8(addrdst, tmp);
@@ -121,8 +121,8 @@ movb_0D.disasm = {
 }
 
 movb_0D.execute = {
-	physical_address_t addrxb = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
-	physical_address_t addropr16a = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addrxb = xb->getEAddr(cpu);
+	physical_address_t addropr16a = opr16a;
 
 	uint8_t tmp = cpu->memRead8(addrxb);
 	cpu->memWrite8(addropr16a, tmp);
@@ -174,7 +174,7 @@ movw_03.disasm = {
 }
 
 movw_03.execute = {
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addr = opr16a;
 
 	cpu->memWrite16(addr,opr16i);
 }
@@ -191,8 +191,8 @@ movw_04.disasm = {
 }
 
 movw_04.execute = {
-	physical_address_t addrsrc = cpu->mmc->getPhysicalAddress(opr16asrc, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
-	physical_address_t addrdst = cpu->mmc->getPhysicalAddress(opr16adst, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addrsrc = opr16asrc;
+	physical_address_t addrdst = opr16adst;
 
 	uint16_t tmp = cpu->memRead16(addrsrc);
 	cpu->memWrite16(addrdst, tmp);
@@ -211,7 +211,7 @@ movw_00.disasm = {
 }
 
 movw_00.execute = {
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addr = xb->getEAddr(cpu);
 
 	cpu->memWrite16(addr,opr16i);
 }
@@ -234,8 +234,8 @@ movw_01.disasm = {
 }
 
 movw_01.execute = {
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
-	physical_address_t addrsrc = cpu->mmc->getPhysicalAddress(opr16asrc, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addr = xb->getEAddr(cpu);
+	physical_address_t addrsrc = opr16asrc;
 
 	uint16_t tmp = cpu->memRead16(addrsrc);
 	cpu->memWrite16(addr, tmp);
@@ -256,8 +256,8 @@ movw_05.disasm = {
 }
 
 movw_05.execute = {
-	physical_address_t addrxb = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
-	physical_address_t addrdst = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addrxb = xb->getEAddr(cpu);
+	physical_address_t addrdst = opr16a;
 
 	uint16_t tmp = cpu->memRead16(addrxb);
 	cpu->memWrite16(addrdst, tmp);
@@ -289,8 +289,8 @@ movw_02.disasm = {
 }
 
 movw_02.execute = {
-	physical_address_t addrsrc = cpu->mmc->getPhysicalAddress(xbsrc->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
-	physical_address_t addrdst = cpu->mmc->getPhysicalAddress(xbdst->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addrsrc = xbsrc->getEAddr(cpu);
+	physical_address_t addrdst = xbdst->getEAddr(cpu);
 	
 	uint16_t  tmp = cpu->memRead16(addrsrc);
 	cpu->memWrite16(addrdst, tmp);

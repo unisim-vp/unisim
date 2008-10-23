@@ -350,16 +350,16 @@ emacs.execute = {
 	uint32_t accOpr, result, inter;
 	
 	
-	xOpr = cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegX(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
-	yOpr = cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegY(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
-	accOpr = cpu->memRead16(cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
-	accOpr = (accOpr << 16) | cpu->memRead16(cpu->mmc->getPhysicalAddress(opr16a+2, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)); 
+	xOpr = cpu->memRead16(cpu->getRegX());
+	yOpr = cpu->memRead16(cpu->getRegY());
+	accOpr = cpu->memRead16(opr16a);
+	accOpr = (accOpr << 16) | cpu->memRead16(opr16a+2); 
 	
 	inter = (uint32_t) xOpr * yOpr;
 	result =  inter + accOpr;
 	
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), (uint16_t) (accOpr >> 16));
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(opr16a+2, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), (uint16_t) accOpr);
+	cpu->memWrite16(opr16a, (uint16_t) (result >> 16));
+	cpu->memWrite16(opr16a+2, (uint16_t) result);
 	
 	// N: Set if MSB of result is set; cleared otherwise
 	if (result & 0x80000000 == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }

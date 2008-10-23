@@ -1065,7 +1065,7 @@ cpu
 #line 222 "xb.isa"
 	{
 
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+		physical_address_t addr = cpu->xb_getAddrRegValue(rr) + n16;
 
 		// Constant offset 16-bit signed
 		return addr;
@@ -1143,7 +1143,7 @@ cpu
 #line 247 "xb.isa"
 	{
 
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(cpu->xb_getAddrRegValue(rr) + n16, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+		physical_address_t addr = cpu->xb_getAddrRegValue(rr) + n16;
 
 		// 16-bit offset indexed-indirect
 		return cpu->memRead16(addr);
@@ -1302,7 +1302,7 @@ cpu
 #line 359 "xb.isa"
 	{
 
-		return cpu->memRead16(cpu->mmc->getPhysicalAddress(cpu->getRegD() + cpu->xb_getAddrRegValue(rr), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+		return cpu->memRead16(cpu->getRegD() + cpu->xb_getAddrRegValue(rr));
 	}
 #line 1308 "xb.cc"
 }

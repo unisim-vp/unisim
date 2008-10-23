@@ -83,8 +83,8 @@ by one.
 	address_t xVal = cpu->getRegX();
 	address_t yVal = cpu->getRegY();
 
-	p1 = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
-	p2 = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	p1 = cpu->memRead8(xVal);
+	p2 = cpu->memRead8(xVal+1);
 	
 	if ((aVal < p1) or (aVal > p2)) {
 		gm = 0;
@@ -92,15 +92,15 @@ by one.
 		uint8_t s1, s2, min1, min2;
 
 		
-		s1 = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal+2, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
-		s2 = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal+3, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+		s1 = cpu->memRead8(xVal+2);
+		s2 = cpu->memRead8(xVal+3);
 		
 		min1 = (aVal - p1) * s1;
 		min2 = (p2 - aVal) * s2;
 		if (min1 < min2) {
-			cpu->memWrite8(cpu->mmc->getPhysicalAddress(yVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), min1);
+			cpu->memWrite8(yVal, min1);
 		} else {
-			cpu->memWrite8(cpu->mmc->getPhysicalAddress(yVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), min2);		
+			cpu->memWrite8(yVal, min2);		
 		} 
 	}
 
@@ -138,37 +138,37 @@ rev.execute = {
 	 xVal = cpu->getRegX();
 	 yVal = cpu->getRegY();
 	 
-	 memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 memX = cpu->memRead8(xVal);
 	 while (memX != 0xFF) {
 	 	
 	 	ccrV = 0; 
 	 	aVal = 0xFF; 
 	 	while ((memX != 0xFE) && (memX != 0xFF)) {
-	 		memYX = cpu->memRead8(cpu->mmc->getPhysicalAddress(yVal+memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 		memYX = cpu->memRead8(yVal+memX);
 	 		if (memYX < aVal) {
 	 			aVal = memYX; 
 	 		}
 	 		xVal++; 
-	 		memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 		memX = cpu->memRead8(xVal);
 	 	}
 	 	
 	 	if (memX != 0xFF) {
 	 		
 	 		ccrV = 1; 
 	 		xVal++;  
-	 		memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 		memX = cpu->memRead8(xVal);
 	 		while ((memX != 0xFE) && (memX != 0xFF)) {
-	 			memYX = cpu->memRead8(cpu->mmc->getPhysicalAddress(yVal+memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 			memYX = cpu->memRead8(yVal+memX);
 	 			if (aVal > memYX) {
-	 				cpu->memWrite8(cpu->mmc->getPhysicalAddress(yVal+memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), aVal);
+	 				cpu->memWrite8(yVal+memX, aVal);
 	 			}
 	 			xVal++; 
-	 			memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 			memX = cpu->memRead8(xVal);
 	 		}
 	 		
 	 		if (memX != 0xFF) {
 	 			xVal++;  
-	 			memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 			memX = cpu->memRead8(xVal);
 	 		}
 	 	}
 	 }
@@ -209,43 +209,43 @@ revw.execute = {
 	 yVal = cpu->getRegY(); cpu->setRegTMP(1, yVal);  // (Y) weight pointer kept in TMP2
 	 ccrC = cpu->ccr->getC();
 
-	 memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 memX = cpu->memRead16(xVal);
 	 while (memX != 0xFFFF) {
 	 	
 	 	ccrV = 0;  
 	 	aVal = 0xFF;  
 	 	while ((memX != 0xFFFE) && (memX != 0xFFFF)) {
-	 		memOfMemX = cpu->memRead8(cpu->mmc->getPhysicalAddress(memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 		memOfMemX = cpu->memRead8(memX);
 	 		if (memOfMemX < aVal) {
 	 			aVal = memOfMemX; 
 	 		}
 	 		xVal++;  
-	 		memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 		memX = cpu->memRead16(xVal);
 	 	}
 	 	
 	 	if (memX != 0xFFFF) {
 			// *** Apply weight	***
 			if (ccrC == 1) {
-				memY = cpu->memRead8(cpu->mmc->getPhysicalAddress(yVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+				memY = cpu->memRead8(yVal);
 				aVal = (uint8_t) ((uint16_t) aVal * (memY+1)) >> 8;  // cpu->setRegA(aVal);
 				yVal++;  cpu->setRegTMP(1, yVal); // cpu->setRegY(yVal);
 			}
 			
 	 		ccrV = 1; 
 	 		xVal++;  
-	 		memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 		memX = cpu->memRead16(xVal);
 	 		while ((memX != 0xFFFE) && (memX != 0xFFFF)) {
-	 			memOfMemX = cpu->memRead16(cpu->mmc->getPhysicalAddress(memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 			memOfMemX = cpu->memRead16(memX);
 	 			if (aVal > memOfMemX) {
-	 				cpu->memWrite8(cpu->mmc->getPhysicalAddress(memX, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), aVal);
+	 				cpu->memWrite8(memX, aVal);
 	 			}
 	 			xVal++;  
-		 		memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+		 		memX = cpu->memRead16(xVal);
 	 		}
 	 		
 	 		if (memX != 0xFFFF) {
 	 			xVal++;  
-	 			memX = cpu->memRead16(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 			memX = cpu->memRead16(xVal);
 	 		}
 	 	}
 	 }
@@ -318,8 +318,8 @@ wav.execute = {
 		 * }
 		 **/
 
-	 	memY = cpu->memRead8(cpu->mmc->getPhysicalAddress(yVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
-		memX = cpu->memRead8(cpu->mmc->getPhysicalAddress(xVal, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS));
+	 	memY = cpu->memRead8(yVal);
+		memX = cpu->memRead8(xVal);
 		
 	 	pp = memX * memY;
 	 	sop += pp;
@@ -362,9 +362,9 @@ wavr.execute = {
 	 */
 
 	address_t sp = cpu->getRegSP();
-	cpu->setRegTMP(0, cpu->memRead16(cpu->mmc->getPhysicalAddress(sp, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
-	cpu->setRegTMP(1, cpu->memRead16(cpu->mmc->getPhysicalAddress(sp+2, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
-	cpu->setRegTMP(2, cpu->memRead16(cpu->mmc->getPhysicalAddress(sp+4, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
+	cpu->setRegTMP(0, cpu->memRead16(sp));
+	cpu->setRegTMP(1, cpu->memRead16(sp+2));
+	cpu->setRegTMP(2, cpu->memRead16(sp+4));
 	cpu->setRegSP(sp+6);
 	
 	if ((cpu->getRegTMP(0) == 0) || 
@@ -404,7 +404,7 @@ tbl.execute = {
  C: Set if result can be rounded up; cleared otherwise
 */
 
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addr = xb->getEAddr(cpu);
 
 	uint8_t bVal = cpu->getRegB();
 	uint8_t mVal = cpu->memRead8(addr);
@@ -442,7 +442,7 @@ The intermediate value [(B) * ((M+2) - (M))] produces a 24-bit result
 with the radix point between bits 7 and 8.
 */
 
-	physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS);
+	physical_address_t addr = xb->getEAddr(cpu);
 
 	uint8_t bVal = cpu->getRegB();
 	uint16_t mVal = cpu->memRead16(addr);

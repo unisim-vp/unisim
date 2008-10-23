@@ -49,7 +49,7 @@ MMC::MMC(HC_Registers *regs) :
 }
 
 
-physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal) {
+physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type) {
 
 	uint8_t gShift;
 	
@@ -88,9 +88,7 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 		} break;
 	}
 
-	if (isGlobal) {
-		address = ((physical_address_t) getGpage() << gShift) | address;
-	} 
+	address = ((physical_address_t) getGpage() << gShift) | address;
 
 	return address;
 }
@@ -150,6 +148,7 @@ physical_address_t MMC::getRamAddress(address_t logicalAddress) {
 	
 	if ((_rpage > 0x00) && (_rpage < CONFIG::RPAGE_LOW)) {
 		// throw "non-valid accesses to memory"
+		return logicalAddress;
 	}
 	
 	if (((_rpage == 0x00) && (logicalAddress < 0x0800)) ||

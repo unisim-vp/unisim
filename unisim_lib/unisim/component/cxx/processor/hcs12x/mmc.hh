@@ -49,9 +49,6 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-#define WO_GLOBAL_ADDRESS	false	// without global addressing (64KB address space)
-#define W_GLOBAL_ADDRESS	true	// with global addressing (8MB address space)
-
 class MEMORY {
 public:
 
@@ -65,7 +62,7 @@ public:
     MMC(HC_Registers *regs);
     void reset();
        
-	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
+	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type);
 
     uint8_t getMmcctl0 ();
 	uint8_t getMode ();
@@ -81,13 +78,12 @@ public:
 	uint8_t getRamshl ();
 	uint8_t getRamshu ();
 
-private:
-
 	physical_address_t getDirectAddress(uint8_t lowByte);
 	physical_address_t getRamAddress(address_t logicalAddress);
 	physical_address_t getEepromAddress(address_t logicalAddress);
 	physical_address_t getFlashAddress(address_t logicalAddress);
-	
+
+private:	
 	//=============================================
 	//=            MMC REGISTERS                  =
 	//=============================================

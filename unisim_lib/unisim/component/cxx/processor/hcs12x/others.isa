@@ -83,20 +83,20 @@ stop.execute = {
 		 */
 		 
 		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegPC());
+		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
 		 
 		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
+		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
 		 
 		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
+		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
 		 
 		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
-		 cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegA());
+		 cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
+		 cpu->memWrite8(cpu->getRegSP()+1, cpu->getRegA());
 		 
 		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
+		 cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
 		 
 		 /* TODO: 
 		  * Stop All Clocks and puts the device in standby mode.
@@ -141,20 +141,20 @@ wai.execute = {
 	 */
 	 
 	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegPC());
+	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
 	 
 	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
+	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
 	 
 	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
+	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
 	 
 	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
-	 cpu->memWrite8(cpu->mmc->getPhysicalAddress(cpu->getRegSP()+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegA());
+	 cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
+	 cpu->memWrite8(cpu->getRegSP()+1, cpu->getRegA());
 	 
 	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite16(cpu->mmc->getPhysicalAddress(cpu->getRegSP(), MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
+	 cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
 
 	/* TODO: 
 	 * Enter a wait state for an integer number of bus clock cycle
@@ -224,20 +224,20 @@ rti.execute = {
 	/* Leave bit X unchanged.
 	 * X bit can be set only by a reset or by recognition of an (!XIRQ) interrupt
 	 */ 	 
-	cpu->ccr->setCCR((cpu->memRead16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)) & 0xFFBF) | (cpu->ccr->getCCR() & 0x0040));
+	cpu->ccr->setCCR((cpu->memRead16(addr) & 0xFFBF) | (cpu->ccr->getCCR() & 0x0040));
 
 	addr = addr + 2;
-	cpu->setRegB(cpu->memRead8(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
-	cpu->setRegA(cpu->memRead8(cpu->mmc->getPhysicalAddress(addr+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
+	cpu->setRegB(cpu->memRead8(addr));
+	cpu->setRegA(cpu->memRead8(addr+1));
 
 	addr = addr + 2;
-	cpu->setRegX(cpu->memRead16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
+	cpu->setRegX(cpu->memRead16(addr));
 
 	addr = addr + 2;
-	cpu->setRegY(cpu->memRead16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
+	cpu->setRegY(cpu->memRead16(addr));
 
 	addr = addr + 2;
-	cpu->setRegPC(cpu->memRead16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS)));
+	cpu->setRegPC(cpu->memRead16(addr));
 
 	addr = addr + 2;
 	cpu->setRegSP(addr);
@@ -272,20 +272,20 @@ swi.execute = {
 	address_t addr = cpu->getRegSP();
 	
 	addr = addr - 2;
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegPC());
+	cpu->memWrite16(addr, cpu->getRegPC());
 	
 	addr = addr - 2;
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
+	cpu->memWrite16(addr, cpu->getRegY());
 	
 	addr = addr - 2;
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
+	cpu->memWrite16(addr, cpu->getRegX());
 	
 	addr = addr - 2;
-	cpu->memWrite8(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegA());
+	cpu->memWrite8(addr, cpu->getRegB());
+	cpu->memWrite16(addr+1, cpu->getRegA());
 	
 	addr = addr - 2;
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
+	cpu->memWrite16(addr, cpu->ccr->getCCR());
 	
 	cpu->ccr->setI();
 	cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
@@ -326,20 +326,20 @@ trap.execute = {
 		address_t addr = cpu->getRegSP();
 		
 		addr = addr - 2;
-		cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegPC());
+		cpu->memWrite16(addr, cpu->getRegPC());
 		
 		addr = addr - 2;
-		cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
+		cpu->memWrite16(addr, cpu->getRegY());
 		
 		addr = addr - 2;
-		cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
+		cpu->memWrite16(addr, cpu->getRegX());
 
 		addr = addr - 2;
-		cpu->memWrite8(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
-		cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegA());
+		cpu->memWrite8(addr, cpu->getRegB());
+		cpu->memWrite16(addr+1, cpu->getRegA());
 		
 		addr = addr - 2;
-		cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
+		cpu->memWrite16(addr, cpu->ccr->getCCR());
 		
 		// 1 => I; 0 => U
 		cpu->ccr->setI();
@@ -382,20 +382,20 @@ sys.execute = {
 	address_t addr = cpu->getRegSP();
 		
 	addr = addr - 2;
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegPC());
+	cpu->memWrite16(addr, cpu->getRegPC());
 		
 	addr = addr - 2;
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegY());
+	cpu->memWrite16(addr, cpu->getRegY());
 		
 	addr = addr - 2;
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegX());
+	cpu->memWrite16(addr, cpu->getRegX());
 
 	addr = addr - 2;
-	cpu->memWrite8(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegB());
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr+1, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->getRegA());
+	cpu->memWrite8(addr, cpu->getRegB());
+	cpu->memWrite16(addr+1, cpu->getRegA());
 		
 	addr = addr - 2;
-	cpu->memWrite16(cpu->mmc->getPhysicalAddress(addr, MEMORY::EXTENDED, WO_GLOBAL_ADDRESS), cpu->ccr->getCCR());
+	cpu->memWrite16(addr, cpu->ccr->getCCR());
 		
 	// 1 => I; 0 => U
 	cpu->ccr->setI();
