@@ -49,7 +49,7 @@ MMC::MMC(HC_Registers *regs) :
 }
 
 
-physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type) {
+physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal) {
 
 	uint8_t gShift;
 	
@@ -88,7 +88,9 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 		} break;
 	}
 
-	address = ((physical_address_t) getGpage() << gShift) | address;
+	if (isGlobal) {
+		address = (((physical_address_t) getGpage() << gShift) | address) & 0x7Fffff;
+	}
 
 	return address;
 }

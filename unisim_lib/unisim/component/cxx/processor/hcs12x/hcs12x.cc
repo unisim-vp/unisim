@@ -25103,7 +25103,7 @@ cpu
 {
 #line 686 "/export/is010125/rnouacer/workspace/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, true);
 		uint8_t val = cpu->memRead8(addr);
 		if (b==0) {
 			cpu->setRegA(val);
@@ -25173,7 +25173,7 @@ cpu
 {
 #line 717 "/export/is010125/rnouacer/workspace/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, true);
 
 		uint8_t val = cpu->memRead8(addr);
 		if (b==0) {
@@ -25291,7 +25291,7 @@ cpu
 #line 767 "/export/is010125/rnouacer/workspace/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, true);
 
 		uint8_t		val = cpu->memRead8(addr);
 
@@ -25365,7 +25365,7 @@ cpu
 {
 #line 803 "/export/is010125/rnouacer/workspace/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, true);
 		uint16_t val = cpu->memRead16(addr);
 		switch (dyxs) {
 			case 0: cpu->setRegD(val); break;
@@ -25439,7 +25439,7 @@ cpu
 {
 #line 838 "/export/is010125/rnouacer/workspace/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, true);
 
 		uint16_t val = cpu->memRead16(addr);
 
@@ -25561,7 +25561,7 @@ cpu
 #line 892 "/export/is010125/rnouacer/workspace/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, true);
 
 		uint16_t	val = cpu->memRead16(addr);
 
@@ -25638,7 +25638,7 @@ cpu
 	{
 
 		uint8_t val;
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, true);
 
 		if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
 
@@ -25711,7 +25711,7 @@ cpu
 	{
 
 		uint8_t	val;
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, true);
 
 		if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
 		cpu->memWrite8(addr, val);
@@ -25827,7 +25827,7 @@ cpu
 #line 1014 "/export/is010125/rnouacer/workspace/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, true);
 
 		uint8_t val;
 		if (b == 0) { val = cpu->getRegA(); } else { val = cpu->getRegB(); }
@@ -25901,7 +25901,7 @@ cpu
 	{
 
 		uint16_t val;
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr8a, MEMORY::DIRECT, true);
 
 		switch (dyxs) {
 			case 0: val = cpu->getRegD(); break;
@@ -25981,7 +25981,7 @@ cpu
 	{
 
 		uint16_t val = 0;
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(opr16a, MEMORY::EXTENDED, true);
 
 		switch (dyxs) {
 			case 0: val = cpu->getRegD(); break;
@@ -26105,7 +26105,7 @@ cpu
 #line 1148 "/export/is010125/rnouacer/workspace/unisim/unisim_lib/unisim/component/cxx/processor/hcs12x/./load_store.isa"
 	{
 
-		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED);
+		physical_address_t addr = cpu->mmc->getPhysicalAddress(xb->getEAddr(cpu), MEMORY::EXTENDED, true);
 
 		uint16_t val = 0;
 

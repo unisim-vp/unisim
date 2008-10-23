@@ -183,7 +183,7 @@ uint8_t CPU::Step()
 	current_pc = getRegPC();
 	physical_pc = current_pc;
 	
-	physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED);
+	physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED, false);
 
 	VerboseDumpRegsStart();
 	

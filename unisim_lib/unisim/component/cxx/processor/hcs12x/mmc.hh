@@ -62,7 +62,7 @@ public:
     MMC(HC_Registers *regs);
     void reset();
        
-	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type);
+	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
 
     uint8_t getMmcctl0 ();
 	uint8_t getMode ();
