@@ -127,9 +127,7 @@ void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 	
 	setRegPC(cpu_address);
 
-	if (page != 0x00) {
-		registers->write(CONFIG::PPAGE_REG_ADDRESS, page);
-	}  
+	registers->write(CONFIG::PPAGE_REG_ADDRESS, page);
   
 }
 
