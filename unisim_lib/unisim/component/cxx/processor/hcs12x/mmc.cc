@@ -53,43 +53,34 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 
 	uint8_t gShift;
 	
-	physical_address_t address = 0;
+	physical_address_t address = logicalAddress;
 	
-	switch (type) {
-		case MEMORY::DIRECT: {
-			address = getDirectAddress((uint8_t) logicalAddress);
-			gShift = sizeof(address_t) * 8; 
-		} break;
-
-		case MEMORY::EXTENDED: {
-
-			if (logicalAddress <= CONFIG::REG_HIGH_OFFSET) { // Access to registers
-				address = logicalAddress;
-				gShift = sizeof(address_t) * 8; 
-
-			}
-			 
-			if ((logicalAddress >= CONFIG::EEPROM_LOW_OFFSET) && (logicalAddress <= CONFIG::EEPROM_HIGH_OFFSET)) { // Access to EEPROM
-				address = getEepromAddress(logicalAddress);
-				gShift = CONFIG::EEPROM_ADDRESS_SIZE + 8; 
-
-			} 
-			
-			if ((logicalAddress >= CONFIG::RAM_LOW_OFFSET) && (logicalAddress <= CONFIG::RAM_HIGH_OFFSET)) { // Access to RAM
-				address = getRamAddress(logicalAddress);
-				gShift = CONFIG::RAM_ADDRESS_SIZE + 8; 
-
-			} 
-			
-			if (logicalAddress >= CONFIG::FLASH_LOW_OFFSET) { // Access to Flash
-				address = getFlashAddress(logicalAddress);
-				gShift = CONFIG::FLASH_ADDRESS_SIZE + 8; 
-			}
-		} break;
+	if (type == MEMORY::DIRECT) {
+		address = getDirectAddress((uint8_t) logicalAddress);
+		gShift = sizeof(address_t) * 8;
+	}
+	
+	if (isGlobal) {
+		address = ((physical_address_t) (getGpage() & 0x7F) << gShift) | address;
+		return address;
 	}
 
-	if (isGlobal) {
-		address = (((physical_address_t) getGpage() << gShift) | address) & 0x7Fffff;
+	if (type == MEMORY::EXTENDED) {
+		if (logicalAddress <= CONFIG::REG_HIGH_OFFSET) { // Access to registers
+			address = logicalAddress;
+		}
+		 
+		if ((logicalAddress >= CONFIG::EEPROM_LOW_OFFSET) && (logicalAddress <= CONFIG::EEPROM_HIGH_OFFSET)) { // Access to EEPROM
+			address = getEepromAddress(logicalAddress);
+		} 
+		
+		if ((logicalAddress >= CONFIG::RAM_LOW_OFFSET) && (logicalAddress <= CONFIG::RAM_HIGH_OFFSET)) { // Access to RAM
+			address = getRamAddress(logicalAddress);
+		} 
+		
+		if (logicalAddress >= CONFIG::FLASH_LOW_OFFSET) { // Access to Flash
+			address = getFlashAddress(logicalAddress);
+		}
 	}
 
 	return address;
