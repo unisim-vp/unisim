@@ -16,7 +16,7 @@
  ***************************************************************************/
 
 #include <conststr.hh>
-#include <string.h>
+#include <cstring>
 
 ConstStr_t::ConstStr_t( char const* _string )
   : m_instance( _string ? (new Instance( _string ))->retain() : 0 )

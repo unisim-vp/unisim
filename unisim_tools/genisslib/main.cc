@@ -28,8 +28,8 @@
 #include <strtools.hh>
 #include <iostream>
 #include <fstream>
-#include <string.h>
-#include <stdlib.h>
+#include <cstring>
+#include <cstdlib>
 using namespace std;
 
 #define DEFAULT_OUTPUT "iss"

@@ -22,7 +22,7 @@
 #include <conststr.hh>
 #include <referencecounting.hh>
 #include <errtools.hh>
-#include <iostream>
+#include <iosfwd>
 
 /** A C source code object */
 struct SourceCode_t : virtual ReferenceCounter {

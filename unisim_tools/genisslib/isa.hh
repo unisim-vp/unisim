@@ -22,7 +22,7 @@
 #include <vect.hh>
 #include <conststr.hh>
 #include <memory>
-#include <iostream>
+#include <iosfwd>
 #include <referencecounting.hh>
 
 struct Isa {
