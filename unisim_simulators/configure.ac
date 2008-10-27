@@ -46,7 +46,7 @@ AC_CONFIG_FILES([Makefile])
 
 #UNISIM_CONFIG_SUBDIR(simulator-cxx, cxx)
 #UNISIM_CONFIG_SUBDIR(simulator-cycle_level, cycle_level)
-UNISIM_CONFIG_SUBDIR(simulator-clm, clm)
+#UNISIM_CONFIG_SUBDIR(simulator-clm, clm)
 UNISIM_CONFIG_SUBDIR(simulator-tlm, tlm)
 UNISIM_CONFIG_SUBDIR(simulator-tlm2, tlm2)
 

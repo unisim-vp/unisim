@@ -8,6 +8,11 @@ INCLUDE_SUBDIRS=
 # INCLUDE_SUBDIRS += cxx
 # endif
  
+if COND_hcs12xemu
+SUBDIRS += hcs12xemu
+INCLUDE_SUBDIRS += hcs12x
+endif
+ 
 dist_share_DATA = COPYING
 
 uninstall-hook:

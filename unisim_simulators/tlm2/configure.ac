@@ -48,6 +48,8 @@ AC_CONFIG_FILES([Makefile])
 
 ###### CHECK FOR HOST ######################
 
+UNISIM_CONFIG_SUBDIR(simulator-tlm2-hcs12xemu, hcs12xemu)
+
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT

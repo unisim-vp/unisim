@@ -13,10 +13,10 @@ INCLUDE_SUBDIRS=
 # INCLUDE_SUBDIRS += cycle_level
 # endif
 
-if COND_clm
-SUBDIRS += clm
-INCLUDE_SUBDIRS += clm
-endif
+#if COND_clm
+#SUBDIRS += clm
+#INCLUDE_SUBDIRS += clm
+#endif
 
 if COND_tlm
 SUBDIRS += tlm

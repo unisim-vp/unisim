@@ -31,6 +31,7 @@
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
+#          Reda   NOUACER  (reda.nouacer@cea.fr)
 #
 
 AC_INIT([UNISIM TLM Simulator Library], [1.0])
@@ -57,7 +58,7 @@ UNISIM_CONFIG_SUBDIR(simulator-tlm-embedded_ppc_g4_board, embedded_ppc_g4_board)
 UNISIM_CONFIG_SUBDIR(simulator-tlm-armemu, armemu, *linux*, *macosx*, *darwin*, *mingw*)
 UNISIM_CONFIG_SUBDIR(simulator-tlm-arm966e_s, arm966e_s)
 UNISIM_CONFIG_SUBDIR(simulator-tlm-arm7tdmi, arm7tdmi)
-UNISIM_CONFIG_SUBDIR(simulator-tlm-hcs12xemu, hcs12xemu)
+#UNISIM_CONFIG_SUBDIR(simulator-tlm-hcs12xemu, hcs12xemu)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

@@ -33,10 +33,10 @@ SUBDIRS += embedded_ppc_g4_board
 INCLUDE_SUBDIRS += embedded_ppc_g4_board
 endif
 
-if COND_hcs12xemu
-SUBDIRS += hcs12xemu
-INCLUDE_SUBDIRS += hcs12x
-endif
+#if COND_hcs12xemu
+#SUBDIRS += hcs12xemu
+#INCLUDE_SUBDIRS += hcs12x
+#endif
 
 dist_share_DATA = COPYING
 
