@@ -44,6 +44,7 @@ retaining the original license:
 //#include <sys/uio.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <cstdio>
 #include <cassert>

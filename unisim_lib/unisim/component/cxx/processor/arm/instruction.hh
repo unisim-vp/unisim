@@ -291,8 +291,6 @@ private:
 	bool is_flushed;
 };
 
-using std::queue;
-
 template<class CONFIG>
 class InstructionFactory {
 public:
@@ -300,7 +298,7 @@ public:
 	static void Destroy(Instruction<CONFIG> *insn);
 	
 private:
-	static queue<Instruction<CONFIG> *> queue;
+	static std::queue<Instruction<CONFIG> *> queue;
 };
 
 } // end of namespace arm

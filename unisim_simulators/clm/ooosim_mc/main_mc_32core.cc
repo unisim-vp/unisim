@@ -60,8 +60,8 @@ int main(int argc, char **argv, char **envp)
   bool kernel_mode = false;
   uint32_t video_refresh_period = 1000;
   int gdb_server_tcp_port = 0;
-  char *device_tree_filename = "device_tree.xml";
-  char *gdb_server_arch_filename = "gdb_powerpc.xml";
+  const char *device_tree_filename = "device_tree.xml";
+  const char *gdb_server_arch_filename = "gdb_powerpc.xml";
   uint64_t maxinst = 0;
   bool check_sig=false;
   

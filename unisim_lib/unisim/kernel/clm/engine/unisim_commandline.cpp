@@ -44,6 +44,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <string.h>
+#include <stdlib.h>
 
 unisim_commandline command_line;
 unisim_commandline_parameter unisim_commandline_parameter_unknown;

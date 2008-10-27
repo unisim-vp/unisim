@@ -41,6 +41,8 @@
 
 #endif // SOCLIB
 
+#include <stdlib.h>
+
 namespace unisim {
 namespace component {
 namespace cxx {

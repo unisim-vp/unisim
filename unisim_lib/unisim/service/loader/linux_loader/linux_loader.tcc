@@ -36,6 +36,7 @@
 #define __UNISIM_SERVICE_LOADER_LINUX_LOADER_LINUX_LOADER_TCC__
 
 #include <iostream>
+#include <stdlib.h>
 
 namespace unisim {
 namespace service {

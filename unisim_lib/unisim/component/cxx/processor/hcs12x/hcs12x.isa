@@ -53,6 +53,7 @@ decl {
 
 impl {
 #include <unisim/component/cxx/processor/hcs12x/xb.hh>
+#include <stdlib.h>
 
 using unisim::component::cxx::processor::hcs12x::XB::XbModes;
  

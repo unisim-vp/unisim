@@ -43,6 +43,7 @@
 #include <map>
 #include <vector>
 #include <sstream>
+#include <string.h>
 
 namespace unisim {
 namespace kernel {

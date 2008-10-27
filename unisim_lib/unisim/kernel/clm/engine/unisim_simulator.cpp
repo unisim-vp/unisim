@@ -43,6 +43,7 @@
 #include <csignal>
 #include <iostream>
 #include <fstream>
+#include <limits.h>
 #include "unisim.h"
 #include "unisim_commandline.h"
 

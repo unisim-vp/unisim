@@ -36,6 +36,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/register.hh>
 #include <stdio.h>
+#include <stdlib.h>
 
 namespace unisim {
 namespace service {
@@ -312,7 +313,7 @@ DeviceNode *DeviceTree::CreateDeviceNode(DeviceNode *reloc_parent, const unisim:
 
 		if(!reloc_parent)
 		{
-			char *name = "/";
+			const char *name = "/";
 			reloc_node->full_name = Host2BigEndian(Malloc(strlen(name) + 1));
 			strcpy((char *) Relocate(BigEndian2Host(reloc_node->full_name)), name);
 		}

@@ -34,6 +34,7 @@
  
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include <stdlib.h>
+#include <string.h>
 
 using std::cerr;
 using std::endl;

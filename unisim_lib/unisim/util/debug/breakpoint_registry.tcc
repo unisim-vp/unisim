@@ -37,6 +37,7 @@
 #define __UNISIM_UTIL_DEBUG_BREAKPOINT_REGISTRY_TCC__
 
 #include <iostream>
+#include <string.h>
 
 namespace unisim {
 namespace util {

@@ -85,6 +85,7 @@ Generator::iss( Product_t& _product ) const {
   
   _product.code( "#include <vector>\n" );
   _product.code( "#include <inttypes.h>\n" );
+  _product.code( "#include <string.h>\n" );
   
 //   _product.code( "#ifndef GCC_VERSION\n" );
 //   _product.code( "#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)\n" );

@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <inttypes.h>
+#include <string.h>
 #include <iosfwd>
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
 struct CodeType {
@@ -99,7 +100,7 @@ namespace unisim { namespace component { namespace cxx { namespace processor { n
 
 } } } } } }  // end namespaces
 
-#line 103 "xb.hh"
+#line 104 "xb.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x { namespace XB {
 class Operation
 {
@@ -112,67 +113,67 @@ public:
 	virtual
 #line 131 "xb.isa"
 	void
-#line 116 "xb.hh"
+#line 117 "xb.hh"
 	post_execute(
 #line 131 "xb.isa"
 	ostream&
-#line 120 "xb.hh"
+#line 121 "xb.hh"
 #line 131 "xb.isa"
 	sink
-#line 123 "xb.hh"
+#line 124 "xb.hh"
 	);
 	virtual
 #line 95 "xb.isa"
 	void
-#line 128 "xb.hh"
+#line 129 "xb.hh"
 	pre_execute(
 #line 95 "xb.isa"
 	ostream&
-#line 132 "xb.hh"
+#line 133 "xb.hh"
 #line 95 "xb.isa"
 	sink
-#line 135 "xb.hh"
+#line 136 "xb.hh"
 	);
 	virtual
 #line 92 "xb.isa"
 	void
-#line 140 "xb.hh"
+#line 141 "xb.hh"
 	getRegsLabel(
 #line 92 "xb.isa"
 	vector<string>
-#line 144 "xb.hh"
+#line 145 "xb.hh"
 #line 92 "xb.isa"
 	&vect
-#line 147 "xb.hh"
+#line 148 "xb.hh"
 	);
 	virtual
 #line 90 "xb.isa"
 	uint16_t
-#line 152 "xb.hh"
+#line 153 "xb.hh"
 	getEAddr(
 #line 90 "xb.isa"
 	CPU *
-#line 156 "xb.hh"
+#line 157 "xb.hh"
 #line 90 "xb.isa"
 	cpu
-#line 159 "xb.hh"
+#line 160 "xb.hh"
 	);
 	virtual
 #line 86 "xb.isa"
 	void
-#line 164 "xb.hh"
+#line 165 "xb.hh"
 	disasm(
 #line 86 "xb.isa"
 	ostream&
-#line 168 "xb.hh"
+#line 169 "xb.hh"
 #line 86 "xb.isa"
 	sink
-#line 171 "xb.hh"
+#line 172 "xb.hh"
 	);
 	virtual
 #line 81 "xb.isa"
 	uint8_t
-#line 176 "xb.hh"
+#line 177 "xb.hh"
 	getXbMode( );
 protected:
 	CodeType encoding;

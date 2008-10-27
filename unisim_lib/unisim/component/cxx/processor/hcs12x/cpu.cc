@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/hcs12x.hh>
 #include <iostream>
+#include <stdlib.h>
 #include "unisim/util/debug/simple_register.hh"
 
 #define LOCATION Function << __FUNCTION__ << File <<  __FILE__ << Line << __LINE__

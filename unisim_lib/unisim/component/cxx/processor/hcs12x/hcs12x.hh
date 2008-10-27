@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <inttypes.h>
+#include <string.h>
 #include <iosfwd>
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x {
 struct CodeType {
@@ -94,7 +95,7 @@ private:
 #include <unisim/component/cxx/processor/hcs12x/concatenated_register.hh>
 #include <iostream>
 #include <iosfwd>
-#line 98 "hcs12x.hh"
+#line 99 "hcs12x.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x {
 class Operation
 {
@@ -105,57 +106,57 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 82 "hcs12x.isa"
+#line 83 "hcs12x.isa"
 	uint8_t
-#line 111 "hcs12x.hh"
+#line 112 "hcs12x.hh"
 	getCycles( );
 	virtual
-#line 77 "hcs12x.isa"
+#line 78 "hcs12x.isa"
 	void
-#line 116 "hcs12x.hh"
+#line 117 "hcs12x.hh"
 	post_execute(
-#line 77 "hcs12x.isa"
+#line 78 "hcs12x.isa"
 	ostream&
-#line 120 "hcs12x.hh"
-#line 77 "hcs12x.isa"
+#line 121 "hcs12x.hh"
+#line 78 "hcs12x.isa"
 	sink
-#line 123 "hcs12x.hh"
+#line 124 "hcs12x.hh"
 	);
 	virtual
-#line 73 "hcs12x.isa"
+#line 74 "hcs12x.isa"
 	void
-#line 128 "hcs12x.hh"
+#line 129 "hcs12x.hh"
 	pre_execute(
-#line 73 "hcs12x.isa"
+#line 74 "hcs12x.isa"
 	ostream&
-#line 132 "hcs12x.hh"
-#line 73 "hcs12x.isa"
+#line 133 "hcs12x.hh"
+#line 74 "hcs12x.isa"
 	sink
-#line 135 "hcs12x.hh"
+#line 136 "hcs12x.hh"
 	);
 	virtual
-#line 67 "hcs12x.isa"
+#line 68 "hcs12x.isa"
 	string
-#line 140 "hcs12x.hh"
+#line 141 "hcs12x.hh"
 	disasm(
-#line 67 "hcs12x.isa"
+#line 68 "hcs12x.isa"
 	ostream&
-#line 144 "hcs12x.hh"
-#line 67 "hcs12x.isa"
+#line 145 "hcs12x.hh"
+#line 68 "hcs12x.isa"
 	sink
-#line 147 "hcs12x.hh"
+#line 148 "hcs12x.hh"
 	);
 	virtual
-#line 61 "hcs12x.isa"
+#line 62 "hcs12x.isa"
 	void
-#line 152 "hcs12x.hh"
+#line 153 "hcs12x.hh"
 	execute(
-#line 61 "hcs12x.isa"
+#line 62 "hcs12x.isa"
 	CPU *
-#line 156 "hcs12x.hh"
-#line 61 "hcs12x.isa"
+#line 157 "hcs12x.hh"
+#line 62 "hcs12x.isa"
 	cpu
-#line 159 "hcs12x.hh"
+#line 160 "hcs12x.hh"
 	);
 protected:
 	CodeType encoding;

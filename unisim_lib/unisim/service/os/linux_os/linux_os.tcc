@@ -49,6 +49,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <stdlib.h>
 
 #ifdef WIN32
 #include <process.h>

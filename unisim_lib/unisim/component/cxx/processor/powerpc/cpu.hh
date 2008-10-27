@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 
+#include <stdlib.h>
 #include <unisim/component/cxx/processor/powerpc/powerpc_types.hh>
 #include <unisim/component/cxx/processor/powerpc/fpu.hh>
 #include <unisim/component/cxx/cache/cache.hh>

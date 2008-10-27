@@ -199,7 +199,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
   /**
    * \brief Creates a new OooSimCpu
    */
-  OooSimCpu(char *name, Object *parent=0) : module(name)
+  OooSimCpu(const char *name, Object *parent=0) : module(name)
 					,Object(name, parent)
     //			  ,MI_Client(name, this)
     //			  ,MI_Service(name, this)
