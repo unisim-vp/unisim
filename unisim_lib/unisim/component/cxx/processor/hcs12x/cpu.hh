@@ -210,14 +210,14 @@ private:
 
 
 class CPU : public Decoder,
-	public Client<DebugControl<physical_address_t> >,
-	public Client<MemoryAccessReporting<physical_address_t> >,
+	public Client<DebugControl<service_address_t> >,
+	public Client<MemoryAccessReporting<service_address_t> >,
 	public Service<MemoryAccessReportingControl>,
-	public Service<Disassembly<physical_address_t> >,
+	public Service<Disassembly<service_address_t> >,
     public Service<Registers>,
-	public Service<Memory<physical_address_t> >,
-	public Client<Memory<physical_address_t> >,
-	public Client<SymbolTableLookup<physical_address_t> >,
+	public Service<Memory<service_address_t> >,
+	public Client<Memory<service_address_t> >,
+	public Client<SymbolTableLookup<service_address_t> >,
 	public Client<Logger> 
 {
 public:
@@ -239,15 +239,15 @@ public:
 	//=                  public service imports/exports                   =
 	//=====================================================================
 	
-	ServiceExport<Disassembly<physical_address_t> > disasm_export;
+	ServiceExport<Disassembly<service_address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
-	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<DebugControl<physical_address_t> > debug_control_import;
-	ServiceImport<MemoryAccessReporting<physical_address_t> > memory_access_reporting_import;
-//	ServiceImport<SymbolTableLookup<physical_address_t> > symbol_table_lookup_import;
-	ServiceImport<Memory<physical_address_t> > memory_import;
+	ServiceImport<DebugControl<service_address_t> > debug_control_import;
+	ServiceImport<MemoryAccessReporting<service_address_t> > memory_access_reporting_import;
+//	ServiceImport<SymbolTableLookup<service_address_t> > symbol_table_lookup_import;
+	ServiceImport<Memory<service_address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 	
 	
@@ -429,8 +429,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             bus interface methods                              =
@@ -462,7 +462,7 @@ public:
 	 * @param next_addr The address following the requested instruction.
 	 * @return The disassembling of the requested instruction address.
 	 */
-    virtual string Disasm(physical_address_t addr, physical_address_t &next_addr);
+    virtual string Disasm(service_address_t addr, service_address_t &next_addr);
 
 	//=====================================================================
 	//=                   Debugging methods                               =

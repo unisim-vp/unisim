@@ -69,14 +69,14 @@ template void EBLB::exchange<uint16_t>(uint8_t rrSrc, uint8_t rrDst);
 
 CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
-	Client<DebugControl<physical_address_t> >(name, parent),
-	Client<MemoryAccessReporting<physical_address_t> >(name, parent),
+	Client<DebugControl<service_address_t> >(name, parent),
+	Client<MemoryAccessReporting<service_address_t> >(name, parent),
 	Service<MemoryAccessReportingControl>(name, parent),
-	Service<Disassembly<physical_address_t> >(name, parent),
+	Service<Disassembly<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
-	Service<Memory<physical_address_t> >(name, parent),
-	Client<Memory<physical_address_t> >(name, parent),
-	Client<SymbolTableLookup<physical_address_t> >(name, parent),
+	Service<Memory<service_address_t> >(name, parent),
+	Client<Memory<service_address_t> >(name, parent),
+	Client<SymbolTableLookup<service_address_t> >(name, parent),
 	Client<Logger>(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
@@ -193,7 +193,7 @@ uint8_t CPU::Step()
 			<< Endl << EndDebugInfo;
 	
 	if(debug_control_import) {
-		DebugControl<physical_address_t>::DebugCommand dbg_cmd;
+		DebugControl<service_address_t>::DebugCommand dbg_cmd;
 
 		do {
 			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
@@ -203,7 +203,7 @@ uint8_t CPU::Step()
 					<< Endl << EndDebugInfo;
 			dbg_cmd = debug_control_import->FetchDebugCommand(physical_pc);
 	
-			if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
+			if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Received debug DBG_STEP command (PC = 0x"
@@ -211,7 +211,7 @@ uint8_t CPU::Step()
 						<< Endl << EndDebugInfo;
 				break;
 			}
-			if(dbg_cmd == DebugControl<physical_address_t>::DBG_SYNC) {
+			if(dbg_cmd == DebugControl<service_address_t>::DBG_SYNC) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Received debug DBG_SYNC command (PC = 0x"
@@ -221,7 +221,7 @@ uint8_t CPU::Step()
 				continue;
 			}
 
-			if(dbg_cmd == DebugControl<physical_address_t>::DBG_KILL) {
+			if(dbg_cmd == DebugControl<service_address_t>::DBG_KILL) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Received debug DBG_KILL command (PC = 0x"
@@ -229,7 +229,7 @@ uint8_t CPU::Step()
 						<< Endl << EndDebugInfo;
 				Stop(0);
 			}
-			if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
+			if(dbg_cmd == DebugControl<service_address_t>::DBG_RESET) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Received debug DBG_RESET command (PC = 0x"
@@ -370,7 +370,7 @@ uint8_t* CPU::queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte)
 	
 void CPU::queueFill(physical_address_t addr, int position, uint8_t nByte) 
 {
-	uint8_t* buff = (uint8_t*) malloc(nByte);
+	uint8_t buff[QUEUE_SIZE];
 	
 	BusRead(addr, buff, nByte);
 	
@@ -379,8 +379,7 @@ void CPU::queueFill(physical_address_t addr, int position, uint8_t nByte)
 		queueBuffer[position] = buff[i];
 		position = (position + 1) % QUEUE_SIZE;
 	}
-	
-	free(buff); buff = NULL;
+
 }
 
 void CPU::queueFlush(uint8_t nByte)
@@ -894,7 +893,7 @@ void CPU::RegistersInfo() {
 //=             memory interface methods                              =
 //=====================================================================
 
-bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)
+bool CPU::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 {
 	if (memory_import) {
 		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
@@ -903,7 +902,7 @@ bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)
 	return false;
 }
 
-bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size)
+bool CPU::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 {
 	if (memory_import) {
 		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
@@ -943,10 +942,11 @@ Register* CPU::GetRegister(const char *name)
  * @param next_addr The address following the requested instruction.
  * @return The disassembling of the requested instruction address.
  */
-string CPU::Disasm(physical_address_t addr, physical_address_t &next_addr)
+string CPU::Disasm(service_address_t service_addr, service_address_t &next_addr)
 {
 	Operation *op = NULL;
 
+	physical_address_t addr = service_addr & 0xFFFFFFFF;
 
 	uint8_t 	buffer[CodeType::maxsize];
 
