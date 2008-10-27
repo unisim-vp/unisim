@@ -231,8 +231,6 @@ Download libxml2-2.6.31 libxml2-2.6.31.tar.gz ftp://xmlsoft.org/libxml2/libxml2-
 Configure libxml2-2.6.31 --host=i586-mingw32msvc --without-python
 Compile libxml2-2.6.31
 Install libxml2-2.6.31
-mv ${INSTALL_DIR}/include/libxml2/libxml ${INSTALL_DIR}/include
-rm -rf ${INSTALL_DIR}/include/libxml2
 
 # boost
 Download boost_1_34_1 boost_1_34_1.tar.bz2 http://downloads.sourceforge.net/boost/boost_1_34_1.tar.bz2

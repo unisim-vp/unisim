@@ -124,10 +124,7 @@ $(INSTALL_DIR)/libxml2: $(SOURCE_DIR)/libxml2-2.6.31
 	cd $(SOURCE_DIR)/libxml2-2.6.31 && \
     ./configure --host=$(HOST) --prefix=$(INSTALL_DIR)/libxml2 --without-python && \
     make -j $(NUM_PROCESSORS) && \
-    make install && \
-    cd $(INSTALL_DIR)/libxml2/include && \
-    mv libxml2/libxml . && \
-    rm -rf libxml2
+    make install
 
 $(ARCHIVE_DIR)/libxml2-2.6.31.tar.gz:
 	cd $(ARCHIVE_DIR) && \
