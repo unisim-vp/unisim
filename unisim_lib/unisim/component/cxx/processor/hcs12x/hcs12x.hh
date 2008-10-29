@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <inttypes.h>
-#include <string.h>
+#include <cstring>
 #include <iosfwd>
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x {
 struct CodeType {
