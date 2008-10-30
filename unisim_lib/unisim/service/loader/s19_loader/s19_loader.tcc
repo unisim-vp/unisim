@@ -335,7 +335,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 				entry_point = s19_addr;
 			}
 			
-			if (s19_addr == 0xFFFE) { // 0xFFFE is the Reset Vector Address for the CPU12
+			if (s19_addr == CPU12_RESET_ADDR) { // 0xFFFE is the Reset Vector Address for the CPU12
 				entry_point = (uint16_t)(sdata[0] << 8) + sdata[1];
 			}
 			

@@ -74,7 +74,8 @@ using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
-#define S_RECORD_SIZE	515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
+#define S_RECORD_SIZE		515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
+#define CPU12_RESET_ADDR	0xFFFE 	//is the Reset Vector Address for the CPU12
 
 template <class MEMORY_ADDR>	
 class S19_Loader :
