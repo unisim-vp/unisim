@@ -200,6 +200,7 @@ private:
 	void LSC_writev();
 	void LSC_mmap();
 	void LSC_mmap2();
+	void LSC_stat64(); 
 	void LSC_fstat64(); 
 	void LSC_getuid32();
 	void LSC_getgid32();

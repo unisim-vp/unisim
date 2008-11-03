@@ -281,6 +281,7 @@ ARMSetup() {
 	SetSyscallId(string("rt_sigprocmask"), 175);
 	SetSyscallId(string("ugetrlimit"), 191);
 	SetSyscallId(string("mmap2"), 192);
+	SetSyscallId(string("stat64"), 195);
 	SetSyscallId(string("fstat64"), 197);
 	SetSyscallId(string("getuid32"), 199);
 	SetSyscallId(string("getgid32"), 200);
@@ -404,6 +405,7 @@ PPCSetup() {
     SetSyscallId(string("rt_sigprocmask"), 174);
     SetSyscallId(string("ugetrlimit"), 190);
     SetSyscallId(string("mmap2"), 192);
+    SetSyscallId(string("fstat64"), 195);
     SetSyscallId(string("fstat64"), 197);
     SetSyscallId(string("fcntl64"), 204);
     SetSyscallId(string("flistxattr"), 217);
@@ -1593,6 +1595,38 @@ LSC_mmap2() {
 				<< Endl << EndDebugInfo;
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 	}
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_stat64() { 
+	int ret;
+	ADDRESS_TYPE buf_address;
+	int fd;
+	struct stat64 *buf;
+
+	fd = GetSystemCallParam(0);
+	buf_address = GetSystemCallParam(1);
+	if(system == "arm")
+	{
+		struct arm_stat64_t target_stat;
+		ret = Stat64(fd, &target_stat);
+		WriteMem(buf_address, &target_stat, sizeof(target_stat));
+	}
+	else if(system == "powerpc")
+	{
+		struct powerpc_stat64_t target_stat;
+		ret = Stat64(fd, &target_stat);
+		WriteMem(buf_address, &target_stat, sizeof(target_stat));
+	}
+	else ret = -1;
+	if(verbose && logger_import)     
+		(*logger_import) << DebugInfo << LOCATION
+			<< "fd = " << fd << ", buf_address = 0x" << Hex << buf_address << Dec 
+			<< ", ret = 0x" << Hex << ret << Dec 
+			<< Endl << EndDebugInfo;
+	SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
