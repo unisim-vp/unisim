@@ -300,54 +300,66 @@ public:
 	//=====================================================================
 	//=                    Interface with outside                         =
 	//=====================================================================
-
-	inline bool HasHardReset() const { return hard_reset; }
-	inline bool HasSoftReset() const { return soft_reset; }
-	inline bool HasNonMaskableXIRQInterrupt() const { return nonMaskableXIRQ_interrupt; }
-	inline bool HasMaskableInterrupt() const { return maskable_interrupt; }
 	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
+
+	inline bool HasMaskableIbitInterrup() const { return maskableIbit_interrupt; }
+	inline bool HasMaskableXIRQInterrupt() const { return maskableXIRQ_interrupt; }
+	inline bool HasNonMaskableSWIInterrupt() const { return nonMascableSWI_interrupt; }
+	inline bool HasTrapInterrupt() const { return trap_interrupt; }
+	inline bool HasReset() const { return reset; }
+	inline bool HasSysCallInterrupt() const { return syscall_interrupt; }
+	inline bool HasSpuriousInterrupt() const { return spurious_interrupt; }
 
 	//=====================================================================
 	//=                    Exception handling methods                     =
 	//=====================================================================
 
-	// Hardware and Software reset (including COP, clock monitor, and pin)
-	void HandleException(const ResetException& exc);
+	// Maskable (I bit) interrupt
+	void HandleException(const MaskableIbitInterrupt& exc);
+
+	// Non-maskable (X bit) interrupts
+	void HandleException(const MaskableXIRQInterrupt& exc);
+
+	// A software interrupt instruction (SWI) or BDM vector request 
+	void HandleException(const NonMaskableSWIInterrupt& exc);
 
 	// Unimplemented opcode trap
 	void HandleException(const TrapException& exc);
 
-	// A software interrupt instruction (SWI) or BDM vector request 
-	void HandleException(const SoftwareInterrupt& exc);
+	// Hardware and Software reset (including COP, clock monitor, and pin)
+	void HandleException(const ResetException& exc);
 
 	// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
 	void HandleException(const SysCallInterrupt& exc);
 
-	// Non-maskable (X bit) interrupts
-	void HandleException(const NonMaskableXIRQInterrupt& exc);
-
-	// Maskable (I bit) interrupt
-	void HandleException(const MaskableInterrupt& exc);
+	// A spurious interrupt
+	void HandleException(const SpuriousInterrupt& exc);
 
 	//=====================================================================
 	//=               Hardware check/acknowledgement methods              =
 	//=====================================================================
 
-	void AckHardReset();
-	void AckSoftReset();
-	void AckNonMaskableAccessErrorInterrupt();
-	void AckMaskableInterrupt();
 	void AckAsynchronousInterrupt();
+	void AckIbitInterrupt();
+	void AckXIRQInterrupt();
+	void AckSWIInterrupt();
+	void AckTrapInterrupt();
+	void AckReset();
+	void AckSysInterrupt();
+	void AckSpuriousInterrupt();
 
 	//=====================================================================
 	//=                    Hardware interrupt request                     =
 	//=====================================================================
 	
-	void ReqHardReset();
-	void ReqSoftReset();
-	void ReqNonMaskableAccessErrorInterrupt();
-	void ReqMaskableInterrupt();
 	void ReqAsynchronousInterrupt();
+	void ReqIbitInterrupt();
+	void ReqXIRQInterrupt();
+	void ReqSWIInterrupt();
+	void ReqTrapInterrupt();
+	void ReqReset();
+	void ReqSysInterrupt();
+	void ReqSpuriousInterrupt();
 
 	//======================================================================
 	//=                  Registers Acces Routines                          =
@@ -520,13 +532,16 @@ private:
 	//=====================================================================
 	//=                   68HCS12X interrupt signals                      =
 	//=====================================================================
-	
-	bool soft_reset;						//!< Soft reset signal
-	bool hard_reset;						//!< Hard reset signal
-	bool nonMaskableXIRQ_interrupt;			//!< Non maskable access error Interrupt signal
-	bool maskable_interrupt;				//!< Maskable interrupt signal 
-	
-	bool asynchronous_interrupt;          //!< summary of all hardware interrupt signals
+
+	bool asynchronous_interrupt;
+	bool maskableIbit_interrupt;	// I-Bit maskable interrupts => IVBR + 0x0012-0x00F2 (113 interrupts)
+	bool maskableXIRQ_interrupt;	// X-Bit (XIRQ) maskable interrupt => IVBR + 0x00F4 
+	bool nonMascableSWI_interrupt;	// (SWI) => IVBR + 0x00F6
+									// non maskable software interrupt request or background debug mode vector request 
+	bool trap_interrupt;			// non maskable unimplemented opcode => IVBR + 0x00F8
+	bool reset;						// Hardware and Software interrupt =>  0xFFFA-0xFFFE
+	bool syscall_interrupt;			// SYS call interrupt => 
+	bool spurious_interrupt;		// Spurious interrupt => IVBR + 0x0010 (default interrupt)
 
 	// Registers map
 	map<string, Register *> registers_registry;       

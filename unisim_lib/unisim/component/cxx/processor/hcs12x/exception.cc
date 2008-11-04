@@ -63,11 +63,11 @@ const char * TrapException::what () const throw ()
 	return "Unimplemented opcode trap";
 }
 
-SoftwareInterrupt::SoftwareInterrupt()
+NonMaskableSWIInterrupt::NonMaskableSWIInterrupt()
 {
 }
 
-const char * SoftwareInterrupt::what () const throw ()
+const char * NonMaskableSWIInterrupt::what () const throw ()
 {
 	return "A software interrupt instruction (SWI) or BDM vector request";
 }
@@ -81,22 +81,31 @@ const char * SysCallInterrupt::what () const throw ()
 	return "A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)";
 }
 
-NonMaskableXIRQInterrupt::NonMaskableXIRQInterrupt()
+MaskableXIRQInterrupt::MaskableXIRQInterrupt()
 {
 }
 
-const char * NonMaskableXIRQInterrupt::what () const throw ()
+const char * MaskableXIRQInterrupt::what () const throw ()
 {
-	return "Non-maskable (X bit) interrupts";
+	return "Maskable XIRQ (X bit) interrupts";
 }
 
-MaskableInterrupt::MaskableInterrupt()
+MaskableIbitInterrupt::MaskableIbitInterrupt()
 {
 }
 
-const char * MaskableInterrupt::what () const throw ()
+const char * MaskableIbitInterrupt::what () const throw ()
 {
 	return "Maskable (I bit) interrupt";
+}
+
+SpuriousInterrupt::SpuriousInterrupt()
+{
+}
+
+const char * SpuriousInterrupt::what () const throw ()
+{
+	return "Spurious interrupt";
 }
 
 } // end of namespace hcs12x

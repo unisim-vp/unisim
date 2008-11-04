@@ -142,12 +142,15 @@ void CPU::Reset()
 	cpu_cycle = 0;
 	instruction_counter = 0;
 
-	soft_reset = false;
-	hard_reset = false;
-	nonMaskableXIRQ_interrupt = false;
-	maskable_interrupt = false;
-	
 	asynchronous_interrupt = false;
+	maskableIbit_interrupt = false;
+	maskableXIRQ_interrupt = false; 
+	nonMascableSWI_interrupt = false;
+	trap_interrupt = false;
+	reset = false;
+	syscall_interrupt = false; 
+	spurious_interrupt = false;
+
 }
 
 //=====================================================================
@@ -318,16 +321,18 @@ uint8_t CPU::Step()
 
 		if(HasAsynchronousInterrupt())
 		{
-			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw ResetException();
-			if(CONFIG::HAS_SOFT_RESET && HasSoftReset()) throw ResetException();
-			if(CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
-			if(CONFIG::HAS_MASKABLE_INTERRUPT && HasMaskableInterrupt()) throw MaskableInterrupt();
-			
+			if (CONFIG::HAS_RESET && HasReset()) throw ResetException();
+			if (CONFIG::HAS_MASKABLE_XIRQ_INTERRUPT && HasMaskableXIRQInterrupt()) throw MaskableXIRQInterrupt();
+			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
 		}
 	}
-	catch(ResetException& exc) { HandleException(exc); }
-	catch(NonMaskableXIRQInterrupt& exc) { HandleException(exc); }
-	catch(MaskableInterrupt& exc) { HandleException(exc); }
+	catch (ResetException& exc) { HandleException(exc); }
+	catch (MaskableXIRQInterrupt& exc) { HandleException(exc); }
+	catch (MaskableIbitInterrupt& exc) { HandleException(exc); }
+	catch (NonMaskableSWIInterrupt& exc) { HandleException(exc); }
+	catch (TrapException& exc) { HandleException(exc); }
+	catch (SysCallInterrupt& exc) { HandleException(exc); }
+	catch (SpuriousInterrupt& exc) { HandleException(exc); }
 	catch(Exception& e)
 	{
 		if(logger_import)
@@ -455,20 +460,19 @@ void CPU::memWrite16(physical_address_t addr, uint16_t val) {
 //=                    Exception handling methods                     =
 //=====================================================================
 
-void CPU::ReqAsynchronousInterrupt()
-{
-	asynchronous_interrupt = true;
-}
-
 void CPU::AckAsynchronousInterrupt()
 {
 	asynchronous_interrupt = false;
-	
-	if(CONFIG::HAS_SOFT_RESET) asynchronous_interrupt |= soft_reset;
-	if(CONFIG::HAS_HARD_RESET) asynchronous_interrupt |= hard_reset;
-	if(CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT) asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
-	if(CONFIG::HAS_MASKABLE_INTERRUPT) asynchronous_interrupt |= maskable_interrupt;
 
+	if (CONFIG::HAS_RESET)  asynchronous_interrupt |= reset;
+	if (CONFIG::HAS_MASKABLE_XIRQ_INTERRUPT)  asynchronous_interrupt |= maskableXIRQ_interrupt;
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT) asynchronous_interrupt |= maskableIbit_interrupt;
+	
+}
+
+void CPU::ReqAsynchronousInterrupt()
+{
+	asynchronous_interrupt = true;
 }
 
 // Hardware and Software reset
@@ -477,28 +481,16 @@ void CPU::HandleException(const ResetException& exc)
 	// TODO:
 }
 
-void CPU::ReqHardReset()
+void CPU::AckReset()
 {
-	hard_reset = true;
-	ReqAsynchronousInterrupt();
-}
-
-void CPU::AckHardReset()
-{
-	hard_reset = false;
+	reset = false;
 	AckAsynchronousInterrupt();
 }
 
-void CPU::ReqSoftReset()
+void CPU::ReqReset()
 {
-	soft_reset = true;
+	reset = true;
 	ReqAsynchronousInterrupt();
-}
-
-void CPU::AckSoftReset()
-{
-	soft_reset = false;
-	AckAsynchronousInterrupt();
 }
 
 // Unimplemented opcode trap 
@@ -507,10 +499,30 @@ void CPU::HandleException(const TrapException& exc)
 	// TODO
 }
 
+void CPU::AckTrapInterrupt()
+{
+	trap_interrupt = false;
+}
+
+void CPU::ReqTrapInterrupt()
+{
+	trap_interrupt = true;
+}
+
 // A software interrupt instruction (SWI) or BDM vector request 
-void CPU::HandleException(const SoftwareInterrupt& exc)
+void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 {
 	// TODO
+}
+
+void CPU::AckSWIInterrupt()
+{
+	nonMascableSWI_interrupt = false;
+}
+
+void CPU::ReqSWIInterrupt()
+{
+	nonMascableSWI_interrupt = false;
 }
 
 // A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
@@ -519,40 +531,66 @@ void CPU::HandleException(const SysCallInterrupt& exc)
 	// TODO
 }
 
-// Non-maskable (X bit) interrupts
-void CPU::HandleException(const NonMaskableXIRQInterrupt& exc)
+void CPU::AckSysInterrupt()
+{
+	syscall_interrupt = false; 
+}
+
+void CPU::ReqSysInterrupt()
+{
+	syscall_interrupt = true; 
+}
+
+// Maskable XIRQ (X bit) interrupts
+void CPU::HandleException(const MaskableXIRQInterrupt& exc)
 {
 	// TODO
 }
 
-void CPU::ReqNonMaskableAccessErrorInterrupt()
+void CPU::AckXIRQInterrupt()
 {
-	nonMaskableXIRQ_interrupt = true;
-	// TODO
+	maskableXIRQ_interrupt = false; 
+	AckAsynchronousInterrupt();
 }
 
-void CPU::AckNonMaskableAccessErrorInterrupt()
+void CPU::ReqXIRQInterrupt()
 {
-	nonMaskableXIRQ_interrupt = false;
-	// TODO
+	maskableXIRQ_interrupt = true;
+	ReqAsynchronousInterrupt();
 }
 
 // Maskable (I bit) interrupt
-void CPU::HandleException(const MaskableInterrupt& exc)
+void CPU::HandleException(const MaskableIbitInterrupt& exc)
 {
 	// TODO
 }
 
-void CPU::ReqMaskableInterrupt()
+void CPU::AckIbitInterrupt()
 {
-	maskable_interrupt = true;
+	maskableIbit_interrupt = false;
+	AckAsynchronousInterrupt();
+}
+
+void CPU::ReqIbitInterrupt()
+{
+	maskableIbit_interrupt = true;
+	ReqAsynchronousInterrupt();
+}
+
+// A spurious interrupt
+void CPU::HandleException(const SpuriousInterrupt& exc)
+{
 	// TODO
 }
 
-void CPU::AckMaskableInterrupt()
+void CPU::AckSpuriousInterrupt()
 {
-	maskable_interrupt = false;
-	// TODO
+	spurious_interrupt = false;
+}
+
+void CPU::ReqSpuriousInterrupt()
+{
+	spurious_interrupt = true;
 }
 
 	//======================================================================

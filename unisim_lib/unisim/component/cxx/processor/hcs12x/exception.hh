@@ -69,10 +69,10 @@ public:
 };
 
 // A software interrupt instruction (SWI) or BDM vector request
-class SoftwareInterrupt : public Exception
+class NonMaskableSWIInterrupt : public Exception
 {
 public:
-	SoftwareInterrupt();
+	NonMaskableSWIInterrupt();
 	virtual const char * what () const throw ();	
 };
 
@@ -84,22 +84,29 @@ public:
 	virtual const char * what () const throw ();	
 };
 
-// Non-maskable (X bit) interrupts
-class NonMaskableXIRQInterrupt : public Exception
+// maskable (X bit) interrupts
+class MaskableXIRQInterrupt : public Exception
 {
 public:
-	NonMaskableXIRQInterrupt();
+	MaskableXIRQInterrupt();
 	virtual const char * what () const throw ();	
 };
 
 // Maskable (I bit) interrupt
-class MaskableInterrupt : public Exception
+class MaskableIbitInterrupt : public Exception
 {
 public:
-	MaskableInterrupt();
+	MaskableIbitInterrupt();
 	virtual const char * what () const throw ();	
 };
 
+// Spurious interrupt
+class SpuriousInterrupt : public Exception
+{
+public:
+	SpuriousInterrupt();
+	virtual const char * what () const throw ();	
+};
 
 } // end of namespace hcs12x
 } // end of namespace processor

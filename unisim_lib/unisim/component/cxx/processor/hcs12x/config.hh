@@ -64,17 +64,19 @@ struct CONFIG {
 	/*
 	 * static initialization may rise problems in SMP architectures !!!
 	 */
-	static const bool TIMING_ENABLE				= false;
+	static const bool TIMING_ENABLE					= false;
 
-	static const bool DEBUG_ENABLE				= true;
-	static const bool DEBUG_EXCEPTION_ENABLE	= false;
-	static const bool REGISTERS_INFO			= true;
-	static const bool HAS_HARD_RESET			= false;
-	static const bool HAS_SOFT_RESET			= false;
-	static const bool HAS_SOFTWARE_INTERRUPT	= false;
-	static const bool HAS_SYS_CALL_INTERRUPT	= false;
-	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
-	static const bool HAS_MASKABLE_INTERRUPT	= false;
+	static const bool DEBUG_ENABLE					= true;
+	static const bool DEBUG_EXCEPTION_ENABLE		= false;
+	static const bool REGISTERS_INFO				= true;
+	
+	static const bool HAS_RESET						= false;
+	static const bool HAS_MASKABLE_XIRQ_INTERRUPT	= false;
+	static const bool HAS_MASKABLE_IBIT_INTERRUPT	= false;
+	static const bool HAS_NONMASKABLE_SWI_INTERRUPT	= false;
+	static const bool HAS_TRAP_INTERRUPT			= false;
+	static const bool HAS_SYSCALL_INTERRUPT			= false;
+	static const bool HAS_SPURIOUS_INTERRUPT		= false;
 
 	//=======================================
 	//=   XINT Registers and Reset Values   =
