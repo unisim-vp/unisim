@@ -49,7 +49,7 @@
 #include <unisim/component/clm/pipeline/fetch/branch_target_buffer.hh>
 #include <unisim/component/clm/pipeline/fetch/return_address_stack.hh>
 
-#include <unisim/component/clm/processor/ooosim/cpu_emulator.hh>
+#include <unisim/component/clm/processor/ooosim_mc/cpu_emulator.hh>
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 
 //#include <boost/array.hpp>

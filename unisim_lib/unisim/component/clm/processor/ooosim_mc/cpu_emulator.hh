@@ -49,9 +49,9 @@
 
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>
 #include <unisim/component/cxx/processor/powerpc/config.hh>
-#include <unisim/component/cxx/processor/powerpc/powerpc.tcc>
-#include <unisim/component/cxx/processor/powerpc/cpu.tcc>
-#include <unisim/component/cxx/processor/powerpc/fpu.tcc>
+//#include <unisim/component/cxx/processor/powerpc/powerpc.tcc>
+//#include <unisim/component/cxx/processor/powerpc/cpu.tcc>
+//#include <unisim/component/cxx/processor/powerpc/fpu.tcc>
 
 namespace unisim {
 namespace component {
