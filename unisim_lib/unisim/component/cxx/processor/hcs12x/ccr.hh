@@ -68,8 +68,8 @@ namespace hcs12x {
 #define SETS	0x0080
 #define CLRS	0xFF7F
 
-#define SETIPL	0x0100
-#define CLRIPL	0xFEFF
+#define SETIPL	0x0700
+#define CLRIPL	0xF8FF
 
 /* I think it's better to declare the CCR as uint16_t and then use mask to set/get each bit */
  
@@ -109,7 +109,7 @@ public:
 	void 	clrS();
 
 	uint8_t getIPL();
-	void 	setIPL();
+	void 	setIPL(uint8_t newIPL);
 	void 	clrIPL();
 
 	uint8_t getCCRLow();	

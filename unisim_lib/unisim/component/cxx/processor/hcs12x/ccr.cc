@@ -73,8 +73,9 @@ uint8_t CCR_t::getS() { return (ccrVal & SETS) >> 7;};
 void 	CCR_t::setS() { ccrVal |= SETS;};
 void 	CCR_t::clrS() { ccrVal &= CLRS;};            
 
+// IPL is 3-bits
 uint8_t CCR_t::getIPL() { return (ccrVal & SETIPL) >> 8;};
-void 	CCR_t::setIPL() { ccrVal |= SETIPL;};
+void 	CCR_t::setIPL(uint8_t newIPL) { clrIPL(); ccrVal |= (((uint16_t) newIPL) & 0x00FF) << 8;};
 void 	CCR_t::clrIPL() { ccrVal &= CLRIPL;};            
 
 uint8_t CCR_t::getCCRLow() {
