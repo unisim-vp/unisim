@@ -80,7 +80,7 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace hcs12x {
-	
+
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
@@ -137,7 +137,7 @@ class CPU;
 	/* *******************************************************************
 	 * ********  Used for                                   **************
 	 * ********    Exchange/Transfer EB:  post-byte         **************
-	 * ********    Loop Primitive    LB:  post-byte         ************** 
+	 * ********    Loop Primitive    LB:  post-byte         **************
 	 * ******************************************************************/
 class EBLB {
 public:
@@ -146,7 +146,7 @@ public:
 		public:
 		enum { A=0x0, B=0x1, CCR=0x2, TMPx=0x3, D=0x4, X=0x5, Y=0x6, SP=0x7 };
 	};
-	
+
 	class EBLBRegs {
 		public:
 		enum {A=0x0, B=0x1, CCR=0x20, CCRL=0x21, CCRH=0x22, CCRW=0x23, TMP1=0x30, TMP2=0x31, TMP3=0x32, D=0x4, X=0x5, Y=0x6, SP=0x7};
@@ -154,7 +154,7 @@ public:
 
 	EBLB(CPU *cpu) { this->cpu = cpu; }
 	~EBLB() { cpu = NULL; }
-	 
+
 	static string getRegName(uint8_t num) {
 		switch (num) {
 			case EBLBRegs::A: return "A"; break;
@@ -170,11 +170,11 @@ public:
 			case EBLBRegs::X: return "X"; break;
 			case EBLBRegs::Y: return "Y"; break;
 			case EBLBRegs::SP: return "SP"; break;
-			default: return "?";			
+			default: return "?";
 		}
 	}
-	
-	static uint8_t getRegSize(uint8_t num) { 
+
+	static uint8_t getRegSize(uint8_t num) {
 		switch (num) {
 			case EBLBRegs::A: return 8; break;
 			case EBLBRegs::B: return 8; break;
@@ -189,15 +189,15 @@ public:
 			case EBLBRegs::X: return 16; break;
 			case EBLBRegs::Y: return 16; break;
 			case EBLBRegs::SP: return 16; break;
-			default: return 0;			
+			default: return 0;
 		}
 	}
 
-	/* Legal "rr" value for setter and getter functions 
-	 * 0x00:A; 0x01:B; 
-	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 
+	/* Legal "rr" value for setter and getter functions
+	 * 0x00:A; 0x01:B;
+	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh;
 	 * 0x30:TMP1; 0x31:TMP2; 0x32:TMP3;
-	 * 0x04:D; 0x05:X; 0x06:Y; 0x07:SP  
+	 * 0x04:D; 0x05:X; 0x06:Y; 0x07:SP
 	 */
 	template <class T>	void setter(uint8_t rr, T val); // setter function
 	template <class T>	T getter(uint8_t rr); // getter function
@@ -205,7 +205,7 @@ public:
 
 private:
 	CPU *cpu;
-	
+
 };	/***********   END EBLB  **********/
 
 
@@ -218,27 +218,27 @@ class CPU : public Decoder,
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >,
 	public Client<SymbolTableLookup<service_address_t> >,
-	public Client<Logger> 
+	public Client<Logger>
 {
 public:
 
 	void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
 	uint8_t* queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte);
-	
+
 private:
 	physical_address_t	queueCurrentAddress;
 	uint8_t		queueBuffer[QUEUE_SIZE];
-	
+
 	int		queueFirst, queueNElement;
-	
+
 	void queueFill(physical_address_t addr, int position, uint8_t nByte);
-	
+
 public:
 
 	//=====================================================================
 	//=                  public service imports/exports                   =
 	//=====================================================================
-	
+
 	ServiceExport<Disassembly<service_address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
 	ServiceExport<Memory<service_address_t> > memory_export;
@@ -249,15 +249,15 @@ public:
 //	ServiceImport<SymbolTableLookup<service_address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<service_address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
-	
-	
+
+
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
 	//=====================================================================
 
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
-	
+
 	void setMMC(MMC *_mmc);
 	void setRegisters(HC_Registers *regs);
 	void SetEntryPoint(uint8_t page, address_t cpu_address);
@@ -265,31 +265,31 @@ public:
 	//==========================================
 	//=     ISA - MEMORY ACCESS ROUTINES       =
 	//==========================================
-	
+
 	uint8_t memRead8(physical_address_t addr);
 	void memWrite8(physical_address_t addr,uint8_t val);
 	uint16_t memRead16(physical_address_t addr);
 	void memWrite16(physical_address_t addr,uint16_t val);
-	
+
 	//=====================================================================
 	//=                    execution handling methods                     =
 	//=====================================================================
-	
+
 	void OnBusCycle();
 	// step() Return the number of cpu cycles consumed by the operation
 	uint8_t Step();
 	virtual void Stop(int ret);
 	virtual void Sync();
-	
+
 	virtual void Reset();
-	
+
 	/* TODO:
 	 * Stop All Clocks and puts the device in standby mode.
-	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode. 
+	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
 	 */
 	virtual void Sleep() = 0;
-	
-	/* TODO: 
+
+	/* TODO:
 	 * Enter a wait state for an integer number of bus clock cycle
 	 * Only CPU12 clocks are stopped
 	 * Wait for not masked interrupt
@@ -303,7 +303,8 @@ public:
 	inline bool HasAsynchronousInterrupt() const { return asynchronous_interrupt; }
 
 	inline bool HasMaskableIbitInterrup() const { return maskableIbit_interrupt; }
-	inline bool HasMaskableXIRQInterrupt() const { return maskableXIRQ_interrupt; }
+	inline bool HasNonMaskableXIRQInterrupt() const { return nonMaskableXIRQ_interrupt; }
+	inline bool HasNonMaskableAccessErrorInterrupt() const { return nonMaskableAccessError_interrupt; }
 	inline bool HasNonMaskableSWIInterrupt() const { return nonMascableSWI_interrupt; }
 	inline bool HasTrapInterrupt() const { return trap_interrupt; }
 	inline bool HasReset() const { return reset; }
@@ -318,9 +319,12 @@ public:
 	void HandleException(const MaskableIbitInterrupt& exc);
 
 	// Non-maskable (X bit) interrupts
-	void HandleException(const MaskableXIRQInterrupt& exc);
+	void HandleException(const NonMaskableXIRQInterrupt& exc);
 
-	// A software interrupt instruction (SWI) or BDM vector request 
+	// Non-maskable Access Error interrupts
+	void HandleException(const NonMaskableAccessErrorInterrupt& exc);
+
+	// A software interrupt instruction (SWI) or BDM vector request
 	void HandleException(const NonMaskableSWIInterrupt& exc);
 
 	// Unimplemented opcode trap
@@ -342,6 +346,7 @@ public:
 	void AckAsynchronousInterrupt();
 	void AckIbitInterrupt();
 	void AckXIRQInterrupt();
+	void AckAccessErrorInterrupt();
 	void AckSWIInterrupt();
 	void AckTrapInterrupt();
 	void AckReset();
@@ -351,10 +356,11 @@ public:
 	//=====================================================================
 	//=                    Hardware interrupt request                     =
 	//=====================================================================
-	
+
 	void ReqAsynchronousInterrupt();
 	void ReqIbitInterrupt();
 	void ReqXIRQInterrupt();
+	void ReqAccessErrorInterrupt();
 	void ReqSWIInterrupt();
 	void ReqTrapInterrupt();
 	void ReqReset();
@@ -366,10 +372,10 @@ public:
 	//======================================================================
     void    setRegA(uint8_t val);
     uint8_t getRegA();
-    
+
     void    setRegB(uint8_t val);
     uint8_t getRegB();
-    
+
     void    setRegD(uint16_t val); // regD == regA:regB
     uint16_t getRegD();
 
@@ -413,20 +419,20 @@ public:
 		case 2:
        		return "D";
        	default:
-       		return "unknown"; // rr=11 see accumulator D offset indexed-indirect 	
+       		return "unknown"; // rr=11 see accumulator D offset indexed-indirect
 		}
 	}
 
 	uint16_t xb_getAddrRegValue(uint8_t rr);
-	void xb_setAddrRegValue(uint8_t rr,uint16_t val);	
+	void xb_setAddrRegValue(uint8_t rr,uint16_t val);
 
 	uint16_t xb_getAccRegValue(uint8_t rr);
 	/*************  END  XB  ***************/
-	
+
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
-	
+
 	virtual bool Setup();
 	virtual void OnDisconnect();
 
@@ -449,7 +455,7 @@ public:
 	//=====================================================================
 	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size) = 0;
 	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size) = 0;
-	
+
 	//=====================================================================
 	//=             CPURegistersInterface interface methods               =
 	//=====================================================================
@@ -467,9 +473,9 @@ public:
 	//=====================================================================
 
     /**
-	 * Returns a string with the disassembling of the instruction found 
+	 * Returns a string with the disassembling of the instruction found
 	 *   at address addr.
-	 * 
+	 *
 	 * @param addr The address of the instruction to disassemble.
 	 * @param next_addr The address following the requested instruction.
 	 * @return The disassembling of the requested instruction address.
@@ -483,17 +489,17 @@ public:
     inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 
-	
+
 //protected:
     class MMC	*mmc;
-    class CCR_t *ccr;   
+    class CCR_t *ccr;
 	class EBLB	*eblb;
 
 protected:
 	//=====================================================================
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
 	//=====================================================================
-	
+
 	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
 	uint64_t voltage;        //!< CPU voltage in mV
 	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
@@ -507,7 +513,7 @@ protected:
 	bool verbose_dump_regs_start;
 	bool verbose_dump_regs_end;
 	bool verbose_exception;
-	
+
 		// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;
 	inline bool VerboseStep() GCC_INLINE;
@@ -516,7 +522,7 @@ protected:
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
 
 	inline void RegistersInfo() GCC_INLINE;
-	
+
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
 	/** indicates if the finished instructions require to be reported */
@@ -526,7 +532,7 @@ private:
 	uint8_t		regA, regB;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
-    
+
     HC_Registers	*registers;
 
 	//=====================================================================
@@ -535,16 +541,17 @@ private:
 
 	bool asynchronous_interrupt;
 	bool maskableIbit_interrupt;	// I-Bit maskable interrupts => IVBR + 0x0012-0x00F2 (113 interrupts)
-	bool maskableXIRQ_interrupt;	// X-Bit (XIRQ) maskable interrupt => IVBR + 0x00F4 
+	bool nonMaskableXIRQ_interrupt;	// X-Bit (XIRQ) maskable interrupt => IVBR + 0x00F4
+	bool nonMaskableAccessError_interrupt; // Memory Access Error Interrupt
 	bool nonMascableSWI_interrupt;	// (SWI) => IVBR + 0x00F6
-									// non maskable software interrupt request or background debug mode vector request 
+									// non maskable software interrupt request or background debug mode vector request
 	bool trap_interrupt;			// non maskable unimplemented opcode => IVBR + 0x00F8
 	bool reset;						// Hardware and Software interrupt =>  0xFFFA-0xFFFE
-	bool syscall_interrupt;			// SYS call interrupt => 
+	bool syscall_interrupt;			// SYS call interrupt =>
 	bool spurious_interrupt;		// Spurious interrupt => IVBR + 0x0010 (default interrupt)
 
 	// Registers map
-	map<string, Register *> registers_registry;       
+	map<string, Register *> registers_registry;
 
 	/** the instruction counter */
 	uint64_t instruction_counter;

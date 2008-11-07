@@ -97,25 +97,25 @@ CPU::CPU(const char *name, Object *parent):
 	verbose_dump_regs_end(true),
 	instruction_counter(0),
 	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFFFFFF)
-	
+
 {
 	setRegA(0x00);
-	setRegB(0x00);	
+	setRegB(0x00);
     setRegX(0x0000);
     setRegY(0x0000);
 
 
     ccr = new CCR_t();
-    ccr->setCCR(0x00D0); // S=1 X=1 I=1 
-    
+    ccr->setCCR(0x00D0); // S=1 X=1 I=1
+
     eblb = new EBLB(this);
 
 	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 
 }
 
-CPU::~CPU() 
-{ 
+CPU::~CPU()
+{
 	if (eblb) { delete eblb; eblb = NULL;}
 	if (ccr) { delete ccr; ccr = NULL;}
 }
@@ -125,18 +125,18 @@ void CPU::setRegisters(HC_Registers *regs) { registers = regs; }
 
 void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 {
-	
+
 	setRegPC(cpu_address);
 
 	registers->write(CONFIG::PPAGE_REG_ADDRESS, page);
-  
+
 }
 
 
 void CPU::Reset()
 {
 	mmc->reset();
-	
+
 	//TODO
 	bus_cycle = 0;
 	cpu_cycle = 0;
@@ -144,11 +144,12 @@ void CPU::Reset()
 
 	asynchronous_interrupt = false;
 	maskableIbit_interrupt = false;
-	maskableXIRQ_interrupt = false; 
+	nonMaskableXIRQ_interrupt = false;
+	nonMaskableAccessError_interrupt = false;
 	nonMascableSWI_interrupt = false;
 	trap_interrupt = false;
 	reset = false;
-	syscall_interrupt = false; 
+	syscall_interrupt = false;
 	spurious_interrupt = false;
 
 }
@@ -178,23 +179,23 @@ uint8_t CPU::Step()
 	physical_address_t physical_pc;
 
 	uint8_t 	buffer[MAX_INS_SIZE];
-	 
+
 	Operation 	*op;
 	uint8_t	opCycles = 0;
-	
+
 	current_pc = getRegPC();
 	physical_pc = current_pc;
-	
+
 	physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED, false);
 
 	VerboseDumpRegsStart();
-	
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import) 
+
+	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Starting step at PC = 0x"
 			<< Hex << physical_pc << Dec
 			<< Endl << EndDebugInfo;
-	
+
 	if(debug_control_import) {
 		DebugControl<service_address_t>::DebugCommand dbg_cmd;
 
@@ -205,7 +206,7 @@ uint8_t CPU::Step()
 					<< Hex << physical_pc << Dec << ")"
 					<< Endl << EndDebugInfo;
 			dbg_cmd = debug_control_import->FetchDebugCommand(physical_pc);
-	
+
 			if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
@@ -263,7 +264,7 @@ uint8_t CPU::Step()
 
 	queueFetch(physical_pc, buffer, MAX_INS_SIZE);
 	CodeType 	insn( buffer, MAX_INS_SIZE);
-	
+
 	/* Decode current PC */
 	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 	{
@@ -278,17 +279,17 @@ uint8_t CPU::Step()
 
 	op = this->Decode(current_pc, insn);
 	setRegPC(current_pc+op->GetEncoding().size);
-	
+
 	queueFlush(op->GetEncoding().size);
-		
+
 	/* Execute instruction */
 
 	if(logger_import) {
 		stringstream disasm_str;
 		stringstream ctstr;
-		
+
 		op->disasm(disasm_str);
-		
+
 		ctstr << insn;
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Executing instruction "
@@ -298,21 +299,21 @@ uint8_t CPU::Step()
 			<< Endl << EndDebugInfo;
 	}
 
-	try 
+	try
 	{
 
 		op->execute(this);
-		if (CONFIG::TIMING_ENABLE) 
+		if (CONFIG::TIMING_ENABLE)
 		{
 			opCycles = op->getCycles();
-		} 
-		
+		}
+
 		VerboseDumpRegsEnd();
-		
+
 		instruction_counter++;
 
 		RegistersInfo();
-	
+
 
 		if(requires_finished_instruction_reporting)
 			if(memory_access_reporting_import)
@@ -322,12 +323,13 @@ uint8_t CPU::Step()
 		if(HasAsynchronousInterrupt())
 		{
 			if (CONFIG::HAS_RESET && HasReset()) throw ResetException();
-			if (CONFIG::HAS_MASKABLE_XIRQ_INTERRUPT && HasMaskableXIRQInterrupt()) throw MaskableXIRQInterrupt();
+			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
 			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
 		}
 	}
 	catch (ResetException& exc) { HandleException(exc); }
-	catch (MaskableXIRQInterrupt& exc) { HandleException(exc); }
+	catch (NonMaskableXIRQInterrupt& exc) { HandleException(exc); }
+	catch (NonMaskableAccessErrorInterrupt& exc) { HandleException(exc); }
 	catch (MaskableIbitInterrupt& exc) { HandleException(exc); }
 	catch (NonMaskableSWIInterrupt& exc) { HandleException(exc); }
 	catch (TrapException& exc) { HandleException(exc); }
@@ -339,7 +341,7 @@ uint8_t CPU::Step()
 			(*logger_import) << DebugError << "uncaught processor exception :" << e.what() << Endl << EndDebugError;
 		Stop(1);
 	}
-	
+
 	return opCycles;
 }
 
@@ -349,10 +351,10 @@ uint8_t CPU::Step()
 
 uint8_t* CPU::queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte)
 {
-	
+
 	if (nByte > QUEUE_SIZE) return NULL;
 
-	if (addr != queueCurrentAddress) 
+	if (addr != queueCurrentAddress)
 	{
 		queueFill(addr, 0, QUEUE_SIZE);
 		queueFirst = 0;
@@ -364,22 +366,22 @@ uint8_t* CPU::queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte)
 		queueFill(addr+queueNElement, (queueFirst+queueNElement) % QUEUE_SIZE, QUEUE_SIZE-queueNElement);
 		queueNElement = QUEUE_SIZE;
 	}
-	
-	for (uint8_t i=0; i < nByte; i++) 
+
+	for (uint8_t i=0; i < nByte; i++)
 	{
 		ins[i] = queueBuffer[(queueFirst + i) % QUEUE_SIZE];
 	}
-	
+
 	return ins;
 }
-	
-void CPU::queueFill(physical_address_t addr, int position, uint8_t nByte) 
+
+void CPU::queueFill(physical_address_t addr, int position, uint8_t nByte)
 {
 	uint8_t buff[QUEUE_SIZE];
-	
+
 	BusRead(addr, buff, nByte);
-	
-	for (uint8_t i=0; i<nByte; i++) 
+
+	for (uint8_t i=0; i<nByte; i++)
 	{
 		queueBuffer[position] = buff[i];
 		position = (position + 1) % QUEUE_SIZE;
@@ -401,12 +403,12 @@ void CPU::queueFlush(uint8_t nByte)
 uint8_t CPU::memRead8(physical_address_t addr) {
 
 	uint8_t data;
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
+	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes
 	{
 		data = registers->read(addr);
 	}
 	else
-	{ 
+	{
 		BusRead(addr, &data, 1);
 	}
 	return data;
@@ -415,37 +417,37 @@ uint8_t CPU::memRead8(physical_address_t addr) {
 uint16_t CPU::memRead16(physical_address_t addr) {
 
 	uint16_t data;
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
+	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes
 	{
 		data = (uint16_t) (registers->read(addr) << 8) || registers->read(addr+1);
 	}
 	else
-	{ 
+	{
 		BusRead(addr, &data, 2);
 	}
 
-	data = BigEndian2Host(data); 
+	data = BigEndian2Host(data);
 
 	return data;
 }
 
 void CPU::memWrite8(physical_address_t addr, uint8_t val) {
 
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
+	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes
 	{
 		registers->write(addr, val);
 	}
 	else
 	{
 		BusWrite( addr, &val, 1);
-	} 
+	}
 }
 
 void CPU::memWrite16(physical_address_t addr, uint16_t val) {
 
 	val = Host2BigEndian(val);
 
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes 
+	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes
 	{
 		registers->write(addr, val >> 8);
 		registers->write(addr+1, val);
@@ -465,9 +467,9 @@ void CPU::AckAsynchronousInterrupt()
 	asynchronous_interrupt = false;
 
 	if (CONFIG::HAS_RESET)  asynchronous_interrupt |= reset;
-	if (CONFIG::HAS_MASKABLE_XIRQ_INTERRUPT)  asynchronous_interrupt |= maskableXIRQ_interrupt;
+	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT)  asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
 	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT) asynchronous_interrupt |= maskableIbit_interrupt;
-	
+
 }
 
 void CPU::ReqAsynchronousInterrupt()
@@ -493,7 +495,7 @@ void CPU::ReqReset()
 	ReqAsynchronousInterrupt();
 }
 
-// Unimplemented opcode trap 
+// Unimplemented opcode trap
 void CPU::HandleException(const TrapException& exc)
 {
 	// TODO
@@ -509,7 +511,7 @@ void CPU::ReqTrapInterrupt()
 	trap_interrupt = true;
 }
 
-// A software interrupt instruction (SWI) or BDM vector request 
+// A software interrupt instruction (SWI) or BDM vector request
 void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 {
 	// TODO
@@ -533,29 +535,47 @@ void CPU::HandleException(const SysCallInterrupt& exc)
 
 void CPU::AckSysInterrupt()
 {
-	syscall_interrupt = false; 
+	syscall_interrupt = false;
 }
 
 void CPU::ReqSysInterrupt()
 {
-	syscall_interrupt = true; 
+	syscall_interrupt = true;
 }
 
-// Maskable XIRQ (X bit) interrupts
-void CPU::HandleException(const MaskableXIRQInterrupt& exc)
+// NonMaskable XIRQ (X bit) interrupts
+void CPU::HandleException(const NonMaskableXIRQInterrupt& exc)
 {
 	// TODO
 }
 
 void CPU::AckXIRQInterrupt()
 {
-	maskableXIRQ_interrupt = false; 
+	nonMaskableXIRQ_interrupt = false;
 	AckAsynchronousInterrupt();
 }
 
 void CPU::ReqXIRQInterrupt()
 {
-	maskableXIRQ_interrupt = true;
+	nonMaskableXIRQ_interrupt = true;
+	ReqAsynchronousInterrupt();
+}
+
+// NonMaskable Access Error interrupts
+void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
+{
+	// TODO
+}
+
+void CPU::AckAccessErrorInterrupt()
+{
+	nonMaskableAccessError_interrupt = false;
+	AckAsynchronousInterrupt();
+}
+
+void CPU::ReqAccessErrorInterrupt()
+{
+	nonMaskableAccessError_interrupt = true;
 	ReqAsynchronousInterrupt();
 }
 
@@ -596,7 +616,7 @@ void CPU::ReqSpuriousInterrupt()
 	//======================================================================
 	//=                  Registers Acces Routines                          =
 	//======================================================================
-	
+
 uint16_t CPU::xb_getAddrRegValue(uint8_t rr) {
     switch (rr) {
 	case 0:
@@ -633,41 +653,41 @@ uint16_t CPU::xb_getAccRegValue(uint8_t rr) {
 	case 2:
     	return getRegD(); break;
     default:
-    	return 0; // ! or throw an exception 	
+    	return 0; // ! or throw an exception
 	}
 }
-	
+
 
 void CPU::setRegA(uint8_t val) { regA = val; }
 uint8_t CPU::getRegA() { return regA; }
-    
-void CPU::setRegB(uint8_t val) { regB = val; }    
+
+void CPU::setRegB(uint8_t val) { regB = val; }
 uint8_t CPU::getRegB() { return regB; }
-    
-void CPU::setRegD(uint16_t val) { 
+
+void CPU::setRegD(uint16_t val) {
     // regD == regA:regB
-	
+
 	setRegA((uint8_t) (val >> 8));
 	setRegB((uint8_t) (val & 0x00FF));
 
-}    
-    
-uint16_t CPU::getRegD() { 
+}
+
+uint16_t CPU::getRegD() {
     // regD == regA:regB
 	uint16_t val = (((uint16_t) getRegA()) << 8) | getRegB();
 	return val;
 }
 
-void CPU::setRegX(uint16_t val) { regX = val; }    
+void CPU::setRegX(uint16_t val) { regX = val; }
 uint16_t CPU::getRegX() { return regX; }
 
-void CPU::setRegY(uint16_t val) { regY = val; }    
+void CPU::setRegY(uint16_t val) { regY = val; }
 uint16_t CPU::getRegY() { return regY; }
 
-void CPU::setRegSP(uint16_t val) { regSP = val; }    
+void CPU::setRegSP(uint16_t val) { regSP = val; }
 uint16_t CPU::getRegSP() { return regSP; }
 
-void CPU::setRegPC(uint16_t val) { regPC = val; }    
+void CPU::setRegPC(uint16_t val) { regPC = val; }
 uint16_t CPU::getRegPC() { return regPC; }
 
 void CPU::setRegTMP(uint8_t index, uint16_t val) { regTMP[index] = val; }
@@ -679,11 +699,11 @@ uint16_t CPU::getRegTMP(uint8_t index) { return regTMP[index]; }
 
 template <class T>
 void EBLB::setter(uint8_t rr, T val) // setter function
-	/* Legal "rr" value for setter and getter functions 
-	 * 0x00:A; 0x01:B; 
+	/* Legal "rr" value for setter and getter functions
+	 * 0x00:A; 0x01:B;
 	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
 	 * 0x30:TMP1; 0x31:TMP2; 0x32:TMP3;
-	 * 0x04:D; 0x05:X; 0x06:Y; 0x07:SP  
+	 * 0x04:D; 0x05:X; 0x06:Y; 0x07:SP
 	 */
 {
 	switch (rr) {
@@ -709,7 +729,7 @@ void EBLB::setter(uint8_t rr, T val) // setter function
 			cpu->setRegTMP(0, (uint16_t) val);
 		} break;
 		case EBLBRegs::TMP2: {
-			cpu->setRegTMP(1, (uint16_t) val); 
+			cpu->setRegTMP(1, (uint16_t) val);
 		} break;
 		case EBLBRegs::TMP3: {
 			cpu->setRegTMP(2, (uint16_t) val);
@@ -732,11 +752,11 @@ void EBLB::setter(uint8_t rr, T val) // setter function
 
 template <class T>
 T EBLB::getter(uint8_t rr) // getter function
-	/* Legal "rr" value for setter and getter functions 
-	 * 0x00:A; 0x01:B; 
+	/* Legal "rr" value for setter and getter functions
+	 * 0x00:A; 0x01:B;
 	 * 0x20:CCR; 0x21:CCRlow; 0x22:CCRhigh; 0x23:CCRWord
 	 * 0x30:TMP1; 0x31:TMP2; 0x32:TMP3;
-	 * 0x04:D; 0x05:X; 0x06:Y; 0x07:SP  
+	 * 0x04:D; 0x05:X; 0x06:Y; 0x07:SP
 	 */
 {
 	switch (rr) {
@@ -783,7 +803,7 @@ T EBLB::getter(uint8_t rr) // getter function
 	}
 }
 
-template <class T> 
+template <class T>
 void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
 	T tmp = getter<T>(rrSrc);
 	setter<T>(rrSrc, getter<T>(rrDst));
@@ -825,9 +845,9 @@ bool CPU::Setup()
 				<< "verbose-dump-regs-start = true"
 				<< Endl << EndDebugInfo;
 	}
-	
+
 	/* setting debugging registers */
-	if(verbose_setup && logger_import) 
+	if(verbose_setup && logger_import)
 		(*logger_import) << DebugInfo << LOCATION
 			<< "Initializing debugging registers"
 			<< Endl << EndDebugInfo;
@@ -836,7 +856,7 @@ bool CPU::Setup()
 	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
 	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
 	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
-	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);	
+	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);
 	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
 	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
 	registers_registry["CCR"] = new SimpleRegister<CCR_t>("CCR", ccr);
@@ -845,7 +865,7 @@ bool CPU::Setup()
 		requires_memory_access_reporting = false;
 		requires_finished_instruction_reporting = false;
 	}
-	
+
 
 	return true;
 }
@@ -872,7 +892,7 @@ void CPU::RequiresFinishedInstructionReporting(bool report)
 /* Verbose methods (protected)                          START */
 /**************************************************************/
 
-inline INLINE 
+inline INLINE
 bool CPU::VerboseSetup() {
 	return CONFIG::DEBUG_ENABLE && verbose_setup && logger_import;
 }
@@ -936,7 +956,7 @@ bool CPU::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 	if (memory_import) {
 		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
 	}
-	
+
 	return false;
 }
 
@@ -945,7 +965,7 @@ bool CPU::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 	if (memory_import) {
 		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
 	}
-	
+
 	return false;
 }
 
@@ -963,7 +983,7 @@ Register* CPU::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
 		return registers_registry[string(name)];
-	else 
+	else
 		return NULL;
 
 }
@@ -973,9 +993,9 @@ Register* CPU::GetRegister(const char *name)
 //=====================================================================
 
 /**
- * Returns a string with the disassembling of the instruction found 
+ * Returns a string with the disassembling of the instruction found
  *   at address addr.
- * 
+ *
  * @param addr The address of the instruction to disassemble.
  * @param next_addr The address following the requested instruction.
  * @return The disassembling of the requested instruction address.
@@ -990,7 +1010,7 @@ string CPU::Disasm(service_address_t service_addr, service_address_t &next_addr)
 
 	ReadMemory(addr, buffer, CodeType::maxsize);
 	CodeType 	insn( buffer, CodeType::maxsize);
-	
+
 	op = this->Decode(addr, insn);
 
 	stringstream disasmBuffer;

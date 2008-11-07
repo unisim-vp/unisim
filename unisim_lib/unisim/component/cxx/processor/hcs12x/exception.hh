@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  *          Reda   Nouacer  (reda.nouacer@cea.fr)
  */
- 
+
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_EXCEPTION_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_EXCEPTION_HH__
 
@@ -57,7 +57,7 @@ class ResetException : public Exception
 {
 public:
 	ResetException();
-	virtual const char * what () const throw ();	
+	virtual const char * what () const throw ();
 };
 
 // Unimplemented opcode trap
@@ -65,7 +65,7 @@ class TrapException : public Exception
 {
 public:
 	TrapException();
-	virtual const char * what () const throw ();	
+	virtual const char * what () const throw ();
 };
 
 // A software interrupt instruction (SWI) or BDM vector request
@@ -73,7 +73,7 @@ class NonMaskableSWIInterrupt : public Exception
 {
 public:
 	NonMaskableSWIInterrupt();
-	virtual const char * what () const throw ();	
+	virtual const char * what () const throw ();
 };
 
 // A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
@@ -81,15 +81,23 @@ class SysCallInterrupt : public Exception
 {
 public:
 	SysCallInterrupt();
-	virtual const char * what () const throw ();	
+	virtual const char * what () const throw ();
 };
 
-// maskable (X bit) interrupts
-class MaskableXIRQInterrupt : public Exception
+// Non-maskable access error interrupts
+class NonMaskableAccessErrorInterrupt : public Exception
 {
 public:
-	MaskableXIRQInterrupt();
-	virtual const char * what () const throw ();	
+	NonMaskableAccessErrorInterrupt();
+	virtual const char * what () const throw ();
+};
+
+// non-Maskable (X bit) interrupts
+class NonMaskableXIRQInterrupt : public Exception
+{
+public:
+	NonMaskableXIRQInterrupt();
+	virtual const char * what () const throw ();
 };
 
 // Maskable (I bit) interrupt
@@ -97,7 +105,7 @@ class MaskableIbitInterrupt : public Exception
 {
 public:
 	MaskableIbitInterrupt();
-	virtual const char * what () const throw ();	
+	virtual const char * what () const throw ();
 };
 
 // Spurious interrupt
@@ -105,7 +113,7 @@ class SpuriousInterrupt : public Exception
 {
 public:
 	SpuriousInterrupt();
-	virtual const char * what () const throw ();	
+	virtual const char * what () const throw ();
 };
 
 } // end of namespace hcs12x

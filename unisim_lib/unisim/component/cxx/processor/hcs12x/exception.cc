@@ -81,13 +81,23 @@ const char * SysCallInterrupt::what () const throw ()
 	return "A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)";
 }
 
-MaskableXIRQInterrupt::MaskableXIRQInterrupt()
+NonMaskableXIRQInterrupt::NonMaskableXIRQInterrupt()
 {
 }
 
-const char * MaskableXIRQInterrupt::what () const throw ()
+const char * NonMaskableXIRQInterrupt::what () const throw ()
 {
-	return "Maskable XIRQ (X bit) interrupts";
+	return "NonMaskable XIRQ (X bit) interrupts";
+}
+
+
+NonMaskableAccessErrorInterrupt::NonMaskableAccessErrorInterrupt()
+{
+}
+
+const char * NonMaskableAccessErrorInterrupt::what () const throw ()
+{
+	return "NonMaskable Access Error interrupt";
 }
 
 MaskableIbitInterrupt::MaskableIbitInterrupt()

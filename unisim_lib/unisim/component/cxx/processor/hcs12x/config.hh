@@ -49,7 +49,7 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <inttypes.h>
 
-// ToRemove: Used Tempory for development purposes to force MC9S12XDP512 
+// ToRemove: Used Tempory for development purposes to force MC9S12XDP512
 #define MC9S12XDP512
 // *** end to remove ***
 
@@ -69,9 +69,10 @@ struct CONFIG {
 	static const bool DEBUG_ENABLE					= true;
 	static const bool DEBUG_EXCEPTION_ENABLE		= false;
 	static const bool REGISTERS_INFO				= true;
-	
+
 	static const bool HAS_RESET						= false;
-	static const bool HAS_MASKABLE_XIRQ_INTERRUPT	= false;
+	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;
+	static const bool HAS_NON_MASKABLE_ACCESS_ERROR_INTERRUPT = false;
 	static const bool HAS_MASKABLE_IBIT_INTERRUPT	= false;
 	static const bool HAS_NONMASKABLE_SWI_INTERRUPT	= false;
 	static const bool HAS_TRAP_INTERRUPT			= false;
@@ -83,7 +84,7 @@ struct CONFIG {
 	//=======================================
 
 	static const address_t	IVBR_ADDRESS			= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
-	static const uint8_t	IVBR_RESET_VALUE		= 0xFF;		// IVBR is only one. 
+	static const uint8_t	IVBR_RESET_VALUE		= 0xFF;		// IVBR is only one.
 
 	static const address_t	INT_XGPRIO				= 0x0126;
 	static const uint8_t	INT_XGPRIO_RESET_VALUE	= 0x01;
@@ -113,7 +114,7 @@ struct CONFIG {
 	static const uint8_t	INT_CFDATA6_RESET_VALUE	= 0x01;
 
 	static const address_t	INT_CFDATA7				= 0x012F;
-	static const uint8_t	INT_CFDATA7_RESET_VALUE	= 0x01; 
+	static const uint8_t	INT_CFDATA7_RESET_VALUE	= 0x01;
 
 	//==============================================================================
 	//=   MEMORY MAP (Logical Memories Offsets) and RESET VALUES OF MMC REGISTERS  =
@@ -127,12 +128,12 @@ struct CONFIG {
 	static const uint16_t DIRECT_PAGE_SIZE	= 0x100;
 	static const uint16_t RAM_PAGE_SIZE		= 0x1000;
 	static const uint16_t EEPROM_PAGE_SIZE	= 0x400;
-	static const uint16_t FLASH_PAGE_SIZE	= 0x4000; 
-	
+	static const uint16_t FLASH_PAGE_SIZE	= 0x4000;
+
 	static const address_t RAM_CPU_ADDRESS_BITS		= 0x0FFF;
 	static const address_t EEPROM_CPU_ADDRESS_BITS	= 0x03FF;
 	static const address_t FLASH_CPU_ADDRESS_BITS	= 0x3FFF;
-	
+
 	static const physical_address_t RAM_PHYSICAL_ADDRESS_FIXED_BITS		= 0x00000000;
 	static const physical_address_t EEPROM_PHYSICAL_ADDRESS_FIXED_BITS	= 0x00100000;
 	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS	= 0x00400000;
@@ -158,11 +159,11 @@ struct CONFIG {
 	static const address_t RAMXGU_REG_ADDRESS	= 0x011D;
 	static const address_t RAMSHL_REG_ADDRESS	= 0x011E;
 	static const address_t RAMSHU_REG_ADDRESS	= 0x011F;
-	
-	 
+
+
 #ifdef MC9S12XDP512
 
-	static const uint16_t REGISTERS_SPACE_SIZE	= 0x800;	// MCS12XDP512 has 2k-bytes of io-register space 
+	static const uint16_t REGISTERS_SPACE_SIZE	= 0x800;	// MCS12XDP512 has 2k-bytes of io-register space
 															// mapped at low address of memory
 
 	static const uint8_t GPAGE_LOW			= 0x00;		// low gpage register value
@@ -171,21 +172,21 @@ struct CONFIG {
 	static const uint8_t RPAGE_LOW			= 0xF8;		// low rpage (ram page) register value
 	static const uint8_t RPAGE_HIGH			= 0xFF;		// high rpage register value
 	static const uint8_t EPAGE_LOW			= 0xFC;		// low epage (eeprom page) register value
-	static const uint8_t EPAGE_HIGH			= 0xFF;		// high epage register value 
+	static const uint8_t EPAGE_HIGH			= 0xFF;		// high epage register value
 	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
 	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
 
-	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value 
-	static const uint8_t DIRECT_RESET_PAGE	= 0x00;		// reset direct register value 
+	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value
+	static const uint8_t DIRECT_RESET_PAGE	= 0x00;		// reset direct register value
 
 	static const uint8_t RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
-	static const uint8_t EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value  
-	static const uint8_t FLASH_RESET_PAGE	= 0xFE;		// reset ppage register value 
+	static const uint8_t EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value
+	static const uint8_t FLASH_RESET_PAGE	= 0xFE;		// reset ppage register value
 
 #else // unknown and will cause compilation errors
 
 #endif
-	
+
 
 };
 
