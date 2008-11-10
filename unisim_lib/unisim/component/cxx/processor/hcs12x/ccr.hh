@@ -72,7 +72,7 @@ namespace hcs12x {
 #define CLRIPL	0xF8FF
 
 /* I think it's better to declare the CCR as uint16_t and then use mask to set/get each bit */
- 
+
 class CCR_t
 {
 public:
@@ -83,15 +83,15 @@ public:
 	uint8_t getV();
 	void 	setV();
 	void 	clrV();
-	
+
 	uint8_t getZ();
 	void 	setZ();
 	void 	clrZ();
-	
+
 	uint8_t getN();
 	void 	setN();
 	void 	clrN();
-	
+
 	uint8_t getI();
 	void 	setI();
 	void 	clrI();
@@ -101,7 +101,6 @@ public:
 	void 	clrH();
 
 	uint8_t getX();
-	void 	setX();
 	void 	clrX();
 
 	uint8_t getS();
@@ -112,7 +111,7 @@ public:
 	void 	setIPL(uint8_t newIPL);
 	void 	clrIPL();
 
-	uint8_t getCCRLow();	
+	uint8_t getCCRLow();
 	void setCCRLow(uint8_t val);
 
 	uint8_t getCCRHigh();
@@ -120,12 +119,14 @@ public:
 
 	uint16_t getCCR();
 	void setCCR(uint16_t val);
-	
+
+	void reset() { ccrVal = 0x00D0; /* S=1 X=1 I=1 */ }
+
 private:
 
 	uint16_t ccrVal; // -------ipl SXHI NZVC
 
-}; // end class CCR_t 
+}; // end class CCR_t
 
 } // end of namespace hcs12x
 } // end of namespace processor

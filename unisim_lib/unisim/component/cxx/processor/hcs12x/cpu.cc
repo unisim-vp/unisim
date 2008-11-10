@@ -99,18 +99,16 @@ CPU::CPU(const char *name, Object *parent):
 	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFFFFFF)
 
 {
+/*
 	setRegA(0x00);
 	setRegB(0x00);
     setRegX(0x0000);
     setRegY(0x0000);
-
+*/
 
     ccr = new CCR_t();
-    ccr->setCCR(0x00D0); // S=1 X=1 I=1
 
     eblb = new EBLB(this);
-
-	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 
 }
 
@@ -135,6 +133,9 @@ void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 
 void CPU::Reset()
 {
+	ccr->reset();
+	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
+
 	mmc->reset();
 
 	//TODO
