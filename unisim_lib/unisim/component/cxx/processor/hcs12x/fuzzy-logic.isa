@@ -171,6 +171,15 @@ rev.execute = {
 	 			memX = cpu->memRead8(xVal);
 	 		}
 	 	}
+	 	
+	 	// check asynchronous interruptions
+	 	if (cpu->HasAsynchronousInterrupt())
+		{
+			if (CONFIG::HAS_RESET && cpu->HasReset()) throw ResetException();
+			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && cpu->HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
+			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && cpu->HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
+		}
+	 	
 	 }
 	 
 	 xVal++;  
@@ -248,6 +257,15 @@ revw.execute = {
 	 			memX = cpu->memRead16(xVal);
 	 		}
 	 	}
+	 
+	  	// check asynchronous interruptions
+	 	if (cpu->HasAsynchronousInterrupt())
+		{
+			if (CONFIG::HAS_RESET && cpu->HasReset()) throw ResetException();
+			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && cpu->HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
+			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && cpu->HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
+		}
+	 
 	 }
 	 
 	 xVal++;  
@@ -314,9 +332,28 @@ wav.execute = {
 		 *   Write word @ -2,SP (stack TMP3); SP = SP - 2;
 		 *   Write word @ -2,SP (stack TMP2); SP = SP - 2;
 		 *   Write word @ -2,SP (stack TMP1); SP = SP - 2;
-		 *   Adjust PC to point at 0x3C wavr pseudo-opcode
+		 *   Adjust PC to point at 0x3C wavr pseudo-opcode (The second byte of WAV opcode).
 		 * }
 		 **/
+
+	 	// check asynchronous interruptions
+	 	if (cpu->HasAsynchronousInterrupt())
+		{
+			cpu->setRegSP(cpu->getRegSP()-2);
+			cpu->memWrite16(cpu->getRegSP(), cpu->getRegTMP(2));
+			cpu->setRegSP(cpu->getRegSP()-2);
+			cpu->memWrite16(cpu->getRegSP(), cpu->getRegTMP(1));
+			cpu->setRegSP(cpu->getRegSP()-2);
+			cpu->memWrite16(cpu->getRegSP(), cpu->getRegTMP(0));
+			
+			//   Adjust PC to point at 0x3C wavr pseudo-opcode
+			cpu->setRegPC(cpu->getRegPC()-1); 
+					 
+			if (CONFIG::HAS_RESET && cpu->HasReset()) throw ResetException();
+			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && cpu->HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
+			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && cpu->HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
+		}
+
 
 	 	memY = cpu->memRead8(yVal);
 		memX = cpu->memRead8(xVal);
