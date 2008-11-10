@@ -269,28 +269,7 @@ swi.execute = {
 	 * (SWI Vector) => PC
 	 */
 
-	address_t addr = cpu->getRegSP();
-	
-	addr = addr - 2;
-	cpu->memWrite16(addr, cpu->getRegPC());
-	
-	addr = addr - 2;
-	cpu->memWrite16(addr, cpu->getRegY());
-	
-	addr = addr - 2;
-	cpu->memWrite16(addr, cpu->getRegX());
-	
-	addr = addr - 2;
-	cpu->memWrite8(addr, cpu->getRegB());
-	cpu->memWrite16(addr+1, cpu->getRegA());
-	
-	addr = addr - 2;
-	cpu->memWrite16(addr, cpu->ccr->getCCR());
-	
-	cpu->ccr->setI();
-	cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
-	
-	// TODO: (SWI Vector) => PC
+	throw new NonMaskableSWIInterrupt();
 }
 
 // TRAP: unimplemented opcode trap
@@ -386,28 +365,6 @@ sys.execute = {
 	 * (Trap Vector) => PC
 	 */
 		 
-	address_t addr = cpu->getRegSP();
-		
-	addr = addr - 2;
-	cpu->memWrite16(addr, cpu->getRegPC());
-		
-	addr = addr - 2;
-	cpu->memWrite16(addr, cpu->getRegY());
-		
-	addr = addr - 2;
-	cpu->memWrite16(addr, cpu->getRegX());
+	throw new SysCallInterrupt();
 
-	addr = addr - 2;
-	cpu->memWrite8(addr, cpu->getRegB());
-	cpu->memWrite16(addr+1, cpu->getRegA());
-		
-	addr = addr - 2;
-	cpu->memWrite16(addr, cpu->ccr->getCCR());
-		
-	// 1 => I; 0 => U
-	cpu->ccr->setI();
-	cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
-		
-	// (Sys Vector) => PC
-//	cpu->setRegPC(cpu->memRead16(cpu->get_Sys_Vector()));
 }

@@ -559,6 +559,8 @@ void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 {
 	PrepareInterrupt();
 	// TODO
+	// (SWI Vector) => PC
+	// setRegPC(cpu->memRead16(cpu->get_SWI_Vector()));
 }
 
 void CPU::AckSWIInterrupt()
@@ -576,6 +578,8 @@ void CPU::HandleException(const SysCallInterrupt& exc)
 {
 	PrepareInterrupt();
 	// TODO
+	// (SYS Vector) => PC
+	// setRegPC(cpu->memRead16(cpu->get_SYS_Vector()));
 }
 
 void CPU::AckSysInterrupt()
