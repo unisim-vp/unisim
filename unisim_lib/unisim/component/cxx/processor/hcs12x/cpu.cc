@@ -186,121 +186,120 @@ uint8_t CPU::Step()
 	current_pc = getRegPC();
 	physical_pc = current_pc;
 
-	physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED, false);
-
-	VerboseDumpRegsStart();
-
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Starting step at PC = 0x"
-			<< Hex << physical_pc << Dec
-			<< Endl << EndDebugInfo;
-
-	if(debug_control_import) {
-		DebugControl<service_address_t>::DebugCommand dbg_cmd;
-
-		do {
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Fetching debug command (PC = 0x"
-					<< Hex << physical_pc << Dec << ")"
-					<< Endl << EndDebugInfo;
-			dbg_cmd = debug_control_import->FetchDebugCommand(physical_pc);
-
-			if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Received debug DBG_STEP command (PC = 0x"
-						<< Hex << physical_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
-				break;
-			}
-			if(dbg_cmd == DebugControl<service_address_t>::DBG_SYNC) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Received debug DBG_SYNC command (PC = 0x"
-						<< Hex << physical_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
-				Sync();
-				continue;
-			}
-
-			if(dbg_cmd == DebugControl<service_address_t>::DBG_KILL) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Received debug DBG_KILL command (PC = 0x"
-						<< Hex << physical_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
-				Stop(0);
-			}
-			if(dbg_cmd == DebugControl<service_address_t>::DBG_RESET) {
-				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-					(*logger_import) << DebugInfo << LOCATION
-						<< "Received debug DBG_RESET command (PC = 0x"
-						<< Hex << physical_pc << Dec << ")"
-						<< Endl << EndDebugInfo;
-			}
-		} while(1);
-	}
-
-	if(requires_memory_access_reporting) {
-		if(memory_access_reporting_import) {
-			if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-				(*logger_import) << DebugInfo << LOCATION
-					<< "Reporting memory acces for fetch at address 0x"
-					<< Hex << physical_pc << Dec
-					<< Endl << EndDebugInfo;
-		}
-	}
-
-
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-	{
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Fetching (reading) instruction at address 0x"
-			<< Hex << physical_pc << Dec
-			<< Endl << EndDebugInfo;
-	}
-
-	queueFetch(physical_pc, buffer, MAX_INS_SIZE);
-	CodeType 	insn( buffer, MAX_INS_SIZE);
-
-	/* Decode current PC */
-	if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
-	{
-		stringstream ctstr;
-		ctstr << insn;
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Decoding instruction at 0x"
-			<< Hex << physical_pc << Dec
-			<< " (0x" << Hex << ctstr.str() << Dec << ")"
-			<< Endl << EndDebugInfo;
-	}
-
-	op = this->Decode(current_pc, insn);
-	setRegPC(current_pc+op->GetEncoding().size);
-
-	queueFlush(op->GetEncoding().size);
-
-	/* Execute instruction */
-
-	if(logger_import) {
-		stringstream disasm_str;
-		stringstream ctstr;
-
-		op->disasm(disasm_str);
-
-		ctstr << insn;
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Executing instruction "
-			<< disasm_str.str()
-			<< " at 0x" << Hex << physical_pc << Dec
-			<< " (0x" << Hex << ctstr.str() << Dec << ", " << instruction_counter << ")"
-			<< Endl << EndDebugInfo;
-	}
-
 	try
 	{
+		physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED, false);
+
+		VerboseDumpRegsStart();
+
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Starting step at PC = 0x"
+				<< Hex << physical_pc << Dec
+				<< Endl << EndDebugInfo;
+
+		if(debug_control_import) {
+			DebugControl<service_address_t>::DebugCommand dbg_cmd;
+
+			do {
+				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Fetching debug command (PC = 0x"
+						<< Hex << physical_pc << Dec << ")"
+						<< Endl << EndDebugInfo;
+				dbg_cmd = debug_control_import->FetchDebugCommand(physical_pc);
+
+				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
+					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+						(*logger_import) << DebugInfo << LOCATION
+							<< "Received debug DBG_STEP command (PC = 0x"
+							<< Hex << physical_pc << Dec << ")"
+							<< Endl << EndDebugInfo;
+					break;
+				}
+				if(dbg_cmd == DebugControl<service_address_t>::DBG_SYNC) {
+					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+						(*logger_import) << DebugInfo << LOCATION
+							<< "Received debug DBG_SYNC command (PC = 0x"
+							<< Hex << physical_pc << Dec << ")"
+							<< Endl << EndDebugInfo;
+					Sync();
+					continue;
+				}
+
+				if(dbg_cmd == DebugControl<service_address_t>::DBG_KILL) {
+					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+						(*logger_import) << DebugInfo << LOCATION
+							<< "Received debug DBG_KILL command (PC = 0x"
+							<< Hex << physical_pc << Dec << ")"
+							<< Endl << EndDebugInfo;
+					Stop(0);
+				}
+				if(dbg_cmd == DebugControl<service_address_t>::DBG_RESET) {
+					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+						(*logger_import) << DebugInfo << LOCATION
+							<< "Received debug DBG_RESET command (PC = 0x"
+							<< Hex << physical_pc << Dec << ")"
+							<< Endl << EndDebugInfo;
+				}
+			} while(1);
+		}
+
+		if(requires_memory_access_reporting) {
+			if(memory_access_reporting_import) {
+				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+					(*logger_import) << DebugInfo << LOCATION
+						<< "Reporting memory acces for fetch at address 0x"
+						<< Hex << physical_pc << Dec
+						<< Endl << EndDebugInfo;
+			}
+		}
+
+
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+		{
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Fetching (reading) instruction at address 0x"
+				<< Hex << physical_pc << Dec
+				<< Endl << EndDebugInfo;
+		}
+
+		queueFetch(physical_pc, buffer, MAX_INS_SIZE);
+		CodeType 	insn( buffer, MAX_INS_SIZE);
+
+		/* Decode current PC */
+		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
+		{
+			stringstream ctstr;
+			ctstr << insn;
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Decoding instruction at 0x"
+				<< Hex << physical_pc << Dec
+				<< " (0x" << Hex << ctstr.str() << Dec << ")"
+				<< Endl << EndDebugInfo;
+		}
+
+		op = this->Decode(current_pc, insn);
+		setRegPC(current_pc+op->GetEncoding().size);
+
+		queueFlush(op->GetEncoding().size);
+
+		/* Execute instruction */
+
+		if(logger_import) {
+			stringstream disasm_str;
+			stringstream ctstr;
+
+			op->disasm(disasm_str);
+
+			ctstr << insn;
+			(*logger_import) << DebugInfo << LOCATION
+				<< "Executing instruction "
+				<< disasm_str.str()
+				<< " at 0x" << Hex << physical_pc << Dec
+				<< " (0x" << Hex << ctstr.str() << Dec << ", " << instruction_counter << ")"
+				<< Endl << EndDebugInfo;
+		}
 
 		op->execute(this);
 		if (CONFIG::TIMING_ENABLE)
@@ -564,7 +563,10 @@ void CPU::ReqXIRQInterrupt()
 // NonMaskable Access Error interrupts
 void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
 {
-	// TODO
+	if(logger_import)
+		(*logger_import) << DebugError << "Processor exception :" << exc.what() << Endl << EndDebugError;
+
+	Stop(-1);
 }
 
 void CPU::AckAccessErrorInterrupt()

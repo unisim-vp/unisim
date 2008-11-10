@@ -88,8 +88,14 @@ public:
 class NonMaskableAccessErrorInterrupt : public Exception
 {
 public:
-	NonMaskableAccessErrorInterrupt();
+	enum ERROR_TYPE {INVALIDE_RPAGE, INVALIDE_EPAGE, INVALIDE_PPAGE};
+
+	NonMaskableAccessErrorInterrupt(ERROR_TYPE error);
 	virtual const char * what () const throw ();
+	ERROR_TYPE getErrorType() { return errorType; }
+
+private:
+	ERROR_TYPE errorType;
 };
 
 // non-Maskable (X bit) interrupts

@@ -37,6 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_EXCEPTION_CC__
 
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
+#include <iostream>
 
 namespace unisim {
 namespace component {
@@ -91,13 +92,24 @@ const char * NonMaskableXIRQInterrupt::what () const throw ()
 }
 
 
-NonMaskableAccessErrorInterrupt::NonMaskableAccessErrorInterrupt()
+NonMaskableAccessErrorInterrupt::NonMaskableAccessErrorInterrupt(ERROR_TYPE error)
 {
+	errorType = error;
 }
 
 const char * NonMaskableAccessErrorInterrupt::what () const throw ()
 {
-	return "NonMaskable Access Error interrupt";
+	std::stringstream strStm;
+
+	strStm << "Access Error: Invalid ";
+
+	switch (errorType) {
+	case NonMaskableAccessErrorInterrupt::INVALIDE_RPAGE: strStm << "RPAGE value"; break;
+	case NonMaskableAccessErrorInterrupt::INVALIDE_EPAGE: strStm << "EPAGE value"; break;
+	case NonMaskableAccessErrorInterrupt::INVALIDE_PPAGE: strStm << "PPAGE value"; break;
+	}
+
+	return strStm.str().c_str();
 }
 
 MaskableIbitInterrupt::MaskableIbitInterrupt()

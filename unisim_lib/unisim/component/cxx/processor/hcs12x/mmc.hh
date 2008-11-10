@@ -55,13 +55,13 @@ public:
 	enum MAP {DIRECT=0, EXTENDED=1};
 };
 
-class MMC 
+class MMC
 {
 public:
 
     MMC(HC_Registers *regs);
     void reset();
-       
+
 	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
 
     uint8_t getMmcctl0 ();
@@ -83,7 +83,7 @@ public:
 	physical_address_t getEepromAddress(address_t logicalAddress);
 	physical_address_t getFlashAddress(address_t logicalAddress);
 
-private:	
+private:
 	//=============================================
 	//=            MMC REGISTERS                  =
 	//=============================================
