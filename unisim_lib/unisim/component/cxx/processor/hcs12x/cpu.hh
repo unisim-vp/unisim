@@ -315,6 +315,9 @@ public:
 	//=                    Exception handling methods                     =
 	//=====================================================================
 
+	// compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
+	void PrepareInterrupt();
+
 	// Maskable (I bit) interrupt
 	void HandleException(const MaskableIbitInterrupt& exc);
 

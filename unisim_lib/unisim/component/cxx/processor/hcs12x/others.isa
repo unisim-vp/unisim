@@ -224,7 +224,7 @@ rti.execute = {
 	/* Leave bit X unchanged.
 	 * X bit can be set only by a reset or by recognition of an (!XIRQ) interrupt
 	 */ 	 
-	cpu->ccr->setCCR((cpu->memRead16(addr) & 0xFFBF) | (cpu->ccr->getCCR() & 0x0040));
+	cpu->ccr->setCCR(cpu->memRead16(addr));
 
 	addr = addr + 2;
 	cpu->setRegB(cpu->memRead8(addr));
@@ -322,31 +322,38 @@ trap.execute = {
 		 * 1 => I; 0 => U
 		 * (Trap Vector) => PC
 		 */
-		 
-		address_t addr = cpu->getRegSP();
-		
-		addr = addr - 2;
-		cpu->memWrite16(addr, cpu->getRegPC());
-		
-		addr = addr - 2;
-		cpu->memWrite16(addr, cpu->getRegY());
-		
-		addr = addr - 2;
-		cpu->memWrite16(addr, cpu->getRegX());
 
-		addr = addr - 2;
-		cpu->memWrite8(addr, cpu->getRegB());
-		cpu->memWrite16(addr+1, cpu->getRegA());
+		throw new TrapException(trapnum);
 		
-		addr = addr - 2;
-		cpu->memWrite16(addr, cpu->ccr->getCCR());
-		
-		// 1 => I; 0 => U
-		cpu->ccr->setI();
-		cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
-		
-		// (Trap Vector) => PC
+//  All this code is implemented in the CPU exception handling mecanism
+//		 
+//		address_t addr = cpu->getRegSP();
+//
+//		addr = addr - 2;
+//		cpu->memWrite16(addr, cpu->getRegPC());
+//		
+//		addr = addr - 2;
+//		cpu->memWrite16(addr, cpu->getRegY());
+//		
+//		addr = addr - 2;
+//		cpu->memWrite16(addr, cpu->getRegX());
+//
+//		addr = addr - 2;
+//		cpu->memWrite8(addr, cpu->getRegB());
+//		cpu->memWrite16(addr+1, cpu->getRegA());
+//		
+//		addr = addr - 2;
+//		cpu->memWrite16(addr, cpu->ccr->getCCR());
+//		
+//		// 1 => I; 0 => U
+//		cpu->ccr->setI();
+//		cpu->ccr->setCCRHigh(cpu->ccr->getCCRHigh() & 0x7F);
+//		
+//		// (Trap Vector) => PC
 //		cpu->setRegPC(cpu->memRead16(cpu->get_Trap_Vector()));
+//
+
+
 	}
 }
 

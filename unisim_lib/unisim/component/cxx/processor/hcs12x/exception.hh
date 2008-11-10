@@ -64,8 +64,10 @@ public:
 class TrapException : public Exception
 {
 public:
-	TrapException();
+	TrapException(uint8_t trapnum);
 	virtual const char * what () const throw ();
+private:
+	uint8_t _trapnum;
 };
 
 // A software interrupt instruction (SWI) or BDM vector request

@@ -477,9 +477,49 @@ void CPU::ReqAsynchronousInterrupt()
 	asynchronous_interrupt = true;
 }
 
+// compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
+void CPU::PrepareInterrupt() {
+	/*
+	 * *** Save context sequence for CPU12X ***
+	 *
+	 * - The instruction queue is refilled
+	 * - The return address is calculated
+	 * - Save the return address and CPU registers as follow:
+	 *    . M(SP+8) <= RTNH:RTNL
+	 *    . M(SP+6) <= YH:YL
+	 *    . M(SP+4) <= XH:XL
+	 *    . M(SP+2) <= B:A
+	 *    . M(SP)   <= CCRH:CCRL
+	 */
+
+	setRegSP(getRegSP()-2);
+	memWrite16(getRegSP(), getRegPC());
+	setRegSP(getRegSP()-2);
+	memWrite16(getRegSP(), getRegY());
+	setRegSP(getRegSP()-2);
+	memWrite16(getRegSP(), getRegX());
+	setRegSP(getRegSP()-2);
+	memWrite16(getRegSP(), getRegD());
+	setRegSP(getRegSP()-2);
+	memWrite16(getRegSP(), ccr->getCCR());
+
+	/* After CCR is stacked, the I-bit (and the X-bit, if an XIRQ interrupt service request cause the interrupt)
+	 * is set to prevent other interrupts from disrupting the interrupt service routine
+	 */
+	ccr->setI();
+	// then check if it is an XIRQ ?
+	// TODO
+
+	/* On the CPU12XV2 the U-bit is cleared
+	 * to make sure the interrupt service routine is executed in supervisor state
+	 */
+	// TODO
+}
+
 // Hardware and Software reset
 void CPU::HandleException(const ResetException& exc)
 {
+	PrepareInterrupt();
 	// TODO:
 }
 
@@ -498,7 +538,10 @@ void CPU::ReqReset()
 // Unimplemented opcode trap
 void CPU::HandleException(const TrapException& exc)
 {
+	PrepareInterrupt();
 	// TODO
+	// (Trap Vector) => PC
+	// setRegPC(cpu->memRead16(cpu->get_Trap_Vector()));
 }
 
 void CPU::AckTrapInterrupt()
@@ -514,6 +557,7 @@ void CPU::ReqTrapInterrupt()
 // A software interrupt instruction (SWI) or BDM vector request
 void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 {
+	PrepareInterrupt();
 	// TODO
 }
 
@@ -530,6 +574,7 @@ void CPU::ReqSWIInterrupt()
 // A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
 void CPU::HandleException(const SysCallInterrupt& exc)
 {
+	PrepareInterrupt();
 	// TODO
 }
 
@@ -546,6 +591,7 @@ void CPU::ReqSysInterrupt()
 // NonMaskable XIRQ (X bit) interrupts
 void CPU::HandleException(const NonMaskableXIRQInterrupt& exc)
 {
+	PrepareInterrupt();
 	// TODO
 }
 
@@ -564,6 +610,8 @@ void CPU::ReqXIRQInterrupt()
 // NonMaskable Access Error interrupts
 void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
 {
+	PrepareInterrupt();
+
 	if(logger_import)
 		(*logger_import) << DebugError << "Processor exception :" << exc.what() << Endl << EndDebugError;
 
@@ -585,6 +633,7 @@ void CPU::ReqAccessErrorInterrupt()
 // Maskable (I bit) interrupt
 void CPU::HandleException(const MaskableIbitInterrupt& exc)
 {
+	PrepareInterrupt();
 	// TODO
 }
 
@@ -603,6 +652,7 @@ void CPU::ReqIbitInterrupt()
 // A spurious interrupt
 void CPU::HandleException(const SpuriousInterrupt& exc)
 {
+	PrepareInterrupt();
 	// TODO
 }
 

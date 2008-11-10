@@ -55,8 +55,9 @@ const char * ResetException::what () const throw ()
 	return "System reset exception";
 }
 
-TrapException::TrapException()
+TrapException::TrapException(uint8_t trapnum)
 {
+	_trapnum = trapnum;
 }
 
 const char * TrapException::what () const throw ()
