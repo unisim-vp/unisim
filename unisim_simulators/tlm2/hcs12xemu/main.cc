@@ -31,7 +31,7 @@
  *
  * Authors: Reda Nouacer (reda.nouacer@cea.fr)
  */
- 
+
 
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
@@ -50,6 +50,7 @@
 // *************
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
+#include <unisim/component/tlm2/processor/hcs12x/xint.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 
@@ -123,6 +124,7 @@ using unisim::util::garbage_collector::GarbageCollector;
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
+using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::debug::symbol_table::SymbolTable;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -219,15 +221,15 @@ int sc_main(int argc, char *argv[])
 	bool logger_on = false;
 	bool logger_messages = false;
 	double cpu_frequency = 40.0; // in Mhz
-	uint8_t cpu_clock_multiplier = 1; 
-	uint8_t xgate_clock_multiplier = 2; 
+	uint8_t cpu_clock_multiplier = 1;
+	uint8_t xgate_clock_multiplier = 2;
 //	double cpu_ipc = 1.0; // in instructions per cycle
 	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
 
 	int memoryMode = S19_Loader<SERVICE_ADDRESS_TYPE>::BANKED;
-	
+
 	// Parse the command line arguments
 	while((c = getopt_long (argc, argv, "c:dg:a:hi:l:zeom", long_options, 0)) != -1)
 	{
@@ -288,29 +290,31 @@ int sc_main(int argc, char *argv[])
 		help(argv[0]);
 		return 0;
 	}
-	
+
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - 68HCS12X processor
 	HC_Registers *hc_registers = new HC_Registers();
-	
+
 	MMC *mmc = 	new MMC(hc_registers);
-	
+
 	CPU *cpu =new CPU("cpu");
 	cpu->setMMC(mmc);
 	cpu->setRegisters(hc_registers);
-	
+
 	//  - tlm2 router
 	ROUTER	*router = new ROUTER("router");
 	//  - RAM
 	MEMORY *memory = new MEMORY("memory");
 
+	// - Interrupt controler
+	XINT *s12xint = new XINT("s12xint");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
-	
+
 	bool isS19 = false;
 	cout << filename << "\n";
 	if ((strstr(filename, ".s19") != NULL) ||
@@ -319,14 +323,14 @@ int sc_main(int argc, char *argv[])
 	}
 
 	Service<Loader<SERVICE_ADDRESS_TYPE> > *loader = NULL;
-	
+
 	if (isS19) {
 		loader = new S19_Loader<SERVICE_ADDRESS_TYPE>("S19_Loader", (S19_Loader<SERVICE_ADDRESS_TYPE>::MODE) memoryMode);
 	} else {
 		loader = new Elf32Loader("elf32-loader");
 	}
-	
-		
+
+
 	//  - Symbol table
 	SymbolTable<SERVICE_ADDRESS_TYPE> *symbol_table = new SymbolTable<SERVICE_ADDRESS_TYPE>("symbol-table");
 	//  - GDB server
@@ -354,14 +358,14 @@ int sc_main(int argc, char *argv[])
 		(*cpu)["max-inst"] = maxinst;
 	}
 
-	//  - Router 
+	//  - Router
 	unisim::kernel::service::VariableBase *var = ServiceManager::GetParameter("router.cycle_time");
 	*var = fsb_cycle_time;
 	var = ServiceManager::GetParameter("router.mapping_0");
 	*var = "range_start=\"0x0000\" range_end=\"0x800000\" output_port=\"0\""; // The 8Mo of memory are supposed in one bank
 	var = ServiceManager::GetParameter("router.verbose_all");
  	*var = true;
-	
+
 	//  - RAM
 	(*memory)["cycle-time"] = mem_cycle_time;
 	(*memory)["org"] = 0x00000000UL;
@@ -380,7 +384,7 @@ int sc_main(int argc, char *argv[])
 	}
 
 	(*loader)["filename"] = filename;
-	
+
 	//  - Loggers
 	if(logger_on)
 	{
@@ -404,6 +408,7 @@ int sc_main(int argc, char *argv[])
 
 	cpu->socket(router->targ_socket);
 	router->init_socket(memory->slave_sock);
+	s12xint->toCPU_Initiator(cpu->interruptTarget);
 
 //	cpu->socket(memory->slave_sock);
 
@@ -412,7 +417,7 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 
 	cpu->memory_import >> memory->memory_export;
-	
+
 	if(inline_debugger)
 	{
 		// Connect inline-debugger to CPU
@@ -442,14 +447,14 @@ int sc_main(int argc, char *argv[])
 		((Elf32Loader *) loader)->memory_import >> memory->memory_export;
 		((Elf32Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	}
-	
+
 //	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 
 	if(inline_debugger)
 	{
 		inline_debugger->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 	}
-	
+
 	/* logger connections */
 	if(logger_on) {
 		unsigned int logger_index = 0;
@@ -469,15 +474,15 @@ int sc_main(int argc, char *argv[])
 		physical_address_t entry_point = loader->GetEntryPoint();
 		address_t cpu_address;
 		uint8_t page = 0;
-		
+
 		if (isS19) {
-			((S19_Loader<SERVICE_ADDRESS_TYPE> *) loader)->GetPagedAddress(entry_point, page, cpu_address); 
+			((S19_Loader<SERVICE_ADDRESS_TYPE> *) loader)->GetPagedAddress(entry_point, page, cpu_address);
 		} else {
 			cpu_address = (address_t) entry_point;
-		} 
-		
+		}
+
 		cpu->SetEntryPoint(page, cpu_address);
-		
+
 		cerr << "Starting simulation ..." << endl;
 
 		double time_start = host_time->GetTime();
