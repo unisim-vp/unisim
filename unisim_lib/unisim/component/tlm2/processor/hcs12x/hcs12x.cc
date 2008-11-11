@@ -38,6 +38,9 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/component/tlm2/processor/hcs12x/hcs12x.hh"
+#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+#include <unisim/component/cxx/processor/hcs12x/types.hh>
+
 #define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
 
 namespace unisim {
@@ -45,6 +48,8 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
+
+using unisim::component::cxx::processor::hcs12x::address_t;
 
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
@@ -66,6 +71,7 @@ HCS12X(const sc_module_name& name, Object *parent) :
 
 	sc_module(name),
 	CPU(name, parent),
+	interruptTarget("interrupt"),
 	cpu_cycle_time(),
 	bus_cycle_time(),
 	cpu_time(),
@@ -87,6 +93,9 @@ HCS12X(const sc_module_name& name, Object *parent) :
 	verbose_tlm_commands(false),
 	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands)
 {
+	
+	interruptTarget.register_b_transport(this, &HCS12X::b_transport);
+	
 	SC_HAS_PROCESS(HCS12X);
 	
 	SC_THREAD(Run);
@@ -352,6 +361,33 @@ void HCS12X::BusRead(physical_address_t addr, void *buffer, uint32_t size)
 	
 }
 
+void HCS12X::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
+{
+	tlm::tlm_command cmd = trans.get_command();
+	sc_dt::uint64 adr = trans.get_address() / 4;
+	unsigned int len = trans.get_data_length();
+	unsigned char* byt = trans.get_byte_enable_ptr();
+	unsigned int wid = trans.get_streaming_width();
+	
+	if (cmd == tlm::TLM_READ_COMMAND) 
+	{
+		// return the current IPL (3-bits)
+		XINT_READ_CMD_T *ptr_buffer = (XINT_READ_CMD_T *) trans.get_data_ptr();
+		ptr_buffer->ipl = ccr->getIPL();  
+	} 
+	else if (cmd ==	tlm::TLM_WRITE_COMMAND) 
+	{
+		// get the new IPL and Vector Address
+	
+		// TODO: handle effectively the interrupt
+		
+		XINT_WRITE_CMD_T *ptr_buffer = (XINT_WRITE_CMD_T *) trans.get_data_ptr();
+		ccr->setIPL(ptr_buffer->ipl);
+		address_t vectorAddr = ptr_buffer->vectorAddress;
+	}
+	
+	trans.set_response_status( tlm::TLM_OK_RESPONSE );
+}
 
 } // end of namespace hcs12x
 } // end of namespace processor

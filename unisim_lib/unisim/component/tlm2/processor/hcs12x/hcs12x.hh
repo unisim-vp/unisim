@@ -39,6 +39,7 @@
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/simple_initiator_socket.h>
+#include <tlm_utils/simple_target_socket.h>
 #include "unisim/component/cxx/processor/hcs12x/hcs12x.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
@@ -70,10 +71,13 @@ class HCS12X :
 	public CPU {
 public:
 	typedef CPU inherited;
-    static const uint32_t FSB_WIDTH = 32; // (should 2 bytes!)
+    static const uint32_t FSB_WIDTH = 32; 
 
 	// Initiator socket
 	tlm_utils::simple_initiator_socket<HCS12X> socket;
+	
+	// target socket: interrupt
+	tlm_utils::simple_target_socket<HCS12X> interruptTarget;
 	
 	HCS12X(const sc_module_name& name, Object *parent = 0);
 	virtual ~HCS12X();
@@ -106,6 +110,7 @@ public:
 	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size);
 	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size);
 
+	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 private:
 	void Synchronize();

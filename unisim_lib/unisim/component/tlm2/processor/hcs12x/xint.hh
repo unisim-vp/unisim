@@ -32,15 +32,20 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_XINT_HH__
-#define __UNISIM_COMPONENT_TLM_PROCESSOR_XINT_HH__
+/*
+ * This module implement the S12XINTV1 controler
+ */
+
+#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_XINT_HH__
+#define __UNISIM_COMPONENT_TLM2_PROCESSOR_XINT_HH__
 
 #include <inttypes.h>
 #include <iostream>
 #include <cmath>
 
 #include <systemc.h>
-
+#include "tlm_utils/simple_initiator_socket.h"
+#include "tlm_utils/multi_passthrough_target_socket.h"
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/hc_registers.hh>
@@ -48,7 +53,7 @@
 
 namespace unisim {
 namespace component {
-namespace tlm {
+namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
@@ -57,23 +62,35 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::hcs12x::HC_Registers;
 using unisim::kernel::service::Object;
 
+
 class XINT : public sc_module
 {
 public:
-	
-//	sc_port<---, 0>		pir_pot;
-//	sc_port<---, 1>		notify_port;
-	
+
+	// to connect to CPU
+	tlm_utils::simple_initiator_socket<XINT> toCPU_Initiator;
+
+/*
+	// receive I-bit interrupts
+	tlm_utils::multi_passthrough_target_socket<XINT> fromIbit_Target;
+
+	// receive Reset Interrupt
+	tlm_utils::multi_passthrough_target_socket<XINT> fromReset_Target;
+
+	// receive XIRQ Interrupts.
+	tlm_utils::simple_initiator_socket<XINT> fromXIRQ_Target;
+*/
+
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
-	
+
 	void Run(); // Priority Decoder and Interrupt selection
-	
+
 	void reset();
 	void setRegisters(HC_Registers *regs) { registers = regs; }
 	void getCFDATA(uint8_t data[]);
 	address_t getIntVector(uint8_t index);
-	
+
 protected:
 
 private:
@@ -88,17 +105,18 @@ public:
 
 	uint8_t getIVBR() { return registers->read(CONFIG::IVBR_ADDRESS); }
 
+/*
 	address_t get_SysReset_Vector() { return 0xFFFE; }
 	address_t get_IllegalAccessReset_Vector() { return 0xFFFE; }
 	address_t get_ClockMonitorReset_Vector() { return 0xFFFC; }
-	address_t get_COPWatchdogReset_Vector() { return 0xFFFA; } 
+	address_t get_COPWatchdogReset_Vector() { return 0xFFFA; }
 
 	address_t get_Trap_Vector() { return (address_t) (getIVBR() << 8) + 0xF8; } // Shared interrupt vector for traps ($FFF8:$FFF9)
 	address_t get_SWI_Vector() { return (address_t) (getIVBR() << 8) + 0xF6 ; }
 	address_t get_XIRQ_Vector() { return (address_t) (getIVBR() << 8) + 0xF4 ; }
 	address_t get_IRQEN_Vector() { return (address_t) (getIVBR() << 8) + 0xF2 ; }
 	address_t get_RTI_Vector() { return (address_t) (getIVBR() << 8) + 0xF0 ; } // Real Time Interrupt Vector
-	address_t get_ECT_Ch0_Vector() { return (address_t) (getIVBR() << 8) + 0xEE ; } // Enhanced Capture Timer Channel 0 
+	address_t get_ECT_Ch0_Vector() { return (address_t) (getIVBR() << 8) + 0xEE ; } // Enhanced Capture Timer Channel 0
 	address_t get_ECT_Ch1_Vector() { return (address_t) (getIVBR() << 8) + 0xEC ; } // Enhanced Capture Timer Channel 1
 	address_t get_ECT_Ch2_Vector() { return (address_t) (getIVBR() << 8) + 0xEA ; } // Enhanced Capture Timer Channel 2
 	address_t get_ECT_Ch3_Vector() { return (address_t) (getIVBR() << 8) + 0xE8 ; } // Enhanced Capture Timer Channel 3
@@ -109,7 +127,7 @@ public:
 	address_t get_ECT_Overflow_Vector() { return (address_t) (getIVBR() << 8) + 0xDE ; } // Enhanced capture Timer Overflow
 	address_t get_PAcc_A_Overflow_Vector() { return (address_t) (getIVBR() << 8) + 0xDC ; } // Pulse Accumulator A Overflow
 	address_t get_PAcc_Input_edge_Vector() { return (address_t) (getIVBR() << 8) + 0xDA ; } // Pulse Accumulator Input Edge
-	address_t get_SPI0_Vector() { return (address_t) (getIVBR() << 8) + 0xD8 ; } 
+	address_t get_SPI0_Vector() { return (address_t) (getIVBR() << 8) + 0xD8 ; }
 	address_t get_SCI0_Vector() { return (address_t) (getIVBR() << 8) + 0xD6 ; }
 	address_t get_SCI1_Vector() { return (address_t) (getIVBR() << 8) + 0xD4 ; }
 	address_t get_ATD0_Vector() { return (address_t) (getIVBR() << 8) + 0xD2 ; }
@@ -171,13 +189,15 @@ public:
 
 	address_t get_Sys_Vector() { return (address_t) (getIVBR() << 8) + 0x12; } // System call interrupt vector is $FF12:$FF13
 	address_t get_Sputious_Vector() { return (address_t) (getIVBR() << 8) + 0x10 ; } // Spurious interrupt
-	
+
+ */
+
 }; /* end class XINT */
 
 } // end of namespace hcs12x
 } // end of namespace processor
-} // end of namespace tlm
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
-#endif /*__UNISIM_COMPONENT_TLM_PROCESSOR_XINT_HH__*/
+#endif /*__UNISIM_COMPONENT_TLM2_PROCESSOR_XINT_HH__*/
