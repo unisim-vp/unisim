@@ -38,8 +38,6 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/service/interfaces/logger.hh"
 #include "unisim/component/tlm2/processor/hcs12x/hcs12x.hh"
-#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
-#include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
 
@@ -48,8 +46,6 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
-
-using unisim::component::cxx::processor::hcs12x::address_t;
 
 using unisim::service::interfaces::Hex;
 using unisim::service::interfaces::Dec;
@@ -149,7 +145,19 @@ void HCS12X ::Wait() {
 
 	wait(irq_event | xirq_event);
 }
- 
+
+address_t HCS12X ::GetIntVector()
+	/* TODO:
+	 * The CPU issues a signal that tells the interrupt module to drive 
+	 * the vector address of the highest priority pending exception onto the system address bus
+	 * (the CPU12 does not provide this address)
+	 */ 
+{
+	address_t address;
+
+	return address;
+}
+
 bool 
 HCS12X :: 
 Setup() {

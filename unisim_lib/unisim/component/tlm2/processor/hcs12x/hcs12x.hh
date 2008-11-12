@@ -42,6 +42,8 @@
 #include <tlm_utils/simple_target_socket.h>
 #include "unisim/component/cxx/processor/hcs12x/hcs12x.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
+#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+#include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include <inttypes.h>
 #include <string>
@@ -52,6 +54,7 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CPU;
 using unisim::kernel::service::Parameter;
@@ -98,6 +101,12 @@ public:
 	 */
 	virtual void Wait();
 
+	/* TODO:
+	 * The CPU issues a signal that tells the interrupt module to drive 
+	 * the vector address of the highest priority pending exception onto the system address bus
+	 * (the CPU12 does not provide this address)
+	 */ 
+	virtual address_t GetIntVector();
 	
 	virtual bool Setup();
 
