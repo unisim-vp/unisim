@@ -101,6 +101,7 @@ public:
 	void 	clrH();
 
 	uint8_t getX();
+	void	setX();
 	void 	clrX();
 
 	uint8_t getS();

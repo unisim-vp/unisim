@@ -99,17 +99,19 @@ CPU::CPU(const char *name, Object *parent):
 	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFFFFFF)
 
 {
-/*
-	setRegA(0x00);
-	setRegB(0x00);
-    setRegX(0x0000);
-    setRegY(0x0000);
-*/
-
     ccr = new CCR_t();
 
     eblb = new EBLB(this);
 
+	//TODO
+	bus_cycle = 0;
+	cpu_cycle = 0;
+	instruction_counter = 0;
+
+	asynchronous_interrupt = false;
+	maskableIbit_interrupt = false;
+	nonMaskableXIRQ_interrupt = false;
+	reset = false;
 }
 
 CPU::~CPU()
@@ -137,22 +139,6 @@ void CPU::Reset()
 	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 
 	mmc->reset();
-
-	//TODO
-	bus_cycle = 0;
-	cpu_cycle = 0;
-	instruction_counter = 0;
-
-	asynchronous_interrupt = false;
-	maskableIbit_interrupt = false;
-	nonMaskableXIRQ_interrupt = false;
-	nonMaskableAccessError_interrupt = false;
-	nonMascableSWI_interrupt = false;
-	trap_interrupt = false;
-	reset = false;
-	syscall_interrupt = false;
-	spurious_interrupt = false;
-
 }
 
 //=====================================================================
@@ -321,7 +307,7 @@ uint8_t CPU::Step()
 
 
 		if(HasAsynchronousInterrupt())
-		{
+		{	// DO NOT change the order of interrupt checking ( Reset => Hw Interrupts => Sw Interrupts )
 			if (CONFIG::HAS_RESET && HasReset()) throw ResetException();
 			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
 			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
@@ -503,24 +489,18 @@ void CPU::PrepareInterrupt() {
 	setRegSP(getRegSP()-2);
 	memWrite16(getRegSP(), ccr->getCCR());
 
-	/* After CCR is stacked, the I-bit (and the X-bit, if an XIRQ interrupt service request cause the interrupt)
-	 * is set to prevent other interrupts from disrupting the interrupt service routine
-	 */
-	ccr->setI();
-	// then check if it is an XIRQ ?
-	// TODO
-
-	/* On the CPU12XV2 the U-bit is cleared
-	 * to make sure the interrupt service routine is executed in supervisor state
-	 */
-	// TODO
 }
 
 // Hardware and Software reset
 void CPU::HandleException(const ResetException& exc)
 {
-	PrepareInterrupt();
-	// TODO:
+	address_t resetAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+
+	this->Reset();
+	// clear U-bit for CPU12XV2
+	ccr->clrIPL();
+	SetEntryPoint(0, resetAddress);
+	AckReset();
 }
 
 void CPU::AckReset()
@@ -535,68 +515,22 @@ void CPU::ReqReset()
 	ReqAsynchronousInterrupt();
 }
 
-// Unimplemented opcode trap
-void CPU::HandleException(const TrapException& exc)
-{
-	PrepareInterrupt();
-	// TODO
-	// (Trap Vector) => PC
-	// setRegPC(cpu->memRead16(cpu->get_Trap_Vector()));
-}
-
-void CPU::AckTrapInterrupt()
-{
-	trap_interrupt = false;
-}
-
-void CPU::ReqTrapInterrupt()
-{
-	trap_interrupt = true;
-}
-
-// A software interrupt instruction (SWI) or BDM vector request
-void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
-{
-	PrepareInterrupt();
-	// TODO
-	// (SWI Vector) => PC
-	// setRegPC(cpu->memRead16(cpu->get_SWI_Vector()));
-}
-
-void CPU::AckSWIInterrupt()
-{
-	nonMascableSWI_interrupt = false;
-}
-
-void CPU::ReqSWIInterrupt()
-{
-	nonMascableSWI_interrupt = false;
-}
-
-// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
-void CPU::HandleException(const SysCallInterrupt& exc)
-{
-	PrepareInterrupt();
-	// TODO
-	// (SYS Vector) => PC
-	// setRegPC(cpu->memRead16(cpu->get_SYS_Vector()));
-}
-
-void CPU::AckSysInterrupt()
-{
-	syscall_interrupt = false;
-}
-
-void CPU::ReqSysInterrupt()
-{
-	syscall_interrupt = true;
-}
-
 // NonMaskable XIRQ (X bit) interrupts
 void CPU::HandleException(const NonMaskableXIRQInterrupt& exc)
 {
+	address_t xirqAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+
+	uint8_t newIPL; // TODO: get newIPL from Interrupt module XINT
+
 	PrepareInterrupt();
-	// TODO
+
+	ccr->setI();
+	// clear U-bit for CPU12XV2
+	ccr->setIPL(newIPL);
+	ccr->setX();
+
+	SetEntryPoint(0, xirqAddress);
+	AckXIRQInterrupt();
 }
 
 void CPU::AckXIRQInterrupt()
@@ -611,34 +545,21 @@ void CPU::ReqXIRQInterrupt()
 	ReqAsynchronousInterrupt();
 }
 
-// NonMaskable Access Error interrupts
-void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
-{
-	PrepareInterrupt();
-
-	if(logger_import)
-		(*logger_import) << DebugError << "Processor exception :" << exc.what() << Endl << EndDebugError;
-
-	Stop(-1);
-}
-
-void CPU::AckAccessErrorInterrupt()
-{
-	nonMaskableAccessError_interrupt = false;
-	AckAsynchronousInterrupt();
-}
-
-void CPU::ReqAccessErrorInterrupt()
-{
-	nonMaskableAccessError_interrupt = true;
-	ReqAsynchronousInterrupt();
-}
-
 // Maskable (I bit) interrupt
 void CPU::HandleException(const MaskableIbitInterrupt& exc)
 {
+	address_t ibitAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+
+	uint8_t newIPL; // TODO: get newIPL from Interrupt module XINT
+
 	PrepareInterrupt();
-	// TODO
+
+	ccr->setI();
+	// clear U-bit for CPU12XV2
+	ccr->setIPL(newIPL);
+
+	SetEntryPoint(0, ibitAddress);
+	AckIbitInterrupt();
 }
 
 void CPU::AckIbitInterrupt()
@@ -653,21 +574,68 @@ void CPU::ReqIbitInterrupt()
 	ReqAsynchronousInterrupt();
 }
 
+// Unimplemented opcode trap
+void CPU::HandleException(const TrapException& exc)
+{
+	address_t trapAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+
+	PrepareInterrupt();
+
+	ccr->setI();
+	// clear U-bit for CPU12XV2
+
+	SetEntryPoint(0, trapAddress);
+}
+
+// A software interrupt instruction (SWI) or BDM vector request
+void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
+{
+	address_t swiAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+
+	PrepareInterrupt();
+
+	ccr->setI();
+	// clear U-bit for CPU12XV2
+
+	SetEntryPoint(0, swiAddress);
+}
+
+// A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
+void CPU::HandleException(const SysCallInterrupt& exc)
+{
+	address_t sysCallAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+
+	PrepareInterrupt();
+
+	ccr->setI();
+	// clear U-bit for CPU12XV2
+
+	SetEntryPoint(0, sysCallAddress);
+}
+
 // A spurious interrupt
 void CPU::HandleException(const SpuriousInterrupt& exc)
 {
+	address_t spuriousAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+
 	PrepareInterrupt();
-	// TODO
+
+	ccr->setI();
+	// clear U-bit for CPU12XV2
+
+	SetEntryPoint(0, spuriousAddress);
 }
 
-void CPU::AckSpuriousInterrupt()
+// NonMaskable Access Error interrupts
+void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
 {
-	spurious_interrupt = false;
-}
+	//TODO: to understand more and finalize (look to XINT documentation)
+	PrepareInterrupt();
 
-void CPU::ReqSpuriousInterrupt()
-{
-	spurious_interrupt = true;
+	if(logger_import)
+		(*logger_import) << DebugError << "Processor exception :" << exc.what() << Endl << EndDebugError;
+
+	Stop(-1);
 }
 
 	//======================================================================

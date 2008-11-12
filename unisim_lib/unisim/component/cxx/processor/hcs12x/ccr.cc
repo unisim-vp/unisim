@@ -66,6 +66,7 @@ void 	CCR_t::setH() { ccrVal |= SETH;};
 void 	CCR_t::clrH() { ccrVal &= CLRH;};
 
 uint8_t CCR_t::getX() { return (ccrVal & SETX) >> 6;};
+void	CCR_t::setX() { ccrVal |= SETX;};
 void 	CCR_t::clrX() { ccrVal &= CLRX;};
 
 uint8_t CCR_t::getS() { return (ccrVal & SETS) >> 7;};
