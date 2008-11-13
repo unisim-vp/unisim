@@ -36,7 +36,7 @@
 #define __UNISIM_COMPONENT_TLM_PROCESSOR_POWERPC_POWERPC_HH__
 
 #include <systemc.h>
-#include <unisim/component/cxx/processor/powerpc/powerpc.hh>
+#include <unisim/component/cxx/processor/powerpc/cpu.hh>
 #include <unisim/component/tlm/message/snooping_fsb.hh>
 #include <unisim/kernel/tlm/tlm.hh>
 #include <unisim/component/tlm/message/interrupt.hh>

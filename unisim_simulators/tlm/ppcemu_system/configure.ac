@@ -61,6 +61,7 @@ AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
 case $host in
 	*linux*)   # linux host
 		UNISIM_CHECK_CURSES
+		UNISIM_CHECK_PTHREAD
 		;;
 	*mingw32*)  # win32 host
 		UNISIM_CHECK_WINSOCK2
@@ -68,6 +69,7 @@ case $host in
 esac
 
 UNISIM_CHECK_READLINE
+UNISIM_CHECK_ZLIB
 UNISIM_CHECK_LIBXML2
 UNISIM_CHECK_SDL
 UNISIM_CHECK_SYSTEMC

@@ -610,33 +610,6 @@ INTEGER LOAD STORE STRING INSTRUCTIONS
 
 op lswi(31[6]:rd[5]:ra[5]:nb[5]:597[10]:?[1])
 lswi.execute = {
-/*	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
-
-	if(cpu->GetMSR_LE())
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
-
-	uint8_t n = nb ? nb : 32;
-	int r = rd - 1;
-	int i = -8;
-	uint8_t v;
-
-	while(n > 0)
-	{
-		if(i < 0)
-		{
-			i = 24;
-			r = (r + 1) & 31;
-			cpu->SetGPR(r, 0);
-		}
-		
-		//cpu->ReadMemory8(ea, v);
-		//cpu->SetGPR(r, cpu->GetGPR(r) | ((uint32_t) v << i));
-		i -= 8;
-		ea++;
-		n--;
-	}*/
 	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
 
 	if(cpu->GetMSR_LE())
@@ -667,34 +640,6 @@ lswi.disasm = {
 
 op lswx(31[6]:rd[5]:ra[5]:rb[5]:533[10]:?[1])
 lswx.execute = {
-/*	if(rd == ra ||
-	   rd == rb ||
-	   (rd == 0 && ra == 0)) throw IllegalInstructionException<CONFIG>();
-
-	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
-
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-
-	uint8_t n = cpu->GetXER_BYTE_COUNT();
-	int r = rd - 1;
-	int i = -8;
-	uint8_t v;
-
-	while(n > 0)
-	{
-		if(i < 0)
-		{
-			i = 24;
-			r = (r + 1) & 31;
-			cpu->SetGPR(r, 0);
-		}
-
-		//cpu->ReadMemory8(ea, v);
-		//cpu->SetGPR(r, cpu->GetGPR(r) | ((uint32_t) v << i));
-		i -= 8;
-		ea++;
-		n--;
-	}*/
 	if(rd == ra ||
 	   rd == rb ||
 	   (rd == 0 && ra == 0)) throw IllegalInstructionException<CONFIG>();
@@ -703,7 +648,8 @@ lswx.execute = {
 
 	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
-	uint8_t n = cpu->GetXER_BYTE_COUNT();
+	uint32_t xer = cpu->GetXER();
+	uint8_t n = (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET;
 	unsigned int r = rd;
 
 	while(n > 0)
@@ -726,27 +672,6 @@ lswx.disasm = {
 
 op stswi(31[6]:rs[5]:ra[5]:nb[5]:725[10]:?[1])
 stswi.execute = {
-/*	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
-
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-
-	uint8_t n = nb ? nb : 32;
-	uint8_t r = rs;
-	int i = 24;
-	while(n > 0)
-	{
-		if(i < 0)
-		{
-			i = 24;
-			r = (r + 1) & 31;
-		}
-			
-		//cpu->WriteMemory8(ea, cpu->GetGPR(r) >> i);
-
-		i -= 8;
-		ea++;
-		n--;
-	}*/
 	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) : 0;
 
 	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
@@ -773,33 +698,12 @@ stswi.disasm = {
 
 op stswx(31[6]:rs[5]:ra[5]:rb[5]:661[10]:?[1])
 stswx.execute = {
-/*	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
-
-	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-
-	uint8_t n = cpu->GetXER_BYTE_COUNT();
-	uint8_t r = rs;
-	int i = 24;
-
-	while(n > 0)
-	{
-		if(i < 0)
-		{
-			i = 24;
-			r = (r + 1) & 31;
-		}
-			
-		//cpu->WriteMemory8(ea, cpu->GetGPR(r) >> i);
-
-		i -= 8;
-		ea++;
-		n--;
-	}*/
 	typename CONFIG::address_t ea = ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb);
 
 	if(cpu->GetMSR_LE()) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
 
-	uint8_t n = cpu->GetXER_BYTE_COUNT();
+	uint32_t xer = cpu->GetXER();
+	uint8_t n = (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET;
 	unsigned int r = rs;
 
 	while(n > 0)
@@ -828,19 +732,6 @@ INTEGER LOAD STORE MULTIPLE INSTRUCTIONS
 
 op lmw(46[6]:rd[5]:ra[5]:sext<32>d[16])
 lmw.execute = {
-/*	if(ra >= rd) throw IllegalInstructionException<CONFIG>();
-	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-
-	if(ea & 3) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-
-	uint32_t _r;
-	uint32_t v;
-	for(_r = rd; _r<32; _r++)
-	{
-		//cpu->ReadMemory32(ea, v);
-		//cpu->SetGPR(_r, v);
-		ea = ea + 4;
-	}*/
 	if(ra >= rd) throw IllegalInstructionException<CONFIG>();
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
@@ -864,17 +755,6 @@ lmw.disasm = {
 
 op stmw(47[6]:rs[5]:ra[5]:sext<32>d[16])
 stmw.execute = {
-/*	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-
-	if(ea & 3) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-
-	uint32_t _r;
-
-	for(_r = rs; _r<32; _r++)
-	{
-		//cpu->WriteMemory32(ea, cpu->GetGPR(_r));
-		ea = ea + 4;
-	}*/
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
 	if(ea & 3) if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);

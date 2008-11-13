@@ -7,26 +7,27 @@
 
 #include <vector>
 #include <inttypes.h>
+#include <cstring>
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace powerpc {
 typedef uint32_t CodeType;
 
 template <
 #line 38 "ppc.isa"
 class
-#line 17 "powerpc.hh"
+#line 18 "powerpc.hh"
 #line 38 "ppc.isa"
 CONFIG
-#line 20 "powerpc.hh"
+#line 21 "powerpc.hh"
 >
 class Operation;
 const unsigned int NUM_OPERATIONS_PER_PAGE = 4096;
 template <
 #line 38 "ppc.isa"
 class
-#line 27 "powerpc.hh"
+#line 28 "powerpc.hh"
 #line 38 "ppc.isa"
 CONFIG
-#line 30 "powerpc.hh"
+#line 31 "powerpc.hh"
 >
 class DecodeMapPage
 {
@@ -38,17 +39,17 @@ public:
 	Operation<
 #line 38 "ppc.isa"
 	CONFIG
-#line 42 "powerpc.hh"
+#line 43 "powerpc.hh"
 	> *operation[NUM_OPERATIONS_PER_PAGE];
 };
 
 template <
 #line 38 "ppc.isa"
 class
-#line 49 "powerpc.hh"
+#line 50 "powerpc.hh"
 #line 38 "ppc.isa"
 CONFIG
-#line 52 "powerpc.hh"
+#line 53 "powerpc.hh"
 >
 class DecodeTableEntry
 {
@@ -56,24 +57,24 @@ public:
 	DecodeTableEntry(CodeType opcode, CodeType opcode_mask, Operation<
 #line 38 "ppc.isa"
 	CONFIG
-#line 60 "powerpc.hh"
+#line 61 "powerpc.hh"
 	> *(*decode)(CodeType, typename CONFIG::address_t));
 	CodeType opcode;
 	CodeType opcode_mask;
 	Operation<
 #line 38 "ppc.isa"
 	CONFIG
-#line 67 "powerpc.hh"
+#line 68 "powerpc.hh"
 	> *(*decode)(CodeType code, typename CONFIG::address_t addr);
 };
 const unsigned int NUM_DECODE_HASH_TABLE_ENTRIES = 4096;
 template <
 #line 38 "ppc.isa"
 class
-#line 74 "powerpc.hh"
+#line 75 "powerpc.hh"
 #line 38 "ppc.isa"
 CONFIG
-#line 77 "powerpc.hh"
+#line 78 "powerpc.hh"
 >
 class Decoder
 {
@@ -84,27 +85,27 @@ public:
 	Operation<
 #line 38 "ppc.isa"
 	CONFIG
-#line 88 "powerpc.hh"
+#line 89 "powerpc.hh"
 	>*NCDecode(typename CONFIG::address_t addr);
 	Operation<
 #line 38 "ppc.isa"
 	CONFIG
-#line 93 "powerpc.hh"
+#line 94 "powerpc.hh"
 	> *NCDecode(typename CONFIG::address_t addr, CodeType code);
 	Operation<
 #line 38 "ppc.isa"
 	CONFIG
-#line 98 "powerpc.hh"
+#line 99 "powerpc.hh"
 	> *Decode(typename CONFIG::address_t addr);
 	Operation<
 #line 38 "ppc.isa"
 	CONFIG
-#line 103 "powerpc.hh"
+#line 104 "powerpc.hh"
 	> *Decode(typename CONFIG::address_t addr, CodeType insn);
 	std::vector<DecodeTableEntry<
 #line 38 "ppc.isa"
 	CONFIG
-#line 108 "powerpc.hh"
+#line 109 "powerpc.hh"
 	> > const& GetDecodeTable() const { return decode_table; };
 	virtual void Fetch(void *, typename CONFIG::address_t, uint32_t) ;
 	void InvalidateDecodingCacheEntry(typename CONFIG::address_t addr);
@@ -117,22 +118,22 @@ private:
 	std::vector<DecodeTableEntry<
 #line 38 "ppc.isa"
 	CONFIG
-#line 121 "powerpc.hh"
+#line 122 "powerpc.hh"
 	> > decode_table;
 	DecodeMapPage<
 #line 38 "ppc.isa"
 	CONFIG
-#line 126 "powerpc.hh"
+#line 127 "powerpc.hh"
 	> *mru_page;
 	DecodeMapPage<
 #line 38 "ppc.isa"
 	CONFIG
-#line 131 "powerpc.hh"
+#line 132 "powerpc.hh"
 	> *decode_hash_table[NUM_DECODE_HASH_TABLE_ENTRIES];
 	DecodeMapPage<
 #line 38 "ppc.isa"
 	CONFIG
-#line 136 "powerpc.hh"
+#line 137 "powerpc.hh"
 	> *FindPage(typename CONFIG::address_t page_key)
 #if defined(__GNUC__) && (__GNUC__ >= 3 && (__GNUC__ != 3 || __GNUC_MINOR__ != 4 || __GNUC_PATCHLEVEL__ != 6))
 	__attribute__((always_inline))
@@ -143,9 +144,25 @@ private:
 } } } } }
 #line 40 "ppc.isa"
 
-#include <unisim/component/cxx/processor/powerpc/cpu.hh>
-#line 148 "powerpc.hh"
-#line 38 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_ppc.isa"
+#include <iostream>
+#include <unisim/component/cxx/processor/powerpc/exception.hh>
+
+namespace unisim {
+	namespace component {
+		namespace cxx {
+			namespace processor {
+				namespace powerpc {
+
+					using std::ostream;
+
+				} // end of namespace powerpc
+			} // end of namespace processor
+		} // end of namespace cxx
+	} // end of namespace component
+} // end of namespace unisim
+
+#line 165 "powerpc.hh"
+#line 38 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_ppc.isa"
 
 
 #include <stdarg.h>
@@ -230,8 +247,8 @@ namespace unisim {
 	} // end of namespace component
 } // end of namespace unisim
 
-#line 234 "powerpc.hh"
-#line 37 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_latencies.isa"
+#line 251 "powerpc.hh"
+#line 37 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_latencies.isa"
 
 
 namespace unisim {
@@ -250,11 +267,13 @@ namespace unisim {
 	} // end of namespace component
 } // end of namespace unisim
 
-#line 254 "powerpc.hh"
-#line 66 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_dependencies.isa"
+#line 271 "powerpc.hh"
+#line 66 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_dependencies.isa"
 
 
 #include <stdarg.h>
+#include <sstream>
+#include <string>
 
 namespace unisim {
 	namespace component {
@@ -262,7 +281,8 @@ namespace unisim {
 			namespace processor {
 				namespace powerpc {
 
-
+					using std::stringstream;
+					using std::string;
 
 					// DD New depencies are arriving ...
 					/*
@@ -308,15 +328,38 @@ namespace unisim {
 	} // end of namespace component
 } // end of namespace unisim
 
-#line 312 "powerpc.hh"
+#line 332 "powerpc.hh"
+#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+
+#include <list>
+#include <iostream>
+#include <stdlib.h>
+
+namespace unisim {
+	namespace component {
+		namespace cxx {
+			namespace processor {
+				namespace powerpc {
+
+					using std::list;
+					using std::endl;
+					using std::cerr;
+
+				} // end of namespace powerpc
+			} // end of namespace processor
+		} // end of namespace cxx
+	} // end of namespace component
+} // end of namespace unisim
+
+#line 355 "powerpc.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace powerpc {
 template <
 #line 38 "ppc.isa"
 class
-#line 317 "powerpc.hh"
+#line 360 "powerpc.hh"
 #line 38 "ppc.isa"
 CONFIG
-#line 320 "powerpc.hh"
+#line 363 "powerpc.hh"
 >
 class Operation
 {
@@ -326,164 +369,179 @@ public:
 	inline typename CONFIG::address_t GetAddr() const { return addr; }
 	inline CodeType GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
-#line 35 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
-	int num_insn_operands;
-#line 332 "powerpc.hh"
-#line 36 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+#line 35 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	unsigned int num_uops;
+#line 375 "powerpc.hh"
+#line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	unsigned int num_insn_operands;
+#line 378 "powerpc.hh"
+#line 37 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
 	typename CONFIG::operands_t insn_operands;
-#line 335 "powerpc.hh"
-#line 37 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+#line 381 "powerpc.hh"
+#line 38 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
 	typename CONFIG::execution_unit_type_t execution_unit;
-#line 338 "powerpc.hh"
-#line 38 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+#line 384 "powerpc.hh"
+#line 39 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
 	typename CONFIG::serialization_t serialization;
-#line 341 "powerpc.hh"
-#line 39 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
-	int insn_latency;
-#line 344 "powerpc.hh"
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
-	int insn_throughput;
-#line 347 "powerpc.hh"
-#line 127 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_ppc.isa"
+#line 387 "powerpc.hh"
+#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	unsigned int insn_latency;
+#line 390 "powerpc.hh"
+#line 41 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	unsigned int insn_inv_thoughput;
+#line 393 "powerpc.hh"
+#line 127 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_ppc.isa"
 	function_t function;
-#line 350 "powerpc.hh"
-#line 57 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_latencies.isa"
+#line 396 "powerpc.hh"
+#line 57 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_latencies.isa"
 	unsigned int latency;
-#line 353 "powerpc.hh"
-#line 58 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_latencies.isa"
+#line 399 "powerpc.hh"
+#line 58 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_latencies.isa"
 	int nstages;
-#line 356 "powerpc.hh"
-#line 59 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_latencies.isa"
+#line 402 "powerpc.hh"
+#line 59 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_latencies.isa"
 	latencies_t latencies;
-#line 359 "powerpc.hh"
-#line 124 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_dependencies.isa"
+#line 405 "powerpc.hh"
+#line 127 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_dependencies.isa"
 	int noperands;
-#line 362 "powerpc.hh"
-#line 125 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_dependencies.isa"
+#line 408 "powerpc.hh"
+#line 128 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_dependencies.isa"
 	operands_t operands;
-#line 365 "powerpc.hh"
+#line 411 "powerpc.hh"
 	virtual
-#line 758 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+#line 784 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	bool
-#line 369 "powerpc.hh"
+#line 415 "powerpc.hh"
 	is_sign_extended( );
 	virtual
-#line 745 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+#line 771 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	bool
-#line 374 "powerpc.hh"
+#line 420 "powerpc.hh"
 	load_need_conversion( );
 	virtual
-#line 733 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+#line 759 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	bool
-#line 379 "powerpc.hh"
+#line 425 "powerpc.hh"
 	store_need_conversion( );
 	virtual
-#line 707 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+#line 729 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	uint32_t
-#line 384 "powerpc.hh"
+#line 430 "powerpc.hh"
 	get_single(
-#line 707 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	CPU<CONFIG> *
-#line 388 "powerpc.hh"
-#line 707 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+#line 729 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	typename CONFIG::STATE *
+#line 434 "powerpc.hh"
+#line 729 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	cpu
-#line 391 "powerpc.hh"
+#line 437 "powerpc.hh"
 	);
 	virtual
-#line 238 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+#line 260 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	list <Operation<CONFIG> *>
-#line 396 "powerpc.hh"
+#line 442 "powerpc.hh"
 	split_into( );
 	virtual
-#line 234 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	bool
-#line 401 "powerpc.hh"
-	is_splitted( );
-	virtual
-#line 227 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	typename CONFIG::address_t
-#line 406 "powerpc.hh"
-	loadstore_effective_address(
-#line 227 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	CPU<CONFIG> *
-#line 410 "powerpc.hh"
-#line 227 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	cpu
-#line 413 "powerpc.hh"
-	);
-	virtual
-#line 209 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	int
-#line 418 "powerpc.hh"
-	loadstore_string_numbyte(
-#line 209 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	CPU<CONFIG> *
-#line 422 "powerpc.hh"
-#line 209 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	cpu
-#line 425 "powerpc.hh"
-	);
-	virtual
-#line 123 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	int
-#line 430 "powerpc.hh"
-	memory_access_size( );
-	virtual
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	int
-#line 435 "powerpc.hh"
-	loadstore_target_register(
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	CPU<CONFIG> *
-#line 439 "powerpc.hh"
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
-	cpu
-#line 442 "powerpc.hh"
-	);
-	virtual
-#line 120 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+#line 256 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	bool
 #line 447 "powerpc.hh"
-	branch_conditioned( );
+	is_splitted( );
 	virtual
-#line 100 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
-	bool
+#line 249 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	typename CONFIG::address_t
 #line 452 "powerpc.hh"
-	branch_linked( );
-	virtual
-#line 68 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
-	bool
-#line 457 "powerpc.hh"
-	branch_statically_predicted_taken(
-#line 68 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
-	CPU<CONFIG> *
-#line 461 "powerpc.hh"
-#line 68 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	loadstore_effective_address(
+#line 249 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	typename CONFIG::STATE *
+#line 456 "powerpc.hh"
+#line 249 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	cpu
-#line 464 "powerpc.hh"
+#line 459 "powerpc.hh"
 	);
 	virtual
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
-	typename CONFIG::address_t
-#line 469 "powerpc.hh"
-	get_target_address(
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
-	typename CONFIG::address_t
-#line 473 "powerpc.hh"
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
-	cia
-#line 476 "powerpc.hh"
-	,
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
-	CPU<CONFIG> *
-#line 480 "powerpc.hh"
-#line 40 "/local/home/gracia/svn/unisim/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+#line 231 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	int
+#line 464 "powerpc.hh"
+	loadstore_string_numbyte(
+#line 231 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	typename CONFIG::STATE *
+#line 468 "powerpc.hh"
+#line 231 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
 	cpu
-#line 483 "powerpc.hh"
+#line 471 "powerpc.hh"
+	);
+	virtual
+#line 145 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	int
+#line 476 "powerpc.hh"
+	memory_access_size( );
+	virtual
+#line 62 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	int
+#line 481 "powerpc.hh"
+	loadstore_target_register(
+#line 62 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	typename CONFIG::STATE *
+#line 485 "powerpc.hh"
+#line 62 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_load.isa"
+	cpu
+#line 488 "powerpc.hh"
+	);
+	virtual
+#line 120 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	bool
+#line 493 "powerpc.hh"
+	branch_conditioned( );
+	virtual
+#line 100 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	bool
+#line 498 "powerpc.hh"
+	branch_linked( );
+	virtual
+#line 68 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	bool
+#line 503 "powerpc.hh"
+	branch_statically_predicted_taken(
+#line 68 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	typename CONFIG::STATE *
+#line 507 "powerpc.hh"
+#line 68 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	cpu
+#line 510 "powerpc.hh"
+	);
+	virtual
+#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	typename CONFIG::address_t
+#line 515 "powerpc.hh"
+	get_target_address(
+#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	typename CONFIG::address_t
+#line 519 "powerpc.hh"
+#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	cia
+#line 522 "powerpc.hh"
+	,
+#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	typename CONFIG::STATE *
+#line 526 "powerpc.hh"
+#line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./sim_branch.isa"
+	cpu
+#line 529 "powerpc.hh"
 	);
 	virtual void initialize_operands( );
 	virtual void initialize_latencies( );
 	virtual void initialize_function( );
+	virtual
+#line 102 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	unsigned int
+#line 537 "powerpc.hh"
+	get_num_uops(
+#line 102 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	typename CONFIG::STATE *
+#line 541 "powerpc.hh"
+#line 102 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	cpu
+#line 544 "powerpc.hh"
+	);
 	virtual void initialize_write_fpscr( );
 	virtual void initialize_read_xer( );
 	virtual void initialize_write_xer( );
@@ -494,6 +552,7 @@ public:
 	virtual void initialize_read_cr( );
 	virtual void initialize_write_ctr( );
 	virtual void initialize_write_lr( );
+	virtual void initialize_write_ear( );
 	virtual void initialize_write_ra( );
 	virtual void initialize_write_rd( );
 	virtual void initialize_write_fd( );
@@ -509,35 +568,73 @@ public:
 	virtual void initialize_serialization( );
 	virtual void initialize_unit( );
 	virtual
-#line 48 "ppc.isa"
+#line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
 	void
-#line 515 "powerpc.hh"
-	disasm(
-#line 48 "ppc.isa"
-	CPU<CONFIG> *
-#line 519 "powerpc.hh"
-#line 48 "ppc.isa"
+#line 574 "powerpc.hh"
+	uop_execute(
+#line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	typename CONFIG::STATE *
+#line 578 "powerpc.hh"
+#line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
 	cpu
-#line 522 "powerpc.hh"
+#line 581 "powerpc.hh"
 	,
-#line 48 "ppc.isa"
-	ostream&
-#line 526 "powerpc.hh"
-#line 48 "ppc.isa"
-	os
-#line 529 "powerpc.hh"
+#line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	unsigned int
+#line 585 "powerpc.hh"
+#line 47 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	uop_num
+#line 588 "powerpc.hh"
 	);
 	virtual
-#line 44 "ppc.isa"
+#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
 	void
-#line 534 "powerpc.hh"
-	execute(
-#line 44 "ppc.isa"
-	CPU<CONFIG> *
-#line 538 "powerpc.hh"
-#line 44 "ppc.isa"
+#line 593 "powerpc.hh"
+	resolve(
+#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	typename CONFIG::STATE *
+#line 597 "powerpc.hh"
+#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
 	cpu
-#line 541 "powerpc.hh"
+#line 600 "powerpc.hh"
+	,
+#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	unsigned int
+#line 604 "powerpc.hh"
+#line 43 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/powerpc/./perf.isa"
+	uop_num
+#line 607 "powerpc.hh"
+	);
+	virtual
+#line 64 "ppc.isa"
+	void
+#line 612 "powerpc.hh"
+	disasm(
+#line 64 "ppc.isa"
+	typename CONFIG::STATE *
+#line 616 "powerpc.hh"
+#line 64 "ppc.isa"
+	cpu
+#line 619 "powerpc.hh"
+	,
+#line 64 "ppc.isa"
+	ostream&
+#line 623 "powerpc.hh"
+#line 64 "ppc.isa"
+	os
+#line 626 "powerpc.hh"
+	);
+	virtual
+#line 60 "ppc.isa"
+	void
+#line 631 "powerpc.hh"
+	execute(
+#line 60 "ppc.isa"
+	typename CONFIG::STATE *
+#line 635 "powerpc.hh"
+#line 60 "ppc.isa"
+	cpu
+#line 638 "powerpc.hh"
 	);
 protected:
 	CodeType encoding;

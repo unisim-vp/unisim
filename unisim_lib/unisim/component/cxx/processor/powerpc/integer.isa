@@ -31,25 +31,73 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
+impl {
+
+#include <unisim/util/arithmetic/arithmetic.hh>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+using unisim::util::arithmetic::Add32;
+using unisim::util::arithmetic::RotateLeft;
+
+inline uint32_t Mask(uint32_t mb, uint32_t me)
+{
+	return (mb > me) ? ~(((uint32_t) -1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1))) : (((uint32_t)-1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1)));
+}
+
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+}
+
 op add(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:266[9]:rc[1])
 add.execute = {
-	uint8_t ca, ov;
+	uint8_t ca; // carry out
+	uint8_t ov; // overflow
+	uint32_t result;
+
+	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
-	uint32_t result;
+
+	// Compute the result
 	Add32(result, ca, ov, a, b, 0);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(oe) {
-		if(ov) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
+	
+	if(unlikely(oe || rc))
+	{
+		// Read XER
+		uint32_t xer = cpu->GetXER();
+		if(unlikely(oe))
+		{
+			// Generate XER[OV] and XER[SO]
+			xer = ov ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
+			// Update XER
+			cpu->SetXER(xer);
 		}
-	}
-	if(rc) {
-		cpu->ComputeCR0(result) ;
+		if(unlikely(rc))
+		{
+			// Read CR
+			uint32_t cr = cpu->GetCR();
+			
+			// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+			cr = (cr & ~CONFIG::CR0_MASK) |
+				((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+				(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+					
+			// Update CR
+			cpu->SetCR(cr);
+		}
 	}
 }
 add.disasm = {
@@ -58,23 +106,45 @@ add.disasm = {
 
 op addc(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:10[9]:rc[1])
 addc.execute = {
-	uint8_t carry, overflow;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
+	uint32_t result;
+
+	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
-	uint32_t result;
+	uint32_t xer = cpu->GetXER();
+	
+	// Compute the result
 	Add32(result, carry, overflow, a, b, 0);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(carry) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	if(oe) {
-		if(overflow) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
-		}
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	if(unlikely(oe))
+	{
+		// Generate XER[OV] and XER[SO]
+		xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+
+	// Update XER
+	cpu->SetXER(xer);
+	
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 addc.disasm = {
@@ -83,23 +153,46 @@ addc.disasm = {
 
 op adde(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:138[9]:rc[1])
 adde.execute = {
-	uint8_t CA, OV;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
+	uint32_t result;
+
+	// Read the input operands
 	uint32_t a = cpu->GetGPR(ra);
 	uint32_t b = cpu->GetGPR(rb);
-	uint32_t result;
-	Add32(result, CA, OV, a, b, cpu->GetXER_CA());
+	uint32_t xer = cpu->GetXER();
+	uint32_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
+	
+	// Compute the result
+	Add32(result, carry, overflow, a, b, carry_in);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	if(oe) {
-		if(OV) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
-		}
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+
+	if(unlikely(oe))
+	{
+		// Generate XER[OV] and XER[SO]
+		xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	// Update XER
+	cpu->SetXER(xer);
+	
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 adde.disasm = {
@@ -108,7 +201,13 @@ adde.disasm = {
 
 op addi(14[6]:rd[5]:ra[5]:sext<32> simm[16])
 addi.execute = {
-	uint32_t result = (ra != 0 ? cpu->GetGPR(ra) + simm : simm);
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	
+	// Compute the result
+	uint32_t result = (ra != 0 ? a + simm : simm);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
 }
 addi.disasm = {
@@ -120,13 +219,25 @@ addi.disasm = {
 
 op addic(12[6]:rd[5]:ra[5]:sext<32> simm[16])
 addic.execute = {
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = simm;
-	uint8_t CA, OV ;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
 	uint32_t result;
-	Add32(result, CA, OV, a, b, 0) ;
+	
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t xer = cpu->GetXER();
+
+	// Compute the result
+	Add32(result, carry, overflow, a, simm, 0);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	// Update XER
+	cpu->SetXER(xer);
 }
 addic.disasm = {
 	os << "addic r" << rd << ", r" << ra << ", " << simm;
@@ -134,14 +245,36 @@ addic.disasm = {
 
 op addic_(13[6]:rd[5]:ra[5]:sext<32> simm[16])
 addic_.execute = {
-	uint8_t CA, OV ;
-	uint32_t a = cpu->GetGPR(ra);
-	uint32_t b = simm;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
 	uint32_t result;
-	Add32(result, CA, OV, a, b, 0) ;
+
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t xer = cpu->GetXER();
+	
+	// Compute the result
+	Add32(result, carry, overflow, a, simm, 0) ;
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	cpu->ComputeCR0(result);
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	// Update XER
+	cpu->SetXER(xer);
+
+	// Read CR
+	uint32_t cr = cpu->GetCR();
+	
+	// Generate CR0
+	cr = (cr & ~CONFIG::CR0_MASK) |
+		((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+		(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+			
+	// Update CR
+	cpu->SetCR(cr);
 }
 addic_.disasm = {
 	os << "addic. r" << rd << ", r" << ra << ", " << simm;
@@ -149,7 +282,13 @@ addic_.disasm = {
 
 op addis(15[6]:rd[5]:ra[5]:shl<16> sext<32> simm[16])
 addis.execute = {
-	uint32_t result = ra != 0 ? cpu->GetGPR(ra) + simm : simm;
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	
+	// Compute the result
+	uint32_t result = ra != 0 ? a + simm : simm;
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
 }
 addis.disasm = {
@@ -161,21 +300,45 @@ addis.disasm = {
 
 op addme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:234[9]:rc[1])
 addme.execute = {
-	uint8_t CA, OV;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
 	uint32_t result;
-	Add32(result, CA, OV, 0xFFFFFFFF, cpu->GetGPR(ra), cpu->GetXER_CA());
+	
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t xer = cpu->GetXER();
+	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
+	
+	// Compute the result
+	Add32(result, carry, overflow, 0xFFFFFFFF, a, carry_in);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
- 	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	if(oe) {
-		if(OV) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
-		}
+	
+	// Generate XER[CA]
+ 	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	if(unlikely(oe))
+	{
+		// Generate XER[OV] and XER[SO]
+		xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	// Update XER
+	cpu->SetXER(xer);
+	
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 addme.disasm = {
@@ -184,21 +347,45 @@ addme.disasm = {
 
 op addze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:202[9]:rc[1])
 addze.execute = {
-	uint8_t CA, OV;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
 	uint32_t result;
-	Add32(result, CA, OV, cpu->GetGPR(ra), cpu->GetXER_CA(), 0);
+	
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t xer = cpu->GetXER();
+	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
+	
+	// Compute the result
+	Add32(result, carry, overflow, a, carry_in, 0);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	if(oe) {
-		if(OV) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
-		}
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	if(unlikely(oe))
+	{
+		// Generate XER[OV] and XER[SO]
+		xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	// Update XER
+	cpu->SetXER(xer);
+	
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 addze.disasm = {
@@ -208,26 +395,79 @@ addze.disasm = {
 
 op divw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:491[9]:rc[1])
 divw.execute = {
-	if((cpu->GetGPR(ra) == 0x80000000UL && cpu->GetGPR(rb) == 0xffffffffUL) || cpu->GetGPR(rb) == 0) {
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	if(unlikely((a == 0x80000000UL && b == 0xffffffffUL) || b == 0))
+	{
+		// Write back the result (zero)
 		cpu->SetGPR(rd, 0);
-		if(oe) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
+		
+		if(unlikely(oe || rc))
+		{
+			// Read XER
+			uint32_t xer = cpu->GetXER();
+			if(unlikely(oe))
+			{
+				// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
+				xer = xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK;
+
+				// Update XER
+				cpu->SetXER(xer);
+			}
+			if(unlikely(rc))
+			{
+				// Read CR
+				uint32_t cr = cpu->GetCR();
+				
+				// Generate CR0: LT=0 GT=0 EQ=0 SO=XER[SO]
+				cr = (cr & ~CONFIG::CR0_MASK) |
+					((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0);
+
+				// Update CR
+				cpu->SetCR(cr);
+			}
 		}
-		if(rc) {
-			cpu->ResetCR0_LT();
-			cpu->ResetCR0_GT();
-			cpu->ResetCR0_EQ();
-			if(cpu->GetXER_SO()) cpu->SetCR0_SO(); else cpu->ResetCR0_SO();
-		}
-	} else {
-		int32_t _a = cpu->GetGPR(ra) ;
-		int32_t _b = cpu->GetGPR(rb) ;
-		int32_t _c = _a / _b ;
-		cpu->SetGPR(rd, _c);
-		if(oe) cpu->ResetXER_OV();
-		if(rc) {
-			cpu->ComputeCR0(_c);
+	}
+	else
+	{
+		// Read the input operands
+		int32_t a = cpu->GetGPR(ra);
+		int32_t b = cpu->GetGPR(rb);
+		
+		// Compute the result
+		int32_t result = a / b;
+		
+		// Write back the result
+		cpu->SetGPR(rd, result);
+		
+		if(unlikely(oe || rc))
+		{
+			// Read XER
+			uint32_t xer = cpu->GetXER();
+			
+			if(unlikely(oe))
+			{
+				// Generate XER[OV]: XER[OV]=0
+				xer = xer & ~CONFIG::XER_OV_MASK;
+				
+				// Update XER
+				cpu->SetXER(xer);
+			}
+			if(unlikely(rc))
+			{
+				// Read CR
+				uint32_t cr = cpu->GetCR();
+				
+				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+				cr = (cr & ~CONFIG::CR0_MASK) |
+					((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+					(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+						
+				// Update CR
+				cpu->SetCR(cr);
+			}
 		}
 	}
 }
@@ -237,26 +477,77 @@ divw.disasm = {
 
 op divwu(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:459[9]:rc[1])
 divwu.execute = {
-	uint32_t _a = cpu->GetGPR(ra) ;
-	uint32_t _b = cpu->GetGPR(rb) ;
-	if(_b == 0) {
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	if(unlikely(b == 0))
+	{
+		// Write back the result (zero)
 		cpu->SetGPR(rd, 0);
-		if(oe) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
+		
+		if(unlikely(oe || rc))
+		{
+			// Read XER
+			uint32_t xer = cpu->GetXER();
+			
+			if(unlikely(oe))
+			{
+				// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
+				xer = xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK;
+				
+				// Update XER
+				cpu->SetXER(xer);
+			}
+			if(unlikely(rc))
+			{
+				// Read CR
+				uint32_t cr = cpu->GetCR();
+				
+				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=0 CR0[GT]=0 CR0[EQ]=1
+				cr = (cr & ~CONFIG::CR0_MASK) |
+					((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+					CONFIG::CR0_EQ_MASK;
+						
+				// Update CR
+				cpu->SetCR(cr);
+			}
 		}
-		if(rc) {
-			cpu->ResetCR0_LT();
-			cpu->ResetCR0_GT();
-			cpu->ResetCR0_EQ();
-			cpu->SetCR0_SO();
-		}
-	} else {
-		uint32_t _c = _a / _b ;
-		cpu->SetGPR(rd, _c);
-		if(oe) cpu->ResetXER_OV();
-		if(rc) {
-			cpu->ComputeCR0(_c) ;
+	}
+	else
+	{
+		// Compute the result
+		uint32_t result = a / b ;
+		
+		// Write back the result
+		cpu->SetGPR(rd, result);
+		
+		if(unlikely(oe || rc))
+		{
+			// Read XER
+			uint32_t xer = cpu->GetXER();
+			
+			if(unlikely(oe))
+			{
+				// Generate XER[OV]: XER[OV]=0
+				xer = xer & ~CONFIG::XER_OV_MASK;
+				
+				// Update XER
+				cpu->SetXER(xer);
+			}
+			if(unlikely(rc))
+			{
+				// Read CR
+				uint32_t cr = cpu->GetCR();
+				
+				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+				cr = (cr & ~CONFIG::CR0_MASK) |
+					((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+					(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+						
+				// Update CR
+				cpu->SetCR(cr);
+			}
 		}
 	}
 }
@@ -267,13 +558,32 @@ divwu.disasm = {
 
 op mulhw(31[6]:rd[5]:ra[5]:rb[5]:?[1]:75[9]:rc[1])
 mulhw.execute = {
-	int64_t a = (int32_t) cpu->GetGPR(ra);
-	int64_t b = (int32_t) cpu->GetGPR(rb);
-	int64_t _prod = a * b ;
-	uint32_t result = (int32_t)(_prod >> 32) ;
+	// Read the input operands
+	int32_t a = cpu->GetGPR(ra);
+	int32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	int64_t result64 = (int64_t) a * (int64_t) b;
+	uint32_t result = (int32_t) (result64 >> 32);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// Read XER
+		uint32_t xer = cpu->GetXER();
+
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 mulhw.disasm = {
@@ -282,14 +592,32 @@ mulhw.disasm = {
 
 op mulhwu(31[6]:rd[5]:ra[5]:rb[5]:?[1]:11[9]:rc[1])
 mulhwu.execute = {
-	uint64_t _a = (uint32_t) cpu->GetGPR(ra);
-	uint64_t _b = (uint32_t) cpu->GetGPR(rb);
-	uint64_t _prod = _a * _b ;
-	_prod = _prod >> 32 ;
-	uint32_t result = (uint32_t) _prod ;
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint64_t result64 = (uint64_t) a * (uint64_t) b;
+	uint32_t result = (uint32_t) (result64 >> 32);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// Read XER
+		uint32_t xer = cpu->GetXER();
+
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 mulhwu.disasm = {
@@ -298,8 +626,14 @@ mulhwu.disasm = {
 
 op mulli(07[6]:rd[5]:ra[5]: sext<32> simm[16])
 mulli.execute = {
-	int64_t _prod = (int64_t) cpu->GetGPR(ra) * (int64_t) simm;
-	uint32_t result = (uint32_t) _prod;
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	
+	// Compute the result
+	int64_t result64 = (int64_t) a * (int64_t) simm;
+	uint32_t result = (uint32_t) result64;
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
 }
 mulli.disasm = {
@@ -308,15 +642,43 @@ mulli.disasm = {
 
 op mullw(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:235[9]:rc[1])
 mullw.execute = {
-	int64_t _prod = (int64_t) cpu->GetGPR(ra) * (int64_t) cpu->GetGPR(rb) ;
-	uint32_t result = (uint32_t) _prod;
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	int64_t result64 = (int64_t) a * (int64_t) b;
+	uint32_t result = (uint32_t) result64;
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(oe && (0xFFFFFFFF00000000ULL & _prod) != 0) {
-		cpu->SetXER_OV();
-		cpu->SetXER_SO();
-	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(oe || rc))
+	{
+		// Read XER
+		uint32_t xer = cpu->GetXER();
+		
+		if(oe && (0xFFFFFFFF00000000ULL & result64) != 0)
+		{
+			// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
+			xer = xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK;
+			
+			// Update XER
+			cpu->SetXER(xer);
+		}
+		if(unlikely(rc))
+		{
+			// Read CR
+			uint32_t cr = cpu->GetCR();
+			
+			// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+			cr = (cr & ~CONFIG::CR0_MASK) |
+				((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+				(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+					
+			// Update CR
+			cpu->SetCR(cr);
+		}
 	}
 }
 mullw.disasm = {
@@ -325,23 +687,76 @@ mullw.disasm = {
 
 op neg(31[6]:rd[5]:ra[5]:?[5]:oe[1]:104[9]:rc[1])
 neg.execute = {
-	uint32_t result;
-	if(cpu->GetGPR(ra) == 0x80000000UL)
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	
+	if(a == 0x80000000UL)
 	{
-		result = 0x80000000UL;
-		if(oe)
+		// Write back the result
+		cpu->SetGPR(rd, 0x80000000UL);
+		
+		if(unlikely(oe || rc))
 		{
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
+			// Read XER
+			uint32_t xer = cpu->GetXER();
+			
+			if(unlikely(oe))
+			{
+				// Generate XER[OV] and XER[SO]: XER[OV]=1 XER[SO]=1
+				xer = xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK;
+				// Update XER
+				cpu->SetXER(xer);
+			}
+			if(unlikely(rc))
+			{
+				// Read CR
+				uint32_t cr = cpu->GetCR();
+				
+				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=1 CR0[GT]=0 CR0[EQ]=0
+				cr = (cr & ~CONFIG::CR0_MASK) |
+					((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+					CONFIG::CR0_LT_MASK;
+						
+				// Update CR
+				cpu->SetCR(cr);
+			}
 		}
 	}
 	else
 	{
-		result = -cpu->GetGPR(ra); //(~GPR(ra)) + 1;
-		if(oe) cpu->ResetXER_OV();
+		// Compute the result
+		uint32_t result = -a; // 2's complement of a: (~a) + 1;
+		
+		// Write back the result
+		cpu->SetGPR(rd, result);
+
+		if(unlikely(oe || rc))
+		{
+			// Read XER
+			uint32_t xer = cpu->GetXER();
+			
+			if(unlikely(oe))
+			{
+				// Generate XER[OV]: XER[OV]=0
+				xer = xer & ~CONFIG::XER_OV_MASK;
+				// Update XER
+				cpu->SetXER(xer);
+			}
+			if(unlikely(rc))
+			{
+				// Read CR
+				uint32_t cr = cpu->GetCR();
+				
+				// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+				cr = (cr & ~CONFIG::CR0_MASK) |
+					((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+					(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+						
+				// Update CR
+				cpu->SetCR(cr);
+			}
+		}
 	}
-	cpu->SetGPR(rd, result);
-	if(rc) cpu->ComputeCR0(result);
 }
 neg.disasm = {
 	os << "neg" << (oe ? "o" : "") << (rc ? "." : "") << " r" << rd << ", r" << ra;
@@ -349,20 +764,44 @@ neg.disasm = {
 
 op subf(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:40[9]:rc[1])
 subf.execute = {
-	uint8_t CA, OV;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
+	
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
 	uint32_t result;
-	Add32(result, CA, OV, ~(cpu->GetGPR(ra)), cpu->GetGPR(rb), 1);
+	Add32(result, carry, overflow, ~a, b, 1);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(oe) {
-		if(OV) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
+	
+	if(unlikely(oe || rc))
+	{
+		// Read XER
+		uint32_t xer = cpu->GetXER();
+		if(unlikely(oe))
+		{
+			// Generate XER[OV] and XER[SO]
+			xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
+			// Update XER
+			cpu->SetXER(xer);
 		}
-	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+		if(unlikely(rc))
+		{
+			// Read CR
+			uint32_t cr = cpu->GetCR();
+			
+			// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+			cr = (cr & ~CONFIG::CR0_MASK) |
+				((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+				(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+					
+			// Update CR
+			cpu->SetCR(cr);
+		}
 	}
 }
 subf.disasm = {
@@ -371,21 +810,44 @@ subf.disasm = {
 
 op subfc(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:8[9]:rc[1])
 subfc.execute = {
-	uint8_t CA, OV;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
 	uint32_t result;
-	Add32(result, CA, OV, ~(cpu->GetGPR(ra)), cpu->GetGPR(rb), 1);
+
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	uint32_t xer = cpu->GetXER();
+	
+	// Compute the result
+	Add32(result, carry, overflow, ~a, b, 1);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	if(oe) {
-		if(OV) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
-		}
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	if(unlikely(oe))
+	{
+		// Generate XER[OV] and XER[SO]
+		xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+
+	// Update XER
+	cpu->SetXER(xer);
+
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 subfc.disasm = {
@@ -394,24 +856,46 @@ subfc.disasm = {
 
 op subfe(31[6]:rd[5]:ra[5]:rb[5]:oe[1]:136[9]:rc[1])
 subfe.execute = {
-	uint32_t a = ~cpu->GetGPR(ra);
-	uint32_t b = cpu->GetGPR(rb);
-	uint32_t c = cpu->GetXER_CA();
-	uint8_t CA, OV;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
 	uint32_t result;
-	Add32(result, CA, OV, a, b, c);
+
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb);
+	uint32_t xer = cpu->GetXER();
+	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
+	
+	// Compute the result
+	Add32(result, carry, overflow, ~a, b, carry_in);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	if(oe) {
-		if(OV) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
-		}
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	if(unlikely(oe))
+	{
+		// Generate XER[OV] and XER[SO]
+		xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+
+	// Update XER
+	cpu->SetXER(xer);
+
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 subfe.disasm = {
@@ -420,13 +904,26 @@ subfe.disasm = {
 
 op subfic(08[6]:rd[5]:ra[5]:sext<32> simm[16])
 subfic.execute = {
-	uint8_t CA, OV = 0;
+	uint8_t carry; // carry out
+	uint8_t overflow = 0; // overflow
+	uint32_t result;
+
+	// Read the input operands
 	int32_t a = cpu->GetGPR(ra);
 	int32_t b = simm;
-	uint32_t result;
-	Add32(result, CA, OV, -a, b, 0);
+	uint32_t xer = cpu->GetXER();
+	
+	// Compute the result
+	Add32(result, carry, overflow, -a, b, 0);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA || a == 0) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+	
+	// Generate XER[CA]
+	xer = (carry || a == 0) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	// Update XER
+	cpu->SetXER(xer);
 }
 subfic.disasm = {
 	os << "subfic r" << rd << ", r" << ra << ", " << simm;
@@ -434,21 +931,45 @@ subfic.disasm = {
 
 op subfme(31[6]:rd[5]:ra[5]:?[5]:oe[1]:232[9]:rc[1])
 subfme.execute = {
-	uint8_t CA, OV;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
 	uint32_t result;
-	Add32(result, CA, OV, ~(cpu->GetGPR(ra)), 0xFFFFFFFF, cpu->GetXER_CA());
+	
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t xer = cpu->GetXER();
+	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
+	
+	// Compute the result
+	Add32(result, carry, overflow, ~a, 0xFFFFFFFF, carry_in);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	if(oe) {
-		if(OV) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
-		}
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	if(unlikely(oe))
+	{
+		// Generate XER[OV] and XER[SO]
+		xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	// Update XER
+	cpu->SetXER(xer);
+	
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 subfme.disasm = {
@@ -457,21 +978,45 @@ subfme.disasm = {
 
 op subfze(31[6]:rd[5]:ra[5]:?[5]:oe[1]:200[9]:rc[1])
 subfze.execute = {
-	uint8_t CA, OV;
+	uint8_t carry; // carry out
+	uint8_t overflow; // overflow
 	uint32_t result;
-	Add32(result, CA, OV, ~(cpu->GetGPR(ra)), cpu->GetXER_CA(), 0);
+	
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t xer = cpu->GetXER();
+	uint8_t carry_in = (xer >> CONFIG::XER_CA_OFFSET) & 1;
+	
+	// Compute the result
+	Add32(result, carry, overflow, ~a, carry_in, 0);
+	
+	// Write back the result
 	cpu->SetGPR(rd, result);
-	if(CA) cpu->SetXER_CA(); else cpu->ResetXER_CA();
-	if(oe) {
-		if(OV) {
-			cpu->SetXER_OV();
-			cpu->SetXER_SO();
-		} else {
-			cpu->ResetXER_OV();
-		}
+	
+	// Generate XER[CA]
+	xer = carry ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
+	
+	if(unlikely(oe))
+	{
+		// Generate XER[OV] and XER[SO]
+		xer = overflow ? xer | CONFIG::XER_OV_MASK | CONFIG::XER_SO_MASK : xer & ~CONFIG::XER_OV_MASK;
 	}
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	// Update XER
+	cpu->SetXER(xer);
+	
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 subfze.disasm = {
@@ -486,21 +1031,18 @@ subfze.disasm = {
 
 op cmp(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:0[10]:?[1])
 cmp.execute = {
-	int32_t _a, _b ;
-	uint32_t _c;
-	_a = (int32_t) cpu->GetGPR(ra);
-	_b = (int32_t) cpu->GetGPR(rb);
-	if(_a<_b) {
-		_c = 1 << 3 ;
-	} else {
-		if(_a>_b) {
-			_c = 1 << 2 ;
-		} else {
-			_c = 1 << 1 ;
-		}
-	}
-	_c = _c | cpu->GetXER_SO();
-	cpu->SetCRF(crfD, _c);
+	// Read the input operands
+	int32_t a = cpu->GetGPR(ra);
+	int32_t b = cpu->GetGPR(rb) ;
+	uint32_t cr = cpu->GetCR();
+	uint32_t xer = cpu->GetXER();
+	
+	// Generate CR[crfD] bit field
+	uint32_t c = ((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) | ((a < b) ? CONFIG::CR0_LT_MASK : (a > b) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK);
+	cr = (cr & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c >> (4 * crfD));
+	
+	// Update CR
+	cpu->SetCR(cr);
 }
 cmp.disasm = {
 	os << "cmp cr" << crfD << ", " << l << ", r" << ra << ", r" << rb;
@@ -508,21 +1050,20 @@ cmp.disasm = {
 
 op cmpi(11[6]:crfD[3]:?[1]:l[1]:ra[5]:sext<32> simm[16])
 cmpi.execute = {
+	// Raise an illegal instruction exception if l=1
 	if(l) throw IllegalInstructionException<CONFIG>();
-	int32_t _a ;
-	uint32_t _c;
-	_a = cpu->GetGPR(ra) ;
-	if(_a<simm) {
-		_c = 1 << 2 ;
-	} else {
-		if(_a>simm) {
-			_c = 1 << 1 ;
-		} else {
-			_c = 1 ;
-		}
-	}
-	_c = (_c << 1) | cpu->GetXER_SO();
-	cpu->SetCRF(crfD, _c);
+	
+	// Read the input operands
+	int32_t a = cpu->GetGPR(ra);
+	uint32_t cr = cpu->GetCR();
+	uint32_t xer = cpu->GetXER();
+	
+	// Generate CR[crfD] bit field
+	uint32_t c = ((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) | ((a < simm) ? CONFIG::CR0_LT_MASK : (a > simm) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK);
+	cr = (cr & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c >> (4 * crfD));
+	
+	// Update CR
+	cpu->SetCR(cr);
 }
 cmpi.disasm = {
 	os << "cmpi cr" << crfD << ", " << l << ", r" << ra << ", " << simm;
@@ -530,21 +1071,21 @@ cmpi.disasm = {
 
 op cmpl(31[6]:crfD[3]:?[1]:l[1]:ra[5]:rb[5]:32[10]:?[1])
 cmpl.execute = {
+	// Raise an illegal instruction exception if l=1
 	if(l) throw IllegalInstructionException<CONFIG>();
-	uint32_t _a, _b, _c;
-	_a = cpu->GetGPR(ra) ;
-	_b = cpu->GetGPR(rb) ;
-	if(_a<_b) {
-		_c = 1 << 2 ;
-	} else {
-		if(_a>_b) {
-			_c = 1 << 1 ;
-		} else {
-			_c = 1 ;
-		}
-	}
-	_c = _c << 1 | cpu->GetXER_SO();
-	cpu->SetCRF(crfD, _c);
+	
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t b = cpu->GetGPR(rb) ;
+	uint32_t cr = cpu->GetCR();
+	uint32_t xer = cpu->GetXER();
+	
+	// Generate CR[crfD] bit field
+	uint32_t c = ((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) | ((a < b) ? CONFIG::CR0_LT_MASK : (a > b) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK);
+	cr = (cr & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c >> (4 * crfD));
+	
+	// Update CR
+	cpu->SetCR(cr);
 }
 cmpl.disasm = {
 	os << "cmpl cr" << crfD << ", " << l << ", r" << ra << ", r" << rb;
@@ -552,24 +1093,20 @@ cmpl.disasm = {
 
 op cmpli(10[6]:crfD[3]:?[1]:l[1]:ra[5]:uimm[16])
 cmpli.execute = {
+	// Raise an illegal instruction exception if l=1
 	if(l) throw IllegalInstructionException<CONFIG>();
-	uint32_t _a, _c;
-	if(l)
-	{
-		throw IllegalInstructionException<CONFIG>();
-	}
-	_a = cpu->GetGPR(ra) ;
-	if(_a<uimm) {
-		_c = 1 << 2 ;
-	} else {
-		if(_a>uimm) {
-			_c = 1 << 1 ;
-		} else {
-			_c = 1 ;
-		}
-	}
-	_c = (_c << 1) | cpu->GetXER_SO();
-	cpu->SetCRF(crfD, _c);
+	
+	// Read the input operands
+	uint32_t a = cpu->GetGPR(ra);
+	uint32_t cr = cpu->GetCR();
+	uint32_t xer = cpu->GetXER();
+	
+	// Generate CR[crfD] bit field
+	uint32_t c = ((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) | ((a < uimm) ? CONFIG::CR0_LT_MASK : (a > uimm) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK);
+	cr = (cr & ~(CONFIG::CR0_MASK >> (4 * crfD))) | (c >> (4 * crfD));
+	
+	// Update CR
+	cpu->SetCR(cr);
 }
 cmpli.disasm = {
 	os << "cmpli cr" << crfD << ", " << l << ", r" << ra << ", " << uimm;
@@ -583,10 +1120,31 @@ cmpli.disasm = {
 
 op and(31[6]: rs[5]: ra[5]: rb[5]: 28[10]: rc[1])
 and.execute = {
-	uint32_t result = cpu->GetGPR(rs) & cpu->GetGPR(rb);
+	// read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = s & b;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 and.disasm = {
@@ -595,10 +1153,31 @@ and.disasm = {
 
 op andc(31[6]: rs[5]: ra[5]: rb[5]: 60[10]: rc[1])
 andc.execute = {
-	uint32_t result = cpu->GetGPR(rs) & ~(cpu->GetGPR(rb));
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = s & ~b;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 andc.disasm = {
@@ -607,9 +1186,26 @@ andc.disasm = {
 
 op andi_(28[6]:rs[5]:ra[5]:uimm[16])
 andi_.execute = {
-	uint32_t result = cpu->GetGPR(rs) & uimm;
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t xer = cpu->GetXER();
+	
+	// Compute the result
+	uint32_t result = s & uimm;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	cpu->ComputeCR0(result);
+	
+	// Read CR
+	uint32_t cr = cpu->GetCR();
+	
+	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+	cr = (cr & ~CONFIG::CR0_MASK) |
+		((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+		(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+			
+	// Update CR
+	cpu->SetCR(cr);
 }
 andi_.disasm = {
 	os << "andi. r" << ra << ", r" << rs << ", " << uimm;
@@ -617,9 +1213,26 @@ andi_.disasm = {
 
 op andis_(29[6]:rs[5]:ra[5]: shl<16> uimm[16])
 andis_.execute = {
-	uint32_t result = cpu->GetGPR(rs) & (uimm);
+	// read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t xer = cpu->GetXER();
+
+	// Compute the result
+	uint32_t result = s & uimm;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	cpu->ComputeCR0(result);
+	
+	// Read CR
+	uint32_t cr = cpu->GetCR();
+	
+	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+	cr = (cr & ~CONFIG::CR0_MASK) |
+		((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+		(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+			
+	// Update CR
+	cpu->SetCR(cr);
 }
 andis_.disasm = {
 	os << "andis. r" << ra << ", r" << rs << ", " << (uimm >> 16);
@@ -627,27 +1240,65 @@ andis_.disasm = {
 
 op cntlzw(31[6]:rs[5]:ra[5]:?[5]:26[10]:rc[1])
 cntlzw.execute = {
-	uint32_t n = 0;
+	// read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t xer = cpu->GetXER();
+	
+	// Compute the result
+	uint32_t result = 0;
 	uint32_t m = 1 << 31;
-	while(n < 32)
+	while(result < 32)
 	{
-		if(cpu->GetGPR(rs) & m) break;
+		if(s & m) break;
 		m >>= 1;
-		n++;
+		result++;
 	}
-	cpu->SetGPR(ra, n);
-	if(rc) cpu->ComputeCR0(n);
- }
+	
+	// Write back the result
+	cpu->SetGPR(ra, result);
+
+	// Read CR
+	uint32_t cr = cpu->GetCR();
+	
+	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+	cr = (cr & ~CONFIG::CR0_MASK) |
+		((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+		(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+			
+	// Update CR
+	cpu->SetCR(cr);
+}
 cntlzw.disasm = {
 	os << "cntlzw" << (rc ? "." : "") << " r" << ra << ", r" << rs;
 }
 
 op eqv(31[6]:rs[5]:ra[5]:rb[5]:284[10]:rc[1])
 eqv.execute = {
- uint32_t _c = ~(cpu->GetGPR(rs) ^ cpu->GetGPR(rb)) ;
-	cpu->SetGPR(ra, _c);
-	if(rc) {
-		cpu->ComputeCR0(_c) ;
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = ~(s ^ b);
+	
+	// Write back the result
+	cpu->SetGPR(ra, result);
+
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 eqv.disasm = {
@@ -656,10 +1307,30 @@ eqv.disasm = {
 
 op extsb(31[6]:rs[5]:ra[5]:?[5]:954[10]:rc[1])
 extsb.execute = {
-	uint32_t result = (uint32_t)(int32_t)(int8_t)(uint8_t) cpu->GetGPR(rs);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t result = (uint32_t)(int32_t)(int8_t)(uint8_t) s;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 extsb.disasm = {
@@ -668,10 +1339,30 @@ extsb.disasm = {
 
 op extsh(31[6]:rs[5]:ra[5]:?[5]:922[10]:rc[1])
 extsh.execute = {
-	uint32_t result = (uint32_t)(int32_t)(int16_t)(uint16_t) cpu->GetGPR(rs);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t result = (uint32_t)(int32_t)(int16_t)(uint16_t) s;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result) ;
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 extsh.disasm = {
@@ -680,10 +1371,31 @@ extsh.disasm = {
 
 op nand(31[6]:rs[5]:ra[5]:rb[5]:476[10]:rc[1])
 nand.execute = {
-	uint32_t result = ~(cpu->GetGPR(rs) & cpu->GetGPR(rb));
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = ~(s & b);
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 nand.disasm = {
@@ -692,10 +1404,31 @@ nand.disasm = {
 
 op nor(31[6]:rs[5]:ra[5]:rb[5]:124[10]:rc[1])
 nor.execute = {
-	uint32_t result = ~(cpu->GetGPR(rs) | cpu->GetGPR(rb));
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = ~(s | b);
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 nor.disasm = {
@@ -707,10 +1440,31 @@ nor.disasm = {
 
 op or(31[6]:rs[5]:ra[5]:rb[5]:444[10]:rc[1])
 or.execute = {
-	uint32_t result = cpu->GetGPR(rs) | cpu->GetGPR(rb);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = s | b;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result) ;
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 or.disasm = {
@@ -722,10 +1476,31 @@ or.disasm = {
 
 op orc(31[6]:rs[5]:ra[5]:rb[5]:412[10]:rc[1])
 orc.execute = {
-	uint32_t result = cpu->GetGPR(rs) | ~(cpu->GetGPR(rb));
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = s | ~b;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 orc.disasm = {
@@ -734,7 +1509,13 @@ orc.disasm = {
 
 op ori(24[6]:rs[5]:ra[5]:uimm[16])
 ori.execute = {
-	uint32_t result = cpu->GetGPR(rs) | uimm ;
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t result = s | uimm;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
 }
 ori.disasm = {
@@ -746,7 +1527,13 @@ ori.disasm = {
 
 op oris(25[6]:rs[5]:ra[5]:shl<16> uimm[16])
 oris.execute = {
-	uint32_t result = cpu->GetGPR(rs) | uimm;
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t result = s | uimm;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
 }
 oris.disasm = {
@@ -755,9 +1542,32 @@ oris.disasm = {
 
 op xor(31[6]:rs[5]:ra[5]:rb[5]:316[10]:rc[1])
 xor.execute = {
-	uint32_t result = cpu->GetGPR(rs) ^ cpu->GetGPR(rb);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = s ^ b;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
+	}
 }
 xor.disasm = {
 	os << "xor" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;
@@ -765,7 +1575,13 @@ xor.disasm = {
 
 op xori(26[6]:rs[5]:ra[5]:uimm[16])
 xori.execute = {
-	uint32_t result = cpu->GetGPR(rs) ^ (uimm);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t result = s ^ uimm;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
 }
 xori.disasm = {
@@ -774,7 +1590,13 @@ xori.disasm = {
 
 op xoris(27[6]:rs[5]:ra[5]:shl<16> uimm[16])
 xoris.execute = {
-	uint32_t result = cpu->GetGPR(rs) ^ (uimm);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t result = s ^ uimm;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
 }
 xoris.disasm = {
@@ -789,13 +1611,33 @@ xoris.disasm = {
 
 op rlwimi(20[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:rc[1])
 rlwimi.execute = {
-	uint32_t _r, _mask ;
-  	_r = RotateLeft(cpu->GetGPR(rs), sh) ;
-	_mask = cpu->Mask(mb, me) ;
-	uint32_t result = (_r & _mask) | (cpu->GetGPR(ra) & ~(_mask));
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t a = cpu->GetGPR(ra);
+	
+	// Compute the result
+  	uint32_t r = RotateLeft(s, sh);
+	uint32_t mask = Mask(mb, me);
+	uint32_t result = (r & mask) | (a & ~mask);
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 rlwimi.disasm = {
@@ -804,13 +1646,32 @@ rlwimi.disasm = {
 
 op rlwinm(21[6]:rs[5]:ra[5]:sh[5]:mb[5]:me[5]:rc[1])
 rlwinm.execute = {
-	uint32_t _r, _mask;
-	_r = RotateLeft(cpu->GetGPR(rs), sh);
-	_mask = cpu->Mask(mb, me);
-	uint32_t result = _r & _mask;
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	
+	// Compute the result
+	uint32_t r = RotateLeft(s, sh);
+	uint32_t mask = Mask(mb, me);
+	uint32_t result = r & mask;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 rlwinm.disasm = {
@@ -819,13 +1680,33 @@ rlwinm.disasm = {
 
 op rlwnm(23[6]:rs[5]:ra[5]:rb[5]:mb[5]:me[5]:rc[1])
 rlwnm.execute = {
-	uint32_t _r, _mask;
-	_r = RotateLeft(cpu->GetGPR(rs), cpu->GetGPR(rb));
-	_mask = cpu->Mask(mb, me);
-	uint32_t result = _r & _mask;
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t r = RotateLeft(s, b);
+	uint32_t mask = Mask(mb, me);
+	uint32_t result = r & mask;
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 rlwnm.disasm = {
@@ -840,15 +1721,31 @@ rlwnm.disasm = {
 
 op slw(31[6]:rs[5]:ra[5]:rb[5]:24[10]:rc[1])
 slw.execute = {
-	uint32_t result;
-	if((cpu->GetGPR(rb) & 0x20)!=0) {
-		result = 0;
-	} else {
-		result = cpu->GetGPR(rs) << (cpu->GetGPR(rb) & 0x1F);
-	}
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	uint32_t result = (b & 0x20) ? 0 : s << (b & 0x1f);
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 slw.disasm = {
@@ -857,37 +1754,61 @@ slw.disasm = {
 
 op sraw(31[6]:rs[5]:ra[5]:rb[5]:792[10]:rc[1])
 sraw.execute = {
-	uint32_t n = cpu->GetGPR(rb);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	uint32_t xer = cpu->GetXER();
+	
+	// Compute the result
 	int32_t result;
-	int32_t src = cpu->GetGPR(rs);
 
-	if(n == 0)
+	if(b == 0)
 	{
-		result = src;
-		cpu->ResetXER_CA();
+		result = s;
+		// Generate XER[CA]: XER[CA]=1
+		xer = xer & ~CONFIG::XER_CA_MASK;
 	}
-	else if(n & 0x20)
+	else if(b & 0x20)
 	{
-		if(src < 0)
+		if(s < 0)
 		{
 			result = 0xffffffff;
-			if(src & 0x7fffffff) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+			// Generate XER[CA]
+			xer = (s & 0x7fffffff) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
 		}
 		else
 		{
 			result = 0;
-			cpu->ResetXER_CA();
+			// Generate XER[CA]: XER[CA]=0
+			xer = xer & ~CONFIG::XER_CA_MASK;
 		}
 	}
 	else
 	{
-		n = n & 0x1f;
-		result = (int32_t) src >> n;
-		if(src < 0 && (src << (32 - n)) != 0) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+		b = b & 0x1f;
+		result = (int32_t) s >> b;
+		// Generate XER[CA]
+		xer = (s < 0 && (s << (32 - b)) != 0) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
 	}
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) {
-		cpu->ComputeCR0(result);
+	
+	// Update XER
+	cpu->SetXER(xer);
+	
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
 	}
 }
 sraw.disasm = {
@@ -896,22 +1817,45 @@ sraw.disasm = {
 
 op srawi(31[6]:rs[5]:ra[5]:sh[5]:824[10]:rc[1])
 srawi.execute = {
-	uint32_t n = sh;
+	// Read the input operands
+	int32_t s = cpu->GetGPR(rs);
+	uint32_t xer = cpu->GetXER();
+	
+	// Compute the result
 	int32_t result;
-	int32_t src = cpu->GetGPR(rs);
 
-	if(n == 0)
+	if(sh == 0)
 	{
-		result = src;
-		cpu->ResetXER_CA();
+		result = s;
+		// Generate XER[CA]: XER[CA]=0
+		xer = xer & ~CONFIG::XER_CA_MASK;
 	}
 	else
 	{
-		result = src >> n;
-		if(src < 0 && (src << (32 - n)) != 0) cpu->SetXER_CA(); else cpu->ResetXER_CA();
+		result = s >> sh;
+		// Generate XER[CA]
+		xer = (s < 0 && (s << (32 - sh)) != 0) ? xer | CONFIG::XER_CA_MASK : xer & ~CONFIG::XER_CA_MASK;
 	}
+	
+	// Update XER
+	cpu->SetXER(xer);
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
+	}
 }
 srawi.disasm = {
 	os << "srawi" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", " << sh;
@@ -919,10 +1863,33 @@ srawi.disasm = {
 
 op srw(31[6]:rs[5]:ra[5]:rb[5]:536[10]:rc[1])
 srw.execute = {
-	unsigned int sh = cpu->GetGPR(rb) & 0x3f;
-	uint32_t result = (sh & 0x20) ? 0 : cpu->GetGPR(rs) >> (sh & 0x1f);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t b = cpu->GetGPR(rb);
+	
+	// Compute the result
+	unsigned int sh = b & 0x3f;
+	uint32_t result = (sh & 0x20) ? 0 : s >> (sh & 0x1f);
+	
+	// Write back the result
 	cpu->SetGPR(ra, result);
-	if(rc) cpu->ComputeCR0(result);
+	
+	if(unlikely(rc))
+	{
+		// read XER
+		uint32_t xer = cpu->GetXER();
+		
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
+	}
 }
 srw.disasm = {
 	os << "srw" << (rc ? "." : "") << " r" << ra << ", r" << rs << ", r" << rb;

@@ -37,15 +37,31 @@ big_endian	/* instruction endian */
 address {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
-{
-#include <unisim/component/cxx/processor/powerpc/cpu.hh>
+decl {
+#include <iostream>
+#include <unisim/component/cxx/processor/powerpc/exception.hh>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+using std::ostream;
+
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
 }
 
-action {void} execute({CPU<CONFIG> *} {cpu}) {
+action {void} execute({typename CONFIG::STATE *} {cpu}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
-action {void} disasm({CPU<CONFIG> *} {cpu}, {ostream&} {os}) {
+action {void} disasm({typename CONFIG::STATE *} {cpu}, {ostream&} {os}) {
 	os << "???";
 }
 

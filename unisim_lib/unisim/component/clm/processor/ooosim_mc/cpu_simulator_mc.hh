@@ -816,7 +816,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		  {
 		    UInt64 sim_value = ReadFPR(i, cfg);
 		    //    UInt64 emul_value = (check_emulator[cfg]->GetFp64(i, cfg)).queryValue();
-		    UInt64 emul_value = check_emulator[cfg]->GetFp64(i);
+		    UInt64 emul_value = check_emulator[cfg]->GetFPR(i).queryValue();
 		    if(sim_value != emul_value)
 		      {
 			cerr << " ==== CONFIGURATION ["<<cfg<<"] ====" << endl;
@@ -965,7 +965,7 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
 		  {
 		    UInt64 sim_value = ReadFPR(i, cfg);
 		    //   UInt64 emul_value = (check_emulator[cfg]->GetFp64(i, cfg)).queryValue();
-		    UInt64 emul_value = check_emulator[cfg]->GetFp64(i);
+		    UInt64 emul_value = check_emulator[cfg]->GetFPR(i).queryValue();
 		    if ( sim_value != emul_value )
 		      {
 			/*

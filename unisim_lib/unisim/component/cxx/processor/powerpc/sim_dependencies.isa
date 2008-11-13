@@ -63,9 +63,11 @@ manque les loafd flottant a update comme lfdu)
  *     -- For other instructions (to defined)
  */
 
-{
+decl {
 
 #include <stdarg.h>
+#include <sstream>
+#include <string>
 
 namespace unisim {
 namespace component {
@@ -73,7 +75,8 @@ namespace cxx {
 namespace processor {
 namespace powerpc {
 
-
+using std::stringstream;
+using std::string;
 
 // DD New depencies are arriving ...
 /*

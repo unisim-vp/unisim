@@ -405,7 +405,7 @@ PPCSetup() {
     SetSyscallId(string("rt_sigprocmask"), 174);
     SetSyscallId(string("ugetrlimit"), 190);
     SetSyscallId(string("mmap2"), 192);
-    SetSyscallId(string("fstat64"), 195);
+    SetSyscallId(string("stat64"), 195);
     SetSyscallId(string("fstat64"), 197);
     SetSyscallId(string("fcntl64"), 204);
     SetSyscallId(string("flistxattr"), 217);
@@ -1975,6 +1975,7 @@ SetSyscallNameMap() {
 	syscall_name_map[string("writev")] = &thistype::LSC_writev;
 	syscall_name_map[string("mmap")] = &thistype::LSC_mmap;
 	syscall_name_map[string("mmap2")] = &thistype::LSC_mmap2;
+	syscall_name_map[string("stat64")] = &thistype::LSC_stat64;
 	syscall_name_map[string("fstat64")] = &thistype::LSC_fstat64;
 	syscall_name_map[string("getuid32")] = &thistype::LSC_getuid32;
 	syscall_name_map[string("getgid32")] = &thistype::LSC_getgid32;

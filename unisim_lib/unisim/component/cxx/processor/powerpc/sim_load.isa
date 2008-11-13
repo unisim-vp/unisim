@@ -33,11 +33,33 @@
  *          David Parello (david.parello@univ-perp.fr)
  */
 
+decl {
+#include <list>
+#include <iostream>
+#include <stdlib.h>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+using std::list;
+using std::endl;
+using std::cerr;
+
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+}
 
 /**
  * Returns the target register of the load instruction.
  */
-action {int} loadstore_target_register({CPU<CONFIG> *} {cpu}) { 
+action {int} loadstore_target_register({typename CONFIG::STATE *} {cpu}) { 
   cerr << "ISS Error: action loadstore_target_register not set for: ";
   Operation<CONFIG>::disasm(0,cerr);
   cerr << endl;
@@ -206,7 +228,7 @@ sync.memory_access_size =    { return 4; }
 /**
  * Returns the number of byte (chararcter) for load/store-string instructions
  */
-action {int} loadstore_string_numbyte({CPU<CONFIG> *} {cpu}) {  
+action {int} loadstore_string_numbyte({typename CONFIG::STATE *} {cpu}) {  
   cerr << "ISS Error: action memory_acces_size not set for: ";
   Operation<CONFIG>::disasm(0,cerr);
   cerr << endl;
@@ -224,7 +246,7 @@ stswx.loadstore_string_numbyte = { return cpu->GetXER(); }
  * Returns the effective memory address of the target load / store instruction.
  * In case of a load / store with update, provide the effective (non updated) address
  */
-action {typename CONFIG::address_t} loadstore_effective_address({CPU<CONFIG> *} {cpu}) { 
+action {typename CONFIG::address_t} loadstore_effective_address({typename CONFIG::STATE *} {cpu}) { 
   return cpu->GetEA();
 }
 
@@ -704,17 +726,21 @@ stfsux.split_into = {
 /**
  * Returns the true value of single-precision to store
  */
-action {uint32_t} get_single({CPU<CONFIG> *} {cpu}) { 
+action {uint32_t} get_single({typename CONFIG::STATE *} {cpu}) { 
   cerr << "ISS Error: operation do not provide single precision information: ";
   Operation<CONFIG>::disasm(0,cerr);
   cerr << endl;
   exit(1);
 }
 
-stfs.get_single = { return cpu->GetFp32(fs); }
-stfsu.get_single = { return cpu->GetFp32(fs); }
-stfsux.get_single = { return cpu->GetFp32(fs); }
-stfsx.get_single = { return cpu->GetFp32(fs); }
+group stf_get_single(stfs, stfsu, stfsux, stfsx)
+
+stf_get_single.get_single = {
+	uint32_t fpscr = cpu->GetFPSCR();
+	Flags flags;
+	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+	return SoftFloat(cpu->GetFPR(fs), flags).queryValue();
+}
 
 /*
 lfs.get_single = { return cpu->GetFp32(fs); }

@@ -37,7 +37,7 @@
  * Returns the target address of branch instructions.
  * The AA bit inform if the branch is relative or absolute.
  */
-action {typename CONFIG::address_t} get_target_address({typename CONFIG::address_t} {cia}, {CPU<CONFIG> *} {cpu}) {
+action {typename CONFIG::address_t} get_target_address({typename CONFIG::address_t} {cia}, {typename CONFIG::STATE *} {cpu}) {
   return 0;
 }
 
@@ -65,7 +65,7 @@ bclr.get_target_address = {
  * up the default branch prediction value statically.
  * See PowerPC manual, p186 (4.2.4.2. Conditional Branch Control)
  */
-action {bool} branch_statically_predicted_taken({CPU<CONFIG> *} {cpu}) { 
+action {bool} branch_statically_predicted_taken({typename CONFIG::STATE *} {cpu}) { 
   return true;
 }
 
@@ -96,7 +96,7 @@ bclr.branch_statically_predicted_taken = {
 
 
 // Are branches linked ?
-//action {bool} branch_linked({CPU<CONFIG> *} {cpu}) { 
+//action {bool} branch_linked({typename CONFIG::STATE *} {cpu}) { 
 action {bool} branch_linked() { 
   return false;
 }

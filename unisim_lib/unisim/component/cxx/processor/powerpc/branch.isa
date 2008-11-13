@@ -31,7 +31,30 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
+impl {
+
+#include <iostream>
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+using std::hex;
+using std::dec;
+using std::endl;
+using std::ios;
+
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+}
+
 op b(18[6]:shl<2> sext<32> li[24]: aa[1]: lk[1])
 b.execute = {
 	typename CONFIG::address_t target_addr = aa ? li : cpu->GetCIA() + li;

@@ -8,11 +8,11 @@ if COND_release
 libunisim_component_cxx_processor_powerpc_a_SOURCES += mpc755.cc mpc7447a.cc
 endif
 
-include_HEADERS = cpu.hh exception.hh powerpc_types.hh \
-	fpu.hh floating.hh config.hh branch.isa condition.isa floating.isa \
+include_HEADERS = cpu.hh exception.hh \
+	floating.hh config.hh branch.isa condition.isa floating.isa \
 	integer.isa loadstore.isa misc.isa altivec.isa ppc.isa perf.isa \
 	sim_branch.isa sim_dependencies.isa sim_latencies.isa sim_load.isa sim_ppc.isa\
-	fpu.tcc cpu.tcc exception.tcc
+	cpu.tcc exception.tcc
 nodist_include_HEADERS = $(top_srcdir)/powerpc.hh $(top_srcdir)/powerpc.tcc
 BUILT_SOURCES = $(top_srcdir)/powerpc.hh $(top_srcdir)/powerpc.tcc
 CLEANFILES = $(top_srcdir)/powerpc.tcc $(top_srcdir)/powerpc.hh

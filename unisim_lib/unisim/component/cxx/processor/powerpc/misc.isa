@@ -50,15 +50,11 @@ sc.disasm = {
 op rfi(19[6]:?[15]:50[10]:?[1])
 rfi.execute = {
 	cpu->FlushSubsequentInstructions();
-	if(cpu->GetMSR_PR())
-	{
-		throw PrivilegeViolationException<CONFIG>();
-	}
-
-//	cerr << "before resuming r9=0x" << hex << cpu->GetGPR(9) << std::dec << endl;
+	uint32_t msr = cpu->GetMSR();
+	if(msr & CONFIG::MSR_PR_MASK) throw PrivilegeViolationException<CONFIG>();
 
 	cpu->SetNIA(cpu->GetSRR0() & 0xfffffffcUL);
-	cpu->SetMSR((cpu->GetMSR() & 0xffff008cUL) | (cpu->GetSRR1() & 0x0000ff73UL));
+	cpu->SetMSR((msr & 0xffff008cUL) | (cpu->GetSRR1() & 0x0000ff73UL));
 }
 rfi.disasm = {
 	os << "rfi" << endl;
@@ -112,11 +108,23 @@ twi.disasm = {
 ******************************************/
 op mcrxr(31[6]:crfD[3]:?[12]:512[10]:?[1])
 mcrxr.execute = {
-	uint32_t _c;
-	_c = (cpu->GetXER() >> 28) & 0xf;	// take bits 0-3 of XER
-	cpu->SetCRF(crfD, _c);
+	// Read XER
+	uint32_t xer = cpu->GetXER();
 	
-	cpu->SetXER(cpu->GetXER() & 0x0fffffffUL);	// resetting bits 0-3 of XER
+	// Read CR
+	uint32_t cr = cpu->GetCR();
+	
+	// Generate CR[crfD]: CR[crfD]=XER[0-3]
+	cr = (cr & ~(CONFIG::CR0_MASK >> (4 * crfD))) | ((xer & 0xf0000000UL) >> (4 * crfD));
+	
+	// Reset XER[0-3]
+	xer = xer & 0x0fffffffUL;
+
+	// Update CR
+	cpu->SetCR(cr);
+	
+	// Update XER
+	cpu->SetXER(xer);
 }
 mcrxr.disasm = {
 	os << "mcrxr cr" << crfD;
@@ -124,6 +132,7 @@ mcrxr.disasm = {
 
 op mfcr(31[6]:rd[5]:?[10]:19[10]:?[1])
 mfcr.execute = {
+	// Move CR to destination GPR
 	cpu->SetGPR(rd, cpu->GetCR());
 }
 mfcr.disasm = {
@@ -132,12 +141,11 @@ mfcr.disasm = {
 
 op mfmsr(31[6]:rd[5]:?[10]:83[10]:?[1])
 mfmsr.execute = {
-	if(cpu->GetMSR_PR())
-	{
-		throw PrivilegeViolationException<CONFIG>();
-	}
+	uint32_t msr = cpu->GetMSR();
+	if(msr & CONFIG::MSR_PR_MASK) throw PrivilegeViolationException<CONFIG>();
 
-	cpu->SetGPR(rd, cpu->GetMSR());
+	// Move MSR to destination GPR
+	cpu->SetGPR(rd, msr);
 }
 mfmsr.disasm = {
 	os << "mfmsr r" << rd;
@@ -278,21 +286,24 @@ mftb.disasm = {
 
 op mtcrf(31[6]:rs[5]:?[1]:crm[8]:?[1]:144[10]:?[1])
 mtcrf.execute = {
-	uint32_t _m,_crm, _c, _a;
-	int _i, _b, _d;
-	_crm = crm;
-	_d = cpu->GetGPR(rs);
-	for(_i = 0; _i < 8; _i++)
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t cr = cpu->GetCR();
+	
+	// Generate a bit mask of bits to move from source GPR to CR
+	uint32_t m = 128;
+	uint32_t mask = 0;
+	unsigned int i = 8; // Hope compiler will unroll the loop !
+	do
 	{
-		_b = (_crm >> _i) & 0x1;
-		if(_b == 1)
-		{
-			_c = cpu->GetCR();
-			_a = (_d >> (_i*4)) & 0xf;
-			_m = (0xf << ((_i)*4));
-			cpu->SetCR((_c & ~_m) | (_a << ((_i)*4)));
-		}
-	}
+		mask = (crm & m) ? (mask << 4) | 0xf : mask << 4;
+	} while(m >>= 1, --i);
+	
+	// Apply the bit mask
+	cr = (cr & ~mask) | (s & mask);
+	
+	// Update CR
+	cpu->SetCR(cr);
 }
 mtcrf.disasm = {
 	if(crm == 0xff)
@@ -303,7 +314,8 @@ mtcrf.disasm = {
 
 op mtmsr(31[6]:rs[5]:?[10]:146[10]:?[1])
 mtmsr.execute = {
-	if(cpu->GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+	uint32_t msr = cpu->GetMSR();
+	if(msr & CONFIG::MSR_PR_MASK) throw PrivilegeViolationException<CONFIG>();
 
 	cpu->SetMSR(cpu->GetGPR(rs));
 }
@@ -318,9 +330,10 @@ SEGMENT REGISTER MANIPULATION INSTRUCTIONS
 **********************************************/
 op mfsr(31[6]:rd[5]:?[1]:sr[4]:?[5]:595[10]:?[1])
 mfsr.execute = {
-	if(cpu->GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+	uint32_t msr = cpu->GetMSR();
+	if(msr & CONFIG::MSR_PR_MASK) throw PrivilegeViolationException<CONFIG>();
 
-	cpu->SetGPR(rd,cpu->GetSR(sr));
+	cpu->SetGPR(rd, cpu->GetSR(sr));
 }
 mfsr.disasm = {
 	os << "mfsr r" << rd << ", " << sr;
@@ -328,7 +341,8 @@ mfsr.disasm = {
 
 op mfsrin(31[6]:rd[5]:?[5]:rb[5]:659[10]:?[1])
 mfsrin.execute = {
-	if(cpu->GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+	uint32_t msr = cpu->GetMSR();
+	if(msr & CONFIG::MSR_PR_MASK) throw PrivilegeViolationException<CONFIG>();
 
 	cpu->SetGPR(rd, cpu->GetSR((cpu->GetGPR(rb) >> 28) & 0xf));
 }
@@ -338,7 +352,8 @@ mfsrin.disasm = {
 
 op mtsr(31[6]:rs[5]:?[1]:sr[4]:?[5]:210[10]:?[1])
 mtsr.execute = {
-	if(cpu->GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+	uint32_t msr = cpu->GetMSR();
+	if(msr & CONFIG::MSR_PR_MASK) throw PrivilegeViolationException<CONFIG>();
 
 	cpu->SetSR(sr, cpu->GetGPR(rs));
 }
@@ -348,7 +363,8 @@ mtsr.disasm = {
 
 op mtsrin(31[6]:rs[5]:?[5]:rb[5]:242[10]:?[1])
 mtsrin.execute = {
-	if(cpu->GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
+	uint32_t msr = cpu->GetMSR();
+	if(msr & CONFIG::MSR_PR_MASK) throw PrivilegeViolationException<CONFIG>();
 
 	cpu->SetSR((cpu->GetGPR(rb) >> 28) & 0xf, cpu->GetGPR(rs));
 }

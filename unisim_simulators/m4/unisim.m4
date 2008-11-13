@@ -4,7 +4,7 @@
 #####################################################
 AC_DEFUN([UNISIM_CHECK_LIBSTDCXX], [
 	# Note: we can't check libstdc++ functions from libstdc++ because it's a library of C++ classes with no C functions.
-	LIBS=${LIBS}" -lstdc++"
+	LIBS="-lstdc++${LIBS}"
 ])
 
 ## UNISIM_WITH_BOOST
@@ -52,7 +52,7 @@ AC_DEFUN([UNISIM_CHECK_BOOST_THREAD], [
 	AC_MSG_ERROR([boost thread headers not found. Please install the boost thread development library. Use --with-boost=<path> to overload default includes search path.]))
 
 	# Note: we can't check libboost_thread functions from libboost_thread because it's a library of C++ classes with no C functions.
-	LIBS=${LIBS}" -lboost_thread"
+	LIBS="-lboost_thread ${LIBS}"
 ])
 
 ## UNISIM_CHECK_BOOST_FUNCTION
@@ -91,7 +91,7 @@ AC_DEFUN([UNISIM_CHECK_BOOST_BIND], [
 #####################################################
 AC_DEFUN([UNISIM_CHECK_WINSOCK2], [
 	# Note: we can't check socket functions from libwsock32 because of the PASCAL calling convention. cdecl is mandatory for autoconf.
-	LIBS=${LIBS}" -lwsock32"
+	LIBS="-lwsock32 ${LIBS}"
 ])
 
 ## UNISIM_CHECK_CURSES
@@ -117,7 +117,7 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
     if test "$broken_ncurses" == "yes"; then
 	AC_MSG_ERROR([installed ncurses library is broken.])
     else
-	LIBS=${LIBS}" -lncurses"
+	LIBS="-lncurses ${LIBS}"
     fi
 ])
 
@@ -135,7 +135,7 @@ AC_DEFUN([UNISIM_CHECK_PTHREAD], [
     if test "$broken_pthread" == "yes"; then
 	AC_MSG_ERROR([installed pthread library is broken.])
     else
-	LIBS=${LIBS}" -lpthread"
+	LIBS="-lpthread ${LIBS}"
     fi
 ])
 
@@ -183,7 +183,7 @@ AC_DEFUN([UNISIM_CHECK_READLINE], [
     if test "$broken_readline" == "yes"; then
 	AC_MSG_ERROR([installed readline library is broken.])
     else
-	LIBS=${LIBS}" -lreadline"
+	LIBS="-lreadline ${LIBS}"
     fi
 ])
 
@@ -249,7 +249,61 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
     if test "$broken_sdl" == "yes"; then
 	AC_MSG_ERROR([installed SDL Library is broken.])
     else
-	LIBS=${LIBS}" -lSDL"
+	LIBS="-lSDL ${LIBS}"
+    fi
+])
+
+## UNISIM_CHECK_ZLIB
+## Checks if the zlib library is installed
+## Does not take parameters
+####################################################
+AC_DEFUN([UNISIM_CHECK_ZLIB], [
+    # Check if zlib path has been overloaded
+    AC_ARG_WITH(zlib,
+	AS_HELP_STRING([--with-zlib=<path>], [zlib library to use (will be completed with /include and /lib)]))
+    if test "x$with_zlib" != "x"; then
+	AC_MSG_NOTICE([using zlib at $with_zlib])
+	LDFLAGS=${LDFLAGS}" -L$with_zlib/lib"
+	CPPFLAGS=${CPPFLAGS}" -I$with_zlib/include"
+    fi
+	
+    # Check for zlib.h
+    AC_CHECK_HEADER(zlib.h,, AC_MSG_ERROR([zlib.h not found. Please install the zlib development library (version >= 1.2.3).]))
+
+    # Check for functions gzopen, gzclose and gzprintf in libz.a
+    AC_CHECK_LIB(z, gzopen,
+    AC_CHECK_LIB(z, gzdopen,
+    AC_CHECK_LIB(z, gzread,
+    AC_CHECK_LIB(z, gzrewind,
+    AC_CHECK_LIB(z, deflateEnd,
+    AC_CHECK_LIB(z, gzclose,
+    AC_CHECK_LIB(z, gzwrite,
+    AC_CHECK_LIB(z, deflate,
+    AC_CHECK_LIB(z, crc32,
+    AC_CHECK_LIB(z, deflateInit2_,
+    AC_CHECK_LIB(z, inflateEnd,
+    AC_CHECK_LIB(z, inflate,
+    AC_CHECK_LIB(z, inflateInit2_,
+    AC_CHECK_LIB(z, gzprintf, broken_zlib=no,
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes),
+    broken_zlib=yes)
+
+    if test "$broken_zlib" == "yes"; then
+	AC_MSG_ERROR([installed zlib is broken.])
+    else
+	LIBS="-lz ${LIBS}"
     fi
 ])
 
@@ -331,7 +385,7 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     if test "$broken_libxml2" == "yes"; then
 		AC_MSG_ERROR([installed xml2 Library is broken.])
     else
-		LIBS=${LIBS}" -lxml2"
+		LIBS="-lxml2 ${LIBS}"
     fi
 ])
 
@@ -419,7 +473,7 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
     if test "$broken_systemc" == "yes"; then
 	AC_MSG_ERROR([installed SystemC is broken. Please install the SystemC library (version > 2.1). Use --with-systemc=<path> to overload default includes search path.])
     else
-	LIBS=${LIBS}" -lsystemc"
+	LIBS="-lsystemc ${LIBS}"
     fi
 ])
 
@@ -515,4 +569,24 @@ AC_ARG_ENABLE(release,
 	*) AC_MSG_ERROR(bad value ${enableval} for --enable-release) ;;
 	esac], [unisim_enabled_release=false])
 	AM_CONDITIONAL(COND_release, test x$unisim_enabled_release = xtrue)
+])
+
+## UNISIM_STATIC
+## Create the variable COND_static that the user can use 
+##   in Makefile.am to decide what needs to be compile for release (--enable-static)
+##   or just for development (--disable-static) (default)
+## No parameters
+#####################################################
+AC_DEFUN([UNISIM_STATIC], [
+AC_ARG_ENABLE(static,
+	AS_HELP_STRING([--enable-static], [build statically linked simulators if possible])
+	AS_HELP_STRING([--disable-static], [build dynamically linked simulators if possible (default)]),
+	[case "${enableval}" in
+	yes) unisim_enabled_static=yes ;;
+	no) unisim_enabled_static=no ;;
+	*) AC_MSG_ERROR(bad value ${enableval} for --enable-static) ;;
+	esac], [unisim_enabled_static=no])
+    if test "x$unisim_enabled_static" = "xyes"; then
+		LDFLAGS="-static ${LDFLAGS}"
+	fi
 ])

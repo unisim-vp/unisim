@@ -35,9 +35,18 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_HH__
 
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+
+#include <unisim/component/cxx/processor/powerpc/floating.hh>
+#include <unisim/component/cxx/processor/powerpc/powerpc.hh>
+#include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <stdlib.h>
-#include <unisim/component/cxx/processor/powerpc/powerpc_types.hh>
-#include <unisim/component/cxx/processor/powerpc/fpu.hh>
 #include <unisim/component/cxx/cache/cache.hh>
 #include <unisim/component/cxx/tlb/tlb.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -61,6 +70,7 @@
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/queue/queue.hh>
 #include <map>
 #include <iostream>
@@ -72,8 +82,19 @@ namespace cxx {
 namespace processor {
 namespace powerpc {
 
-using unisim::util::arithmetic::Add32;
-using unisim::util::arithmetic::RotateLeft;
+class FloatingPointRegisterInterface : public unisim::util::debug::Register
+{
+public:
+	FloatingPointRegisterInterface(const char *name, SoftDouble *value);
+	virtual ~FloatingPointRegisterInterface();
+	virtual const char *GetName() const;
+	virtual void GetValue(void *buffer) const;
+	virtual void SetValue(const void *buffer);
+	virtual int GetSize() const;
+private:
+	string name;
+	SoftDouble *value;
+};
 
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
@@ -83,6 +104,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::CachePowerEstimator;
 using unisim::service::interfaces::PowerMode;
+using unisim::service::interfaces::Registers;
 using namespace unisim::util::endian;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
@@ -122,32 +144,6 @@ using unisim::component::cxx::tlb::TLB;
 
 
 typedef enum {
-	// G1 processors
-	MPC601 = 0,
-	// G2 processors
-	MPC603E,
-	MPC604E,
-	// G3 processors
-	MPC740,
-	MPC745,
-	MPC750,
-	MPC755,
-	// G4 processors
-	MPC7400,
-	MPC7410,
-	MPC7441,
-	MPC7445,
-	MPC7447,
-	MPC7447A,
-	MPC7448,
-	MPC7450,
-	MPC7451,
-	MPC7455,
-	MPC7457,
-	NUM_MODELS
-} Model;
-
-typedef enum {
 	LSM_DEFAULT = 0,
 	LSM_FLOATING_POINT = 1,
 	LSM_BYTE_REVERSE = 2,
@@ -163,62 +159,11 @@ typedef union
 	uint32_t w[4];
 } vr_t;
 
-template <class T>
-class Register
-{
-public:
-	bool valid;
-	T value;
-};
+template <class CONFIG>
+class CPU;
 
 template <class CONFIG>
-class Instruction
-{
-public:
-	void SetOperation(Operation<CONFIG> *operation);
-	Operation<CONFIG> GetOperation() { return operation; }
-	typename CONFIG::execution_unit_type_t GetExecutionUnit() const { return operation->execution_unit; }
-	typename CONFIG::serialization_t GetSerialization() const { return operation->serialization; }
-	unsigned int GetLatency() const { return operation->insn_latency; }
-	unsigned int GetThroughput() const { return operation->insn_throughput; }
-	unsigned int GetNumOperands() const { return operation->num_insn_operands; }
-	const typename CONFIG::operand_t& GetOperand(unsigned int num_operand) const { return operation->insn_operands[num_operand]; }
-	void Execute();
-	
-	Instruction();
-	~Instruction();
-private:
-	Operation<CONFIG> *operation;
-};
-
-// template <class CONFIG>
-// class MappingTable
-// {
-// public:
-// 	MappingTable();
-// 	~MappingTable();
-// 	unsigned int Allocate(unsigned int reg_num);
-// 	unsigned int Lookup(unsigned int reg_num);
-// 	void Free(unsigned int reg_num);
-// private:
-// 	typedef struct
-// 	{
-// 		bool valid;
-// 		unsigned int tag;
-// 	}  MappingTableEntry;
-// 
-// 	MappingTableEntry mapping_table[CONFIG::SIZE];
-// 
-// 	class FreeListConfig
-// 	{
-// 	public:
-// 		static const bool DEBUG = true;
-// 		typedef unsigned int ELEMENT;
-// 		static const unsigned int SIZE = CONFIG::SIZE;
-// 	};
-// 
-// 	Queue<FreeListConfig> free_list;
-// };
+class Instruction;
 
 template <class CONFIG>
 class CacheAccess
@@ -245,9 +190,9 @@ public:
 	// Input
 
 	typename CONFIG::address_t addr;
-	PrivilegeLevel privilege_level;
-	MemoryAccessType memory_access_type;
-	MemoryType memory_type;
+	typename CONFIG::PrivilegeLevel privilege_level;
+	typename CONFIG::MemoryAccessType memory_access_type;
+	typename CONFIG::MemoryType memory_type;
 
 	// LookupBAT intermediate computations
 	uint32_t bepi;							// BEPI bit field
@@ -281,6 +226,299 @@ public:
 	typename CONFIG::WIMG wimg;
 };
 
+template <class CONFIG>
+class LoadStoreAccess
+{
+public:
+	typedef enum
+	{
+		INT8_LOAD                = 0x00001, // 8-bit integer load with zero extension to 32-bit integer
+		INT16_LOAD               = 0x00002, // 16-bit integer load with zero extension to 32-bit integer
+		SINT16_LOAD              = 0x00004, // 16-bit integer load with sign extension to 32-bit integer
+		INT32_LOAD               = 0x00008, // 32-bit integer load with zero extension to 32-bit integer
+		FP32_LOAD                = 0x00010, // 32-bit floating point load with conversion to 64-bit floating point
+		FP64_LOAD                = 0x00020, // 64-bit floating point load
+		INT16_LOAD_BYTE_REVERSE  = 0x00040, // 16-bit integer load byte reversed
+		INT32_LOAD_BYTE_REVERSE  = 0x00080, // 32-bit integer load byte reversed
+		INT_LOAD_MSB             = 0x00100, // 8-bit, 16-bit, 24-bit, or 32-bit integer load into most significant bits
+		LOAD                     = 0x001ff, // binary mask to detect any of the above load
+		INT8_STORE               = 0x00200, // 8-bit integer store
+		INT16_STORE              = 0x00400, // 16-bit integer store
+		INT32_STORE              = 0x00800, // 32-bit integer store
+		FP32_STORE               = 0x01000, // 32-bit floating point store converted from a 64-bit floating point
+		FP64_STORE               = 0x02000, // 64-bit floating point store
+		FP_STORE_LSW             = 0x04000, // 32-bit raw bits from the 32 least signicative bits of a 64-bit floating point
+		INT16_STORE_BYTE_REVERSE = 0x08000, // 16-bit integer store byte reversed
+		INT32_STORE_BYTE_REVERSE = 0x10000, // 32-bit integer store byte reversed
+		INT_STORE_MSB            = 0x20000, // 8-bit, 16-bit, 24-bit, or 32-bit integer store of most significant bits
+		STORE                    = 0x3fe00  // binary mask to detect any of the above store
+	} Type;
+
+	Type type;                                           // type of Load/Store access
+	unsigned int reg_num;                                // destination register
+	typename CONFIG::address_t munged_ea;                // Munged Effective Address
+	uint32_t offset;                                     // Offset from the actual Load/Store access
+	uint32_t size;                                       // size in byte of the access
+	bool valid;                                          // true if data is available (for a load)
+	uint8_t data[8];                                     // data to store/loaded data
+	Instruction<CONFIG> *instruction;                    // instruction that causes the access
+	MMUAccess<CONFIG> mmu_access;                        // MMU access
+	CacheAccess<typename CONFIG::DL1_CONFIG> l1_access;  // L1 Cache access
+	CacheAccess<typename CONFIG::L2_CONFIG> l2_access;   // L2 Cache access
+	LoadStoreAccess<CONFIG> *next_free;                  // next free element in the free list
+};
+
+template <class CONFIG>
+class BusAccess
+{
+public:
+	typedef enum
+	{
+		LOAD,     // cache inhibited load
+		REFILL,   // cache refill
+		REFILLX,  // cache refill with intent to modify
+		STORE,    // write through/cache inhibited store
+		EVICTION  // block eviction
+	} Type;
+
+	Type type;
+	LoadStoreAccess<CONFIG> *load_store_access;
+	typename CONFIG::physical_address_t addr;
+	uint32_t size;
+	uint8_t storage[CONFIG::FSB_BURST_SIZE];
+	typename CONFIG::WIMG wimg;
+	bool rwitm;
+	BusAccess<CONFIG> *next_free;
+};
+
+template <class CONFIG>
+class Operand
+{
+public:
+	typedef enum { GPR, FPR, CR, LR, CTR, XER, FPSCR } Type;
+
+	Type type;
+	bool valid;             // whether the value is available
+	unsigned reg_num;       // logical register number (always 0 for CR, LR, CTR, XER, FPSCR)
+	int tag;                // >= 0: logical register number (same as reg_num), < 0: rename register number (1's complement)
+	uint32_t int_value;     // operand value for GPR, CR, LR, CTR, XER, FPSCR
+	SoftDouble float_value; // operand value for FPR
+	unsigned int ref_count;
+
+	class PendingInstructionsConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 7;
+	};
+	Queue<PendingInstructionsConfig> pending_instructions; // instruction waiting for that operand in a reservation station
+
+	Operand<CONFIG> *next_free;
+
+	CPU<CONFIG> *cpu;
+};
+
+template <class CONFIG>
+class Instruction
+{
+public:
+	typedef enum { FUNCTIONAL_SIMULATION_MODE, PERFORMANCE_SIMULATION_MODE } SimulationMode;
+	static const unsigned int MAX_INPUT_OPERANDS = 3;
+	static const unsigned int MAX_OUTPUT_OPERANDS = 2;
+
+	class ForwardingConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef bool ELEMENT;
+		static const unsigned int SIZE = 3;
+	};
+
+	class InputOperandsConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Operand<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 3;
+	};
+
+	class OutputOperandsConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Operand<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 2;
+	};
+
+	typename CONFIG::address_t cia;
+	typename CONFIG::address_t nia;
+	Queue<InputOperandsConfig> input_operands;
+	Queue<ForwardingConfig> forwarding;
+	Queue<OutputOperandsConfig> output_operands;
+
+	class LoadStoreAccessQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef LoadStoreAccess<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 2;
+	};
+
+	Queue<LoadStoreAccessQueueConfig> load_store_access_queue; // used only if instruction is a load/store
+	unsigned int load_store_access_index;
+
+	typedef enum { FETCH, BRANCH_EXECUTE, DISPATCH, ISSUE, EXECUTE, FINISH, COMPLETE, WRITEBACK } Stage;
+
+	void Initialize(CPU<CONFIG> *cpu, typename CONFIG::address_t cia, uint32_t encoding);
+	void Initialize(CPU<CONFIG> *cpu, const Instruction<CONFIG>& instruction, unsigned int uop_num);
+
+	void SetNIA(typename CONFIG::address_t value);
+	void SetGPR(unsigned int n, uint32_t value, uint64_t latency = 1);
+	void SetFPR(unsigned int n, const SoftDouble& value, uint64_t latency = 1);
+	void SetCR(uint32_t value, uint64_t latency = 1);
+	void SetLR(uint32_t value, uint64_t latency = 1);
+	void SetCTR(uint32_t value, uint64_t latency = 1);
+	void SetXER(uint32_t value);
+	void SetSPR(unsigned int n, uint32_t value);
+	void SetFPSCR(uint32_t value);
+
+	typename CONFIG::address_t GetCIA();
+	uint32_t GetGPR(unsigned int n);
+	const SoftDouble& GetFPR(unsigned int n);
+	uint32_t GetCR();
+	uint32_t GetLR();
+	uint32_t GetCTR();
+	uint32_t GetXER();
+	uint32_t GetSPR(unsigned int n);
+	uint32_t GetFPSCR();
+	uint32_t GetMSR();
+
+	Operand<CONFIG> *SearchInputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num = 0);
+	Operand<CONFIG> *SearchOutputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num = 0);
+
+	typename CONFIG::execution_unit_type_t GetExecutionUnit() const { return execution_unit; }
+	typename CONFIG::serialization_t GetSerialization() const { return serialization; }
+	unsigned int GetLatency() const { return operation->insn_latency; }
+
+ 	unsigned int GetNumOutputGPR() const { return num_input_gpr; }
+ 	unsigned int GetNumOutputFPR() const { return num_input_fpr; }
+ 	unsigned int GetNumOutputCR() const { return num_input_cr; }
+ 	unsigned int GetNumOutputLR() const { return num_input_lr; }
+ 	unsigned int GetNumOutputCTR() const { return num_input_ctr; }
+
+	void Int8Load(unsigned int rd, typename CONFIG::address_t ea);
+	void Int16Load(unsigned int rd, typename CONFIG::address_t ea);
+	void SInt16Load(unsigned int rd, typename CONFIG::address_t ea);
+	void Int32Load(unsigned int rd, typename CONFIG::address_t ea);
+	void Fp32Load(unsigned int fd, typename CONFIG::address_t ea);
+	void Fp64Load(unsigned int fd, typename CONFIG::address_t ea);
+	void Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea);
+	void Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea);
+	void IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size);
+	void Int8Store(unsigned int rs, typename CONFIG::address_t ea);
+	void Int16Store(unsigned int rs, typename CONFIG::address_t ea);
+	void Int32Store(unsigned int rs, typename CONFIG::address_t ea);
+	void Fp32Store(unsigned int fs, typename CONFIG::address_t ea);
+	void Fp64Store(unsigned int fs, typename CONFIG::address_t ea);
+	void FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea);
+	void Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
+	void Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
+	void IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size);
+
+	void Execute(CPU<CONFIG> *cpu);
+
+	bool IsFinished() const { return finished; }
+	void Finish() { finished = true; }
+
+	bool IsAllowedToExecute() const { return allowed_to_execute; }
+	bool IsReadyToExecute() const { return ready_to_execute; }
+	bool CheckInputOperandsAvailability();
+	void AllowExecution() { allowed_to_execute = true; }
+
+	unsigned int GetNumUOps() const { return num_uops; }
+	unsigned int GetUOpNum() const { return uop_num; }
+
+	Instruction();
+	~Instruction();
+
+	Operation<CONFIG> *operation;
+	CPU<CONFIG> *cpu;
+	SimulationMode sim_mode;
+	Stage stage;
+
+	typename CONFIG::execution_unit_type_t execution_unit;
+	typename CONFIG::serialization_t serialization;
+	bool allowed_to_execute;
+	bool ready_to_execute;
+	bool finished;
+	bool retired;
+	unsigned int num_uops;
+	unsigned int uop_num;
+	Instruction<CONFIG> *macro_op;
+	unsigned int num_input_gpr;
+	unsigned int num_input_fpr;
+	unsigned int num_input_cr;
+	unsigned int num_input_lr;
+	unsigned int num_input_ctr;
+
+	void Initialize(CPU<CONFIG> *cpu, unsigned int uop_num);
+
+	Instruction<CONFIG> *next_free;
+};
+
+template <class CONFIG>
+class CPUInterface : public Instruction<CONFIG>
+{
+};
+
+template <class CONFIG>
+class Event
+{
+public:
+	typedef enum
+	{
+		EV_NULL,              // null event
+		EV_FINISHED_INSN,     // an instruction is finished
+		EV_AVAILABLE_OPERAND, // an operand is available
+		EV_BUS_ACCESS         // a cache miss causes a bus access
+	} Type;
+
+	Type type;
+	union
+	{
+		Instruction<CONFIG> *instruction; // used if type is EV_FINISHED_INSN
+		Operand<CONFIG> *operand;         // used if type is either EV_AVAILABLE_OPERAND or EV_OPERAND_WB
+		BusAccess<CONFIG> *bus_access;    // used if type is EV_BUS_ACCESS
+		void *null;                       // used if null event. Should be 0
+	} object;
+
+	Event<CONFIG> *next_free;
+};
+
+template <class CONFIG>
+class MappingTable
+{
+public:
+	MappingTable();
+	~MappingTable();
+	bool Allocate(unsigned int reg_num, int& tag);
+	int Lookup(unsigned int reg_num);
+	void Free(unsigned int reg_num, int tag);
+	unsigned int GetNumFreeRenameRegisters() const;
+private:
+	int mapping_table[CONFIG::NUM_LOGICAL_REGISTERS];
+
+	class FreeListConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef int ELEMENT;
+		static const unsigned int SIZE = CONFIG::NUM_RENAME_REGISTERS;
+	};
+
+	Queue<FreeListConfig> free_list;
+};
 
 template <class CONFIG>
 class CPU :
@@ -305,15 +543,15 @@ class CPU :
 {
 public:
 
-	static inline bool IsMPC7XX() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
-	static inline bool IsMPC74X() { return CONFIG::MODEL == MPC740 || CONFIG::MODEL == MPC745; }
-	static inline bool IsMPC75X() { return CONFIG::MODEL == MPC750 || CONFIG::MODEL == MPC755; }
-	static inline bool IsMPC7X5() { return CONFIG::MODEL == MPC745 || CONFIG::MODEL == MPC755; }
+	static inline bool IsMPC7XX() { return CONFIG::MODEL == CONFIG::MPC740 || CONFIG::MODEL == CONFIG::MPC745 || CONFIG::MODEL == CONFIG::MPC750 || CONFIG::MODEL == CONFIG::MPC755; }
+	static inline bool IsMPC74X() { return CONFIG::MODEL == CONFIG::MPC740 || CONFIG::MODEL == CONFIG::MPC745; }
+	static inline bool IsMPC75X() { return CONFIG::MODEL == CONFIG::MPC750 || CONFIG::MODEL == CONFIG::MPC755; }
+	static inline bool IsMPC7X5() { return CONFIG::MODEL == CONFIG::MPC745 || CONFIG::MODEL == CONFIG::MPC755; }
 	static inline bool IsMPC7XXX()
 	{
-		return CONFIG::MODEL == MPC7400 || CONFIG::MODEL == MPC7410 || CONFIG::MODEL == MPC7441 || CONFIG::MODEL == MPC7445 ||
-		       CONFIG::MODEL == MPC7447 || CONFIG::MODEL == MPC7447A || CONFIG::MODEL == MPC7448 || CONFIG::MODEL == MPC7450 ||
-		       CONFIG::MODEL == MPC7451 || CONFIG::MODEL == MPC7455 || CONFIG::MODEL == MPC7457;
+		return CONFIG::MODEL == CONFIG::MPC7400 || CONFIG::MODEL == CONFIG::MPC7410 || CONFIG::MODEL == CONFIG::MPC7441 || CONFIG::MODEL == CONFIG::MPC7445 ||
+		       CONFIG::MODEL == CONFIG::MPC7447 || CONFIG::MODEL == CONFIG::MPC7447A || CONFIG::MODEL == CONFIG::MPC7448 || CONFIG::MODEL == CONFIG::MPC7450 ||
+		       CONFIG::MODEL == CONFIG::MPC7451 || CONFIG::MODEL == CONFIG::MPC7455 || CONFIG::MODEL == CONFIG::MPC7457;
 	}
 
 	static inline bool IsG3() { return IsMPC7XX(); }
@@ -327,27 +565,6 @@ public:
 	static const uint32_t MEMORY_PAGE_SIZE = CONFIG::MEMORY_PAGE_SIZE;
 
 	static const uint32_t FSB_WIDTH = 8; // 64-bit front side bus
-
-	static const uint32_t MSR_VEC_MASK = CONFIG::HAS_MSR_VEC ? ((1UL << CONFIG::MSR_VEC_BITSIZE) - 1) << CONFIG::MSR_VEC_OFFSET : 0;
-	static const uint32_t MSR_POW_MASK = CONFIG::HAS_MSR_POW ? ((1UL << CONFIG::MSR_POW_BITSIZE) - 1) << CONFIG::MSR_POW_OFFSET : 0;
-	static const uint32_t MSR_ILE_MASK = CONFIG::HAS_MSR_ILE ? ((1UL << CONFIG::MSR_ILE_BITSIZE) - 1) << CONFIG::MSR_ILE_OFFSET : 0;
-	static const uint32_t MSR_EE_MASK = CONFIG::HAS_MSR_EE ? ((1UL << CONFIG::MSR_EE_BITSIZE) - 1) << CONFIG::MSR_EE_OFFSET : 0;
-	static const uint32_t MSR_PR_MASK = CONFIG::HAS_MSR_PR ? ((1UL << CONFIG::MSR_PR_BITSIZE) - 1) << CONFIG::MSR_PR_OFFSET : 0;
-	static const uint32_t MSR_FP_MASK = CONFIG::HAS_MSR_FP ? ((1UL << CONFIG::MSR_FP_BITSIZE) - 1) << CONFIG::MSR_FP_OFFSET : 0;
-	static const uint32_t MSR_ME_MASK = CONFIG::HAS_MSR_ME ? ((1UL << CONFIG::MSR_ME_BITSIZE) - 1) << CONFIG::MSR_ME_OFFSET : 0;
-	static const uint32_t MSR_FE0_MASK = CONFIG::HAS_MSR_FE0 ? ((1UL << CONFIG::MSR_FE0_BITSIZE) - 1) << CONFIG::MSR_FE0_OFFSET : 0;
-	static const uint32_t MSR_SE_MASK = CONFIG::HAS_MSR_SE ? ((1UL << CONFIG::MSR_SE_BITSIZE) - 1) << CONFIG::MSR_SE_OFFSET: 0;
-	static const uint32_t MSR_BE_MASK = CONFIG::HAS_MSR_BE ? ((1UL << CONFIG::MSR_BE_BITSIZE) - 1) << CONFIG::MSR_BE_OFFSET: 0;
-	static const uint32_t MSR_FE1_MASK = CONFIG::HAS_MSR_FE1 ? ((1UL << CONFIG::MSR_FE1_BITSIZE) - 1) << CONFIG::MSR_FE1_OFFSET : 0;
-	static const uint32_t MSR_IP_MASK = CONFIG::HAS_MSR_IP ? ((1UL << CONFIG::MSR_IP_BITSIZE) - 1) << CONFIG::MSR_IP_OFFSET : 0;
-	static const uint32_t MSR_IR_MASK = CONFIG::HAS_MSR_IR ? ((1UL << CONFIG::MSR_IR_BITSIZE) - 1) << CONFIG::MSR_IR_OFFSET : 0;
-	static const uint32_t MSR_DR_MASK = CONFIG::HAS_MSR_DR ? ((1UL << CONFIG::MSR_DR_BITSIZE) - 1) << CONFIG::MSR_DR_OFFSET : 0;
-	static const uint32_t MSR_PM_MASK = CONFIG::HAS_MSR_PM ? ((1UL << CONFIG::MSR_PM_BITSIZE) - 1) << CONFIG::MSR_PM_OFFSET : 0;
-	static const uint32_t MSR_RI_MASK = CONFIG::HAS_MSR_RI ? ((1UL << CONFIG::MSR_RI_BITSIZE) - 1) << CONFIG::MSR_RI_OFFSET : 0;
-	static const uint32_t MSR_LE_MASK = CONFIG::HAS_MSR_LE ? ((1UL << CONFIG::MSR_RI_BITSIZE) - 1) << CONFIG::MSR_LE_OFFSET : 0;
-	static const uint32_t MSR_MASK = MSR_VEC_MASK | MSR_POW_MASK | MSR_ILE_MASK | MSR_EE_MASK | MSR_PR_MASK | MSR_FP_MASK | MSR_ME_MASK | MSR_FE0_MASK |
-	                                 MSR_SE_MASK | MSR_BE_MASK | MSR_FE1_MASK | MSR_IP_MASK | MSR_IR_MASK | MSR_DR_MASK | MSR_PM_MASK | MSR_RI_MASK | MSR_LE_MASK;
-
 
 	static const uint32_t HID0_EMCP_MASK = CONFIG::HAS_HID0_EMCP ? ((1UL << CONFIG::HID0_EMCP_BITSIZE) - 1) << CONFIG::HID0_EMCP_OFFSET : 0;
 	static const uint32_t HID0_DBP_MASK = CONFIG::HAS_HID0_DBP ? ((1UL << CONFIG::HID0_DBP_BITSIZE) - 1) << CONFIG::HID0_DBP_OFFSET : 0;
@@ -460,6 +677,7 @@ public:
 
 	static const uint32_t ICTRL_MASK = ICTRL_CIRQ_MASK | ICTRL_EIEC_MASK | ICTRL_EDCE_MASK | ICTRL_EICP_MASK | ICTRL_ICWL_MASK;
 
+
 	//=====================================================================
 	//=                  public service imports/exports                   =
 	//=====================================================================
@@ -511,7 +729,8 @@ public:
 	//=                    execution handling methods                     =
 	//=====================================================================
 	
-	void Step();
+	void StepOneInstruction();
+	void StepOneCycle();
 	void Run();
 	virtual void Stop(int ret);
 	virtual void Synchronize();
@@ -525,6 +744,8 @@ public:
 	void SetUserPrivilegeLevel();
 	void EnableFPU();
 	void DisableFPU();
+	void EnableFPUException();
+	void DisableFPUException();
 	void EnableDataCache();
 	void DisableDataCache();
 	void EnableInsnCache();
@@ -533,10 +754,19 @@ public:
 	void DisableL2Cache();
 	void EnableAddressBroadcast();
 	void DisableAddressBroadcast();
+	inline bool IsFPUEnabled();
+	inline bool IsFPUExceptionEnabled();
 	inline bool IsDataCacheEnabled();
 	inline bool IsInsnCacheEnabled();
 	inline bool IsL2CacheEnabled();
 	inline bool IsAddressBroadcastEnabled();
+
+	//=====================================================================
+	//=                State interface (with .isa files)                  =
+	//=====================================================================
+
+	const SoftDouble& GetFPR(unsigned int n) const { return fpr[n]; }
+	void SetFPR(unsigned int n, const SoftDouble& value) { fpr[n] = value; }
 
 	//=====================================================================
 	//=                     Cache/MMU handling methods                    =
@@ -575,6 +805,7 @@ public:
 	template <bool TRANSLATE_ADDR> void EmuStore(address_t addr, const void *buffer, uint32_t size);
 	template <class T> void EmuLoad(T& value, address_t ea);
 	template <class T> void EmuStore(T value, address_t ea);
+	inline address_t MungEffectiveAddress(address_t ea, unsigned int size) { return (msr & CONFIG::MSR_LE_MASK) ? ea ^ (8 - size) : ea; }
 	void Int8Load(unsigned int rd, address_t ea);
 	void Int16Load(unsigned int rd, address_t ea);
 	void SInt16Load(unsigned int rd, address_t ea);
@@ -593,12 +824,6 @@ public:
 	void Int16StoreByteReverse(unsigned int rs, address_t ea);
 	void Int32StoreByteReverse(unsigned int rs, address_t ea);
 	void IntStoreMSBFirst(unsigned int rs, address_t ea, uint32_t size);
-
-
-
-
-
-
 
 	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
 	virtual void BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT);
@@ -622,8 +847,8 @@ public:
 	//=               Programmer view memory access methods               =
 	//=====================================================================
 	
-	bool ReadMemory(address_t addr, void *buffer, uint32_t size, MemoryType mt, bool translate_addr);
-	bool WriteMemory(address_t addr, const void *buffer, uint32_t size, MemoryType mt, bool translate_addr);
+	bool ReadMemory(address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
+	bool WriteMemory(address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr);
 	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
 	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
@@ -633,10 +858,10 @@ public:
 	//=                         utility methods                           =
 	//=====================================================================
 	
-	static uint32_t Mask(uint32_t mb, uint32_t me)
+/*	static uint32_t Mask(uint32_t mb, uint32_t me)
 	{
 		return (mb > me) ? ~(((uint32_t) -1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1))) : (((uint32_t)-1 >> mb) ^ ((me >= 31) ? 0 : (uint32_t) -1 >> (me + 1)));
-	}
+	}*/
 	
 	static uint32_t CRFieldMask(uint32_t crfD)
 	{
@@ -657,7 +882,7 @@ public:
 	inline uint32_t GetGPR(unsigned int n) { return gpr[n]; }
 	inline void SetGPR(unsigned int n, uint32_t value) { gpr[n] = value; }
 	inline uint32_t GetLR() { return lr; }
-	inline void SetLR(uint32_t value) { lr =  value; }
+	inline void SetLR(uint32_t value) { lr = value; }
 	inline uint32_t GetCTR() { return ctr; }
 	inline void SetCTR(uint32_t value) { ctr = value; }
 	inline uint32_t GetMQ() { return mq; }
@@ -723,26 +948,31 @@ public:
 	//=                        XER set/get methods                        =
 	//=====================================================================
 
-	inline void SetXER(uint32_t value) { xer = value & 0xe000ff7fUL; }  // reserved bits are set to zero but bits 16-23
+	inline void SetXER(uint32_t value) { xer = value & CONFIG::XER_MASK; }
 	inline uint32_t GetXER() { return xer; }
-	inline uint32_t GetXER_SO() { return (xer >> 31) & 1; }
-	inline uint32_t GetXER_OV() { return (xer >> 30) & 1; }
-	inline uint32_t GetXER_CA() { return (xer >> 29) & 1; }
-	inline uint32_t GetXER_BYTE_COUNT() { return xer & 0x7f; }
-	inline void SetXER_CA() { xer = xer | (1 << 29); }
-	inline void SetXER_OV() { xer = xer | (1 << 30); }
-	inline void SetXER_SO() { xer = xer | (1 << 31); }
-	inline void ResetXER_CA() { xer = xer & (~(1 << 29)); }
-	inline void ResetXER_OV() { xer = xer & (~(1 << 30)); }
-	inline void ResetXER_SO() { xer = xer & (~(1 << 31)); }
+
+	// Deprecated methods
+	inline uint32_t GetXER_SO() { return (xer & CONFIG::XER_SO_MASK) >> CONFIG::XER_SO_OFFSET; }
+	inline void SetXER_SO() { xer = xer | CONFIG::XER_SO_MASK; }
+	inline void ResetXER_SO() { xer = xer & ~CONFIG::XER_SO_MASK; }
+	inline uint32_t GetXER_OV() { return (xer & CONFIG::XER_OV_MASK) >> CONFIG::XER_OV_OFFSET; }
+	inline void SetXER_OV() { xer = xer | CONFIG::XER_OV_MASK; }
+	inline void ResetXER_OV() { xer = xer & ~CONFIG::XER_OV_MASK; }
+	inline uint32_t GetXER_CA() { return (xer & CONFIG::XER_CA_MASK) >> CONFIG::XER_CA_OFFSET; }
+	inline void SetXER_CA() { xer = xer | CONFIG::XER_CA_MASK; }
+	inline void ResetXER_CA() { xer = xer & ~CONFIG::XER_CA_MASK; }
+	inline uint32_t GetXER_BYTE_COUNT() { return (xer & CONFIG::XER_BYTE_COUNT_MASK) >> CONFIG::XER_BYTE_COUNT_OFFSET; }
+
 	
 	//=====================================================================
 	//=                         CR set/get methods                        =
 	//=====================================================================
 
 	inline uint32_t GetCR() { return cr; }
-	inline uint32_t GetCRF(unsigned int crf) { return cr >> ((7 - crf) * 4); }
 	inline void SetCR(uint32_t value) { cr = value; }
+
+	// Deprecated methods
+	inline uint32_t GetCRF(unsigned int crf) { return cr >> ((7 - crf) * 4); }
 	inline void SetCRF(unsigned int crfd, uint32_t value)
 	{
 		uint32_t _c = value << ((7 - crfd) * 4) ; // positionning the crX field
@@ -750,29 +980,6 @@ public:
 		cr = cr & _d ;	//Deleting old sub-registrer value
 		cr = cr | _c ;  //Writing the new one
 	}
-	inline void SetCR0_LT() { cr = cr | (1 << 31); }
-	inline void SetCR0_GT() { cr = cr | (1 << 30); }
-	inline void SetCR0_EQ() { cr = cr | (1 << 29); }
-	inline void SetCR0_SO() { cr = cr | (1 << 28); }
-	inline void ResetCR0_LT() { cr = cr & (~(1 << 31)); }
-	inline void ResetCR0_GT() { cr = cr & (~(1 << 30)); }
-	inline void ResetCR0_EQ() { cr = cr & (~(1 << 29)); }
-	inline void ResetCR0_SO() { cr = cr & (~(1 << 28)); }
-	inline void SetCR_LT(unsigned int n) { cr = cr | (1 << (3 + 4 * (7 - n))); }
-	inline void SetCR_GT(unsigned int n) { cr = cr | (1 << (2 + 4 * (7 - n))); }
-	inline void SetCR_EQ(unsigned int n) { cr = cr | (1 << (1 + 4 * (7 - n))); }
-	inline void SetCR_SO(unsigned int n) { cr = cr | (1 << (4 * (7 - n))); }
-	inline void ResetCR_LT(unsigned int n) { cr = cr & (~(1 << (3 + 4 * (7 - n)))); }
-	inline void ResetCR_GT(unsigned int n) { cr = cr & (~(1 << (2 + 4 * (7 - n)))); }
-	inline void ResetCR_EQ(unsigned int n) { cr = cr & (~(1 << (1 + 4 * (7 - n)))); }
-	inline void ResetCR_SO(unsigned int n) { cr = cr & (~(1 << (4 * (7 - n)))); }
-	
-	//=====================================================================
-	//=                 CR0/CR1 generation methods                        =
-	//=====================================================================
-	
-	inline void ComputeCR0(uint32_t result) { cr = (cr & 0xfffffffUL) | (GetXER_SO() ? 0x10000000UL : 0) | (((int32_t)(result) < 0) ? 0x80000000UL : (((int32_t)(result) > 0) ? 0x40000000UL : 0x20000000UL)); }
-	inline void ComputeCR1() { cr = (cr & 0xf0ffffffUL) | ((GetFPSCR() >> 4) & 0x0f000000UL); }
 	
 	//=====================================================================
 	//=                        MSR set/get methods                        =
@@ -780,61 +987,62 @@ public:
 	
 	uint32_t GetMSR() { return msr; }
 	void SetMSR(uint32_t value);
-	inline uint32_t GetMSR_VEC() { return (GetMSR() & MSR_VEC_MASK) >> CONFIG::MSR_VEC_OFFSET; }
-	inline uint32_t GetMSR_POW() { return (GetMSR() & MSR_POW_MASK) >> CONFIG::MSR_POW_OFFSET; }
-	inline uint32_t GetMSR_ILE() { return (GetMSR() & MSR_ILE_MASK) >> CONFIG::MSR_ILE_OFFSET; }
-	inline uint32_t GetMSR_EE() { return (GetMSR() & MSR_EE_MASK) >> CONFIG::MSR_EE_OFFSET; }
-	inline uint32_t GetMSR_PR() { return (GetMSR() & MSR_PR_MASK) >> CONFIG::MSR_PR_OFFSET; }
-	inline PrivilegeLevel GetPrivilegeLevel() { return GetMSR_PR() ? PR_USER : PR_SUPERVISOR; }
-	inline uint32_t GetMSR_FP() { return (GetMSR() & MSR_FP_MASK) >> CONFIG::MSR_FP_OFFSET; }
-	inline uint32_t GetMSR_ME() { return (GetMSR() & MSR_ME_MASK) >> CONFIG::MSR_ME_OFFSET; }
-	inline uint32_t GetMSR_FE0() { return (GetMSR() & MSR_FE0_MASK) >> CONFIG::MSR_FE0_OFFSET; }
-	inline uint32_t GetMSR_SE() { return (GetMSR() & MSR_SE_MASK) >> CONFIG::MSR_SE_OFFSET; }
-	inline uint32_t GetMSR_BE() { return (GetMSR() & MSR_BE_MASK) >> CONFIG::MSR_BE_OFFSET; }
-	inline uint32_t GetMSR_FE1() { return (GetMSR() & MSR_FE1_MASK) >> CONFIG::MSR_FE1_OFFSET; }
-	inline uint32_t GetMSR_IP() { return (GetMSR() & MSR_IP_MASK) >> CONFIG::MSR_IP_OFFSET; }
-	inline uint32_t GetMSR_IR() { return (GetMSR() & MSR_IR_MASK) >> CONFIG::MSR_IR_OFFSET; }
-	inline uint32_t GetMSR_DR() { return (GetMSR() & MSR_DR_MASK) >> CONFIG::MSR_DR_OFFSET; }
-	inline uint32_t GetMSR_PM() { return (GetMSR() & MSR_PM_MASK) >> CONFIG::MSR_PM_OFFSET; }
+	inline uint32_t GetMSR_VEC() { return (GetMSR() & CONFIG::MSR_VEC_MASK) >> CONFIG::MSR_VEC_OFFSET; }
+	inline uint32_t GetMSR_POW() { return (GetMSR() & CONFIG::MSR_POW_MASK) >> CONFIG::MSR_POW_OFFSET; }
+	inline uint32_t GetMSR_ILE() { return (GetMSR() & CONFIG::MSR_ILE_MASK) >> CONFIG::MSR_ILE_OFFSET; }
+	inline uint32_t GetMSR_EE() { return (GetMSR() & CONFIG::MSR_EE_MASK) >> CONFIG::MSR_EE_OFFSET; }
+	inline uint32_t GetMSR_PR() { return (GetMSR() & CONFIG::MSR_PR_MASK) >> CONFIG::MSR_PR_OFFSET; }
+	inline typename CONFIG::PrivilegeLevel GetPrivilegeLevel() { return GetMSR_PR() ? CONFIG::PR_USER : CONFIG::PR_SUPERVISOR; }
+	inline uint32_t GetMSR_FP() { return (GetMSR() & CONFIG::MSR_FP_MASK) >> CONFIG::MSR_FP_OFFSET; }
+	inline uint32_t GetMSR_ME() { return (GetMSR() & CONFIG::MSR_ME_MASK) >> CONFIG::MSR_ME_OFFSET; }
+	inline uint32_t GetMSR_FE0() { return (GetMSR() & CONFIG::MSR_FE0_MASK) >> CONFIG::MSR_FE0_OFFSET; }
+	inline uint32_t GetMSR_SE() { return (GetMSR() & CONFIG::MSR_SE_MASK) >> CONFIG::MSR_SE_OFFSET; }
+	inline uint32_t GetMSR_BE() { return (GetMSR() & CONFIG::MSR_BE_MASK) >> CONFIG::MSR_BE_OFFSET; }
+	inline uint32_t GetMSR_FE1() { return (GetMSR() & CONFIG::MSR_FE1_MASK) >> CONFIG::MSR_FE1_OFFSET; }
+	inline uint32_t GetMSR_IP() { return (GetMSR() & CONFIG::MSR_IP_MASK) >> CONFIG::MSR_IP_OFFSET; }
+	inline uint32_t GetMSR_IR() { return (GetMSR() & CONFIG::MSR_IR_MASK) >> CONFIG::MSR_IR_OFFSET; }
+	inline uint32_t GetMSR_DR() { return (GetMSR() & CONFIG::MSR_DR_MASK) >> CONFIG::MSR_DR_OFFSET; }
+	inline uint32_t GetMSR_PM() { return (GetMSR() & CONFIG::MSR_PM_MASK) >> CONFIG::MSR_PM_OFFSET; }
 	inline uint32_t GetMSR_PMM() { return GetMSR_PM(); }
-	inline uint32_t GetMSR_RI() { return (GetMSR() & MSR_RI_MASK) >> CONFIG::MSR_RI_OFFSET; }
-	inline uint32_t GetMSR_LE() { return (GetMSR() & MSR_LE_MASK) >> CONFIG::MSR_LE_OFFSET; }
-	inline void SetMSR_VEC() { SetMSR(GetMSR() | MSR_VEC_MASK); }
-	inline void SetMSR_POW() { SetMSR(GetMSR() | MSR_POW_MASK); }
-	inline void SetMSR_ILE() { SetMSR(GetMSR() | MSR_ILE_MASK); }
-	inline void SetMSR_EE() { SetMSR(GetMSR() | MSR_EE_MASK); }
-	inline void SetMSR_PR() { SetMSR(GetMSR() | MSR_PR_MASK); }
-	inline void SetMSR_FP() { SetMSR(GetMSR() | MSR_FP_MASK); }
-	inline void SetMSR_ME() { SetMSR(GetMSR() | MSR_ME_MASK); }
-	inline void SetMSR_FE0() { SetMSR(GetMSR() | MSR_FE0_MASK); }
-	inline void SetMSR_SE() { SetMSR(GetMSR() | MSR_SE_MASK); }
-	inline void SetMSR_BE() { SetMSR(GetMSR() | MSR_BE_MASK); }
-	inline void SetMSR_FE1() { SetMSR(GetMSR() | MSR_FE1_MASK); }
-	inline void SetMSR_IP() { SetMSR(GetMSR() | MSR_IP_MASK); }
-	inline void SetMSR_IR() { SetMSR(GetMSR() | MSR_IR_MASK); }
-	inline void SetMSR_DR() { SetMSR(GetMSR() | MSR_DR_MASK); }
-	inline void SetMSR_PM() { SetMSR(GetMSR() | MSR_PM_MASK); }
+	inline uint32_t GetMSR_RI() { return (GetMSR() & CONFIG::MSR_RI_MASK) >> CONFIG::MSR_RI_OFFSET; }
+	inline uint32_t GetMSR_LE() { return (GetMSR() & CONFIG::MSR_LE_MASK) >> CONFIG::MSR_LE_OFFSET; }
+	inline void SetMSR_VEC() { SetMSR(GetMSR() | CONFIG::MSR_VEC_MASK); }
+	inline void SetMSR_POW() { SetMSR(GetMSR() | CONFIG::MSR_POW_MASK); }
+	inline void SetMSR_ILE() { SetMSR(GetMSR() | CONFIG::MSR_ILE_MASK); }
+	inline void SetMSR_EE() { SetMSR(GetMSR() | CONFIG::MSR_EE_MASK); }
+	inline void SetMSR_PR() { SetMSR(GetMSR() | CONFIG::MSR_PR_MASK); }
+	inline void SetMSR_FP() { SetMSR(GetMSR() | CONFIG::MSR_FP_MASK); }
+	inline void SetMSR_ME() { SetMSR(GetMSR() | CONFIG::MSR_ME_MASK); }
+	inline void SetMSR_FE0() { SetMSR(GetMSR() | CONFIG::MSR_FE0_MASK); }
+	inline void SetMSR_SE() { SetMSR(GetMSR() | CONFIG::MSR_SE_MASK); }
+	inline void SetMSR_BE() { SetMSR(GetMSR() | CONFIG::MSR_BE_MASK); }
+	inline void SetMSR_FE1() { SetMSR(GetMSR() | CONFIG::MSR_FE1_MASK); }
+	inline void SetMSR_IP() { SetMSR(GetMSR() | CONFIG::MSR_IP_MASK); }
+	inline void SetMSR_IR() { SetMSR(GetMSR() | CONFIG::MSR_IR_MASK); }
+	inline void SetMSR_DR() { SetMSR(GetMSR() | CONFIG::MSR_DR_MASK); }
+	inline void SetMSR_PM() { SetMSR(GetMSR() | CONFIG::MSR_PM_MASK); }
 	inline void SetMSR_PMM() { SetMSR_PM(); }
-	inline void SetMSR_RI() { SetMSR(GetMSR() | MSR_RI_MASK); }
-	inline void SetMSR_LE() { SetMSR(GetMSR() | MSR_LE_MASK); }
-	inline void ResetMSR_VEC() { SetMSR(GetMSR() & ~MSR_VEC_MASK); }
-	inline void ResetMSR_POW() { SetMSR(GetMSR() & ~MSR_POW_MASK); }
-	inline void ResetMSR_ILE() { SetMSR(GetMSR() & ~MSR_ILE_MASK); }
-	inline void ResetMSR_EE() { SetMSR(GetMSR() & ~MSR_EE_MASK); }
-	inline void ResetMSR_PR() { SetMSR(GetMSR() & ~MSR_PR_MASK); }
-	inline void ResetMSR_FP() { SetMSR(GetMSR() & ~MSR_FP_MASK); }
-	inline void ResetMSR_ME() { SetMSR(GetMSR() & ~MSR_ME_MASK); }
-	inline void ResetMSR_FE0() { SetMSR(GetMSR() & ~MSR_FE0_MASK); }
-	inline void ResetMSR_SE() { SetMSR(GetMSR() & ~MSR_SE_MASK); }
-	inline void ResetMSR_BE() { SetMSR(GetMSR() & ~MSR_BE_MASK); }
-	inline void ResetMSR_FE1() { SetMSR(GetMSR() & ~MSR_FE1_MASK); }
-	inline void ResetMSR_IP() { SetMSR(GetMSR() & ~MSR_IP_MASK); }
-	inline void ResetMSR_IR() { SetMSR(GetMSR() & ~MSR_IR_MASK); }
-	inline void ResetMSR_DR() { SetMSR(GetMSR() & ~MSR_DR_MASK); }
-	inline void ResetMSR_PM() { SetMSR(GetMSR() & ~MSR_PM_MASK); }
+	inline void SetMSR_RI() { SetMSR(GetMSR() | CONFIG::MSR_RI_MASK); }
+	inline void SetMSR_LE() { SetMSR(GetMSR() | CONFIG::MSR_LE_MASK); }
+	inline void ResetMSR_VEC() { SetMSR(GetMSR() & ~CONFIG::MSR_VEC_MASK); }
+	inline void ResetMSR_POW() { SetMSR(GetMSR() & ~CONFIG::MSR_POW_MASK); }
+	inline void ResetMSR_ILE() { SetMSR(GetMSR() & ~CONFIG::MSR_ILE_MASK); }
+	inline void ResetMSR_EE() { SetMSR(GetMSR() & ~CONFIG::MSR_EE_MASK); }
+	inline void ResetMSR_PR() { SetMSR(GetMSR() & ~CONFIG::MSR_PR_MASK); }
+	inline void ResetMSR_FP() { SetMSR(GetMSR() & ~CONFIG::MSR_FP_MASK); }
+	inline void ResetMSR_ME() { SetMSR(GetMSR() & ~CONFIG::MSR_ME_MASK); }
+	inline void ResetMSR_FE0() { SetMSR(GetMSR() & ~CONFIG::MSR_FE0_MASK); }
+	inline void ResetMSR_SE() { SetMSR(GetMSR() & ~CONFIG::MSR_SE_MASK); }
+	inline void ResetMSR_BE() { SetMSR(GetMSR() & ~CONFIG::MSR_BE_MASK); }
+	inline void ResetMSR_FE1() { SetMSR(GetMSR() & ~CONFIG::MSR_FE1_MASK); }
+	inline void ResetMSR_IP() { SetMSR(GetMSR() & ~CONFIG::MSR_IP_MASK); }
+	inline void ResetMSR_IR() { SetMSR(GetMSR() & ~CONFIG::MSR_IR_MASK); }
+	inline void ResetMSR_DR() { SetMSR(GetMSR() & ~CONFIG::MSR_DR_MASK); }
+	inline void ResetMSR_PM() { SetMSR(GetMSR() & ~CONFIG::MSR_PM_MASK); }
 	inline void ResetMSR_PMM() { ResetMSR_PM(); }
-	inline void ResetMSR_RI() { SetMSR(GetMSR() & ~MSR_RI_MASK); }
-	inline void ResetMSR_LE() { SetMSR(GetMSR() & ~MSR_LE_MASK); }
+	inline void ResetMSR_RI() { SetMSR(GetMSR() & ~CONFIG::MSR_RI_MASK); }
+	inline void ResetMSR_LE() { SetMSR(GetMSR() & ~CONFIG::MSR_LE_MASK); }
+
 
 	//=====================================================================
 	//=                       DABR set/get methods                        =
@@ -849,125 +1057,10 @@ public:
 	//=====================================================================
 	//=                   FPU registers set/get methods                   =
 	//=====================================================================
-	
-	inline uint64_t GetFp64(unsigned int n) { return fpu.GetFp64(n); }
-	inline void SetFp64(unsigned int n, uint64_t value) { fpu.SetFp64(n, value); }
-	inline uint32_t GetFp32(unsigned int n) { return fpu.GetFp32(n); }
-	inline void SetFp32(unsigned int n, uint32_t value) { fpu.SetFp32(n, value); }
-	inline void SetFPSCR(uint32_t value) { fpu.SetFPSCR(value); }
-	inline uint32_t GetFPSCR() { return fpu.GetFPSCR(); }
-	inline uint32_t GetFPSCR_FX() { return fpu.GetFPSCR_FX(); }
-	inline uint32_t GetFPSCR_FEX() { return  fpu.GetFPSCR_FEX(); }
-	inline uint32_t GetFPSCR_VX() { return fpu.GetFPSCR_VX(); }
-	inline uint32_t GetFPSCR_OX() { return fpu.GetFPSCR_OX(); }
-	inline uint32_t GetFPSCR_UX() { return fpu.GetFPSCR_UX(); }
-	inline uint32_t GetFPSCR_ZX() { return  fpu.GetFPSCR_ZX(); }
-	inline uint32_t GetFPSCR_XX() { return fpu.GetFPSCR_XX(); }
-	inline uint32_t GetFPSCR_VXSNAN() { return fpu.GetFPSCR_VXSNAN(); }
-	inline uint32_t GetFPSCR_VXISI() { return fpu.GetFPSCR_VXISI(); }
-	inline uint32_t GetFPSCR_VXIDI() { return fpu.GetFPSCR_VXIDI(); }
-	inline uint32_t GetFPSCR_VXZDZ() { return fpu.GetFPSCR_VXZDZ(); }
-	inline uint32_t GetFPSCR_VXIMZ() { return fpu.GetFPSCR_VXIMZ(); }
-	inline uint32_t GetFPSCR_VXVC() { return fpu.GetFPSCR_VXVC(); }
-	inline uint32_t GetFPSCR_FR() { return fpu.GetFPSCR_FR(); }
-	inline uint32_t GetFPSCR_FI() { return fpu.GetFPSCR_FI(); }
-	inline uint32_t GetFPSCR_FPRF() { return fpu.GetFPSCR_FPRF(); }
-	inline uint32_t GetFPSCR_FPCC() { return fpu.GetFPSCR_FPCC(); }
-	inline uint32_t GetFPSCR_VXSOFT() { return fpu.GetFPSCR_VXSOFT(); }
-	inline uint32_t GetFPSCR_VXSQRT() { return fpu.GetFPSCR_VXSQRT(); }
-	inline uint32_t GetFPSCR_VXCVI() { return fpu.GetFPSCR_VXCVI(); }
-	inline uint32_t GetFPSCR_VE() { return fpu.GetFPSCR_VE(); }
-	inline uint32_t GetFPSCR_OE() { return fpu.GetFPSCR_OE(); }
-	inline uint32_t GetFPSCR_UE() { return fpu.GetFPSCR_UE(); }
-	inline uint32_t GetFPSCR_ZE() { return fpu.GetFPSCR_ZE(); }
-	inline uint32_t GetFPSCR_XE() { return fpu.GetFPSCR_XE(); }
-	inline uint32_t GetFPSCR_NI() { return fpu.GetFPSCR_NI(); }
-	inline uint32_t GetFPSCR_RN() { return fpu.GetFPSCR_RN(); }
-	inline void SetFPSCR_FPRF(uint32_t value) { fpu.SetFPSCR_FPRF(value); }
-	inline void SetFPSCR_FX() { fpu.SetFPSCR_FX(); }
-	inline void SetFPSCR_FEX() { fpu.SetFPSCR_FEX(); }
-	inline void SetFPSCR_VX() { fpu.SetFPSCR_VX(); }
-	inline void SetFPSCR_OX() { fpu.SetFPSCR_OX(); }
-	inline void SetFPSCR_UX() { fpu.SetFPSCR_UX(); }
-	inline void SetFPSCR_ZX() { fpu.SetFPSCR_ZX(); }
-	inline void SetFPSCR_XX() { fpu.SetFPSCR_XX(); }
-	inline void SetFPSCR_VXSNAN() { fpu.SetFPSCR_VXSNAN(); }
-	inline void SetFPSCR_VXISI() { fpu.SetFPSCR_VXISI(); }
-	inline void SetFPSCR_VXIDI() { fpu.SetFPSCR_VXIDI(); }
-	inline void SetFPSCR_VXZDZ() { fpu.SetFPSCR_VXZDZ(); }
-	inline void SetFPSCR_VXIMZ() { fpu.SetFPSCR_VXIMZ(); }
-	inline void SetFPSCR_VXVC() { fpu.SetFPSCR_VXVC(); }
-	inline void SetFPSCR_FR() { fpu.SetFPSCR_FR();; }
-	inline void SetFPSCR_FI() { fpu.SetFPSCR_FI();; }
-	inline void SetFPSCR_FPCC(uint32_t c) { fpu.SetFPSCR_FPCC(c); }
-	inline void SetFPSCR_VXSOFT() { fpu.SetFPSCR_VXSOFT(); }
-	inline void SetFPSCR_VXSQRT() { fpu.SetFPSCR_VXSQRT(); }
-	inline void SetFPSCR_VXCVI() { fpu.SetFPSCR_VXCVI(); }
-	inline void SetFPSCR_VE() { fpu.SetFPSCR_VE(); }
-	inline void SetFPSCR_OE() { fpu.SetFPSCR_OE(); }
-	inline void SetFPSCR_UE() { fpu.SetFPSCR_UE(); }
-	inline void SetFPSCR_ZE() { fpu.SetFPSCR_ZE(); }
-	inline void SetFPSCR_XE() { fpu.SetFPSCR_XE(); }
-	inline void SetFPSCR_NI() { fpu.SetFPSCR_NI(); }
-	inline void SetFPSCR_RN(uint32_t mode) { fpu.SetFPSCR_RN(mode); }
-	inline void ResetFPSCR_FX() { fpu.ResetFPSCR_FX(); }
-	inline void ResetFPSCR_FEX() { fpu.ResetFPSCR_FEX(); }
-	inline void ResetFPSCR_VX() { fpu.ResetFPSCR_VX(); }
-	inline void ResetFPSCR_OX() { fpu.ResetFPSCR_OX(); }
-	inline void ResetFPSCR_UX() { fpu.ResetFPSCR_UX(); }
-	inline void ResetFPSCR_ZX() { fpu.ResetFPSCR_ZX(); }
-	inline void ResetFPSCR_XX() { fpu.ResetFPSCR_XX(); }
-	inline void ResetFPSCR_VXSNAN() { fpu.ResetFPSCR_VXSNAN(); }
-	inline void ResetFPSCR_VXISI() { fpu.ResetFPSCR_VXISI(); }
-	inline void ResetFPSCR_VXIDI() { fpu.ResetFPSCR_VXIDI(); }
-	inline void ResetFPSCR_VXZDZ() { fpu.ResetFPSCR_VXZDZ(); }
-	inline void ResetFPSCR_VXIMZ() { fpu.ResetFPSCR_VXIMZ(); }
-	inline void ResetFPSCR_VXVC() { fpu.ResetFPSCR_VXVC(); }
-	inline void ResetFPSCR_FR() { fpu.ResetFPSCR_FR(); }
-	inline void ResetFPSCR_FI() { fpu.ResetFPSCR_FI(); }
-	inline void ResetFPSCR_VXSOFT() { fpu.ResetFPSCR_VXSOFT(); }
-	inline void ResetFPSCR_VXSQRT() { fpu.ResetFPSCR_VXSQRT(); }
-	inline void ResetFPSCR_VXCVI() { fpu.ResetFPSCR_VXCVI(); }
-	inline void ResetFPSCR_VE() { fpu.ResetFPSCR_VE(); }
-	inline void ResetFPSCR_OE() { fpu.ResetFPSCR_OE(); }
-	inline void ResetFPSCR_UE() { fpu.ResetFPSCR_UE(); }
-	inline void ResetFPSCR_ZE() { fpu.ResetFPSCR_ZE(); }
-	inline void ResetFPSCR_XE() { fpu.ResetFPSCR_XE(); }
-	inline void ResetFPSCR_NI() { fpu.ResetFPSCR_NI(); }
-	
-	//=====================================================================
-	//=                     FPU instructions handling                     =
-	//=====================================================================
-	
-	inline void Fp32Add(unsigned int fd, unsigned int fa, unsigned int fb) { fpu.Fp32Add(fd, fa, fb); }
-	inline void Fp32Sub(unsigned int fd, unsigned int fa, unsigned int fb) { fpu.Fp32Sub(fd, fa, fb); }
-	inline void Fp32Mul(unsigned int fd, unsigned int fa, unsigned int fb) { fpu.Fp32Mul(fd, fa, fb); }
-	inline void Fp32Div(unsigned int fd, unsigned int fa, unsigned int fb) { fpu.Fp32Div(fd, fa, fb); }
-	inline void Fp32EstimateInv(unsigned int fd, unsigned int fa) { fpu.Fp32EstimateInv(fd, fa); }
-	inline void Fp32MulAdd(unsigned int fd, unsigned fa, unsigned fb, unsigned fc) { fpu.Fp32MulAdd(fd, fa, fb, fc); }
-	inline void Fp32MulSub(unsigned int fd, unsigned fa, unsigned fb, unsigned fc) { fpu.Fp32MulSub(fd, fa, fb, fc); }
-	inline void Fp32NegMulAdd(unsigned int fd, unsigned fa, unsigned fb, unsigned fc) { fpu.Fp32NegMulAdd(fd, fa, fb, fc); }
-	inline void Fp32NegMulSub(unsigned int fd, unsigned fa, unsigned fb, unsigned fc) { fpu.Fp32NegMulSub(fd, fa, fb, fc); }
-	inline void Fp64Add(unsigned int fd, unsigned int fa, unsigned int fb) { fpu.Fp64Add(fd, fa, fb); }
-	inline void Fp64Sub(unsigned int fd, unsigned int fa, unsigned int fb) { fpu.Fp64Sub(fd, fa, fb); }
-	inline void Fp64Mul(unsigned int fd, unsigned int fa, unsigned int fb) { fpu.Fp64Mul(fd, fa, fb); }
-	inline void Fp64Div(unsigned int fd, unsigned int fa, unsigned int fb) { fpu.Fp64Div(fd, fa, fb); }
-	inline void Fp64EstimateInvSqrt(unsigned int fd, unsigned int fa) { fpu.Fp64EstimateInvSqrt(fd, fa); }
-	inline void Fp64MulAdd(unsigned int fd, unsigned fa, unsigned fb, unsigned fc) { fpu.Fp64MulAdd(fd, fa, fb, fc); }
-	inline void Fp64MulSub(unsigned int fd, unsigned fa, unsigned fb, unsigned fc) { fpu.Fp64MulSub(fd, fa, fb, fc); }
-	inline void Fp64NegMulAdd(unsigned int fd, unsigned fa, unsigned fb, unsigned fc) { fpu.Fp64NegMulAdd(fd, fa, fb, fc); }
-	inline void Fp64NegMulSub(unsigned int fd, unsigned fa, unsigned fb, unsigned fc) { fpu.Fp64NegMulSub(fd, fa, fb, fc); }
-	inline void Fp64Neg(unsigned int fd, unsigned int fa) { fpu.Fp64Neg(fd, fa); }
-	inline void Fp64Abs(unsigned int fd, unsigned int fa) { fpu.Fp64Abs(fd, fa); }
-	inline void Fp64NegAbs(unsigned int fd, unsigned int fa) { fpu.Fp64NegAbs(fd, fa); }
-	inline void Fp64CompareOrdered(unsigned int crfD, unsigned int fa, unsigned int fb) { SetCRF(crfD, fpu.Fp64CompareOrdered(fa, fb)); }
-	inline void Fp64CompareUnordered(unsigned int crfD, unsigned int fa, unsigned int fb) { SetCRF(crfD, fpu.Fp64CompareUnordered(fa, fb)); }
-	inline void Fp64ToInt32(unsigned int fd, unsigned int fa) { fpu.Fp64ToInt32(fd, fa); }
-	inline void Fp64ToInt32TowardZero(unsigned int fd, unsigned int fa) { fpu.Fp64ToInt32TowardZero(fd, fa); }
-	inline void Fp64Select(unsigned int fd, unsigned int fa, unsigned int fb, unsigned int fc) { fpu.Fp64Select(fd, fa, fb, fc); }
-	inline void Fp64ToFp32(unsigned int fd, unsigned int fa) { fpu.Fp64ToFp32(fd, fa); }
-	inline void Fp64Move(unsigned int fd, unsigned int fa) { fpu.Fp64Move(fd, fa); }
 
+	inline uint32_t GetFPSCR() { return fpscr; }
+	inline void SetFPSCR(uint32_t value) { fpscr = value; }
+	
 	//=====================================================================
 	//=                      L2CR set/get methods                         =
 	//=====================================================================
@@ -988,9 +1081,9 @@ public:
 	//=====================================================================
 	inline uint32_t GetIABR() { return iabr; }
 	inline void SetIABR(uint32_t value) { iabr = value; }
-	inline uint32_t GetIABR_ADDR() { return (iabr >> 2) & 0x3fffffffUL; }
-	inline uint32_t GetIABR_BE() { return (iabr >> 1) & 1; }
-	inline uint32_t GetIABR_TE() { return iabr & 1; }
+	inline uint32_t GetIABR_ADDR() { return (GetIABR() & CONFIG::IABR_ADDR_MASK) >> CONFIG::IABR_ADDR_OFFSET; }
+	inline uint32_t GetIABR_BE() { return (GetIABR() & CONFIG::IABR_BE_MASK) >> CONFIG::IABR_BE_OFFSET; }
+	inline uint32_t GetIABR_TE() { return (GetIABR() & CONFIG::IABR_TE_MASK) >> CONFIG::IABR_TE_OFFSET; }
 
 	inline uint32_t GetLDSTDB() { return ldstdb; }
 	inline void SetLDSTDB(uint32_t value) { ldstdb = value; }
@@ -1264,7 +1357,7 @@ public:
 	void ChooseEntryToEvictITLB(MMUAccess<CONFIG>& mmu_access);
 	void ChooseEntryToEvictDTLB(MMUAccess<CONFIG>& mmu_access);
 	template <bool DEBUG> void AccessTLB(MMUAccess<CONFIG>& mmu_access);
-	template <bool DEBUG> void HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> void EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access);
 	template <bool DEBUG> void EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access);
 	void LoadITLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo);
 	void LoadDTLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, uint32_t pte_lo);
@@ -1301,7 +1394,10 @@ public:
 	//=                        Debugging stuffs                           =
 	//=====================================================================
 
-  address_t GetEA() { return effective_address; }
+	bool fp32_estimate_inv_warning;
+	bool fp64_estimate_inv_sqrt_warning;
+
+	address_t GetEA() { return effective_address; }
 	
 	Parameter<bool> param_verbose_all;
 	Parameter<bool> param_verbose_step;
@@ -1417,6 +1513,7 @@ private:
 	uint32_t ctr;           //!< count register (all)
 	SoftDouble fpr[32];     //!< floating point registers (C++ objects implementing IEEE 754 floating point numbers) (604e, 7xx, 7xxx)
 	uint32_t fpscr;         //!< floating point status and control register (604e, 7xx, 7xxx)
+	Flags flags;            //!< fpscr Reflector
 	uint32_t gpr[32];       //!< general purpose registers (all)
 	uint32_t lr;            //!< link register (all)
 	uint32_t mq;            //!< MQ register (601)
@@ -1563,12 +1660,6 @@ private:
 	/* Instruction Translation look-aside buffer */
 	TLB<class CONFIG::ITLB_CONFIG> itlb;
 
-	//=====================================================================
-	//=                  Floating point Unit (FPU)                        =
-	//=====================================================================
-	
-	FPU<CONFIG> fpu;
-	
 	//=====================================================================
 	//=    Internal service imports to adjust power mode of caches/TLBs   =
 	//=====================================================================
@@ -1741,6 +1832,23 @@ private:
     /** indicates if the finished instructions require to be reported */
     bool requires_finished_instruction_reporting;
 
+	// Compute the FPSCR bits
+	void ComputeFPSCR_FEX(Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_FPRF(const SoftFloat& result, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_FPRF(const SoftDouble& result, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_FI(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_OX(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_UX(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_ZX(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_VXSNAN(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_VXISI(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_VXIDI(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_VXZDZ(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_VXIMZ(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_FR(const SoftFloat& result, const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_VXCVI(const Flags& flags, Instruction<CONFIG> *insn = 0);
+	void ComputeFPSCR_FR(const SoftDouble& result, const Flags& flags, Instruction<CONFIG> *insn = 0);
+
 protected:
 	//=====================================================================
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
@@ -1766,14 +1874,54 @@ protected:
 	static const uint32_t GPR_ISSUE_WIDTH = 3;
 	static const uint32_t FPR_ISSUE_WIDTH = 1;
 	static const uint32_t NUM_IU1 = 3;
+	static const uint32_t IU1_PIPELINE_DEPTH = 1;
 	static const uint32_t NUM_IU2 = 1;
+	static const uint32_t IU2_PIPELINE_DEPTH = 3;
 	static const uint32_t NUM_FPU = 1;
+	static const uint32_t FPU_PIPELINE_DEPTH = 5;
+	static const uint32_t COMPLETE_WIDTH = 3;
+	static const uint32_t MAX_GPR_WB_PER_CYCLE = 3;
+	static const uint32_t MAX_FPR_WB_PER_CYCLE = 3;
+	static const uint32_t MAX_CR_WB_PER_CYCLE = 3;
+	static const uint32_t MAX_LR_WB_PER_CYCLE = 1;
+	static const uint32_t MAX_CTR_WB_PER_CYCLE = 1;
+	static const uint32_t DL1_LATENCY = 2;
+	static const uint32_t L2_LATENCY = 2;
+	static const uint32_t MAX_OUTSTANDING_L1_LOAD_MISS = 5;
+	static const uint32_t MAX_OUTSTANDING_L2_LOAD_MISS = 11;
+	static const uint32_t MAX_OUTSTANDING_L1_STORE_MISS = 1;
+	static const uint32_t MAX_OUTSTANDING_L2_STORE_MISS = 9;
+	static const uint32_t STORE_WB_LATENCY = 2;
 
-	class InstructionWindowConfig
+	class InstructionFreeListConfig
 	{
 	public:
 		static const bool DEBUG = true;
-		typedef Instruction<CONFIG> ELEMENT;
+		typedef Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 256;
+	};
+
+	class OperandFreeListConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Operand<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 256;
+	};
+
+	class LoadStoreAccessFreeListConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef LoadStoreAccess<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 256;
+	};
+
+	class BusAccessFreeListConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef BusAccess<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 256;
 	};
 
@@ -1817,44 +1965,44 @@ protected:
 		static const unsigned int SIZE = 16;
 	};
 
-	class GPRRenameBuffersConfig
+	class GPRMappingTableConfig
 	{
 	public:
 		static const bool DEBUG = true;
-		typedef Register<uint32_t> *ELEMENT;
-		static const unsigned int SIZE = 16;
+		static const unsigned int NUM_LOGICAL_REGISTERS = 32;
+		static const unsigned int NUM_RENAME_REGISTERS = 16;
 	};
 	
-	class FPRRenameBuffersConfig
+	class FPRMappingTableConfig
 	{
 	public:
 		static const bool DEBUG = true;
-		typedef Register<SoftDouble> *ELEMENT;
-		static const unsigned int SIZE = 16;
+		static const unsigned int NUM_LOGICAL_REGISTERS = 32;
+		static const unsigned int NUM_RENAME_REGISTERS = 16;
 	};
-	
-	class CRRenameBuffersConfig
+
+	class CRMappingTableConfig
 	{
 	public:
 		static const bool DEBUG = true;
-		typedef Register<uint32_t> *ELEMENT;
-		static const unsigned int SIZE = 1;
+		static const unsigned int NUM_LOGICAL_REGISTERS = 1;
+		static const unsigned int NUM_RENAME_REGISTERS = 1;
 	};
-	
-	class LRRenameBuffersConfig
+
+	class LRMappingTableConfig
 	{
 	public:
 		static const bool DEBUG = true;
-		typedef Register<uint32_t> *ELEMENT;
-		static const unsigned int SIZE = 1;
+		static const unsigned int NUM_LOGICAL_REGISTERS = 1;
+		static const unsigned int NUM_RENAME_REGISTERS = 1;
 	};
-	
-	class CTRRenameBuffersConfig
+
+	class CTRMappingTableConfig
 	{
 	public:
 		static const bool DEBUG = true;
-		typedef Register<uint32_t> *ELEMENT;
-		static const unsigned int SIZE = 1;
+		static const unsigned int NUM_LOGICAL_REGISTERS = 1;
+		static const unsigned int NUM_RENAME_REGISTERS = 1;
 	};
 
 	class IU1ReservationStationConfig
@@ -1865,6 +2013,14 @@ protected:
 		static const unsigned int SIZE = 1;
 	};
 
+	class IU1PipelineConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = IU1_PIPELINE_DEPTH > 1 ? IU1_PIPELINE_DEPTH - 1 : 1;
+	};
+
 	class IU2ReservationStationConfig
 	{
 	public:
@@ -1873,7 +2029,15 @@ protected:
 		static const unsigned int SIZE = 2;
 	};
 
-	class FPRReservationStationConfig
+	class IU2PipelineConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = IU2_PIPELINE_DEPTH > 1 ? IU2_PIPELINE_DEPTH - 1 : 1;
+	};
+
+	class FPUReservationStationConfig
 	{
 	public:
 		static const bool DEBUG = true;
@@ -1881,37 +2045,200 @@ protected:
 		static const unsigned int SIZE = 2;
 	};
 
-	class LSReservationStationConfig
+	class FPUPipelineConfig
 	{
 	public:
 		static const bool DEBUG = true;
 		typedef  Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = FPU_PIPELINE_DEPTH > 1 ? FPU_PIPELINE_DEPTH - 1 : 1;
+	};
+
+	class LSUReservationStationConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> *ELEMENT;
 		static const unsigned int SIZE = 2;
 	};
 
-	Queue<InstructionWindowConfig> iw;
+	class FinishedStoreQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 3;
+	};
+
+	class CommittedStoreQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 5;
+	};
+
+	class RequiredEffectiveAddressConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 1;
+	};
+
+	class BusStoreQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef BusAccess<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = 10;
+	};
+
+	class BusLoadQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef BusAccess<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = MAX_OUTSTANDING_L2_LOAD_MISS;
+	};
+
+	class WriteBackQueueConfig
+	{
+	public:
+		static const bool DEBUG = true;
+		typedef Instruction<CONFIG> *ELEMENT;
+		static const unsigned int SIZE = COMPLETE_WIDTH;
+	};
+
+	// Instruction Queue
 	Queue<InstructionQueueConfig> iq;
+
+	// Vector Issue Queue
 	Queue<VRIssueQueueConfig> viq;
+
+	// General Purpose Issue Queue
 	Queue<GPRIssueQueueConfig> giq;
+
+	// Floating point Issue Queue
 	Queue<FPRIssueQueueConfig> fiq;
+
+	// Completion Queue
 	Queue<CompletionQueueConfig> cq;
-	Queue<GPRRenameBuffersConfig> gpr_rename_buffers;
-	Queue<FPRRenameBuffersConfig> fpr_rename_buffers;
-	Queue<LRRenameBuffersConfig> lr_rename_buffers;
-	Queue<CTRRenameBuffersConfig> ctr_rename_buffers;
-	Queue<CRRenameBuffersConfig> cr_rename_buffers;
+
+	// Mapping tables
+	MappingTable<GPRMappingTableConfig> gpr_mapping_table;
+	MappingTable<FPRMappingTableConfig> fpr_mapping_table;
+	MappingTable<CRMappingTableConfig> cr_mapping_table;
+	MappingTable<LRMappingTableConfig> lr_mapping_table;
+	MappingTable<CTRMappingTableConfig> ctr_mapping_table;
+
+	// Reservation stations
 	Queue<IU1ReservationStationConfig> iu1_reservation_station[NUM_IU1];
 	Queue<IU2ReservationStationConfig> iu2_reservation_station[NUM_IU2];
-	Queue<FPRReservationStationConfig> fpr_reservation_station[NUM_FPU];
-	Queue<LSReservationStationConfig> ls_reservation_station;
+	Queue<FPUReservationStationConfig> fpu_reservation_station[NUM_FPU];
+	Queue<LSUReservationStationConfig> lsu_reservation_station;
+
+	// Integer/Floating Units Pipelines
+	Queue<IU1PipelineConfig> iu1_pipeline[NUM_IU1];
+	Queue<IU2PipelineConfig> iu2_pipeline[NUM_IU2];
+	Queue<FPUPipelineConfig> fpu_pipeline[NUM_FPU];
+
+	// Effective Address
+	Queue<RequiredEffectiveAddressConfig> required_ea;
+
+	// Finished Store Queue
+	Queue<FinishedStoreQueueConfig> fsq;
+
+	// Committed Store Queue
+	Queue<CommittedStoreQueueConfig> csq;
+
+	// Bus Load Queue
+	Queue<BusLoadQueueConfig> blq;
+
+	// Bus Store Queue
+	Queue<BusStoreQueueConfig> bsq;
+
+	// Write Back Cycle 0
+	Queue<WriteBackQueueConfig> wb0;
+
+	// Write Back Cycle 1
+	Queue<WriteBackQueueConfig> wb1;
+
+	// Schedules
+	std::multimap<uint64_t, Event<CONFIG> *> schedule;
+
+	Event<CONFIG> *event_free_list;
+	Instruction<CONFIG> *insn_free_list;
+	Operand<CONFIG> *operand_free_list;
+	BusAccess<CONFIG> *bus_access_free_list;
+	LoadStoreAccess<CONFIG> *load_store_access_free_list;
+
+	Event<CONFIG> *AllocateEvent();
+	Instruction<CONFIG> *AllocateInstruction();
+	Operand<CONFIG> *AllocateOperand();
+	LoadStoreAccess<CONFIG> *AllocateLoadStoreAccess();
+	void GenLoadStoreAccess(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, address_t munged_ea, uint32_t size, Instruction<CONFIG> *instruction);
+	BusAccess<CONFIG> *AllocateBusAccess();
+	void AcquireOperand(Operand<CONFIG> *operand);
+	void FreeEvent(Event<CONFIG> *ev);
+	void FreeInstruction(Instruction<CONFIG> *instruction);
+	void FreeOperand(Operand<CONFIG> *operand);
+	void FreeLoadStoreAccess(LoadStoreAccess<CONFIG> *load_store_access);
+	void FreeBusAccess(BusAccess<CONFIG> *bus_access);
+
+	// Architectural registers
+	Operand<CONFIG> *arch_gpr[GPRMappingTableConfig::NUM_LOGICAL_REGISTERS];
+	Operand<CONFIG> *arch_fpr[FPRMappingTableConfig::NUM_LOGICAL_REGISTERS];
+	Operand<CONFIG> *arch_cr;
+	Operand<CONFIG> *arch_lr;
+	Operand<CONFIG> *arch_ctr;
+	Operand<CONFIG> *arch_xer;
+	Operand<CONFIG> *arch_fpscr;
+
+	// Rename registers
+	Operand<CONFIG> *rename_gpr[GPRMappingTableConfig::NUM_RENAME_REGISTERS];
+	Operand<CONFIG> *rename_fpr[FPRMappingTableConfig::NUM_RENAME_REGISTERS];
+	Operand<CONFIG> *rename_cr[CRMappingTableConfig::NUM_RENAME_REGISTERS];
+	Operand<CONFIG> *rename_lr[LRMappingTableConfig::NUM_RENAME_REGISTERS];
+	Operand<CONFIG> *rename_ctr[CTRMappingTableConfig::NUM_RENAME_REGISTERS];
+
+	uint32_t num_outstanding_l1_load_miss;
+	uint32_t num_outstanding_l1_store_miss;
+	uint32_t num_outstanding_l2_load_miss;
+	uint32_t num_outstanding_l2_store_miss;
+	unsigned int dispatch_uop_num;
+	unsigned int load_store_access_num;
+
+	void ScheduleEvents();
 
 	void Fetch();
 	void DecodeDispatch();
 	void GPRIssue();
 	void FPRIssue();
 	void VRIssue();
-	
+	void IU1Execute();
+	void IU2Execute();
+	void FPUExecute();
+	void LSUExecute1();
+	void LSUExecute2();
+	void BIU();
+	void Complete();
+	void WriteBack0();
+	void WriteBack1();
+	void Flush();
+	bool HasPipelineCollision(BusAccess<CONFIG> *bus_load_access);
 
+	void NotifyEvent(Event<CONFIG> *ev, uint64_t latency);
+	void NotifyLoadResultAvailability(LoadStoreAccess<CONFIG> *load_store_access, uint64_t latency);
+	void NotifyOperandAvailability(Operand<CONFIG> *operand, uint64_t latency);
+	void NotifyFinishedInstruction(Instruction<CONFIG> *operand, uint64_t latency);
+	void NotifyBusAccess(BusAccess<CONFIG> *bus_access, uint64_t latency);
+	void NotifyWriteBack(Operand<CONFIG> *operand, uint64_t latency);
+	void NotifyStoreWriteBack(LoadStoreAccess<CONFIG> *load_store_access, uint64_t latency);
+
+	void OnFinishedBusAccess(BusAccess<CONFIG> *bus_access);
+	virtual void DoBusAccess(BusAccess<CONFIG> *bus_access) {}
+
+	friend class Instruction<CONFIG>;
 };
 
 } // end of namespace powerpc

@@ -642,7 +642,7 @@ class AddressGenerationUnit : public module
 						case FPR_T:
 							/* Copy the floating point register value of the simulator into the state of the emulator */
 							//state.fpr[srcreg] = *(double *) &(*instruction)->sources[i].data;
-						  state->SetFp64(srcreg, *(uint64_t *)&(*instruction)->sources[i].data);
+						  state->SetFPR(srcreg, SoftDouble(*(uint64_t *)&(*instruction)->sources[i].data));
 							break;
 
 						default:
@@ -685,7 +685,7 @@ class AddressGenerationUnit : public module
 							//(*instruction)->destination.data = *(T *) &state.fpr[dstreg];
 							//(*instruction)->destination.data = *((T *) (state->GetFPR(dstreg)));
 							//(*instruction)->destinations[j].data = *(uint64_t *)&state->GetFPR(dstreg);
-							(*instruction)->destinations[j].data = state->GetFp64(dstreg);
+							(*instruction)->destinations[j].data = state->GetFPR(dstreg).queryValue();
 							break;
 
 						default:

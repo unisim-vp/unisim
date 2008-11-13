@@ -138,7 +138,7 @@ ISIGuardedMemoryException<CONFIG>::ISIGuardedMemoryException(address_t addr) : I
 }
 
 template <class CONFIG>
-DSIException<CONFIG>::DSIException(const char *name, address_t addr, MemoryAccessType memory_access_type)
+DSIException<CONFIG>::DSIException(const char *name, address_t addr, typename CONFIG::MemoryAccessType memory_access_type)
 {
 	this->addr = addr;
 	this->memory_access_type = memory_access_type;
@@ -161,7 +161,7 @@ typename CONFIG::address_t DSIException<CONFIG>::GetAddress() const
 }
 
 template <class CONFIG>
-MemoryAccessType DSIException<CONFIG>::GetAccessType() const
+typename CONFIG::MemoryAccessType DSIException<CONFIG>::GetAccessType() const
 {
 	return memory_access_type;
 }
@@ -173,32 +173,32 @@ const char * DSIException<CONFIG>::what () const throw ()
 }
 
 template <class CONFIG>
-DSIDirectStoreException<CONFIG>::DSIDirectStoreException(address_t addr, MemoryAccessType memory_access_type) : DSIException<CONFIG>("direct store", addr, memory_access_type)
+DSIDirectStoreException<CONFIG>::DSIDirectStoreException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("direct store", addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIProtectionViolationException<CONFIG>::DSIProtectionViolationException(address_t addr, MemoryAccessType memory_access_type) : DSIException<CONFIG>("protection violation", addr, memory_access_type)
+DSIProtectionViolationException<CONFIG>::DSIProtectionViolationException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("protection violation", addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIPageFaultException<CONFIG>::DSIPageFaultException(address_t addr, MemoryAccessType memory_access_type) : DSIException<CONFIG>("page fault", addr, memory_access_type)
+DSIPageFaultException<CONFIG>::DSIPageFaultException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("page fault", addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIDataAddressBreakpointException<CONFIG>::DSIDataAddressBreakpointException(address_t addr, MemoryAccessType memory_access_type) : DSIException<CONFIG>("data address breakpoint", addr, memory_access_type)
+DSIDataAddressBreakpointException<CONFIG>::DSIDataAddressBreakpointException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("data address breakpoint", addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIExternalAccessDisabledException<CONFIG>::DSIExternalAccessDisabledException(address_t addr, MemoryAccessType memory_access_type) : DSIException<CONFIG>("external access disabled", addr, memory_access_type)
+DSIExternalAccessDisabledException<CONFIG>::DSIExternalAccessDisabledException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("external access disabled", addr, memory_access_type)
 {
 }
 
 template <class CONFIG>
-DSIWriteThroughLinkedLoadStore<CONFIG>::DSIWriteThroughLinkedLoadStore(address_t addr, MemoryAccessType memory_access_type) : DSIException<CONFIG>("write through linked load-store", addr, memory_access_type)
+DSIWriteThroughLinkedLoadStore<CONFIG>::DSIWriteThroughLinkedLoadStore(address_t addr, typename CONFIG::MemoryAccessType memory_access_type) : DSIException<CONFIG>("write through linked load-store", addr, memory_access_type)
 {
 }
 
@@ -315,7 +315,7 @@ const char * InstructionAddressBreakpointException<CONFIG>::what () const throw 
 }
 
 template <class CONFIG>
-TLBMissException<CONFIG>::TLBMissException(MemoryAccessType memory_access_type, MemoryType memory_type, address_t addr, uint32_t way, uint32_t key, uint32_t vsid, uint32_t api, physical_address_t primary_pteg, physical_address_t secondary_pteg)
+TLBMissException<CONFIG>::TLBMissException(typename CONFIG::MemoryAccessType memory_access_type, typename CONFIG::MemoryType memory_type, address_t addr, uint32_t way, uint32_t key, uint32_t vsid, uint32_t api, physical_address_t primary_pteg, physical_address_t secondary_pteg)
 {
 	this->memory_access_type = memory_access_type;
 	this->memory_type = memory_type;
@@ -329,13 +329,13 @@ TLBMissException<CONFIG>::TLBMissException(MemoryAccessType memory_access_type, 
 }
 
 template <class CONFIG>
-MemoryAccessType TLBMissException<CONFIG>::GetMemoryAccessType() const
+typename CONFIG::MemoryAccessType TLBMissException<CONFIG>::GetMemoryAccessType() const
 {
 	return memory_access_type;
 }
 
 template <class CONFIG>
-MemoryType TLBMissException<CONFIG>::GetMemoryType() const
+typename CONFIG::MemoryType TLBMissException<CONFIG>::GetMemoryType() const
 {
 	return memory_type;
 }
@@ -385,17 +385,17 @@ uint32_t TLBMissException<CONFIG>::GetSecondaryPTEG() const
 template <class CONFIG>
 const char * TLBMissException<CONFIG>::what () const throw ()
 {
-	if(memory_type & MT_INSN)
+	if(memory_type & CONFIG::MT_INSN)
 	{
 		return "ITLB miss exception";
 	}
 	
-	if(memory_access_type & MAT_WRITE)
+	if(memory_access_type & CONFIG::MAT_WRITE)
 	{
 		return "DTLB store miss exception";
 	}
 	
-	if(memory_access_type & MAT_READ)
+	if(memory_access_type & CONFIG::MAT_READ)
 	{
 		return "DTLB load miss exception";
 	}
@@ -818,7 +818,7 @@ void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
 	// FIXME: for eciwx, ecowx, lwarx or stwcx. DSISR[5] should be set
-	if(exc.GetAccessType() == MAT_WRITE)
+	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
 		SetDSISR(0x82000000UL); // set DSISR[0], DSISR[6], clear other bits
 	else
 		SetDSISR(0x80000000UL); // set DSISR[0], clear other bits
@@ -831,7 +831,7 @@ void CPU<CONFIG>::HandleException(const DSIDirectStoreException<CONFIG>& exc)
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
 		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == MAT_WRITE ? "writing" : "reading")
+		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
 				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
 		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
@@ -856,7 +856,7 @@ void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>&
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	if(exc.GetAccessType() == MAT_WRITE)
+	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
 		SetDSISR(0x0a000000UL); // set DSISR[4], set DSISR[6], clear other bits
 	else
 		SetDSISR(0x08000000UL); // set DSISR[4], clear other bits
@@ -869,7 +869,7 @@ void CPU<CONFIG>::HandleException(const DSIProtectionViolationException<CONFIG>&
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
 		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == MAT_WRITE ? "writing" : "reading")
+		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
 				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
 		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
@@ -894,7 +894,7 @@ void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	if(exc.GetAccessType() == MAT_WRITE)
+	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
 		SetDSISR(0x42000000UL); // set DSISR[1], set DSISR[6], clear other bits
 	else
 		SetDSISR(0x40000000UL); // set DSISR[1], clear other bits
@@ -907,7 +907,7 @@ void CPU<CONFIG>::HandleException(const DSIPageFaultException<CONFIG>& exc)
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
 		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == MAT_WRITE ? "writing" : "reading")
+		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
 				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
 		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
@@ -932,7 +932,7 @@ void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	if(exc.GetAccessType() == MAT_WRITE)
+	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
 		SetDSISR(0x02400000UL); // set DSISR[6], set DSISR[9], clear other bits
 	else
 		SetDSISR(0x00400000UL); // set DSISR[9], clear other bits
@@ -945,7 +945,7 @@ void CPU<CONFIG>::HandleException(const DSIDataAddressBreakpointException<CONFIG
 		(*logger_import) << ":" << "At 0x" << Hex << GetCIA() << Dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
 		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << exc.what() << " while " << (exc.GetAccessType() == MAT_WRITE ? "writing" : "reading")
+		(*logger_import) << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
 				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
 		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
@@ -970,7 +970,7 @@ void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFI
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	if(exc.GetAccessType() == MAT_WRITE)
+	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
 		SetDSISR(0x02100000UL); // set DSISR[6], DSISR[11], clear other bits
 	else
 		SetDSISR(0x02100000UL); // set DSISR[11], clear other bits
@@ -983,7 +983,7 @@ void CPU<CONFIG>::HandleException(const DSIExternalAccessDisabledException<CONFI
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
 		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == MAT_WRITE ? "writing" : "reading")
+		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
 				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
 		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
@@ -1008,7 +1008,7 @@ void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& 
 	// MSR[SE]=0, MSR[BE]=0, MSR[FE1]=0, MSR[IR]=0, MSR[DR]=0, MSR[RI]=0
 	SetMSR((GetMSR() & 0x00011040UL) | ((GetMSR() >> 16) & 1));
 	
-	if(exc.GetAccessType() == MAT_WRITE)
+	if(exc.GetAccessType() == CONFIG::MAT_WRITE)
 		SetDSISR(0x06000000UL); // set DSISR[5], DSISR[6], clear other bits
 	else
 		SetDSISR(0x04000000UL); // set DSISR[5], clear other bits
@@ -1021,7 +1021,7 @@ void CPU<CONFIG>::HandleException(const DSIWriteThroughLinkedLoadStore<CONFIG>& 
 		(*logger_import) << "At 0x" << Hex << GetCIA() << Dec;
 		const Symbol<address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_FUNC) : 0;
 		if(func_symbol) (*logger_import) << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == MAT_WRITE ? "writing" : "reading")
+		(*logger_import) << ":" << exc.what() << " while " << (exc.GetAccessType() == CONFIG::MAT_WRITE ? "writing" : "reading")
 				<< " data at 0x" << Hex << exc.GetAddress() << Dec;
 		const Symbol<address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<address_t>::SYM_OBJECT) : 0;
 		if(obj_symbol) (*logger_import) << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
@@ -1682,7 +1682,7 @@ void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 	// SRR1[0-3]=CR0, clear SRR1[4-11], SRR1[12]=key, SRR1[13]=0, SRR1[14]=way, SRR1[15]=0, SRR1[16-31]=MSR[16-31]
 	SetSRR1((GetCR() & 0xf0000000UL) | ((exc.GetKey() & 1) << 19) | ((exc.GetWay() & 1) << 17) | (GetMSR() & 0x0000ffffUL));
 	
-	if(exc.GetMemoryType() == MT_INSN)
+	if(exc.GetMemoryType() == CONFIG::MT_INSN)
 	{
 		SetIMISS(exc.GetAddress());
 		SetICMP(pte_hi);
@@ -1694,7 +1694,7 @@ void CPU<CONFIG>::HandleException(const TLBMissException<CONFIG>& exc)
 	{
 		SetDMISS(exc.GetAddress());
 		SetDCMP(pte_hi);
-		if(exc.GetMemoryAccessType() == MAT_WRITE)
+		if(exc.GetMemoryAccessType() == CONFIG::MAT_WRITE)
 		{
 			// SRR1[15]=1
 			SetSRR1(GetSRR1() | 0x00010000UL);

@@ -181,7 +181,7 @@ void PowerPC<CONFIG>::Run()
 				//wait(SC_ZERO_TIME); // be nice with other threads: leave host execution resources
 			}
 		}
-		CPU<CONFIG>::Step();
+		CPU<CONFIG>::StepOneInstruction();
 		cpu_sctime += time_per_instruction;
 	}
 }

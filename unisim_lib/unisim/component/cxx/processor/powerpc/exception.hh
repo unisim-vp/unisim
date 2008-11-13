@@ -141,14 +141,14 @@ class DSIException : public Exception
 {
 public:
 	typedef typename CONFIG::address_t address_t;
-	DSIException(const char *name, address_t addr, MemoryAccessType memory_access_type);
+	DSIException(const char *name, address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
 	virtual ~DSIException() throw();
 	address_t GetAddress() const;
-	MemoryAccessType GetAccessType() const;
+	typename CONFIG::MemoryAccessType GetAccessType() const;
 	virtual const char * what () const throw ();
 private:
 	address_t addr;
-	MemoryAccessType memory_access_type;
+	typename CONFIG::MemoryAccessType memory_access_type;
 	string what_str;
 };
 
@@ -157,7 +157,7 @@ class DSIDirectStoreException : public DSIException<CONFIG>
 {
 public:
 	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIDirectStoreException(address_t addr, MemoryAccessType memory_access_type);
+	DSIDirectStoreException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
 };
 
 template <class CONFIG>
@@ -165,7 +165,7 @@ class DSIProtectionViolationException : public DSIException<CONFIG>
 {
 public:
 	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIProtectionViolationException(address_t addr, MemoryAccessType memory_access_type);
+	DSIProtectionViolationException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
 };
 
 template <class CONFIG>
@@ -173,7 +173,7 @@ class DSIPageFaultException : public DSIException<CONFIG>
 {
 public:
 	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIPageFaultException(address_t addr, MemoryAccessType memory_access_type);
+	DSIPageFaultException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
 };
 
 template <class CONFIG>
@@ -181,7 +181,7 @@ class DSIDataAddressBreakpointException : public DSIException<CONFIG>
 {
 public:
 	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIDataAddressBreakpointException(address_t addr, MemoryAccessType memory_access_type);
+	DSIDataAddressBreakpointException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
 };
 
 template <class CONFIG>
@@ -189,7 +189,7 @@ class DSIExternalAccessDisabledException : public DSIException<CONFIG>
 {
 public:
 	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIExternalAccessDisabledException(address_t addr, MemoryAccessType memory_access_type);
+	DSIExternalAccessDisabledException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
 };
 
 template <class CONFIG>
@@ -197,7 +197,7 @@ class DSIWriteThroughLinkedLoadStore : public DSIException<CONFIG>
 {
 public:
 	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIWriteThroughLinkedLoadStore(address_t addr, MemoryAccessType memory_access_type);
+	DSIWriteThroughLinkedLoadStore(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
 };
 
 
@@ -299,10 +299,10 @@ class TLBMissException : public Exception
 public:
 	typedef typename CONFIG::address_t address_t;
 	typedef typename CONFIG::physical_address_t physical_address_t;
-	TLBMissException(MemoryAccessType memory_access_type, MemoryType memory_type, address_t addr, uint32_t key, uint32_t way, uint32_t vsid, uint32_t api, physical_address_t primary_pteg, physical_address_t secondary_pteg);
+	TLBMissException(typename CONFIG::MemoryAccessType memory_access_type, typename CONFIG::MemoryType memory_type, address_t addr, uint32_t key, uint32_t way, uint32_t vsid, uint32_t api, physical_address_t primary_pteg, physical_address_t secondary_pteg);
 	virtual const char * what () const throw ();
-	MemoryAccessType GetMemoryAccessType() const;
-	MemoryType GetMemoryType() const;
+	typename CONFIG::MemoryAccessType GetMemoryAccessType() const;
+	typename CONFIG::MemoryType GetMemoryType() const;
 	address_t GetAddress() const;
 	uint32_t GetVSID() const;
 	uint32_t GetAPI() const;
@@ -311,8 +311,8 @@ public:
 	uint32_t GetPrimaryPTEG() const;
 	uint32_t GetSecondaryPTEG() const;
 private:
-	MemoryAccessType memory_access_type;
-	MemoryType memory_type;
+	typename CONFIG::MemoryAccessType memory_access_type;
+	typename CONFIG::MemoryType memory_type;
 	address_t addr;
 	uint32_t vsid;
 	uint32_t api;

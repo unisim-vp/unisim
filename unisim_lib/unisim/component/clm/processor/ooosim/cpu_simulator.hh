@@ -928,7 +928,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		  {
 		    UInt64 sim_value = ReadFPR(i);
 		    //    UInt64 emul_value = (check_emulator->GetFp64(i)).queryValue();
-		    UInt64 emul_value = check_emulator->GetFp64(i);
+		    UInt64 emul_value = check_emulator->GetFPR(i).queryValue();
 		    if(sim_value != emul_value)
 		      {
 			cerr << *this;
@@ -1088,7 +1088,7 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 		  {
 		    UInt64 sim_value = ReadFPR(i);
 		    //   UInt64 emul_value = (check_emulator->GetFp64(i)).queryValue();
-		    UInt64 emul_value = check_emulator->GetFp64(i);
+		    UInt64 emul_value = check_emulator->GetFPR(i).queryValue();
 		    if ( sim_value != emul_value )
 		      {
 			/*

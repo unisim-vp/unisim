@@ -47,6 +47,7 @@
 //#include <common.h>
 //#include <systemc.h>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
+#include <unisim/component/cxx/processor/powerpc/floating.hh>
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
@@ -66,6 +67,7 @@ using unisim::component::clm::interfaces::InstructionPtr;
 
 using unisim::component::clm::processor::ooosim::CPUSim;
 using unisim::component::cxx::processor::powerpc::Exception;
+using unisim::component::cxx::processor::powerpc::SoftDouble;
 
 using unisim::component::clm::utility::branch_direction_t;
 using unisim::component::clm::utility::Taken;
@@ -439,7 +441,7 @@ class FunctionalUnit : public module
 							//state.fpr[srcreg] = *(double *) &(*instruction)->sources[i].data;
 							//state->SetFPR(srcreg) = *(double *) &(*instruction)->sources[i].data;
 							//state->SetFPR(srcreg, *(double *) &(*instruction)->sources[i].data);
-							state->SetFp64(srcreg, (T)(*instruction)->sources[i].data);
+							state->SetFPR(srcreg, SoftDouble((T)(*instruction)->sources[i].data));
 							break;
 					case CR_T:
 							state->SetCRF(srcreg, (*instruction)->sources[i].data);
@@ -521,7 +523,7 @@ class FunctionalUnit : public module
 					  //(*instruction)->destination.data = *(T *) state->GetFPR(dstreg);
 					  //    (*instruction)->destinations[j].data = *(uint64_t *)&state->GetFPR(dstreg);
 					  //  (*instruction)->destinations[j].data = (state->GetFp64(dstreg)).queryValue();
-					  (*instruction)->destinations[j].data = state->GetFp64(dstreg);
+					  (*instruction)->destinations[j].data = state->GetFPR(dstreg).queryValue();
 					  break;
 					case CR_T:
 					  //(*instruction)->destinations[j].data = state->GetCRF(dstreg);

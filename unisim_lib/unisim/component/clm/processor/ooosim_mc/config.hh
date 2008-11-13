@@ -4,6 +4,19 @@
 
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
+
+template <class CONFIG> class CPU;
+
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 namespace unisim {
 namespace component {
@@ -17,6 +30,7 @@ using unisim::component::cxx::processor::powerpc::MPC7447AConfig;
 class MyPowerPcConfig : public MPC7447AConfig
 {
 public:
+	typedef unisim::component::cxx::processor::powerpc::CPU<MyPowerPcConfig> STATE;
   //	static const Model MODEL = MyPowerPcConfig;
 	
 	static const uint32_t PROCESSOR_VERSION = 0x00000001UL;

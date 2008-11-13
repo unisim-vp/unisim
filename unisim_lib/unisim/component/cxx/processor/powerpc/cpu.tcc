@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CPU_TCC__
 
+#include <unisim/component/cxx/processor/powerpc/powerpc.tcc>
+#include <unisim/util/simfloat/floating.tcc>
 #include <unisim/component/cxx/processor/powerpc/exception.tcc>
 #include <unisim/component/cxx/cache/cache.tcc>
 #include <unisim/component/cxx/tlb/tlb.tcc>
@@ -115,13 +117,14 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 	l2(),
 	itlb(),
 	dtlb(),
-	fpu("fpu", this),
 	cpu_cycle_time(0),
 	voltage(0),
 	bus_cycle_time(0),
 	max_inst(0xffffffffffffffffULL),
 	num_insn_in_prefetch_buffer(0),
 	cur_insn_in_prefetch_buffer(0),
+	fp32_estimate_inv_warning(false),
+	fp64_estimate_inv_sqrt_warning(false),
 	verbose_all(false),
 	verbose_step(false),
 	verbose_dtlb(false),
@@ -172,7 +175,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 	Object::SetupDependsOn(logger_import);
 
 
-	int i;
+	unsigned int i;
 
 	for(i = 0; i < 32; i++)
 	{
@@ -181,10 +184,21 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 		registers_registry[sstr.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &gpr[i]);
 	}
 
+	registers_registry["fpscr"] = new unisim::util::debug::SimpleRegister<uint32_t>("fpscr", &fpscr);
+
+	for(i = 0; i < 32; i++)
+	{
+		stringstream sstr;
+		sstr << "f" << i;
+		registers_registry[sstr.str()] = new FloatingPointRegisterInterface(sstr.str().c_str(), &fpr[i]);
+	}
+
 	registers_registry["cr"] = new unisim::util::debug::SimpleRegister<uint32_t>("cr", &cr);
 	registers_registry["xer"] = new unisim::util::debug::SimpleRegister<uint32_t>("xer", &xer);
+
 	registers_registry["lr"] = new unisim::util::debug::SimpleRegister<uint32_t>("lr", &lr);
 	registers_registry["ctr"] = new unisim::util::debug::SimpleRegister<uint32_t>("ctr", &ctr);
+
 	registers_registry["cia"] = new unisim::util::debug::SimpleRegister<uint32_t>("cia", &cia);
 
 	registers_registry["msr"] = new unisim::util::debug::SimpleRegister<uint32_t>("msr", &msr);
@@ -282,8 +296,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 
 	registers_registry["sdr1"] = new unisim::util::debug::SimpleRegister<uint32_t>("sdr1", &sdr1);
 
-	fpu.logger_import >> fpu_logger_import;
-	
 	Reset();
 }
 
@@ -517,6 +529,11 @@ void CPU<CONFIG>::Reset()
 	reserve_addr = 0;
 
 	for(i = 0; i < 32; i++) SetGPR(i, 0);
+
+	SetFPSCR(0);
+	flags.clear();
+	for(i = 0; i < 32; i++) SetFPR(i, SoftDouble(0));
+
 	SetCR(0);
 	SetXER(0);
 	SetLR(0);
@@ -573,7 +590,6 @@ void CPU<CONFIG>::Reset()
 	{
 		InvalidateL2();
 	}
-	fpu.Reset();
 	
 	num_insn_in_prefetch_buffer = 0;
 	cur_insn_in_prefetch_buffer = 0;
@@ -1894,7 +1910,7 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Step()
+void CPU<CONFIG>::StepOneInstruction()
 {
 	if(debug_control_import)
 	{
@@ -1934,7 +1950,7 @@ void CPU<CONFIG>::Step()
 		
 		if(CONFIG::PREFETCH_BUFFER_ENABLE)
 		{
-			if(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer)
+			if(unlikely(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer))
 			{
 				uint32_t size_to_block_boundary = IsInsnCacheEnabled() ? CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - (addr & (CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1)) : FSB_WIDTH - (addr & (FSB_WIDTH - 1));
 				uint32_t size_to_prefetch = size_to_block_boundary > (4 * CONFIG::NUM_PREFETCH_BUFFER_ENTRIES) ? CONFIG::NUM_PREFETCH_BUFFER_ENTRIES / 4 : size_to_block_boundary;
@@ -1954,9 +1970,9 @@ void CPU<CONFIG>::Step()
 		BSwap(insn);
 #endif
 
-		if(requires_memory_access_reporting) 
+		if(unlikely(requires_memory_access_reporting)) 
 		{
-			if(memory_access_reporting_import)
+			if(unlikely(memory_access_reporting_import != 0))
 			{
 				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_INSN, addr, 4);
 			}
@@ -1965,7 +1981,7 @@ void CPU<CONFIG>::Step()
 		if(CONFIG::IABR_ENABLE && CONFIG::HAS_IABR)
 		{
 			/* Check for instruction address breakpoint */
-			if(GetIABR_BE() && GetIABR_TE() == GetMSR_IR() && ((GetCIA() >> 2) & 0x3fffffffUL) == GetIABR_ADDR())
+			if(unlikely(GetIABR_BE() && GetIABR_TE() == GetMSR_IR() && ((GetCIA() >> 2) & 0x3fffffffUL) == GetIABR_ADDR()))
 			{
 				throw InstructionAddressBreakpointException<CONFIG>();
 			}
@@ -1973,17 +1989,17 @@ void CPU<CONFIG>::Step()
 
 		operation = Decoder<CONFIG>::Decode(addr, insn);
 
-		if(IsVerboseStep())
+		if(unlikely(IsVerboseStep()))
 		{
 			stringstream sstr;
-			operation->disasm(this, sstr);
+			operation->disasm((CPU<CONFIG> *) this, sstr);
 			(*logger_import) << DebugInfo << "#" << instruction_counter << ":0x" << Hex << addr << Dec << ":" << sstr.str() << Endl << EndDebugInfo;
 		}
 
 		/* execute the instruction */
 		operation->execute(this);
 
-		if(HasAsynchronousInterrupt())
+		if(unlikely(HasAsynchronousInterrupt()))
 		{
 			if(CONFIG::HAS_HARD_RESET && HasHardReset()) throw SystemResetException<CONFIG>();
 			if(CONFIG::HAS_MCP && HasMCP() && GetHID0_EMCP()) throw MachineCheckException<CONFIG>();
@@ -2034,7 +2050,7 @@ void CPU<CONFIG>::Step()
 	/* go to the next instruction */
 	if(CONFIG::PREFETCH_BUFFER_ENABLE)
 	{
-		if(GetNIA() != sequential_nia)
+		if(unlikely(GetNIA() != sequential_nia))
 		{
 			// branch or exception is being taken: flush the prefetch buffer
 			num_insn_in_prefetch_buffer = 0;
@@ -2050,21 +2066,46 @@ void CPU<CONFIG>::Step()
 
 	/* update the instruction counter */
 	instruction_counter++;
-	if(trap_reporting_import && instruction_counter == trap_on_instruction_counter)
+	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
 	{
 		trap_reporting_import->ReportTrap();
 	}
 	
-	if(requires_finished_instruction_reporting)
+	if(unlikely(requires_finished_instruction_reporting))
 	{
-		if(memory_access_reporting_import)
+		if(unlikely(memory_access_reporting_import != 0))
 		{
 			memory_access_reporting_import->ReportFinishedInstruction(GetNIA());
 		}
 	}
 
-	if(instruction_counter >= max_inst) Stop(0);
+	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::StepOneCycle()
+{
+	ScheduleEvents();
+
+	// Complete
+	Complete();
+	// Execute
+	IU1Execute();
+	IU2Execute();
+	FPUExecute();
+	BIU();
+	LSUExecute2();
+	LSUExecute1();
+	// Issue
+	GPRIssue();
+	VRIssue();
+	FPRIssue();
+	// Decode/Dispatch
+	DecodeDispatch();
+	// Fetch
+	Fetch();
+	cpu_cycle++;
 }
 
 template <class CONFIG>
@@ -2099,7 +2140,7 @@ void CPU<CONFIG>::Run()
 {
 	do
 	{
-		Step();
+		StepOneCycle();
 		if(instruction_counter >= max_inst) Stop(0);
 	} while(1);
 }
@@ -2327,6 +2368,18 @@ void CPU<CONFIG>::DisableAddressBroadcast()
 }
 
 template <class CONFIG>
+inline bool CPU<CONFIG>::IsFPUEnabled()
+{
+	return GetMSR_FP() != 0;
+}
+
+template <class CONFIG>
+inline bool CPU<CONFIG>::IsFPUExceptionEnabled()
+{
+	return (CONFIG::HAS_MSR_FE0 && GetMSR_FE0()) | (CONFIG::HAS_MSR_FE1 && GetMSR_FE1());
+}
+
+template <class CONFIG>
 inline bool CPU<CONFIG>::IsDataCacheEnabled()
 {
 	return CONFIG::DL1_CONFIG::ENABLE && (!CONFIG::HAS_HID0_DCE || (CONFIG::HAS_HID0_DCE && GetHID0_DCE()));
@@ -2412,7 +2465,7 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	uint32_t old_msr_le = GetMSR_LE();
 	uint32_t old_msr_fe = (CONFIG::HAS_MSR_FE0 ? GetMSR_FE0() : 0) | (CONFIG::HAS_MSR_FE1 ? GetMSR_FE1() : 0);
 
-	msr = (msr & ~MSR_MASK) | (value & MSR_MASK);
+	msr = (msr & ~CONFIG::MSR_MASK) | (value & CONFIG::MSR_MASK);
 
 	if(CONFIG::HAS_MSR_IR)
 	{
@@ -2466,14 +2519,12 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 		{
 			if(IsVerboseSetMSR())
 				(*logger_import) << DebugInfo << "Enabling FPU exception" << Endl << EndDebugInfo;
-			fpu.EnableException();
 		}
 	
 		if(old_msr_fe && !msr_fe)
 		{
 			if(IsVerboseSetMSR())
 				(*logger_import) << DebugInfo << "Disabling FPU exception" << Endl << EndDebugInfo;
-			fpu.DisableException();
 		}
 	}
 
@@ -2558,9 +2609,7 @@ unisim::util::debug::Register *CPU<CONFIG>::GetRegister(const char *name)
 		return (*reg_iter).second;
 	}
 
-	unisim::util::debug::Register *fpu_reg = fpu.GetRegister(name);
-
-	return fpu_reg;
+	return 0;
 }
 
 template <class CONFIG>
@@ -2831,11 +2880,6 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 	// line miss
 	l1_access.line = 0;
 	l1_access.block = 0;
-	ChooseLineToEvictDL1(l1_access);
-	if(IsVerboseDL1())
-	{
-		(*logger_import) << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << Endl << EndDebugInfo;
-	}
 	num_dl1_misses++;
 }
 
@@ -2903,11 +2947,6 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 	// line miss
 	l1_access.line = 0;
 	l1_access.block = 0;
-	ChooseLineToEvictIL1(l1_access);
-	if(IsVerboseIL1())
-	{
-		(*logger_import) << DebugInfo << "IL1 line miss: choosen way=" << l1_access.way << Endl << EndDebugInfo;
-	}
 	num_il1_misses++;
 }
 
@@ -2975,11 +3014,6 @@ void CPU<CONFIG>::LookupL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access)
 	// line miss
 	l2_access.line = 0;
 	l2_access.block = 0;
-	ChooseLineToEvictL2(l2_access);
-	if(IsVerboseL2())
-	{
-		(*logger_import) << DebugInfo << "L2 line miss: choosen way=" << l2_access.way << Endl << EndDebugInfo;
-	}
 	num_l2_misses++;
 }
 
@@ -3256,12 +3290,12 @@ template <class CONFIG>
 inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access, WIMG wimg, bool rwitm)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
-	if(IsVerboseDL1())
+	if(unlikely(IsVerboseDL1()))
 	{
 		(*logger_import) << DebugInfo << "DL1: filling block at 0x" << Hex << l1_access.block_base_addr << Dec << Endl << EndDebugInfo;
 	}
 	// DL1 block fill
-	if(IsL2CacheEnabled())
+	if(likely(IsL2CacheEnabled()))
 	{
 		// DL1 block fill from L2
 		CacheAccess<class CONFIG::L2_CONFIG> l2_access;
@@ -3270,18 +3304,25 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 	
 		LookupL2(l2_access);
 	
-		if(!l2_access.line)
+		if(unlikely(!l2_access.line))
 		{
-			if(IsVerboseL2())
+			if(unlikely(IsVerboseL2()))
 			{
 				(*logger_import) << DebugInfo << "L2: line miss at 0x" << Hex << l2_access.addr << Dec << Endl << EndDebugInfo;
 			}
+			
+			ChooseLineToEvictL2(l2_access);
+			if(unlikely(IsVerboseL2()))
+			{
+				(*logger_import) << DebugInfo << "L2 line miss: choosen way=" << l2_access.way << Endl << EndDebugInfo;
+			}
+			
 			EmuEvictL2(l2_access);
 		}
 	
-		if(!l2_access.block)
+		if(unlikely(!l2_access.block))
 		{
-			if(IsVerboseL2())
+			if(unlikely(IsVerboseL2()))
 			{
 				(*logger_import) << DebugInfo << "L2: block miss at 0x" << Hex << l2_access.addr << Dec << Endl << EndDebugInfo;
 			}
@@ -3307,13 +3348,13 @@ template <class CONFIG>
 inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, WIMG wimg)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
-	if(IsVerboseIL1())
+	if(unlikely(IsVerboseIL1()))
 	{
 		(*logger_import) << DebugInfo << "IL1: filling block at 0x" << Hex << l1_access.block_base_addr << Dec << Endl << EndDebugInfo;
 	}
 
 	// DL1 block fill
-	if(IsL2CacheEnabled())
+	if(likely(IsL2CacheEnabled()))
 	{
 		// DL1 block fill from L2
 		CacheAccess<class CONFIG::L2_CONFIG> l2_access;
@@ -3322,18 +3363,25 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 	
 		LookupL2(l2_access);
 	
-		if(!l2_access.line)
+		if(unlikely(!l2_access.line))
 		{
-			if(IsVerboseL2())
+			if(unlikely(IsVerboseL2()))
 			{
 				(*logger_import) << DebugInfo << "L2: line miss at 0x" << Hex << l2_access.addr << Dec << Endl << EndDebugInfo;
 			}
+
+			ChooseLineToEvictL2(l2_access);
+			if(unlikely(IsVerboseL2()))
+			{
+				(*logger_import) << DebugInfo << "L2 line miss: choosen way=" << l2_access.way << Endl << EndDebugInfo;
+			}
+
 			EmuEvictL2(l2_access);
 		}
 	
-		if(!l2_access.block)
+		if(unlikely(!l2_access.block))
 		{
-			if(IsVerboseL2())
+			if(unlikely(IsVerboseL2()))
 			{
 				(*logger_import) << DebugInfo << "L2: block miss at 0x" << Hex << l2_access.addr << Dec << Endl << EndDebugInfo;
 			}
@@ -3357,7 +3405,7 @@ template <class CONFIG>
 void CPU<CONFIG>::EmuFillL2(CacheAccess<typename CONFIG::L2_CONFIG>& l2_access, WIMG wimg, bool rwitm)
 {
 	l2_access.block = &(*l2_access.line)[l2_access.sector];
-	if(IsVerboseL2())
+	if(unlikely(IsVerboseL2()))
 	{
 		(*logger_import) << DebugInfo << "L2: filling block at 0x" << Hex << l2_access.block_base_addr << Dec << Endl << EndDebugInfo;
 	}
@@ -3381,8 +3429,8 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 	
 		mmu_access.addr = addr;
 		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = MAT_READ;
-		mmu_access.memory_type = MT_INSN;
+		mmu_access.memory_access_type = CONFIG::MAT_READ;
+		mmu_access.memory_type = CONFIG::MT_INSN;
 	
 		EmuTranslateAddress<false>(mmu_access);
 	
@@ -3400,7 +3448,7 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 	}
 
 	// Is IL1 enabled ?
-	if(IsInsnCacheEnabled())
+	if(likely(IsInsnCacheEnabled()))
 	{
 		// IL1 Access
 		CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
@@ -3408,20 +3456,27 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 		l1_access.addr = physical_addr;
 		LookupIL1(l1_access);
 
-		if(!l1_access.line)
+		if(unlikely(!l1_access.line))
 		{
 			// IL1 line miss
-			if(IsVerboseIL1())
+			if(unlikely(IsVerboseIL1()))
 			{
 				(*logger_import) << DebugInfo << "IL1: line miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
+
+			ChooseLineToEvictIL1(l1_access);
+			if(unlikely(IsVerboseIL1()))
+			{
+				(*logger_import) << DebugInfo << "IL1 line miss: choosen way=" << l1_access.way << Endl << EndDebugInfo;
+			}
+
 			EmuEvictIL1(l1_access);
 		}
 
-		if(!l1_access.block)
+		if(unlikely(!l1_access.block))
 		{
 			// IL1 block miss
-			if(IsVerboseIL1())
+			if(unlikely(IsVerboseIL1()))
 			{
 				(*logger_import) << DebugInfo << "IL1: block miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
@@ -3454,8 +3509,8 @@ void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
 	
 		mmu_access.addr = addr;
 		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = MAT_READ;
-		mmu_access.memory_type = MT_DATA;
+		mmu_access.memory_access_type = CONFIG::MAT_READ;
+		mmu_access.memory_type = CONFIG::MT_DATA;
 
 		EmuTranslateAddress<false>(mmu_access);
 
@@ -3472,7 +3527,7 @@ void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
 		physical_addr = addr;
 	}
 	
-	if(!(wimg & CONFIG::WIMG_CACHE_INHIBITED) && IsDataCacheEnabled())
+	if(likely(!(wimg & CONFIG::WIMG_CACHE_INHIBITED) && IsDataCacheEnabled()))
 	{
 		// DL1 Access
 		CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
@@ -3480,18 +3535,25 @@ void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
 		l1_access.addr = physical_addr;
 		LookupDL1(l1_access);
 
-		if(!l1_access.line)
+		if(unlikely(!l1_access.line))
 		{
-			if(IsVerboseDL1())
+			if(unlikely(IsVerboseDL1()))
 			{
 				(*logger_import) << DebugInfo << "DL1: line miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
+
+			ChooseLineToEvictDL1(l1_access);
+			if(unlikely(IsVerboseDL1()))
+			{
+				(*logger_import) << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << Endl << EndDebugInfo;
+			}
+			
 			EmuEvictDL1(l1_access);
 		}
 
-		if(!l1_access.block)
+		if(unlikely(!l1_access.block))
 		{
-			if(IsVerboseDL1())
+			if(unlikely(IsVerboseDL1()))
 			{
 				(*logger_import) << DebugInfo << "DL1: block miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
@@ -3506,7 +3568,7 @@ void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
 		// DL1 disabled
 		BusRead(physical_addr, buffer, size, wimg);
 	}
-	if(IsVerboseLoad())
+	if(unlikely(IsVerboseLoad()))
 	{
 		uint32_t i;
 		(*logger_import) << DebugInfo << "instruction #" << instruction_counter << ":Loading ";
@@ -3525,7 +3587,7 @@ template <class CONFIG>
 template <bool TRANSLATE_ADDR>
 void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 {
-	if(IsVerboseStore())
+	if(unlikely(IsVerboseStore()))
 	{
 		uint32_t i;
 		(*logger_import) << DebugInfo << "insn #" << instruction_counter << ":Storing ";
@@ -3548,8 +3610,8 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 	
 		mmu_access.addr = addr;
 		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = MAT_WRITE;
-		mmu_access.memory_type = MT_DATA;
+		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
+		mmu_access.memory_type = CONFIG::MT_DATA;
 
 		EmuTranslateAddress<false>(mmu_access);
 
@@ -3566,7 +3628,7 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 		physical_addr = addr;
 	}
 
-	if(!(wimg & CONFIG::WIMG_CACHE_INHIBITED) && IsDataCacheEnabled())
+	if(likely(!(wimg & CONFIG::WIMG_CACHE_INHIBITED) && IsDataCacheEnabled()))
 	{
 		// DL1 Access
 		CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
@@ -3574,18 +3636,25 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 		l1_access.addr = physical_addr;
 		LookupDL1(l1_access);
 
-		if(!l1_access.line)
+		if(unlikely(!l1_access.line))
 		{
-			if(IsVerboseDL1())
+			if(unlikely(IsVerboseDL1()))
 			{
 				(*logger_import) << DebugInfo << "DL1: line miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
+
+			ChooseLineToEvictDL1(l1_access);
+			if(unlikely(IsVerboseDL1()))
+			{
+				(*logger_import) << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << Endl << EndDebugInfo;
+			}
+
 			EmuEvictDL1(l1_access);
 		}
 		
-		if(!l1_access.block)
+		if(unlikely(!l1_access.block))
 		{
-			if(IsVerboseDL1())
+			if(unlikely(IsVerboseDL1()))
 			{
 				(*logger_import) << DebugInfo << "DL1: block miss at 0x" << Hex << l1_access.addr << Dec << Endl << EndDebugInfo;
 			}
@@ -3597,9 +3666,9 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 		l1_access.block->status.dirty = true;
 		UpdateReplacementPolicyDL1(l1_access);
 	
-		if(wimg & CONFIG::WIMG_WRITE_THROUGH)
+		if(unlikely(wimg & CONFIG::WIMG_WRITE_THROUGH))
 		{
-			if(IsL2CacheEnabled())
+			if(likely(IsL2CacheEnabled()))
 			{
 				// DL1 block fill from L2
 				CacheAccess<class CONFIG::L2_CONFIG> l2_access;
@@ -3628,19 +3697,19 @@ inline void CPU<CONFIG>::EmuLoad(T& value, address_t ea)
 	// Data Address Breakpoint handling
 	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
 	{
-		if(GetDABR_DR() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT())
+		if(unlikely(GetDABR_DR() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT()))
 		{
-			throw DSIDataAddressBreakpointException<CONFIG>(ea, MAT_READ);
+			throw DSIDataAddressBreakpointException<CONFIG>(ea, CONFIG::MAT_READ);
 		}
 	}
 
 	// Address munging
-	address_t munged_ea = GetMSR_LE() ? ea ^ (8 - sizeof(T)) : ea;
+	address_t munged_ea = MungEffectiveAddress(ea, sizeof(T));
 
 	uint32_t size_to_fsb_boundary = FSB_WIDTH - (munged_ea & (FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
-	if(size_to_fsb_boundary >= sizeof(T))
+	if(likely(size_to_fsb_boundary >= sizeof(T)))
 	{
 		// Memory load does not cross a FSB boundary
 		EmuLoad<true>(munged_ea, &value, sizeof(T));
@@ -3660,19 +3729,19 @@ inline void CPU<CONFIG>::EmuStore(T value, address_t ea)
 	// Data Address	Breakpoint handling
 	if(CONFIG::DABR_ENABLE && CONFIG::HAS_DABR)
 	{
-		if(GetDABR_DW() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT())
+		if(unlikely(GetDABR_DW() && ((ea >> 3) & 0x1fffffffUL) == GetDABR_DAB() && GetMSR_DR() == GetDABR_BT()))
 		{
-			throw DSIDataAddressBreakpointException<CONFIG>(ea, MAT_WRITE);
+			throw DSIDataAddressBreakpointException<CONFIG>(ea, CONFIG::MAT_WRITE);
 		}
 	}
 
 	// Address munging
-	address_t munged_ea = GetMSR_LE() ? ea ^ (8 - sizeof(T)) : ea;
+	address_t munged_ea = MungEffectiveAddress(ea, sizeof(T));
 
 	uint32_t size_to_fsb_boundary = FSB_WIDTH - (munged_ea & (FSB_WIDTH - 1));
 
 	// Ensure that memory access does not cross a FSB boundary
-	if(size_to_fsb_boundary >= sizeof(T))
+	if(likely(size_to_fsb_boundary >= sizeof(T)))
 	{
 		// Memory store does not cross a FSB boundary
 		EmuStore<true>(munged_ea, &value, sizeof(T));
@@ -3689,7 +3758,7 @@ template <class CONFIG>
 inline void CPU<CONFIG>::MonitorLoad(address_t ea, uint32_t size)
 {
 	// Memory access reporting
-	if(requires_memory_access_reporting && memory_access_reporting_import)
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_DATA, ea, size);
 	}
@@ -3699,7 +3768,7 @@ template <class CONFIG>
 inline void CPU<CONFIG>::MonitorStore(address_t ea, uint32_t size)
 {
 	// Memory access reporting
-	if(requires_memory_access_reporting && memory_access_reporting_import)
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
 		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_WRITE, MemoryAccessReporting<address_t>::MT_DATA, ea, size);
 	}
@@ -3750,7 +3819,9 @@ void CPU<CONFIG>::Fp32Load(unsigned int fd, address_t ea)
 {
 	uint32_t value;
 	EmuLoad<uint32_t>(value, ea);
-	fpu.SetFp32(fd, BigEndian2Host(value));
+	Flags flags;
+	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
+	fpr[fd].assign(SoftFloat(BigEndian2Host(value)), flags);
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3760,7 +3831,7 @@ void CPU<CONFIG>::Fp64Load(unsigned int fd, address_t ea)
 {
 	uint64_t value;
 	EmuLoad<uint64_t>(value, ea);
-	fpu.SetFp64(fd, BigEndian2Host(value));
+	fpr[fd] = SoftDouble(BigEndian2Host(value));
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
 }
@@ -3856,7 +3927,9 @@ void CPU<CONFIG>::Int32Store(unsigned int rs, address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Fp32Store(unsigned int fs, address_t ea)
 {
-	uint32_t value = Host2BigEndian(fpu.GetFp32(fs));
+	Flags flags;
+	flags.setRoundingMode(RN_ZERO);
+	uint32_t value = Host2BigEndian(SoftFloat(fpr[fs], flags).queryValue());
 	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
@@ -3865,7 +3938,7 @@ void CPU<CONFIG>::Fp32Store(unsigned int fs, address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Fp64Store(unsigned int fs, address_t ea)
 {
-	uint64_t value = Host2BigEndian(fpu.GetFp64(fs));
+	uint64_t value = Host2BigEndian(fpr[fs].queryValue());
 	EmuStore<uint64_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
@@ -3874,7 +3947,7 @@ void CPU<CONFIG>::Fp64Store(unsigned int fs, address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::FpStoreLSW(unsigned int fs, address_t ea)
 {
-	uint32_t value = Host2BigEndian((uint32_t) fpu.GetFp64(fs));
+	uint32_t value = Host2BigEndian((uint32_t) fpr[fs].queryValue());
 	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
@@ -3944,9 +4017,9 @@ template <bool DEBUG>
 void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 {
 	address_t addr = mmu_access.addr;
-	PrivilegeLevel privilege_level = mmu_access.privilege_level;
-	MemoryAccessType memory_access_type = mmu_access.memory_access_type;
-	MemoryType memory_type = mmu_access.memory_type;
+	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
+	typename CONFIG::MemoryAccessType memory_access_type = mmu_access.memory_access_type;
+	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
 	uint32_t bat_num;						// BAT register number
 	uint32_t bepi;							// BEPI bit field
 	uint32_t sr_num;						// Segment register number
@@ -3974,7 +4047,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 	// Compute BEPI from the effective address
 	mmu_access.bepi = bepi = (addr >> 17) & 0x7fff;
 
-	if(memory_type == MT_INSN)
+	if(memory_type == CONFIG::MT_INSN)
 	{
 		// Memory access is an instruction fetch
 		uint32_t num_ibats = (CONFIG::HAS_HID2 && GetHID2_SWT_EN()) ? CONFIG::NUM_BATS : 4;
@@ -3991,7 +4064,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 				//cerr << "privilege level = " << ((privilege_level == PR_SUPERVISOR) ? "supervisor" : "user") << endl;
 				//cerr << "IBATU_VP = " << GetIBATU_VP(bat_num) << endl;
 				//cerr << "IBATU_VS = " << GetIBATU_VS(bat_num) << endl;
-				if((GetIBATU_VP(bat_num) && (privilege_level & PR_USER)) || (GetIBATU_VS(bat_num) && (privilege_level & PR_SUPERVISOR)))
+				if((GetIBATU_VP(bat_num) && (privilege_level & CONFIG::PR_USER)) || (GetIBATU_VS(bat_num) && (privilege_level & CONFIG::PR_SUPERVISOR)))
 				{
 					//cerr << "IBAT match for 0x" << hex << addr << endl;
 					// A BAT match occurs
@@ -3999,14 +4072,14 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 					mmu_access.wimg = wimg = (WIMG)(GetIBATL_WIMG(bat_num) & 0x6); // W and G are not defined in IBATs;
 
 					// Check if access is guarded
-					if(wimg & CONFIG::WIMG_GUARDED_MEMORY)
+					if(unlikely(wimg & CONFIG::WIMG_GUARDED_MEMORY))
 					{
 						if(!DEBUG) throw ISIGuardedMemoryException<CONFIG>(addr);
 					}
 
 					// Check access rights
 					uint32_t pp = GetIBATL_PP(bat_num);
-					if(!pp) // PP=00: No access
+					if(unlikely(!pp)) // PP=00: No access
 					{
 						// Raise a protection violation
 						if(!DEBUG) throw ISIProtectionViolationException<CONFIG>(addr);
@@ -4036,7 +4109,7 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 						 && (bepi & ~GetDBATU_BL(bat_num) & 0x7ff) == (GetDBATU_BEPI(bat_num) & 0x7ff)) // compare the 11 least significative
 				// bits of the 15 most significative bits in EA and DBAT BEPI field according to the DBAT block size mask (BL)
 			{
-				if((GetDBATU_VP(bat_num) && (privilege_level & PR_USER)) || (GetDBATU_VS(bat_num) && (privilege_level & PR_SUPERVISOR)))
+// 				if((GetDBATU_VP(bat_num) && (privilege_level & CONFIG::PR_USER)) || (GetDBATU_VS(bat_num) && (privilege_level & CONFIG::PR_SUPERVISOR)))
 				{
 					// A DBAT match occurs
 					mmu_access.protection_boundary = ((GetDBATU_BEPI(bat_num) & 0x7ffUL) + GetDBATU_BL(bat_num)) << 17;
@@ -4044,8 +4117,8 @@ void CPU<CONFIG>::LookupBAT(MMUAccess<CONFIG>& mmu_access)
 	
 					// Check access rights
 					uint32_t pp = GetDBATL_PP(bat_num);
-					if(!pp || // PP=00: No access
-					  ((pp & 1) && (memory_access_type == MAT_WRITE))) // PP=x1: Read-only
+					if(unlikely(!pp || // PP=00: No access
+					            ((pp & 1) && (memory_access_type == CONFIG::MAT_WRITE)))) // PP=x1: Read-only
 					{
 						if(!DEBUG)
 						{
@@ -4171,7 +4244,7 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 	uint32_t tlb_way;
 
 	dtlb.DecodeAddress(virtual_addr, base_virtual_addr, tlb_index);
-	if(IsVerboseDTLB())
+	if(unlikely(IsVerboseDTLB()))
 	{
 		(*logger_import) << DebugInfo << "DTLB Lookup at 0x";
 		(*logger_import) << Hex << virtual_addr << Dec << " : ";
@@ -4189,7 +4262,7 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 		if(tlb_entry->status.valid && tlb_entry->GetBaseVirtualAddr() == base_virtual_addr)
 		{
 			// DTLB Hit
-			if(IsVerboseDTLB())
+			if(unlikely(IsVerboseDTLB()))
 			{
 				(*logger_import) << DebugInfo << "DTLB hit: tlb_way=" << tlb_way << ", base_physical_addr=0x" << Hex << tlb_entry->pte.base_physical_addr << Dec << Endl << EndDebugInfo;
 			}
@@ -4203,7 +4276,7 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 	// DTLB Miss
 	mmu_access.tlb_hit = false;
 	ChooseEntryToEvictDTLB(mmu_access);
-	if(IsVerboseDTLB())
+	if(unlikely(IsVerboseDTLB()))
 	{
 		(*logger_import) << DebugInfo << "DTLB miss: choosen TLB way=" << mmu_access.tlb_way << Endl << EndDebugInfo;
 	}
@@ -4288,9 +4361,9 @@ template <bool DEBUG>
 void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 {
 	address_t addr = mmu_access.addr;
-	PrivilegeLevel privilege_level = mmu_access.privilege_level;
-	MemoryAccessType memory_access_type = mmu_access.memory_access_type;
-	MemoryType memory_type = mmu_access.memory_type;
+	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
+	typename CONFIG::MemoryAccessType memory_access_type = mmu_access.memory_access_type;
+	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
 	uint32_t bat_num;						// BAT register number
 	uint32_t bepi;							// BEPI bit field
 	uint32_t sr_num;						// Segment register number
@@ -4326,16 +4399,16 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	// Get the No-execute bit from the segment register
 	mmu_access.sr_noexecute = sr_noexecute = GetSR_N(sr_num);
 
-	if((memory_type == MT_INSN) && sr_noexecute)
+	if(unlikely((memory_type == CONFIG::MT_INSN) && sr_noexecute))
 	{
 		// Raise an exception because the program is trying to execute instructions within a No-execute segment
 		if(!DEBUG) throw ISINoExecuteException<CONFIG>(addr);
 	}
 	
-	if(GetSR_T(sr_num) == 1)
+	if(unlikely(GetSR_T(sr_num) == 1))
 	{
 		// Raise an exception because the program is trying to access to a direct-store segment (not supported by PPC750)
-		if(memory_type == MT_INSN)
+		if(memory_type == CONFIG::MT_INSN)
 		{
 			if(!DEBUG) throw ISIDirectStoreException<CONFIG>(addr);
 		}
@@ -4348,7 +4421,7 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	// Get the key bits from the segment register
 	mmu_access.sr_ks = sr_ks = GetSR_KS(sr_num);
 	mmu_access.sr_kp = sr_kp = GetSR_KP(sr_num);
-	mmu_access.key = key = (sr_kp && (privilege_level & PR_USER)) || (sr_ks && (privilege_level & PR_SUPERVISOR));
+	mmu_access.key = key = (sr_kp && (privilege_level & CONFIG::PR_USER)) || (sr_ks && (privilege_level & CONFIG::PR_SUPERVISOR));
 	
 	// Get the virtual segment id from the segment register
 	mmu_access.virtual_segment_id = virtual_segment_id = GetSR_VSID(sr_num);
@@ -4360,24 +4433,24 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 	//------------------------------
 	//-    Search in ITLB/DTLB     -
 	//------------------------------
-	if(memory_type == MT_INSN)
+	if(memory_type == CONFIG::MT_INSN)
 	{
 		if(CONFIG::ITLB_CONFIG::ENABLE)
 		{
 			// Memory access is an instruction fetch
 			LookupITLB(mmu_access);
-			if(mmu_access.tlb_hit)
+			if(likely(mmu_access.tlb_hit))
 			{
 				// ITLB hit
 				mmu_access.wimg = wimg = mmu_access.itlb_entry->pte.wimg;
 						
-				if(wimg & CONFIG::WIMG_GUARDED_MEMORY)
+				if(unlikely(wimg & CONFIG::WIMG_GUARDED_MEMORY))
 				{
 					if(!DEBUG) throw ISIGuardedMemoryException<CONFIG>(addr);
 				}
 			
 				// Check access rights
-				if(key && !mmu_access.itlb_entry->pte.pp)
+				if(unlikely(key && !mmu_access.itlb_entry->pte.pp))
 				{
 					if(!DEBUG) throw ISIProtectionViolationException<CONFIG>(addr);
 				}
@@ -4403,16 +4476,16 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 			// Memory access is a data memory access
 			LookupDTLB(mmu_access);
 
-			if(mmu_access.tlb_hit)
+			if(likely(mmu_access.tlb_hit))
 			{
 				// DTLB Hit
 				// return WIMG bits
 				mmu_access.wimg = wimg = mmu_access.dtlb_entry->pte.wimg;
 	
 				// Check access rights
-				if((key && (!mmu_access.dtlb_entry->pte.pp ||
-				   ((mmu_access.dtlb_entry->pte.pp & 1) && (memory_access_type == MAT_WRITE)))) ||
-                   (!key && (mmu_access.dtlb_entry->pte.pp==3 && (memory_access_type == MAT_WRITE))))
+				if(unlikely((key && (!mmu_access.dtlb_entry->pte.pp ||
+				            ((mmu_access.dtlb_entry->pte.pp & 1) && (memory_access_type == CONFIG::MAT_WRITE)))) ||
+                             (!key && (mmu_access.dtlb_entry->pte.pp==3 && (memory_access_type == CONFIG::MAT_WRITE)))))
 				{
 					// Raise a protection violation
 					if(!DEBUG)
@@ -4421,10 +4494,10 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 					}
 				}
 				
-				mmu_access.force_page_table_walk = memory_access_type == MAT_WRITE && !mmu_access.dtlb_entry->pte.c;
+				mmu_access.force_page_table_walk = memory_access_type == CONFIG::MAT_WRITE && !mmu_access.dtlb_entry->pte.c;
 
 				// Update the replacement policy
-				if(!DEBUG && !mmu_access.force_page_table_walk) UpdateDTLBReplacementPolicy(mmu_access);
+				if(likely(!DEBUG && !mmu_access.force_page_table_walk)) UpdateDTLBReplacementPolicy(mmu_access);
 					
 				// compute the physical address
 				mmu_access.physical_addr = mmu_access.dtlb_entry->pte.base_physical_addr | (addr & 0x00000fffUL);
@@ -4444,12 +4517,12 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 
 template <class CONFIG>
 template <bool DEBUG>
-void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
+void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 {
 	address_t addr = mmu_access.addr;
-	PrivilegeLevel privilege_level = mmu_access.privilege_level;
-	MemoryAccessType memory_access_type = mmu_access.memory_access_type;
-	MemoryType memory_type = mmu_access.memory_type;
+	typename CONFIG::PrivilegeLevel privilege_level = mmu_access.privilege_level;
+	typename CONFIG::MemoryAccessType memory_access_type = mmu_access.memory_access_type;
+	typename CONFIG::MemoryType memory_type = mmu_access.memory_type;
 	uint32_t sr_num = mmu_access.sr_num;						// Segment register number
 	uint32_t virtual_segment_id = mmu_access.virtual_segment_id;			// Virtual segment id
 	virtual_address_t virtual_addr = mmu_access.virtual_addr;			// Virtual address
@@ -4473,7 +4546,7 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 
 	if(CONFIG::HAS_SOFTWARE_TABLE_SEARCH_SUPPORT)
 	{
-		if(!DEBUG && CONFIG::HAS_HID2 && GetHID2_SWT_EN())
+		if(unlikely(!DEBUG && CONFIG::HAS_HID2 && GetHID2_SWT_EN()))
 		{
 			// Software page table search is enabled
 			
@@ -4493,7 +4566,7 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 				memory_type,
 				addr,
 				mmu_access.tlb_way,
-				(privilege_level & PR_USER) ? GetSR_KP(sr_num) : GetSR_KS(sr_num),
+				(privilege_level & CONFIG::PR_USER) ? GetSR_KP(sr_num) : GetSR_KS(sr_num),
 				virtual_segment_id,
 				api,
 				primary_pteg,
@@ -4530,7 +4603,7 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 			// Read the page table entry from memory
 			if(DEBUG)
 			{
-				ReadMemory(pte_addr, &pte_value, 8, MT_DATA, false);
+				ReadMemory(pte_addr, &pte_value, 8, CONFIG::MT_DATA, false);
 			}
 			else
 			{
@@ -4542,26 +4615,26 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 
 			pte_valid = (pte_value >> 63) & 1;
 //			cerr << "pte_valid = " << pte_valid << endl;
-			if(!pte_valid) // check valid bit
+			if(likely(!pte_valid)) // check valid bit
 				continue;
 			pte_h = (pte_value >> 38) & 1;
 //			cerr << "pte_h = " << pte_h << endl;
-			if(pte_h != h) // good hash key ?
+			if(likely(pte_h != h)) // good hash key ?
 				continue;
 
 			pte_virtual_segment_id = (pte_value >> 39) & 0xffffffUL;
 //			cerr << "pte_virtual_segment_id = 0x" << std::hex << pte_virtual_segment_id << std::dec << endl;
 			pte_api = (pte_value >> 32) & 0x3f;
 			
-			if(pte_virtual_segment_id == virtual_segment_id && // compare VSIDs
-						pte_api == api) // compare APIs
+			if(unlikely(pte_virtual_segment_id == virtual_segment_id && // compare VSIDs
+						pte_api == api)) // compare APIs
 			{
 				// Hit in page table
 				pte_wimg = (WIMG)((pte_value >> 3) & 0xf);
 				mmu_access.wimg = wimg = pte_wimg;
 				
 				// Check if access is guarded
-				if((memory_type == MT_INSN) && (wimg & CONFIG::WIMG_GUARDED_MEMORY))
+				if(unlikely((memory_type == CONFIG::MT_INSN) && (wimg & CONFIG::WIMG_GUARDED_MEMORY)))
 				{
 					if(!DEBUG) throw ISIGuardedMemoryException<CONFIG>(addr);
 				}
@@ -4569,10 +4642,10 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 				pte_pp = (pte_value & 3);
 				
 				// Check access rights
-				if((key && (!pte_pp || ((pte_pp & 1) && (memory_access_type == MAT_WRITE)))) || (!key && (pte_pp==3 && (memory_access_type == MAT_WRITE))))
+				if(unlikely((key && (!pte_pp || ((pte_pp & 1) && (memory_access_type == CONFIG::MAT_WRITE)))) || (!key && (pte_pp==3 && (memory_access_type == CONFIG::MAT_WRITE)))))
 				{
 					// Raise a protection violation
-					if(memory_type == MT_INSN)
+					if(memory_type == CONFIG::MT_INSN)
 					{
 						if(!DEBUG) throw ISIProtectionViolationException<CONFIG>(addr);
 					}
@@ -4584,7 +4657,7 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 				
 				// Update bit R and C in PTE
 				pte_value |= 0x100ULL; // set accessed bit (R)
-				if((memory_access_type == MAT_WRITE)) pte_value |= 0x80ULL; // set change bit (C)
+				if((memory_access_type == CONFIG::MAT_WRITE)) pte_value |= 0x80ULL; // set change bit (C)
 
 				base_physical_addr = pte_value & 0xfffff000UL;
 //				cerr << "base_physical_addr = 0x" << std::hex << base_physical_addr << std::dec << endl;
@@ -4600,7 +4673,7 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 					EmuStore<false>(pte_addr, &pte_value, 8);
 				}
 
-				if(memory_type == MT_INSN)
+				if(memory_type == CONFIG::MT_INSN)
 				{
 					if(CONFIG::ITLB_CONFIG::ENABLE)
 					{
@@ -4646,7 +4719,7 @@ void CPU<CONFIG>::HardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 	// Raise a page fault
 	//DumpPageTable(cerr);
 	
-	if(memory_type == MT_INSN)
+	if(memory_type == CONFIG::MT_INSN)
 	{
 		if(!DEBUG)
 		{
@@ -4699,7 +4772,7 @@ void CPU<CONFIG>::DumpPageTable(ostream& os)
 					uint32_t page_index, api;
 					address_t base_paddr;
 
-					ReadMemory(pte_addr, &pte_value, 8, MT_DATA, false);
+					ReadMemory(pte_addr, &pte_value, 8, CONFIG::MT_DATA, false);
 		
 					pte_value = BigEndian2Host(pte_value);
 		
@@ -4735,20 +4808,20 @@ template <bool DEBUG>
 void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 {
 	LookupBAT<DEBUG>(mmu_access);
-	if(!mmu_access.bat_hit)
+	if(likely(!mmu_access.bat_hit))
 	{
 		AccessTLB<DEBUG>(mmu_access);
 
-		if(!mmu_access.tlb_hit || mmu_access.force_page_table_walk)
+		if(unlikely(!mmu_access.tlb_hit || mmu_access.force_page_table_walk))
 		{
 			// BAT/TLB Miss
-			HardwarePageTableSearch<DEBUG>(mmu_access);
+			EmuHardwarePageTableSearch<DEBUG>(mmu_access);
 		}
 	}
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, MemoryType mt, bool translate_addr)
+bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
 {
 	uint32_t read_offset = 0;
 
@@ -4764,7 +4837,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, Memory
 		
 			mmu_access.addr = addr;
 			mmu_access.privilege_level = GetPrivilegeLevel();
-			mmu_access.memory_access_type = MAT_READ;
+			mmu_access.memory_access_type = CONFIG::MAT_READ;
 			mmu_access.memory_type = mt;
 	
 			EmuTranslateAddress<true>(mmu_access); // debug is enabled
@@ -4797,7 +4870,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, Memory
 
 			switch(mt)
 			{
-				case MT_DATA:
+				case CONFIG::MT_DATA:
 					if(IsDataCacheEnabled())
 					{
 						// DL1 Access
@@ -4819,7 +4892,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, Memory
 						}
 					}
 					break;
-				case MT_INSN:
+				case CONFIG::MT_INSN:
 					if(IsInsnCacheEnabled())
 					{
 						// DL1 Access
@@ -4894,7 +4967,7 @@ bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size, Memory
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size, MemoryType mt, bool translate_addr)
+bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
 {
 	uint32_t write_offset = 0;
 
@@ -4909,8 +4982,8 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 			MMUAccess<CONFIG> mmu_access;
 		
 			mmu_access.addr = addr;
-			mmu_access.privilege_level = PR_SUPERVISOR;
-			mmu_access.memory_access_type = MAT_WRITE;
+			mmu_access.privilege_level = CONFIG::PR_SUPERVISOR;
+			mmu_access.memory_access_type = CONFIG::MAT_WRITE;
 			mmu_access.memory_type = mt;
 	
 			EmuTranslateAddress<true>(mmu_access); // debug is enabled
@@ -4943,7 +5016,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 
 			switch(mt)
 			{
-				case MT_DATA:
+				case CONFIG::MT_DATA:
 					if(IsDataCacheEnabled())
 					{
 						// DL1 Access
@@ -4965,7 +5038,7 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 						}
 					}
 					break;
-				case MT_INSN:
+				case CONFIG::MT_INSN:
 					if(IsInsnCacheEnabled())
 					{
 						// DL1 Access
@@ -5042,13 +5115,13 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size)
 {
-	return ReadMemory(addr, buffer, size, MT_DATA, true);
+	return ReadMemory(addr, buffer, size, CONFIG::MT_DATA, true);
 }
 
 template <class CONFIG>
 bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size)
 {
-	return WriteMemory(addr, buffer, size, MT_DATA, true);
+	return WriteMemory(addr, buffer, size, CONFIG::MT_DATA, true);
 }
 
 template <class CONFIG>
@@ -5108,8 +5181,8 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 	
 		mmu_access.addr = addr;
 		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = MAT_READ;
-		mmu_access.memory_type = MT_INSN;
+		mmu_access.memory_access_type = CONFIG::MAT_READ;
+		mmu_access.memory_type = CONFIG::MT_INSN;
 	
 		EmuTranslateAddress<true>(mmu_access);
 	
@@ -5224,8 +5297,8 @@ void CPU<CONFIG>::Dcbi(address_t addr)
 	
 		mmu_access.addr = addr;
 		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = MAT_WRITE;
-		mmu_access.memory_type = MT_DATA;
+		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
+		mmu_access.memory_type = CONFIG::MT_DATA;
 
 		EmuTranslateAddress<false>(mmu_access);
 
@@ -5337,8 +5410,8 @@ void CPU<CONFIG>::Dcbst(address_t addr)
 	
 		mmu_access.addr = addr;
 		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = MAT_READ; // 3.4.4.4 Data Cache Block Store (dcbst): This instruction is treated as a load with respect to address translation and memory protection
-		mmu_access.memory_type = MT_DATA;
+		mmu_access.memory_access_type = CONFIG::MAT_READ; // 3.4.4.4 Data Cache Block Store (dcbst): This instruction is treated as a load with respect to address translation and memory protection
+		mmu_access.memory_type = CONFIG::MT_DATA;
 
 		EmuTranslateAddress<false>(mmu_access);
 
@@ -5455,8 +5528,8 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 	
 		mmu_access.addr = addr;
 		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = MAT_WRITE; // 3.4.4.3 Data Cache Block Zero (dcbz): The dcbz instruction is treated as a store to the addressed byte with respect to address translation, protection, and pipelining.
-		mmu_access.memory_type = MT_DATA;
+		mmu_access.memory_access_type = CONFIG::MAT_WRITE; // 3.4.4.3 Data Cache Block Zero (dcbz): The dcbz instruction is treated as a store to the addressed byte with respect to address translation, protection, and pipelining.
+		mmu_access.memory_type = CONFIG::MT_DATA;
 
 		EmuTranslateAddress<false>(mmu_access);
 
@@ -5488,6 +5561,12 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 	
 		if(!l1_access.line)
 		{
+			ChooseLineToEvictDL1(l1_access);
+			if(IsVerboseDL1())
+			{
+				(*logger_import) << DebugInfo << "DL1 line miss: choosen way=" << l1_access.way << Endl << EndDebugInfo;
+			}
+			
 			EmuEvictDL1(l1_access);
 		}
 	
@@ -5514,6 +5593,12 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 		
 			if(!l2_access.line)
 			{
+				ChooseLineToEvictL2(l2_access);
+				if(IsVerboseL2())
+				{
+					(*logger_import) << DebugInfo << "L2 line miss: choosen way=" << l2_access.way << Endl << EndDebugInfo;
+				}
+
 				EmuEvictL2(l2_access);
 			}
 		
@@ -5678,14 +5763,14 @@ void CPU<CONFIG>::Stwcx(unsigned int rs, address_t addr)
 			Int32Store(rs, addr);
 
 			/* clear CR0[LT][GT], setCR0[EQ] and copy XER[SO] to CR0[SO] */
-			SetCR((GetCR() & 0x2fffffffUL) | (GetXER_SO() ? 0x10000000UL : 0) | 0x20000000UL);
+			SetCR((GetCR() & ~CONFIG::CR0_MASK) | CONFIG::CR0_EQ_MASK | ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
 			reserve = false;
 			return;
 		}
 	}
 
 	/* clear CR0 and copy XER[SO] to CR0[SO] */
-	SetCR((GetCR() & 0x0fffffffUL) | (GetXER_SO() ? 0x10000000UL : 0));
+	SetCR((GetCR() & ~CONFIG::CR0_MASK) | ((GetXER() & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0));
 }
 
 template <class CONFIG>
@@ -5873,6 +5958,174 @@ inline uint32_t Min(uint32_t a, uint32_t b)
 }
 
 template <class CONFIG>
+Event<CONFIG> *CPU<CONFIG>::AllocateEvent()
+{
+	if(!event_free_list)
+	{
+		event_free_list = new Event<CONFIG>();
+	}
+
+	Event<CONFIG> *ev = event_free_list;
+	event_free_list = ev->next_free;
+	ev->type = Event<CONFIG>::EV_NULL;
+	ev->object.null = 0;
+	ev->next_free = 0;
+	return ev;
+}
+
+template <class CONFIG>
+Instruction<CONFIG> *CPU<CONFIG>::AllocateInstruction()
+{
+	if(!insn_free_list)
+	{
+		insn_free_list = new Instruction<CONFIG>();
+	}
+
+	Instruction<CONFIG> *instruction = insn_free_list;
+	insn_free_list = instruction->next_free;
+	instruction->next_free = 0;
+	return instruction;
+}
+
+template <class CONFIG>
+Operand<CONFIG> *CPU<CONFIG>::AllocateOperand()
+{
+	if(!operand_free_list)
+	{
+		operand_free_list = new Operand<CONFIG>();
+	}
+
+	Operand<CONFIG> *operand = operand_free_list;
+	operand_free_list = operand->next_free;
+	operand->ref_count = 1;
+	operand->next_free = 0;
+	return operand;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::AcquireOperand(Operand<CONFIG> *operand)
+{
+	operand->ref_count++;
+}
+
+template <class CONFIG>
+LoadStoreAccess<CONFIG> *CPU<CONFIG>::AllocateLoadStoreAccess()
+{
+	if(!load_store_access_free_list)
+	{
+		load_store_access_free_list = new LoadStoreAccess<CONFIG>();
+	}
+
+	LoadStoreAccess<CONFIG> *load_store_access = load_store_access_free_list;
+	load_store_access_free_list = load_store_access->next_free;
+	load_store_access->next_free = 0;	
+	return load_store_access;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::GenLoadStoreAccess(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, address_t munged_ea, uint32_t size, Instruction<CONFIG> *instruction)
+{
+	uint32_t size_to_fsb_boundary = FSB_WIDTH - (munged_ea & (FSB_WIDTH - 1));
+
+	// Ensure that memory access does not cross a FSB boundary
+	if(size_to_fsb_boundary >= size)
+	{
+		// Memory load does not cross a FSB boundary
+		LoadStoreAccess<CONFIG> *load_store_access = AllocateLoadStoreAccess();
+		load_store_access->type = type;
+		load_store_access->reg_num = reg_num;
+		load_store_access->munged_ea = munged_ea;
+		load_store_access->offset = 0;
+		load_store_access->size = size;
+		load_store_access->instruction = instruction;
+		instruction->load_store_access_queue.Push(load_store_access);
+	}
+	else
+	{
+		// Memory load crosses a FSB boundary
+		LoadStoreAccess<CONFIG> *load_store_access1 = AllocateLoadStoreAccess();
+		load_store_access1->type = type;
+		load_store_access1->reg_num = reg_num;
+		load_store_access1->munged_ea = munged_ea;
+		load_store_access1->offset = 0;
+		load_store_access1->size = size_to_fsb_boundary;
+		load_store_access1->instruction = instruction;
+		instruction->load_store_access_queue.Push(load_store_access1);
+
+		LoadStoreAccess<CONFIG> *load_store_access2 = AllocateLoadStoreAccess();
+		load_store_access2->type = type;
+		load_store_access2->reg_num = reg_num;
+		load_store_access2->munged_ea = munged_ea + size_to_fsb_boundary;
+		load_store_access2->offset = size_to_fsb_boundary;
+		load_store_access2->size = size - size_to_fsb_boundary;
+		load_store_access2->instruction = instruction;
+		instruction->load_store_access_queue.Push(load_store_access2);
+	}
+}
+
+template <class CONFIG>
+BusAccess<CONFIG> *CPU<CONFIG>::AllocateBusAccess()
+{
+	if(!bus_access_free_list)
+	{
+		bus_access_free_list = new BusAccess<CONFIG>();
+	}
+
+	BusAccess<CONFIG> *bus_access = bus_access_free_list;
+	bus_access_free_list = bus_access->next_free;
+	bus_access->next_free = 0;	
+	return bus_access;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::FreeEvent(Event<CONFIG> *ev)
+{
+	ev->next_free = event_free_list;
+	event_free_list = ev;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::FreeInstruction(Instruction<CONFIG> *instruction)
+{
+	unsigned int num_operands = instruction->input_operands.Size();
+	unsigned int i;
+
+	for(i = 0; i < num_operands; i++)
+	{
+		Operand<CONFIG> *operand = instruction->input_operands[i];
+		FreeOperand(operand);
+	}
+
+	instruction->next_free = insn_free_list;
+	insn_free_list = instruction;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::FreeOperand(Operand<CONFIG> *operand)
+{
+	if(--operand->ref_count == 0)
+	{
+		operand->next_free = operand_free_list;
+		operand_free_list = operand;
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::FreeLoadStoreAccess(LoadStoreAccess<CONFIG> *load_store_access)
+{
+	load_store_access->next_free = load_store_access_free_list;
+	load_store_access_free_list = load_store_access;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::FreeBusAccess(BusAccess<CONFIG> *bus_access)
+{
+	bus_access->next_free = bus_access_free_list;
+	bus_access_free_list = bus_access;
+}
+
+
+template <class CONFIG>
 void CPU<CONFIG>::Fetch()
 {
 	// Stall if IQ is full
@@ -5887,9 +6140,8 @@ void CPU<CONFIG>::Fetch()
 	for(offset = 0; offset < read_size; offset += sizeof(uint32_t), cia += sizeof(uint32_t))
 	{
 		uint32_t insn = prefetch_buffer[offset];
-		Operation<CONFIG> *operation = Decoder<CONFIG>::Decode(cia, insn);
-		Instruction<CONFIG> *instruction = iw.Allocate();
-		instruction->SetOperation(operation);
+		Instruction<CONFIG> *instruction = AllocateInstruction();
+		instruction->Initialize(this, cia, insn);
 		iq.Push(instruction);
 	}
 }
@@ -5897,31 +6149,54 @@ void CPU<CONFIG>::Fetch()
 template <class CONFIG>
 void CPU<CONFIG>::DecodeDispatch()
 {
+	if(iq.Empty()) return;
+
 	int num_load_stores = 0;
-	unsigned int i;
+	unsigned int i, j;
 	for(i = 0; i < DECODE_WIDTH; i++)
 	{
+		// Check for completion queue availability
 		if(cq.Full()) return;
 
+		// Lookup the last instruction from the instruction queue
 		Instruction<CONFIG> *instruction = iq.Front();
 
 		const typename CONFIG::execution_unit_type_t execution_unit = instruction->GetExecutionUnit();
 
+		// Check for specific dispatch constraints
 		switch(execution_unit)
 		{
 			case CONFIG::NO_UNIT_T: // No Unit
 				break;
 			case CONFIG::LSU_T:     // Load/Store Unit
 				if(num_load_stores >= MAX_DISPATCHED_LOAD_STORES_PER_CYCLE) return;
-				num_load_stores++;
+			case CONFIG::IU1_T:     // Simple Integer Unit
+			case CONFIG::IU2_T:     // Complex Integer Unit
+				break;
+			case CONFIG::FPU_T:     // Floating Point Unit
+				break;
+			case CONFIG::BPU_T:     // Branch Processing Unit
+				// Branches don't go to an issue queue
+				break;
+			case CONFIG::VFPU_T:    // Vector Floating Point Unit
+			case CONFIG::VPU_T:     // vector Processing Unit
+			case CONFIG::VIU1_T:    // Simple Vector Integer
+			case CONFIG::VIU2_T:    // Complex Vector Integer
+				break;
+		}
+
+		// Check for issue queue availability
+		switch(execution_unit)
+		{
+			case CONFIG::NO_UNIT_T: // No Unit
+				break;
+			case CONFIG::LSU_T:     // Load/Store Unit
 			case CONFIG::IU1_T:     // Simple Integer Unit
 			case CONFIG::IU2_T:     // Complex Integer Unit
 				if(giq.Full()) return;
-				giq.Push(instruction);
 				break;
 			case CONFIG::FPU_T:     // Floating Point Unit
 				if(fiq.Full()) return;
-				fiq.Push(instruction);
 				break;
 			case CONFIG::BPU_T:     // Branch Processing Unit
 				// Branches don't go to an issue queue
@@ -5931,12 +6206,206 @@ void CPU<CONFIG>::DecodeDispatch()
 			case CONFIG::VIU1_T:    // Simple Vector Integer
 			case CONFIG::VIU2_T:    // Complex Vector Integer
 				if(viq.Full()) return;
+				break;
+		}
+
+		// Check for rename registers availability
+		unsigned int num_output_fpr = instruction->GetNumOutputFPR();
+		if(num_output_fpr && num_output_fpr > fpr_mapping_table.GetNumFreeRenameRegisters()) return;
+
+		unsigned int num_output_gpr = instruction->GetNumOutputGPR();
+		if(num_output_gpr && num_output_gpr > gpr_mapping_table.GetNumFreeRenameRegisters()) return;
+
+		unsigned int num_output_cr = instruction->GetNumOutputCR();
+		if(num_output_cr && num_output_cr > cr_mapping_table.GetNumFreeRenameRegisters()) return;
+
+		unsigned int num_output_lr = instruction->GetNumOutputLR();
+		if(num_output_lr && num_output_lr > lr_mapping_table.GetNumFreeRenameRegisters()) return;
+
+		unsigned int num_output_ctr = instruction->GetNumOutputCTR();
+		if(num_output_ctr && num_output_ctr > ctr_mapping_table.GetNumFreeRenameRegisters()) return;
+
+		// Locate input operands
+		Operation<CONFIG> *operation = instruction->operation;
+		unsigned int num_operands = operation->num_insn_operands;
+
+		for(j = 0; j < num_operands; j++)
+		{
+			typename CONFIG::operand_t *insn_operand = &operation->insn_operands[i];
+	
+			if(insn_operand->dir == CONFIG::INPUT_T)
+			{
+				Operand<CONFIG> *operand;
+				bool forwarding = true;
+
+				switch(insn_operand->type)
+				{
+					case CONFIG::GPR_T:
+						{
+							unsigned int gpr_reg_num = insn_operand->reg_num;
+							int gpr_tag = gpr_mapping_table.Lookup(gpr_reg_num);
+							operand = (gpr_tag >= 0) ? arch_gpr[gpr_reg_num] : rename_gpr[~gpr_tag];
+						}
+						break;
+
+					case CONFIG::GPR_ST_T:
+						{
+							unsigned int gpr_reg_num = insn_operand->reg_num;
+							int gpr_tag = gpr_mapping_table.Lookup(gpr_reg_num);
+							operand = (gpr_tag >= 0) ? arch_gpr[gpr_reg_num] : rename_gpr[~gpr_tag];
+							forwarding = false; // store value is not forwarded to L/S reservation station
+						}
+						break;
+
+					case CONFIG::FPR_T:
+						{
+							unsigned int fpr_reg_num = insn_operand->reg_num;
+							int fpr_tag = fpr_mapping_table.Lookup(fpr_reg_num);
+							operand = (fpr_tag >= 0) ? arch_fpr[fpr_reg_num] : rename_fpr[~fpr_tag];
+						}
+						break;
+		
+					case CONFIG::CR_T:
+						{
+							int cr_tag = cr_mapping_table.Lookup(0);
+							operand = (cr_tag >= 0) ? arch_cr : rename_cr[~cr_tag];
+						}
+						break;
+		
+					case CONFIG::LR_T:
+						{
+							int lr_tag = lr_mapping_table.Lookup(0);
+							operand = (lr_tag >= 0) ? arch_lr : rename_lr[~lr_tag];
+						}
+						break;
+		
+					case CONFIG::CTR_T:
+						{
+							int ctr_tag = ctr_mapping_table.Lookup(0);
+							operand = (ctr_tag >= 0) ? arch_ctr : rename_ctr[~ctr_tag];
+						}
+						break;
+				}
+
+				AcquireOperand(operand);
+				instruction->input_operands.Push(operand);
+				instruction->forwarding.Push(forwarding);
+			}
+		}
+
+		// Allocate rename registers for output operands
+		for(j = 0; j < num_operands; j++)
+		{
+			typename CONFIG::operand_t *insn_operand = &operation->insn_operands[i];
+	
+			if(insn_operand->dir == CONFIG::OUTPUT_T)
+			{
+				Operand<CONFIG> *operand = AllocateOperand();
+				operand->valid = false;
+
+				switch(insn_operand->type)
+				{
+					case CONFIG::GPR_T:
+						{
+							operand->type = Operand<CONFIG>::GPR;
+							operand->reg_num = insn_operand->reg_num;
+							gpr_mapping_table.Allocate(operand->reg_num, operand->tag);
+							rename_gpr[~operand->tag] = operand;
+						}
+						break;
+
+					case CONFIG::FPR_T:
+						{
+							operand->type = Operand<CONFIG>::FPR;
+							operand->reg_num = insn_operand->reg_num;
+							fpr_mapping_table.Allocate(operand->reg_num, operand->tag);
+							rename_fpr[~operand->tag] = operand;
+						}
+						break;
+		
+					case CONFIG::CR_T:
+						{
+							operand->type = Operand<CONFIG>::CR;
+							operand->reg_num = 0;
+							cr_mapping_table.Allocate(operand->reg_num, operand->tag);
+							rename_cr[~operand->tag] = operand;
+						}
+						break;
+		
+					case CONFIG::LR_T:
+						{
+							operand->type = Operand<CONFIG>::LR;
+							operand->reg_num = 0;
+							lr_mapping_table.Allocate(operand->reg_num, operand->tag);
+							rename_lr[~operand->tag] = operand;
+						}
+						break;
+		
+					case CONFIG::CTR_T:
+						{
+							operand->type = Operand<CONFIG>::CTR;
+							operand->reg_num = 0;
+							ctr_mapping_table.Allocate(operand->reg_num, operand->tag);
+							rename_ctr[~operand->tag] = operand;
+						}
+						break;
+
+					case CONFIG::XER_T:
+						{
+							operand->type = Operand<CONFIG>::XER;
+							operand->reg_num = 0;
+						}
+						break;
+
+					case CONFIG::FPSCR_T:
+						{
+							operand->type = Operand<CONFIG>::FPSCR;
+							operand->reg_num = 0;
+						}
+						break;
+				}
+
+				instruction->output_operands.Push(operand);
+			}
+		}
+
+		// Move the instruction from the instruction queue to completion queue and an issue queue
+		switch(execution_unit)
+		{
+			case CONFIG::NO_UNIT_T: // No Unit
+				break;
+			case CONFIG::LSU_T:     // Load/Store Unit
+				num_load_stores++;
+			case CONFIG::IU1_T:     // Simple Integer Unit
+			case CONFIG::IU2_T:     // Complex Integer Unit
+				giq.Push(instruction);
+				break;
+			case CONFIG::FPU_T:     // Floating Point Unit
+				fiq.Push(instruction);
+				break;
+			case CONFIG::BPU_T:     // Branch Processing Unit
+				// Branches don't go to an issue queue
+				break;
+			case CONFIG::VFPU_T:    // Vector Floating Point Unit
+			case CONFIG::VPU_T:     // vector Processing Unit
+			case CONFIG::VIU1_T:    // Simple Vector Integer
+			case CONFIG::VIU2_T:    // Complex Vector Integer
 				viq.Push(instruction);
 				break;
 		}
 
 		cq.Push(instruction);
-		iq.Pop();
+
+		if(++dispatch_uop_num < instruction->GetNumUOps())
+		{
+			iq[0] = AllocateInstruction();
+			iq[0]->Initialize(this, *instruction, dispatch_uop_num);
+		}
+		else
+		{
+			dispatch_uop_num = 0;
+			iq.Pop();
+		}
 	}
 }
 
@@ -5944,27 +6413,75 @@ template <class CONFIG>
 void CPU<CONFIG>::GPRIssue()
 {
 	// Issue is Out-of-order
-	unsigned int i;
-	for(i = 0; i < GPR_ISSUE_WIDTH; i++)
+	unsigned int i, j, k;
+	for(i = k = 0; i < GPR_ISSUE_WIDTH; i++)
 	{
-		Instruction<CONFIG> *instruction = giq[i];
+		if(k >= giq.Size()) return;
+		Instruction<CONFIG> *instruction = giq[k];
 
 		const typename CONFIG::execution_unit_type_t execution_unit = instruction->GetExecutionUnit();
 
 		switch(execution_unit)
 		{
-			case CONFIG::NO_UNIT_T: // No Unit
-				break;
 			case CONFIG::LSU_T:     // Load/Store Unit
+				if(!lsu_reservation_station.Full())
+				{
+					lsu_reservation_station.Push(instruction);
+					giq.Remove(k);
+				}
+				else
+				{
+					k++;
+				}
 				break;
 			case CONFIG::IU1_T:     // Simple Integer Unit
+				{
+					bool found_iu1 = false;
+					for(j = 0; j < NUM_IU1; j++)
+					{
+						if(!iu1_reservation_station[j].Full())
+						{
+							iu1_reservation_station[j].Push(instruction);
+							found_iu1 = true;
+							break;
+						}
+					}
+
+					if(found_iu1)
+					{
+						giq.Remove(k);
+					}
+					else
+					{
+						k++;
+					}
+				}
 				break;
 			case CONFIG::IU2_T:     // Complex Integer Unit
+				{
+					bool found_iu2 = false;
+					for(j = 0; j < NUM_IU2; j++)
+					{
+						if(!iu2_reservation_station[j].Full())
+						{
+							iu2_reservation_station[j].Push(instruction);
+							found_iu2 = true;
+							break;
+						}
+					}
+
+					if(found_iu2)
+					{
+						giq.Remove(k);
+					}
+					else
+					{
+						k++;
+					}
+				}
 				break;
 		}
-		
 	}
-	
 }
 
 template <class CONFIG>
@@ -5975,35 +6492,1618 @@ void CPU<CONFIG>::FPRIssue()
 template <class CONFIG>
 void CPU<CONFIG>::VRIssue()
 {
-/*
-	unsigned int i;
-	for(i = 0; i < CONFIG::VR_ISSUE_WIDTH; i++)
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::IU1Execute()
+{
+	unsigned int i, j;
+	for(i = 0; i < NUM_IU1; i++)
 	{
-		Operation *operation = viq.Front();
-		
-		VecInsnType vec_insn_type = operation->GetVecInsnType();
-		switch(vec_insn_type)
+		if(!iu1_reservation_station[i].Empty())
 		{
-			case VEC_PERM_INSN:
+			Instruction<CONFIG> *instruction = iu1_reservation_station[i].Front();
+
+			if(instruction->IsAllowedToExecute() && instruction->IsReadyToExecute())
+			{
+				instruction->Execute(this);
+
+				NotifyFinishedInstruction(instruction, instruction->GetLatency());
+				iu1_reservation_station[i].Pop();
+			}
+		}
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::IU2Execute()
+{
+	unsigned int i, j;
+	for(i = 0; i < NUM_IU2; i++)
+	{
+		if(!iu2_reservation_station[i].Empty())
+		{
+			Instruction<CONFIG> *instruction = iu2_reservation_station[i].Front();
+
+			if(instruction->IsAllowedToExecute() && instruction->IsReadyToExecute())
+			{
+				instruction->Execute(this);
+				NotifyFinishedInstruction(instruction, instruction->GetLatency());
+				iu2_reservation_station[i].Pop();
+			}
+		}
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::FPUExecute()
+{
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::LSUExecute1()
+{
+	unsigned int i, j;
+	if(!lsu_reservation_station.Empty())
+	{
+		Instruction<CONFIG> *instruction = lsu_reservation_station.Front();
+
+		if(!instruction->IsAllowedToExecute()) return;
+		if(!instruction->IsReadyToExecute()) return;
+		if(required_ea.Full()) return;
+
+		instruction->Execute(this);
+		required_ea.Push(instruction);
+		lsu_reservation_station.Pop();
+	}
+}
+
+// 		if(instruction->GetSerialization() & CONFIG::STORE_SERIALIZATION)
+// 		{
+// 			unsigned int num_load_store_accesses = instruction->load_store_access_queue.Size();
+// 			NotifyFinishedInstruction(instruction, num_load_store_accesses);
+// 		}
+// 		else
+// 		{
+
+
+template <class CONFIG>
+void CPU<CONFIG>::LSUExecute2()
+{
+	unsigned int lat = 0;
+
+	if(!required_ea.Empty())
+	{
+		Instruction<CONFIG> *instruction = required_ea.Front();
+
+		LoadStoreAccess<CONFIG> *load_store_access = instruction->load_store_access_queue[instruction->load_store_access_index];
+	
+		load_store_access->mmu_access.addr = load_store_access->munged_ea;
+		load_store_access->mmu_access.privilege_level = GetPrivilegeLevel();
+		load_store_access->mmu_access.memory_type = CONFIG::MT_DATA;
+		
+		if(GetMSR_DR())
+		{
+			// BATs and TLB Lookup
+			load_store_access->mmu_access.memory_access_type = (load_store_access->type & LoadStoreAccess<CONFIG>::STORE) ? CONFIG::MAT_WRITE : CONFIG::MAT_READ;
+	
+			LookupBAT<false>(load_store_access->mmu_access);
+			if(!load_store_access->mmu_access.bat_hit)
+			{
+				AccessTLB<false>(load_store_access->mmu_access);
+					
+				if(!load_store_access->mmu_access.tlb_hit || load_store_access->mmu_access.force_page_table_walk)
+				{
+					// BAT/TLB Miss
+					abort(); // Hardware page table search should start at commit
+				}
+			}
+		}
+		else
+		{
+			// W=0: Write through disabled
+			// I=0: Cache not inhibited
+			// M=1: Memory coherency enforced
+			// G=1: Guarded memory access (speculative fetch forbidden)
+			load_store_access->mmu_access.wimg = (WIMG)(CONFIG::WIMG_MEMORY_COHERENCY_ENFORCED | CONFIG::WIMG_GUARDED_MEMORY);
+			load_store_access->mmu_access.physical_addr = load_store_access->munged_ea;
+		}
+
+		if(load_store_access->type & LoadStoreAccess<CONFIG>::LOAD)
+		{
+			// Load
+			if(!(load_store_access->mmu_access.wimg & CONFIG::WIMG_CACHE_INHIBITED) && IsDataCacheEnabled())
+			{
+				// DL1 Access
+				load_store_access->l1_access.addr = load_store_access->mmu_access.physical_addr;
+				LookupDL1(load_store_access->l1_access);
+				lat += DL1_LATENCY;
+	
+				if(load_store_access->l1_access.block)
+				{
+					// Load hit in DL1
+					memcpy(load_store_access->data, &(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->size);
+					UpdateReplacementPolicyDL1(load_store_access->l1_access);
+					NotifyLoadResultAvailability(load_store_access, lat);
+				}
+				else
+				{
+					// Load miss in DL1
+					if(num_outstanding_l1_load_miss >= MAX_OUTSTANDING_L1_LOAD_MISS) return;
+		
+					if(IsL2CacheEnabled())
+					{
+						// DL1 block fill from L2
+						load_store_access->l2_access.addr = load_store_access->l1_access.block_base_addr;
+					
+						LookupL2(load_store_access->l2_access);
+						lat += L2_LATENCY;
+	
+						if(load_store_access->l2_access.block)
+						{
+							// DL1 block fill hit in L2
+							memcpy(&(*load_store_access->l1_access.block)[0], &(*load_store_access->l2_access.block)[load_store_access->l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+							UpdateReplacementPolicyL2(load_store_access->l2_access);
+							memcpy(load_store_access->data, &(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->size);
+							UpdateReplacementPolicyDL1(load_store_access->l1_access);
+							NotifyLoadResultAvailability(load_store_access, lat);
+						}
+						else
+						{
+							// Load miss in L2
+							if(num_outstanding_l2_load_miss >= MAX_OUTSTANDING_L2_LOAD_MISS) return;
+	
+							// L2 block fill from bus
+							load_store_access->l2_access.block = &(*load_store_access->l2_access.line)[load_store_access->l2_access.sector];
+		
+							BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+							bus_access->type = BusAccess<CONFIG>::REFILL;
+							bus_access->addr = load_store_access->l2_access.block_base_addr;
+							bus_access->size = CacheBlock<class CONFIG::L2_CONFIG>::SIZE;
+							bus_access->load_store_access = load_store_access;
+							bus_access->wimg = load_store_access->mmu_access.wimg;
+							bus_access->rwitm = false;
+							NotifyBusAccess(bus_access, lat);
+						}
+					}
+					else
+					{
+						// DL1 block fill from bus
+						BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+						bus_access->type = BusAccess<CONFIG>::REFILL;
+						bus_access->addr = load_store_access->l1_access.block_base_addr;
+						bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
+						bus_access->load_store_access = load_store_access;
+						bus_access->wimg = load_store_access->mmu_access.wimg;
+						bus_access->rwitm = false;
+						NotifyBusAccess(bus_access, lat);
+					}
+				}
+			}
+			else
+			{
+				// Caching is either disabled or inhibited
+				BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+				bus_access->type = BusAccess<CONFIG>::LOAD;
+				bus_access->addr = load_store_access->mmu_access.physical_addr;
+				bus_access->size = load_store_access->size;
+				bus_access->load_store_access = load_store_access;
+				bus_access->wimg = load_store_access->mmu_access.wimg;
+				bus_access->rwitm = false;
+				NotifyBusAccess(bus_access, lat);
+			}
+		}
+
+		if(++instruction->load_store_access_index >= instruction->load_store_access_queue.Size())
+		{
+			required_ea.Pop();
+
+			if(instruction->GetSerialization() & CONFIG::STORE_SERIALIZATION)
+			{
+				instruction->load_store_access_index = 0;
+				NotifyFinishedInstruction(instruction, 1);
+			}
+			else
+			{
+				return;
+			}
+		}
+	}
+
+	if(!csq.Empty())
+	{
+		Instruction<CONFIG> *instruction = csq.Front();
+
+		LoadStoreAccess<CONFIG> *load_store_access = instruction->load_store_access_queue[instruction->load_store_access_index];
+
+		switch(load_store_access->type)
+		{
+			case LoadStoreAccess<CONFIG>::INT8_STORE:
+				{
+					uint8_t value = instruction->GetGPR(load_store_access->reg_num);
+					memcpy(load_store_access->data, &value, sizeof(value));
+				}
 				break;
-			case VEC_INT_INSN:
+			case LoadStoreAccess<CONFIG>::INT16_STORE:
+				{
+					uint16_t value = Host2BigEndian((uint16_t) instruction->GetGPR(load_store_access->reg_num));
+					memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+				}
 				break;
-			case VEC_FP_INSN:
+			case LoadStoreAccess<CONFIG>::INT32_STORE:
+				{
+					uint32_t value = Host2BigEndian((uint32_t) instruction->GetGPR(load_store_access->reg_num));
+					memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+				}
+				break;
+			case LoadStoreAccess<CONFIG>::FP32_STORE:
+				{
+					uint32_t value = Host2BigEndian(SoftFloat(instruction->GetFPR(load_store_access->reg_num), flags).queryValue());
+					memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+				}
+				break;
+			case LoadStoreAccess<CONFIG>::FP64_STORE:
+				{
+					uint64_t value = Host2BigEndian(instruction->GetFPR(load_store_access->reg_num).queryValue());
+					memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+				}
+				break;
+			case LoadStoreAccess<CONFIG>::FP_STORE_LSW:
+				{
+					uint32_t value = Host2BigEndian((uint32_t) instruction->GetFPR(load_store_access->reg_num).queryValue());
+					memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+				}
+				break;
+			case LoadStoreAccess<CONFIG>::INT16_STORE_BYTE_REVERSE:
+				{
+					uint16_t value = Host2LittleEndian((uint16_t) instruction->GetGPR(load_store_access->reg_num));
+					memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+				}
+				break;
+			case LoadStoreAccess<CONFIG>::INT32_STORE_BYTE_REVERSE:
+				{
+					uint32_t value = Host2LittleEndian((uint32_t) instruction->GetGPR(load_store_access->reg_num));
+					memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+				}
+				break;
+			case LoadStoreAccess<CONFIG>::INT_STORE_MSB:
+				switch(load_store_access->size)
+				{
+					case 1:
+						{
+							uint8_t value = instruction->GetGPR(load_store_access->reg_num) >> 24;
+							memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+						}
+						break;
+					case 2:
+						{
+							uint16_t value = Host2BigEndian((uint16_t)(instruction->GetGPR(load_store_access->reg_num) >> 16));
+							memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+							break;
+						}
+			
+					case 3:
+						{
+							uint32_t value = instruction->GetGPR(load_store_access->reg_num);
+							uint8_t buffer[3];
+							buffer[0] = value >> 24;
+							buffer[1] = value >> 16;
+							buffer[2] = value >> 8;
+							memcpy(load_store_access->data, buffer + load_store_access->offset, load_store_access->size);
+							break;
+						}
+			
+					case 4:
+						{
+							uint32_t value = Host2BigEndian(instruction->GetGPR(load_store_access->reg_num));
+							memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
+							break;
+						}
+				}
+				break;
+		}
+
+		if(!(load_store_access->mmu_access.wimg & CONFIG::WIMG_CACHE_INHIBITED) && IsDataCacheEnabled())
+		{
+			// DL1 Access
+			load_store_access->l1_access.addr = load_store_access->mmu_access.physical_addr;
+			LookupDL1(load_store_access->l1_access);
+			lat += DL1_LATENCY;
+
+			if(load_store_access->l1_access.block)
+			{
+				// Store hit in DL1
+				memcpy(&(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->data, load_store_access->size);
+				load_store_access->l1_access.block->status.dirty = true;
+				UpdateReplacementPolicyDL1(load_store_access->l1_access);
+			}
+			else
+			{
+				// Store miss in DL1
+				if(num_outstanding_l1_store_miss >= MAX_OUTSTANDING_L1_STORE_MISS) return;
+	
+				if(IsL2CacheEnabled())
+				{
+					// DL1 block fill from L2
+					load_store_access->l2_access.addr = load_store_access->l1_access.block_base_addr;
+				
+					LookupL2(load_store_access->l2_access);
+					lat += L2_LATENCY;
+	
+					if(load_store_access->l2_access.block)
+					{
+						// DL1 block fill hit in L2
+						memcpy(&(*load_store_access->l1_access.block)[0], &(*load_store_access->l2_access.block)[load_store_access->l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+						UpdateReplacementPolicyL2(load_store_access->l2_access);
+						memcpy(&(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->data, load_store_access->size);
+						UpdateReplacementPolicyDL1(load_store_access->l1_access);
+					}
+					else
+					{
+						// Store miss in L2
+						if(num_outstanding_l2_store_miss >= MAX_OUTSTANDING_L2_STORE_MISS) return;
+	
+						// L2 block fill from bus
+						load_store_access->l2_access.block = &(*load_store_access->l2_access.line)[load_store_access->l2_access.sector];
+	
+						BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+						bus_access->type = BusAccess<CONFIG>::REFILLX;
+						bus_access->addr = load_store_access->l2_access.block_base_addr;
+						bus_access->size = CacheBlock<class CONFIG::L2_CONFIG>::SIZE;
+						bus_access->load_store_access = load_store_access;
+						bus_access->wimg = load_store_access->mmu_access.wimg;
+						bus_access->rwitm = false;
+						NotifyBusAccess(bus_access, lat);
+					}
+				}
+				else
+				{
+					// DL1 block fill from bus
+					BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+					bus_access->type = BusAccess<CONFIG>::REFILLX;
+					bus_access->addr = load_store_access->l1_access.block_base_addr;
+					bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
+					bus_access->load_store_access = load_store_access;
+					bus_access->wimg = load_store_access->mmu_access.wimg;
+					bus_access->rwitm = false;
+					NotifyBusAccess(bus_access, lat);
+				}
+			}
+		}
+		else
+		{
+			// Caching is either disabled or inhibited
+			BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+			bus_access->type = BusAccess<CONFIG>::STORE;
+			bus_access->addr = load_store_access->mmu_access.physical_addr;
+			bus_access->size = load_store_access->size;
+			bus_access->load_store_access = load_store_access;
+			bus_access->wimg = load_store_access->mmu_access.wimg;
+			bus_access->rwitm = false;
+			NotifyBusAccess(bus_access, lat);
+		}
+		csq.Pop();
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::ScheduleEvents()
+{
+	while(!schedule.empty())
+	{
+		typename std::multimap<uint64_t, Event<CONFIG> *>::iterator it = schedule.begin();
+		if(it->first > cpu_cycle) return;
+
+		Event<CONFIG> *ev = it->second;
+
+		switch(ev->type)
+		{
+			case Event<CONFIG>::EV_FINISHED_INSN:     // an instruction is finished
+				{
+					Instruction<CONFIG> *instruction = ev->object.instruction;
+
+					instruction->Finish();
+					if(instruction->GetSerialization() & CONFIG::STORE_SERIALIZATION)
+					{
+						if(!fsq.Full())
+						{
+							fsq.Push(instruction);
+							required_ea.Pop();
+						}
+					}
+				}
+				break;
+			case Event<CONFIG>::EV_AVAILABLE_OPERAND: // an operand is available
+				{
+					Operand<CONFIG> *operand = ev->object.operand;
+
+					operand->valid = true;
+					
+					unsigned int num_pending_instructions = operand->pending_instructions.Size();
+					unsigned int i, j;
+			
+					for(i = j = 0; i < num_pending_instructions; i++)
+					{
+						Instruction<CONFIG> *instruction = operand->pending_instructions[j];
+						
+						if(instruction->CheckInputOperandsAvailability())
+						{
+							operand->pending_instructions.Remove(j);
+						}
+						else
+						{
+							j++;
+						}
+					}
+				}
+				break;
+			case Event<CONFIG>::EV_BUS_ACCESS:        // a cache miss causes a bus access
+				{
+					BusAccess<CONFIG> *bus_access = ev->object.bus_access;
+
+					switch(bus_access->type)
+					{
+						case BusAccess<CONFIG>::LOAD:     // cache inhibited load
+						case BusAccess<CONFIG>::REFILL:   // cache refill
+						case BusAccess<CONFIG>::REFILLX:  // cache refill with intent to modify
+							if(!blq.Full())
+								blq.Push(bus_access);
+							else
+								NotifyEvent(ev, 1); // Reschedule event on next cycle
+							break;
+						case BusAccess<CONFIG>::STORE:    // write through/cache inhibited store
+						case BusAccess<CONFIG>::EVICTION: // block eviction
+							if(!bsq.Full())
+								bsq.Push(bus_access);
+							else
+								NotifyEvent(ev, 1); // Reschedule event on next cycle
+							break;
+					}
+				}
+				break;
+		}
+
+		schedule.erase(it);
+	}
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::HasPipelineCollision(BusAccess<CONFIG> *bus_load_access)
+{
+	unsigned int i;
+	unsigned int bsq_size = bsq.Size();
+	for(i = 0; i < bsq_size; i++)
+	{
+		BusAccess<CONFIG> *bus_store_access = bsq[i];
+		if(bus_load_access->addr == bus_store_access->addr) return true;
+	}
+
+	return false;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::BIU()
+{
+	if(!blq.Empty())
+	{
+		BusAccess<CONFIG> *bus_access = blq.Front();
+		if(!HasPipelineCollision(bus_access))
+		{
+			DoBusAccess(bus_access);
+			return;
+		}
+	}
+
+	if(!bsq.Empty())
+	{
+		BusAccess<CONFIG> *bus_access = bsq.Front();
+		DoBusAccess(bus_access);
+	}
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::OnFinishedBusAccess(BusAccess<CONFIG> *bus_access)
+{
+	LoadStoreAccess<CONFIG> *load_store_access = bus_access->load_store_access;
+	unsigned int lat = 0;
+
+	switch(bus_access->type)
+	{
+		case BusAccess<CONFIG>::REFILL:
+		case BusAccess<CONFIG>::REFILLX:
+			if(!load_store_access->l1_access.line)
+			{
+				// DL1 Line miss
+				ChooseLineToEvictDL1(load_store_access->l1_access);
+				
+				if(load_store_access->l1_access.line_to_evict->status.valid)
+				{
+					// DL1 Line eviction
+					uint32_t l1_sector;
+				
+					for(l1_sector = 0; l1_sector < CacheLine<class CONFIG::DL1_CONFIG>::BLOCKS_PER_LINE; l1_sector++)
+					{
+						CacheBlock<class CONFIG::DL1_CONFIG>& l1_block_to_evict = (*load_store_access->l1_access.line_to_evict)[l1_sector];
+				
+						if(l1_block_to_evict.status.valid && l1_block_to_evict.status.dirty)
+						{
+							// dirty DL1 block eviction
+							if(IsL2CacheEnabled())
+							{
+								// DL1 block eviction into L2
+								CacheAccess<class CONFIG::L2_CONFIG> l2_access;
+								l2_access.addr = l1_block_to_evict.GetBaseAddr();
+								LookupL2(l2_access);
+								lat += L2_LATENCY;
+			
+								if(l2_access.block)
+								{
+									// DL1 block eviction hit in L2
+									memcpy(&(*l2_access.block)[l2_access.offset], &l1_block_to_evict[0], CacheBlock<typename CONFIG::DL1_CONFIG>::SIZE);
+									l2_access.block->status.dirty = true;
+				
+									UpdateReplacementPolicyL2(l2_access);
+								}
+								else
+								{
+									// dirty DL1 block eviction miss in L2
+									// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
+									BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+									bus_access->type = BusAccess<CONFIG>::EVICTION;
+									bus_access->addr = l1_block_to_evict.GetBaseAddr();
+									bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
+									memcpy(bus_access->storage, &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+									bus_access->load_store_access = load_store_access;
+									NotifyBusAccess(bus_access, lat);
+								}
+							}
+							else
+							{
+								// dirty DL1 block eviction into memory
+								// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
+								BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+								bus_access->type = BusAccess<CONFIG>::EVICTION;
+								bus_access->addr = l1_block_to_evict.GetBaseAddr();
+								bus_access->size = CacheBlock<class CONFIG::DL1_CONFIG>::SIZE;
+								memcpy(bus_access->storage, &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+								bus_access->load_store_access = load_store_access;
+								NotifyBusAccess(bus_access, lat);
+							}
+						}
+						l1_block_to_evict.status.valid = false;
+						l1_block_to_evict.status.dirty = false;
+					}
+					load_store_access->l1_access.line_to_evict->status.valid = false;
+				}
+				load_store_access->l1_access.line = load_store_access->l1_access.line_to_evict;
+				load_store_access->l1_access.line_to_evict = 0;
+			}
+
+			if(!load_store_access->l2_access.line)
+			{
+				if(load_store_access->l2_access.line_to_evict->status.valid)
+				{
+					// L2 Line eviction
+					uint32_t l2_sector;
+				
+					for(l2_sector = 0; l2_sector < CacheLine<class CONFIG::L2_CONFIG>::BLOCKS_PER_LINE; l2_sector++)
+					{
+						CacheBlock<class CONFIG::L2_CONFIG>& l2_block_to_evict = (*load_store_access->l2_access.line_to_evict)[l2_sector];
+				
+						if(l2_block_to_evict.status.valid && l2_block_to_evict.status.dirty)
+						{
+							// dirty L2 block eviction into memory
+							// MPC7450UM, Rev. 5, paragraphe 3.8.3, p3-91: Because cache block castouts and snoop pushes do not require snooping, the GBL signal is not asserted for these operations.
+							BusAccess<CONFIG> *bus_access = AllocateBusAccess();
+							bus_access->type = BusAccess<CONFIG>::EVICTION;
+							bus_access->addr = l2_block_to_evict.GetBaseAddr();
+							bus_access->size = CacheBlock<class CONFIG::L2_CONFIG>::SIZE;
+							memcpy(bus_access->storage, &l2_block_to_evict[0], CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
+							bus_access->load_store_access = load_store_access;
+							NotifyBusAccess(bus_access, lat);
+						}
+						l2_block_to_evict.status.valid = false;
+						l2_block_to_evict.status.dirty = false;
+					}
+				
+					load_store_access->l2_access.line_to_evict->status.valid = false;
+				}
+				load_store_access->l2_access.line = load_store_access->l2_access.line_to_evict;
+				load_store_access->l2_access.line_to_evict = 0;
+			}
+
+			break;
+		case BusAccess<CONFIG>::STORE:
+		case BusAccess<CONFIG>::EVICTION:
+			FreeInstruction(load_store_access->instruction);
+			bsq.Pop();
+			break;
+	}
+
+	// Finalize cache refills
+	switch(bus_access->type)
+	{
+		case BusAccess<CONFIG>::REFILL:
+		case BusAccess<CONFIG>::REFILLX:
+			// Finalize L2 Refill
+			memcpy(&(*load_store_access->l2_access.block)[0], bus_access->storage, CacheBlock<class CONFIG::L2_CONFIG>::SIZE);
+			load_store_access->l2_access.line->status.valid = true;
+			load_store_access->l2_access.line->SetBaseAddr(load_store_access->l2_access.line_base_addr);
+			load_store_access->l2_access.block->status.valid = true;
+			load_store_access->l2_access.block->status.dirty = false;
+
+			// Finalize DL1 refill
+			memcpy(&(*load_store_access->l1_access.block)[0], &(*load_store_access->l2_access.block)[load_store_access->l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
+			UpdateReplacementPolicyL2(load_store_access->l2_access);
+			load_store_access->l1_access.line->status.valid = true;
+			load_store_access->l1_access.line->SetBaseAddr(load_store_access->l1_access.line_base_addr);
+			load_store_access->l1_access.block->status.valid = true;
+			load_store_access->l1_access.block->status.dirty = false;
+			break;
+	}
+
+	// Finalize Load/Store access
+	switch(bus_access->type)
+	{
+		case BusAccess<CONFIG>::LOAD:
+		case BusAccess<CONFIG>::REFILL:
+			// Finalize load in DL1 and forward load result
+			memcpy(load_store_access->data, &(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->size);
+			UpdateReplacementPolicyDL1(load_store_access->l1_access);
+			NotifyLoadResultAvailability(load_store_access, lat);
+			NotifyFinishedInstruction(load_store_access->instruction, lat);
+			blq.Pop();
+			break;
+		case BusAccess<CONFIG>::REFILLX:
+		case BusAccess<CONFIG>::STORE:
+			// Finalize store in DL1
+			memcpy(&(*load_store_access->l1_access.block)[load_store_access->l1_access.offset], load_store_access->data, load_store_access->size);
+			UpdateReplacementPolicyDL1(load_store_access->l1_access);
+			bsq.Pop();
+			break;
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::NotifyEvent(Event<CONFIG> *ev, uint64_t latency)
+{
+	schedule.insert(std::pair<uint64_t, Event<CONFIG> *>(cpu_cycle + latency, ev));
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::NotifyBusAccess(BusAccess<CONFIG> *bus_access, uint64_t latency)
+{
+	Event<CONFIG> *ev = AllocateEvent();
+	ev->type = Event<CONFIG>::EV_BUS_ACCESS;
+	ev->object.bus_access = bus_access;
+	NotifyEvent(ev, latency);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::NotifyFinishedInstruction(Instruction<CONFIG> *instruction, uint64_t latency)
+{
+	Event<CONFIG> *ev = AllocateEvent();
+	ev->type = Event<CONFIG>::EV_FINISHED_INSN;
+	ev->object.instruction = instruction;
+	NotifyEvent(ev, latency);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::NotifyOperandAvailability(Operand<CONFIG> *operand, uint64_t latency)
+{
+	Event<CONFIG> *ev = AllocateEvent();
+	ev->type = Event<CONFIG>::EV_AVAILABLE_OPERAND;
+	ev->object.operand = operand;
+	NotifyEvent(ev, latency);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::NotifyLoadResultAvailability(LoadStoreAccess<CONFIG> *load_store_access, uint64_t latency)
+{
+	Instruction<CONFIG> *instruction = load_store_access->instruction;
+
+	unsigned int i;
+	unsigned int num_load_store_accesses = instruction->load_store_access_queue.Size();
+	uint8_t data[8];
+
+	for(i = 0; i < num_load_store_accesses; i++)
+	{
+		if(!load_store_access->valid) return;
+		memcpy(data + load_store_access->offset, load_store_access->data, load_store_access->size);
+	}
+
+	switch(load_store_access->type)
+	{
+		case LoadStoreAccess<CONFIG>::INT8_LOAD:
+			{
+				uint8_t value = *(uint8_t *) data;
+				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) value, latency); // 8-bit to 32-bit zero extension
+			}
+			break;
+		case LoadStoreAccess<CONFIG>::INT16_LOAD:
+			{
+				uint16_t value = *(uint16_t *) data;
+				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) BigEndian2Host(value), latency); // 16-bit to 32-bit zero extension
+			}
+			break;
+		case LoadStoreAccess<CONFIG>::SINT16_LOAD:
+			{
+				uint16_t value = *(uint16_t *) data;
+				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) (int16_t) BigEndian2Host(value), latency); // 16-bit to 32-bit sign extension
+			}
+			break;
+		case LoadStoreAccess<CONFIG>::INT32_LOAD:
+			{
+				uint32_t value = *(uint32_t *) data;
+				load_store_access->instruction->SetGPR(load_store_access->reg_num, BigEndian2Host(value), latency);
+			}
+			break;
+		case LoadStoreAccess<CONFIG>::FP32_LOAD:
+			{
+				uint32_t value = *(uint32_t *) data;
+				Flags flags;
+				flags.setRoundingMode(RN_ZERO);
+				load_store_access->instruction->SetFPR(load_store_access->reg_num, SoftDouble(SoftFloat(BigEndian2Host(value)), flags), latency);
+			}
+			break;
+		case LoadStoreAccess<CONFIG>::FP64_LOAD:
+			{
+				uint64_t value = *(uint64_t *) data;
+				load_store_access->instruction->SetFPR(load_store_access->reg_num, SoftDouble(BigEndian2Host(value)), latency);
+			}
+			break;
+		case LoadStoreAccess<CONFIG>::INT16_LOAD_BYTE_REVERSE:
+			{
+				uint16_t value = *(uint16_t *) data;
+				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) LittleEndian2Host(value), latency); // reverse bytes and 16-bit to 32-bit zero extension
+			}
+			break;
+		case LoadStoreAccess<CONFIG>::INT32_LOAD_BYTE_REVERSE:
+			{
+				uint32_t value = *(uint32_t *) data;
+				load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) LittleEndian2Host(value), latency); // reverse bytes
+			}
+			break;
+		case LoadStoreAccess<CONFIG>::INT_LOAD_MSB:
+			switch(load_store_access->size)
+			{
+				case 1:
+				{
+					uint8_t value = *(uint8_t *) data;
+					load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) value << 24, latency);
+					break;
+				}
+		
+				case 2:
+				{
+					uint16_t value = *(uint16_t *) data;
+					load_store_access->instruction->SetGPR(load_store_access->reg_num, (uint32_t) BigEndian2Host(value) << 16, latency);
+					break;
+				}
+		
+				case 3:
+				{
+					uint8_t *buffer = (uint8_t *) data;
+					load_store_access->instruction->SetGPR(load_store_access->reg_num, ((uint32_t) buffer[0] << 24) | ((uint32_t) buffer[1] << 16) | ((uint32_t) buffer[2] << 8), latency);
+					break;
+				}
+		
+				case 4:
+				{
+					uint32_t value = *(uint32_t *) data;
+					load_store_access->instruction->SetGPR(load_store_access->reg_num, BigEndian2Host(value), latency);
+					break;
+				}
+			}
+			break;
+	}
+
+	NotifyFinishedInstruction(load_store_access->instruction, 1);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Complete()
+{
+	if(cq.Empty()) return;
+
+	unsigned int i, j;
+	unsigned int num_gpr_wb_ports = 0;
+	unsigned int num_fpr_wb_ports = 0;
+	unsigned int num_cr_wb_ports = 0;
+	unsigned int num_lr_wb_ports = 0;
+	unsigned int num_ctr_wb_ports = 0;
+	for(i = 0; i < COMPLETE_WIDTH; i++)
+	{
+		// Lookup the last instruction from the instruction queue
+		Instruction<CONFIG> *instruction = cq.Front();
+
+		if(!instruction->IsFinished())
+		{
+			if(!instruction->IsAllowedToExecute() && (instruction->GetSerialization() & CONFIG::EXECUTION_SERIALIZATION))
+			{
+				instruction->AllowExecution();
+			}
+			return;
+		}
+
+		// Check exception flags
+
+		// check for store
+		if(instruction->GetSerialization() & CONFIG::STORE_SERIALIZATION)
+		{
+			
+		}
+
+		// Check write back constraints
+		if(wb0.Full()) return;
+
+		unsigned int num_output_gpr = instruction->GetNumOutputGPR();
+		num_gpr_wb_ports += num_output_gpr;
+		if(num_gpr_wb_ports > MAX_GPR_WB_PER_CYCLE) return;
+
+		unsigned int num_output_fpr = instruction->GetNumOutputFPR();
+		num_fpr_wb_ports += num_output_fpr;
+		if(num_fpr_wb_ports > MAX_FPR_WB_PER_CYCLE) return;
+
+		unsigned int num_output_cr = instruction->GetNumOutputCR();
+		num_cr_wb_ports += num_output_cr;
+		if(num_cr_wb_ports > MAX_CR_WB_PER_CYCLE) return;
+
+		unsigned int num_output_lr = instruction->GetNumOutputLR();
+		num_lr_wb_ports += num_output_lr;
+		if(num_lr_wb_ports > MAX_LR_WB_PER_CYCLE) return;
+
+		unsigned int num_output_ctr = instruction->GetNumOutputCTR();
+		num_ctr_wb_ports += num_output_ctr;
+		if(num_ctr_wb_ports > MAX_CTR_WB_PER_CYCLE) return;
+	
+		// Instruction Retire
+		wb0.Push(instruction);
+		cq.Pop();
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::WriteBack0()
+{
+	while(!wb0.Empty())
+	{
+		Instruction<CONFIG> *instruction = wb0.Front();
+
+		if(instruction->GetSerialization() & CONFIG::STORE_SERIALIZATION)
+		{
+			if(wb1.Full()) return;
+		}
+
+		Operand<CONFIG> *operand;
+		unsigned int num_output_operands = instruction->output_operands.Size();
+		unsigned int j;
+
+		for(j = 0; j < num_output_operands; j++)
+		{
+			Operand<CONFIG> *operand = instruction->output_operands[j];
+
+			switch(operand->type)
+			{
+				case Operand<CONFIG>::GPR:
+					FreeOperand(arch_gpr[operand->reg_num]);
+					arch_gpr[operand->reg_num] = operand;
+					rename_gpr[~operand->tag] = 0;
+					gpr_mapping_table.Free(operand->reg_num, operand->tag);
+					operand->tag = operand->reg_num;
+					break;
+				case Operand<CONFIG>::FPR:
+					FreeOperand(arch_fpr[operand->reg_num]);
+					arch_fpr[operand->reg_num] = operand;
+					rename_fpr[~operand->tag] = 0;
+					fpr_mapping_table.Free(operand->reg_num, operand->tag);
+					operand->tag = operand->reg_num;
+					break;
+				case Operand<CONFIG>::CR:
+					FreeOperand(arch_cr);
+					arch_cr = operand;
+					rename_cr[~operand->tag] = 0;
+					cr_mapping_table.Free(operand->reg_num, operand->tag);
+					operand->tag = 0;
+					break;
+				case Operand<CONFIG>::LR:
+					FreeOperand(arch_lr);
+					arch_lr = operand;
+					rename_lr[~operand->tag] = 0;
+					lr_mapping_table.Free(operand->reg_num, operand->tag);
+					operand->tag = 0;
+					break;
+				case Operand<CONFIG>::CTR:
+					FreeOperand(arch_ctr);
+					arch_ctr = operand;
+					rename_ctr[~operand->tag] = 0;
+					ctr_mapping_table.Free(operand->reg_num, operand->tag);
+					operand->tag = 0;
+					break;
+				case Operand<CONFIG>::XER:
+					FreeOperand(arch_xer);
+					arch_xer = operand;
+					break;
+				case Operand<CONFIG>::FPSCR:
+					FreeOperand(arch_fpscr);
+					arch_fpscr = operand;
+					break;
+			}
+		}
+		
+		if(instruction->GetSerialization() & CONFIG::STORE_SERIALIZATION)
+		{
+			wb1.Push(instruction);
+		}
+		else
+		{
+			FreeInstruction(instruction);
+		}
+		wb0.Pop();
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::WriteBack1()
+{
+	while(!wb1.Empty())
+	{
+		Instruction<CONFIG> *instruction = wb1.Front();
+
+		if(csq.Full()) return;
+
+		csq.Push(instruction);
+		fsq.Pop();
+		wb1.Pop();
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Flush()
+{
+	unsigned int i;
+
+	if(!iq.Empty())
+	{
+		do
+		{
+			Instruction<CONFIG> *instruction = iq.Front();
+			FreeInstruction(instruction);
+			iq.Pop();
+		} while(!iq.Empty());
+	}
+
+	if(!giq.Empty())
+	{
+		do
+		{
+			Instruction<CONFIG> *instruction = giq.Front();
+			FreeInstruction(instruction);
+			giq.Pop();
+		} while(!giq.Empty());
+	}
+
+	if(!fiq.Empty())
+	{
+		do
+		{
+			Instruction<CONFIG> *instruction = fiq.Front();
+			FreeInstruction(instruction);
+			fiq.Pop();
+		} while(!fiq.Empty());
+	}
+
+	if(!viq.Empty())
+	{
+		do
+		{
+			Instruction<CONFIG> *instruction = viq.Front();
+			FreeInstruction(instruction);
+			viq.Pop();
+		} while(!viq.Empty());
+	}
+
+	for(i = 0; i < NUM_IU1; i++)
+	{
+		if(!iu1_reservation_station[i].Empty())
+		{
+			do
+			{
+				Instruction<CONFIG> *instruction = iu1_reservation_station[i].Front();
+				FreeInstruction(instruction);
+				iu1_reservation_station[i].Pop();
+			} while(!iu1_reservation_station[i].Empty());
+		}
+	}
+
+	for(i = 0; i < NUM_IU2; i++)
+	{
+		if(!iu2_reservation_station[i].Empty())
+		{
+			do
+			{
+				Instruction<CONFIG> *instruction = iu2_reservation_station[i].Front();
+				FreeInstruction(instruction);
+				iu2_reservation_station[i].Pop();
+			} while(!iu2_reservation_station[i].Empty());
+		}
+	}
+
+	for(i = 0; i < NUM_FPU; i++)
+	{
+		if(!fpu_reservation_station[i].Empty())
+		{
+			do
+			{
+				Instruction<CONFIG> *instruction = fpu_reservation_station[i].Front();
+				FreeInstruction(instruction);
+				fpu_reservation_station[i].Pop();
+			} while(!fpu_reservation_station[i].Empty());
+		}
+	}
+
+	if(!lsu_reservation_station.Empty())
+	{
+		do
+		{
+			Instruction<CONFIG> *instruction = lsu_reservation_station.Front();
+			FreeInstruction(instruction);
+			lsu_reservation_station.Pop();
+		} while(!lsu_reservation_station.Empty());
+	}
+
+	if(!cq.Empty())
+	{
+		do
+		{
+			Instruction<CONFIG> *instruction = cq.Front();
+
+			cq.Pop();
+		} while(!cq.Empty());
+	}
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Initialize(CPU<CONFIG> *cpu, typename CONFIG::address_t cia, uint32_t encoding)
+{
+	this->operation = cpu->Decode(cia, encoding);
+	operation->resolve(cpu, 0);
+	execution_unit = operation->execution_unit;
+	serialization = operation->serialization;
+	num_uops = operation->num_uops;
+	this->uop_num = 0;
+	input_operands.Clear();
+	forwarding.Clear();
+	output_operands.Clear();
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Initialize(CPU<CONFIG> *cpu, const Instruction<CONFIG>& instruction, unsigned int uop_num)
+{
+	this->operation = instruction.operation;
+	operation->resolve(cpu, uop_num);
+	execution_unit = operation->execution_unit;
+	serialization = operation->serialization;
+	num_uops = operation->num_uops;
+	this->uop_num = uop_num;
+	input_operands.Clear();
+	forwarding.Clear();
+	output_operands.Clear();
+}
+
+template <class CONFIG>
+bool Instruction<CONFIG>::CheckInputOperandsAvailability()
+{
+	if(ready_to_execute) return true;
+
+	unsigned int num_input_operands = input_operands.Size();
+	unsigned int i;
+
+	for(i = 0; i < num_input_operands; i++)
+	{
+		if(forwarding[i] && !input_operands[i]->valid) return false;
+	}
+
+	ready_to_execute = true;
+	return true;
+}
+
+/*
+template <class CONFIG>
+void Instruction<CONFIG>::Initialize(CPU<CONFIG> *cpu, unsigned int uop_num)
+{
+	unsigned int i;
+
+	operation->resolve(cpu, uop_num);
+	execution_unit = operation->execution_unit;
+	serialization = operation->serialization;
+	num_uops = operation->num_uops;
+	this->uop_num = uop_num;
+	num_input_operands = 0;
+	num_ready_input_operands = 0;
+
+	for(i = 0; i < operation->num_insn_operands; i++)
+	{
+		typename CONFIG::operand_t *operand = &operation->insn_operands[i];
+
+		switch(operand->dir)
+		{
+			case CONFIG::INPUT_T:
+				switch(operand->type)
+				{
+					case CONFIG::GPR_T:
+						input_gpr[num_input_gpr].reg_num = operand->extra.reg_num;
+						num_input_gpr++;
+						num_input_operands++;
+						break;
+
+					case CONFIG::FPR_T:
+						input_fpr[num_input_fpr].reg_num = operand->extra.reg_num;
+						num_input_fpr++;
+						num_input_operands++;
+						break;
+		
+					case CONFIG::CRF_T:
+						has_input_cr = true;
+						num_input_operands++;
+						break;
+		
+					case CONFIG::LR_T:
+						has_input_lr = true;
+						num_input_operands++;
+						break;
+		
+					case CONFIG::CTR_T:
+						has_input_ctr = true;
+						num_input_operands++;
+						break;
+				}
+				break;
+
+			case CONFIG::OUTPUT_T:
+				switch(operand->type)
+				{
+					case CONFIG::GPR_T:
+						output_gpr[num_output_gpr].reg_num = operand->extra.reg_num;
+						num_output_gpr++;
+						break;
+		
+					case CONFIG::FPR_T:
+						output_fpr[num_output_fpr].reg_num = operand->extra.reg_num;
+						num_output_fpr++;
+						break;
+		
+					case CONFIG::CRF_T:
+						has_output_cr = true;
+						break;
+		
+					case CONFIG::LR_T:
+						has_output_lr = true;
+						break;
+		
+					case CONFIG::CTR_T:
+						has_output_ctr = true;
+						break;
+				}
 				break;
 		}
 	}
+
+	cycle = 0;
+	stage = FETCH;
+	finished = false;
+	allowed_to_execute = (serialization == CONFIG::EXECUTION_SERIALIZATION) ? false : true;
+	ready_to_execute = false;
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetInputGPRValue(unsigned int i, uint32_t value)
+{
+	input_gpr[i].value = value;
+	input_gpr[i].ready = true;
+	num_ready_input_operands++;
+	ready_to_execute = (num_ready_input_operands >= num_input_operands);
+}
+
+template <class CONFIG>
+uint32_t Instruction<CONFIG>::GetGPR(unsigned int n)
+{
+	unsigned int i;
+	for(i = 0; i < num_input_gpr; i++)
+	{
+		if(input_gpr[i].reg_num == n) return input_gpr[i].value;
+	}
+	assert(false);
+}
+
 */
+
+template <class CONFIG>
+Operand<CONFIG> *Instruction<CONFIG>::SearchInputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num)
+{
+	unsigned int num_input_operands = input_operands.Size();
+	unsigned int i;
+
+	for(i = 0; i < num_input_operands; i++)
+	{
+		Operand<CONFIG> *operand = input_operands[i];
+		if(operand->type == type && operand->reg_num == reg_num)
+		{
+			return operand;
+		}
+	}
+	return 0;
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::SetOperation(Operation<CONFIG> *operation)
+Operand<CONFIG> *Instruction<CONFIG>::SearchOutputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num)
 {
-	
+	unsigned int num_output_operands = input_operands.Size();
+	unsigned int i;
+
+	for(i = 0; i < num_output_operands; i++)
+	{
+		Operand<CONFIG> *operand = input_operands[i];
+		if(operand->type == type && operand->reg_num == reg_num)
+		{
+			return operand;
+		}
+	}
+	return 0;
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::Execute()
+void Instruction<CONFIG>::SetGPR(unsigned int n, uint32_t value, uint64_t latency)
 {
+	Operand<CONFIG> *operand = SearchOutputOperand(Operand<CONFIG>::GPR, n);
+	assert(operand != 0);
+	operand->int_value = value;
+	cpu->NotifyOperandAvailability(operand, latency);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetFPR(unsigned int n, const SoftDouble& value, uint64_t latency)
+{
+	Operand<CONFIG> *operand = SearchOutputOperand(Operand<CONFIG>::FPR, n);
+	assert(operand != 0);
+	operand->float_value = value;
+	cpu->NotifyOperandAvailability(operand, latency);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetCR(uint32_t value, uint64_t latency)
+{
+	Operand<CONFIG> *operand = SearchOutputOperand(Operand<CONFIG>::CR);
+	assert(operand != 0);
+	operand->int_value = value;
+	cpu->NotifyOperandAvailability(operand, latency);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetLR(uint32_t value, uint64_t latency)
+{
+	Operand<CONFIG> *operand = SearchOutputOperand(Operand<CONFIG>::LR);
+	assert(operand != 0);
+	operand->int_value = value;
+	cpu->NotifyOperandAvailability(operand, latency);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetCTR(uint32_t value, uint64_t latency)
+{
+	Operand<CONFIG> *operand = SearchOutputOperand(Operand<CONFIG>::CTR);
+	assert(operand != 0);
+	operand->int_value = value;
+	cpu->NotifyOperandAvailability(operand, latency);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetXER(uint32_t value)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+	{
+		Operand<CONFIG> *operand = SearchOutputOperand(Operand<CONFIG>::XER);
+		assert(operand != 0);
+		operand->int_value = value;
+	}
+	else
+	{
+		cpu->SetXER(value);
+	}
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetFPSCR(uint32_t value)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+	{
+		Operand<CONFIG> *operand = SearchOutputOperand(Operand<CONFIG>::FPSCR);
+		assert(operand != 0);
+		operand->int_value = value;
+	}
+	else
+	{
+		cpu->SetFPSCR(value);
+	}
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetNIA(typename CONFIG::address_t value)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		nia = value;
+	else
+		cpu->SetNIA(value);
+}
+
+
+template <class CONFIG>
+uint32_t Instruction<CONFIG>::GetGPR(unsigned int n)
+{
+	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::GPR);
+	assert(operand != 0);
+	return operand->int_value;
+}
+
+template <class CONFIG>
+const SoftDouble& Instruction<CONFIG>::GetFPR(unsigned int n)
+{
+	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::FPR);
+	assert(operand != 0);
+	return operand->float_value;
+}
+
+template <class CONFIG>
+uint32_t Instruction<CONFIG>::GetCR()
+{
+	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::CR);
+	assert(operand != 0);
+	return operand->int_value;
+}
+
+template <class CONFIG>
+uint32_t Instruction<CONFIG>::GetLR()
+{
+	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::LR);
+	assert(operand != 0);
+	return operand->int_value;
+}
+
+template <class CONFIG>
+uint32_t Instruction<CONFIG>::GetCTR()
+{
+	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::CTR);
+	assert(operand != 0);
+	return operand->int_value;
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT8_LOAD, rd, ea, 1, this);
+	else
+		cpu->Int8Load(rd, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT16_LOAD, rd, ea, 2, this);
+	else
+		cpu->Int16Load(rd, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::SINT16_LOAD, rd, ea, 2, this);
+	else
+		cpu->SInt16Load(rd, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT32_LOAD, rd, ea, 4, this);
+	else
+		cpu->Int32Load(rd, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::FP32_LOAD, fd, ea, 4, this);
+	else
+		cpu->Fp32Load(fd, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::FP64_LOAD, fd, ea, 8, this);
+	else
+		cpu->Fp64Load(fd, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT16_LOAD_BYTE_REVERSE, rd, ea, 2, this);
+	else
+		cpu->Int16LoadByteReverse(rd, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT32_LOAD_BYTE_REVERSE, rd, ea, 4, this);
+	else
+		cpu->Int32LoadByteReverse(rd, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::IntLoadMSBFirst(unsigned int rd, typename CONFIG::address_t ea, uint32_t size)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT_LOAD_MSB, rd, ea, size, this);
+	else
+		cpu->IntLoadMSBFirst(rd, ea, size);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int8Store(unsigned int rs, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT8_STORE, rs, ea, 1, this);
+	else
+		cpu->Int8Store(rs, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT16_STORE, rs, ea, 2, this);
+	else
+		cpu->Int16Store(rs, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT32_STORE, rs, ea, 4, this);
+	else
+		cpu->Int32Store(rs, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::FP32_STORE, fs, ea, 4, this);
+	else
+		cpu->Fp32Store(fs, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::FP64_STORE, fs, ea, 8, this);
+	else
+		cpu->Fp64Store(fs, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::FP_STORE_LSW, fs, ea, 4, this);
+	else
+		cpu->FpStoreLSW(fs, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT16_STORE_BYTE_REVERSE, rs, ea, 2, this);
+	else
+		cpu->Int16StoreByteReverse(rs, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT32_STORE_BYTE_REVERSE, rs, ea, 4, this);
+	else
+		cpu->Int32StoreByteReverse(rs, ea);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size)
+{
+	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
+		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT_STORE_MSB, rs, ea, size, this);
+	else
+		cpu->IntStoreMSBFirst(rs, ea, size);
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::Execute(CPU<CONFIG> *cpu)
+{
+	operation->uop_execute(cpu, uop_num);
+}
+
+template <class CONFIG>
+MappingTable<CONFIG>::MappingTable()
+{
+	unsigned int reg_num;
+
+	for(reg_num = 0; reg_num < CONFIG::NUM_LOGICAL_REGISTERS; reg_num++)
+	{
+		mapping_table[reg_num] = reg_num;
+	}
+
+	int tag;
+
+	// WARNING! tags are negative integers (2's complement)
+	// WARNING! tag 0 is unused as it refers to logical register 0
+	// WARNING! 'tag' refers to rename register number '~tag'
+	for(tag = -1; tag >= -CONFIG::NUM_RENAME_REGISTERS; tag--)
+	{
+		free_list.Push(tag);
+	}
+}
+
+template <class CONFIG>
+MappingTable<CONFIG>::~MappingTable()
+{
+}
+
+template <class CONFIG>
+bool MappingTable<CONFIG>::Allocate(unsigned int reg_num, int& tag)
+{
+	if(free_list.Empty()) return false;
+
+	tag = mapping_table[reg_num] = free_list.Front();
+	free_list.Pop();
+
+	return true;
+}
+
+template <class CONFIG>
+int MappingTable<CONFIG>::Lookup(unsigned int reg_num)
+{
+	return mapping_table[reg_num];
+}
+
+template <class CONFIG>
+void MappingTable<CONFIG>::Free(unsigned int reg_num, int tag)
+{
+	if(mapping_table[reg_num] == tag)
+	{
+		mapping_table[reg_num] = reg_num;
+	}
+
+	free_list.Push(tag);
+}
+
+template <class CONFIG>
+unsigned int MappingTable<CONFIG>::GetNumFreeRenameRegisters() const
+{
+	return free_list.Size();
 }
 
 

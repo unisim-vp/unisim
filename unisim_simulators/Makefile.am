@@ -7,16 +7,16 @@ INCLUDE_SUBDIRS=
 # SUBDIRS += cxx
 # INCLUDE_SUBDIRS += cxx
 # endif
- 
+#  
 # if COND_cycle_level
 # SUBDIRS += cycle_level
 # INCLUDE_SUBDIRS += cycle_level
 # endif
 
-#if COND_clm
-#SUBDIRS += clm
-#INCLUDE_SUBDIRS += clm
-#endif
+if COND_clm
+SUBDIRS += clm
+INCLUDE_SUBDIRS += clm
+endif
 
 if COND_tlm
 SUBDIRS += tlm

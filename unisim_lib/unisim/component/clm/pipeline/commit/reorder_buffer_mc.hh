@@ -570,7 +570,7 @@ class ReorderBuffer : public module//, public StatisticService
 		  }
 #endif	 
 		//	    cerr << "Emulator CIA: " << hexa(emulator->GetNIA()) << endl;
-		emulator[cfg]->Step();
+		emulator[cfg]->StepOneInstruction();
 #ifdef DD_DEBUG_EMULATOR
 		if (DD_DEBUG_TIMESTAMP<timestamp())
 		  {

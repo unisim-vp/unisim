@@ -53,6 +53,14 @@ Queue<CONFIG>::~Queue()
 }
 
 template <class CONFIG>
+void Queue<CONFIG>::Clear()
+{
+	front_idx = 0;
+	back_idx = 0;
+	size = 0;
+}
+
+template <class CONFIG>
 typename CONFIG::ELEMENT& Queue<CONFIG>::operator [] (unsigned int idx)
 {
 	if(CONFIG::DEBUG && idx >= size) throw QueueException("out of range access", __FILE__, __FUNCTION__, __LINE__);

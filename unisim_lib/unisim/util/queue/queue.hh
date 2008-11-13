@@ -104,6 +104,7 @@ public:
 	bool Empty() const;
 	bool Full() const;
 	void Remove(unsigned int idx);
+	void Clear();
 
 	friend std::ostream& operator << <CONFIG>(std::ostream& os, Queue<CONFIG>& q);
 private:

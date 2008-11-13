@@ -59,6 +59,8 @@ AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
 
+UNISIM_STATIC
+
 case $host in
 	*linux*)   # linux host
 		UNISIM_CHECK_CURSES
@@ -69,6 +71,7 @@ case $host in
 esac
 
 UNISIM_CHECK_READLINE
+UNISIM_CHECK_ZLIB
 UNISIM_CHECK_LIBXML2
 UNISIM_CHECK_SYSTEMC
 

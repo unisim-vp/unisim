@@ -45,6 +45,12 @@ do
 			has_to_build="true"
 		fi
 	fi
+	if test "x$1" == "x--force";
+	then 
+		has_to_build="true"
+		is_configure_missing="true"
+		is_makefile_missing="true"
+	fi
 	message_to_display="$current_path ("
 	if test "x$has_to_build" == "xtrue";
 	then
