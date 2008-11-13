@@ -523,7 +523,7 @@ TBuiltDouble<TypeTraits>::setFloat(const FloatConversion& fcValue, StatusAndCont
                   biExponent.inc();
                   fcmMantissa.setFalseBitArray(bitSizeMantissa());
                };
-               if (!biExponent.isZero())
+               if (biExponent.isZero())
                   scfFlags.setUnderflow();
             }
             else
