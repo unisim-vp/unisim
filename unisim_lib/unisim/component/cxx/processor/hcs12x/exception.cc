@@ -45,14 +45,13 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-
-ResetException::ResetException()
+AsynchronousException::AsynchronousException()
 {
 }
 
-const char * ResetException::what () const throw ()
+const char * AsynchronousException::what () const throw ()
 {
-	return "System reset exception";
+	return "Asynchronous exception";
 }
 
 TrapException::TrapException(uint8_t trapnum)
@@ -83,16 +82,6 @@ const char * SysCallInterrupt::what () const throw ()
 	return "A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)";
 }
 
-NonMaskableXIRQInterrupt::NonMaskableXIRQInterrupt()
-{
-}
-
-const char * NonMaskableXIRQInterrupt::what () const throw ()
-{
-	return "NonMaskable XIRQ (X bit) interrupts";
-}
-
-
 NonMaskableAccessErrorInterrupt::NonMaskableAccessErrorInterrupt(ERROR_TYPE error)
 {
 	errorType = error;
@@ -111,15 +100,6 @@ const char * NonMaskableAccessErrorInterrupt::what () const throw ()
 	}
 
 	return strStm.str().c_str();
-}
-
-MaskableIbitInterrupt::MaskableIbitInterrupt()
-{
-}
-
-const char * MaskableIbitInterrupt::what () const throw ()
-{
-	return "Maskable (I bit) interrupt";
 }
 
 SpuriousInterrupt::SpuriousInterrupt()

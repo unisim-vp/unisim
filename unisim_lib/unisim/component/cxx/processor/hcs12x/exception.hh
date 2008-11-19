@@ -52,11 +52,13 @@ using std::string;
 
 class Exception : public std::exception {};
 
-// Hardware and Software reset (including COP, clock monitor, and pin)
-class ResetException : public Exception
+// Asynchronous exception group : Resets, I-bit, XIRQ and IRQ interrupts.
+// The CPU12 isn't aware of what kind of Hardware interrupt happened.
+// Only the XINT module has this ability and when the CPU12 issue a request it return the Hw-interrupt vector.
+class AsynchronousException : public Exception
 {
 public:
-	ResetException();
+	AsynchronousException();
 	virtual const char * what () const throw ();
 };
 
@@ -98,22 +100,6 @@ public:
 
 private:
 	ERROR_TYPE errorType;
-};
-
-// non-Maskable (X bit) interrupts
-class NonMaskableXIRQInterrupt : public Exception
-{
-public:
-	NonMaskableXIRQInterrupt();
-	virtual const char * what () const throw ();
-};
-
-// Maskable (I bit) interrupt
-class MaskableIbitInterrupt : public Exception
-{
-public:
-	MaskableIbitInterrupt();
-	virtual const char * what () const throw ();
 };
 
 // Spurious interrupt

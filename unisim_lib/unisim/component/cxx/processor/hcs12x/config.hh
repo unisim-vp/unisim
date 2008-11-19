@@ -79,9 +79,9 @@ struct CONFIG {
 	static const bool HAS_SYSCALL_INTERRUPT			= false;
 	static const bool HAS_SPURIOUS_INTERRUPT		= false;
 
-	//=======================================
-	//=   XINT Registers and Reset Values   =
-	//=======================================
+	//======================================================================
+	//=   XINT Registers, Reset Values and Fixed Interrupt vectors Offsets =
+	//======================================================================
 
 	static const address_t	IVBR_ADDRESS			= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
 	static const uint8_t	IVBR_RESET_VALUE		= 0xFF;		// IVBR is only one.
@@ -116,6 +116,18 @@ struct CONFIG {
 	static const address_t	INT_CFDATA7				= 0x012F;
 	static const uint8_t	INT_CFDATA7_RESET_VALUE	= 0x01;
 
+	// Fixed Interrupt vectors Offsets
+	static const uint8_t	INT_SYS_RESET_OFFSET	= 0xFE;
+	static const uint8_t	INT_ILLEGAL_ACCESS_RESET_OFFSET	= 0xFE;
+	static const uint8_t	INT_CLK_MONITOR_RESET_OFFSET	= 0xFC;
+	static const uint8_t	INT_COP_WATCHDOG_RESET_OFFSET	= 0xFA;
+	static const uint8_t	INT_TRAP_OFFSET					= 0xF8;
+	static const uint8_t	INT_SWI_OFFSET					= 0xF6;
+	static const uint8_t	INT_XIRQ_OFFSET					= 0xF4;
+	static const uint8_t	INT_IRQ_OFFSET					= 0xF2;
+	static const uint8_t	INT_RAM_ACCESS_VIOLATION_OFFSET	= 0x60;
+	static const uint8_t	INT_SYSCALL_OFFSET				= 0x12;
+
 	//==============================================================================
 	//=   MEMORY MAP (Logical Memories Offsets) and RESET VALUES OF MMC REGISTERS  =
 	//==============================================================================
@@ -146,6 +158,9 @@ struct CONFIG {
 	static const address_t RAM_HIGH_OFFSET	= 0x3FFF;
 	static const address_t FLASH_LOW_OFFSET	= 0x4000;
 	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
+
+	static const address_t MMC_LOW_ADDRESS		= 0x000A;
+	static const address_t MMC_HIGH_ADDRESS		= 0x011F;
 
 	static const address_t MMCCTL0_REG_ADDRESS	= 0x000A;
 	static const address_t MMC_MODE_REG_ADDRESS	= 0x000B;

@@ -175,9 +175,7 @@ rev.execute = {
 	 	// check asynchronous interruptions
 	 	if (cpu->HasAsynchronousInterrupt())
 		{
-			if (CONFIG::HAS_RESET && cpu->HasReset()) throw ResetException();
-			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && cpu->HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
-			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && cpu->HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
+			throw AsynchronousException();
 		}
 	 	
 	 }
@@ -261,9 +259,7 @@ revw.execute = {
 	  	// check asynchronous interruptions
 	 	if (cpu->HasAsynchronousInterrupt())
 		{
-			if (CONFIG::HAS_RESET && cpu->HasReset()) throw ResetException();
-			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && cpu->HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
-			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && cpu->HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
+			throw AsynchronousException();
 		}
 	 
 	 }
@@ -348,10 +344,9 @@ wav.execute = {
 			
 			//   Adjust PC to point at 0x3C wavr pseudo-opcode
 			cpu->setRegPC(cpu->getRegPC()-1); 
+
+			throw AsynchronousException();
 					 
-			if (CONFIG::HAS_RESET && cpu->HasReset()) throw ResetException();
-			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && cpu->HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
-			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && cpu->HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
 		}
 
 

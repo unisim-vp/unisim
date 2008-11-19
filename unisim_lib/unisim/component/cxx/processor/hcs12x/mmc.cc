@@ -44,8 +44,7 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-MMC::MMC(HC_Registers *regs) :
-	 registers(regs)
+MMC::MMC()
 {
 	reset();
 }
@@ -90,38 +89,82 @@ physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, MEMORY::MAP
 
 void MMC::reset() {
 
-	registers->write(CONFIG::MMCCTL0_REG_ADDRESS, 0);
-	registers->write(CONFIG::MMC_MODE_REG_ADDRESS, 0);
-	registers->write(CONFIG::GPAGE_REG_ADDRESS, CONFIG::GLOBAL_RESET_PAGE);
-	registers->write(CONFIG::DIRECT_REG_ADDRESS, CONFIG::DIRECT_RESET_PAGE);
-	registers->write(CONFIG::MMCCTL1_REG_ADDRESS, 0);
-	registers->write(CONFIG::RPAGE_REG_ADDRESS, CONFIG::RAM_RESET_PAGE);
-	registers->write(CONFIG::EPAGE_REG_ADDRESS, CONFIG::EEPROM_RESET_PAGE);
-	registers->write(CONFIG::PPAGE_REG_ADDRESS, CONFIG::FLASH_RESET_PAGE);
-	registers->write(CONFIG::RAMWPC_REG_ADDRESS, 0);
-	registers->write(CONFIG::RAMXGU_REG_ADDRESS, 0);
-	registers->write(CONFIG::RAMSHL_REG_ADDRESS, 0);
-	registers->write(CONFIG::RAMSHU_REG_ADDRESS, 0);
+	directSet = false;
+	write(CONFIG::MMCCTL0_REG_ADDRESS, 0);
+	write(CONFIG::MMC_MODE_REG_ADDRESS, 0);
+	write(CONFIG::GPAGE_REG_ADDRESS, CONFIG::GLOBAL_RESET_PAGE);
+	write(CONFIG::DIRECT_REG_ADDRESS, CONFIG::DIRECT_RESET_PAGE);
+	write(CONFIG::MMCCTL1_REG_ADDRESS, 0);
+	write(CONFIG::RPAGE_REG_ADDRESS, CONFIG::RAM_RESET_PAGE);
+	write(CONFIG::EPAGE_REG_ADDRESS, CONFIG::EEPROM_RESET_PAGE);
+	write(CONFIG::PPAGE_REG_ADDRESS, CONFIG::FLASH_RESET_PAGE);
+	write(CONFIG::RAMWPC_REG_ADDRESS, 0);
+	write(CONFIG::RAMXGU_REG_ADDRESS, 0);
+	write(CONFIG::RAMSHL_REG_ADDRESS, 0);
+	write(CONFIG::RAMSHU_REG_ADDRESS, 0);
 
 }
 
-uint8_t MMC::getMmcctl0 () { return registers->read(CONFIG::MMCCTL0_REG_ADDRESS); }
+uint8_t MMC::read(address_t address)
+{
+	switch (address) {
+	case CONFIG::MMCCTL0_REG_ADDRESS: return mmcctl0;
+	case CONFIG::MMC_MODE_REG_ADDRESS: return mode;
+	case CONFIG::GPAGE_REG_ADDRESS: return gpage;
+	case CONFIG::DIRECT_REG_ADDRESS: return direct;
+	case CONFIG::MMCCTL1_REG_ADDRESS: return mmcctl1;
+	case CONFIG::RPAGE_REG_ADDRESS: return rpage;
+	case CONFIG::EPAGE_REG_ADDRESS: return epage;
+	case CONFIG::PPAGE_REG_ADDRESS: return ppage;
+	case CONFIG::RAMWPC_REG_ADDRESS: return ramwpc;
+	case CONFIG::RAMXGU_REG_ADDRESS: return ramxgu;
+	case CONFIG::RAMSHL_REG_ADDRESS: return ramshl;
+	case CONFIG::RAMSHU_REG_ADDRESS: return ramshu;
+	default: return 0;
+	}
+}
 
-uint8_t MMC::getMode () { return registers->read(CONFIG::MMC_MODE_REG_ADDRESS); }
+void MMC::write(address_t address, uint8_t val)
+{
+	switch (address) {
+	case CONFIG::MMCCTL0_REG_ADDRESS: mmcctl0 = val; break;
+	case CONFIG::MMC_MODE_REG_ADDRESS: mode = val; break;
+	case CONFIG::GPAGE_REG_ADDRESS: gpage = val; break;
+	case CONFIG::DIRECT_REG_ADDRESS: {
+		if (!directSet) {
+			direct = val;
+			directSet = true;
+		}
+	} break;
+	case CONFIG::MMCCTL1_REG_ADDRESS: mmcctl1 = val;
+	case CONFIG::RPAGE_REG_ADDRESS: rpage = val;
+	case CONFIG::EPAGE_REG_ADDRESS: epage = val;
+	case CONFIG::PPAGE_REG_ADDRESS: ppage = val;
+	case CONFIG::RAMWPC_REG_ADDRESS: ramwpc = val;
+	case CONFIG::RAMXGU_REG_ADDRESS: ramxgu = val;
+	case CONFIG::RAMSHL_REG_ADDRESS: ramshl = val;
+	case CONFIG::RAMSHU_REG_ADDRESS: ramshu = val;
+	}
 
-uint8_t MMC::getMmcctl1 () { return registers->read(CONFIG::MMCCTL1_REG_ADDRESS); }
+}
 
-uint8_t MMC::getRamwpc () { return registers->read(CONFIG::RAMWPC_REG_ADDRESS); }
+uint8_t MMC::getMmcctl0 () { return mmcctl0; }
 
-uint8_t MMC::getRamxgu () { return registers->read(CONFIG::RAMXGU_REG_ADDRESS); }
+uint8_t MMC::getMode () { return mode; }
 
-uint8_t MMC::getRamshl () { return registers->read(CONFIG::RAMSHL_REG_ADDRESS); }
+uint8_t MMC::getMmcctl1 () { return mmcctl1; }
 
-uint8_t MMC::getRamshu () { return registers->read(CONFIG::RAMSHU_REG_ADDRESS); }
+uint8_t MMC::getRamwpc () { return ramwpc; }
 
-uint8_t MMC::getGpage () { return registers->read(CONFIG::GPAGE_REG_ADDRESS); }
+uint8_t MMC::getRamxgu () { return ramxgu; }
 
-uint8_t MMC::getDirect () { return registers->read(CONFIG::DIRECT_REG_ADDRESS); }
+uint8_t MMC::getRamshl () { return ramshl; }
+
+uint8_t MMC::getRamshu () { return ramshu; }
+
+uint8_t MMC::getGpage () { return gpage; }
+
+uint8_t MMC::getDirect () { return direct; }
 physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
 
 	uint8_t _direct = getDirect ();
@@ -136,7 +179,7 @@ physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
 
 }
 
-uint8_t MMC::getRpage () { return registers->read(CONFIG::RPAGE_REG_ADDRESS); }
+uint8_t MMC::getRpage () { return rpage; }
 physical_address_t MMC::getRamAddress(address_t logicalAddress) {
 
 	uint8_t _rpage = getRpage();
@@ -158,7 +201,7 @@ physical_address_t MMC::getRamAddress(address_t logicalAddress) {
 	}
 }
 
-uint8_t MMC::getEpage () { return registers->read(CONFIG::EPAGE_REG_ADDRESS); }
+uint8_t MMC::getEpage () { return epage; }
 physical_address_t MMC::getEepromAddress(address_t logicalAddress) {
 
 	uint8_t _epage = getEpage();
@@ -178,8 +221,8 @@ physical_address_t MMC::getEepromAddress(address_t logicalAddress) {
 	}
 }
 
-uint8_t MMC::getPpage () { return registers->read(CONFIG::PPAGE_REG_ADDRESS); }
-void MMC::setPpage(uint8_t page) { registers->write(CONFIG::PPAGE_REG_ADDRESS, page); }
+uint8_t MMC::getPpage () { return ppage; }
+void MMC::setPpage(uint8_t page) { ppage = page; }
 
 physical_address_t MMC::getFlashAddress(address_t logicalAddress) {
 

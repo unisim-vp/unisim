@@ -41,7 +41,6 @@
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
-#include <unisim/component/cxx/processor/hcs12x/hc_registers.hh>
 
 namespace unisim {
 namespace component {
@@ -59,7 +58,7 @@ class MMC
 {
 public:
 
-    MMC(HC_Registers *regs);
+    MMC();
     void reset();
 
 	physical_address_t getPhysicalAddress(address_t logicalAddress, MEMORY::MAP type, bool isGlobal);
@@ -83,13 +82,28 @@ public:
 	physical_address_t getEepromAddress(address_t logicalAddress);
 	physical_address_t getFlashAddress(address_t logicalAddress);
 
+	uint8_t read(address_t address);
+	void write(address_t address, uint8_t val);
+
 private:
 	//=============================================
 	//=            MMC REGISTERS                  =
 	//=============================================
 
-	HC_Registers	*registers;		// registers is a reference to registers address space
+    uint8_t mmcctl0;
+	uint8_t mode;
+    uint8_t gpage;
+    uint8_t direct;
+	uint8_t mmcctl1;
+    uint8_t rpage;
+    uint8_t epage;
+    uint8_t ppage;
+	uint8_t ramwpc;
+	uint8_t ramxgu;
+	uint8_t ramshl;
+	uint8_t ramshu;
 
+	bool directSet;
 
 };
 

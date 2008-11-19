@@ -121,14 +121,13 @@ CPU::~CPU()
 }
 
 void CPU::setMMC(MMC *_mmc) { mmc = _mmc; }
-void CPU::setRegisters(HC_Registers *regs) { registers = regs; }
 
 void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 {
 
 	setRegPC(cpu_address);
 
-	registers->write(CONFIG::PPAGE_REG_ADDRESS, page);
+	mmc->write(CONFIG::PPAGE_REG_ADDRESS, page);
 
 }
 
@@ -305,18 +304,14 @@ uint8_t CPU::Step()
 			if(memory_access_reporting_import)
 				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
 
-
 		if(HasAsynchronousInterrupt())
-		{	// DO NOT change the order of interrupt checking ( Reset => Hw Interrupts => Sw Interrupts )
-			if (CONFIG::HAS_RESET && HasReset()) throw ResetException();
-			if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) throw NonMaskableXIRQInterrupt();
-			if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup()) throw MaskableIbitInterrupt();
+		{
+			throw AsynchronousException();
 		}
+
 	}
-	catch (ResetException& exc) { HandleException(exc); }
-	catch (NonMaskableXIRQInterrupt& exc) { HandleException(exc); }
+	catch (AsynchronousException& exc) { HandleException(exc); }
 	catch (NonMaskableAccessErrorInterrupt& exc) { HandleException(exc); }
-	catch (MaskableIbitInterrupt& exc) { HandleException(exc); }
 	catch (NonMaskableSWIInterrupt& exc) { HandleException(exc); }
 	catch (TrapException& exc) { HandleException(exc); }
 	catch (SysCallInterrupt& exc) { HandleException(exc); }
@@ -389,9 +384,9 @@ void CPU::queueFlush(uint8_t nByte)
 uint8_t CPU::memRead8(physical_address_t addr) {
 
 	uint8_t data;
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes
+	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
 	{
-		data = registers->read(addr);
+		data = mmc->read(addr);
 	}
 	else
 	{
@@ -403,9 +398,9 @@ uint8_t CPU::memRead8(physical_address_t addr) {
 uint16_t CPU::memRead16(physical_address_t addr) {
 
 	uint16_t data;
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes
+	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
 	{
-		data = (uint16_t) (registers->read(addr) << 8) || registers->read(addr+1);
+		data = (uint16_t) (mmc->read(addr) << 8) || mmc->read(addr+1);
 	}
 	else
 	{
@@ -419,9 +414,9 @@ uint16_t CPU::memRead16(physical_address_t addr) {
 
 void CPU::memWrite8(physical_address_t addr, uint8_t val) {
 
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes
+	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
 	{
-		registers->write(addr, val);
+		mmc->write(addr, val);
 	}
 	else
 	{
@@ -433,10 +428,10 @@ void CPU::memWrite16(physical_address_t addr, uint16_t val) {
 
 	val = Host2BigEndian(val);
 
-	if (addr < CONFIG::REGISTERS_SPACE_SIZE) // Register address space is 2 KBytes
+	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
 	{
-		registers->write(addr, val >> 8);
-		registers->write(addr+1, val);
+		mmc->write(addr, val >> 8);
+		mmc->write(addr+1, val);
 	}
 	else
 	{
@@ -447,21 +442,6 @@ void CPU::memWrite16(physical_address_t addr, uint16_t val) {
 //=====================================================================
 //=                    Exception handling methods                     =
 //=====================================================================
-
-void CPU::AckAsynchronousInterrupt()
-{
-	asynchronous_interrupt = false;
-
-	if (CONFIG::HAS_RESET)  asynchronous_interrupt |= reset;
-	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT)  asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
-	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT) asynchronous_interrupt |= maskableIbit_interrupt;
-
-}
-
-void CPU::ReqAsynchronousInterrupt()
-{
-	asynchronous_interrupt = true;
-}
 
 // compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
 void CPU::PrepareInterrupt() {
@@ -491,15 +471,43 @@ void CPU::PrepareInterrupt() {
 
 }
 
-// Hardware and Software reset
-void CPU::HandleException(const ResetException& exc)
+// AsynchronousException
+void CPU::HandleException(const AsynchronousException& exc)
 {
-	address_t resetAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+	uint8_t newIPL = ccr->getIPL();
+	address_t asyncVector = GetIntVector(newIPL);
+
+	if (CONFIG::HAS_RESET && HasReset()) HandleResetException(asyncVector);
+	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) HandleNonMaskableXIRQException(asyncVector, newIPL);
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup()) HandleMaskableIbitException(asyncVector, newIPL);
+
+	// It is necessary to call AckAsynchronousInterrupt() if XIRQ and I-bit interrupt are masked
+	AckAsynchronousInterrupt();
+}
+
+void CPU::AckAsynchronousInterrupt()
+{
+	asynchronous_interrupt = false;
+
+	if (CONFIG::HAS_RESET)  asynchronous_interrupt |= reset;
+	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT)  asynchronous_interrupt |= nonMaskableXIRQ_interrupt;
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT) asynchronous_interrupt |= maskableIbit_interrupt;
+
+}
+
+void CPU::ReqAsynchronousInterrupt()
+{
+	asynchronous_interrupt = true;
+}
+
+// Hardware and Software reset
+void CPU::HandleResetException(address_t resetVector)
+{
 
 	this->Reset();
 	// clear U-bit for CPU12XV2
 	ccr->clrIPL();
-	SetEntryPoint(0, resetAddress);
+	SetEntryPoint(0, memRead16(resetVector));
 	AckReset();
 }
 
@@ -512,16 +520,11 @@ void CPU::AckReset()
 void CPU::ReqReset()
 {
 	reset = true;
-	ReqAsynchronousInterrupt();
 }
 
 // NonMaskable XIRQ (X bit) interrupts
-void CPU::HandleException(const NonMaskableXIRQInterrupt& exc)
+void CPU::HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 {
-	address_t xirqAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
-
-	uint8_t newIPL; // TODO: get newIPL from Interrupt module XINT
-
 	PrepareInterrupt();
 
 	ccr->setI();
@@ -529,7 +532,7 @@ void CPU::HandleException(const NonMaskableXIRQInterrupt& exc)
 	ccr->setIPL(newIPL);
 	ccr->setX();
 
-	SetEntryPoint(0, xirqAddress);
+	SetEntryPoint(0, memRead16(xirqVector));
 	AckXIRQInterrupt();
 }
 
@@ -541,24 +544,19 @@ void CPU::AckXIRQInterrupt()
 
 void CPU::ReqXIRQInterrupt()
 {
-	nonMaskableXIRQ_interrupt = true;
-	ReqAsynchronousInterrupt();
+	if (ccr->getX() == 0) nonMaskableXIRQ_interrupt = true;
 }
 
 // Maskable (I bit) interrupt
-void CPU::HandleException(const MaskableIbitInterrupt& exc)
+void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 {
-	address_t ibitAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
-
-	uint8_t newIPL; // TODO: get newIPL from Interrupt module XINT
-
 	PrepareInterrupt();
 
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 	ccr->setIPL(newIPL);
 
-	SetEntryPoint(0, ibitAddress);
+	SetEntryPoint(0, memRead16(ibitVector));
 	AckIbitInterrupt();
 }
 
@@ -570,73 +568,151 @@ void CPU::AckIbitInterrupt()
 
 void CPU::ReqIbitInterrupt()
 {
-	maskableIbit_interrupt = true;
-	ReqAsynchronousInterrupt();
+	if (ccr->getI() == 0) maskableIbit_interrupt = true;
 }
 
 // Unimplemented opcode trap
 void CPU::HandleException(const TrapException& exc)
 {
-	address_t trapAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+	ReqTrapInterrupt();
+
+	uint8_t newIPL = ccr->getIPL();
+	address_t trapVector = GetIntVector(newIPL);
 
 	PrepareInterrupt();
 
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(0, trapAddress);
+	SetEntryPoint(0, memRead16(trapVector));
+
+	AckTrapInterrupt();
+}
+
+void CPU::AckTrapInterrupt()
+{
+	trap_interrupt = false;
+}
+
+void CPU::ReqTrapInterrupt()
+{
+	trap_interrupt = true;
 }
 
 // A software interrupt instruction (SWI) or BDM vector request
 void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 {
-	address_t swiAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+	ReqSWIInterrupt();
+
+	uint8_t newIPL = ccr->getIPL();
+
+	address_t swiVector = GetIntVector(newIPL);
 
 	PrepareInterrupt();
 
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(0, swiAddress);
+	SetEntryPoint(0, memRead16(swiVector));
+
+	AckSWIInterrupt();
+}
+
+void CPU::AckSWIInterrupt()
+{
+	nonMascableSWI_interrupt = false;
+}
+
+void CPU::ReqSWIInterrupt()
+{
+	nonMascableSWI_interrupt = false;
 }
 
 // A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
 void CPU::HandleException(const SysCallInterrupt& exc)
 {
-	address_t sysCallAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+	ReqSysInterrupt();
+
+	uint8_t newIPL = ccr->getIPL();
+
+	address_t sysCallVector = GetIntVector(newIPL);
 
 	PrepareInterrupt();
 
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(0, sysCallAddress);
+	SetEntryPoint(0, memRead16(sysCallVector));
+
+	AckSysInterrupt();
+}
+
+void CPU::AckSysInterrupt()
+{
+	syscall_interrupt = false;
+}
+
+void CPU::ReqSysInterrupt()
+{
+	syscall_interrupt = true;
 }
 
 // A spurious interrupt
 void CPU::HandleException(const SpuriousInterrupt& exc)
 {
-	address_t spuriousAddress = GetIntVector(); // TODO: GetIntVector is not finalized yet
+	ReqSpuriousInterrupt();
+
+	uint8_t newIPL = ccr->getIPL();
+
+	address_t spuriousVector = GetIntVector(newIPL); // TODO: GetIntVector is not finalized yet
 
 	PrepareInterrupt();
 
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(0, spuriousAddress);
+	SetEntryPoint(0, memRead16(spuriousVector));
+
+	AckSpuriousInterrupt();
+}
+
+void CPU::AckSpuriousInterrupt()
+{
+	spurious_interrupt = false;
+}
+
+void CPU::ReqSpuriousInterrupt()
+{
+	spurious_interrupt = true;
 }
 
 // NonMaskable Access Error interrupts
 void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
 {
-	//TODO: to understand more and finalize (look to XINT documentation)
-	PrepareInterrupt();
+	ReqAccessErrorInterrupt();
 
-	if(logger_import)
-		(*logger_import) << DebugError << "Processor exception :" << exc.what() << Endl << EndDebugError;
+	uint8_t newIPL = ccr->getIPL();
 
-	Stop(-1);
+	address_t accessErrorVector = GetIntVector(newIPL);
+
+	SetEntryPoint(0, memRead16(accessErrorVector));
+
+	AckAccessErrorInterrupt();
+
 }
+
+void CPU::AckAccessErrorInterrupt()
+{
+	nonMaskableAccessError_interrupt = false;
+	AckAsynchronousInterrupt();
+}
+
+void CPU::ReqAccessErrorInterrupt()
+{
+	nonMaskableAccessError_interrupt = true;
+	ReqAsynchronousInterrupt();
+}
+
 
 	//======================================================================
 	//=                  Registers Acces Routines                          =
