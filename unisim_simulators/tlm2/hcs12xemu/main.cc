@@ -46,7 +46,6 @@
 
 // *************
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
-#include <unisim/component/cxx/processor/hcs12x/hc_registers.hh>
 // *************
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
@@ -115,7 +114,6 @@ typedef unisim::component::tlm2::interconnect::generic_router::Router<> ROUTER;
 
 
 using unisim::component::cxx::processor::hcs12x::MMC;
-using unisim::component::cxx::processor::hcs12x::HC_Registers;
 
 using namespace std;
 
@@ -295,13 +293,11 @@ int sc_main(int argc, char *argv[])
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - 68HCS12X processor
-	HC_Registers *hc_registers = new HC_Registers();
 
-	MMC *mmc = 	new MMC(hc_registers);
+	MMC *mmc = 	new MMC();
 
 	CPU *cpu =new CPU("cpu");
 	cpu->setMMC(mmc);
-	cpu->setRegisters(hc_registers);
 
 	//  - tlm2 router
 	ROUTER	*router = new ROUTER("router");
@@ -361,8 +357,13 @@ int sc_main(int argc, char *argv[])
 	//  - Router
 	unisim::kernel::service::VariableBase *var = ServiceManager::GetParameter("router.cycle_time");
 	*var = fsb_cycle_time;
+
 	var = ServiceManager::GetParameter("router.mapping_0");
-	*var = "range_start=\"0x0000\" range_end=\"0x800000\" output_port=\"0\""; // The 8Mo of memory are supposed in one bank
+	*var = "range_start=\"0x000121\" range_end=\"0x00012F\" output_port=\"0\""; // S12XINT
+
+	var = ServiceManager::GetParameter("router.mapping_1");
+	*var = "range_start=\"0x000800\" range_end=\"0x7FFFFF\" output_port=\"1\""; // RAM-EEPROM-FLASH
+
 	var = ServiceManager::GetParameter("router.verbose_all");
  	*var = true;
 
@@ -407,8 +408,12 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 
 	cpu->socket(router->targ_socket);
-	router->init_socket(memory->slave_sock);
+	cpu->toXINT(s12xint->fromCPU_Target);
 	s12xint->toCPU_Initiator(cpu->interruptTarget);
+
+	// This order is mandatory (see the memoryMapping)
+	router->init_socket(s12xint->slave_socket);
+	router->init_socket(memory->slave_sock);
 
 //	cpu->socket(memory->slave_sock);
 
@@ -528,7 +533,6 @@ int sc_main(int argc, char *argv[])
 	}
 
 	if (mmc) { delete mmc; mmc = NULL; }
-	if (hc_registers) { delete hc_registers; hc_registers = NULL; }
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
