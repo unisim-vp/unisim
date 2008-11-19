@@ -45,10 +45,10 @@
 
 #include <systemc.h>
 #include "tlm_utils/simple_initiator_socket.h"
+#include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_target_socket.h"
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
-#include <unisim/component/cxx/processor/hcs12x/hc_registers.hh>
 #include <unisim/kernel/service/service.hh>
 
 namespace unisim {
@@ -59,7 +59,6 @@ namespace hcs12x {
 
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
-using unisim::component::cxx::processor::hcs12x::HC_Registers;
 using unisim::kernel::service::Object;
 
 
@@ -70,32 +69,37 @@ public:
 	// to connect to CPU
 	tlm_utils::simple_initiator_socket<XINT> toCPU_Initiator;
 
-/*
-	// receive I-bit interrupts
-	tlm_utils::multi_passthrough_target_socket<XINT> fromIbit_Target;
+	// from CPU
+	tlm_utils::simple_target_socket<XINT> fromCPU_Target;
 
-	// receive Reset Interrupt
-	tlm_utils::multi_passthrough_target_socket<XINT> fromReset_Target;
-
-	// receive XIRQ Interrupts.
-	tlm_utils::simple_initiator_socket<XINT> fromXIRQ_Target;
-*/
+	// interface with bus
+	tlm_utils::simple_target_socket<XINT> slave_socket;
 
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
 
+	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+
 	void Run(); // Priority Decoder and Interrupt selection
 
 	void reset();
-	void setRegisters(HC_Registers *regs) { registers = regs; }
+
 	void getCFDATA(uint8_t data[]);
 	address_t getIntVector(uint8_t index);
+
+	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 protected:
 
 private:
 
-	HC_Registers *registers;
+	void write(address_t address, uint8_t value);
+	void read(address_t address, uint8_t &value);
+
+	uint8_t ivbr;
+	uint8_t	int_xgprio;
+	uint8_t	int_cfaddr;
+	uint8_t	int_cfdata[8];
 
 public:
 
@@ -103,7 +107,17 @@ public:
 	//=              Interrupt Vectors and Access Routines                =
 	//=====================================================================
 
-	uint8_t getIVBR() { return registers->read(CONFIG::IVBR_ADDRESS); }
+	uint8_t getIVBR();
+	void setIVBR(uint8_t value);
+
+	uint8_t	getINT_XGPRIO();
+	void setINT_XGPRIO(uint8_t value);
+
+	uint8_t	getINT_CFADDR();
+	void setINT_CFADDR(uint8_t value);
+
+	uint8_t	getINT_CFDATA(uint8_t index);
+	void setINT_CFDATA(uint8_t index, uint8_t value);
 
 /*
 	address_t get_SysReset_Vector() { return 0xFFFE; }
@@ -115,6 +129,7 @@ public:
 	address_t get_SWI_Vector() { return (address_t) (getIVBR() << 8) + 0xF6 ; }
 	address_t get_XIRQ_Vector() { return (address_t) (getIVBR() << 8) + 0xF4 ; }
 	address_t get_IRQEN_Vector() { return (address_t) (getIVBR() << 8) + 0xF2 ; }
+
 	address_t get_RTI_Vector() { return (address_t) (getIVBR() << 8) + 0xF0 ; } // Real Time Interrupt Vector
 	address_t get_ECT_Ch0_Vector() { return (address_t) (getIVBR() << 8) + 0xEE ; } // Enhanced Capture Timer Channel 0
 	address_t get_ECT_Ch1_Vector() { return (address_t) (getIVBR() << 8) + 0xEC ; } // Enhanced Capture Timer Channel 1

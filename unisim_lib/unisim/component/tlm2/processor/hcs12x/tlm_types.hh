@@ -32,7 +32,7 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
- 
+
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_TLM_TYPES_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_TLM_TYPES_HH__
 
@@ -48,19 +48,15 @@ namespace hcs12x {
 
 using unisim::component::cxx::processor::hcs12x::address_t;
 
-	struct XINT_READ_CMD_T {
-		uint8_t ipl;
-	} ;
-
-	struct XINT_WRITE_CMD_T {
+	struct INT_TRANS_T {
 		uint8_t ipl;
 		address_t vectorAddress;
 	} ;
-		
+
 } // end of namespace hcs12x
 } // end of namespace processor
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
-	
+
 #endif /*__UNISIM_COMPONENT_TLM2_PROCESSOR_TLM_TYPES_HH__*/

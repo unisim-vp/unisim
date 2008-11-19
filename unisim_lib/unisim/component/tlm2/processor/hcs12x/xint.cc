@@ -32,6 +32,8 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
+#include <assert.h>
+
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
@@ -43,6 +45,9 @@ namespace hcs12x {
 
 XINT::XINT(const sc_module_name& name, Object *parent) {
 
+	fromCPU_Target.register_b_transport(this, &XINT::b_transport);
+	slave_socket.register_b_transport(this, &XINT::read_write);
+
 	SC_HAS_PROCESS(XINT);
 
 	SC_THREAD(Run);
@@ -52,30 +57,16 @@ XINT::~XINT() {
 
 }
 
-void XINT::Run() {
+void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
+{
+	// This method is called to compute the interrupt vector based on currentIPL and issued interrupt (Hw/Sw)
 
-	tlm::tlm_generic_payload* trans = new tlm::tlm_generic_payload;
-	sc_time delay = sc_time(SC_ZERO, SC_NS);
+	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
 
-	XINT_READ_CMD_T buffer;
+	uint8_t currentIPL = buffer->ipl;
 
-	while (1) {
-		// Get from CPU the current IPL
-		trans->set_command( tlm::TLM_READ_COMMAND );
-		trans->set_address( 0 );
-		trans->set_data_ptr( (unsigned char *) &buffer );
+	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 
-		trans->set_data_length(sizeof(XINT_READ_CMD_T));
-		trans->set_streaming_width(sizeof(XINT_READ_CMD_T));
-
-		trans->set_byte_enable_ptr( 0 );
-		trans->set_dmi_allowed( false );
-		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-		toCPU_Initiator->b_transport( *trans, delay );
-
-		wait(sc_time(rand()%100,SC_NS));
-	}
 /*
 	uint8_t int_cfdata[8];
 	uint8_t cpuPriority = 0, xgatePriority = 0;
@@ -107,6 +98,26 @@ void XINT::Run() {
 
 }
 
+void XINT::Run()
+{
+	// This thread is waked-up by any hardware interrupt
+
+	/* TODO:
+	 *  Check which interrupt if (reset) setIVBR(0xFF)
+	 */
+	tlm::tlm_generic_payload* trans = new tlm::tlm_generic_payload;
+	sc_time delay = sc_time(1, SC_NS);
+
+	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+	toCPU_Initiator->b_transport( *trans, delay );
+
+	if (trans->is_response_error() )
+		SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
+
+	wait();
+}
+
 
 address_t XINT::getIntVector(uint8_t index) {
 
@@ -115,9 +126,8 @@ address_t XINT::getIntVector(uint8_t index) {
 	return 0;
 }
 
-void XINT::getCFDATA(uint8_t data[]) {
-
-	uint8_t int_cfaddr = registers->read(CONFIG::INT_CFADDR);
+void XINT::getCFDATA(uint8_t data[])
+{
 
 	if (int_cfaddr == 0) {
 		for (uint8_t i=0; i<8; i++) {
@@ -125,26 +135,93 @@ void XINT::getCFDATA(uint8_t data[]) {
 		}
 	} else {
 		for (uint8_t i=0; i<8; i++) {
-			data[i] = registers->read(CONFIG::INT_CFDATA0 + i);
+			data[i] = int_cfdata[i];
 		}
 	}
 }
 
 void XINT::reset() {
 
-	registers->write(CONFIG::IVBR_ADDRESS, CONFIG::IVBR_RESET_VALUE);
-	registers->write(CONFIG::INT_XGPRIO, CONFIG::INT_XGPRIO_RESET_VALUE);
-	registers->write(CONFIG::INT_CFADDR, CONFIG::INT_CFADDR_RESET_VALUE);
-	registers->write(CONFIG::INT_CFDATA0, CONFIG::INT_CFDATA0_RESET_VALUE);
-	registers->write(CONFIG::INT_CFDATA1, CONFIG::INT_CFDATA1_RESET_VALUE);
-	registers->write(CONFIG::INT_CFDATA2, CONFIG::INT_CFDATA2_RESET_VALUE);
-	registers->write(CONFIG::INT_CFDATA3, CONFIG::INT_CFDATA3_RESET_VALUE);
-	registers->write(CONFIG::INT_CFDATA4, CONFIG::INT_CFDATA4_RESET_VALUE);
-	registers->write(CONFIG::INT_CFDATA5, CONFIG::INT_CFDATA5_RESET_VALUE);
-	registers->write(CONFIG::INT_CFDATA6, CONFIG::INT_CFDATA6_RESET_VALUE);
-	registers->write(CONFIG::INT_CFDATA7, CONFIG::INT_CFDATA7_RESET_VALUE);
-
+	write(CONFIG::IVBR_ADDRESS, CONFIG::IVBR_RESET_VALUE);
+	write(CONFIG::INT_XGPRIO, CONFIG::INT_XGPRIO_RESET_VALUE);
+	write(CONFIG::INT_CFADDR, CONFIG::INT_CFADDR_RESET_VALUE);
+	write(CONFIG::INT_CFDATA0, CONFIG::INT_CFDATA0_RESET_VALUE);
+	write(CONFIG::INT_CFDATA1, CONFIG::INT_CFDATA1_RESET_VALUE);
+	write(CONFIG::INT_CFDATA2, CONFIG::INT_CFDATA2_RESET_VALUE);
+	write(CONFIG::INT_CFDATA3, CONFIG::INT_CFDATA3_RESET_VALUE);
+	write(CONFIG::INT_CFDATA4, CONFIG::INT_CFDATA4_RESET_VALUE);
+	write(CONFIG::INT_CFDATA5, CONFIG::INT_CFDATA5_RESET_VALUE);
+	write(CONFIG::INT_CFDATA6, CONFIG::INT_CFDATA6_RESET_VALUE);
+	write(CONFIG::INT_CFDATA7, CONFIG::INT_CFDATA7_RESET_VALUE);
 }
+
+void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
+{
+	tlm::tlm_command cmd = trans.get_command();
+	sc_dt::uint64 address = trans.get_address();
+	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
+	unsigned int len = trans.get_data_length();
+	unsigned char* byt = trans.get_byte_enable_ptr();
+	unsigned int wid = trans.get_streaming_width();
+
+	if (cmd == tlm::TLM_READ_COMMAND) {
+		read((address_t) address, *data_ptr);
+	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
+		write((address_t) address, *data_ptr);
+	}
+
+	trans.set_response_status( tlm::TLM_OK_RESPONSE );
+}
+
+void XINT::write(address_t address, uint8_t value)
+{
+	switch (address)
+	{
+		case CONFIG::IVBR_ADDRESS: setIVBR(value); break;
+		case CONFIG::INT_XGPRIO: setINT_XGPRIO(value); break;
+		case CONFIG::INT_CFADDR: setINT_CFADDR(value); break;
+		case CONFIG::INT_CFDATA0: setINT_CFDATA(0, value); break;
+		case CONFIG::INT_CFDATA1: setINT_CFDATA(1, value); break;
+		case CONFIG::INT_CFDATA2: setINT_CFDATA(2, value); break;
+		case CONFIG::INT_CFDATA3: setINT_CFDATA(3, value); break;
+		case CONFIG::INT_CFDATA4: setINT_CFDATA(4, value); break;
+		case CONFIG::INT_CFDATA5: setINT_CFDATA(5, value); break;
+		case CONFIG::INT_CFDATA6: setINT_CFDATA(6, value); break;
+		case CONFIG::INT_CFDATA7: setINT_CFDATA(7, value); break;
+		default: ;
+	}
+}
+
+void XINT::read(address_t address, uint8_t &value)
+{
+	switch (address)
+	{
+		case CONFIG::IVBR_ADDRESS: value = getIVBR();
+		case CONFIG::INT_XGPRIO: value = getINT_XGPRIO();;
+		case CONFIG::INT_CFADDR: value = getINT_CFADDR();
+		case CONFIG::INT_CFDATA0: value = getINT_CFDATA(0);
+		case CONFIG::INT_CFDATA1: value = getINT_CFDATA(1);
+		case CONFIG::INT_CFDATA2: value = getINT_CFDATA(2);
+		case CONFIG::INT_CFDATA3: value = getINT_CFDATA(3);
+		case CONFIG::INT_CFDATA4: value = getINT_CFDATA(4);
+		case CONFIG::INT_CFDATA5: value = getINT_CFDATA(5);
+		case CONFIG::INT_CFDATA6: value = getINT_CFDATA(6);
+		case CONFIG::INT_CFDATA7: value = getINT_CFDATA(7);
+		default: value = 0;
+	}
+}
+
+uint8_t XINT::getIVBR() { return ivbr; }
+void XINT::setIVBR(uint8_t value) { ivbr = value; }
+
+uint8_t	XINT::getINT_XGPRIO() { return int_xgprio; }
+void XINT::setINT_XGPRIO(uint8_t value) { int_xgprio = value; }
+
+uint8_t	XINT::getINT_CFADDR() { return int_cfaddr; }
+void XINT::setINT_CFADDR(uint8_t value) { int_cfaddr = value; }
+
+uint8_t	XINT::getINT_CFDATA(uint8_t index) { assert(index < 8); return int_cfdata[index]; }
+void XINT::setINT_CFDATA(uint8_t index, uint8_t value) { assert(index < 8); int_cfdata[index] = value; }
 
 } // end of namespace hcs12x
 } // end of namespace processor
