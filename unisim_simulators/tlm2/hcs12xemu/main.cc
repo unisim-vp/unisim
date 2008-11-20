@@ -122,6 +122,7 @@ using unisim::util::garbage_collector::GarbageCollector;
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
+using unisim::component::tlm2::processor::hcs12x::INT_GEN;
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::debug::symbol_table::SymbolTable;
@@ -307,6 +308,8 @@ int sc_main(int argc, char *argv[])
 	// - Interrupt controler
 	XINT *s12xint = new XINT("s12xint");
 
+	INT_GEN *int_gen = new INT_GEN("INT_GEN");
+
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
@@ -409,13 +412,22 @@ int sc_main(int argc, char *argv[])
 
 	cpu->socket(router->targ_socket);
 	cpu->toXINT(s12xint->fromCPU_Target);
-	s12xint->toCPU_Initiator(cpu->interruptTarget);
+
+	sc_signal<bool>  interruptReq;
+	s12xint->toCPU_Initiator(interruptReq);
+	cpu->interruptRequest(interruptReq);
+
+	sc_signal<bool>  gen_interruptReq[128];
+	for (int i=0; i<128; i++) {
+		int_gen->intReq[i](gen_interruptReq[i]);
+
+		s12xint->interrupt_request(gen_interruptReq[i]);
+	}
 
 	// This order is mandatory (see the memoryMapping)
 	router->init_socket(s12xint->slave_socket);
 	router->init_socket(memory->slave_sock);
 
-//	cpu->socket(memory->slave_sock);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -452,8 +464,6 @@ int sc_main(int argc, char *argv[])
 		((Elf32Loader *) loader)->memory_import >> memory->memory_export;
 		((Elf32Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	}
-
-//	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 
 	if(inline_debugger)
 	{
