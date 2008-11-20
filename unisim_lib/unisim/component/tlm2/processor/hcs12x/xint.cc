@@ -109,9 +109,13 @@ void XINT::Run()
 		/* TODO:
 		 *  Check which interrupt if (reset) setIVBR(0xFF)
 		 */
-
-
-		cout << "HAS interrupt \n";
+/*
+		for (int index=0; index < 128; index++) {
+			if (interrupt_request[index].event()) {
+				cout << "HAS interrupt on => " << index << "\n";
+			}
+		}
+*/
 
 		toCPU_Initiator = true;
 	}

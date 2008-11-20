@@ -86,8 +86,9 @@ public:
 	virtual ~INT_GEN() {};
 
 	void Run() {
-/*
+
 		int index;
+/*
 		while (1) {
 			wait(sc_time(10,SC_NS));
 			index = rand() % 128;
