@@ -67,7 +67,6 @@ HCS12X(const sc_module_name& name, Object *parent) :
 
 	sc_module(name),
 	CPU(name, parent),
-	interruptTarget("interrupt"),
 	cpu_cycle_time(),
 	bus_cycle_time(),
 	cpu_time(),
@@ -90,11 +89,13 @@ HCS12X(const sc_module_name& name, Object *parent) :
 	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands)
 {
 
-	interruptTarget.register_b_transport(this, &HCS12X::b_transport);
-
 	SC_HAS_PROCESS(HCS12X);
 
+	SC_THREAD(AsyncIntThread);
+	sensitive << interruptRequest;
+
 	SC_THREAD(Run);
+
 }
 
 
@@ -430,13 +431,15 @@ void HCS12X::BusRead(physical_address_t addr, void *buffer, uint32_t size)
 
 }
 
-void HCS12X::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
+void HCS12X::AsyncIntThread()
 {
 	// The XINT wake-up the CPU to handle asynchronous interrupt
 
-	ReqAsynchronousInterrupt();
+	while (true) {
+		wait();
 
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
+		ReqAsynchronousInterrupt();
+	}
 
 }
 

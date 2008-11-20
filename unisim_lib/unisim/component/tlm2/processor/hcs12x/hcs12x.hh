@@ -83,8 +83,8 @@ public:
 	// Initiator socket
 	tlm_utils::simple_initiator_socket<HCS12X> socket;
 
-	// target socket: interrupt
-	tlm_utils::simple_target_socket<HCS12X> interruptTarget;
+	// wake-up request from XINT
+	sc_in<bool> interruptRequest;
 
 	// Initiator
 	tlm_utils::simple_initiator_socket<HCS12X> toXINT;
@@ -131,7 +131,7 @@ public:
 	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size);
 	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size);
 
-	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+	void AsyncIntThread();
 
 private:
 	void Synchronize();

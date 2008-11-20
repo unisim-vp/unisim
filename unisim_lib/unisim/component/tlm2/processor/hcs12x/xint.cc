@@ -51,6 +51,7 @@ XINT::XINT(const sc_module_name& name, Object *parent) {
 	SC_HAS_PROCESS(XINT);
 
 	SC_THREAD(Run);
+	sensitive << interrupt_request;
 }
 
 XINT::~XINT() {
@@ -59,7 +60,7 @@ XINT::~XINT() {
 
 void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
-	// This method is called to compute the interrupt vector based on currentIPL and issued interrupt (Hw/Sw)
+	// This method is called to compute the interrupt vector based on currentIPL and issued not CPU interrupt
 
 	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
 
@@ -100,22 +101,21 @@ void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 void XINT::Run()
 {
-	// This thread is waked-up by any hardware interrupt
+	// This thread is waked-up by any not CPU interrupt
 
-	/* TODO:
-	 *  Check which interrupt if (reset) setIVBR(0xFF)
-	 */
-	tlm::tlm_generic_payload* trans = new tlm::tlm_generic_payload;
-	sc_time delay = sc_time(1, SC_NS);
+	while (true) {
+		wait();
 
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+		/* TODO:
+		 *  Check which interrupt if (reset) setIVBR(0xFF)
+		 */
 
-	toCPU_Initiator->b_transport( *trans, delay );
 
-	if (trans->is_response_error() )
-		SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
+		cout << "HAS interrupt \n";
 
-	wait();
+		toCPU_Initiator = true;
+	}
+
 }
 
 
@@ -160,9 +160,11 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
+/*
 	unsigned int len = trans.get_data_length();
 	unsigned char* byt = trans.get_byte_enable_ptr();
 	unsigned int wid = trans.get_streaming_width();
+*/
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
 		read((address_t) address, *data_ptr);

@@ -61,19 +61,74 @@ using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::service::Object;
 
+class INT_GEN : public sc_module
+{
+public:
+/*
+ * 0xFFFE				: pin reset, power-on reset, low-voltage reset, illegal address reset
+ * 0xFFFC				: clock monitor reset
+ * 0xFFFA				: COP watchdog reset
+ * (ivbr + 0x00F8)		: unimplemented opcode trap
+ * (ivbr + 0x00F6)		: software interrupt instruction (SWI) or BDM vector request
+ * (ivbr + 0x00F4)		: !XIRQ interrupt request
+ * (ivbr + 0x00F2)		: !IRQ interrupt request
+ * (ivbr +0x00F0-0x0012): Device specific I-bit maskable interrupt source
+ * (ivbr + 0x0010)		: Spurious interrupt
+ */
+
+	sc_out<bool> intReq[128];
+
+	INT_GEN(const sc_module_name& name, Object *parent = 0) {
+		SC_HAS_PROCESS(INT_GEN);
+		SC_THREAD(Run);
+	}
+
+	virtual ~INT_GEN() {};
+
+	void Run() {
+/*
+		int index;
+		while (1) {
+			wait(sc_time(10,SC_NS));
+			index = rand() % 128;
+			intReq[index] = true;
+			cout << "GEN_INT => " << index << "\n";
+		}
+*/
+	}
+
+private:
+
+};
 
 class XINT : public sc_module
 {
 public:
 
+	/*
+	 * 0xFFFE				: pin reset, power-on reset, low-voltage reset, illegal address reset
+	 * 0xFFFC				: clock monitor reset
+	 * 0xFFFA				: COP watchdog reset
+	 * (ivbr + 0x00F8)		: unimplemented opcode trap
+	 * (ivbr + 0x00F6)		: software interrupt instruction (SWI) or BDM vector request
+	 * (ivbr + 0x00F4)		: !XIRQ interrupt request
+	 * (ivbr + 0x00F2)		: !IRQ interrupt request
+	 * (ivbr +0x00F0-0x0012): Device specific I-bit maskable interrupt source
+	 * (ivbr + 0x0010)		: Spurious interrupt
+	 */
+
+	// Interrupt requests
+	sc_port< sc_signal_in_if<bool>, 128>  interrupt_request;
+
 	// to connect to CPU
-	tlm_utils::simple_initiator_socket<XINT> toCPU_Initiator;
+	sc_out<bool> toCPU_Initiator;
 
 	// from CPU
 	tlm_utils::simple_target_socket<XINT> fromCPU_Target;
 
 	// interface with bus
 	tlm_utils::simple_target_socket<XINT> slave_socket;
+
 
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
