@@ -228,6 +228,8 @@ physical_address_t MMC::getFlashAddress(address_t logicalAddress) {
 
 	uint8_t _ppage = getPpage();
 
+	if (_ppage == 0) return logicalAddress;
+
 	if ((_ppage > 0) && (_ppage < CONFIG::PPAGE_LOW)) {
 		throw NonMaskableAccessErrorInterrupt(NonMaskableAccessErrorInterrupt::INVALIDE_PPAGE);
 	}
