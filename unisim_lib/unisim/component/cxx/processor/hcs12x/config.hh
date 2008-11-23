@@ -117,7 +117,7 @@ struct CONFIG {
 	static const uint8_t	INT_CFDATA7_RESET_VALUE	= 0x01;
 
 	// Fixed Interrupt vectors Offsets
-	static const uint8_t	INT_SYS_RESET_OFFSET	= 0xFE;
+	static const uint8_t	INT_SYS_RESET_OFFSET			= 0xFE;
 	static const uint8_t	INT_ILLEGAL_ACCESS_RESET_OFFSET	= 0xFE;
 	static const uint8_t	INT_CLK_MONITOR_RESET_OFFSET	= 0xFC;
 	static const uint8_t	INT_COP_WATCHDOG_RESET_OFFSET	= 0xFA;
@@ -127,6 +127,7 @@ struct CONFIG {
 	static const uint8_t	INT_IRQ_OFFSET					= 0xF2;
 	static const uint8_t	INT_RAM_ACCESS_VIOLATION_OFFSET	= 0x60;
 	static const uint8_t	INT_SYSCALL_OFFSET				= 0x12;
+	static const uint8_t	INT_SPURIOUS_OFFSET				= 0x10;
 
 	//==============================================================================
 	//=   MEMORY MAP (Logical Memories Offsets) and RESET VALUES OF MMC REGISTERS  =
