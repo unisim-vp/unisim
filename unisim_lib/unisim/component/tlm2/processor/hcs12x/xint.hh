@@ -86,14 +86,20 @@ public:
 	virtual ~INT_GEN() {};
 
 	void Run() {
-
-		int index;
 /*
 		while (1) {
-			wait(sc_time(10,SC_NS));
-			index = rand() % 128;
-			intReq[index] = true;
-			cout << "GEN_INT => " << index << "\n";
+			wait(sc_time(100,SC_NS));
+			for (int index=0; index<128; index++)
+				intReq[index] = false;
+
+			for (int index=0; index<128; index++)
+			{
+				if (rand() % 19 == 0)
+				{
+					intReq[index] = true;
+					cout << "GEN_INT => " << index << "\n";
+				}
+			}
 		}
 */
 	}
@@ -134,16 +140,31 @@ public:
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
 
-	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+	void reset();
 
 	void Run(); // Priority Decoder and Interrupt selection
 
-	void reset();
+	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 
-	void getCFDATA(uint8_t data[]);
 	address_t getIntVector(uint8_t index);
 
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
+
+	//==============================================================
+	//=              XINT Registers Access Routines                =
+	//==============================================================
+
+	uint8_t getIVBR();
+	void setIVBR(uint8_t value);
+
+	uint8_t	getINT_XGPRIO();
+	void setINT_XGPRIO(uint8_t value);
+
+	uint8_t	getINT_CFADDR();
+	void setINT_CFADDR(uint8_t value);
+
+	uint8_t	getINT_CFDATA(uint8_t index);
+	void setINT_CFDATA(uint8_t index, uint8_t value);
 
 protected:
 
@@ -159,107 +180,95 @@ private:
 
 public:
 
-	//=====================================================================
-	//=              Interrupt Vectors and Access Routines                =
-	//=====================================================================
+	//==============================================
+	//=              Interrupt Vectors             =
+	//==============================================
 
-	uint8_t getIVBR();
-	void setIVBR(uint8_t value);
-
-	uint8_t	getINT_XGPRIO();
-	void setINT_XGPRIO(uint8_t value);
-
-	uint8_t	getINT_CFADDR();
-	void setINT_CFADDR(uint8_t value);
-
-	uint8_t	getINT_CFDATA(uint8_t index);
-	void setINT_CFDATA(uint8_t index, uint8_t value);
-
-/*
 	address_t get_SysReset_Vector() { return 0xFFFE; }
 	address_t get_IllegalAccessReset_Vector() { return 0xFFFE; }
 	address_t get_ClockMonitorReset_Vector() { return 0xFFFC; }
 	address_t get_COPWatchdogReset_Vector() { return 0xFFFA; }
+	address_t get_XIRQ_Vector() { return ((address_t) getIVBR() << 8) + CONFIG::INT_XIRQ_OFFSET; }
 
-	address_t get_Trap_Vector() { return (address_t) (getIVBR() << 8) + 0xF8; } // Shared interrupt vector for traps ($FFF8:$FFF9)
-	address_t get_SWI_Vector() { return (address_t) (getIVBR() << 8) + 0xF6 ; }
-	address_t get_XIRQ_Vector() { return (address_t) (getIVBR() << 8) + 0xF4 ; }
-	address_t get_IRQEN_Vector() { return (address_t) (getIVBR() << 8) + 0xF2 ; }
+/*
+	address_t get_Trap_Vector() { return ((address_t) getIVBR() << 8) + 0xF8; } // Shared interrupt vector for traps ($FFF8:$FFF9)
+	address_t get_SWI_Vector() { return ((address_t) getIVBR() << 8) + 0xF6 ; }
+	address_t get_IRQEN_Vector() { return ((address_t) getIVBR() << 8) + 0xF2 ; }
 
-	address_t get_RTI_Vector() { return (address_t) (getIVBR() << 8) + 0xF0 ; } // Real Time Interrupt Vector
-	address_t get_ECT_Ch0_Vector() { return (address_t) (getIVBR() << 8) + 0xEE ; } // Enhanced Capture Timer Channel 0
-	address_t get_ECT_Ch1_Vector() { return (address_t) (getIVBR() << 8) + 0xEC ; } // Enhanced Capture Timer Channel 1
-	address_t get_ECT_Ch2_Vector() { return (address_t) (getIVBR() << 8) + 0xEA ; } // Enhanced Capture Timer Channel 2
-	address_t get_ECT_Ch3_Vector() { return (address_t) (getIVBR() << 8) + 0xE8 ; } // Enhanced Capture Timer Channel 3
-	address_t get_ECT_Ch4_Vector() { return (address_t) (getIVBR() << 8) + 0xE6 ; } // Enhanced Capture Timer Channel 4
-	address_t get_ECT_Ch5_Vector() { return (address_t) (getIVBR() << 8) + 0xE4 ; } // Enhanced Capture Timer Channel 5
-	address_t get_ECT_Ch6_Vector() { return (address_t) (getIVBR() << 8) + 0xE2 ; } // Enhanced Capture Timer Channel 6
-	address_t get_ECT_Ch7_Vector() { return (address_t) (getIVBR() << 8) + 0xE0 ; } // Enhanced Capture Timer Channel 7
-	address_t get_ECT_Overflow_Vector() { return (address_t) (getIVBR() << 8) + 0xDE ; } // Enhanced capture Timer Overflow
-	address_t get_PAcc_A_Overflow_Vector() { return (address_t) (getIVBR() << 8) + 0xDC ; } // Pulse Accumulator A Overflow
-	address_t get_PAcc_Input_edge_Vector() { return (address_t) (getIVBR() << 8) + 0xDA ; } // Pulse Accumulator Input Edge
-	address_t get_SPI0_Vector() { return (address_t) (getIVBR() << 8) + 0xD8 ; }
-	address_t get_SCI0_Vector() { return (address_t) (getIVBR() << 8) + 0xD6 ; }
-	address_t get_SCI1_Vector() { return (address_t) (getIVBR() << 8) + 0xD4 ; }
-	address_t get_ATD0_Vector() { return (address_t) (getIVBR() << 8) + 0xD2 ; }
-	address_t get_ATD1_Vector() { return (address_t) (getIVBR() << 8) + 0xD0 ; }
-	address_t get_PortJ_Vector() { return (address_t) (getIVBR() << 8) + 0xCE ; }
-	address_t get_PortH_Vector() { return (address_t) (getIVBR() << 8) + 0xCC ; }
-	address_t get_MDC_Underflow_Vector() { return (address_t) (getIVBR() << 8) + 0xCA ; } // Modulus Down Counter Underflow
-	address_t get_PAcc_B_Overflow_Vector() { return (address_t) (getIVBR() << 8) + 0xC8 ; } // Pulse Accumulator B Overflow
-	address_t get_CRGPLL_Lock_Vector() { return (address_t) (getIVBR() << 8) + 0xC6 ; }
-	address_t get_CRG_SelfClockMode_Vector() { return (address_t) (getIVBR() << 8) + 0xC4 ; }
-	address_t get_IIC0_Bus_Vector() { return (address_t) (getIVBR() << 8) + 0xC0 ; }
-	address_t get_SPI1_Vector() { return (address_t) (getIVBR() << 8) + 0xBE ; }
-	address_t get_SPI2_Vector() { return (address_t) (getIVBR() << 8) + 0xBC ; }
-	address_t get_EEPROM_Vector() { return (address_t) (getIVBR() << 8) + 0xBA ; }
-	address_t get_FLASH_Vector() { return (address_t) (getIVBR() << 8) + 0xB8 ; }
-	address_t get_CAN0_WakeUp_Vector() { return (address_t) (getIVBR() << 8) + 0xB6 ; }
-	address_t get_CAN0_Errors_Vector() { return (address_t) (getIVBR() << 8) + 0xB4 ; }
-	address_t get_CAN0_Receive_Vector() { return (address_t) (getIVBR() << 8) + 0xB2 ; }
-	address_t get_CAN0_Transmit_Vector() { return (address_t) (getIVBR() << 8) + 0xB0 ; }
-	address_t get_CAN1_WakeUp_Vector() { return (address_t) (getIVBR() << 8) + 0xAE ; }
-	address_t get_CAN1_Errors_Vector() { return (address_t) (getIVBR() << 8) + 0xAC ; }
-	address_t get_CAN1_Receive_Vector() { return (address_t) (getIVBR() << 8) + 0xAA ; }
-	address_t get_CAN1_Transmit_Vector() { return (address_t) (getIVBR() << 8) + 0xA8 ; }
-	address_t get_CAN2_WakeUp_Vector() { return (address_t) (getIVBR() << 8) + 0xA6 ; }
-	address_t get_CAN2_Errors_Vector() { return (address_t) (getIVBR() << 8) + 0xA4 ; }
-	address_t get_CAN2_Receive_Vector() { return (address_t) (getIVBR() << 8) + 0xA2 ; }
-	address_t get_CAN2_Transmit_Vector() { return (address_t) (getIVBR() << 8) + 0xA0 ; }
-	address_t get_CAN3_WakeUp_Vector() { return (address_t) (getIVBR() << 8) + 0x9E ; }
-	address_t get_CAN3_Errors_Vector() { return (address_t) (getIVBR() << 8) + 0x9C ; }
-	address_t get_CAN3_Receive_Vector() { return (address_t) (getIVBR() << 8) + 0x9A ; }
-	address_t get_CAN3_Transmit_Vector() { return (address_t) (getIVBR() << 8) + 0x98 ; }
-	address_t get_CAN4_WakeUp_Vector() { return (address_t) (getIVBR() << 8) + 0x96 ; }
-	address_t get_CAN4_Errors_Vector() { return (address_t) (getIVBR() << 8) + 0x94 ; }
-	address_t get_CAN4_Receive_Vector() { return (address_t) (getIVBR() << 8) + 0x92 ; }
-	address_t get_CAN4_Transmit_Vector() { return (address_t) (getIVBR() << 8) + 0x90 ; }
-	address_t get_PortP_Vector() { return (address_t) (getIVBR() << 8) + 0x8E ; }
-	address_t get_PWM_Shutdown_Vector() { return (address_t) (getIVBR() << 8) + 0x8C ; }
-	address_t get_SCI2_Vector() { return (address_t) (getIVBR() << 8) + 0x8A ; }
-	address_t get_SCI3_Vector() { return (address_t) (getIVBR() << 8) + 0x88 ; }
-	address_t get_SCI4_Vector() { return (address_t) (getIVBR() << 8) + 0x86 ; }
-	address_t get_SCI5_Vector() { return (address_t) (getIVBR() << 8) + 0x84 ; }
-	address_t get_IIC1_Bus_Vector() { return (address_t) (getIVBR() << 8) + 0x82 ; }
-	address_t get_LVI_Vector() { return (address_t) (getIVBR() << 8) + 0x80 ; }
-	address_t get_API_Vector() { return (address_t) (getIVBR() << 8) + 0x7E ; }
-	address_t get_PIT_Ch0_Vector() { return (address_t) (getIVBR() << 8) + 0x7A ; } // Periodic Interrupt Timer Channel 0
-	address_t get_PIT_Ch1_Vector() { return (address_t) (getIVBR() << 8) + 0x78 ; } // Periodic Interrupt Timer Channel 1
-	address_t get_PIT_Ch2_Vector() { return (address_t) (getIVBR() << 8) + 0x76 ; } // Periodic Interrupt Timer Channel 2
-	address_t get_PIT_Ch3_Vector() { return (address_t) (getIVBR() << 8) + 0x74 ; } // Periodic Interrupt Timer Channel 3
-	address_t get_XGATE_SW_Trigger0_Vector() { return (address_t) (getIVBR() << 8) + 0x72 ; }
-	address_t get_XGATE_SW_Trigger1_Vector() { return (address_t) (getIVBR() << 8) + 0x70 ; }
-	address_t get_XGATE_SW_Trigger2_Vector() { return (address_t) (getIVBR() << 8) + 0x6E ; }
-	address_t get_XGATE_SW_Trigger3_Vector() { return (address_t) (getIVBR() << 8) + 0x6C ; }
-	address_t get_XGATE_SW_Trigger4_Vector() { return (address_t) (getIVBR() << 8) + 0x6A ; }
-	address_t get_XGATE_SW_Trigger5_Vector() { return (address_t) (getIVBR() << 8) + 0x68 ; }
-	address_t get_XGATE_SW_Trigger6_Vector() { return (address_t) (getIVBR() << 8) + 0x66 ; }
-	address_t get_XGATE_SW_Trigger7_Vector() { return (address_t) (getIVBR() << 8) + 0x64 ; }
-	address_t get_XGATE_SW_Error_Vector() { return (address_t) (getIVBR() << 8) + 0x62 ; }
-	address_t get_S12X_RAV_Vector() { return (address_t) (getIVBR() << 8) + 0x60 ; } // S12XCPU RAM Access Violation
+	address_t get_RTI_Vector() { return ((address_t) getIVBR() << 8) + 0xF0 ; } // Real Time Interrupt Vector
+	address_t get_ECT_Ch0_Vector() { return ((address_t) getIVBR() << 8) + 0xEE ; } // Enhanced Capture Timer Channel 0
+	address_t get_ECT_Ch1_Vector() { return ((address_t) getIVBR() << 8) + 0xEC ; } // Enhanced Capture Timer Channel 1
+	address_t get_ECT_Ch2_Vector() { return ((address_t) getIVBR() << 8) + 0xEA ; } // Enhanced Capture Timer Channel 2
+	address_t get_ECT_Ch3_Vector() { return ((address_t) getIVBR() << 8) + 0xE8 ; } // Enhanced Capture Timer Channel 3
+	address_t get_ECT_Ch4_Vector() { return ((address_t) getIVBR() << 8) + 0xE6 ; } // Enhanced Capture Timer Channel 4
+	address_t get_ECT_Ch5_Vector() { return ((address_t) getIVBR() << 8) + 0xE4 ; } // Enhanced Capture Timer Channel 5
+	address_t get_ECT_Ch6_Vector() { return ((address_t) getIVBR() << 8) + 0xE2 ; } // Enhanced Capture Timer Channel 6
+	address_t get_ECT_Ch7_Vector() { return ((address_t) getIVBR() << 8) + 0xE0 ; } // Enhanced Capture Timer Channel 7
+	address_t get_ECT_Overflow_Vector() { return ((address_t) getIVBR() << 8) + 0xDE ; } // Enhanced capture Timer Overflow
+	address_t get_PAcc_A_Overflow_Vector() { return ((address_t) getIVBR() << 8) + 0xDC ; } // Pulse Accumulator A Overflow
+	address_t get_PAcc_Input_edge_Vector() { return ((address_t) getIVBR() << 8) + 0xDA ; } // Pulse Accumulator Input Edge
+	address_t get_SPI0_Vector() { return ((address_t) getIVBR() << 8) + 0xD8 ; }
+	address_t get_SCI0_Vector() { return ((address_t) getIVBR() << 8) + 0xD6 ; }
+	address_t get_SCI1_Vector() { return ((address_t) getIVBR() << 8) + 0xD4 ; }
+	address_t get_ATD0_Vector() { return ((address_t) getIVBR() << 8) + 0xD2 ; }
+	address_t get_ATD1_Vector() { return ((address_t) getIVBR() << 8) + 0xD0 ; }
+	address_t get_PortJ_Vector() { return ((address_t) getIVBR() << 8) + 0xCE ; }
+	address_t get_PortH_Vector() { return ((address_t) getIVBR() << 8) + 0xCC ; }
+	address_t get_MDC_Underflow_Vector() { return ((address_t) getIVBR() << 8) + 0xCA ; } // Modulus Down Counter Underflow
+	address_t get_PAcc_B_Overflow_Vector() { return ((address_t) getIVBR() << 8) + 0xC8 ; } // Pulse Accumulator B Overflow
+	address_t get_CRGPLL_Lock_Vector() { return ((address_t) getIVBR() << 8) + 0xC6 ; }
+	address_t get_CRG_SelfClockMode_Vector() { return ((address_t) getIVBR() << 8) + 0xC4 ; }
+	address_t get_IIC0_Bus_Vector() { return ((address_t) getIVBR() << 8) + 0xC0 ; }
+	address_t get_SPI1_Vector() { return ((address_t) getIVBR() << 8) + 0xBE ; }
+	address_t get_SPI2_Vector() { return ((address_t) getIVBR() << 8) + 0xBC ; }
+	address_t get_EEPROM_Vector() { return ((address_t) getIVBR() << 8) + 0xBA ; }
+	address_t get_FLASH_Vector() { return ((address_t) getIVBR() << 8) + 0xB8 ; }
+	address_t get_CAN0_WakeUp_Vector() { return ((address_t) getIVBR() << 8) + 0xB6 ; }
+	address_t get_CAN0_Errors_Vector() { return ((address_t) getIVBR() << 8) + 0xB4 ; }
+	address_t get_CAN0_Receive_Vector() { return ((address_t) getIVBR() << 8) + 0xB2 ; }
+	address_t get_CAN0_Transmit_Vector() { return ((address_t) getIVBR() << 8) + 0xB0 ; }
+	address_t get_CAN1_WakeUp_Vector() { return ((address_t) getIVBR() << 8) + 0xAE ; }
+	address_t get_CAN1_Errors_Vector() { return ((address_t) getIVBR() << 8) + 0xAC ; }
+	address_t get_CAN1_Receive_Vector() { return ((address_t) getIVBR() << 8) + 0xAA ; }
+	address_t get_CAN1_Transmit_Vector() { return ((address_t) getIVBR() << 8) + 0xA8 ; }
+	address_t get_CAN2_WakeUp_Vector() { return ((address_t) getIVBR() << 8) + 0xA6 ; }
+	address_t get_CAN2_Errors_Vector() { return ((address_t) getIVBR() << 8) + 0xA4 ; }
+	address_t get_CAN2_Receive_Vector() { return ((address_t) getIVBR() << 8) + 0xA2 ; }
+	address_t get_CAN2_Transmit_Vector() { return ((address_t) getIVBR() << 8) + 0xA0 ; }
+	address_t get_CAN3_WakeUp_Vector() { return ((address_t) getIVBR() << 8) + 0x9E ; }
+	address_t get_CAN3_Errors_Vector() { return ((address_t) getIVBR() << 8) + 0x9C ; }
+	address_t get_CAN3_Receive_Vector() { return ((address_t) getIVBR() << 8) + 0x9A ; }
+	address_t get_CAN3_Transmit_Vector() { return ((address_t) getIVBR() << 8) + 0x98 ; }
+	address_t get_CAN4_WakeUp_Vector() { return ((address_t) getIVBR() << 8) + 0x96 ; }
+	address_t get_CAN4_Errors_Vector() { return ((address_t) getIVBR() << 8) + 0x94 ; }
+	address_t get_CAN4_Receive_Vector() { return ((address_t) getIVBR() << 8) + 0x92 ; }
+	address_t get_CAN4_Transmit_Vector() { return ((address_t) getIVBR() << 8) + 0x90 ; }
+	address_t get_PortP_Vector() { return ((address_t) getIVBR() << 8) + 0x8E ; }
+	address_t get_PWM_Shutdown_Vector() { return ((address_t) getIVBR() << 8) + 0x8C ; }
+	address_t get_SCI2_Vector() { return ((address_t) getIVBR() << 8) + 0x8A ; }
+	address_t get_SCI3_Vector() { return ((address_t) getIVBR() << 8) + 0x88 ; }
+	address_t get_SCI4_Vector() { return ((address_t) getIVBR() << 8) + 0x86 ; }
+	address_t get_SCI5_Vector() { return ((address_t) getIVBR() << 8) + 0x84 ; }
+	address_t get_IIC1_Bus_Vector() { return ((address_t) getIVBR() << 8) + 0x82 ; }
+	address_t get_LVI_Vector() { return ((address_t) getIVBR() << 8) + 0x80 ; }
+	address_t get_API_Vector() { return ((address_t) getIVBR() << 8) + 0x7E ; }
+	address_t get_PIT_Ch0_Vector() { return ((address_t) getIVBR() << 8) + 0x7A ; } // Periodic Interrupt Timer Channel 0
+	address_t get_PIT_Ch1_Vector() { return ((address_t) getIVBR() << 8) + 0x78 ; } // Periodic Interrupt Timer Channel 1
+	address_t get_PIT_Ch2_Vector() { return ((address_t) getIVBR() << 8) + 0x76 ; } // Periodic Interrupt Timer Channel 2
+	address_t get_PIT_Ch3_Vector() { return ((address_t) getIVBR() << 8) + 0x74 ; } // Periodic Interrupt Timer Channel 3
+	address_t get_XGATE_SW_Trigger0_Vector() { return ((address_t) getIVBR() << 8) + 0x72 ; }
+	address_t get_XGATE_SW_Trigger1_Vector() { return ((address_t) getIVBR() << 8) + 0x70 ; }
+	address_t get_XGATE_SW_Trigger2_Vector() { return ((address_t) getIVBR() << 8) + 0x6E ; }
+	address_t get_XGATE_SW_Trigger3_Vector() { return ((address_t) getIVBR() << 8) + 0x6C ; }
+	address_t get_XGATE_SW_Trigger4_Vector() { return ((address_t) getIVBR() << 8) + 0x6A ; }
+	address_t get_XGATE_SW_Trigger5_Vector() { return ((address_t) getIVBR() << 8) + 0x68 ; }
+	address_t get_XGATE_SW_Trigger6_Vector() { return ((address_t) getIVBR() << 8) + 0x66 ; }
+	address_t get_XGATE_SW_Trigger7_Vector() { return ((address_t) getIVBR() << 8) + 0x64 ; }
+	address_t get_XGATE_SW_Error_Vector() { return ((address_t) getIVBR() << 8) + 0x62 ; }
+	address_t get_S12X_RAV_Vector() { return ((address_t) getIVBR() << 8) + 0x60 ; } // S12XCPU RAM Access Violation
 
-	address_t get_Sys_Vector() { return (address_t) (getIVBR() << 8) + 0x12; } // System call interrupt vector is $FF12:$FF13
-	address_t get_Sputious_Vector() { return (address_t) (getIVBR() << 8) + 0x10 ; } // Spurious interrupt
+	address_t get_Sys_Vector() { return ((address_t) getIVBR() << 8) + 0x12; } // System call interrupt vector is $FF12:$FF13
+	address_t get_Sputious_Vector() { return ((address_t) getIVBR() << 8) + 0x10 ; } // Spurious interrupt
 
  */
 

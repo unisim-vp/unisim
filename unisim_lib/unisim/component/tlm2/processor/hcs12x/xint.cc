@@ -45,6 +45,8 @@ namespace hcs12x {
 
 XINT::XINT(const sc_module_name& name, Object *parent) {
 
+	reset();
+
 	fromCPU_Target.register_b_transport(this, &XINT::b_transport);
 	slave_socket.register_b_transport(this, &XINT::read_write);
 
@@ -65,37 +67,47 @@ void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
 
 	uint8_t currentIPL = buffer->ipl;
+	address_t vectorAddress = ((address_t) getIVBR()) << 8;
+	uint8_t cfaddr = getINT_CFADDR();
+
+
+	/*
+	 * Check if it is reset
+	 */
+	if (interrupt_request[CONFIG::INT_CLK_MONITOR_RESET_OFFSET/2]->read())
+		vectorAddress = get_ClockMonitorReset_Vector();
+	else if (interrupt_request[CONFIG::INT_COP_WATCHDOG_RESET_OFFSET/2]->read())
+		vectorAddress = get_COPWatchdogReset_Vector();
+	else if (interrupt_request[CONFIG::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]->read())
+		vectorAddress = get_IllegalAccessReset_Vector();
+	else if (interrupt_request[CONFIG::INT_SYS_RESET_OFFSET/2]->read())
+		vectorAddress = get_SysReset_Vector();
+	else if (interrupt_request[CONFIG::INT_XIRQ_OFFSET/2]->read())
+		vectorAddress = get_XIRQ_Vector();
+	else
+		for (int index=cfaddr; index < cfaddr+8; index++) { // Check only the selected interrupts
+			if (interrupt_request[index]->read()) {
+//				cout << "HAS interrupt on => " << index << "\n";
+
+				uint8_t dataPriority = int_cfdata[index] && 0x07;
+
+				// if 7-bit=0 then cpu else xgate
+				if ((int_cfdata[index] & 0x80) == 0)
+				{
+					if (dataPriority > currentIPL) {
+						currentIPL = dataPriority;
+						vectorAddress = ((address_t) getIVBR() << 8) + cfaddr + index;
+					}
+				}
+				else ;
+
+			}
+		}
+
+	buffer->ipl = currentIPL;
+	buffer->vectorAddress = vectorAddress;
 
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
-
-/*
-	uint8_t int_cfdata[8];
-	uint8_t cpuPriority = 0, xgatePriority = 0;
-	uint8_t cpuIndex = 0, xgateIndex = 0;
-
-	getCFDATA(int_cfdata);
-
-	for (uint8_t i=0; i<8; i++) {
-
-		uint8_t dataPriority = int_cfdata[i] && 0x07;
-
-		// if 7-bit=0 then cpu else xgate
-		if ((int_cfdata[i] & 0x80) == 0)
-		{
-			if (dataPriority > cpuPriority) {
-				cpuPriority = dataPriority;
-				cpuIndex = i;
-			}
-		}
-		else
-		{
-			if (dataPriority > xgatePriority) {
-				xgatePriority = dataPriority;
-				xgateIndex = i;
-			}
-		}
-	}
-*/
 
 }
 
@@ -106,16 +118,17 @@ void XINT::Run()
 	while (true) {
 		wait();
 
-		/* TODO:
+		/*
 		 *  Check which interrupt if (reset) setIVBR(0xFF)
 		 */
-/*
-		for (int index=0; index < 128; index++) {
-			if (interrupt_request[index].event()) {
-				cout << "HAS interrupt on => " << index << "\n";
-			}
+
+		if (interrupt_request[CONFIG::INT_CLK_MONITOR_RESET_OFFSET/2]->read() ||
+				interrupt_request[CONFIG::INT_COP_WATCHDOG_RESET_OFFSET/2]->read() ||
+				interrupt_request[CONFIG::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]->read() ||
+				interrupt_request[CONFIG::INT_SYS_RESET_OFFSET/2]->read() )
+		{
+			setIVBR(0xFF);
 		}
-*/
 
 		toCPU_Initiator = true;
 	}
@@ -128,20 +141,6 @@ address_t XINT::getIntVector(uint8_t index) {
 	// TODO:
 
 	return 0;
-}
-
-void XINT::getCFDATA(uint8_t data[])
-{
-
-	if (int_cfaddr == 0) {
-		for (uint8_t i=0; i<8; i++) {
-			data[i] = 0;
-		}
-	} else {
-		for (uint8_t i=0; i<8; i++) {
-			data[i] = int_cfdata[i];
-		}
-	}
 }
 
 void XINT::reset() {
@@ -164,11 +163,6 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
-/*
-	unsigned int len = trans.get_data_length();
-	unsigned char* byt = trans.get_byte_enable_ptr();
-	unsigned int wid = trans.get_streaming_width();
-*/
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
 		read((address_t) address, *data_ptr);
@@ -226,8 +220,83 @@ void XINT::setINT_XGPRIO(uint8_t value) { int_xgprio = value; }
 uint8_t	XINT::getINT_CFADDR() { return int_cfaddr; }
 void XINT::setINT_CFADDR(uint8_t value) { int_cfaddr = value; }
 
-uint8_t	XINT::getINT_CFDATA(uint8_t index) { assert(index < 8); return int_cfdata[index]; }
-void XINT::setINT_CFDATA(uint8_t index, uint8_t value) { assert(index < 8); int_cfdata[index] = value; }
+uint8_t	XINT::getINT_CFDATA(uint8_t index)
+{
+	assert(index < 8);
+
+	uint8_t cfaddr = getINT_CFADDR();
+
+	if (cfaddr == 0xF0) {
+		/*
+		 *  if 0x00F4-0x00FE are selected
+		 *  then
+		 *   - write access to PRIOLVL[2:0] are ignored
+		 *   - read access of PRIOLVL[2:0] return all 0s
+		 */
+		if (index > 1) return int_cfdata[index] & 0x80;
+
+		/*
+		 * CFDATA1 register is used for IRQ interrupt when writing 0xF0 to CFADDR
+		 * The !IRQ interrupt cannot be handled by XGATE module. For this reason RQST is always set to 0.
+		 */
+		if (index == 1) return int_cfdata[index] & 0x7F;
+	}
+	else
+		/*
+		 * - Writing all 0s selects non-existing configuration registers.
+		 */
+		if (cfaddr == 0x0) return 0;
+
+	/*
+	 * - Write access to CFDATA of the spurious interrupt will be ignored
+	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
+	 */
+	if (cfaddr+index == CONFIG::INT_SPURIOUS_OFFSET) return 0x7;
+
+
+	return int_cfdata[index];
+}
+
+void XINT::setINT_CFDATA(uint8_t index, uint8_t value)
+{
+	assert(index < 8);
+
+	uint8_t cfaddr = getINT_CFADDR();
+
+	if (cfaddr == 0xF0) {
+		/*
+		 *  if 0x00F4-0x00FE are selected
+		 *  then
+		 *   - write access to PRIOLVL[2:0] are ignored
+		 *   - read access of PRIOLVL[2:0] return all 0s
+		 */
+		if (index > 1) return;
+
+		/*
+		 * CFDATA1 register is used for IRQ interrupt when writing 0xF0 to CFADDR
+		 * The !IRQ interrupt cannot be handled by XGATE module. For this reason RQST is always set to 0.
+		 */
+		if (index == 1)
+		{
+			int_cfdata[index] = value & 0x7F;
+			return;
+
+		}
+	}
+	else
+		/*
+		 * - Writing all 0s selects non-existing configuration registers.
+		 */
+		if (cfaddr == 0x0) return;
+
+	/*
+	 * - Write access to CFDATA of the spurious interrupt will be ignored
+	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
+	 */
+	if (cfaddr+index == CONFIG::INT_SPURIOUS_OFFSET) return;
+
+	int_cfdata[index] = value;
+}
 
 } // end of namespace hcs12x
 } // end of namespace processor
