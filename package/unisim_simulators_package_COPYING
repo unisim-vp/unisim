@@ -203,10 +203,10 @@ that Recipient deposits or contributes in accordance with Section 3 in furtheran
 of the Purpose of this Agreement but does not include any software that has
 been previously so deposited or contributed.
 
-1.3   “Contribution Questionnaire” means the questionnaire attached hereto as
+1.3   "Contribution Questionnaire" means the questionnaire attached hereto as
 Exhibit C.
 
-1.4   "Contributor" means any Recipient, including Synopsys, Inc. ("Synopsys”),
+1.4   "Contributor" means any Recipient, including Synopsys, Inc. ("Synopsys"),
 that makes a Contribution pursuant to Section 3. Any Recipient depositing, as
 part or all of a Contribution, code which has previously been so deposited by
 another Recipient is not the Contributor of such re-deposited code for the
@@ -238,7 +238,7 @@ Program (with or without Modifications) to any third party.
 compiled into object code form along with only those header files from such
 Original Program that are strictly necessary to make use of the object code.
 
-1.10  “Marks” means, collectively, the registered and unregistered marks and
+1.10  "Marks" means, collectively, the registered and unregistered marks and
 logos that OSCI has licensed or otherwise authorized Recipient to use. All marks
 and logos are listed on Exhibit D, which list may be amended from time to time
 by OSCI to add or delete any marks or logos.
@@ -250,7 +250,7 @@ Program; and (c) any reference implementation of the Program.
 1.12   "Original Program" means the SystemC 1.1 version of the software
 accompanying this Agreement as released by Synopsys.
 
-1.13   “OSCI” means Open SystemC Initiative, a California nonprofit mutual
+1.13   "OSCI" means Open SystemC Initiative, a California nonprofit mutual
 benefit corporation.
 
 1.14   "Program" means the Original Program and each other Contribution and
@@ -325,7 +325,7 @@ Contributions made by Recipient in any media.
       the rights granted pursuant to this Agreement and to indicate that the
       products being marketed by Recipient are compatible with, and meet the
       standards of, the SystemC modeling language. All uses of the Marks shall
-      be in accordance with OSCI’s trademark usage policy set forth in Exhibit
+      be in accordance with OSCI's trademark usage policy set forth in Exhibit
       D.
 
       (b)   Recipient shall assist OSCI to the extent reasonably necessary to
@@ -339,15 +339,15 @@ Contributions made by Recipient in any media.
       Recipient shall fully cooperate with OSCI in any such litigation. OSCI shall
       reimburse Recipient for the reasonable costs associated with providing
       such assistance, except to the extent that such costs result from
-      Recipient’s breach of this Section 2.6. Recipient shall not commence any
-      action regarding the Marks without OSCI’s prior written consent.
+      Recipient's breach of this Section 2.6. Recipient shall not commence any
+      action regarding the Marks without OSCI's prior written consent.
 
       (c)   All goodwill with respect to the Marks shall accrue for the sole
       benefit of OSCI. Recipient shall maintain the quality of any products,
       associated packaging, collateral and marketing materials on which it uses
       any of the Marks in a manner consistent with all terms, conditions and
       requirements set forth in this Section 2.6 and at a level that meets or
-      exceeds Recipient’s overall reputation for quality and that is at least
+      exceeds Recipient's overall reputation for quality and that is at least
       commensurate with industry standards.
 
 2.7   RECIPIENT UNDERSTANDS THAT ALTHOUGH EACH CONTRIBUTOR
@@ -553,10 +553,10 @@ specifically set forth in Section 1.10.
 12. ELECTRONIC ACCEPTANCE
 
 This Agreement may be executed either electronically or on paper. By clicking on the
-“Accept” button, Recipient warrants that it agrees to all of the terms of this Agreement,
+"Accept" button, Recipient warrants that it agrees to all of the terms of this Agreement,
 that Recipient is authorized to enter into this Agreement, and that this Agreement is
 legally binding upon Recipient. If Recipient does not agree to be bound by this
-Agreement, then Recipient shall click the “Decline” button and Recipient shall not
+Agreement, then Recipient shall click the "Decline" button and Recipient shall not
 receive any rights from the Contributors nor shall Recipient download any materials,
 including the Program.
 
