@@ -203,15 +203,18 @@ inline void GenFPSCR_FX(uint32_t& fpscr, uint32_t old_fpscr)
 {
 	fpscr = fpscr |
 	       (((~old_fpscr & fpscr & CONFIG::FPSCR_OX_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_UX_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_ZX_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_XX_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_VXSNAN_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_VXISI_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_VXIDI_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_VXZDZ_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_VXIMZ_MASK) |
-	        (~old_fpscr & fpscr & CONFIG::FPSCR_VXVC_MASK)) ? CONFIG::FPSCR_FX_MASK : 0);
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_UX_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_ZX_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_XX_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXSNAN_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXISI_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXIDI_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXZDZ_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXIMZ_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXVC_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXSOFT_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXSQRT_MASK) |
+	         (~old_fpscr & fpscr & CONFIG::FPSCR_VXCVI_MASK)) ? CONFIG::FPSCR_FX_MASK : 0);
 }
 
 template <class CONFIG>
@@ -223,7 +226,10 @@ inline void GenFPSCR_VX(uint32_t& fpscr)
 	           (fpscr & CONFIG::FPSCR_VXIDI_MASK) |
 	           (fpscr & CONFIG::FPSCR_VXZDZ_MASK) |
 	           (fpscr & CONFIG::FPSCR_VXIMZ_MASK) |
-	           (fpscr & CONFIG::FPSCR_VXVC_MASK)) ? CONFIG::FPSCR_VX_MASK : 0);
+	           (fpscr & CONFIG::FPSCR_VXVC_MASK) |
+	           (fpscr & CONFIG::FPSCR_VXSOFT_MASK) |
+	           (fpscr & CONFIG::FPSCR_VXSQRT_MASK) |
+	           (fpscr & CONFIG::FPSCR_VXCVI_MASK)) ? CONFIG::FPSCR_VX_MASK : 0);
 }
 
 template <class CONFIG>
@@ -315,6 +321,7 @@ fadds.execute = {
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftFloat result(cpu->GetFPR(fa), flags);
+	flags.clear();
 	SoftFloat b(cpu->GetFPR(fb), flags);
 	flags.clear();
 	
@@ -426,6 +433,7 @@ fdivs.execute = {
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftFloat result(cpu->GetFPR(fa), flags);
+	flags.clear();
 	SoftFloat b(cpu->GetFPR(fb), flags);
 	flags.clear();
 
@@ -540,6 +548,7 @@ fmuls.execute = {
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftFloat result(cpu->GetFPR(fa), flags);
+	flags.clear();
 	SoftFloat c(cpu->GetFPR(fc), flags);
 	flags.clear();
 
@@ -604,7 +613,10 @@ fres.execute = {
 		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Write back result
-			cpu->SetFPR(fd, SoftDouble(b.isNegative() ? 0xfff8000000000000ULL : 0x7ff8000000000000ULL)); // QNaN/Keep sign of b
+			SoftFloat result(b.queryValue() | 0x400000UL);// QNaN (b with high order bit of mantissa set)
+			cpu->SetFPR(fd, SoftDouble(result, flags)); 
+			// Generate FPRF
+			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
 		}
 		// Generate VXSNAN
 		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
@@ -612,11 +624,10 @@ fres.execute = {
 	else if(unlikely(b.isQNaN()))
 	{
 		// b = QNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
-		{
-			// Write back result
-			cpu->SetFPR(fd, SoftDouble(b.isNegative() ? 0xfff8000000000000ULL : 0x7ff8000000000000ULL)); // QNaN/Keep sign of b
-		}
+		// Write back result
+		cpu->SetFPR(fd, SoftDouble(b, flags)); // QNaN (b)
+		// Generate FPRF
+		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
 	}
 	else if(unlikely(b.isZero()))
 	{
@@ -670,8 +681,6 @@ fres.execute = {
 		// Generate OX, UX, ZX, VXSNAN, FR, FI, FPRF
 		GenFPSCR_OX<CONFIG>(fpscr, flags);
 		GenFPSCR_UX<CONFIG>(fpscr, flags);
-		GenFPSCR_ZX<CONFIG>(fpscr, flags);
-		GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 		GenFPSCR_FPRF<CONFIG, SoftFloat>(fpscr, result);
 
 		// Write back the result
@@ -727,7 +736,7 @@ frsqrte.execute = {
 			// Generate FPRF
 			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
 			// Write back result
-			cpu->SetFPR(fd, SoftDouble(b.isNegative() ? 0xfff8000000000000ULL : 0x7ff8000000000000ULL)); // QNaN/Keep sign of b
+			cpu->SetFPR(fd, SoftDouble(b.queryValue() | 0x0008000000000000ULL)); // QNaN (b with high order bit of mantissa set)
 		}
 		// Generate VXSNAN
 		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
@@ -738,7 +747,7 @@ frsqrte.execute = {
 		// Generate FPRF
 		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
 		// Write back result
-		cpu->SetFPR(fd, SoftDouble(b.isNegative() ? 0xfff8000000000000ULL : 0x7ff8000000000000ULL)); // QNaN/Keep sign of b
+		cpu->SetFPR(fd, b); // QNaN (b)
 	}
 	else if(unlikely(b.isZero()))
 	{
@@ -771,7 +780,7 @@ frsqrte.execute = {
 		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
 		{
 			// Write back result
-			cpu->SetFPR(fd, SoftDouble(0xfff8000000000000ULL)); // QNaN
+			cpu->SetFPR(fd, SoftDouble(0x7ff8000000000000ULL)); // Positive QNaN
 			// Generate FPRF
 			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
 		}
@@ -917,7 +926,9 @@ fsubs.execute = {
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftFloat result(cpu->GetFPR(fa), flags);
+	flags.clear();
 	SoftFloat b(cpu->GetFPR(fb), flags);
+	flags.clear();
 
 	// Compute the result	
 	result.minusAssign(b, flags);
@@ -1079,7 +1090,9 @@ fmadds.execute = {
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftFloat result(cpu->GetFPR(fa), flags);
+	flags.clear();
 	SoftFloat b(cpu->GetFPR(fb), flags);
+	flags.clear();
 	SoftFloat c(cpu->GetFPR(fc), flags);
 	flags.clear();
 	
@@ -1194,7 +1207,9 @@ fmsubs.execute = {
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftFloat result(cpu->GetFPR(fa), flags);
+	flags.clear();
 	SoftFloat b(cpu->GetFPR(fb), flags);
+	flags.clear();
 	SoftFloat c(cpu->GetFPR(fc), flags);
 	flags.clear();
 
@@ -1312,7 +1327,9 @@ fnmadds.execute = {
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftFloat result(cpu->GetFPR(fa), flags);
+	flags.clear();
 	SoftFloat b(cpu->GetFPR(fb), flags);
+	flags.clear();
 	SoftFloat c(cpu->GetFPR(fc), flags);
 	flags.clear();
 
@@ -1433,6 +1450,7 @@ fnmsubs.execute = {
 	Flags flags;
 	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftFloat result(cpu->GetFPR(fa), flags);
+	flags.clear();
 	SoftFloat b(cpu->GetFPR(fb), flags);
 	SoftFloat c(cpu->GetFPR(fc), flags);
 	flags.clear();
@@ -1654,8 +1672,8 @@ fctiw.execute = {
 	// Generate VXSNAN, VXCVI, FR, FI, XX, FX, VX, FEX
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXCVI<CONFIG>(fpscr, flags);
-	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, result, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags);
+	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, b, flags);
+	if(!flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
 	GenFPSCR_VX<CONFIG>(fpscr);
@@ -1705,7 +1723,6 @@ fctiwz.execute = {
 	uint32_t fpscr = cpu->GetFPSCR();
 	uint32_t old_fpscr = fpscr;
 	Flags flags;
-	flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 	SoftDouble b = cpu->GetFPR(fb);
 	
 	// Compute the result
@@ -1727,8 +1744,8 @@ fctiwz.execute = {
 	// Generate VXSNAN, VXCVI, FR, FI, XX, FX, VX, FEX
 	GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
 	GenFPSCR_VXCVI<CONFIG>(fpscr, flags);
-	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, result, flags);
-	GenFPSCR_FI<CONFIG>(fpscr, flags);
+	GenFPSCR_FR<CONFIG, SoftDouble>(fpscr, b, flags);
+	if(!flags.isOverflow()) GenFPSCR_FI<CONFIG>(fpscr, flags);
 	GenFPSCR_XX<CONFIG>(fpscr);
 	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
 	GenFPSCR_VX<CONFIG>(fpscr);
