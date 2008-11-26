@@ -1242,7 +1242,6 @@ op cntlzw(31[6]:rs[5]:ra[5]:?[5]:26[10]:rc[1])
 cntlzw.execute = {
 	// read the input operands
 	uint32_t s = cpu->GetGPR(rs);
-	uint32_t xer = cpu->GetXER();
 	
 	// Compute the result
 	uint32_t result = 0;
@@ -1257,16 +1256,21 @@ cntlzw.execute = {
 	// Write back the result
 	cpu->SetGPR(ra, result);
 
-	// Read CR
-	uint32_t cr = cpu->GetCR();
-	
-	// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
-	cr = (cr & ~CONFIG::CR0_MASK) |
-		((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
-		(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
-			
-	// Update CR
-	cpu->SetCR(cr);
+	if(unlikely(rc))
+	{
+		// Read XER
+		uint32_t xer = cpu->GetXER();
+		// Read CR
+		uint32_t cr = cpu->GetCR();
+		
+		// Generate CR0: CR0[SO]=XER[SO] CR0[LT]=(result<0) CR0[GT]=(result>0) CR0[EQ]=(result==0)
+		cr = (cr & ~CONFIG::CR0_MASK) |
+			((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
+			(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
+				
+		// Update CR
+		cpu->SetCR(cr);
+	}
 }
 cntlzw.disasm = {
 	os << "cntlzw" << (rc ? "." : "") << " r" << ra << ", r" << rs;
