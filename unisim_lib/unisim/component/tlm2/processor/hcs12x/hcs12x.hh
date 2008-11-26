@@ -70,6 +70,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::util::garbage_collector::Pointer;
 
 using unisim::kernel::tlm2::ManagedPayload;
+using unisim::kernel::tlm2::PayloadFabric;
 
 using std::string;
 
@@ -168,6 +169,7 @@ private:
 
 	uint64_t last_instruction_counter;
 
+	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 };
 
 } // end of namespace hcs12x

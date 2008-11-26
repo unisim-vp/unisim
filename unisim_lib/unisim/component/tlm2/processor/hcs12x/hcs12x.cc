@@ -170,7 +170,8 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 	buffer.ipl = ipl;
 	buffer.vectorAddress = 0;
 
-	tlm::tlm_generic_payload* trans = new tlm::tlm_generic_payload;
+	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+
 	sc_time delay = bus_cycle_time;
 
 	trans->set_command( tlm::TLM_READ_COMMAND );
@@ -191,6 +192,8 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 
 	ipl = buffer.ipl;
 	address = buffer.vectorAddress;
+
+	trans->release();
 
 	/*
 	 * - Set HasReset, HasXIRQ, HasIbit interrupts flag to be used by Handle asynchronous interrupts
@@ -382,8 +385,9 @@ Reset() {
 
 void HCS12X::BusWrite(physical_address_t addr, const void *buffer, uint32_t size)
 {
-	tlm::tlm_generic_payload* trans = new tlm::tlm_generic_payload;
-//	sc_time delay = sc_time(10, SC_NS);
+	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+
+	//	sc_time delay = sc_time(10, SC_NS);
 	sc_time delay = bus_cycle_time;
 
 	trans->set_command( tlm::TLM_WRITE_COMMAND );
@@ -402,12 +406,13 @@ void HCS12X::BusWrite(physical_address_t addr, const void *buffer, uint32_t size
 	if (trans->is_response_error() )
 		SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
 
-	wait(delay);
+	trans->release();
 }
 
 void HCS12X::BusRead(physical_address_t addr, void *buffer, uint32_t size)
 {
-	tlm::tlm_generic_payload* trans = new tlm::tlm_generic_payload;
+	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+
 //	sc_time delay = sc_time(10, SC_NS);
 	sc_time delay = bus_cycle_time;
 
@@ -427,8 +432,7 @@ void HCS12X::BusRead(physical_address_t addr, void *buffer, uint32_t size)
 	if (trans->is_response_error() )
 		SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
 
-	wait(delay);
-
+	trans->release();
 }
 
 void HCS12X::AsyncIntThread()
