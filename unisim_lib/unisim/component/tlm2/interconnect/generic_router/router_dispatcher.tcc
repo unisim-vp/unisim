@@ -112,6 +112,9 @@ Run()
 		m_queue.erase(it);
 		(m_owner->*m_cb)(m_id, *trans);
 		wait(m_complete_event);
+// ** Reda & Gilles 
+       if (trans->is_write()) trans->release();
+// *** end Reda & Gilles
 		now = sc_core::sc_time_stamp();
 		it = m_queue.begin();
 		if (it == m_queue.end()) continue;
