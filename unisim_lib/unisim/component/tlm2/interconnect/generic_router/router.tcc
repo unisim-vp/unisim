@@ -119,84 +119,6 @@
 }
 
 namespace unisim {
-namespace kernel {
-namespace service {
-
-using unisim::kernel::service::Variable;
-
-template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::Variable(const char *_name, Object *_object, unisim::component::tlm2::interconnect::generic_router::Mapping &_storage, Type type, const char *_description) :
-	VariableBase(_name, _object, type, _description), storage(&_storage) {
-}
-
-template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator bool () const { return false; }
-template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator long long () const { return 0; }
-template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator unsigned long long () const { return 0; }
-template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator double () const { return 0; }
-template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator string () const { 
-	std::stringstream buf;
-	buf << "<unisim::component::tlm2::interconnect::generic_router::mapping range_start=\"0x" << std::hex << storage->range_start << std::dec
-		<< "\" range_end=\"0x" << std::hex << storage->range_end << std::dec
-		<< "\" output_port=\"" << storage->output_port << "\"/>";
-	return buf.str();
-}
-
-template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator = (bool value) { return *this;}
-template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator = (long long value) { return *this;}
-template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator = (unsigned long long value) { return *this;}
-template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator = (double value) { return *this;}
-template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator = (const char *value) { 
-	uint64_t range_start;
-	uint64_t range_end;
-	unsigned int output_port;
-
-	std::stringstream buf(value);
-	std::string str(buf.str());
-	std::string str_rest;
-	unsigned int pos;
-	pos = str.find('"');
-	str_rest = str.substr(pos + 1);
-	str = str_rest;
-	pos = str.find('"');
-	str_rest = str.substr(pos + 1);
-	str = str.substr(0, pos);
-	stringstream range_start_str;
-	range_start_str << str;
-	range_start_str >> std::hex >> range_start >> std::dec;
-	str = str_rest;
-	pos = str.find('"');
-	str = str.substr(pos + 1);
-	pos = str.find('"');
-	str_rest = str.substr(pos + 1);
-	str = str.substr(0, pos);
-	stringstream range_end_str;
-	range_end_str << str;
-	range_end_str >> std::hex >> range_end >> std::dec;
-	str = str_rest;
-	pos = str.find('"');
-	str = str.substr(pos + 1);
-	pos = str.find('"');
-	str = str.substr(0, pos);
-	stringstream output_port_str;
-	output_port_str << str;
-	output_port_str >> output_port;
-	storage->used = true;
-	storage->range_start = range_start;
-	storage->range_end = range_end;
-	storage->output_port = output_port;
-	return *this;
-}
-
-template <> const char *Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::GetDataTypeName() const {
-	return "unisim::component::tlm2::bus::simple_router::Mapping";
-}
-
-template class Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>;
-
-} // end of namespace unisim
-} // end of namespace kernel
-} // namespace service
-
-namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace interconnect {
@@ -394,6 +316,7 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 				m_rsp_dispatcher[targ_id]->Push(trans, time);
 				/* change the phase and signal that the response is completed */
 				phase = tlm::END_RESP;
+				trans.release();
 				return tlm::TLM_COMPLETED;
 			}
 			break;
@@ -493,7 +416,7 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 			} else {
 				/* trans is a write, the request is complete at this point so we need to copy it to forward it */
 				transaction_type *clone_trans = payload_fabric.allocate();
-				clone_trans->acquire();
+				// clone_trans->acquire(); // not necessary because it is being done in the payload_fabric
 				unsigned char *data = (unsigned char *)malloc(sizeof(unsigned char) * trans.get_data_length());
 				clone_trans->set_data_ptr(data);
 				if (trans.get_byte_enable_length() != 0) {
