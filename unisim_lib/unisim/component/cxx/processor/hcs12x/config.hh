@@ -64,11 +64,11 @@ struct CONFIG {
 	/*
 	 * static initialization may rise problems in SMP architectures !!!
 	 */
-	static const bool TIMING_ENABLE					= false;
+	static const bool TIMING_ENABLE					= true;
 
 	static const bool DEBUG_ENABLE					= true;
 	static const bool DEBUG_EXCEPTION_ENABLE		= false;
-	static const bool REGISTERS_INFO				= true;
+	static const bool REGISTERS_INFO				= false;
 
 	static const bool HAS_RESET						= false;
 	static const bool HAS_NON_MASKABLE_XIRQ_INTERRUPT	= false;

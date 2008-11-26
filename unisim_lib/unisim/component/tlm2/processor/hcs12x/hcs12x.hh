@@ -150,6 +150,10 @@ private:
 	sc_time nice_time;
 	sc_time next_nice_time;
 	uint64_t nice_time_int;
+
+	sc_time tlm2_btrans_time;
+	sc_time opCyclesArray[32]; // replace with the Max Inst Cycles
+
 //	double ipc;
 	uint64_t cpu_cycle_time_int;
 	uint64_t bus_cycle_time_int;

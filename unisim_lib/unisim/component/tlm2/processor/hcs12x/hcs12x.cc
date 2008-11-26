@@ -172,7 +172,6 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
-	sc_time delay = bus_cycle_time;
 
 	trans->set_command( tlm::TLM_READ_COMMAND );
 	trans->set_address( 0 );
@@ -185,7 +184,7 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 	trans->set_dmi_allowed( false );
 	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-	toXINT->b_transport( *trans, delay );
+	toXINT->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
 		SC_REPORT_ERROR("TLM-2", "Unable to compute interrupt vector");
@@ -251,6 +250,12 @@ Setup() {
 
 	cpu_cycle_time = sc_time((double)cpu_cycle_time_int, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+
+	tlm2_btrans_time = sc_time((double)0, SC_PS);
+
+	// ***
+	for (int i=0; i<32; i++) opCyclesArray[i] = cpu_cycle_time * i;
+	// ****
 
 	nice_time = sc_time((double)nice_time_int, SC_PS);
 	if( inherited::verbose_setup && inherited::logger_import) {
@@ -350,7 +355,7 @@ HCS12X ::
 Run() {
 	uint8_t opCycles = 0;
 //	sc_time time_per_instruction = cpu_cycle_time * ipc;
-	sc_time time_per_instruction;
+	sc_time &time_per_instruction = opCyclesArray[0];
 
 	while(1) {
 		if(cpu_time >= bus_time) {
@@ -367,7 +372,8 @@ Run() {
 				<< Endl << EndDebugInfo;
 
 		opCycles = inherited::Step();
-		time_per_instruction = cpu_cycle_time * opCycles;
+//		time_per_instruction = cpu_cycle_time * opCycles;
+		time_per_instruction = opCyclesArray[opCycles];
 
 		if( verbose_tlm_run_thread && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
@@ -387,9 +393,6 @@ void HCS12X::BusWrite(physical_address_t addr, const void *buffer, uint32_t size
 {
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
-	//	sc_time delay = sc_time(10, SC_NS);
-	sc_time delay = bus_cycle_time;
-
 	trans->set_command( tlm::TLM_WRITE_COMMAND );
 	trans->set_address( addr );
 	trans->set_data_ptr( (unsigned char *)buffer );
@@ -401,7 +404,7 @@ void HCS12X::BusWrite(physical_address_t addr, const void *buffer, uint32_t size
 	trans->set_dmi_allowed( false );
 	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-	socket->b_transport( *trans, delay );
+	socket->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
 		SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
@@ -412,9 +415,6 @@ void HCS12X::BusWrite(physical_address_t addr, const void *buffer, uint32_t size
 void HCS12X::BusRead(physical_address_t addr, void *buffer, uint32_t size)
 {
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
-
-//	sc_time delay = sc_time(10, SC_NS);
-	sc_time delay = bus_cycle_time;
 
 	trans->set_command( tlm::TLM_READ_COMMAND );
 	trans->set_address( addr );
@@ -427,7 +427,7 @@ void HCS12X::BusRead(physical_address_t addr, void *buffer, uint32_t size)
 	trans->set_dmi_allowed( false );
 	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-	socket->b_transport( *trans, delay );
+	socket->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
 		SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
