@@ -219,7 +219,9 @@ int sc_main(int argc, char *argv[])
 	bool logger_out = false;
 	bool logger_on = false;
 	bool logger_messages = false;
-	double cpu_frequency = 40.0; // in Mhz
+//	double cpu_frequency = 40.0; // in Mhz
+	double cpu_frequency = 2.0; // in Mhz
+
 	uint8_t cpu_clock_multiplier = 1;
 	uint8_t xgate_clock_multiplier = 2;
 //	double cpu_ipc = 1.0; // in instructions per cycle
@@ -365,7 +367,8 @@ int sc_main(int argc, char *argv[])
 	*var = "range_start=\"0x000121\" range_end=\"0x00012F\" output_port=\"0\""; // S12XINT
 
 	var = ServiceManager::GetParameter("router.mapping_1");
-	*var = "range_start=\"0x000800\" range_end=\"0x7FFFFF\" output_port=\"1\""; // RAM-EEPROM-FLASH
+//	*var = "range_start=\"0x000800\" range_end=\"0x7FFFFF\" output_port=\"1\""; // RAM-EEPROM-FLASH
+	*var = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"1\""; // RAM-EEPROM-FLASH
 
 	var = ServiceManager::GetParameter("router.verbose_all");
  	*var = true;
@@ -374,6 +377,9 @@ int sc_main(int argc, char *argv[])
 	(*memory)["cycle-time"] = mem_cycle_time;
 	(*memory)["org"] = 0x00000000UL;
 	(*memory)["bytesize"] = (uint32_t)-1; //effective memory size is 8Mo
+//	(*memory)["bytesize"] = (uint32_t)-1; //effective memory size is 8Mo
+	(*memory)["bytesize"] = (uint32_t)0x10000; //effective memory size is 8Mo
+
 	(*memory)["verbose"] = true;
 
 	//=========================================================================
