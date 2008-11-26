@@ -50,7 +50,6 @@ AC_CONFIG_FILES([Makefile])
 ###### CHECK FOR HOST ######################
 
 UNISIM_CONFIG_SUBDIR(tests-tlm2-bus-generic-bus, generic_bus)
-UNISIM_CONFIG_SUBDIR(tests-tlm2-bus-generic-router, generic_router)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
