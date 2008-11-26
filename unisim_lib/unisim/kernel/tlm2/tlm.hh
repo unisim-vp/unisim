@@ -291,6 +291,7 @@ public:
 		{
 			payload = free_list.front();
 			free_list.pop();
+			payload->acquire();
 			return payload;
 		}
 
