@@ -1552,8 +1552,10 @@ TBuiltDouble<TypeTraits>::plusAssign(const thisType& bdSource, StatusAndControlF
             else if (bdSource.fNegative != fNegative) {
                scfFlags.setInftyMinusInfty();
                biMantissa = 0U;
-               biMantissa.neg();
-               biMantissa.setFalseBitArray(bitSizeMantissa()-1);
+               // Modifs franck
+               biMantissa.setTrueBitArray(bitSizeMantissa()-1);
+               // biMantissa.neg();
+               // biMantissa.setFalseBitArray(bitSizeMantissa()-1);
             };
          };
       }
@@ -1661,8 +1663,10 @@ TBuiltDouble<TypeTraits>::minusAssign(const thisType& bdSource, StatusAndControl
             else if (bdSource.fNegative == fNegative) {
                scfFlags.setInftyMinusInfty();
                biMantissa = 0U;
-               biMantissa.neg();
-               biMantissa.setFalseBitArray(bitSizeMantissa()-1);
+               // Modifs franck
+               biMantissa.setTrueBitArray(bitSizeMantissa()-1);
+               // biMantissa.neg();
+               // biMantissa.setFalseBitArray(bitSizeMantissa()-1);
             };
          };
       }
@@ -2523,8 +2527,10 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
       else if (bdSource.biMantissa.isZero() && bdSource.biExponent.isZero()) {
          scfFlags.setInftyMultZero();
          biMantissa = 0;
-         biMantissa.neg();
-         biMantissa.setFalseBitArray(bitSizeMantissa()-1);
+         // Modifs franck
+         biMantissa.setTrueBitArray(bitSizeMantissa()-1);
+         // biMantissa.neg();
+         // biMantissa.setFalseBitArray(bitSizeMantissa()-1);
          if (scfFlags.keepNaNSign())
             fNegative = fOldNegative;
       };
@@ -2575,8 +2581,10 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
          if (bdSource.biMantissa.isZero()) {
             scfFlags.setInftyMultZero();
             biMantissa = 0U;
-            biMantissa.neg();
-            biMantissa.setFalseBitArray(bitSizeMantissa()-1);
+            // Modifs franck
+            biMantissa.setTrueBitArray(bitSizeMantissa()-1);
+            // biMantissa.neg();
+            // biMantissa.setFalseBitArray(bitSizeMantissa()-1);
          }
          else {
             biMantissa = bdSource.biMantissa;
