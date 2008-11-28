@@ -74,7 +74,7 @@ HCS12X(const sc_module_name& name, Object *parent) :
 	last_cpu_time(),
 	nice_time(),
 	next_nice_time(),
-	nice_time_int(10),
+	nice_time_int(1000000000000ULL),
 	cpu_cycle_time_int(0),
 	bus_cycle_time_int(0),
 	last_instruction_counter(0),
@@ -358,6 +358,7 @@ Run() {
 	sc_time &time_per_instruction = opCyclesArray[0];
 
 	while(1) {
+/*
 		if(cpu_time >= bus_time) {
 			bus_time += bus_cycle_time;
 			inherited::OnBusCycle();
@@ -366,6 +367,12 @@ Run() {
 				Synchronize();
 			}
 		}
+*/
+		if(cpu_time >= next_nice_time) {
+			next_nice_time = cpu_time + nice_time;
+			Synchronize();
+		}
+
 		if( verbose_tlm_run_thread && inherited::logger_import)
 			(*inherited::logger_import) << DebugInfo << LOCATION
 				<< "Executing step"
