@@ -371,7 +371,7 @@ int sc_main(int argc, char *argv[])
 //	*var = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"1\""; // 64KByte - RAM-EEPROM-FLASH
 
 	var = ServiceManager::GetParameter("router.verbose_all");
- 	*var = true;
+ 	*var = false;
 
 	//  - RAM
 	(*memory)["cycle-time"] = mem_cycle_time;
@@ -380,7 +380,7 @@ int sc_main(int argc, char *argv[])
 	(*memory)["bytesize"] = (uint32_t) 0x800000; // memory size is 8Mo
 //	(*memory)["bytesize"] = (uint32_t)0x10000; // memory size is 64KByte
 
-	(*memory)["verbose"] = true;
+	(*memory)["verbose"] = false;
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===
