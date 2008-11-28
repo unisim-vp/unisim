@@ -264,10 +264,10 @@ public:
 	//=     ISA - MEMORY ACCESS ROUTINES       =
 	//==========================================
 
-	uint8_t memRead8(physical_address_t addr);
-	void memWrite8(physical_address_t addr,uint8_t val);
-	uint16_t memRead16(physical_address_t addr);
-	void memWrite16(physical_address_t addr,uint16_t val);
+	inline uint8_t memRead8(physical_address_t addr);
+	inline void memWrite8(physical_address_t addr,uint8_t val);
+	inline uint16_t memRead16(physical_address_t addr);
+	inline void memWrite16(physical_address_t addr,uint16_t val);
 
 	//=====================================================================
 	//=                    execution handling methods                     =
@@ -385,29 +385,29 @@ public:
 	//======================================================================
 	//=                  Registers Acces Routines                          =
 	//======================================================================
-    void    setRegA(uint8_t val);
-    uint8_t getRegA();
+    inline void    setRegA(uint8_t val);
+    inline uint8_t getRegA();
 
-    void    setRegB(uint8_t val);
-    uint8_t getRegB();
+    inline void    setRegB(uint8_t val);
+    inline uint8_t getRegB();
 
-    void    setRegD(uint16_t val); // regD == regA:regB
-    uint16_t getRegD();
+    inline void    setRegD(uint16_t val); // regD == regA:regB
+    inline uint16_t getRegD();
 
-    void    setRegX(uint16_t val);
-    uint16_t getRegX();
+    inline void    setRegX(uint16_t val);
+    inline uint16_t getRegX();
 
-    void    setRegY(uint16_t val);
-    uint16_t getRegY();
+    inline void    setRegY(uint16_t val);
+    inline uint16_t getRegY();
 
-    void    setRegSP(uint16_t val);
-    uint16_t getRegSP();
+    inline void    setRegSP(uint16_t val);
+    inline uint16_t getRegSP();
 
-    void    setRegPC(uint16_t val);
-    uint16_t getRegPC();
+    inline void    setRegPC(uint16_t val);
+    inline uint16_t getRegPC();
 
-    void    setRegTMP(uint8_t index, uint16_t val);
-    uint16_t getRegTMP(uint8_t index);
+    inline void    setRegTMP(uint8_t index, uint16_t val);
+    inline uint16_t getRegTMP(uint8_t index);
 
 	/********************************************************************
 	 * *******  Used for Indexed Operations XB: Postbyte Code  **********
@@ -438,10 +438,10 @@ public:
 		}
 	}
 
-	uint16_t xb_getAddrRegValue(uint8_t rr);
-	void xb_setAddrRegValue(uint8_t rr,uint16_t val);
+	inline uint16_t xb_getAddrRegValue(uint8_t rr);
+	inline void xb_setAddrRegValue(uint8_t rr,uint16_t val);
 
-	uint16_t xb_getAccRegValue(uint8_t rr);
+	inline uint16_t xb_getAccRegValue(uint8_t rr);
 	/*************  END  XB  ***************/
 
 	//=====================================================================
@@ -571,6 +571,147 @@ private:
 
 };
 
+// ==============================================
+// =          MEMORY ACCESS ROUTINES            =
+// ==============================================
+
+inline uint8_t CPU::memRead8(physical_address_t addr) {
+
+	uint8_t data;
+	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
+	{
+		data = mmc->read(addr);
+	}
+	else
+	{
+		BusRead(addr, &data, 1);
+	}
+	return data;
+}
+
+inline uint16_t CPU::memRead16(physical_address_t addr) {
+
+	uint16_t data;
+	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
+	{
+		data = (uint16_t) (mmc->read(addr) << 8) || mmc->read(addr+1);
+	}
+	else
+	{
+		BusRead(addr, &data, 2);
+	}
+
+	data = BigEndian2Host(data);
+
+	return data;
+}
+
+inline void CPU::memWrite8(physical_address_t addr, uint8_t val) {
+
+	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
+	{
+		mmc->write(addr, val);
+	}
+	else
+	{
+		BusWrite( addr, &val, 1);
+	}
+}
+
+inline void CPU::memWrite16(physical_address_t addr, uint16_t val) {
+
+	val = Host2BigEndian(val);
+
+	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
+	{
+		mmc->write(addr, val >> 8);
+		mmc->write(addr+1, val);
+	}
+	else
+	{
+		BusWrite(addr, &val, 2);
+	}
+}
+
+//======================================================================
+//=                  Registers Acces Routines                          =
+//======================================================================
+
+uint16_t CPU::xb_getAddrRegValue(uint8_t rr) {
+switch (rr) {
+case 0:
+	return getRegX(); break;
+case 1:
+	return getRegY(); break;
+case 2:
+	return getRegSP(); break;
+case 3:
+	return getRegPC(); break;
+}
+}
+
+void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
+switch (rr) {
+case 0:
+	return setRegX(val); break;
+case 1:
+	return setRegY(val); break;
+case 2:
+	return setRegSP(val); break;
+case 3:
+	return setRegPC(val); break;
+}
+}
+
+
+uint16_t CPU::xb_getAccRegValue(uint8_t rr) {
+switch (rr) {
+case 0:
+	return getRegA(); break;
+case 1:
+	return getRegB(); break;
+case 2:
+	return getRegD(); break;
+default:
+	return 0; // ! or throw an exception
+}
+}
+
+
+void CPU::setRegA(uint8_t val) { regA = val; }
+uint8_t CPU::getRegA() { return regA; }
+
+void CPU::setRegB(uint8_t val) { regB = val; }
+uint8_t CPU::getRegB() { return regB; }
+
+void CPU::setRegD(uint16_t val) {
+// regD == regA:regB
+
+setRegA((uint8_t) (val >> 8));
+setRegB((uint8_t) (val & 0x00FF));
+
+}
+
+uint16_t CPU::getRegD() {
+// regD == regA:regB
+uint16_t val = (((uint16_t) getRegA()) << 8) | getRegB();
+return val;
+}
+
+void CPU::setRegX(uint16_t val) { regX = val; }
+uint16_t CPU::getRegX() { return regX; }
+
+void CPU::setRegY(uint16_t val) { regY = val; }
+uint16_t CPU::getRegY() { return regY; }
+
+void CPU::setRegSP(uint16_t val) { regSP = val; }
+uint16_t CPU::getRegSP() { return regSP; }
+
+void CPU::setRegPC(uint16_t val) { regPC = val; }
+uint16_t CPU::getRegPC() { return regPC; }
+
+void CPU::setRegTMP(uint8_t index, uint16_t val) { regTMP[index] = val; }
+uint16_t CPU::getRegTMP(uint8_t index) { return regTMP[index]; }
 
 
 } // end of namespace hcs12x

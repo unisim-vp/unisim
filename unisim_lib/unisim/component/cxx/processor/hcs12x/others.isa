@@ -269,7 +269,7 @@ swi.execute = {
 	 * (SWI Vector) => PC
 	 */
 
-	throw new NonMaskableSWIInterrupt();
+	throw NonMaskableSWIInterrupt();
 }
 
 // TRAP: unimplemented opcode trap
@@ -302,7 +302,7 @@ trap.execute = {
 		 * (Trap Vector) => PC
 		 */
 
-		throw new TrapException(trapnum);
+		throw TrapException(trapnum);
 		
 //  All this code is implemented in the CPU exception handling mecanism
 //		 
@@ -365,6 +365,6 @@ sys.execute = {
 	 * (Trap Vector) => PC
 	 */
 		 
-	throw new SysCallInterrupt();
+	throw SysCallInterrupt();
 
 }

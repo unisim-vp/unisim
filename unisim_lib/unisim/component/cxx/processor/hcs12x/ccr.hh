@@ -76,50 +76,50 @@ namespace hcs12x {
 class CCR_t
 {
 public:
-	uint8_t getC();
-	void 	setC();
-	void 	clrC();
+	inline uint8_t getC();
+	inline void 	setC();
+	inline void 	clrC();
 
-	uint8_t getV();
-	void 	setV();
-	void 	clrV();
+	inline uint8_t getV();
+	inline void 	setV();
+	inline void 	clrV();
 
-	uint8_t getZ();
-	void 	setZ();
-	void 	clrZ();
+	inline uint8_t getZ();
+	inline void 	setZ();
+	inline void 	clrZ();
 
-	uint8_t getN();
-	void 	setN();
-	void 	clrN();
+	inline uint8_t getN();
+	inline void 	setN();
+	inline void 	clrN();
 
-	uint8_t getI();
-	void 	setI();
-	void 	clrI();
+	inline uint8_t getI();
+	inline void 	setI();
+	inline void 	clrI();
 
-	uint8_t getH();
-	void 	setH();
-	void 	clrH();
+	inline uint8_t getH();
+	inline void 	setH();
+	inline void 	clrH();
 
-	uint8_t getX();
-	void	setX();
-	void 	clrX();
+	inline uint8_t getX();
+	inline void	setX();
+	inline void 	clrX();
 
-	uint8_t getS();
-	void 	setS();
-	void 	clrS();
+	inline uint8_t getS();
+	inline void 	setS();
+	inline void 	clrS();
 
-	uint8_t getIPL();
-	void 	setIPL(uint8_t newIPL);
-	void 	clrIPL();
+	inline uint8_t getIPL();
+	inline void 	setIPL(uint8_t newIPL);
+	inline void 	clrIPL();
 
-	uint8_t getCCRLow();
-	void setCCRLow(uint8_t val);
+	inline uint8_t getCCRLow();
+	inline void setCCRLow(uint8_t val);
 
-	uint8_t getCCRHigh();
-	void setCCRHigh(uint8_t val);
+	inline uint8_t getCCRHigh();
+	inline void setCCRHigh(uint8_t val);
 
-	uint16_t getCCR();
-	void setCCR(uint16_t val);
+	inline uint16_t getCCR();
+	inline void setCCR(uint16_t val);
 
 	void reset() { ccrVal = 0x00D0; /* S=1 X=1 I=1 */ }
 
@@ -128,6 +128,78 @@ private:
 	uint16_t ccrVal; // -------ipl SXHI NZVC
 
 }; // end class CCR_t
+
+
+inline uint8_t CCR_t::getC() { return ccrVal & SETC;};
+inline void 	CCR_t::setC() { ccrVal |= SETC;};
+inline void 	CCR_t::clrC() { ccrVal &= CLRC;};
+
+inline uint8_t CCR_t::getV() { return (ccrVal & SETV) >> 1;};
+inline void 	CCR_t::setV() { ccrVal |= SETV;};
+inline void 	CCR_t::clrV() { ccrVal &= CLRV;};
+
+inline uint8_t CCR_t::getZ() { return (ccrVal & SETZ) >> 2;};
+inline void 	CCR_t::setZ() { ccrVal |= SETZ;};
+inline void 	CCR_t::clrZ() { ccrVal &= CLRZ;};
+
+inline uint8_t CCR_t::getN() { return (ccrVal & SETN) >> 3;};
+inline void 	CCR_t::setN() { ccrVal |= SETN;};
+inline void 	CCR_t::clrN() { ccrVal &= CLRN;};
+
+inline uint8_t CCR_t::getI() { return (ccrVal & SETI) >> 4;};
+inline void 	CCR_t::setI() { ccrVal |= SETI;};
+inline void 	CCR_t::clrI() { ccrVal &= CLRI;};
+
+inline uint8_t CCR_t::getH() { return (ccrVal & SETH) >> 5;};
+inline void 	CCR_t::setH() { ccrVal |= SETH;};
+inline void 	CCR_t::clrH() { ccrVal &= CLRH;};
+
+inline uint8_t CCR_t::getX() { return (ccrVal & SETX) >> 6;};
+inline void	CCR_t::setX() { ccrVal |= SETX;};
+inline void 	CCR_t::clrX() { ccrVal &= CLRX;};
+
+inline uint8_t CCR_t::getS() { return (ccrVal & SETS) >> 7;};
+inline void 	CCR_t::setS() { ccrVal |= SETS;};
+inline void 	CCR_t::clrS() { ccrVal &= CLRS;};
+
+// IPL is 3-bits
+inline uint8_t CCR_t::getIPL() { return (ccrVal & SETIPL) >> 8;};
+inline void 	CCR_t::setIPL(uint8_t newIPL) { clrIPL(); ccrVal |= (((uint16_t) newIPL) & 0x00FF) << 8;};
+inline void 	CCR_t::clrIPL() { ccrVal &= CLRIPL;};
+
+inline uint8_t CCR_t::getCCRLow() {
+	uint8_t val = (uint8_t) (ccrVal & 0x00FF);
+
+	return val;
+};
+inline void CCR_t::setCCRLow(uint8_t val) {
+	// before check the X-bit: once cleared it cannot be set by program instructions
+	if (getX() == 0) val &= 0xBF;
+	ccrVal = (ccrVal & 0xFF00) | val;
+};
+
+inline uint8_t CCR_t::getCCRHigh() {
+	uint8_t val = (uint8_t) ((ccrVal >> 8) & 0x00FF);
+
+	return val;
+};
+
+inline void CCR_t::setCCRHigh(uint8_t val) {
+	ccrVal = (ccrVal & 0x00FF) | ((uint16_t) val << 8);
+};
+
+
+inline uint16_t CCR_t::getCCR() {
+	return ccrVal;
+};
+
+inline void CCR_t::setCCR(uint16_t val) {
+	// before check the X-bit: once cleared it cannot be set by program instructions
+	if (getX() == 0) val &= 0xFFBF;
+
+	ccrVal = val;
+};
+
 
 } // end of namespace hcs12x
 } // end of namespace processor
