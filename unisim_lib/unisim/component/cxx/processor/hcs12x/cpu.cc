@@ -87,8 +87,8 @@ CPU::CPU(const char *name, Object *parent):
 //	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
 	logger_import("logger_import", this),
-	requires_memory_access_reporting(true),
-	requires_finished_instruction_reporting(true),
+	requires_memory_access_reporting(false),
+	requires_finished_instruction_reporting(false),
 	verbose_all(false),
 	verbose_exception(false),
 	verbose_setup(false),
@@ -118,6 +118,18 @@ CPU::~CPU()
 {
 	if (eblb) { delete eblb; eblb = NULL;}
 	if (ccr) { delete ccr; ccr = NULL;}
+
+	// Release registers_registry
+	registers_registry.clear();
+
+/*
+	map<string, Register *>::iterator the_iterator = registers_registry.begin();
+	while( the_iterator != registers_registry.end() ) {
+
+		the_iterator++;
+	}
+*/
+
 }
 
 void CPU::setMMC(MMC *_mmc) { mmc = _mmc; }

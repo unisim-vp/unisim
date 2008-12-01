@@ -125,7 +125,7 @@ public:
 
 private:
 
-	uint16_t ccrVal; // -------ipl SXHI NZVC
+	uint16_t ccrVal; // u----ipl(3bits) SXHI NZVC
 
 }; // end class CCR_t
 
