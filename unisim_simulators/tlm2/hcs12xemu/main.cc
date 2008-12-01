@@ -548,16 +548,23 @@ int sc_main(int argc, char *argv[])
 		cerr << "Can't start simulation because of previous errors" << endl;
 	}
 
-	if (mmc) { delete mmc; mmc = NULL; }
-	if(memory) delete memory;
-	if(gdb_server) delete gdb_server;
-	if(inline_debugger) delete inline_debugger;
-	if(router) delete router;
-	if(cpu) delete cpu;
-	if(time) delete time;
-	if(logger) delete logger;
+	if(loader) { delete loader; loader = NULL; }
 
-	if(loader) delete loader;
+	if (int_gen) { delete int_gen; int_gen = NULL; }
+	if (s12xint) { delete s12xint; s12xint = NULL; }
+	if (mmc) { delete mmc; mmc = NULL; }
+	if(memory) { delete memory; memory = NULL; }
+	if(router) { delete router; router = NULL; }
+	if(cpu) { delete cpu; cpu = NULL; }
+
+	if(logger) { delete logger; logger = NULL; }
+
+	if(gdb_server) { delete gdb_server; gdb_server = NULL; }
+	if(inline_debugger) { delete inline_debugger; inline_debugger = NULL; }
+	if (symbol_table) { delete symbol_table; symbol_table = NULL; }
+
+	if (host_time) { delete host_time; host_time = NULL; }
+	if(time) { delete time; time = NULL; }
 
 #ifdef WIN32
 	// releases the winsock2 resources
