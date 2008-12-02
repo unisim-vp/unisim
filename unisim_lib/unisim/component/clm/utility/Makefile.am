@@ -8,7 +8,7 @@ include_HEADERS = \
 	common.hh \
 	error.h \
 	types.hh \
-	utility.h
+	utility.hh
 
 
 dist_share_DATA = COPYING

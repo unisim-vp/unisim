@@ -51,6 +51,9 @@ namespace clm {
 namespace processor {
 namespace ooosim {
 
+  using unisim::component::clm::memory::ReplacementPolicyType;
+  using unisim::component::clm::memory::randomReplacementPolicy;
+
 /* ISA Parameters */
 //const int nSources = 3;
 const int nSources = 32;

@@ -52,7 +52,7 @@
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 #include <unisim/component/clm/utility/error.h>
 //#include "memreq.h"
-#include <unisim/component/clm/interfaces/memreq_mc.h>
+#include <unisim/component/clm/interfaces/memreq_mc.hh>
 #include <unisim/component/clm/memory/mem_common.hh>
 
 #include <unisim/component/clm/utility/utility.hh>
@@ -100,6 +100,11 @@ namespace component {
 namespace clm {
 namespace processor {
 namespace ooosim {
+
+using unisim::component::clm::memory::endianess_t;
+using unisim::component::clm::memory::big_endian;
+using unisim::component::clm::memory::little_endian;
+using unisim::component::clm::memory::ByteArray;
 
 using unisim::component::clm::interfaces::InstructionPtr;
 

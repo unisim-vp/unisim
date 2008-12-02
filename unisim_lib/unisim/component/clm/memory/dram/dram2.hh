@@ -47,7 +47,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unisim/component/clm/utility/common.hh>
 #include <unisim/component/clm/memory/mem_common.hh>
 #include <unisim/component/clm/utility/error.h>
-#include <unisim/component/clm/utility/utility.h>
+#include <unisim/component/clm/utility/utility.hh>
 #include <unisim/component/clm/memory/memory_container.hh>
 #include <unisim/component/clm/memory/dram/dram_components_mc.hh>
 
@@ -56,7 +56,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include <generic/memory/MyMemEmulator.hh>
 #include <unisim/component/cxx/memory/ram/memory.hh>
 
-#include <unisim/component/clm/interfaces/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.hh>
 //#include <generic/memory/memory_interface.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>

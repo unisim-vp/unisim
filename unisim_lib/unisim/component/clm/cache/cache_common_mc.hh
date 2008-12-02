@@ -45,7 +45,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //#include "mem_common.h"
 #include <unisim/component/clm/memory/mem_common.hh>
-#include <unisim/component/clm/interfaces/memreq.hh>
+#include <unisim/component/clm/interfaces/memreq_mc.hh>
 #include <inttypes.h>
 
 namespace unisim {

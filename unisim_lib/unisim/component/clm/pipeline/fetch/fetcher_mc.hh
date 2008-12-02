@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_FETCH_FETCHER_MC_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_FETCH_FETCHER_MC_HH__
 
-#include <unisim/component/clm/interfaces/memreq_mc.h>
+#include <unisim/component/clm/interfaces/memreq_mc.hh>
 
 #include <unisim/component/clm/cache/cache_common.hh>
 #include <unisim/component/clm/pipeline/fetch/branch_history_table.hh>

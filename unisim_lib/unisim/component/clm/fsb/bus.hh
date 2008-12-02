@@ -44,7 +44,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <unisim/component/clm/interfaces/memreq.hh>
 #include <unisim/component/clm/utility/error.h>
-#include <unisim/component/clm/utility/utility.h>
+#include <unisim/component/clm/utility/utility.hh>
 #include <sstream>
 
 #include <unisim/component/clm/debug/svg_memreq_interface.hh>

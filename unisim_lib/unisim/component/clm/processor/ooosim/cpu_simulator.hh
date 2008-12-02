@@ -55,7 +55,7 @@
 #include <unisim/component/clm/interfaces/memreq.hh>
 #include <unisim/component/clm/memory/mem_common.hh>
 
-#include <unisim/component/clm/utility/utility.h>
+#include <unisim/component/clm/utility/utility.hh>
 
 #include <unisim/component/clm/processor/ooosim/cpu_emulator.hh>
 

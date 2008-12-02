@@ -48,7 +48,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "mem_common.h"
 #include <unisim/component/clm/memory/mem_common.hh>
 //#include "memreq.h"
-#include <unisim/component/clm/interfaces/memreq_mc.h>
+#include <unisim/component/clm/interfaces/memreq_mc.hh>
 //#include "common.h"
 #include <unisim/component/clm/utility/common.hh>
 //#include "base/utility.h"

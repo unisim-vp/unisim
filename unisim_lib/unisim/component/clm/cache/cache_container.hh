@@ -42,7 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __UNISIM_COMPONENT_CLM_CACHE_CACHE_CONTAINER_HH__
 #define __UNISIM_COMPONENT_CLM_CACHE_CACHE_CONTAINER_HH__
 
-#include <unisim/component/clm/utility/utility.h>
+#include <unisim/component/clm/utility/utility.hh>
 #include <unisim/component/clm/memory/mem_common.hh>
 #include <inttypes.h>
 #include <stdio.h>

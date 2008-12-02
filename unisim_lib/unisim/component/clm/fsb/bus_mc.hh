@@ -42,9 +42,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __UNISIM_COMPONENT_CLM_FSB_BUS_MC_HH__
 
 
-#include <unisim/component/clm/interfaces/memreq_mc.h>
+#include <unisim/component/clm/interfaces/memreq_mc.hh>
 #include <unisim/component/clm/utility/error.h>
-#include <unisim/component/clm/utility/utility.h>
+#include <unisim/component/clm/utility/utility.hh>
 #include <sstream>
 
 #include <unisim/component/clm/debug/svg_memreq_interface.hh>

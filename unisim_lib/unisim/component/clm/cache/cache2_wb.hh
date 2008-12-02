@@ -52,7 +52,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "common.h"
 #include <unisim/component/clm/utility/common.hh>
 //#include "base/utility.h"
-#include <unisim/component/clm/utility/utility.h>
+#include <unisim/component/clm/utility/utility.hh>
 //#include "system/CacheContainer.h"
 //#include "system/memory/cache/CacheCommon.h"
 #include <unisim/component/clm/cache/cache_container.hh>

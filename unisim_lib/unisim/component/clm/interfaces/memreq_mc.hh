@@ -53,6 +53,7 @@ namespace component {
 namespace clm {
 namespace interfaces {
 
+  using unisim::component::clm::memory::ByteArray;
 
 using namespace std;
 

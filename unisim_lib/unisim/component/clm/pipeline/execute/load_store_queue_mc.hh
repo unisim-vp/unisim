@@ -45,7 +45,7 @@
 //#include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
-#include <unisim/component/clm/interfaces/memreq.hh>
+#include <unisim/component/clm/interfaces/memreq_mc.hh>
 
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 
