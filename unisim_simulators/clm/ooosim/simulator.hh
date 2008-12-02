@@ -53,6 +53,7 @@
 //#define DD_DEBUG_TIMESTAMP 70000
 //#define DD_DEBUG_TIMESTAMP 3552229
 //#define DD_DEBUG_TIMESTAMP 0
+//#define DD_DEBUG_TIMESTAMP 5000
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -133,9 +134,9 @@
 #endif
 
 // --------- TO USED !!!
-#define DD_CHECK_WITH_EMULATOR
+//#define DD_CHECK_WITH_EMULATOR
 //#define CHECK_REGISTER_STEP 10000000
-#define CHECK_REGISTER_STEP 1
+//#define CHECK_REGISTER_STEP 1
 
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
@@ -148,6 +149,7 @@
 #include <unisim/component/clm/fsb/bus_multiqueue3.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
+#include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
 #include <unisim/kernel/service/service.hh>
 
 // Includes for services
@@ -392,7 +394,7 @@ public:
 #define nDL1CPUtoCacheDataPathSize 8
 #define nProg 1
   */
-  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg> cCPU;
+  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, false> cCPU;
 
   // Unisim modules
   //  cSAC *__sac;

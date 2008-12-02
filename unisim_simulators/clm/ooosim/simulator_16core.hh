@@ -148,6 +148,7 @@
 #include <unisim/component/clm/fsb/bus_multiqueue3.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
+#include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
 #include <unisim/kernel/service/service.hh>
 
 // Includes for services

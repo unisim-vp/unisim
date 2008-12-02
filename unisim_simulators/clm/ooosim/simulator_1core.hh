@@ -53,6 +53,7 @@
 //#define DD_DEBUG_TIMESTAMP 70000
 //#define DD_DEBUG_TIMESTAMP 3552229
 //#define DD_DEBUG_TIMESTAMP 0
+#define DD_DEBUG_TIMESTAMP 5000
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -133,9 +134,9 @@
 #endif
 
 // --------- TO USED !!!
-//#define DD_CHECK_WITH_EMULATOR
+#define DD_CHECK_WITH_EMULATOR
 //#define CHECK_REGISTER_STEP 10000000
-//#define CHECK_REGISTER_STEP 1
+#define CHECK_REGISTER_STEP 1
 
 #define SYSCALL_DISPATCH_WITHOUT_MIB
 
