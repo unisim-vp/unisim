@@ -9,7 +9,7 @@ nobase_include_HEADERS = \
 	dram/dram_components_mc.hh \
 	dram/dram.hh \
 	dram/dram2.hh \
-	mem_common.h \
+	mem_common.hh \
 	memory_container.hh
 
 dist_share_DATA = COPYING

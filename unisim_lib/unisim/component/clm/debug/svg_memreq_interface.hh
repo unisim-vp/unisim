@@ -15,7 +15,7 @@
 #include <string>
 #include <inttypes.h>
 //#include "memreq.h"
-#include <unisim/component/clm/interfaces/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.hh>
 
 //class Instruction;
 

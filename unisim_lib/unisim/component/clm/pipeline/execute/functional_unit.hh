@@ -42,10 +42,6 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_FUNCTIONAL_UNIT_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_FUNCTIONAL_UNIT_HH__
 
-//#include <types.h>
-//#include <utility.h>
-//#include <common.h>
-//#include <systemc.h>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 

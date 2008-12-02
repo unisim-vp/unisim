@@ -40,9 +40,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************** */
 
 #ifndef __UNISIM_COMPONENT_CLM_CACHE_CACHE_CONTAINER_HH__
-#define __UNISIM_COMPONENT_CLM_CACHE_CACHE__CONTAINER_HH__
+#define __UNISIM_COMPONENT_CLM_CACHE_CACHE_CONTAINER_HH__
 
 #include <unisim/component/clm/utility/utility.h>
+#include <unisim/component/clm/memory/mem_common.hh>
 #include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
@@ -50,6 +51,14 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unisim/component/clm/utility/error.h>
 #include <unisim/component/clm/cache/cache_coherency_protocol.hh>
 #include <unisim/component/clm/cache/mesi.h>
+
+
+using unisim::component::clm::memory::ReplacementPolicyType;
+using unisim::component::clm::memory::randomReplacementPolicy;
+using unisim::component::clm::memory::lruReplacementPolicy;
+using unisim::component::clm::memory::pseudoLRUReplacementPolicy;
+using unisim::component::clm::memory::address_t;
+
 
 /* get a random number */
 INLINE int myrand()                    /* returns random number */

@@ -8,6 +8,7 @@ include_HEADERS = \
 	config.hh \
 	cpu_emulator.hh \
 	cpu_simulator.hh \
+	cpu_simulator.tcc \
 	iss_interface.hh \
 	parameters.hh
 

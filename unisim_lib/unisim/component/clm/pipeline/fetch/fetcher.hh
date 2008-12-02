@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_FETCH_FETCHER_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_FETCH_FETCHER_HH__
 
-#include <unisim/component/clm/interfaces/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.hh>
 
 //#include <system/memory/cache/CacheCommon.h>
 #include <unisim/component/clm/cache/cache_common.hh>
@@ -59,6 +59,9 @@ namespace clm {
 namespace pipeline {
 namespace fetch {
 
+
+using unisim::component::clm::memory::endianess_t;
+using unisim::component::clm::memory::ByteArray;
 
 using unisim::component::clm::interfaces::memreq;
 using unisim::component::clm::interfaces::memreq_types;

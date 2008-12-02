@@ -42,10 +42,6 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_DECODE_ALLOCATOR_RENAMER_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_DECODE_ALLOCATOR_RENAMER_HH__
 
-//#include <systemc.h>
-//#include <utility.h>
-//#include <types.h>
-//#include <common.h>
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 

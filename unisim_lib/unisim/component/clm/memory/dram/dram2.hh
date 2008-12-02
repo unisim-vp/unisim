@@ -44,8 +44,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __UNISIM_COMPONENT_CLM_MEMORY_DRAM_DRAM_HH__
 
 #include <unisim/kernel/clm/engine/unisim.h>
-#include <unisim/component/clm/utility/common.h>
-#include <unisim/component/clm/memory/mem_common.h>
+#include <unisim/component/clm/utility/common.hh>
+#include <unisim/component/clm/memory/mem_common.hh>
 #include <unisim/component/clm/utility/error.h>
 #include <unisim/component/clm/utility/utility.h>
 #include <unisim/component/clm/memory/memory_container.hh>

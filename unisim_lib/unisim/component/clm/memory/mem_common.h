@@ -39,11 +39,29 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   
 ***************************************************************************** */
 
-#ifndef __MEM_COMMON_H__
-#define __MEM_COMMON_H__
+#ifndef __UNISIM_COMPONENT_CLM_MEMORY_MEM_COMMON_HH__
+#define __UNISIM_COMPONENT_CLM_MEMORY_MEM_COMMON_HH__
 
+#include <iostream>
+#include <iomanip>
 #include <string.h>
 #include <inttypes.h>
+
+namespace unisim {
+namespace component {
+namespace clm {
+namespace memory {
+
+
+using std::ostream;
+using std::right;
+using std::left;
+using std::dec;
+using std::hex;
+using std::setw;
+using std::setfill;
+
+//using namespace std;
 
 //typedef uint64_t address_t;
 typedef uint32_t address_t;
@@ -281,5 +299,10 @@ class ByteArray
 enum WritePolicyType       { writethrough, writeback };
 enum ReplacementPolicyType { randomReplacementPolicy, lruReplacementPolicy, pseudoLRUReplacementPolicy };
 enum AllocationPolicyType  { allocateOnWritePolicy, nonAllocateOnWritePolicy };
+
+} // end of namespace memory
+} // end of namespace clm
+} // end of namespace component
+} // end of namespace unisim
 
 #endif

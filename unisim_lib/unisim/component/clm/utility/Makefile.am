@@ -5,7 +5,7 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/utility
 #INCLUDE_SUBDIRS=
 
 include_HEADERS = \
-	common.h \
+	common.hh \
 	error.h \
 	types.hh \
 	utility.h

@@ -43,7 +43,7 @@
 #define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_PARMETER_HH__
 
 #include <unisim/component/clm/utility/types.hh>
-#include <unisim/component/clm/memory/mem_common.h>
+#include <unisim/component/clm/memory/mem_common.hh>
 
 namespace unisim {
 namespace component {

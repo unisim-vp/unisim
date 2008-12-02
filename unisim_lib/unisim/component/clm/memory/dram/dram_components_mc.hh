@@ -43,11 +43,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __UNISIM_COMPONENT_CLM_MEMORY_DRAM_DRAM_COMPONENT_HH__
 #define __UNISIM_COMPONENT_CLM_MEMORY_DRAM_DRAM_COMPONENT_HH__
 
-#include <unisim/component/clm/utility/common.h>
-#include <unisim/component/clm/memory/mem_common.h>
+#include <unisim/component/clm/utility/common.hh>
+#include <unisim/component/clm/memory/mem_common.hh>
 #include <unisim/component/clm/utility/utility.h>
 #include <unisim/component/clm/memory/memory_container.hh>
-#include <unisim/component/clm/interfaces/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.hh>
 
 
 namespace unisim {

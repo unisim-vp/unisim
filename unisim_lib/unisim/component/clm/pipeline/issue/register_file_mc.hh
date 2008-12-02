@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_ISSUE_REGISTER_FILE_MC_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_ISSUE_REGISTER_FILE_MC_HH__
 
-#include <unisim/component/clm/utility/common.h>
+#include <unisim/component/clm/utility/common.hh>
 
 namespace unisim {
 namespace component {

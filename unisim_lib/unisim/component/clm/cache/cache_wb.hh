@@ -46,11 +46,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "unisim/unisim.h"
 #include <unisim/kernel/clm/engine/unisim.h>
 //#include "mem_common.h"
-#include <unisim/component/clm/memory/mem_common.h>
+#include <unisim/component/clm/memory/mem_common.hh>
 //#include "memreq.h"
-#include <unisim/component/clm/interfaces/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.hh>
 //#include "common.h"
-#include <unisim/component/clm/utility/common.h>
+#include <unisim/component/clm/utility/common.hh>
 //#include "base/utility.h"
 #include <unisim/component/clm/utility/utility.h>
 //#include "system/CacheContainer.h"

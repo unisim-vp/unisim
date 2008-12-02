@@ -25,7 +25,8 @@
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>
 
-#include <unisim/component/clm/utility/common.h>
+#include <unisim/component/clm/memory/mem_common.hh>
+#include <unisim/component/clm/utility/common.hh>
 
 namespace unisim {
 namespace component {
@@ -63,6 +64,7 @@ namespace interfaces {
   using unisim::component::clm::utility::MISALIGNMENT_EXCEPTION;
   using unisim::component::clm::utility::INVALID_OPCODE_EXCEPTION;
 
+  using unisim::component::clm::memory::address_t;
 
 #undef GCC_INLINE
 

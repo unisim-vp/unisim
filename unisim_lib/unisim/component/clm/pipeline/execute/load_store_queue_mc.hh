@@ -45,17 +45,21 @@
 //#include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
-#include <unisim/component/clm/interfaces/memreq.h>
+#include <unisim/component/clm/interfaces/memreq.hh>
 
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 
-#include <unisim/component/clm/utility/common.h>
+#include <unisim/component/clm/utility/common.hh>
 
 namespace unisim {
 namespace component {
 namespace clm {
 namespace pipeline {
 namespace execute {
+
+  using unisim::component::clm::memory::address_t;
+using unisim::component::clm::memory::endianess_t;
+using unisim::component::clm::memory::ByteArray;
 
   // Parameters
 using unisim::component::clm::processor::ooosim::DL1_nLineSize;

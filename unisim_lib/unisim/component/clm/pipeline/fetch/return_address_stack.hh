@@ -42,11 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_FETCH_RETURN_ADDRESS_STACK_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_FETCH_RETURN_ADDRESS_STACK_HH__
 
-//#include <systemc.h>
-//#include <generics/others/utility.h>
-//#include <generics/others/types.h>
-//#include <generics/others/common.h>
-#include <unisim/component/clm/utility/common.h>
+#include <unisim/component/clm/utility/common.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 namespace unisim {
@@ -55,6 +51,7 @@ namespace clm {
 namespace pipeline {
 namespace fetch {
 
+  using unisim::component::clm::memory::address_t;
 using unisim::component::clm::interfaces::InstructionPtr;
 
 using unisim::component::clm::utility::hexa;

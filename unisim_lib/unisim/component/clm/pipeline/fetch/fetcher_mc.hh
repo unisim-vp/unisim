@@ -62,6 +62,9 @@ namespace pipeline {
 namespace fetch {
 
 
+using unisim::component::clm::memory::endianess_t;
+using unisim::component::clm::memory::ByteArray;
+
 using unisim::component::clm::interfaces::memreq;
 using unisim::component::clm::interfaces::memreq_types;
 

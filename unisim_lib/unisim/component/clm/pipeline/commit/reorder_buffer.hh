@@ -47,7 +47,7 @@
 
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
-#include <unisim/component/clm/utility/common.h>
+#include <unisim/component/clm/utility/common.hh>
 
 
 namespace unisim {
@@ -55,6 +55,8 @@ namespace component {
 namespace clm {
 namespace pipeline {
 namespace commit {
+
+  using unisim::component::clm::memory::address_t;
 
 using unisim::component::clm::interfaces::InstructionPtr;
 
