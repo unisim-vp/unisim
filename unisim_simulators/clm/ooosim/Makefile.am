@@ -7,10 +7,11 @@ bin_PROGRAMS = ooosim_1core ooosim_2core ooosim_4core ooosim_8core ooosim_16core
 ooosim_1core_SOURCES = ooosim_cpu_emulator.cc cpu_simulator.cc main_1core.cc simulator.hh
 #ooosim_1core_SOURCES = ooosim_cpu_emulator.cc main_1core.cc simulator.hh
 
-#ooosim_2core_SOURCES = ooosim_cpu_emulator.cc cpu_simulator.cc main_2core.cc simulator_2core.hh
-ooosim_2core_SOURCES = ooosim_cpu_emulator.cc main_2core.cc simulator_2core.hh
+ooosim_2core_SOURCES = ooosim_cpu_emulator.cc cpu_simulator.cc main_2core.cc simulator_2core.hh
+#ooosim_2core_SOURCES = ooosim_cpu_emulator.cc main_2core.cc simulator_2core.hh
 
 ooosim_4core_SOURCES = main_4core.cc ooosim_cpu_emulator.cc simulator_4core.hh
+#ooosim_4core_SOURCES = main_4core.cc ooosim_cpu_emulator.cc simulator_4core.hh
 
 ooosim_8core_SOURCES = main_8core.cc ooosim_cpu_emulator.cc simulator_8core.hh
 
