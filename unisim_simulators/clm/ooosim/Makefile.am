@@ -4,8 +4,8 @@ bin_PROGRAMS = ooosim_1core ooosim_2core ooosim_4core ooosim_8core ooosim_16core
 #ooosim_SOURCES = main.cc
 #ooosim_CPPFLAGS =
 
-#ooosim_1core_SOURCES = ooosim_cpu_emulator.cc cpu_simulator.cc main_1core.cc simulator.hh
-ooosim_1core_SOURCES = ooosim_cpu_emulator.cc main_1core.cc simulator.hh
+ooosim_1core_SOURCES = ooosim_cpu_emulator.cc cpu_simulator.cc main_1core.cc simulator.hh
+#ooosim_1core_SOURCES = ooosim_cpu_emulator.cc main_1core.cc simulator.hh
 
 #ooosim_2core_SOURCES = ooosim_cpu_emulator.cc cpu_simulator.cc main_2core.cc simulator_2core.hh
 ooosim_2core_SOURCES = ooosim_cpu_emulator.cc main_2core.cc simulator_2core.hh

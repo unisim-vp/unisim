@@ -3,6 +3,7 @@ INCLUDES=-I$(top_srcdir)/../../include -I$(top_builddir)/../..
 bin_PROGRAMS = ooosim_mc_2core ooosim_mc_4core ooosim_mc_8core ooosim_mc_16core ooosim_mc_32core ooosim_mc_64core ooosim_mc_128core
 
 ooosim_mc_2core_SOURCES = main_mc_2core.cc ooosim_mc_cpu_emulator.cc simulator_mc_2core.hh
+#ooosim_mc_2core_SOURCES = ooosim_mc_cpu_emulator.cc cpu_simulator_mc.cc main_mc_2core.cc simulator_mc_2core.hh
 
 ooosim_mc_4core_SOURCES = main_mc_4core.cc ooosim_mc_cpu_emulator.cc simulator_mc_4core.hh
 

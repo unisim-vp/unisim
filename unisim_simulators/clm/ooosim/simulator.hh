@@ -149,7 +149,7 @@
 #include <unisim/component/clm/fsb/bus_multiqueue3.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
-#include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
+//#include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
 #include <unisim/kernel/service/service.hh>
 
 // Includes for services
@@ -163,6 +163,9 @@
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/logger/logger_server.hh>
+
+#include <unisim/component/clm/interfaces/memreq.hh>
+#include <unisim/component/clm/interfaces/memreq.tcc>
 
 /* Following includes have been moved into cpu_emulator.hh */
 /*
