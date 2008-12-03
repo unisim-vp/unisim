@@ -263,8 +263,23 @@ using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
+/*
+namespace unisim {
+namespace component {
+namespace clm {
+namespace interfaces {
+ 
+  template class memreq<InstructionPtr, DL1_nCPUtoCacheDataPathSize>;
+  template class memreq<InstructionPtr, DL1_nMemtoCacheDataPathSize>;
+  
+  template ostream & 
+  operator<<(ostream &os,
+	     const memreq<unisim::component::clm::interfaces::InstructionPtr, 32> &req);
+  operator<<(ostream &os,
+	     const memreq<unisim::component::clm::interfaces::InstructionPtr, 8> &req);
 
-
+} } } }
+*/
 
 class GeneratedSimulator : public Simulator{
 public:
