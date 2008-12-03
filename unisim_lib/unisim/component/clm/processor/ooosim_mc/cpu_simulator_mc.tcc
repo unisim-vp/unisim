@@ -40,8 +40,8 @@
                             OooSimCpu.sim  -  description
  ***************************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_MC_HH__
-#define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_MC_HH__
+#ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_MC_TCC__
+#define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_MC_TCC__
 
 #define TAG_SEND_ON_MEMORY_REQUEST 0
 //#define __BYTE_ORDER __BIG_ENDIAN
@@ -98,13 +98,13 @@ using unisim::kernel::service::Object;
     >
   OooSimCpu<nIntegerRegisters,nIL1CachetoCPUDataPathSize,nIL1CPUtoCacheDataPathSize,
 	    nDL1CachetoCPUDataPathSize,nDL1CPUtoCacheDataPathSize,nProg,VERBOSE,nConfig>:: 
-  OooSimCpu(const char *name, Object *parent=0) : module(name)
+  OooSimCpu(const char *name, Object *parent) : module(name)
 					,Object(name, parent)
   { 
     class_name = " OooSimCpu";
     category = category_PROCESSOR;
 
-    initialization();
+    //    initialization();
     int a = 0x1234;
     host_endianess = (*(char *) &a == 0x34) ? little_endian : big_endian;
     //    this->endianess = options.endianess;
@@ -1236,7 +1236,7 @@ using unisim::kernel::service::Object;
   uint64_t
   OooSimCpu<nIntegerRegisters,nIL1CachetoCPUDataPathSize,nIL1CPUtoCacheDataPathSize,
 	    nDL1CachetoCPUDataPathSize,nDL1CPUtoCacheDataPathSize,nProg,VERBOSE,nConfig>:: 
-  GetRetiredInstructions();
+  GetRetiredInstructions() {return 0;}
 
   /**
    * Dump the simulator registers for debugging purpose
