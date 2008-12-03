@@ -43,6 +43,18 @@
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
 
+namespace unisim {
+namespace component {
+namespace clm {
+namespace interfaces {
+
+template class memreq<unisim::component::clm::interfaces::InstructionPtr, 32>;
+template class memreq<unisim::component::clm::interfaces::InstructionPtr, 8>;
+
+template ostream & operator<<(ostream &os, const memreq<unisim::component::clm::interfaces::InstructionPtr, 32> &req);
+
+
+} } } }
 
 namespace unisim {
   namespace component {

@@ -165,7 +165,6 @@
 #include <unisim/service/logger/logger_server.hh>
 
 #include <unisim/component/clm/interfaces/memreq.hh>
-#include <unisim/component/clm/interfaces/memreq.tcc>
 
 /* Following includes have been moved into cpu_emulator.hh */
 /*
