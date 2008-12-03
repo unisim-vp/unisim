@@ -7,6 +7,7 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/interfaces
 nobase_include_HEADERS = \
 	instruction_interface.hh \
 	memreq.hh \
+	memreq.tcc \
 	memreq_mc.hh \
 	memreq_interface.hh
 

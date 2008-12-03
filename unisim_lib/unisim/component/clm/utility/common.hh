@@ -143,7 +143,7 @@ INLINE string hexa(int64_t v)
   return buffer;
 }
 
-void print_buffer(ostream &os, const void *buffer, size_t size)
+INLINE void print_buffer(ostream &os, const void *buffer, size_t size)
 { char *buf = (char*)buffer;
   os << hex << right << setfill('0');
   for(int i=0; i<size; i++)

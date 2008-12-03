@@ -48,7 +48,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-#include <unisim/component/clm/utility/error.h>
+//#include <unisim/component/clm/utility/error.h>
 #include <unisim/component/clm/cache/cache_coherency_protocol.hh>
 #include <unisim/component/clm/cache/mesi.h>
 
@@ -59,6 +59,7 @@ using unisim::component::clm::memory::lruReplacementPolicy;
 using unisim::component::clm::memory::pseudoLRUReplacementPolicy;
 using unisim::component::clm::memory::address_t;
 
+#define error( format, ...) error_func( __LINE__, __FUNCTION__, __FILE__, format, ## __VA_ARGS__)
 
 /* get a random number */
 INLINE int myrand()                    /* returns random number */
@@ -93,6 +94,19 @@ class CacheContainer
   /**
    * Class constructor 
    */
+void error_func(const int line, const char *funcname, const char *filename, const char *format, ...)
+{ static char buffer[1024];
+  va_list arg;
+  va_start(arg, format);
+  vsprintf( buffer, format, arg);
+  fprintf(stderr, "%s:%s:%d\tERROR:%s", filename, funcname, line, buffer);
+  fflush(stderr);
+  va_end(arg);
+  exit(-1);
+}
+
+
+
   CacheContainer()
   { if(nCacheLines < 1) error("nCacheLines should be bigger than 0");
     if(nAssociativity < 1) error("nAssociativity should be bigger than 0");

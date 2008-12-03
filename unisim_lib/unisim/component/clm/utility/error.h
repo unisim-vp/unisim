@@ -45,7 +45,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iomanip>
 
 #define error( format, ...) error_func( __LINE__, __FUNCTION__, __FILE__, format, ## __VA_ARGS__)
-
+/*
 void error_func(const int line, const char *funcname, const char *filename, const char *format, ...)
 { static char buffer[1024];
   va_list arg;
@@ -56,7 +56,7 @@ void error_func(const int line, const char *funcname, const char *filename, cons
   va_end(arg);
   exit(-1);
 }
-
+*/
 ofstream info_stream;
 
 // Message macros for modules

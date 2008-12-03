@@ -104,78 +104,18 @@ class sender_uid_type_t
   /** 
    * \brief Pretty printer for the command_t enum 
    */
-  friend ostream & operator<<(ostream &os, const command_t &c)
-  { switch(c)
-    { case cmd_UNKNOWN:
-        os << "UNK  ";
-        break;
-      case cmd_READ:
-        os << "READ ";
-        break;
-      case cmd_READX:
-        os << "READX";
-        break;
-      case cmd_WRITE:
-        os << "WRITE";
-        break;
-      case cmd_PREFETCH:
-        os << "PREFETCH";
-        break;
-      case cmd_EVICT:
-        os << "EVICT";
-        break;
-      case cmd_FLUSH:
-        os << "FLUSH";
-        break;
-      case cmd_BLOCK_INVALIDATE:
-        os << "BLOCK_INVALIDATE";
-        break;
-    }
-    return os;
-  }
+  friend ostream & operator<<(ostream &os, const command_t &c);
 
   /** 
    * \brief Pretty printer for the sender_type_t enum 
    */
-  friend ostream & operator<<(ostream &os, const sender_type_t &t)
-  { switch(t)
-    { case sender_UNKNOWN: 
-        os << "\e[1;35mUNK\e[0m";
-        break;
-      case sender_CPU:
-        os << "\e[1;31mCPU\e[0m";
-        break;
-      case sender_CACHE:
-        os << "\e[1;33mCAC\e[0m";
-        break;
-      case sender_MEM:
-        os << "\e[1;34mMEM\e[0m";
-        break;
-    }
-    return os;
-  }
+  friend ostream & operator<<(ostream &os, const sender_type_t &t);
 
   /** 
    * \brief Pretty printer for the sender_type_t enum 
    */
-  friend ostream & operator<<(ostream &os, const message_type_t &m)
-  { switch(m)
-    { case type_UNKNOWN: 
-//        os << "\e[1;35mUNK\e[0m";
-        os << "UNK";
-        break;
-      case type_REQUEST:
-//        os << "\e[1;32mREQ\e[0m";
-        os << "REQ";
-        break;
-      case type_ANSWER:
-//        os << "\e[1;31mANS\e[0m";
-        os << "ANS";
-        break;
-    }
-    return os;
-  }
-
+  friend ostream & operator<<(ostream &os, const message_type_t &m);
+  
   static uint64_t memreq_id_max;   ///< Maximum memreq_id used so far. 
 };
 
@@ -205,56 +145,23 @@ class memreq_dataless : public memreq_types
   int dst_id;                  ///< destination tile id
   int src_id;                  ///< source tile id
 #endif
+  
 
   /** 
    * \brief Creates a new memory request 
    */
-  memreq_dataless()
-  { size=0;
-    address=0;
-    command=cmd_UNKNOWN;
-    uid=0;
-    sender_type=sender_UNKNOWN;
-    message_type=type_UNKNOWN;
-    sender = NULL;
-    req_sender = NULL;
-    cachable = true;
-    memreq_id = memreq_id_max++;
-    valid = false;
-#ifdef NOC_THREADS_DISTRIBUTION
-    dst_id = 0;
-    src_id = 0;
-#endif
-  }
+  memreq_dataless();
 
   /** 
    * \brief Pretty printer for the memreq class 
    */
-  friend ostream & operator<<(ostream &os, const memreq_dataless &req)
-  { os << "MEMREQ [ ";
-    os << req.command << ", ";
-    os << "sender_type=" << req.sender_type << ", ";
-    os << "msg_type=" << req.message_type << ", ";
-    if(req.sender) os << "sender=" << setw(8) << req.sender->name() << ", ";
-    else           os << "sender=" << setw(8) << "NULL" << ", ";
-    if(req.req_sender) os << "req_sender=" << setw(8) << req.req_sender->name() << ", ";
-    else               os << "req_sender=" << setw(8) << "NULL" << ", ";
-    os << "@=0x" << hex << req.address << dec << ", ";
-    os << "sz=" << setw(2) << req.size << ", ";
-    os << "uid=" << req.uid << ", ";
-    os << req.instr.disasm() << ", ";
-    if(req.cachable) os << "cachable ";
-    else os << "not cachable ";
-    os << "]";
-    return os;
-  }
+  template <class INSTR>
+  friend ostream & operator<<(ostream &os, const memreq_dataless<INSTR> &req);
 
   /** 
    * \brief Returns the data of the memreq
    */
-  virtual const char * Read() const
-  { return NULL;
-  }
+  virtual const char * Read() const;
 
 };
 
@@ -269,83 +176,39 @@ class memreq : public memreq_dataless <INSTRUCTION>
   /** 
    * \brief Creates a new memory request 
    */
-  memreq() : memreq_dataless <INSTRUCTION>()
-  { 
-  }
+  memreq();
 
   /** 
    * \brief Pretty printer for the memreq class 
    */
-  friend ostream & operator<<(ostream &os, const memreq &req)
-  { os << "MEMREQ [ " << left;
-    os << req.command << ", ";
-    os << "sndr_type=" << req.sender_type << ", ";
-    os << "msg_type=" << req.message_type << ", ";
-        if(req.sender) os << "sndr=" << setw(8) << req.sender->name() << ", ";
-        else           os << "sndr=" << setw(8) << "NULL" << ", ";
-	//os << "sndr=" << setw(8) << req.sender << ", ";
-        if(req.req_sender) os << "req_sndr=" << setw(8) << req.req_sender->name() << ", ";
-        else               os << "req_sndr=" << setw(8) << "NULL" << ", ";
-	//os << "req_sndr=" << setw(8) << req.req_sender << ", ";
-    os << "@=0x" << hex << setw(8) << req.address << dec << ", ";
-    os << "sz=" << setw(2) << req.size << ", ";
-//    os << "memreq_id=" << req.memreq_id << ", ";
-//    if(req.message_type==memreq_types::type_ANSWER) os << "data=" << req.data << ", ";
-//    os << req.instr << " ";
-//    req.instr.operation->disasm(os);
-    if(req.instr->operation)
-    { os << "instr={0x" << hex << req.instr->cia << dec << ": ";
-      req.instr->operation->disasm(0,os);
-      os << "}";
-    }
-    os << " uid=" << req.uid << ", ";
-#ifdef NOC_THREADS_DISTRIBUTION
-    os << " dst_id =" << req.dst_id<<", ";
-    os << " src_id=" << req.src_id<<", ";
-#endif
-    if(req.cachable) os << "cachable ";
-    else os << "not cachable ";
-    os << " ]";
-    if( (req.message_type==memreq_types::type_ANSWER) || (req.command==memreq_types::cmd_WRITE) )
-    { os << " data=" << req.data;
-    }
-    return os;
-  }
-
+  template <class INSTR, int DTSZ>
+  friend ostream & operator<<(ostream &os, const memreq<INSTR,DTSZ> &req);
 
   /**
    * \brief Read from the message data
    */
-  const char * Read() const
-  { return (const char *)data;
-  }
+  const char * Read() const;
 
   /**
    * \brief Write to the message data
    */
-  void Write(const char *buf, int num_bytes)
-  { memcpy(data.buffer, buf, num_bytes);
-  }
+  void Write(const char *buf, int num_bytes);
 
   /** 
    * \brief Returns the data of the memreq as a 32bit value
    */
-  uint32_t Read32() const
-  { int result;
-    memcpy(&result,data.buffer,4);
-    return result;
-  }
+  uint32_t Read32() const;
 
   /**
    * \brief Set the data of the memreq as a 32bit value
    */
-  void Write32(uint32_t val)
-  { memcpy(data.buffer, &val, 4);
-  }
+  void Write32(uint32_t val);
+
+  //static uint64_t memreq_types::memreq_id_max;
 
 };
 
-uint64_t memreq_types::memreq_id_max;
+  //  uint64_t memreq_types::memreq_id_max=0;
 
 } // end of namespace interfaces
 } // end of namespace clm

@@ -50,7 +50,7 @@
 
 //#include <unisim/component/clm/interface/iss_interface.hh>
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
-#include <unisim/component/clm/utility/error.h>
+//#include <unisim/component/clm/utility/error.h>
 //#include "memreq.h"
 #include <unisim/component/clm/interfaces/memreq.hh>
 #include <unisim/component/clm/memory/mem_common.hh>

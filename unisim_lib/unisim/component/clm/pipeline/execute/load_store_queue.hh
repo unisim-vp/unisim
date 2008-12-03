@@ -80,6 +80,7 @@ using unisim::component::cxx::processor::powerpc::SoftDouble;
 /////////////////////////////////////////
 // From AlphaISS alpha/src/alpha_lib.c //
 /////////////////////////////////////////
+/*
 double UInt64toDouble(UInt64 value)
 {
 	double result;
@@ -87,10 +88,12 @@ double UInt64toDouble(UInt64 value)
 	result = *(double *) &value;
 	return result;
 }
+*/
 /** Transform a double into a single.
 		@param double the double to transform
 		@return a single into a 32 bits unsigned integer
 */
+ /*
 UInt32 F32ToLong(double f) {
 	double f_double;
 	int64_t f_copy;
@@ -101,10 +104,12 @@ UInt32 F32ToLong(double f) {
 	result = (((f_copy >> 32) & 0x0c0000000) | ((f_copy >> 29) & 0x3fffffff));
 	return result;
 }
+ */
 /** Transform a single to a double.
 		@param val the value to transform
 		@return the transformed value
 */
+ /*
 double LongToF32(UInt32 val) {
     UInt64 val1, val2, val3;
     double f;
@@ -127,7 +132,8 @@ double LongToF32(UInt32 val) {
     result = f;
 		return result;
 }
-
+ */
+ /*
 UInt64 LongToF32bis(UInt32 val) {
 
   uint64_t raw_fp64;
@@ -138,6 +144,7 @@ UInt64 LongToF32bis(UInt32 val) {
   SoftDouble fp64(fp32, flagsConvert);
   
   raw_fp64 = fp64.queryValue();
+ */
   /*
     UInt64 val1, val2, val3;
     double f;
@@ -163,10 +170,11 @@ UInt64 LongToF32bis(UInt32 val) {
 		return result;
   */
   //    return val2;
+ /*
   return raw_fp64;
 }
 
-
+*/
 
 INLINE uint64_t LSQMASK(int n)
 {
@@ -296,7 +304,7 @@ public:
 	}
 };
 
-
+  /*
 bool misaligned(InstructionPtr load)
 {
   bool res;
@@ -320,6 +328,7 @@ bool misaligned(InstructionPtr load)
 #endif
   return res;
 }
+*/
 
 template <class T, int nSources, int LoadQueueSize, int StoreQueueSize, int Width, int AllocateWidth, int RetireWidth, int nCPUDataPathSize, int nDataCachePorts, int nCDBPorts>
 class LoadStoreQueue : public module
@@ -372,6 +381,58 @@ public:
 	/* To the reorder buffer */
 	//	ml_out_data<bool> outBusy;			/*< true there is a pending load/store operation into the load/store queue */
   //	outport<bool> outBusy;
+
+
+ bool misaligned(InstructionPtr load)
+{
+  bool res;
+  address_t ea = load->ea;
+  int size = load->operation->memory_access_size();
+  address_t baseaddr = ea & (~((address_t)(DL1_nLineSize - 1)));
+  res = (ea + size) > (baseaddr + DL1_nLineSize);
+#ifdef DD_DEBUG_MISALIGNED_LOAD
+  if (DD_DEBUG_TIMESTAMP < timestamp() )
+    {
+      if (res)
+	{
+	  cerr << "[Misaligned] ea           : " << hexa(ea) << endl;
+	  cerr << "[Misaligned] baseaddr     : " << hexa(baseaddr) << endl;
+	  cerr << "[Misaligned] ea+size      : " << hexa(ea+size) << endl;
+	  cerr << "[Misaligned] ba+nLineSize : " << hexa(baseaddr+DL1_nLineSize) << endl;
+	  cerr << "[Misaligned] size         : " << size << endl;
+	  cerr << "[Misaligned] nLineSize    : " << DL1_nLineSize << endl;
+	}
+    }
+#endif
+  return res;
+}
+
+  UInt64 LongToF32bis(UInt32 val) {
+
+    uint64_t raw_fp64;
+    uint32_t raw_fp32 = val;
+    
+    SoftFloat fp32(raw_fp32);
+    Flags flagsConvert;
+    SoftDouble fp64(fp32, flagsConvert);
+    
+    raw_fp64 = fp64.queryValue();    
+    return raw_fp64;
+  }
+
+  
+  UInt32 F32ToLong(double f) {
+    double f_double;
+    int64_t f_copy;
+    UInt32 result;
+    
+    f_double = f;
+    f_copy = *(int64_t *)&f_double;
+    result = (((f_copy >> 32) & 0x0c0000000) | ((f_copy >> 29) & 0x3fffffff));
+    return result;
+  }
+  
+
 
 	LoadStoreQueue(const char *name, endianess_t endianess) : module(name)
 	{
@@ -1661,7 +1722,8 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 				    if(instruction->operation->memory_access_size() == 4)
 				      {
 					// do a single to double precision floating point conversion
-					double tmp = LongToF32((UInt32) data);
+					//double tmp = LongToF32((UInt32) data);
+					double tmp = LongToF32bis((UInt32) data);
 					instruction->destinations[0].data = *(UInt64 *) &tmp;
 				      }
 				    else
