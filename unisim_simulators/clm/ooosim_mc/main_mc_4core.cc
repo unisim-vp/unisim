@@ -10,6 +10,24 @@
 
 #include "simulator_mc_4core.hh"
 
+#include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.hh>
+#include <unisim/component/clm/processor/ooosim_mc/cpu_simulator_mc.tcc>
+
+namespace unisim {
+namespace component {
+namespace clm {
+namespace processor {
+namespace ooosim_mc {
+
+template class OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, false, nConfig>;
+          
+} // end of namespace ooosim_mc
+} // end of namespace processor
+} // end of namespace clm
+} // end of namespace component
+} // end of namespace unisim
+
+
 int main(int argc, char **argv, char **envp)
 { 
   command_line.add_flag("display-signals", "display signals at each cycle");

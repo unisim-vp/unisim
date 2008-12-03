@@ -188,7 +188,7 @@
 using unisim::component::clm::fsb::BusMultiQueue;
 using unisim::component::clm::memory::dram::DRAM;
 using unisim::component::clm::cache::CacheWB;
-using unisim::component::clm::processor::ooosim::OooSimCpu;
+using unisim::component::clm::processor::ooosim_mc::OooSimCpu;
 
 //#ifdef interface
 //#undef interface
@@ -196,59 +196,59 @@ using unisim::component::clm::processor::ooosim::OooSimCpu;
 using unisim::component::clm::interfaces::InstructionPtr;
 
 // Using Parameters
-using unisim::component::clm::processor::ooosim::nCPU;
-using unisim::component::clm::processor::ooosim::BUS_BufferSize;
-using unisim::component::clm::processor::ooosim::BUS_RequestWidth;
-using unisim::component::clm::processor::ooosim::Snooping;
+using unisim::component::clm::processor::ooosim_mc::nCPU;
+using unisim::component::clm::processor::ooosim_mc::BUS_BufferSize;
+using unisim::component::clm::processor::ooosim_mc::BUS_RequestWidth;
+using unisim::component::clm::processor::ooosim_mc::Snooping;
 
-using unisim::component::clm::processor::ooosim::nProg;
+using unisim::component::clm::processor::ooosim_mc::nProg;
 
-using unisim::component::clm::processor::ooosim::DRAM_nBanks;
-using unisim::component::clm::processor::ooosim::DRAM_nRows;
-using unisim::component::clm::processor::ooosim::DRAM_nCols;
-using unisim::component::clm::processor::ooosim::DRAM_TRRD;
-using unisim::component::clm::processor::ooosim::DRAM_TRAS;
-using unisim::component::clm::processor::ooosim::DRAM_TRCD;
-using unisim::component::clm::processor::ooosim::DRAM_CL;
-using unisim::component::clm::processor::ooosim::DRAM_TRP;
-using unisim::component::clm::processor::ooosim::DRAM_TRC;
-using unisim::component::clm::processor::ooosim::DRAM_TREF;
-using unisim::component::clm::processor::ooosim::DRAM_nDataPathSize;
-using unisim::component::clm::processor::ooosim::DRAM_nCacheLineSize;
-using unisim::component::clm::processor::ooosim::DRAM_nCtrlQueueSize;
+using unisim::component::clm::processor::ooosim_mc::DRAM_nBanks;
+using unisim::component::clm::processor::ooosim_mc::DRAM_nRows;
+using unisim::component::clm::processor::ooosim_mc::DRAM_nCols;
+using unisim::component::clm::processor::ooosim_mc::DRAM_TRRD;
+using unisim::component::clm::processor::ooosim_mc::DRAM_TRAS;
+using unisim::component::clm::processor::ooosim_mc::DRAM_TRCD;
+using unisim::component::clm::processor::ooosim_mc::DRAM_CL;
+using unisim::component::clm::processor::ooosim_mc::DRAM_TRP;
+using unisim::component::clm::processor::ooosim_mc::DRAM_TRC;
+using unisim::component::clm::processor::ooosim_mc::DRAM_TREF;
+using unisim::component::clm::processor::ooosim_mc::DRAM_nDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::DRAM_nCacheLineSize;
+using unisim::component::clm::processor::ooosim_mc::DRAM_nCtrlQueueSize;
 
-using unisim::component::clm::processor::ooosim::DL1_nCPUtoCacheDataPathSize;
-using unisim::component::clm::processor::ooosim::DL1_nCachetoCPUDataPathSize;
-using unisim::component::clm::processor::ooosim::DL1_nMemtoCacheDataPathSize;
-using unisim::component::clm::processor::ooosim::DL1_nCachetoMemDataPathSize;
-using unisim::component::clm::processor::ooosim::DL1_nLineSize;
-using unisim::component::clm::processor::ooosim::DL1_nCacheLines;
-using unisim::component::clm::processor::ooosim::DL1_nAssociativity;
-using unisim::component::clm::processor::ooosim::DL1_nStages;
-using unisim::component::clm::processor::ooosim::DL1_nDelay;
+using unisim::component::clm::processor::ooosim_mc::DL1_nCPUtoCacheDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::DL1_nCachetoCPUDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::DL1_nMemtoCacheDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::DL1_nCachetoMemDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::DL1_nLineSize;
+using unisim::component::clm::processor::ooosim_mc::DL1_nCacheLines;
+using unisim::component::clm::processor::ooosim_mc::DL1_nAssociativity;
+using unisim::component::clm::processor::ooosim_mc::DL1_nStages;
+using unisim::component::clm::processor::ooosim_mc::DL1_nDelay;
 
-using unisim::component::clm::processor::ooosim::IL1_nCPUtoCacheDataPathSize;
-using unisim::component::clm::processor::ooosim::IL1_nCachetoCPUDataPathSize;
-using unisim::component::clm::processor::ooosim::IL1_nMemtoCacheDataPathSize;
-using unisim::component::clm::processor::ooosim::IL1_nCachetoMemDataPathSize;
-using unisim::component::clm::processor::ooosim::IL1_nLineSize;
-using unisim::component::clm::processor::ooosim::IL1_nCacheLines;
-using unisim::component::clm::processor::ooosim::IL1_nAssociativity;
-using unisim::component::clm::processor::ooosim::IL1_nStages;
-using unisim::component::clm::processor::ooosim::IL1_nDelay;
+using unisim::component::clm::processor::ooosim_mc::IL1_nCPUtoCacheDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::IL1_nCachetoCPUDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::IL1_nMemtoCacheDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::IL1_nCachetoMemDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::IL1_nLineSize;
+using unisim::component::clm::processor::ooosim_mc::IL1_nCacheLines;
+using unisim::component::clm::processor::ooosim_mc::IL1_nAssociativity;
+using unisim::component::clm::processor::ooosim_mc::IL1_nStages;
+using unisim::component::clm::processor::ooosim_mc::IL1_nDelay;
 
-using unisim::component::clm::processor::ooosim::nIntegerRegisters;
-//using unisim::component::clm::processor::ooosim::IL1_nCachetoCPUDataPathSize;
-//using unisim::component::clm::processor::ooosim::IL1_nCPUtoCacheDataPathSize;
-//using unisim::component::clm::processor::ooosim::DL1_nCachetoCPUDataPathSize;
-//using unisim::component::clm::processor::ooosim::DL1_nCPUtoCacheDataPathSize;
+using unisim::component::clm::processor::ooosim_mc::nIntegerRegisters;
+//using unisim::component::clm::processor::ooosim_mc::IL1_nCachetoCPUDataPathSize;
+//using unisim::component::clm::processor::ooosim_mc::IL1_nCPUtoCacheDataPathSize;
+//using unisim::component::clm::processor::ooosim_mc::DL1_nCachetoCPUDataPathSize;
+//using unisim::component::clm::processor::ooosim_mc::DL1_nCPUtoCacheDataPathSize;
 
 /*
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
-using unisim::component::clm::processor::ooosim::;
+using unisim::component::clm::processor::ooosim_mc::;
+using unisim::component::clm::processor::ooosim_mc::;
+using unisim::component::clm::processor::ooosim_mc::;
+using unisim::component::clm::processor::ooosim_mc::;
+using unisim::component::clm::processor::ooosim_mc::;
 */
 
 /*
@@ -634,8 +634,8 @@ public:
 
 	//	for(int cfg=0; cfg<nConfig; cfg++)
 	//	  { 
-	//	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator[cfg];
-	unisim::component::clm::processor::ooosim::CPUEmu *cpu[nConfig];// = __cpu->check_emulator[0];
+	//	unisim::component::clm::processor::ooosim_mc::CPUEmu *cpu = __cpu->check_emulator[cfg];
+	unisim::component::clm::processor::ooosim_mc::CPUEmu *cpu[nConfig];// = __cpu->check_emulator[0];
 
 	for(int cfg=0; cfg<nConfig; cfg++)
 	  { 
