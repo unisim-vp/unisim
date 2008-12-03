@@ -276,7 +276,7 @@ using unisim::kernel::service::ServiceManager;
 
 const int nConfig = 2;
 
-#include "cpu_simulator_mc.cc"
+//#include "cpu_simulator_mc.cc"
 
 class GeneratedSimulator : public Simulator{
 public:
