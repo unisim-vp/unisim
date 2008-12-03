@@ -42,7 +42,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_DECODE_DISPATCHER_MC_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_DECODE_DISPATCHER_MC_HH__
 
-//#include <unisim/component/clm/processor/ooosim/parameters.hh>
+#include <unisim/component/clm/processor/ooosim_mc/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
 
@@ -54,7 +54,7 @@ namespace decode {
 
 using unisim::component::clm::interfaces::InstructionPtr;
 
-using unisim::component::clm::processor::ooosim::nConditionArchitecturalRegisters;
+using unisim::component::clm::processor::ooosim_mc::nConditionArchitecturalRegisters;
 
   //using unisim::component::clm::::InstructionPtr;
 

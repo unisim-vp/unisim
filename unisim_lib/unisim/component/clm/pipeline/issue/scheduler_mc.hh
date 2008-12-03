@@ -53,17 +53,17 @@ namespace issue {
 
 using unisim::component::clm::interfaces::InstructionPtr;
 
-using unisim::component::clm::processor::ooosim::nConditionRegisters;
-using unisim::component::clm::processor::ooosim::nFPSCArchitecturalRegisters;
-using unisim::component::clm::processor::ooosim::nFPSCRegisters;
-using unisim::component::clm::processor::ooosim::nLinkArchitecturalRegisters;
-using unisim::component::clm::processor::ooosim::nLinkRegisters;
-using unisim::component::clm::processor::ooosim::nCountArchitecturalRegisters;
-using unisim::component::clm::processor::ooosim::nCountRegisters;
-using unisim::component::clm::processor::ooosim::nXERArchitecturalRegisters;
-using unisim::component::clm::processor::ooosim::nXERRegisters;
+using unisim::component::clm::processor::ooosim_mc::nConditionRegisters;
+using unisim::component::clm::processor::ooosim_mc::nFPSCArchitecturalRegisters;
+using unisim::component::clm::processor::ooosim_mc::nFPSCRegisters;
+using unisim::component::clm::processor::ooosim_mc::nLinkArchitecturalRegisters;
+using unisim::component::clm::processor::ooosim_mc::nLinkRegisters;
+using unisim::component::clm::processor::ooosim_mc::nCountArchitecturalRegisters;
+using unisim::component::clm::processor::ooosim_mc::nCountRegisters;
+using unisim::component::clm::processor::ooosim_mc::nXERArchitecturalRegisters;
+using unisim::component::clm::processor::ooosim_mc::nXERRegisters;
 
-using unisim::component::clm::processor::ooosim::IssueWidth;
+using unisim::component::clm::processor::ooosim_mc::IssueWidth;
 
 
 /** A C++ class representing a reservation station

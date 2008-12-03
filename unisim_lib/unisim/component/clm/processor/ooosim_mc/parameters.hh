@@ -39,8 +39,8 @@
                 parms.hh  -  superscalar processor parameters
  ***************************************************************************/
 
-#ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_PARMETER_HH__
-#define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_PARMETER_HH__
+#ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_MC_PARMETER_HH__
+#define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_MC_PARMETER_HH__
 
 #include <unisim/component/clm/utility/types.hh>
 #include <unisim/component/clm/memory/mem_common.hh>
@@ -49,7 +49,7 @@ namespace unisim {
 namespace component {
 namespace clm {
 namespace processor {
-namespace ooosim {
+namespace ooosim_mc {
 
   using unisim::component::clm::memory::ReplacementPolicyType;
   using unisim::component::clm::memory::randomReplacementPolicy;
@@ -281,7 +281,7 @@ const int reorderBufferSize = 128;
 const int retireWidth = Degree;
 //const int retireWidth = commonDataBusArbiterPorts;
 
-} // end of namespace ooosim
+} // end of namespace ooosim_mc
 } // end of namespace processor
 } // end of namespace clm
 } // end of namespace component

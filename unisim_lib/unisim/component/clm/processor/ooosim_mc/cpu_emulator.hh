@@ -37,6 +37,9 @@
 #ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_EMULATOR__HH__
 #define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_EMULATOR__HH__
 
+#include <unisim/component/clm/utility/common.hh>
+#include <unisim/component/clm/utility/utility.hh>
+
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 
 #include <unisim/service/interfaces/memory.hh>
@@ -57,8 +60,9 @@ namespace unisim {
 namespace component {
 namespace clm {
 namespace processor {
-namespace ooosim {
+namespace ooosim_mc {
 
+using unisim::component::clm::memory::address_t;
   //new usings
   //  using unisim::component::cxx::processor::powerpc::MPC7447AConfig;
 
@@ -338,7 +342,7 @@ public:
 };
 
 
-} // end of namespace ooosim
+} // end of namespace ooosim_mc
 } // end of namespace processor
 } // end of namespace clm
 } // end of namespace component

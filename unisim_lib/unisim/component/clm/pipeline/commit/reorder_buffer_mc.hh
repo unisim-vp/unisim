@@ -59,7 +59,7 @@ namespace commit {
   using unisim::component::clm::memory::address_t;
 using unisim::component::clm::interfaces::InstructionPtr;
 
-using unisim::component::clm::processor::ooosim::CPUEmu;
+using unisim::component::clm::processor::ooosim_mc::CPUEmu;
 
 using unisim::component::clm::utility::hexa;
 

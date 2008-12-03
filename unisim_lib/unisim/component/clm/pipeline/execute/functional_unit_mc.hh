@@ -61,7 +61,7 @@ namespace execute {
 using unisim::component::clm::interfaces::InstructionPtr;
 
 
-using unisim::component::clm::processor::ooosim::CPUSim;
+using unisim::component::clm::processor::ooosim_mc::CPUSim;
 using unisim::component::cxx::processor::powerpc::Exception;
 using unisim::component::cxx::processor::powerpc::SoftDouble;
 

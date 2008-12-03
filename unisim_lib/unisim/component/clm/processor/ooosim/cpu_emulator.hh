@@ -38,6 +38,7 @@
 #define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_EMULATOR__HH__
 
 #include <unisim/component/clm/utility/common.hh>
+#include <unisim/component/clm/utility/utility.hh>
 
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 
@@ -46,7 +47,7 @@
 
 #include <unisim/kernel/service/service.hh>
 
-//#include <unisim/component/cxx/processor/powerpc/config.hh>
+#include <unisim/component/cxx/processor/powerpc/config.hh>
 
 
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>

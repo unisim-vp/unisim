@@ -62,7 +62,7 @@ using unisim::component::clm::memory::endianess_t;
 using unisim::component::clm::memory::ByteArray;
 
   // Parameters
-using unisim::component::clm::processor::ooosim::DL1_nLineSize;
+using unisim::component::clm::processor::ooosim_mc::DL1_nLineSize;
 
 using unisim::component::clm::interfaces::memreq;
 using unisim::component::clm::interfaces::memreq_types;

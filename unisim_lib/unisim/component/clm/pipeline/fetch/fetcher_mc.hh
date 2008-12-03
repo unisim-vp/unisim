@@ -76,7 +76,7 @@ using unisim::component::clm::interfaces::Destination;
   using unisim::kernel::service::ServiceImport;
   //  using unisim::kernel::service::ServiceExport;
 
-  using unisim::component::clm::processor::ooosim::CPUSim;
+  using unisim::component::clm::processor::ooosim_mc::CPUSim;
 
   using unisim::component::clm::utility::branch_direction_t;
   using unisim::component::clm::utility::Taken;
