@@ -43,23 +43,15 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __UNISIM_COMPONENT_CLM_CACHE_CACHE_WB_MC_HH__
 #define __UNISIM_COMPONENT_CLM_CACHE_CACHE_WB_MC_HH__
 
-//#include "unisim/unisim.h"
 #include <unisim/kernel/clm/engine/unisim.h>
-//#include "mem_common.h"
 #include <unisim/component/clm/memory/mem_common.hh>
-//#include "memreq.h"
 #include <unisim/component/clm/interfaces/memreq_mc.hh>
-//#include "common.h"
 #include <unisim/component/clm/utility/common.hh>
-//#include "base/utility.h"
 #include <unisim/component/clm/utility/utility.hh>
-//#include "system/CacheContainer.h"
-//#include "system/memory/cache/CacheCommon.h"
+#include <unisim/component/clm/utility/error.h>
 #include <unisim/component/clm/cache/cache_container.hh>
 #include <unisim/component/clm/cache/cache_common_mc.hh>
 
-//#include <generic/memory/memory_interface.hh>
-//#include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/memory_injection.hh>
 
 #include <unisim/component/clm/debug/svg_memreq_interface.hh>
