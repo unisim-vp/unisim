@@ -39,10 +39,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   
 ***************************************************************************** */
 
-#ifndef __MEMORYCONTAINER_H__
-#define __MEMORYCONTAINER_H__
+#ifndef __UNISIM_COMPONENT_CLM_MEMORY_MEMORYCONTAINER_HH__
+#define __UNISIM_COMPONENT_CLM_MEMORY_MEMORYCONTAINER_HH__
 
-#include "mem_common.h"
+//#include "mem_common.h"
+#include <unisim/component/clm/memory/mem_common.hh>
 #include <list>
 #include <set>
 
