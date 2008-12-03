@@ -588,6 +588,7 @@ class fsc_prim_out : public fsc_prim_port
 
   bool was_known() const GCC_INLINE;
 
+
 #ifdef LIBERTY_SUPPORT
   /* This is for liberty support */
   void port_set(LSE_signal_t s)

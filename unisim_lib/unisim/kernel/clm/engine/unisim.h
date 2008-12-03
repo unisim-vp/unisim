@@ -436,6 +436,14 @@ class unisim_prim_out: public fsc_prim_out< boost::array<U,NCONFIG> >
       written_count = 0;
 #endif
     }
+
+    friend ostream & operator<<(ostream &os, unisim_prim_out &upo)
+    {
+      for (int i=0; i<NCONFIG; i++)
+	os << upo.temporary_array[i] << " ";
+      return os;
+    }
+
 #ifdef USE_AUTOMATIC_SEND
   friend class dummy;
   //  template <class V, uint32_t NCONF>
@@ -1009,7 +1017,7 @@ Direct acces tot the data value should be replaced by port.data
 #undef DD_MY_SIGNAL_DEBUGGER
 
     os << setw(15) << " " << "|";
-    if(data.was_known() && data.something()) os << data;
+    if(data.was_known() && data.something()) os << " ";//data;
 
     os << endl;
   }
@@ -1045,7 +1053,7 @@ Direct acces tot the data value should be replaced by port.data
     //#define DD_MY_SIGNAL_DEBUGGER
     //#ifdef DD_MY_SIGNAL_DEBUGGER
     if(data.was_known())
-      { if(data.something()) os << " " << data;
+      { if(data.something()) os << " ";// << data;
       }
     //#endif   
     //#undef DD_MY_SIGNAL_DEBUGGER
@@ -1528,7 +1536,7 @@ removed, should be replaced by port.data = ... instead of port = ...
     //#define DD_MY_SIGNAL_DEBUGGER
     //#ifdef DD_MY_SIGNAL_DEBUGGER
     if(data.was_known())
-      { if(!data.is_nothing()) os << " " << data;
+      { if(!data.is_nothing()) os << " ";// << data;
       }
     //#endif   
     //#undef DD_MY_SIGNAL_DEBUGGER
