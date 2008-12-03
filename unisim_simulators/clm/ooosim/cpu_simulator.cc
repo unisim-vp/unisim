@@ -52,10 +52,13 @@ namespace component {
 namespace clm {
 namespace interfaces {
 
-  template class memreq<unisim::component::clm::interfaces::InstructionPtr, 32>;
-  template class memreq<unisim::component::clm::interfaces::InstructionPtr, 8>;
+  template class memreq<unisim::component::clm::interfaces::InstructionPtr,
+			unisim::component::clm::processor::ooosim::DL1_nCPUtoCacheDataPathSize>;
+  template class memreq<unisim::component::clm::interfaces::InstructionPtr,
+			unisim::component::clm::processor::ooosim::DL1_nCachetoMemDataPathSize>;
 
-  template ostream & operator<<(ostream &os, const memreq<unisim::component::clm::interfaces::InstructionPtr, 32> &req);
+  template ostream & operator<<(ostream &os, const memreq<unisim::component::clm::interfaces::InstructionPtr,
+				unisim::component::clm::processor::ooosim::DL1_nCachetoMemDataPathSize> &req);
 
 
 } } } }
