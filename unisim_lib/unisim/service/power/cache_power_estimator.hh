@@ -36,7 +36,7 @@
 #define __UNISIM_SERVICE_POWER_CACHE_POWER_ESTIMATOR_HH__
 
 #include <unisim/kernel/service/service.hh>
-#include <unisim/service/power/cacti4_2.hh>
+
 #include <unisim/service/interfaces/cache_power_estimator.hh>
 #include <unisim/service/interfaces/power_mode.hh>
 #include <unisim/service/interfaces/time.hh>
@@ -46,6 +46,8 @@
 namespace unisim {
 namespace service {
 namespace power {
+
+class Cacti4_2; // forward declaration
 
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -167,7 +169,7 @@ private:
 	double time_stamp; // in seconds
 	
 	/* total results */
-	Cacti4_2 cacti;
+	Cacti4_2 *cacti;
 };
 
 } // end of namespace power

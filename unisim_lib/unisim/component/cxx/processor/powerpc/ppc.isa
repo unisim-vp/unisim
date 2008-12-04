@@ -38,7 +38,7 @@ address {typename CONFIG::address_t}
 template <{class} {CONFIG}>
 
 decl {
-#include <iostream>
+#include <iosfwd>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 
 namespace unisim {

@@ -37,7 +37,6 @@
 
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <inttypes.h>
-#include <iostream>
 
 namespace unisim {
 namespace util {

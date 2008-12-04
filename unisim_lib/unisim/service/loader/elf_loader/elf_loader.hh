@@ -45,8 +45,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/service/service.hh>
 
-#include <iostream>
-#include <fstream>
+#include <iosfwd>
 
 namespace unisim {
 namespace service {

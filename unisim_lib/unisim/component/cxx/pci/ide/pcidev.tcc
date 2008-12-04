@@ -42,6 +42,8 @@ retaining the original license:
 
 #ifndef __UNISIM_COMPONENT_CXX_PCI_IDE_PCIDEV_TCC__
 #define __UNISIM_COMPONENT_CXX_PCI_IDE_PCIDEV_TCC__
+
+#include <iostream>
  
 namespace unisim {
 namespace component {

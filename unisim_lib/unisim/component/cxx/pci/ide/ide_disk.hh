@@ -49,6 +49,7 @@ retaining the original license:
 #include "unisim/component/cxx/pci/ide/ide_wdcreg.hh"
 #include "unisim/component/cxx/pci/ide/pci_master.hh"
 #include "unisim/component/cxx/pci/ide/event.hh"
+#include <iostream>
 
 namespace unisim {
 namespace component {

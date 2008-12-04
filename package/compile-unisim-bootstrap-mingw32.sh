@@ -18,7 +18,7 @@ PATCHES_DIR=$(PWD)/patches
 ARCHIVE_DIR=$(PWD)/archives
 NUM_PROCESSORS=`cat /proc/cpuinfo | cut -f 1 | grep vendor_id | wc -l`
 
-all: notice $(INSTALL_DIR)/expat $(INSTALL_DIR)/zlib $(INSTALL_DIR)/gdb $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/TLM-2008-06-09 $(INSTALL_DIR)/readline $(INSTALL_DIR)/boost
+all: notice $(INSTALL_DIR)/expat $(INSTALL_DIR)/zlib $(INSTALL_DIR)/gdb $(INSTALL_DIR)/SDL $(INSTALL_DIR)/libxml2 $(INSTALL_DIR)/systemc $(INSTALL_DIR)/TLM-2008-06-09 $(INSTALL_DIR)/boost
 	@echo "Your built is in $(INSTALL_DIR)"
 
 clean:
@@ -37,7 +37,8 @@ notice:
 	@echo "  - libxml2 (2.6.31)"
 	@echo "  - SystemC (2.2.0)"
 	@echo "  - TLM 2.0"
-	@echo "  - readline (5.0)"
+	@echo "  - pdcurses (3.4)"
+	@echo "  - libedit (2.11)"
 	@echo "  - boost (1.34.1)"
 	@echo "  - expat (2.0.1)"
 	@echo "It will automatically download/configure and install the following softwares which can interact with UNISIM:"
@@ -62,7 +63,7 @@ $(SOURCE_DIR)/expat-2.0.1: $(ARCHIVE_DIR)/expat-2.0.1.tar.gz
 
 $(ARCHIVE_DIR)/expat-2.0.1.tar.gz:
 	cd $(ARCHIVE_DIR) && \
-    wget "http://downloads.sourceforge.net/expat/expat-2.0.1.tar.gz"
+    wget "http://ovh.dl.sourceforge.net/expat/expat-2.0.1.tar.gz"
 
 
 # gdb
@@ -85,7 +86,7 @@ $(SOURCE_DIR)/gdb-6.8: $(ARCHIVE_DIR)/gdb-6.8.tar.bz2
 $(ARCHIVE_DIR)/gdb-6.8.tar.bz2:
 	cd $(ARCHIVE_DIR) && \
     wget "ftp://ftp.gnu.org/pub/gnu/gdb/gdb-6.8.tar.bz2"
-	
+
 # zlib
 
 $(INSTALL_DIR)/zlib: $(SOURCE_DIR)/zlib-1.2.3
@@ -157,22 +158,10 @@ $(INSTALL_DIR)/TLM-2008-06-09: $(ARCHIVE_DIR)/TLM-2.0.tar.gz
 	cd $(INSTALL_DIR) && \
     tar zxvf $<
 
-# readline
-
-$(ARCHIVE_DIR)/readline-5.0-1-bin.zip:
-	cd $(ARCHIVE_DIR) && \
-    wget "http://downloads.sourceforge.net/gnuwin32/readline-5.0-1-bin.zip"
-
-$(INSTALL_DIR)/readline: $(ARCHIVE_DIR)/readline-5.0-1-bin.zip
-	cd $(INSTALL_DIR) && \
-    mkdir -p readline && \
-    cd readline && \
-    unzip $(ARCHIVE_DIR)/readline-5.0-1-bin.zip
-
 # boost
 $(ARCHIVE_DIR)/boost_1_34_1.tar.bz2:
 	cd $(ARCHIVE_DIR) && \
-    wget "http://downloads.sourceforge.net/boost/boost_1_34_1.tar.bz2"
+    wget "http://ovh.dl.sourceforge.net/boost/boost_1_34_1.tar.bz2"
 
 $(SOURCE_DIR)/boost_1_34_1: $(ARCHIVE_DIR)/boost_1_34_1.tar.bz2
 	cd $(SOURCE_DIR) && \

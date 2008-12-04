@@ -56,9 +56,12 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent) :
 	memory_import("memory-import", this),
 	keyboard_export("keyboard-export", this),
 	logger_import("logger-import", this),
+#if defined(HAVE_SDL)
 	sdl_mutex(0),
 	kbd_mutex(0),
 	surface(0),
+	screen(0),
+#endif
 	fb_addr(0),
 	width(0),
 	height(0),
@@ -68,7 +71,6 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent) :
 	alive(false),
 	refresh(false),
 	mode_set(false),
-	screen(0),
 	bmp_out_filename(),
 	bmp_out_file_number(0),
 	param_refresh_period("refresh-period", this, refresh_period),
@@ -82,9 +84,12 @@ SDL<ADDRESS>::~SDL()
 	if(alive)
 	{
 		alive = false;
+#if defined(HAVE_SDL)
 		SDL_WaitThread(refresh_thread, 0);
 		SDL_WaitThread(event_handling_thread, 0);
+#endif
 	}
+#if defined(HAVE_SDL)
 	if(surface)
 	{
 		SDL_FreeSurface(surface);
@@ -93,6 +98,7 @@ SDL<ADDRESS>::~SDL()
 	SDL_DestroyMutex(sdl_mutex);
 	SDL_DestroyMutex(kbd_mutex);
 	SDL_Quit();
+#endif
 }
 
 template <class ADDRESS>
@@ -104,6 +110,7 @@ template <class ADDRESS>
 bool SDL<ADDRESS>::Setup()
 {
 	if(!memory_import) return false;
+#if defined(HAVE_SDL)
 	cerr << Object::GetName() << ": Initializing SDL..." << endl;
 	if(SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
@@ -114,12 +121,16 @@ bool SDL<ADDRESS>::Setup()
 
 	sdl_mutex = SDL_CreateMutex();
 	kbd_mutex = SDL_CreateMutex();
+#else
+	cerr << Object::GetName() << ": no host video output nor input devices available" << endl;
+#endif
 	
 	bmp_out_file_number = 0;
-	// create a thread for refreshing display on screen
 	alive = true;
 	refresh = false;
-		
+
+#if defined(HAVE_SDL)
+	// create a thread for refreshing display on screen
 	if(!(refresh_thread = SDL_CreateThread((int (*)(void *)) RefreshThread, this)))
 	{
 		alive = false;
@@ -131,10 +142,12 @@ bool SDL<ADDRESS>::Setup()
 		alive = false;
 		return false;
 	}
+#endif
 	
 	return true;
 }
 
+#if defined(HAVE_SDL)
 template <class ADDRESS>
 int SDL<ADDRESS>::RefreshThread(SDL<ADDRESS> *sdl)
 {
@@ -148,30 +161,40 @@ int SDL<ADDRESS>::EventHandlingThread(SDL<ADDRESS> *sdl)
 	sdl->EventLoop();
 	return 0;
 }
+#endif
 
 template <class ADDRESS>
 bool SDL<ADDRESS>::GetScancode(uint8_t& scancode)
 {
 	bool ret = false;
+#if defined(HAVE_SDL)
 	SDL_mutexP(kbd_mutex);
+#endif
 	if(!kbd_scancode_fifo.empty())
 	{
 		scancode = kbd_scancode_fifo.front();
 		kbd_scancode_fifo.pop_front();
 		ret = true;
 	}
+#if defined(HAVE_SDL)
 	SDL_mutexV(kbd_mutex);
+#endif
 	return ret;
 }
 
 template <class ADDRESS>
 void SDL<ADDRESS>::PushScancode(uint8_t scancode)
 {
+#if defined(HAVE_SDL)
 	SDL_mutexP(kbd_mutex);
+#endif
 	kbd_scancode_fifo.push_back(scancode);
+#if defined(HAVE_SDL)
 	SDL_mutexV(kbd_mutex);
+#endif
 }
 
+#if defined(HAVE_SDL)
 template <class ADDRESS>
 uint8_t SDL<ADDRESS>::Translate(SDLKey key)
 {
@@ -503,11 +526,14 @@ void SDL<ADDRESS>::RefreshLoop()
 		SDL_Delay(refresh_period);
 	}
 }
+#endif
 
 template <class ADDRESS>
 bool SDL<ADDRESS>::SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height, uint32_t depth, uint32_t fb_bytes_per_line)
 {
+#if defined(HAVE_SDL)
 	SDL_mutexP(sdl_mutex);
+#endif
 	
 	this->fb_addr = fb_addr;
 	this->width = width;
@@ -515,6 +541,7 @@ bool SDL<ADDRESS>::SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height
 	this->depth = depth;
 	this->fb_bytes_per_line = fb_bytes_per_line;
 	
+#if defined(HAVE_SDL)
 	unsigned int red_offset;
 	unsigned int green_offset;
 	unsigned int blue_offset;
@@ -599,9 +626,11 @@ bool SDL<ADDRESS>::SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height
 	
 	mode_set = true;
 	SDL_mutexV(sdl_mutex);
+#endif
 	return true;
 }
 
+#if defined(HAVE_SDL)
 template <class ADDRESS>
 void SDL<ADDRESS>::Blit()
 {
@@ -672,6 +701,7 @@ void SDL<ADDRESS>::Blit()
 
 	SDL_mutexV(sdl_mutex);
 }
+#endif
 
 template <class ADDRESS>
 void SDL<ADDRESS>::RefreshDisplay()

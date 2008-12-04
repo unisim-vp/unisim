@@ -37,6 +37,7 @@
 #include <unisim/util/debug/register.hh>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fstream>
 
 namespace unisim {
 namespace service {

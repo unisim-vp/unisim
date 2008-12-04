@@ -31,28 +31,21 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_BUILD_HH__
-#define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_BUILD_HH__
 
-#include <unisim/util/debug/symbol.hh>
-#include <iosfwd>
+#include <unisim/component/cxx/processor/powerpc/config.hh>
 
 namespace unisim {
-namespace service {
-namespace interfaces {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace powerpc {
 
-template <class T>
-class SymbolTableBuild
-{
-public:
-	virtual void Reset() = 0;
-	virtual void AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type) = 0;
-	virtual void Dump(std::ostream& os) const = 0;
-};
+const uint32_t CRLayout::CR0_LT_MASK;
+const uint32_t CRLayout::CR0_GT_MASK;
+const uint32_t CRLayout::CR0_EQ_MASK;
 
-} // end of namespace interfaces
-} // end of namespace service
+} // end of namespace powerpc
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
 } // end of namespace unisim
-
-#endif

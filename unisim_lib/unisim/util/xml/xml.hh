@@ -37,8 +37,7 @@
 
 #include <list>
 #include <string>
-#include <iostream>
-#include <fstream>
+#include <iosfwd>
 #include <stdarg.h>
 
 namespace unisim {
@@ -49,7 +48,6 @@ using std::list;
 using std::istream;
 using std::fstream;
 using std::ostream;
-using std::endl;
 using std::string;
 
 class Node;

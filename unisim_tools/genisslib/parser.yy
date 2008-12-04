@@ -564,6 +564,7 @@ op_var_list_declaration: TOK_IDENT '.' TOK_VAR var_list
   }
   delete var_list;
 }
+;
 
 global_var_list_declaration: TOK_VAR var_list
 {
@@ -679,6 +680,7 @@ constness:
 {
   $$ = true;
 }
+;
 
 param: TOK_SOURCE_CODE TOK_SOURCE_CODE
 {

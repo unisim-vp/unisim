@@ -43,6 +43,7 @@
 #ifndef Numerics_Double_FloatingTemplate
 #define Numerics_Double_FloatingTemplate
 #include <unisim/util/simfloat/floating.hh>
+#include <iostream>
 
 namespace unisim {
 namespace util {

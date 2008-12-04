@@ -50,7 +50,9 @@
 #ifdef WIN32
 #include <windows.h>
 #else
+#if defined(HAVE_PTHREAD)
 #include <pthread.h>
+#endif
 #endif
 
 fsc_simcontext *Simulator::context = 0;
@@ -288,7 +290,9 @@ void* progress_bar_thread_statup(void* sim)
 #ifdef WIN32
   ExitThread(0);
 #else
+#if defined(HAVE_PTHREAD)
   pthread_exit(NULL);
+#endif
 #endif
 }
 
@@ -297,7 +301,9 @@ void Simulator::set_progress_max(uint64_t max)
 #ifdef WIN32
   HANDLE t;
 #else
+#if defined(HAVE_PTHREAD)
   pthread_t t;
+#endif
 #endif
   start_time=time(NULL);
   ListPointer<unisim_module> m;
@@ -320,6 +326,8 @@ void Simulator::set_progress_max(uint64_t max)
      dwCreationFlags,
      lpThreadId);
 #else
+#if defined(HAVE_PTHREAD)
   pthread_create(&t, NULL, progress_bar_thread_statup, this);
+#endif
 #endif
 }

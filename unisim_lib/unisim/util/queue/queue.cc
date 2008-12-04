@@ -34,6 +34,8 @@
 
 #include <unisim/util/queue/queue.hh>
 
+#include <sstream>
+
 namespace unisim {
 namespace util {
 namespace queue {

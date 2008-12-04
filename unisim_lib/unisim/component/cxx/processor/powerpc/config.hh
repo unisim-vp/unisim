@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CONFIG_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_CONFIG_HH__
 
+#include <inttypes.h>
+
 namespace unisim {
 namespace component {
 namespace cxx {

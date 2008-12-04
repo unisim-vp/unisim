@@ -44,7 +44,7 @@
 #define Numerics_Integer_IntegerH
 
 #include <unisim/util/endian/endian.hh>
-#include <iostream>
+#include <iosfwd>
 #include <limits.h>
 #include <float.h>
 #include <math.h>

@@ -146,11 +146,20 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
     fi
 	
     # Check for ncurses.h
-    AC_CHECK_HEADER(ncurses.h,, AC_MSG_ERROR([ncurses.h not found. Please install the readline development library. Use --with-ncurses=<path> to overload default includes search path.]))
+    AC_CHECK_HEADER(ncurses.h, broken_ncurses=no, broken_ncurses=yes)
+
+    # Check for functions wgetch in libncurses.a
+    AC_CHECK_LIB(ncurses, wgetch, broken_ncurses=no, broken_ncurses=yes)
+
+    if test "$broken_ncurses" == "yes"; then
+		AC_MSG_NOTICE([ncurses not found. No line edition capabilities will be available.])
+    else
+		AC_DEFINE([HAVE_NCURSES], [], [Whether ncurses is available])
+    fi
 ])
 
 ## UNISIM_CHECK_PTHREAD
-## Checks if the curses library is installed
+## Checks if the pthread library is installed
 ## Does not take parameters
 #####################################################
 AC_DEFUN([UNISIM_CHECK_PTHREAD], [
@@ -158,27 +167,33 @@ AC_DEFUN([UNISIM_CHECK_PTHREAD], [
     AC_CHECK_HEADER(pthread.h,, AC_MSG_ERROR([pthread.h not found.]))
 
     if test "$broken_pthread" == "yes"; then
-	AC_MSG_ERROR([installed pthread library is broken.])
+		AC_MSG_NOTICE([POSIX thread library not found.])
     else
-	LIBS=${LIBS}" -lpthread"
+		AC_DEFINE([HAVE_PTHREAD], [], [Whether POSIX thread library is available])
     fi
 ])
 
-## UNISIM_CHECK_READLINE
-## Checks if the realine library is installed
+## UNISIM_CHECK_LIBEDIT
+## Checks if the libedit library (Port of NetBSD alternative 'editline' to GNU GPL 'readline') is installed
 ## Does not take parameters
 #####################################################
-AC_DEFUN([UNISIM_CHECK_READLINE], [
-    # Check if readline path has been overloaded
-    AC_ARG_WITH(readline,
-	AS_HELP_STRING([--with-readline=<path>], [readline library to use (will be completed with /include and /lib)]))
-    if test "x$with_readline" != "x"; then
-	AC_MSG_NOTICE([using readline at $with_readline])
-	CPPFLAGS=${CPPFLAGS}" -I$with_readline/include"
+AC_DEFUN([UNISIM_CHECK_LIBEDIT], [
+    # Check if libedit path has been overloaded
+    AC_ARG_WITH(libedit,
+	AS_HELP_STRING([--with-libedit=<path>], [libedit library to use (will be completed with /include and /lib)]))
+    if test "x$with_libedit" != "x"; then
+	AC_MSG_NOTICE([using libedit at $with_libedit])
+	CPPFLAGS=${CPPFLAGS}" -I$with_libedit/include"
     fi
 	
-    # Check for readline/readline.h
-    AC_CHECK_HEADER(readline/readline.h,, AC_MSG_ERROR([readline/realine.h not found. Please install the readline development library. Use --with-readline=<path> to overload default includes search path.]))
+    # Check for editline/readline.h
+    AC_CHECK_HEADER(editline/readline.h, broken_libedit=no, broken_libedit=yes)
+
+    if test "$broken_libedit" == "yes"; then
+		AC_MSG_NOTICE([libedit (NetBSD editline port) not found. No line edition capabilities will be available.])
+    else
+		AC_DEFINE([HAVE_LIBEDIT], [], [Whether libedit is available])
+	fi
 	
 ])
 
@@ -196,8 +211,14 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
     fi
 
     # Check for the main SDL header
-    AC_CHECK_HEADER(SDL/SDL.h,, AC_MSG_ERROR([SDL/SDL.h not found. Please install the SDL development library (version >= 1.2.0).]))
-	
+    AC_CHECK_HEADER(SDL/SDL.h, broken_sdl=no, broken_sdl=yes)
+
+    if test "$broken_sdl" == "yes"; then
+		AC_MSG_NOTICE([SDL not found. No video frame buffer or input devices will be available.])
+    else
+		LIBS="-lSDL ${LIBS}"
+		AC_DEFINE([HAVE_SDL], [], [Whether SDL is available])
+    fi
 ])
 
 ## UNISIM_CHECK_LIBXML2
@@ -398,3 +419,25 @@ AC_DEFUN([UNISIM_CHECK_BOOST], [
 	AC_MSG_ERROR([boost thread headers not found. Please install the boost thread development library. Use --with-boost=<path> to overload default includes search path.]))
 ])
 
+## UNISIM_CHECK_CACTI
+## Checks if the cacti library is installed
+## Does not take parameters
+####################################################
+AC_DEFUN([UNISIM_CHECK_CACTI], [
+    # Check if cacti path has been overloaded
+    AC_ARG_WITH(cacti,
+	AS_HELP_STRING([--with-cacti=<path>], [Cacti 4.2 library to use (will be completed with /include and /lib)]))
+    if test "x$with_cacti" != "x"; then
+	AC_MSG_NOTICE([using cacti at $with_cacti])
+	CPPFLAGS=${CPPFLAGS}" -I$with_cacti/include"
+    fi
+	
+    # Check for cacti4_2.hh
+    AC_CHECK_HEADER(cacti4_2.hh, broken_cacti=no, broken_cacti=yes)
+
+    if test "$broken_cacti" == "yes"; then
+		AC_MSG_NOTICE([CACTI 4.2 not found. Cache power estimation will be unavailable.])
+    else
+		AC_DEFINE([HAVE_CACTI4_2], [], [Whether Cacti 4.2 is available])
+	fi
+])

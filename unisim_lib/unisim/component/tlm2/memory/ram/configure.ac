@@ -50,9 +50,13 @@ AC_PROG_LN_S
 
 AC_LANG([C++])
 
-UNISIM_CHECK_LIBXML2
 UNISIM_CHECK_SYSTEMC
 UNISIM_CHECK_TLM20
+
+# TLM 2.0 needs boost
+UNISIM_WITH_BOOST
+UNISIM_CHECK_BOOST_FUNCTION
+UNISIM_CHECK_BOOST_MEM_FN
 
 # files to generate
 #   this should include all the makefiles to generate

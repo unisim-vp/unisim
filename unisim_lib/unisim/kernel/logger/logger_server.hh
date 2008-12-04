@@ -35,11 +35,13 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include <string>
-#include <libxml/encoding.h>
-#include <libxml/xmlwriter.h>
 
 #ifndef __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
 #define __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
+
+// Forward declaration to hide libxml2 data types
+typedef struct _xmlTextWriter xmlTextWriter;
+typedef xmlTextWriter *xmlTextWriterPtr;
 
 namespace unisim {
 namespace kernel {

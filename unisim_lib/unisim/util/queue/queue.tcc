@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_QUEUE_QUEUE_TCC__
 #define __UNISIM_UTIL_QUEUE_QUEUE_TCC__
 
+#include <iostream>
+
 namespace unisim {
 namespace util {
 namespace queue {

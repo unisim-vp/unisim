@@ -38,6 +38,7 @@ retaining the original license:
 
 #include <unisim/component/cxx/pci/ide/ide_ctrl.hh>
 #include <unisim/component/cxx/pci/ide/ide_ctrl.tcc>
+#include <iostream>
 
 namespace unisim {
 namespace component {

@@ -31,13 +31,26 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
+#if defined(HAVE_CACTI4_2)
+#include <cacti4_2.hh>
+#endif
+
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+// #if defined(HAVE_CACTI4_2)
+// #define cacti (*(Cacti4_2 *) opaque)
+// #endif
+
 
 namespace unisim {
 namespace kernel {
@@ -181,6 +194,11 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	min_cycle_time(0),
 	time_stamp(0.0)
 {
+#if defined(HAVE_CACTI4_2)
+	cacti =  new Cacti4_2();
+#else
+	cacti = 0;
+#endif
 }
 
 CachePowerEstimator::~CachePowerEstimator()
@@ -197,6 +215,7 @@ CachePowerEstimator::~CachePowerEstimator()
 
 void CachePowerEstimator::SetPowerMode(unsigned int cycle_time, unsigned int voltage)
 {
+#if defined(HAVE_CACTI4_2)
 	double new_time_stamp = time_import->GetTime(); // in seconds
 	
 	map<CacheProfileKey, CacheProfile *>::iterator prof_iter;
@@ -218,7 +237,7 @@ void CachePowerEstimator::SetPowerMode(unsigned int cycle_time, unsigned int vol
 	
 	Cacti4_2::total_result_type total_result;
 	
-	total_result = cacti.cacti_interface(
+	total_result = cacti->cacti_interface(
 			p_cache_size,
 			p_line_size,
 			p_associativity,
@@ -241,7 +260,7 @@ void CachePowerEstimator::SetPowerMode(unsigned int cycle_time, unsigned int vol
 			Nspd,
 			(double) voltage / 1e3 /* V */);
 	
-	//cacti.output_data(&total_result.result,&total_result.area,&total_result.params);
+	//cacti->output_data(&total_result.result,&total_result.area,&total_result.params);
 	
 	if(cycle_time < min_cycle_time)
 	{
@@ -267,7 +286,7 @@ void CachePowerEstimator::SetPowerMode(unsigned int cycle_time, unsigned int vol
 // 			<< " nJ, dyn-energy-per-write=" << (prof->dyn_energy_per_write * 1e9)
 // 			<< " nJ, max-dyn-power=" << (prof->dyn_energy_per_read * prof->frequency * 1e6)
 // 			<< " W, leak-power=" << prof->leak_power << " W)" << endl;
-
+#endif
 }
 
 unsigned int CachePowerEstimator::GetMinCycleTime()
@@ -338,6 +357,7 @@ double CachePowerEstimator::GetLeakagePower()
 
 bool CachePowerEstimator::Setup()
 {
+#if defined(HAVE_CACTI4_2)
 	if(!time_import)
 	{
 		cerr << GetName() << ": ERROR! no time service is connected." << endl;
@@ -368,7 +388,7 @@ bool CachePowerEstimator::Setup()
 	Cacti4_2::total_result_type total_result;
 	double VddPow;
 
-	total_result = cacti.cacti_interface(
+	total_result = cacti->cacti_interface(
 			p_cache_size,
 	p_line_size,
 	p_associativity,
@@ -385,7 +405,7 @@ bool CachePowerEstimator::Setup()
 	0,
 	&VddPow);
 
-	//cacti.output_data(&total_result.result,&total_result.area,&total_result.params);
+	//cacti->output_data(&total_result.result,&total_result.area,&total_result.params);
 
 	Ndwl = total_result.result.best_Ndwl;
 	Ndbl = total_result.result.best_Ndbl;
@@ -404,6 +424,10 @@ bool CachePowerEstimator::Setup()
 	
 	SetPowerMode(min_cycle_time, default_voltage);
 	return true;
+#else
+	cerr << GetName() << ": ERROR! Cacti 4.2 is not available." << endl;
+	return false;
+#endif
 }
 
 } // end of namespace power

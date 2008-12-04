@@ -37,9 +37,8 @@
 
 #include <inttypes.h>
 #include <string.h>
-#include <iostream>
+#include <iosfwd>
 #include <stdexcept>
-#include <sstream>
 
 namespace unisim {
 namespace util {

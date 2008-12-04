@@ -69,6 +69,8 @@ case $host in
 		;;
 esac
 
+UNISIM_CHECK_CACTI
+
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])

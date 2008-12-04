@@ -43,6 +43,7 @@
 #ifndef Numerics_Integer_IntegerTemplate
 #define Numerics_Integer_IntegerTemplate
 #include <unisim/util/simfloat/integer.hh>
+#include <iostream>
 
 namespace unisim {
 namespace util {

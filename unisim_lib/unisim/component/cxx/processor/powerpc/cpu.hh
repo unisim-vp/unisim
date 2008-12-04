@@ -46,7 +46,6 @@
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>
 #include <unisim/component/cxx/processor/powerpc/config.hh>
-#include <stdlib.h>
 #include <unisim/component/cxx/cache/cache.hh>
 #include <unisim/component/cxx/tlb/tlb.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -73,8 +72,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/queue/queue.hh>
 #include <map>
-#include <iostream>
-#include <stdio.h>
+#include <iosfwd>
 
 namespace unisim {
 namespace component {
@@ -1659,16 +1657,6 @@ private:
 
 	/* Instruction Translation look-aside buffer */
 	TLB<class CONFIG::ITLB_CONFIG> itlb;
-
-	//=====================================================================
-	//=    Internal service imports to adjust power mode of caches/TLBs   =
-	//=====================================================================
-	
-	ServiceImport<PowerMode> internal_il1_power_mode_import;
-	ServiceImport<PowerMode> internal_dl1_power_mode_import;
-	ServiceImport<PowerMode> internal_l2_power_mode_import;
-	ServiceImport<PowerMode> internal_dtlb_power_mode_import;
-	ServiceImport<PowerMode> internal_itlb_power_mode_import;
 
 	//=====================================================================
 	//=               Instruction prefetch buffer                         =

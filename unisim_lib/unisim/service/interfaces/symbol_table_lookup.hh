@@ -36,7 +36,6 @@
 #define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_LOOKUP_HH__
 
 #include <unisim/util/debug/symbol.hh>
-#include <iostream>
 
 namespace unisim {
 namespace service {

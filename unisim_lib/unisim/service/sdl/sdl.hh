@@ -35,6 +35,10 @@
 #ifndef __UNISIM_SERVICE_SDL_SDL_HH__
 #define __UNISIM_SERVICE_SDL_SDL_HH__
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/logger.hh>
 #include <unisim/service/interfaces/video.hh>
@@ -43,8 +47,11 @@
 #include <unisim/util/endian/endian.hh>
 
 #include <inttypes.h>
+
+#if defined(HAVE_SDL)
 #include <SDL/SDL.h>
 #include <SDL/SDL_thread.h>
+#endif
 
 #include <list>
 #include <string>
@@ -91,15 +98,25 @@ public:
 	virtual bool GetScancode(uint8_t& scancode);
 	
 private:
-	bool mode_set;
+#if defined(HAVE_SDL)
 	SDL_Surface *surface;
-	bool alive;
-	bool refresh;
 	SDL_Surface *screen;
 	SDL_Thread *refresh_thread;
 	SDL_Thread *event_handling_thread;
 	SDL_mutex *sdl_mutex;
 	SDL_mutex *kbd_mutex;
+
+	uint8_t Translate(SDLKey keysym);
+	void ProcessKeyboardEvent(SDL_KeyboardEvent& key);
+	void RefreshLoop();
+	void EventLoop();
+	void Blit();
+	static int RefreshThread(SDL<ADDRESS> *sdl);
+	static int EventHandlingThread(SDL<ADDRESS> *sdl);
+#endif
+	bool mode_set;
+	bool alive;
+	bool refresh;
 	uint32_t refresh_period;
 	ADDRESS fb_addr;
 	uint32_t width;
@@ -112,14 +129,7 @@ private:
 	Parameter<uint32_t> param_refresh_period;
 	Parameter<string> param_bmp_out_filename;
 
-	static int RefreshThread(SDL<ADDRESS> *sdl);
-	static int EventHandlingThread(SDL<ADDRESS> *sdl);
-	void RefreshLoop();
-	void EventLoop();
-	void Blit();
 	void PushScancode(uint8_t scancode);
-	uint8_t Translate(SDLKey keysym);
-	void ProcessKeyboardEvent(SDL_KeyboardEvent& key);
 };
 
 } // end of namespace sdl

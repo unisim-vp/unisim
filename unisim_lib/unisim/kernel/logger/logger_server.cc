@@ -33,6 +33,8 @@
  */
 
 #include "unisim/kernel/logger/logger_server.hh"
+#include <libxml/encoding.h>
+#include <libxml/xmlwriter.h>
 #include <sstream>
 
 namespace unisim {

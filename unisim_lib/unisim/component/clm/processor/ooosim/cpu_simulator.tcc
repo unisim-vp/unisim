@@ -43,6 +43,8 @@
 #ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_TCC__
 #define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_TCC__
 
+#include <unisim/component/clm/interfaces/memreq.tcc>
+
 #define TAG_SEND_ON_MEMORY_REQUEST 0
 //#define __BYTE_ORDER __BIG_ENDIAN
 

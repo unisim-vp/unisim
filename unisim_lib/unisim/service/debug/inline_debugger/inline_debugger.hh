@@ -49,8 +49,6 @@
 #include <unisim/kernel/service/service.hh>
 
 #include <inttypes.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 #include <string>
 
 namespace unisim {

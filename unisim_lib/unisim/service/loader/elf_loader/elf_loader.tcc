@@ -36,6 +36,8 @@
 #define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 
 #include <unisim/util/endian/endian.hh>
+#include <iostream>
+#include <fstream>
 #include <stdlib.h>
 
 namespace unisim {

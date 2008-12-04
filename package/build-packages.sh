@@ -36,7 +36,7 @@ case ${TARGET} in
 
 		# UNISIM Library package dependencies
 		UNISIM_LIB_DEPS="libncurses5-dev (>= 5.5)"
-		UNISIM_LIB_DEPS+=",libreadline5-dev (>= 5.2)"
+		UNISIM_LIB_DEPS+=",libedit-dev (>= 2.11)"
 		UNISIM_LIB_DEPS+=",libxml2-dev (>= 2.6.27)"
 		UNISIM_LIB_DEPS+=",libsdl1.2-dev (>= 1.2.11)"
 		UNISIM_LIB_DEPS+=",libstdc++6-dev (>= 4.1.2)"
@@ -46,7 +46,7 @@ case ${TARGET} in
 
 		# UNISIM Simulators package dependencies
 		UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5)"
-		UNISIM_SIMULATORS_DEPS+=",libreadline5 (>= 5.2)"
+		UNISIM_SIMULATORS_DEPS+=",libedit (>= 2.11)"
 		UNISIM_SIMULATORS_DEPS+=",libxml2 (>= 2.6.27)"
 		UNISIM_SIMULATORS_DEPS+=",libsdl1.2debian (>= 1.2.11)"
 		UNISIM_SIMULATORS_DEPS+=",libstdc++6 (>= 4.1.2)"
@@ -65,7 +65,7 @@ case ${TARGET} in
 
 		# UNISIM Library package dependencies
 		UNISIM_LIB_DEPS="libncurses5-devel >= 5.5"
-		UNISIM_LIB_DEPS+=",libreadline5-devel >= 5.2"
+		UNISIM_LIB_DEPS+=",libedit-devel >= 2.11"
 		UNISIM_LIB_DEPS+=",libxml2-devel >= 2.6.27"
 		UNISIM_LIB_DEPS+=",libsdl1.2-devel >= 1.2.11"
 		UNISIM_LIB_DEPS+=",libstdc++6-devel >= 4.1.2"
@@ -75,7 +75,7 @@ case ${TARGET} in
 
 		# UNISIM Simulators package dependencies
 		UNISIM_SIMULATORS_DEPS="libncurses5 >= 5.5"
-		UNISIM_SIMULATORS_DEPS+=",libreadline5 >= 5.2"
+		UNISIM_SIMULATORS_DEPS+=",libedit >= 2.11"
 		UNISIM_SIMULATORS_DEPS+=",libxml2 >= 2.6.27"
 		UNISIM_SIMULATORS_DEPS+=",libsdl1.2 >= 1.2.11"
 		UNISIM_SIMULATORS_DEPS+=",libstdc++6 >= 4.1.2"
@@ -683,7 +683,6 @@ case ${TARGET} in
           --with-sdl=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/zlib \
-          --with-readline=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/readline \
           --with-libxml2=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/libxml2 \
           --enable-release
 		;;
@@ -697,7 +696,7 @@ case ${TARGET} in
           --with-sdl=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/zlib \
-          --with-readline=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/readline \
+          --with-libedit=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/libedit \
           --with-libxml2=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
@@ -711,7 +710,7 @@ case ${TARGET} in
           --with-sdl=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/zlib \
-          --with-readline=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/readline \
+          --with-libedit=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libedit \
           --with-libxml2=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
@@ -743,7 +742,6 @@ case ${TARGET} in
           --with-sdl=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/zlib \
-          --with-readline=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/readline \
           --with-libxml2=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/libxml2 \
           --enable-release
 		;;
@@ -757,7 +755,7 @@ case ${TARGET} in
           --with-sdl=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/zlib \
-          --with-readline=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/readline \
+          --with-libedit=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/libedit \
           --with-libxml2=${UNISIM_BOOTSTRAP_I686_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
@@ -771,7 +769,7 @@ case ${TARGET} in
           --with-sdl=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/SDL \
           --with-boost=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/zlib \
-          --with-readline=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/readline \
+          --with-libedit=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libedit \
           --with-libxml2=${UNISIM_BOOTSTRAP_POWERPC_DARWIN_DIR}/install/libxml2 \
           --enable-release
 		;;
@@ -794,8 +792,6 @@ case ${TARGET} in
 	*mingw32*)
 		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/libxml2/bin/libxml2-2.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
 		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/SDL/bin/SDL.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
-		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/readline/bin/readline5.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
-		cp ${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/readline/bin/history5.dll ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/bin
 		;;
 esac
 

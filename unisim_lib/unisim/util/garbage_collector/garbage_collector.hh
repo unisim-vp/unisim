@@ -35,8 +35,7 @@
 #ifndef __UNISIM_UTIL_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
 #define __UNISIM_UTIL_GARBAGE_COLLECTOR_GARBAGE_COLLECTOR_HH__
 
-#include <iostream>
-#include <stdlib.h>
+#include <cstddef>
 
 namespace unisim {
 namespace util {
@@ -55,8 +54,8 @@ namespace unisim {
 namespace util {
 namespace garbage_collector {
 
-using std::cerr;
-using std::endl;	
+//using std::cerr;
+//using std::endl;	
 	
 struct MemoryBlock
 {

@@ -41,8 +41,7 @@
 #include <unisim/kernel/service/service.hh>
 #include <string>
 #include <list>
-#include <iostream>
-#include <sstream>
+#include <iosfwd>
 
 namespace unisim {
 namespace service {

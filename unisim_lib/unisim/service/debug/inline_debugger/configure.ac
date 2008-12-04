@@ -65,14 +65,11 @@ AC_CHECK_HEADERS([string iostream],,\
 case $host in
 	*linux*)   # linux host
 		UNISIM_CHECK_CURSES
+		UNISIM_CHECK_LIBEDIT
 		;;
 	*mingw32*)  # win32 host
 		;;
 esac
-
-###### CHECK FOR EXTERNAL LIBRARIES ######################
-
-UNISIM_CHECK_READLINE
 
 # files to generate
 #   this should include all the makefiles to generate

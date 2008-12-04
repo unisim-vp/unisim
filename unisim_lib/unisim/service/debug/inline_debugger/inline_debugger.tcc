@@ -36,13 +36,21 @@
 #define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_TCC_
 
 #include <iostream>
-#include <readline/readline.h>
+
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
+#if defined(HAVE_LIBEDIT)
+#include <editline/readline.h>
+#endif
 
 namespace unisim {
 namespace service {
 namespace debug {
 namespace inline_debugger {
 
+using std::cin;
 using std::cout;
 using std::hex;
 using std::dec;
@@ -722,10 +730,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetLine(char *line, int size)
 {
-	//cin.getline(line, size);
-	//if(cin.fail()) return false;
-	//return true;
-	
+#if defined(HAVE_LIBEDIT)
 	char *line_read = readline(prompt.c_str());
 
   /* If the line has any text in it,
@@ -739,6 +744,12 @@ bool InlineDebugger<ADDRESS>::GetLine(char *line, int size)
 		return true;
 	}
 	return false;
+#else
+	cout << prompt;
+	cin.getline(line, size);
+	if(cin.fail()) return false;
+	return true;
+#endif
 }
 
 

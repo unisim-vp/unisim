@@ -35,6 +35,9 @@
 #ifndef __UNISIM_SERVICE_DEBUG_SYMBOL_TABLE_TCC__
 #define __UNISIM_SERVICE_DEBUG_SYMBOL_TABLE_TCC__
 
+#include <iostream>
+#include <sstream>
+
 namespace unisim {
 namespace service {
 namespace debug {
@@ -82,7 +85,7 @@ string Symbol<T>::GetFriendlyName(T addr) const
 	if(type == unisim::util::debug::Symbol<T>::SYM_FUNC)
 		sstr << "()";
 	if(addr != this->addr && (addr - this->addr) <= size)
-		sstr << "+0x" << hex << addr - this->addr << dec;
+		sstr << "+0x" << std::hex << addr - this->addr << std::dec;
 	
 	return sstr.str();
 }
@@ -170,14 +173,10 @@ const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByName(
 	
 	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
 	{
-		//cerr << "SYMBOL: " << (*symbol_iter)->GetName() << "(type=" << type << ")" << endl;
 		if(strcmp((*symbol_iter)->GetName(), name) == 0) return *symbol_iter;
 	}
 	return 0;
 }
-
-using std::endl;
-using std::cerr;
 
 template <class T>
 const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const
@@ -219,7 +218,7 @@ void SymbolTable<T>::Dump(ostream& os, typename unisim::util::debug::Symbol<T>::
 
 	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
 	{
-		os << hex << (*symbol_iter)->GetAddress() << dec << ": " << (*symbol_iter)->GetName() << " (" << (*symbol_iter)->GetSize() << " bytes)" << endl;
+		os << std::hex << (*symbol_iter)->GetAddress() << std::dec << ": " << (*symbol_iter)->GetName() << " (" << (*symbol_iter)->GetSize() << " bytes)" << endl;
 	}
 }
 

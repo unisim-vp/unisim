@@ -43,9 +43,10 @@ retaining the original license:
 #ifndef __UNISIM_COMPONENT_CXX_PCI_IDE_PCIDEV_HH__
 #define __UNISIM_COMPONENT_CXX_PCI_IDE_PCIDEV_HH__
  
-#include <iostream>
-#include <stack>
+#include <iosfwd>
+//#include <stack>
 #include <list>
+#include <string>
 
 #include "unisim/component/cxx/pci/ide/pcireg.hh"
 #include "unisim/component/cxx/pci/ide/event.hh"

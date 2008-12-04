@@ -38,6 +38,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <stdlib.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
@@ -141,7 +142,7 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 			<< "Running arm in system mode. Only arm966e_s and arm7tdmi can run under this mode" << endl
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 			<< EndDebug;
-		exit(-1);
+		Stop(-1);
 	}
 	// set CPSR to system mode
 	cpsr = 0;
@@ -1192,7 +1193,7 @@ LSWUBReg(const uint32_t u,
 			<< LOCATION << EndDebug;
 
 #endif // SOCLIB
-		exit(-1);
+		Stop(-1);
 	}
 	return val_rn + (((u << 1) - 1) * index);
 }
@@ -1380,7 +1381,7 @@ DisasmCondition(const uint32_t cond, stringstream &buffer) {
   default:
     cerr << "ERROR(" << __FUNCTION__ << "): "
 	 << "unknown condition code (" << cond << ")" << endl;
-    exit(-1);
+    Stop(-1);
     break;
   }
 }
@@ -1448,7 +1449,7 @@ DisasmShiftOperandImmShift(const uint32_t shift_imm,
     cerr << "ERROR(" << __FUNCTION__ << "): ";
     cerr << "unexpected case found disassembling (shift val = " 
 	 << dec << shift << ")." << endl;
-    exit(-1);
+    Stop(-1);
   }
 
   buffer << " #" << dec << shift_imm;
@@ -1549,7 +1550,7 @@ DisasmLSWUBReg_post(const uint32_t u,
     default:
       cerr << "ERROR(" << __FUNCTION__ << "): "
 	   << "unknown shift value (" << dec << shift << ")" << endl;
-      exit(-1);
+      Stop(-1);
       break;
     }
     if((shift != 3) && (shift_imm != 0))
@@ -1587,7 +1588,7 @@ DisasmLSWUBReg_offset(const uint32_t u,
     default:
       cerr << "ERROR(" << __FUNCTION__ << "): "
 	   << "unknown shift value (" << dec << shift << ")" << endl;
-      exit(-1);
+      Stop(-1);
       break;
     }
     if(shift != 3 && shift_imm != 0)
@@ -1626,7 +1627,7 @@ DisasmLSWUBReg_pre(const uint32_t u,
     default:
       cerr << "ERROR(" << __FUNCTION__ << "): "
 	   << "unknown shift value (" << dec << shift << ")" << endl;
-      exit(-1);
+      Stop(-1);
       break;
     }
     if((shift != 3) && (shift_imm != 0))
@@ -1838,7 +1839,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode) {
   default:
     cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
 	 << " unknown running mode (0x" << hex << src_mode << dec << ")" << endl;
-    exit(-1);
+    Stop(-1);
     break;
   }
 
@@ -1894,7 +1895,7 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode) {
   default:
     cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
 	 << " unknown running mode (0x" << hex << tar_mode << dec << ")" << endl;
-    exit(-1);
+    Stop(-1);
     break;
   }
 }
@@ -2532,7 +2533,7 @@ GetSPSRIndex() {
 #ifdef SOCLIB
 		cerr << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 			<< "Trying to modify SPSR under USER_MODE" << endl;
-		exit(-1);
+		Stop(-1);
 #else // SOCLIB
 		logger << DebugError
 				<< "Trying to modify SPSR under USER_MODE" << Endl
@@ -2545,7 +2546,7 @@ GetSPSRIndex() {
 #ifdef SOCLIB
 		cerr << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 			<< "Trying to modify SPSR under SYSTEM_MODE" << endl;
-		exit(-1);
+		Stop(-1);
 #else // ifndef SOCLIB
 		logger << DebugError
 			<< "Trying to modify SPSR under SYSTEM_MODE" << Endl
@@ -2573,7 +2574,7 @@ GetSPSRIndex() {
 #ifdef SOCLIB
 		cerr << "ERROR(" << __FUNCTION__ << "): ";
 		cerr << "unknown running mode." << endl;
-		exit(-1);
+		Stop(-1);
 #else // SOCLIB
 		logger << DebugError
 			<< "unkonwn running mode." << Endl

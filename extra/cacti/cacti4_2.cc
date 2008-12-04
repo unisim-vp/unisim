@@ -39,7 +39,7 @@
  * SOFTWARE.
  *------------------------------------------------------------*/
 
-#include <unisim/service/power/cacti4_2.hh>
+#include "cacti4_2.hh"
 #include <iostream>
 #include <stdio.h>
 #include <math.h>

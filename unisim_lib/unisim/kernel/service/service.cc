@@ -35,6 +35,7 @@
  
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger_server.hh"
+#include <iostream>
 #include <sstream>
 #include <fstream>
 #include <stdlib.h>

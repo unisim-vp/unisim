@@ -44,6 +44,9 @@
 
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace unisim {
 namespace component {
@@ -104,11 +107,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 	l2_power_mode_import("l2-power-mode-import", this),
 	itlb_power_mode_import("itlb-power-mode-import", this),
 	dtlb_power_mode_import("dtlb-power-mode-import", this),
-	internal_il1_power_mode_import("internal-il1-power-mode-import", this),
-	internal_dl1_power_mode_import("internal-dl1-power-mode-import", this),
-	internal_l2_power_mode_import("internal-l2-power-mode-import", this),
-	internal_itlb_power_mode_import("internal-itlb-power-mode-import", this),
-	internal_dtlb_power_mode_import("internal-dtlb-power-mode-import", this),
 	synchronizable_export("synchronizable-export", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
@@ -167,11 +165,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 	stat_bus_cycle("bus-cycle", this, bus_cycle),
 	stat_cpu_cycle("cpu-cycle", this, cpu_cycle)
 {
-	Object::SetupDependsOn(internal_il1_power_mode_import);
-	Object::SetupDependsOn(internal_dl1_power_mode_import);
-	Object::SetupDependsOn(internal_l2_power_mode_import);
-	Object::SetupDependsOn(internal_itlb_power_mode_import);
-	Object::SetupDependsOn(internal_dtlb_power_mode_import);
 	Object::SetupDependsOn(logger_import);
 
 
@@ -323,51 +316,45 @@ CPU<CONFIG>::~CPU()
 template <class CONFIG>
 bool CPU<CONFIG>::Setup()
 {
-/*	
 	unsigned int min_cycle_time = 0;
 
-	if(CONFIG::ITLB_ENABLE)
+	if(CONFIG::ITLB_CONFIG::ENABLE && itlb_power_mode_import)
 	{
-		if(!internal_itlb_power_mode_import) return false;
-		unsigned int itlb_min_cycle_time = internal_itlb_power_mode_import->GetMinCycleTime();
+		unsigned int itlb_min_cycle_time = itlb_power_mode_import->GetMinCycleTime();
 		if(itlb_min_cycle_time > 0 && itlb_min_cycle_time > min_cycle_time) min_cycle_time = itlb_min_cycle_time;
-		unsigned int itlb_default_voltage = internal_itlb_power_mode_import->GetDefaultVoltage();
+		unsigned int itlb_default_voltage = itlb_power_mode_import->GetDefaultVoltage();
 		if(voltage <= 0) voltage = itlb_default_voltage;
 	}
 
-	if(CONFIG::DTLB_ENABLE)
+	if(CONFIG::DTLB_CONFIG::ENABLE && dtlb_power_mode_import)
 	{
-		if(!internal_dtlb_power_mode_import) return false;
-		unsigned int dtlb_min_cycle_time = internal_dtlb_power_mode_import->GetMinCycleTime();
+		unsigned int dtlb_min_cycle_time = dtlb_power_mode_import->GetMinCycleTime();
 		if(dtlb_min_cycle_time > 0 && dtlb_min_cycle_time > min_cycle_time) min_cycle_time = dtlb_min_cycle_time;
-		unsigned int dtlb_default_voltage = internal_dtlb_power_mode_import->GetDefaultVoltage();
+		unsigned int dtlb_default_voltage = dtlb_power_mode_import->GetDefaultVoltage();
 		if(voltage <= 0) voltage = dtlb_default_voltage;
 	}
 	
-	if(CONFIG::L1_INSN_ENABLE)
+	if(CONFIG::IL1_CONFIG::ENABLE && il1_power_mode_import)
 	{
-		if(!internal_il1_power_mode_import) return false;
-		unsigned int il1_min_cycle_time = internal_il1_power_mode_import->GetMinCycleTime();
+		unsigned int il1_min_cycle_time = il1_power_mode_import->GetMinCycleTime();
 		if(il1_min_cycle_time > 0 && il1_min_cycle_time > min_cycle_time) min_cycle_time = il1_min_cycle_time;
-		unsigned int il1_default_voltage = internal_il1_power_mode_import->GetDefaultVoltage();
+		unsigned int il1_default_voltage = il1_power_mode_import->GetDefaultVoltage();
 		if(voltage <= 0) voltage = il1_default_voltage;
 	}
 	
-	if(CONFIG::L1_DATA_ENABLE)
+	if(CONFIG::DL1_CONFIG::ENABLE && dl1_power_mode_import)
 	{
-		if(!internal_dl1_power_mode_import) return false;
-		unsigned int dl1_min_cycle_time = internal_dl1_power_mode_import->GetMinCycleTime();
+		unsigned int dl1_min_cycle_time = dl1_power_mode_import->GetMinCycleTime();
 		if(dl1_min_cycle_time > 0 && dl1_min_cycle_time > min_cycle_time) min_cycle_time = dl1_min_cycle_time;
-		unsigned int dl1_default_voltage = internal_dl1_power_mode_import->GetDefaultVoltage();
+		unsigned int dl1_default_voltage = dl1_power_mode_import->GetDefaultVoltage();
 		if(voltage <= 0) voltage = dl1_default_voltage;
 	}
 	
-	if(CONFIG::L2_ENABLE)
+	if(CONFIG::L2_CONFIG::ENABLE && l2_power_mode_import)
 	{
-		if(!internal_l2_power_mode_import) return false;
-		unsigned int l2_min_cycle_time = internal_l2_power_mode_import->GetMinCycleTime();
+		unsigned int l2_min_cycle_time = l2_power_mode_import->GetMinCycleTime();
 		if(l2_min_cycle_time > 0 && l2_min_cycle_time > min_cycle_time) min_cycle_time = l2_min_cycle_time;
-		unsigned int l2_default_voltage = internal_l2_power_mode_import->GetDefaultVoltage();
+		unsigned int l2_default_voltage = l2_power_mode_import->GetDefaultVoltage();
 		if(voltage <= 0) voltage = l2_default_voltage;
 	}
 	
@@ -439,16 +426,15 @@ bool CPU<CONFIG>::Setup()
 		}
 	}
 
-	if(internal_il1_power_mode_import)
-		internal_il1_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+	if(il1_power_mode_import)
+		il1_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
 	
-	if(internal_dl1_power_mode_import)
-		internal_dl1_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+	if(dl1_power_mode_import)
+		dl1_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
 	
-	if(internal_l2_power_mode_import)
-		internal_l2_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+	if(l2_power_mode_import)
+		l2_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
 	
-	*/
 	if(linux_os_import)
 	{
 		EnableFPU();
@@ -3053,6 +3039,8 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 						l2_access.block->status.dirty = true;
 	
 						UpdateReplacementPolicyL2(l2_access);
+						
+						if(unlikely(l2_power_estimator_import != 0)) l2_power_estimator_import->ReportWriteAccess();
 					}
 					else
 					{
@@ -3331,6 +3319,8 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 
 		memcpy(&(*l1_access.block)[0], &(*l2_access.block)[l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
 		UpdateReplacementPolicyL2(l2_access);
+
+		if(unlikely(l2_power_estimator_import != 0)) l2_power_estimator_import->ReportReadAccess();
 	}
 	else
 	{
@@ -3389,6 +3379,8 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 		}
 		memcpy(&(*l1_access.block)[0], &(*l2_access.block)[l2_access.offset], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE);
 		UpdateReplacementPolicyL2(l2_access);
+
+		if(unlikely(l2_power_estimator_import != 0)) l2_power_estimator_import->ReportReadAccess();
 	}
 	else
 	{
@@ -3485,6 +3477,8 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 	
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);
 		UpdateReplacementPolicyIL1(l1_access);
+
+		if(unlikely(il1_power_estimator_import != 0)) il1_power_estimator_import->ReportReadAccess();
 	}
 	else
 	{
@@ -3562,6 +3556,8 @@ void CPU<CONFIG>::EmuLoad(address_t addr, void *buffer, uint32_t size)
 
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);
 		UpdateReplacementPolicyDL1(l1_access);
+
+		if(unlikely(dl1_power_estimator_import != 0)) dl1_power_estimator_import->ReportReadAccess();
 	}
 	else
 	{
@@ -3665,7 +3661,9 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 		memcpy(&(*l1_access.block)[l1_access.offset], buffer, size);
 		l1_access.block->status.dirty = true;
 		UpdateReplacementPolicyDL1(l1_access);
-	
+
+		if(unlikely(dl1_power_estimator_import != 0)) dl1_power_estimator_import->ReportWriteAccess();
+
 		if(unlikely(wimg & CONFIG::WIMG_WRITE_THROUGH))
 		{
 			if(likely(IsL2CacheEnabled()))
@@ -3679,6 +3677,7 @@ void CPU<CONFIG>::EmuStore(address_t addr, const void *buffer, uint32_t size)
 				memcpy(&(*l2_access.block)[l2_access.offset], buffer, size);
 				l2_access.block->status.dirty = true;
 				UpdateReplacementPolicyL2(l2_access);
+				if(unlikely(l2_power_estimator_import != 0)) l2_power_estimator_import->ReportWriteAccess();
 			}
 			BusWrite(physical_addr, buffer, size, wimg);
 		}
@@ -4439,6 +4438,8 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 		{
 			// Memory access is an instruction fetch
 			LookupITLB(mmu_access);
+			if(unlikely(itlb_power_estimator_import != 0)) itlb_power_estimator_import->ReportReadAccess();
+
 			if(likely(mmu_access.tlb_hit))
 			{
 				// ITLB hit
@@ -4475,6 +4476,7 @@ void CPU<CONFIG>::AccessTLB(MMUAccess<CONFIG>& mmu_access)
 		{
 			// Memory access is a data memory access
 			LookupDTLB(mmu_access);
+			if(unlikely(dtlb_power_estimator_import != 0)) dtlb_power_estimator_import->ReportReadAccess();
 
 			if(likely(mmu_access.tlb_hit))
 			{
@@ -4677,6 +4679,8 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 				{
 					if(CONFIG::ITLB_CONFIG::ENABLE)
 					{
+						// ITLB Refill
+						if(unlikely(itlb_power_estimator_import != 0)) itlb_power_estimator_import->ReportWriteAccess();
 						mmu_access.itlb_entry->status.valid = true;
 						mmu_access.itlb_entry->SetBaseVirtualAddr(base_virtual_addr);
 						mmu_access.itlb_entry->pte.c = pte_c;
@@ -4694,6 +4698,8 @@ void CPU<CONFIG>::EmuHardwarePageTableSearch(MMUAccess<CONFIG>& mmu_access)
 				{
 					if(CONFIG::DTLB_CONFIG::ENABLE)
 					{
+						// DTLB Refill
+						if(unlikely(dtlb_power_estimator_import != 0)) dtlb_power_estimator_import->ReportWriteAccess();
 						mmu_access.dtlb_entry->status.valid = true;
 						mmu_access.dtlb_entry->SetBaseVirtualAddr(base_virtual_addr);
 						mmu_access.dtlb_entry->pte.c = pte_c;
@@ -5582,6 +5588,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 		l1_access.block->status.valid = true;
 		l1_access.block->status.dirty = true;
 		UpdateReplacementPolicyDL1(l1_access);
+		if(unlikely(dl1_power_estimator_import != 0)) dl1_power_estimator_import->ReportWriteAccess();
 
 		if(IsL2CacheEnabled())
 		{
@@ -5614,6 +5621,7 @@ void CPU<CONFIG>::Dcbz(address_t addr)
 			l2_access.block->status.valid = true;
 			l2_access.block->status.dirty = true;
 			UpdateReplacementPolicyL2(l2_access);
+			if(unlikely(l2_power_estimator_import != 0)) l2_power_estimator_import->ReportWriteAccess();
 		}
 	}
 	else
