@@ -2,6 +2,14 @@
 
 ppcemu-system is a full system simulator of an MPC7447A/MPC107 (PowerPC) based board with Linux boot capability. The simulated board is very similar to a PowerMac G4 PCI machine. Computations on IEEE 754 floating point numbers are emulated using simfloat. Altivec instructions are currently decoded but not implemented. The running PowerPC application is a PowerMac Linux Kernel and all the applications installed on the hard disk image and/or the initial RAM disk image. Software running on the simulated hardware can be debugged by connecting a GDB client to the simulator through the GDB serial remote protocol. The GDB client can be either the standard text based client (i.e. command gdb), a graphical front-end to GDB (e.g. ddd), or even Eclipse CDT.
 
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=\textwidth]{ppcemu_system/fig_ppcemu_system.pdf}
+	\end{center}
+	\caption{ppcemu-system simplified schematic.}
+	\label{fig:ppcemu_system}
+\end{figure}
+
 \section{Simulated configuration}
 
 The simulator is composed of the following modules:
