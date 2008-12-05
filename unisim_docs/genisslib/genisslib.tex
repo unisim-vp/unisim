@@ -1,4 +1,4 @@
-\section{GenISSLib : An Instruction Set Simulator Generator}
+\section{Introduction}
 
 %-------------------------------------------------------------------------
 Instruction set simulators are usefull for processor simulation, either
@@ -18,6 +18,8 @@ GenISSLib is intended for developping such instruction set simulators. It uses a
 description language for describing instruction encoding. C++ source code blended with
 the description language allow the use of complex instruction behavior, or even more functionalities
 like disassembling, binary translation, system calls translation.
+
+\section{Quick Start}
 
 We will now presents you how to use GenISSLib through an example. Suppose that we want to build an instruction set simulator for
 a simple 16-bit RISC processor, see table~\ref{instruction_set_summary}. We need GenISSLib to generate C++ class 'Decoder' to decode an instruction, and a C++ class 'Operation' representing the decoded instruction.
@@ -460,6 +462,10 @@ int main(int argc, char *argv[]) {
 % \caption{The branch instruction.}
 % \label{branch_instr}
 % \end{figure}
+
+\newpage
+
+\subsection{Technical Reference}
 
 \begin{figure}[p]
 input $\rightarrow$ decl\_list\\

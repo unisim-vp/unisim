@@ -15,6 +15,18 @@
 % \usepackage{geometry}
 \usepackage{pifont}
 
+\usepackage{hyperref}%                   % Utilisation de HyperTeX
+
+\hypersetup{
+    pdfauthor   = {Gilles Mouchard, Daniel Gracia P\'erez, Reda Nouacer, Yves Lhuillier and Franck V\'edrine},%
+    pdftitle    = {UNISIM Documentation},%
+    pdfsubject  = {UNISIM},%
+    pdfkeywords = {simulation framework, architectural exploration, embedded system design, system verification},%
+    pdfcreator  = {rubber},%
+    pdfproducer = {rubber}
+}
+
+
 %\geometry{hmargin=3.0cm,vmargin=2.5cm}
 
 \begin{document}
@@ -41,9 +53,13 @@
 \label{installation}
 \input{installation/install}
 
-\chapter{GenISSLib}
+\chapter{GenISSLib : An Instruction Set Simulator Generator}
 \label{genisslib}
 \input{genisslib/genisslib}
+
+\chapter{ppcemu-system}
+\label{ppcemu_system}
+\input{ppcemu_system/ppcemu_system}
 
 \chapter{Services}
 \label{services}
