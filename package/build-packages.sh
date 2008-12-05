@@ -29,59 +29,10 @@ case ${TARGET} in
 	*86*deb*)
 		ARCH=i386
 		UNISIM_PREFIX=/usr
-		# UNISIM Tools package dependencies
-		UNISIM_TOOLS_DEPS="bash (>= 3.2)"
-		UNISIM_TOOLS_DEPS+=",libc6 (>= 2.5)"
-		UNISIM_TOOLS_DEPS+=",libgcc1 (>= 4.1.2)"
-
-		# UNISIM Library package dependencies
-		UNISIM_LIB_DEPS="libncurses5-dev (>= 5.5)"
-		UNISIM_LIB_DEPS+=",libedit-dev (>= 2.11)"
-		UNISIM_LIB_DEPS+=",libxml2-dev (>= 2.6.27)"
-		UNISIM_LIB_DEPS+=",libsdl1.2-dev (>= 1.2.11)"
-		UNISIM_LIB_DEPS+=",libstdc++6-dev (>= 4.1.2)"
-		UNISIM_LIB_DEPS+=",libc6-dev (>= 2.5)"
-		UNISIM_LIB_DEPS+=",libgcc1 (>= 4.1.2)"
-		UNISIM_LIB_DEPS+=",zlib1g (>= 1.2.3)"
-
-		# UNISIM Simulators package dependencies
-		UNISIM_SIMULATORS_DEPS="libncurses5 (>= 5.5)"
-		UNISIM_SIMULATORS_DEPS+=",libedit (>= 2.11)"
-		UNISIM_SIMULATORS_DEPS+=",libxml2 (>= 2.6.27)"
-		UNISIM_SIMULATORS_DEPS+=",libsdl1.2debian (>= 1.2.11)"
-		UNISIM_SIMULATORS_DEPS+=",libstdc++6 (>= 4.1.2)"
-		UNISIM_SIMULATORS_DEPS+=",libc6 (>= 2.5)"
-		UNISIM_SIMULATORS_DEPS+=",libgcc1 (>= 4.1.2)"
-		UNISIM_SIMULATORS_DEPS+=",zlib1g-dev (>= 1.2.3)"
 		;;
 	*86*rpm*)
 		ARCH=i386
 		UNISIM_PREFIX=/usr
-
-		# UNISIM Tools package dependencies
-		UNISIM_TOOLS_DEPS="bash >= 3.2"
-		UNISIM_TOOLS_DEPS+=",glibc >= 2.5"
-		UNISIM_TOOLS_DEPS+=",libgcc1 >= 4.1.2"
-
-		# UNISIM Library package dependencies
-		UNISIM_LIB_DEPS="libncurses5-devel >= 5.5"
-		UNISIM_LIB_DEPS+=",libedit-devel >= 2.11"
-		UNISIM_LIB_DEPS+=",libxml2-devel >= 2.6.27"
-		UNISIM_LIB_DEPS+=",libsdl1.2-devel >= 1.2.11"
-		UNISIM_LIB_DEPS+=",libstdc++6-devel >= 4.1.2"
-		UNISIM_LIB_DEPS+=",glibc-devel >= 2.5"
-		UNISIM_LIB_DEPS+=",libgcc1 >= 4.1.2"
-		UNISIM_LIB_DEPS+=",zlib1 >= 1.2.3"
-
-		# UNISIM Simulators package dependencies
-		UNISIM_SIMULATORS_DEPS="libncurses5 >= 5.5"
-		UNISIM_SIMULATORS_DEPS+=",libedit >= 2.11"
-		UNISIM_SIMULATORS_DEPS+=",libxml2 >= 2.6.27"
-		UNISIM_SIMULATORS_DEPS+=",libsdl1.2 >= 1.2.11"
-		UNISIM_SIMULATORS_DEPS+=",libstdc++6 >= 4.1.2"
-		UNISIM_SIMULATORS_DEPS+=",glibc >= 2.5"
-		UNISIM_SIMULATORS_DEPS+=",libgcc1 >= 4.1.2"
-		UNISIM_SIMULATORS_DEPS+=",zlib1-devel >= 1.2.3"
 		;;
 	*powerpc*darwin*)
 		ARCH=POWERPC
@@ -294,12 +245,45 @@ function fill_rpm_files_section ()
 	done
 }
 
+function find_deb_dependencies
+{
+	PKG_DEPS=""
+	TMP=""
+	for FILE in $@; do
+		if [ -f ${FILE} ] && [ -x ${FILE} ]; then
+			FILE_HEAD=`head -c 4 ${FILE}`
+			ELF_HEAD=`echo -e "\0177ELF"`
+			if [ "${FILE_HEAD}" = "${ELF_HEAD}" ]; then
+				SO_DEPS=`ldd ${FILE} | sed 's/^.*=>//' | cut -f 1 -d "("`
+				#echo "SO_DEPS=\"${SO_DEPS}\""
+				for SO_DEP in ${SO_DEPS}; do
+					PKGS=`dpkg -S ${SO_DEP} 2> /dev/null | cut -f 1 -d ":"`
+					#echo "PKGS=\"${PKGS}\""
+					for PKG in ${PKGS}; do
+						PKG_VERSION=`dpkg -s ${PKG} 2> /dev/null | grep Version | cut -f 2- -d ":" | sed 's/^[ \t]*//'`
+						regex="([0-9][0-9]*:)*[0-9][0-9]*(\.[0-9][0-9]*)*"
+						if [[ ${PKG_VERSION} =~ ${regex} ]]; then
+							PKG_VERSION=$BASH_REMATCH
+						fi
+						if [ -n "${TMP}" ]; then
+							TMP+="\n"
+						fi
+						TMP+="${PKG} (>= ${PKG_VERSION})"
+					done
+				done
+			fi
+		fi
+	done
+	
+	PKG_DEPS=`echo -e "${TMP}" | sort -u | sed ':a;N;$!ba;s/\n/, /g'`
+	echo ${PKG_DEPS}
+}
+
 function Package {
 	PACKAGE_NAME=$1
 	INSTALL_DIR=$2
 	LICENSE_FILE=$3
-	DEPS=$4
-	DESCRIPTION=$5
+	DESCRIPTION=$4
 
 	case ${TARGET} in
 		*mingw32*)
@@ -383,12 +367,15 @@ function Package {
 			mkdir -p ${INSTALL_DIR}/DEBIAN
 			
 			# Fill-in DEBIAN/md5sums
-			for file in $file_list
+			for file in ${file_list}
 			do
 				if test -f $file; then
 					md5sum $file | sed 's:./::' >> ${MD5SUMS_FILE}
 				fi
 			done
+
+			# Finding package dependencies
+			DEPS=`find_deb_dependencies ${file_list}`
 			
 			# Fill-in DEBIAN/control
 			echo "Package: ${PACKAGE_NAME}" > ${CONTROL_FILE}
@@ -518,7 +505,8 @@ function Package {
 			echo "Group: Development" >> ${SPEC_FILE}
 			echo "BuildRoot: ${INSTALL_DIR}" >> ${SPEC_FILE}
 			echo "Provides: ${PACKAGE_NAME}" >> ${SPEC_FILE}
-			echo "Requires: ${DEPS}" >> ${SPEC_FILE}
+			# Let the packager find the dependencies
+			#echo "Requires: ${DEPS}" >> ${SPEC_FILE}
 			echo "" >> ${SPEC_FILE}
 			echo "%description"  >> ${SPEC_FILE}
 			echo "${DESCRIPTION}"  >> ${SPEC_FILE}
@@ -729,7 +717,7 @@ Compile ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}
 Install ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}
 mkdir -p ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}/${UNISIM_PREFIX}/src
 cp ${HERE}/${UNISIM_LIB_LONG_NAME}.tar.gz ${UNISIM_LIB_TEMPORARY_INSTALL_DIR}/${UNISIM_PREFIX}/src/.
-Package ${UNISIM_LIB_SHORT_NAME} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} ${UNISIM_LIB_LICENSE_FILE} "${UNISIM_LIB_DEPS}" "${UNISIM_LIB_DESCRIPTION}"
+Package ${UNISIM_LIB_SHORT_NAME} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} ${UNISIM_LIB_LICENSE_FILE} "${UNISIM_LIB_DESCRIPTION}"
 
 case ${TARGET} in
 	*mingw32*)
@@ -786,7 +774,7 @@ esac
 
 Compile ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}
 Install ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}
-cp -f `dirname $0`/unisim_simulators_package_COPYING ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/${UNISIM_SIMULATORS_LICENSE_FILE}
+cp -f `dirname $0`/unisim_simulators_package_COPYING ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/${UNISIM_PREFIX}/${UNISIM_SIMULATORS_LICENSE_FILE}
 
 case ${TARGET} in
 	*mingw32*)
@@ -797,7 +785,7 @@ esac
 
 mkdir -p ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/${UNISIM_PREFIX}/src
 cp ${HERE}/${UNISIM_SIMULATORS_LONG_NAME}.tar.gz ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR}/${UNISIM_PREFIX}/src/.
-Package ${UNISIM_SIMULATORS_SHORT_NAME} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} ${UNISIM_SIMULATORS_LICENSE_FILE} "${UNISIM_SIMULATORS_DEPS}" "${UNISIM_SIMULATORS_DESCRIPTION}"
+Package ${UNISIM_SIMULATORS_SHORT_NAME} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} ${UNISIM_SIMULATORS_LICENSE_FILE} "${UNISIM_SIMULATORS_DESCRIPTION}"
 
 case ${TARGET} in
 	*mingw32*)
@@ -830,7 +818,7 @@ esac
 
 mkdir -p ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}/${UNISIM_PREFIX}/src
 cp ${HERE}/${UNISIM_TOOLS_LONG_NAME}.tar.gz ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}/${UNISIM_PREFIX}/src/.
-Package ${UNISIM_TOOLS_SHORT_NAME} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} ${UNISIM_TOOLS_LICENSE_FILE} "${UNISIM_TOOLS_DEPS}" "${UNISIM_TOOLS_DESCRIPTION}"
+Package ${UNISIM_TOOLS_SHORT_NAME} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} ${UNISIM_TOOLS_LICENSE_FILE} "${UNISIM_TOOLS_DESCRIPTION}"
 
 echo "========================================="
 echo "=       Clean temporary directories     ="
