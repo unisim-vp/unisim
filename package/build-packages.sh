@@ -4,7 +4,7 @@ function Usage
 {
 	echo "Usage:"
 	echo "  $0 i386-deb <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
-	echo "  $0 i386-rpm <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
+	echo "  $0 i586-rpm <version> <SystemC 2.2.0 install dir> <TLM 2.0 install dir>"
 	echo "  $0 mingw32 <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
 	echo "  $0 powerpc-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
 	echo "  $0 i386-darwin <version> <SystemC 2.2.0 tarball> <TLM 2.0 tarball>"
@@ -31,7 +31,7 @@ case ${TARGET} in
 		UNISIM_PREFIX=/usr
 		;;
 	*86*rpm*)
-		ARCH=i386
+		ARCH=i586
 		UNISIM_PREFIX=/usr
 		;;
 	*powerpc*darwin*)
@@ -492,7 +492,7 @@ function Package {
 			;;
 
 		*86*rpm*)
-			RPM_MACROS_FILE=${HOME}/tmp/rpmmacros
+			RPM_MACROS_FILE=${HOME}/.rpmmacros
 			echo "%_rpmdir ${HOME}/tmp" > ${RPM_MACROS_FILE}
 
 			SPEC_FILE="${HOME}/tmp/${PACKAGE_NAME}.spec"
@@ -525,7 +525,7 @@ function Package {
 			echo "========================================="
 			echo "=            Package build              ="
 			echo "========================================="
-			fakeroot rpmbuild -bb ${SPEC_FILE} --macros=${RPM_MACROS_FILE} --target=i386-pc-linux || exit
+			rpmbuild -bb ${SPEC_FILE} --buildroot "${INSTALL_DIR}" --macros=${RPM_MACROS_FILE} --target=${ARCH}-pc-linux || exit
 			# uncomment this line to dump informations about the package
 			# rpm -qpl --info --requires --provides ${HOME}/tmp/${ARCH}/${PACKAGE_NAME}-${VERSION}.${ARCH}.rpm
 			mv ${HOME}/tmp/${ARCH}/${PACKAGE_NAME}-${VERSION}.${ARCH}.rpm ${HERE}/.
@@ -572,7 +572,7 @@ function Compile
 	echo "========================================="
 	rm -rf ${INSTALL_DIR}
 	cd ${CONFIG_DIR}
-	fakeroot make -j ${NUM_PROCESSORS} all || exit
+	make -j ${NUM_PROCESSORS} all || exit
 }
 
 function Install
@@ -606,7 +606,7 @@ function Clean
 	echo "=              Cleaning                 ="
 	echo "========================================="
 	cd ${CONFIG_DIR}
-	fakeroot make clean || exit
+	make clean || exit
 }
 
 case ${TARGET} in
