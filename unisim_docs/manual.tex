@@ -17,8 +17,10 @@
 
 \usepackage{hyperref}%                   % Utilisation de HyperTeX
 
+\lhead{\includegraphics[width=1.0cm]{logo_unisim.pdf}}
+
 \hypersetup{
-    pdfauthor   = {Gilles Mouchard, Daniel Gracia P\'erez, Reda Nouacer, Yves Lhuillier and Franck V\'edrine},%
+    pdfauthor   = {Gilles Mouchard, Daniel Gracia P\'erez, Reda Nouacer, Sylvain Girbal, Olivier Temam, Yves Lhuillier and Franck V\'edrine},%
     pdftitle    = {UNISIM Documentation},%
     pdfsubject  = {UNISIM},%
     pdfkeywords = {simulation framework, architectural exploration, embedded system design, system verification},%
@@ -34,20 +36,34 @@
 \setlength{\parskip}{0.5em}%0.15cm}
 \baselineskip 14pt
 
-%\input{title}
 
+\title{\bf \huge UNISIM: UNited SIMulation environment\\Documentation Project}
+\author{Gilles Mouchard \\Daniel Gracia P\'erez\\Reda Nouacer\\Sylvain Girbal\\Olivier Temam\\Yves Lhuillier \\Franck V\'edrine}
+\date{2008, Dec 9th}
 
-%\maketitle
-\frontmatter
+\begin{titlepage}
+%\frontmatter
+\begin{figure}
+\begin{center}
+\includegraphics[width=8cm]{logo_unisim.pdf}
+\maketitle
+\end{center}
+\end{figure}
+\end{titlepage}
 %\input{abstract}
 %\input{acknowledgements}
 %\tableofcontents
+
 
 %\addcontentsline{toc}{chapter}{Table des mati�res} 
 \tableofcontents \markboth{Table of content}{Table of content}
 \listoffigures
 
 \mainmatter
+
+\chapter{Introduction}
+\label{introduction}
+\input{introduction/introduction}
 
 \chapter{Installation}
 \label{installation}

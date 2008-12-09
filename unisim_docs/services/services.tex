@@ -33,39 +33,71 @@ Section~\ref{services_library} documents the available services in the library. 
 \section{Services library}
 \label{services_library}
 
-\subsection{ELF Loader}
+\subsection{Loaders}
+
+\subsubsection{ELF Loader}
 
 The ELF loader service (class \texttt{ElfLoader<T>}) allows to load a binary program (ELF32 for \texttt{ElfLoader<uint32\_t>}, ELF64 for \texttt{ElfLoader<uint64\_t>}) into a memory and fill a symbol table. The loader also provides information about the loaded file such as the code and data locations (base address and size). The ELF loader loads the program during setup.
 
-\noindent Parameters:
 \begin{itemize}
-\item "filename": the ELF file name to load into the connected memory.
+\item Class:
+	\begin{itemize}
+		\item name:~\texttt{unisim::service::loader::elf\_loader::ElfLoaderImpl}\\
+		\item header:~\texttt{unisim/service/loader/elf\_loader/elf\_loader.hh}
+		\item specialized versions: \texttt{Elf32Loader}, \texttt{Elf64Loader} (recommended use)
+	\end{itemize}
+\item Template Parameters:
+	\begin{itemize}
+		\item class MEMORY\_ADDR
+		\item class T
+		\item unsigned int ElfClass
+		\item class Elf\_Ehdr
+		\item class Elf\_Phdr
+		\item class Elf\_Shdr
+		\item class Elf\_Sym
+	\end{itemize}
+\item Run-time Parameters:
+	\begin{itemize}
+		\item \texttt{"filename"} (string): the ELF file name to load into the connected memory.
+		\item \texttt{"base\_addr"} (MEMORY\_ADDR)
+		\item \texttt{"force-use-virtual-address"} (bool)
+	\end{itemize}
+\item Exports:
+	\begin{itemize}
+		\item member:~\texttt{loader\_export}\\
+		interface:~\texttt{unisim::service::interfaces::Loader<MEMORY\_ADDR>}\\
+		interface header:~\texttt{unisim/service/interfaces/loader.hh}\\
+		description: the ELF loader provides information about the code and data location through this export.
+	\end{itemize}
+\item Imports:
+	\begin{itemize}
+		\item member:~\texttt{memory\_import}\\
+		interface:~\texttt{unisim::service::interfaces::Memory<MEMORY\_ADDR>}\\
+		interface header:~\texttt{unisim/service/interfaces/memory.hh}\\
+		description: the ELF loader accesses to the memory through this import.
+
+		\item member:~\texttt{symbol\_table}\\
+		interface:~\texttt{unisim::service::interfaces::SymbolTableBuild<MEMORY\_ADDR>}\\
+		interface header:~\texttt{unisim/service/interfaces/symbol\_table\_build.hh}
+		description: the ELF loader fills the symbol table using this import.
+	\end{itemize}
 \end{itemize}
 
-\noindent Exports:
-\begin{itemize}
-\item member:~\texttt{exp}\\
-interface:~\texttt{full\_system::plugins::loader::LoaderInterface<T>}\\
-header:~\texttt{plugins/loader/loader\_interface.hh}\\
-description: the ELF loader provides information about the code and data location through this export.
-\end{itemize}
 
-\noindent Imports:
-\begin{itemize}
-\item member:~\texttt{memory}\\
-interface:~\texttt{full\_system::generic::memory::MemoryInterface<T>}\\
-header:~\texttt{generic/memory/memory\_interface.hh}\\
-description: the ELF loader accesses to the memory through this import.
 
-\item member:~\texttt{symbol\_table}\\
-interface:~\texttt{full\_system::utils::debug::SymbolTableBuildInterface<T>}\\
-header:~\texttt{utils/debug/symbol\_table\_interface.hh}
-description: the ELF loader fills the symbol table using this import.
-\end{itemize}
+\subsubsection{PowerMac BootX Loader}
 
-\subsection{Linux OS}
+\subsubsection{PowerMAC Linux Kernel Loader}
 
-\subsection{Debuggers}
+\subsubsection{S19 Loader}
+
+\subsection{Operating System Application Binary Interface (OS ABI)}
+
+\subsubsection{Linux OS system call translator}
+
+\subsection{Debug}
+
+\subsubsection{Inline Debugger \& GDB Server}
 
 The library provides two debuggers using the same interfaces, and naming convention for the imports and exports: an inline debugger (text base) and a GDB server communicating through TCP/IP with the standard GDB client supporting the target machine.
 
@@ -80,9 +112,18 @@ header:~{\scriptsize \texttt{plugins/debug/instruction\_level\_debug\_interface.
 description: the debugger provides debug facilities to the CPU client through this export.
 \end{itemize}
 
-\subsection{PowerMAC Linux Kernel Loader}
 
-\subsection{Symbol Table}
+\subsubsection{Symbol Table}
+
+\subsection{Power Estimators}
+
+\subsubsection{Cache/SRAM Power Estimator}
+
+\subsection{Simple DirectMedia Layer (SDL)}
+
+\subsection{Tees}
+
+\subsection{Time}
 
 \section{Building a service graph}
 \label{building_a_service_graph}
