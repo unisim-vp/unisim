@@ -206,7 +206,7 @@ mkdir -p ${INSTALL_DIR}
 # Compile some missing libraries
 
 # expat
-Download expat-2.0.1 expat-2.0.1.tar.gz http://downloads.sourceforge.net/expat/expat-2.0.1.tar.gz
+Download expat-2.0.1 expat-2.0.1.tar.gz http://ovh.dl.sourceforge.net/expat/expat-2.0.1.tar.gz
 Configure expat-2.0.1 --host=i586-mingw32msvc
 Compile expat-2.0.1
 Install expat-2.0.1
@@ -233,7 +233,7 @@ Compile libxml2-2.6.31
 Install libxml2-2.6.31
 
 # boost
-Download boost_1_34_1 boost_1_34_1.tar.bz2 http://downloads.sourceforge.net/boost/boost_1_34_1.tar.bz2
+Download boost_1_34_1 boost_1_34_1.tar.bz2 http://ovh.dl.sourceforge.net/boost/boost_1_34_1.tar.bz2
 cd ${TMP_DIR}/boost_1_34_1
 rm -f g++
 ln -s `which i586-mingw32msvc-g++` g++
@@ -387,7 +387,6 @@ rm -rf ${INSTALL_DIR}/coreutils-5.97
 
 # Install some addtional utilities from gnuwin32
 
-InstallBinArchive readline-bin.zip http://gnuwin32.sourceforge.net/downlinks/readline-bin-zip.php
 InstallBinArchive file-bin.zip http://gnuwin32.sourceforge.net/downlinks/file-bin-zip.php
 InstallBinArchive unrar-bin.zip http://gnuwin32.sourceforge.net/downlinks/unrar-bin-zip.php
 InstallBinArchive unzip-bin.zip http://gnuwin32.sourceforge.net/downlinks/unzip-bin-zip.php
