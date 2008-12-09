@@ -13,7 +13,7 @@ The source of UNISIM is composed of three different packages:
 
 \subsubsection{Tarballs}
 
-Source is available as tarballs (.tar.gz) at \texttt{http://unisim.org/distributions/source}, where you will find the three different packages.
+Source is available as tarballs (.tar.gz) at \url{http://unisim.org/distributions/source}, where you will find the three different packages.
 To uncompress a source tarball, use program ‘tar’ at the command prompt:
 
 \begin{verbatim}
@@ -30,10 +30,10 @@ To compile (and install) the packages refer to the corresponding sections. Note 
 
 \subsubsection{Subversion repository}
 
-Source of UNISIM is also available from the subversion repository at \texttt{https://guest@unisim.org/svn/devel}.
+Source of UNISIM is also available from the subversion repository at \url{https://guest@unisim.org/svn/devel}.
 Note that the subversion repository hosts the development version of UNISIM which may have installation problems or instabilities.
 You may use the subversion repository only if you want to have a daily up-to-date version of UNISIM and don’t care about such problems.
-To access to the source, you must have a subversion client installed which is available for you operating system either as a package or an installer here: \texttt{http://tortoisesvn.tigris.org}.
+To access to the source, you must have a subversion client installed which is available for you operating system either as a package or an installer here: \url{http://tortoisesvn.tigris.org}.
 
 To download the source from the command prompt, just type:
 
@@ -54,7 +54,7 @@ On Windows, this means that you are either administrator or a user with some pri
 
 \noindent \textbf{Manually installing the UNISIM debian packages}
 
-The Debian packages (.deb) are available here: \texttt{http://unisim.org/distributions/binary/deb}.
+The Debian packages (.deb) are available here: \url{http://unisim.org/distributions/binary/deb}.
 These packages can be used on Debian Linux or any derived debian distributions such as Ubuntu
 Program ‘dpkg’ can install the UNISIM debian packages:
 
@@ -74,7 +74,8 @@ Your Linux can be configured to fetch the packages using you preferred package m
 At the command prompt, type the following as root:
 
 \begin{verbatim}
-$ echo "deb http://unisim.org/distributions/binary/deb stable main" > /etc/apt/sources.list.d/unisim.list
+$ echo "deb http://unisim.org/distributions/binary/deb stable main" > \
+  /etc/apt/sources.list.d/unisim.list
 $ apt-get update
 \end{verbatim}
 
@@ -96,7 +97,7 @@ $ apt-get remove unisim-simulators
 
 \noindent \textbf{Manually installing the UNISIM rpm packages}
 
-The Redhat packages (.rpm) are available here: \texttt{http://unisim.org/distributions/binary/rpm}.
+The Redhat packages (.rpm) are available here: \url{http://unisim.org/distributions/binary/rpm}.
 These packages can be used on Redhat Linux or any derived redhat distributions such as Mandriva or Fedora.
 Program ‘rpm’ can install the UNISIM rpm packages:
 
@@ -136,11 +137,11 @@ $ urpme unisim-simulators
 \subsubsection{Binaries for Windows (2000/XP/XP64/Vista 32/Vista 64)}
 
 The Windows installers (.exe) are available here:\\
-\texttt{http://unisim.org/distributions/binary/win32}.\\
+\url{http://unisim.org/distributions/binary/win32}.\\
 Run the installers and follow the instructions.
-To develop with UNISIM on Windows you may want to use Mingw32/MSYS, which is available for download at \texttt{http://www.mingw.org}.\\
+To develop with UNISIM on Windows you may want to use Mingw32/MSYS, which is available for download at \url{http://www.mingw.org}.\\
 You can also use a “ready to use” packaged version of Mingw32/MSYS available here:\\
-\texttt{http://unisim.org/distributions/binary/win32/mingw32-unisim-pack.exe}.\\
+\url{http://unisim.org/distributions/binary/win32/mingw32-unisim-pack.exe}.\\
 To uninstall UNISIM, go to “Start” $\rightarrow$ “Control Panel” $\rightarrow$ “Add or Remove Programs”, and select the UNISIM component you want to uninstall.
 
 \noindent \textbf{Tip:} When developing under Windows with Mingw32/MSYS, you should avoid using spaces in file and directory names
@@ -226,7 +227,7 @@ $ make install
 \item libSDL development library provides video frame capability and access to input devices (e.g. keyboard)
 \item editline (libedit) development library provides line editing and history capabilities (e.g. for an inline debugger)
 \item ncurses development library provides access to terminal screen (e.g. for an inline debugger)
-\item Cacti 4.2 as a C++ class library (see \texttt{https://guest@unisim.org/svn/devel/extra/cacti}) provides a foundation to estimate power consumption
+\item Cacti 4.2 as a C++ class library (see \url{https://guest@unisim.org/svn/devel/extra/cacti}) provides a foundation to estimate power consumption
 \end{itemize}
 
 \subsubsection{Building the UNISIM Library 'configure' scripts}
@@ -306,7 +307,7 @@ $ make install
 \item libSDL development library provides video frame capability and access to input devices (e.g. keyboard)
 \item editline (libedit) development library provides line editing and history capabilities (e.g. for an inline debugger)
 \item ncurses development library provides access to terminal screen (e.g. for an inline debugger)
-\item Cacti 4.2 as a C++ class library (see \texttt{https://guest@unisim.org/svn/devel/extra/cacti}) provides a foundation to estimate power consumption
+\item Cacti 4.2 as a C++ class library (see \url{https://guest@unisim.org/svn/devel/extra/cacti}) provides a foundation to estimate power consumption
 \end{itemize}
 
 \subsubsection{Building the 'configure' scripts}

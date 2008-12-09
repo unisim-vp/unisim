@@ -2,6 +2,14 @@
 
 armemu is a user level simulator of an ARM9 processor. The simulator is able to run linux compiled programs from ARM9 and ARM7. Thumb instructions while supported by the implementation of the ARM9 processor are not available at user level. The simulator uses an elf binary loader to load into memory the program to simulate. Software running on the simulated hardware can be debugged by connecting a GDB client to the simulator through the GDB serial remote protocol. The GDB client can be either the standard text based client (i.e. command gdb), a graphical front-end to GDB (e.g. ddd), or even Eclipse CDT. Additionally an inline debugger is also available.
 
+\begin{figure}[!h]
+	\begin{center}
+		\includegraphics[width=\textwidth]{armemu/fig_armemu.pdf}
+	\end{center}
+	\caption{armemu simplified schematic.}
+	\label{fig:armemu_system}
+\end{figure}
+
 Four different versions of the armemu simulator are provided:
 \begin{itemize}\addtolength{\itemsep}{-0.40\baselineskip}
 \item armemu: the main version. This version of the simulator includes caches, which increases the processor and simulator performance.
