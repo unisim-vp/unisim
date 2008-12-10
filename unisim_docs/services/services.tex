@@ -36,10 +36,52 @@ Section~\ref{services_library} documents the available services in the library. 
 \section{Services library}
 \label{services_library}
 
+% \newpage
+% \begin{center}
+% 	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+% 		\hline
+% 		\multicolumn{2}{|l|}{\textbf{\Large Service Sample}}\\
+% 		\hline
+% 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{sample::sample::sample}\newline$\hookrightarrow$\texttt{::sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{sample/sample/sample}\newline$\hookrightarrow$\texttt{/sample.hh}}\\
+% 		\multicolumn{2}{|l|}{}\\
+% 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+% 		\hline
+% 		\hline
+% 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
+% 		\hline
+% 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{sample}}\\
+% 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{sample}}\\
+% 		\multicolumn{2}{|l|}{}\\
+% 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+% 		\hline
+% 		\hline
+% 		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+% 		\hline
+% 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{sample}}\\
+% 		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{sample}}\\
+% 		\multicolumn{2}{|l|}{}\\
+% 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+% 		\hline
+% 		\hline
+% 		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+% 		\hline
+% 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample} \newline$\hookrightarrow$\texttt{sample}}\\
+% 		\multicolumn{2}{|l|}{}\\
+% 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+% 		\hline
+% 		\hline
+% 		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+% 		\hline
+% 		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{sample} \newline \textbf{Mandatory connected:} yes/no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{sample::sample::sample} \newline$\hookrightarrow$\texttt{::sample}}\\
+% 		\multicolumn{2}{|l|}{}\\
+% 		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Sample.}\\
+% 		\hline
+% 	\end{tabular}
+% \end{center}
+
 \subsection{Loaders}
 
 \newpage
-
 \begin{center}
 	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
 		\hline
@@ -134,16 +176,104 @@ Section~\ref{services_library} documents the available services in the library. 
 	\end{tabular}
 \end{center}
 
-% 		\multicolumn{16}{c}{}\\
-% 		15  &  14  &  13  &  12  &  11  &  10  &  ~9  & ~8  &  ~7  &  ~6  &  ~5  &  ~4  &  ~3  &  ~2  &  ~1  &  ~0 \\
-% 		\hline
-% 		\multicolumn{1}{|c|}{1}  & \multicolumn{1}{|c|}{0} & \multicolumn{1}{|c|}{1} & \multicolumn{1}{|c|}{0} & \multicolumn{4}{|c|}{rs} &\multicolumn{8}{|c|}{offset}\\
-% 		\hline
-% 		\multicolumn{16}{c}{}\\
-% 		\multicolumn{16}{l}{if (rs) \textless \textgreater 0 then}\\
-% 		\multicolumn{1}{l}{} &\multicolumn{15}{l}{NIA $\leftarrow$ CIA + offset}\\
-% 		\multicolumn{16}{l}{else}\\
-% 		\multicolumn{1}{l}{} & \multicolumn{15}{l}{NIA $\leftarrow$ CIA + 1}\\
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Service ELF32 Loader}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::loader::elf\_loader}\newline$\hookrightarrow$\texttt{::Elf32Loader}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/loader/elf\_loader}\newline$\hookrightarrow$\texttt{/elf\_loader.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF32 loader service allows to load an ELF32 binary program into a memory and fill a symbol table. The loader also provides information about the loaded file such as the code and data locations (base address and size). The ELF loader loads the program during setup.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF file name to load into the connected memory.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{base-addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{uint32\_t}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If this parameter is non-zero, force the ELF Loader to load the unique program segment at this base address.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{force-use-virtual-address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, this parameter forces the ELF loader to use the segment virtual address instead of the segment physical address when loading the segments into memory.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{logger\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Loader<uint32\_t>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader provides information about the code and data location through this export.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Memory<uint32\_t>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader accesses to the memory through this import.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_build\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{SymbolTableBuild<uint32\_t>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader fills the symbol table using this import.}\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Service ELF64 Loader}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::loader::elf\_loader}\newline$\hookrightarrow$\texttt{::Elf32Loader}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/loader/elf\_loader}\newline$\hookrightarrow$\texttt{/elf\_loader.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF32 loader service allows to load an ELF64 binary program into a memory and fill a symbol table. The loader also provides information about the loaded file such as the code and data locations (base address and size). The ELF loader loads the program during setup.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF file name to load into the connected memory.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{base-addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{uint64\_t}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If this parameter is non-zero, force the ELF Loader to load the unique program segment at this base address.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{force-use-virtual-address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, this parameter forces the ELF loader to use the segment virtual address instead of the segment physical address when loading the segments into memory.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{logger\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Loader<uint64\_t>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader provides information about the code and data location through this export.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Memory<uint64\_t>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader accesses to the memory through this import.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_build\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{SymbolTableBuild<uint64\_t>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader fills the symbol table using this import.}\\
+		\hline
+	\end{tabular}
+\end{center}
+
 
 % \subsubsection{PowerMac BootX Loader}
 % 
@@ -156,6 +286,148 @@ Section~\ref{services_library} documents the available services in the library. 
 \subsubsection{Linux OS system call translator}
 
 \subsection{Debug}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Service Inline Debugger}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::debug}\newline$\hookrightarrow$\texttt{::inline\_debugger::InlineDebugger}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/debug}\newline$\hookrightarrow$\texttt{/inline\_debugger/inline\_debugger.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The inline debugger service allows the user to interactively debug a target application running on a CPU module. The debug is at the instruction level. The inline debugger may be connected to a CPU module and (optionally) to a symbol table.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ADDRESS}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is the C++ type of a memory address (e.g. uint32\_t or uint64\_t).}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debug\_control\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::DebugControl<ADDRESS>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. The CPU module calls method \texttt{FetchDebugCommand} through its service import to leave control to the debugger and fetch a new debug command.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{MemoryAccessReporting<ADDRESS>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. The CPU module calls methods \texttt{ReportMemoryAccess} and \texttt{ReportFinishedInstruction} through its service import. This allows the debugger to spy memory accesses and thus handle breakpoints and watchpoints.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TrapReporting}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. A CPU module calls method \texttt{ReportTrap} through its service import. This allows the debugger to break execution on the simulated CPU once a trap condition is detected by the CPU module.}\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{disasm\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Disassembly<ADDRESS>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The CPU module should implements method \texttt{Disassemble} which provides the debugger with disassembling of the instructions.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory<ADDRESS>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU or a memory module. The debugger uses this service import to access to memory using methods \texttt{ReadMemory} and \texttt{WriteMemory}.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\newline$\hookrightarrow$\_control\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryAccessReportingControl}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The debugger calls methods \texttt{RequiresMemoryAccessReporting} and \texttt{RequiresFinishedInstructionReporting} through this service import to enable/disable memory access reporting from the CPU module.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{registers\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Registers}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The debugger calls method \texttt{GetRegister} through this service import to get an interface to the CPU registers. The debugger uses methods \texttt{GetName}, \texttt{GetValue}, \texttt{GetSize} and \texttt{SetValue} of that interface to access to CPU registers.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_lookup\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::SymbolTableLookup}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a symbol table. The debugger calls method \texttt{FindSymbol}, \texttt{FindSymbolByAddr}, \texttt{FindSymbolByName} through this service import to translate address to symbol and vice-versa.}\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Service GDB Server}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::debug}\newline$\hookrightarrow$\texttt{::gdb\_server::GDBServer}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/debug}\newline$\hookrightarrow$\texttt{/gdb\_server/gdb\_server.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The GDB server service allows the user to interactively debug a target application running on a CPU module. The debug is at the instruction level and/or source level. The GDB server service may be connected to a CPU module.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ADDRESS}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is the C++ type of a memory address (e.g. uint32\_t or uint64\_t).}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{tcp-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{int}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{12345}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The TCP port used by GDB server service to communicate with the GDB client.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{architecture-description\newline$\hookrightarrow$-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The path to the architecture description file that the GDB server service must use. The description file provides retargetability to the GDB server service. The following files brings support of the ARM, PowerPC and HCS12X processors to the GDB server service: 
+		\begin{itemize}
+			\item \texttt{unisim/service/debug/gdb\_server/gdb\_armv4l.xml}
+			\item \texttt{unisim/service/debug/gdb\_server/gdb\_armv5b.xml}
+			\item \texttt{unisim/service/debug/gdb\_server/gdb\_powerpc.xml}
+			\item \texttt{unisim/service/debug/gdb\_server/gdb\_hcs12x.xml}
+		\end{itemize}
+		}\\
+		\hline
+	\end{tabular}
+\end{center}
+
+\newpage
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debug\_control\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::DebugControl<ADDRESS>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. The CPU module calls method \texttt{FetchDebugCommand} through its service import to leave control to the debugger and fetch a new debug command.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{MemoryAccessReporting<ADDRESS>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. The CPU module calls methods \texttt{ReportMemoryAccess} and \texttt{ReportFinishedInstruction} through its service import. This allows the debugger to spy memory accesses and thus handle breakpoints and watchpoints.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{trap\_reporting\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::TrapReporting}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service export should be connected to a CPU module. A CPU module calls method \texttt{ReportTrap} through its service import. This allows the debugger to break execution on the simulated CPU once a trap condition is detected by the CPU module.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Memory<ADDRESS>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU or a memory module. The debugger uses this service import to access to memory using methods \texttt{ReadMemory} and \texttt{WriteMemory}.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_access\_reporting\newline$\hookrightarrow$\_control\_import} \newline \textbf{Mandatory connected:} no} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::MemoryAccessReportingControl}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The debugger calls methods \texttt{RequiresMemoryAccessReporting} and \texttt{RequiresFinishedInstructionReporting} through this service import to enable/disable memory access reporting from the CPU module.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{registers\_import} \newline \textbf{Mandatory connected:} yes} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces} \newline$\hookrightarrow$\texttt{::Registers}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This service import should be connected to a CPU module. The debugger calls method \texttt{GetRegister} through this service import to get an interface to the CPU registers. The debugger uses methods \texttt{GetName}, \texttt{GetValue}, \texttt{GetSize} and \texttt{SetValue} of that interface to access to CPU registers.}\\
+		\hline
+	\end{tabular}
+\end{center}
 
 \subsubsection{Inline Debugger \& GDB Server}
 
