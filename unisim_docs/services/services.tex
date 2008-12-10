@@ -295,7 +295,7 @@ Section~\ref{services_library} documents the available services in the library. 
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::debug}\newline$\hookrightarrow$\texttt{::inline\_debugger::InlineDebugger}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/debug}\newline$\hookrightarrow$\texttt{/inline\_debugger/inline\_debugger.hh}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The inline debugger service allows the user to interactively debug a target application running on a CPU module. The debug is at the instruction level. The inline debugger may be connected to a CPU module and (optionally) to a symbol table.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The inline debugger service provides the user with a simple text-based interface to interactively debug a target application running on a CPU module. The debug is at the instruction level. The inline debugger may be connected to a CPU module and (optionally) to a symbol table.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
@@ -360,7 +360,7 @@ Section~\ref{services_library} documents the available services in the library. 
 		\hline
 		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::debug}\newline$\hookrightarrow$\texttt{::gdb\_server::GDBServer}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/debug}\newline$\hookrightarrow$\texttt{/gdb\_server/gdb\_server.hh}}\\
 		\multicolumn{2}{|l|}{}\\
-		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The GDB server service allows the user to interactively debug a target application running on a CPU module. The debug is at the instruction level and/or source level. The GDB server service may be connected to a CPU module.}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The GDB server service allows debugging a software running on a simulated hardware by connecting (over TCP/IP) a GDB client to it (and thus to the simulator). The GDB client can be either the standard text based client (i.e. command \texttt{gdb}), a graphical front-end to GDB (e.g. \texttt{ddd}), or even Eclipse CDT. The GDB server service directly speaks the GDB serial remote protocol (over TCP/IP), so that a GDB client can connect (over TCP/IP) to the simulator using GDB command \texttt{target remote}. The GDB server service may be connected to a CPU module.}\\
 		\hline
 		\hline
 		\multicolumn{2}{|c|}{\textbf{\large Template Parameters}}\\
@@ -428,22 +428,6 @@ Section~\ref{services_library} documents the available services in the library. 
 		\hline
 	\end{tabular}
 \end{center}
-
-\subsubsection{Inline Debugger \& GDB Server}
-
-The library provides two debuggers using the same interfaces, and naming convention for the imports and exports: an inline debugger (text base) and a GDB server communicating through TCP/IP with the standard GDB client supporting the target machine.
-
-%	ServiceImport<SymbolTableLookupInterface<ADDRESS> > symbol_table;
-
-\noindent Exports:
-\begin{itemize}
-\item member:~\texttt{exp}\\
-service interface:~{\scriptsize ~\texttt{full\_system::plugins::debug::InstructionLevelDebuggerInterface<ADDRESS>}}\\
-client interface:~{\scriptsize \texttt{full\_system::plugins::debug::CPUInstructionLevelDebugInterface<ADDRESS>}}\\
-header:~{\scriptsize \texttt{plugins/debug/instruction\_level\_debug\_interface.hh}}\\
-description: the debugger provides debug facilities to the CPU client through this export.
-\end{itemize}
-
 
 \subsubsection{Symbol Table}
 
