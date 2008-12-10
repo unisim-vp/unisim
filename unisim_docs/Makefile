@@ -31,7 +31,9 @@ SERVICES_LATEX_SOURCES=services/services.tex
 SERVICES_CPP_SOURCES= \
 services/instanciation.cpp \
 services/connection.cpp \
-services/simple_service.cpp
+services/simple_service.cpp \
+services/simple_client.cpp \
+services/run_time_parameter.cpp
 SERVICES_FIGURES=
 
 SERVICES_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(SERVICES_CPP_SOURCES))
