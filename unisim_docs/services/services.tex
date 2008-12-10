@@ -30,66 +30,126 @@ Section~\ref{services_library} documents the available services in the library. 
 % parameterization -> generic parameters\\
 % setup problem -> call/use graph enables automatic setup order\\
 
+\section{Service Interfaces}
+\label{service_interfaces}
+
 \section{Services library}
 \label{services_library}
 
 \subsection{Loaders}
 
-\subsubsection{ELF Loader}
+\newpage
 
-The ELF loader service (class \texttt{ElfLoader<T>}) allows to load a binary program (ELF32 for \texttt{ElfLoader<uint32\_t>}, ELF64 for \texttt{ElfLoader<uint64\_t>}) into a memory and fill a symbol table. The loader also provides information about the loaded file such as the code and data locations (base address and size). The ELF loader loads the program during setup.
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|l|}{\textbf{\Large Service ELF Loader}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Class Name:} \newline \texttt{unisim::service::loader::elf\_loader}\newline$\hookrightarrow$\texttt{::ElfLoaderImpl}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Header:} \newline \texttt{unisim/service/loader/elf\_loader}\newline$\hookrightarrow$\texttt{/elf\_loader.hh}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader service allows to load a binary program into a memory and fill a symbol table.
+		The loader also provides information about the loaded file such as the code and data locations (base address and size). The ELF loader loads the program during setup. \texttt{Elf32Loader} and \texttt{Elf64Loader} are two specialized versions of class \texttt{ElfLoaderImpl<>} which the user should use whenever possible.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|l|}{\textbf{Template Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{MEMORY\_ADDR}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline This is the C++ type of a memory address (e.g. uint32\_t or uint64\_t).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{T}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline We should consider removing this parameter or have a reason to have it.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ElfClass}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{unsigned int}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline class of machine (either \texttt{ELFCLASS32} or \texttt{ELFCLASS64}).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{Elf\_Ehdr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline ELF Header structure (either Elf32\_Ehdr or Elf64\_Ehdr).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{Elf\_Phdr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline ELF Program Header structure (either Elf32\_Phdr or Elf64\_Phdr).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{Elf\_Shdr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline ELF Section Header structure (either \texttt{Elf32\_Shdr} or \texttt{Elf64\_Shdr}).}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{Elf\_Sym}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{class}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} none}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline ELF Symbol structure (either \texttt{Elf32\_Sym} or \texttt{Elf64\_Sym}).}\\
+		\hline
+	\end{tabular}
+\end{center}
 
-\begin{itemize}
-\item Class:
-	\begin{itemize}
-		\item name:~\texttt{unisim::service::loader::elf\_loader::ElfLoaderImpl}\\
-		\item header:~\texttt{unisim/service/loader/elf\_loader/elf\_loader.hh}
-		\item specialized versions: \texttt{Elf32Loader}, \texttt{Elf64Loader} (recommended use)
-	\end{itemize}
-\item Template Parameters:
-	\begin{itemize}
-		\item class MEMORY\_ADDR
-		\item class T
-		\item unsigned int ElfClass
-		\item class Elf\_Ehdr
-		\item class Elf\_Phdr
-		\item class Elf\_Shdr
-		\item class Elf\_Sym
-	\end{itemize}
-\item Run-time Parameters:
-	\begin{itemize}
-		\item \texttt{"filename"} (string): the ELF file name to load into the connected memory.
-		\item \texttt{"base\_addr"} (MEMORY\_ADDR)
-		\item \texttt{"force-use-virtual-address"} (bool)
-	\end{itemize}
-\item Exports:
-	\begin{itemize}
-		\item member:~\texttt{loader\_export}\\
-		interface:~\texttt{unisim::service::interfaces::Loader<MEMORY\_ADDR>}\\
-		interface header:~\texttt{unisim/service/interfaces/loader.hh}\\
-		description: the ELF loader provides information about the code and data location through this export.
-	\end{itemize}
-\item Imports:
-	\begin{itemize}
-		\item member:~\texttt{memory\_import}\\
-		interface:~\texttt{unisim::service::interfaces::Memory<MEMORY\_ADDR>}\\
-		interface header:~\texttt{unisim/service/interfaces/memory.hh}\\
-		description: the ELF loader accesses to the memory through this import.
+\begin{center}
+	\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Run-Time Parameters}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{string}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} empty string}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF file name to load into the connected memory.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{base-addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{MEMORY\_ADDR}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{0}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If this parameter is non-zero, force the ELF Loader to load the unique program segment at this base address.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{force-use-virtual-address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{bool}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Default value:} \texttt{false}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If true, this parameter forces the ELF loader to use the segment virtual address instead of the segment physical address when loading the segments into memory.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Exports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{logger\_export}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Loader<MEMORY\_ADDR>}}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader provides information about the code and data location through this export.}\\
+		\hline
+		\hline
+		\multicolumn{2}{|c|}{\textbf{\large Service Imports}}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{Memory<MEMORY\_ADDR>}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader accesses to the memory through this import.}\\
+		\hline
+		\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{symbol\_table\_build\_import}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Interface:} \newline \texttt{unisim::service::interfaces::} \newline$\hookrightarrow$\texttt{SymbolTableBuild<MEMORY\_ADDR>}}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Mandatory connected:} no}\\
+		\multicolumn{2}{|l|}{}\\
+		\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline The ELF loader fills the symbol table using this import.}\\
+		\hline
+	\end{tabular}
+\end{center}
 
-		\item member:~\texttt{symbol\_table}\\
-		interface:~\texttt{unisim::service::interfaces::SymbolTableBuild<MEMORY\_ADDR>}\\
-		interface header:~\texttt{unisim/service/interfaces/symbol\_table\_build.hh}
-		description: the ELF loader fills the symbol table using this import.
-	\end{itemize}
-\end{itemize}
+% 		\multicolumn{16}{c}{}\\
+% 		15  &  14  &  13  &  12  &  11  &  10  &  ~9  & ~8  &  ~7  &  ~6  &  ~5  &  ~4  &  ~3  &  ~2  &  ~1  &  ~0 \\
+% 		\hline
+% 		\multicolumn{1}{|c|}{1}  & \multicolumn{1}{|c|}{0} & \multicolumn{1}{|c|}{1} & \multicolumn{1}{|c|}{0} & \multicolumn{4}{|c|}{rs} &\multicolumn{8}{|c|}{offset}\\
+% 		\hline
+% 		\multicolumn{16}{c}{}\\
+% 		\multicolumn{16}{l}{if (rs) \textless \textgreater 0 then}\\
+% 		\multicolumn{1}{l}{} &\multicolumn{15}{l}{NIA $\leftarrow$ CIA + offset}\\
+% 		\multicolumn{16}{l}{else}\\
+% 		\multicolumn{1}{l}{} & \multicolumn{15}{l}{NIA $\leftarrow$ CIA + 1}\\
 
-
-
-\subsubsection{PowerMac BootX Loader}
-
-\subsubsection{PowerMAC Linux Kernel Loader}
-
-\subsubsection{S19 Loader}
+% \subsubsection{PowerMac BootX Loader}
+% 
+% \subsubsection{PowerMAC Linux Kernel Loader}
+% 
+% \subsubsection{S19 Loader}
 
 \subsection{Operating System Application Binary Interface (OS ABI)}
 
