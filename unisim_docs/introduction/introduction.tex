@@ -1,4 +1,36 @@
- Software simulation is the crux of all processor and systems-on-chips design processes. Due to the growing complexity of hardware on-chip systems, the growing complexity of software applications, and the growing impact of technology issues (power, process variability,...) on system design, software simulation methodology must rapidly evolve in the following ways:
+\section{Purpose of this document}
+
+This document is a project to document UNISIM, a simulation framework based on SystemC.
+The document is decomposed into several parts:
+\begin{itemize}
+	\item First, the documentation of currently available UNISIM Simulators:
+	\begin{itemize}
+		\item In Chapter~\ref{armemu}: armemu, a user level ARM TLM simulator with Linux system call translation capability
+		\item In Chapter~\ref{arm7tdmi}: arm7tdmi, an ARM7TDMI TLM simulator
+		\item In Chapter~\ref{arm966e_s}: arm966e\_s, an ARM966E/S TLM simulator
+		\item In Chapter~\ref{ppcemu}, ppcemu, a user level PowerPC TLM simulator with Linux system call translation capability
+		\item In Chapter~\ref{ppcemu_system}, ppcemu-system, a full-system TLM simulator of an MPC7447A/MPC107 board (similar to a PowerMac G4 PCI machine) which can boot a Linux for PowerMac
+		\item In chapter~\ref{embedded_ppc_g4_board}, embedded-ppc-g4-board, a full-system TLM simulator of an MPC7447A/MPC107 embedded board
+	\end{itemize}
+	\item Second, the documentation of technologies currently behind UNISIM
+	\begin{itemize}
+		\item In Chapter~\ref{genisslib}: GenISSLib, an Instruction Set Simulator Generator
+		\item In Chapter~\ref{tlm_ttlm}: the TLM (Transaction Level Modeling) methodology used to develop the UNISIM TLM simulators
+		\item In Chapter~\ref{services}: The framework services which bring features such as debug support, program loading facilities, interface with the underlying host hardware \ldots
+	\end{itemize}
+\end{itemize}
+
+Although we make efforts to document UNISIM, lot of documentations still lack. This include the following subjects:
+\begin{itemize}
+	\item A comprehensive documentation of the UNISIM simulation components (i.e. the SystemC modules)
+	\item The cycle level simulators
+	\item The cycle level fast engine (derived from FastSysC)
+	\item The cycle level simulation methodology
+\end{itemize}
+
+\section{Overview of research challenges}
+
+Software simulation is the crux of all processor and systems-on-chips design processes. Due to the growing complexity of hardware on-chip systems, the growing complexity of software applications, and the growing impact of technology issues (power, process variability,...) on system design, software simulation methodology must rapidly evolve in the following ways:
 
 \begin{itemize}
 \item \textbf{Design systems by composing multiple hardware blocks}, possibly described at different levels of detail/granularity, using standardized architecture interfaces, rather than one large and monolithic system at a single granularity level (cycle-level or TLM). SystemC popularized modular multi-granularity simulators with the goal of enabling design by composition; but the lack of \textbf{standardized architecture-level interfaces}, and \textbf{common communication protocols} between these interfaces, makes it impossible, in practice, to seamlessly connect together many theoretically pluggable SystemC modules.\\
