@@ -1,6 +1,6 @@
 \section{Purpose of this document}
 
-This document is a project to document UNISIM, a simulation framework based on SystemC.
+This document is a project to document UNISIM, an "open source" simulation framework based on SystemC.
 The document is decomposed into several parts:
 \begin{itemize}
 	\item First, the documentation of currently available UNISIM Simulators:
@@ -10,7 +10,7 @@ The document is decomposed into several parts:
 		\item In Chapter~\ref{arm966e_s}: arm966e\_s, an ARM966E/S TLM simulator
 		\item In Chapter~\ref{ppcemu}, ppcemu, a user level PowerPC TLM simulator with Linux system call translation capability
 		\item In Chapter~\ref{ppcemu_system}, ppcemu-system, a full-system TLM simulator of an MPC7447A/MPC107 board (similar to a PowerMac G4 PCI machine) which can boot a Linux for PowerMac
-		\item In chapter~\ref{embedded_ppc_g4_board}, embedded-ppc-g4-board, a full-system TLM simulator of an MPC7447A/MPC107 embedded board
+		\item In Chapter~\ref{embedded_ppc_g4_board}, embedded-ppc-g4-board, a full-system TLM simulator of an MPC7447A/MPC107 embedded board
 	\end{itemize}
 	\item Second, the documentation of technologies currently behind UNISIM
 	\begin{itemize}
@@ -20,13 +20,15 @@ The document is decomposed into several parts:
 	\end{itemize}
 \end{itemize}
 
-Although we make efforts to document UNISIM, lot of documentations still lack. This include the following subjects:
+Although we make efforts to document UNISIM, lot of documentations still lack or are incomplete. This include the following subjects:
 \begin{itemize}
 	\item A comprehensive documentation of the UNISIM simulation components (i.e. the SystemC modules)
 	\item The cycle level simulators
-	\item The cycle level fast engine (derived from FastSysC)
+	\item The cycle level fast engine (derived from FastSysC: \url{http://unisim.org/site/_media/publications/fastsysc.pdf?id=speed\%3Afastsysc&cache=cache})
 	\item The cycle level simulation methodology
 \end{itemize}
+
+The following section introduces the rationals behind UNISIM.
 
 \section{Overview of research challenges}
 
