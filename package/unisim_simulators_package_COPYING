@@ -15,6 +15,7 @@ The UNISIM simulators in "object" form are linked with the following library whi
 - Editline (libedit) is copyright The NetBSD Foundation, Inc. (see below) and available at http://www.thrysoee.dk/editline
 - The GNU C Library is copyright The Free Software Foundation (see below) and available at http://www.gnu.org/software/libc
 - "The XML C parser and toolkit of Gnome" (libxml2) is copyright Daniel Veillard (see below) and available at http://xmlsoft.org
+- Simple DirectMedia Layer (libSDL) (see below) is available at http://www.libsdl.org 
 - The Boost C++ Libraries (see below) are available at http://www.boost.org 
 - The GNU C++ Library (see below) is copyright The Free Software Foundation (see below) and available at http://gcc.gnu.org/libstdc++/index.html
 
@@ -178,8 +179,8 @@ holders shall not be used in advertising or otherwise to promote the
 sale, use or other dealings in this Software without prior written
 authorization.
 
-License of the GNU C Library:
------------------------------
+License of the GNU C Library and libSDL:
+----------------------------------------
 
 Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007
 Free Software Foundation, Inc.
