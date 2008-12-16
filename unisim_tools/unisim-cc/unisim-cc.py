@@ -1,15 +1,16 @@
 #!/usr/bin/python
 
 import sys
+import re
 
+from unisim_compiler import ConfigReader
 from xml.dom import minidom
 from UserDict import UserDict
 from optparse import OptionParser
-from unisim_compiler import ConfigReader
 import os.path
 import shutil
 import filecmp
-import pdb
+# import pdb
 
 verbose = False
 
@@ -18,7 +19,6 @@ class Source:
 		self.id = id
 		self.file = ""
 		self.location = ""
-		self.type = "source"
 
 	def setFile(self, file):
 		self.file = file
@@ -32,22 +32,7 @@ class Source:
 	def getLocation(self):
 		return self.location
 
-	def setTypeInclude(self):
-		self.type = "include"
-	
-	def setTypeSource(self):
-		self.type = "source"
-
-	def getType(self):
-		return self.type
-
-	def isTypeSource(self):
-		return self.type == "source"
-
-	def isTypeInclude(self):
-		return self.type == "include"
-
-#############################3
+#############################
 
 def getText(nodelist):
 	rc = ""
@@ -156,10 +141,84 @@ def parseUnitRequirements(node):
 		if getText(req.childNodes) not in g_requirements:
 			g_requirements.append(getText(req.childNodes))
 
+def parseUnitInstantiations(node):
+	nodelist = node.getElementsByTagName("instantiates")
+	instnodelist = []
+	for node in nodelist:
+		instnodelist += node.getElementsByTagName("item")
+	for instnode in instnodelist:
+		namenodelist_tmp = instnode.getElementsByTagName("name")
+		namenodelist = []
+		for namenode in namenodelist_tmp:
+			if namenode.parentNode is instnode:
+				namenodelist.append(namenode)
+		if len(namenodelist) == 1:
+			namenode = namenodelist[0]
+		else:
+			if len(namenodelist) == 0:
+				return
+			else:
+				print "bad formed instantiation(" + len(namenodelist) + ")"
+				sys.exit(-1)
+		name = getText(namenode.childNodes)
+		modulenamenodelist = instnode.getElementsByTagName("module_name")
+		if len(modulenamenodelist) == 1:
+			modulenamenode = modulenamenodelist[0]
+		else:
+			print "bad formed instantiation(" + len(modulenamenodelist) + ")"
+			sys.exit(-1)
+		modulename = getText(modulenamenode.childNodes)
+		vars = {}
+		for varnode in instnode.getElementsByTagName("variable"):
+			varnamenode = varnode.getElementsByTagName("name")[0]
+			varvaluenode = varnode.getElementsByTagName("value")[0]
+			vars[getText(varnamenode.childNodes)] = getText(varvaluenode.childNodes)
+		g_instantiations.append((name, modulename, vars))
+
 def parseUnit(node):
 	parseUnitSource(node)
 	parseUnitExternals(node)
 	parseUnitRequirements(node)
+	parseUnitInstantiations(node)
+
+def processTemplate(template_node):
+	nodelist = template_node.getElementsByTagName('variable')
+	template = {}
+	vars = {}
+	for node in nodelist:
+		if not node.hasAttribute('name'):
+			var_name = getText(node.getElementsByTagName('name')[0].childNodes)
+			var_default = getText(node.getElementsByTagName('default')[0].childNodes)
+			vars[var_name] = var_default
+	template['vars'] = vars
+	codenode = template_node.getElementsByTagName('code')[0]
+	codelist = []
+	for node in codenode.childNodes:
+		if node.nodeType is minidom.Node.TEXT_NODE:
+			codelist.append(('text', node.data))
+		if node.nodeType is minidom.Node.ELEMENT_NODE:
+			if node.tagName == 'variable':
+				codelist.append(('variable', node.getAttribute('name')))
+	template['code'] = codelist
+	return template
+
+def expandTemplate(template, values = None):
+	vars = template['vars']
+	codelist = template['code']
+	text = ""
+	for item in codelist:
+		(type, data) = item
+		if type is 'text':
+			text += data
+		if type is 'variable':
+			if values is not None:
+				if data in values.keys():
+					text += values[data]
+				else:
+					text += vars[data]
+			else:
+				text += vars[data]
+	return text
 
 def processExternal(file):
 	f = open(file, 'r')
@@ -173,6 +232,16 @@ def processExternal(file):
 	reflist = dom.getElementsByTagName('module')
 	unit = reflist[0]
 	parseUnit(unit)
+	if unit.hasAttribute('name'):
+		name = unit.getAttribute('name')
+		print "processing %s" % (name, )
+		nodelist = unit.getElementsByTagName('template')
+		if len(nodelist) > 1:
+			print "more than one template defined in module (" + name + ") in file " + file
+			sys.exit(-1)
+		for node in nodelist:
+			template = processTemplate(node)
+			g_templates[name] = template
 	dom.unlink()
 	del dom
 
@@ -185,15 +254,45 @@ def processExternals():
 	while len(g_externals) != len(g_externals_processed):
 		processExternals()
 
+def generateInstantiations():
+	if g_verbose:
+		print "creating instantiations"
+	for instantiation in g_instantiations:
+		(name, modulename, vars) = instantiation
+		if g_verbose:
+			print "- %s %s" % (name, modulename)
+		# dir = "./source/instantiations"
+		dir = "./instantiations"
+		if not os.path.isdir(dir):
+			os.makedirs(dir)
+		# dst = "./source/instantiations/" + re.sub(":", "_", name) + ".cc"
+		dst = "./instantiations/" + re.sub(":", "_", name) + ".cc"
+		tmp = dst + ".tmp"
+		file = open(tmp, 'w')
+		template = g_templates[modulename]
+		text = expandTemplate(template, vars)
+		file.write(text)
+		file.write("\n")
+		file.close()
+		copy = False
+		if os.path.exists(dst):
+			if not filecmp.cmp(dst, tmp):
+				copy = True
+		else:
+			copy = True
+		if copy:
+			shutil.move(tmp, dst)
+
 def copySources():
 	if g_verbose:
 		print "Creating sources"
 	for source in g_sources:
-		dir = os.path.dirname(source.getFile())
-		dir = "./source/" + dir
+		dir = "./" + os.path.dirname(source.getFile())
+		# dir = "./source/" + dir
 		if not os.path.isdir(dir):
 			os.makedirs(dir)
-		dst = "./source/" + source.getFile()
+		# dst = "./source/" + source.getFile()
+		dst = source.getFile()
 		copy = False
 		if os.path.exists(dst):
 			if not filecmp.cmp(source.getLocation(), dst):
@@ -226,7 +325,7 @@ def createConfigure(exec_name, version, author, author_contact):
 	f.write(s)
 
 	# add source path for includes
-	s = "CPPFLAGS=${CPPFLAGS}\" -Isource\"\n\n"
+	s = "CPPFLAGS=${CPPFLAGS}\" -I./source\"\n\n"
 	f.write(s)
 
 	# create the requirements
@@ -249,7 +348,22 @@ def createMakefile(exec_name):
 	s += "bin_PROGRAMS = %s\n" % (exec_name,)
 	s += "%s_SOURCES = " % (exec_name,)
 	for source in g_sources:
-		file = "source/" + source.getFile()
+		# file = "source/" + source.getFile()
+		file = source.getFile()
+		s += "\\\n\t%s" % (file,)
+	namelist = {}
+	for (name, modulename, vars) in g_instantiations:
+		if name in namelist.keys():
+			counter = namelist[name]
+		else:
+			counter = 0
+		namelist[name] = counter + 1
+		if counter == 0:
+			# file = "source/instantiations/" + re.sub(":", "_", name) + ".cc"
+			file = "instantiations/" + re.sub(":", "_", name) + ".cc"
+		else:
+			# file = "source/instantiations/" + re.sub(":", "_", name) + "." + str(counter) + ".cc"
+			file = "instantiations/" + re.sub(":", "_", name) + "." + str(counter) + ".cc"
 		s += "\\\n\t%s" % (file,)
 	s += "\n"
 	f.write(s)
@@ -296,12 +410,16 @@ def main(argv):
 	global g_requirements
 	global g_configure_ac_filename
 	global g_makefile_am_filename
+	global g_templates
+	global g_instantiations
 
 	g_verbose = False
 	g_externals = []
 	g_externals_processed = []
 	g_sources = []
 	g_requirements = []
+	g_templates = {}
+	g_instantiations = []
 
 	usage = "usage: %prog [options] <simulator.md>"
 	op = OptionParser(usage=usage, version="%prog 1.0")
@@ -367,11 +485,15 @@ def main(argv):
 		for req in g_requirements:
 			print "- %s" % (req,)
 	copySources()
+	generateInstantiations()
 	createConfigure(exec_name, version, author, author_contact)
 	createMakefile(exec_name)
 	createM4()
 	buildConfigure()
 	showNextStep()
+
+	for (key, template) in g_templates.iteritems():
+		print "%s" % (expandTemplate(template), )
 
 if __name__ == "__main__":
 	# pdb.run("main(sys.argv)")
