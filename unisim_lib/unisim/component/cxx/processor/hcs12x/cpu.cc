@@ -96,6 +96,8 @@ CPU::CPU(const char *name, Object *parent):
 	verbose_dump_regs_start(false),
 	verbose_dump_regs_end(false),
 	instruction_counter(0),
+	max_inst((uint64_t) -1),
+	param_max_inst("max-inst",this,max_inst),
 	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFFFFFF)
 
 {
@@ -335,6 +337,8 @@ uint8_t CPU::Step()
 		Stop(1);
 	}
 
+	if (instruction_counter >= max_inst) Stop(0);
+	
 	return opCycles;
 }
 

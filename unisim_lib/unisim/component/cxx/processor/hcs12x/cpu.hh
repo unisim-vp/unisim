@@ -568,6 +568,8 @@ private:
 
 	/** the instruction counter */
 	uint64_t instruction_counter;
+	uint64_t	max_inst;
+	Parameter<uint64_t>	   param_max_inst;
 
 };
 
