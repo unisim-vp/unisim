@@ -117,7 +117,6 @@ Stop(int ret) {
 	// Call BusSynchronize to account for the remaining time spent in the cpu core
 	BusSynchronize();
 	sc_stop();
-	wait();
 }
 
 
@@ -134,6 +133,7 @@ void HCS12X ::Sleep() {
  * Stop All Clocks and puts the device in standby mode.
  * Asserting the ~RESET, ~XIRQ, or ~IRQ signals ends standby mode.
  */
+
 	wait(irq_event | reset_event | xirq_event);
 }
 
