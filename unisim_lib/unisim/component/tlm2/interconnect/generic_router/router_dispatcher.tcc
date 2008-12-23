@@ -68,6 +68,7 @@ void
 RouterDispatcher<OWNER, CONFIG>::
 Push(transaction_type &trans, const sc_core::sc_time &time) 
 {
+	trans.acquire();
 	m_queue.insert(pair_t(sc_core::sc_time_stamp() + time, &trans));
 	m_event.notify(time);
 	//phase_type phase = tlm::BEGIN_REQ;
@@ -112,8 +113,9 @@ Run()
 		m_queue.erase(it);
 		(m_owner->*m_cb)(m_id, *trans);
 		wait(m_complete_event);
+		trans->release();
 // ** Reda & Gilles 
-       if (trans->is_write()) trans->release();
+//       if (trans->is_write()) trans->release();
 // *** end Reda & Gilles
 		now = sc_core::sc_time_stamp();
 		it = m_queue.begin();

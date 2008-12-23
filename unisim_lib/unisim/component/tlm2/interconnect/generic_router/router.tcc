@@ -43,7 +43,8 @@
 #define PHASE(X) 	" - phase = " << 	( (X) == tlm::BEGIN_REQ  ? 	"BEGIN_REQ" : \
 										( (X) == tlm::END_REQ    ? 	"END_REQ" : \
 										( (X) == tlm::BEGIN_RESP ? 	"BEGIN_RESP" : \
-																	"END_RESP")))
+										( (X) == tlm::END_RESP   ?  "END_RESP" : \
+										  							"UNINITIALIZED_PHASE"))))
 #define TRANS(L,X) \
 { \
 	(L) << " - trans = " << &(X) << endl \
@@ -340,6 +341,11 @@ I_nb_transport_bw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 		case tlm::END_REQ:
 			/* just signal that the socket can be used again */
 			m_req_dispatcher[id]->Completed(time);
+			/* if the transaction is a write, we do not expect a response and the request is finished for us.
+			 *   we can release it */
+			if (trans.is_write()) {
+				trans.release();
+			}
 			return tlm::TLM_COMPLETED;
 			break;
 	}
@@ -427,6 +433,7 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 				SetRouterExtension(trans, id);
 				/* push the transaction to the corresponding init port queue */
 				m_req_dispatcher[init_id]->Push(trans, time);
+				trans.release();
 				/* change the phase and return */
 				phase = tlm::END_REQ;
 				return tlm::TLM_UPDATED;
@@ -447,6 +454,7 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 				phase = tlm::END_REQ;
 				trans.set_response_status(tlm::TLM_OK_RESPONSE);
 				trans.release();
+				clone_trans->release();
 				return tlm::TLM_COMPLETED;
 			}
 		}
@@ -454,6 +462,8 @@ T_nb_transport_fw_cb(int id, transaction_type &trans, phase_type &phase, sc_core
 	case tlm::END_RESP:
 		/* just signal that the socket can be used again */
 		m_rsp_dispatcher[id]->Completed(time);
+		/* the transaction is now finished for us, release it */
+		trans.release();
 		return tlm::TLM_COMPLETED;
 		break;
 	}
@@ -492,7 +502,8 @@ T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
 			<< EndDebug;
 		return;
 	}
-	SetRouterExtension(trans, id);
+	// SetRouterExtension(trans, id); // extensions are not needed for the blocking version of the transport method
+	//                                //   because the context is keeped
 	/* forward the transaction to the selected output port */
 	if(VerboseBlocking()) {
 		logger << DebugInfo << "Forwarding transaction received on port " << id << " to port " << port << endl
@@ -501,18 +512,9 @@ T_b_transport_cb(int id, transaction_type &trans, sc_core::sc_time &time)
 		logger << EndDebug;
 	}
 	init_socket[port]->b_transport(trans, time);
-	if(VerboseBlocking()) {
-		RouterPayloadExtension *router_extension = 0;
-		trans.get_extension(router_extension);
-		if(!router_extension) {
-			logger<< DebugError << "Where did the RouterPayloadExtension go???" << endl
-				<< TIME(time) << endl;
-			TRANS(logger, trans);
-			logger << EndDebug;
-			sc_stop();
-			wait();
-		}
-		logger << DebugInfo << "Forwarding transaction reply to port " << router_extension->Front() << endl
+	if (VerboseBlocking()) 
+	{
+		logger << DebugInfo << "Forwarding transaction reply to port " << id << endl
 			<< TIME(time) << endl;
 		TRANS(logger, trans);
 		logger << EndDebug;
@@ -847,7 +849,7 @@ SendReq(unsigned int id, transaction_type &trans) {
 						time = m_init_rsp_ready[id] - sc_time_stamp();
 						m_init_rsp_ready[id] = m_init_rsp_ready[id] + cycle_time;
 					} else {
-						/* the inti port is ready for the time the response is received, however we have to make sure
+						/* the init port is ready for the time the response is received, however we have to make sure
 						 *   that the incomming transactions is synchronized with the router cycle_time */
 						sc_core::sc_time t_time = ((cycle_time * floor(cur_time / cycle_time)) + cycle_time);
 						time = t_time - sc_time_stamp();
