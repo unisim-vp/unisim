@@ -172,6 +172,23 @@ param_verbose_blocking("verbose_blocking", this, verbose_blocking, "Display bloc
 template<class CONFIG>
 Router<CONFIG>::
 ~Router() {
+	typename std::vector<RouterDispatcher<Router<CONFIG>, CONFIG> *>::iterator m_req_dispatcher_iter;
+
+	for(m_req_dispatcher_iter = m_req_dispatcher.begin(); m_req_dispatcher_iter != m_req_dispatcher.end(); m_req_dispatcher_iter++)
+	{
+		delete *m_req_dispatcher_iter;
+	}
+
+	typename std::vector<RouterDispatcher<Router<CONFIG>, CONFIG> *>::iterator m_rsp_dispatcher_iter;
+
+	for(m_rsp_dispatcher_iter = m_rsp_dispatcher.begin(); m_rsp_dispatcher_iter != m_rsp_dispatcher.end(); m_rsp_dispatcher_iter++)
+	{
+		delete *m_rsp_dispatcher_iter;
+	}
+
+	for(unsigned int i = 0; i < MAX_NUM_MAPPINGS; i++) {
+		delete param_mapping[i];
+	}
 }
 
 template<class CONFIG>

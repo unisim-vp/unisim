@@ -132,6 +132,24 @@ AC_DEFUN([UNISIM_CHECK_ZLIB], [
     AC_CHECK_HEADER(zlib.h,, AC_MSG_ERROR([zlib.h not found. Please install the zlib development library. Use --with-zlib=<path> to overload default includes search path.]))
 ])
 
+## UNISIM_CHECK_CXXABI
+## Does not take parameters
+####################################################
+AC_DEFUN([UNISIM_CHECK_CXXABI], [
+    # Check for execinfo.h
+    AC_CHECK_HEADER(execinfo.h, broken_cxxabi=no, broken_cxxabi=yes)
+    AC_CHECK_HEADER(cxxabi.h, , broken_cxxabi=yes)
+    AC_CHECK_LIB(c, backtrace, , broken_cxxabi=yes)
+    AC_CHECK_LIB(c, backtrace_symbols, , broken_cxxabi=yes)
+    #AX_CXX_CHECK_LIB(stdc++, [abi::__cxa_demangle()], , broken_cxxabi=yes)
+
+    if test "$broken_cxxabi" == "yes"; then
+        AC_MSG_NOTICE([C++ ABI functions not found. No kernel debug will be available.])
+    else
+        AC_DEFINE([HAVE_CXXABI], [], [Whether C++ ABI functions are available])
+    fi
+])
+
 ## UNISIM_CHECK_CURSES
 ## Checks if the curses library is installed
 ## Does not take parameters
@@ -164,7 +182,7 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
 #####################################################
 AC_DEFUN([UNISIM_CHECK_PTHREAD], [
     # Check for pthread.h
-    AC_CHECK_HEADER(pthread.h,, AC_MSG_ERROR([pthread.h not found.]))
+    AC_CHECK_HEADER(pthread.h,broken_pthread=no, broken_pthread=yes)
 
     if test "$broken_pthread" == "yes"; then
 		AC_MSG_NOTICE([POSIX thread library not found.])

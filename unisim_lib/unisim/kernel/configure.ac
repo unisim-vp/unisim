@@ -45,6 +45,7 @@ UNISIM_CONFIG_SUBDIR(unisim-kernel-tlm, tlm)
 UNISIM_CONFIG_SUBDIR(unisim-kernel-tlm2, tlm2)
 UNISIM_CONFIG_SUBDIR(unisim-kernel-service, service)
 UNISIM_CONFIG_SUBDIR(unisim-kernel-logger, logger)
+UNISIM_CONFIG_SUBDIR(unisim-kernel-debug, debug)
 
 # files to generate
 #   this should include all the makefiles to generate

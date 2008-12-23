@@ -38,6 +38,10 @@
 #include <tlm.h>
 #include <queue>
 
+// to remove asap
+#include <iostream>
+#include <unisim/kernel/debug/debug.hh>
+
 namespace unisim {
 namespace kernel {
 namespace tlm2 {
@@ -280,6 +284,7 @@ public:
 			PAYLOAD *payload = free_list.front();
 			free_list.pop();
 			delete payload;
+			std::cerr << "PayloadFabric::~PayloadFabric: deleting payload" << std::endl;
 		}
 	}
 
@@ -304,6 +309,7 @@ public:
 	void free(tlm::tlm_generic_payload *_payload)
 	{
 		PAYLOAD *payload = reinterpret_cast<PAYLOAD *>(_payload);
+		payload->free_all_extensions();
 		free_list.push(payload);
 	}
 private:

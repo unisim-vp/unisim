@@ -28,6 +28,11 @@ SUBDIRS += service
 INCLUDE_SUBDIRS += service
 endif
 
+if COND_debug
+SUBDIRS += debug
+INCLUDE_SUBDIRS += debug
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

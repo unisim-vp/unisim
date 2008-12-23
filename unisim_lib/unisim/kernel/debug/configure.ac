@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2008,
+#  Copyright (c) 2007,
 #  Commissariat a l'Energie Atomique (CEA)
 #  All rights reserved.
 #
@@ -29,18 +29,16 @@
 #  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Authors: Reda Nouacer (reda.nouacer@cea.fr)
+# Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM HCS12X user level TLM simulator], [1.0],
-	[Reda Nouacer <reda.nouacer@cea.fr>],
-	[hcs12xemu])
+AC_INIT([UNISIM Kernel Debug Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
-    
+
 AM_INIT_AUTOMAKE
 
 AC_PATH_PROGS(SH, sh)
@@ -51,69 +49,11 @@ AC_PROG_LN_S
 
 AC_LANG([C++])
 
-###### CHECK FOR STANDARD C HEADERS ###########################################
-AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+AC_CHECK_HEADERS([iostream],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
-
-###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
-
-UNISIM_STATIC
-
-case $host in
-	*linux*)   # linux host
-		UNISIM_CHECK_CURSES
-		#UNISIM_CHECK_TERMCAP
-		UNISIM_CHECK_LIBEDIT
-		;;
-	*mingw32*)  # win32 host
-		UNISIM_CHECK_WINSOCK2
-		;;
-esac
-
-UNISIM_CHECK_ZLIB
-UNISIM_CHECK_LIBXML2
-UNISIM_CHECK_SYSTEMC
-
-UNISIM_CHECK_TLM20
-UNISIM_WITH_BOOST
-UNISIM_CHECK_BOOST_FUNCTION
-UNISIM_CHECK_BOOST_MEM_FN
-
-
-UNISIM_CHECK_UNISIM_LIB
 UNISIM_CHECK_CXXABI
-
-UNISIM_LINK(unisim_kernel_logger)
-UNISIM_LINK(unisim_kernel_service)
-UNISIM_LINK(unisim_kernel_debug)
-
-UNISIM_LINK(unisim_util_xml)
-UNISIM_LINK(unisim_util_debug)
-UNISIM_LINK(unisim_util_endian)
-UNISIM_LINK(unisim_util_garbage_collector)
-UNISIM_LINK(unisim_util_queue)
-
-UNISIM_LINK(unisim_service_time_sc_time)
-UNISIM_LINK(unisim_service_time_host_time)
-UNISIM_LINK(unisim_service_power)
-UNISIM_LINK(unisim_service_debug_gdb_server)
-UNISIM_LINK(unisim_service_debug_inline_debugger)
-UNISIM_LINK(unisim_service_loader_s19_loader)
-UNISIM_LINK(unisim_service_loader_elf_loader)
-UNISIM_LINK(unisim_service_debug_symbol_table)
-UNISIM_LINK(unisim_service_loader_pmac_bootx)
-UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
-UNISIM_LINK(unisim_service_loader_linux_loader)
-UNISIM_LINK(unisim_service_logger)
-UNISIM_LINK(unisim_service_sdl)
-
-UNISIM_LINK(unisim_component_cxx_processor_hcs12x)
-UNISIM_LINK(unisim_component_cxx_memory_ram)
-
-UNISIM_LINK(unisim_component_tlm2_processor_hcs12x)
-UNISIM_LINK(unisim_component_tlm2_memory_ram)
-UNISIM_LINK(unisim_component_tlm2_interconnect_generic_router)
 
 # files to generate
 #   this should include all the makefiles to generate

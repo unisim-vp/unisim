@@ -122,6 +122,13 @@ CPU::~CPU()
 	if (ccr) { delete ccr; ccr = NULL;}
 
 	// Release registers_registry
+	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		delete reg_iter->second;
+	}
+
 	registers_registry.clear();
 
 /*

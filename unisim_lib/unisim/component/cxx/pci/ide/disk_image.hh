@@ -47,8 +47,6 @@ retaining the original license:
 #include <map>
 #include <inttypes.h>
 
-#include "unisim/util/hash_table/hash_table.hh"
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -57,7 +55,6 @@ namespace ide {
 
 #define SectorSize (512)
 
-using unisim::util::hash_table::HashTable;
 using namespace std;
 
 /**
