@@ -148,7 +148,7 @@ void HCS12X ::Wait() {
 }
 
 address_t HCS12X ::GetIntVector(uint8_t &ipl)
-	/* TODO:
+	/* 
 	 * The CPU issues a signal that tells the interrupt module to drive
 	 * the vector address of the highest priority pending exception onto the system address bus
 	 * (the CPU12 does not provide this address)
@@ -202,10 +202,17 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 	switch (address & 0x00FF)
 	{
 		case 0x00: { // The CPU is the initiator of the interrupt and only need the value of IVBR (interrupt vector base register)
-			if (HasNonMaskableAccessErrorInterrupt()) address = (address & 0xFF00) | CONFIG::INT_RAM_ACCESS_VIOLATION_OFFSET;
-			if (HasNonMaskableSWIInterrupt()) address = (address & 0xFF00) | CONFIG::INT_SWI_OFFSET;
-			if (HasTrapInterrupt()) address = (address & 0xFF00) | CONFIG::INT_TRAP_OFFSET;
-			if (HasSysCallInterrupt())  address = (address & 0xFF00) | CONFIG::INT_SYSCALL_OFFSET;
+			if (HasNonMaskableAccessErrorInterrupt()) 
+				address = (address & 0xFF00) | CONFIG::INT_RAM_ACCESS_VIOLATION_OFFSET;
+				
+			if (HasNonMaskableSWIInterrupt()) 
+				address = (address & 0xFF00) | CONFIG::INT_SWI_OFFSET;
+				
+			if (HasTrapInterrupt()) 
+				address = (address & 0xFF00) | CONFIG::INT_TRAP_OFFSET;
+				
+			if (HasSysCallInterrupt())  
+				address = (address & 0xFF00) | CONFIG::INT_SYSCALL_OFFSET;
 		} break;
 		case CONFIG::INT_SYS_RESET_OFFSET:
 			/*
@@ -213,10 +220,17 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 			 */
 			ReqReset();
 			break;
-		case CONFIG::INT_CLK_MONITOR_RESET_OFFSET: ReqReset(); break;
-		case CONFIG::INT_COP_WATCHDOG_RESET_OFFSET: ReqReset(); break;
-		case CONFIG::INT_XIRQ_OFFSET: ReqXIRQInterrupt(); break;
-		default: ReqIbitInterrupt();
+		case CONFIG::INT_CLK_MONITOR_RESET_OFFSET: 
+			ReqReset(); 
+			break;
+		case CONFIG::INT_COP_WATCHDOG_RESET_OFFSET: 
+			ReqReset(); 
+			break;
+		case CONFIG::INT_XIRQ_OFFSET: 
+			ReqXIRQInterrupt(); 
+			break;
+		default: 
+			ReqIbitInterrupt();
 	}
 
 	return address;

@@ -43,7 +43,9 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-XINT::XINT(const sc_module_name& name, Object *parent) {
+XINT::XINT(const sc_module_name& name, Object *parent) : 
+	isHardwareInterrupt(false) 
+{
 
 	reset();
 
@@ -60,14 +62,19 @@ XINT::~XINT() {
 
 }
 
+/* 
+ *    This method is called to compute the interrupt vector based on currentIPL
+ */
 void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
-	// This method is called to compute the interrupt vector based on currentIPL and issued not CPU interrupt
 
+	// The CPU has taken in account the external interrupt request => disactivate the interrupt request 
+	toCPU_Initiator = false;
+	
 	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
 
-	uint8_t currentIPL = buffer->ipl;
-	address_t vectorAddress = ((address_t) getIVBR()) << 8;
+	uint8_t newIPL = 0;
+	address_t vectorAddress = 0;
 	uint8_t cfaddr = getINT_CFADDR();
 
 
@@ -87,15 +94,14 @@ void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 	else
 		for (int index=cfaddr; index < cfaddr+8; index++) { // Check only the selected interrupts
 			if (interrupt_request[index]->read()) {
-//				cout << "HAS interrupt on => " << index << "\n";
 
 				uint8_t dataPriority = int_cfdata[index] && 0x07;
 
 				// if 7-bit=0 then cpu else xgate
 				if ((int_cfdata[index] & 0x80) == 0)
 				{
-					if (dataPriority > currentIPL) {
-						currentIPL = dataPriority;
+					if (dataPriority > newIPL) {
+						newIPL = dataPriority;
 						vectorAddress = ((address_t) getIVBR() << 8) + cfaddr + index;
 					}
 				}
@@ -104,9 +110,20 @@ void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 			}
 		}
 
-	buffer->ipl = currentIPL;
+	if (vectorAddress == 0) {
+		if (isHardwareInterrupt) {
+			vectorAddress = get_Spurious_Vector();
+			newIPL = 0x7;
+		} else {
+			vectorAddress = (address_t) getIVBR() << 8 ;
+		}
+	}
+	
+	// The comparaison of the newIPL to the currentIPL is done by the CPU during I-bit-interrupt handling
+	buffer->ipl = newIPL;
 	buffer->vectorAddress = vectorAddress;
 
+	isHardwareInterrupt = false;
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 
 }
@@ -130,6 +147,7 @@ void XINT::Run()
 			setIVBR(0xFF);
 		}
 
+		isHardwareInterrupt = true;
 		toCPU_Initiator = true;
 	}
 

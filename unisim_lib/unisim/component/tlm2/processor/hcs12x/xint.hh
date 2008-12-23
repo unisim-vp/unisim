@@ -89,11 +89,11 @@ public:
 /*
 		while (1) {
 			wait(sc_time(100,SC_NS));
-			for (int index=0; index<128; index++)
-				intReq[index] = false;
 
 			for (int index=0; index<128; index++)
 			{
+				intReq[index] = false; // disable the previous request
+				
 				if (rand() % 19 == 0)
 				{
 					intReq[index] = true;
@@ -177,6 +177,8 @@ private:
 	uint8_t	int_xgprio;
 	uint8_t	int_cfaddr;
 	uint8_t	int_cfdata[8];
+	
+	bool isHardwareInterrupt;
 
 public:
 
@@ -189,6 +191,8 @@ public:
 	address_t get_ClockMonitorReset_Vector() { return 0xFFFC; }
 	address_t get_COPWatchdogReset_Vector() { return 0xFFFA; }
 	address_t get_XIRQ_Vector() { return ((address_t) getIVBR() << 8) + CONFIG::INT_XIRQ_OFFSET; }
+
+	address_t get_Spurious_Vector() { return ((address_t) getIVBR() << 8) + CONFIG::INT_SPURIOUS_OFFSET; } // Spurious interrupt
 
 /*
 	address_t get_Trap_Vector() { return ((address_t) getIVBR() << 8) + 0xF8; } // Shared interrupt vector for traps ($FFF8:$FFF9)
@@ -268,7 +272,6 @@ public:
 	address_t get_S12X_RAV_Vector() { return ((address_t) getIVBR() << 8) + 0x60 ; } // S12XCPU RAM Access Violation
 
 	address_t get_Sys_Vector() { return ((address_t) getIVBR() << 8) + 0x12; } // System call interrupt vector is $FF12:$FF13
-	address_t get_Sputious_Vector() { return ((address_t) getIVBR() << 8) + 0x10 ; } // Spurious interrupt
 
  */
 

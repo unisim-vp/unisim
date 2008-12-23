@@ -438,9 +438,14 @@ void CPU::HandleException(const AsynchronousException& exc)
 	uint8_t newIPL = ccr->getIPL();
 	address_t asyncVector = GetIntVector(newIPL);
 
-	if (CONFIG::HAS_RESET && HasReset()) HandleResetException(asyncVector);
-	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) HandleNonMaskableXIRQException(asyncVector, newIPL);
-	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup()) HandleMaskableIbitException(asyncVector, newIPL);
+	if (CONFIG::HAS_RESET && HasReset()) 
+		HandleResetException(asyncVector);
+		
+	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0)) 
+		HandleNonMaskableXIRQException(asyncVector, newIPL);
+		
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && (ccr->getX() == 0) && (ccr->getI() == 0)) 
+		HandleMaskableIbitException(asyncVector, newIPL);
 
 	// It is necessary to call AckAsynchronousInterrupt() if XIRQ and I-bit interrupt are masked
 	AckAsynchronousInterrupt();
@@ -511,13 +516,17 @@ void CPU::ReqXIRQInterrupt()
 // Maskable (I bit) interrupt
 void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 {
-	PrepareInterrupt();
 
-	ccr->setI();
-	// clear U-bit for CPU12XV2
-	ccr->setIPL(newIPL);
+	if (newIPL > ccr->getIPL()) {
+		PrepareInterrupt();
+	
+		ccr->setI();
+		// clear U-bit for CPU12XV2
+		ccr->setIPL(newIPL);
+	
+		SetEntryPoint(0, memRead16(ibitVector));
+	}
 
-	SetEntryPoint(0, memRead16(ibitVector));
 	AckIbitInterrupt();
 }
 
@@ -625,7 +634,7 @@ void CPU::HandleException(const SpuriousInterrupt& exc)
 
 	uint8_t newIPL = ccr->getIPL();
 
-	address_t spuriousVector = GetIntVector(newIPL); // TODO: GetIntVector is not finalized yet
+	address_t spuriousVector = GetIntVector(newIPL); 
 
 	PrepareInterrupt();
 
