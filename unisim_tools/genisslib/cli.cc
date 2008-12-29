@@ -163,7 +163,7 @@ struct Opts_t : public CLI::Args_t {
   bool match( bool _active, char const* _shortdesc, char const* _longdesc ) { return false; }
   
   bool match( char const* _patterns, char const* _shortdesc, char const* _longdesc ) {
-    Screen_t screen( m_align, 120 );
+    Screen_t screen( m_align, 96 );
     
     char const* sep = "  ";
     for( Pattern pattern( _patterns ); pattern.next(); ) {

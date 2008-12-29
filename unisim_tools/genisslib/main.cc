@@ -77,36 +77,41 @@ struct GIL : public CLI, public Opts {
   }
   
   void parse( CLI::Args_t& _args ) {
-    if( _args.match( "-I", "<directory>", "include a directory into the search path for includes." ) ) {
+    if( _args.match( "-I", "<directory>", "Adds the directory <directory> "
+                     "to the search paths for include directives." ) ) {
       if( this->add_lookupdir( _args.pop_front() ) ) return;
       cerr << GENISSLIB ": '-I' must be followed by a directory.\n";
       help();
       throw CLI::Exit_t( 1 );
     }
     
-    if( _args.match( "-o,--output", "<output>", "Outputs the instruction set simulator source code into "
-                     "<output>.hh and <output>.cc/<output>.tcc (default is <output>=\"" DEFAULT_OUTPUT "\")." ) ) {
+    if( _args.match( "-o,--output", "<output>", "Sets the prefix "
+                     "of the generated source files to <output>; "
+                     "(default is <output>=\"" DEFAULT_OUTPUT "\")." ) ) {
       if( (outputprefix = _args.pop_front()) ) return;
       cerr << GENISSLIB ": '-o' must be followed by an output name.\n";
       help();
       throw CLI::Exit_t( 1 );
     }
     
-    if( _args.match( "-w,--word-size", "<size>", "Uses <size> as the minimum bit size for holding an operand bit field." ) ) {
+    if( _args.match( "-w,--word-size", "<size>", "Uses <size> as the "
+                     "minimum bit size for holding an operand bit field." ) ) {
       if( this->setminwordsize( _args.pop_front() ) ) return;
       cerr << GENISSLIB ": '-w' must be followed by a size.\n";
       help();
       throw CLI::Exit_t( 1 );
     }
     
-    if( _args.match( "--specialization", "on/off", "Toggles specialized operation generation (default: on)." ) ) {
+    if( _args.match( "--specialization", "on/off", "Toggles specialized "
+                     "operation generation (default: on)." ) ) {
       if( this->on_off( &GIL::specialization, _args.pop_front() ) ) return;
       cerr << GENISSLIB ": '--specialization' must be followed by 'on' or 'off'.\n";
       help();
       throw CLI::Exit_t( 1 );
     }
 
-    if( _args.match( "--source-lines", "on/off", "Toggles on/off source line reference in generated files (default: on)." ) ) {
+    if( _args.match( "--source-lines", "on/off", "Toggles the output of "
+                     "source line references in generated files (default: on)." ) ) {
       if( this->on_off( &GIL::sourcelines, _args.pop_front() ) ) return;
       cerr << GENISSLIB ": '--source-lines' must be followed by 'on' or 'off'.\n";
       help();
@@ -126,7 +131,8 @@ struct GIL : public CLI, public Opts {
       throw CLI::Exit_t( 1 );
     }
 
-    if( _args.match( "-E,--expand", "<filename>", "Expands the preprocessed input file to <filename>." ) ) {
+    if( _args.match( "-E,--expand", "<filename>", "Expands the preprocessed input file to "
+                     "<filename>." ) ) {
       if( (expandname = _args.pop_front()) ) return;
       cerr << GENISSLIB ": '-E' must be followed by a file name.\n";
       help();
