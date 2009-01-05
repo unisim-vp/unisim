@@ -19,6 +19,9 @@
     @brief generates the instruction set simulator library
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <main.hh>
 #include <cli.hh>
 #include <isa.hh>
@@ -30,6 +33,13 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
+#if defined(GIL_XPROC) && defined(HAVE_DLFCN_H)
+#include <dlfcn.h>
+#define GIL_MAIN base_main
+#else
+#define GIL_MAIN main
+#endif // defined(GIL_XPROC) && defined(HAVE_DLFCN_H)
+
 using namespace std;
 
 #define DEFAULT_OUTPUT "iss"
@@ -147,7 +157,7 @@ struct GIL : public CLI, public Opts {
 };
 
 int
-main( int argc, char** argv, char** envp ) {
+GIL_MAIN (int argc, char** argv, char** envp) {
   GIL gil;
   gil.set( GENISSLIB, argv[0] );
   try {
@@ -204,3 +214,45 @@ main( int argc, char** argv, char** envp ) {
   
   return 0;
 }
+
+#if defined(GIL_XPROC) && defined(HAVE_DLFCN_H)
+
+bool
+log_dl_failure( std::ostream& _sink ) {
+  char const* err = dlerror();
+  if (err) _sink << GENISSLIB ": " << err << std::endl;
+  return err;
+}
+
+typedef int (*gxp_abi_t) ();
+typedef int (*gxp_main_t) (int argc, char** argv, char** envp);
+
+int
+main (int argc, char** argv, char** envp)
+{
+  if (argc < 2 or (strncmp( argv[1], "xproc=", 6 ) != 0))
+    return base_main (argc, argv, envp);
+  
+  char const* xproc_path = argv[1] + 6;
+  
+  // Open the xproc module.
+  void* handle = dlopen( xproc_path, RTLD_NOW );
+  if (log_dl_failure (std::cerr)) return 1;
+  
+  // Check that xproc module and genisslib abi match.
+  gxp_abi_t gxp_abi = (gxp_abi_t)dlsym (handle, "gxp_abi");
+  if (log_dl_failure (std::cerr)) return 1;
+  if (gxp_abi() != 1) {
+    cerr << GENISSLIB ": process extension '" << xproc_path
+         << "' doesn't match current version of genisslib.\n";
+    return 1;
+  }
+  
+  // Launch xproc module main procedure
+  gxp_main_t gxp_main = (gxp_main_t)dlsym (handle, "gxp_main");
+  if (log_dl_failure (std::cerr)) return 1;
+  argv[1] = argv[0];
+  return gxp_main (argc-1, argv+1, envp);
+}
+
+#endif // defined(GIL_XPROC) && defined(HAVE_DLFCN_H)

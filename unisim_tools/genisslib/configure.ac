@@ -60,6 +60,20 @@ AC_LANG([C++])
 AC_CHECK_HEADERS([limits map memory vector iosfwd iostream fstream ostream cstdio cstdlib cassert cctype cerrno cmath cstdarg cstring inttypes.h unistd.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
+### GenISSLib process extensions support ###
+AC_ARG_ENABLE(xproc,
+  AC_HELP_STRING([--enable-xproc], [Enable GenISSLib process extensions]),
+  [gil_xproc=$enableval], [gil_xproc=no])
+
+if test $gil_xproc = yes; then
+    AC_DEFINE([GIL_XPROC], [], Using GenISSLib process extensions)
+
+    AC_CHECK_HEADERS([dlfcn.h], [
+    LDFLAGS="$LDFLAGS -rdynamic"
+    LIBS="$LIBS -ldl"
+    ])
+fi
+
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
