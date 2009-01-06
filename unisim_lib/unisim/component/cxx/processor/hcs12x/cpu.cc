@@ -119,14 +119,16 @@ CPU::CPU(const char *name, Object *parent):
 CPU::~CPU()
 {
 	if (eblb) { delete eblb; eblb = NULL;}
-	if (ccr) { delete ccr; ccr = NULL;}
+	// ccr will be release while releasing registers_registry
+	//if (ccr) { delete ccr; ccr = NULL;}
 
 	// Release registers_registry
 	map<string, unisim::util::debug::Register *>::iterator reg_iter;
 
 	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
 	{
-		delete reg_iter->second;
+		if(reg_iter->second)
+			delete reg_iter->second;
 	}
 
 	registers_registry.clear();
@@ -850,7 +852,12 @@ bool CPU::Setup()
 	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);
 	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
 	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
-	registers_registry["CCR"] = new SimpleRegister<CCR_t>("CCR", ccr);
+	registers_registry[ccr->GetName()] = ccr;
+	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
+	registers_registry[ccrl->GetName()] = ccrl;
+	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
+	registers_registry[ccrh->GetName()] = ccrh;
+
 
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;

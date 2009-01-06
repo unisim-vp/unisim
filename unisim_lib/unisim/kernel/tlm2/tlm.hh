@@ -284,7 +284,6 @@ public:
 			PAYLOAD *payload = free_list.front();
 			free_list.pop();
 			delete payload;
-			std::cerr << "PayloadFabric::~PayloadFabric: deleting payload" << std::endl;
 		}
 	}
 

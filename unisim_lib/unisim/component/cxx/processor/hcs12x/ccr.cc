@@ -33,6 +33,7 @@
  */
 
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
+#include <unisim/util/debug/simple_register.hh>
 
 namespace unisim {
 namespace component {
@@ -40,6 +41,47 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
+const char *CCR_t::GetName() const
+{
+	return "CCR";
+}
+
+void CCR_t::GetValue(void *buffer) const
+{
+	*(uint16_t *) buffer = ccrVal;
+}
+
+void CCR_t::SetValue(const void *buffer)
+{
+	ccrVal = *(uint16_t *) buffer;
+}
+
+int CCR_t::GetSize() const
+{
+	return 2;
+}
+
+unisim::util::debug::Register *CCR_t::GetLowRegister()
+{
+	return new unisim::util::debug::SimpleRegister<uint8_t>("CCRL",
+#if BYTE_ORDER == BIG_ENDIAN
+            ((uint8_t *) &ccrVal) + 1
+#else
+            ((uint8_t *) &ccrVal)
+#endif
+        );
+}
+
+unisim::util::debug::Register *CCR_t::GetHighRegister()
+{
+	return new unisim::util::debug::SimpleRegister<uint8_t>("CCRH",
+#if BYTE_ORDER == BIG_ENDIAN
+            ((uint8_t *) &ccrVal)
+#else
+            ((uint8_t *) &ccrVal) + 1
+#endif
+        );
+}
 
 } // end of namespace hcs12x
 } // end of namespace processor

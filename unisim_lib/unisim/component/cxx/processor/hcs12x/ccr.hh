@@ -37,6 +37,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CCR_HH__
 
 #include <inttypes.h>
+#include <unisim/util/debug/register.hh>
 
 namespace unisim {
 namespace component {
@@ -73,7 +74,7 @@ namespace hcs12x {
 
 /* I think it's better to declare the CCR as uint16_t and then use mask to set/get each bit */
 
-class CCR_t
+class CCR_t : public unisim::util::debug::Register
 {
 public:
 	inline uint8_t getC();
@@ -123,6 +124,13 @@ public:
 
 	void reset() { ccrVal = 0x00D0; /* S=1 X=1 I=1 */ }
 
+	virtual const char *GetName() const;
+	virtual void GetValue(void *buffer) const;
+	virtual void SetValue(const void *buffer);
+	virtual int GetSize() const;
+
+	unisim::util::debug::Register *GetLowRegister();
+	unisim::util::debug::Register *GetHighRegister();
 private:
 
 	uint16_t ccrVal; // u----ipl(3bits) SXHI NZVC
