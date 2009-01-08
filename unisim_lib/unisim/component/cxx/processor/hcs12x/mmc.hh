@@ -267,7 +267,10 @@ inline void MMC::setPpage(uint8_t page) { ppage = page; }
 inline physical_address_t MMC::getFlashAddress(address_t logicalAddress) {
 
 	uint8_t _ppage = getPpage();
-	
+
+/* 
+ * TODO: I have to implement the external (pins) configuration of the micro-controller before
+ * 	
 	static const uint8_t ROMHM_MASK = 0x02;
 	
 	if ((logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) {
@@ -280,6 +283,7 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress) {
 	if (logicalAddress > 0xBFFF) {
 		return CONFIG::FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) 0xFF << CONFIG::FLASH_ADDRESS_SIZE) | ((address_t) CONFIG::FLASH_CPU_ADDRESS_BITS & logicalAddress);
 	} 
+*/
 	
 	if (_ppage == 0) return logicalAddress;
 
