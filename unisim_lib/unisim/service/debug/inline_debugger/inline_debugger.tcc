@@ -45,6 +45,8 @@
 #include <editline/readline.h>
 #endif
 
+#include <unisim/util/endian/endian.hh>
+
 namespace unisim {
 namespace service {
 namespace debug {

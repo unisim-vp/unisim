@@ -34,6 +34,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
 #include <unisim/util/debug/simple_register.hh>
+#include <unisim/util/endian/endian.hh>
 
 namespace unisim {
 namespace component {
