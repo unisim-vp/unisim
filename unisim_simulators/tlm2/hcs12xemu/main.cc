@@ -172,6 +172,9 @@ void help(char *prog_name)
 	cerr << "            0: banked modele (default)" << endl;
 	cerr << "            1: linear modele (recommended by Motorola/Freescale)" << endl;
 	cerr << "            2: gnu/gcc modele " << endl << endl;
+	cerr << "-f" << endl;
+	cerr << "--force-use-virtual-address" << endl;
+	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
 	cerr << "--help" << endl;
 	cerr << "-h" << endl;
 	cerr << "            displays this help" << endl;
@@ -204,6 +207,7 @@ int sc_main(int argc, char *argv[])
 	{"logger:out", no_argument, 0, 'o'},
 	{"logger:message_spy", no_argument, 0, 'm'},
 	{"compiler-memory-modele", required_argument, 0, 'c'},
+	{"force-use-virtual-address", no_argument, 0, 'f'},
 	{0, 0, 0, 0}
 	};
 
@@ -228,11 +232,12 @@ int sc_main(int argc, char *argv[])
 	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	uint32_t mem_cycle_time = fsb_cycle_time;
+	bool force_use_virtual_address = false;
 
 	int memoryMode = S19_Loader<SERVICE_ADDRESS_TYPE>::BANKED;
 
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "c:dg:a:hi:l:zeom", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "c:dg:a:hi:l:zeomf", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -269,6 +274,9 @@ int sc_main(int argc, char *argv[])
 				break;
 			case 'c':
 				memoryMode = atoi(optarg);
+				break;
+			case 'f':
+				force_use_virtual_address = true;
 				break;
 		}
 	}
@@ -394,6 +402,12 @@ int sc_main(int argc, char *argv[])
 	}
 
 	(*loader)["filename"] = filename;
+
+	if(!isS19)
+	{
+		(*loader)["force-use-virtual-address"] = force_use_virtual_address;
+	}
+
 
 	//  - Loggers
 	if(logger_on)

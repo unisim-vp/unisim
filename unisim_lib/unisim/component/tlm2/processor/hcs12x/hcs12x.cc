@@ -117,6 +117,8 @@ Stop(int ret) {
 	// Call BusSynchronize to account for the remaining time spent in the cpu core
 	BusSynchronize();
 	sc_stop();
+	// Leave control to the SystemC simulation kernel
+	wait();
 }
 
 
