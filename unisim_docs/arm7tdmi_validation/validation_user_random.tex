@@ -8,7 +8,7 @@ The tool then creates multiple tests of the instruction defining random inputs.
 The outputs of the tests are printed on the screen, so we can compare the outputs of the simulator against those of the target platform.
 
 \begin{figure}[!h]
-	\input{adc_imm}
+	\input{arm7tdmi_validation/adc_imm}
 	\caption{\texttt{adc} with immediate input template.}
 	\label{fig:adc_imm_template}
 \end{figure}
@@ -31,7 +31,7 @@ For each instruction test we check that the output register and the \texttt{cpsr
 
 \subsubsection{Results}
 
-Test templates as the one presented in Figure~\ref{fig:adc_imm_template} have been developed for all the versions of the \texttt{adc} instruction (i.e., with two input registers, with a shifted immediate as input, and with a shifted register as input), and for all of the versions of most of the \emph{user level} instructions of the ARM7TDMI.
+Test templates as the one presented in Figure~\ref{fig:adc_imm_template} have been developed for all the versions of the \texttt{adc} instruction (i.e., with two input registers, with a shifted immediate as input, and with a shifted register as input), and for all of the versions of most of the \textit{user level} instructions of the ARM7TDMI.
 A total of 100,000 tests were generated from each template (making an average of 400,000 tests for instruction), and all the tests were succesfully passed. The following is a list of the validated instructions:
 \begin{enumerate}
 	\item adc
@@ -58,5 +58,5 @@ A total of 100,000 tests were generated from each template (making an average of
 	\item umull
 \end{enumerate}
 
-This list includes all the \emph{user level} instructions of the ARM7TDMI processor, with the exception of memory instructions, branch instructions, and the system call instruction.
-To validate those instructions (and complete the validation of the \emph{user level} instructions tested by the random tests), we performed tests over full applications presented in the following section.
+This list includes all the \textit{user level} instructions of the ARM7TDMI processor, with the exception of memory instructions, branch instructions, and the system call instruction.
+To validate those instructions (and complete the validation of the \textit{user level} instructions tested by the random tests), we performed tests over full applications presented in the following section.
