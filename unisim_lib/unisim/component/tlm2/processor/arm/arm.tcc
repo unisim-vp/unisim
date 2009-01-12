@@ -41,6 +41,66 @@
 #include "unisim/service/interfaces/logger.hh"
 
 #define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+#define LOCATION 	" - location = " << __FUNCTION__ << ":unisim_lib/unisim/component/tlm2/processor/arm/arm.tcc:" << __LINE__
+#define TIME(X) 	" - time = " << sc_time_stamp() + (X)
+#define PHASE(X) 	" - phase = " << 	( (X) == tlm::BEGIN_REQ  ? 	"BEGIN_REQ" : \
+										( (X) == tlm::END_REQ    ? 	"END_REQ" : \
+										( (X) == tlm::BEGIN_RESP ? 	"BEGIN_RESP" : \
+										( (X) == tlm::END_RESP   ?  "END_RESP" : \
+										  							"UNINITIALIZED_PHASE"))))
+#define TRANS(L,X) \
+{ \
+	(L) << " - trans = " << &(X) << endl \
+		<< "   - " << ((X).is_read()?"read":"write") << endl \
+		<< "   - address = 0x" << hex << (X).get_address() << dec << endl \
+		<< "   - data_length = " << (X).get_data_length(); \
+	if((X).is_write()) { \
+		(L) << endl; \
+		(L) << "   - data ="; \
+		for(unsigned int _trans_i = 0; _trans_i < (X).get_data_length(); _trans_i++) { \
+			(L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
+		} \
+	} \
+}
+
+#define ETRANS(L,X) \
+{ \
+	(L) << " - trans = " << &(X) << endl \
+		<< "   - " << ((X).is_read()?"read":"write") << endl \
+		<< "   - address = 0x" << hex << (X).get_address() << dec << endl \
+		<< "   - data_length = " << (X).get_data_length() << endl \
+	    << "   - response_status = "; \
+	switch((X).get_response_status()) { \
+	case tlm::TLM_OK_RESPONSE: \
+		(L) << "TLM_OK_RESPONSE"; \
+		break; \
+	case tlm::TLM_INCOMPLETE_RESPONSE: \
+		(L) << "TLM_INCOMPLETE_RESPONSE"; \
+		break; \
+	case tlm::TLM_GENERIC_ERROR_RESPONSE: \
+		(L) << "TLM_GENERIC_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_ADDRESS_ERROR_RESPONSE: \
+		(L) << "TLM_ADDRESS_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_COMMAND_ERROR_RESPONSE: \
+		(L) << "TLM_COMMAND_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_BURST_ERROR_RESPONSE: \
+		(L) << "TLM_BURST_ERROR_RESPONSE"; \
+		break; \
+	case tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE: \
+		(L) << "TLM_BYTE_ENABLE_ERROR_RESPONSE"; \
+		break; \
+	} \
+	if((X).get_response_status() == tlm::TLM_OK_RESPONSE) { \
+		(L) << endl; \
+		(L) << "   - data ="; \
+		for(unsigned int _trans_i = 0; _trans_i < (X).get_data_length(); _trans_i++) { \
+			(L) << " " << hex << (unsigned int)((X).get_data_ptr()[_trans_i]) << dec; \
+		} \
+	} \
+}
 
 namespace unisim {
 namespace component {
@@ -50,8 +110,8 @@ namespace arm {
 
 using namespace unisim::kernel::logger;
 
-template<class CONFIG>
-ARM<CONFIG> :: 
+template<class CONFIG, bool BLOCKING>
+ARM<CONFIG, BLOCKING> :: 
 ARM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
@@ -86,14 +146,14 @@ ARM(const sc_module_name& name, Object *parent) :
 	SC_THREAD(Run);
 }
 
-template<class CONFIG>
-ARM<CONFIG> ::
+template<class CONFIG, bool BLOCKING>
+ARM<CONFIG, BLOCKING> ::
 ~ARM() {
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG> ::
+ARM<CONFIG, BLOCKING> ::
 Stop(int ret) {
 	// Call BusSynchronize to account for the remaining time spent in the cpu core
 	BusSynchronize();
@@ -101,18 +161,18 @@ Stop(int ret) {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void
-ARM<CONFIG> ::
+ARM<CONFIG, BLOCKING> ::
 Sync() {
 	sc_time time_spent = cpu_time - last_cpu_time;
 	last_cpu_time = cpu_time;
 	wait(time_spent);
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 bool 
-ARM<CONFIG> :: 
+ARM<CONFIG, BLOCKING> :: 
 Setup() {
 	if(!inherited::Setup()) {
 		if(inherited::logger_import)
@@ -152,9 +212,9 @@ Setup() {
 	return true;
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG> :: 
+ARM<CONFIG, BLOCKING> :: 
 BusSynchronize() {
 //	if(cpu_time < sc_time_stamp()) {
 //		cerr << "sc_time_stamp bigger than cpu_time" << endl;
@@ -218,9 +278,9 @@ BusSynchronize() {
 			<< Endl << EndDebugInfo;
 }
 	
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::Synchronize()
+ARM<CONFIG, BLOCKING>::Synchronize()
 {
 	sc_time time_spent = cpu_time - last_cpu_time;
 	last_cpu_time = cpu_time;
@@ -229,9 +289,9 @@ ARM<CONFIG>::Synchronize()
 //	next_nice_sctime = sc_time_stamp() + nice_sctime;
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG> :: 
+ARM<CONFIG, BLOCKING> :: 
 Run() {
 	sc_time time_per_instruction = cpu_cycle_time * ipc;
 //	sc_time stat_refresh_time = stat_reporting_period;
@@ -263,15 +323,130 @@ Run() {
 	}
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG> :: 
+ARM<CONFIG, BLOCKING> :: 
 Reset() {
 }
 	
-template<class CONFIG> 
+/**
+ * Virtual method implementation to handle backward path of transactions sent through the 
+ * master_port
+ *
+ * @param trans the transcation to handle
+ * @param phase the state of the transaction to handle (should only be END_REQ or BEGIN_RESP)
+ * @param time  the relative time at which the call is being done
+ *
+ * @return      the synchronization status
+ */
+template<class CONFIG, bool BLOCKING>
+sync_enum_type 
+ARM<CONFIG, BLOCKING> ::
+nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time) 
+{
+	sync_enum_type ret = tlm::TLM_ACCEPTED;
+
+	if (trans.get_command() == tlm::TLM_IGNORE_COMMAND) 
+	{
+		logger << DebugWarning << "Received nb_transport_bw on port " << id << ", with an ignore, which the cpu doesn't know how to handle" << endl
+			<< TIME(time) << endl
+			<< PHASE(phase) << endl;
+		TRANS(logger, trans);
+		logger << EndDebug;
+		return ret;
+	}
+
+	switch(phase)
+	{
+		case tlm::BEGIN_REQ:
+		case tlm::END_RESP:
+			/* The cpu should not receive the BEGIN_REQ (as it is the cpu which generates cpu requests), 
+			 *   neither END_RESP (as it is the cpu which ends responses) */
+			logger << DebugError << "Received nb_transport_bw on init_socket[" << id << "], with unexpected phase" << endl
+				<< LOCATION << endl
+				<< TIME(time) << endl
+				<< PHASE(phase) << endl;
+			TRANS(logger, trans);
+			logger << EndDebug;
+			sc_stop();
+			wait();
+			break;
+		case tlm::END_REQ:
+			/* The request phase is finished.
+			 * If the request was a write, then the request can be released, because we do not 
+			 *   expect any answer. And we can send a TLM_COMPLETED for the same reason.
+			 * If the request was a read, the request can not be released and TLM_ACCEPTED has to
+			 *   be sent, and we should wait for the BEGIN_RESP phase. */
+			if (trans.is_write()) 
+			{
+				trans.release();
+				ret = tlm::TLM_COMPLETED;
+			}
+			else
+				ret = tlm::TLM_ACCEPTED;
+			return ret;
+			break;
+		case tlm::BEGIN_RESP:
+			/* Starting the response phase.
+			 * If the request is a write report an error and stop, we should not have received it.
+			 * The target has initiated the response to a read request, compute when the request can
+			 *   be completely accepted and send a TLM_COMPLETED back. Send an event to the PrRead
+			 *   method to unlock the thread that originated the read transaction (using the end_read_event).
+			 */
+			trans.acquire();
+			if (trans.is_write())
+			{
+				logger << DebugError << "Received nb_transport_bw on BEGIN_RESP phase, with unexpected write transaction" << endl
+					<< LOCATION << endl
+					<< TIME(time) << endl 
+					<< PHASE(phase) << endl;
+				TRANS(logger, trans);
+				logger << EndDebug;
+				sc_stop();
+				wait();
+				break;
+			}
+			tmp_time = sc_time_stamp() + time;
+			/* TODO: increase tmp_time depending on the size of the transaction. */
+			end_read_event.notify(time);
+			ret = tlm::TLM_COMPLETED;
+			trans.release();
+			return ret;
+			break;
+	}
+
+	/* this code should never be executed, if you are here something is wrong above :( */
+	logger << DebugError << "Reached end of nb_transport_bw, THIS SHOULD NEVER HAPPEN" << endl
+		<< LOCATION << endl
+		<< TIME(time) << endl
+		<< PHASE(phase) << endl;
+	TRANS(logger, trans);
+	logger << EndDebug;
+	sc_stop();
+	wait();
+	// useless return to avoid compiler warnings/errors
+	return ret;
+}
+
+/**
+ * Virtual method implementation to handle backward path of dmi requests sent through the
+ * master port.
+ * We do not use the dmi option in our simulator, so this method is unnecessary. However,
+ * we have to declare it in order to be able to compile the simulator.
+ *
+ * @param start_range the start address of the memory range to remove
+ * @param end_range   the end address of the memory range to remove
+ */
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG> :: 
+ARM<CONFIG, BLOCKING> ::
+invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
+	// nothing to do, we are not using dmi
+}
+
+template<class CONFIG, bool BLOCKING> 
+void 
+ARM<CONFIG, BLOCKING> :: 
 PrRead(address_t addr, 
 	uint8_t *buffer, 
 	uint32_t size) {
@@ -281,6 +456,94 @@ PrRead(address_t addr,
 			<< Endl << EndDebugInfo;
 	// synchonize with bus cycle time
 	BusSynchronize();
+
+	// create the transaction
+	tlm::tlm_generic_payload *trans;
+	trans = payload_fabric.allocate();
+	trans->set_address(addr);
+	trans->set_data_length(size);
+	trans->set_data_ptr(buffer);
+	trans->set_read();
+
+	
+	if (BLOCKING)
+	{
+		// send the transaction (blocking version)
+		sc_time time(SC_ZERO_TIME);
+		master_socket->b_transport(*trans, time);
+	}
+	else
+	{
+		// send the transaction (non-blocking version)
+		tlm::tlm_phase phase = tlm::BEGIN_REQ;
+		switch (master_socket->nb_transport_fw(*trans, phase, time)) 
+		{
+			case tlm::TLM_ACCEPTED:
+				if (CONFIG::DEBUG_ENABLE)
+				{
+					logger << DebugInfo << "Read transaction accepted, waiting for the response" << endl
+						<< TIME(time) << endl;
+					TRANS(logger, trans);
+					logger << EndDebugInfo;
+				}
+				wait(end_read_event);
+				if (CONFIG::DEBUG_ENABLE)
+				{			
+					logger << DebugInfo << "Read transaction finished" << endl
+						<< TIME(time) << endl;
+					ETRANS(logger, trans);
+					logger << EndDebugInfo;
+				}
+				break;
+			case tlm::TLM_UPDATED:
+				switch(phase) {
+				case tlm::BEGIN_REQ:
+				case tlm::END_RESP:
+				case tlm::BEGIN_RESP:
+					logger << DebugError << "Received TLM_UPDATED with unexpected phase" << endl
+						<< LOCATION << endl
+						<< TIME(time) << endl
+						<< PHASE(phase) << endl;
+						TRANS(logger, *trans);
+						logger << EndDebug;
+						sc_stop();
+						wait();
+						break;
+				case tlm::END_REQ:
+					if (CONFIG::DEBUG_ENABLE) {
+						logger << DebugInfo << "Received TLM_UPDATED with END_REQ, waiting for the response event" << endl
+							<< TIME(time) << endl;
+						TRANS(looger, trans);
+						logger << EndDebug;
+					}
+					wait(end_read_rsp_event);
+					if (CONFIG::DEBUG_ENABLE) {
+						logger << DebugInfo << "end response event received" << endl
+							<< TIME(time) << EndDebug;
+					}
+					break;
+				}
+				break;
+			case tlm::TLM_COMPLETED:
+				break;
+		}
+	}
+
+	if (CONFIG::DEBUG_ENABLE) {
+		logger << DebugInfo << "Transaction answer received" << endl
+			<< " - time = " << sc_time_stamp() + time << endl;
+		ETRANS(logger, *trans);
+		logger << EndDebug;
+	}
+	
+	wait(time);
+
+	if (CONFIG::DEBUG_ENABLE)
+		logger << DebugInfo << "Transaction finished, releasing transaction" << endl
+			<< " - time = " << sc_time_stamp() << endl
+			<< " - trans = " << trans << EndDebug;
+
+	trans->release();
 
 	// bus transaction request
 	Pointer<SimpleFSBRequest<address_t, CONFIG::FSB_BURST_SIZE> > req = 
@@ -361,9 +624,9 @@ PrRead(address_t addr,
 			<< Endl << EndDebugInfo;
 }
 
-template<class CONFIG> 
+template<class CONFIG, bool BLOCKING> 
 void 
-ARM<CONFIG> :: 
+ARM<CONFIG, BLOCKING> :: 
 PrWrite(address_t addr, 
 	const uint8_t *buffer, 
 	uint32_t size) {
@@ -419,9 +682,13 @@ PrWrite(address_t addr,
 			<< Endl << EndDebugInfo;
 }
 
-template<class CONFIG>
+/*********************************************************************************
+ * TODO: Methods to be removed                                             START *
+ *********************************************************************************/
+
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 SetLock(uint32_t lock, uint32_t set) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -431,9 +698,9 @@ SetLock(uint32_t lock, uint32_t set) {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrInvalidateBlock(uint32_t set, uint32_t way) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -443,9 +710,9 @@ PrInvalidateBlock(uint32_t set, uint32_t way) {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrFlushBlock(uint32_t set, uint32_t way) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -455,9 +722,8 @@ PrFlushBlock(uint32_t set, uint32_t way) {
 	wait();
 }
 
-template<class CONFIG>
-void 
-ARM<CONFIG>::
+template<class CONFIG, bool BLOCKING>
+void ARM<CONFIG, BLOCKING>::
 PrCleanBlock(uint32_t set, uint32_t way) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -467,9 +733,9 @@ PrCleanBlock(uint32_t set, uint32_t way) {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 uint32_t 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 GetCacheSize() {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -481,9 +747,9 @@ GetCacheSize() {
 	return 0;
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 uint32_t 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 GetCacheAssociativity() {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -495,9 +761,9 @@ GetCacheAssociativity() {
 	return 0;
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 uint32_t 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 GetCacheBlockSize() {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -509,9 +775,9 @@ GetCacheBlockSize() {
 	return 0;
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 Enable() {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -521,9 +787,9 @@ Enable() {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 Disable() {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -533,9 +799,9 @@ Disable() {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 bool
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 IsEnabled() {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -547,9 +813,9 @@ IsEnabled() {
 	return false;
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrReset() {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -559,9 +825,9 @@ PrReset() {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrInvalidate() {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -571,9 +837,9 @@ PrInvalidate() {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrInvalidateSet(uint32_t set) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -583,9 +849,9 @@ PrInvalidateSet(uint32_t set) {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrInvalidateBlock(address_t addr) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -595,9 +861,9 @@ PrInvalidateBlock(address_t addr) {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrFlushBlock(address_t addr) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -607,9 +873,9 @@ PrFlushBlock(address_t addr) {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrCleanBlock(address_t addr) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -619,9 +885,9 @@ PrCleanBlock(address_t addr) {
 	wait();
 }
 
-template<class CONFIG>
+template<class CONFIG, bool BLOCKING>
 void 
-ARM<CONFIG>::
+ARM<CONFIG, BLOCKING>::
 PrZeroBlock(address_t addr) {
 	if(inherited::logger_import) 
 		(*inherited::logger_import) << DebugError << LOCATION
@@ -630,6 +896,10 @@ PrZeroBlock(address_t addr) {
 	sc_stop();
 	wait();
 }
+
+/*********************************************************************************
+ * TODO: Methods to be removed                                              STOP *
+ *********************************************************************************/
 
 } // end of namespace arm
 } // end of namespace processor

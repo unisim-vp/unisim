@@ -61,22 +61,39 @@ using unisim::component::cxx::processor::arm::CacheInterface;
 
 using std::string;
 
-template <class CONFIG>
+template <class CONFIG, bool BLOCKING = false>
 class ARM :
 	public sc_module,
-	public CPU<CONFIG>,
+	public tlm::tlm_bw_transport_if<>,
+	public CPU<DEBUG_ENABLE, CONFIG>,
 	public CacheInterface<typename CONFIG::address_t> {
 public:
+	typedef tlm::tlm_payload_type  transaction_type;
+	typedef tlm::tlm_phase_type    phase_type;
+	typedef tlm::tlm_sync_enum     sync_enum_type;
+	
 	typedef typename CONFIG::address_t address_t;
 	typedef CPU<CONFIG> inherited;
-	
-	// Bus port
+
+	/*****************************************************************************************************
+	 * Port to the bus and its virtual methods to handle incomming calls.                          START *
+	 *****************************************************************************************************/
+	// Master port to the bus port
 	tlm::tlm_initiator_socket<CONFIG::FSB_BURST_SIZE> master_port;
+	
+	// virtual method implementation to handle backward path of transactions sent through the master_port
+	virtual sync_enum_type nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time);
+	// virtual method implementation to handle backward path of the dmi mechanism
+	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+
+	/*****************************************************************************************************
+	 * Port to the bus and its virtual methods to handle incomming calls.                            END *
+	 *****************************************************************************************************/
 	
 	SC_HAS_PROCESS(ARM);
 	ARM(const sc_module_name& name, Object *parent = 0);
 	virtual ~ARM();
-	
+
 	virtual void Stop(int ret);
 	virtual void Sync();
 	
@@ -91,6 +108,7 @@ public:
 	// cache interface implemented by the arm processor to get the request from the caches
 	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
 	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
+	// TODO: Check if the following methods can be removed somehow
 	// the following instruction exist in the arm cache interface but they can not be used 
 	virtual void SetLock(uint32_t lock, uint32_t set);
 	virtual void PrInvalidateBlock(uint32_t set, uint32_t way);
@@ -109,9 +127,22 @@ public:
 	virtual void PrFlushBlock(address_t addr);
 	virtual void PrCleanBlock(address_t addr);
 	virtual void PrZeroBlock(address_t addr);
+	// end of TODO
 
 private:
+	/** Event used to signalize the end of a read transaction.
+	 * Method PrRead waits for this event once the read transaction has been sent, and the 
+	 *   nb_transport_bw notifies on it when the read transaction is finished. */
+	sc_event end_read_event;
+	
+	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	void Synchronize();
+
+	/** A temporary variable that can be used anywhere in the code to compute a time.
+	 * A temporary variable that can be used anywhere in the code to compute a time.
+	 *   Should be initialized everytime it is used.
+	 */
+	sc_time tmp_time;
 	
 	sc_time cpu_cycle_time;
 	sc_time bus_cycle_time;
