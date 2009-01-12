@@ -1322,6 +1322,7 @@ public:
 				    if (!(instructionQueue.FreeSpace()>0))
 				    //  if (!instructionQueue.Full())
 				      {
+					cerr << "Time Stamp: " << timestamp() << endl;
 					cerr << "INSTRUCTION SPLITTING: No FreeSpace!!!!!!!!!!!" << endl;
 					cerr << "Inst : " << (entry->instruction) << endl;
 					cerr << " FreeSpace = " << instructionQueue.FreeSpace() << endl;
