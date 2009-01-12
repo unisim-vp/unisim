@@ -1,0 +1,224 @@
+/*
+ *  Copyright (c) 2008,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
+ */
+
+
+/***************************************************
+
+	SINGLE PRECISION FLOATING-POINT ARITHMETIC INSTRUCTIONS
+
+****************************************************/
+
+op fsmad_full( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	0xe[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
+
+//op fsmac_full(0xe[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/1[1]:src2_cm[1]:src2[7]:src1[7]:\
+//	dest[7]:0[1]:1[1]:\
+//	0[3]:?[1]:imm_hi[26]:/*marker*/3[2])
+
+fsmad_full.disasm = {
+//	cpu.DisasmPred(pred_cond, pred_reg, buffer);
+
+	buffer << "mad.f32";
+	DisasmRounding(rounding_mode, buffer);
+//	cpu.DisasmMarker(marker, buffer);
+	buffer << " ";
+//	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
+//	cpu.DisasmDest(dest, ignore_output, buffer);
+	insn.DisasmDest(buffer);
+
+	buffer << ", ";
+	//cpu.DisasmSrc(src1, 0, src1_sh, src1_neg, addr_lo, addr_hi, addr_imm, buffer);
+	DisasmSign(src1_neg);
+	insn.DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	//cpu.DisasmSrc(src2, src2_cm, 0, 0, buffer);
+	insn.DisasmSrc2(buffer);
+	
+	buffer << ", ";
+	//cpu.DisasmSrc(src3, src3_cm, 0, src3_neg, buffer);
+	DisasmSign(src3_neg);
+	insn.DisasmSrc3(buffer);
+}
+
+/*
+fsmac_full.disasm = {
+	cpu.DisasmPred(pred_cond, pred_reg, buffer);
+
+	buffer << "mac.f32";
+	cpu.DisasmRounding(rounding_mode, buffer);
+	//cpu.DisasmMarker(marker, buffer);
+	buffer << " ";
+	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
+	cpu.DisasmDest(dest, 0, buffer);
+	buffer << ", ";
+	cpu.DisasmSrc(src1, 0, src1_sh, src1_neg, addr_lo, addr_hi, addr_imm, buffer);
+	buffer << ", ";
+	cpu.DisasmImm(imm_hi, src2, buffer);
+}
+*/
+
+// TODO: marker, pred
+
+fsmad_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+//	cpu.ExecMarker(marker);
+	// dest = a * b + c
+	reg_t a = insn->ReadSrc1();
+	if(src1_neg)
+		a.NegateFP32();
+	reg_t b = insn->ReadSrc2();
+	reg_t c = insn->ReadSrc3();
+	if(src3_neg)
+		c.NegateFP32();
+	
+	reg_t output = FSMad(a, b, c, rounding_mode);
+	
+	insn->WriteDest(output);
+	insn->SetPredFP(output);
+//	if(set_pred)
+//		cpu.WritePred(set_pred_reg, pred_cond, pred_reg, ComputePredFP32(output));
+}
+/*
+fsmac_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	cpu.ExecMarker(marker);
+	// dest += a * b
+	// b immediate
+	reg_t dest = cpu.ReadOperandFP32(dest, 0, 0, 0);
+	reg_t a = cpu.ReadOperandFP32(src1, 0, 0, 0, addr_lo, addr_hi, addr_imm);
+	reg_t b = cpu.ReadImmediate(imm_hi, src2);
+	reg_t output = cpu.FSMad(a, b, c, rounding_mode);
+	cpu.WriteOutput(output, pred_cond, pred_reg);
+	if(set_pred)
+		cpu.WritePred(set_pred_reg, pred_cond, pred_reg);
+}
+*/
+
+// Single-precision FP Add
+// full: dest = src1 + src3
+// half: dest = src1 + src2
+
+op fsadd_full( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
+
+
+fsadd_full.disasm = {
+//	cpu.DisasmPred(pred_cond, pred_reg, buffer);
+
+	buffer << "add.f32";
+	DisasmRounding(rounding_mode, buffer);
+	buffer << " ";
+	insn.DisasmDest(buffer);
+
+	buffer << ", ";
+	DisasmSign(src1_neg);
+	insn.DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	DisasmSign(src3_neg);
+	insn.DisasmSrc3(buffer);
+}
+
+fsadd_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a + c
+	reg_t a = insn->ReadSrc1();
+	if(src1_neg)
+		a.NegateFP32();
+	reg_t c = insn->ReadSrc3();
+	if(src3_neg)
+		c.NegateFP32();
+	
+	reg_t output = FSAdd(a, c, rounding_mode);
+	
+	insn->WriteDest(output);
+	insn->SetPredFP(output);
+}
+
+// TODO: half
+
+// Single-precision FP Mul
+// dest = src1 * src2
+
+// TODO: enforce no src2?
+
+op fsmul_full( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	0xc[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
+
+group fsmul(fsmul_full)
+
+fsmul.disasm = {
+
+	buffer << "mul.f32";
+	DisasmRounding(rounding_mode, buffer);
+	buffer << " ";
+	insn.DisasmDest(buffer);
+
+	buffer << ", ";
+	DisasmSign(src1_neg);
+	insn.DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	DisasmSign(src3_neg);
+	insn.DisasmSrc2(buffer);
+}
+
+fsmul_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a * b
+	reg_t a = insn->ReadSrc1();
+	if(src1_neg)
+		a.NegateFP32();
+	reg_t b = insn->ReadSrc2();
+	if(src3_neg)	// Applies to Src2 here
+		c.NegateFP32();	// (not very useful to have -a * -b btw)
+	
+	reg_t output = FSMul(a, b, rounding_mode);
+	
+	insn->WriteDest(output);
+	insn->SetPredFP(output);
+}
+

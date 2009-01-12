@@ -33,21 +33,37 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM C++ Processor Component Library], [1.0])
+AC_INIT([UNISIM C++ G80 simulator], [1.0])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR C HEADERS ####################################################
+AC_CHECK_HEADERS([inttypes.h],,\
+    AC_MSG_ERROR([Some standard C headers are missing.]))
+
+###### CHECK FOR C++ HEADERS ##################################################
+AC_CHECK_HEADERS([iostream],,\
+    AC_MSG_ERROR([Some standard C++ headers are missing.]))
+
+UNISIM_CHECK_UNISIM_TOOLS
+UNISIM_RELEASE
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
-
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor-powerpc, powerpc)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor-arm, arm)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor-hcs12x, hcs12x)
-UNISIM_CONFIG_SUBDIR(unisim-component-cxx-processor-tesla, tesla)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

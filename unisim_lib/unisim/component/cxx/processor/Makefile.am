@@ -19,6 +19,12 @@ SUBDIRS += hcs12x
 INCLUDE_SUBDIRS += hcs12x
 endif
 
+if COND_tesla
+SUBDIRS += tesla
+INCLUDE_SUBDIRS += tesla
+endif
+
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

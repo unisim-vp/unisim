@@ -1,0 +1,147 @@
+/*
+ *  Copyright (c) 2008,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
+ */
+
+
+/***************************************************
+
+	DATA MOVE INSTRUCTIONS
+
+****************************************************/
+
+op mov_reg_full_normal( \
+	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:data_32[1]:const_seg[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+group mov_reg_full_noimm(mov_reg_full_normal)
+
+// No immediate : dest = conv(src1)
+// If immediate : dest = conv(src3)
+
+
+mov_reg_full_noimm.disasm = {
+//	cpu.DisasmPred(pred_cond, pred_reg, buffer);
+	// data_32 = 0 -> mov.b16
+	// data_32 = 1 -> mov.b32
+	// cvt_round = 1 -> default, round down?
+	// cvt_type = 7 -> default, no conv
+	// pred_cond = 15 -> default, true
+	buffer << "mov";
+
+	//cpu.DisasmDataType(m_size, buffer);
+	cpu.DisasmConvert(cvt_round, cvt_type, data_32, buffer);
+//	cpu.DisasmMarker(marker, buffer);
+	buffer << " ";
+//	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
+//	cpu.DisasmDest(dest, ignore_output, buffer);
+	insn.DisasmDest(buffer);
+
+	buffer << ", ";
+//	cpu.DisasmSrc(src1, 0, src1_sh, 0, addr_lo, addr_hi, addr_imm, buffer);
+	insn.DisasmSrc1(buffer);
+}
+
+mov_reg_full_noimm.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+//	cpu.ExecMarker(marker);
+	// dest = a
+	// TODO: Read 2 regs if 64-bit
+	assert(!f64);
+	reg_t a = insn->ReadSrc1();	// TODO: addr reg
+	reg_t output = cpu.Convert(a, cvt_round, cvt_type, m_size);
+
+//	if(!ignore_output)
+//		cpu.WriteOutput(output, dest, pred_cond, pred_reg);
+	insn->WriteDest(output);
+	insn->SetPredFP(output);
+	
+//	if(set_pred)
+//		cpu.WritePred(set_pred_reg, pred_cond, pred_reg, ComputePredFP32(output));	// TODO: FP32 or...?
+}
+
+op stg_full( \
+	/*subop*/5[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
+	0xd[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:segment[7]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+
+stg_full.disasm = {
+//	cpu.DisasmPred(pred_cond, pred_reg, buffer);
+	// m_size = 4 -> b64
+	// m_size = 8 -> b32
+	// data_32 = 0 -> mov.b16
+	// data_32 = 1 -> mov.b32
+	// cvt_round = 1 -> default, round down
+	// cvt_type = 7 -> default, no conv
+	// pred_cond = 15 -> default, true
+	buffer << "mov";
+
+//	cpu.DisasmDataType(m_size, buffer);
+//	cpu.DisasmMarker(marker, buffer);
+	buffer << " ";
+//	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
+	cpu.DisasmGlobal(dest, addr_lo, addr_hi, addr_imm, segment, /*ignore_output*/0, buffer);
+	buffer << ", ";
+//	cpu.DisasmSrc(src1, 0, 0, 0, buffer);
+	insn.DisasmSrc1(buffer);	// TODO: force reg?
+}
+
+stg_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+//	cpu.ExecMarker(marker);
+	// dest = a
+//	reg_t a = cpu.ReadOperand(src1, 0, 0);
+	reg_t a = insn->ReadSrc1();	// TODO: force reg?
+
+	reg_t output = a;
+
+//	if(!ignore_output)
+//		cpu.ScatterGlobal(output, dest, addr_lo, addr_hi, addr_imm, segment, pred_cond, pred_reg);
+//	if(set_pred)
+//		cpu.WritePred(set_pred_reg, pred_cond, pred_reg, ComputePredFP32(output));	// TODO: FP32 or...?
+	insn->WriteDest(output);
+	insn->SetPredFP(output);
+}
+
+op mov_reg_xxx( \
+	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:data_32[1]:const_seg[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
