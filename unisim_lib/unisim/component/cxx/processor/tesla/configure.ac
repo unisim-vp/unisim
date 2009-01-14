@@ -51,15 +51,17 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR C HEADERS ####################################################
-AC_CHECK_HEADERS([inttypes.h],,\
+AC_CHECK_HEADERS([inttypes.h stdio.h stdlib.h],,\
     AC_MSG_ERROR([Some standard C headers are missing.]))
 
 ###### CHECK FOR C++ HEADERS ##################################################
-AC_CHECK_HEADERS([iostream],,\
+AC_CHECK_HEADERS([bitset cassert cstring iomanip iosfwd iostream map ostream sstream stack stdexcept string vector],,\
     AC_MSG_ERROR([Some standard C++ headers are missing.]))
 
 UNISIM_CHECK_UNISIM_TOOLS
 UNISIM_RELEASE
+UNISIM_WITH_BOOST
+UNISIM_CHECK_BOOST_INTEGER
 
 # files to generate
 #   this should include all the makefiles to generate
