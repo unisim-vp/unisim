@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2007,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *

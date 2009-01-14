@@ -31,14 +31,11 @@
  *
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
- 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_FLAGS_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_FLAGS_HH__
 
-#include <boost/integer.hpp>
-#include <bitset>
-#include <unisim/component/cxx/processor/tesla/register.hh>
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXCEPTION_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXCEPTION_TCC__
 
+#include <unisim/component/cxx/processor/tesla/exception.hh>
 
 namespace unisim {
 namespace component {
@@ -46,72 +43,85 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-using namespace boost;
-using std::bitset;
-
-// From Decuda
-enum Cond
+template <class CONFIG>
+ProgramException<CONFIG>::ProgramException(const char *name)
 {
-	CD_FL = 0,
-	CD_LT = 1,
-	CD_EQ = 2,
-	CD_LE = 3,
-	CD_GT = 4,
-	CD_NE = 5,
-	CD_GE = 6,
-	CD_LEG = 7,
-	CD_NAN = 8,
-	CD_LTU = 9,
-	CD_EQU = 10,
-	CD_LEU = 11,
-	CD_GTU = 12,
-	CD_NEU = 13,
-	CD_GEU = 14,
-	CD_TR = 15,
-	CD_OF = 16,
-	CD_CF = 17,
-	CD_AB = 18,
-	CD_ST = 19,
-	// ... Unknown flags
-	CD_NSF = 28,
-	CD_BLE = 29,
-	CD_NCF = 30,
-	CD_NOF = 31
-};
+	stringstream sstr;
+	sstr << "Program " << name << " exception";
+	what_str = sstr.str();
+}
 
-enum SetCond
+template <class CONFIG>
+ProgramException<CONFIG>::~ProgramException() throw()
 {
-	SC_FL = 0,
-	SC_LT = 1,
-	SC_EQ = 2,
-	SC_LE = 3,
-	SC_GT = 4,
-	SC_NE = 5,
-	SC_GE = 6,
-	SC_TR = 7
-};
+}
+
+template <class CONFIG>
+const char * ProgramException<CONFIG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template <class CONFIG>
+IllegalInstructionException<CONFIG>::IllegalInstructionException() : ProgramException<CONFIG>("illegal instruction")
+{
+}
 
 
 template <class CONFIG>
-struct VectorFlags
+TrapException<CONFIG>::TrapException() : ProgramException<CONFIG>("trap")
 {
-	uint_t<4>::fast v[CONFIG::WARP_SIZE];
-	
-	void Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask);
-	
-};
+}
 
-std::string CondCodeString(Cond c);
-std::string SetCondString(SetCond c);
+template <class CONFIG>
+TraceException<CONFIG>::TraceException()
+{
+}
 
-bool IsPredSet(uint32_t cond, uint_t<4>::fast flags);
+template <class CONFIG>
+const char * TraceException<CONFIG>::what () const throw ()
+{
+	return "Trace exception";
+}
 
-template<class CONFIG>
-bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> vf);
+template <class CONFIG>
+InstructionAddressBreakpointException<CONFIG>::InstructionAddressBreakpointException()
+{
+}
 
-template<class CONFIG>
-VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output);
+template <class CONFIG>
+const char * InstructionAddressBreakpointException<CONFIG>::what () const throw ()
+{
+	return "Instruction address breakpoint exception";
+}
 
+#if 0
+
+template <class CONFIG>
+void CPU<CONFIG>::HandleException(const IllegalInstructionException<CONFIG>& exc)
+{
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::HandleException(const TrapException<CONFIG>& exc)
+{
+}
+
+
+
+/* Trace exception */
+template <class CONFIG>
+void CPU<CONFIG>::HandleException(const TraceException<CONFIG>& exc)
+{
+}
+
+/* Instruction Address Breakpoint exception */
+template <class CONFIG>
+void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CONFIG>& exc)
+{
+}
+
+#endif
 
 } // end of namespace tesla
 } // end of namespace processor

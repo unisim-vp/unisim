@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_FLAGS_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_FLAGS_TCC__
 
+#include <unisim/component/cxx/processor/tesla/flags.hh>
+
 #include <sstream>
 #include <stdexcept>
 
@@ -46,34 +48,26 @@ namespace tesla {
 
 using namespace std;
 
-string CondCodeString(Cond c)
-{
-}
-
-string SetCondString(SetCond c)
-{
-}
-
-bool IsPredSet(uint32_t cond, uint_t<4>::fast flags)
-{
-}
-
-template <class CONFIG>
+template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> flags)
 {
 }
 
-template <class CONFIG>
+template <class CONFIG>
 VectorFlags<CONFIG> ComputePred(VectorRegister<CONFIG> const & output)
 {
 }
 
-template <class CONFIG>
-void VectorFlags<CONFIG>::Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask);
+template <class CONFIG>
+void VectorFlags<CONFIG>::Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask)
+{
+}
 
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+#endif
 

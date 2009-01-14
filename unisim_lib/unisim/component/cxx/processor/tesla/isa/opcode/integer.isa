@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -54,15 +54,15 @@ iadd_full.disasm = {
 		buffer << ".sat";
 		
 	buffer << " ";
-	insn.DisasmDest(buffer);
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	DisasmSign(src1_neg);
-	insn.DisasmSrc1(buffer);
+	DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
-	DisasmSign(src3_neg);
-	insn.DisasmSrc3(buffer);
+	DisasmSign(src3_neg, buffer);
+	insn->DisasmSrc3(buffer);
 }
 
 iadd_full.execute = {
@@ -72,10 +72,12 @@ iadd_full.execute = {
 	reg_t a = insn->ReadSrc1();
 	reg_t c = insn->ReadSrc3();
 	
-	reg_t output = I32Add(a, c, sat, src1_neg, src3_neg);
+	int carry, ovf;
+	
+	reg_t output = cpu->I32Add(a, c, carry, ovf, sat, src1_neg, src3_neg);
 	
 	insn->WriteDest(output);
-	insn->SetPredFP(output);
+	insn->SetPredI32(output, carry, ovf);
 }
 
 

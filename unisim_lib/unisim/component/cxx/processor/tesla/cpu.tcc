@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -35,9 +35,12 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CPU_TCC__
 
-//#include <unisim/component/cxx/processor/tesla/exception.tcc>
+#include <unisim/component/cxx/processor/tesla/exception.tcc>
 #include <unisim/component/cxx/processor/tesla/register.tcc>
 #include <unisim/component/cxx/processor/tesla/instruction.tcc>
+#include <unisim/component/cxx/processor/tesla/flags.tcc>
+#include <unisim/component/cxx/processor/tesla/exec.tcc>
+
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
 //#include <unisim/util/queue/queue.tcc>
@@ -45,6 +48,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cassert>
+#include <iomanip>
 
 namespace unisim {
 namespace component {
@@ -69,13 +73,13 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 //	Client<TrapReporting>(name, parent),
 //	Service<MemoryAccessReportingControl>(name, parent),
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
-	Service<unisim::service::interfaces::Registers>(name, parent),
+//	Service<unisim::service::interfaces::Registers>(name, parent),
 	Service<Memory<typename CONFIG::address_t> >(name, parent),
 	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
 //	Service<CPULinuxOS>(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
 //	Client<LinuxOS>(name, parent),
-	Client<Logger>(name, parent),
+//	Client<Logger>(name, parent),
 //	Client<CachePowerEstimator>(name, parent),
 //	Client<PowerMode>(name, parent),
 //	Service<Synchronizable>(name, parent),
@@ -92,7 +96,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 	memory_import("memory-import", this),
 //	linux_os_import("linux-os-import", this),
 //	trap_reporting_import("trap-reporting-import", this),
-	logger_import("logger-import", this),
+//	logger_import("logger-import", this),
 //	synchronizable_export("synchronizable-export", this),
 	cpu_cycle_time(0),
 	voltage(0),
@@ -154,6 +158,16 @@ CPU<CONFIG>::RequiresFinishedInstructionReporting(bool report) {
 
 template <class CONFIG>
 void CPU<CONFIG>::OnDisconnect()
+{
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Stop(int ret)
+{
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Synchronize()
 {
 }
 
@@ -287,15 +301,14 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size,
 template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(address_t addr, void *buffer, uint32_t size)
 {
-//	return ReadMemory(addr, buffer, size, MT_DATA, true);
-	return true;
+	// No addr translation for now
+	return memory_import->ReadMemory(addr, buffer, size);
 }
 
 template <class CONFIG>
 bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size)
 {
-//	return WriteMemory(addr, buffer, size, MT_DATA, true);
-	return true;
+	return memory_import->WriteMemory(addr, buffer, size);
 }
 
 template <class CONFIG>
@@ -352,16 +365,19 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 
 	physical_addr = addr;
 
-	if(!memory_import->ReadMemory(physical_addr, &insn, 4)) return string("unreadable ?");
+	if(!memory_import->ReadMemory(physical_addr, &insn, 8)) return string("unreadable ?");
 
 	Instruction<CONFIG> instruction(this, physical_addr, insn);
 
 //	operation = Decoder<CONFIG>::Decode(addr, insn);
 
-	// disassemble the instruction
-	sstr << "0x" << std::hex;
+	sstr << std::hex;
 	sstr.fill('0'); sstr.width(8); 
-	sstr << insn << std::dec << " ";	// TODO: endianness...
+	sstr << addr - CONFIG::CODE_START << " ";
+	// disassemble the instruction
+	sstr << "0x" << std::hex;// << std::setw(16);
+	sstr.fill('0'); sstr.width(16); 
+	sstr << insn << std::dec << std::noshowbase << " ";	// TODO: endianness...
 	instruction.Disasm(sstr);
 
 	next_addr = addr + 8;

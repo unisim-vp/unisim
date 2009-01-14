@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -87,9 +87,9 @@ struct VectorRegister
 	VectorRegister();
 	VectorRegister(uint32_t val);
 	void NegateFP32();
-	typename CONFIG::reg_t v[CONFIG::WARP_SIZE];
-	
 	void Write(VectorRegister<CONFIG> const & v, std::bitset<CONFIG::WARP_SIZE> mask);
+
+	typename CONFIG::reg_t v[CONFIG::WARP_SIZE];
 };
 
 

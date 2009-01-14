@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -67,8 +67,11 @@ public:
 	VectorRegister<CONFIG> ReadSrc1(int offset = 0) const;
 	VectorRegister<CONFIG> ReadSrc2(int offset = 0) const;
 	VectorRegister<CONFIG> ReadSrc3(int offset = 0) const;
-	void WriteDest(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask, int offset = 0) const;
-	void SetPredFP32(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask) const;
+	void WriteDest(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask = 0xffffffff, int offset = 0) const;
+	void SetPredFP32(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask = 0xffffffff) const;
+	void SetPredI32(VectorRegister<CONFIG> const & value, int carry, int ovf, bitset<CONFIG::WARP_SIZE> mask = 0xffffffff) const;
+
+	bitset<CONFIG::WARP_SIZE> Mask() const;
 	
 	void DisasmSrc1(std::ostream & os) const;
 	void DisasmSrc2(std::ostream & os) const;

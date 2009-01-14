@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -71,7 +71,7 @@ public:
 	static const bool DEBUG_WRITE_MEMORY_ENABLE = false;
 
 	// start address
-	static const uint32_t START_ADDR = 0xfff00100UL; // processor starts at system reset interrupt handler
+//	static const uint32_t START_ADDR = 0xfff00100UL; // processor starts at system reset interrupt handler
 
 	static uint32_t const WARP_SIZE = 32;
 	static uint32_t const MAX_WARPS_PER_BLOCK = 16;
@@ -84,6 +84,21 @@ public:
 	static uint32_t const CALL_STACK_DEPTH = 17;	// 17 = Smallest random-looking value
 	static uint32_t const MAX_ADDR_REGS = 4;
 	static uint32_t const MAX_PRED_REGS = 4;
+
+	// Memory layout
+	static address_t const CODE_START = 0x10000000;
+
+	// 16 * 64 K
+	static address_t const CONST_START = 0x20000000;	// -> 0x20100000
+	static uint32_t const CONST_SEG_SIZE = 64 * 1024;
+	static uint32_t const CONST_SEG_NUM = 16;
+
+	static address_t const SHARED_START = 0x20100000;	// -> 0x20104000
+	static uint32_t const SHARED_SIZE = 16 * 1024;
+	
+	static address_t const LOCAL_START = 0x30000000;
+	
+	static address_t const GLOBAL_START = 0x40000000;
 
 };
 

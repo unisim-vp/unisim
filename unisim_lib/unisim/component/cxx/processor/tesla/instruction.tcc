@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -36,6 +36,11 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_INSTRUCTION_TCC__
 
 #include <unisim/component/cxx/processor/tesla/instruction.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_opcode.tcc>
+#include <unisim/component/cxx/processor/tesla/tesla_dest.tcc>
+#include <unisim/component/cxx/processor/tesla/tesla_src1.tcc>
+#include <unisim/component/cxx/processor/tesla/tesla_src2.tcc>
+#include <unisim/component/cxx/processor/tesla/tesla_src3.tcc>
 
 
 namespace unisim {
@@ -45,6 +50,20 @@ namespace processor {
 namespace tesla {
 
 
+template <class CONFIG>
+isa::opcode::Decoder<CONFIG> Instruction<CONFIG>::op_decoder;
+
+template <class CONFIG>
+isa::src1::Decoder<CONFIG> Instruction<CONFIG>::src1_decoder;
+
+template <class CONFIG>
+isa::src2::Decoder<CONFIG> Instruction<CONFIG>::src2_decoder;
+
+template <class CONFIG>
+isa::src3::Decoder<CONFIG> Instruction<CONFIG>::src3_decoder;
+
+template <class CONFIG>
+isa::dest::Decoder<CONFIG> Instruction<CONFIG>::dest_decoder;
 
 template <class CONFIG>
 Instruction<CONFIG>::Instruction(CPU<CONFIG> * cpu, typename CONFIG::address_t addr, typename CONFIG::insn_t iw) :
@@ -109,7 +128,7 @@ void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, bitset
 		dest = dest_decoder.Decode(addr, iw);
 	}
 	// apply current warp mask
-	mask &= cpu.CurrentWarp().mask;
+	mask &= cpu->CurrentWarp().mask;
 	dest->write(cpu, value, mask, offset);
 }
 
@@ -119,12 +138,22 @@ void Instruction<CONFIG>::SetPredFP32(VectorRegister<CONFIG> const & value, bits
 }
 
 template <class CONFIG>
+void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value, int carry, int ovf, bitset<CONFIG::WARP_SIZE> mask) const
+{
+}
+
+template <class CONFIG>
+bitset<CONFIG::WARP_SIZE> Instruction<CONFIG>::Mask() const
+{
+}
+
+template <class CONFIG>
 void Instruction<CONFIG>::DisasmSrc1(std::ostream & os) const
 {
 	if(src1 == 0) {
 		src1 = src1_decoder.Decode(addr, iw);
 	}
-	src1->disasm(os);
+	src1->disasm(cpu, this, os);
 }
 
 template <class CONFIG>
@@ -133,7 +162,7 @@ void Instruction<CONFIG>::DisasmSrc2(std::ostream & os) const
 	if(src2 == 0) {
 		src2 = src2_decoder.Decode(addr, iw);
 	}
-	src2->disasm(os);
+	src2->disasm(cpu, this, os);
 }
 
 template <class CONFIG>
@@ -142,7 +171,7 @@ void Instruction<CONFIG>::DisasmSrc3(std::ostream & os) const
 	if(src3 == 0) {
 		src3 = src3_decoder.Decode(addr, iw);
 	}
-	src3->disasm(os);
+	src3->disasm(cpu, this, os);
 }
 
 
@@ -152,7 +181,7 @@ void Instruction<CONFIG>::DisasmDest(std::ostream & os) const
 	if(dest == 0) {
 		dest = dest_decoder.Decode(addr, iw);
 	}
-	dest->disasm(os);
+	dest->disasm(cpu, this, os);
 }
 
 

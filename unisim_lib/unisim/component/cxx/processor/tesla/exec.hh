@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -44,46 +44,9 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-template<class CONFIG>
-VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     VectorRegister<CONFIG> const & c, uint32_t rounding_mode);
-
-template<class CONFIG>
-VectorRegister<CONFIG> FSMul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t rounding_mode);
-
-template<class CONFIG>
-VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t rounding_mode);
-
-template <class CONFIG>
-void FSNegate(VectorRegister<CONFIG> & a);
-
-template<class CONFIG>
-VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
-                     uint32_t rb = 0, uint32_t rc = 0);
-
-template<class CONFIG>
-VectorRegister<CONFIG> I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
-                     uint32_t rb = 0, uint32_t rc = 0);
-
-template<class CONFIG>
-VectorRegister<CONFIG> I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
-
-template<class CONFIG>
-VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
-
-template<class CONFIG>
-VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
 
 
-template <class CONFIG>
-void I32Negate(VectorRegister<CONFIG> & a);
+
 
 } // end of namespace tesla
 } // end of namespace processor

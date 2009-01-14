@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -36,9 +36,10 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_DISASM_HH__
 
 #include <string>
-#include <sstream>
+#include <iosfwd>
 
 #include <unisim/component/cxx/processor/tesla/register.hh>
+#include <unisim/component/cxx/processor/tesla/flags.hh>
 
 namespace unisim {
 namespace component {
@@ -46,24 +47,27 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+using std::ostream;
+
 //=====================================================================
 //=                Disassembly helper functions                       =
 //=====================================================================
-void DisasmPred(uint32_t pred_cond, uint32_t pred_reg, stringstream & buffer);
-void DisasmRounding(uint32_t rounding_mode, stringstream & buffer);
-void DisasmMarker(uint32_t marker, stringstream & buffer);
-void DisasmSetPred(uint32_t set_pred_reg, uint32_t set_pred, stringstream & buffer);
-void DisasmDest(uint32_t dest, uint32_t set_output, stringstream & buffer);
-void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, stringstream & buffer);
+void DisasmPred(uint32_t pred_cond, uint32_t pred_reg, ostream & buffer);
+void DisasmRounding(uint32_t rounding_mode, ostream & buffer);
+void DisasmMarker(uint32_t marker, ostream & buffer);
+void DisasmSetPred(uint32_t set_pred_reg, uint32_t set_pred, ostream & buffer);
+void DisasmDest(uint32_t dest, uint32_t set_output, ostream & buffer);
+void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, ostream & buffer);
 void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo,
-	uint32_t addr_hi, uint32_t addr_imm, stringstream & buffer);
-void DisasmImm(uint32_t imm_hi, uint32_t imm_lo, stringstream & buffer);
-void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, uint32_t data_32, uint32_t m_size, stringstream & buffer);
-void DisasmDataType(uint32_t dt, stringstream & buffer);
+	uint32_t addr_hi, uint32_t addr_imm, ostream & buffer);
+void DisasmImm(uint32_t imm_hi, uint32_t imm_lo, ostream & buffer);
+void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, uint32_t data_32, ostream & buffer);
+void DisasmDataType(uint32_t dt, ostream & buffer);
 std::string DataTypeString(DataType d);
 std::string RoundingModeString(RoundingMode r);
-void DisasmSign(uint32_t sign);
-
+std::string ConvTypeString(ConvType t);
+void DisasmSign(uint32_t sign, ostream & buffer);
+void DisasmGlobal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, ostream & buffer);
 
 } // end of namespace tesla
 } // end of namespace processor

@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -111,13 +111,13 @@ class CPU :
 //	public Client<TrapReporting>,
 //	public Service<MemoryAccessReportingControl>,
 	public Service<Disassembly<typename CONFIG::address_t> >,
-	public Service<unisim::service::interfaces::Registers>,
+//	public Service<unisim::service::interfaces::Registers>,
 	public Service<Memory<typename CONFIG::address_t> >,
 	public Service<MemoryInjection<typename CONFIG::address_t> >,
 //	public Service<CPULinuxOS>,
-	public Client<Memory<typename CONFIG::address_t> >,
+	public Client<Memory<typename CONFIG::address_t> >
 //	public Client<LinuxOS>,
-	public Client<Logger>
+//	public Client<Logger>
 //	public Client<CachePowerEstimator>,
 //	public Client<PowerMode>,
 //	public Service<Synchronizable>
@@ -165,7 +165,7 @@ public:
 	ServiceImport<Memory<physical_address_t> > memory_import;
 //	ServiceImport<LinuxOS> linux_os_import;
 //	ServiceImport<TrapReporting> trap_reporting_import;
-	ServiceImport<Logger> logger_import;
+//	ServiceImport<Logger> logger_import;
 
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
@@ -292,6 +292,34 @@ public:
 	//=====================================================================
 	//=                 Execution helper functions                        =
 	//=====================================================================
+
+
+	// Implementation in exec.tcc
+	VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+		                 VectorRegister<CONFIG> const & c, uint32_t rounding_mode);
+	VectorRegister<CONFIG> FSMul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+		                 uint32_t rounding_mode);
+	VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+		                 uint32_t rounding_mode);
+	void FSNegate(VectorRegister<CONFIG> & a);
+	VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+		                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
+		                 uint32_t rb = 0, uint32_t rc = 0);
+	VectorRegister<CONFIG> I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+		                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
+		                 uint32_t rb = 0, uint32_t rc = 0);
+	VectorRegister<CONFIG> I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
+	VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
+	VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+		                 int & carry, int & ovf,
+		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
+	void I32Negate(VectorRegister<CONFIG> & a);
+	VectorRegister<CONFIG> Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type);
+	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask);
+
+
 	void ExecMarker(uint32_t marker);
 	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg);
 	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm);
@@ -309,14 +337,13 @@ public:
 	VecReg ReadConstant(int addr, uint32_t seg = 0) const;
 	VecReg ReadShared(VecReg const & addr) const;
 	VecReg ReadShared(int addr) const;
-	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg);
 
 	VecReg EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg);
 	
-private:
-	//int GetCurrentWarpID() const;
 	Warp & CurrentWarp();
 	Warp const & CurrentWarp() const;
+private:
+	//int GetCurrentWarpID() const;
 	
 	//=====================================================================
 	//=                         Exception vectors                         =
@@ -332,9 +359,10 @@ private:
 	
 	VecReg gpr[MAX_VGPR];
 	
-	uint32_t num_blocks;
-	uint32_t warps_per_block;
+//	uint32_t num_blocks;
+//	uint32_t warps_per_block;
 	uint32_t regs_per_warp;
+	uint32_t num_warps;
 	
 	uint32_t shared_mem[SHARED_MEM_SIZE];
 	

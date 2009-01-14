@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_TCC__
 
+#include <unisim/component/cxx/processor/tesla/exec.hh>
 
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::FSMad(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
@@ -54,46 +55,57 @@ VectorRegister<CONFIG> CPU<CONFIG>::FSAdd(VectorRegister<CONFIG> const & a, Vect
 {
 }
 
-template <class CONFIG>
-void FSNegate(VectorRegister<CONFIG> & a)
+template <class CONFIG>
+void CPU<CONFIG>::FSNegate(VectorRegister<CONFIG> & a)
 {
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> CPU<CONFIG>::I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      VectorRegister<CONFIG> const & c, uint32_t sat, uint32_t ra, uint32_t rb,
                      uint32_t rc)
 {
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> CPU<CONFIG>::I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      VectorRegister<CONFIG> const & c, uint32_t sat, uint32_t ra, uint32_t rb,
                      uint32_t rc)
 {
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> CPU<CONFIG>::I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      uint32_t sat, uint32_t ra, uint32_t rb)
 {
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> CPU<CONFIG>::I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      uint32_t sat, uint32_t ra, uint32_t rb)
 {
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> CPU<CONFIG>::I32Add(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+                     int & carry, int & ovf,
                      uint32_t sat, uint32_t ra, uint32_t rb)
 {
 }
 
 
-template <class CONFIG>
-void I32Negate(VectorRegister<CONFIG> & a)
+template <class CONFIG>
+void CPU<CONFIG>::I32Negate(VectorRegister<CONFIG> & a)
+{
+}
+
+template <class CONFIG>
+VectorRegister<CONFIG> CPU<CONFIG>::Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type)
+{
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask)
 {
 }
 

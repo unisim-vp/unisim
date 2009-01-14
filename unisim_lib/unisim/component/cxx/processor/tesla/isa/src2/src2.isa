@@ -1,6 +1,6 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without modification,
@@ -13,7 +13,7 @@
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- *   - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -39,6 +39,7 @@ template <{class} {CONFIG}>
 
 {
 #include <unisim/component/cxx/processor/tesla/cpu.hh>
+#include <iomanip>
 }
 
 constructor action initialize() {
@@ -48,7 +49,7 @@ action {VectorRegister<CONFIG>} read({CPU<CONFIG> *} {cpu}, {int} {offset}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
-action {void} disasm({CPU<CONFIG> *} {cpu}, {ostream&} {os}) {
+action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {ostream&} {os}) {
 	os << "???";
 }
 
@@ -76,7 +77,7 @@ op alu_full_join_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0
 group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg)
 
 alu_reg.read = {
-	return cpu.GetGPR(src2 + offset);
+	return cpu->GetGPR(src2 + offset);
 }
 
 alu_reg.disasm = {
@@ -115,7 +116,7 @@ group alu_const(alu_full_normal_const, alu_full_end_const, alu_full_join_const)
 alu_const.read = {
 	// TODO: segment?
 	// But not for some (all?) FPU ops
-	return cpu.ReadConstant(src2 + offset * 4);
+	return cpu->ReadConstant(src2 + offset * 4);
 }
 
 alu_const.disasm = {
@@ -123,15 +124,15 @@ alu_const.disasm = {
 	os << "c[" << src2 << "]";
 }
 
-op alu_full_imm(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:imm_hi[25]:/*marker*/3[2]:\
+op alu_full_imm(/*subop*/?[3]:/*?*/?[1]:imm_hi[26]:/*marker*/3[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/0[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 alu_full_imm.read = {
-	return VectorRegister((imm_hi << 7) | src2);
+	return VectorRegister<CONFIG>((imm_hi << 6) | src2);
 }
 
 alu_full_imm.disasm = {
-	os << std::hex << (imm_hi << 7) | src2;
+	os << "0x" << std::setfill('0') << std::setw(8) << std::hex << ((imm_hi << 6) | src2);
 }
 

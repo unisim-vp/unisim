@@ -31,53 +31,71 @@
  *
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
+ 
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXCEPTION_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXCEPTION_HH__
 
-namespace unisim::component::cxx::processor::tesla::isa::dest
-little_endian
-address {typename CONFIG::address_t}
-template <{class} {CONFIG}>
+#include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace tesla {
+
+using std::string;
+
+class Exception : public std::exception {};
+
+template <class CONFIG>
+class ProgramException : public Exception
 {
-#include <unisim/component/cxx/processor/tesla/cpu.hh>
-}
+public:
+	ProgramException(const char *name);
+	virtual ~ProgramException() throw();
+	virtual const char * what () const throw ();
+private:
+	string what_str;
+};
 
-//action {void} execute({CPU<CONFIG> *} {cpu}) {
-//	throw IllegalInstructionException<CONFIG>();
-//}
+template <class CONFIG>
+class IllegalInstructionException : public ProgramException<CONFIG>
+{
+public:
+	IllegalInstructionException();
+};
 
-constructor action initialize() {
-}
+template <class CONFIG>
+class TrapException : public ProgramException<CONFIG>
+{
+public:
+	TrapException();
+};
 
-action {void} write({CPU<CONFIG> *} {cpu}, {VectorRegister<CONFIG> const &} {value}, {bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}) {
-	throw IllegalInstructionException<CONFIG>();
-}
+template <class CONFIG>
+class TraceException : public Exception
+{
+public:
+	TraceException();
+	virtual const char * what () const throw ();
+};
 
-action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {ostream&} {os}) {
-	os << "???";
-}
-
-// TODO: check whether GPR or output reg
-
-// TODO: also manage predication
-
-// little-endian
-op alu_full( \
-	/*subop*/?[3]:?[1]:?[26]:/*marker*/?[2]: \
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
-	dest[7]:/*flow*/0[1]:/*long*/1[1] \
-)
-
-op alu_half(/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
-	dest[7]:/*flow*/0[1]:/*long*/0[1])
-
-group dest1(alu_full, alu_half)
-
-dest1.write = {
-	cpu->GetGPR(dest + offset).Write(value, mask);
-}
-
-dest1.disasm = {
-	os << "r" << dest;
-}
+template <class CONFIG>
+class InstructionAddressBreakpointException : Exception
+{
+public:
+	InstructionAddressBreakpointException();
+	virtual const char * what () const throw ();
+};
 
 
+} // end of namespace tesla
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif

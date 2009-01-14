@@ -32,52 +32,82 @@
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
 
-namespace unisim::component::cxx::processor::tesla::isa::dest
-little_endian
-address {typename CONFIG::address_t}
-template <{class} {CONFIG}>
+#include <unisim/component/cxx/processor/tesla/flags.hh>
+#include <cassert>
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace tesla {
+
+using namespace std;
+
+string CondCodeString(Cond c)
 {
-#include <unisim/component/cxx/processor/tesla/cpu.hh>
+	static char const * cc_desc[] = {
+		"fl",	// 0
+		"lt",
+		"eq",
+		"le",
+		"gt",
+		"ne",
+		"ge",
+		"leg",
+		"nan",
+		"ltu",
+		"equ",
+		"leu",
+		"gtu",
+		"neu",
+		"geu",
+		"tr",
+		"of",
+		"cf",
+		"ab",
+		"sf",
+		"20",
+		"21",
+		"22",
+		"23",
+		"24",
+		"25",
+		"26",
+		"27",
+		"nsf",
+		"ble",
+		"ncf",
+		"nof"	// 31
+	};
+	assert(c >= 0 && c < 32);
+	return string(cc_desc[c]);
 }
 
-//action {void} execute({CPU<CONFIG> *} {cpu}) {
-//	throw IllegalInstructionException<CONFIG>();
-//}
-
-constructor action initialize() {
+string SetCondString(SetCond c)
+{
+	static char const * sc_desc[] = {
+		"fl",	// 0
+		"lt",
+		"eq",
+		"le",
+		"gt",
+		"ne",
+		"ge",
+		"tr",	// 7
+	};
+	assert(c >= 0 && c < 8);
+	return string(sc_desc[c]);
 }
 
-action {void} write({CPU<CONFIG> *} {cpu}, {VectorRegister<CONFIG> const &} {value}, {bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}) {
-	throw IllegalInstructionException<CONFIG>();
+bool IsPredSet(uint32_t cond, uint_t<4>::fast flags)
+{
+	// TODO: use a BIG truth table...
 }
 
-action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {ostream&} {os}) {
-	os << "???";
-}
 
-// TODO: check whether GPR or output reg
-
-// TODO: also manage predication
-
-// little-endian
-op alu_full( \
-	/*subop*/?[3]:?[1]:?[26]:/*marker*/?[2]: \
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
-	dest[7]:/*flow*/0[1]:/*long*/1[1] \
-)
-
-op alu_half(/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
-	dest[7]:/*flow*/0[1]:/*long*/0[1])
-
-group dest1(alu_full, alu_half)
-
-dest1.write = {
-	cpu->GetGPR(dest + offset).Write(value, mask);
-}
-
-dest1.disasm = {
-	os << "r" << dest;
-}
-
+} // end of namespace tesla
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
