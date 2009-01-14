@@ -31,15 +31,22 @@
  *
  * Authors: 
  *     David Parello (david.parello@univ-perp.fr)
+ *     Sylvain Collange (sylvain.collange@univ-perp.fr)
  *
  */
+ 
+#ifndef SIMULATOR_CXX_TESLA_DRIVER_HH
+#define SIMULATOR_CXX_TESLA_DRIVER_HH
 
 #include <driver_objects.hh>
+#include <module.hh>
+#include <device.hh>
 
 /*****************************************
  *                DRIVER                 *
  *****************************************/
-class Driver
+template<class CONFIG>
+struct Driver
 {
 public:
   //  const usigned int MAX_CONTEXT=1;
@@ -51,25 +58,32 @@ public:
   CUresult  cuInit(unsigned int&Flags);
 
   //    Device management
+  CUresult  cuDeviceGet(CUdevice *device, int ordinal);
+  
+  CUresult  cuDeviceGetCount(int *count);
 
   //    Context management
   CUresult  cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev );
   CUresult  cuCtxDestroy( CUcontext ctx );
 
   //    Module management
-  CUresult  cuModuleLoad(CUmodule *module, const char *fname);
-  CUresult   cuModuleUnload(CUmodule hmod);
+  CUresult ModuleLoad(Module<CONFIG> * & module, const char *fname);
+  CUresult ModuleUnload(Module<CONFIG> * hmod);
 
-  CUresult  cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name);
+//  CUresult cuModuleGetFunction(Kernel<CONFIG> **hfunc, Module<CONFIG> * hmod, const char *name);
 
   //    Memory management
   CUresult  cuMemGetInfo(unsigned int *free, unsigned int *total);
   CUresult  cuMemAlloc( CUdeviceptr *dptr, unsigned int bytesize);
+  
+  void FunctionDump(Kernel<CONFIG> const & kernel);
 
 private:
   //CUcontext context_list; // TODO: have to be a list of context.
   CUcontext current_context; // TODO: to be a per thread current context.
-  CUdevice_st device[MAXDEVICE];
+  Device<CONFIG> device[MAXDEVICE];	// TODO: one config per device
 
 };
+
+#endif
 

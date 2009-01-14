@@ -30,32 +30,19 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: 
- *     David Parello (david.parello@univ-perp.fr)
+ *     Sylvain Collange (sylvain.collange@univ-perp.fr)
  *
  */
-#include <driver_objects.hh>
-
-template class CPU<BaseConfig>;
-template class unisim::component::cxx::memory::ram::Memory<BaseConfig::address_t>;
-
-//class CUctx_st
-CUctx_st::CUctx_st(CUdevice dev): device(dev), usage_count(1) {}  
  
-CUdevice CUctx_st::GetDevice()
+#ifndef SIMULATOR_CXX_TESLA_CONFIG_HH
+#define SIMULATOR_CXX_TESLA_CONFIG_HH
+
+#include <unisim/component/cxx/processor/tesla/config.hh>
+
+using unisim::component::cxx::processor::tesla::BaseConfig;
+
+struct SimuConfig : BaseConfig
 {
-	return device;
-}
-//class CUmod_st
-//CUmod_st::CUmod_st() {}
+};
 
-//class CUfunc_st
-CUfunc_st::CUfunc_st() {}
-CUresult CUfunc_st::cuLaunch() {}
-
-//class CUarray_st
-
-//class CUtexref_st
-
-//class CUevent_st
-
-//class CUstream_st
+#endif

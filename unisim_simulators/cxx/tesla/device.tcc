@@ -30,32 +30,58 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: 
- *     David Parello (david.parello@univ-perp.fr)
+ *     Sylvain Collange (sylvain.collange@univ-perp.fr)
  *
  */
-#include <driver_objects.hh>
-
-template class CPU<BaseConfig>;
-template class unisim::component::cxx::memory::ram::Memory<BaseConfig::address_t>;
-
-//class CUctx_st
-CUctx_st::CUctx_st(CUdevice dev): device(dev), usage_count(1) {}  
  
-CUdevice CUctx_st::GetDevice()
+#ifndef SIMULATOR_CXX_TESLA_DRIVER_DEVICE_TCC
+#define SIMULATOR_CXX_TESLA_DRIVER_DEVICE_TCC
+
+#include "device.hh"
+#include <string>
+#include <ostream>
+
+using std::string;
+using std::endl;
+
+template<class CONFIG>
+Device<CONFIG>::Device() :
+	Object("device_0"),
+	cpu("gpu_core_0", this),
+	memory("memory", this)
 {
-	return device;
+	cpu.memory_import >> memory.memory_export;
+	memory.Setup();
+
 }
-//class CUmod_st
-//CUmod_st::CUmod_st() {}
 
-//class CUfunc_st
-CUfunc_st::CUfunc_st() {}
-CUresult CUfunc_st::cuLaunch() {}
+template<class CONFIG>
+void Device<CONFIG>::Load(Kernel<CONFIG> const & kernel)
+{
+	kernel.Load(memory);
+}
 
-//class CUarray_st
+template<class CONFIG>
+void Device<CONFIG>::DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os)
+{
+	Load(kernel);
+	typename CONFIG::address_t pc = CONFIG::CODE_START;
+	os << "Dumping code @" << std::hex << pc << endl;
+	while(pc < CONFIG::CODE_START + kernel.CodeSize())
+	{
+		string s = cpu.Disasm(pc, pc);
+		os << s << endl;
+	}
+}
 
-//class CUtexref_st
+template<class CONFIG>
+void Run(Kernel<CONFIG> const & kernel)
+{
+}
 
-//class CUevent_st
+template<class CONFIG>
+void Device<CONFIG>::Reset()
+{
+}
 
-//class CUstream_st
+#endif

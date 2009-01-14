@@ -34,41 +34,46 @@
  *
  */
 
-//#include <unisim/component/cxx/tesla/cpu.hh>
-//#include <unisim/component/cxx/tesla/cpu.tcc>
+#ifndef SIMULATOR_CXX_TESLA_DRIVER_OBJECTS_HH
+#define SIMULATOR_CXX_TESLA_DRIVER_OBJECTS_HH
+
+#include <unisim/component/cxx/processor/tesla/cpu.hh>
+#include <unisim/component/cxx/processor/tesla/cpu.tcc>
+#include <unisim/component/cxx/processor/tesla/config.hh>
+#include <unisim/component/cxx/memory/ram/memory.hh>
+
 
 #include <inttypes.h>
 #include <cuda.h>
 
-class CUdevice_st
+using unisim::component::cxx::processor::tesla::CPU;
+using unisim::component::cxx::processor::tesla::BaseConfig;
+
+extern "C"
 {
-public:
-  CUdevice_st();
-  
-private:
-  //  CPU<CPU_CONFIG> cpu;
-  
+struct CUmod_st
+{
 };
+
+struct CUdevice_st
+{
+};
+
+}
+
 
 class CUctx_st
 {
 public:
   CUctx_st(CUdevice dev);
   
+  CUdevice GetDevice();
 private:
   CUdevice device;
   uint32_t usage_count;
   
 };
  
-//   typedef struct CUmod_st *CUmodule;
-class CUmod_st
-{
-public:
-  CUmod_st();
-private:
-  CUfunction function;
-};
 
 //    typedef struct CUfunc_st *CUfunction;
 class CUfunc_st
@@ -112,3 +117,6 @@ public:
 private:
 
 };
+
+#endif
+

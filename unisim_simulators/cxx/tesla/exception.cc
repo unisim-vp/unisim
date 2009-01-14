@@ -30,60 +30,16 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: 
- *     David Parello (david.parello@univ-perp.fr)
+ *     Sylvain Collange (sylvain.collange@univ-perp.fr)
  *
  */
 
-#include <driver.hh>
+#include "exception.hh"
+#include <iostream>
 
-/*****************************************
- *                DRIVER                 *
- *****************************************/
-Driver::Driver() {}
-
-//    Initialization
-CUresult CUDAAPI Driver::cuInit(unsigned int&Flags) { return CUDA_SUCCESS; }
-
-//    Device management
-
-//    Context management
-CUresult CUDAAPI Driver::cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev )
+CudaException::CudaException(CUresult code) :
+	code(code)
 {
-  current_context = new CUctx_st(dev);
-  pctx = &current_context;
-  return CUDA_SUCCESS;
+	std::cerr << "Barra error " << code << std::endl;
 }
-
-CUresult CUDAAPI Driver::cuCtxDestroy( CUcontext ctx )
-{
-  delete ctx;
-}
-
-//    Module management
-CUresult CUDAAPI Driver::cuModuleLoad(CUmodule *module, const char *fname)
-{
-
-}
-
-CUresult  CUDAAPI Driver::cuModuleUnload(CUmodule hmod)
-{
-
-}
-
-CUresult CUDAAPI Driver::cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name)
-{
-
-}
-
-//    Memory management
-CUresult CUDAAPI Driver::cuMemGetInfo(unsigned int *free, unsigned int *total)
-{
-
-}
-
-CUresult CUDAAPI Driver::cuMemAlloc( CUdeviceptr *dptr, unsigned int bytesize)
-{
-
-}
-
 

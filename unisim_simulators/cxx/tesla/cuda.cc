@@ -38,10 +38,23 @@
 #include <driver.hh>
 #include <iostream>
 
+#include "config.hh"
+
+#include "driver.tcc"
+#include "module.tcc"
+#include "device.tcc"
+
 using std::cerr;
 using std::endl;
 
-Driver driver;
+typedef BaseConfig MyConfig;
+
+Driver<MyConfig> driver;
+
+#define CHECK_PTR(p) \
+	{ if(!p) { \
+		cerr << "Null pointer " #p " at " << __FILE__ << ":" << __LINE__ << endl; \
+		return CUDA_ERROR_INVALID_VALUE; } }
 
 /*********************************
  ** Initialization
@@ -58,14 +71,12 @@ CUresult  CUDAAPI cuInit(unsigned int Flags)
 
 CUresult  CUDAAPI cuDeviceGet(CUdevice *device, int ordinal)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+  return driver.cuDeviceGet(device, ordinal);
 }
 
 CUresult  CUDAAPI cuDeviceGetCount(int *count)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+  return driver.cuDeviceGetCount(count);
 }
 
 CUresult  CUDAAPI cuDeviceGetName(char *name, int len, CUdevice dev)
@@ -107,14 +118,12 @@ CUresult  CUDAAPI cuDeviceGetAttribute(int *pi, CUdevice_attribute attrib, CUdev
 
 CUresult  CUDAAPI cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev )
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+  return driver.cuCtxCreate(pctx, flags, dev);
 }
 
 CUresult  CUDAAPI cuCtxDestroy( CUcontext ctx )
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+  return driver.cuCtxDestroy(ctx);
 }
 
 CUresult  CUDAAPI cuCtxAttach(CUcontext *pctx, unsigned int flags)
@@ -161,10 +170,13 @@ CUresult  CUDAAPI cuCtxSynchronize(void)
  **
  ***********************************/
 
-CUresult  CUDAAPI cuModuleLoad(CUmodule *module, const char *fname)
+CUresult cuModuleLoad(CUmodule *module, const char *fname)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	Module<MyConfig>* mod = 0;
+	CUresult res = driver.ModuleLoad(mod, fname);
+	assert(mod != 0);
+	*module = mod;
+	return res;
 }
 
 CUresult  CUDAAPI cuModuleLoadData(CUmodule *module, const void *image)
@@ -181,14 +193,22 @@ CUresult  CUDAAPI cuModuleLoadFatBinary(CUmodule *module, const void *fatCubin)
 
 CUresult  CUDAAPI cuModuleUnload(CUmodule hmod)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+  return driver.ModuleUnload(static_cast<Module<MyConfig>*>(hmod));
 }
 
-CUresult  CUDAAPI cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name)
+CUresult cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	CHECK_PTR(hmod);
+	Module<MyConfig>* mod = static_cast<Module<MyConfig>*>(hmod);
+	Kernel<MyConfig>* kernel;
+	try {
+		kernel = &mod->GetKernel(name);
+		*hfunc = kernel;
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmodule hmod, const char *name)
@@ -805,7 +825,23 @@ CUresult CUDAAPI  cuStreamDestroy( CUstream hStream )
   abort();
 }
 
+/************************************
+ **
+ **    Barra extensions (debug, instrumentation...)
+ **
+ ***********************************/
 
+
+CUresult barFunctionDump(CUfunction f)
+{
+	try {
+		driver.FunctionDump(*static_cast<Kernel<MyConfig>*>(f));
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
+}
 
 
 //#endif /* __cuda_cuda_cc__ */

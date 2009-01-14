@@ -30,32 +30,33 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: 
- *     David Parello (david.parello@univ-perp.fr)
+ *     Sylvain Collange (sylvain.collange@univ-perp.fr)
  *
  */
-#include <driver_objects.hh>
-
-template class CPU<BaseConfig>;
-template class unisim::component::cxx::memory::ram::Memory<BaseConfig::address_t>;
-
-//class CUctx_st
-CUctx_st::CUctx_st(CUdevice dev): device(dev), usage_count(1) {}  
  
-CUdevice CUctx_st::GetDevice()
+#ifndef SIMULATOR_CXX_TESLA_DRIVER_DEVICE_HH
+#define SIMULATOR_CXX_TESLA_DRIVER_DEVICE_HH
+
+#include "driver_objects.hh"
+#include "module.hh"
+#include <iosfwd>
+
+template<class CONFIG>
+struct Device: CUdevice_st, Object
 {
-	return device;
-}
-//class CUmod_st
-//CUmod_st::CUmod_st() {}
+	Device();
 
-//class CUfunc_st
-CUfunc_st::CUfunc_st() {}
-CUresult CUfunc_st::cuLaunch() {}
+	void DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os);
+	void Run(Kernel<CONFIG> const & kernel);	// TODO: block shape etc.
 
-//class CUarray_st
+private:
+	void Load(Kernel<CONFIG> const & kernel);
+	void Reset();
 
-//class CUtexref_st
+	CPU<CONFIG> cpu;
+	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;
+};
 
-//class CUevent_st
 
-//class CUstream_st
+
+#endif

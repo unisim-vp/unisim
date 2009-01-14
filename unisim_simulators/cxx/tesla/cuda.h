@@ -52,7 +52,7 @@ extern "C" {
 #endif
     typedef unsigned int CUdeviceptr; 
 
-    typedef int CUdevice; 
+    typedef int CUdevice;
     typedef struct CUctx_st *CUcontext;
     typedef struct CUmod_st *CUmodule;
     typedef struct CUfunc_st *CUfunction;
