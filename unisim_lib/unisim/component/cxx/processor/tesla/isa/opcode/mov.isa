@@ -66,6 +66,7 @@ mov_reg_full_noimm.disasm = {
 	// cvt_type = 7 -> default, no conv
 	// pred_cond = 15 -> default, true
 	buffer << "mov";
+	insn->DisasmControl(buffer);
 
 	//cpu.DisasmDataType(m_size, buffer);
 	DisasmConvert(cvt_round, cvt_type, data_32, buffer);
@@ -100,6 +101,7 @@ mov_reg_full_noimm.execute = {
 
 mov_reg_full_imm.disasm = {
 	buffer << "mov";
+	insn->DisasmControl(buffer);
 
 //	DisasmConvert(cvt_round, cvt_type, data_32, buffer);
 	buffer << " ";
@@ -141,6 +143,7 @@ stg_full.disasm = {
 	// cvt_type = 7 -> default, no conv
 	// pred_cond = 15 -> default, true
 	buffer << "mov";
+	insn->DisasmControl(buffer);
 
 //	cpu.DisasmDataType(m_size, buffer);
 //	cpu.DisasmMarker(marker, buffer);

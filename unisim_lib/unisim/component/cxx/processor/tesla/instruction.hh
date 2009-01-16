@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/tesla/tesla_src2.hh>
 #include <unisim/component/cxx/processor/tesla/tesla_src3.hh>
 #include <unisim/component/cxx/processor/tesla/tesla_dest.hh>
+#include <unisim/component/cxx/processor/tesla/tesla_control.hh>
 
 
 namespace unisim {
@@ -58,6 +59,7 @@ public:
 	typedef isa::src1::Operation<CONFIG> OpSrc1;
 	typedef isa::src2::Operation<CONFIG> OpSrc2;
 	typedef isa::src3::Operation<CONFIG> OpSrc3;
+	typedef isa::control::Operation<CONFIG> OpControl;
 
 	void SetOperation(OpCode *operation);
 	OpCode * GetOperation() { return operation; }
@@ -68,8 +70,8 @@ public:
 	VectorRegister<CONFIG> ReadSrc2(int offset = 0) const;
 	VectorRegister<CONFIG> ReadSrc3(int offset = 0) const;
 	void WriteDest(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask = 0xffffffff, int offset = 0) const;
-	void SetPredFP32(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask = 0xffffffff) const;
-	void SetPredI32(VectorRegister<CONFIG> const & value, int carry, int ovf, bitset<CONFIG::WARP_SIZE> mask = 0xffffffff) const;
+	void SetPredFP32(VectorRegister<CONFIG> const & value) const;
+	void SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const;
 
 	bitset<CONFIG::WARP_SIZE> Mask() const;
 	
@@ -77,6 +79,10 @@ public:
 	void DisasmSrc2(std::ostream & os) const;
 	void DisasmSrc3(std::ostream & os) const;
 	void DisasmDest(std::ostream & os) const;
+	void DisasmControl(std::ostream & os) const;
+	
+	bool IsLong() const;
+	bool IsEnd() const;
 	
 	Instruction(CPU<CONFIG> * cpu, typename CONFIG::address_t addr, typename CONFIG::insn_t iw);
 	~Instruction();
@@ -90,12 +96,14 @@ private:
 	mutable OpSrc2 * src2;
 	mutable OpSrc3 * src3;
 	mutable OpDest * dest;
+	mutable OpControl * control;
 	
 	static isa::opcode::Decoder<CONFIG> op_decoder;
 	static isa::src1::Decoder<CONFIG> src1_decoder;
 	static isa::src2::Decoder<CONFIG> src2_decoder;
 	static isa::src3::Decoder<CONFIG> src3_decoder;
 	static isa::dest::Decoder<CONFIG> dest_decoder;
+	static isa::control::Decoder<CONFIG> control_decoder;
 };
 
 #if 0

@@ -39,6 +39,7 @@
 
 #include <sstream>
 #include <stdexcept>
+#include <algorithm>
 
 namespace unisim {
 namespace component {
@@ -51,16 +52,71 @@ using namespace std;
 template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> flags)
 {
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
 VectorFlags<CONFIG> ComputePred(VectorRegister<CONFIG> const & output)
 {
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
 void VectorFlags<CONFIG>::Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask)
 {
+}
+
+template <class CONFIG>
+void VectorFlags<CONFIG>::Reset()
+{
+	std::fill(v, v + CONFIG::WARP_SIZE, 0);
+}
+
+template <class CONFIG>
+void VectorFlags<CONFIG>::SetZero(int z, int lane)
+{
+	v[lane][0] = z;
+}
+
+template <class CONFIG>
+int VectorFlags<CONFIG>::GetZero(int lane)
+{
+	return int(v[lane][0]);
+}
+template <class CONFIG>
+void VectorFlags<CONFIG>::SetSign(int s, int lane)
+{
+	v[lane][1] = s;
+}
+
+template <class CONFIG>
+int VectorFlags<CONFIG>::GetSign(int lane)
+{
+	return int(v[lane][1]);
+}
+
+
+template <class CONFIG>
+void VectorFlags<CONFIG>::SetCarry(int c, int lane)
+{
+	v[lane][2] = c;
+}
+
+template <class CONFIG>
+int VectorFlags<CONFIG>::GetCarry(int lane)
+{
+	return int(v[lane][2]);
+}
+
+template <class CONFIG>
+void VectorFlags<CONFIG>::SetOvf(int o, int lane)
+{
+	v[lane][3] = o;
+}
+template <class CONFIG>
+int VectorFlags<CONFIG>::GetOvf(int lane)
+{
+	return int(v[lane][3]);
 }
 
 } // end of namespace tesla

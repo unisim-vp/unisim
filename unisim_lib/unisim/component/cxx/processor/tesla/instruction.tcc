@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/tesla/tesla_src1.tcc>
 #include <unisim/component/cxx/processor/tesla/tesla_src2.tcc>
 #include <unisim/component/cxx/processor/tesla/tesla_src3.tcc>
+#include <unisim/component/cxx/processor/tesla/tesla_control.tcc>
 
 
 namespace unisim {
@@ -66,8 +67,11 @@ template <class CONFIG>
 isa::dest::Decoder<CONFIG> Instruction<CONFIG>::dest_decoder;
 
 template <class CONFIG>
+isa::control::Decoder<CONFIG> Instruction<CONFIG>::control_decoder;
+
+template <class CONFIG>
 Instruction<CONFIG>::Instruction(CPU<CONFIG> * cpu, typename CONFIG::address_t addr, typename CONFIG::insn_t iw) :
-	cpu(cpu), addr(addr), iw(iw), operation(0), src1(0), src2(0), src3(0), dest(0)
+	cpu(cpu), addr(addr), iw(iw), operation(0), src1(0), src2(0), src3(0), dest(0), control(0)
 {
 }
 
@@ -83,6 +87,12 @@ void Instruction<CONFIG>::Execute()
 		operation = op_decoder.Decode(addr, iw);
 	}
 	operation->execute(cpu, this);
+	if(control->is_join) {
+		cpu->Join();
+	}
+	if(control->is_end) {
+		cpu->End();
+	}
 }
 
 template <class CONFIG>
@@ -133,18 +143,22 @@ void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, bitset
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::SetPredFP32(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask) const
+void Instruction<CONFIG>::SetPredFP32(VectorRegister<CONFIG> const & value) const
 {
+	// TODO
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value, int carry, int ovf, bitset<CONFIG::WARP_SIZE> mask) const
+void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const
 {
+	// TODO
 }
 
 template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> Instruction<CONFIG>::Mask() const
 {
+	// TODO
+	return 0xffffffff;
 }
 
 template <class CONFIG>
@@ -184,7 +198,26 @@ void Instruction<CONFIG>::DisasmDest(std::ostream & os) const
 	dest->disasm(cpu, this, os);
 }
 
+template <class CONFIG>
+void Instruction<CONFIG>::DisasmControl(std::ostream & os) const
+{
+	if(control == 0) {
+		control = control_decoder.Decode(addr, iw);
+	}
+	control->disasm(os);
+}
 
+template <class CONFIG>
+bool Instruction<CONFIG>::IsLong() const
+{
+	return control->is_long;
+}
+
+template <class CONFIG>
+bool Instruction<CONFIG>::IsEnd() const
+{
+	return control->is_end;
+}
 
 } // end of namespace tesla
 } // end of namespace processor

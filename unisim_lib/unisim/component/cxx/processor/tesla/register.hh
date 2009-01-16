@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_HH__
 
 #include <bitset>
+#include <iosfwd>
 
 namespace unisim {
 namespace component {
@@ -80,19 +81,36 @@ enum RoundingMode
 	RM_RZ = 3
 };
 
+enum SMType
+{
+	SM_U8 = 0,
+	SM_U16 = 1,
+	SM_S16 = 2,
+	SM_U32 = 3
+};
 
 template <class CONFIG>
 struct VectorRegister
 {
+	static int const WARP_SIZE = CONFIG::WARP_SIZE;
+	typedef typename CONFIG::reg_t reg_t;
 	VectorRegister();
 	VectorRegister(uint32_t val);
 	void NegateFP32();
-	void Write(VectorRegister<CONFIG> const & v, std::bitset<CONFIG::WARP_SIZE> mask);
+	void Write(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
+	void Write16(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask, int hi);
+	
+	void WriteLane(uint32_t val, int lane);
+	uint32_t ReadLane(int lane);
+	
+	uint32_t operator[] (int lane) const;
+	uint32_t & operator[] (int lane);
 
-	typename CONFIG::reg_t v[CONFIG::WARP_SIZE];
+	reg_t v[WARP_SIZE];
 };
 
-
+template <class CONFIG>
+std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r);
 
 } // end of namespace tesla
 } // end of namespace processor

@@ -36,28 +36,35 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_TCC__
 
 #include <unisim/component/cxx/processor/tesla/exec.hh>
+#include <unisim/util/arithmetic/arithmetic.hh>
+
+using namespace unisim::util::arithmetic;
 
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::FSMad(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      VectorRegister<CONFIG> const & c, uint32_t rounding_mode)
 {
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::FSMul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      uint32_t rounding_mode)
 {
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      uint32_t rounding_mode)
 {
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::FSNegate(VectorRegister<CONFIG> & a)
 {
+	throw "Not implemented!";
 }
 
 template<class CONFIG>
@@ -65,6 +72,7 @@ VectorRegister<CONFIG> CPU<CONFIG>::I32Mad24(VectorRegister<CONFIG> const & a, V
                      VectorRegister<CONFIG> const & c, uint32_t sat, uint32_t ra, uint32_t rb,
                      uint32_t rc)
 {
+	throw "Not implemented!";
 }
 
 template<class CONFIG>
@@ -72,42 +80,77 @@ VectorRegister<CONFIG> CPU<CONFIG>::I16Mad24Lo(VectorRegister<CONFIG> const & a,
                      VectorRegister<CONFIG> const & c, uint32_t sat, uint32_t ra, uint32_t rb,
                      uint32_t rc)
 {
+	throw "Not implemented!";
 }
 
 template<class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      uint32_t sat, uint32_t ra, uint32_t rb)
 {
+	throw "Not implemented!";
 }
 
 template<class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      uint32_t sat, uint32_t ra, uint32_t rb)
 {
+	throw "Not implemented!";
 }
 
+
+// Does NOT update zero and sign flag
 template<class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::I32Add(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     int & carry, int & ovf,
-                     uint32_t sat, uint32_t ra, uint32_t rb)
+VectorRegister<CONFIG> CPU<CONFIG>::I32Add(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorFlags<CONFIG> & flags,
+	uint32_t sat, uint32_t ra, uint32_t rb)
 {
+	VecReg rv;
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		int32_t sa = int32_t(a[i]);
+		int32_t sb = int32_t(b[i]);
+		if(ra) {
+			sa = -sa;
+		}
+		if(rb) {
+			sb = -sb;
+		}
+		uint32_t r;
+		if(sat) {
+			uint8_t does_sat;
+			SignedSatAdd32(r, does_sat, uint32_t(sa), uint32_t(sb));
+			// TODO: CHECK: ovf = does_sat??
+			flags.SetOvf(int(does_sat), i);
+			flags.SetCarry(0, i);
+		}
+		else {
+			uint8_t carry_out, overflow;
+			Add32(r, carry_out, overflow, uint32_t(sa), uint32_t(sb), 0);
+			flags.SetOvf(int(overflow), i);
+			flags.SetCarry(int(carry_out), i);
+		}
+		rv[i] = r;
+	}
+	return rv;
 }
-
 
 template <class CONFIG>
 void CPU<CONFIG>::I32Negate(VectorRegister<CONFIG> & a)
 {
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type)
 {
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask)
 {
+	throw "Not implemented!";
 }
-
 
 #endif

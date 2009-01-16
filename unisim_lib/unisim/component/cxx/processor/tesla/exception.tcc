@@ -123,6 +123,18 @@ void CPU<CONFIG>::HandleException(const InstructionAddressBreakpointException<CO
 
 #endif
 
+template <class CONFIG>
+MemoryAccessException<CONFIG>::MemoryAccessException()
+{
+}
+
+template <class CONFIG>
+const char * MemoryAccessException<CONFIG>::what () const throw ()
+{
+	return "Memory access exception";
+}
+
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

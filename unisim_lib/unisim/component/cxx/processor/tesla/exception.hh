@@ -91,6 +91,12 @@ public:
 	virtual const char * what () const throw ();
 };
 
+template <class CONFIG>
+struct MemoryAccessException : Exception
+{
+	MemoryAccessException();
+	virtual const char * what () const throw ();	
+};
 
 } // end of namespace tesla
 } // end of namespace processor

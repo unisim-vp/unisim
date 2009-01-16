@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_FLAGS_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_FLAGS_HH__
 
-#include <boost/integer.hpp>
+//#include <boost/integer.hpp>
 #include <bitset>
 #include <unisim/component/cxx/processor/tesla/register.hh>
 
@@ -46,7 +46,7 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
-using namespace boost;
+//using namespace boost;
 using std::bitset;
 
 // From Decuda
@@ -95,16 +95,27 @@ enum SetCond
 template <class CONFIG>
 struct VectorFlags
 {
-	uint_t<4>::fast v[CONFIG::WARP_SIZE];
 	
 	void Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask);
+	void Reset();
+	
+	void SetZero(int z, int lane);
+	int GetZero(int lane);
+	void SetSign(int s, int lane);
+	int GetSign(int lane);
+	void SetCarry(int c, int lane);
+	int GetCarry(int lane);
+	void SetOvf(int o, int lane);
+	int GetOvf(int lane);
+
+	bitset<4> v[CONFIG::WARP_SIZE];
 	
 };
 
 std::string CondCodeString(Cond c);
 std::string SetCondString(SetCond c);
 
-bool IsPredSet(uint32_t cond, uint_t<4>::fast flags);
+bool IsPredSet(uint32_t cond, bitset<4> flags);
 
 template<class CONFIG>
 bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> vf);

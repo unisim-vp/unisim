@@ -31,25 +31,56 @@
  *
  * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
  */
- 
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_EXEC_HH__
 
-#include <unisim/component/cxx/processor/tesla/register.hh>
+namespace unisim::component::cxx::processor::tesla::isa::control
+little_endian
+address {typename CONFIG::address_t}
+template <{class} {CONFIG}>
 
+{
+#include <unisim/component/cxx/processor/tesla/cpu.hh>
+}
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace tesla {
+var is_long : { bool }
+var is_end : { bool }
+var is_join : { bool }
+var is_flow : { bool }
 
+constructor action init() {
+}
 
+action {void} disasm({ostream&} {os}) {
+	if(is_end) {
+		os << ".end";
+	}
+	else if(is_join) {
+		os << ".join";
+	}
+	if(!is_long) {
+		os << ".half";
+	}
+}
 
-} // end of namespace tesla
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+// template
+op long_instruction(?[30]:marker[2]:\
+	?[30]:flow[1]:/*long*/1[1])
 
-#endif
+long_instruction.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::is_long = true;
+	inherited::is_end = (marker == 1);
+	inherited::is_join = (marker == 2);
+	inherited::is_flow = flow;
+}
+
+op short_instruction(?[32]:\
+	?[30]:flow[1]:/*long*/0[1])
+
+short_instruction.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::is_long = false;
+	inherited::is_end = false;
+	inherited::is_join = false;
+	inherited::is_flow = flow;
+}
+

@@ -35,6 +35,7 @@
 #include <unisim/component/cxx/processor/tesla/disasm.hh>
 #include <ostream>
 #include <cassert>
+#include <iomanip>
 
 namespace unisim {
 namespace component {
@@ -194,6 +195,18 @@ std::string ConvTypeString(ConvType t)
 	return string(ct_desc[t]);
 }
 
+std::string SMTypeString(SMType t)
+{
+	static char const * sm_desc[] = {
+		".u8",	// 0
+		".u16",
+		".s16",
+		".u32"	// 3
+	};
+	assert(t >= 0 && t < 4);
+	return string(sm_desc[t]);
+}
+
 void DisasmSign(uint32_t sign, ostream & buffer)
 {
 	if(sign)
@@ -225,6 +238,18 @@ void DisasmGlobal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t ad
 	buffer << "]";
 }
 
+void DisasmShared(uint32_t addr, uint32_t type, ostream & buffer)
+{
+	static int sm_size[] = {
+		1, 2, 2, 4
+	};
+	SMType smt = SMType(type);
+	assert(smt < 4);
+	addr *= sm_size[smt];
+	buffer << "s" << SMTypeString(smt)
+		<< "[" << "0x" << std::setfill('0') << std::setw(4) << std::hex << addr << "]";
+	buffer << std::dec;
+}
 
 } // end of namespace tesla
 } // end of namespace processor

@@ -64,18 +64,19 @@ using unisim::service::interfaces::Line;
 
 
 template <class CONFIG>
-CPU<CONFIG>::CPU(const char *name, Object *parent) :
+CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 	Object(name, parent),
+	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
+	Service<Memory<typename CONFIG::address_t> >(name, parent),
+	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
+
 	Client<Loader<typename CONFIG::physical_address_t> >(name, parent),
-	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
 	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
+	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
 //	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
 //	Client<TrapReporting>(name, parent),
 //	Service<MemoryAccessReportingControl>(name, parent),
-	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 //	Service<unisim::service::interfaces::Registers>(name, parent),
-	Service<Memory<typename CONFIG::address_t> >(name, parent),
-	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
 //	Service<CPULinuxOS>(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
 //	Client<LinuxOS>(name, parent),
@@ -98,17 +99,19 @@ CPU<CONFIG>::CPU(const char *name, Object *parent) :
 //	trap_reporting_import("trap-reporting-import", this),
 //	logger_import("logger-import", this),
 //	synchronizable_export("synchronizable-export", this),
-	cpu_cycle_time(0),
-	voltage(0),
-	bus_cycle_time(0),
+//	cpu_cycle_time(0),
+//	voltage(0),
+//	bus_cycle_time(0),
+	coreid(coreid),
+	instruction_counter(0),
 	max_inst(0xffffffffffffffffULL),
 //	num_insn_in_prefetch_buffer(0),
 //	cur_insn_in_prefetch_buffer(0),
 //	verbose_all(false),
 //	trap_on_instruction_counter(0xffffffffffffffffULL),
-	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time),
-	param_voltage("voltage", this, voltage),
-	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time),
+//	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time),
+//	param_voltage("voltage", this, voltage),
+//	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time),
 	param_max_inst("max-inst", this, max_inst),
 //	param_verbose_all("verbose-all", this, verbose_all),
 //	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
@@ -174,69 +177,95 @@ void CPU<CONFIG>::Synchronize()
 template <class CONFIG>
 void CPU<CONFIG>::Reset()
 {
-	effective_address = 0;
+	for(int i = 0; i != MAX_WARPS; ++i)
+	{
+		warps[i].id = i;
+		warps[i].state = Warp::Finished;
+	}
+	num_warps = 0;
+//	effective_address = 0;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Step()
+void CPU<CONFIG>::Reset(int threadsperblock, int numblocks)
 {
-#if 0
-	address_t sequential_nia = GetCIA() + 4;
-	Operation<CONFIG> *operation = 0;
+	Reset();
 
-	SetNIA(sequential_nia);
-
-	try
-	{
-		address_t addr = GetCIA();
-		uint32_t insn;
-		
-		EmuFetch(addr, &insn, 4);
-
-		operation = Decoder<CONFIG>::Decode(addr, insn);
-
-		if(IsVerboseStep())
-		{
-			stringstream sstr;
-			operation->disasm(this, sstr);
-			(*logger_import) << DebugInfo << "#" << instruction_counter << ":0x" << Hex << addr << Dec << ":" << sstr.str() << Endl << EndDebugInfo;
-		}
-
-		/* execute the instruction */
-		operation->execute(this);
-
-	}
-	catch(Exception& e)
-	{
-		if(logger_import)
-			(*logger_import) << DebugError << "uncaught processor exception :" << e.what() << Endl << EndDebugError;
-		Stop(1);
-	}
-
-	SetCIA(GetNIA());
-
-	/* update the instruction counter */
-	instruction_counter++;
-	if(trap_reporting_import && instruction_counter == trap_on_instruction_counter)
-	{
-		trap_reporting_import->ReportTrap();
-	}
+	// Round up
+	int warpsperblock = (threadsperblock + WARP_SIZE - 1) / WARP_SIZE;
 	
-	if(requires_finished_instruction_reporting)
+	// TODO: move this to the driver/loader?
+	assert(numblocks <= MAX_BLOCKS);
+	assert(warpsperblock <= MAX_WARPS_PER_BLOCK);
+	int total_warps = warpsperblock * numblocks;
+	assert(total_warps <= MAX_WARPS);
+	assert(total_warps > 0);
+	
+	num_warps = total_warps;
+	
+	
+	int gprs_per_warp = MAX_VGPR / total_warps;	// TODO: round to power of 2?
+												// and/or use count given by the compiler?
+
+	int sm_size = SHARED_MEM_SIZE / numblocks;	// TODO: round to power of 2?
+												// at least align on DWord boundary!
+
+	address_t sm_base = CONFIG::SHARED_START + coreid * CONFIG::SHARED_SIZE;
+
+	cerr << dec;
+	cerr << "Core " << coreid << ": reset: " << threadsperblock << " threads (" << warpsperblock << "warps) * " << numblocks << " blocks\n";
+	cerr << " total " << total_warps << " warps.\n";
+	cerr << " " << gprs_per_warp << " GPRs/warp, " << sm_size << "B SM/warp\n";
+
+	for(int b = 0; b != numblocks; ++b)
 	{
-		if(memory_access_reporting_import)
+		for(int w = b * warpsperblock; w != (b+1) * warpsperblock; ++w)
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(GetNIA());
+			// TODO: compute mask for last (partial) warp
+//			GetWarp(w).Reset(w, b, gprs_per_warp, sm_size, 0xffffffff, sm_base);
+			warps[w].Reset(w, b, gprs_per_warp, sm_size, 0xffffffff, sm_base);
 		}
 	}
+	instruction_counter = 0;
+}
 
-	if(instruction_counter >= max_inst) Stop(0);
-#endif
+template <class CONFIG>
+bool CPU<CONFIG>::Step()
+{
+	// Simple round-robin policy
+
+	bool all_finished = true;
+	for(int i = 0; i != num_warps; ++i) {
+		StepWarp(i);
+		if(GetWarp(i).state != Warp::Finished) {
+			all_finished = false;
+		}
+	}
+	return all_finished;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::StepWarp(uint32_t warpid)
 {
+	current_warpid = warpid;
+	
+	address_t fetchaddr = GetPC();
+	typename CONFIG::insn_t iw;
+	if(!ReadMemory(fetchaddr, &iw, sizeof(typename CONFIG::insn_t))) {
+		throw MemoryAccessException<CONFIG>();
+	}
+	Instruction<CONFIG> insn(this, fetchaddr, iw);
+	insn.Disasm(cerr);
+	cerr << endl;
+	if(insn.IsLong()) {
+		SetNPC(fetchaddr + 8);
+	}
+	else {
+		SetNPC(fetchaddr + 4);
+	}
+	
+	insn.Execute();
+	SetPC(GetNPC());
 }
 
 
@@ -250,11 +279,12 @@ void CPU<CONFIG>::OnBusCycle()
 template <class CONFIG>
 void CPU<CONFIG>::Run()
 {
-	do
+	while(!Step() && instruction_counter < max_inst)
 	{
-		Step();
-		if(instruction_counter >= max_inst) Stop(0);
-	} while(1);
+	}
+	
+	cerr << "All warps finished\n";
+	DumpRegisters(0, cerr);
 }
 
 template <class CONFIG>
@@ -314,45 +344,13 @@ bool CPU<CONFIG>::WriteMemory(address_t addr, const void *buffer, uint32_t size)
 template <class CONFIG>
 bool CPU<CONFIG>::InjectReadMemory(address_t addr, void *buffer, uint32_t size)
 {
-#if 0
-	if(size > 0)
-	{
-		uint32_t sz;
-		uint8_t *dst = (uint8_t *) buffer;
-		do
-		{
-			uint32_t size_to_fsb_boundary = FSB_WIDTH - (addr & (FSB_WIDTH - 1));
-			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-			EmuLoad<true>(addr, dst, sz);
-			dst += sz;
-			addr += sz;
-			size -= sz;
-		} while(size > 0);
-	}
-#endif
-	return true;
+	return ReadMemory(addr, buffer, size);
 }
 
 template <class CONFIG>
 bool CPU<CONFIG>::InjectWriteMemory(address_t addr, const void *buffer, uint32_t size)
 {
-#if 0
-	if(size > 0)
-	{
-		uint32_t sz;
-		const uint8_t *src = (const uint8_t *) buffer;
-		do
-		{
-			uint32_t size_to_fsb_boundary = FSB_WIDTH - (addr & (FSB_WIDTH - 1));
-			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-			EmuStore<true>(addr, src, sz);
-			src += sz;
-			addr += sz;
-			size -= sz;
-		} while(size > 0);
-	}
-#endif
-	return true;
+	return WriteMemory(addr, buffer, size);
 }
 
 template <class CONFIG>
@@ -382,6 +380,18 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 
 	next_addr = addr + 8;
 	return sstr.str();
+}
+
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpRegisters(int warpid, ostream & os)
+{
+	Warp & warp = GetWarp(warpid);
+	os << "Warp " << warpid << endl;
+	for(int i = 0; i != warp.gpr_window_size; ++i)
+	{
+		os << " r" << i << " = " << GetGPR(warpid, i) << endl;
+	}
 }
 
 #if 0
@@ -441,7 +451,7 @@ void CPU<CONFIG>::Fetch()
 //=                 Execution helper functions                        =
 //=====================================================================
 
-
+#if 0
 template <class CONFIG>
 void CPU<CONFIG>::ExecMarker(uint32_t marker)
 {
@@ -464,6 +474,7 @@ VectorRegister<CONFIG> CPU<CONFIG>::ReadOperandFP32(uint32_t reg, uint32_t cm, u
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm)
 {
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
@@ -511,11 +522,14 @@ void CPU<CONFIG>::WritePred(uint32_t set_pred_reg, uint32_t pred_cond, uint32_t 
 	CurrentWarp().pred_flags[pred_reg].Write(flags, mask);
 }
 
+#endif
+
 template <class CONFIG>
 VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int reg)	// for current warp
 {
 	// If special reg return dummy??
 	// Compute physical register ID
+	return gpr[CurrentWarp().GetGPRAddress(reg)];
 }
 
 template <class CONFIG>
@@ -523,7 +537,25 @@ VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(int reg) const	// for current warp
 {
 	// If special reg (zero...), return value
 	// Compute physical register ID
+	return gpr[CurrentWarp().GetGPRAddress(reg)];
 }
+
+template <class CONFIG>
+VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int wid, int reg)
+{
+	// If special reg return dummy??
+	// Compute physical register ID
+	return gpr[GetWarp(wid).GetGPRAddress(reg)];
+}
+
+template <class CONFIG>
+VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(int wid, int reg) const
+{
+	// If special reg (zero...), return value
+	// Compute physical register ID
+	return gpr[GetWarp(wid).GetGPRAddress(reg)];
+}
+
 
 template <class CONFIG>
 typename CPU<CONFIG>::Warp & CPU<CONFIG>::CurrentWarp()
@@ -538,28 +570,124 @@ typename CPU<CONFIG>::Warp const & CPU<CONFIG>::CurrentWarp() const
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(VectorRegister<CONFIG> const & addr, uint32_t seg) const
+typename CPU<CONFIG>::Warp & CPU<CONFIG>::GetWarp(int wid)
 {
+	assert(wid >= 0 && wid < MAX_WARPS);
+	return warps[wid];
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(int addr, uint32_t seg) const
+typename CPU<CONFIG>::Warp const & CPU<CONFIG>::GetWarp(int wid) const
 {
+	assert(wid >= 0 && wid < MAX_WARPS);
+	return warps[wid];
+}
+
+template <class CONFIG>
+VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(VectorRegister<CONFIG> const & addr, uint32_t seg)
+{
+	assert(seg < CONFIG::CONST_SEG_NUM);
+	VecReg v;
+	Gather32(addr, v, 1, CONFIG::CONST_START + seg * CONFIG::CONST_SEG_SIZE);
+	return v;
+}
+
+template <class CONFIG>
+VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(int addr, uint32_t seg)
+{
+	assert(seg < CONFIG::CONST_SEG_NUM);
+	VecReg v;
+	Broadcast32(addr, v, 1, CONFIG::CONST_START + seg * CONFIG::CONST_SEG_SIZE);
+	return v;
 }
 
 
 // For current block
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadShared(VectorRegister<CONFIG> const & addr) const
+void CPU<CONFIG>::ReadShared(VectorRegister<CONFIG> const & addr,
+	VectorRegister<CONFIG> & data, SMType t)
 {
+	switch(t)
+	{
+	case SM_U32:
+		Gather32(addr, data, 1, CurrentWarp().GetSMAddress());
+		break;
+	case SM_U8:
+	case SM_U16:
+	case SM_S16:
+		throw "Not implemented!";
+	default:
+		assert(false);
+	}
 }
 
 
 // For current block
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadShared(int addr) const
+void CPU<CONFIG>::ReadShared(int addr, VectorRegister<CONFIG> & data, SMType t)
 {
-	// bits 6-5: size, sign
+	switch(t)
+	{
+	case SM_U32:
+		Gather32(addr, data, 4, CurrentWarp().GetSMAddress());
+		break;
+	case SM_U8:
+	case SM_U16:
+	case SM_S16:
+		throw "Not implemented!";
+	default:
+		assert(false);
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Gather32(VecReg const & addr, VecReg & data, uint32_t factor, address_t offset)
+{
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		Read32(addr[i], data[i], factor, offset);
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Scatter32(VecReg const & addr, VecReg const & data,
+	std::bitset<CONFIG::WARP_SIZE> mask,
+	uint32_t factor, address_t offset)
+{
+	// TODO: check overlap and warn
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		if(mask[i]) {
+			Write32(addr[i], data[i], factor, offset);
+		}
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Broadcast32(address_t addr, VecReg & data,
+	uint32_t factor, address_t offset)
+{
+	uint32_t val;
+	Read32(addr, val, factor, offset);
+	data = VecReg(val);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Read32(address_t addr, uint32_t & data,
+	uint32_t factor, address_t offset)
+{
+	if(!ReadMemory(addr * factor + offset, &data, 4)) {
+		throw MemoryAccessException<CONFIG>();
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Write32(address_t addr, uint32_t data,
+	uint32_t factor, address_t offset)
+{
+	if(!WriteMemory(addr * factor + offset, &data, 4)) {
+		throw MemoryAccessException<CONFIG>();
+	}
 }
 
 //template <class CONFIG>
@@ -568,24 +696,72 @@ VectorRegister<CONFIG> CPU<CONFIG>::ReadShared(int addr) const
 //	return current_warpid;
 //}
 
+#if 0
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg)
 {
 	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
 	// [seg][$a#addr_reg + addr_imm]
+	throw "Not implemented!";
+}
+#endif
+
+template <class CONFIG>
+void CPU<CONFIG>::Join()
+{
+	throw "Not implemented!";
 }
 
 template <class CONFIG>
-uint32_t CPU<CONFIG>::Warp::GetGPRAddress(uint32_t reg)
+void CPU<CONFIG>::End()
+{
+	CurrentWarp().state = Warp::Finished;
+}
+
+
+
+template <class CONFIG>
+void CPU<CONFIG>::Warp::Reset(int wid, int bid, int gpr_num, int sm_size,
+	bitset<WARP_SIZE> init_mask, address_t sm_base)
+{
+	pc = CONFIG::CODE_START;
+	npc = 0;
+	
+	gpr_window_size = gpr_num;
+	gpr_window_base = gpr_num * wid;
+	
+	sm_window_size = sm_size;
+	sm_window_base = sm_base + sm_size * bid;
+	
+	mask = init_mask;
+	
+	for(int i = 0; i != MAX_PRED_REGS; ++i) {
+		pred_flags[i].Reset();
+	}
+	
+	for(int j = 0; j != MAX_ADDR_REGS; ++j) {
+		std::fill(addr[j], addr[j] + WARP_SIZE, 0);
+	}
+	
+	state = Active;
+	cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";
+	cerr << "  " << gpr_window_size << " GPRs from " << gpr_window_base << "\n";
+}
+
+template <class CONFIG>
+uint32_t CPU<CONFIG>::Warp::GetGPRAddress(uint32_t reg) const
 {
 	// 32-bit access
 	// No special register here
+	if(reg >= gpr_window_size) {
+		std::cerr << "Warp " << id << ": accessing r" << reg << " on a " << gpr_window_size << " reg window\n";
+	}
 	assert(reg < gpr_window_size);
 	return gpr_window_base + reg;
 }
 
 template <class CONFIG>
-uint32_t CPU<CONFIG>::Warp::GetSMAddress(uint32_t sm)
+typename CPU<CONFIG>::address_t CPU<CONFIG>::Warp::GetSMAddress(uint32_t sm) const
 {
 	assert(sm < sm_window_size);
 	return sm_window_base + sm;

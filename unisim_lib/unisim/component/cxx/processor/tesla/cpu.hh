@@ -104,16 +104,16 @@ using namespace boost;
 template <class CONFIG>
 class CPU :
 //	public Decoder<CONFIG>
+	public Service<Disassembly<typename CONFIG::address_t> >,
+	public Service<Memory<typename CONFIG::address_t> >,
+	public Service<MemoryInjection<typename CONFIG::address_t> >,
 	public Client<Loader<typename CONFIG::physical_address_t> >,
-	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
+	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 //	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
 //	public Client<TrapReporting>,
 //	public Service<MemoryAccessReportingControl>,
-	public Service<Disassembly<typename CONFIG::address_t> >,
 //	public Service<unisim::service::interfaces::Registers>,
-	public Service<Memory<typename CONFIG::address_t> >,
-	public Service<MemoryInjection<typename CONFIG::address_t> >,
 //	public Service<CPULinuxOS>,
 	public Client<Memory<typename CONFIG::address_t> >
 //	public Client<LinuxOS>,
@@ -138,7 +138,7 @@ public:
 	static uint32_t const MAX_VGPR = CONFIG::MAX_VGPR;
 	static uint32_t const MAX_BLOCKS = CONFIG::MAX_BLOCKS;
 	static uint32_t const MAX_THREADS = MAX_WARPS * WARP_SIZE;
-	static uint32_t const SHARED_MEM_SIZE = CONFIG::SHARED_MEM_SIZE;
+	static uint32_t const SHARED_MEM_SIZE = CONFIG::SHARED_SIZE;
 	static uint32_t const BRANCH_STACK_DEPTH = CONFIG::BRANCH_STACK_DEPTH;
 	static uint32_t const CALL_STACK_DEPTH = CONFIG::CALL_STACK_DEPTH;
 	static uint32_t const MAX_ADDR_REGS = CONFIG::MAX_ADDR_REGS;
@@ -171,7 +171,7 @@ public:
 	//=                    Constructor/Destructor                         =
 	//=====================================================================
 
-	CPU(const char *name, Object *parent = 0);
+	CPU(const char *name, Object *parent = 0, int coreid = 0);
 	virtual ~CPU();
 	
 	//=====================================================================
@@ -185,11 +185,12 @@ public:
 	//=                    execution handling methods                     =
 	//=====================================================================
 	
-	void Step();
+	bool Step();	// -> true when finished
 	void Run();
 	virtual void Stop(int ret);
 	virtual void Synchronize();
 	virtual void Reset();
+	void Reset(int threadsperblock, int numblocks);
 
 
 //	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
@@ -248,7 +249,7 @@ public:
 	//=                        Debugging stuffs                           =
 	//=====================================================================
 
- 	address_t GetEA() const { return effective_address; }
+// 	address_t GetEA() const { return effective_address; }
 	
 //	Parameter<uint64_t> param_trap_on_instruction_counter;
 	virtual string Disasm(address_t addr, address_t& next_addr);
@@ -259,6 +260,8 @@ public:
 	bool ProcessCustomDebugCommand(const char *custom_debug_command);
 	inline void MonitorLoad(address_t ea, uint32_t size);
 	inline void MonitorStore(address_t ea, uint32_t size);
+	
+	void DumpRegisters(int warpid, ostream & os);
 
 	//=====================================================================
 	//=          DEC/TBL/TBU bus-time based update methods                =
@@ -270,9 +273,13 @@ public:
 	
 	struct Warp
 	{
-		uint32_t GetGPRAddress(uint32_t reg);
-		uint32_t GetSMAddress(uint32_t sm);
-
+		// wid unique across blocks
+		void Reset(int wid, int bid, int gpr_num, int sm_size,
+			bitset<WARP_SIZE> init_mask, address_t sm_base);
+	
+		uint32_t GetGPRAddress(uint32_t reg) const;
+		address_t GetSMAddress(uint32_t sm = 0) const;
+		
 		virtual_address_t pc;
 		virtual_address_t npc;
 
@@ -285,6 +292,15 @@ public:
 		uint32_t sm_window_size;
 		
 		bitset<WARP_SIZE> mask;
+
+		enum WarpState {
+			Active,
+			Finished
+		};
+		
+		WarpState state;
+		
+		uint32_t id;	// for debugging purposes only
 	};
 
 	
@@ -313,35 +329,53 @@ public:
 	VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
 	VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 int & carry, int & ovf,
-		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
+		                 VectorFlags<CONFIG> & flags,
+		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);	// No carry in
 	void I32Negate(VectorRegister<CONFIG> & a);
 	VectorRegister<CONFIG> Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type);
+
 	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask);
+	void Join();
+	void End();
 
-
-	void ExecMarker(uint32_t marker);
-	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg);
-	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm);
-	VecReg ReadOperand(uint32_t reg, uint32_t cm, uint32_t sh);
-	VecReg ReadImmediate(uint32_t imm_hi, uint32_t imm_lo);
-	void WriteOutput(VecReg const & v, uint32_t reg, uint32_t pred_cond, uint32_t pred_reg);
-	void WritePred(uint32_t set_pred_reg, uint32_t pred_cond, uint32_t pred_reg, VecFlags flags);	// To be called last - can modify its own predicate
+//	void ExecMarker(uint32_t marker);
+//	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg);
+//	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm);
+//	VecReg ReadOperand(uint32_t reg, uint32_t cm, uint32_t sh);
+//	VecReg ReadImmediate(uint32_t imm_hi, uint32_t imm_lo);
+//	void WriteOutput(VecReg const & v, uint32_t reg, uint32_t pred_cond, uint32_t pred_reg);
+//	void WritePred(uint32_t set_pred_reg, uint32_t pred_cond, uint32_t pred_reg, VecFlags flags);	// To be called last - can modify its own predicate
 
 	
 	VecReg & GetGPR(int reg);	// for current warp
 	VecReg GetGPR(int reg) const;	// for current warp
+	
+	VecReg & GetGPR(int wid, int reg);
+	VecReg GetGPR(int wid, int reg) const;
+
 	void StepWarp(uint32_t warpid);
 	
-	VecReg ReadConstant(VecReg const & addr, uint32_t seg = 0) const;
-	VecReg ReadConstant(int addr, uint32_t seg = 0) const;
-	VecReg ReadShared(VecReg const & addr) const;
-	VecReg ReadShared(int addr) const;
+	// High-level memory access
+	VecReg ReadConstant(VecReg const & addr, uint32_t seg = 0);	// addr in bytes
+	VecReg ReadConstant(int addr, uint32_t seg = 0);
+	void ReadShared(VecReg const & addr, VecReg & data, SMType t = SM_U32);	// addr in bytes
+	void ReadShared(int addr, VecReg & data, SMType t = SM_U32);		// addr in WORDS!!
 
-	VecReg EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg);
+	// Low-level memory access
+	void Gather32(VecReg const & addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
+	void Scatter32(VecReg const & addr, VecReg const & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
+	void Broadcast32(address_t addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
+	
+	void Read32(address_t addr, uint32_t & data, uint32_t factor = 1, address_t offset = 0);
+	void Write32(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
+
+//	VecReg EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg);
 	
 	Warp & CurrentWarp();
 	Warp const & CurrentWarp() const;
+	
+	Warp & GetWarp(int wid);
+	Warp const & GetWarp(int wid) const;
 private:
 	//int GetCurrentWarpID() const;
 	
@@ -353,6 +387,7 @@ private:
 	//=                           G80 registers                           =
 	//=====================================================================
 	
+	int coreid;
 
 	Warp warps[MAX_WARPS];
 	uint32_t current_warpid;
@@ -361,17 +396,19 @@ private:
 	
 //	uint32_t num_blocks;
 //	uint32_t warps_per_block;
-	uint32_t regs_per_warp;
+
+//	uint32_t regs_per_warp;
 	uint32_t num_warps;
-	
-	uint32_t shared_mem[SHARED_MEM_SIZE];
+
+//	SM mapped in memory	
+//	uint32_t shared_mem[SHARED_MEM_SIZE];
 	
 	
 //	stack<uint_t<MAX_WARPS>::fast > branch_mask_stack[MAX_WARPS];
 //	stack<virtual_address_t> call_stack[MAX_WARPS];
 	
 	// GT200
-	bool mutex[SHARED_MEM_SIZE];
+//	bool mutex[SHARED_MEM_SIZE];
 	
 	//uint32_t current_blockid;
 	
@@ -379,7 +416,7 @@ private:
 	//=====================================================================
 	//=                      Debugging stuffs                             =
 	//=====================================================================
-	address_t effective_address;
+//	address_t effective_address;
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
@@ -387,9 +424,9 @@ private:
 	//=                    CPU run-time parameters                        =
 	//=====================================================================
 	
-	Parameter<uint64_t> param_cpu_cycle_time;             //!< linked to member cpu_cycle_time
-	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
-	Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
+//	Parameter<uint64_t> param_cpu_cycle_time;             //!< linked to member cpu_cycle_time
+//	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
+//	Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
 
 	//=====================================================================
@@ -404,11 +441,11 @@ protected:
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
 	//=====================================================================
 	
-	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
-	uint64_t voltage;        //!< CPU voltage in mV
-	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
-	uint64_t cpu_cycle;      //!< Number of cpu cycles
+//	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
+//	uint64_t voltage;        //!< CPU voltage in mV
+//	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
+	uint64_t cpu_cycle;      //!< Number of cpu cycles
 
 
 //	void Fetch();

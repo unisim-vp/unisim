@@ -99,10 +99,11 @@ string SetCondString(SetCond c)
 	return string(sc_desc[c]);
 }
 
-bool IsPredSet(uint32_t cond, uint_t<4>::fast flags)
+bool IsPredSet(uint32_t cond, bitset<4> flags)
 {
 	// TODO: use a BIG truth table...
 }
+
 
 
 } // end of namespace tesla

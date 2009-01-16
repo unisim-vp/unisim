@@ -53,6 +53,8 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 	os << "???";
 }
 
+// FIXME: src2 on 6 bits only??
+
 // Reg
 
 op alu_full_normal_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/0[1]:/*src3*/?[7]\
@@ -124,15 +126,16 @@ alu_const.disasm = {
 	os << "c[" << src2 << "]";
 }
 
-op alu_full_imm(/*subop*/?[3]:/*?*/?[1]:imm_hi[26]:/*marker*/3[2]:\
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/0[1]:src2[7]:/*src1*/?[7]:\
+op alu_imm(/*subop*/?[3]:/*?*/?[1]:imm_hi[26]:/*marker*/3[2]:\
+	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/0[1]:/*src2_neg*/?[1]:src2[6]:/*src1_neg*/?[1]:/*src1*/?[6]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-alu_full_imm.read = {
+alu_imm.read = {
 	return VectorRegister<CONFIG>((imm_hi << 6) | src2);
 }
 
-alu_full_imm.disasm = {
+alu_imm.disasm = {
 	os << "0x" << std::setfill('0') << std::setw(8) << std::hex << ((imm_hi << 6) | src2);
+	os << std::dec;
 }
 

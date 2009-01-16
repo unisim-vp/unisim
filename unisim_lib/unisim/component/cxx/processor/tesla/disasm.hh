@@ -66,8 +66,10 @@ void DisasmDataType(uint32_t dt, ostream & buffer);
 std::string DataTypeString(DataType d);
 std::string RoundingModeString(RoundingMode r);
 std::string ConvTypeString(ConvType t);
+std::string SMTypeString(SMType t);
 void DisasmSign(uint32_t sign, ostream & buffer);
 void DisasmGlobal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, ostream & buffer);
+void DisasmShared(uint32_t addr, uint32_t type, ostream & buffer);
 
 } // end of namespace tesla
 } // end of namespace processor

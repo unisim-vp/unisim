@@ -52,7 +52,9 @@ op fsmad_full( \
 fsmad_full.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
 
-	buffer << "mad.f32";
+	buffer << "mad";
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
 	DisasmRounding(rounding_mode, buffer);
 //	cpu.DisasmMarker(marker, buffer);
 	buffer << " ";
@@ -143,7 +145,10 @@ op fsadd_full( \
 fsadd_full.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
 
-	buffer << "add.f32";
+	buffer << "add";
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
+	
 	DisasmRounding(rounding_mode, buffer);
 	buffer << " ";
 	insn->DisasmDest(buffer);
@@ -191,7 +196,10 @@ group fsmul(fsmul_full)
 
 fsmul.disasm = {
 
-	buffer << "mul.f32";
+	buffer << "mul";
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
+	
 	DisasmRounding(rounding_mode, buffer);
 	buffer << " ";
 	insn->DisasmDest(buffer);

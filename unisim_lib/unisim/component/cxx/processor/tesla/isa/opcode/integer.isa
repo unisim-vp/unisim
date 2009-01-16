@@ -41,15 +41,32 @@
 
 
 // TODO: no src1_neg if immediate!
-
-op iadd_full( \
-	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:?[22]:/*marker*/?[2]: \
+// no, src1_neg, 32/16-bit instead??
+op iadd_full_normal( \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:?[22]:/*marker*/0[2]: \
 	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+op iadd_full_end( \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:?[22]:/*marker*/1[2]: \
+	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+op iadd_full_join( \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:?[22]:/*marker*/2[2]: \
+	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+
+group iadd_full(iadd_full_normal, iadd_full_end, iadd_full_join)
+
 iadd_full.disasm = {
-	buffer << "add.s32";
+	buffer << "add";
+	insn->DisasmControl(buffer);
+	buffer << ".s32";	// TODO: unsigned ??
 	if(sat)
 		buffer << ".sat";
 		
@@ -57,7 +74,7 @@ iadd_full.disasm = {
 	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	DisasmSign(src1_neg, buffer);
+	//DisasmSign(src1_neg, buffer);
 	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
@@ -72,14 +89,51 @@ iadd_full.execute = {
 	reg_t a = insn->ReadSrc1();
 	reg_t c = insn->ReadSrc3();
 	
-	int carry, ovf;
+	VectorFlags<CONFIG> flags;
 	
-	reg_t output = cpu->I32Add(a, c, carry, ovf, sat, src1_neg, src3_neg);
+	reg_t output = cpu->I32Add(a, c, flags, sat, /*src1_neg*/0, src3_neg);
 	
 	insn->WriteDest(output);
-	insn->SetPredI32(output, carry, ovf);
+	insn->SetPredI32(output, flags);
 }
 
+op iadd_full_imm( \
+	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
+	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*imm_lo*/?[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+iadd_full_imm.disasm = {
+	buffer << "add";
+	insn->DisasmControl(buffer);
+	buffer << ".s32";	// TODO: unsigned ??
+		
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+//	DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	DisasmSign(src3_neg, buffer);
+	insn->DisasmSrc2(buffer);
+}
+
+iadd_full_imm.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a + c
+	reg_t a = insn->ReadSrc1();
+	reg_t c = insn->ReadSrc2();
+	
+	VectorFlags<CONFIG> flags;
+	
+	reg_t output = cpu->I32Add(a, c, flags, 0, /*src1_neg*/0, src3_neg);
+	
+	insn->WriteDest(output);
+	insn->SetPredI32(output, flags);
+}
 
 
 op umad24_lo_full( \

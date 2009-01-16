@@ -36,7 +36,8 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_REGISTER_TCC__
 
 #include <unisim/component/cxx/processor/tesla/register.hh>
-
+#include <cassert>
+#include <ostream>
 
 namespace unisim {
 namespace component {
@@ -58,13 +59,68 @@ VectorRegister<CONFIG>::VectorRegister()
 template <class CONFIG>
 VectorRegister<CONFIG>::VectorRegister(uint32_t val)
 {
+	std::fill(v, v + WARP_SIZE, val);
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::Write(VectorRegister<CONFIG> const & v, bitset<CONFIG::WARP_SIZE> mask)
+void VectorRegister<CONFIG>::Write(VectorRegister<CONFIG> const & vec, bitset<CONFIG::WARP_SIZE> mask)
 {
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		if(mask[i]) {
+			WriteLane(vec[i], i);
+		}
+	}
 }
 
+template <class CONFIG>
+void VectorRegister<CONFIG>::Write16(VectorRegister<CONFIG> const & vec,
+	bitset<CONFIG::WARP_SIZE> mask, int hi)
+{
+	throw "Not implemented!";
+}
+
+template <class CONFIG>
+void VectorRegister<CONFIG>::WriteLane(uint32_t val, int lane)
+{
+	assert(lane >= 0 && lane < WARP_SIZE);
+	v[lane] = val;
+}
+
+template <class CONFIG>
+uint32_t VectorRegister<CONFIG>::ReadLane(int lane)
+{
+	assert(lane >= 0 && lane < WARP_SIZE);
+	return v[lane];
+}
+
+template <class CONFIG>
+uint32_t VectorRegister<CONFIG>::operator[] (int lane) const
+{
+	assert(lane >= 0 && lane < WARP_SIZE);
+	return v[lane];
+}
+
+template <class CONFIG>
+uint32_t & VectorRegister<CONFIG>::operator[] (int lane)
+{
+	assert(lane >= 0 && lane < WARP_SIZE);
+	return v[lane];
+}
+
+template <class CONFIG>
+std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
+{
+	os << "(";
+	os << std::hex;
+	for(int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
+	{
+		os << r[i] << ", ";
+	}
+	os << r[CONFIG::WARP_SIZE-1];
+	os << std::dec;
+	os << ")";
+}
 
 } // end of namespace tesla
 } // end of namespace processor
