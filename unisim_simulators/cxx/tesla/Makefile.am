@@ -17,7 +17,7 @@ with_unisim_lib = /home/scollang/usr/unisim/lib
 #endif
 
 include_HEADERS = cuda.h driver.hh driver_objects.hh module.hh module.tcc \
-	driver.tcc config.hh
+	driver.tcc config.hh kernel.hh kernel.tcc
 
 dist_share_DATA = COPYING
 

@@ -164,4 +164,11 @@ void Driver<CONFIG>::FunctionDump(Kernel<CONFIG> const & kernel)
 	device[dev].DumpCode(kernel, cout);
 }
 
+template<class CONFIG>
+void Driver<CONFIG>::Launch(Kernel<CONFIG> & kernel)
+{
+	int dev = current_context->GetDevice();
+	device[dev].Run(kernel);	// Synchronous call
+}
+
 #endif

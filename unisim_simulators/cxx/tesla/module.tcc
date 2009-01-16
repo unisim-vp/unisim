@@ -50,6 +50,8 @@
 #include "exception.hh"
 #include "cuda.h"
 
+#include "kernel.tcc"
+
 using namespace std;
 
 inline string Strip(string s)
@@ -237,137 +239,6 @@ typename CONFIG::address_t ConstSeg<CONFIG>::Address() const
 		+ offset;
 }
 
-template<class CONFIG>
-Kernel<CONFIG>::Kernel(std::istream & is)
-{
-	cerr << " Kernel segment\n";
-	typedef string::iterator it_t;
-	while(true)
-	{
-		if(!is) {
-			throw ParsingException("Unexpected EOF");
-		}
-		string line;
-		getline(is, line);
-		if(Strip(line) != "")
-		{
-			it_t closebrace = find(line.begin(), line.end(), '}');
-			it_t openbrace = find(line.begin(), line.end(), '{');
-			it_t equalpos = find(line.begin(), line.end(), '=');
-			if(openbrace != line.end())
-			{
-				string cmd = Strip(string(line.begin(), openbrace));
-				if(closebrace != line.end())
-				{
-					throw ParsingException("Unsupported in-line field");
-				}
-				else
-				{
-					if(cmd == "bincode")
-					{
-						cerr << "  bincode {...}\n";
-						ParseBinCode(bincode, is);
-					}
-					else
-					{
-						throw ParsingException("Unknown multi-line field : ", cmd);
-					}
-				}
-			}
-			else if(equalpos != line.end())
-			{
-				string valname = Strip(string(line.begin(), equalpos));
-				string valvalue = Strip(string(++equalpos, line.end()));
-				SetAttribute(valname, valvalue);
-			}
-			else if(closebrace != line.end())
-			{
-				break;
-			}
-			// Else, just ignore
-		}
-	}
-}
-
-template<class CONFIG>
-Kernel<CONFIG>::Kernel()
-{
-}
-
-#if 0
-template<class CONFIG>
-uint32_t Kernel<CONFIG>::ConstSize() const
-{
-}
-
-template<class CONFIG>
-uint32_t Kernel<CONFIG>::LocalSize() const
-{
-}
-#endif
-
-template<class CONFIG>
-uint32_t Kernel<CONFIG>::CodeSize() const
-{
-	return bincode.size() * 4;
-}
-
-template<class CONFIG>
-void Kernel<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & mem, uint32_t offset) const
-{
-	cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::endl;
-	if(!mem.WriteMemory(CONFIG::CODE_START + offset, &bincode[0], CodeSize())) {
-		cerr << "Kernel::Load : Cannot write memory??\n";
-		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error
-	}
-	for(typename ConstList::const_iterator it = const_segs.begin();
-		it != const_segs.end();
-		++it)
-	{
-		it->Load(mem);
-	}
-}
-
-template<class CONFIG>
-void Kernel<CONFIG>::SetAttribute(std::string const & attrname, std::string const & value)
-{
-	cerr << "  " << attrname << " = " << value << endl;
-	if(attrname == "name")
-	{
-		name = value;
-	}
-	else if(attrname == "lmem")
-	{
-		lmem = atoi(value.c_str());
-	}
-	else if(attrname == "smem")
-	{
-		smem = atoi(value.c_str());
-	}
-	else if(attrname == "reg")
-	{
-		reg = atoi(value.c_str());
-	}
-	else if(attrname == "bar")
-	{
-		bar = atoi(value.c_str());
-	}
-	else
-	{
-		throw ParsingException("Unknown attribute : ", attrname);
-	}
-}
-
-template<class CONFIG>
-std::string const & Kernel<CONFIG>::Name() const
-{
-	return name;
-}
-
-template<class CONFIG>
-void Kernel<CONFIG>::Dump(std::ostream & os) const
-{
-}
 
 template<class CONFIG>
 Module<CONFIG>::Module(char const * fname)
@@ -443,6 +314,12 @@ void Module<CONFIG>::LoadCubin(char const * fname)
 					else if(cmd == "samplers")
 					{
 						// ignore for now
+						cerr << "Warning: skipping section: samplers\n";
+					}
+					else if(cmd == "reloc")
+					{
+						// ignore for now
+						cerr << "Warning: skipping section: reloc\n";
 					}
 					else
 					{

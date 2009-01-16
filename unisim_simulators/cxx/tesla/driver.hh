@@ -77,6 +77,7 @@ public:
   CUresult  cuMemAlloc( CUdeviceptr *dptr, unsigned int bytesize);
   
   void FunctionDump(Kernel<CONFIG> const & kernel);
+  void Launch(Kernel<CONFIG> & kernel);
 
 private:
   //CUcontext context_list; // TODO: have to be a list of context.

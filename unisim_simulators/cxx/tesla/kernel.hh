@@ -34,29 +34,67 @@
  *
  */
  
-#ifndef SIMULATOR_CXX_TESLA_DRIVER_DEVICE_HH
-#define SIMULATOR_CXX_TESLA_DRIVER_DEVICE_HH
+#ifndef SIMULATOR_CXX_TESLA_KERNEL_HH
+#define SIMULATOR_CXX_TESLA_KERNEL_HH
 
-#include "driver_objects.hh"
-#include "module.hh"
+#include <string>
 #include <iosfwd>
+#include <vector>
+#include <list>
+#include <map>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/service/interfaces/memory.hh>
+
+using unisim::kernel::service::Service;
+using unisim::service::interfaces::Memory;
 
 template<class CONFIG>
-struct Device: CUdevice_st, Object
+struct ConstSeg;
+
+template<class CONFIG>
+struct Kernel : CUfunc_st
 {
-	Device();
-
-	void DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os);
-	void Run(Kernel<CONFIG> const & kernel);
-
+	Kernel(std::istream & is);
+	Kernel();
+//	uint32_t ConstSize() const;
+//	uint32_t LocalSize() const;
+	uint32_t CodeSize() const;
+	
+	void Load(Service<Memory<typename CONFIG::address_t> > & mem, uint32_t offset = 0) const;
+	std::string const & Name() const;
+	void Dump(std::ostream & os) const;
+	void SetBlockShape(int x, int y, int z);
+	int BlockX() const;
+	int BlockY() const;
+	int BlockZ() const;
+	int ThreadsPerBlock() const;
+	
+	void ParamSeti(int offset, uint32_t value);
+	void ParamSetf(int offest, float value);
+	void ParamSetv(int offset, void * data, int size);
+	void ParamSetSize(int size);
+	void SetSharedSize(int size);
+	
+	uint32_t SharedTotal() const;
+	
 private:
-	void Load(Kernel<CONFIG> const & kernel);
-	void Reset();
-	void SetThreadIDs(Kernel<CONFIG> const & kernel);
-	uint32_t BuildTID(int x, int y, int z);
+	void SetAttribute(std::string const & name, std::string const & value);
+	void InitShared(Service<Memory<typename CONFIG::address_t> > & mem, int index = 0) const;
 
-	CPU<CONFIG> cpu;
-	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;
+	std::string name;
+	int lmem;
+	int smem;
+	int reg;
+	int bar;
+	std::vector<uint32_t> bincode;
+	//std::vector<uint32_t> const_mem;
+	typedef std::list<ConstSeg<CONFIG> > ConstList;
+	ConstList const_segs;
+	std::vector<uint8_t> parameters;
+	int param_size;
+	int dyn_smem;
+	
+	int blockx, blocky, blockz;
 };
 
 

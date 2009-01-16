@@ -156,10 +156,9 @@ CUresult  CUDAAPI cuCtxGetDevice(CUdevice *device)
   abort();
 }
 
-CUresult  CUDAAPI cuCtxSynchronize(void)
+CUresult cuCtxSynchronize()
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	return CUDA_SUCCESS;
 }
 
 
@@ -500,17 +499,30 @@ CUresult  CUDAAPI cuMemsetD2D32( CUdeviceptr dstDevice, unsigned int dstPitch, u
  ***********************************/
 
 
-CUresult CUDAAPI cuFuncSetBlockShape (CUfunction hfunc, int x, int y, int z)
+CUresult cuFuncSetBlockShape(CUfunction hfunc, int x, int y, int z)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
+	try {
+		kernel->SetBlockShape(x, y, z);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
+	return CUDA_SUCCESS;
 }
 
 
-CUresult CUDAAPI cuFuncSetSharedSize (CUfunction hfunc, unsigned int bytes)
+CUresult cuFuncSetSharedSize(CUfunction hfunc, unsigned int bytes)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
+	try {
+		kernel->SetSharedSize(bytes);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
@@ -678,35 +690,56 @@ CUresult  CUDAAPI cuTexRefGetFlags( unsigned int *pFlags, CUtexref hTexRef )
  **
  ***********************************/
 
-CUresult  CUDAAPI cuParamSetSize (CUfunction hfunc, unsigned int numbytes)
+CUresult cuParamSetSize(CUfunction hfunc, unsigned int numbytes)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
+	try {
+		kernel->ParamSetSize(numbytes);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
+}
+
+CUresult cuParamSeti(CUfunction hfunc, int offset, unsigned int value)
+{
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
+	try {
+		kernel->ParamSeti(offset, value);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
+}
+
+CUresult cuParamSetf(CUfunction hfunc, int offset, float value)
+{
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
+	try {
+		kernel->ParamSetf(offset, value);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
+}
+
+CUresult cuParamSetv(CUfunction hfunc, int offset, void * ptr, unsigned int numbytes)
+{
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
+	try {
+		kernel->ParamSetv(offset, ptr, numbytes);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
-CUresult  CUDAAPI cuParamSeti    (CUfunction hfunc, int offset, unsigned int value)
-{
-  cerr << "function not implemented !!!" << endl;
-  abort();
-}
-
-
-CUresult  CUDAAPI cuParamSetf    (CUfunction hfunc, int offset, float value)
-{
-  cerr << "function not implemented !!!" << endl;
-  abort();
-}
-
-
-CUresult  CUDAAPI cuParamSetv    (CUfunction hfunc, int offset, void * ptr, unsigned int numbytes)
-{
-  cerr << "function not implemented !!!" << endl;
-  abort();
-}
-
-
-CUresult  CUDAAPI cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRef)
+CUresult cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRef)
 {
   cerr << "function not implemented !!!" << endl;
   abort();
@@ -723,10 +756,16 @@ CUresult  CUDAAPI cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexR
  **
  ***********************************/
 
-CUresult CUDAAPI cuLaunch ( CUfunction f )
+CUresult cuLaunch (CUfunction f)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(f);
+	try {
+		driver.Launch(*kernel);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 

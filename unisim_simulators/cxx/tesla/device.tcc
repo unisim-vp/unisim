@@ -52,6 +52,7 @@ Device<CONFIG>::Device() :
 {
 	cpu.memory_import >> memory.memory_export;
 	memory.Setup();
+	cpu.Setup();
 
 }
 
@@ -75,13 +76,49 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os)
 }
 
 template<class CONFIG>
-void Run(Kernel<CONFIG> const & kernel)
+void Device<CONFIG>::Run(Kernel<CONFIG> const & kernel)
 {
+	cpu.Reset(kernel.ThreadsPerBlock(), 1);
+	SetThreadIDs(kernel);
+	cpu.Run();	// Multiple cores??
 }
 
 template<class CONFIG>
 void Device<CONFIG>::Reset()
 {
 }
+
+template<class CONFIG>
+void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel)
+{
+	// Set register 0 of each thread
+	
+	// TODO: multiple blocks
+	// TODO: multiple cores
+	for(int z = 0; z != kernel.BlockZ(); ++z)
+	{
+		for(int y = 0; y != kernel.BlockY(); ++y)
+		{
+			for(int x = 0; x != kernel.BlockX(); ++x)
+			{
+				int tid = ((z * kernel.BlockY()) + y) * kernel.BlockX() + x;
+				int warpid = tid / CONFIG::WARP_SIZE;
+				int lane = tid % CONFIG::WARP_SIZE;
+				
+				uint32_t reg = BuildTID(x, y, z);
+				cpu.GetGPR(warpid, 0).WriteLane(reg, lane);	// TID on r0
+			}
+		}
+	}
+}
+
+template<class CONFIG>
+uint32_t Device<CONFIG>::BuildTID(int x, int y, int z)
+{
+	// TODO: check it matches with actual hardware
+	// TODO: and use config
+	return (z << 26) | (y << 16) | x;
+}
+
 
 #endif

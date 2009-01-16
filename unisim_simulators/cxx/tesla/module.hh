@@ -45,6 +45,8 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/service/interfaces/memory.hh>
 
+#include "kernel.hh"
+
 using unisim::kernel::service::Service;
 using unisim::service::interfaces::Memory;
 
@@ -83,33 +85,6 @@ private:
 	std::vector<uint32_t> mem;
 };
 
-template<class CONFIG>
-struct Kernel : CUfunc_st
-{
-	Kernel(std::istream & is);
-	Kernel();
-//	uint32_t ConstSize() const;
-//	uint32_t LocalSize() const;
-	uint32_t CodeSize() const;
-	
-	void Load(Service<Memory<typename CONFIG::address_t> > & mem, uint32_t offset = 0) const;
-	std::string const & Name() const;
-	void Dump(std::ostream & os) const;
-	
-private:
-	void SetAttribute(std::string const & name, std::string const & value);
-
-	std::string name;
-	int lmem;
-	int smem;
-	int reg;
-	int bar;
-	std::vector<uint32_t> bincode;
-	//std::vector<uint32_t> const_mem;
-	typedef std::list<ConstSeg<CONFIG> > ConstList;
-	ConstList const_segs;
-};
-
 
 template<class CONFIG>
 struct Module : CUmod_st
@@ -136,6 +111,10 @@ private:
 //	std::list<CUfunction> functions;
 	
 };
+
+inline string Strip(string s);
+inline void ParseBinCode(vector<uint32_t> & v, istream & is);
+
 
 #endif
 
