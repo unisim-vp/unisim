@@ -244,18 +244,21 @@ int Kernel<CONFIG>::BlockZ() const
 template<class CONFIG>
 void Kernel<CONFIG>::ParamSeti(int offset, uint32_t value)
 {
+	cerr << "ParamSeti @" << offset << " = " << value << endl; 
 	ParamSetv(offset, &value, sizeof(value));
 }
 
 template<class CONFIG>
 void Kernel<CONFIG>::ParamSetf(int offset, float value)
 {
+	cerr << "ParamSetf @" << offset << " = " << value << endl; 
 	ParamSetv(offset, &value, sizeof(value));
 }
 
 template<class CONFIG>
 void Kernel<CONFIG>::ParamSetv(int offset, void * data, int size)
 {
+	cerr << "ParamSetv @" << offset << "(" << size << ")" << endl; 
 	if(offset + size > parameters.size()) {
 		parameters.resize(offset + size);
 	}
@@ -302,6 +305,7 @@ void Kernel<CONFIG>::InitShared(Service<Memory<typename CONFIG::address_t> > & m
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
 	}
 	
+	cerr << "Loading " << param_size << "B parameters @" << hex << shared_base + 16 << dec << endl;
 	// Parameters
 	if(!mem.WriteMemory(shared_base + 16, &parameters[0], param_size)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);

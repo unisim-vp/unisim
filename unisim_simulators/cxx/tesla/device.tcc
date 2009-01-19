@@ -43,12 +43,40 @@
 
 using std::string;
 using std::endl;
+using std::hex;
+using std::dec;
+
+template<class CONFIG>
+Allocator<CONFIG>::Allocator(typename CONFIG::address_t base, size_t size) :
+	base(base), limit(base), max_size(size)
+{
+	limit = base;
+}
+
+
+template<class CONFIG>
+typename CONFIG::address_t Allocator<CONFIG>::Alloc(size_t size)
+{
+	if(limit + size > base + max_size)
+	{
+		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
+	}
+	typename CONFIG::address_t addr = limit;
+	limit += size;
+	return addr;
+}
+
+template<class CONFIG>
+void Allocator<CONFIG>::Free(typename CONFIG::address_t addr)
+{
+}
 
 template<class CONFIG>
 Device<CONFIG>::Device() :
 	Object("device_0"),
 	cpu("gpu_core_0", this),
-	memory("memory", this)
+	memory("memory", this),
+	global_allocator(CONFIG::GLOBAL_START, CONFIG::GLOBAL_SIZE)
 {
 	cpu.memory_import >> memory.memory_export;
 	memory.Setup();
@@ -78,10 +106,87 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os)
 template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> const & kernel)
 {
+	Load(kernel);
 	cpu.Reset(kernel.ThreadsPerBlock(), 1);
 	SetThreadIDs(kernel);
 	cpu.Run();	// Multiple cores??
 }
+
+template<class CONFIG>
+typename CONFIG::address_t Device<CONFIG>::MAlloc(size_t size)
+{
+	typename CONFIG::address_t addr = global_allocator.Alloc(size);
+	cerr << "Device malloc: " << size << "B @" << hex << addr << dec << endl;
+	return addr;
+}
+
+template<class CONFIG>
+void Device<CONFIG>::Free(typename CONFIG::address_t addr)
+{
+	cerr << "Device free: @" << hex << addr << dec << endl;
+	global_allocator.Free(addr);
+}
+
+template<class CONFIG>
+void Device<CONFIG>::CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size)
+{
+	cerr << "Device copy " << size << "B to @" << hex << dest << dec << endl;
+	if(!memory.WriteMemory(dest, src, size)) {
+		throw CudaException(CUDA_ERROR_INVALID_VALUE);
+	}
+}
+
+template<class CONFIG>
+void Device<CONFIG>::CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size)
+{
+	cerr << "Device copy " << size << "B from @" << hex << src << dec << endl;
+	if(!memory.ReadMemory(src, dest, size)) {
+		throw CudaException(CUDA_ERROR_INVALID_VALUE);
+	}
+}
+
+template<class CONFIG>
+void Device<CONFIG>::CopyDtoD(void * dest, typename CONFIG::address_t src, size_t size)
+{
+	// TODO
+}
+
+template<class CONFIG>
+void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint32_t val, size_t n)
+{
+	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
+	for(int i = 0; i != n; ++i)
+	{
+		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
+			throw CudaException(CUDA_ERROR_INVALID_VALUE);
+		}
+	}
+}
+
+template<class CONFIG>
+void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint16_t val, size_t n)
+{
+	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
+	for(int i = 0; i != n; ++i)
+	{
+		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
+			throw CudaException(CUDA_ERROR_INVALID_VALUE);
+		}
+	}
+}
+
+template<class CONFIG>
+void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint8_t val, size_t n)
+{
+	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
+	for(int i = 0; i != n; ++i)
+	{
+		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
+			throw CudaException(CUDA_ERROR_INVALID_VALUE);
+		}
+	}
+}
+
 
 template<class CONFIG>
 void Device<CONFIG>::Reset()

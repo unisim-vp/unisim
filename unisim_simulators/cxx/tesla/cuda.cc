@@ -31,6 +31,7 @@
  *
  * Authors: 
  *     David Parello (david.parello@univ-perp.fr)
+ *     Sylvain Collange (sylvain.collange@univ-perp.fr)
  *
  */
 
@@ -238,8 +239,15 @@ CUresult CUDAAPI cuMemGetInfo(unsigned int *free, unsigned int *total)
 
 CUresult CUDAAPI cuMemAlloc( CUdeviceptr *dptr, unsigned int bytesize)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try
+	{
+		MyConfig::address_t addr = driver.MAlloc(bytesize);
+		*dptr = addr;
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 CUresult CUDAAPI cuMemAllocPitch( CUdeviceptr *dptr, 
@@ -257,8 +265,14 @@ CUresult CUDAAPI cuMemAllocPitch( CUdeviceptr *dptr,
 
 CUresult CUDAAPI cuMemFree(CUdeviceptr dptr)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try
+	{
+		driver.Free(dptr);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 CUresult CUDAAPI cuMemGetAddressRange( CUdeviceptr *pbase, unsigned int *psize, CUdeviceptr dptr )
@@ -267,17 +281,24 @@ CUresult CUDAAPI cuMemGetAddressRange( CUdeviceptr *pbase, unsigned int *psize, 
   abort();
 }
 
-
 CUresult CUDAAPI cuMemAllocHost(void **pp, unsigned int bytesize)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try
+	{
+		*pp = new uint8_t[bytesize];
+		return CUDA_SUCCESS;
+	}
+	catch(std::bad_alloc & ba)
+	{
+		return CUDA_ERROR_OUT_OF_MEMORY;
+	}
 }
 
 CUresult CUDAAPI cuMemFreeHost(void *p)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	uint8_t * ptr = static_cast<uint8_t*>(p);
+	delete [] ptr;
+	return CUDA_SUCCESS;
 }
 
 
@@ -294,14 +315,26 @@ CUresult CUDAAPI cuMemFreeHost(void *p)
 // system <-> device memory
 CUresult  CUDAAPI cuMemcpyHtoD (CUdeviceptr dstDevice, const void *srcHost, unsigned int ByteCount )
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try
+	{
+		driver.CopyHtoD(dstDevice, srcHost, ByteCount);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 CUresult  CUDAAPI cuMemcpyDtoH (void *dstHost, CUdeviceptr srcDevice, unsigned int ByteCount )
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try
+	{
+		driver.CopyDtoH(dstHost, srcDevice, ByteCount);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
@@ -464,8 +497,14 @@ CUresult  CUDAAPI cuMemsetD16( CUdeviceptr dstDevice, unsigned short us, unsigne
 
 CUresult  CUDAAPI cuMemsetD32( CUdeviceptr dstDevice, unsigned int ui, unsigned int N )
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try
+	{
+		driver.Memset(dstDevice, ui, N);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 

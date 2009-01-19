@@ -142,7 +142,6 @@ CUresult Driver<CONFIG>::cuModuleGetFunction(Kernel<CONFIG> **hfunc,
 {
 
 }
-#endif
 
 //    Memory management
 template<class CONFIG>
@@ -150,11 +149,20 @@ CUresult Driver<CONFIG>::cuMemGetInfo(unsigned int *free, unsigned int *total)
 {
 
 }
+#endif
 
 template<class CONFIG>
-CUresult Driver<CONFIG>::cuMemAlloc( CUdeviceptr *dptr, unsigned int bytesize)
+typename CONFIG::address_t Driver<CONFIG>::MAlloc(size_t size)
 {
+	int dev = current_context->GetDevice();
+	return device[dev].MAlloc(size);
+}
 
+template<class CONFIG>
+void Driver<CONFIG>::Free(typename CONFIG::address_t addr)
+{
+	int dev = current_context->GetDevice();
+	return device[dev].Free(addr);
 }
 
 template<class CONFIG>
@@ -170,5 +178,48 @@ void Driver<CONFIG>::Launch(Kernel<CONFIG> & kernel)
 	int dev = current_context->GetDevice();
 	device[dev].Run(kernel);	// Synchronous call
 }
+
+template<class CONFIG>
+void Driver<CONFIG>::CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size)
+{
+	int dev = current_context->GetDevice();
+	device[dev].CopyHtoD(dest, src, size);
+}
+
+template<class CONFIG>
+void Driver<CONFIG>::CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size)
+{
+	int dev = current_context->GetDevice();
+	device[dev].CopyDtoH(dest, src, size);
+}
+
+template<class CONFIG>
+void Driver<CONFIG>::CopyDtoD(void * dest, typename CONFIG::address_t src, size_t size)
+{
+	int dev = current_context->GetDevice();
+	device[dev].CopyDtoD(dest, src, size);
+}
+
+template<class CONFIG>
+void Driver<CONFIG>::Memset(typename CONFIG::address_t dest, uint32_t val, size_t n)
+{
+	int dev = current_context->GetDevice();
+	device[dev].Memset(dest, val, n);
+}
+
+template<class CONFIG>
+void Driver<CONFIG>::Memset(typename CONFIG::address_t dest, uint16_t val, size_t n)
+{
+	int dev = current_context->GetDevice();
+	device[dev].Memset(dest, val, n);
+}
+
+template<class CONFIG>
+void Driver<CONFIG>::Memset(typename CONFIG::address_t dest, uint8_t val, size_t n)
+{
+	int dev = current_context->GetDevice();
+	device[dev].Memset(dest, val, n);
+}
+
 
 #endif

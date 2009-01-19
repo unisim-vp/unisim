@@ -49,40 +49,48 @@ template<class CONFIG>
 struct Driver
 {
 public:
-  //  const usigned int MAX_CONTEXT=1;
-  static const unsigned int MAXDEVICE=1;
-  
-  Driver();
+	//  const usigned int MAX_CONTEXT=1;
+	static const unsigned int MAXDEVICE=1;
 
-  //    Initialization
-  CUresult  cuInit(unsigned int&Flags);
+	Driver();
 
-  //    Device management
-  CUresult  cuDeviceGet(CUdevice *device, int ordinal);
-  
-  CUresult  cuDeviceGetCount(int *count);
+	//    Initialization
+	CUresult  cuInit(unsigned int&Flags);
 
-  //    Context management
-  CUresult  cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev );
-  CUresult  cuCtxDestroy( CUcontext ctx );
+	//    Device management
+	CUresult  cuDeviceGet(CUdevice *device, int ordinal);
 
-  //    Module management
-  CUresult ModuleLoad(Module<CONFIG> * & module, const char *fname);
-  CUresult ModuleUnload(Module<CONFIG> * hmod);
+	CUresult  cuDeviceGetCount(int *count);
 
-//  CUresult cuModuleGetFunction(Kernel<CONFIG> **hfunc, Module<CONFIG> * hmod, const char *name);
+	//    Context management
+	CUresult  cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevice dev );
+	CUresult  cuCtxDestroy( CUcontext ctx );
 
-  //    Memory management
-  CUresult  cuMemGetInfo(unsigned int *free, unsigned int *total);
-  CUresult  cuMemAlloc( CUdeviceptr *dptr, unsigned int bytesize);
-  
-  void FunctionDump(Kernel<CONFIG> const & kernel);
-  void Launch(Kernel<CONFIG> & kernel);
+	//    Module management
+	CUresult ModuleLoad(Module<CONFIG> * & module, const char *fname);
+	CUresult ModuleUnload(Module<CONFIG> * hmod);
+
+	//  CUresult cuModuleGetFunction(Kernel<CONFIG> **hfunc, Module<CONFIG> * hmod, const char *name);
+
+	//    Memory management
+	typename CONFIG::address_t MAlloc(size_t size);
+	void Free(typename CONFIG::address_t addr);
+ 
+	void FunctionDump(Kernel<CONFIG> const & kernel);
+	void Launch(Kernel<CONFIG> & kernel);
+	
+	void CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size);
+	void CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size);
+	void CopyDtoD(void * dest, typename CONFIG::address_t src, size_t size);
+	
+	void Memset(typename CONFIG::address_t dest, uint32_t val, size_t n);
+	void Memset(typename CONFIG::address_t dest, uint16_t val, size_t n);
+	void Memset(typename CONFIG::address_t dest, uint8_t val, size_t n);
 
 private:
-  //CUcontext context_list; // TODO: have to be a list of context.
-  CUcontext current_context; // TODO: to be a per thread current context.
-  Device<CONFIG> device[MAXDEVICE];	// TODO: one config per device
+	//CUcontext context_list; // TODO: have to be a list of context.
+	CUcontext current_context; // TODO: to be a per thread current context.
+	Device<CONFIG> device[MAXDEVICE];	// TODO: one config per device
 
 };
 

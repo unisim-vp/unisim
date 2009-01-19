@@ -41,6 +41,25 @@
 #include "module.hh"
 #include <iosfwd>
 
+
+// Trivial allocator, no deallocation at all
+// for the moment
+// TODO: implement cuMemGetAddressRange
+template<class CONFIG>
+struct Allocator
+{
+	Allocator(typename CONFIG::address_t base, size_t max_size);
+	
+	typename CONFIG::address_t Alloc(size_t size);
+	void Free(typename CONFIG::address_t addr);
+
+private:
+	typename CONFIG::address_t base;
+	typename CONFIG::address_t limit;
+	size_t max_size;
+
+};
+
 template<class CONFIG>
 struct Device: CUdevice_st, Object
 {
@@ -48,6 +67,17 @@ struct Device: CUdevice_st, Object
 
 	void DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os);
 	void Run(Kernel<CONFIG> const & kernel);
+	
+	typename CONFIG::address_t MAlloc(size_t size);
+	void Free(typename CONFIG::address_t addr);
+
+	void CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size);
+	void CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size);
+	void CopyDtoD(void * dest, typename CONFIG::address_t src, size_t size);
+
+	void Memset(typename CONFIG::address_t dest, uint32_t val, size_t n);
+	void Memset(typename CONFIG::address_t dest, uint16_t val, size_t n);
+	void Memset(typename CONFIG::address_t dest, uint8_t val, size_t n);
 
 private:
 	void Load(Kernel<CONFIG> const & kernel);
@@ -57,6 +87,7 @@ private:
 
 	CPU<CONFIG> cpu;
 	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;
+	Allocator<CONFIG> global_allocator;
 };
 
 
