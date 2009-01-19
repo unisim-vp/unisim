@@ -101,7 +101,9 @@ struct VectorRegister
 	void Write16(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask, int hi);
 	
 	void WriteLane(uint32_t val, int lane);
-	uint32_t ReadLane(int lane);
+	uint32_t ReadLane(int lane) const;
+	void WriteFloat(float val, int lane);
+	float ReadFloat(int lane) const;
 	
 	uint32_t operator[] (int lane) const;
 	uint32_t & operator[] (int lane);

@@ -69,9 +69,10 @@ public:
 	VectorRegister<CONFIG> ReadSrc1(int offset = 0) const;
 	VectorRegister<CONFIG> ReadSrc2(int offset = 0) const;
 	VectorRegister<CONFIG> ReadSrc3(int offset = 0) const;
-	void WriteDest(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask = 0xffffffff, int offset = 0) const;
+	void WriteDest(VectorRegister<CONFIG> const & value, int offset = 0) const;
 	void SetPredFP32(VectorRegister<CONFIG> const & value) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const;
+	void SetPredI32(VectorRegister<CONFIG> const & value) const;
 
 	bitset<CONFIG::WARP_SIZE> Mask() const;
 	

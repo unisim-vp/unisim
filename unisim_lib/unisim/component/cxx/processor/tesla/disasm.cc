@@ -149,6 +149,7 @@ void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, uint32_t data_32, ostr
 
 void DisasmDataType(uint32_t dt, ostream & buffer)
 {
+	buffer << DataTypeString(DataType(dt));
 }
 
 std::string DataTypeString(DataType d)

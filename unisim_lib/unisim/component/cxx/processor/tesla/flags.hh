@@ -97,7 +97,7 @@ struct VectorFlags
 {
 	
 	void Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask);
-	void Reset();
+	VectorFlags<CONFIG> Reset();
 	
 	void SetZero(int z, int lane);
 	int GetZero(int lane);
@@ -123,6 +123,8 @@ bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> vf);
 template<class CONFIG>
 VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output);
 
+template<class CONFIG>
+VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags);
 
 } // end of namespace tesla
 } // end of namespace processor

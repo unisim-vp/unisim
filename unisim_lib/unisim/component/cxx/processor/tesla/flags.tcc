@@ -40,6 +40,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+#include <cmath>
 
 namespace unisim {
 namespace component {
@@ -52,24 +53,80 @@ using namespace std;
 template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> flags)
 {
+	if(cond == CD_TR) {
+		return bitset<CONFIG::WARP_SIZE>().set();	// fast path
+	}
+	
+	// TODO: Lookup in a big truth table
 	throw "Not implemented!";
 }
 
 template <class CONFIG>
-VectorFlags<CONFIG> ComputePred(VectorRegister<CONFIG> const & output)
+VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output)
 {
-	throw "Not implemented!";
+	// As tested on G80 and G86:
+	//  normal -> 0
+	//  zero   -> 1
+	//  -inf   -> 2
+	//  +inf   -> 0	(sic!)
+	//  NaN    -> 3
+	VectorFlags<CONFIG> flags;
+	flags.Reset();
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float f = output.ReadFloat(i);
+		switch(fpclassify(f))
+		{
+		case FP_NORMAL:
+			break;
+		case FP_ZERO:
+			flags.v[i] = 1;
+			break;
+		case FP_INFINITE:
+			if(f < 0) {
+				flags.v[i] = 2;
+			}
+			break;
+		case FP_NAN:
+			flags.v[i] = 3;
+			break;
+		case FP_SUBNORMAL:
+			flags.v[i] = 1;
+			cerr << "Warning: unexpected FP32 subnormal!\n";
+			break;
+		}
+	}
+	return flags;
+}
+
+template<class CONFIG>
+VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags)
+{
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		flags.SetZero((output[i] == 0), i);
+		flags.SetSign((output[i] < 0), i);
+	}
+	return flags;
 }
 
 template <class CONFIG>
 void VectorFlags<CONFIG>::Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask)
 {
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		if(mask[i])
+		{
+			v[i] = f.v[i];
+		}
+	}
 }
 
 template <class CONFIG>
-void VectorFlags<CONFIG>::Reset()
+VectorFlags<CONFIG> VectorFlags<CONFIG>::Reset()
 {
 	std::fill(v, v + CONFIG::WARP_SIZE, 0);
+	return *this;
 }
 
 template <class CONFIG>

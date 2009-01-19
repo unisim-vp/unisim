@@ -48,7 +48,21 @@ template <{class} {CONFIG}>
 constructor action initialize() {
 }
 
-action {void} write({CPU<CONFIG> *} {cpu}, {VectorRegister<CONFIG> const &} {value}, {bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}) {
+action {void} write({CPU<CONFIG> *} {cpu}, {VectorRegister<CONFIG> const &} {value}, \
+	{bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}) \
+{
+	throw IllegalInstructionException<CONFIG>();
+}
+
+action {void} writePred({CPU<CONFIG> *} {cpu}, \
+	{VectorFlags<CONFIG>} {flags}, \
+	{bitset<CONFIG::WARP_SIZE>} {mask}) \
+{
+	throw IllegalInstructionException<CONFIG>();
+}
+
+action {bitset<CONFIG::WARP_SIZE>} predMask({CPU<CONFIG> *} {cpu}) \
+{
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -56,13 +70,91 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 	os << "???";
 }
 
+action {void} disasmPred({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {ostream&} {os}) {
+	os << "???";
+}
+
+
 // TODO: check whether GPR or output reg
 
 // TODO: also manage predication
 
 // little-endian
-op alu_full( \
-	/*subop*/?[3]:?[1]:?[26]:/*marker*/?[2]: \
+op alu_full_normal( \
+	/*subop*/?[3]:?[1]:?[14]: \
+	pred_reg[2]:pred_cond[5]:set_pred[1]:set_pred_reg[2]:output_reg[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
+	dest[7]:/*flow*/0[1]:/*long*/1[1] \
+)
+
+op alu_full_end( \
+	/*subop*/?[3]:?[1]:?[14]: \
+	pred_reg[2]:pred_cond[5]:set_pred[1]:set_pred_reg[2]:output_reg[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
+	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
+	dest[7]:/*flow*/0[1]:/*long*/1[1] \
+)
+
+op alu_full_join( \
+	/*subop*/?[3]:?[1]:?[14]: \
+	pred_reg[2]:pred_cond[5]:set_pred[1]:set_pred_reg[2]:output_reg[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
+	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
+	dest[7]:/*flow*/0[1]:/*long*/1[1] \
+)
+
+
+group alu_full(alu_full_normal, alu_full_end, alu_full_join)
+
+alu_full.predMask = {
+	return IsPredSet(pred_cond, cpu->GetFlags(pred_reg));
+}
+
+alu_full.write = {
+	if(output_reg)
+	{
+		throw "Output reg not implemented!";
+	}
+	else
+	{
+		cpu->GetGPR(dest + offset).Write(value, mask);
+	}
+}
+
+alu_full.writePred = {
+	if(set_pred) {
+		cpu->GetFlags(set_pred_reg).Write(flags, mask);
+	}
+}
+
+alu_full.disasm = {
+	// Disasm set pred
+	if(set_pred)
+	{
+		os << "p" << set_pred_reg;
+		os << "|";
+	}
+	
+	if(output_reg)
+	{
+		// o127 (long) or o63 (short instr) = sink??
+		os << "o" << dest;
+	}
+	else
+	{
+		os << "r" << dest;
+	}
+}
+
+alu_full.disasmPred = {
+	if(pred_cond != CD_TR)
+	{
+		os << "@p" << pred_reg;
+		os << "." << CondCodeString(Cond(pred_cond)) << " ";
+	}
+}
+
+
+op alu_imm( \
+	/*subop*/?[3]:?[1]:?[26]:/*marker*/3[2]: \
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
 	dest[7]:/*flow*/0[1]:/*long*/1[1] \
 )
@@ -70,14 +162,23 @@ op alu_full( \
 op alu_half(/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:/*src1*/?[7]: \
 	dest[7]:/*flow*/0[1]:/*long*/0[1])
 
-group dest1(alu_full, alu_half)
+group alu_halfimm(alu_imm, alu_half)
 
-dest1.write = {
+alu_halfimm.predMask = {
+	return bitset<CONFIG::WARP_SIZE>().set();
+}
+
+alu_halfimm.write = {
 	cpu->GetGPR(dest + offset).Write(value, mask);
 }
 
-dest1.disasm = {
+alu_halfimm.writePred = {
+}
+
+alu_halfimm.disasm = {
 	os << "r" << dest;
 }
 
+alu_halfimm.disasmPred = {
+}
 

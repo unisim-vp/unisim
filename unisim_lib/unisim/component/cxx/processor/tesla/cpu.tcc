@@ -219,11 +219,20 @@ void CPU<CONFIG>::Reset(int threadsperblock, int numblocks)
 
 	for(int b = 0; b != numblocks; ++b)
 	{
-		for(int w = b * warpsperblock; w != (b+1) * warpsperblock; ++w)
+		for(int w = 0; w != warpsperblock; ++w)
 		{
 			// TODO: compute mask for last (partial) warp
-//			GetWarp(w).Reset(w, b, gprs_per_warp, sm_size, 0xffffffff, sm_base);
-			warps[w].Reset(w, b, gprs_per_warp, sm_size, 0xffffffff, sm_base);
+			bitset<WARP_SIZE> mask;
+			int nt = threadsperblock - w;
+			if(nt < WARP_SIZE) {
+				// Partial warp
+				mask = (1 << nt) - 1;
+			}
+			else {
+				mask.set();
+			}
+			int wid = b * warpsperblock + w;
+			GetWarp(wid).Reset(wid, b, gprs_per_warp, sm_size, mask, sm_base);
 		}
 	}
 	instruction_counter = 0;
@@ -541,6 +550,20 @@ VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(int reg) const	// for current warp
 }
 
 template <class CONFIG>
+VectorFlags<CONFIG> & CPU<CONFIG>::GetFlags(int reg)	// for current warp
+{
+	assert(reg >= 0 && reg < MAX_PRED_REGS);
+	return CurrentWarp().pred_flags[reg];
+}
+
+template <class CONFIG>
+VectorFlags<CONFIG> CPU<CONFIG>::GetFlags(int reg) const
+{
+	assert(reg >= 0 && reg < MAX_PRED_REGS);
+	return CurrentWarp().pred_flags[reg];
+}
+
+template <class CONFIG>
 VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int wid, int reg)
 {
 	// If special reg return dummy??
@@ -679,12 +702,16 @@ void CPU<CONFIG>::Read32(address_t addr, uint32_t & data,
 	if(!ReadMemory(addr * factor + offset, &data, 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}
+	cerr << "Read32 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
+		<< data << std::dec << endl;
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Write32(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
+	cerr << "Write32: " << std::hex << data
+		<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
 	if(!WriteMemory(addr * factor + offset, &data, 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}
@@ -698,11 +725,14 @@ void CPU<CONFIG>::Write32(address_t addr, uint32_t data,
 
 #if 0
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg)
+VectorRegister<CONFIG> CPU<CONFIG>::GlobalEffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg)
 {
 	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
 	// [seg][$a#addr_reg + addr_imm]
-	throw "Not implemented!";
+	if(addr_reg != 0) {
+		throw "Not implemented!";
+	}
+
 }
 #endif
 

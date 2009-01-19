@@ -136,6 +136,7 @@ iadd_full_imm.execute = {
 }
 
 
+
 op umad24_lo_full( \
 	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:/*const_seg*/?[2]:/*src1_sh*/?[1]:/*src3*/?[7]: \
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
@@ -143,5 +144,84 @@ op umad24_lo_full( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
+
+// No need to check for "immediate" marker,
+// shift amount fits in 7 bits.
+op shl_full( \
+	/*subop*/6[3]:/*?*/0[1]:?[1]:u32[1]:0[2]:?[3]:/*imm*/0[1]:?[18]:/*marker*/?[2]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:/*src2*/?[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+op shl_full_imm2( \
+	/*subop*/6[3]:/*?*/0[1]:?[1]:u32[1]:0[2]:?[3]:/*imm*/1[1]:?[18]:/*marker*/?[2]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:src2[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+
+// TODO: end, join
+
+//group shl_full(shl_full_normal)
+
+//group shl_full_imm2(shl_full_imm2_normal)
+
+shl_full.disasm = {
+	buffer << "shl";
+	insn->DisasmControl(buffer);
+
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	insn->DisasmSrc2(buffer);
+}
+
+shl_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	
+	assert(u32);
+
+	// dest = a << c
+	reg_t a = insn->ReadSrc1();
+	reg_t c = insn->ReadSrc2();
+	
+	reg_t output = cpu->ShiftLeft(a, c);
+	
+	insn->WriteDest(output);
+	insn->SetPredI32(output);
+}
+
+shl_full_imm2.disasm = {
+	buffer << "shl";
+	insn->DisasmControl(buffer);
+
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	buffer << src2;
+}
+
+shl_full_imm2.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	
+	assert(u32);
+
+	// dest = a << c
+	reg_t a = insn->ReadSrc1();
+	reg_t c = reg_t(src2);
+	
+	reg_t output = cpu->ShiftLeft(a, c);
+	
+	insn->WriteDest(output);
+	insn->SetPredI32(output);
+}
 
 

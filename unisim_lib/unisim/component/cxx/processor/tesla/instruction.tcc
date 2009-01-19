@@ -132,33 +132,50 @@ VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc3(int offset) const
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, bitset<CONFIG::WARP_SIZE> mask, int offset) const
+void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, int offset) const
 {
 	if(dest == 0) {
 		dest = dest_decoder.Decode(addr, iw);
 	}
-	// apply current warp mask
-	mask &= cpu->CurrentWarp().mask;
-	dest->write(cpu, value, mask, offset);
+	dest->write(cpu, value, Mask(), offset);
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::SetPredFP32(VectorRegister<CONFIG> const & value) const
 {
-	// TODO
+	VectorFlags<CONFIG> flags = ComputePredFP32(value);
+	if(dest == 0) {
+		dest = dest_decoder.Decode(addr, iw);
+	}
+	dest->writePred(cpu, flags, Mask());
 }
 
 template <class CONFIG>
 void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const
 {
-	// TODO
+	VectorFlags<CONFIG> myflags = ComputePredI32(value, flags);
+	if(dest == 0) {
+		dest = dest_decoder.Decode(addr, iw);
+	}
+	dest->writePred(cpu, myflags, Mask());
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value) const
+{
+	SetPredI32(value, VectorFlags<CONFIG>().Reset());
 }
 
 template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> Instruction<CONFIG>::Mask() const
 {
-	// TODO
-	return 0xffffffff;
+	if(dest == 0) {
+		dest = dest_decoder.Decode(addr, iw);
+	}
+	// mask = current warp mask & predicate mask
+	bitset<CONFIG::WARP_SIZE> mask = cpu->CurrentWarp().mask;
+	mask &= dest->predMask(cpu);
+	return mask;
 }
 
 template <class CONFIG>

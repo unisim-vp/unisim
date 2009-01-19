@@ -97,8 +97,10 @@ public:
 	static uint32_t const SHARED_SIZE = 16 * 1024;
 	
 	static address_t const LOCAL_START = 0x30000000;
-	
 	static address_t const GLOBAL_START = 0x40000000;
+
+	static size_t const LOCAL_SIZE = GLOBAL_START - LOCAL_START;
+	static size_t const GLOBAL_SIZE = 0 - GLOBAL_START;
 
 };
 

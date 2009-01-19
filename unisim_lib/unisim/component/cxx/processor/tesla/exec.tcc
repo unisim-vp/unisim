@@ -135,6 +135,25 @@ VectorRegister<CONFIG> CPU<CONFIG>::I32Add(VectorRegister<CONFIG> const & a,
 	return rv;
 }
 
+template<class CONFIG>
+VectorRegister<CONFIG> CPU<CONFIG>::ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	VecReg rv;
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		uint32_t sb = b[i];
+		if(sb > 32) {
+			sb = 32;
+		}
+		if(sb < 0) {
+			sb = 0;
+		}
+		rv[i] = a[i] << sb;
+	}
+	return rv;
+}
+
+
 template <class CONFIG>
 void CPU<CONFIG>::I32Negate(VectorRegister<CONFIG> & a)
 {
@@ -148,9 +167,29 @@ VectorRegister<CONFIG> CPU<CONFIG>::Convert(VectorRegister<CONFIG> & a, uint32_t
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask)
+void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
-	throw "Not implemented!";
+	if(dt != DT_U32 && dt != DT_S32) {
+		throw "Not implemented!";
+	}
+	int width = 4;
+
+	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
+	// [seg][$a#addr_reg + dest]
+	if(addr_reg != 0) {
+		throw "Not implemented!";
+	}
+	VecReg offset;
+	if(addr_imm) {
+		offset = VecReg(dest);	// TODO: CHECK immediate in words???
+	}
+	else {
+		offset = GetGPR(dest);
+	}
+	
+	// TODO: segment??
+	address_t base = 0;
+	Scatter32(offset, output, mask, 1, base);
 }
 
 #endif

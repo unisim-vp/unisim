@@ -333,8 +333,10 @@ public:
 		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);	// No carry in
 	void I32Negate(VectorRegister<CONFIG> & a);
 	VectorRegister<CONFIG> Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type);
+	
+	VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
 
-	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask);
+	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
 	void Join();
 	void End();
 
@@ -352,6 +354,9 @@ public:
 	
 	VecReg & GetGPR(int wid, int reg);
 	VecReg GetGPR(int wid, int reg) const;
+	
+	VecFlags & GetFlags(int reg);	// for current warp
+	VecFlags GetFlags(int reg) const;
 
 	void StepWarp(uint32_t warpid);
 	
@@ -369,7 +374,7 @@ public:
 	void Read32(address_t addr, uint32_t & data, uint32_t factor = 1, address_t offset = 0);
 	void Write32(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
 
-//	VecReg EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg);
+//	VecReg GlobalEffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg);
 	
 	Warp & CurrentWarp();
 	Warp const & CurrentWarp() const;

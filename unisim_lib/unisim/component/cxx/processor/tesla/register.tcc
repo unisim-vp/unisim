@@ -88,10 +88,26 @@ void VectorRegister<CONFIG>::WriteLane(uint32_t val, int lane)
 }
 
 template <class CONFIG>
-uint32_t VectorRegister<CONFIG>::ReadLane(int lane)
+uint32_t VectorRegister<CONFIG>::ReadLane(int lane) const
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	return v[lane];
+}
+
+template <class CONFIG>
+void VectorRegister<CONFIG>::WriteFloat(float val, int lane)
+{
+	union { float f; uint32_t u; } caster;
+	caster.f = val;
+	WriteLane(caster.u, lane);
+}
+
+template <class CONFIG>
+float VectorRegister<CONFIG>::ReadFloat(int lane) const
+{
+	union { float f; uint32_t u; } caster;
+	caster.u = ReadLane(lane);
+	return caster.f;
 }
 
 template <class CONFIG>
