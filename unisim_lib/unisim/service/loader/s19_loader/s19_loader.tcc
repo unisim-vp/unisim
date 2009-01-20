@@ -177,9 +177,6 @@ physical_address_t S19_Loader<MEMORY_ADDR>::GetFlashAddress(page_t page, address
 	static const address_t FLASH_CPU_ADDRESS_BITS = 0x3FFF;
 	static const uint8_t PPAGE_LOW	= 0xE0;		// low ppage (flash page) register value
 
-	if (page < PPAGE_LOW) {
-		// throw "non-valid accesses to memory"
-	}
 
 	if (((page == 0xFD) && (logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) ||
 		((page == 0xFF) && (logicalAddress > 0xBFFF)) ||
@@ -191,7 +188,6 @@ physical_address_t S19_Loader<MEMORY_ADDR>::GetFlashAddress(page_t page, address
 	{
 		return logicalAddress;
 	}
-
 }
 
 template <class MEMORY_ADDR>
@@ -329,22 +325,24 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 				ShowError(ERR_BADCHKSUM,linenum,srec);
 				return false;
 			}
-		
-			if (isFirstDataRec) {
-				isFirstDataRec = false;
-				entry_point = s19_addr;
-			}
-			
-			if (s19_addr == CPU12_RESET_ADDR) { // 0xFFFE is the Reset Vector Address for the CPU12
-				entry_point = (uint16_t)(sdata[0] << 8) + sdata[1];
-			}
-			
-			top_addr = s19_addr;
 			
 			GetPagedAddress(s19_addr, page, cpu_address);
 			flash_address = GetFlashAddress(page, cpu_address);
 			
-			return memWrite(flash_address, sdata,sdataIndex);
+			if (addrSize == 2) // S1 record
+			{
+				if ((cpu_address + nDataByte-2) == CPU12_RESET_ADDR) {
+					entry_point = (uint16_t)(sdata[nDataByte-2] << 8) + sdata[nDataByte-1];
+				}
+			}
+			else if (addrSize == 3) // S2 record
+			{
+				if ((flash_address + nDataByte-2) == GetFlashAddress(0xFF,CPU12_RESET_ADDR)) {
+					entry_point = (uint16_t)(sdata[nDataByte-2] << 8) + sdata[nDataByte-1];
+				}
+			}
+			
+			return memWrite(flash_address, sdata,nDataByte);
 		}
 	}
 	
