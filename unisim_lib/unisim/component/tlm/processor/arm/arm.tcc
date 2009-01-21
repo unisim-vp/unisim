@@ -68,6 +68,7 @@ ARM(const sc_module_name& name, Object *parent) :
 	ipc(1.0),
 	cpu_cycle_time_int(0),
 	bus_cycle_time_int(0),
+	logger(*this),
 	param_nice_time("nice-time", this, nice_time_int),
 	param_ipc("ipc", this, ipc),
 	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time_int),

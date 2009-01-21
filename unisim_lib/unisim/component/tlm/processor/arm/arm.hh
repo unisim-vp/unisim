@@ -40,6 +40,7 @@
 #include "unisim/component/cxx/processor/arm/cache_interface.hh"
 #include "unisim/component/tlm/message/simple_fsb.hh"
 #include "unisim/kernel/tlm/tlm.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
 #include <inttypes.h>
 #include <string>
@@ -115,6 +116,8 @@ public:
 	virtual void PrZeroBlock(address_t addr);
 
 private:
+	unisim::kernel::logger::Logger logger;
+
 	void Synchronize();
 	bool DebugEnable();
 	
