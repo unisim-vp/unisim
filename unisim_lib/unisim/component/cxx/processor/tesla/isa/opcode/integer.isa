@@ -136,6 +136,102 @@ iadd_full_imm.execute = {
 }
 
 
+op umad16_lo_full_normal( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/0[2]: \
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+op umad16_lo_full_end( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/1[2]: \
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+op umad16_lo_full_join( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/2[2]: \
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+group umad16_lo_full(umad16_lo_full_normal, umad16_lo_full_end, umad16_lo_full_join)
+
+umad16_lo_full.disasm = {
+	buffer << "umad16x16+32";
+	insn->DisasmControl(buffer);
+//	buffer << ".u32";
+		
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	//DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer, RT_U16);	// 16-bit
+
+	buffer << ", ";
+	insn->DisasmSrc2(buffer, RT_U16);	// 16-bit
+		
+	buffer << ", ";
+	DisasmSign(src3_neg, buffer);
+	insn->DisasmSrc3(buffer);
+}
+
+umad16_lo_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a * b + c
+	reg_t a = insn->ReadSrc1(0, RT_U16);
+	reg_t b = insn->ReadSrc2(0, RT_U16);
+	reg_t c = insn->ReadSrc3();
+	
+	VectorFlags<CONFIG> flags;
+	
+	reg_t output = cpu->UMad24(a, b, c, flags, src1_neg, src3_neg);
+	
+	insn->WriteDest(output);
+	insn->SetPredI32(output, flags);
+}
+
+op umac16_lo_imm( \
+	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
+	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*imm_lo*/?[6]:\
+	/*src1*/?[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+umac16_lo_imm.disasm = {
+	// r <- a * b + r
+	buffer << "umac16x16+32";
+//	buffer << ".u32";
+		
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	//DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer, RT_U16);	// 16-bit
+
+	buffer << ", ";
+	DisasmSign(src3_neg, buffer);
+	insn->DisasmSrc2(buffer, RT_U16);	// 16-bit
+}
+
+umac16_lo_imm.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a * b + c
+	reg_t a = insn->ReadSrc1(0, RT_U16);
+	reg_t b = insn->ReadSrc2(0, RT_U16);
+	reg_t c = cpu->GetGPR(dest);
+	
+	VectorFlags<CONFIG> flags;
+	
+	reg_t output = cpu->UMad24(a, b, c, flags, /*src1_neg*/0, src3_neg);
+	
+	insn->WriteDest(output);
+	insn->SetPredI32(output, flags);
+}
+
+
 
 op umad24_lo_full( \
 	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:/*const_seg*/?[2]:/*src1_sh*/?[1]:/*src3*/?[7]: \
@@ -143,6 +239,8 @@ op umad24_lo_full( \
 	0x6[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
+
+
 
 
 // No need to check for "immediate" marker,

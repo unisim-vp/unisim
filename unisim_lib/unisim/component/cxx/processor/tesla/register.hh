@@ -89,6 +89,13 @@ enum SMType
 	SM_U32 = 3
 };
 
+// Does not match any ISA field
+enum RegType
+{
+	RT_U16,
+	RT_U32
+};
+
 template <class CONFIG>
 struct VectorRegister
 {
@@ -104,6 +111,9 @@ struct VectorRegister
 	uint32_t ReadLane(int lane) const;
 	void WriteFloat(float val, int lane);
 	float ReadFloat(int lane) const;
+	void WriteSimfloat(typename CONFIG::float_t val, int lane);
+	typename CONFIG::float_t ReadSimfloat(int lane) const;
+	VectorRegister<CONFIG> Split(int hilo) const;
 	
 	uint32_t operator[] (int lane) const;
 	uint32_t & operator[] (int lane);
@@ -113,6 +123,22 @@ struct VectorRegister
 
 template <class CONFIG>
 std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r);
+
+template <class CONFIG>
+struct VectorAddress
+{
+	static int const WARP_SIZE = CONFIG::WARP_SIZE;
+	typedef typename CONFIG::address_t address_t;
+	
+	VectorAddress();
+	VectorAddress(address_t addr);
+	
+	void Reset();
+	address_t operator[] (int lane) const;
+	address_t & operator[] (int lane);
+	
+	address_t v[WARP_SIZE];
+};
 
 } // end of namespace tesla
 } // end of namespace processor

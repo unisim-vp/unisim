@@ -40,6 +40,7 @@
 #include <unisim/component/cxx/processor/tesla/instruction.tcc>
 #include <unisim/component/cxx/processor/tesla/flags.tcc>
 #include <unisim/component/cxx/processor/tesla/exec.tcc>
+#include <unisim/component/cxx/processor/tesla/simfloat.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
@@ -564,6 +565,20 @@ VectorFlags<CONFIG> CPU<CONFIG>::GetFlags(int reg) const
 }
 
 template <class CONFIG>
+VectorAddress<CONFIG> & CPU<CONFIG>::GetAddr(int reg)
+{
+	assert(reg >= 0 && reg < MAX_ADDR_REGS);
+	return CurrentWarp().addr[reg];
+}
+
+template <class CONFIG>
+VectorAddress<CONFIG> CPU<CONFIG>::GetAddr(int reg) const
+{
+	assert(reg >= 0 && reg < MAX_ADDR_REGS);
+	return CurrentWarp().addr[reg];
+}
+
+template <class CONFIG>
 VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int wid, int reg)
 {
 	// If special reg return dummy??
@@ -769,8 +784,8 @@ void CPU<CONFIG>::Warp::Reset(int wid, int bid, int gpr_num, int sm_size,
 		pred_flags[i].Reset();
 	}
 	
-	for(int j = 0; j != MAX_ADDR_REGS; ++j) {
-		std::fill(addr[j], addr[j] + WARP_SIZE, 0);
+	for(int i = 0; i != MAX_ADDR_REGS; ++i) {
+		addr[i].Reset();
 	}
 	
 	state = Active;

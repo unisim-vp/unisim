@@ -41,24 +41,127 @@
 using namespace unisim::util::arithmetic;
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::FSMad(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     VectorRegister<CONFIG> const & c, uint32_t rounding_mode)
+VectorRegister<CONFIG> CPU<CONFIG>::FSMad(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorRegister<CONFIG> const & c,
+	uint32_t neg_a, uint32_t neg_b, uint32_t neg_c,
+	uint32_t rounding_mode, uint32_t sat)
 {
-	throw "Not implemented!";
+	VecReg rv;
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		float_t sa = a.ReadSimfloat(i);
+		float_t sb = b.ReadSimfloat(i);
+		float_t sc = c.ReadSimfloat(i);
+		if(neg_a) {
+			sa.opposite();
+		}
+		if(neg_b) {
+			sb.opposite();
+		}
+		if(neg_c) {
+			sc.opposite();
+		}
+		
+		FPFlags flags;
+		if(rounding_mode == RM_RN) {
+			flags.setNearestRound();
+		}
+		else if(rounding_mode == RM_RZ) {
+			flags.setZeroRound();
+		}
+		else {
+			assert(false);
+		}
+		
+		// G80-GT200: first mul always rounded to zero
+		sa.multAssign(sb, FPFlags().setZeroRound());
+		float_t r = sa.plusAssign(sc, flags);
+		
+		if(sat) {
+			r.saturate();
+		}
+		rv[i] = r.queryValue();
+	}
+	return rv;
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::FSMul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t rounding_mode)
+VectorRegister<CONFIG> CPU<CONFIG>::FSMul(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	uint32_t neg_a, uint32_t neg_b,
+	uint32_t rounding_mode, uint32_t sat)
 {
-	throw "Not implemented!";
+	VecReg rv;
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		float_t sa = a.ReadSimfloat(i);
+		float_t sb = b.ReadSimfloat(i);
+		if(neg_a) {
+			sa.opposite();
+		}
+		if(neg_b) {
+			sb.opposite();
+		}
+		
+		FPFlags flags;
+		if(rounding_mode == RM_RN) {
+			flags.setNearestRound();
+		}
+		else if(rounding_mode == RM_RZ) {
+			flags.setZeroRound();
+		}
+		else {
+			assert(false);
+		}
+		
+		float_t r = sa.multAssign(sb, flags);
+		
+		if(sat) {
+			r.saturate();
+		}
+		rv[i] = r.queryValue();
+	}
+	return rv;
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-                     uint32_t rounding_mode)
+VectorRegister<CONFIG> CPU<CONFIG>::FSAdd(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	uint32_t neg_a, uint32_t neg_b,
+	uint32_t rounding_mode, uint32_t sat)
 {
-	throw "Not implemented!";
+	VecReg rv;
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		float_t sa = a.ReadSimfloat(i);
+		float_t sb = b.ReadSimfloat(i);
+		if(neg_a) {
+			sa.opposite();
+		}
+		if(neg_b) {
+			sb.opposite();
+		}
+		
+		FPFlags flags;
+		if(rounding_mode == RM_RN) {
+			flags.setNearestRound();
+		}
+		else if(rounding_mode == RM_RZ) {
+			flags.setZeroRound();
+		}
+		else {
+			assert(false);
+		}
+		
+		float_t r = sa.plusAssign(sb, flags);
+		
+		if(sat) {
+			r.saturate();
+		}
+		rv[i] = r.queryValue();
+	}
+	return rv;
 }
 
 template <class CONFIG>
@@ -136,6 +239,38 @@ VectorRegister<CONFIG> CPU<CONFIG>::I32Add(VectorRegister<CONFIG> const & a,
 }
 
 template<class CONFIG>
+VectorRegister<CONFIG> CPU<CONFIG>::UMad24(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorRegister<CONFIG> const & c,
+	VectorFlags<CONFIG> & flags,
+	uint32_t src1_neg,
+	uint32_t src3_neg)
+{
+	VecReg rv;
+	// unsigned, ignore neg...?
+	assert(!src1_neg);
+	assert(!src3_neg);
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		uint32_t sa = (a[i] & 0x00ffffff);	// 24x24 mul
+		uint32_t sb = (b[i] & 0x00ffffff);
+		uint32_t sc = c[i];
+		uint32_t r;
+
+		uint8_t carry_out, overflow;
+//		cerr << "mac " << sa << " * " << sb << " + " << sc << std::endl;
+		r = sa * sb;
+		Add32(r, carry_out, overflow, r, sc, 0);
+		// TODO: CHECK which op updates flags...
+		flags.SetOvf(int(overflow), i);
+		flags.SetCarry(int(carry_out), i);
+
+		rv[i] = r;
+	}
+	return rv;
+}
+
+template<class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
 {
 	VecReg rv;
@@ -163,7 +298,13 @@ void CPU<CONFIG>::I32Negate(VectorRegister<CONFIG> & a)
 template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type)
 {
-	throw "Not implemented!";
+	// U/I32 -> XX
+	if(cvt_type != CT_NONE)
+	{
+		assert(false);
+		throw "Not implemented!";
+	}
+	return a;
 }
 
 template <class CONFIG>
@@ -181,6 +322,7 @@ void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, 
 	}
 	VecReg offset;
 	if(addr_imm) {
+		cerr << "Warning: unchecked immediate field!\n";
 		offset = VecReg(dest);	// TODO: CHECK immediate in words???
 	}
 	else {

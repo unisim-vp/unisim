@@ -45,6 +45,8 @@ op fsmad_full( \
 	0xe[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
 
+// Sat?
+
 //op fsmac_full(0xe[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/1[1]:src2_cm[1]:src2[7]:src1[7]:\
 //	dest[7]:0[1]:1[1]:\
 //	0[3]:?[1]:imm_hi[26]:/*marker*/3[2])
@@ -94,21 +96,16 @@ fsmac_full.disasm = {
 }
 */
 
-// TODO: marker, pred
 
 fsmad_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 //	cpu.ExecMarker(marker);
 	// dest = a * b + c
 	reg_t a = insn->ReadSrc1();
-	if(src1_neg)
-		a.NegateFP32();
 	reg_t b = insn->ReadSrc2();
 	reg_t c = insn->ReadSrc3();
-	if(src3_neg)
-		c.NegateFP32();
 	
-	reg_t output = cpu->FSMad(a, b, c, rounding_mode);
+	reg_t output = cpu->FSMad(a, b, c, src1_neg, 0, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);
@@ -135,12 +132,23 @@ fsmac_full.execute = {
 // full: dest = src1 + src3
 // half: dest = src1 + src2
 
-op fsadd_full( \
-	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+op fsadd_full_normal( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:?[20]:/*marker*/0[2]: \
 	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
 
+op fsadd_full_end( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:?[20]:/*marker*/1[2]: \
+	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
+
+op fsadd_full_join( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:?[20]:/*marker*/2[2]: \
+	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
+
+
+group fsadd_full(fsadd_full_normal, fsadd_full_end, fsadd_full_join)
 
 fsadd_full.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
@@ -167,19 +175,59 @@ fsadd_full.execute = {
 
 	// dest = a + c
 	reg_t a = insn->ReadSrc1();
-	if(src1_neg)
-		a.NegateFP32();
 	reg_t c = insn->ReadSrc3();
-	if(src3_neg)
-		c.NegateFP32();
 	
-	reg_t output = cpu->FSAdd(a, c, rounding_mode);
+	reg_t output = cpu->FSAdd(a, c, src1_neg, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);
 }
 
-// TODO: half
+op fsadd_imm( \
+	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
+	0xb[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:src2_neg[1]:/*src2*/?[6]:src1_neg[1]:/*src1*/?[6]: \
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1] \
+)
+
+op fsadd_half( \
+	/*hi*/?[32]: \
+	0xb[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:src2_neg[1]:/*src2*/?[6]:src1_neg[1]:/*src1*/?[6]: \
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1] \
+)
+
+group fsadd_halfimm(fsadd_imm, fsadd_half)
+
+fsadd_halfimm.disasm = {
+//	cpu.DisasmPred(pred_cond, pred_reg, buffer);
+
+	buffer << "add";
+	buffer << ".f32";
+	
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	DisasmSign(src2_neg, buffer);
+	insn->DisasmSrc2(buffer);
+}
+
+fsadd_halfimm.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a + b
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
+	
+	reg_t output = cpu->FSAdd(a, b, src1_neg, src2_neg, RM_RN);
+	
+	insn->WriteDest(output);
+	insn->SetPredFP32(output);
+}
+
 
 // Single-precision FP Mul
 // dest = src1 * src2
@@ -218,13 +266,11 @@ fsmul_full.execute = {
 
 	// dest = a * b
 	reg_t a = insn->ReadSrc1();
-	if(src1_neg)
-		a.NegateFP32();
 	reg_t b = insn->ReadSrc2();
-	if(src3_neg)	// Applies to Src2 here
-		b.NegateFP32();	// (not very useful to have -a * -b btw)
-	
-	reg_t output = cpu->FSMul(a, b, rounding_mode);
+
+	// src3_neg applies to Src2 here
+	// (not very useful to have -a * -b btw)
+	reg_t output = cpu->FSMul(a, b, src1_neg, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);

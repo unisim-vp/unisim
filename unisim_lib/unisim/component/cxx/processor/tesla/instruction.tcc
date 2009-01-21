@@ -105,30 +105,30 @@ void Instruction<CONFIG>::Disasm(std::ostream & os) const
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc1(int offset) const
+VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc1(int offset, RegType rt) const
 {
 	if(src1 == 0) {
 		src1 = src1_decoder.Decode(addr, iw);
 	}
-	return src1->read(cpu, offset);
+	return src1->read(cpu, offset, rt);
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc2(int offset) const
+VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc2(int offset, RegType rt) const
 {
 	if(src2 == 0) {
 		src2 = src2_decoder.Decode(addr, iw);
 	}
-	return src2->read(cpu, offset);
+	return src2->read(cpu, offset, rt);
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc3(int offset) const
+VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc3(int offset, RegType rt) const
 {
 	if(src3 == 0) {
 		src3 = src3_decoder.Decode(addr, iw);
 	}
-	return src3->read(cpu, offset);
+	return src3->read(cpu, offset, rt);
 }
 
 template <class CONFIG>
@@ -179,30 +179,30 @@ bitset<CONFIG::WARP_SIZE> Instruction<CONFIG>::Mask() const
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::DisasmSrc1(std::ostream & os) const
+void Instruction<CONFIG>::DisasmSrc1(std::ostream & os, RegType rt) const
 {
 	if(src1 == 0) {
 		src1 = src1_decoder.Decode(addr, iw);
 	}
-	src1->disasm(cpu, this, os);
+	src1->disasm(cpu, this, rt, os);
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::DisasmSrc2(std::ostream & os) const
+void Instruction<CONFIG>::DisasmSrc2(std::ostream & os, RegType rt) const
 {
 	if(src2 == 0) {
 		src2 = src2_decoder.Decode(addr, iw);
 	}
-	src2->disasm(cpu, this, os);
+	src2->disasm(cpu, this, rt, os);
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::DisasmSrc3(std::ostream & os) const
+void Instruction<CONFIG>::DisasmSrc3(std::ostream & os, RegType rt) const
 {
 	if(src3 == 0) {
 		src3 = src3_decoder.Decode(addr, iw);
 	}
-	src3->disasm(cpu, this, os);
+	src3->disasm(cpu, this, rt, os);
 }
 
 
@@ -227,12 +227,18 @@ void Instruction<CONFIG>::DisasmControl(std::ostream & os) const
 template <class CONFIG>
 bool Instruction<CONFIG>::IsLong() const
 {
+	if(control == 0) {
+		control = control_decoder.Decode(addr, iw);
+	}
 	return control->is_long;
 }
 
 template <class CONFIG>
 bool Instruction<CONFIG>::IsEnd() const
 {
+	if(control == 0) {
+		control = control_decoder.Decode(addr, iw);
+	}
 	return control->is_end;
 }
 

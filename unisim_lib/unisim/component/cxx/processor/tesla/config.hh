@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CONFIG_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_TESLA_CONFIG_HH__
 
+#include <unisim/component/cxx/processor/tesla/simfloat.hh>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -50,7 +52,9 @@ public:
 	typedef uint32_t physical_address_t;    // 32-bit physical address
 	typedef uint32_t reg_t;                 // register type
 	typedef uint64_t insn_t;				// instruction word
-	static const uint32_t MEMORY_PAGE_SIZE = 4096; // DO NOT MODIFY THIS VALUE !!!!!
+//	static const uint32_t MEMORY_PAGE_SIZE = 4096; // DO NOT MODIFY THIS VALUE !!!!!
+	
+	typedef FloatDAZFTZ<SoftFloatIEEE> float_t;
 
 	/* A Memory Page Table Entry */
 	class PTE

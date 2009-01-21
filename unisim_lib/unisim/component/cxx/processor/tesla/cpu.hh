@@ -127,10 +127,13 @@ public:
 	typedef typename CONFIG::virtual_address_t virtual_address_t;
 	typedef typename CONFIG::physical_address_t physical_address_t;
 	typedef typename CONFIG::insn_t insn_t;
+	typedef typename CONFIG::float_t float_t;
 	typedef VectorRegister<CONFIG> VecReg;
 	typedef VectorFlags<CONFIG> VecFlags;
+	typedef VectorAddress<CONFIG> VecAddr;
+	typedef typename float_t::StatusAndControlFlags FPFlags;
 	
-	static const uint32_t MEMORY_PAGE_SIZE = CONFIG::MEMORY_PAGE_SIZE;
+//	static const uint32_t MEMORY_PAGE_SIZE = CONFIG::MEMORY_PAGE_SIZE;
 	
 	static uint32_t const WARP_SIZE = CONFIG::WARP_SIZE;
 	static uint32_t const MAX_WARPS_PER_BLOCK = CONFIG::MAX_WARPS_PER_BLOCK;
@@ -284,7 +287,7 @@ public:
 		virtual_address_t npc;
 
 		VectorFlags<CONFIG> pred_flags[MAX_PRED_REGS];
-		virtual_address_t addr[MAX_ADDR_REGS][WARP_SIZE];
+		VectorAddress<CONFIG> addr[MAX_ADDR_REGS];
 		
 		uint32_t gpr_window_base;
 		uint32_t gpr_window_size;
@@ -311,13 +314,31 @@ public:
 
 
 	// Implementation in exec.tcc
-	VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 VectorRegister<CONFIG> const & c, uint32_t rounding_mode);
+	VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a,
+		VectorRegister<CONFIG> const & b,
+		VectorRegister<CONFIG> const & c,
+		uint32_t nega, uint32_t negb, uint32_t negc,
+		uint32_t rounding_mode, uint32_t sat = 0);
 	VectorRegister<CONFIG> FSMul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 uint32_t rounding_mode);
+		uint32_t nega, uint32_t negb,
+		uint32_t rounding_mode, uint32_t sat = 0);
 	VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 uint32_t rounding_mode);
+		uint32_t nega, uint32_t negb,
+		uint32_t rounding_mode, uint32_t sat = 0);
 	void FSNegate(VectorRegister<CONFIG> & a);
+
+	VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a,
+		VectorRegister<CONFIG> const & b,
+		VectorFlags<CONFIG> & flags,
+		uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);	// No carry in
+
+	VectorRegister<CONFIG> UMad24(VectorRegister<CONFIG> const & a,
+		VectorRegister<CONFIG> const & b,
+		VectorRegister<CONFIG> const & c,
+		VectorFlags<CONFIG> & flags,
+		uint32_t src1_neg = 0,
+		uint32_t src3_neg = 0);
+
 	VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 		                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
 		                 uint32_t rb = 0, uint32_t rc = 0);
@@ -328,9 +349,7 @@ public:
 		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
 	VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
-	VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 VectorFlags<CONFIG> & flags,
-		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);	// No carry in
+
 	void I32Negate(VectorRegister<CONFIG> & a);
 	VectorRegister<CONFIG> Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type);
 	
@@ -357,6 +376,9 @@ public:
 	
 	VecFlags & GetFlags(int reg);	// for current warp
 	VecFlags GetFlags(int reg) const;
+	
+	VecAddr & GetAddr(int reg);
+	VecAddr GetAddr(int reg) const;
 
 	void StepWarp(uint32_t warpid);
 	

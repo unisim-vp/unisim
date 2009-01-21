@@ -97,6 +97,7 @@ uint32_t VectorRegister<CONFIG>::ReadLane(int lane) const
 template <class CONFIG>
 void VectorRegister<CONFIG>::WriteFloat(float val, int lane)
 {
+	// TODO: endianness
 	union { float f; uint32_t u; } caster;
 	caster.f = val;
 	WriteLane(caster.u, lane);
@@ -105,9 +106,40 @@ void VectorRegister<CONFIG>::WriteFloat(float val, int lane)
 template <class CONFIG>
 float VectorRegister<CONFIG>::ReadFloat(int lane) const
 {
+	// TODO: endianness
 	union { float f; uint32_t u; } caster;
 	caster.u = ReadLane(lane);
 	return caster.f;
+}
+
+template <class CONFIG>
+void VectorRegister<CONFIG>::WriteSimfloat(typename CONFIG::float_t val, int lane)
+{
+	WriteLane(val.queryValue(), lane);
+}
+
+template <class CONFIG>
+typename CONFIG::float_t VectorRegister<CONFIG>::ReadSimfloat(int lane) const
+{
+	return typename CONFIG::float_t(ReadLane(lane));
+}
+
+template <class CONFIG>
+VectorRegister<CONFIG> VectorRegister<CONFIG>::Split(int hilo) const
+{
+	VectorRegister<CONFIG> vr;
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		if(hilo) {
+			// high part
+			vr[i] = (v[i] << 16);
+		}
+		else {
+			// low part
+			vr[i] = (v[i] & 0x0000ffff);
+		}
+	}
+	return vr;
 }
 
 template <class CONFIG>
@@ -137,6 +169,38 @@ std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
 	os << std::dec;
 	os << ")";
 }
+
+template <class CONFIG>
+VectorAddress<CONFIG>::VectorAddress()
+{
+}
+
+template <class CONFIG>
+VectorAddress<CONFIG>::VectorAddress(VectorAddress<CONFIG>::address_t addr)
+{
+	std::fill(v, v + WARP_SIZE, addr);
+}
+
+template <class CONFIG>
+void VectorAddress<CONFIG>::Reset()
+{
+	std::fill(v, v + WARP_SIZE, 0);
+}
+
+template <class CONFIG>
+typename VectorAddress<CONFIG>::address_t VectorAddress<CONFIG>::operator[] (int lane) const
+{
+	assert(lane >= 0 && lane < WARP_SIZE);
+	return v[lane];
+}
+
+template <class CONFIG>
+typename VectorAddress<CONFIG>::address_t & VectorAddress<CONFIG>::operator[] (int lane)
+{
+	assert(lane >= 0 && lane < WARP_SIZE);
+	return v[lane];
+}
+
 
 } // end of namespace tesla
 } // end of namespace processor

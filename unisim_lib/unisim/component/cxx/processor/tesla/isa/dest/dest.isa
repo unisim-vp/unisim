@@ -75,10 +75,6 @@ action {void} disasmPred({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {i
 }
 
 
-// TODO: check whether GPR or output reg
-
-// TODO: also manage predication
-
 // little-endian
 op alu_full_normal( \
 	/*subop*/?[3]:?[1]:?[14]: \

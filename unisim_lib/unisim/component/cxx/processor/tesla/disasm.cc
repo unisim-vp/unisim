@@ -223,7 +223,7 @@ void DisasmGlobal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t ad
 		if(addr_imm)
 		{
 			// g_segment[dest]
-			buffer << "imm??";	// TODO
+			buffer << "0x" << std::setfill('0') << std::setw(4) << std::hex << dest << dec;
 		}
 		else
 		{
