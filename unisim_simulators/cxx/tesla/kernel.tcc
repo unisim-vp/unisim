@@ -90,6 +90,11 @@ Kernel<CONFIG>::Kernel(std::istream & is) :
 						cerr << "  bincode {...}\n";
 						ParseBinCode(bincode, is);
 					}
+					else if(cmd == "const")
+					{
+						cerr << "  const {...}\n";
+						const_segs.push_back(ConstSeg<CONFIG>(is));
+					}
 					else
 					{
 						throw ParsingException("Unknown multi-line field : ", cmd);

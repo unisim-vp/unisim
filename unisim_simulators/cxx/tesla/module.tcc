@@ -105,14 +105,14 @@ ParsingException::ParsingException() :
 ParsingException::ParsingException(char const * str) :
 	str(str)
 {
-	std::cerr << str;
+	std::cerr << str << std::endl;
 	assert(false);
 }
 
 ParsingException::ParsingException(char const * str, std::string const & param) :
 	str(str), param(param)
 {
-	std::cerr << str << param;
+	std::cerr << str << param<< std::endl;
 	assert(false);
 }
 
