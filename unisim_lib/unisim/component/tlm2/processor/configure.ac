@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2007,
+#  Copyright (c) 2008,
 #  Commissariat a l'Energie Atomique (CEA)
 #  All rights reserved.
 #
@@ -45,6 +45,7 @@ AC_PROG_INSTALL
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-processor-arm, arm)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-processor-hcs12x, hcs12x)
 
 

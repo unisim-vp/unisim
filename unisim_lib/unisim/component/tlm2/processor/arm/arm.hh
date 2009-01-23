@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -46,7 +46,7 @@
 
 namespace unisim {
 namespace component {
-namespace tlm {
+namespace tlm2 {
 namespace processor {
 namespace arm {
 
@@ -65,11 +65,11 @@ template <class CONFIG, bool BLOCKING = false>
 class ARM :
 	public sc_module,
 	public tlm::tlm_bw_transport_if<>,
-	public CPU<DEBUG_ENABLE, CONFIG>,
+	public CPU<CONFIG>,
 	public CacheInterface<typename CONFIG::address_t> {
 public:
-	typedef tlm::tlm_payload_type  transaction_type;
-	typedef tlm::tlm_phase_type    phase_type;
+	typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
+	typedef tlm::tlm_base_protocol_types::tlm_phase_type    phase_type;
 	typedef tlm::tlm_sync_enum     sync_enum_type;
 	
 	typedef typename CONFIG::address_t address_t;
@@ -79,7 +79,7 @@ public:
 	 * Port to the bus and its virtual methods to handle incomming calls.                          START *
 	 *****************************************************************************************************/
 	// Master port to the bus port
-	tlm::tlm_initiator_socket<CONFIG::FSB_BURST_SIZE> master_port;
+	tlm::tlm_initiator_socket<CONFIG::FSB_BURST_SIZE> master_socket;
 	
 	// virtual method implementation to handle backward path of transactions sent through the master_port
 	virtual sync_enum_type nb_transport_bw(transaction_type &trans, phase_type &phase, sc_core::sc_time &time);
@@ -133,10 +133,9 @@ private:
 	/** Event used to signalize the end of a read transaction.
 	 * Method PrRead waits for this event once the read transaction has been sent, and the 
 	 *   nb_transport_bw notifies on it when the read transaction is finished. */
-	sc_event end_read_event;
+	sc_event end_read_rsp_event;
 	
 	unisim::kernel::tlm2::PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
-	void Synchronize();
 
 	/** A temporary variable that can be used anywhere in the code to compute a time.
 	 * A temporary variable that can be used anywhere in the code to compute a time.
@@ -148,6 +147,7 @@ private:
 	sc_time bus_cycle_time;
 	sc_time cpu_time;
 	sc_time bus_time;
+	sc_time quantum_time;
 	sc_time last_cpu_time;
 	sc_time nice_time;
 	sc_time next_nice_time;
@@ -179,12 +179,12 @@ private:
 	inline bool VerboseBlocking();
 
 
-	// bool verbose_tlm_bus_synchronize;
-	// Parameter<bool> param_verbose_tlm_bus_synchronize;
-	// bool verbose_tlm_run_thread;
-	// Parameter<bool> param_verbose_tlm_run_thread;
-	// bool verbose_tlm_commands;
-	// Parameter<bool> param_verbose_tlm_commands;
+	bool verbose_tlm_bus_synchronize;
+	Parameter<bool> param_verbose_tlm_bus_synchronize;
+	bool verbose_tlm_run_thread;
+	Parameter<bool> param_verbose_tlm_run_thread;
+	bool verbose_tlm_commands;
+	Parameter<bool> param_verbose_tlm_commands;
 	
 	/*************************************************************************
 	 * Logger and verbose parameters/methods                             END *

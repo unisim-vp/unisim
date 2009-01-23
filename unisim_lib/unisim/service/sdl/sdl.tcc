@@ -589,7 +589,7 @@ bool SDL<ADDRESS>::SetVideoMode(ADDRESS fb_addr, uint32_t width, uint32_t height
 	cerr << Object::GetName() << ": Initializing video mode " << width << " pixels x " << height << " pixels x " << depth << " bits per pixel..." << endl;
 
 	unsigned int sdl_depth = (depth + 7) & ~7;
-	screen = SDL_SetVideoMode(width, height, sdl_depth, SDL_HWSURFACE);
+	screen = SDL_SetVideoMode(width, height, sdl_depth, SDL_SWSURFACE);
 	if(!screen)
 	{
 		cerr << Object::GetName() << ": WARNING! Can't set video mode using a hardware surface: " << SDL_GetError() << endl;

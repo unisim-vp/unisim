@@ -65,6 +65,9 @@ case $host in
 	*linux*)   # linux host
 		UNISIM_CHECK_PTHREAD
 		;;
+	*darwin*)  # darwin host
+		UNISIM_CHECK_PTHREAD
+		;;
 esac
 
 # files to generate
