@@ -59,9 +59,11 @@ ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>:
 	base_addr(0),
 	top_addr(0),
 	force_use_virtual_address(false),
+	dump_headers(false),
 	param_filename("filename", this, filename),
 	param_base_addr("base-addr", this, base_addr),
-	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address)
+	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address),
+	param_dump_headers("dump-headers", this, dump_headers)
 {
 	Object::SetupDependsOn(memory_import);
 	Object::SetupDependsOn(symbol_table_build_import);
@@ -101,13 +103,14 @@ bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 	//memory->Reset();
 	if(symbol_table_build_import) symbol_table_build_import->Reset();
 
-	Elf_Ehdr *hdr = NULL;
-	Elf_Phdr *phdr = NULL;
-	Elf_Shdr *shdr = NULL, *shdr_table = NULL;
-	char *sh_string_table = NULL;
+	Elf_Ehdr *hdr = 0;
+	Elf_Phdr *phdr = 0;
+	const Elf_Shdr *shdr = 0;
+	Elf_Shdr *shdr_table = 0;
+	char *sh_string_table = 0;
 	T section_size, section_type, section_flags;
 	void *section;
-	char *section_name;
+	const char *section_name;
 	T section_vaddr;
 	int i, j;
 //	Elf_Addr data_base = 0;
@@ -135,7 +138,6 @@ bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 	}
 		
 	cerr << Object::GetName() << ": Reading ELF header" << endl;
-	//DumpElfHeader(hdr, cerr);
 			
 	phdr = ReadProgramHeaders(hdr, is);
 	if(!phdr)
@@ -159,6 +161,19 @@ bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 		if(!sh_string_table)
 		{
 			cerr << Object::GetName() << ": WARNING! Can't load section header string table" << endl;
+		}
+	}
+
+	if(dump_headers)
+	{
+		DumpElfHeader(hdr, cerr);
+		for(i = 0; i < hdr->e_phnum; i++)
+		{
+			DumpProgramHeader(&phdr[i], cerr);
+		}
+		for(i = 0, shdr = shdr_table; i < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),i++)
+		{
+			DumpSectionHeader(shdr, sh_string_table, cerr);
 		}
 	}
 
@@ -190,7 +205,6 @@ bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 
 		for(i = 0; i < hdr->e_phnum; i++)
 		{
-			//DumpProgramHeader(&phdr[i], cerr);
 			if(phdr[i].p_type == PT_LOAD) /* Loadable Program Segment */
 			{
 				T segment_addr = 0;
@@ -243,8 +257,6 @@ bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 				{
 					for(j = 0, shdr = shdr_table; j < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),j++)
 					{
-						//DumpSectionHeader(shdr, sh_string_table, cerr);
-
 						section_type = GetSectionType(shdr);
 						section_size = GetSectionSize(shdr);
 						section_vaddr = GetSectionAddr(shdr);
@@ -409,7 +421,7 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustProgramHeader(Elf_Ehdr *hdr, Elf_Phdr *phdr)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr)
 {
 	switch(hdr->e_ident[EI_DATA])
 	{
@@ -427,7 +439,7 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSectionHeader(Elf_Ehdr *hdr, Elf_Shdr *shdr)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr)
 {
 	switch(hdr->e_ident[EI_DATA])
 	{
@@ -446,7 +458,7 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSymbolEntry(Elf_Ehdr *hdr, Elf_Sym *sym)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSymbolEntry(const Elf_Ehdr *hdr, Elf_Sym *sym)
 {
 	switch(hdr->e_ident[EI_DATA])
 	{
@@ -464,7 +476,7 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSymbolTable(Elf_Ehdr *hdr, Elf_Shdr *shdr, Elf_Sym *sym)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::AdjustSymbolTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, Elf_Sym *sym)
 {
 	int nsymbols = shdr->sh_size / sizeof(Elf_Sym);
 	int i;
@@ -507,7 +519,7 @@ Elf_Ehdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr,
 
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadProgramHeaders(Elf_Ehdr *hdr, istream& is)
+Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadProgramHeaders(const Elf_Ehdr *hdr, istream& is)
 {
 	if(hdr->e_phnum > 0)
 	{
@@ -537,7 +549,7 @@ Elf_Phdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr,
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadSectionHeaders(Elf_Ehdr *hdr, istream& is)
+Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ReadSectionHeaders(const Elf_Ehdr *hdr, istream& is)
 {
 	int i;
 	if(hdr->e_shnum)
@@ -565,15 +577,15 @@ Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr,
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetNextSectionHeader(Elf_Ehdr *hdr, Elf_Shdr *shdr)
+const Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr)
 {
-	return (Elf_Shdr *)((char *) shdr + hdr->e_shentsize);
+	return (const Elf_Shdr *)((const char *) shdr + hdr->e_shentsize);
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-char *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSectionHeaderStringTable(Elf_Ehdr *hdr, Elf_Shdr *shdr_table, istream& is)
+char *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, istream& is)
 {
-	Elf_Shdr *shdr = (Elf_Shdr *)((char *) shdr_table + hdr->e_shentsize * hdr->e_shstrndx);
+	const Elf_Shdr *shdr = (const Elf_Shdr *)((const char *) shdr_table + hdr->e_shentsize * hdr->e_shstrndx);
 	char *string_table;
 
 	if(is.seekg(shdr->sh_offset, ios::beg).fail())
@@ -591,7 +603,7 @@ char *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpElfHeader(Elf_Ehdr *hdr, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpElfHeader(const Elf_Ehdr *hdr, ostream& os)
 {
 	os << "--- Elf Header ---";
 	os << endl << "File Class : ";
@@ -740,7 +752,7 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpProgramHeader(Elf_Phdr *phdr, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpProgramHeader(const Elf_Phdr *phdr, ostream& os)
 {
 	os << "--- Program Header ---";
 	os << endl << "Segment type : ";
@@ -781,10 +793,10 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSectionHeader(Elf_Shdr *shdr, char *string_table, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, ostream& os)
 {
 	os << "--- Section header ---";
-	os << endl << "Section name : \"" << (string_table + shdr->sh_name) << "\"";
+	os << endl << "Section name : \"" << (string_table ? (string_table + shdr->sh_name) : "unknown")<< "\"";
 	os << endl << "Section type : ";
 
 	switch(shdr->sh_type)
@@ -845,7 +857,7 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbol(Elf_Sym *sym, char *string_table, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbol(const Elf_Sym *sym, const char *string_table, ostream& os)
 {
 	os << "---- Symbol ---";
 	os << endl << "Name : \"" << (string_table + sym->st_name) << "\"";
@@ -885,7 +897,7 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbolTable(Elf_Shdr *shdr, char *content, char *string_table, ostream& os)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, ostream& os)
 {
 	int nsymbols = shdr->sh_size / sizeof(Elf_Sym);
 	int i;
@@ -898,25 +910,25 @@ void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionSize(Elf_Shdr *shdr)
+T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionSize(const Elf_Shdr *shdr)
 {
 	return shdr->sh_size;
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionAddr(Elf_Shdr *shdr)
+T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionAddr(const Elf_Shdr *shdr)
 {
 	return shdr->sh_addr;
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionType(Elf_Shdr *shdr)
+T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionType(const Elf_Shdr *shdr)
 {
 	return shdr->sh_type;
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSection(Elf_Ehdr *hdr, Elf_Shdr *shdr, void *buffer, istream& is)
+bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, istream& is)
 {
 	if(is.seekg(shdr->sh_offset, ios::beg).fail()) return false;
 	if(is.read((char *) buffer, shdr->sh_size).fail()) return false;
@@ -928,7 +940,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSegment(Elf_Ehdr *hdr, Elf_Phdr *phdr, void *buffer, istream& is)
+bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, istream& is)
 {
 	if(is.seekg(phdr->p_offset, ios::beg).fail()) return false;
 	if(is.read((char *) buffer, phdr->p_filesz).fail()) return false;
@@ -936,19 +948,19 @@ bool ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionFlags(Elf_Shdr *shdr)
+T ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionFlags(const Elf_Shdr *shdr)
 {
 	return shdr->sh_flags;
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-char *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionName(Elf_Shdr *shdr, char *string_table)
+const char *ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionName(const Elf_Shdr *shdr, const char *string_table)
 {
-	return string_table + shdr->sh_name;
+	return string_table ? string_table + shdr->sh_name : "unknown";
 }
 
 template <class MEMORY_ADDR, class T, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BuildSymbolTable(Elf_Shdr *shdr, void *content, char *string_table)
+void ElfLoaderImpl<MEMORY_ADDR, T, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table)
 {
 	if(symbol_table_build_import)
 	{
