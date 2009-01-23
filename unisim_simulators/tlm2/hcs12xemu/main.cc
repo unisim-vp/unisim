@@ -120,7 +120,7 @@ using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 
-typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
 using unisim::component::tlm2::processor::hcs12x::INT_GEN;
 using unisim::component::tlm2::processor::hcs12x::XINT;

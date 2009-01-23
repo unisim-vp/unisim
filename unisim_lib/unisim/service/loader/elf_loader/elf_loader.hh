@@ -65,7 +65,7 @@ using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
-template <class MEMORY_ADDR, class T, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
 	public Client<Memory<MEMORY_ADDR> >,
 	public Service<Loader<MEMORY_ADDR> >,
@@ -89,13 +89,13 @@ public:
 
 private:
 	string filename;
-	T entry_point;
-	T top_addr;
-	T base_addr;
+	MEMORY_ADDR entry_point;
+	MEMORY_ADDR top_addr;
+	MEMORY_ADDR base_addr;
 	bool force_use_virtual_address;
 	bool dump_headers;
 	Parameter<string> param_filename;
-	Parameter<T> param_base_addr;
+	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
 	Parameter<bool> param_dump_headers;
 
@@ -118,18 +118,18 @@ private:
 	void DumpSectionHeader(const Elf_Shdr *shdr, const char *string_table, ostream& os);
 	void DumpSymbol(const Elf_Sym *sym, const char *string_table, ostream& os);
 	void DumpSymbolTable(const Elf_Shdr *shdr, const char *content, const char *string_table, ostream& os);
-	T GetSectionSize(const Elf_Shdr *shdr);
-	T GetSectionAddr(const Elf_Shdr *shdr);
-	T GetSectionType(const Elf_Shdr *shdr);
+	MEMORY_ADDR GetSectionSize(const Elf_Shdr *shdr);
+	MEMORY_ADDR GetSectionAddr(const Elf_Shdr *shdr);
+	MEMORY_ADDR GetSectionType(const Elf_Shdr *shdr);
 	bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, istream& is);
 	bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, istream& is);
-	T GetSectionFlags(const Elf_Shdr *shdr);
+	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
 	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
 	void BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table);
 };
 
-typedef ElfLoaderImpl<uint32_t, uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
-typedef ElfLoaderImpl<uint64_t, uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
+typedef ElfLoaderImpl<uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+typedef ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
 
 } // end of namespace elf_loader
 } // end of namespace loader

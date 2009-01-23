@@ -298,10 +298,10 @@
      showgrid="false"
      showguides="true"
      inkscape:guide-bbox="true"
-     inkscape:window-width="1599"
-     inkscape:window-height="1145"
-     inkscape:window-x="0"
-     inkscape:window-y="24" />
+     inkscape:window-width="1280"
+     inkscape:window-height="738"
+     inkscape:window-x="-4"
+     inkscape:window-y="-4" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -335,33 +335,29 @@
          id="tspan2387"
          x="151.42857"
          y="480.93362" /></text>
-    <g
-       id="g3184"
-       transform="translate(0,-10.621057)">
-      <rect
-         y="421.36011"
-         x="387.94019"
-         height="139.72475"
-         width="85.092415"
-         id="rect3170"
-         style="fill:#4242fc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.69584292;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:1;stroke-opacity:1" />
-      <text
-         id="text3172"
-         y="484.66144"
+    <rect
+       style="fill:#4242fc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.69584292;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:1;stroke-opacity:1"
+       id="rect3170"
+       width="85.092415"
+       height="139.72475"
+       x="387.94019"
+       y="410.73904" />
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+       x="429.87115"
+       y="474.04037"
+       id="text3172"><tspan
+         sodipodi:role="line"
+         id="tspan3174"
          x="429.87115"
-         style="font-size:12px;font-style:normal;font-weight:normal;text-align:center;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-         xml:space="preserve"><tspan
-           style="font-size:18px"
-           y="484.66144"
-           x="429.87115"
-           id="tspan3174"
-           sodipodi:role="line">Memory</tspan><tspan
-           style="font-size:18px"
-           id="tspan3179"
-           y="507.16144"
-           x="429.87115"
-           sodipodi:role="line">Bridge</tspan></text>
-    </g>
+         y="474.04037"
+         style="font-size:18px;fill:#ffffff">Memory</tspan><tspan
+         sodipodi:role="line"
+         x="429.87115"
+         y="496.54037"
+         id="tspan3179"
+         style="font-size:18px;fill:#ffffff">Bridge</tspan></text>
     <g
        id="g3221"
        transform="translate(-75.761441,-129.819)">
@@ -448,31 +444,24 @@
          style="opacity:1;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:1;stroke-opacity:1"
          sodipodi:type="star" />
     </g>
-    <g
-       id="g3377">
-      <g
-         transform="translate(-56,-29.308855)"
-         id="g3208">
-        <rect
-           style="fill:#4242fc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.58010572;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:1;stroke-opacity:1"
-           id="rect3199"
-           width="108.44165"
-           height="76.200867"
-           x="643.79456"
-           y="471.80984" />
-        <text
-           xml:space="preserve"
-           style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
-           x="678.20483"
-           y="516.47131"
-           id="text3201"><tspan
-             sodipodi:role="line"
-             id="tspan3203"
-             x="678.20483"
-             y="516.47131"
-             style="font-size:18px">RAM</tspan></text>
-      </g>
-    </g>
+    <rect
+       style="fill:#4242fc;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.58010572;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:1;stroke-opacity:1"
+       id="rect3199"
+       width="108.44165"
+       height="76.200867"
+       x="587.79456"
+       y="442.50098" />
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+       x="622.20483"
+       y="487.16245"
+       id="text3201"><tspan
+         sodipodi:role="line"
+         id="tspan3203"
+         x="622.20483"
+         y="487.16245"
+         style="font-size:18px;fill:#ffffff">RAM</tspan></text>
     <g
        id="g3251"
        transform="translate(38.449255,-129.819)">
@@ -525,7 +514,7 @@
        y="442.51282" />
     <text
        xml:space="preserve"
-       style="font-size:12px;font-style:normal;font-weight:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
+       style="font-size:12px;font-style:normal;font-weight:normal;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Bitstream Vera Sans"
        x="184.29047"
        y="487.16245"
        id="text3159"><tspan
@@ -533,7 +522,7 @@
          id="tspan3161"
          x="184.29047"
          y="487.16245"
-         style="font-size:18px">ARM7TDMI</tspan></text>
+         style="font-size:18px;fill:#ffffff">ARM7TDMI</tspan></text>
     <g
        id="g3259"
        transform="translate(-253.30719,-129.819)">
