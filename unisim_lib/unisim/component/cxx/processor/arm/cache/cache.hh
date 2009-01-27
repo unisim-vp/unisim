@@ -114,10 +114,10 @@ public:
 	
 #ifndef SOCLIB
 	
-	// Cache -> Memory Interface (debugg dervice)
+	// Cache -> Memory Interface (debug device)
 	virtual void Reset();
-	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
 	
 #endif // SOCLIB
 	

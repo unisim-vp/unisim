@@ -133,8 +133,8 @@ class CacheInterfaceWithMemoryService :
 template <class address_t>
 class CacheInterfaceWithMemoryService :
 	public CacheInterface<address_t>,
-	public Service<Memory<address_t> >,
-	public Client<Memory<address_t> > {
+	public Service<Memory<uint64_t> >,
+	public Client<Memory<uint64_t> > {
 		
 #endif // SOCLIB
 		
@@ -149,8 +149,8 @@ public:
 	CacheInterfaceWithMemoryService(const char *name,
 			Object *parent) :
 		Object(name, parent),
-		Service<Memory<address_t> >(name, parent),
-		Client<Memory<address_t> >(name, parent),
+		Service<Memory<uint64_t> >(name, parent),
+		Client<Memory<uint64_t> >(name, parent),
 		logger(*this),
 		memory_export("memory_export", this),
 		memory_import("memory_import", this) {}
@@ -171,8 +171,8 @@ public:
 	
 #ifndef SOCLIB
 	
-	ServiceExport<Memory<address_t> > memory_export;
-	ServiceImport<Memory<address_t> > memory_import;
+	ServiceExport<Memory<uint64_t> > memory_export;
+	ServiceImport<Memory<uint64_t> > memory_import;
 	unisim::kernel::logger::Logger logger;
 
 #endif // SOCLIB

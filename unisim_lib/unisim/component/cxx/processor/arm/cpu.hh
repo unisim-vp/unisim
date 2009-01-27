@@ -231,17 +231,17 @@ public:
 	
 #ifndef SOCLIB
 	
-	ServiceExport<Disassembly<address_t> > disasm_export;
+	ServiceExport<Disassembly<uint64_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
 	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
-	ServiceExport<Memory<address_t> > memory_export;
+	ServiceExport<Memory<uint64_t> > memory_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<DebugControl<address_t> > debug_control_import;
-	ServiceImport<MemoryAccessReporting<address_t> > memory_access_reporting_import;
-	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
-	ServiceImport<Memory<address_t> > memory_import;
+	ServiceImport<DebugControl<uint64_t> > debug_control_import;
+	ServiceImport<MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+	ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
+	ServiceImport<Memory<uint64_t> > memory_import;
 	ServiceImport<LinuxOS> linux_os_import;
 
 	// the kernel logger
@@ -1162,13 +1162,13 @@ private:
 
 	/** the cache level 1 if data and instruction caches are unified
 	 *  and data cache level 1 if not */
-	CacheInterfaceWithMemoryService<typename CONFIG::cache_l1_t::address_t>
+	CacheInterfaceWithMemoryService<address_t>
 			*cache_l1;
 	/** the instruction cache level 1 if instruction and data cache are not unified */
-	CacheInterfaceWithMemoryService<typename CONFIG::insn_cache_l1_t::address_t>
+	CacheInterfaceWithMemoryService<address_t>
 			*cache_il1;
 	/** the unified cache level 2 */
-	CacheInterfaceWithMemoryService<typename CONFIG::cache_l2_t::address_t>
+	CacheInterfaceWithMemoryService<address_t>
 			*cache_l2;
 
 	/** this method initialize the cache/mmu/cp15 memory system */

@@ -1324,7 +1324,7 @@ Reset() {
 template <class CONFIG>
 bool
 Cache<CONFIG> ::
-ReadMemory(address_t addr, void *data, uint32_t size) {
+ReadMemory(uint64_t addr, void *data, uint32_t size) {
 	address_t tag;
 	address_t set;
 	address_t pos;
@@ -1401,7 +1401,7 @@ ReadMemory(address_t addr, void *data, uint32_t size) {
 template <class CONFIG>
 bool 
 Cache<CONFIG> ::
-WriteMemory(address_t addr, const void *buffer, uint32_t size) {
+WriteMemory(uint64_t addr, const void *buffer, uint32_t size) {
 	address_t tag;
 	address_t set;
 	address_t pos;

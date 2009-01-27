@@ -128,8 +128,8 @@ CP15(const char *name,
 		Object *parent) :
 	Object(name, parent),
 	CPInterface<CONFIG::DEBUG_ENABLE>(name, _cp_id, _cpu, parent),
-	Client<Memory<typename CONFIG::address_t> >(name, parent),
-	Service<Memory<typename CONFIG::address_t> >(name, parent),
+	Client<Memory<uint64_t> >(name, parent),
+	Service<Memory<uint64_t> >(name, parent),
 	dtcm(_dtcm),
 	itcm(_itcm),
 	memory_interface(_memory_interface),
@@ -1058,7 +1058,7 @@ PrRead(address_t addr, uint8_t *buffer, uint32_t size) {
 template<class CONFIG>
 bool 
 CP15<CONFIG> ::
-ReadMemory(address_t addr, void *buffer, uint32_t size) {
+ReadMemory(uint64_t addr, void *buffer, uint32_t size) {
 	bool success = false;
 	
 	/* First check if the acces if for a TCM memory, if so check that
@@ -1178,7 +1178,7 @@ ReadMemory(address_t addr, void *buffer, uint32_t size) {
 template<class CONFIG>
 bool 
 CP15<CONFIG> ::
-WriteMemory(address_t addr, const void *buffer, uint32_t size) {
+WriteMemory(uint64_t addr, const void *buffer, uint32_t size) {
 	bool success = false;
 	
 	/* First check if the acces if for a TCM memory, if so check that

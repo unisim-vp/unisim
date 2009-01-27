@@ -700,9 +700,9 @@ CPU<CONFIG> ::
 GetObjectFriendlyName(typename CONFIG::address_t addr) {
 	stringstream sstr;
 	
-	const Symbol<typename CONFIG::address_t> *symbol = 
+	const Symbol<uint64_t> *symbol = 
 		symbol_table_lookup_import->FindSymbolByAddr(addr, 
-            Symbol<typename CONFIG::address_t>::SYM_OBJECT);
+            Symbol<uint64_t>::SYM_OBJECT);
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -717,9 +717,9 @@ CPU<CONFIG> ::
 GetFunctionFriendlyName(typename CONFIG::address_t addr) {
 	stringstream sstr;
 	
-	const Symbol<typename CONFIG::address_t> *symbol = 
+	const Symbol<uint64_t> *symbol = 
 		symbol_table_lookup_import->FindSymbolByAddr(addr, 
-            Symbol<typename CONFIG::address_t>::SYM_FUNC);
+            Symbol<uint64_t>::SYM_FUNC);
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -2817,8 +2817,8 @@ Read32toPCUpdateT(address_t address) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address & ~((address_t)0x3), 4);
 	
 #endif // SOCLIB
@@ -2897,8 +2897,8 @@ Read32toPC(address_t address) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address & ~((address_t)0x3), 4);
 	
 #endif // SOCLIB
@@ -2970,8 +2970,8 @@ Read32toGPR(address_t address, uint32_t reg) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address & ~((address_t)0x3), 4);
 	
 #endif // SOCLIB
@@ -3045,8 +3045,8 @@ Read32toGPRAligned(address_t address, uint32_t reg) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 4);
 
 #endif // SOCLIB
@@ -3098,8 +3098,8 @@ Read16toGPRAligned(address_t address, uint32_t reg) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 2);
 	
 #endif // SOCLIB
@@ -3155,8 +3155,8 @@ ReadS16toGPRAligned(address_t address, uint32_t reg) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 2);
 	
 #endif // SOCLIB
@@ -3211,8 +3211,8 @@ ReadS8toGPR(address_t address, uint32_t reg) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 				 	address, 1);
 	
 #endif // SOCLIB
@@ -3264,8 +3264,8 @@ Read8toGPR(address_t address, uint32_t reg) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 				 	address, 1);
 
 #endif // SOCLIB
@@ -3318,8 +3318,8 @@ Write32(address_t address, uint32_t value) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_WRITE,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_WRITE,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 4);
 	
 #endif // SOCLIB
@@ -3368,8 +3368,8 @@ Write16(address_t address, uint16_t value) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_WRITE,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_WRITE,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 2);
 	
 #endif // SOCLIB
@@ -3417,8 +3417,8 @@ Write8(address_t address, uint8_t value) {
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import) 
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<address_t>::MAT_WRITE,
-					MemoryAccessReporting<address_t>::MT_DATA,
+					MemoryAccessReporting<uint64_t>::MAT_WRITE,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 1);
 	
 #endif // SOCLIB
@@ -4244,8 +4244,9 @@ PerformPrefetchAccess(MemoryOp<CONFIG> *memop) {
 	
 	if(requires_memory_access_reporting)
 		if(memory_access_reporting_import)
-			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ,
-					MemoryAccessReporting<address_t>::MT_DATA,
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
 					read_address, 4);
 	
 }

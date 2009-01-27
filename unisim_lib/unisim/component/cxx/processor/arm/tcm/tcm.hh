@@ -87,7 +87,7 @@ public:
 	
 #ifndef SOCLIB
 	
-	ServiceExport<Memory<address_t> > memory_export;
+	ServiceExport<Memory<uint64_t> > memory_export;
 	ServiceImport<Logger> logger_import;
 	
 #endif // SOCLIB

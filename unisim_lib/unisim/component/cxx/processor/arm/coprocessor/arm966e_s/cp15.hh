@@ -83,8 +83,8 @@ template<class CONFIG>
 class CP15 : 
 	public CacheInterface<typename CONFIG::address_t>,
 	public CPInterface<CONFIG::DEBUG_ENABLE>,
-	public Service<Memory<typename CONFIG::address_t> >,
-	public Client<Memory<typename CONFIG::address_t> > {
+	public Service<Memory<uint64_t> >,
+	public Client<Memory<uint64_t> > {
 
 #endif // SOCLIB
 	
@@ -97,10 +97,10 @@ public:
 	
 #ifndef SOCLIB
 	
-	ServiceImport<Memory<address_t> > itcm_memory_import;
-	ServiceImport<Memory<address_t> > dtcm_memory_import;
-	ServiceImport<Memory<address_t> > memory_import;
-	ServiceExport<Memory<address_t> > memory_export;
+	ServiceImport<Memory<uint64_t> > itcm_memory_import;
+	ServiceImport<Memory<uint64_t> > dtcm_memory_import;
+	ServiceImport<Memory<uint64_t> > memory_import;
+	ServiceExport<Memory<uint64_t> > memory_export;
 
 #endif // SOCLIB
 	
@@ -208,10 +208,10 @@ public:
     
 #ifndef SOCLIB
 	
-	// CP15 -> Memory Interface (debugg dervice)
+	// CP15 -> Memory Interface (debug device)
 //	virtual void Reset();
-	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
 	
 #endif // SOCLIB
 

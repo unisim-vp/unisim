@@ -90,7 +90,7 @@ StepInstruction() {
 			<< EndDebugInfo;
 	
 	if(debug_control_import) {
-		typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
+		typename DebugControl<uint64_t>::DebugCommand dbg_cmd;
 
 		do {
 			if(CONFIG::DEBUG_ENABLE && verbose_step)
@@ -100,7 +100,7 @@ StepInstruction() {
 					<< EndDebugInfo;
 			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 	
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) {
+			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step)
 					logger << DebugInfo
 						<< "Received debug DBG_STEP command (PC = 0x"
@@ -108,7 +108,7 @@ StepInstruction() {
 						<< EndDebugInfo;
 				break;
 			}
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_SYNC) {
+			if(dbg_cmd == DebugControl<uint64_t>::DBG_SYNC) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step)
 					logger << DebugInfo
 						<< "Received debug DBG_SYNC command (PC = 0x"
@@ -118,7 +118,7 @@ StepInstruction() {
 				continue;
 			}
 
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL) {
+			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step)
 					logger << DebugInfo
 						<< "Received debug DBG_KILL command (PC = 0x"
@@ -126,7 +126,7 @@ StepInstruction() {
 						<< EndDebugInfo;
 				Stop(0);
 			}
-			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_RESET) {
+			if(dbg_cmd == DebugControl<uint64_t>::DBG_RESET) {
 				if(CONFIG::DEBUG_ENABLE && verbose_step)
 					logger << DebugInfo
 						<< "Received debug DBG_RESET command (PC = 0x"
@@ -150,8 +150,8 @@ StepInstruction() {
 			else
 				insn_size = 4;
 			memory_access_reporting_import->ReportMemoryAccess(
-				MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, 
-				MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, 
+				MemoryAccessReporting<uint64_t>::MAT_READ, 
+				MemoryAccessReporting<uint64_t>::MT_INSN, 
 				current_pc, insn_size);
 		}
 	}
