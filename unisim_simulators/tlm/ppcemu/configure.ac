@@ -67,6 +67,10 @@ case $host in
 		#UNISIM_CHECK_TERMCAP
 		UNISIM_CHECK_LIBEDIT
 		;;
+	*darwin*)   # darwin host
+		UNISIM_CHECK_CURSES
+		UNISIM_CHECK_LIBEDIT
+		;;
 	*mingw32*)  # win32 host
 		UNISIM_CHECK_WINSOCK2
 		;;

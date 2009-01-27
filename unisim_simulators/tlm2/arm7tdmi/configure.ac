@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2007,
+#  Copyright (c) 2008,
 #  Commissariat a l'Energie Atomique (CEA)
 #  All rights reserved.
 #
@@ -33,7 +33,9 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Embedded PowerPC G4 system TLM simulator], [1.0])
+AC_INIT([UNISIM ARM7TDMI TLM simulator], [1.0],
+	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>],
+	[arm7tdmi])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
@@ -54,7 +56,6 @@ AC_LANG([C++])
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
-
 ###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
 
 UNISIM_STATIC
@@ -74,14 +75,14 @@ case $host in
 		;;
 esac
 
+UNISIM_RELEASE
 UNISIM_CHECK_ZLIB
 UNISIM_CHECK_LIBXML2
 UNISIM_CHECK_SYSTEMC
-UNISIM_CHECK_CACTI
+UNISIM_CHECK_TLM20
 
 UNISIM_CHECK_UNISIM_LIB
 UNISIM_CHECK_CXXABI
-UNISIM_RELEASE
 
 UNISIM_LINK(unisim_kernel_logger)
 UNISIM_LINK(unisim_kernel_service)
@@ -91,7 +92,7 @@ UNISIM_LINK(unisim_util_xml)
 UNISIM_LINK(unisim_util_debug)
 UNISIM_LINK(unisim_util_endian)
 UNISIM_LINK(unisim_util_garbage_collector)
-UNISIM_LINK(unisim_util_queue)
+UNISIM_LINK(unisim_util_time)
 
 UNISIM_LINK(unisim_service_time_sc_time)
 UNISIM_LINK(unisim_service_time_host_time)
@@ -100,44 +101,12 @@ UNISIM_LINK(unisim_service_debug_gdb_server)
 UNISIM_LINK(unisim_service_debug_inline_debugger)
 UNISIM_LINK(unisim_service_loader_elf_loader)
 UNISIM_LINK(unisim_service_debug_symbol_table)
-UNISIM_LINK(unisim_service_loader_pmac_bootx)
-UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
-UNISIM_LINK(unisim_service_loader_linux_loader)
-UNISIM_LINK(unisim_service_logger)
-UNISIM_LINK(unisim_service_sdl)
-UNISIM_LINK(unisim_service_tee_memory_access_reporting)
 
-# UNISIM_LINK(unisim_component_cxx_processor_arm)
-UNISIM_LINK(unisim_component_cxx_processor_powerpc)
-UNISIM_LINK(unisim_component_cxx_pci_debug)
-UNISIM_LINK(unisim_component_cxx_pci_macio)
-UNISIM_LINK(unisim_component_cxx_pci)
-# UNISIM_LINK(unisim_component_cxx_pci_ide)
-# UNISIM_LINK(unisim_component_cxx_pci_video)
-UNISIM_LINK(unisim_component_cxx_chipset_mpc107_epic)
-UNISIM_LINK(unisim_component_cxx_chipset_mpc107_atu)
-UNISIM_LINK(unisim_component_cxx_chipset_mpc107_dma)
-UNISIM_LINK(unisim_component_cxx_chipset_mpc107)
-# UNISIM_LINK(unisim_component_cxx_isa_i8042)
-UNISIM_LINK(unisim_component_cxx_bridge_pci_isa)
+UNISIM_LINK(unisim_component_cxx_processor_arm)
 UNISIM_LINK(unisim_component_cxx_memory_ram)
-UNISIM_LINK(unisim_component_cxx_memory_flash_am29lv)
 
-UNISIM_LINK(unisim_component_tlm_processor_powerpc)
-# UNISIM_LINK(unisim_component_tlm_processor_arm)
-UNISIM_LINK(unisim_component_tlm_memory_flash_am29lv)
-UNISIM_LINK(unisim_component_tlm_memory_ram)
-# UNISIM_LINK(unisim_component_tlm_bridge_pci_isa)
-UNISIM_LINK(unisim_component_tlm_fsb_snooping_bus)
-# UNISIM_LINK(unisim_component_tlm_fsb_simple_bus)
-UNISIM_LINK(unisim_component_tlm_message)
-# UNISIM_LINK(unisim_component_tlm_isa_i8042)
-UNISIM_LINK(unisim_component_tlm_chipset_mpc107_epic)
-UNISIM_LINK(unisim_component_tlm_chipset_mpc107)
-# UNISIM_LINK(unisim_component_tlm_pci_video)
-# UNISIM_LINK(unisim_component_tlm_pci_ide)
-UNISIM_LINK(unisim_component_tlm_pci_macio)
-UNISIM_LINK(unisim_component_tlm_pci_debug)
+UNISIM_LINK(unisim_component_tlm2_processor_arm)
+UNISIM_LINK(unisim_component_tlm2_memory_ram)
 
 # files to generate
 #   this should include all the makefiles to generate

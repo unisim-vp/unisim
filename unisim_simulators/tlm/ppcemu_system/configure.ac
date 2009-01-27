@@ -65,6 +65,11 @@ case $host in
 		UNISIM_CHECK_LIBEDIT
 		UNISIM_CHECK_PTHREAD
 		;;
+	*darwin*)   # darwin host
+		UNISIM_CHECK_CURSES
+		UNISIM_CHECK_LIBEDIT
+		UNISIM_CHECK_PTHREAD
+		;;
 	*mingw32*)  # win32 host
 		UNISIM_CHECK_WINSOCK2
 		;;

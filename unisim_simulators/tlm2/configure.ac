@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2008,
+#  Copyright (c) 2009,
 #  Commissariat a l'Energie Atomique (CEA)
 #  All rights reserved.
 #
@@ -49,6 +49,7 @@ AC_CONFIG_FILES([Makefile])
 ###### CHECK FOR HOST ######################
 
 UNISIM_CONFIG_SUBDIR(simulator-tlm2-hcs12xemu, hcs12xemu)
+UNISIM_CONFIG_SUBDIR(simulator-tlm2-arm7tdmi, arm7tdmi)
 
 # launch the generation of makefiles
 #   this must be the last command of configure.ac

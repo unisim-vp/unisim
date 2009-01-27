@@ -13,20 +13,20 @@ SUBDIRS += ppcemu
 INCLUDE_SUBDIRS += ppcemu
 endif
 
-if COND_armemu
-SUBDIRS += armemu
-INCLUDE_SUBDIRS += armemu
-endif
-
-if COND_arm966e_s
-SUBDIRS += arm966e_s
-INCLUDE_SUBDIRS += arm966e_s
-endif
-
-if COND_arm7tdmi
-SUBDIRS += arm7tdmi
-INCLUDE_SUBDIRS += arm7tdmi
-endif
+# if COND_armemu
+# SUBDIRS += armemu
+# INCLUDE_SUBDIRS += armemu
+# endif
+# 
+# if COND_arm966e_s
+# SUBDIRS += arm966e_s
+# INCLUDE_SUBDIRS += arm966e_s
+# endif
+# 
+# if COND_arm7tdmi
+# SUBDIRS += arm7tdmi
+# INCLUDE_SUBDIRS += arm7tdmi
+# endif
 
 if COND_embedded_ppc_g4_board
 SUBDIRS += embedded_ppc_g4_board
