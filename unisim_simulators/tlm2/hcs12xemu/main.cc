@@ -44,12 +44,11 @@
 #include <unisim/kernel/service/service.hh>
 #include <stdlib.h>
 
-// *************
-#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
-// *************
+#include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xmmc.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 
@@ -111,10 +110,9 @@ typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
 
 typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 typedef unisim::component::tlm2::interconnect::generic_router::Router<> ROUTER;
+typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
-
-using unisim::component::cxx::processor::hcs12x::MMC;
-
+using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using namespace std;
 
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -172,6 +170,9 @@ void help(char *prog_name)
 	cerr << "            0: banked modele (default)" << endl;
 	cerr << "            1: linear modele (recommended by Motorola/Freescale)" << endl;
 	cerr << "            2: gnu/gcc modele " << endl << endl;
+	cerr << "-s <symbol_filename>" << endl;
+	cerr << "--symbol-filename <symbol_filename>" << endl;
+	cerr << "            used for debbug purpose when loading an S19-File" << endl;
 	cerr << "-f" << endl;
 	cerr << "--force-use-virtual-address" << endl;
 	cerr << "            force the ELF Loader to use segment virtual address instead of segment physical address" << endl << endl;
@@ -207,6 +208,7 @@ int sc_main(int argc, char *argv[])
 	{"logger:out", no_argument, 0, 'o'},
 	{"logger:message_spy", no_argument, 0, 'm'},
 	{"compiler-memory-modele", required_argument, 0, 'c'},
+	{"symbol-filename", required_argument, 0, 's'},
 	{"force-use-virtual-address", no_argument, 0, 'f'},
 	{0, 0, 0, 0}
 	};
@@ -223,6 +225,9 @@ int sc_main(int argc, char *argv[])
 	bool logger_out = false;
 	bool logger_on = false;
 	bool logger_messages = false;
+	
+	char *symbol_filename = NULL;
+	
 //	double cpu_frequency = 40.0; // in Mhz
 	double cpu_frequency = 2.0; // in Mhz
 
@@ -234,10 +239,10 @@ int sc_main(int argc, char *argv[])
 	uint32_t mem_cycle_time = fsb_cycle_time;
 	bool force_use_virtual_address = false;
 
-	int memoryMode = S19_Loader<SERVICE_ADDRESS_TYPE>::BANKED;
+	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
 	// Parse the command line arguments
-	while((c = getopt_long (argc, argv, "c:dg:a:hi:l:zeomf", long_options, 0)) != -1)
+	while((c = getopt_long (argc, argv, "cs:dg:a:hi:l:zeomf", long_options, 0)) != -1)
 	{
 		switch(c)
 		{
@@ -273,8 +278,11 @@ int sc_main(int argc, char *argv[])
 				logger_messages = true;
 				break;
 			case 'c':
-				memoryMode = atoi(optarg);
+				address_encoding = (ADDRESS::ENCODING) atoi(optarg);
 				break;
+			case 's':
+				symbol_filename = optarg;
+				break;	
 			case 'f':
 				force_use_virtual_address = true;
 				break;
@@ -305,15 +313,17 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 	//  - 68HCS12X processor
 
-	MMC *mmc = 	new MMC();
+	MMC *mmc = 	new MMC("mmc");
 
 	CPU *cpu =new CPU("cpu");
-	cpu->setMMC(mmc);
 
 	//  - tlm2 router
-	ROUTER	*router = new ROUTER("router");
-	//  - RAM
-	MEMORY *memory = new MEMORY("memory");
+	ROUTER	*external_router = new ROUTER("external_router");
+	ROUTER	*internal_router = new ROUTER("internal_router");
+
+	//  - Memories
+	MEMORY *internal_memory = new MEMORY("internal-memory");
+	MEMORY *external_memory = new MEMORY("external-memory");
 
 	// - Interrupt controler
 	XINT *s12xint = new XINT("s12xint");
@@ -325,18 +335,22 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 
 	bool isS19 = false;
-	cout << filename << "\n";
+
 	if ((strstr(filename, ".s19") != NULL) ||
 		 (strstr(filename, ".S19") != NULL))  {
 		isS19 = true;
 	}
 
-	Service<Loader<SERVICE_ADDRESS_TYPE> > *loader = NULL;
+	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderS19 = NULL;
+	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderELF = NULL;
 
 	if (isS19) {
-		loader = new S19_Loader<SERVICE_ADDRESS_TYPE>("S19_Loader", (S19_Loader<SERVICE_ADDRESS_TYPE>::MODE) memoryMode);
+		loaderS19 = new S19_Loader<SERVICE_ADDRESS_TYPE>("S19_Loader");
+		if (symbol_filename != NULL) {
+			loaderELF = new Elf32Loader("elf32-loader");
+		}
 	} else {
-		loader = new Elf32Loader("elf32-loader");
+		loaderELF = new Elf32Loader("elf32-loader");
 	}
 
 
@@ -367,28 +381,43 @@ int sc_main(int argc, char *argv[])
 		(*cpu)["max-inst"] = maxinst;
 	}
 
-	//  - Router
-	unisim::kernel::service::VariableBase *var = ServiceManager::GetParameter("router.cycle_time");
+	//  -External Router
+	unisim::kernel::service::VariableBase *var = ServiceManager::GetParameter("external_router.cycle_time");
 	*var = fsb_cycle_time;
 
-	var = ServiceManager::GetParameter("router.mapping_0");
-	*var = "range_start=\"0x000121\" range_end=\"0x00012F\" output_port=\"0\""; // S12XINT
+	var = ServiceManager::GetParameter("external_router.mapping_0");
+	*var = "range_start=\"0x000800\" range_end=\"0x7FFFFF\" output_port=\"0\""; // 8MByte - RAM-EEPROM-FLASH
 
-	var = ServiceManager::GetParameter("router.mapping_1");
-	*var = "range_start=\"0x000800\" range_end=\"0x7FFFFF\" output_port=\"1\""; // 8MByte - RAM-EEPROM-FLASH
-//	*var = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"1\""; // 64KByte - RAM-EEPROM-FLASH
-
-	var = ServiceManager::GetParameter("router.verbose_all");
+	var = ServiceManager::GetParameter("external_router.verbose_all");
  	*var = false;
 
-	//  - RAM
-	(*memory)["cycle-time"] = mem_cycle_time;
-	(*memory)["org"] = 0x00000000UL;
-//	(*memory)["bytesize"] = (uint32_t)-1; // unfinit memory size
-	(*memory)["bytesize"] = (uint32_t) 0x800000; // memory size is 8Mo
-//	(*memory)["bytesize"] = (uint32_t)0x10000; // memory size is 64KByte
+	//  -Internal Router
+	unisim::kernel::service::VariableBase *var1 = ServiceManager::GetParameter("internal_router.cycle_time");
+	*var1 = fsb_cycle_time;
 
-	(*memory)["verbose"] = false;
+	var1 = ServiceManager::GetParameter("internal_router.mapping_0");
+	*var1 = "range_start=\"0x000121\" range_end=\"0x00012F\" output_port=\"0\""; // S12XINT
+
+	var1 = ServiceManager::GetParameter("internal_router.mapping_1");
+	*var1 = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"1\""; // 64KByte - RAM-EEPROM-FLASH
+
+	var1 = ServiceManager::GetParameter("internal_router.verbose_all");
+ 	*var1 = false;
+
+	// MMC parameter
+	(*mmc)["address-encoding"] = address_encoding;
+	
+	//  - External Memory
+	(*external_memory)["cycle-time"] = mem_cycle_time;
+	(*external_memory)["org"] = 0x00000000UL;
+	(*external_memory)["bytesize"] = (uint32_t) 0x800000; // memory size is 8Mo
+	(*external_memory)["verbose"] = false;
+
+	//  - Internal Memory
+	(*internal_memory)["cycle-time"] = mem_cycle_time;
+	(*internal_memory)["org"] = 0x00000000UL;
+	(*internal_memory)["bytesize"] = (uint32_t)0x10000; // memory size is 64KByte
+	(*internal_memory)["verbose"] = false;
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===
@@ -401,11 +430,17 @@ int sc_main(int argc, char *argv[])
 		(*gdb_server)["architecture-description-filename"] = gdb_server_arch_filename;
 	}
 
-	(*loader)["filename"] = filename;
 
-	if(!isS19)
+	if(isS19) {
+		(*loaderS19)["filename"] = filename;
+		if (symbol_filename != NULL) {
+			(*loaderELF)["filename"] = symbol_filename;
+		}
+	}
+	else
 	{
-		(*loader)["force-use-virtual-address"] = force_use_virtual_address;
+		(*loaderELF)["filename"] = filename;
+		(*loaderELF)["force-use-virtual-address"] = force_use_virtual_address;
 	}
 
 
@@ -430,7 +465,7 @@ int sc_main(int argc, char *argv[])
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	cpu->socket(router->targ_socket);
+	cpu->socket(mmc->cpu_socket);
 	cpu->toXINT(s12xint->fromCPU_Target);
 
 	sc_signal<bool>  interruptReq;
@@ -444,16 +479,22 @@ int sc_main(int argc, char *argv[])
 		s12xint->interrupt_request(gen_interruptReq[i]);
 	}
 
+	mmc->local_socket(internal_router->targ_socket);
+	mmc->external_socket(external_router->targ_socket);
+	
 	// This order is mandatory (see the memoryMapping)
-	router->init_socket(s12xint->slave_socket);
-	router->init_socket(memory->slave_sock);
+	internal_router->init_socket(s12xint->slave_socket);
+	internal_router->init_socket(internal_memory->slave_sock); // to connect to the MMC
 
+	external_router->init_socket(external_memory->slave_sock);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
 
-	cpu->memory_import >> memory->memory_export;
+	cpu->memory_import >> mmc->memory_export;
+	mmc->internal_memory_import >> internal_memory->memory_export;
+	mmc->external_memory_import >> external_memory->memory_export;
 
 	if(inline_debugger)
 	{
@@ -478,11 +519,14 @@ int sc_main(int argc, char *argv[])
 	}
 
 	if (isS19) {
-		((S19_Loader<SERVICE_ADDRESS_TYPE> *) loader)->memory_import >> memory->memory_export;
-		((S19_Loader<SERVICE_ADDRESS_TYPE> *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+		((S19_Loader<SERVICE_ADDRESS_TYPE> *) loaderS19)->memory_import >> mmc->memory_export;
+
+		if (symbol_filename != NULL) {
+			((Elf32Loader *) loaderELF)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+		}
 	} else {
-		((Elf32Loader *) loader)->memory_import >> memory->memory_export;
-		((Elf32Loader *) loader)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+		((Elf32Loader *) loaderELF)->memory_import >> mmc->memory_export;
+		((Elf32Loader *) loaderELF)->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	}
 
 	if(inline_debugger)
@@ -506,12 +550,20 @@ int sc_main(int argc, char *argv[])
 	if(ServiceManager::Setup())
 	{
 
-		physical_address_t entry_point = loader->GetEntryPoint();
+		physical_address_t entry_point;
+		
+		if (isS19) {
+			entry_point = loaderS19->GetEntryPoint();
+		}
+		else{
+			entry_point = loaderELF->GetEntryPoint();
+		}
+		
 		address_t cpu_address;
 		uint8_t page = 0;
 
 		if (isS19) {
-			((S19_Loader<SERVICE_ADDRESS_TYPE> *) loader)->GetPagedAddress(entry_point, page, cpu_address);
+			mmc->SplitPagedAddress(entry_point, page, cpu_address);
 		} else {
 			cpu_address = (address_t) entry_point;
 		}
@@ -562,13 +614,16 @@ int sc_main(int argc, char *argv[])
 		cerr << "Can't start simulation because of previous errors" << endl;
 	}
 
-	if(loader) { delete loader; loader = NULL; }
+	if(loaderS19) { delete loaderS19; loaderS19 = NULL; }
+	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
 	if (int_gen) { delete int_gen; int_gen = NULL; }
 	if (s12xint) { delete s12xint; s12xint = NULL; }
 	if (mmc) { delete mmc; mmc = NULL; }
-	if(memory) { delete memory; memory = NULL; }
-	if(router) { delete router; router = NULL; }
+	if(external_memory) { delete external_memory; external_memory = NULL; }
+	if(internal_memory) { delete internal_memory; internal_memory = NULL; }
+	if(external_router) { delete external_router; external_router = NULL; }
+	if(internal_router) { delete internal_router; internal_router = NULL; }
 	if(cpu) { delete cpu; cpu = NULL; }
 
 	if(logger) { delete logger; logger = NULL; }
