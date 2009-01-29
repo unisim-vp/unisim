@@ -299,7 +299,7 @@ inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debu
 
 	uint8_t _rpage;
 	
-	if (debugload) _rpage = debug_page; else  _rpage = getRpage();
+	if (debugload && (debug_page != 0x00)) _rpage = debug_page; else  _rpage = getRpage();
 
 	if ((_rpage > 0x00) && (_rpage < CONFIG::RPAGE_LOW)) {
 		throw NonMaskableAccessErrorInterrupt(NonMaskableAccessErrorInterrupt::INVALIDE_RPAGE);
@@ -322,7 +322,7 @@ inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool d
 
 	uint8_t _epage;
 
-	if (debugload) _epage = debug_page; else _epage = getEpage(); 
+	if (debugload && (debug_page != 0x00)) _epage = debug_page; else _epage = getEpage(); 
 	
 	if ((_epage > 0) && (_epage < CONFIG::EPAGE_LOW)) {
 		throw NonMaskableAccessErrorInterrupt(NonMaskableAccessErrorInterrupt::INVALIDE_EPAGE);
@@ -347,7 +347,7 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool de
 
 	uint8_t _ppage;
 
-	if (debugload) _ppage = debug_page; else _ppage = getPpage(); 
+	if (debugload && (debug_page != 0x00)) _ppage = debug_page; else _ppage = getPpage(); 
 
 	if (isPaged(logicalAddress, _ppage, debugload)) {
 		return CONFIG::FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _ppage << CONFIG::FLASH_ADDRESS_SIZE) | ((address_t) CONFIG::FLASH_CPU_ADDRESS_BITS & logicalAddress);

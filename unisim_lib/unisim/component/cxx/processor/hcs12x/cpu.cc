@@ -218,6 +218,7 @@ uint8_t CPU::Step()
 						<< "Fetching debug command (PC = 0x"
 						<< Hex << current_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
+						
 				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
