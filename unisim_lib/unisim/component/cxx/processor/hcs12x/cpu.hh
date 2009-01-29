@@ -69,7 +69,7 @@
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
-#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
+//#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
 
@@ -257,17 +257,18 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 
-	void setMMC(MMC *_mmc);
+//	void setMMC(MMC *_mmc);
 	void SetEntryPoint(uint8_t page, address_t cpu_address);
 
 	//==========================================
 	//=     ISA - MEMORY ACCESS ROUTINES       =
 	//==========================================
 
-	inline uint8_t memRead8(physical_address_t addr);
-	inline void memWrite8(physical_address_t addr,uint8_t val);
-	inline uint16_t memRead16(physical_address_t addr);
-	inline void memWrite16(physical_address_t addr,uint16_t val);
+	inline uint8_t memRead8(address_t logicalAddress, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false);
+	inline void memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false);
+
+	inline uint16_t memRead16(address_t logicalAddress, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false);
+	inline void memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false);
 
 	//=====================================================================
 	//=                    execution handling methods                     =
@@ -506,7 +507,7 @@ public:
 
 
 //protected:
-    class MMC	*mmc;
+//    class MMC	*mmc;
     class CCR_t *ccr;
 	class EBLB	*eblb;
 
@@ -577,9 +578,20 @@ private:
 // =          MEMORY ACCESS ROUTINES            =
 // ==============================================
 
-inline uint8_t CPU::memRead8(physical_address_t addr) {
+inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal) {
 
 	uint8_t data;
+	MMC_DATA mmc_data;
+	
+	mmc_data.type = type;
+	mmc_data.isGlobal = isGlobal;
+	mmc_data.buffer = &data;
+	mmc_data.data_size = 1;
+	
+	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+/*	
+	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type, isGlobal);
+	
 	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
 	{
 		data = mmc->read(addr);
@@ -588,12 +600,27 @@ inline uint8_t CPU::memRead8(physical_address_t addr) {
 	{
 		BusRead(addr, &data, 1);
 	}
+*/
 	return data;
 }
 
-inline uint16_t CPU::memRead16(physical_address_t addr) {
+inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal) {
 
 	uint16_t data;
+	MMC_DATA mmc_data;
+	
+	mmc_data.type = type;
+	mmc_data.isGlobal = isGlobal;
+	mmc_data.buffer = &data;
+	mmc_data.data_size = 2;
+	
+	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+
+/*
+	uint16_t data;
+	
+	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type, isGlobal);
+	
 	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
 	{
 		data = (uint16_t) (mmc->read(addr) << 8) || mmc->read(addr+1);
@@ -602,13 +629,26 @@ inline uint16_t CPU::memRead16(physical_address_t addr) {
 	{
 		BusRead(addr, &data, 2);
 	}
+*/
 
 	data = BigEndian2Host(data);
 
 	return data;
 }
 
-inline void CPU::memWrite8(physical_address_t addr, uint8_t val) {
+inline void CPU::memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE type, bool isGlobal) {
+
+	MMC_DATA mmc_data;
+	
+	mmc_data.type = type;
+	mmc_data.isGlobal = isGlobal;
+	mmc_data.buffer = &val;
+	mmc_data.data_size = 1;
+	
+	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+	
+/*
+	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type, isGlobal);
 
 	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
 	{
@@ -618,11 +658,24 @@ inline void CPU::memWrite8(physical_address_t addr, uint8_t val) {
 	{
 		BusWrite( addr, &val, 1);
 	}
+*/	
 }
 
-inline void CPU::memWrite16(physical_address_t addr, uint16_t val) {
+inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE type, bool isGlobal) {
+
+	MMC_DATA mmc_data;
 
 	val = Host2BigEndian(val);
+	
+	mmc_data.type = type;
+	mmc_data.isGlobal = isGlobal;
+	mmc_data.buffer = &val;
+	mmc_data.data_size = 2;
+	
+	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+
+/*
+	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type, isGlobal);
 
 	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
 	{
@@ -633,6 +686,8 @@ inline void CPU::memWrite16(physical_address_t addr, uint16_t val) {
 	{
 		BusWrite(addr, &val, 2);
 	}
+*/
+	
 }
 
 //======================================================================

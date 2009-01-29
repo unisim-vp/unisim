@@ -143,15 +143,20 @@ CPU::~CPU()
 
 }
 
+/*
 void CPU::setMMC(MMC *_mmc) { mmc = _mmc; }
+*/
 
 void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
 {
 
 	setRegPC(cpu_address);
 
-	mmc->write(CONFIG::PPAGE_REG_ADDRESS, page);
-
+/*
+	if ((mmc->getMode() == MMC::EX) || (mmc->getMode() == MMC::NX)) {
+		mmc->write(CONFIG::PPAGE_REG_ADDRESS, page);
+	}
+*/
 }
 
 
@@ -160,7 +165,7 @@ void CPU::Reset()
 	ccr->reset();
 	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 
-	mmc->reset();
+//	mmc->Reset();
 }
 
 //=====================================================================
@@ -185,7 +190,6 @@ void CPU::OnBusCycle()
 uint8_t CPU::Step()
 {
 	address_t 	current_pc;
-	physical_address_t physical_pc;
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
@@ -193,18 +197,16 @@ uint8_t CPU::Step()
 	uint8_t	opCycles = 0;
 
 	current_pc = getRegPC();
-	physical_pc = current_pc;
 
 	try
 	{
-		physical_pc = mmc->getPhysicalAddress(current_pc, MEMORY::EXTENDED, false);
 
 		VerboseDumpRegsStart();
 
 		if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Starting step at PC = 0x"
-				<< Hex << physical_pc << Dec
+				<< Hex << current_pc << Dec
 				<< Endl << EndDebugInfo;
 
 		if(debug_control_import) {
@@ -214,15 +216,15 @@ uint8_t CPU::Step()
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Fetching debug command (PC = 0x"
-						<< Hex << physical_pc << Dec << ")"
+						<< Hex << current_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
-				dbg_cmd = debug_control_import->FetchDebugCommand(physical_pc);
+				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
 					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 						(*logger_import) << DebugInfo << LOCATION
 							<< "Received debug DBG_STEP command (PC = 0x"
-							<< Hex << physical_pc << Dec << ")"
+							<< Hex << current_pc << Dec << ")"
 							<< Endl << EndDebugInfo;
 					break;
 				}
@@ -230,7 +232,7 @@ uint8_t CPU::Step()
 					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 						(*logger_import) << DebugInfo << LOCATION
 							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< Hex << physical_pc << Dec << ")"
+							<< Hex << current_pc << Dec << ")"
 							<< Endl << EndDebugInfo;
 					Sync();
 					continue;
@@ -240,7 +242,7 @@ uint8_t CPU::Step()
 					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 						(*logger_import) << DebugInfo << LOCATION
 							<< "Received debug DBG_KILL command (PC = 0x"
-							<< Hex << physical_pc << Dec << ")"
+							<< Hex << current_pc << Dec << ")"
 							<< Endl << EndDebugInfo;
 					Stop(0);
 				}
@@ -248,7 +250,7 @@ uint8_t CPU::Step()
 					if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 						(*logger_import) << DebugInfo << LOCATION
 							<< "Received debug DBG_RESET command (PC = 0x"
-							<< Hex << physical_pc << Dec << ")"
+							<< Hex << current_pc << Dec << ")"
 							<< Endl << EndDebugInfo;
 				}
 			} while(1);
@@ -259,7 +261,7 @@ uint8_t CPU::Step()
 				if(CONFIG::DEBUG_ENABLE && verbose_step && logger_import)
 					(*logger_import) << DebugInfo << LOCATION
 						<< "Reporting memory acces for fetch at address 0x"
-						<< Hex << physical_pc << Dec
+						<< Hex << current_pc << Dec
 						<< Endl << EndDebugInfo;
 			}
 		}
@@ -269,11 +271,11 @@ uint8_t CPU::Step()
 		{
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Fetching (reading) instruction at address 0x"
-				<< Hex << physical_pc << Dec
+				<< Hex << current_pc << Dec
 				<< Endl << EndDebugInfo;
 		}
 
-		queueFetch(physical_pc, buffer, MAX_INS_SIZE);
+		queueFetch(current_pc, buffer, MAX_INS_SIZE);
 		CodeType 	insn( buffer, MAX_INS_SIZE);
 
 		/* Decode current PC */
@@ -283,7 +285,7 @@ uint8_t CPU::Step()
 			ctstr << insn;
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Decoding instruction at 0x"
-				<< Hex << physical_pc << Dec
+				<< Hex << current_pc << Dec
 				<< " (0x" << Hex << ctstr.str() << Dec << ")"
 				<< Endl << EndDebugInfo;
 		}
@@ -305,7 +307,7 @@ uint8_t CPU::Step()
 			(*logger_import) << DebugInfo << LOCATION
 				<< "Executing instruction "
 				<< disasm_str.str()
-				<< " at 0x" << Hex << physical_pc << Dec
+				<< " at 0x" << Hex << current_pc << Dec
 				<< " (0x" << Hex << ctstr.str() << Dec << ", " << instruction_counter << ")"
 				<< Endl << EndDebugInfo;
 		}
@@ -385,7 +387,18 @@ void CPU::queueFill(physical_address_t addr, int position, uint8_t nByte)
 {
 	uint8_t buff[QUEUE_SIZE];
 
-	BusRead(addr, buff, nByte);
+//	BusRead(addr, buff, nByte);
+
+//  *********
+	MMC_DATA mmc_data;
+	
+	mmc_data.type = ADDRESS::EXTENDED;
+	mmc_data.isGlobal = false;
+	mmc_data.buffer = buff;
+	mmc_data.data_size = nByte;
+
+	BusRead(addr, &mmc_data, sizeof(MMC_DATA));
+// **********
 
 	for (uint8_t i=0; i<nByte; i++)
 	{

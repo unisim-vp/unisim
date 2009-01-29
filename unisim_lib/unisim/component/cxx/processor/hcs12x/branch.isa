@@ -259,8 +259,8 @@ br_clr_set_dir.disasm = {
 }
 
 br_clr_set_dir.execute = {
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);
-	uint8_t opr8aVal = cpu->memRead8(addr);
+
+	uint8_t opr8aVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 	
 	if (b==0) {
 		opr8aVal = ~opr8aVal;
@@ -413,6 +413,7 @@ call_ext.execute = {
 	 * TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	 */
 	physical_address_t addr;
+	page_t old_ppage;
 		 
 	cpu->setRegSP(cpu->getRegSP()-2);
 	
@@ -425,9 +426,12 @@ call_ext.execute = {
 	cpu->setRegSP(cpu->getRegSP()-1);
 	
 	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	old_ppage = cpu->memRead8(CONFIG::PPAGE_REG_ADDRESS);
+//	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	cpu->memWrite8(addr, old_ppage);
 
-	cpu->mmc->setPpage(page);
+//	cpu->mmc->setPpage(page);
+	cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, page);
 	cpu->setRegPC(opr16a);
 
 	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
@@ -461,6 +465,7 @@ call_16offset_idx_ind.execute = {
 	 */
 
 	physical_address_t addr;
+	page_t old_ppage;
 
 	physical_address_t idxAddr = cpu->xb_getAddrRegValue(rr) + n16;
 
@@ -477,9 +482,12 @@ call_16offset_idx_ind.execute = {
 	
 	cpu->setRegSP(cpu->getRegSP()-1);
 	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	old_ppage = cpu->memRead8(CONFIG::PPAGE_REG_ADDRESS);
+//	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	cpu->memWrite8(addr, old_ppage);
 
-	cpu->mmc->setPpage(ppageVal);
+//	cpu->mmc->setPpage(ppageVal);
+	cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, ppageVal);
 	cpu->setRegPC(subAddr);
 
 	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
@@ -509,6 +517,7 @@ call_accD_offset_idx_ind.execute = {
 	 */
 
 	physical_address_t addr;
+	page_t old_ppage;
 
 	physical_address_t idxAddr = cpu->getRegD() + cpu->xb_getAddrRegValue(rr);
 
@@ -523,9 +532,12 @@ call_accD_offset_idx_ind.execute = {
 	
 	cpu->setRegSP(cpu->getRegSP()-1);
 	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	old_ppage = cpu->memRead8(CONFIG::PPAGE_REG_ADDRESS);
+//	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	cpu->memWrite8(addr, old_ppage);
 
-	cpu->mmc->setPpage(ppageVal);
+//	cpu->mmc->setPpage(ppageVal);
+	cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, ppageVal);
 	cpu->setRegPC(subAddr);
 
 	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
@@ -569,6 +581,7 @@ call_idx.execute = {
  	 * TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
 	 */
 	physical_address_t addr;
+	page_t old_ppage;
 
 	physical_address_t callAddr = xb->getEAddr(cpu);  
 			 
@@ -580,9 +593,12 @@ call_idx.execute = {
 	
 	cpu->setRegSP(cpu->getRegSP()-1);
 	addr = cpu->getRegSP();
-	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	old_ppage = cpu->memRead8(CONFIG::PPAGE_REG_ADDRESS);
+//	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	cpu->memWrite8(addr, old_ppage);
 
-	cpu->mmc->setPpage(page);
+//	cpu->mmc->setPpage(page);
+	cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, page);
 	cpu->setRegPC(callAddr);
 
 	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
@@ -657,7 +673,8 @@ jsr_dir.execute = {
 	 * RTNh:RTNl => M[SP]:M[SP+1]
 	 * subroutine address => PC
 	 */
-	physical_address_t addr;
+	address_t addr;
+	page_t direct_reg;
 		 
 	cpu->setRegSP(cpu->getRegSP()-2);
 	addr = cpu->getRegSP();	
@@ -665,8 +682,10 @@ jsr_dir.execute = {
 	addr = cpu->getRegSP()+1;	
 	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
 	
-	addr = cpu->mmc->getDirectAddress(opr8a);
-	cpu->setRegPC((address_t) addr);
+	direct_reg = cpu->memRead8(CONFIG::DIRECT_REG_ADDRESS);
+//	addr = cpu->mmc->getDirectAddress(opr8a);
+	addr = ((uint16_t) direct_reg << 8) | opr8a;
+	cpu->setRegPC(addr);
 
  	// TODO: Refill the instruction queue with three program words from the new address
 }
@@ -763,7 +782,8 @@ rtc.execute = {
 	 physical_address_t addr;
 	 
 	 addr = cpu->getRegSP();
-	 cpu->mmc->setPpage(cpu->memRead8(addr));
+//	 cpu->mmc->setPpage(cpu->memRead8(addr));
+	 cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, cpu->memRead8(addr));
 	 cpu->setRegSP(cpu->getRegSP() + 1);
 	 
 	 addr = cpu->getRegSP();

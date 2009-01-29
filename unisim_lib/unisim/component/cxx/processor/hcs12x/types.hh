@@ -47,7 +47,21 @@ typedef uint16_t address_t;
 typedef uint32_t physical_address_t;
 typedef uint16_t reg_t;
 typedef uint64_t service_address_t;
+typedef uint8_t	 page_t;
 
+class ADDRESS {
+	public:
+		enum MODE {DIRECT=0, EXTENDED=1};
+		enum ENCODING {BANKED=0, LINEAR=1, GNUGCC=2};
+};
+
+class MMC_DATA {
+public:
+	ADDRESS::MODE type;
+	bool isGlobal;
+	void *buffer;
+	uint32_t data_size;
+};
 
 } // end hcs12x namespace
 } // end processor namespace

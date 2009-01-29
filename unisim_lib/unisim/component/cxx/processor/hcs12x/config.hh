@@ -66,7 +66,7 @@ struct CONFIG {
 	 */
 	static const bool TIMING_ENABLE					= true;
 
-	static const bool DEBUG_ENABLE					= true;
+	static const bool DEBUG_ENABLE					= false;
 	static const bool DEBUG_EXCEPTION_ENABLE		= false;
 	static const bool REGISTERS_INFO				= false;
 
@@ -192,12 +192,29 @@ struct CONFIG {
 	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
 	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
 
+	static const uint8_t MMCCTL0_RESET		= 0x00;
+	// MODC=1, MODB=0, MODA=0 => Normal single-chip
+	static const uint8_t MMC_MODE_RESET		= 0x80; 
+
 	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value
 	static const uint8_t DIRECT_RESET_PAGE	= 0x00;		// reset direct register value
+	// EROMON=EROMCTL=1	=> Enable the emulated flash or ROM in memoryMap 
+	// ROMHM=0  => The fixed page of Flash or ROM can be accessed in the lower half of the memory map. 
+	//             Accesses to $4000–$7FFF will be mapped to $7F_4000-$7F_7FFF in the global memory space
+	// ROMHM=1  => Disables access to the Flash or ROM in the lower half of the memory map.
+	//             These physical locations of the Flash or ROM can still be accessed through the program page window. 
+	//             Accesses to $4000–$7FFF will be mapped to $14_4000-$14_7FFF in the global memory space (external access). 
+	// ROMON=ROMCTL=1 => Enable the flash or ROM in memoryMap
+	static const uint8_t MMCCTL1_RESET		= 0x05;	
 
 	static const uint8_t RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
 	static const uint8_t EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value
 	static const uint8_t FLASH_RESET_PAGE	= 0xFE;		// reset ppage register value
+
+	static const uint8_t RAMWPC_RESET		= 0x00;
+	static const uint8_t RAMXGU_RESET		= 0xFF;
+	static const uint8_t RAMSHL_RESET		= 0xFF;
+	static const uint8_t RAMSHU_RESET		= 0xFF;
 
 #else // unknown and will cause compilation errors
 

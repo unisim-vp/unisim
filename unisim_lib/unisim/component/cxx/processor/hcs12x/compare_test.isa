@@ -118,8 +118,8 @@ cmp_ab_dir.disasm = {
 cmp_ab_dir.execute = {
 	uint8_t result, carry_out, overflow, carry_in;
 	uint8_t regVal;
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
-	uint8_t opr8aVal = cpu->memRead8(addr);
+	
+	uint8_t opr8aVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 	
 	carry_in = 0;
 	if (b==0) {
@@ -291,8 +291,8 @@ cp_dyxs_dir.execute = {
 	uint8_t carry_out, overflow, carry_in;
 	uint16_t result, regVal;
 	uint16_t opr8aVal;
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
-	opr8aVal = cpu->memRead16(addr);
+	
+	opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 	
 	carry_in = 0;
 	switch (dyxs) {
@@ -471,8 +471,8 @@ cpe_dyxs_dir.execute = {
 	uint8_t carry_out, overflow, carry_in, zeroBit;
 	uint16_t result, regVal;
 	uint16_t opr8aVal;
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
-	opr8aVal = cpu->memRead16(addr);
+
+	opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 	
 	zeroBit =  cpu->ccr->getZ();
 	carry_in = cpu->ccr->getC();

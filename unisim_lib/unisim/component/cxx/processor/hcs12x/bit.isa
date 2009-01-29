@@ -705,13 +705,13 @@ bclr_dir.disasm = {
 }
 
 bclr_dir.execute = {
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);
-	uint8_t ddVal = cpu->memRead8(addr);
+
+	uint8_t ddVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 	uint8_t mmCom = ~mm;
 	
 	uint8_t val = ddVal & mmCom;
 	
-	cpu->memWrite8(addr, val);
+	cpu->memWrite8(opr8a, val, ADDRESS::DIRECT, false);
 	
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -836,13 +836,13 @@ bit_ab_dir.disasm = {
 }
 
 bit_ab_dir.execute = {
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);
+
 	uint8_t val;
 	
 	if (b==0) {
-		val = cpu->getRegA() & cpu->memRead8(addr);
+		val = cpu->getRegA() & cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 	} else {
-		val = cpu->getRegB() & cpu->memRead8(addr);
+		val = cpu->getRegB() & cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 	}
 	
 	cpu->ccr->clrV();
@@ -982,13 +982,13 @@ bit_xy_dir.disasm = {
 }
 
 bit_xy_dir.execute = {
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);
+
 	uint16_t val;
 	
 	if (b==0) {
-		val = cpu->getRegX() & cpu->memRead16(addr);
+		val = cpu->getRegX() & cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 	} else {
-		val = cpu->getRegY() & cpu->memRead16(addr);
+		val = cpu->getRegY() & cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
 	}
 	
 	cpu->ccr->clrV();
@@ -1091,12 +1091,12 @@ bset_dir.disasm = {
 }
 
 bset_dir.execute = {
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);
-	uint8_t ddVal = cpu->memRead8(addr);
+
+	uint8_t ddVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 	
 	uint8_t val = ddVal | mm;
 	
-	cpu->memWrite8(addr, val);
+	cpu->memWrite8(opr8a, val, ADDRESS::DIRECT, false);
 	
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -2508,15 +2508,15 @@ N: Set if MSB of test is set; cleared otherwise
 Z: Set if test is 0x00; cleared otherwise
 V: 0; cleared
 */
-	physical_address_t addr = cpu->mmc->getDirectAddress(opr8a);	
-	uint8_t opr8aVal = cpu->memRead8(addr);
+	
+	uint8_t opr8aVal = cpu->memRead8(opr8a, ADDRESS::DIRECT, false);
 	
 	uint8_t test = opr8aVal & msk8;
 	if (test == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();}
 	if ((test & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();}
 	cpu->ccr->clrV();
 	
-	cpu->memWrite8(addr, opr8aVal | msk8);
+	cpu->memWrite8(opr8a, opr8aVal | msk8, ADDRESS::DIRECT, false);
 }
 
 op btas_ext(0x18[8]:> <:0x36[8]:opr16a[16]:msk8[8])
