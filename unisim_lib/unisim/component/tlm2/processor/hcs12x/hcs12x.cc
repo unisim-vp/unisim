@@ -189,7 +189,7 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 	toXINT->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
-		SC_REPORT_ERROR("TLM-2", "Unable to compute interrupt vector");
+		SC_REPORT_ERROR("HCS12X : ", "Unable to compute interrupt vector");
 
 	ipl = buffer.ipl;
 	address = buffer.vectorAddress;
@@ -430,7 +430,7 @@ void HCS12X::BusWrite(physical_address_t addr, const void *buffer, uint32_t size
 	socket->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
-		SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
+		SC_REPORT_ERROR("HCS12X : ", "Response error from b_transport");
 
 	trans->release();
 }
@@ -453,7 +453,7 @@ void HCS12X::BusRead(physical_address_t addr, void *buffer, uint32_t size)
 	socket->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
-		SC_REPORT_ERROR("TLM-2", "Response error from b_transport");
+		SC_REPORT_ERROR("HCS12X : ", "Response error from b_transport");
 
 	trans->release();
 }

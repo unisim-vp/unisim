@@ -2,9 +2,9 @@ INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
 includedir = $(prefix)/include/unisim/component/tlm2/processor/hcs12x
 sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm2/processor/hcs12x
 lib_LIBRARIES = libunisim_component_tlm2_processor_hcs12x.a
-libunisim_component_tlm2_processor_hcs12x_a_SOURCES = hcs12x.cc xint.cc
+libunisim_component_tlm2_processor_hcs12x_a_SOURCES = hcs12x.cc xint.cc s12xmmc.cc
 	
-include_HEADERS = hcs12x.hh xint.hh tlm_types.hh
+include_HEADERS = hcs12x.hh xint.hh tlm_types.hh s12xmmc.hh
 
 dist_share_DATA = COPYING
 
