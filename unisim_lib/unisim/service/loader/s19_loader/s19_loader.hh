@@ -74,18 +74,17 @@ using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
-#define S_RECORD_SIZE		515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
-#define CPU12_RESET_ADDR	0xFFFE 	//is the Reset Vector Address for the CPU12
+#define S_RECORD_SIZE			515		// s2_record_size = 2+2+255*2 +1 ("+1" is for \0 char)
+#define CPU12_RESET_ADDR		0xFFFE 	//is the local Reset Vector Address for the CPU12
+#define GLOBAL_CPU12_RESET_ADDR	0xFFBFFE 	//is the global Reset Vector Address offset for the CPU12
 
 template <class MEMORY_ADDR>	
 class S19_Loader :
 	public Client<Memory<MEMORY_ADDR> >,
-	public Service<Loader<MEMORY_ADDR> >,
-	public Client<SymbolTableBuild<MEMORY_ADDR> > 
+//	public Client<SymbolTableBuild<MEMORY_ADDR> >, 
+	public Service<Loader<MEMORY_ADDR> >
 {
 public:
-
-	enum MODE {BANKED=0, LINEAR=1, GNUGCC=2};
 
 	enum {ERR_NOFILE, ERR_BADREC, ERR_NOSUPPORT, ERR_BADADDR, ERR_BADCHKSUM, ERR_BADFILENAME};
 
@@ -104,7 +103,7 @@ public:
 	enum {S0='0', S1='1', S2='2', S3='3', S5='5', S7='7', S8='8', S9='9'};
 
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceImport<SymbolTableBuild<MEMORY_ADDR> > symbol_table_build_import;
+//	ServiceImport<SymbolTableBuild<MEMORY_ADDR> > symbol_table_build_import;
 	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
 
 	virtual void OnDisconnect();
@@ -114,14 +113,12 @@ public:
 	virtual MEMORY_ADDR GetTopAddr() const;
 	virtual MEMORY_ADDR GetStackBase() const;
 
-	S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent = 0);
+	S19_Loader(char const *name, Object *parent = 0);
 	virtual ~S19_Loader();	
-	void GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t &cpu_address);
 
 private:
 	string				filename;
 	physical_address_t	entry_point;
-	physical_address_t	top_addr;
 	physical_address_t	base_addr;
 	bool				force_use_virtual_address;
 	
@@ -130,9 +127,7 @@ private:
 	Parameter<bool>		param_force_use_virtual_address;
 	
 	bool				isFirstDataRec;
-	int					memoryMode;
 
-	physical_address_t GetFlashAddress(page_t page, address_t cpu_address);
 	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);
 	void	ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE]);
 	bool	memWrite(physical_address_t addr, const void *buffer, uint32_t size);

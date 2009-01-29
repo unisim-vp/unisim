@@ -45,28 +45,26 @@ namespace loader {
 namespace s19_loader {
 
 template <class MEMORY_ADDR>	
-S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, S19_Loader::MODE memMode, Object *parent) :
+S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent) :
 	Object(name,parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
-	Client<SymbolTableBuild<MEMORY_ADDR> >(name, parent),
+//	Client<SymbolTableBuild<MEMORY_ADDR> >(name, parent),
 	Service<Loader<MEMORY_ADDR> >(name, parent),
 	memory_import("memory-import", this),
-	symbol_table_build_import("symbol-table-build-import", this),
+//	symbol_table_build_import("symbol-table-build-import", this),
 	loader_export("loader-export", this),
 	filename(),
 	entry_point(0),
 	base_addr(0),
-	top_addr(0),
 	force_use_virtual_address(false),
 	param_filename("filename", this, filename),
 	param_base_addr("base-addr", this, base_addr),
 	param_force_use_virtual_address("force-use-virtual-address", this, force_use_virtual_address),
-	isFirstDataRec(true),
-	memoryMode(memMode)
+	isFirstDataRec(true)
 	
 {
 	Object::SetupDependsOn(memory_import);
-	Object::SetupDependsOn(symbol_table_build_import); 
+//	Object::SetupDependsOn(symbol_table_build_import); 
 }
 
 template <class MEMORY_ADDR>
@@ -94,7 +92,7 @@ MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetEntryPoint() const
 template <class MEMORY_ADDR>
 MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetTopAddr() const
 {  
-	return (MEMORY_ADDR) top_addr;
+	return -1;
 }
 
 template <class MEMORY_ADDR>
@@ -113,7 +111,7 @@ bool S19_Loader<MEMORY_ADDR>::Setup() {
 	FILE            *bootptr;           /* pointer to bootstrap file */
 	bool			success;
 
-	if(symbol_table_build_import) symbol_table_build_import->Reset();
+//	if(symbol_table_build_import) symbol_table_build_import->Reset();
 	
 	if(filename.empty()) return true;
 	
@@ -139,55 +137,6 @@ bool S19_Loader<MEMORY_ADDR>::Setup() {
 	cerr << Object::GetName() << ": File \"" << filename << "\" successfully Loaded." << endl;
 
 	return success;
-}
-
-template <class MEMORY_ADDR>
-void S19_Loader<MEMORY_ADDR>::GetPagedAddress(s19_address_t s19_addr, page_t &page, address_t &cpu_address)
-{
-	if (memoryMode == GNUGCC) 
-	{
-		if (s19_addr < 0x10000) {
-			page = 0;
-			cpu_address = (address_t) s19_addr;
-		} else {
-			page = (page_t) ((s19_addr - 0x10000) / 0x4000);
-			cpu_address = (address_t) ((s19_addr - 0x10000) % 0x4000);
-		}
-	} 
-	else
-	{
-		if (memoryMode == LINEAR) {
-			page = (page_t) (s19_addr / 0x4000);
-			cpu_address = (address_t) ((s19_addr % 0x4000) + 0x8000);
-		} else { // BANKED
-			page = (page_t) (s19_addr / 0x10000);
-			cpu_address = (address_t) (s19_addr % 0x10000);
-		}
-	}
-	
-}
-
-// TODO: This function is a duplicate of once in MMC class.
-//       I have to see how to rearange the project to remove this duplication !!!
-template <class MEMORY_ADDR>
-physical_address_t S19_Loader<MEMORY_ADDR>::GetFlashAddress(page_t page, address_t logicalAddress)
-{
-	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS = 0x00400000;
-	static const uint8_t FLASH_ADDRESS_SIZE = 14;
-	static const address_t FLASH_CPU_ADDRESS_BITS = 0x3FFF;
-	static const uint8_t PPAGE_LOW	= 0xE0;		// low ppage (flash page) register value
-
-
-	if (((page == 0xFD) && (logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) ||
-		((page == 0xFF) && (logicalAddress > 0xBFFF)) ||
-		((logicalAddress > 0x7FFF) && (logicalAddress < 0xC000)))
-	{
-		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) page << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
-	}
-	else
-	{
-		return logicalAddress;
-	}
 }
 
 template <class MEMORY_ADDR>
@@ -325,24 +274,23 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 				ShowError(ERR_BADCHKSUM,linenum,srec);
 				return false;
 			}
-			
-			GetPagedAddress(s19_addr, page, cpu_address);
-			flash_address = GetFlashAddress(page, cpu_address);
-			
-			if (addrSize == 2) // S1 record
+
+			if (srec[1] == S1)
 			{
-				if ((cpu_address + nDataByte-2) == CPU12_RESET_ADDR) {
+				if ((s19_addr + nDataByte-2) == CPU12_RESET_ADDR) {
 					entry_point = (uint16_t)(sdata[nDataByte-2] << 8) + sdata[nDataByte-1];
 				}
 			}
-			else if (addrSize == 3) // S2 record
+			else if (srec[1] == S2) // S2 record
 			{
-				if ((flash_address + nDataByte-2) == GetFlashAddress(0xFF,CPU12_RESET_ADDR)) {
+				if ((s19_addr + nDataByte-2) == GLOBAL_CPU12_RESET_ADDR) {
 					entry_point = (uint16_t)(sdata[nDataByte-2] << 8) + sdata[nDataByte-1];
 				}
+				
 			}
 			
-			return memWrite(flash_address, sdata,nDataByte);
+			return memWrite(s19_addr, sdata,nDataByte);
+
 		}
 	}
 	
