@@ -568,7 +568,7 @@ int sc_main(int argc, char *argv[])
 			cpu_address = (address_t) entry_point;
 		}
 
-		cpu->SetEntryPoint(page, cpu_address);
+		cpu->SetEntryPoint(cpu_address);
 
 		cerr << "Starting simulation ..." << endl;
 
