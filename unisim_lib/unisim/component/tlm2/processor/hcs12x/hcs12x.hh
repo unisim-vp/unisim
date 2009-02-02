@@ -59,7 +59,6 @@ namespace hcs12x {
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::component::cxx::processor::hcs12x::address_t;
-using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CPU;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Object;
@@ -129,8 +128,8 @@ public:
 
 	virtual void Reset();
 
-	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size);
-	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size);
+	virtual void BusWrite(address_t addr, const void *buffer, uint32_t size);
+	virtual void BusRead(address_t addr, void *buffer, uint32_t size);
 
 	void AsyncIntThread();
 

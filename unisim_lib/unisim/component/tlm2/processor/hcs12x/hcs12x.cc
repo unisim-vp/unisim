@@ -370,20 +370,11 @@ void
 HCS12X ::
 Run() {
 	uint8_t opCycles = 0;
-//	sc_time time_per_instruction = cpu_cycle_time * ipc;
+
 	sc_time &time_per_instruction = opCyclesArray[0];
 
 	while(1) {
-/*
-		if(cpu_time >= bus_time) {
-			bus_time += bus_cycle_time;
-			inherited::OnBusCycle();
-			if(cpu_time >= next_nice_time) {
-				next_nice_time = cpu_time + nice_time;
-				Synchronize();
-			}
-		}
-*/
+
 		if(cpu_time >= next_nice_time) {
 			next_nice_time = cpu_time + nice_time;
 			Synchronize();
@@ -395,7 +386,7 @@ Run() {
 				<< Endl << EndDebugInfo;
 
 		opCycles = inherited::Step();
-//		time_per_instruction = cpu_cycle_time * opCycles;
+
 		time_per_instruction = opCyclesArray[opCycles];
 
 		if( verbose_tlm_run_thread && inherited::logger_import)
@@ -412,7 +403,7 @@ HCS12X ::
 Reset() {
 }
 
-void HCS12X::BusWrite(physical_address_t addr, const void *buffer, uint32_t size)
+void HCS12X::BusWrite(address_t addr, const void *buffer, uint32_t size)
 {
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
@@ -435,7 +426,7 @@ void HCS12X::BusWrite(physical_address_t addr, const void *buffer, uint32_t size
 	trans->release();
 }
 
-void HCS12X::BusRead(physical_address_t addr, void *buffer, uint32_t size)
+void HCS12X::BusRead(address_t addr, void *buffer, uint32_t size)
 {
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
