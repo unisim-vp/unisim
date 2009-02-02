@@ -98,7 +98,7 @@ CPU::CPU(const char *name, Object *parent):
 	instruction_counter(0),
 	max_inst((uint64_t) -1),
 	param_max_inst("max-inst",this,max_inst),
-	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFFFFFF)
+	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFE)
 
 {
     ccr = new CCR_t();
@@ -143,20 +143,9 @@ CPU::~CPU()
 
 }
 
-/*
-void CPU::setMMC(MMC *_mmc) { mmc = _mmc; }
-*/
-
-void CPU::SetEntryPoint(uint8_t page, address_t cpu_address)
+void CPU::SetEntryPoint(address_t cpu_address)
 {
-
 	setRegPC(cpu_address);
-
-/*
-	if ((mmc->getMode() == MMC::EX) || (mmc->getMode() == MMC::NX)) {
-		mmc->write(CONFIG::PPAGE_REG_ADDRESS, page);
-	}
-*/
 }
 
 
@@ -164,8 +153,6 @@ void CPU::Reset()
 {
 	ccr->reset();
 	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
-
-//	mmc->Reset();
 }
 
 //=====================================================================
@@ -358,7 +345,7 @@ uint8_t CPU::Step()
 //=              HCS12X (CPU12X) Queue Handling                       =
 //=====================================================================
 
-uint8_t* CPU::queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte)
+uint8_t* CPU::queueFetch(address_t addr, uint8_t* ins, uint8_t nByte)
 {
 
 	if (nByte > QUEUE_SIZE) return NULL;
@@ -384,13 +371,10 @@ uint8_t* CPU::queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte)
 	return ins;
 }
 
-void CPU::queueFill(physical_address_t addr, int position, uint8_t nByte)
+void CPU::queueFill(address_t addr, int position, uint8_t nByte)
 {
 	uint8_t buff[QUEUE_SIZE];
 
-//	BusRead(addr, buff, nByte);
-
-//  *********
 	MMC_DATA mmc_data;
 	
 	mmc_data.type = ADDRESS::EXTENDED;
@@ -399,7 +383,6 @@ void CPU::queueFill(physical_address_t addr, int position, uint8_t nByte)
 	mmc_data.data_size = nByte;
 
 	BusRead(addr, &mmc_data, sizeof(MMC_DATA));
-// **********
 
 	for (uint8_t i=0; i<nByte; i++)
 	{
@@ -489,7 +472,7 @@ void CPU::HandleResetException(address_t resetVector)
 	this->Reset();
 	// clear U-bit for CPU12XV2
 	ccr->clrIPL();
-	SetEntryPoint(0, memRead16(resetVector));
+	SetEntryPoint(memRead16(resetVector));
 	AckReset();
 }
 
@@ -514,7 +497,7 @@ void CPU::HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 	ccr->setIPL(newIPL);
 	ccr->setX();
 
-	SetEntryPoint(0, memRead16(xirqVector));
+	SetEntryPoint(memRead16(xirqVector));
 	AckXIRQInterrupt();
 }
 
@@ -540,7 +523,7 @@ void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 		// clear U-bit for CPU12XV2
 		ccr->setIPL(newIPL);
 	
-		SetEntryPoint(0, memRead16(ibitVector));
+		SetEntryPoint(memRead16(ibitVector));
 	}
 
 	AckIbitInterrupt();
@@ -570,7 +553,7 @@ void CPU::HandleException(const TrapException& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(0, memRead16(trapVector));
+	SetEntryPoint(memRead16(trapVector));
 
 	AckTrapInterrupt();
 }
@@ -599,7 +582,7 @@ void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(0, memRead16(swiVector));
+	SetEntryPoint(memRead16(swiVector));
 
 	AckSWIInterrupt();
 }
@@ -628,7 +611,7 @@ void CPU::HandleException(const SysCallInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(0, memRead16(sysCallVector));
+	SetEntryPoint(memRead16(sysCallVector));
 
 	AckSysInterrupt();
 }
@@ -657,7 +640,7 @@ void CPU::HandleException(const SpuriousInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(0, memRead16(spuriousVector));
+	SetEntryPoint(memRead16(spuriousVector));
 
 	AckSpuriousInterrupt();
 }
@@ -681,7 +664,7 @@ void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
 
 	address_t accessErrorVector = GetIntVector(newIPL);
 
-	SetEntryPoint(0, memRead16(accessErrorVector));
+	SetEntryPoint(memRead16(accessErrorVector));
 
 	AckAccessErrorInterrupt();
 
@@ -1016,19 +999,17 @@ string CPU::Disasm(service_address_t service_addr, service_address_t &next_addr)
 {
 	Operation *op = NULL;
 
-	physical_address_t addr = service_addr & 0xFFFFFFFF;
-
 	uint8_t 	buffer[CodeType::maxsize];
 
-	ReadMemory(addr, buffer, CodeType::maxsize);
+	ReadMemory(service_addr, buffer, CodeType::maxsize);
 	CodeType 	insn( buffer, CodeType::maxsize);
 
-	op = this->Decode(addr, insn);
+	op = this->Decode(service_addr, insn);
 
 	stringstream disasmBuffer;
 	op->disasm(disasmBuffer);
 
-	next_addr = addr + op->GetEncoding().size;
+	next_addr = service_addr + op->GetEncoding().size;
 	return disasmBuffer.str();
 }
 

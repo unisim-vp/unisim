@@ -69,7 +69,6 @@
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
-//#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
 
@@ -222,15 +221,15 @@ class CPU : public Decoder,
 public:
 
 	void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
-	uint8_t* queueFetch(physical_address_t addr, uint8_t* ins, uint8_t nByte);
+	uint8_t* queueFetch(address_t addr, uint8_t* ins, uint8_t nByte);
 
 private:
-	physical_address_t	queueCurrentAddress;
+	address_t	queueCurrentAddress;
 	uint8_t		queueBuffer[QUEUE_SIZE];
 
 	int		queueFirst, queueNElement;
 
-	void queueFill(physical_address_t addr, int position, uint8_t nByte);
+	void queueFill(address_t addr, int position, uint8_t nByte);
 
 public:
 
@@ -257,8 +256,7 @@ public:
 	CPU(const char *name, Object *parent = 0);
 	virtual ~CPU();
 
-//	void setMMC(MMC *_mmc);
-	void SetEntryPoint(uint8_t page, address_t cpu_address);
+	void SetEntryPoint(address_t cpu_address);
 
 	//==========================================
 	//=     ISA - MEMORY ACCESS ROUTINES       =
@@ -275,8 +273,7 @@ public:
 	//=====================================================================
 
 	void OnBusCycle();
-	// step() Return the number of cpu cycles consumed by the operation
-	uint8_t Step();
+	uint8_t Step();	// Return the number of cpu cycles consumed by the operation
 	virtual void Stop(int ret);
 	virtual void Sync();
 
@@ -469,8 +466,8 @@ public:
 	//=====================================================================
 	//=             bus interface methods                              =
 	//=====================================================================
-	virtual void BusWrite(physical_address_t addr, const void *buffer, uint32_t size) = 0;
-	virtual void BusRead(physical_address_t addr, void *buffer, uint32_t size) = 0;
+	virtual void BusWrite(address_t addr, const void *buffer, uint32_t size) = 0;
+	virtual void BusRead(address_t addr, void *buffer, uint32_t size) = 0;
 
 	//=====================================================================
 	//=             CPURegistersInterface interface methods               =
@@ -507,7 +504,6 @@ public:
 
 
 //protected:
-//    class MMC	*mmc;
     class CCR_t *ccr;
 	class EBLB	*eblb;
 
@@ -589,18 +585,7 @@ inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool 
 	mmc_data.data_size = 1;
 	
 	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
-/*	
-	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type, isGlobal);
-	
-	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
-	{
-		data = mmc->read(addr);
-	}
-	else
-	{
-		BusRead(addr, &data, 1);
-	}
-*/
+
 	return data;
 }
 
@@ -615,21 +600,6 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 	mmc_data.data_size = 2;
 	
 	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
-
-/*
-	uint16_t data;
-	
-	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type, isGlobal);
-	
-	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
-	{
-		data = (uint16_t) (mmc->read(addr) << 8) || mmc->read(addr+1);
-	}
-	else
-	{
-		BusRead(addr, &data, 2);
-	}
-*/
 
 	data = BigEndian2Host(data);
 
@@ -646,19 +616,7 @@ inline void CPU::memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE t
 	mmc_data.data_size = 1;
 	
 	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
-	
-/*
-	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type, isGlobal);
 
-	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
-	{
-		mmc->write(addr, val);
-	}
-	else
-	{
-		BusWrite( addr, &val, 1);
-	}
-*/	
 }
 
 inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE type, bool isGlobal) {
@@ -674,20 +632,6 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE
 	
 	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-/*
-	physical_address_t addr = mmc->getPhysicalAddress(logicalAddress, type, isGlobal);
-
-	if ((addr >= CONFIG::MMC_LOW_ADDRESS) && (addr <= CONFIG::MMC_HIGH_ADDRESS)) // MMC Registers. To speed-up simulation.
-	{
-		mmc->write(addr, val >> 8);
-		mmc->write(addr+1, val);
-	}
-	else
-	{
-		BusWrite(addr, &val, 2);
-	}
-*/
-	
 }
 
 //======================================================================
