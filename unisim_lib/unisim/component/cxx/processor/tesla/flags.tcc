@@ -53,12 +53,16 @@ using namespace std;
 template <class CONFIG>
 bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> flags)
 {
+	assert(cond < 32);
 	if(cond == CD_TR) {
 		return bitset<CONFIG::WARP_SIZE>().set();	// fast path
 	}
-	
-	// TODO: Lookup in a big truth table
-	throw "Not implemented!";
+	bitset<CONFIG::WARP_SIZE> bs;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		bs[i] = IsPredSet(cond, flags[i]);
+	}
+	return bs;
 }
 
 template <class CONFIG>
@@ -109,6 +113,46 @@ VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, Vector
 	}
 	return flags;
 }
+
+
+template<class CONFIG>
+VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
+	VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	SetCond sc)
+{
+	// TODO: check it only outputs boolean values
+	// input:
+	// SZ
+	// 00  01  10
+	// +1  0   -1
+/*	uint8 truth_table[8][3] = 
+		{ 0, 0, 0 },	// FL
+		{ 0, 0, 1 },	// LT
+		{ 0, 1, 0 },	// EQ
+		{ 0, 1, 1 },	// LE
+		{  },	// GT
+		{ },	// NE
+		{ },	// GE
+		{ },	// TR*/
+	
+	bitset<3> lut = bitset<3>(sc);
+
+	VectorFlags<CONFIG> flags;
+	flags.Reset();
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		uint8_t cond = 0;
+		if(a[i] == b[i]) cond |= 1;
+		if(a[i] < b[i])  cond |= 2;	// TODO: signed, unsigned
+		
+		bool r = lut[cond];
+		flags.SetZero(r, i);
+		output[i] = r;
+	}
+	return flags;
+}
+
 
 template <class CONFIG>
 void VectorFlags<CONFIG>::Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask)
@@ -174,6 +218,32 @@ template <class CONFIG>
 int VectorFlags<CONFIG>::GetOvf(int lane)
 {
 	return int(v[lane][3]);
+}
+
+template <class CONFIG>
+bitset<4> VectorFlags<CONFIG>::operator[](unsigned int i) const
+{
+	return v[i];
+}
+
+template <class CONFIG>
+bitset<4> & VectorFlags<CONFIG>::operator[](unsigned int i)
+{
+	return v[i];
+}
+
+template <class CONFIG>
+std::ostream & operator << (std::ostream & os, VectorFlags<CONFIG> const & r)
+{
+	os << "(";
+	os << std::hex;
+	for(int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
+	{
+		os << r[i] << ", ";
+	}
+	os << r[CONFIG::WARP_SIZE-1];
+	os << std::dec;
+	os << ")";
 }
 
 } // end of namespace tesla

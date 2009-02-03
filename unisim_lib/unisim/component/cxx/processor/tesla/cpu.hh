@@ -242,10 +242,11 @@ public:
 	//=                  instruction address set/get methods              =
 	//=====================================================================
 	
-	inline uint32_t GetPC() const { return CurrentWarp().pc; }
-	inline void SetPC(uint32_t value) { CurrentWarp().pc = value; }
-	inline uint32_t GetNPC() const { return CurrentWarp().npc; }
-	inline void SetNPC(uint32_t value) { CurrentWarp().npc = value; }
+	inline address_t GetPC() const { return CurrentWarp().pc; }
+	inline void SetPC(address_t value) { CurrentWarp().pc = value; }
+	inline address_t GetNPC() const { return CurrentWarp().npc; }
+	inline address_t & GetNPC() { return CurrentWarp().npc; }
+	inline void SetNPC(address_t value) { CurrentWarp().npc = value; }
 	
 	
 	//=====================================================================
@@ -283,8 +284,8 @@ public:
 		uint32_t GetGPRAddress(uint32_t reg) const;
 		address_t GetSMAddress(uint32_t sm = 0) const;
 		
-		virtual_address_t pc;
-		virtual_address_t npc;
+		address_t pc;
+		address_t npc;
 
 		VectorFlags<CONFIG> pred_flags[MAX_PRED_REGS];
 		VectorAddress<CONFIG> addr[MAX_ADDR_REGS];
@@ -295,6 +296,10 @@ public:
 		uint32_t sm_window_size;
 		
 		bitset<WARP_SIZE> mask;
+		
+		std::stack<address_t> join_stack;
+		std::stack<bitset<WARP_SIZE> > mask_stack;
+		std::stack<address_t> loop_stack;
 
 		enum WarpState {
 			Active,
@@ -379,8 +384,26 @@ public:
 	
 	VecAddr & GetAddr(int reg);
 	VecAddr GetAddr(int reg) const;
+	
+	std::bitset<CONFIG::WARP_SIZE> & GetCurrentMask();
+	std::bitset<CONFIG::WARP_SIZE> GetCurrentMask() const;
+	
+	std::bitset<CONFIG::WARP_SIZE> PopMask();
+	void PushMask(std::bitset<CONFIG::WARP_SIZE> mask);
+	std::bitset<CONFIG::WARP_SIZE> GetNextMask();
+
+	address_t PopJoin();
+	void PushJoin(address_t addr);
+	address_t GetJoin() const;
+	address_t & GetJoin();
+	bool InConditional() const;
+	
+	address_t GetLoop() const;
+	void PushLoop(address_t addr);
+	void PopLoop();
 
 	void StepWarp(uint32_t warpid);
+	void CheckJoin();
 	
 	// High-level memory access
 	VecReg ReadConstant(VecReg const & addr, uint32_t seg = 0);	// addr in bytes

@@ -1,0 +1,149 @@
+/*
+ *  Copyright (c) 2009,
+ *  University of Perpignan (UPVD),
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of UPVD nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Sylvain Collange (sylvain.collange@univ-perp.fr)
+ */
+
+
+/***************************************************
+
+	BRANCH INSTRUCTIONS
+
+****************************************************/
+
+
+op br( \
+	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
+	0x1[4]:target_addr[19]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
+)
+
+//group br(br_full_normal)
+
+br.disasm = {
+	buffer << "br ";
+	buffer << "0x" << std::setfill('0') << std::setw(6) << std::hex << target_addr << std::dec;
+}
+
+br.execute = {
+	assert((target_addr & 3) == 0);	// 64-bit-aligned targets
+	typename CONFIG::address_t adjpc = cpu->GetPC() - CONFIG::CODE_START;
+
+	// Check mask
+	// Mask == none -> nop
+	// Mask == all  -> jump
+	// Mask == other -> argh
+	
+	// Side effect: take other side of cond branch???
+	std::bitset<CONFIG::WARP_SIZE> mask = insn->Mask();
+	typename CONFIG::address_t abs_target = target_addr + CONFIG::CODE_START;
+
+	if((mask).none())
+	{
+		if(adjpc > target_addr)
+		{
+			// Not-taken backward loop
+			// Re-enable threads
+			// Compare PC with top of loop address stack
+			// if ==, pop
+			if(cpu->GetLoop() != 0 && cpu->GetLoop() == cpu->GetPC()) {
+				cerr << hex;
+				cerr << "End of loop " << cpu->GetPC() - CONFIG::CODE_START << " detected, restoring context\n";
+				cerr << dec;
+				cpu->PopLoop();
+				cpu->GetCurrentMask() = cpu->PopMask();
+				cerr << " Mask = " << cpu->GetCurrentMask() << endl;
+			}
+		}
+	}
+//	else if(mask.flip().none())
+	else if(mask == cpu->GetCurrentMask())	// Same number of enable threads as before
+	{
+		cpu->SetNPC(abs_target);
+	}
+	else
+	{
+		if(adjpc > target_addr)
+		{
+			// backward jump, loop
+			// Okay to forget previous state??
+			// NO!!!
+			// Compare PC with top of loop address stack
+			// if !=, push PC and mask
+			cerr << "Conditional non-coherent backward jump from " << hex
+				<< adjpc << " to " << target_addr << dec << endl;
+
+			if(cpu->GetLoop() != cpu->GetPC()) {
+				cerr << hex;
+				cerr << "Start of loop " << cpu->GetPC() - CONFIG::CODE_START << " detected, saving context\n";
+				cerr << " Current mask = " << cpu->GetCurrentMask() << endl;
+				cerr << dec;
+				cpu->PushLoop(cpu->GetPC());
+				cpu->PushMask(cpu->GetCurrentMask());
+			}
+			cpu->GetCurrentMask() = mask;
+			cpu->SetNPC(abs_target);
+			
+		}
+		else
+		{
+			// forward jump
+			// Push lots of stuff in stacks
+			// then don't take the branch.
+			cerr << hex;
+			cerr << "Conditional non-coherent forward jump from "
+				<< adjpc << " to " << target_addr << endl;
+			cerr << dec;
+			cpu->PushMask(cpu->GetCurrentMask());
+			cpu->GetCurrentMask() = mask;
+			cpu->PushJoin(abs_target);
+			// At the right time (PC >= tos?) go back and
+			// take the branch.
+			// Keep comparing PC to top of stack, go back (1st pass) or pop (2nd pass) if >=.
+		}
+		cerr << " New mask = " << mask << endl;
+	}
+}
+
+
+op join( \
+	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
+	0xa[4]:target_addr[19]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
+)
+
+//group br(br_full_normal)
+
+join.disasm = {
+	buffer << "join ";
+	buffer << "0x" << std::setfill('0') << std::setw(6) << std::hex << target_addr << std::dec;
+}
+
+join.execute = {
+}

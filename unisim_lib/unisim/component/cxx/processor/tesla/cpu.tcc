@@ -62,7 +62,7 @@ using unisim::service::interfaces::File;
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::Line;
 
-
+#define VERBOSE
 
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
@@ -222,9 +222,9 @@ void CPU<CONFIG>::Reset(int threadsperblock, int numblocks)
 	{
 		for(int w = 0; w != warpsperblock; ++w)
 		{
-			// TODO: compute mask for last (partial) warp
+			// Compute mask for last (partial) warp
 			bitset<WARP_SIZE> mask;
-			int nt = threadsperblock - w;
+ 			int nt = threadsperblock - (w * WARP_SIZE);
 			if(nt < WARP_SIZE) {
 				// Partial warp
 				mask = (1 << nt) - 1;
@@ -246,8 +246,8 @@ bool CPU<CONFIG>::Step()
 
 	bool all_finished = true;
 	for(int i = 0; i != num_warps; ++i) {
-		StepWarp(i);
 		if(GetWarp(i).state != Warp::Finished) {
+			StepWarp(i);
 			all_finished = false;
 		}
 	}
@@ -265,8 +265,10 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 		throw MemoryAccessException<CONFIG>();
 	}
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
+#ifdef VERBOSE
 	insn.Disasm(cerr);
 	cerr << endl;
+#endif
 	if(insn.IsLong()) {
 		SetNPC(fetchaddr + 8);
 	}
@@ -275,9 +277,34 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	}
 	
 	insn.Execute();
+	// Join or take other branch?
+	CheckJoin();
+	
 	SetPC(GetNPC());
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::CheckJoin()
+{
+	if(InConditional())
+	{
+		if(GetNPC() == GetJoin())
+		{
+			// Joined
+			// Restore last mask and join
+			GetCurrentMask() = PopMask();
+			PopJoin();
+		}
+		else if(GetNPC() > GetJoin())
+		{
+			// Jumped over join point
+			// Go back following the other branch
+			std::swap(GetJoin(), GetNPC());
+			// Invert condition
+			GetCurrentMask() = ~GetCurrentMask() & GetNextMask();
+		}
+	}
+}
 
 template <class CONFIG>
 void CPU<CONFIG>::OnBusCycle()
@@ -401,6 +428,10 @@ void CPU<CONFIG>::DumpRegisters(int warpid, ostream & os)
 	for(int i = 0; i != warp.gpr_window_size; ++i)
 	{
 		os << " r" << i << " = " << GetGPR(warpid, i) << endl;
+	}
+	for(int i = 0; i != MAX_PRED_REGS; ++i)
+	{
+		os << " p" << i << " = " << warp.pred_flags[i] << endl;
 	}
 }
 
@@ -576,6 +607,94 @@ VectorAddress<CONFIG> CPU<CONFIG>::GetAddr(int reg) const
 {
 	assert(reg >= 0 && reg < MAX_ADDR_REGS);
 	return CurrentWarp().addr[reg];
+}
+
+template <class CONFIG>
+std::bitset<CONFIG::WARP_SIZE> & CPU<CONFIG>::GetCurrentMask()
+{
+	return CurrentWarp().mask;
+}
+
+template <class CONFIG>
+std::bitset<CONFIG::WARP_SIZE> CPU<CONFIG>::GetCurrentMask() const
+{
+	return CurrentWarp().mask;
+}
+
+template <class CONFIG>
+std::bitset<CONFIG::WARP_SIZE> CPU<CONFIG>::PopMask()
+{
+	std::bitset<CONFIG::WARP_SIZE> msk = CurrentWarp().mask_stack.top();
+	CurrentWarp().mask_stack.pop();
+	return msk;
+}
+
+template <class CONFIG>
+std::bitset<CONFIG::WARP_SIZE> CPU<CONFIG>::GetNextMask()
+{
+	return CurrentWarp().mask_stack.top();
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::PushMask(std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	CurrentWarp().mask_stack.push(mask);
+}
+
+template <class CONFIG>
+typename CONFIG::address_t CPU<CONFIG>::PopJoin()
+{
+	address_t addr = CurrentWarp().join_stack.top();
+	CurrentWarp().join_stack.pop();
+	return addr;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::PushJoin(typename CONFIG::address_t addr)
+{
+	// TODO: raise exn if ovf
+	assert(CurrentWarp().join_stack.size() < BRANCH_STACK_DEPTH);
+	CurrentWarp().join_stack.push(addr);
+}
+
+template <class CONFIG>
+typename CONFIG::address_t CPU<CONFIG>::GetJoin() const
+{
+	return CurrentWarp().join_stack.top();
+}
+
+template <class CONFIG>
+typename CONFIG::address_t & CPU<CONFIG>::GetJoin()
+{
+	return CurrentWarp().join_stack.top();
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::InConditional() const
+{
+	return !CurrentWarp().join_stack.empty();
+}
+
+template <class CONFIG>
+typename CONFIG::address_t CPU<CONFIG>::GetLoop() const
+{
+	if(CurrentWarp().loop_stack.empty()) {
+		return 0;
+	}
+	return CurrentWarp().loop_stack.top();
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::PushLoop(address_t addr)
+{
+	CurrentWarp().loop_stack.push(addr);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::PopLoop()
+{
+	assert(!CurrentWarp().loop_stack.empty());
+	CurrentWarp().loop_stack.pop();
 }
 
 template <class CONFIG>

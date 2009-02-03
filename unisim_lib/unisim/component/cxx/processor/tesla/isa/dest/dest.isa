@@ -178,3 +178,33 @@ alu_halfimm.disasm = {
 alu_halfimm.disasmPred = {
 }
 
+
+// TODO: forbid immediate or...?
+op flow_full( \
+	/*subop*/?[3]:/*?*/?[1]:?[14]: \
+	pred_reg[2]:pred_cond[5]:set_pred[1]:set_pred_reg[2]:output_reg[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	/*op*/?[4]:/*target_addr*/?[19]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
+)
+
+flow_full.predMask = {
+	return IsPredSet(pred_cond, cpu->GetFlags(pred_reg));
+}
+
+flow_full.writePred = {
+	if(set_pred) {
+		cpu->GetFlags(set_pred_reg).Write(flags, mask);
+	}
+}
+
+flow_full.disasm = {
+	os << "???";
+}
+
+flow_full.disasmPred = {
+	if(pred_cond != CD_TR)
+	{
+		os << "@p" << pred_reg;
+		os << "." << CondCodeString(Cond(pred_cond)) << " ";
+	}
+}
+

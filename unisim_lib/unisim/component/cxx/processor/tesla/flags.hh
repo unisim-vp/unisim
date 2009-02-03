@@ -81,6 +81,8 @@ enum Cond
 
 enum SetCond
 {
+	// Actually a LUT
+	// addressed by SZ flags
 	SC_FL = 0,
 	SC_LT = 1,
 	SC_EQ = 2,
@@ -107,10 +109,16 @@ struct VectorFlags
 	int GetCarry(int lane);
 	void SetOvf(int o, int lane);
 	int GetOvf(int lane);
+	
+	bitset<4> operator[](unsigned int i) const;
+	bitset<4> & operator[](unsigned int i);
 
 	bitset<4> v[CONFIG::WARP_SIZE];
 	
 };
+
+template <class CONFIG>
+std::ostream & operator << (std::ostream & os, VectorFlags<CONFIG> const & r);
 
 std::string CondCodeString(Cond c);
 std::string SetCondString(SetCond c);
@@ -125,6 +133,12 @@ VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output);
 
 template<class CONFIG>
 VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags);
+
+template<class CONFIG>
+VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
+	VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	SetCond sc);
 
 } // end of namespace tesla
 } // end of namespace processor

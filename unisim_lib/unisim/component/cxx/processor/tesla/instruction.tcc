@@ -98,6 +98,11 @@ void Instruction<CONFIG>::Execute()
 template <class CONFIG>
 void Instruction<CONFIG>::Disasm(std::ostream & os) const
 {
+	if(dest == 0) {
+		dest = dest_decoder.Decode(addr, iw);
+	}
+	dest->disasmPred(cpu, this, os);
+
 	if(operation == 0) {
 		operation = op_decoder.Decode(addr, iw);
 	}
@@ -164,6 +169,15 @@ template <class CONFIG>
 void Instruction<CONFIG>::SetPredI32(VectorRegister<CONFIG> const & value) const
 {
 	SetPredI32(value, VectorFlags<CONFIG>().Reset());
+}
+
+template <class CONFIG>
+void Instruction<CONFIG>::SetPred(VectorFlags<CONFIG> flags) const
+{
+	if(dest == 0) {
+		dest = dest_decoder.Decode(addr, iw);
+	}
+	dest->writePred(cpu, flags, Mask());
 }
 
 template <class CONFIG>

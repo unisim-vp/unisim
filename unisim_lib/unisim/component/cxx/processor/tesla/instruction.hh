@@ -73,6 +73,7 @@ public:
 	void SetPredFP32(VectorRegister<CONFIG> const & value) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value) const;
+	void SetPred(VectorFlags<CONFIG> flags) const;
 
 	bitset<CONFIG::WARP_SIZE> Mask() const;
 	

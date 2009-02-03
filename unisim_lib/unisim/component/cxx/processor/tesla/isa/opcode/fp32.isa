@@ -276,3 +276,37 @@ fsmul_full.execute = {
 	insn->SetPredFP32(output);
 }
 
+
+// TODO: forbit immediate?
+op fsset_full( \
+	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:setcond[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
+
+group fsset(fsset_full)
+
+fsset.disasm = {
+	buffer << "set";
+	buffer << SetCondString(SetCond(setcond));
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
+	
+//	DisasmRounding(rounding_mode, buffer);
+	buffer << " ";
+	insn->DisasmSrc1(buffer);
+	
+}
+
+fsset.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a * b
+	reg_t a = insn->ReadSrc1();
+	reg_t output;
+	assert(false);
+	
+	insn->WriteDest(output);
+	insn->SetPredFP32(output);
+}
+

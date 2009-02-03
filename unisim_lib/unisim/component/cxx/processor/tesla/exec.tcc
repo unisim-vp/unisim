@@ -334,4 +334,5 @@ void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, 
 	Scatter32(offset, output, mask, 1, base);
 }
 
+
 #endif

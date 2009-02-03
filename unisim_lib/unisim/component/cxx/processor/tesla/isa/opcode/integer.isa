@@ -322,4 +322,113 @@ shl_full_imm2.execute = {
 	insn->SetPredI32(output);
 }
 
+// and, or, xor, 2nd
 
+// TODO: forbid immediate
+
+op and_full( \
+	/*subop*/0[3]:/*?*/0[1]:?[1]:u32[1]:0[2]:?[3]:/*imm*/0[1]:0[2]:src1_not[1]:src2_not[1]:/*lop*/0[2]:?[12]:/*marker*/?[2]: \
+	0xd[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:/*src2*/?[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+and_full.disasm = {
+	buffer << "and";
+	insn->DisasmControl(buffer);
+
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	insn->DisasmSrc2(buffer);
+}
+
+and_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	
+	assert(u32);
+
+	// dest = (neg?)a & (neg?)b
+	reg_t a = insn->ReadSrc1();
+	if(src1_not) {
+		a = BinNeg(a);
+	}
+	reg_t b = insn->ReadSrc2();
+	if(src2_not) {
+		b = BinNeg(b);
+	}
+	
+	reg_t output = BinAnd(a, b);
+	
+	insn->WriteDest(output);
+	insn->SetPredI32(output);
+}
+
+
+op set_full( \
+	/*subop*/3[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:u32[1]:const_seg[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cond[3]:?[12]:/*marker*/?[2]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*f64*/0[1]:/*src2*/?[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+set_full.disasm = {
+	buffer << "set.";
+	buffer << SetCondString(SetCond(cond));
+	insn->DisasmControl(buffer);
+	buffer << ".u32";
+
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	insn->DisasmSrc2(buffer);
+}
+
+set_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	
+	assert(u32);	// TODO
+
+	// dest = cond(a, b)
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
+	
+	reg_t output;
+	VectorFlags<CONFIG> vf;
+	// GRRRRR
+//	vf = ComputePredSetI32<CONFIG>(output, a, b, cond);
+	
+	insn->WriteDest(output);
+	insn->SetPred(vf);
+}
+
+op nop_full_normal( \
+	/*subop*/7[3]:/*?*/0[1]:?[26]:/*marker*/0[2]: \
+	0xf[4]:?[28] \
+)
+
+op nop_full_end( \
+	/*subop*/7[3]:/*?*/0[1]:?[26]:/*marker*/1[2]: \
+	0xf[4]:?[28] \
+)
+
+op nop_full_join( \
+	/*subop*/7[3]:/*?*/0[1]:?[26]:/*marker*/2[2]: \
+	0xf[4]:?[28] \
+)
+
+group nop_full(nop_full_normal, nop_full_end, nop_full_join)
+
+nop_full.disasm = {
+	buffer << "nop";
+	insn->DisasmControl(buffer);
+}
+
+nop_full.execute = {
+}

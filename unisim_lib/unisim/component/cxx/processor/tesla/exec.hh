@@ -44,7 +44,62 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+template<class CONFIG>
+VectorRegister<CONFIG> BinNeg(VectorRegister<CONFIG> const & a);
 
+template<class CONFIG>
+VectorRegister<CONFIG> BinAnd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinNeg(VectorRegister<CONFIG> const & a)
+{
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = ~a[i];
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinAnd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = a[i] & b[i];
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = a[i] | b[i];
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = a[i] ^ b[i];
+	}
+	return rv;
+}
 
 } // end of namespace tesla
 } // end of namespace processor
