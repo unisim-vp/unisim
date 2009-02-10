@@ -115,6 +115,8 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 	address_t cpu_address;
 	physical_address_t addr;
 	
+	// TODO: read MMC registers
+	
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 	
@@ -136,6 +138,8 @@ bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t
 	page_t page;
 	address_t cpu_address;
 	physical_address_t addr;
+
+	// TODO: write to MMC registers
 	
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
