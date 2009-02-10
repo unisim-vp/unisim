@@ -43,8 +43,9 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-XINT::XINT(const sc_module_name& name, Object *parent) : 
-	isHardwareInterrupt(false) 
+XINT::XINT(const sc_module_name& name, Object *parent) :
+	sc_module(name),
+	isHardwareInterrupt(false)
 {
 
 	reset();
@@ -62,15 +63,15 @@ XINT::~XINT() {
 
 }
 
-/* 
+/*
  *    This method is called to compute the interrupt vector based on currentIPL
  */
 void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
 
-	// The CPU has taken in account the external interrupt request => disactivate the interrupt request 
+	// The CPU has taken in account the external interrupt request => disactivate the interrupt request
 	toCPU_Initiator = false;
-	
+
 	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
 
 	uint8_t newIPL = 0;
@@ -118,7 +119,7 @@ void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 			vectorAddress = (address_t) getIVBR() << 8 ;
 		}
 	}
-	
+
 	// The comparaison of the newIPL to the currentIPL is done by the CPU during I-bit-interrupt handling
 	buffer->ipl = newIPL;
 	buffer->vectorAddress = vectorAddress;
