@@ -44,7 +44,7 @@ template <{class} {CONFIG}>
 constructor action initialize() {
 }
 
-action {VectorRegister<CONFIG>} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {RegType} {rt}) {
+action {VectorRegister<CONFIG>} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {Instruction<CONFIG> const *} {insn}, {RegType} {rt}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 

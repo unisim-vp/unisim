@@ -147,3 +147,20 @@ join.disasm = {
 
 join.execute = {
 }
+
+op fence( \
+	/*?*/0[32]: \
+	0x8[4]:ope[3]:bar[4]:arg[12]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
+)
+
+fence.disasm = {
+	buffer << "bar.sync";
+	if(ope != 3 || arg != 0xfff) {
+		buffer << ".???";
+	}
+	buffer << " " << bar;
+}
+
+fence.execute = {
+}
+

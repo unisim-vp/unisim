@@ -45,6 +45,61 @@ namespace processor {
 namespace tesla {
 
 template<class CONFIG>
+VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorRegister<CONFIG> const & c,
+	uint32_t nega, uint32_t negb, uint32_t negc,
+	uint32_t rounding_mode, uint32_t sat = 0);
+template<class CONFIG>
+VectorRegister<CONFIG> FSMul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	uint32_t nega, uint32_t negb,
+	uint32_t rounding_mode, uint32_t sat = 0);
+template<class CONFIG>
+VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	uint32_t nega, uint32_t negb,
+	uint32_t rounding_mode, uint32_t sat = 0);
+template<class CONFIG>
+void FSNegate(VectorRegister<CONFIG> & a);
+
+template<class CONFIG>
+VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorFlags<CONFIG> & flags,
+	uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);	// No carry in
+
+template<class CONFIG>
+VectorRegister<CONFIG> UMad24(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorRegister<CONFIG> const & c,
+	VectorFlags<CONFIG> & flags,
+	uint32_t src1_neg = 0,
+	uint32_t src3_neg = 0);
+
+template<class CONFIG>
+VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
+	                 uint32_t rb = 0, uint32_t rc = 0);
+template<class CONFIG>
+VectorRegister<CONFIG> I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
+	                 uint32_t rb = 0, uint32_t rc = 0);
+template<class CONFIG>
+VectorRegister<CONFIG> I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
+template<class CONFIG>
+VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
+
+template<class CONFIG>
+void I32Negate(VectorRegister<CONFIG> & a);
+template<class CONFIG>
+VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat);
+
+template<class CONFIG>
+VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+
+
+template<class CONFIG>
 VectorRegister<CONFIG> BinNeg(VectorRegister<CONFIG> const & a);
 
 template<class CONFIG>
@@ -56,50 +111,19 @@ VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CO
 template<class CONFIG>
 VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
 
+template<class CONFIG>
+VectorRegister<CONFIG> UMul24Lo(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	uint32_t sat, uint32_t ra, uint32_t rb, uint32_t u16);
 
 template<class CONFIG>
-VectorRegister<CONFIG> BinNeg(VectorRegister<CONFIG> const & a)
-{
-	VectorRegister<CONFIG> rv;
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
-	{
-		rv[i] = ~a[i];
-	}
-	return rv;
-}
+VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, uint32_t sb);
 
-template<class CONFIG>
-VectorRegister<CONFIG> BinAnd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
-{
-	VectorRegister<CONFIG> rv;
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
-	{
-		rv[i] = a[i] & b[i];
-	}
-	return rv;
-}
+inline SMType MvSizeToSMType(uint32_t mv_size);
 
-template<class CONFIG>
-VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
-{
-	VectorRegister<CONFIG> rv;
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
-	{
-		rv[i] = a[i] | b[i];
-	}
-	return rv;
-}
+///////// Should not be here /////////
 
-template<class CONFIG>
-VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
-{
-	VectorRegister<CONFIG> rv;
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
-	{
-		rv[i] = a[i] ^ b[i];
-	}
-	return rv;
-}
+
 
 } // end of namespace tesla
 } // end of namespace processor

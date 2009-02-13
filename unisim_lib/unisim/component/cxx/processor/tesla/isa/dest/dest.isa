@@ -49,7 +49,7 @@ constructor action initialize() {
 }
 
 action {void} write({CPU<CONFIG> *} {cpu}, {VectorRegister<CONFIG> const &} {value}, \
-	{bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}) \
+	{bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}, {RegType} {rt}) \
 {
 	throw IllegalInstructionException<CONFIG>();
 }
@@ -107,7 +107,11 @@ alu_full.predMask = {
 alu_full.write = {
 	if(output_reg)
 	{
-		throw "Output reg not implemented!";
+		// Long insn : o127 = sink
+		if(dest != 127) {
+			assert(false);
+			throw "Output reg not implemented!";
+		}
 	}
 	else
 	{
@@ -132,7 +136,14 @@ alu_full.disasm = {
 	if(output_reg)
 	{
 		// o127 (long) or o63 (short instr) = sink??
-		os << "o" << dest;
+		// BTW, when is a short insn able to write to an output reg?
+		if(dest != 127) {
+			os << "o" << dest;
+		}
+		else {
+			// bit bucket
+			os << "_";
+		}
 	}
 	else
 	{

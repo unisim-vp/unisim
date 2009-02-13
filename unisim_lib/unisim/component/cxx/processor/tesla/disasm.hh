@@ -61,15 +61,21 @@ void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, ostream & b
 void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo,
 	uint32_t addr_hi, uint32_t addr_imm, ostream & buffer);
 void DisasmImm(uint32_t imm_hi, uint32_t imm_lo, ostream & buffer);
-void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, uint32_t data_32, ostream & buffer);
+void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, uint32_t data_32, uint32_t abssat, ostream & buffer);
 void DisasmDataType(uint32_t dt, ostream & buffer);
 std::string DataTypeString(DataType d);
 std::string RoundingModeString(RoundingMode r);
 std::string ConvTypeString(ConvType t);
 std::string SMTypeString(SMType t);
+std::string AbsSatString(AbsSat as);
+
+void DisasmAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t shift, ostream & buffer);
 void DisasmSign(uint32_t sign, ostream & buffer);
-void DisasmGlobal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, ostream & buffer);
+void DisasmGlobal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t dt, ostream & buffer);
 void DisasmShared(uint32_t addr, uint32_t type, ostream & buffer);
+void DisasmShared(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, SMType type, ostream & buffer);
+void DisasmNot(uint32_t bnot, ostream & buffer);
+void DisasmSignWidth(uint32_t sign, uint32_t width, ostream & buffer);
 
 } // end of namespace tesla
 } // end of namespace processor

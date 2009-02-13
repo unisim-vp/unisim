@@ -53,8 +53,14 @@ group mov_reg_full_noimm(mov_reg_full_normal)
 
 op mov_reg_full_imm( \
 	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
-	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*imm_lo*/?[6]:\
+	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*op1_shared*/?[1]:/*src2_cm*/0[1]:f64[1]:/*imm_lo*/?[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+op mov_reg_half( \
+	?[32]: \
+	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/0[1]:f64[1]:/*imm_lo*/?[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1]\
 )
 
 
@@ -69,7 +75,7 @@ mov_reg_full_noimm.disasm = {
 	insn->DisasmControl(buffer);
 
 	//cpu.DisasmDataType(m_size, buffer);
-	DisasmConvert(cvt_round, cvt_type, data_32, buffer);
+	DisasmConvert(cvt_round, cvt_type, data_32, abs_sat, buffer);
 //	cpu.DisasmMarker(marker, buffer);
 	buffer << " ";
 //	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
@@ -88,7 +94,7 @@ mov_reg_full_noimm.execute = {
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
 	reg_t a = insn->ReadSrc1();	// TODO: addr reg
-	reg_t output = cpu->Convert(a, cvt_round, cvt_type);
+	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
 
 //	if(!ignore_output)
 //		cpu.WriteOutput(output, dest, pred_cond, pred_reg);
@@ -125,6 +131,87 @@ mov_reg_full_imm.execute = {
 	insn->SetPredI32(output);	// TODO: check type?
 }
 
+mov_reg_half.disasm = {
+	buffer << "mov";
+	insn->DisasmControl(buffer);
+
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+}
+
+mov_reg_half.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	// dest = a
+	// TODO: Read 2 regs if 64-bit
+	assert(!f64);
+	reg_t a = insn->ReadSrc1();
+	reg_t output = a;
+
+	insn->WriteDest(output);
+	insn->SetPredI32(output);	// TODO: check type?
+}
+
+
+op stsh_full( \
+	/*subop*/7[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:w32[1]:/*?*/0[2]: m_size[3]:src3[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
+	0x0[4]:addr_lo[2]:/*??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]: \
+	dest[14]:/*?*/0[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+// Source/dest swapped?
+//  mov g[a?src1], dest
+
+stsh_full.disasm = {
+	// m_size = 0 -> b16
+	// m_size = 1 -> b32
+	// m_size = 2 -> b8
+	buffer << "mov";
+	insn->DisasmControl(buffer);
+	SMType smt;
+	switch(m_size) {
+	case 0:
+		buffer << ".b16";
+		break;
+	case 1:
+		buffer << ".b32";
+		break;
+	case 2:
+		buffer << ".b8";
+		break;
+	default:
+		buffer << ".b??";
+	}
+
+	if(!w32) {
+		buffer << ".b16";
+	}
+
+	buffer << " ";
+	
+	DisasmShared(dest, addr_lo, addr_hi, 1, MvSizeToSMType(m_size), buffer);
+	buffer << ", ";
+
+//	buffer << "r" << src3;
+	insn->DisasmSrc3(buffer, RegType(w32));
+}
+
+stsh_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	// dest = a
+	//reg_t a = cpu->GetGPR(src3);
+	reg_t a = insn->ReadSrc3(0, RegType(w32));
+
+	reg_t output = a;
+
+	cpu->ScatterShared(output, dest, addr_lo, addr_hi, 1, insn->Mask(), MvSizeToSMType(m_size));
+	insn->SetPredI32(output);
+}
+
+
 op stg_full( \
 	/*subop*/5[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
@@ -151,7 +238,7 @@ stg_full.disasm = {
 //	cpu.DisasmMarker(marker, buffer);
 	buffer << " ";
 //	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
-	DisasmGlobal(src1, addr_lo, addr_hi, addr_imm, segment, buffer);
+	DisasmGlobal(src1, addr_lo, addr_hi, addr_imm, segment, m_size, buffer);
 	buffer << ", ";
 //	cpu.DisasmSrc(src1, 0, 0, 0, buffer);
 //	insn->DisasmSrc1(buffer);	// TODO: force reg?
@@ -176,10 +263,10 @@ stg_full.execute = {
 
 
 op ldg_full( \
-	/*subop*/8[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
+	/*subop*/4[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/?[2]: \
 	0xd[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:segment[7]:\
-	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+	src1[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 //  mov dest, g[src1]
@@ -200,7 +287,7 @@ ldg_full.disasm = {
 	buffer << " ";
 	insn->DisasmDest(buffer);
 	buffer << ", ";
-	DisasmGlobal(src1, addr_lo, addr_hi, addr_imm, segment, buffer);
+	DisasmGlobal(src1, addr_lo, addr_hi, addr_imm, segment, m_size, buffer);
 }
 
 ldg_full.execute = {
@@ -208,8 +295,8 @@ ldg_full.execute = {
 
 	reg_t output;
 
-	assert(false);
-//	cpu->GatherGlobal(output, src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
+	cpu->GatherGlobal(output, src1, addr_lo, addr_hi, addr_imm, segment, insn->Mask(), DataType(m_size));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
 }
 
@@ -220,4 +307,108 @@ ldg_full.execute = {
 // 	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
 // 	src1[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 // )
+
+
+
+op icvt_full_normal( \
+	/*subop*/0[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+group icvt_full_noimm(icvt_full_normal)
+
+// No immediate : dest = conv(src1)
+
+
+icvt_full_noimm.disasm = {
+	// data_32 = 0 -> mov.b16
+	// data_32 = 1 -> mov.b32
+	// cvt_round = 1 -> default, round down?
+	// cvt_type = 7 -> default, no conv
+	// pred_cond = 15 -> default, true
+	buffer << "cvt";
+	insn->DisasmControl(buffer);
+
+	DisasmConvert(cvt_round, cvt_type, data_32, abs_sat, buffer);
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+}
+
+icvt_full_noimm.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	// dest = a
+	// TODO: Read 2 regs if 64-bit
+	assert(!f64);
+	reg_t a = insn->ReadSrc1();	// TODO: addr reg
+	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
+
+	insn->WriteDest(output);
+	insn->SetPredI32(output);	// TODO: check type?
+	// (16-bit, etc.)
+}
+
+// TODO: icvt_neg (subop = 1)
+
+op ldam_full_normal( \
+	/*subop*/6[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	0x0[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:src2[7]:\
+	/*src1*/?[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+// TODO: end, join, imm, half
+
+group ldam_full(ldam_full_normal)
+
+ldam_full.disasm = {
+	buffer << "lda";
+	insn->DisasmControl(buffer);
+	
+	buffer << " a" << dest;
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+	
+	buffer << " << ";
+	//DisasmImm(0, src2, buffer);
+	buffer << src2;
+}
+
+ldam_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	reg_t a = insn->ReadSrc1();
+	reg_t output = ShiftLeft(a, src2);
+	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(output), insn->Mask());
+}
+
+op ldaa_full_normal( \
+	/*subop*/1[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/0[2]: \
+	0xd[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:src[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+group ldaa_full(ldaa_full_normal)
+
+// TODO: end, join, imm, half
+
+ldaa_full.disasm = {
+	buffer << "lda";
+	insn->DisasmControl(buffer);
+	
+	buffer << " a" << dest;
+	buffer << ", ";
+	DisasmAddress(src, addr_lo, addr_hi, 1, 0, buffer);
+}
+
+ldaa_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	typedef VectorAddress<CONFIG> VecAddr;	
+
+	VecAddr output = cpu->EffectiveAddress(src, addr_lo, addr_hi, 1, 0);
+	cpu->GetAddr(dest).Write(output, insn->Mask());
+}
 

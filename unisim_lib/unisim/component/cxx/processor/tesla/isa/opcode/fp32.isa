@@ -105,7 +105,7 @@ fsmad_full.execute = {
 	reg_t b = insn->ReadSrc2();
 	reg_t c = insn->ReadSrc3();
 	
-	reg_t output = cpu->FSMad(a, b, c, src1_neg, 0, src3_neg, rounding_mode);
+	reg_t output = FSMad(a, b, c, src1_neg, 0, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);
@@ -177,7 +177,7 @@ fsadd_full.execute = {
 	reg_t a = insn->ReadSrc1();
 	reg_t c = insn->ReadSrc3();
 	
-	reg_t output = cpu->FSAdd(a, c, src1_neg, src3_neg, rounding_mode);
+	reg_t output = FSAdd(a, c, src1_neg, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);
@@ -222,7 +222,7 @@ fsadd_halfimm.execute = {
 	reg_t a = insn->ReadSrc1();
 	reg_t b = insn->ReadSrc2();
 	
-	reg_t output = cpu->FSAdd(a, b, src1_neg, src2_neg, RM_RN);
+	reg_t output = FSAdd(a, b, src1_neg, src2_neg, RM_RN);
 	
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);
@@ -270,7 +270,7 @@ fsmul_full.execute = {
 
 	// src3_neg applies to Src2 here
 	// (not very useful to have -a * -b btw)
-	reg_t output = cpu->FSMul(a, b, src1_neg, src3_neg, rounding_mode);
+	reg_t output = FSMul(a, b, src1_neg, src3_neg, rounding_mode);
 	
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);

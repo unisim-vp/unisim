@@ -318,49 +318,7 @@ public:
 	//=====================================================================
 
 
-	// Implementation in exec.tcc
-	VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a,
-		VectorRegister<CONFIG> const & b,
-		VectorRegister<CONFIG> const & c,
-		uint32_t nega, uint32_t negb, uint32_t negc,
-		uint32_t rounding_mode, uint32_t sat = 0);
-	VectorRegister<CONFIG> FSMul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		uint32_t nega, uint32_t negb,
-		uint32_t rounding_mode, uint32_t sat = 0);
-	VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		uint32_t nega, uint32_t negb,
-		uint32_t rounding_mode, uint32_t sat = 0);
-	void FSNegate(VectorRegister<CONFIG> & a);
 
-	VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a,
-		VectorRegister<CONFIG> const & b,
-		VectorFlags<CONFIG> & flags,
-		uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);	// No carry in
-
-	VectorRegister<CONFIG> UMad24(VectorRegister<CONFIG> const & a,
-		VectorRegister<CONFIG> const & b,
-		VectorRegister<CONFIG> const & c,
-		VectorFlags<CONFIG> & flags,
-		uint32_t src1_neg = 0,
-		uint32_t src3_neg = 0);
-
-	VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
-		                 uint32_t rb = 0, uint32_t rc = 0);
-	VectorRegister<CONFIG> I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
-		                 uint32_t rb = 0, uint32_t rc = 0);
-	VectorRegister<CONFIG> I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
-	VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
-		                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
-
-	void I32Negate(VectorRegister<CONFIG> & a);
-	VectorRegister<CONFIG> Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type);
-	
-	VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
-
-	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
 	void Join();
 	void End();
 
@@ -405,21 +363,35 @@ public:
 	void StepWarp(uint32_t warpid);
 	void CheckJoin();
 	
+	// Memory access helpers
+	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void ScatterShared(VecReg const & output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
+
+	void GatherShared(VecAddr const & addr, VecReg & data, SMType t = SM_U32);	// addr in bytes
+	void GatherShared(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
+
 	// High-level memory access
+	void ReadShared(int addr, VecReg & data, SMType t = SM_U32);		// addr in WORDS!!
 	VecReg ReadConstant(VecReg const & addr, uint32_t seg = 0);	// addr in bytes
 	VecReg ReadConstant(int addr, uint32_t seg = 0);
-	void ReadShared(VecReg const & addr, VecReg & data, SMType t = SM_U32);	// addr in bytes
-	void ReadShared(int addr, VecReg & data, SMType t = SM_U32);		// addr in WORDS!!
+
+
 
 	// Low-level memory access
-	void Gather32(VecReg const & addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
-	void Scatter32(VecReg const & addr, VecReg const & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
+	void Gather32(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
+	void Scatter32(VecAddr const & addr, VecReg const & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
+	void Gather16(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
+	void Scatter16(VecAddr const & addr, VecReg const & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
 	void Broadcast32(address_t addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
 	
 	void Read32(address_t addr, uint32_t & data, uint32_t factor = 1, address_t offset = 0);
 	void Write32(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
+	void Read16(address_t addr, uint32_t & data, uint32_t factor = 1, address_t offset = 0);
+	void Write16(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
 
-//	VecReg GlobalEffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg);
+	VecAddr EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi,
+		uint32_t addr_imm, uint32_t shift);
 	
 	Warp & CurrentWarp();
 	Warp const & CurrentWarp() const;

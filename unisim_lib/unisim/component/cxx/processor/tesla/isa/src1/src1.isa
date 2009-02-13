@@ -48,7 +48,7 @@ template <{class} {CONFIG}>
 //constructor action initialize() {
 //}
 
-action {VectorRegister<CONFIG>} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {RegType} {rt}) {
+action {VectorRegister<CONFIG>} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {Instruction<CONFIG> const *} {insn}, {RegType} {rt}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -85,11 +85,12 @@ op alu_imm_reg(/*subop*/?[3]:/*?*/?[1]:/*imm*/?[26]:/*marker*/3[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/0[1]:/*src2_cm*/?[1]:/*src2_neg*/?[1]:/*src2*/?[6]:/*src1_neg*/?[1]:src1[6]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
+op alu_half_reg(?[32]:\
+	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/0[1]:/*src2_cm*/?[1]:/*src2_neg*/?[1]:/*src2*/?[6]:/*src1_neg*/?[1]:src1[6]:\
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
 
-// TODO: half ops
 
-
-group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg, alu_imm_reg)
+group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg, alu_imm_reg, alu_half_reg)
 
 alu_reg.read = {
 	if(rt == RT_U32) {
@@ -118,36 +119,57 @@ alu_reg.disasm = {
 // Shared
 
 op alu_full_normal_shared(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/1[1]:/*src3*/?[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]:\
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:smtype[2]:src1[5]:\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/0[2]:\
+	/*op*/?[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:smtype[2]:src1[5]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 op alu_full_end_shared(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/1[1]:/*src3*/?[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]:\
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:smtype[2]:src1[5]:\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/1[2]:\
+	/*op*/?[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:smtype[2]:src1[5]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 op alu_full_join_shared(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/1[1]:/*src3*/?[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]:\
-	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:smtype[2]:src1[5]:\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:addr_hi[1]:/*marker*/2[2]:\
+	/*op*/?[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:smtype[2]:src1[5]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 op alu_imm_shared(/*subop*/?[3]:/*?*/?[1]:/*imm*/?[26]:/*marker*/3[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/1[1]:/*src2_cm*/?[1]:/*src2_neg*/?[1]:/*src2*/?[6]:/*src1_neg*/?[1]:smtype[2]:src1[4]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
+op alu_half_shared(?[32]:\
+	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/1[1]:/*src2_cm*/?[1]:/*src2_neg*/?[1]:/*src2*/?[6]:/*src1_neg*/?[1]:smtype[2]:src1[4]:\
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
+
 // TODO: half ops
 
-group alu_shared(alu_full_normal_shared, alu_full_end_shared, alu_full_join_shared, alu_imm_shared)
+group alu_full_shared(alu_full_normal_shared, alu_full_end_shared, alu_full_join_shared)
 
-alu_shared.read = {
+alu_full_shared.read = {
+	VectorRegister<CONFIG> vr;
+	//cpu->ReadShared(src1 + offset, vr, SMType(smtype));
+	assert(offset == 0);
+	// always immediate
+	cpu->GatherShared(vr, src1, addr_lo, addr_hi, 1, insn->Mask(), SMType(smtype));
+	return vr;
+}
+
+alu_full_shared.disasm = {
+	DisasmShared(src1, addr_lo, addr_hi, 1, SMType(smtype), os);
+}
+
+
+
+group alu_immhalf_shared(alu_imm_shared, alu_half_shared)
+
+alu_immhalf_shared.read = {
 	VectorRegister<CONFIG> vr;
 	cpu->ReadShared(src1 + offset, vr, SMType(smtype));
 	return vr;
 }
 
-alu_shared.disasm = {
-	DisasmShared(src1, smtype, os);
+alu_immhalf_shared.disasm = {
+	DisasmShared(src1, SMType(smtype), os);
 }
 
 

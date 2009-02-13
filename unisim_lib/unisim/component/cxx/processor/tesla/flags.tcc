@@ -69,11 +69,17 @@ template <class CONFIG>
 VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output)
 {
 	// As tested on G80 and G86:
-	//  normal -> 0
-	//  zero   -> 1
+	//  +normal-> 0
+	//  -normal-> 0
+	//  +zero  -> 1
+	//  -zero  -> 1
 	//  -inf   -> 2
 	//  +inf   -> 0	(sic!)
 	//  NaN    -> 3
+	// ZF = (Zero | NaN)
+	// SF = ((Neg & Inf) | NaN)
+	// Does NOT match g80_spec, p. 348.
+	// Hardware bug???
 	VectorFlags<CONFIG> flags;
 	flags.Reset();
 	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
@@ -119,7 +125,8 @@ template<class CONFIG>
 VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
 	VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
-	SetCond sc)
+	SetCond sc,
+	bool is_signed)
 {
 	// TODO: check it only outputs boolean values
 	// input:
@@ -144,7 +151,10 @@ VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
 	{
 		uint8_t cond = 0;
 		if(a[i] == b[i]) cond |= 1;
-		if(a[i] < b[i])  cond |= 2;	// TODO: signed, unsigned
+		if(is_signed && (int32_t(a[i]) < int32_t(b[i]))
+			|| !is_signed && (a[i] < b[i])) {
+			cond |= 2;
+		}
 		
 		bool r = lut[cond];
 		flags.SetZero(r, i);

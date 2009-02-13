@@ -115,7 +115,7 @@ VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc1(int offset, RegType rt) con
 	if(src1 == 0) {
 		src1 = src1_decoder.Decode(addr, iw);
 	}
-	return src1->read(cpu, offset, rt);
+	return src1->read(cpu, offset, this, rt);
 }
 
 template <class CONFIG>
@@ -124,7 +124,7 @@ VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc2(int offset, RegType rt) con
 	if(src2 == 0) {
 		src2 = src2_decoder.Decode(addr, iw);
 	}
-	return src2->read(cpu, offset, rt);
+	return src2->read(cpu, offset, this, rt);
 }
 
 template <class CONFIG>
@@ -133,16 +133,16 @@ VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc3(int offset, RegType rt) con
 	if(src3 == 0) {
 		src3 = src3_decoder.Decode(addr, iw);
 	}
-	return src3->read(cpu, offset, rt);
+	return src3->read(cpu, offset, this, rt);
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, int offset) const
+void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, int offset, RegType rt) const
 {
 	if(dest == 0) {
 		dest = dest_decoder.Decode(addr, iw);
 	}
-	dest->write(cpu, value, Mask(), offset);
+	dest->write(cpu, value, Mask(), offset, rt);
 }
 
 template <class CONFIG>

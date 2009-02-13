@@ -182,6 +182,23 @@ VectorAddress<CONFIG>::VectorAddress(VectorAddress<CONFIG>::address_t addr)
 }
 
 template <class CONFIG>
+VectorAddress<CONFIG>::VectorAddress(VectorRegister<CONFIG> const & vr)
+{
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+		v[i] = vr[i];
+	}
+}
+
+template <class CONFIG>
+void VectorAddress<CONFIG>::Write(VectorAddress<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+		if(mask[i])
+			v[i] = vec[i];
+	}
+}
+
+template <class CONFIG>
 void VectorAddress<CONFIG>::Reset()
 {
 	std::fill(v, v + WARP_SIZE, 0);
@@ -199,6 +216,15 @@ typename VectorAddress<CONFIG>::address_t & VectorAddress<CONFIG>::operator[] (i
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	return v[lane];
+}
+
+template <class CONFIG>
+VectorAddress<CONFIG> & VectorAddress<CONFIG>::operator+=(VectorAddress<CONFIG> const & other)
+{
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+		v[i] += other[i];
+	}
+	return *this;
 }
 
 

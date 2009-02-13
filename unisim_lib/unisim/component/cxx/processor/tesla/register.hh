@@ -90,10 +90,19 @@ enum SMType
 };
 
 // Does not match any ISA field
+// ... except b32.
 enum RegType
 {
-	RT_U16,
-	RT_U32
+	RT_U16 = 0,
+	RT_U32 = 1
+};
+
+enum AbsSat
+{
+	AS_NONE = 0,
+	AS_SAT = 1,
+	AS_ABS = 2,
+	AS_SSAT = 3
 };
 
 template <class CONFIG>
@@ -132,10 +141,15 @@ struct VectorAddress
 	
 	VectorAddress();
 	VectorAddress(address_t addr);
+	VectorAddress(VectorRegister<CONFIG> const & vr);
+
+	void Write(VectorAddress<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
 	
 	void Reset();
 	address_t operator[] (int lane) const;
 	address_t & operator[] (int lane);
+	
+	VectorAddress<CONFIG> & operator+=(VectorAddress<CONFIG> const & other);
 	
 	address_t v[WARP_SIZE];
 };

@@ -38,17 +38,28 @@
 #include <unisim/component/cxx/processor/tesla/exec.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace tesla {
+
+
 using namespace unisim::util::arithmetic;
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::FSMad(VectorRegister<CONFIG> const & a,
+VectorRegister<CONFIG> FSMad(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorRegister<CONFIG> const & c,
 	uint32_t neg_a, uint32_t neg_b, uint32_t neg_c,
 	uint32_t rounding_mode, uint32_t sat)
 {
+	typedef VectorRegister<CONFIG> VecReg;
+	typedef typename CONFIG::float_t float_t;
+	typedef typename float_t::StatusAndControlFlags FPFlags;
 	VecReg rv;
-	for(int i = 0; i != WARP_SIZE; ++i)
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		float_t sa = a.ReadSimfloat(i);
 		float_t sb = b.ReadSimfloat(i);
@@ -87,13 +98,15 @@ VectorRegister<CONFIG> CPU<CONFIG>::FSMad(VectorRegister<CONFIG> const & a,
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::FSMul(VectorRegister<CONFIG> const & a,
+VectorRegister<CONFIG> FSMul(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	uint32_t neg_a, uint32_t neg_b,
 	uint32_t rounding_mode, uint32_t sat)
 {
-	VecReg rv;
-	for(int i = 0; i != WARP_SIZE; ++i)
+	typedef typename CONFIG::float_t float_t;
+	typedef typename float_t::StatusAndControlFlags FPFlags;
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		float_t sa = a.ReadSimfloat(i);
 		float_t sb = b.ReadSimfloat(i);
@@ -126,13 +139,15 @@ VectorRegister<CONFIG> CPU<CONFIG>::FSMul(VectorRegister<CONFIG> const & a,
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::FSAdd(VectorRegister<CONFIG> const & a,
+VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	uint32_t neg_a, uint32_t neg_b,
 	uint32_t rounding_mode, uint32_t sat)
 {
-	VecReg rv;
-	for(int i = 0; i != WARP_SIZE; ++i)
+	typedef typename CONFIG::float_t float_t;
+	typedef typename float_t::StatusAndControlFlags FPFlags;
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		float_t sa = a.ReadSimfloat(i);
 		float_t sb = b.ReadSimfloat(i);
@@ -165,13 +180,13 @@ VectorRegister<CONFIG> CPU<CONFIG>::FSAdd(VectorRegister<CONFIG> const & a,
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::FSNegate(VectorRegister<CONFIG> & a)
+void FSNegate(VectorRegister<CONFIG> & a)
 {
 	throw "Not implemented!";
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      VectorRegister<CONFIG> const & c, uint32_t sat, uint32_t ra, uint32_t rb,
                      uint32_t rc)
 {
@@ -179,7 +194,7 @@ VectorRegister<CONFIG> CPU<CONFIG>::I32Mad24(VectorRegister<CONFIG> const & a, V
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> I16Mad24Lo(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      VectorRegister<CONFIG> const & c, uint32_t sat, uint32_t ra, uint32_t rb,
                      uint32_t rc)
 {
@@ -187,14 +202,14 @@ VectorRegister<CONFIG> CPU<CONFIG>::I16Mad24Lo(VectorRegister<CONFIG> const & a,
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> I32Mul24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      uint32_t sat, uint32_t ra, uint32_t rb)
 {
 	throw "Not implemented!";
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
                      uint32_t sat, uint32_t ra, uint32_t rb)
 {
 	throw "Not implemented!";
@@ -203,13 +218,13 @@ VectorRegister<CONFIG> CPU<CONFIG>::I16Mul(VectorRegister<CONFIG> const & a, Vec
 
 // Does NOT update zero and sign flag
 template<class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::I32Add(VectorRegister<CONFIG> const & a,
+VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorFlags<CONFIG> & flags,
 	uint32_t sat, uint32_t ra, uint32_t rb)
 {
-	VecReg rv;
-	for(int i = 0; i != WARP_SIZE; ++i)
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		int32_t sa = int32_t(a[i]);
 		int32_t sb = int32_t(b[i]);
@@ -239,18 +254,18 @@ VectorRegister<CONFIG> CPU<CONFIG>::I32Add(VectorRegister<CONFIG> const & a,
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::UMad24(VectorRegister<CONFIG> const & a,
+VectorRegister<CONFIG> UMad24(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorRegister<CONFIG> const & c,
 	VectorFlags<CONFIG> & flags,
 	uint32_t src1_neg,
 	uint32_t src3_neg)
 {
-	VecReg rv;
+	VectorRegister<CONFIG> rv;
 	// unsigned, ignore neg...?
 	assert(!src1_neg);
 	assert(!src3_neg);
-	for(int i = 0; i != WARP_SIZE; ++i)
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		uint32_t sa = (a[i] & 0x00ffffff);	// 24x24 mul
 		uint32_t sb = (b[i] & 0x00ffffff);
@@ -271,10 +286,10 @@ VectorRegister<CONFIG> CPU<CONFIG>::UMad24(VectorRegister<CONFIG> const & a,
 }
 
 template<class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
 {
-	VecReg rv;
-	for(int i = 0; i != WARP_SIZE; ++i)
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		uint32_t sb = b[i];
 		if(sb > 32) {
@@ -290,49 +305,146 @@ VectorRegister<CONFIG> CPU<CONFIG>::ShiftLeft(VectorRegister<CONFIG> const & a, 
 
 
 template <class CONFIG>
-void CPU<CONFIG>::I32Negate(VectorRegister<CONFIG> & a)
+void I32Negate(VectorRegister<CONFIG> & a)
 {
 	throw "Not implemented!";
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::Convert(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type)
+VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat)
 {
-	// U/I32 -> XX
-	if(cvt_type != CT_NONE)
+	// cvt_type = *SOURCE* type
+	// b32 = *DEST* type
+	assert(abssat == AS_NONE);	// TODO: sat, abs, ssat
+
+	// Unless abs, dest>source means no-op
+	if(cvt_type == CT_NONE
+		|| b32
+		|| (cvt_type == CT_U16 || cvt_type == CT_S16) && !b32)
 	{
-		assert(false);
-		throw "Not implemented!";
+		// No-op
+		return a;
 	}
+	// No rounding mode for int->int conversion (always truncation?)
+	assert(false);	// TODO
 	return a;
 }
 
-template <class CONFIG>
-void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
-{
-	if(dt != DT_U32 && dt != DT_S32) {
-		throw "Not implemented!";
-	}
-	int width = 4;
 
-	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
-	// [seg][$a#addr_reg + dest]
-	if(addr_reg != 0) {
-		throw "Not implemented!";
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinNeg(VectorRegister<CONFIG> const & a)
+{
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = ~a[i];
 	}
-	VecReg offset;
-	if(addr_imm) {
-		cerr << "Warning: unchecked immediate field!\n";
-		offset = VecReg(dest);	// TODO: CHECK immediate in words???
-	}
-	else {
-		offset = GetGPR(dest);
-	}
-	
-	// TODO: segment??
-	address_t base = 0;
-	Scatter32(offset, output, mask, 1, base);
+	return rv;
 }
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinAnd(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = a[i] & b[i];
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = a[i] | b[i];
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = a[i] ^ b[i];
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> UMul24Lo(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	uint32_t sat, uint32_t ra, uint32_t rb, uint32_t u16)
+{
+	typedef VectorRegister<CONFIG> VecReg;
+	VecReg rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		uint32_t sa = a[i];
+		uint32_t sb = b[i];
+		if(u16) {
+			sa = sa & 0x0000ffff;
+			sb = sb & 0x0000ffff;
+		}
+		else {
+			sa = sa & 0x00ffffff;
+			sb = sb & 0x00ffffff;
+		}
+		assert(!ra && !rb);
+		uint32_t r;
+		assert(!sat);
+		uint8_t carry_out, overflow;
+		r = (sa * sb);
+
+		rv[i] = r;
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, uint32_t sb)
+{
+	if(sb > 32) {
+		sb = 32;
+	}
+	if(sb < 0) {
+		sb = 0;
+	}
+	VectorRegister<CONFIG> rv;
+	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		rv[i] = a[i] << sb;
+	}
+	return rv;
+}
+
+inline SMType MvSizeToSMType(uint32_t mv_size)
+{
+	switch(mv_size) {
+	case 0:
+		return SM_U16;
+	case 1:
+		return SM_U32;
+	case 2:
+		return SM_U8;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
+
+
+} // end of namespace tesla
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 
 
 #endif

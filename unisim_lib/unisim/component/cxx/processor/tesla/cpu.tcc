@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/tesla/flags.tcc>
 #include <unisim/component/cxx/processor/tesla/exec.tcc>
 #include <unisim/component/cxx/processor/tesla/simfloat.tcc>
+#include <unisim/component/cxx/processor/tesla/memory.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
@@ -409,13 +410,28 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 	sstr << std::hex;
 	sstr.fill('0'); sstr.width(8); 
 	sstr << addr - CONFIG::CODE_START << " ";
+	
+	if(instruction.IsLong()) {
+		sstr << "0x" << std::hex;// << std::setw(16);
+		sstr.fill('0'); sstr.width(16); 
+		sstr << insn << std::dec << std::noshowbase << " ";	// TODO: endianness...
+	}
+	else {
+		sstr << "        ";
+		sstr << "0x" << std::hex;// << std::setw(16);
+		sstr.fill('0'); sstr.width(8); 
+		sstr << uint32_t(insn) << std::dec << std::noshowbase << " ";	// TODO: endianness...
+	}
+
 	// disassemble the instruction
-	sstr << "0x" << std::hex;// << std::setw(16);
-	sstr.fill('0'); sstr.width(16); 
-	sstr << insn << std::dec << std::noshowbase << " ";	// TODO: endianness...
 	instruction.Disasm(sstr);
 
-	next_addr = addr + 8;
+	if(instruction.IsLong()) {
+		next_addr = addr + 8;
+	}
+	else {
+		next_addr = addr + 4;
+	}
 	return sstr.str();
 }
 
@@ -452,15 +468,6 @@ endian_type CPU<CONFIG>::GetEndianess()
 	return E_LITTLE_ENDIAN;
 }
 
-inline uint32_t Max(uint32_t a, uint32_t b)
-{
-	return a > b ? a : b;
-}
-
-inline uint32_t Min(uint32_t a, uint32_t b)
-{
-	return a < b ? a : b;
-}
 #endif
 #if 0
 
@@ -492,78 +499,6 @@ void CPU<CONFIG>::Fetch()
 //=                 Execution helper functions                        =
 //=====================================================================
 
-#if 0
-template <class CONFIG>
-void CPU<CONFIG>::ExecMarker(uint32_t marker)
-{
-	// 0 = normal
-	// 1 = end
-	// 2 = join
-	// 3 shouldn't happen here
-}
-
-template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg)
-{
-	VectorRegister<CONFIG> dest = ReadOperand(reg, cm, sh);
-	if(neg)
-		dest.NegateFP32();
-	return dest;
-}
-
-
-template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm)
-{
-	throw "Not implemented!";
-}
-
-template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadOperand(uint32_t reg, uint32_t cm, uint32_t sh)
-{
-	assert(!(cm && sh));
-	if(cm)
-		return ReadConstant(reg);
-	else if(sh)
-		return ReadShared(reg);
-	else
-		return GetGPR(reg);
-}
-
-#if 0
-template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadOperand(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm)
-{
-}
-#endif
-
-template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadImmediate(uint32_t imm_hi, uint32_t imm_lo)
-{
-	uint32_t imm_val = (imm_hi << 7) | imm_lo;
-	return VectorRegister<CONFIG>(imm_val);
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::WriteOutput(VectorRegister<CONFIG> const & v, uint32_t reg, uint32_t pred_cond, uint32_t pred_reg)
-{
-	assert(pred_reg < MAX_PRED_REGS);
-	Warp & warp = CurrentWarp();
-	// Masked write with pred AND current mask (top of stack)
-	GetGPR(reg).Write(v, IsPredSet(pred_cond, warp.pred_flags[pred_reg]) & warp.mask);
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::WritePred(uint32_t set_pred_reg, uint32_t pred_cond, uint32_t pred_reg, VectorFlags<CONFIG> flags)
-{
-	assert(pred_reg < MAX_PRED_REGS);
-	Warp & warp = CurrentWarp();
-	// Masked write with pred AND current mask
-	bitset<WARP_SIZE> mask = IsPredSet(pred_cond, warp.pred_flags[pred_reg]) & warp.mask;
-	CurrentWarp().pred_flags[pred_reg].Write(flags, mask);
-}
-
-#endif
 
 template <class CONFIG>
 VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int reg)	// for current warp
@@ -741,139 +676,8 @@ typename CPU<CONFIG>::Warp const & CPU<CONFIG>::GetWarp(int wid) const
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(VectorRegister<CONFIG> const & addr, uint32_t seg)
-{
-	assert(seg < CONFIG::CONST_SEG_NUM);
-	VecReg v;
-	Gather32(addr, v, 1, CONFIG::CONST_START + seg * CONFIG::CONST_SEG_SIZE);
-	return v;
-}
-
-template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(int addr, uint32_t seg)
-{
-	assert(seg < CONFIG::CONST_SEG_NUM);
-	VecReg v;
-	Broadcast32(addr, v, 1, CONFIG::CONST_START + seg * CONFIG::CONST_SEG_SIZE);
-	return v;
-}
-
-
-// For current block
-template <class CONFIG>
-void CPU<CONFIG>::ReadShared(VectorRegister<CONFIG> const & addr,
-	VectorRegister<CONFIG> & data, SMType t)
-{
-	switch(t)
-	{
-	case SM_U32:
-		Gather32(addr, data, 1, CurrentWarp().GetSMAddress());
-		break;
-	case SM_U8:
-	case SM_U16:
-	case SM_S16:
-		throw "Not implemented!";
-	default:
-		assert(false);
-	}
-}
-
-
-// For current block
-template <class CONFIG>
-void CPU<CONFIG>::ReadShared(int addr, VectorRegister<CONFIG> & data, SMType t)
-{
-	switch(t)
-	{
-	case SM_U32:
-		Gather32(addr, data, 4, CurrentWarp().GetSMAddress());
-		break;
-	case SM_U8:
-	case SM_U16:
-	case SM_S16:
-		throw "Not implemented!";
-	default:
-		assert(false);
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Gather32(VecReg const & addr, VecReg & data, uint32_t factor, address_t offset)
-{
-	for(int i = 0; i != WARP_SIZE; ++i)
-	{
-		Read32(addr[i], data[i], factor, offset);
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Scatter32(VecReg const & addr, VecReg const & data,
-	std::bitset<CONFIG::WARP_SIZE> mask,
-	uint32_t factor, address_t offset)
-{
-	// TODO: check overlap and warn
-	for(int i = 0; i != WARP_SIZE; ++i)
-	{
-		if(mask[i]) {
-			Write32(addr[i], data[i], factor, offset);
-		}
-	}
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Broadcast32(address_t addr, VecReg & data,
-	uint32_t factor, address_t offset)
-{
-	uint32_t val;
-	Read32(addr, val, factor, offset);
-	data = VecReg(val);
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Read32(address_t addr, uint32_t & data,
-	uint32_t factor, address_t offset)
-{
-	if(!ReadMemory(addr * factor + offset, &data, 4)) {
-		throw MemoryAccessException<CONFIG>();
-	}
-	cerr << "Read32 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
-		<< data << std::dec << endl;
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::Write32(address_t addr, uint32_t data,
-	uint32_t factor, address_t offset)
-{
-	cerr << "Write32: " << std::hex << data
-		<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
-	if(!WriteMemory(addr * factor + offset, &data, 4)) {
-		throw MemoryAccessException<CONFIG>();
-	}
-}
-
-//template <class CONFIG>
-//int CPU<CONFIG>::GetCurrentWarpID() const
-//{
-//	return current_warpid;
-//}
-
-#if 0
-template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::GlobalEffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t pred_cond, uint32_t pred_reg)
-{
-	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
-	// [seg][$a#addr_reg + addr_imm]
-	if(addr_reg != 0) {
-		throw "Not implemented!";
-	}
-
-}
-#endif
-
-template <class CONFIG>
 void CPU<CONFIG>::Join()
 {
-	throw "Not implemented!";
 }
 
 template <class CONFIG>
@@ -882,7 +686,7 @@ void CPU<CONFIG>::End()
 	CurrentWarp().state = Warp::Finished;
 }
 
-
+//////////////////////////////////////////////////////////////////////
 
 template <class CONFIG>
 void CPU<CONFIG>::Warp::Reset(int wid, int bid, int gpr_num, int sm_size,
@@ -932,6 +736,7 @@ typename CPU<CONFIG>::address_t CPU<CONFIG>::Warp::GetSMAddress(uint32_t sm) con
 }
 
 
+
 //////////////////////////////////////////////////////////////////////
 
 
@@ -941,5 +746,6 @@ typename CPU<CONFIG>::address_t CPU<CONFIG>::Warp::GetSMAddress(uint32_t sm) con
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
 
 #endif

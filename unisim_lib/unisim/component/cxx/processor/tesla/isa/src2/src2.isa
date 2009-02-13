@@ -45,7 +45,7 @@ template <{class} {CONFIG}>
 constructor action initialize() {
 }
 
-action {VectorRegister<CONFIG>} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {RegType} {rt}) {
+action {VectorRegister<CONFIG>} read({CPU<CONFIG> *} {cpu}, {int} {offset}, {Instruction<CONFIG> const *} {insn}, {RegType} {rt}) {
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -57,26 +57,28 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 
 // Reg
 
-op alu_full_normal_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/0[1]:/*src3*/?[7]\
+op alu_full_normal_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/0[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-op alu_full_end_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/0[1]:/*src3*/?[7]\
+op alu_full_end_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:?[5]:/*marker*/1[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/0[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-op alu_full_join_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/0[1]:/*src3*/?[7]\
+op alu_full_join_reg(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/?[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:?[5]:/*marker*/2[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/0[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
 
-// TODO: half ops
+op alu_half_reg(?[32]:\
+	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/0[1]:/*src2_neg*/?[1]:src2[6]:/*src1_n*/?[7]:\
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
 
 
-group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg)
+group alu_reg(alu_full_normal_reg, alu_full_end_reg, alu_full_join_reg, alu_half_reg)
 
 alu_reg.read = {
 	if(rt == RT_U32) {
@@ -104,21 +106,24 @@ alu_reg.disasm = {
 
 // Constant memory
 
-op alu_full_normal_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:/*rounding_mode*/constseg[2]:/*src1_sh*/0[1]:/*src3*/?[7]\
+op alu_full_normal_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm??*/?[1]:/*rounding_mode*/constseg[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/1[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-op alu_full_end_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/constseg[2]:/*src1_sh*/0[1]:/*src3*/?[7]\
+op alu_full_end_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/constseg[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/1[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
-op alu_full_join_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/constseg[2]:/*src1_sh*/0[1]:/*src3*/?[7]\
+op alu_full_join_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]:0[1]:/*src2_imm*/?[1]:/*rounding_mode*/constseg[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*ignore_output*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/1[1]:src2[7]:/*src1*/?[7]:\
 	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1])
 
+op alu_half_const(?[32]:\
+	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/1[1]:/*src2_neg*/?[1]:src2[6]:/*src1_n*/?[7]:\
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1])
 
 // Invalid op?
 //op alu_full_imm_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*imm*/?[25]:/*marker*/3[2]:\
@@ -140,6 +145,16 @@ alu_const.disasm = {
 	// TODO: segment
 	os << "c" << constseg << "[" << src2 << "]";
 }
+
+alu_half_const.read = {
+	// Default segment = 0??
+	return cpu->ReadConstant(src2 + offset * 4, 0);
+}
+
+alu_half_const.disasm = {
+	os << "c" << 0 << "[" << src2 << "]";
+}
+
 
 op alu_imm(/*subop*/?[3]:/*?*/?[1]:imm_hi[26]:/*marker*/3[2]:\
 	/*op*/?[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/0[1]:/*src2_neg*/?[1]:src2[6]:/*src1_neg*/?[1]:/*src1*/?[6]:\

@@ -69,7 +69,7 @@ public:
 	VectorRegister<CONFIG> ReadSrc1(int offset = 0, RegType rt = RT_U32) const;
 	VectorRegister<CONFIG> ReadSrc2(int offset = 0, RegType rt = RT_U32) const;
 	VectorRegister<CONFIG> ReadSrc3(int offset = 0, RegType rt = RT_U32) const;
-	void WriteDest(VectorRegister<CONFIG> const & value, int offset = 0) const;
+	void WriteDest(VectorRegister<CONFIG> const & value, int offset = 0, RegType rt = RT_U32) const;
 	void SetPredFP32(VectorRegister<CONFIG> const & value) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value) const;

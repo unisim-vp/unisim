@@ -8,7 +8,7 @@ libunisim_component_cxx_processor_tesla_a_SOURCES = cpu.cc g80_debug.cc flags.cc
 
 include_HEADERS = cpu.hh cpu.tcc config.hh disasm.hh exec.hh exec.tcc \
 	flags.hh flags.tcc instruction.hh instruction.tcc register.hh register.tcc \
-	exception.hh exception.tcc simfloat.hh simfloat.tcc \
+	exception.hh exception.tcc simfloat.hh simfloat.tcc memory.tcc \
 	isa/opcode/tesla.isa isa/src1/src1.isa isa/src2/src2.isa isa/src3/src3.isa \
 	isa/dest/dest.isa isa/control/control.isa \
 	isa/opcode/mov.isa isa/opcode/integer.isa isa/opcode/fp32.isa isa/opcode/fp32.isa \
