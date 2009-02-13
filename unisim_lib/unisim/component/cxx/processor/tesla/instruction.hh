@@ -80,7 +80,7 @@ public:
 	void DisasmSrc1(std::ostream & os, RegType rt = RT_U32) const;
 	void DisasmSrc2(std::ostream & os, RegType rt = RT_U32) const;
 	void DisasmSrc3(std::ostream & os, RegType rt = RT_U32) const;
-	void DisasmDest(std::ostream & os) const;
+	void DisasmDest(std::ostream & os, RegType rt = RT_U32) const;
 	void DisasmControl(std::ostream & os) const;
 	
 	bool IsLong() const;

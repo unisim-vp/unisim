@@ -120,9 +120,7 @@ template<class CONFIG>
 VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, uint32_t sb);
 
 inline SMType MvSizeToSMType(uint32_t mv_size);
-
-///////// Should not be here /////////
-
+inline RegType CvtTypeToRT(ConvType ct);
 
 
 } // end of namespace tesla

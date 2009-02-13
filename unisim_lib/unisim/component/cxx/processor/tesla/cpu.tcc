@@ -105,6 +105,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 //	voltage(0),
 //	bus_cycle_time(0),
 	coreid(coreid),
+	zero_reg(0),
 	instruction_counter(0),
 	max_inst(0xffffffffffffffffULL),
 //	num_insn_in_prefetch_buffer(0),
@@ -266,10 +267,12 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 		throw MemoryAccessException<CONFIG>();
 	}
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
-#ifdef VERBOSE
-	insn.Disasm(cerr);
-	cerr << endl;
-#endif
+
+	if(CONFIG::TRACE)
+	{
+		insn.Disasm(cerr);
+		cerr << endl;
+	}
 	if(insn.IsLong()) {
 		SetNPC(fetchaddr + 8);
 	}
@@ -437,18 +440,43 @@ string CPU<CONFIG>::Disasm(address_t addr, address_t& next_addr)
 
 
 template <class CONFIG>
-void CPU<CONFIG>::DumpRegisters(int warpid, ostream & os)
+void CPU<CONFIG>::DumpRegisters(int warpid, ostream & os) const
 {
-	Warp & warp = GetWarp(warpid);
+	Warp const & warp = GetWarp(warpid);
 	os << "Warp " << warpid << endl;
 	for(int i = 0; i != warp.gpr_window_size; ++i)
 	{
-		os << " r" << i << " = " << GetGPR(warpid, i) << endl;
+		DumpGPR(warpid, i, os);
 	}
 	for(int i = 0; i != MAX_PRED_REGS; ++i)
 	{
-		os << " p" << i << " = " << warp.pred_flags[i] << endl;
+		DumpFlags(warpid, i, os);
 	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpGPR(int warpid, int reg, ostream & os) const
+{
+	os << " r" << reg << " = " << GetGPR(warpid, reg) << endl;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpGPR(int reg, ostream & os) const
+{
+	DumpGPR(current_warpid, reg, os);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpFlags(int warpid, int reg, ostream & os) const
+{
+	Warp const & warp = GetWarp(warpid);
+	os << " p" << reg << " = " << warp.pred_flags[reg] << endl;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpFlags(int reg, ostream & os) const
+{
+	DumpFlags(current_warpid, reg, os);
 }
 
 #if 0
@@ -503,7 +531,11 @@ void CPU<CONFIG>::Fetch()
 template <class CONFIG>
 VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int reg)	// for current warp
 {
-	// If special reg return dummy??
+	// If special reg return dummy
+	if(reg == 124) {
+		// TODO: prevent code such as mov r124, 42...
+		return zero_reg;
+	}
 	// Compute physical register ID
 	return gpr[CurrentWarp().GetGPRAddress(reg)];
 }
@@ -512,6 +544,9 @@ template <class CONFIG>
 VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(int reg) const	// for current warp
 {
 	// If special reg (zero...), return value
+	if(reg == 124) {
+		return zero_reg;
+	}
 	// Compute physical register ID
 	return gpr[CurrentWarp().GetGPRAddress(reg)];
 }

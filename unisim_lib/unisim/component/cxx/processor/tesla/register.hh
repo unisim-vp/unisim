@@ -154,6 +154,9 @@ struct VectorAddress
 	address_t v[WARP_SIZE];
 };
 
+template <class CONFIG>
+std::ostream & operator << (std::ostream & os, VectorAddress<CONFIG> const & r);
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

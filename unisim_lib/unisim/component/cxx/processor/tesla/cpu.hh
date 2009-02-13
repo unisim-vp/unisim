@@ -265,7 +265,12 @@ public:
 	inline void MonitorLoad(address_t ea, uint32_t size);
 	inline void MonitorStore(address_t ea, uint32_t size);
 	
-	void DumpRegisters(int warpid, ostream & os);
+	void DumpRegisters(int warpid, ostream & os) const;
+	void DumpGPR(int warpid, int reg, ostream & os) const;
+	void DumpGPR(int reg, ostream & os) const;
+
+	void DumpFlags(int warpid, int reg, ostream & os) const;
+	void DumpFlags(int reg, ostream & os) const;
 
 	//=====================================================================
 	//=          DEC/TBL/TBU bus-time based update methods                =
@@ -368,11 +373,11 @@ public:
 	void GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
 	void ScatterShared(VecReg const & output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
-	void GatherShared(VecAddr const & addr, VecReg & data, SMType t = SM_U32);	// addr in bytes
+	void GatherShared(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, SMType t = SM_U32);	// addr in bytes
 	void GatherShared(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
 	// High-level memory access
-	void ReadShared(int addr, VecReg & data, SMType t = SM_U32);		// addr in WORDS!!
+	void ReadShared(address_t addr, VecReg & data, SMType t = SM_U32);		// addr in WORDS!!
 	VecReg ReadConstant(VecReg const & addr, uint32_t seg = 0);	// addr in bytes
 	VecReg ReadConstant(int addr, uint32_t seg = 0);
 
@@ -384,6 +389,7 @@ public:
 	void Gather16(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
 	void Scatter16(VecAddr const & addr, VecReg const & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
 	void Broadcast32(address_t addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
+	void Broadcast16(address_t addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
 	
 	void Read32(address_t addr, uint32_t & data, uint32_t factor = 1, address_t offset = 0);
 	void Write32(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
@@ -415,6 +421,8 @@ private:
 	uint32_t current_warpid;
 	
 	VecReg gpr[MAX_VGPR];
+	
+	VecReg zero_reg;
 	
 //	uint32_t num_blocks;
 //	uint32_t warps_per_block;

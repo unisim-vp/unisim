@@ -106,6 +106,7 @@ public:
 	static size_t const LOCAL_SIZE = GLOBAL_START - LOCAL_START;
 	static size_t const GLOBAL_SIZE = 0 - GLOBAL_START;
 
+	static bool const TRACE = true;
 };
 
 

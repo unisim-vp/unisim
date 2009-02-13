@@ -63,26 +63,6 @@ VectorRegister<CONFIG> CPU<CONFIG>::ReadConstant(int addr, uint32_t seg)
 }
 
 
-// For current block
-template <class CONFIG>
-void CPU<CONFIG>::GatherShared(VectorAddress<CONFIG> const & addr,
-	VectorRegister<CONFIG> & data, SMType t)
-{
-	switch(t)
-	{
-	case SM_U32:
-		Gather32(addr, data, 1, CurrentWarp().GetSMAddress());
-		break;
-	case SM_U16:
-	case SM_S16:
-		Gather16(addr, data, 1, CurrentWarp().GetSMAddress());
-		break;
-	case SM_U8:
-		throw "Not implemented!";
-	default:
-		assert(false);
-	}
-}
 
 template <class CONFIG>
 VectorAddress<CONFIG> CPU<CONFIG>::EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi,
@@ -112,8 +92,31 @@ void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, ui
 	if(type == SM_U16 || type == SM_S16) shift = 1;
 	else if(type == SM_U32) shift = 2;
 	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
-	
-	GatherShared(offset, output, type);
+
+//	if(CONFIG::TRACE)
+//		cerr << " GatherShared, EA = " << offset << endl;
+	GatherShared(offset, output, mask, type);
+}
+
+// For current block
+template <class CONFIG>
+void CPU<CONFIG>::GatherShared(VectorAddress<CONFIG> const & addr,
+	VectorRegister<CONFIG> & data, std::bitset<CONFIG::WARP_SIZE> mask, SMType t)
+{
+	switch(t)
+	{
+	case SM_U32:
+		Gather32(addr, data, mask, 1, CurrentWarp().GetSMAddress());
+		break;
+	case SM_U16:
+	case SM_S16:
+		Gather16(addr, data, mask, 1, CurrentWarp().GetSMAddress());
+		break;
+	case SM_U8:
+		throw "Not implemented!";
+	default:
+		assert(false);
+	}
 }
 
 template <class CONFIG>
@@ -137,16 +140,18 @@ void CPU<CONFIG>::ScatterShared(VectorRegister<CONFIG> const & output, uint32_t 
 
 // For current block
 template <class CONFIG>
-void CPU<CONFIG>::ReadShared(int addr, VectorRegister<CONFIG> & data, SMType t)
+void CPU<CONFIG>::ReadShared(typename CONFIG::address_t addr, VectorRegister<CONFIG> & data, SMType t)
 {
 	switch(t)
 	{
 	case SM_U32:
-		Gather32(addr, data, 4, CurrentWarp().GetSMAddress());
+		//Gather32(addr, data, mask, 4, CurrentWarp().GetSMAddress());
+		Broadcast32(addr, data, 4, CurrentWarp().GetSMAddress());
 		break;
 	case SM_U16:
 	case SM_S16:
-		Gather16(addr, data, 1, CurrentWarp().GetSMAddress());
+		//Gather16(addr, data, mask, 1, CurrentWarp().GetSMAddress());
+		Broadcast16(addr, data, 2, CurrentWarp().GetSMAddress());
 		break;
 	case SM_U8:
 		throw "Not implemented!";
@@ -217,6 +222,17 @@ void CPU<CONFIG>::Broadcast32(address_t addr, VecReg & data,
 	data = VecReg(val);
 }
 
+// TODO: add mask
+template <class CONFIG>
+void CPU<CONFIG>::Broadcast16(address_t addr, VecReg & data,
+	uint32_t factor, address_t offset)
+{
+	uint32_t val;
+	Read16(addr, val, factor, offset);
+	data = VecReg(val);	// mask...
+}
+
+
 template <class CONFIG>
 void CPU<CONFIG>::Read32(address_t addr, uint32_t & data,
 	uint32_t factor, address_t offset)
@@ -224,16 +240,20 @@ void CPU<CONFIG>::Read32(address_t addr, uint32_t & data,
 	if(!ReadMemory(addr * factor + offset, &data, 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}
-	cerr << "Read32 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
-		<< data << std::dec << endl;
+	if(CONFIG::TRACE) {
+		cerr << " Read32 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
+			<< data << std::dec << endl;
+	}
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Write32(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
-	cerr << "Write32: " << std::hex << data
-		<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
+	if(CONFIG::TRACE) {
+		cerr << " Write32: " << std::hex << data
+			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
+	}
 	if(!WriteMemory(addr * factor + offset, &data, 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}
@@ -246,16 +266,20 @@ void CPU<CONFIG>::Read16(address_t addr, uint32_t & data,
 	if(!ReadMemory(addr * factor + offset, &data, 2)) {
 		throw MemoryAccessException<CONFIG>();
 	}
-	cerr << "Read16 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
-		<< data << std::dec << endl;
+	if(CONFIG::TRACE) {
+		cerr << " Read16 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
+			<< data << std::dec << endl;
+	}
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Write16(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
-	cerr << "Write16: " << std::hex << data
-		<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
+	if(CONFIG::TRACE) {
+		cerr << " Write16: " << std::hex << data
+			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
+	}
 	if(!WriteMemory(addr * factor + offset, &data, 2)) {
 		throw MemoryAccessException<CONFIG>();
 	}

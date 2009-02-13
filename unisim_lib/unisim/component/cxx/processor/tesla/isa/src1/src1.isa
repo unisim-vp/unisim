@@ -146,7 +146,7 @@ op alu_half_shared(?[32]:\
 group alu_full_shared(alu_full_normal_shared, alu_full_end_shared, alu_full_join_shared)
 
 alu_full_shared.read = {
-	VectorRegister<CONFIG> vr;
+	VectorRegister<CONFIG> vr(0);
 	//cpu->ReadShared(src1 + offset, vr, SMType(smtype));
 	assert(offset == 0);
 	// always immediate
@@ -163,7 +163,7 @@ alu_full_shared.disasm = {
 group alu_immhalf_shared(alu_imm_shared, alu_half_shared)
 
 alu_immhalf_shared.read = {
-	VectorRegister<CONFIG> vr;
+	VectorRegister<CONFIG> vr(0);
 	cpu->ReadShared(src1 + offset, vr, SMType(smtype));
 	return vr;
 }

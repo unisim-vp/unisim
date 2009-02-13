@@ -221,12 +221,12 @@ void Instruction<CONFIG>::DisasmSrc3(std::ostream & os, RegType rt) const
 
 
 template <class CONFIG>
-void Instruction<CONFIG>::DisasmDest(std::ostream & os) const
+void Instruction<CONFIG>::DisasmDest(std::ostream & os, RegType rt) const
 {
 	if(dest == 0) {
 		dest = dest_decoder.Decode(addr, iw);
 	}
-	dest->disasm(cpu, this, os);
+	dest->disasm(cpu, this, rt, os);
 }
 
 template <class CONFIG>

@@ -319,12 +319,16 @@ VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_ro
 
 	// Unless abs, dest>source means no-op
 	if(cvt_type == CT_NONE
-		|| b32
-		|| (cvt_type == CT_U16 || cvt_type == CT_S16) && !b32)
+		|| (cvt_type == CT_U32 || cvt_type == CT_S32) && b32)
 	{
 		// No-op
 		return a;
 	}
+	else if(cvt_type == CT_U16)
+	{
+		return a.Split(0);	// Extract lower part
+	}
+	
 	// No rounding mode for int->int conversion (always truncation?)
 	assert(false);	// TODO
 	return a;
@@ -438,6 +442,21 @@ inline SMType MvSizeToSMType(uint32_t mv_size)
 	}
 }
 
+inline RegType CvtTypeToRT(ConvType ct)
+{
+	switch(ct) {
+	case CT_U16:
+	case CT_S16:
+		return RT_U16;
+	case CT_U32:
+	case CT_S32:
+	case CT_NONE:
+		return RT_U32;
+	default:
+		assert(false);
+		throw "";
+	}
+}
 
 
 } // end of namespace tesla

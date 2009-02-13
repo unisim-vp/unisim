@@ -60,6 +60,10 @@ template <class CONFIG>
 VectorRegister<CONFIG>::VectorRegister(uint32_t val)
 {
 	std::fill(v, v + WARP_SIZE, val);
+//	for(int i = 0; i != WARP_SIZE; ++i)
+//	{
+//		WriteLane(val, i);
+//	}
 }
 
 template <class CONFIG>
@@ -77,7 +81,17 @@ template <class CONFIG>
 void VectorRegister<CONFIG>::Write16(VectorRegister<CONFIG> const & vec,
 	bitset<CONFIG::WARP_SIZE> mask, int hi)
 {
-	throw "Not implemented!";
+	for(int i = 0; i != WARP_SIZE; ++i)
+	{
+		if(mask[i]) {
+			if(hi) {
+				v[i] = (v[i] & 0x0000ffff) | (vec[i] << 16);
+			}
+			else {
+				v[i] = (v[i] & 0xffff0000) | (vec[i] & 0x0000ffff);
+			}
+		}
+	}
 }
 
 template <class CONFIG>
@@ -132,7 +146,7 @@ VectorRegister<CONFIG> VectorRegister<CONFIG>::Split(int hilo) const
 	{
 		if(hilo) {
 			// high part
-			vr[i] = (v[i] << 16);
+			vr[i] = (v[i] >> 16);
 		}
 		else {
 			// low part
@@ -226,6 +240,21 @@ VectorAddress<CONFIG> & VectorAddress<CONFIG>::operator+=(VectorAddress<CONFIG> 
 	}
 	return *this;
 }
+
+template <class CONFIG>
+std::ostream & operator << (std::ostream & os, VectorAddress<CONFIG> const & r)
+{
+	os << "(";
+	os << std::hex;
+	for(int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
+	{
+		os << r[i] << ", ";
+	}
+	os << r[CONFIG::WARP_SIZE-1];
+	os << std::dec;
+	os << ")";
+}
+
 
 
 } // end of namespace tesla
