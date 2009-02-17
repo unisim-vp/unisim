@@ -1,6 +1,6 @@
 INCLUDES=-I$(top_srcdir)/../../..
-lib_LIBRARIES = libunisim_service_logger.a
-libunisim_service_logger_a_SOURCES = logger.cc logger_server.cc
+lib_LTLIBRARIES = libunisim_service_logger.la
+libunisim_service_logger_la_SOURCES = logger.cc logger_server.cc
 
 includedir = $(prefix)/include/unisim/service/logger
 sharedir = $(prefix)/share/unisim_lib/unisim/service/logger

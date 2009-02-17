@@ -93,7 +93,7 @@ void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, ui
 	else if(type == SM_U32) shift = 2;
 	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
 
-//	if(CONFIG::TRACE)
+//	if(CONFIG::TRACE_LOADSTORE)
 //		cerr << " GatherShared, EA = " << offset << endl;
 	GatherShared(offset, output, mask, type);
 }
@@ -240,7 +240,7 @@ void CPU<CONFIG>::Read32(address_t addr, uint32_t & data,
 	if(!ReadMemory(addr * factor + offset, &data, 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}
-	if(CONFIG::TRACE) {
+	if(CONFIG::TRACE_LOADSTORE) {
 		cerr << " Read32 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
 			<< data << std::dec << endl;
 	}
@@ -250,7 +250,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Write32(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
-	if(CONFIG::TRACE) {
+	if(CONFIG::TRACE_LOADSTORE) {
 		cerr << " Write32: " << std::hex << data
 			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
 	}
@@ -266,7 +266,7 @@ void CPU<CONFIG>::Read16(address_t addr, uint32_t & data,
 	if(!ReadMemory(addr * factor + offset, &data, 2)) {
 		throw MemoryAccessException<CONFIG>();
 	}
-	if(CONFIG::TRACE) {
+	if(CONFIG::TRACE_LOADSTORE) {
 		cerr << " Read16 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
 			<< data << std::dec << endl;
 	}
@@ -276,7 +276,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Write16(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
-	if(CONFIG::TRACE) {
+	if(CONFIG::TRACE_LOADSTORE) {
 		cerr << " Write16: " << std::hex << data
 			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
 	}
@@ -289,33 +289,19 @@ void CPU<CONFIG>::Write16(address_t addr, uint32_t data,
 template <class CONFIG>
 void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
-	if(dt != DT_U32 && dt != DT_S32) {
-		throw "Not implemented!";
-	}
-	int width = 4;
-
-	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
-	// [seg][$a#addr_reg + dest]
-	VecAddr offset;
-	if(addr_imm) {
-		cerr << "Warning: unchecked immediate field!\n";
-		// Make sure immediate is in words!
-		if(dt == DT_U16 || dt == DT_S16) dest << 1;	// 16-bit
-		else if(dt == DT_U32 || dt == DT_S32) dest << 2;	// 32-bit
-		else if(dt == DT_U64) dest << 3;	// 32-bit
-		else if(dt == DT_U128) dest << 4;
-
-		offset = VecAddr(dest);
-	}
-	else {
-		offset = VecAddr(GetGPR(dest));
-	}
-
-	if(addr_reg != 0) {
-		offset += GetAddr(addr_reg);
-	}
+	int shift = 0;
+	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
+	else if(dt == DT_U32 || dt == DT_S32) shift = 2;	// 32-bit
+	else if(dt == DT_U64) shift = 3;
+	else if(dt == DT_U128) shift = 4;
 	
+	// [seg][$a#addr_reg + dest]
+	VecAddr offset = EffectiveAddress(dest, addr_lo, addr_hi, addr_imm, shift);
+
 	// TODO: segment??
+	// 14 = global mem
+	//    = local mem
+	assert(segment == 14);
 	address_t base = 0;
 	Scatter32(offset, output, mask, 1, base);
 }
@@ -323,26 +309,17 @@ void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, 
 template <class CONFIG>
 void CPU<CONFIG>::GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
-	if(dt != DT_U32 && dt != DT_S32) {
-		throw "Not implemented!";
-	}
-	int width = 4;
-
-	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
+	int shift = 0;
+	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
+	else if(dt == DT_U32 || dt == DT_S32) shift = 2;	// 32-bit
+	else if(dt == DT_U64) shift = 3;
+	else if(dt == DT_U128) shift = 4;
+	
 	// [seg][$a#addr_reg + dest]
-	if(addr_reg != 0) {
-		throw "Not implemented!";
-	}
-	VecReg offset;
-	if(addr_imm) {
-		cerr << "Warning: unchecked immediate field!\n";
-		offset = VecReg(src);	// TODO: CHECK immediate in words???
-	}
-	else {
-		offset = GetGPR(src);
-	}
+	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
 	
 	// TODO: segment??
+	assert(segment == 14);
 	address_t base = 0;
 	Gather32(offset, output, mask, 1, base);
 

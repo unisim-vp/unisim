@@ -105,8 +105,14 @@ public:
 
 	static size_t const LOCAL_SIZE = GLOBAL_START - LOCAL_START;
 	static size_t const GLOBAL_SIZE = 0 - GLOBAL_START;
+	
+	static int const COMPUTE_CAP_MAJOR = 1;
+	static int const COMPUTE_CAP_MINOR = 0;
+	static int const SHADER_CLOCK_KHZ = 1350000;
 
-	static bool const TRACE = true;
+	static bool const TRACE_INSN = true;
+	static bool const TRACE_LOADSTORE = false;
+	static bool const TRACE_REG = true;
 };
 
 

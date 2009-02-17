@@ -1,9 +1,9 @@
 INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
 includedir = $(prefix)/include/unisim/component/cxx/processor/tesla
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/tesla
-lib_LIBRARIES = libunisim_component_cxx_processor_tesla.a
+lib_LTLIBRARIES = libunisim_component_cxx_processor_tesla.la
 
-libunisim_component_cxx_processor_tesla_a_SOURCES = cpu.cc g80_debug.cc flags.cc disasm.cc
+libunisim_component_cxx_processor_tesla_la_SOURCES = cpu.cc g80_debug.cc flags.cc disasm.cc
 
 
 include_HEADERS = cpu.hh cpu.tcc config.hh disasm.hh exec.hh exec.tcc \

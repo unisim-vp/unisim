@@ -119,8 +119,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 //	param_verbose_all("verbose-all", this, verbose_all),
 //	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
-	stat_bus_cycle("bus-cycle", this, bus_cycle),
-	stat_cpu_cycle("cpu-cycle", this, cpu_cycle)
+	stat_cpu_cycle("cpu-cycle", this, cpu_cycle),
+	stat_bus_cycle("bus-cycle", this, bus_cycle)
 {
 //	Object::SetupDependsOn(logger_import);
 
@@ -180,7 +180,7 @@ void CPU<CONFIG>::Synchronize()
 template <class CONFIG>
 void CPU<CONFIG>::Reset()
 {
-	for(int i = 0; i != MAX_WARPS; ++i)
+	for(unsigned int i = 0; i != MAX_WARPS; ++i)
 	{
 		warps[i].id = i;
 		warps[i].state = Warp::Finished;
@@ -190,7 +190,7 @@ void CPU<CONFIG>::Reset()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Reset(int threadsperblock, int numblocks)
+void CPU<CONFIG>::Reset(int threadsperblock, int numblocks, int gprs_per_warp, int sm_size)
 {
 	Reset();
 
@@ -207,11 +207,15 @@ void CPU<CONFIG>::Reset(int threadsperblock, int numblocks)
 	num_warps = total_warps;
 	
 	
-	int gprs_per_warp = MAX_VGPR / total_warps;	// TODO: round to power of 2?
+	//int gprs_per_warp = MAX_VGPR / total_warps;	// TODO: round to power of 2?
 												// and/or use count given by the compiler?
+	assert(gprs_per_warp * total_warps <= MAX_VGPR);
 
-	int sm_size = SHARED_MEM_SIZE / numblocks;	// TODO: round to power of 2?
+	//int sm_size = SHARED_MEM_SIZE / numblocks;	// TODO: round to power of 2?
 												// at least align on DWord boundary!
+												// To be filled by driver.
+	assert((sm_size & 0x3) == 0);
+	assert(sm_size * numblocks <= SHARED_MEM_SIZE);
 
 	address_t sm_base = CONFIG::SHARED_START + coreid * CONFIG::SHARED_SIZE;
 
@@ -222,6 +226,7 @@ void CPU<CONFIG>::Reset(int threadsperblock, int numblocks)
 
 	for(int b = 0; b != numblocks; ++b)
 	{
+		//address_t sm_block = sm_base + b * sm_size;
 		for(int w = 0; w != warpsperblock; ++w)
 		{
 			// Compute mask for last (partial) warp
@@ -247,7 +252,7 @@ bool CPU<CONFIG>::Step()
 	// Simple round-robin policy
 
 	bool all_finished = true;
-	for(int i = 0; i != num_warps; ++i) {
+	for(unsigned int i = 0; i != num_warps; ++i) {
 		if(GetWarp(i).state != Warp::Finished) {
 			StepWarp(i);
 			all_finished = false;
@@ -268,7 +273,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	}
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
 
-	if(CONFIG::TRACE)
+	if(CONFIG::TRACE_INSN)
 	{
 		insn.Disasm(cerr);
 		cerr << endl;
@@ -325,7 +330,7 @@ void CPU<CONFIG>::Run()
 	}
 	
 	cerr << "All warps finished\n";
-	DumpRegisters(0, cerr);
+	//DumpRegisters(0, cerr);
 }
 
 template <class CONFIG>
@@ -479,6 +484,13 @@ void CPU<CONFIG>::DumpFlags(int reg, ostream & os) const
 	DumpFlags(current_warpid, reg, os);
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::DumpAddr(int reg, ostream & os) const
+{
+	os << " a" << reg << " = " << GetAddr(reg) << endl;
+}
+
+
 #if 0
 /* PowerPC Linux OS Interface */
 template <class CONFIG>
@@ -568,15 +580,16 @@ VectorFlags<CONFIG> CPU<CONFIG>::GetFlags(int reg) const
 template <class CONFIG>
 VectorAddress<CONFIG> & CPU<CONFIG>::GetAddr(int reg)
 {
-	assert(reg >= 0 && reg < MAX_ADDR_REGS);
-	return CurrentWarp().addr[reg];
+	// base 1
+	assert(reg > 0 && reg <= MAX_ADDR_REGS);
+	return CurrentWarp().addr[reg - 1];
 }
 
 template <class CONFIG>
 VectorAddress<CONFIG> CPU<CONFIG>::GetAddr(int reg) const
 {
-	assert(reg >= 0 && reg < MAX_ADDR_REGS);
-	return CurrentWarp().addr[reg];
+	assert(reg > 0 && reg <= MAX_ADDR_REGS);
+	return CurrentWarp().addr[reg - 1];
 }
 
 template <class CONFIG>
@@ -711,14 +724,51 @@ typename CPU<CONFIG>::Warp const & CPU<CONFIG>::GetWarp(int wid) const
 }
 
 template <class CONFIG>
+void CPU<CONFIG>::Meet(CPU<CONFIG>::address_t addr)
+{
+	// TODO
+}
+
+template <class CONFIG>
 void CPU<CONFIG>::Join()
 {
+	// TODO
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::End()
 {
 	CurrentWarp().state = Warp::Finished;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Fence()
+{
+	CurrentWarp().state = Warp::WaitingFence;
+	
+	CheckFenceCompleted();
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::CheckFenceCompleted()
+{
+	// When all warps in a block are in WaitingFence state
+	bool synchronized[MAX_BLOCKS];
+	std::fill(synchronized, synchronized + MAX_BLOCKS, true);
+	for(int i = 0; i != num_warps; ++i)
+	{
+		if(warps[i].state != Warp::WaitingFence) {
+			synchronized[warps[i].blockid] = false;
+		}
+	}
+	
+	// Turn them to active state
+	for(int i = 0; i != num_warps; ++i)
+	{
+		if(synchronized[warps[i].blockid]) {
+			warps[i].state = Warp::Active;
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -729,6 +779,8 @@ void CPU<CONFIG>::Warp::Reset(int wid, int bid, int gpr_num, int sm_size,
 {
 	pc = CONFIG::CODE_START;
 	npc = 0;
+	
+	blockid = bid;
 	
 	gpr_window_size = gpr_num;
 	gpr_window_base = gpr_num * wid;
@@ -749,6 +801,7 @@ void CPU<CONFIG>::Warp::Reset(int wid, int bid, int gpr_num, int sm_size,
 	state = Active;
 	cerr << " Warp " << id << " (" << bid << ", " << wid << "): reset\n";
 	cerr << "  " << gpr_window_size << " GPRs from " << gpr_window_base << "\n";
+	cerr << "  " << sm_size << "B shared mem from " << std::hex << sm_window_base << std::dec << "\n";
 }
 
 template <class CONFIG>

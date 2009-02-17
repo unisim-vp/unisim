@@ -126,7 +126,7 @@ alu_full.write = {
 			uint32_t hilo = (dest & 1);
 			cpu->GetGPR(rnum).Write16(value, mask, hilo);
 		}
-		if(CONFIG::TRACE) {
+		if(CONFIG::TRACE_REG) {
 			cpu->DumpGPR(dest + offset, cerr);
 		}
 	}
@@ -135,7 +135,7 @@ alu_full.write = {
 alu_full.writePred = {
 	if(set_pred) {
 		cpu->GetFlags(set_pred_reg).Write(flags, mask);
-		if(CONFIG::TRACE) {
+		if(CONFIG::TRACE_REG) {
 			cpu->DumpFlags(set_pred_reg, cerr);
 		}
 	}
@@ -200,7 +200,7 @@ alu_halfimm.predMask = {
 
 alu_halfimm.write = {
 	cpu->GetGPR(dest + offset).Write(value, mask);
-	if(CONFIG::TRACE) {
+	if(CONFIG::TRACE_REG) {
 		cpu->DumpGPR(dest + offset, cerr);
 	}
 }
@@ -230,7 +230,7 @@ flow_full.predMask = {
 flow_full.writePred = {
 	if(set_pred) {
 		cpu->GetFlags(set_pred_reg).Write(flags, mask);
-		if(CONFIG::TRACE) {
+		if(CONFIG::TRACE_REG) {
 			cpu->DumpFlags(set_pred_reg, cerr);
 		}
 	}

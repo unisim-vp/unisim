@@ -193,7 +193,7 @@ public:
 	virtual void Stop(int ret);
 	virtual void Synchronize();
 	virtual void Reset();
-	void Reset(int threadsperblock, int numblocks);
+	void Reset(int threadsperblock, int numblocks, int regnum, int smsize);
 
 
 //	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
@@ -272,6 +272,8 @@ public:
 	void DumpFlags(int warpid, int reg, ostream & os) const;
 	void DumpFlags(int reg, ostream & os) const;
 
+	void DumpAddr(int reg, ostream & os) const;
+
 	//=====================================================================
 	//=          DEC/TBL/TBU bus-time based update methods                =
 	//=====================================================================
@@ -308,10 +310,12 @@ public:
 
 		enum WarpState {
 			Active,
+			WaitingFence,
 			Finished
 		};
 		
 		WarpState state;
+		uint32_t blockid;
 		
 		uint32_t id;	// for debugging purposes only
 	};
@@ -323,9 +327,12 @@ public:
 	//=====================================================================
 
 
-
+	// Control flow
+	void Meet(address_t addr);
 	void Join();
 	void End();
+	void Fence();
+
 
 //	void ExecMarker(uint32_t marker);
 //	VecReg ReadOperandFP32(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg);
@@ -367,6 +374,7 @@ public:
 
 	void StepWarp(uint32_t warpid);
 	void CheckJoin();
+	void CheckFenceCompleted();
 	
 	// Memory access helpers
 	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);

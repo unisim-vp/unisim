@@ -182,6 +182,7 @@ std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
 	os << r[CONFIG::WARP_SIZE-1];
 	os << std::dec;
 	os << ")";
+	return os;
 }
 
 template <class CONFIG>
@@ -253,6 +254,7 @@ std::ostream & operator << (std::ostream & os, VectorAddress<CONFIG> const & r)
 	os << r[CONFIG::WARP_SIZE-1];
 	os << std::dec;
 	os << ")";
+	return os;
 }
 
 

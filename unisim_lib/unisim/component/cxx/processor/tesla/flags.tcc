@@ -254,6 +254,7 @@ std::ostream & operator << (std::ostream & os, VectorFlags<CONFIG> const & r)
 	os << r[CONFIG::WARP_SIZE-1];
 	os << std::dec;
 	os << ")";
+	return os;
 }
 
 } // end of namespace tesla

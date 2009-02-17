@@ -53,6 +53,7 @@ inline SoftFloatIEEE& SoftFloatIEEE::saturate()
 	else if(hasPositiveOrNullExponent()) {	// >= 1
 		setOne();
 	}
+	return *this;
 }
 
 template<class BaseFloat>

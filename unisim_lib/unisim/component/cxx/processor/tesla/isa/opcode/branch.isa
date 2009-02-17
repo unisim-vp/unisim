@@ -146,6 +146,8 @@ join.disasm = {
 }
 
 join.execute = {
+	assert((target_addr & 3) == 0);	// 64-bit-aligned targets
+	cpu->Meet(target_addr);
 }
 
 op fence( \
@@ -162,5 +164,6 @@ fence.disasm = {
 }
 
 fence.execute = {
+	cpu->Fence();
 }
 

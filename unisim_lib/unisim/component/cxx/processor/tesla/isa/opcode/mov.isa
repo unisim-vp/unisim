@@ -383,10 +383,13 @@ ldam_full.execute = {
 	reg_t a = insn->ReadSrc1();
 	reg_t output = ShiftLeft(a, src2);
 	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(output), insn->Mask());
+	if(CONFIG::TRACE_REG) {
+		cpu->DumpAddr(dest, cerr);
+	}
 }
 
 op ldaa_full_normal( \
-	/*subop*/1[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*subop*/1[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*data_32?*/0[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:addr_hi[1]:/*marker*/0[2]: \
 	0xd[4]:addr_lo[2]:/*addr_imm??*/0[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:src[14]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
@@ -408,9 +411,12 @@ ldaa_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	typedef VectorAddress<CONFIG> VecAddr;	
 
-	assert(data_32);
+//	assert(data_32);
 
 	VecAddr output = cpu->EffectiveAddress(src, addr_lo, addr_hi, 1, 0);
 	cpu->GetAddr(dest).Write(output, insn->Mask());
+	if(CONFIG::TRACE_REG) {
+		cpu->DumpAddr(dest, cerr);
+	}
 }
 
