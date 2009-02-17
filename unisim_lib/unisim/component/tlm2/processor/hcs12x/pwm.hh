@@ -71,6 +71,7 @@ class PWM : public Service<Memory<service_address_t> >,
 public:
 
 	static const uint8_t MEMORY_MAP_SIZE = 37; // number of registers
+	static const uint8_t PWM_SIZE	= 8; // The Number Channel
 
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
@@ -93,10 +94,10 @@ public:
     PWM(const char *name, Object *parent = 0);
     ~PWM();
 
-    uint16_t getClockA();
-    uint16_t getClockB();
-    uint16_t getClockSA();
-    uint16_t getClockSB();
+    clock_t getClockA();
+    clock_t getClockB();
+    clock_t getClockSA();
+    clock_t getClockSB();
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -118,10 +119,11 @@ public:
     void write(address_t address, uint8_t val);
 
 private:
-	uint16_t	bus_cycle_time;
-	Parameter<uint16_t>	param_bus_cycle_time;
+	uint32_t	bus_cycle_time;
+	Parameter<uint32_t>	param_bus_cycle_time;
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
+	sc_time nextTime[10];
 
 	uint8_t	pwme_register, pwmpol_register, pwmclk_register, pwmprclk_register;
 	uint8_t pwmcae_register, pwmctl_register;
@@ -130,15 +132,20 @@ private:
 
 	uint8_t pwmscla_register, pwmsclb_register;
 
+	uint8_t pwmcnt16_register[PWM_SIZE];
+	uint8_t pwmper16_register[PWM_SIZE];
+	uint8_t pwmdty16_register_value[PWM_SIZE];
+
 	class Channel_t : public sc_module {
 	public:
-		enum State {COUNT, STOP};
 
-		Channel_t(const sc_module_name& name);
+		Channel_t(const sc_module_name& name, PWM *parent, const uint8_t channel_number, uint8_t *pwmcnt_ptr, uint8_t *pwmper_ptr, uint8_t *pwmdty_ptr);
 
 		void Run();
-		void start();
-		void stop();
+		void enable();
+		void disable();
+
+		inline uint8_t getChannelMask() { return (0x01 << channel_number);}
 
 		bool isOutput();
 		void setOutput(bool val);
@@ -156,19 +163,63 @@ private:
 		void setPWMDTYBuffer(uint8_t val);
 
 	private:
-		State	state;
 		bool output;
-		uint8_t pwmcnt_register;
-		uint8_t pwmper_register_value;
+		uint8_t *pwmcnt_register_ptr;
+		uint8_t *pwmper_register_value_ptr;
 		uint8_t pwmper_register_buffer;
-		uint8_t pwmdty_register_value;
+		uint8_t *pwmdty_register_value_ptr;
 		uint8_t pwmdty_register_buffer;
 
-	} *channel[8];
+		uint8_t channel_number;
+		PWM	*pwmParent;
+		sc_event wakeup_event;
+
+		template <class T> void checkChangeStateAndWait(const clock_t clk);
+
+	} *channel[PWM_SIZE];
 
 	uint8_t pwmsdn_register;
 
 };
+
+template <class T> void PWM::Channel_t::checkChangeStateAndWait(const clock_t clk) {
+	clock_t zeroToDTY, dtyToPeriod;
+
+	T dty = *((T *) pwmdty_register_value_ptr);
+	T per = *((T *) pwmper_register_value_ptr);
+	T cnt = *((T *) pwmcnt_register_ptr);
+
+	// Check alignment and compute the current period
+	if ((pwmParent->pwmcae_register & getChannelMask()) == 0)  // is Left Aligned ?
+	{
+		per = per - 1;
+	}
+
+	if (dty < per) {
+		zeroToDTY = clk * dty;
+		dtyToPeriod = per - dty;
+
+		*((T *) pwmcnt_register_ptr) = dty;
+
+		wait(sc_time(clk*zeroToDTY, SC_NS)); // TODO: replace this with precomputed sc_time
+
+		output = ~output;
+
+		if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
+		{
+			wait(sc_time(clk*dtyToPeriod, SC_NS)); // TODO: replace this with precomputed sc_time
+			setPwmcnt_register(0);	// end of period
+		} else {
+			// do nothing, just loop.
+		}
+	} else {
+		wait(sc_time(clk*per, SC_NS)); // TODO: replace this with precomputed sc_time
+		setPwmcnt_register(0);	// end of period
+	}
+}
+
+template void PWM::Channel_t::checkChangeStateAndWait<uint8_t>(const clock_t clk);
+template void PWM::Channel_t::checkChangeStateAndWait<uint16_t>(const clock_t clk);
 
 
 } // end of namespace hcs12x

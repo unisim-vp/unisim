@@ -50,11 +50,24 @@ PWM::PWM(const char *name, Object *parent) :
 	param_baseAddress("base-address", this, baseAddress),
 	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time)
 {
+	uint8_t channel_number;
+	for (int i=0; i<PWM_SIZE; i++) {
+#if BYTE_ORDER == BIG_ENDIAN
+		channel_number = i;
+#else
+		channel_number =  PWM::PWM_SIZE-i-1;
+#endif
 
-	for (int i=0; i<8; i++) channel[i] = new Channel_t("jhdsq");
+		channel[channel_number] = new Channel_t("jhdsq", this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
+
+	}
 
 	// Reserved Register for factory testing
 	pwmtst_register = pwmprsc_register = pwmscnta_register = pwmscntb_register = 0;
+
+	for (int i=0; i<10; i++) {
+		nextTime[i] = sc_time(bus_cycle_time/pow(2,i), SC_NS);
+	}
 
 }
 
@@ -142,11 +155,11 @@ void PWM::write(address_t address, uint8_t val) {
 			uint8_t mask = 0x01;
 
 			pwme_register = val;
-			for (uint8_t index=0; index<8; index++) {
+			for (uint8_t index=0; index<PWM_SIZE; index++) {
 				if (pwme_register & mask) {
-					channel[index]->start();
+					channel[index]->enable();
 				} else {
-					channel[index]->stop();
+					channel[index]->disable();
 				}
 			}
 		}
@@ -156,7 +169,7 @@ void PWM::write(address_t address, uint8_t val) {
 
 			pwmpol_register = val;
 
-			for (uint8_t i=0; i<8; i++) {
+			for (uint8_t i=0; i<PWM_SIZE; i++) {
 				channel[i]->setOutput(pwmpol_register & mask);
 				mask << 1;
 			}
@@ -218,7 +231,8 @@ void PWM::write(address_t address, uint8_t val) {
 		default: {
 			// PWMCNTx
 			if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
-				channel[offset-PWMCNT0]->setPwmcnt_register(val);
+				// Any external write operation to the counter register sets it to zero (0)
+				channel[offset-PWMCNT0]->setPwmcnt_register(0);
 			}
 
 			// PWMPERx
@@ -253,34 +267,26 @@ void PWM::write(address_t address, uint8_t val) {
 	}
 }
 
-uint16_t PWM::getClockA() {
+uint32_t PWM::getClockA() {
 
 	uint8_t pckaMask = 0x07;
 	uint8_t pcka = pwmprclk_register & pckaMask;
 
-	if (pcka == 0) {
-		return bus_cycle_time;
-	} else {
-		return bus_cycle_time/(2 << pcka);
-	}
+	return bus_cycle_time/pow(2,pcka);
 
 }
 
-uint16_t PWM::getClockB() {
+uint32_t PWM::getClockB() {
 
 	uint8_t pckbMask = 0x70;
 	uint8_t pckb = (pwmprclk_register & pckbMask) >> 4;
 
-	if (pckb == 0) {
-		return bus_cycle_time;
-	} else {
-		return bus_cycle_time/(2 << pckb);
-	}
+	return bus_cycle_time/pow(2,pckb);
 }
 
-uint16_t PWM::getClockSA() {
+uint32_t PWM::getClockSA() {
 
-	uint16_t clockSA;
+	uint32_t clockSA;
 
 	if (pwmscla_register != 0x00) {
 		clockSA = getClockA() / (2 * pwmscla_register);
@@ -291,9 +297,9 @@ uint16_t PWM::getClockSA() {
 	return clockSA;
 }
 
-uint16_t PWM::getClockSB() {
+uint32_t PWM::getClockSB() {
 
-	uint16_t clockSB;
+	uint32_t clockSB;
 
 	if (pwmsclb_register != 0x00) {
 		clockSB = getClockB() / (2 * pwmsclb_register);
@@ -361,53 +367,126 @@ void PWM::Reset() {
 	//=             PWM Channel methods                   =
 	//=====================================================
 
-PWM::Channel_t::Channel_t(const sc_module_name& name) : sc_module(name) {
+PWM::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, const uint8_t channel_num, uint8_t *pwmcnt_ptr, uint8_t *pwmper_ptr, uint8_t *pwmdty_ptr) :
+	sc_module(name),
+	pwmParent(parent),
+	channel_number(channel_num),
+	pwmcnt_register_ptr(pwmcnt_ptr),
+	pwmper_register_value_ptr(pwmper_ptr),
+	pwmdty_register_value_ptr(pwmdty_ptr)
 
-	state = STOP;
+{
+
 	setOutput(false);
 
 	SC_HAS_PROCESS(Channel_t);
 
 	SC_THREAD(Run);
-
+	sensitive << wakeup_event;
 }
 
 void PWM::Channel_t::Run() {
 
-	/* TODO:
-	 *  - Take in account the channel state (COUNT or STOP)
-	 *  - Take in account the channel Output Alignment
-	 *  - Is Channel concatenated ?
-	 *  - Select clock source using PCLKx
-	 *     channel 0, 1, 4, 5 then clock A or SA
-	 *     channel 2, 3, 6, 7 then clock B or SB
+	clock_t clk;
+
+	uint8_t bit2Mask = 0x02;
+
+
+	uint8_t ctl_register;
+	uint8_t conMask = 0x10 << (channel_number / 2);
+	/*
+	 * PWMCTL bits interpretation
+	 * bit7: CON67, bit6: CON45, bit5: CON23, bit4: CON01
+	 * when
+	 *  - CONxy=1 then channel x high order and channel y low order
+	 *  - only channel y registers and output are used to control the behavior of the concatenated channel
 	 */
+
+	bool isEnable = false;
+
+	while (true) {
+		isEnable = ((pwmParent->pwme_register & (0x01 << channel_number)) != 0);
+		ctl_register = pwmParent->pwmctl_register;
+
+		/*
+		 * - Take in account the channel state (COUNT or STOP)
+		 * - Is Channel concatenated ?
+		 */
+		while (((ctl_register & conMask) && (channel_number % 2 == 0)) || (!isEnable))
+		{
+			wait(wakeup_event);
+
+			isEnable = ((pwmParent->pwme_register & (0x01 << channel_number)) != 0);
+			ctl_register = pwmParent->pwmctl_register;
+		}
+
+		/*
+	 	 *  - Select clock source using PCLKx
+	 	 *     channel 0, 1, 4, 5 then clock A or SA
+	 	 *     channel 2, 3, 6, 7 then clock B or SB
+		 */
+		if ((pwmParent->pwmclk_register & getChannelMask())  != 0) {
+			if (channel_number & bit2Mask) {
+				clk = pwmParent->getClockB();
+			} else {
+				clk = pwmParent->getClockA();
+			}
+
+		} else {
+			if (channel_number & bit2Mask) {
+				clk = pwmParent->getClockSB();
+			} else {
+				clk = pwmParent->getClockSA();
+			}
+
+		}
+
+		if ((ctl_register & conMask) && (channel_number % 2 != 0)) { // 16-bit mode
+			checkChangeStateAndWait<uint16_t>(clk);
+		} else { // 8-bit mode
+			checkChangeStateAndWait<uint8_t>(clk);
+		}
+	}
 }
 
-void PWM::Channel_t::start() { state = COUNT; }
+void PWM::Channel_t::enable() {
+	wakeup_event.notify();
+}
 
-void PWM::Channel_t::stop() { state = STOP; }
+void PWM::Channel_t::disable() {
+	/* TODO: not finalized. Disactivate the channel thread */
 
-bool PWM::Channel_t::isOutput() { return output; }
-void PWM::Channel_t::setOutput(bool val) { output = val; }
-
-uint8_t PWM::Channel_t::getPwmcnt_register() { return pwmcnt_register; }
-void PWM::Channel_t::setPwmcnt_register(uint8_t val) {
-	pwmcnt_register = 0;
 	setPWMPERValue(getPWMPERBuffer());
 	setPWMDTYValue(getPWMDTYBuffer());
 }
 
-uint8_t PWM::Channel_t::getPWMPERValue() { return pwmper_register_value; }
+bool PWM::Channel_t::isOutput() { return output; }
+void PWM::Channel_t::setOutput(bool val) { output = val; }
+
+uint8_t PWM::Channel_t::getPwmcnt_register() { return *pwmcnt_register_ptr; }
+void PWM::Channel_t::setPwmcnt_register(uint8_t val) {
+	*pwmcnt_register_ptr = val;
+	if (*pwmcnt_register_ptr == 0) {
+		setPWMPERValue(getPWMPERBuffer());
+		setPWMDTYValue(getPWMDTYBuffer());
+		// change output according to polarity
+		if ((pwmParent->pwmpol_register & getChannelMask()) != 0) {
+			output = true;
+		} else {
+			output = false;
+		}
+	}
+}
+
+uint8_t PWM::Channel_t::getPWMPERValue() { return *pwmper_register_value_ptr; }
 void PWM::Channel_t::setPWMPERValue(uint8_t val) {
-	pwmper_register_value = val;
-	if (pwmper_register_value == 0) setPwmcnt_register(0);
+	*pwmper_register_value_ptr = val;
 }
 uint8_t PWM::Channel_t::getPWMPERBuffer() { return pwmper_register_buffer; }
 void PWM::Channel_t::setPWMPERBuffer(uint8_t val) { pwmper_register_buffer = val; }
 
-uint8_t PWM::Channel_t::getPWMDTYValue() { return pwmdty_register_value; }
-void PWM::Channel_t::setPWMDTYValue(uint8_t val) { pwmdty_register_value = val; }
+uint8_t PWM::Channel_t::getPWMDTYValue() { return *pwmdty_register_value_ptr; }
+void PWM::Channel_t::setPWMDTYValue(uint8_t val) { *pwmdty_register_value_ptr = val; }
 uint8_t PWM::Channel_t::getPWMDTYBuffer() { return pwmdty_register_buffer; }
 void PWM::Channel_t::setPWMDTYBuffer(uint8_t val) { pwmdty_register_buffer = val; }
 
