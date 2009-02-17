@@ -104,12 +104,35 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os)
 }
 
 template<class CONFIG>
-void Device<CONFIG>::Run(Kernel<CONFIG> const & kernel)
+void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 {
 	Load(kernel);
-	cpu.Reset(kernel.ThreadsPerBlock(), 1);
-	SetThreadIDs(kernel);
-	cpu.Run();	// Multiple cores??
+	kernel.SetGridShape(width, height);
+	
+	int blockspercore = kernel.BlocksPerCore();
+	
+	// TODO: multiple cores
+	// Blocks are scheduled sequentially on available resources
+	int bidy = 0;
+	int bidx = 0;
+	for(int i = 0; i < height * width; i += blockspercore)
+	{
+		int blocks = std::min(blockspercore, height * width - i);
+		cpu.Reset(kernel.ThreadsPerBlock(), blocks, kernel.GPRs(), kernel.SharedTotal());
+
+		for(int j = 0; j < blocks; ++j)
+		{
+			kernel.InitShared(memory, j, bidx, bidy);
+			SetThreadIDs(kernel, j);
+
+			++bidx;
+			if(bidx == width) {
+				bidx = 0;
+				++bidy;
+			}
+		}
+		cpu.Run();
+	}
 }
 
 template<class CONFIG>
@@ -194,12 +217,14 @@ void Device<CONFIG>::Reset()
 }
 
 template<class CONFIG>
-void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel)
+void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum)
 {
 	// Set register 0 of each thread
 	
-	// TODO: multiple blocks
 	// TODO: multiple cores
+	int warpsperblock = kernel.WarpsPerBlock();
+	int blockstart = bnum * warpsperblock;
+	//cerr << "Warpsperblocks = " << warpsperblock << ", blockstart = " << blockstart << endl;
 	for(int z = 0; z != kernel.BlockZ(); ++z)
 	{
 		for(int y = 0; y != kernel.BlockY(); ++y)
@@ -207,9 +232,10 @@ void Device<CONFIG>::SetThreadIDs(Kernel<CONFIG> const & kernel)
 			for(int x = 0; x != kernel.BlockX(); ++x)
 			{
 				int tid = ((z * kernel.BlockY()) + y) * kernel.BlockX() + x;
-				int warpid = tid / CONFIG::WARP_SIZE;
+				int warpid = blockstart + tid / CONFIG::WARP_SIZE;
 				int lane = tid % CONFIG::WARP_SIZE;
 				
+				//cerr << "Setting r0 of warp " << warpid << endl;
 				uint32_t reg = BuildTID(x, y, z);
 				cpu.GetGPR(warpid, 0).WriteLane(reg, lane);	// TID on r0
 			}
@@ -225,5 +251,46 @@ uint32_t Device<CONFIG>::BuildTID(int x, int y, int z)
 	return (z << 26) | (y << 16) | x;
 }
 
+template<class CONFIG>
+std::string Device<CONFIG>::Name()
+{
+	return "Barra simulator";
+}
+
+template<class CONFIG>
+unsigned int Device<CONFIG>::TotalMem()
+{
+	return CONFIG::GLOBAL_SIZE;
+}
+
+template<class CONFIG>
+int Device<CONFIG>::ComputeCapabilityMajor()
+{
+	return CONFIG::COMPUTE_CAP_MAJOR;
+}
+
+template<class CONFIG>
+int Device<CONFIG>::ComputeCapabilityMinor()
+{
+	return CONFIG::COMPUTE_CAP_MINOR;
+}
+
+template<class CONFIG>
+CUdevprop Device<CONFIG>::Properties()
+{
+	CUdevprop prop = {
+		CONFIG::MAX_THREADS,	// maxThreadsPerBlock
+		{ 512, 512, 64 },		// maxThreadsDim[3]
+		{ 65535, 65535, 1 },	// maxGridSize[3]
+		CONFIG::SHARED_SIZE,	// sharedMemPerBlock
+		CONFIG::CONST_SEG_SIZE,	// totalConstantMemory
+		CONFIG::WARP_SIZE,		// SIMDWidth
+		16*4,					// memPitch
+		CONFIG::MAX_VGPR * CONFIG::WARP_SIZE,	// regsPerBlock
+		CONFIG::SHADER_CLOCK_KHZ,	// clockRate
+		16*4	// textureAlign
+	};
+	return prop;
+}
 
 #endif

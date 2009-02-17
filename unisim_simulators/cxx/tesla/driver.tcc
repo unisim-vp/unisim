@@ -40,6 +40,7 @@
 #include <driver.hh>
 #include <module.hh>
 #include <iostream>
+#include "exception.hh"
 
 
 /*****************************************
@@ -60,6 +61,7 @@ CUresult Driver<CONFIG>::cuDeviceGet(CUdevice *device, int ordinal)
 {
 	if(ordinal >= MAXDEVICE || ordinal < 0)
 	{
+		std::cerr << "Invalid device : " << ordinal << std::endl;
 		return CUDA_ERROR_INVALID_DEVICE;
 	}
 	*device = ordinal;
@@ -84,6 +86,7 @@ CUresult Driver<CONFIG>::cuCtxCreate(CUcontext *pctx, unsigned int flags, CUdevi
 	}
 	catch(...)
 	{
+		std::cerr << "Cannot create context\n";
 		return CUDA_ERROR_UNKNOWN;
 	}
 	return CUDA_SUCCESS;
@@ -98,6 +101,7 @@ CUresult Driver<CONFIG>::cuCtxDestroy( CUcontext ctx )
 	}
 	catch(...)
 	{
+		std::cerr << "Cannot destroy context\n";
 		return CUDA_ERROR_UNKNOWN;
 	}
 	return CUDA_SUCCESS;
@@ -115,6 +119,7 @@ CUresult Driver<CONFIG>::ModuleLoad(Module<CONFIG> *  &module, const char *fname
 	// TODO: catch specific exceptions, display and return appropriate errors
 	catch(...)
 	{
+		std::cerr << "Cannot load module\n";
 		return CUDA_ERROR_UNKNOWN;
 	}
 	return CUDA_SUCCESS;
@@ -130,6 +135,7 @@ CUresult Driver<CONFIG>::ModuleUnload(Module<CONFIG> * hmod)
 	}
 	catch(...)
 	{
+		std::cerr << "Cannot unload module\n";
 		return CUDA_ERROR_UNKNOWN;
 	}
 	return CUDA_SUCCESS;
@@ -180,6 +186,13 @@ void Driver<CONFIG>::Launch(Kernel<CONFIG> & kernel)
 }
 
 template<class CONFIG>
+void Driver<CONFIG>::LaunchGrid(Kernel<CONFIG> & kernel, int width, int height)
+{
+	int dev = current_context->GetDevice();
+	device[dev].Run(kernel, width, height);
+}
+
+template<class CONFIG>
 void Driver<CONFIG>::CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size)
 {
 	int dev = current_context->GetDevice();
@@ -221,5 +234,20 @@ void Driver<CONFIG>::Memset(typename CONFIG::address_t dest, uint8_t val, size_t
 	device[dev].Memset(dest, val, n);
 }
 
+template<class CONFIG>
+Device<CONFIG> const & Driver<CONFIG>::Dev(int dev) const
+{
+	if(dev < 0 || dev >= MAXDEVICE)
+		throw CudaException(CUDA_ERROR_INVALID_DEVICE);
+	return device[dev];
+}
+
+template<class CONFIG>
+Device<CONFIG> & Driver<CONFIG>::Dev(int dev)
+{
+	if(dev < 0 || dev >= MAXDEVICE)
+		throw CudaException(CUDA_ERROR_INVALID_DEVICE);
+	return device[dev];
+}
 
 #endif

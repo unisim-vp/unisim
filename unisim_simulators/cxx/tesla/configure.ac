@@ -33,9 +33,7 @@
 #          
 #
 
-AC_INIT([UNISIM Tesla instruction set architecture simulator], [1.0],
-	[David Parello <david.parello@univ-perp.fr>],
-	[tesla])
+AC_INIT([UNISIM Tesla instruction set architecture simulator],[1.0],[David Parello <david.parello@univ-perp.fr>],[tesla])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
@@ -44,15 +42,25 @@ AC_CANONICAL_TARGET
     
 AM_INIT_AUTOMAKE
 
+#AC_INIT_AUTOMAKE
+#LT_INIT([shared])
+#AC_LIBTOOL_DLOPEN
+#AC_DISABLE_SHARED
+AC_ENABLE_SHARED
+AC_DISABLE_STATIC
+AC_PROG_LIBTOOL
+AC_SUBST(LIBTOOL_DEPS)
+
 AC_PATH_PROGS(SH, sh)
 AC_PROG_CXX
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+#AC_PROG_RANLIB
 AC_PROG_LN_S
 
 AC_LANG([C++])
 
 AC_PROG_CC
+
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
@@ -88,27 +96,27 @@ UNISIM_RELEASE
 #UNISIM_LINK(unisim_kernel_clm_engine)
 UNISIM_LINK(unisim_kernel_logger)
 UNISIM_LINK(unisim_kernel_service)
-UNISIM_LINK(unisim_kernel_debug)
+#UNISIM_LINK(unisim_kernel_debug)
 
-UNISIM_LINK(unisim_util_xml)
-UNISIM_LINK(unisim_util_debug)
-UNISIM_LINK(unisim_util_endian)
-UNISIM_LINK(unisim_util_garbage_collector)
-UNISIM_LINK(unisim_util_queue)
+#UNISIM_LINK(unisim_util_xml)
+#UNISIM_LINK(unisim_util_debug)
+#UNISIM_LINK(unisim_util_endian)
+#UNISIM_LINK(unisim_util_garbage_collector)
+#UNISIM_LINK(unisim_util_queue)
 
-UNISIM_LINK(unisim_service_time_sc_time)
-UNISIM_LINK(unisim_service_time_host_time)
-UNISIM_LINK(unisim_service_power)
-UNISIM_LINK(unisim_service_debug_gdb_server)
-UNISIM_LINK(unisim_service_debug_inline_debugger)
-UNISIM_LINK(unisim_service_os_linux_os)
-UNISIM_LINK(unisim_service_loader_elf_loader)
-UNISIM_LINK(unisim_service_debug_symbol_table)
+#UNISIM_LINK(unisim_service_time_sc_time)
+#UNISIM_LINK(unisim_service_time_host_time)
+#UNISIM_LINK(unisim_service_power)
+#UNISIM_LINK(unisim_service_debug_gdb_server)
+#UNISIM_LINK(unisim_service_debug_inline_debugger)
+#UNISIM_LINK(unisim_service_os_linux_os)
+#UNISIM_LINK(unisim_service_loader_elf_loader)
+#UNISIM_LINK(unisim_service_debug_symbol_table)
 #UNISIM_LINK(unisim_service_loader_pmac_bootx)
 #UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
-UNISIM_LINK(unisim_service_loader_linux_loader)
-UNISIM_LINK(unisim_service_logger)
-UNISIM_LINK(unisim_service_sdl)
+#UNISIM_LINK(unisim_service_loader_linux_loader)
+#UNISIM_LINK(unisim_service_logger)
+#UNISIM_LINK(unisim_service_sdl)
 
 UNISIM_LINK(unisim_component_cxx_processor_tesla)
 #UNISIM_LINK(unisim_component_cxx_processor_arm)

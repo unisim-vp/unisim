@@ -70,44 +70,65 @@ CUresult  CUDAAPI cuInit(unsigned int Flags)
  **
  ***********************************/
 
-CUresult  CUDAAPI cuDeviceGet(CUdevice *device, int ordinal)
+CUresult CUDAAPI cuDeviceGet(CUdevice *device, int ordinal)
 {
   return driver.cuDeviceGet(device, ordinal);
 }
 
-CUresult  CUDAAPI cuDeviceGetCount(int *count)
+CUresult CUDAAPI cuDeviceGetCount(int *count)
 {
   return driver.cuDeviceGetCount(count);
 }
 
-CUresult  CUDAAPI cuDeviceGetName(char *name, int len, CUdevice dev)
+CUresult CUDAAPI cuDeviceGetName(char *name, int len, CUdevice dev)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try {
+		strncpy(name, driver.Dev(dev).Name().c_str(), len);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
-CUresult  CUDAAPI cuDeviceComputeCapability(int *major, int *minor, CUdevice dev)
+CUresult CUDAAPI cuDeviceComputeCapability(int *major, int *minor, CUdevice dev)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try {
+		*major = driver.Dev(dev).ComputeCapabilityMajor();
+		*minor = driver.Dev(dev).ComputeCapabilityMinor();
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
-CUresult  CUDAAPI cuDeviceTotalMem(unsigned int *bytes, CUdevice dev)
+CUresult CUDAAPI cuDeviceTotalMem(unsigned int *bytes, CUdevice dev)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+ 	try {
+		*bytes = driver.Dev(dev).TotalMem();
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 CUresult  CUDAAPI cuDeviceGetProperties(CUdevprop *prop, CUdevice dev)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+ 	try {
+		*prop = driver.Dev(dev).Properties();
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 CUresult  CUDAAPI cuDeviceGetAttribute(int *pi, CUdevice_attribute attrib, CUdevice dev)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
         
@@ -130,34 +151,35 @@ CUresult  CUDAAPI cuCtxDestroy( CUcontext ctx )
 CUresult  CUDAAPI cuCtxAttach(CUcontext *pctx, unsigned int flags)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult  CUDAAPI cuCtxDetach(CUcontext ctx)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+//  cerr << "function not implemented !!!" << endl;
+//  assert(false);
+	return CUDA_SUCCESS;
 }
 
 CUresult  CUDAAPI cuCtxPushCurrent( CUcontext ctx )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult  CUDAAPI cuCtxPopCurrent( CUcontext *pctx )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult  CUDAAPI cuCtxGetDevice(CUdevice *device)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
-CUresult cuCtxSynchronize()
+CUresult CUDAAPI cuCtxSynchronize()
 {
 	return CUDA_SUCCESS;
 }
@@ -170,7 +192,7 @@ CUresult cuCtxSynchronize()
  **
  ***********************************/
 
-CUresult cuModuleLoad(CUmodule *module, const char *fname)
+CUresult CUDAAPI cuModuleLoad(CUmodule *module, const char *fname)
 {
 	Module<MyConfig>* mod = 0;
 	CUresult res = driver.ModuleLoad(mod, fname);
@@ -182,13 +204,13 @@ CUresult cuModuleLoad(CUmodule *module, const char *fname)
 CUresult  CUDAAPI cuModuleLoadData(CUmodule *module, const void *image)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult  CUDAAPI cuModuleLoadFatBinary(CUmodule *module, const void *fatCubin)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult  CUDAAPI cuModuleUnload(CUmodule hmod)
@@ -214,13 +236,13 @@ CUresult cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name)
 CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmodule hmod, const char *name)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult  CUDAAPI cuModuleGetTexRef(CUtexref *pTexRef, CUmodule hmod, const char *name)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -233,7 +255,7 @@ CUresult  CUDAAPI cuModuleGetTexRef(CUtexref *pTexRef, CUmodule hmod, const char
 CUresult CUDAAPI cuMemGetInfo(unsigned int *free, unsigned int *total)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -260,7 +282,7 @@ CUresult CUDAAPI cuMemAllocPitch( CUdeviceptr *dptr,
 				  )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult CUDAAPI cuMemFree(CUdeviceptr dptr)
@@ -278,7 +300,7 @@ CUresult CUDAAPI cuMemFree(CUdeviceptr dptr)
 CUresult CUDAAPI cuMemGetAddressRange( CUdeviceptr *pbase, unsigned int *psize, CUdeviceptr dptr )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult CUDAAPI cuMemAllocHost(void **pp, unsigned int bytesize)
@@ -342,7 +364,7 @@ CUresult  CUDAAPI cuMemcpyDtoH (void *dstHost, CUdeviceptr srcDevice, unsigned i
 CUresult  CUDAAPI cuMemcpyDtoD (CUdeviceptr dstDevice, CUdeviceptr srcDevice, unsigned int ByteCount )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -350,13 +372,13 @@ CUresult  CUDAAPI cuMemcpyDtoD (CUdeviceptr dstDevice, CUdeviceptr srcDevice, un
 CUresult  CUDAAPI cuMemcpyDtoA ( CUarray dstArray, unsigned int dstIndex, CUdeviceptr srcDevice, unsigned int ByteCount )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 CUresult  CUDAAPI cuMemcpyAtoD ( CUdeviceptr dstDevice, CUarray hSrc, unsigned int SrcIndex, unsigned int ByteCount )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -364,14 +386,14 @@ CUresult  CUDAAPI cuMemcpyAtoD ( CUdeviceptr dstDevice, CUarray hSrc, unsigned i
 CUresult  CUDAAPI cuMemcpyHtoA( CUarray dstArray, unsigned int dstIndex, const void *pSrc, unsigned int ByteCount )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuMemcpyAtoH( void *dstHost, CUarray srcArray, unsigned int srcIndex, unsigned int ByteCount )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -380,7 +402,7 @@ CUresult  CUDAAPI cuMemcpyAtoH( void *dstHost, CUarray srcArray, unsigned int sr
 CUresult  CUDAAPI cuMemcpyAtoA( CUarray dstArray, unsigned int dstIndex, CUarray srcArray, unsigned int srcIndex, unsigned int ByteCount )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -389,14 +411,14 @@ CUresult  CUDAAPI cuMemcpyAtoA( CUarray dstArray, unsigned int dstIndex, CUarray
 CUresult  CUDAAPI cuMemcpy2D( const CUDA_MEMCPY2D *pCopy )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuMemcpy2DUnaligned( const CUDA_MEMCPY2D *pCopy )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -405,7 +427,7 @@ CUresult  CUDAAPI cuMemcpy2DUnaligned( const CUDA_MEMCPY2D *pCopy )
 CUresult  CUDAAPI cuMemcpy3D( const CUDA_MEMCPY3D *pCopy )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -427,7 +449,7 @@ CUresult  CUDAAPI cuMemcpyHtoDAsync (CUdeviceptr dstDevice,
 				     const void *srcHost, unsigned int ByteCount, CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -435,7 +457,7 @@ CUresult  CUDAAPI cuMemcpyDtoHAsync (void *dstHost,
 				     CUdeviceptr srcDevice, unsigned int ByteCount, CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -445,7 +467,7 @@ CUresult  CUDAAPI cuMemcpyHtoAAsync( CUarray dstArray, unsigned int dstIndex,
 				     const void *pSrc, unsigned int ByteCount, CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -453,7 +475,7 @@ CUresult  CUDAAPI cuMemcpyAtoHAsync( void *dstHost, CUarray srcArray, unsigned i
 				     unsigned int ByteCount, CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -462,7 +484,7 @@ CUresult  CUDAAPI cuMemcpyAtoHAsync( void *dstHost, CUarray srcArray, unsigned i
 CUresult  CUDAAPI cuMemcpy2DAsync( const CUDA_MEMCPY2D *pCopy, CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -471,7 +493,7 @@ CUresult  CUDAAPI cuMemcpy2DAsync( const CUDA_MEMCPY2D *pCopy, CUstream hStream 
 CUresult  CUDAAPI cuMemcpy3DAsync( const CUDA_MEMCPY3D *pCopy, CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -483,15 +505,27 @@ CUresult  CUDAAPI cuMemcpy3DAsync( const CUDA_MEMCPY3D *pCopy, CUstream hStream 
  ***********************************/
 CUresult  CUDAAPI cuMemsetD8( CUdeviceptr dstDevice, unsigned char uc, unsigned int N )
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try
+	{
+		driver.Memset(dstDevice, uc, N);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult  CUDAAPI cuMemsetD16( CUdeviceptr dstDevice, unsigned short us, unsigned int N )
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	try
+	{
+		driver.Memset(dstDevice, us, N);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
@@ -512,21 +546,21 @@ CUresult  CUDAAPI cuMemsetD32( CUdeviceptr dstDevice, unsigned int ui, unsigned 
 CUresult  CUDAAPI cuMemsetD2D8( CUdeviceptr dstDevice, unsigned int dstPitch, unsigned char uc, unsigned int Width, unsigned int Height )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuMemsetD2D16( CUdeviceptr dstDevice, unsigned int dstPitch, unsigned short us, unsigned int Width, unsigned int Height )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuMemsetD2D32( CUdeviceptr dstDevice, unsigned int dstPitch, unsigned int ui, unsigned int Width, unsigned int Height )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -538,7 +572,7 @@ CUresult  CUDAAPI cuMemsetD2D32( CUdeviceptr dstDevice, unsigned int dstPitch, u
  ***********************************/
 
 
-CUresult cuFuncSetBlockShape(CUfunction hfunc, int x, int y, int z)
+CUresult CUDAAPI cuFuncSetBlockShape(CUfunction hfunc, int x, int y, int z)
 {
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
@@ -552,7 +586,7 @@ CUresult cuFuncSetBlockShape(CUfunction hfunc, int x, int y, int z)
 }
 
 
-CUresult cuFuncSetSharedSize(CUfunction hfunc, unsigned int bytes)
+CUresult CUDAAPI cuFuncSetSharedSize(CUfunction hfunc, unsigned int bytes)
 {
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
@@ -574,21 +608,21 @@ CUresult cuFuncSetSharedSize(CUfunction hfunc, unsigned int bytes)
 CUresult  CUDAAPI cuArrayCreate( CUarray *pHandle, const CUDA_ARRAY_DESCRIPTOR *pAllocateArray )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuArrayGetDescriptor( CUDA_ARRAY_DESCRIPTOR *pArrayDescriptor, CUarray hArray )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuArrayDestroy( CUarray hArray )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -596,14 +630,14 @@ CUresult  CUDAAPI cuArrayDestroy( CUarray hArray )
 CUresult  CUDAAPI cuArray3DCreate( CUarray *pHandle, const CUDA_ARRAY3D_DESCRIPTOR *pAllocateArray )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuArray3DGetDescriptor( CUDA_ARRAY3D_DESCRIPTOR *pArrayDescriptor, CUarray hArray )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -616,14 +650,14 @@ CUresult  CUDAAPI cuArray3DGetDescriptor( CUDA_ARRAY3D_DESCRIPTOR *pArrayDescrip
 CUresult  CUDAAPI cuTexRefCreate( CUtexref *pTexRef )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefDestroy( CUtexref hTexRef )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -631,7 +665,7 @@ CUresult  CUDAAPI cuTexRefDestroy( CUtexref hTexRef )
 CUresult  CUDAAPI cuTexRefSetArray( CUtexref hTexRef, CUarray hArray, unsigned int Flags )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -640,14 +674,14 @@ CUresult  CUDAAPI cuTexRefSetArray( CUtexref hTexRef, CUarray hArray, unsigned i
 CUresult  CUDAAPI cuTexRefSetAddress( unsigned int *ByteOffset, CUtexref hTexRef, CUdeviceptr dptr, unsigned int bytes )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefSetFormat( CUtexref hTexRef, CUarray_format fmt, int NumPackedComponents )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -655,21 +689,21 @@ CUresult  CUDAAPI cuTexRefSetFormat( CUtexref hTexRef, CUarray_format fmt, int N
 CUresult  CUDAAPI cuTexRefSetAddressMode( CUtexref hTexRef, int dim, CUaddress_mode am )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefSetFilterMode( CUtexref hTexRef, CUfilter_mode fm )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefSetFlags( CUtexref hTexRef, unsigned int Flags )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -683,42 +717,42 @@ CUresult  CUDAAPI cuTexRefSetFlags( CUtexref hTexRef, unsigned int Flags )
 CUresult  CUDAAPI cuTexRefGetAddress( CUdeviceptr *pdptr, CUtexref hTexRef )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefGetArray( CUarray *phArray, CUtexref hTexRef )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefGetAddressMode( CUaddress_mode *pam, CUtexref hTexRef, int dim )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefGetFilterMode( CUfilter_mode *pfm, CUtexref hTexRef )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefGetFormat( CUarray_format *pFormat, int *pNumChannels, CUtexref hTexRef )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult  CUDAAPI cuTexRefGetFlags( unsigned int *pFlags, CUtexref hTexRef )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -729,7 +763,7 @@ CUresult  CUDAAPI cuTexRefGetFlags( unsigned int *pFlags, CUtexref hTexRef )
  **
  ***********************************/
 
-CUresult cuParamSetSize(CUfunction hfunc, unsigned int numbytes)
+CUresult CUDAAPI cuParamSetSize(CUfunction hfunc, unsigned int numbytes)
 {
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
@@ -741,7 +775,7 @@ CUresult cuParamSetSize(CUfunction hfunc, unsigned int numbytes)
 	}
 }
 
-CUresult cuParamSeti(CUfunction hfunc, int offset, unsigned int value)
+CUresult CUDAAPI cuParamSeti(CUfunction hfunc, int offset, unsigned int value)
 {
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
@@ -753,7 +787,7 @@ CUresult cuParamSeti(CUfunction hfunc, int offset, unsigned int value)
 	}
 }
 
-CUresult cuParamSetf(CUfunction hfunc, int offset, float value)
+CUresult CUDAAPI cuParamSetf(CUfunction hfunc, int offset, float value)
 {
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
@@ -765,7 +799,7 @@ CUresult cuParamSetf(CUfunction hfunc, int offset, float value)
 	}
 }
 
-CUresult cuParamSetv(CUfunction hfunc, int offset, void * ptr, unsigned int numbytes)
+CUresult CUDAAPI cuParamSetv(CUfunction hfunc, int offset, void * ptr, unsigned int numbytes)
 {
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(hfunc);
 	try {
@@ -778,10 +812,10 @@ CUresult cuParamSetv(CUfunction hfunc, int offset, void * ptr, unsigned int numb
 }
 
 
-CUresult cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRef)
+CUresult CUDAAPI cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRef)
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -795,7 +829,7 @@ CUresult cuParamSetTexRef(CUfunction hfunc, int texunit, CUtexref hTexRef)
  **
  ***********************************/
 
-CUresult cuLaunch (CUfunction f)
+CUresult CUDAAPI cuLaunch (CUfunction f)
 {
 	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(f);
 	try {
@@ -810,15 +844,21 @@ CUresult cuLaunch (CUfunction f)
 
 CUresult CUDAAPI cuLaunchGrid (CUfunction f, int grid_width, int grid_height)
 {
-  cerr << "function not implemented !!!" << endl;
-  abort();
+	Kernel<MyConfig> * kernel = static_cast<Kernel<MyConfig> *>(f);
+	try {
+		driver.LaunchGrid(*kernel, grid_width, grid_height);
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 
 CUresult CUDAAPI cuLaunchGridAsync( CUfunction f, int grid_width, int grid_height, CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -831,42 +871,42 @@ CUresult CUDAAPI cuLaunchGridAsync( CUfunction f, int grid_width, int grid_heigh
 CUresult CUDAAPI cuEventCreate( CUevent *phEvent, unsigned int Flags )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult CUDAAPI cuEventRecord( CUevent hEvent, CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult CUDAAPI cuEventQuery( CUevent hEvent )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult CUDAAPI cuEventSynchronize( CUevent hEvent )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult CUDAAPI cuEventDestroy( CUevent hEvent )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult CUDAAPI cuEventElapsedTime( float *pMilliseconds, CUevent hStart, CUevent hEnd )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
@@ -879,28 +919,28 @@ CUresult CUDAAPI cuEventElapsedTime( float *pMilliseconds, CUevent hStart, CUeve
 CUresult CUDAAPI  cuStreamCreate( CUstream *phStream, unsigned int Flags )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult CUDAAPI  cuStreamQuery( CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult CUDAAPI  cuStreamSynchronize( CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 
 CUresult CUDAAPI  cuStreamDestroy( CUstream hStream )
 {
   cerr << "function not implemented !!!" << endl;
-  abort();
+  assert(false);
 }
 
 /************************************
@@ -910,7 +950,7 @@ CUresult CUDAAPI  cuStreamDestroy( CUstream hStream )
  ***********************************/
 
 
-CUresult barFunctionDump(CUfunction f)
+CUresult CUDAAPI barFunctionDump(CUfunction f)
 {
 	try {
 		driver.FunctionDump(*static_cast<Kernel<MyConfig>*>(f));
@@ -921,6 +961,4 @@ CUresult barFunctionDump(CUfunction f)
 	}
 }
 
-
-//#endif /* __cuda_cuda_cc__ */
 

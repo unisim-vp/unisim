@@ -60,6 +60,8 @@ Kernel<CONFIG>::Kernel(std::istream & is) :
 	blockx(1),
 	blocky(1),
 	blockz(1),
+	gridx(1),
+	gridy(1),
 	param_size(0)
 {
 	cerr << " Kernel segment\n";
@@ -154,9 +156,6 @@ void Kernel<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & mem, ui
 		it->Load(mem);
 	}
 	
-	// TODO: multiple cores
-	InitShared(mem, 0);
-	
 }
 
 template<class CONFIG>
@@ -223,10 +222,39 @@ void Kernel<CONFIG>::SetBlockShape(int x, int y, int z)
 }
 
 template<class CONFIG>
+void Kernel<CONFIG>::SetGridShape(int x, int y)
+{
+	if(x < 0 || y < 0)
+		throw CudaException(CUDA_ERROR_INVALID_VALUE);
+	// TODO: check individual upper bounds
+		
+	if(x == 0)
+		x = 1;
+	if(y == 0)
+		y = 1;
+	
+	gridx = x;
+	gridy = y;
+}
+
+template<class CONFIG>
 int Kernel<CONFIG>::ThreadsPerBlock() const
 {
 	return blockz * blocky * blockx;
 }
+
+template<class CONFIG>
+int Kernel<CONFIG>::WarpsPerBlock() const
+{
+	return (ThreadsPerBlock() + CONFIG::WARP_SIZE - 1) / CONFIG::WARP_SIZE;
+}
+
+template<class CONFIG>
+int Kernel<CONFIG>::GPRs() const
+{
+	return reg;
+}
+
 
 template<class CONFIG>
 int Kernel<CONFIG>::BlockX() const
@@ -287,24 +315,39 @@ void Kernel<CONFIG>::SetSharedSize(int size)
 template<class CONFIG>
 uint32_t Kernel<CONFIG>::SharedTotal() const
 {
-	return 16 + param_size + smem + dyn_smem;
+	// Align to DWORD boundary
+	return (16 + param_size + smem + dyn_smem + 3) & (~3);
 }
 
 template<class CONFIG>
-void Kernel<CONFIG>::InitShared(Service<Memory<typename CONFIG::address_t> > & mem, int index) const
+void Kernel<CONFIG>::InitShared(Service<Memory<typename CONFIG::address_t> > & mem, int index,
+	int bidx, int bidy) const
 {
+	// TODO: multiple cores
 	// Header
 	uint16_t header[8];	// 10?
 	header[0] = 0;	// flags? gridid?
 	header[1] = blockx;
 	header[2] = blocky;
 	header[3] = blockz;
-	header[4] = 1;	// gridx
-	header[5] = 1;	// gridy
-	header[6] = 0;	// bidx
-	header[7] = 0;	// bidy
-	
-	typename CONFIG::address_t shared_base = CONFIG::SHARED_START + index * CONFIG::SHARED_SIZE;
+	header[4] = gridx;	// gridx
+	header[5] = gridy;	// gridy
+	header[6] = bidx;	// bidx
+	header[7] = bidy;	// bidy
+/*
+	// Little-endian
+	header[1] = 0;	// flags? gridid?
+	header[0] = blockx;
+	header[3] = blocky;
+	header[2] = blockz;
+	header[5] = gridx;	// gridx
+	header[4] = gridy;	// gridy
+	header[7] = bidx;	// bidx
+	header[6] = bidy;	// bidy
+*/	
+	cerr << "Init block " << index << " (" << bidx << ", " << bidy << ") / ("
+	<< gridx << ", " << gridy << ") shared memory\n";
+	typename CONFIG::address_t shared_base = CONFIG::SHARED_START + index * SharedTotal();
 
 	if(!mem.WriteMemory(shared_base, header, 16)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
@@ -315,6 +358,16 @@ void Kernel<CONFIG>::InitShared(Service<Memory<typename CONFIG::address_t> > & m
 	if(!mem.WriteMemory(shared_base + 16, &parameters[0], param_size)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);
 	}
+}
+
+template<class CONFIG>
+int Kernel<CONFIG>::BlocksPerCore() const
+{
+	int blocksreg = CONFIG::MAX_VGPR / reg;
+	int blockssm = CONFIG::SHARED_SIZE / SharedTotal();	// TODO: align
+	int blockswarps = CONFIG::MAX_WARPS / WarpsPerBlock();
+	
+	return std::min(std::min(blocksreg, blockssm), std::min(int(CONFIG::MAX_BLOCKS), blockswarps));
 }
 
 #endif

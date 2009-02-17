@@ -45,6 +45,11 @@ do
 			has_to_build="true"
 		fi
 	fi
+	if test ! -e config/ltmain.sh;
+	then
+		is_libtool_missing="true"
+		has_to_build="true"
+	fi
 	if test "x$1" == "x--force";
 	then 
 		has_to_build="true"
@@ -71,8 +76,13 @@ do
 		then
 			message_to_display=$message_to_display" (Makefile.in missing)"
 		fi
+		if test "x$is_libtool_missing" != "x"
+		then
+			message_to_display=$message_to_display" (config/ltmain.sh missing)"
+		fi
 		echo "$message_to_display"
 		aclocal -I $m4_path
+		libtoolize --force
 		autoconf --force
 		has_ac_config_headers=`grep AC_CONFIG_HEADERS configure.ac`
 		if test "x$has_ac_config_headers" != "x";

@@ -78,6 +78,7 @@ public:
  
 	void FunctionDump(Kernel<CONFIG> const & kernel);
 	void Launch(Kernel<CONFIG> & kernel);
+	void LaunchGrid(Kernel<CONFIG> & kernel, int width, int height);
 	
 	void CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size);
 	void CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size);
@@ -86,6 +87,9 @@ public:
 	void Memset(typename CONFIG::address_t dest, uint32_t val, size_t n);
 	void Memset(typename CONFIG::address_t dest, uint16_t val, size_t n);
 	void Memset(typename CONFIG::address_t dest, uint8_t val, size_t n);
+	
+	Device<CONFIG> const & Dev(int dev) const;
+	Device<CONFIG> & Dev(int dev);
 
 private:
 	//CUcontext context_list; // TODO: have to be a list of context.

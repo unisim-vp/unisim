@@ -64,10 +64,13 @@ struct Kernel : CUfunc_st
 	std::string const & Name() const;
 	void Dump(std::ostream & os) const;
 	void SetBlockShape(int x, int y, int z);
+	void SetGridShape(int x, int y);
 	int BlockX() const;
 	int BlockY() const;
 	int BlockZ() const;
 	int ThreadsPerBlock() const;
+	int WarpsPerBlock() const;
+	int GPRs() const;
 	
 	void ParamSeti(int offset, uint32_t value);
 	void ParamSetf(int offest, float value);
@@ -76,10 +79,13 @@ struct Kernel : CUfunc_st
 	void SetSharedSize(int size);
 	
 	uint32_t SharedTotal() const;
+	void InitShared(Service<Memory<typename CONFIG::address_t> > & mem, int index = 0,
+		int bidx = 0, int bidy = 0) const;
+	
+	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture
 	
 private:
 	void SetAttribute(std::string const & name, std::string const & value);
-	void InitShared(Service<Memory<typename CONFIG::address_t> > & mem, int index = 0) const;
 
 	std::string name;
 	int lmem;
@@ -95,6 +101,7 @@ private:
 	int dyn_smem;
 	
 	int blockx, blocky, blockz;
+	int gridx, gridy;
 };
 
 

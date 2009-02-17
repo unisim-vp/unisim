@@ -66,7 +66,7 @@ struct Device: CUdevice_st, Object
 	Device();
 
 	void DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os);
-	void Run(Kernel<CONFIG> const & kernel);
+	void Run(Kernel<CONFIG> & kernel, int width = 1, int height = 1);
 	
 	typename CONFIG::address_t MAlloc(size_t size);
 	void Free(typename CONFIG::address_t addr);
@@ -78,11 +78,17 @@ struct Device: CUdevice_st, Object
 	void Memset(typename CONFIG::address_t dest, uint32_t val, size_t n);
 	void Memset(typename CONFIG::address_t dest, uint16_t val, size_t n);
 	void Memset(typename CONFIG::address_t dest, uint8_t val, size_t n);
+	
+	std::string Name();
+	unsigned int TotalMem();
+	int ComputeCapabilityMajor();
+	int ComputeCapabilityMinor();
+	CUdevprop Properties();
 
 private:
 	void Load(Kernel<CONFIG> const & kernel);
 	void Reset();
-	void SetThreadIDs(Kernel<CONFIG> const & kernel);
+	void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum);
 	uint32_t BuildTID(int x, int y, int z);
 
 	CPU<CONFIG> cpu;
