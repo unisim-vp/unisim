@@ -48,6 +48,7 @@ typedef uint32_t physical_address_t;
 typedef uint16_t reg_t;
 typedef uint64_t service_address_t;
 typedef uint8_t	 page_t;
+typedef uint32_t clock_t;
 
 class ADDRESS {
 	public:
@@ -69,4 +70,4 @@ public:
 } // end component namespace
 } // end unisim namespace
 
-#endif 
+#endif
