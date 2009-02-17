@@ -69,7 +69,7 @@ public:
 	//    Module management
 	CUresult ModuleLoad(Module<CONFIG> * & module, const char *fname);
 	CUresult ModuleUnload(Module<CONFIG> * hmod);
-
+	
 	//  CUresult cuModuleGetFunction(Kernel<CONFIG> **hfunc, Module<CONFIG> * hmod, const char *name);
 
 	//    Memory management

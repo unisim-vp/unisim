@@ -363,7 +363,7 @@ void Kernel<CONFIG>::InitShared(Service<Memory<typename CONFIG::address_t> > & m
 template<class CONFIG>
 int Kernel<CONFIG>::BlocksPerCore() const
 {
-	int blocksreg = CONFIG::MAX_VGPR / reg;
+	int blocksreg = CONFIG::MAX_VGPR / (reg * WarpsPerBlock());
 	int blockssm = CONFIG::SHARED_SIZE / SharedTotal();	// TODO: align
 	int blockswarps = CONFIG::MAX_WARPS / WarpsPerBlock();
 	

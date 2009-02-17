@@ -254,12 +254,13 @@ uint32_t Device<CONFIG>::BuildTID(int x, int y, int z)
 template<class CONFIG>
 std::string Device<CONFIG>::Name()
 {
-	return "Barra simulator";
+	return "Barra Simulator";
 }
 
 template<class CONFIG>
 unsigned int Device<CONFIG>::TotalMem()
 {
+	cerr << "TotalMem: " << CONFIG::GLOBAL_SIZE << endl;
 	return CONFIG::GLOBAL_SIZE;
 }
 
@@ -285,12 +286,56 @@ CUdevprop Device<CONFIG>::Properties()
 		CONFIG::SHARED_SIZE,	// sharedMemPerBlock
 		CONFIG::CONST_SEG_SIZE,	// totalConstantMemory
 		CONFIG::WARP_SIZE,		// SIMDWidth
-		16*4,					// memPitch
+		262144,					// memPitch
 		CONFIG::MAX_VGPR * CONFIG::WARP_SIZE,	// regsPerBlock
 		CONFIG::SHADER_CLOCK_KHZ,	// clockRate
-		16*4	// textureAlign
+		256	// textureAlign
 	};
 	return prop;
+}
+
+template<class CONFIG>
+int Device<CONFIG>::Attribute(int attrib)
+{
+	switch(attrib)
+	{
+	case CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK:
+		return CONFIG::MAX_THREADS;
+	case CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X:
+		return 512;
+    case CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y:
+    	return 512;
+    case CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z:
+    	return 64;
+    case CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X:
+    	return 65535;
+    case CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Y:
+    	return 65535;
+    case CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Z:
+    	return 1;
+    case CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK:
+    //case CU_DEVICE_ATTRIBUTE_SHARED_MEMORY_PER_BLOCK:
+   		return CONFIG::SHARED_SIZE;
+    case CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY:
+    	return CONFIG::CONST_SEG_SIZE;
+    case CU_DEVICE_ATTRIBUTE_WARP_SIZE:
+    	return CONFIG::WARP_SIZE;
+    case CU_DEVICE_ATTRIBUTE_MAX_PITCH:
+    	return 262144;
+    case CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK:
+    //case CU_DEVICE_ATTRIBUTE_REGISTERS_PER_BLOCK:
+   		return CONFIG::MAX_VGPR * CONFIG::WARP_SIZE;
+    case CU_DEVICE_ATTRIBUTE_CLOCK_RATE:
+    	return CONFIG::SHADER_CLOCK_KHZ;
+    case CU_DEVICE_ATTRIBUTE_TEXTURE_ALIGNMENT:
+    	return 256;
+	case CU_DEVICE_ATTRIBUTE_GPU_OVERLAP:
+		return 0;
+    case CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT:
+    	return CONFIG::CORE_COUNT;
+    default:
+    	throw CudaException(CUDA_ERROR_INVALID_VALUE);
+	}
 }
 
 #endif

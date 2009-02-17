@@ -90,12 +90,13 @@ template<class CONFIG>
 struct Module : CUmod_st
 {
 	Module(char const * fname);
+	Module(void const *fatCubin, int);
 	
 	Kernel<CONFIG> & GetKernel(char const * name);
 	ConstSeg<CONFIG> & GetConstant(char const * name);
 
 private:
-	void LoadCubin(char const * fname);
+	void LoadCubin(std::istream & is);
 	void SetField(std::string const & name, std::string const & value);
 
 	std::string architecture;

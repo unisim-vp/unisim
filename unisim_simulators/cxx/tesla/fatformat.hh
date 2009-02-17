@@ -34,69 +34,63 @@
  *
  */
  
-#ifndef SIMULATOR_CXX_TESLA_DRIVER_DEVICE_HH
-#define SIMULATOR_CXX_TESLA_DRIVER_DEVICE_HH
+#ifndef SIMULATOR_CXX_TESLA_FATFORMAT_HH
+#define SIMULATOR_CXX_TESLA_FATFORMAT_HH
 
-#include "driver_objects.hh"
-#include "module.hh"
 #include <iosfwd>
 
+// From __cudaFatFormat.h in the CUDA toolkit
 
-// Trivial allocator, no deallocation at all
-// for the moment
-// TODO: implement cuMemGetAddressRange
-template<class CONFIG>
-struct Allocator
+struct cudaFatCubinEntry
 {
-	Allocator(typename CONFIG::address_t base, size_t max_size);
-	
-	typename CONFIG::address_t Alloc(size_t size);
-	void Free(typename CONFIG::address_t addr);
-
-private:
-	typename CONFIG::address_t base;
-	typename CONFIG::address_t limit;
-	size_t max_size;
-
+	char * gpuProfileName;
+	char * cubin;
 };
 
-template<class CONFIG>
-struct Device: CUdevice_st, Object
+struct cudaFatPtxEntry
 {
-	Device();
+	char * gpuProfileName;            
+	char * ptx;
+};
 
-	void DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os);
-	void Run(Kernel<CONFIG> & kernel, int width = 1, int height = 1);
-	
-	typename CONFIG::address_t MAlloc(size_t size);
-	void Free(typename CONFIG::address_t addr);
+struct cudaFatDebugEntry
+{
+	char * gpuProfileName;            
+	char * debug;
+};
 
-	void CopyHtoD(typename CONFIG::address_t dest, void const * src, size_t size);
-	void CopyDtoH(void * dest, typename CONFIG::address_t src, size_t size);
-	void CopyDtoD(void * dest, typename CONFIG::address_t src, size_t size);
+enum cudaFatCudaBinaryFlag
+{
+	cudaFatDontSearchFlag = (1 << 0),
+	cudaFatDontCacheFlag  = (1 << 1),
+	cudaFatSassDebugFlag  = (1 << 2)
+};
 
-	void Memset(typename CONFIG::address_t dest, uint32_t val, size_t n);
-	void Memset(typename CONFIG::address_t dest, uint16_t val, size_t n);
-	void Memset(typename CONFIG::address_t dest, uint8_t val, size_t n);
-	
-	std::string Name();
-	unsigned int TotalMem();
-	int ComputeCapabilityMajor();
-	int ComputeCapabilityMinor();
-	CUdevprop Properties();
-	int Attribute(int attrib);
-
-private:
-	void Load(Kernel<CONFIG> const & kernel);
-	void Reset();
-	void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum);
-	uint32_t BuildTID(int x, int y, int z);
-
-	CPU<CONFIG> cpu;
-	unisim::component::cxx::memory::ram::Memory<typename CONFIG::address_t> memory;
-	Allocator<CONFIG> global_allocator;
+struct cudaFatCudaBinary
+{
+	unsigned long     magic;
+	unsigned long     version;
+	unsigned long     gpuInfoVersion;
+	char*            key;
+	char*            ident;
+	char*            usageMode;
+	cudaFatPtxEntry      *ptx;
+	cudaFatCubinEntry    *cubin;
+	cudaFatDebugEntry    *debug;
+	void*           debugInfo;
+	unsigned int            flags;
 };
 
 
+struct FatFormat
+{
+	FatFormat(void const *fatCubin);
+	
+	char const * GetCubin(char const * gpuname);
+	void Dump();
+
+private:
+	cudaFatCudaBinary const * fcb;
+};
 
 #endif

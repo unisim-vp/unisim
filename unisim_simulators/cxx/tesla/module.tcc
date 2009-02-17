@@ -51,6 +51,7 @@
 #include "cuda.h"
 
 #include "kernel.tcc"
+#include "fatformat.hh"
 
 using namespace std;
 
@@ -243,7 +244,19 @@ typename CONFIG::address_t ConstSeg<CONFIG>::Address() const
 template<class CONFIG>
 Module<CONFIG>::Module(char const * fname)
 {
-	LoadCubin(fname);
+	cerr << "Cubin " << fname << endl;
+	ifstream is(fname, ifstream::in);
+	LoadCubin(is);
+}
+
+template<class CONFIG>
+Module<CONFIG>::Module(void const *fatCubin, int)
+{
+	FatFormat ff(fatCubin);
+	ff.Dump();
+	char const * cubin = ff.GetCubin(0);
+	istringstream is(cubin);
+	LoadCubin(is);
 }
 
 template<class CONFIG>
@@ -268,12 +281,10 @@ ConstSeg<CONFIG> & Module<CONFIG>::GetConstant(char const * name)
 }
 
 template<class CONFIG>
-void Module<CONFIG>::LoadCubin(char const * fname)
+void Module<CONFIG>::LoadCubin(istream & is)
 {
 	// Mostly adapted from Decuda
-	cerr << "Cubin " << fname << endl;
 	typedef string::iterator it_t;
-	ifstream is(fname, ifstream::in);
 	while(is)
 	{
 		string line;
