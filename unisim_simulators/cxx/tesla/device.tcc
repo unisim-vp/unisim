@@ -106,6 +106,8 @@ void Device<CONFIG>::DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os)
 template<class CONFIG>
 void Device<CONFIG>::Run(Kernel<CONFIG> & kernel, int width, int height)
 {
+	DumpCode(kernel, cerr);
+
 	Load(kernel);
 	kernel.SetGridShape(width, height);
 	
