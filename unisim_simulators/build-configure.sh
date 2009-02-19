@@ -83,6 +83,11 @@ do
 		echo "$message_to_display"
 		aclocal -I $m4_path
 		libtoolize --force
+		if [ `uname` == "Darwin" ]; then
+			glibtoolize --force
+		else
+			libtoolize --force
+		fi
 		autoconf --force
 		has_ac_config_headers=`grep AC_CONFIG_HEADERS configure.ac`
 		if test "x$has_ac_config_headers" != "x";
