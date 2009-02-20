@@ -120,14 +120,17 @@ alu_full.write = {
 	{
 		if(rt == RT_U32) {
 			cpu->GetGPR(dest + offset).Write(value, mask);
+			if(CONFIG::TRACE_REG) {
+				cpu->DumpGPR(dest + offset, cerr);
+			}
 		}
 		else {
 			uint32_t rnum = (dest >> 1);
 			uint32_t hilo = (dest & 1);
 			cpu->GetGPR(rnum).Write16(value, mask, hilo);
-		}
-		if(CONFIG::TRACE_REG) {
-			cpu->DumpGPR(dest + offset, cerr);
+			if(CONFIG::TRACE_REG) {
+				cpu->DumpGPR(rnum, cerr);
+			}
 		}
 	}
 }
@@ -199,9 +202,19 @@ alu_halfimm.predMask = {
 }
 
 alu_halfimm.write = {
-	cpu->GetGPR(dest + offset).Write(value, mask);
-	if(CONFIG::TRACE_REG) {
-		cpu->DumpGPR(dest + offset, cerr);
+	if(rt == RT_U32) {
+		cpu->GetGPR(dest + offset).Write(value, mask);
+		if(CONFIG::TRACE_REG) {
+			cpu->DumpGPR(dest + offset, cerr);
+		}
+	}
+	else {
+		uint32_t rnum = (dest >> 1);
+		uint32_t hilo = (dest & 1);
+		cpu->GetGPR(rnum).Write16(value, mask, hilo);
+		if(CONFIG::TRACE_REG) {
+			cpu->DumpGPR(rnum, cerr);
+		}
 	}
 }
 
@@ -209,7 +222,14 @@ alu_halfimm.writePred = {
 }
 
 alu_halfimm.disasm = {
-	os << "r" << dest;
+	if(rt == RT_U32) {
+		os << "r" << dest;
+	}
+	else {
+		uint32_t rnum = dest >> 1;
+		uint32_t hilo = (dest & 1);
+		os << "r" << rnum << (hilo ? ".hi" : ".lo");
+	}
 }
 
 alu_halfimm.disasmPred = {

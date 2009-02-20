@@ -105,10 +105,11 @@ enum AbsSat
 	AS_SSAT = 3
 };
 
+// Inherit from valarray<CONFIG::reg_t>??
 template <class CONFIG>
 struct VectorRegister
 {
-	static int const WARP_SIZE = CONFIG::WARP_SIZE;
+	static unsigned int const WARP_SIZE = CONFIG::WARP_SIZE;
 	typedef typename CONFIG::reg_t reg_t;
 	VectorRegister();
 	VectorRegister(uint32_t val);
@@ -116,16 +117,16 @@ struct VectorRegister
 	void Write(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
 	void Write16(VectorRegister<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask, int hi);
 	
-	void WriteLane(uint32_t val, int lane);
-	uint32_t ReadLane(int lane) const;
-	void WriteFloat(float val, int lane);
-	float ReadFloat(int lane) const;
-	void WriteSimfloat(typename CONFIG::float_t val, int lane);
-	typename CONFIG::float_t ReadSimfloat(int lane) const;
+	void WriteLane(uint32_t val, unsigned int lane);
+	uint32_t ReadLane(unsigned int lane) const;
+	void WriteFloat(float val, unsigned int lane);
+	float ReadFloat(unsigned int lane) const;
+	void WriteSimfloat(typename CONFIG::float_t val, unsigned int lane);
+	typename CONFIG::float_t ReadSimfloat(unsigned int lane) const;
 	VectorRegister<CONFIG> Split(int hilo) const;
 	
-	uint32_t operator[] (int lane) const;
-	uint32_t & operator[] (int lane);
+	uint32_t operator[] (unsigned int lane) const;
+	uint32_t & operator[] (unsigned int lane);
 
 	reg_t v[WARP_SIZE];
 };
@@ -136,7 +137,7 @@ std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
 template <class CONFIG>
 struct VectorAddress
 {
-	static int const WARP_SIZE = CONFIG::WARP_SIZE;
+	static unsigned int const WARP_SIZE = CONFIG::WARP_SIZE;
 	typedef typename CONFIG::address_t address_t;
 	
 	VectorAddress();
@@ -146,13 +147,19 @@ struct VectorAddress
 	void Write(VectorAddress<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask);
 	
 	void Reset();
-	address_t operator[] (int lane) const;
-	address_t & operator[] (int lane);
+	address_t operator[] (unsigned int lane) const;
+	address_t & operator[] (unsigned int lane);
 	
 	VectorAddress<CONFIG> & operator+=(VectorAddress<CONFIG> const & other);
 	
 	address_t v[WARP_SIZE];
 };
+
+template<class CONFIG>
+VectorAddress<CONFIG> operator+(VectorAddress<CONFIG> const & a, VectorAddress<CONFIG> const & b);
+
+template<class CONFIG>
+VectorAddress<CONFIG> operator*(unsigned int factor, VectorAddress<CONFIG> const & addr);
 
 template <class CONFIG>
 std::ostream & operator << (std::ostream & os, VectorAddress<CONFIG> const & r);

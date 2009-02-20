@@ -135,11 +135,12 @@ template<class CONFIG>
 VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags);
 
 template<class CONFIG>
-VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
+VectorFlags<CONFIG> ComputePredSetI(VectorRegister<CONFIG> & output,
 	VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	SetCond sc,
-	bool is_signed);
+	bool is_signed,
+	bool b32);
 
 } // end of namespace tesla
 } // end of namespace processor

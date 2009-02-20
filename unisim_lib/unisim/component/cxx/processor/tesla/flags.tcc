@@ -58,7 +58,7 @@ bitset<CONFIG::WARP_SIZE> IsPredSet(uint32_t cond, VectorFlags<CONFIG> flags)
 		return bitset<CONFIG::WARP_SIZE>().set();	// fast path
 	}
 	bitset<CONFIG::WARP_SIZE> bs;
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		bs[i] = IsPredSet(cond, flags[i]);
 	}
@@ -82,7 +82,7 @@ VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output)
 	// Hardware bug???
 	VectorFlags<CONFIG> flags;
 	flags.Reset();
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		float f = output.ReadFloat(i);
 		switch(fpclassify(f))
@@ -112,7 +112,7 @@ VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output)
 template<class CONFIG>
 VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, VectorFlags<CONFIG> flags)
 {
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		flags.SetZero((output[i] == 0), i);
 		flags.SetSign((output[i] < 0), i);
@@ -122,11 +122,12 @@ VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, Vector
 
 
 template<class CONFIG>
-VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
+VectorFlags<CONFIG> ComputePredSetI(VectorRegister<CONFIG> & output,
 	VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	SetCond sc,
-	bool is_signed)
+	bool is_signed,
+	bool b32)
 {
 	// TODO: check it only outputs boolean values
 	// input:
@@ -138,8 +139,8 @@ VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
 		{ 0, 0, 1 },	// LT
 		{ 0, 1, 0 },	// EQ
 		{ 0, 1, 1 },	// LE
-		{  },	// GT
-		{ },	// NE
+		{ 1, 0, 0 },	// GT
+		{ 1, 0, 1 },	// NE
 		{ },	// GE
 		{ },	// TR*/
 	
@@ -147,18 +148,34 @@ VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
 
 	VectorFlags<CONFIG> flags;
 	flags.Reset();
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		uint8_t cond = 0;
-		if(a[i] == b[i]) cond |= 1;
-		if(is_signed && (int32_t(a[i]) < int32_t(b[i]))
-			|| !is_signed && (a[i] < b[i])) {
-			cond |= 2;
+		if(b32) {
+			if(a[i] == b[i]) cond |= 1;
+			if(is_signed && (int32_t(a[i]) < int32_t(b[i]))
+				|| !is_signed && (a[i] < b[i])) {
+				cond |= 2;
+			}
+		}
+		else {
+			uint16_t sa = a[i];// & 0x0000ffff;
+			uint16_t sb = b[i];// & 0x0000ffff;
+			if(sa == sb) cond |= 1;
+			if(is_signed && (int16_t(sa) < int16_t(sb))
+				|| !is_signed && (sa < sb)) {
+				cond |= 2;
+			}
 		}
 		
-		bool r = lut[cond];
-		flags.SetZero(r, i);
-		output[i] = r;
+		//cerr << "  cond[" << i << "] = " << uint32_t(cond) << endl;
+		assert(cond <= 2);
+		bool r = lut[2 - cond];	// addressed from the left
+		output[i] = -r;	// G80Spec -> extend
+		
+		// TODO: CHECK is this correct (=ComputePredI32)?
+		flags.SetZero(output[i] == 0, i);
+		flags.SetSign(output[i] < 0, i);
 	}
 	return flags;
 }
@@ -167,7 +184,7 @@ VectorFlags<CONFIG> ComputePredSetI32(VectorRegister<CONFIG> & output,
 template <class CONFIG>
 void VectorFlags<CONFIG>::Write(VectorFlags<CONFIG> const & f, bitset<CONFIG::WARP_SIZE> mask)
 {
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		if(mask[i])
 		{
@@ -247,7 +264,7 @@ std::ostream & operator << (std::ostream & os, VectorFlags<CONFIG> const & r)
 {
 	os << "(";
 	os << std::hex;
-	for(int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
 	{
 		os << r[i] << ", ";
 	}

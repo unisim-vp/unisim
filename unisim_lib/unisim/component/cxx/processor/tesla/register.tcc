@@ -60,7 +60,7 @@ template <class CONFIG>
 VectorRegister<CONFIG>::VectorRegister(uint32_t val)
 {
 	std::fill(v, v + WARP_SIZE, val);
-//	for(int i = 0; i != WARP_SIZE; ++i)
+//	for(unsigned int i = 0; i != WARP_SIZE; ++i)
 //	{
 //		WriteLane(val, i);
 //	}
@@ -69,7 +69,7 @@ VectorRegister<CONFIG>::VectorRegister(uint32_t val)
 template <class CONFIG>
 void VectorRegister<CONFIG>::Write(VectorRegister<CONFIG> const & vec, bitset<CONFIG::WARP_SIZE> mask)
 {
-	for(int i = 0; i != WARP_SIZE; ++i)
+	for(unsigned int i = 0; i != WARP_SIZE; ++i)
 	{
 		if(mask[i]) {
 			WriteLane(vec[i], i);
@@ -81,7 +81,7 @@ template <class CONFIG>
 void VectorRegister<CONFIG>::Write16(VectorRegister<CONFIG> const & vec,
 	bitset<CONFIG::WARP_SIZE> mask, int hi)
 {
-	for(int i = 0; i != WARP_SIZE; ++i)
+	for(unsigned int i = 0; i != WARP_SIZE; ++i)
 	{
 		if(mask[i]) {
 			if(hi) {
@@ -95,21 +95,21 @@ void VectorRegister<CONFIG>::Write16(VectorRegister<CONFIG> const & vec,
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::WriteLane(uint32_t val, int lane)
+void VectorRegister<CONFIG>::WriteLane(uint32_t val, unsigned int lane)
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	v[lane] = val;
 }
 
 template <class CONFIG>
-uint32_t VectorRegister<CONFIG>::ReadLane(int lane) const
+uint32_t VectorRegister<CONFIG>::ReadLane(unsigned int lane) const
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::WriteFloat(float val, int lane)
+void VectorRegister<CONFIG>::WriteFloat(float val, unsigned int lane)
 {
 	// TODO: endianness
 	union { float f; uint32_t u; } caster;
@@ -118,7 +118,7 @@ void VectorRegister<CONFIG>::WriteFloat(float val, int lane)
 }
 
 template <class CONFIG>
-float VectorRegister<CONFIG>::ReadFloat(int lane) const
+float VectorRegister<CONFIG>::ReadFloat(unsigned int lane) const
 {
 	// TODO: endianness
 	union { float f; uint32_t u; } caster;
@@ -127,13 +127,13 @@ float VectorRegister<CONFIG>::ReadFloat(int lane) const
 }
 
 template <class CONFIG>
-void VectorRegister<CONFIG>::WriteSimfloat(typename CONFIG::float_t val, int lane)
+void VectorRegister<CONFIG>::WriteSimfloat(typename CONFIG::float_t val, unsigned int lane)
 {
 	WriteLane(val.queryValue(), lane);
 }
 
 template <class CONFIG>
-typename CONFIG::float_t VectorRegister<CONFIG>::ReadSimfloat(int lane) const
+typename CONFIG::float_t VectorRegister<CONFIG>::ReadSimfloat(unsigned int lane) const
 {
 	return typename CONFIG::float_t(ReadLane(lane));
 }
@@ -142,7 +142,7 @@ template <class CONFIG>
 VectorRegister<CONFIG> VectorRegister<CONFIG>::Split(int hilo) const
 {
 	VectorRegister<CONFIG> vr;
-	for(int i = 0; i != WARP_SIZE; ++i)
+	for(unsigned int i = 0; i != WARP_SIZE; ++i)
 	{
 		if(hilo) {
 			// high part
@@ -157,14 +157,14 @@ VectorRegister<CONFIG> VectorRegister<CONFIG>::Split(int hilo) const
 }
 
 template <class CONFIG>
-uint32_t VectorRegister<CONFIG>::operator[] (int lane) const
+uint32_t VectorRegister<CONFIG>::operator[] (unsigned int lane) const
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
-uint32_t & VectorRegister<CONFIG>::operator[] (int lane)
+uint32_t & VectorRegister<CONFIG>::operator[] (unsigned int lane)
 {
 	assert(lane >= 0 && lane < WARP_SIZE);
 	return v[lane];
@@ -175,7 +175,7 @@ std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
 {
 	os << "(";
 	os << std::hex;
-	for(int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
 	{
 		os << r[i] << ", ";
 	}
@@ -199,7 +199,7 @@ VectorAddress<CONFIG>::VectorAddress(VectorAddress<CONFIG>::address_t addr)
 template <class CONFIG>
 VectorAddress<CONFIG>::VectorAddress(VectorRegister<CONFIG> const & vr)
 {
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		v[i] = vr[i];
 	}
 }
@@ -207,7 +207,7 @@ VectorAddress<CONFIG>::VectorAddress(VectorRegister<CONFIG> const & vr)
 template <class CONFIG>
 void VectorAddress<CONFIG>::Write(VectorAddress<CONFIG> const & vec, std::bitset<CONFIG::WARP_SIZE> mask)
 {
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		if(mask[i])
 			v[i] = vec[i];
 	}
@@ -220,26 +220,46 @@ void VectorAddress<CONFIG>::Reset()
 }
 
 template <class CONFIG>
-typename VectorAddress<CONFIG>::address_t VectorAddress<CONFIG>::operator[] (int lane) const
+typename VectorAddress<CONFIG>::address_t VectorAddress<CONFIG>::operator[] (unsigned int lane) const
 {
-	assert(lane >= 0 && lane < WARP_SIZE);
+	assert(lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
-typename VectorAddress<CONFIG>::address_t & VectorAddress<CONFIG>::operator[] (int lane)
+typename VectorAddress<CONFIG>::address_t & VectorAddress<CONFIG>::operator[] (unsigned int lane)
 {
-	assert(lane >= 0 && lane < WARP_SIZE);
+	assert(lane < WARP_SIZE);
 	return v[lane];
 }
 
 template <class CONFIG>
 VectorAddress<CONFIG> & VectorAddress<CONFIG>::operator+=(VectorAddress<CONFIG> const & other)
 {
-	for(int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
 		v[i] += other[i];
 	}
 	return *this;
+}
+
+template<class CONFIG>
+VectorAddress<CONFIG> operator+(VectorAddress<CONFIG> const & a, VectorAddress<CONFIG> const & b)
+{
+	VectorAddress<CONFIG> dest;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+		dest[i] = a[i] + b[i];
+	}
+	return dest;
+}
+
+template<class CONFIG>
+VectorAddress<CONFIG> operator*(unsigned int factor, VectorAddress<CONFIG> const & addr)
+{
+	VectorAddress<CONFIG> dest;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+		dest[i] = factor * addr[i];
+	}
+	return dest;
 }
 
 template <class CONFIG>
@@ -247,7 +267,7 @@ std::ostream & operator << (std::ostream & os, VectorAddress<CONFIG> const & r)
 {
 	os << "(";
 	os << std::hex;
-	for(int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
 	{
 		os << r[i] << ", ";
 	}

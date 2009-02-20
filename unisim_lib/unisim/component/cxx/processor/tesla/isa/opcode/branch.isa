@@ -64,9 +64,17 @@ br.execute = {
 	// Side effect: take other side of cond branch???
 	std::bitset<CONFIG::WARP_SIZE> mask = insn->Mask();
 	typename CONFIG::address_t abs_target = target_addr + CONFIG::CODE_START;
+	if(CONFIG::TRACE_BRANCH) {
+		cerr << " Branch mask = " << mask << endl;
+	}
+	
+	assert((mask & ~(cpu->GetCurrentMask())).none());	// No zombies allowed
 
 	if((mask).none())
 	{
+		if(CONFIG::TRACE_BRANCH) {
+			cerr << "  Coherent, not taken." << endl;
+		}
 		if(adjpc > target_addr)
 		{
 			// Not-taken backward loop
@@ -74,18 +82,25 @@ br.execute = {
 			// Compare PC with top of loop address stack
 			// if ==, pop
 			if(cpu->GetLoop() != 0 && cpu->GetLoop() == cpu->GetPC()) {
-				cerr << hex;
-				cerr << "End of loop " << cpu->GetPC() - CONFIG::CODE_START << " detected, restoring context\n";
-				cerr << dec;
+				if(CONFIG::TRACE_BRANCH) {
+					cerr << hex;
+					cerr << " End of loop " << cpu->GetPC() - CONFIG::CODE_START
+						<< "  detected, restoring context\n";
+					cerr << dec;
+				}
 				cpu->PopLoop();
 				cpu->GetCurrentMask() = cpu->PopMask();
-				cerr << " Mask = " << cpu->GetCurrentMask() << endl;
+				if(CONFIG::TRACE_BRANCH) {
+					cerr << "  Mask = " << cpu->GetCurrentMask() << endl;
+				}
 			}
 		}
 	}
-//	else if(mask.flip().none())
-	else if(mask == cpu->GetCurrentMask())	// Same number of enable threads as before
+	else if(mask == cpu->GetCurrentMask())	// Same number of enabled threads as before
 	{
+		if(CONFIG::TRACE_BRANCH) {
+			cerr << "  Coherent, taken." << endl;
+		}
 		cpu->SetNPC(abs_target);
 	}
 	else
@@ -93,18 +108,20 @@ br.execute = {
 		if(adjpc > target_addr)
 		{
 			// backward jump, loop
-			// Okay to forget previous state??
-			// NO!!!
 			// Compare PC with top of loop address stack
 			// if !=, push PC and mask
-			cerr << "Conditional non-coherent backward jump from " << hex
-				<< adjpc << " to " << target_addr << dec << endl;
+			if(CONFIG::TRACE_BRANCH) {
+				cerr << " Conditional non-coherent backward jump from " << hex
+					<< adjpc << " to " << target_addr << dec << endl;
+			}
 
 			if(cpu->GetLoop() != cpu->GetPC()) {
-				cerr << hex;
-				cerr << "Start of loop " << cpu->GetPC() - CONFIG::CODE_START << " detected, saving context\n";
-				cerr << " Current mask = " << cpu->GetCurrentMask() << endl;
-				cerr << dec;
+				if(CONFIG::TRACE_BRANCH) {
+					cerr << hex;
+					cerr << " Start of loop " << cpu->GetPC() - CONFIG::CODE_START << " detected, saving context\n";
+					cerr << "  Current mask = " << cpu->GetCurrentMask() << endl;
+					cerr << dec;
+				}
 				cpu->PushLoop(cpu->GetPC());
 				cpu->PushMask(cpu->GetCurrentMask());
 			}
@@ -117,18 +134,25 @@ br.execute = {
 			// forward jump
 			// Push lots of stuff in stacks
 			// then don't take the branch.
-			cerr << hex;
-			cerr << "Conditional non-coherent forward jump from "
-				<< adjpc << " to " << target_addr << endl;
-			cerr << dec;
-			cpu->PushMask(cpu->GetCurrentMask());
-			cpu->GetCurrentMask() = mask;
+			if(CONFIG::TRACE_BRANCH) {
+				cerr << hex;
+				cerr << " Conditional non-coherent forward jump from "
+					<< adjpc << " to " << target_addr << endl;
+				cerr << dec;
+			}
+			std::bitset<CONFIG::WARP_SIZE> tos = cpu->GetCurrentMask();
+			cpu->PushMask(tos);
+			
+			// Start by executing the 'not taken' branch: negate mask
+			cpu->GetCurrentMask() = ~mask & tos;
 			cpu->PushJoin(abs_target);
 			// At the right time (PC >= tos?) go back and
 			// take the branch.
 			// Keep comparing PC to top of stack, go back (1st pass) or pop (2nd pass) if >=.
 		}
-		cerr << " New mask = " << mask << endl;
+		if(CONFIG::TRACE_BRANCH) {
+			cerr << "  New mask = " << cpu->GetCurrentMask() << endl;
+		}
 	}
 }
 
@@ -167,3 +191,17 @@ fence.execute = {
 	cpu->Fence();
 }
 
+op ret( \
+	/*subop*/?[3]:/*?*/?[1]:?[26]:/*marker*/?[2]: \
+	0x3[4]:/*target_addr*/0[19]:/*dest*/0[7]:/*flow*/1[1]:/*IWidth*/1[1] \
+)
+
+
+ret.disasm = {
+	buffer << "return";
+}
+
+ret.execute = {
+	// TODO
+	cpu->Kill(insn->Mask());
+}

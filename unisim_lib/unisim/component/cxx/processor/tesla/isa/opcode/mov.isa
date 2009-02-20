@@ -54,13 +54,13 @@ group mov_reg_full_noimm(mov_reg_full_normal)
 op mov_reg_full_imm( \
 	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
 	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*op1_shared*/?[1]:/*src2_cm*/0[1]:f64[1]:/*imm_lo*/?[6]:\
-	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+	data_32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
 )
 
 op mov_reg_half( \
 	?[32]: \
 	0x1[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sm*/?[1]:/*src2_cm*/0[1]:f64[1]:/*imm_lo*/?[6]:\
-	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1]\
+	data_32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1]\
 )
 
 
@@ -74,8 +74,9 @@ mov_reg_full_noimm.disasm = {
 	buffer << "mov";
 	insn->DisasmControl(buffer);
 
+	DisasmSignWidth(false, data_32, buffer);
 	//cpu.DisasmDataType(m_size, buffer);
-	DisasmConvert(cvt_round, cvt_type, data_32, abs_sat, buffer);
+	DisasmConvert(cvt_round, cvt_type, data_32, abs_sat, buffer);	// Convert allowed??
 //	cpu.DisasmMarker(marker, buffer);
 	buffer << " ";
 //	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
@@ -84,7 +85,7 @@ mov_reg_full_noimm.disasm = {
 
 	buffer << ", ";
 //	cpu.DisasmSrc(src1, 0, src1_sh, 0, addr_lo, addr_hi, addr_imm, buffer);
-	insn->DisasmSrc1(buffer);	// source format??
+	insn->DisasmSrc1(buffer, RegType(data_32));
 }
 
 mov_reg_full_noimm.execute = {
@@ -93,12 +94,12 @@ mov_reg_full_noimm.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc1();	// TODO: addr reg
+	reg_t a = insn->ReadSrc1(0, RegType(data_32));
 	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
 
 //	if(!ignore_output)
 //		cpu.WriteOutput(output, dest, pred_cond, pred_reg);
-	insn->WriteDest(output);
+	insn->WriteDest(output, 0, RegType(data_32));
 //	insn->SetPredFP32(output);	// TODO: check type?
 	insn->SetPredI32(output);	// TODO: check type?
 	
@@ -110,12 +111,13 @@ mov_reg_full_imm.disasm = {
 	buffer << "mov";
 	insn->DisasmControl(buffer);
 
+	DisasmSignWidth(false, data_32, buffer);
 //	DisasmConvert(cvt_round, cvt_type, data_32, buffer);
 	buffer << " ";
-	insn->DisasmDest(buffer);
+	insn->DisasmDest(buffer, RegType(data_32));
 
 	buffer << ", ";
-	insn->DisasmSrc2(buffer);
+	insn->DisasmSrc2(buffer, RegType(data_32));
 }
 
 mov_reg_full_imm.execute = {
@@ -123,10 +125,10 @@ mov_reg_full_imm.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc2();
+	reg_t a = insn->ReadSrc2(0, RegType(data_32));
 	reg_t output = a;
 
-	insn->WriteDest(output);
+	insn->WriteDest(output, 0, RegType(data_32));
 	//insn->SetPredFP32(output);
 	insn->SetPredI32(output);	// TODO: check type?
 }
@@ -134,12 +136,13 @@ mov_reg_full_imm.execute = {
 mov_reg_half.disasm = {
 	buffer << "mov";
 	insn->DisasmControl(buffer);
+	DisasmSignWidth(false, data_32, buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer);
+	insn->DisasmDest(buffer, RegType(data_32));
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer);
+	insn->DisasmSrc1(buffer, RegType(data_32));
 }
 
 mov_reg_half.execute = {
@@ -147,10 +150,10 @@ mov_reg_half.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc1();
+	reg_t a = insn->ReadSrc1(0, RegType(data_32));
 	reg_t output = a;
 
-	insn->WriteDest(output);
+	insn->WriteDest(output, 0, RegType(data_32));
 	insn->SetPredI32(output);	// TODO: check type?
 }
 
@@ -171,7 +174,6 @@ stsh_full.disasm = {
 	// m_size = 2 -> b8
 	buffer << "mov";
 	insn->DisasmControl(buffer);
-	SMType smt;
 	switch(m_size) {
 	case 0:
 		buffer << ".b16";
@@ -211,6 +213,7 @@ stsh_full.execute = {
 	insn->SetPredI32(output);
 }
 
+// TODO: stsh_half/imm
 
 op stg_full( \
 	/*subop*/5[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*?*/0[3]: m_size[3]:/*?*/0[1]:/*?*/0[3]:/*cvt_type*/0[3]\
@@ -347,7 +350,7 @@ icvt_full_noimm.execute = {
 	reg_t a = insn->ReadSrc1(0, CvtTypeToRT(ConvType(cvt_type)));
 	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
 
-	insn->WriteDest(output, 0, RegType(data_32));	// Always output to a 32-bit reg??
+	insn->WriteDest(output, 0, RegType(data_32));
 	insn->SetPredI32(output);	// TODO: check type?
 	// (16-bit, etc.)
 }
@@ -381,7 +384,7 @@ ldam_full.disasm = {
 ldam_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	reg_t a = insn->ReadSrc1();
-	reg_t output = ShiftLeft(a, src2);
+	reg_t output = ShiftLeft(a, src2, 1);
 	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(output), insn->Mask());
 	if(CONFIG::TRACE_REG) {
 		cpu->DumpAddr(dest, cerr);

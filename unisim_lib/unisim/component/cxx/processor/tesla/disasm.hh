@@ -58,8 +58,8 @@ void DisasmMarker(uint32_t marker, ostream & buffer);
 void DisasmSetPred(uint32_t set_pred_reg, uint32_t set_pred, ostream & buffer);
 void DisasmDest(uint32_t dest, uint32_t set_output, ostream & buffer);
 void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, ostream & buffer);
-void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo,
-	uint32_t addr_hi, uint32_t addr_imm, ostream & buffer);
+//void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo,
+//	uint32_t addr_hi, uint32_t addr_imm, ostream & buffer);
 void DisasmImm(uint32_t imm_hi, uint32_t imm_lo, ostream & buffer);
 void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, uint32_t data_32, uint32_t abssat, ostream & buffer);
 void DisasmDataType(uint32_t dt, ostream & buffer);

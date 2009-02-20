@@ -60,14 +60,14 @@
 #include <bitset>
 #include <unisim/component/cxx/processor/tesla/register.hh>
 #include <unisim/component/cxx/processor/tesla/flags.hh>
+#include <unisim/component/cxx/processor/tesla/maskstack.hh>
+
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace tesla {
-
-using unisim::util::arithmetic::Add32;
 
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
@@ -193,7 +193,7 @@ public:
 	virtual void Stop(int ret);
 	virtual void Synchronize();
 	virtual void Reset();
-	void Reset(int threadsperblock, int numblocks, int regnum, int smsize);
+	void Reset(unsigned int threadsperblock, unsigned int numblocks, unsigned int regnum, unsigned int smsize);
 
 
 //	virtual void BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, WIMG wimg = CONFIG::WIMG_DEFAULT, bool rwitm = false);
@@ -285,7 +285,7 @@ public:
 	struct Warp
 	{
 		// wid unique across blocks
-		void Reset(int wid, int bid, int gpr_num, int sm_size,
+		void Reset(unsigned int wid, unsigned int bid, unsigned int gpr_num, unsigned int sm_size,
 			bitset<WARP_SIZE> init_mask, address_t sm_base);
 	
 		uint32_t GetGPRAddress(uint32_t reg) const;
@@ -305,7 +305,8 @@ public:
 		bitset<WARP_SIZE> mask;
 		
 		std::stack<address_t> join_stack;
-		std::stack<bitset<WARP_SIZE> > mask_stack;
+		//std::stack<bitset<WARP_SIZE> > mask_stack;
+		MaskStack<WARP_SIZE, CONFIG::BRANCH_STACK_DEPTH> mask_stack;
 		std::stack<address_t> loop_stack;
 
 		enum WarpState {
@@ -332,6 +333,7 @@ public:
 	void Join();
 	void End();
 	void Fence();
+	void Kill(std::bitset<CONFIG::WARP_SIZE> mask);
 
 
 //	void ExecMarker(uint32_t marker);
@@ -343,17 +345,17 @@ public:
 //	void WritePred(uint32_t set_pred_reg, uint32_t pred_cond, uint32_t pred_reg, VecFlags flags);	// To be called last - can modify its own predicate
 
 	
-	VecReg & GetGPR(int reg);	// for current warp
-	VecReg GetGPR(int reg) const;	// for current warp
+	VecReg & GetGPR(unsigned int reg);	// for current warp
+	VecReg GetGPR(unsigned int reg) const;	// for current warp
 	
-	VecReg & GetGPR(int wid, int reg);
-	VecReg GetGPR(int wid, int reg) const;
+	VecReg & GetGPR(unsigned int wid, unsigned int reg);
+	VecReg GetGPR(unsigned int wid, unsigned int reg) const;
 	
-	VecFlags & GetFlags(int reg);	// for current warp
-	VecFlags GetFlags(int reg) const;
+	VecFlags & GetFlags(unsigned int reg);	// for current warp
+	VecFlags GetFlags(unsigned int reg) const;
 	
-	VecAddr & GetAddr(int reg);
-	VecAddr GetAddr(int reg) const;
+	VecAddr & GetAddr(unsigned int reg);
+	VecAddr GetAddr(unsigned int reg) const;
 	
 	std::bitset<CONFIG::WARP_SIZE> & GetCurrentMask();
 	std::bitset<CONFIG::WARP_SIZE> GetCurrentMask() const;
@@ -377,8 +379,14 @@ public:
 	void CheckFenceCompleted();
 	
 	// Memory access helpers
+	
+	// Only for <= 32-bit accesses
+	VecAddr LocalAddress(VecAddr const & addr, unsigned int segment);
+	
 	void ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
 	void GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void ScatterLocal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void GatherLocal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
 	void ScatterShared(VecReg const & output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
 	void GatherShared(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, SMType t = SM_U32);	// addr in bytes
@@ -387,7 +395,7 @@ public:
 	// High-level memory access
 	void ReadShared(address_t addr, VecReg & data, SMType t = SM_U32);		// addr in WORDS!!
 	VecReg ReadConstant(VecReg const & addr, uint32_t seg = 0);	// addr in bytes
-	VecReg ReadConstant(int addr, uint32_t seg = 0);
+	VecReg ReadConstant(unsigned int addr, uint32_t seg = 0);
 
 
 
@@ -395,14 +403,19 @@ public:
 	void Gather32(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
 	void Scatter32(VecAddr const & addr, VecReg const & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
 	void Gather16(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
+	void Gather8(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
 	void Scatter16(VecAddr const & addr, VecReg const & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
+	void Scatter8(VecAddr const & addr, VecReg const & data, std::bitset<CONFIG::WARP_SIZE> mask, uint32_t factor = 1, address_t offset = 0);
 	void Broadcast32(address_t addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
 	void Broadcast16(address_t addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
+	void Broadcast8(address_t addr, VecReg & data, uint32_t factor = 1, address_t offset = 0);
 	
 	void Read32(address_t addr, uint32_t & data, uint32_t factor = 1, address_t offset = 0);
 	void Write32(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
 	void Read16(address_t addr, uint32_t & data, uint32_t factor = 1, address_t offset = 0);
 	void Write16(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
+	void Read8(address_t addr, uint32_t & data, uint32_t factor = 1, address_t offset = 0);
+	void Write8(address_t addr, uint32_t data, uint32_t factor = 1, address_t offset = 0);
 
 	VecAddr EffectiveAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi,
 		uint32_t addr_imm, uint32_t shift);
@@ -410,8 +423,8 @@ public:
 	Warp & CurrentWarp();
 	Warp const & CurrentWarp() const;
 	
-	Warp & GetWarp(int wid);
-	Warp const & GetWarp(int wid) const;
+	Warp & GetWarp(unsigned int wid);
+	Warp const & GetWarp(unsigned int wid) const;
 private:
 	//int GetCurrentWarpID() const;
 	

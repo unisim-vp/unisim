@@ -112,6 +112,7 @@ void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, ostream & b
 		buffer << "$r" << reg;
 }
 
+#if 0
 void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t addr_lo,
 	uint32_t addr_hi, uint32_t addr_imm, ostream & buffer)
 {
@@ -130,6 +131,7 @@ void DisasmSrc(uint32_t reg, uint32_t cm, uint32_t sh, uint32_t neg, uint32_t ad
 	}
 }
 
+#endif
 
 void DisasmImm(uint32_t imm_hi, uint32_t imm_lo, ostream & buffer)
 {
@@ -252,7 +254,6 @@ void DisasmAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t ad
 
 void DisasmGlobal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t dt, ostream & buffer)
 {
-	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
 	buffer << "g" << segment << "[";
 
 	int shift = 0;

@@ -42,6 +42,7 @@
 #include <unisim/component/cxx/processor/tesla/exec.tcc>
 #include <unisim/component/cxx/processor/tesla/simfloat.tcc>
 #include <unisim/component/cxx/processor/tesla/memory.tcc>
+#include <unisim/component/cxx/processor/tesla/maskstack.tcc>
 
 //#include <unisim/component/cxx/cache/cache.tcc>
 //#include <unisim/component/cxx/tlb/tlb.tcc>
@@ -190,19 +191,18 @@ void CPU<CONFIG>::Reset()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::Reset(int threadsperblock, int numblocks, int gprs_per_warp, int sm_size)
+void CPU<CONFIG>::Reset(unsigned int threadsperblock, unsigned int numblocks, unsigned int gprs_per_warp, unsigned int sm_size)
 {
 	Reset();
 
 	// Round up
-	int warpsperblock = (threadsperblock + WARP_SIZE - 1) / WARP_SIZE;
+	unsigned int warpsperblock = (threadsperblock + WARP_SIZE - 1) / WARP_SIZE;
 	
 	// TODO: move this to the driver/loader?
 	assert(numblocks <= MAX_BLOCKS);
 	assert(warpsperblock <= MAX_WARPS_PER_BLOCK);
-	int total_warps = warpsperblock * numblocks;
+	unsigned int total_warps = warpsperblock * numblocks;
 	assert(total_warps <= MAX_WARPS);
-	assert(total_warps > 0);
 	
 	num_warps = total_warps;
 	
@@ -224,14 +224,14 @@ void CPU<CONFIG>::Reset(int threadsperblock, int numblocks, int gprs_per_warp, i
 	cerr << " total " << total_warps << " warps.\n";
 	cerr << " " << gprs_per_warp << " GPRs/warp, " << sm_size << "B SM/warp\n";
 
-	for(int b = 0; b != numblocks; ++b)
+	for(unsigned int b = 0; b != numblocks; ++b)
 	{
 		//address_t sm_block = sm_base + b * sm_size;
-		for(int w = 0; w != warpsperblock; ++w)
+		for(unsigned int w = 0; w != warpsperblock; ++w)
 		{
 			// Compute mask for last (partial) warp
 			bitset<WARP_SIZE> mask;
- 			int nt = threadsperblock - (w * WARP_SIZE);
+ 			unsigned int nt = threadsperblock - (w * WARP_SIZE);
 			if(nt < WARP_SIZE) {
 				// Partial warp
 				mask = (1 << nt) - 1;
@@ -239,7 +239,7 @@ void CPU<CONFIG>::Reset(int threadsperblock, int numblocks, int gprs_per_warp, i
 			else {
 				mask.set();
 			}
-			int wid = b * warpsperblock + w;
+			unsigned int wid = b * warpsperblock + w;
 			GetWarp(wid).Reset(wid, b, gprs_per_warp, sm_size, mask, sm_base);
 		}
 	}
@@ -253,8 +253,10 @@ bool CPU<CONFIG>::Step()
 
 	bool all_finished = true;
 	for(unsigned int i = 0; i != num_warps; ++i) {
-		if(GetWarp(i).state != Warp::Finished) {
+		if(GetWarp(i).state == Warp::Active) {
 			StepWarp(i);
+		}
+		if(GetWarp(i).state != Warp::Finished) {
 			all_finished = false;
 		}
 	}
@@ -275,6 +277,13 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 
 	if(CONFIG::TRACE_INSN)
 	{
+		cerr << warpid << ": ";
+		//address_t dummy;
+		//cerr << Disasm(fetchaddr, dummy);
+		cerr << std::hex;
+		cerr.fill('0'); cerr.width(6); 
+		cerr << fetchaddr - CONFIG::CODE_START << " ";
+		cerr << std::dec;
 		insn.Disasm(cerr);
 		cerr << endl;
 	}
@@ -449,11 +458,11 @@ void CPU<CONFIG>::DumpRegisters(int warpid, ostream & os) const
 {
 	Warp const & warp = GetWarp(warpid);
 	os << "Warp " << warpid << endl;
-	for(int i = 0; i != warp.gpr_window_size; ++i)
+	for(unsigned int i = 0; i != warp.gpr_window_size; ++i)
 	{
 		DumpGPR(warpid, i, os);
 	}
-	for(int i = 0; i != MAX_PRED_REGS; ++i)
+	for(unsigned int i = 0; i != MAX_PRED_REGS; ++i)
 	{
 		DumpFlags(warpid, i, os);
 	}
@@ -541,7 +550,7 @@ void CPU<CONFIG>::Fetch()
 
 
 template <class CONFIG>
-VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int reg)	// for current warp
+VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(unsigned int reg)	// for current warp
 {
 	// If special reg return dummy
 	if(reg == 124) {
@@ -553,7 +562,7 @@ VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int reg)	// for current warp
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(int reg) const	// for current warp
+VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(unsigned int reg) const	// for current warp
 {
 	// If special reg (zero...), return value
 	if(reg == 124) {
@@ -564,21 +573,21 @@ VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(int reg) const	// for current warp
 }
 
 template <class CONFIG>
-VectorFlags<CONFIG> & CPU<CONFIG>::GetFlags(int reg)	// for current warp
+VectorFlags<CONFIG> & CPU<CONFIG>::GetFlags(unsigned int reg)	// for current warp
 {
-	assert(reg >= 0 && reg < MAX_PRED_REGS);
+	assert(reg < MAX_PRED_REGS);
 	return CurrentWarp().pred_flags[reg];
 }
 
 template <class CONFIG>
-VectorFlags<CONFIG> CPU<CONFIG>::GetFlags(int reg) const
+VectorFlags<CONFIG> CPU<CONFIG>::GetFlags(unsigned int reg) const
 {
-	assert(reg >= 0 && reg < MAX_PRED_REGS);
+	assert(reg < MAX_PRED_REGS);
 	return CurrentWarp().pred_flags[reg];
 }
 
 template <class CONFIG>
-VectorAddress<CONFIG> & CPU<CONFIG>::GetAddr(int reg)
+VectorAddress<CONFIG> & CPU<CONFIG>::GetAddr(unsigned int reg)
 {
 	// base 1
 	assert(reg > 0 && reg <= MAX_ADDR_REGS);
@@ -586,9 +595,9 @@ VectorAddress<CONFIG> & CPU<CONFIG>::GetAddr(int reg)
 }
 
 template <class CONFIG>
-VectorAddress<CONFIG> CPU<CONFIG>::GetAddr(int reg) const
+VectorAddress<CONFIG> CPU<CONFIG>::GetAddr(unsigned int reg) const
 {
-	assert(reg > 0 && reg <= MAX_ADDR_REGS);
+	assert(reg <= MAX_ADDR_REGS);
 	return CurrentWarp().addr[reg - 1];
 }
 
@@ -681,7 +690,7 @@ void CPU<CONFIG>::PopLoop()
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int wid, int reg)
+VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(unsigned int wid, unsigned int reg)
 {
 	// If special reg return dummy??
 	// Compute physical register ID
@@ -689,7 +698,7 @@ VectorRegister<CONFIG> & CPU<CONFIG>::GetGPR(int wid, int reg)
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(int wid, int reg) const
+VectorRegister<CONFIG> CPU<CONFIG>::GetGPR(unsigned int wid, unsigned int reg) const
 {
 	// If special reg (zero...), return value
 	// Compute physical register ID
@@ -710,16 +719,16 @@ typename CPU<CONFIG>::Warp const & CPU<CONFIG>::CurrentWarp() const
 }
 
 template <class CONFIG>
-typename CPU<CONFIG>::Warp & CPU<CONFIG>::GetWarp(int wid)
+typename CPU<CONFIG>::Warp & CPU<CONFIG>::GetWarp(unsigned int wid)
 {
-	assert(wid >= 0 && wid < MAX_WARPS);
+	assert(wid < MAX_WARPS);
 	return warps[wid];
 }
 
 template <class CONFIG>
-typename CPU<CONFIG>::Warp const & CPU<CONFIG>::GetWarp(int wid) const
+typename CPU<CONFIG>::Warp const & CPU<CONFIG>::GetWarp(unsigned int wid) const
 {
-	assert(wid >= 0 && wid < MAX_WARPS);
+	assert(wid < MAX_WARPS);
 	return warps[wid];
 }
 
@@ -738,6 +747,10 @@ void CPU<CONFIG>::Join()
 template <class CONFIG>
 void CPU<CONFIG>::End()
 {
+	// Make sure stacks are now empty
+	assert(CurrentWarp().mask_stack.empty());
+	assert(CurrentWarp().join_stack.empty());
+	assert(CurrentWarp().loop_stack.empty());
 	CurrentWarp().state = Warp::Finished;
 }
 
@@ -755,26 +768,76 @@ void CPU<CONFIG>::CheckFenceCompleted()
 	// When all warps in a block are in WaitingFence state
 	bool synchronized[MAX_BLOCKS];
 	std::fill(synchronized, synchronized + MAX_BLOCKS, true);
-	for(int i = 0; i != num_warps; ++i)
+	for(unsigned int i = 0; i != num_warps; ++i)
 	{
+		if(CONFIG::TRACE_SYNC) {
+			cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
+		}
 		if(warps[i].state != Warp::WaitingFence) {
 			synchronized[warps[i].blockid] = false;
+			if(CONFIG::TRACE_SYNC) {
+				cerr << "   Not synchronized\n";
+			}
+		}
+		else if(CONFIG::TRACE_SYNC) {
+			cerr << "   Synchronized\n";
 		}
 	}
 	
 	// Turn them to active state
-	for(int i = 0; i != num_warps; ++i)
+	for(unsigned int i = 0; i != num_warps; ++i)
 	{
 		if(synchronized[warps[i].blockid]) {
 			warps[i].state = Warp::Active;
+			if(CONFIG::TRACE_SYNC) {
+				cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
+				cerr << "   Activated\n";
+			}
 		}
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	// mask : threads to kill
+	// GetCurrentMask() & ~mask : threads alive
+	Warp & warp = CurrentWarp();
+	std::bitset<CONFIG::WARP_SIZE> alive = warp.mask & ~mask;
+	if(CONFIG::TRACE_BRANCH) {
+		cerr << " Kill, mask=" << mask << endl;
+	}
+	if(alive.none())
+	{
+		// Pop everything.
+		while(!warp.mask_stack.empty()) warp.mask_stack.pop();
+		while(!warp.join_stack.empty()) warp.join_stack.pop();
+		while(!warp.loop_stack.empty()) warp.loop_stack.pop();
+		warp.state = Warp::Finished;
+		if(CONFIG::TRACE_BRANCH) {
+			cerr << "  Warp killed" << endl;
+		}
+	}
+	else if(!mask.none())
+	{
+		// Remove masked threads from whole stack
+		warp.mask_stack.dig(mask, 0);
+		warp.mask = alive;
+		if(CONFIG::TRACE_BRANCH) {
+			cerr << "  Inactive threads killed. Mask="
+				<< GetCurrentMask() << endl;
+		}
+	}
+	else if(CONFIG::TRACE_BRANCH) {
+		cerr << "  No thread killed. Mask="
+			<< GetCurrentMask() << endl;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////
 
 template <class CONFIG>
-void CPU<CONFIG>::Warp::Reset(int wid, int bid, int gpr_num, int sm_size,
+void CPU<CONFIG>::Warp::Reset(unsigned int wid, unsigned int bid, unsigned int gpr_num, unsigned int sm_size,
 	bitset<WARP_SIZE> init_mask, address_t sm_base)
 {
 	pc = CONFIG::CODE_START;
@@ -790,11 +853,11 @@ void CPU<CONFIG>::Warp::Reset(int wid, int bid, int gpr_num, int sm_size,
 	
 	mask = init_mask;
 	
-	for(int i = 0; i != MAX_PRED_REGS; ++i) {
+	for(unsigned int i = 0; i != MAX_PRED_REGS; ++i) {
 		pred_flags[i].Reset();
 	}
 	
-	for(int i = 0; i != MAX_ADDR_REGS; ++i) {
+	for(unsigned int i = 0; i != MAX_ADDR_REGS; ++i) {
 		addr[i].Reset();
 	}
 	

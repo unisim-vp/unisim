@@ -62,19 +62,44 @@ template<class CONFIG>
 void FSNegate(VectorRegister<CONFIG> & a);
 
 template<class CONFIG>
-VectorRegister<CONFIG> I32Add(VectorRegister<CONFIG> const & a,
+VectorRegister<CONFIG> IAdd(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorFlags<CONFIG> & flags,
-	uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);	// No carry in
+	bool sat = false, bool ra = false, bool rb = false,
+	bool m32 = true);	// No carry in
 
 template<class CONFIG>
-VectorRegister<CONFIG> UMad24(VectorRegister<CONFIG> const & a,
+VectorRegister<CONFIG> IAdd16(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorFlags<CONFIG> & flags,
+	bool sat = false, bool ra = false, bool rb = false);	// No carry in
+
+template<class CONFIG>
+VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	VectorFlags<CONFIG> & flags,
+	bool sat = false, bool ra = false, bool rb = false);	// No carry in
+
+
+template<class CONFIG>
+VectorRegister<CONFIG> Mul24(VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	bool sat, bool ra, bool rb, bool m24,
+	bool issigned, bool hi);
+
+template<class CONFIG>
+VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
 	VectorRegister<CONFIG> const & c,
 	VectorFlags<CONFIG> & flags,
-	uint32_t src1_neg = 0,
-	uint32_t src3_neg = 0);
+	bool sat,
+	bool src1_neg,
+	bool src3_neg,
+	bool m24,
+	bool issigned,
+	bool hi);
 
+#if 0
 template<class CONFIG>
 VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	                 VectorRegister<CONFIG> const & c, uint32_t sat = 0, uint32_t ra = 0,
@@ -90,13 +115,26 @@ template<class CONFIG>
 VectorRegister<CONFIG> I16Mul(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	                 uint32_t sat = 0, uint32_t ra = 0, uint32_t rb = 0);
 
+
 template<class CONFIG>
 void I32Negate(VectorRegister<CONFIG> & a);
+#endif
 template<class CONFIG>
 VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat);
 
 template<class CONFIG>
-VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	bool u32, bool issigned);
+
+template<class CONFIG>
+VectorRegister<CONFIG> ShiftRight(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	bool u32, bool issigned);
+
+template<class CONFIG>
+VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, uint32_t sb, bool u32);
+
+template<class CONFIG>
+VectorRegister<CONFIG> ShiftRight(VectorRegister<CONFIG> const & a, uint32_t sb, bool u32, bool issigned);
 
 
 template<class CONFIG>
@@ -111,16 +149,16 @@ VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CO
 template<class CONFIG>
 VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
 
-template<class CONFIG>
-VectorRegister<CONFIG> UMul24Lo(VectorRegister<CONFIG> const & a,
-	VectorRegister<CONFIG> const & b,
-	uint32_t sat, uint32_t ra, uint32_t rb, uint32_t u16);
-
-template<class CONFIG>
-VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, uint32_t sb);
-
 inline SMType MvSizeToSMType(uint32_t mv_size);
 inline RegType CvtTypeToRT(ConvType ct);
+
+template<class CONFIG>
+VectorRegister<CONFIG> Min(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	unsigned int m32, unsigned int issigned);
+
+template<class CONFIG>
+VectorRegister<CONFIG> Max(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
+	unsigned int m32, unsigned int issigned);
 
 
 } // end of namespace tesla

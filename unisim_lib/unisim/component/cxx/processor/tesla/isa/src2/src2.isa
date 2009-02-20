@@ -138,21 +138,21 @@ group alu_const(alu_full_normal_const, alu_full_end_const, alu_full_join_const)
 alu_const.read = {
 	// TODO: segment?
 	// But not for some (all?) FPU ops
-	return cpu->ReadConstant(src2 + offset * 4, constseg);
+	return cpu->ReadConstant((rt == RT_U32 ? src2 * 4 : src2 * 2) + offset * 4, constseg);
 }
 
 alu_const.disasm = {
 	// TODO: segment
-	os << "c" << constseg << "[" << src2 << "]";
+	os << "c" << constseg << "[" << (rt == RT_U32 ? src2 * 4 : src2 * 2) << "]";
 }
 
 alu_half_const.read = {
 	// Default segment = 0??
-	return cpu->ReadConstant(src2 + offset * 4, 0);
+	return cpu->ReadConstant((rt == RT_U32 ? src2 * 4 : src2 * 2) + offset * 4, 0);
 }
 
 alu_half_const.disasm = {
-	os << "c" << 0 << "[" << src2 << "]";
+	os << "c" << 0 << "[" << (rt == RT_U32 ? src2 * 4 : src2 * 2) << "]";
 }
 
 

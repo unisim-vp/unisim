@@ -84,7 +84,7 @@ public:
 	static uint32_t const MAX_BLOCKS = 8;
 	static uint32_t const MAX_THREADS = MAX_WARPS * WARP_SIZE;
 //	static uint32_t const SHARED_MEM_SIZE = 4096;
-	static uint32_t const BRANCH_STACK_DEPTH = 17;	// Random value
+	static uint32_t const BRANCH_STACK_DEPTH = 100;	// Random value
 	static uint32_t const CALL_STACK_DEPTH = 17;	// 17 = Smallest random-looking value
 	static uint32_t const MAX_ADDR_REGS = 4;
 	static uint32_t const MAX_PRED_REGS = 4;
@@ -109,10 +109,13 @@ public:
 	static int const COMPUTE_CAP_MAJOR = 1;
 	static int const COMPUTE_CAP_MINOR = 0;
 	static int const SHADER_CLOCK_KHZ = 1350000;
+	static int const CORE_COUNT = 1;
 
-	static bool const TRACE_INSN = true;
+	static bool const TRACE_INSN = false;
 	static bool const TRACE_LOADSTORE = false;
-	static bool const TRACE_REG = true;
+	static bool const TRACE_REG = false;
+	static bool const TRACE_BRANCH = false;
+	static bool const TRACE_SYNC = false;
 };
 
 
