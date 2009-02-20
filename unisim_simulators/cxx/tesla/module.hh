@@ -113,8 +113,8 @@ private:
 	
 };
 
-inline string Strip(string s);
-inline void ParseBinCode(vector<uint32_t> & v, istream & is);
+inline std::string Strip(std::string s);
+inline void ParseBinCode(std::vector<uint32_t> & v, std::istream & is);
 
 
 #endif

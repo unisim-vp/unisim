@@ -41,6 +41,16 @@
 #include "module.hh"
 #include <iosfwd>
 
+#include <unisim/component/cxx/processor/tesla/cpu.hh>
+//#include <unisim/component/cxx/processor/tesla/cpu.tcc>
+#include <unisim/component/cxx/processor/tesla/config.hh>
+#include <unisim/component/cxx/memory/ram/memory.hh>
+#include <unisim/kernel/service/service.hh>
+
+using unisim::component::cxx::processor::tesla::CPU;
+using unisim::component::cxx::processor::tesla::BaseConfig;
+//using unisim::component::cxx::memory::ram::Memory;
+using unisim::kernel::service::Object;
 
 // Trivial allocator, no deallocation at all
 // for the moment

@@ -37,17 +37,10 @@
 #ifndef SIMULATOR_CXX_TESLA_DRIVER_OBJECTS_HH
 #define SIMULATOR_CXX_TESLA_DRIVER_OBJECTS_HH
 
-#include <unisim/component/cxx/processor/tesla/cpu.hh>
-#include <unisim/component/cxx/processor/tesla/cpu.tcc>
-#include <unisim/component/cxx/processor/tesla/config.hh>
-#include <unisim/component/cxx/memory/ram/memory.hh>
-
 
 #include <inttypes.h>
 #include <cuda.h>
 
-using unisim::component::cxx::processor::tesla::CPU;
-using unisim::component::cxx::processor::tesla::BaseConfig;
 
 extern "C"
 {
@@ -79,10 +72,6 @@ private:
 class CUfunc_st
 {
 public:
-  CUfunc_st();
-  CUresult cuLaunch();
-private:
-  uint32_t entrypoint;
 };
 
 //    typedef struct CUarray_st *CUarray;

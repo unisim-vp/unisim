@@ -175,7 +175,7 @@ template<class CONFIG>
 void Driver<CONFIG>::FunctionDump(Kernel<CONFIG> const & kernel)
 {
 	int dev = current_context->GetDevice();
-	device[dev].DumpCode(kernel, cout);
+	device[dev].DumpCode(kernel, std::cout);
 }
 
 template<class CONFIG>

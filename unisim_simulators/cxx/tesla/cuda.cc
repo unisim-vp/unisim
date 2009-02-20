@@ -267,8 +267,20 @@ CUresult cuModuleGetFunction(CUfunction *hfunc, CUmodule hmod, const char *name)
 
 CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmodule hmod, const char *name)
 {
-  cerr << "function not implemented !!!" << endl;
-  assert(false);
+	if(verbose) cerr << "cuModuleGetGlobal(..." << hmod << ", " << name << ")" << endl;
+	CHECK_PTR(hmod);
+	Module<MyConfig>* mod = static_cast<Module<MyConfig>*>(hmod);
+	try {
+		ConstSeg<MyConfig> const & seg = mod->GetConstant(name);
+		if(dptr != 0)
+			*dptr = seg.Address();
+		if(bytes != 0)
+			*bytes = seg.Size();
+		return CUDA_SUCCESS;
+	}
+	catch(CudaException e) {
+		return e.code;
+	}
 }
 
 CUresult  CUDAAPI cuModuleGetTexRef(CUtexref *pTexRef, CUmodule hmod, const char *name)

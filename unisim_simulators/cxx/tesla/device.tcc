@@ -180,7 +180,7 @@ template<class CONFIG>
 void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint32_t val, size_t n)
 {
 	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
-	for(int i = 0; i != n; ++i)
+	for(unsigned int i = 0; i != n; ++i)
 	{
 		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
 			throw CudaException(CUDA_ERROR_INVALID_VALUE);
@@ -192,7 +192,7 @@ template<class CONFIG>
 void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint16_t val, size_t n)
 {
 	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
-	for(int i = 0; i != n; ++i)
+	for(unsigned int i = 0; i != n; ++i)
 	{
 		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
 			throw CudaException(CUDA_ERROR_INVALID_VALUE);
@@ -204,7 +204,7 @@ template<class CONFIG>
 void Device<CONFIG>::Memset(typename CONFIG::address_t dest, uint8_t val, size_t n)
 {
 	cerr << "Device memset: " << n * sizeof(val) << "B @" << hex << dest << dec << endl;
-	for(int i = 0; i != n; ++i)
+	for(unsigned int i = 0; i != n; ++i)
 	{
 		if(!memory.WriteMemory(dest + i * sizeof(val), &val, sizeof(val))) {
 			throw CudaException(CUDA_ERROR_INVALID_VALUE);

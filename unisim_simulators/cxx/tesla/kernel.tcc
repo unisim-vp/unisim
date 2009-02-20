@@ -57,12 +57,13 @@ Kernel<CONFIG>::Kernel(std::istream & is) :
 	smem(0),
 	reg(0),
 	bar(0),
+	param_size(0),
+	dyn_smem(0),
 	blockx(1),
 	blocky(1),
 	blockz(1),
 	gridx(1),
-	gridy(1),
-	param_size(0)
+	gridy(1)
 {
 	cerr << " Kernel segment\n";
 	typedef string::iterator it_t;
@@ -142,7 +143,7 @@ uint32_t Kernel<CONFIG>::CodeSize() const
 }
 
 template<class CONFIG>
-void Kernel<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & mem, uint32_t offset) const
+void Kernel<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, uint32_t offset) const
 {
 	cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::endl;
 	if(!mem.WriteMemory(CONFIG::CODE_START + offset, &bincode[0], CodeSize())) {
@@ -213,7 +214,7 @@ void Kernel<CONFIG>::SetBlockShape(int x, int y, int z)
 	if(z == 0)
 		z = 1;
 	
-	if(x * y * z > CONFIG::MAX_WARPS_PER_BLOCK * CONFIG::WARP_SIZE)
+	if(x * y * z > int(CONFIG::MAX_WARPS_PER_BLOCK * CONFIG::WARP_SIZE))
 		throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	
 	blockx = x;
@@ -292,7 +293,7 @@ template<class CONFIG>
 void Kernel<CONFIG>::ParamSetv(int offset, void * data, int size)
 {
 	cerr << "ParamSetv @" << offset << "(" << size << ")" << endl; 
-	if(offset + size > parameters.size()) {
+	if(offset + size > int(parameters.size())) {
 		parameters.resize(offset + size);
 	}
 	uint8_t * bytedata = static_cast<uint8_t *>(data);
@@ -320,7 +321,7 @@ uint32_t Kernel<CONFIG>::SharedTotal() const
 }
 
 template<class CONFIG>
-void Kernel<CONFIG>::InitShared(Service<Memory<typename CONFIG::address_t> > & mem, int index,
+void Kernel<CONFIG>::InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index,
 	int bidx, int bidy) const
 {
 	// TODO: multiple cores
@@ -334,17 +335,7 @@ void Kernel<CONFIG>::InitShared(Service<Memory<typename CONFIG::address_t> > & m
 	header[5] = gridy;	// gridy
 	header[6] = bidx;	// bidx
 	header[7] = bidy;	// bidy
-/*
-	// Little-endian
-	header[1] = 0;	// flags? gridid?
-	header[0] = blockx;
-	header[3] = blocky;
-	header[2] = blockz;
-	header[5] = gridx;	// gridx
-	header[4] = gridy;	// gridy
-	header[7] = bidx;	// bidx
-	header[6] = bidy;	// bidy
-*/	
+
 	cerr << "Init block " << index << " (" << bidx << ", " << bidy << ") / ("
 	<< gridx << ", " << gridy << ") shared memory\n";
 	typename CONFIG::address_t shared_base = CONFIG::SHARED_START + index * SharedTotal();

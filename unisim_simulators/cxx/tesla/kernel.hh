@@ -46,7 +46,8 @@
 #include <unisim/service/interfaces/memory.hh>
 
 using unisim::kernel::service::Service;
-using unisim::service::interfaces::Memory;
+//using unisim::service::interfaces::Memory;
+// Conflicts with ram::Memory, do NOT use in headers
 
 template<class CONFIG>
 struct ConstSeg;
@@ -59,8 +60,8 @@ struct Kernel : CUfunc_st
 //	uint32_t ConstSize() const;
 //	uint32_t LocalSize() const;
 	uint32_t CodeSize() const;
-	
-	void Load(Service<Memory<typename CONFIG::address_t> > & mem, uint32_t offset = 0) const;
+
+	void Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, uint32_t offset = 0) const;
 	std::string const & Name() const;
 	void Dump(std::ostream & os) const;
 	void SetBlockShape(int x, int y, int z);
@@ -79,7 +80,7 @@ struct Kernel : CUfunc_st
 	void SetSharedSize(int size);
 	
 	uint32_t SharedTotal() const;
-	void InitShared(Service<Memory<typename CONFIG::address_t> > & mem, int index = 0,
+	void InitShared(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, int index = 0,
 		int bidx = 0, int bidy = 0) const;
 	
 	int BlocksPerCore() const;	// Max blocks that can run on a SM of target architecture

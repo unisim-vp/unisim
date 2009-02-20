@@ -50,7 +50,7 @@ struct Driver
 {
 public:
 	//  const usigned int MAX_CONTEXT=1;
-	static const unsigned int MAXDEVICE=1;
+	static const int MAXDEVICE=1;
 
 	Driver();
 

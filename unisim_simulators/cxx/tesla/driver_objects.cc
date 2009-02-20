@@ -35,8 +35,8 @@
  */
 #include <driver_objects.hh>
 
-template class CPU<BaseConfig>;
-template class unisim::component::cxx::memory::ram::Memory<BaseConfig::address_t>;
+//template class CPU<BaseConfig>;
+//template class unisim::component::cxx::memory::ram::Memory<BaseConfig::address_t>;
 
 //class CUctx_st
 CUctx_st::CUctx_st(CUdevice dev): device(dev), usage_count(1) {}  
@@ -49,8 +49,6 @@ CUdevice CUctx_st::GetDevice()
 //CUmod_st::CUmod_st() {}
 
 //class CUfunc_st
-CUfunc_st::CUfunc_st() {}
-CUresult CUfunc_st::cuLaunch() {}
 
 //class CUarray_st
 
