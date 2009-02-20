@@ -45,6 +45,7 @@ subdecoder unisim::component::cxx::processor::hcs12x::XB XB
 address {uint16_t}
 
 decl {
+#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
 #include <unisim/component/cxx/processor/hcs12x/concatenated_register.hh>
 #include <iostream>

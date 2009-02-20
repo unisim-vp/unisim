@@ -60,20 +60,20 @@ MMC::MMC(const char *name, Object *parent):
 void MMC::Reset() {
 
 	directSet = false;
-	write(CONFIG::MMCCTL0_REG_ADDRESS, CONFIG::MMCCTL0_RESET);
-	write(CONFIG::MMC_MODE_REG_ADDRESS, CONFIG::MMC_MODE_RESET); 
-	write(CONFIG::GPAGE_REG_ADDRESS, CONFIG::GLOBAL_RESET_PAGE);
-	write(CONFIG::DIRECT_REG_ADDRESS, CONFIG::DIRECT_RESET_PAGE);
-	write(CONFIG::MMCCTL1_REG_ADDRESS, CONFIG::MMCCTL1_RESET);	
-	
-	write(CONFIG::RPAGE_REG_ADDRESS, CONFIG::RAM_RESET_PAGE);
-	write(CONFIG::EPAGE_REG_ADDRESS, CONFIG::EEPROM_RESET_PAGE);
-	write(CONFIG::PPAGE_REG_ADDRESS, CONFIG::FLASH_RESET_PAGE);
-	
-	write(CONFIG::RAMWPC_REG_ADDRESS, CONFIG::RAMWPC_RESET);
-	write(CONFIG::RAMXGU_REG_ADDRESS, CONFIG::RAMXGU_RESET);
-	write(CONFIG::RAMSHL_REG_ADDRESS, CONFIG::RAMSHL_RESET);
-	write(CONFIG::RAMSHU_REG_ADDRESS, CONFIG::RAMSHU_RESET);
+	write(MMCCTL0_REG_ADDRESS, MMCCTL0_RESET);
+	write(MMC_MODE_REG_ADDRESS, MMC_MODE_RESET);
+	write(GPAGE_REG_ADDRESS, GLOBAL_RESET_PAGE);
+	write(DIRECT_REG_ADDRESS, DIRECT_RESET_PAGE);
+	write(MMCCTL1_REG_ADDRESS, MMCCTL1_RESET);
+
+	write(RPAGE_REG_ADDRESS, RAM_RESET_PAGE);
+	write(EPAGE_REG_ADDRESS, EEPROM_RESET_PAGE);
+	write(PPAGE_REG_ADDRESS, FLASH_RESET_PAGE);
+
+	write(RAMWPC_REG_ADDRESS, RAMWPC_RESET);
+	write(RAMXGU_REG_ADDRESS, RAMXGU_RESET);
+	write(RAMSHL_REG_ADDRESS, RAMSHL_RESET);
+	write(RAMSHU_REG_ADDRESS, RAMSHU_RESET);
 
 }
 
@@ -86,7 +86,7 @@ void MMC::OnDisconnect() {
 
 void MMC::SplitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address)
 {
-	if (address_encoding == ADDRESS::GNUGCC) 
+	if (address_encoding == ADDRESS::GNUGCC)
 	{
 		if (paged_addr < 0x10000) {
 			page = 0;
@@ -95,7 +95,7 @@ void MMC::SplitPagedAddress(physical_address_t paged_addr, page_t &page, address
 			page = (page_t) ((paged_addr - 0x10000) / 0x4000);
 			cpu_address = (address_t) ((paged_addr - 0x10000) % 0x4000);
 		}
-	} 
+	}
 	else
 	{
 		if (address_encoding == ADDRESS::LINEAR) {
@@ -106,20 +106,20 @@ void MMC::SplitPagedAddress(physical_address_t paged_addr, page_t &page, address
 			cpu_address = (address_t) (paged_addr % 0x10000);
 		}
 	}
-	
+
 }
 
 bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) {
-	
+
 	page_t page;
 	address_t cpu_address;
 	physical_address_t addr;
-	
+
 	// TODO: read MMC registers
-	
+
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
-	
+
 	if (isPaged(cpu_address, page, true)) {
 		if (external_memory_import) {
 			return external_memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
@@ -140,10 +140,10 @@ bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t
 	physical_address_t addr;
 
 	// TODO: write to MMC registers
-	
+
 	SplitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
-	
+
 	if (isPaged(cpu_address, page, true)) {
 		if (external_memory_import) {
 			return external_memory_import->WriteMemory(addr, (uint8_t *) buffer, size);

@@ -70,6 +70,93 @@ public:
 
 	enum MODE {SS = 0x00, ES = 0x20, ST = 0x40, EX = 0x60, NS = 0x80, NX = 0xA0};
 
+	//==============================================================================
+	//=   MEMORY MAP (Logical Memories Offsets) and RESET VALUES OF MMC REGISTERS  =
+	//==============================================================================
+
+	static const uint8_t DIRECT_ADDRESS_SIZE	= 8;	// Number of bits used by the CPU to address DIRECT (max=8)
+	static const uint8_t RAM_ADDRESS_SIZE		= 12;	// Number of bits used by the CPU to address RAM (max=16)
+	static const uint8_t EEPROM_ADDRESS_SIZE	= 10;	// Number of bits used by the CPU to address EEPROM (max=16)
+	static const uint8_t FLASH_ADDRESS_SIZE		= 14;	// Number of bits used by the CPU to address FLASH (max=16)
+
+	static const uint16_t DIRECT_PAGE_SIZE	= 0x100;
+	static const uint16_t RAM_PAGE_SIZE		= 0x1000;
+	static const uint16_t EEPROM_PAGE_SIZE	= 0x400;
+	static const uint16_t FLASH_PAGE_SIZE	= 0x4000;
+
+	static const address_t RAM_CPU_ADDRESS_BITS		= 0x0FFF;
+	static const address_t EEPROM_CPU_ADDRESS_BITS	= 0x03FF;
+	static const address_t FLASH_CPU_ADDRESS_BITS	= 0x3FFF;
+
+	static const physical_address_t RAM_PHYSICAL_ADDRESS_FIXED_BITS		= 0x00000000;
+	static const physical_address_t EEPROM_PHYSICAL_ADDRESS_FIXED_BITS	= 0x00100000;
+	static const physical_address_t FLASH_PHYSICAL_ADDRESS_FIXED_BITS	= 0x00400000;
+
+	static const address_t REG_LOW_OFFSET	= 0x0000;
+	static const address_t REG_HIGH_OFFSET	= 0x07FF;
+	static const address_t EEPROM_LOW_OFFSET= 0x0800;
+	static const address_t EEPROM_HIGH_OFFSET=0x0FFF;
+	static const address_t RAM_LOW_OFFSET	= 0x1000;
+	static const address_t RAM_HIGH_OFFSET	= 0x3FFF;
+	static const address_t FLASH_LOW_OFFSET	= 0x4000;
+	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
+
+	static const address_t MMC_LOW_ADDRESS		= 0x000A;
+	static const address_t MMC_HIGH_ADDRESS		= 0x011F;
+
+	static const address_t MMCCTL0_REG_ADDRESS	= 0x000A;
+	static const address_t MMC_MODE_REG_ADDRESS	= 0x000B;
+	static const address_t GPAGE_REG_ADDRESS	= 0x0010;
+	static const address_t DIRECT_REG_ADDRESS	= 0x0011;
+	static const address_t MMCCTL1_REG_ADDRESS	= 0x0013;
+	static const address_t RPAGE_REG_ADDRESS	= 0x0016;
+	static const address_t EPAGE_REG_ADDRESS	= 0x0017;
+	static const address_t PPAGE_REG_ADDRESS	= 0x0030;
+	static const address_t RAMWPC_REG_ADDRESS	= 0x011C;
+	static const address_t RAMXGU_REG_ADDRESS	= 0x011D;
+	static const address_t RAMSHL_REG_ADDRESS	= 0x011E;
+	static const address_t RAMSHU_REG_ADDRESS	= 0x011F;
+
+	static const uint16_t REGISTERS_SPACE_SIZE	= 0x800;	// MCS12XDP512 has 2k-bytes of io-register space
+															// mapped at low address of memory
+
+	static const uint8_t GPAGE_LOW			= 0x00;		// low gpage register value
+	static const uint8_t GPAGE_HIGH			= 0x7F;		// high gpage register value
+
+	static const uint8_t RPAGE_LOW			= 0xF8;		// low rpage (ram page) register value
+	static const uint8_t RPAGE_HIGH			= 0xFF;		// high rpage register value
+	static const uint8_t EPAGE_LOW			= 0xFC;		// low epage (eeprom page) register value
+	static const uint8_t EPAGE_HIGH			= 0xFF;		// high epage register value
+	static const uint8_t PPAGE_LOW			= 0xE0;		// low ppage (flash page) register value
+	static const uint8_t PPAGE_HIGH			= 0xFF;		// high ppage register value
+
+	static const uint8_t MMCCTL0_RESET		= 0x00;
+	// MODC=1, MODB=0, MODA=0 => Normal single-chip
+	static const uint8_t MMC_MODE_RESET		= 0x80;
+
+	static const uint8_t GLOBAL_RESET_PAGE	= GPAGE_LOW;// reset gpage register value
+	static const uint8_t DIRECT_RESET_PAGE	= 0x00;		// reset direct register value
+	// EROMON=EROMCTL=1	=> Enable the emulated flash or ROM in memoryMap
+	// ROMHM=0  => The fixed page of Flash or ROM can be accessed in the lower half of the memory map.
+	//             Accesses to $4000–$7FFF will be mapped to $7F_4000-$7F_7FFF in the global memory space
+	// ROMHM=1  => Disables access to the Flash or ROM in the lower half of the memory map.
+	//             These physical locations of the Flash or ROM can still be accessed through the program page window.
+	//             Accesses to $4000–$7FFF will be mapped to $14_4000-$14_7FFF in the global memory space (external access).
+	// ROMON=ROMCTL=1 => Enable the flash or ROM in memoryMap
+	static const uint8_t MMCCTL1_RESET		= 0x05;
+
+	static const uint8_t RAM_RESET_PAGE		= 0xFD;		// reset rpage register value
+	static const uint8_t EEPROM_RESET_PAGE	= 0xFE;		// reset epage register value
+	static const uint8_t FLASH_RESET_PAGE	= 0xFE;		// reset ppage register value
+
+	static const uint8_t RAMWPC_RESET		= 0x00;
+	static const uint8_t RAMXGU_RESET		= 0xFF;
+	static const uint8_t RAMSHL_RESET		= 0xFF;
+	static const uint8_t RAMSHU_RESET		= 0xFF;
+
+
+	// ***************************************
+
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > internal_memory_import;
 	ServiceImport<Memory<service_address_t> > external_memory_import;
@@ -78,7 +165,7 @@ public:
 
     inline physical_address_t getPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload = false, uint8_t debug_page = 0xFF);
 	inline bool isPaged(address_t addr, page_t page, bool debugload);
-	
+
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
@@ -86,7 +173,7 @@ public:
 	virtual bool Setup();
 	virtual void OnDisconnect();
 	virtual void Reset();
-	
+
 
 	//=====================================================================
 	//=             memory interface methods                              =
@@ -95,7 +182,7 @@ public:
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 	void SplitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address);
-	
+
 	//=====================================================================
 	//=             Internal Registers Accessors                          =
 	//=====================================================================
@@ -164,19 +251,19 @@ inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDR
 	}
 
 	if (type == ADDRESS::EXTENDED) {
-		if (logicalAddress <= CONFIG::REG_HIGH_OFFSET) { // Access to registers
+		if (logicalAddress <= REG_HIGH_OFFSET) { // Access to registers
 			address = logicalAddress;
 		}
 
-		if ((logicalAddress >= CONFIG::EEPROM_LOW_OFFSET) && (logicalAddress <= CONFIG::EEPROM_HIGH_OFFSET)) { // Access to EEPROM
+		if ((logicalAddress >= EEPROM_LOW_OFFSET) && (logicalAddress <= EEPROM_HIGH_OFFSET)) { // Access to EEPROM
 			address = getEepromAddress(logicalAddress, debugload, debug_page);
 		}
 
-		if ((logicalAddress >= CONFIG::RAM_LOW_OFFSET) && (logicalAddress <= CONFIG::RAM_HIGH_OFFSET)) { // Access to RAM
+		if ((logicalAddress >= RAM_LOW_OFFSET) && (logicalAddress <= RAM_HIGH_OFFSET)) { // Access to RAM
 			address = getRamAddress(logicalAddress, debugload, debug_page);
 		}
 
-		if (logicalAddress >= CONFIG::FLASH_LOW_OFFSET) { // Access to Flash
+		if (logicalAddress >= FLASH_LOW_OFFSET) { // Access to Flash
 			address = getFlashAddress(logicalAddress, debugload, debug_page);
 		}
 	}
@@ -187,18 +274,18 @@ inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDR
 inline uint8_t MMC::read(address_t address)
 {
 	switch (address) {
-	case CONFIG::MMCCTL0_REG_ADDRESS: return mmcctl0;
-	case CONFIG::MMC_MODE_REG_ADDRESS: return mode;
-	case CONFIG::GPAGE_REG_ADDRESS: return gpage;
-	case CONFIG::DIRECT_REG_ADDRESS: return direct;
-	case CONFIG::MMCCTL1_REG_ADDRESS: return mmcctl1;
-	case CONFIG::RPAGE_REG_ADDRESS: return rpage;
-	case CONFIG::EPAGE_REG_ADDRESS: return epage;
-	case CONFIG::PPAGE_REG_ADDRESS: return ppage;
-	case CONFIG::RAMWPC_REG_ADDRESS: return ramwpc;
-	case CONFIG::RAMXGU_REG_ADDRESS: return ramxgu;
-	case CONFIG::RAMSHL_REG_ADDRESS: return ramshl;
-	case CONFIG::RAMSHU_REG_ADDRESS: return ramshu;
+	case MMCCTL0_REG_ADDRESS: return mmcctl0;
+	case MMC_MODE_REG_ADDRESS: return mode;
+	case GPAGE_REG_ADDRESS: return gpage;
+	case DIRECT_REG_ADDRESS: return direct;
+	case MMCCTL1_REG_ADDRESS: return mmcctl1;
+	case RPAGE_REG_ADDRESS: return rpage;
+	case EPAGE_REG_ADDRESS: return epage;
+	case PPAGE_REG_ADDRESS: return ppage;
+	case RAMWPC_REG_ADDRESS: return ramwpc;
+	case RAMXGU_REG_ADDRESS: return ramxgu;
+	case RAMSHL_REG_ADDRESS: return ramshl;
+	case RAMSHU_REG_ADDRESS: return ramshu;
 	default: return 0;
 	}
 }
@@ -206,40 +293,40 @@ inline uint8_t MMC::read(address_t address)
 inline void MMC::write(address_t address, uint8_t val)
 {
 	switch (address) {
-	case CONFIG::MMCCTL0_REG_ADDRESS: mmcctl0 = val; break;
-	case CONFIG::MMC_MODE_REG_ADDRESS: mode = val; break;
-	case CONFIG::GPAGE_REG_ADDRESS: gpage = val; break;
-	case CONFIG::DIRECT_REG_ADDRESS: {
+	case MMCCTL0_REG_ADDRESS: mmcctl0 = val; break;
+	case MMC_MODE_REG_ADDRESS: mode = val; break;
+	case GPAGE_REG_ADDRESS: gpage = val; break;
+	case DIRECT_REG_ADDRESS: {
 		if (!directSet) {
 			direct = val;
 			directSet = true;
 		}
 	} break;
-	case CONFIG::MMCCTL1_REG_ADDRESS: mmcctl1 = val;
-	case CONFIG::RPAGE_REG_ADDRESS: rpage = val;
-	case CONFIG::EPAGE_REG_ADDRESS: epage = val;
-	case CONFIG::PPAGE_REG_ADDRESS: ppage = val;
-	case CONFIG::RAMWPC_REG_ADDRESS: ramwpc = val;
-	case CONFIG::RAMXGU_REG_ADDRESS: ramxgu = val;
-	case CONFIG::RAMSHL_REG_ADDRESS: ramshl = val;
-	case CONFIG::RAMSHU_REG_ADDRESS: ramshu = val;
+	case MMCCTL1_REG_ADDRESS: mmcctl1 = val;
+	case RPAGE_REG_ADDRESS: rpage = val;
+	case EPAGE_REG_ADDRESS: epage = val;
+	case PPAGE_REG_ADDRESS: ppage = val;
+	case RAMWPC_REG_ADDRESS: ramwpc = val;
+	case RAMXGU_REG_ADDRESS: ramxgu = val;
+	case RAMSHL_REG_ADDRESS: ramshl = val;
+	case RAMSHU_REG_ADDRESS: ramshu = val;
 	}
 
 }
 
 
-inline bool MMC::isPaged(address_t addr, page_t page, bool debugload) { 
+inline bool MMC::isPaged(address_t addr, page_t page, bool debugload) {
 
 	// EEPROM window
 	if ((addr > 0x07FF) && (addr < 0x0C00)) {
 		if (!debugload) {
 			page = getEpage();
-		} 
+		}
 		if (page != 0xFF) {
 			return true;
-		} 
+		}
 	}
-	
+
 	// RAM window
 	if ((addr > 0x0FFF) && (addr < 0x2000)) {
 		if (!debugload) {
@@ -248,18 +335,18 @@ inline bool MMC::isPaged(address_t addr, page_t page, bool debugload) {
 		if ((page != 0xFE) && (page != 0xFF)) {
 			return true;
 		}
-	} 
-	
+	}
+
 	// FLASH window
 	if ((addr > 0x7FFF) && (addr < 0xC000)) {
 		if (!debugload) {
 			page = getPpage();
-		}		
+		}
 		if ((page != 0xFD) && (page != 0xFF)) {
 			return true;
 		}
-	}   
-	
+	}
+
 	return false;
 }
 
@@ -286,7 +373,7 @@ inline physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
 
 	if (_direct != 0)
 	{
-		return (((address_t) getDirect()) << CONFIG::DIRECT_ADDRESS_SIZE) | ((address_t) lowByte & 0x00FF);
+		return (((address_t) getDirect()) << DIRECT_ADDRESS_SIZE) | ((address_t) lowByte & 0x00FF);
 	} else
 	{
 		return lowByte;
@@ -298,15 +385,15 @@ inline uint8_t MMC::getRpage () { return rpage; }
 inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debugload, uint8_t debug_page) {
 
 	uint8_t _rpage;
-	
+
 	if (debugload && (debug_page != 0x00)) _rpage = debug_page; else  _rpage = getRpage();
 
-	if ((_rpage > 0x00) && (_rpage < CONFIG::RPAGE_LOW)) {
+	if ((_rpage > 0x00) && (_rpage < RPAGE_LOW)) {
 		throw NonMaskableAccessErrorInterrupt(NonMaskableAccessErrorInterrupt::INVALIDE_RPAGE);
 	}
 
 	if (isPaged(logicalAddress, _rpage, debugload)) {
-		return CONFIG::RAM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _rpage << CONFIG::RAM_ADDRESS_SIZE) | ((address_t) CONFIG::RAM_CPU_ADDRESS_BITS & logicalAddress);	
+		return RAM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _rpage << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
 		if ((logicalAddress > 0x0FFF) && (logicalAddress < 0x2000)) {
 			if (_rpage == 0xFE) return (logicalAddress - 0x1000) + 0x2000;
@@ -314,7 +401,7 @@ inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool debu
 		}
 	}
 
-	return logicalAddress;	
+	return logicalAddress;
 }
 
 inline uint8_t MMC::getEpage () { return epage; }
@@ -322,20 +409,20 @@ inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool d
 
 	uint8_t _epage;
 
-	if (debugload && (debug_page != 0x00)) _epage = debug_page; else _epage = getEpage(); 
-	
-	if ((_epage > 0) && (_epage < CONFIG::EPAGE_LOW)) {
+	if (debugload && (debug_page != 0x00)) _epage = debug_page; else _epage = getEpage();
+
+	if ((_epage > 0) && (_epage < EPAGE_LOW)) {
 		throw NonMaskableAccessErrorInterrupt(NonMaskableAccessErrorInterrupt::INVALIDE_EPAGE);
 	}
 
 	if (isPaged(logicalAddress, _epage, debugload)) {
-		return CONFIG::EEPROM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _epage << CONFIG::EEPROM_ADDRESS_SIZE) | ((address_t) CONFIG::EEPROM_CPU_ADDRESS_BITS & logicalAddress);
+		return EEPROM_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _epage << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
-		if ((logicalAddress > 0x07FF) && (logicalAddress < 0x0C00) && (epage == 0xFF)) 
+		if ((logicalAddress > 0x07FF) && (logicalAddress < 0x0C00) && (epage == 0xFF))
 			return (logicalAddress -0x0800) + 0x0C00;
 	}
-	
-	return logicalAddress;		
+
+	return logicalAddress;
 }
 
 inline uint8_t MMC::getPpage () { return ppage; }
@@ -347,19 +434,19 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool de
 
 	uint8_t _ppage;
 
-	if (debugload && (debug_page != 0x00)) _ppage = debug_page; else _ppage = getPpage(); 
+	if (debugload && (debug_page != 0x00)) _ppage = debug_page; else _ppage = getPpage();
 
 	if (isPaged(logicalAddress, _ppage, debugload)) {
-		return CONFIG::FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _ppage << CONFIG::FLASH_ADDRESS_SIZE) | ((address_t) CONFIG::FLASH_CPU_ADDRESS_BITS & logicalAddress);
+		return FLASH_PHYSICAL_ADDRESS_FIXED_BITS | ((physical_address_t) _ppage << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
 	} else {
 		if ((logicalAddress > 0x7FFF) && (logicalAddress < 0xC000)) {
 			if (_ppage == 0xFD) return (logicalAddress - 0x8000) + 0x4000;
 			if (_ppage == 0xFF) return (logicalAddress - 0x8000) + 0xC000;
 		}
 	}
-	
-// TODO: ne pas oublier d'intégrer le cas ci-dessous du ROMHM	
-/*	
+
+// TODO: ne pas oublier d'intégrer le cas ci-dessous du ROMHM
+/*
 	if ((logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) {
 		if ((getMmcctl1() & ROMHM_MASK) == 1) { // 0x4000-0x7FFF is mapped to 0x14_4000-0x14_7FFF (external access)
 			return (physical_address_t) (0x14 << 16) | logicalAddress;
@@ -367,7 +454,7 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool de
 			_ppage = 0xFD;
 		}
 	}
-*/	
+*/
 
 	return logicalAddress;
 

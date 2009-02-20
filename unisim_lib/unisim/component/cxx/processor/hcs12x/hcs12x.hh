@@ -91,11 +91,12 @@ private:
 } } } } }
 #line 47 "hcs12x.isa"
 
+#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/cpu.hh>
 #include <unisim/component/cxx/processor/hcs12x/concatenated_register.hh>
 #include <iostream>
 #include <iosfwd>
-#line 99 "hcs12x.hh"
+#line 100 "hcs12x.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace hcs12x {
 class Operation
 {
@@ -106,57 +107,57 @@ public:
 	inline CodeType const& GetEncoding() const { return encoding; }
 	inline const char *GetName() const { return name; }
 	virtual
-#line 83 "hcs12x.isa"
+#line 84 "hcs12x.isa"
 	uint8_t
-#line 112 "hcs12x.hh"
+#line 113 "hcs12x.hh"
 	getCycles( );
 	virtual
-#line 78 "hcs12x.isa"
+#line 79 "hcs12x.isa"
 	void
-#line 117 "hcs12x.hh"
+#line 118 "hcs12x.hh"
 	post_execute(
-#line 78 "hcs12x.isa"
+#line 79 "hcs12x.isa"
 	ostream&
-#line 121 "hcs12x.hh"
-#line 78 "hcs12x.isa"
+#line 122 "hcs12x.hh"
+#line 79 "hcs12x.isa"
 	sink
-#line 124 "hcs12x.hh"
+#line 125 "hcs12x.hh"
 	);
 	virtual
-#line 74 "hcs12x.isa"
+#line 75 "hcs12x.isa"
 	void
-#line 129 "hcs12x.hh"
+#line 130 "hcs12x.hh"
 	pre_execute(
-#line 74 "hcs12x.isa"
+#line 75 "hcs12x.isa"
 	ostream&
-#line 133 "hcs12x.hh"
-#line 74 "hcs12x.isa"
+#line 134 "hcs12x.hh"
+#line 75 "hcs12x.isa"
 	sink
-#line 136 "hcs12x.hh"
+#line 137 "hcs12x.hh"
 	);
 	virtual
-#line 68 "hcs12x.isa"
+#line 69 "hcs12x.isa"
 	string
-#line 141 "hcs12x.hh"
+#line 142 "hcs12x.hh"
 	disasm(
-#line 68 "hcs12x.isa"
+#line 69 "hcs12x.isa"
 	ostream&
-#line 145 "hcs12x.hh"
-#line 68 "hcs12x.isa"
+#line 146 "hcs12x.hh"
+#line 69 "hcs12x.isa"
 	sink
-#line 148 "hcs12x.hh"
+#line 149 "hcs12x.hh"
 	);
 	virtual
-#line 62 "hcs12x.isa"
+#line 63 "hcs12x.isa"
 	void
-#line 153 "hcs12x.hh"
+#line 154 "hcs12x.hh"
 	execute(
-#line 62 "hcs12x.isa"
+#line 63 "hcs12x.isa"
 	CPU *
-#line 157 "hcs12x.hh"
-#line 62 "hcs12x.isa"
+#line 158 "hcs12x.hh"
+#line 63 "hcs12x.isa"
 	cpu
-#line 160 "hcs12x.hh"
+#line 161 "hcs12x.hh"
 	);
 protected:
 	CodeType encoding;

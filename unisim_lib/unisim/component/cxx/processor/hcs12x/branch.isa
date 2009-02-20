@@ -426,12 +426,10 @@ call_ext.execute = {
 	cpu->setRegSP(cpu->getRegSP()-1);
 	
 	addr = cpu->getRegSP();
-	old_ppage = cpu->memRead8(CONFIG::PPAGE_REG_ADDRESS);
-//	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
 	cpu->memWrite8(addr, old_ppage);
 
-//	cpu->mmc->setPpage(page);
-	cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, page);
+	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, page);
 	cpu->setRegPC(opr16a);
 
 	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
@@ -482,12 +480,10 @@ call_16offset_idx_ind.execute = {
 	
 	cpu->setRegSP(cpu->getRegSP()-1);
 	addr = cpu->getRegSP();
-	old_ppage = cpu->memRead8(CONFIG::PPAGE_REG_ADDRESS);
-//	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
 	cpu->memWrite8(addr, old_ppage);
 
-//	cpu->mmc->setPpage(ppageVal);
-	cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, ppageVal);
+	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, ppageVal);
 	cpu->setRegPC(subAddr);
 
 	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
@@ -532,12 +528,10 @@ call_accD_offset_idx_ind.execute = {
 	
 	cpu->setRegSP(cpu->getRegSP()-1);
 	addr = cpu->getRegSP();
-	old_ppage = cpu->memRead8(CONFIG::PPAGE_REG_ADDRESS);
-//	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
 	cpu->memWrite8(addr, old_ppage);
 
-//	cpu->mmc->setPpage(ppageVal);
-	cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, ppageVal);
+	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, ppageVal);
 	cpu->setRegPC(subAddr);
 
 	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
@@ -593,12 +587,10 @@ call_idx.execute = {
 	
 	cpu->setRegSP(cpu->getRegSP()-1);
 	addr = cpu->getRegSP();
-	old_ppage = cpu->memRead8(CONFIG::PPAGE_REG_ADDRESS);
-//	cpu->memWrite8(addr, cpu->mmc->getPpage());
+	old_ppage = cpu->memRead8(MMC::PPAGE_REG_ADDRESS);
 	cpu->memWrite8(addr, old_ppage);
 
-//	cpu->mmc->setPpage(page);
-	cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, page);
+	cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, page);
 	cpu->setRegPC(callAddr);
 
 	// TODO: Refill the instruction queue with three program words from the new address (PPAGE:PC)
@@ -682,8 +674,7 @@ jsr_dir.execute = {
 	addr = cpu->getRegSP()+1;	
 	cpu->memWrite8(addr, (uint8_t) (cpu->getRegPC() & 0x00FF));
 	
-	direct_reg = cpu->memRead8(CONFIG::DIRECT_REG_ADDRESS);
-//	addr = cpu->mmc->getDirectAddress(opr8a);
+	direct_reg = cpu->memRead8(MMC::DIRECT_REG_ADDRESS);
 	addr = ((uint16_t) direct_reg << 8) | opr8a;
 	cpu->setRegPC(addr);
 
@@ -782,8 +773,7 @@ rtc.execute = {
 	 physical_address_t addr;
 	 
 	 addr = cpu->getRegSP();
-//	 cpu->mmc->setPpage(cpu->memRead8(addr));
-	 cpu->memWrite8(CONFIG::PPAGE_REG_ADDRESS, cpu->memRead8(addr));
+	 cpu->memWrite8(MMC::PPAGE_REG_ADDRESS, cpu->memRead8(addr));
 	 cpu->setRegSP(cpu->getRegSP() + 1);
 	 
 	 addr = cpu->getRegSP();
