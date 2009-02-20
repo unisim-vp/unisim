@@ -82,15 +82,15 @@ void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 	/*
 	 * Check if it is reset
 	 */
-	if (interrupt_request[CONFIG::INT_CLK_MONITOR_RESET_OFFSET/2]->read())
+	if (interrupt_request[XINT::INT_CLK_MONITOR_RESET_OFFSET/2]->read())
 		vectorAddress = get_ClockMonitorReset_Vector();
-	else if (interrupt_request[CONFIG::INT_COP_WATCHDOG_RESET_OFFSET/2]->read())
+	else if (interrupt_request[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2]->read())
 		vectorAddress = get_COPWatchdogReset_Vector();
-	else if (interrupt_request[CONFIG::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]->read())
+	else if (interrupt_request[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]->read())
 		vectorAddress = get_IllegalAccessReset_Vector();
-	else if (interrupt_request[CONFIG::INT_SYS_RESET_OFFSET/2]->read())
+	else if (interrupt_request[XINT::INT_SYS_RESET_OFFSET/2]->read())
 		vectorAddress = get_SysReset_Vector();
-	else if (interrupt_request[CONFIG::INT_XIRQ_OFFSET/2]->read())
+	else if (interrupt_request[XINT::INT_XIRQ_OFFSET/2]->read())
 		vectorAddress = get_XIRQ_Vector();
 	else
 		for (int index=cfaddr; index < cfaddr+8; index++) { // Check only the selected interrupts
@@ -140,10 +140,10 @@ void XINT::Run()
 		 *  Check which interrupt if (reset) setIVBR(0xFF)
 		 */
 
-		if (interrupt_request[CONFIG::INT_CLK_MONITOR_RESET_OFFSET/2]->read() ||
-				interrupt_request[CONFIG::INT_COP_WATCHDOG_RESET_OFFSET/2]->read() ||
-				interrupt_request[CONFIG::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]->read() ||
-				interrupt_request[CONFIG::INT_SYS_RESET_OFFSET/2]->read() )
+		if (interrupt_request[XINT::INT_CLK_MONITOR_RESET_OFFSET/2]->read() ||
+				interrupt_request[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2]->read() ||
+				interrupt_request[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]->read() ||
+				interrupt_request[XINT::INT_SYS_RESET_OFFSET/2]->read() )
 		{
 			setIVBR(0xFF);
 		}
@@ -164,17 +164,17 @@ address_t XINT::getIntVector(uint8_t index) {
 
 void XINT::reset() {
 
-	write(CONFIG::IVBR_ADDRESS, CONFIG::IVBR_RESET_VALUE);
-	write(CONFIG::INT_XGPRIO, CONFIG::INT_XGPRIO_RESET_VALUE);
-	write(CONFIG::INT_CFADDR, CONFIG::INT_CFADDR_RESET_VALUE);
-	write(CONFIG::INT_CFDATA0, CONFIG::INT_CFDATA0_RESET_VALUE);
-	write(CONFIG::INT_CFDATA1, CONFIG::INT_CFDATA1_RESET_VALUE);
-	write(CONFIG::INT_CFDATA2, CONFIG::INT_CFDATA2_RESET_VALUE);
-	write(CONFIG::INT_CFDATA3, CONFIG::INT_CFDATA3_RESET_VALUE);
-	write(CONFIG::INT_CFDATA4, CONFIG::INT_CFDATA4_RESET_VALUE);
-	write(CONFIG::INT_CFDATA5, CONFIG::INT_CFDATA5_RESET_VALUE);
-	write(CONFIG::INT_CFDATA6, CONFIG::INT_CFDATA6_RESET_VALUE);
-	write(CONFIG::INT_CFDATA7, CONFIG::INT_CFDATA7_RESET_VALUE);
+	write(IVBR_ADDRESS, IVBR_RESET_VALUE);
+	write(INT_XGPRIO, INT_XGPRIO_RESET_VALUE);
+	write(INT_CFADDR, INT_CFADDR_RESET_VALUE);
+	write(INT_CFDATA0, INT_CFDATA0_RESET_VALUE);
+	write(INT_CFDATA1, INT_CFDATA1_RESET_VALUE);
+	write(INT_CFDATA2, INT_CFDATA2_RESET_VALUE);
+	write(INT_CFDATA3, INT_CFDATA3_RESET_VALUE);
+	write(INT_CFDATA4, INT_CFDATA4_RESET_VALUE);
+	write(INT_CFDATA5, INT_CFDATA5_RESET_VALUE);
+	write(INT_CFDATA6, INT_CFDATA6_RESET_VALUE);
+	write(INT_CFDATA7, INT_CFDATA7_RESET_VALUE);
 }
 
 void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
@@ -196,17 +196,17 @@ void XINT::write(address_t address, uint8_t value)
 {
 	switch (address)
 	{
-		case CONFIG::IVBR_ADDRESS: setIVBR(value); break;
-		case CONFIG::INT_XGPRIO: setINT_XGPRIO(value); break;
-		case CONFIG::INT_CFADDR: setINT_CFADDR(value); break;
-		case CONFIG::INT_CFDATA0: setINT_CFDATA(0, value); break;
-		case CONFIG::INT_CFDATA1: setINT_CFDATA(1, value); break;
-		case CONFIG::INT_CFDATA2: setINT_CFDATA(2, value); break;
-		case CONFIG::INT_CFDATA3: setINT_CFDATA(3, value); break;
-		case CONFIG::INT_CFDATA4: setINT_CFDATA(4, value); break;
-		case CONFIG::INT_CFDATA5: setINT_CFDATA(5, value); break;
-		case CONFIG::INT_CFDATA6: setINT_CFDATA(6, value); break;
-		case CONFIG::INT_CFDATA7: setINT_CFDATA(7, value); break;
+		case IVBR_ADDRESS: setIVBR(value); break;
+		case INT_XGPRIO: setINT_XGPRIO(value); break;
+		case INT_CFADDR: setINT_CFADDR(value); break;
+		case INT_CFDATA0: setINT_CFDATA(0, value); break;
+		case INT_CFDATA1: setINT_CFDATA(1, value); break;
+		case INT_CFDATA2: setINT_CFDATA(2, value); break;
+		case INT_CFDATA3: setINT_CFDATA(3, value); break;
+		case INT_CFDATA4: setINT_CFDATA(4, value); break;
+		case INT_CFDATA5: setINT_CFDATA(5, value); break;
+		case INT_CFDATA6: setINT_CFDATA(6, value); break;
+		case INT_CFDATA7: setINT_CFDATA(7, value); break;
 		default: ;
 	}
 }
@@ -215,17 +215,17 @@ void XINT::read(address_t address, uint8_t &value)
 {
 	switch (address)
 	{
-		case CONFIG::IVBR_ADDRESS: value = getIVBR();
-		case CONFIG::INT_XGPRIO: value = getINT_XGPRIO();;
-		case CONFIG::INT_CFADDR: value = getINT_CFADDR();
-		case CONFIG::INT_CFDATA0: value = getINT_CFDATA(0);
-		case CONFIG::INT_CFDATA1: value = getINT_CFDATA(1);
-		case CONFIG::INT_CFDATA2: value = getINT_CFDATA(2);
-		case CONFIG::INT_CFDATA3: value = getINT_CFDATA(3);
-		case CONFIG::INT_CFDATA4: value = getINT_CFDATA(4);
-		case CONFIG::INT_CFDATA5: value = getINT_CFDATA(5);
-		case CONFIG::INT_CFDATA6: value = getINT_CFDATA(6);
-		case CONFIG::INT_CFDATA7: value = getINT_CFDATA(7);
+		case IVBR_ADDRESS: value = getIVBR();
+		case INT_XGPRIO: value = getINT_XGPRIO();;
+		case INT_CFADDR: value = getINT_CFADDR();
+		case INT_CFDATA0: value = getINT_CFDATA(0);
+		case INT_CFDATA1: value = getINT_CFDATA(1);
+		case INT_CFDATA2: value = getINT_CFDATA(2);
+		case INT_CFDATA3: value = getINT_CFDATA(3);
+		case INT_CFDATA4: value = getINT_CFDATA(4);
+		case INT_CFDATA5: value = getINT_CFDATA(5);
+		case INT_CFDATA6: value = getINT_CFDATA(6);
+		case INT_CFDATA7: value = getINT_CFDATA(7);
 		default: value = 0;
 	}
 }
@@ -270,7 +270,7 @@ uint8_t	XINT::getINT_CFDATA(uint8_t index)
 	 * - Write access to CFDATA of the spurious interrupt will be ignored
 	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
 	 */
-	if (cfaddr+index == CONFIG::INT_SPURIOUS_OFFSET) return 0x7;
+	if (cfaddr+index == XINT::INT_SPURIOUS_OFFSET) return 0x7;
 
 
 	return int_cfdata[index];
@@ -312,7 +312,7 @@ void XINT::setINT_CFDATA(uint8_t index, uint8_t value)
 	 * - Write access to CFDATA of the spurious interrupt will be ignored
 	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
 	 */
-	if (cfaddr+index == CONFIG::INT_SPURIOUS_OFFSET) return;
+	if (cfaddr+index == XINT::INT_SPURIOUS_OFFSET) return;
 
 	int_cfdata[index] = value;
 }

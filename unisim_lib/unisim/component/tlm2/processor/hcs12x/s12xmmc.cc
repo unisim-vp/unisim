@@ -47,7 +47,7 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	MMC(name, parent)
-	 
+
 {
 
 	reset();
@@ -79,13 +79,13 @@ void S12XMMC::Run() {
 }
 
 void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
-	
+
 	sc_dt::uint64 logicalAddress = trans.get_address();
 	MMC_DATA *buffer = (MMC_DATA *) trans.get_data_ptr();
 	tlm::tlm_command cmd = trans.get_command();
-	
+
 	// MMC Registers. To speed-up simulation.
-	if ((logicalAddress >= CONFIG::MMC_LOW_ADDRESS) && (logicalAddress <= CONFIG::MMC_HIGH_ADDRESS)) {
+	if ((logicalAddress >= MMC_LOW_ADDRESS) && (logicalAddress <= MMC_HIGH_ADDRESS)) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			*((uint8_t *) buffer->buffer) = inherited::read(logicalAddress);
 		} else {
@@ -95,16 +95,16 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 	} else {
 
 		tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
-	
+
 		mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
-	
+
 		mmc_trans->set_data_length( buffer->data_size );
 		mmc_trans->set_streaming_width( buffer->data_size );
-	
+
 		mmc_trans->set_byte_enable_ptr( 0 );
 		mmc_trans->set_dmi_allowed( false );
 		mmc_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-	
+
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			mmc_trans->set_command( tlm::TLM_READ_COMMAND );
 		} else {
@@ -124,11 +124,11 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 			cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << std::dec << endl;
 			SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
 		}
-			
-	
+
+
 		mmc_trans->release();
 
-	} 
+	}
 
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }

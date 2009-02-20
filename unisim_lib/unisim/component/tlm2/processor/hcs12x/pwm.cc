@@ -41,21 +41,23 @@ namespace processor {
 namespace hcs12x {
 
 
-PWM::PWM(const char *name, Object *parent) :
+PWM::PWM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
+	sc_module(name),
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	param_baseAddress("base-address", this, baseAddress),
-	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time)
+	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time),
+	quantumkeeper_cycle_time(10.0, SC_NS) // TODO: as parameter ...
 {
 	uint8_t channel_number;
-	for (int i=0; i<PWM_SIZE; i++) {
+	for (int i=0; i<CONFIG::PWM_SIZE; i++) {
 #if BYTE_ORDER == BIG_ENDIAN
 		channel_number = i;
 #else
-		channel_number =  PWM::PWM_SIZE-i-1;
+		channel_number =  CONFIG::PWM_SIZE-i-1;
 #endif
 
 		channel[channel_number] = new Channel_t("jhdsq", this, channel_number, &pwmcnt16_register[i], &pwmper16_register[i], &pwmdty16_register_value[i]);
@@ -65,9 +67,18 @@ PWM::PWM(const char *name, Object *parent) :
 	// Reserved Register for factory testing
 	pwmtst_register = pwmprsc_register = pwmscnta_register = pwmscntb_register = 0;
 
-	for (int i=0; i<10; i++) {
-		nextTime[i] = sc_time(bus_cycle_time/pow(2,i), SC_NS);
+	clockVector[0] = sc_time(bus_cycle_time, SC_NS);
+	for (int i=1; i < 8; i++) {
+		clockVector[i] = sc_time(bus_cycle_time/(2 << i), SC_NS);
 	}
+
+	master_sock(*this);
+	slave_socket.register_b_transport(this, &PWM::read_write);
+
+	SC_HAS_PROCESS(PWM);
+
+	SC_THREAD(Run);
+	sensitive << refresh_channel_event;
 
 }
 
@@ -75,93 +86,210 @@ PWM::~PWM() {
 
 }
 
-uint8_t PWM::read(address_t address) {
+// Master methods
+void PWM::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	// Leave this empty as it is designed for memory mapped buses
+}
 
-	assert((address >= baseAddress) && (address - baseAddress < MEMORY_MAP_SIZE));
+tlm_sync_enum PWM::nb_transport_bw(PWM_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch(phase)
+	{
+		case BEGIN_REQ:
+			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_REQ" << endl;
+			sc_stop();
+			wait(); // leave control to the SystemC kernel
+			break;
+		case END_REQ:
+			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
+			sc_stop();
+			wait(); // leave control to the SystemC kernel
+			break;
+		case BEGIN_RESP:
+			payload.release();
+			return TLM_COMPLETED;
+		case END_RESP:
+			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
+			sc_stop();
+			wait(); // leave control to the SystemC kernel
+			break;
+		default:
+			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
+			sc_stop();
+			wait(); // leave control to the SystemC kernel
+			break;
+	}
 
-	uint8_t offset = address - baseAddress;
+	return TLM_ACCEPTED;
+}
+
+void PWM::Run() {
+
+	while (true) {
+		/**
+		 * setup a PWM_Payload to refresh output
+		 */
+		bool pwmChannelOutput[CONFIG::PWM_SIZE];
+
+		for (int i=0; i < CONFIG::PWM_SIZE; i++) {
+			pwmChannelOutput[i] = channel[i]->getOutput();
+		}
+
+		quantumkeeper.inc(quantumkeeper_cycle_time); // Processing the input takes one cycle
+		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+		refreshOutput(pwmChannelOutput);
+
+		wait();
+	}
+}
+
+void PWM::refreshOutput(bool pwmValue[CONFIG::PWM_SIZE])
+{
+	tlm_phase phase = BEGIN_REQ;
+	PWM_Payload *payload = payload_fabric.allocate();
+
+	for (int i=0; i<CONFIG::PWM_SIZE; i++) {
+		payload->pwmChannel[i] = pwmValue[i];
+	}
+
+	sc_time local_time = quantumkeeper.get_local_time();
+
+	cout << sc_time_stamp() << ":" << name() << "(PWMx) : send " << payload->serialize() << endl;
+
+	tlm_sync_enum ret = master_sock->nb_transport_fw(*payload, phase, local_time);
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
+	/*
+	 * Because we are using a non-blocking prototol,
+	 * the payload is released by the slave/receiver.
+	 * Hence do not call payload release method
+	 * <!-- payload->release(); -->
+	 */
+
+
+}
+
+
+void PWM::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
+{
+	tlm::tlm_command cmd = trans.get_command();
+	sc_dt::uint64 address = trans.get_address();
+	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
+
+	assert(address >= baseAddress);
+
+	if (cmd == tlm::TLM_READ_COMMAND) {
+		read(address - baseAddress, *data_ptr);
+	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
+		write(address - baseAddress, *data_ptr);
+	}
+
+	trans.set_response_status( tlm::TLM_OK_RESPONSE );
+}
+
+void PWM::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
-		case PWME: return pwme_register; break;
-		case PWMPOL: return pwmpol_register; break;
-		case PWMCLK: return pwmclk_register; break;
+		case PWME: value = pwme_register; break;
+		case PWMPOL: value = pwmpol_register; break;
+		case PWMCLK: value = pwmclk_register; break;
 		case PWMPRCLK: {
 			const uint8_t pwmprclk_readMask = 0x77;
-			return pwmprclk_register & pwmprclk_readMask;
+			value = pwmprclk_register & pwmprclk_readMask;
 		}
 		break;
-		case PWMCAE: return pwmcae_register; break;
+		case PWMCAE: value = pwmcae_register; break;
 		case PWMCTL: {
 			const uint8_t pwmctl_readMask = 0xFC;
-			return	pwmctl_register & pwmctl_readMask;
+			value =	pwmctl_register & pwmctl_readMask;
 		}
 		break;
 		case PWMTST: {
 			const uint8_t pwmtst_readMask = 0X00;
-			return pwmtst_register & pwmtst_readMask;
+			value = pwmtst_register & pwmtst_readMask;
 		}
 		break;
 		case PWMPRSC: {
 			const uint8_t pwmprsc_readMask = 0x00;
-			return pwmprsc_register & pwmprsc_readMask;
+			value = pwmprsc_register & pwmprsc_readMask;
 		}
 		break;
-		case PWMSCLA: return pwmscla_register; break;
-		case PWMSCLB: return pwmsclb_register; break;
+		case PWMSCLA: value = pwmscla_register; break;
+		case PWMSCLB: value = pwmsclb_register; break;
 		case PWMSCNTA: {
 			const uint8_t pwmscnta_readMask = 0x00;
-			return pwmscnta_register & pwmscnta_readMask;
+			value = pwmscnta_register & pwmscnta_readMask;
 		}
 		break;
 		case PWMSCNTB: {
 			const uint8_t pwmscntb_readMask = 0x00;
-			return pwmscntb_register & pwmscntb_readMask;
+			value = pwmscntb_register & pwmscntb_readMask;
 		}
 		break;
 		case PWMSDN: {
 			const uint8_t pwmsdn_readMask = 0xD7;
-			return pwmsdn_register & pwmsdn_readMask;
+			value = pwmsdn_register & pwmsdn_readMask;
 		}
 		break;
 		default: {
 			// PWMCNTx
 			if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
-				return channel[offset-PWMCNT0]->getPwmcnt_register();
+				value = channel[offset-PWMCNT0]->getPwmcnt_register();
 			}
 
 			// PWMPERx
 			if ((offset >= PWMPER0) && (offset <= PWMPER7)) {
-				return channel[offset-PWMPER0]->getPWMPERValue();
+				value = channel[offset-PWMPER0]->getPWMPERValue();
 			}
 
 			// PWMDTYx
 			if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
-				return channel[offset-PWMDTY0]->getPWMDTYValue();
+				value = channel[offset-PWMDTY0]->getPWMDTYValue();
 			}
 		}
 	}
 
 }
 
-void PWM::write(address_t address, uint8_t val) {
-
-	assert((address >= baseAddress) && (address - baseAddress < MEMORY_MAP_SIZE));
-
-	uint8_t offset = address - baseAddress;
+void PWM::write(uint8_t offset, uint8_t val) {
 
 	switch (offset) {
 		case PWME: {
-
+			bool isEnable;
 			uint8_t mask = 0x01;
 
-			pwme_register = val;
-			for (uint8_t index=0; index<PWM_SIZE; index++) {
-				if (pwme_register & mask) {
+			for (uint8_t index=0; index<CONFIG::PWM_SIZE; index++) {
+				isEnable = ((pwme_register & mask) != 0);
+				if ((val & mask) && !isEnable) {
 					channel[index]->enable();
-				} else {
+				}
+				if (!(val & mask) && isEnable) {
 					channel[index]->disable();
 				}
+				mask = mask << 1;
 			}
+			pwme_register = val;
+
 		}
 		break;
 		case PWMPOL: {
@@ -169,9 +297,9 @@ void PWM::write(address_t address, uint8_t val) {
 
 			pwmpol_register = val;
 
-			for (uint8_t i=0; i<PWM_SIZE; i++) {
+			for (uint8_t i=0; i<CONFIG::PWM_SIZE; i++) {
 				channel[i]->setOutput(pwmpol_register & mask);
-				mask << 1;
+				mask = mask << 1;
 			}
 		}
 		break;
@@ -180,6 +308,7 @@ void PWM::write(address_t address, uint8_t val) {
 		case PWMPRCLK: {
 			const uint8_t pwmprclk_writeMask = 0x77; // bit 3 and 7 can't be written
 			pwmprclk_register = val & pwmprclk_writeMask;
+			updateClockAB();
 		}
 		break;
 		case PWMCAE:
@@ -217,8 +346,16 @@ void PWM::write(address_t address, uint8_t val) {
 			break;
 		case PWMTST: /* Intended for factory test purposes only */ break;
 		case PWMPRSC: /* Intended for factory test purposes only */ break;
-		case PWMSCLA: pwmscla_register = val; break;
-		case PWMSCLB: pwmsclb_register = val; break;
+		case PWMSCLA: {
+			pwmscla_register = val;
+			updateScaledClockA();
+		}
+		break;
+		case PWMSCLB: {
+			pwmsclb_register = val;
+			updateScaledClockB();
+		}
+		break;
 		case PWMSCNTA: /* Intended for factory test purposes only */ break;
 		case PWMSCNTB: /* Intended for factory test purposes only */ break;
 
@@ -267,26 +404,25 @@ void PWM::write(address_t address, uint8_t val) {
 	}
 }
 
-uint32_t PWM::getClockA() {
+void PWM::updateClockAB() {
 
 	uint8_t pckaMask = 0x07;
 	uint8_t pcka = pwmprclk_register & pckaMask;
 
-	return bus_cycle_time/pow(2,pcka);
-
-}
-
-uint32_t PWM::getClockB() {
+	clockA = clockVector[pcka];
 
 	uint8_t pckbMask = 0x70;
 	uint8_t pckb = (pwmprclk_register & pckbMask) >> 4;
 
-	return bus_cycle_time/pow(2,pckb);
+	clockB = clockVector[pckb];
+
+	updateScaledClockA();
+	updateScaledClockB();
 }
 
-uint32_t PWM::getClockSA() {
+void PWM::updateScaledClockA() {
 
-	uint32_t clockSA;
+	sc_time clockSA;
 
 	if (pwmscla_register != 0x00) {
 		clockSA = getClockA() / (2 * pwmscla_register);
@@ -294,12 +430,11 @@ uint32_t PWM::getClockSA() {
 		clockSA = getClockA() / (2 * 256);
 	}
 
-	return clockSA;
 }
 
-uint32_t PWM::getClockSB() {
+void PWM::updateScaledClockB() {
 
-	uint32_t clockSB;
+	sc_time clockSB;
 
 	if (pwmsclb_register != 0x00) {
 		clockSB = getClockB() / (2 * pwmsclb_register);
@@ -307,6 +442,21 @@ uint32_t PWM::getClockSB() {
 		clockSB = getClockB() / (2 * 256);
 	}
 
+}
+
+sc_time PWM::getClockA() {
+	return clockA;
+}
+
+sc_time PWM::getClockB() {
+	return clockB;
+}
+
+sc_time PWM::getClockSA() {
+	return clockSA;
+}
+
+sc_time PWM::getClockSB() {
 	return clockSB;
 }
 
@@ -323,43 +473,43 @@ void PWM::OnDisconnect() {
 
 void PWM::Reset() {
 
-	write(baseAddress+PWME, 0);
-	write(baseAddress+PWMPOL, 0);
-	write(baseAddress+PWMCLK, 0);
-	write(baseAddress+PWMPRCLK, 0);
-	write(baseAddress+PWMCAE, 0);
-	write(baseAddress+PWMCTL, 0);
-	write(baseAddress+PWMSCLA, 0);
-	write(baseAddress+PWMSCLB, 0);
+	write(PWME, 0);
+	write(PWMPOL, 0);
+	write(PWMCLK, 0);
+	write(PWMPRCLK, 0);
+	write(PWMCAE, 0);
+	write(PWMCTL, 0);
+	write(PWMSCLA, 0);
+	write(PWMSCLB, 0);
 
-	write(baseAddress+PWMCNT0, 0);
-	write(baseAddress+PWMCNT1, 0);
-	write(baseAddress+PWMCNT2, 0);
-	write(baseAddress+PWMCNT3, 0);
-	write(baseAddress+PWMCNT4, 0);
-	write(baseAddress+PWMCNT5, 0);
-	write(baseAddress+PWMCNT6, 0);
-	write(baseAddress+PWMCNT7, 0);
+	write(PWMCNT0, 0);
+	write(PWMCNT1, 0);
+	write(PWMCNT2, 0);
+	write(PWMCNT3, 0);
+	write(PWMCNT4, 0);
+	write(PWMCNT5, 0);
+	write(PWMCNT6, 0);
+	write(PWMCNT7, 0);
 
-	write(baseAddress+PWMPER0, 0);
-	write(baseAddress+PWMPER1, 0);
-	write(baseAddress+PWMPER2, 0);
-	write(baseAddress+PWMPER3, 0);
-	write(baseAddress+PWMPER4, 0);
-	write(baseAddress+PWMPER5, 0);
-	write(baseAddress+PWMPER6, 0);
-	write(baseAddress+PWMPER7, 0);
+	write(PWMPER0, 0);
+	write(PWMPER1, 0);
+	write(PWMPER2, 0);
+	write(PWMPER3, 0);
+	write(PWMPER4, 0);
+	write(PWMPER5, 0);
+	write(PWMPER6, 0);
+	write(PWMPER7, 0);
 
-	write(baseAddress+PWMDTY0, 0);
-	write(baseAddress+PWMDTY1, 0);
-	write(baseAddress+PWMDTY2, 0);
-	write(baseAddress+PWMDTY3, 0);
-	write(baseAddress+PWMDTY4, 0);
-	write(baseAddress+PWMDTY5, 0);
-	write(baseAddress+PWMDTY6, 0);
-	write(baseAddress+PWMDTY7, 0);
+	write(PWMDTY0, 0);
+	write(PWMDTY1, 0);
+	write(PWMDTY2, 0);
+	write(PWMDTY3, 0);
+	write(PWMDTY4, 0);
+	write(PWMDTY5, 0);
+	write(PWMDTY6, 0);
+	write(PWMDTY7, 0);
 
-	write(baseAddress+PWMSDN, 0);
+	write(PWMSDN, 0);
 
 }
 
@@ -378,6 +528,7 @@ PWM::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, const uint8_t
 {
 
 	setOutput(false);
+	channelMask = (0x01 << channel_number);
 
 	SC_HAS_PROCESS(Channel_t);
 
@@ -387,7 +538,7 @@ PWM::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, const uint8_t
 
 void PWM::Channel_t::Run() {
 
-	clock_t clk;
+	sc_time clk;
 
 	uint8_t bit2Mask = 0x02;
 
@@ -405,18 +556,18 @@ void PWM::Channel_t::Run() {
 	bool isEnable = false;
 
 	while (true) {
-		isEnable = ((pwmParent->pwme_register & (0x01 << channel_number)) != 0);
+		isEnable = ((pwmParent->pwme_register & channelMask) != 0);
 		ctl_register = pwmParent->pwmctl_register;
 
 		/*
-		 * - Take in account the channel state (COUNT or STOP)
+		 * - Take in account the channel state (Enable or Disable)
 		 * - Is Channel concatenated ?
 		 */
 		while (((ctl_register & conMask) && (channel_number % 2 == 0)) || (!isEnable))
 		{
 			wait(wakeup_event);
 
-			isEnable = ((pwmParent->pwme_register & (0x01 << channel_number)) != 0);
+			isEnable = ((pwmParent->pwme_register & channelMask) != 0);
 			ctl_register = pwmParent->pwmctl_register;
 		}
 
@@ -425,7 +576,7 @@ void PWM::Channel_t::Run() {
 	 	 *     channel 0, 1, 4, 5 then clock A or SA
 	 	 *     channel 2, 3, 6, 7 then clock B or SB
 		 */
-		if ((pwmParent->pwmclk_register & getChannelMask())  != 0) {
+		if ((pwmParent->pwmclk_register & channelMask)  != 0) {
 			if (channel_number & bit2Mask) {
 				clk = pwmParent->getClockB();
 			} else {
@@ -454,13 +605,18 @@ void PWM::Channel_t::enable() {
 }
 
 void PWM::Channel_t::disable() {
-	/* TODO: not finalized. Disactivate the channel thread */
+	/*
+	 *  Buffered registers are updated :
+	 *  - The effective period ends
+	 *  - The counter is written (counter reset to $00)
+	 *  - The channel is disabled
+	 */
 
 	setPWMPERValue(getPWMPERBuffer());
 	setPWMDTYValue(getPWMDTYBuffer());
 }
 
-bool PWM::Channel_t::isOutput() { return output; }
+bool PWM::Channel_t::getOutput() { return output; }
 void PWM::Channel_t::setOutput(bool val) { output = val; }
 
 uint8_t PWM::Channel_t::getPwmcnt_register() { return *pwmcnt_register_ptr; }
@@ -469,12 +625,6 @@ void PWM::Channel_t::setPwmcnt_register(uint8_t val) {
 	if (*pwmcnt_register_ptr == 0) {
 		setPWMPERValue(getPWMPERBuffer());
 		setPWMDTYValue(getPWMDTYBuffer());
-		// change output according to polarity
-		if ((pwmParent->pwmpol_register & getChannelMask()) != 0) {
-			output = true;
-		} else {
-			output = false;
-		}
 	}
 }
 

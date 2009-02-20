@@ -93,7 +93,7 @@ public:
 			for (int index=0; index<128; index++)
 			{
 				intReq[index] = false; // disable the previous request
-				
+
 				if (rand() % 19 == 0)
 				{
 					intReq[index] = true;
@@ -111,6 +111,59 @@ private:
 class XINT : public sc_module
 {
 public:
+	//========================================================
+	//=   XINT Registers addresses and Reset Values          =
+	//========================================================
+
+	static const address_t	IVBR_ADDRESS			= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
+	static const uint8_t	IVBR_RESET_VALUE		= 0xFF;		// IVBR is only one.
+
+	static const address_t	INT_XGPRIO				= 0x0126;
+	static const uint8_t	INT_XGPRIO_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFADDR				= 0x0127;
+	static const uint8_t	INT_CFADDR_RESET_VALUE	= 0x10;
+
+	static const address_t	INT_CFDATA0				= 0x0128;
+	static const uint8_t	INT_CFDATA0_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA1				= 0x0129;
+	static const uint8_t	INT_CFDATA1_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA2				= 0x012A;
+	static const uint8_t	INT_CFDATA2_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA3				= 0x012B;
+	static const uint8_t	INT_CFDATA3_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA4				= 0x012C;
+	static const uint8_t	INT_CFDATA4_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA5				= 0x012D;
+	static const uint8_t	INT_CFDATA5_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA6				= 0x012E;
+	static const uint8_t	INT_CFDATA6_RESET_VALUE	= 0x01;
+
+	static const address_t	INT_CFDATA7				= 0x012F;
+	static const uint8_t	INT_CFDATA7_RESET_VALUE	= 0x01;
+
+	//==================================================================
+	//=           XINT  Fixed Interrupt vectors Offsets                =
+	//==================================================================
+
+	static const uint8_t	INT_SYS_RESET_OFFSET			= 0xFE;
+	static const uint8_t	INT_ILLEGAL_ACCESS_RESET_OFFSET	= 0xFE;
+	static const uint8_t	INT_CLK_MONITOR_RESET_OFFSET	= 0xFC;
+	static const uint8_t	INT_COP_WATCHDOG_RESET_OFFSET	= 0xFA;
+	static const uint8_t	INT_TRAP_OFFSET					= 0xF8;
+	static const uint8_t	INT_SWI_OFFSET					= 0xF6;
+	static const uint8_t	INT_XIRQ_OFFSET					= 0xF4;
+	static const uint8_t	INT_IRQ_OFFSET					= 0xF2;
+	static const uint8_t	INT_RAM_ACCESS_VIOLATION_OFFSET	= 0x60;
+	static const uint8_t	INT_SYSCALL_OFFSET				= 0x12;
+	static const uint8_t	INT_SPURIOUS_OFFSET				= 0x10;
+
 
 	/*
 	 * 0xFFFE				: pin reset, power-on reset, low-voltage reset, illegal address reset
@@ -177,7 +230,7 @@ private:
 	uint8_t	int_xgprio;
 	uint8_t	int_cfaddr;
 	uint8_t	int_cfdata[8];
-	
+
 	bool isHardwareInterrupt;
 
 public:
@@ -190,9 +243,9 @@ public:
 	address_t get_IllegalAccessReset_Vector() { return 0xFFFE; }
 	address_t get_ClockMonitorReset_Vector() { return 0xFFFC; }
 	address_t get_COPWatchdogReset_Vector() { return 0xFFFA; }
-	address_t get_XIRQ_Vector() { return ((address_t) getIVBR() << 8) + CONFIG::INT_XIRQ_OFFSET; }
+	address_t get_XIRQ_Vector() { return ((address_t) getIVBR() << 8) + INT_XIRQ_OFFSET; }
 
-	address_t get_Spurious_Vector() { return ((address_t) getIVBR() << 8) + CONFIG::INT_SPURIOUS_OFFSET; } // Spurious interrupt
+	address_t get_Spurious_Vector() { return ((address_t) getIVBR() << 8) + INT_SPURIOUS_OFFSET; } // Spurious interrupt
 
 /*
 	address_t get_Trap_Vector() { return ((address_t) getIVBR() << 8) + 0xF8; } // Shared interrupt vector for traps ($FFF8:$FFF9)

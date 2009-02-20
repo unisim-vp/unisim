@@ -39,13 +39,16 @@
 
 #include <inttypes.h>
 #include <iostream>
-#include <cmath>
-#include <assert.h>
+#include <string>
 
+#include <tlm.h>
+#include <tlm_utils/tlm_quantumkeeper.h>
+#include <tlm_utils/peq_with_get.h>
+#include "tlm_utils/simple_target_socket.h"
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/memory.hh"
-
+#include "unisim/kernel/tlm2/tlm.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -56,6 +59,10 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
+using namespace std;
+using namespace tlm;
+using namespace tlm_utils;
+
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
@@ -65,13 +72,41 @@ using unisim::kernel::service::Parameter;
 
 using unisim::service::interfaces::Memory;
 
-class PWM : public Service<Memory<service_address_t> >,
+using unisim::kernel::tlm2::ManagedPayload;
+using unisim::kernel::tlm2::PayloadFabric;
+
+
+class PWM_Payload : public ManagedPayload
+{
+public:
+	bool pwmChannel[CONFIG::PWM_SIZE];
+
+	std::string serialize() {
+
+		std::stringstream os;
+		os << "[ ";
+		for (int i=0; i<CONFIG::PWM_SIZE; i++) {
+			os << " " << this->pwmChannel[i] << " ";
+		}
+		os << " ]";
+
+		return os.str();
+	}
+};
+
+struct UNISIM_PWM_ProtocolTypes
+{
+  typedef PWM_Payload tlm_payload_type;
+  typedef tlm_phase tlm_phase_type;
+};
+
+class PWM :
+	public sc_module,
+	virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes>,
+	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >
 {
 public:
-
-	static const uint8_t MEMORY_MAP_SIZE = 37; // number of registers
-	static const uint8_t PWM_SIZE	= 8; // The Number Channel
 
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
@@ -87,17 +122,29 @@ public:
 						PWMPER0, PWMPER1, PWMPER2, PWMPER3, PWMPER4, PWMPER5, PWMPER6, PWMPER7,
 						PWMDTY0, PWMDTY1, PWMDTY2, PWMDTY3, PWMDTY4, PWMDTY5, PWMDTY6, PWMDTY7, PWMSDN};
 
+	tlm_initiator_socket<CONFIG::UNISIM2EXTERNAL_BUS_WIDTH, UNISIM_PWM_ProtocolTypes> master_sock;
+	// interface with bus
+	tlm_utils::simple_target_socket<PWM> slave_socket;
 
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > memory_import;
 
-    PWM(const char *name, Object *parent = 0);
+    PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
-    clock_t getClockA();
-    clock_t getClockB();
-    clock_t getClockSA();
-    clock_t getClockSB();
+    void Run();
+
+    sc_time getClockA();
+    sc_time getClockB();
+    sc_time getClockSA();
+    sc_time getClockSB();
+
+    //================================================================
+    //=                    tlm2 Interface                            =
+    //================================================================
+    virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+    virtual tlm_sync_enum nb_transport_bw(PWM_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -115,26 +162,45 @@ public:
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 
-    uint8_t read(address_t address);
-    void write(address_t address, uint8_t val);
+	//=====================================================================
+	//=             registers setters and getters                         =
+	//=====================================================================
+    void read(uint8_t offset, uint8_t &value);
+    void write(uint8_t offset, uint8_t val);
 
 private:
+	tlm_quantumkeeper quantumkeeper;
+	sc_time quantumkeeper_cycle_time;
+
+	PayloadFabric<PWM_Payload> payload_fabric;
+
 	uint32_t	bus_cycle_time;
 	Parameter<uint32_t>	param_bus_cycle_time;
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
-	sc_time nextTime[10];
+
+	sc_event refresh_channel_event;
+
+	sc_time clockVector[8];
+	sc_time clockA, clockB, clockSA, clockSB;
+
+	void updateClockAB();
+	void updateScaledClockA();
+	void updateScaledClockB();
+
+	void refreshOutput(bool pwmValue[CONFIG::PWM_SIZE]);
 
 	uint8_t	pwme_register, pwmpol_register, pwmclk_register, pwmprclk_register;
 	uint8_t pwmcae_register, pwmctl_register;
+
 	// Reserved Register for factory testing
 	uint8_t pwmtst_register, pwmprsc_register, pwmscnta_register, pwmscntb_register;
 
 	uint8_t pwmscla_register, pwmsclb_register;
 
-	uint8_t pwmcnt16_register[PWM_SIZE];
-	uint8_t pwmper16_register[PWM_SIZE];
-	uint8_t pwmdty16_register_value[PWM_SIZE];
+	uint8_t pwmcnt16_register[CONFIG::PWM_SIZE];
+	uint8_t pwmper16_register[CONFIG::PWM_SIZE];
+	uint8_t pwmdty16_register_value[CONFIG::PWM_SIZE];
 
 	class Channel_t : public sc_module {
 	public:
@@ -145,9 +211,7 @@ private:
 		void enable();
 		void disable();
 
-		inline uint8_t getChannelMask() { return (0x01 << channel_number);}
-
-		bool isOutput();
+		bool getOutput();
 		void setOutput(bool val);
 		uint8_t getPwmcnt_register();
 		void setPwmcnt_register(uint8_t val);
@@ -164,6 +228,7 @@ private:
 
 	private:
 		bool output;
+		uint8_t channelMask;
 		uint8_t *pwmcnt_register_ptr;
 		uint8_t *pwmper_register_value_ptr;
 		uint8_t pwmper_register_buffer;
@@ -174,52 +239,101 @@ private:
 		PWM	*pwmParent;
 		sc_event wakeup_event;
 
-		template <class T> void checkChangeStateAndWait(const clock_t clk);
+		template <class T> void checkChangeStateAndWait(const sc_time clk);
 
-	} *channel[PWM_SIZE];
+	} *channel[CONFIG::PWM_SIZE];
 
 	uint8_t pwmsdn_register;
 
 };
 
-template <class T> void PWM::Channel_t::checkChangeStateAndWait(const clock_t clk) {
-	clock_t zeroToDTY, dtyToPeriod;
+template <class T> void PWM::Channel_t::checkChangeStateAndWait(const sc_time clk) {
+
+	clock_t toPeriod;
+	bool	isCenterAligned = true;
+	int8_t increment = 1;
 
 	T dty = *((T *) pwmdty_register_value_ptr);
-	T per = *((T *) pwmper_register_value_ptr);
+	T period = *((T *) pwmper_register_value_ptr);
 	T cnt = *((T *) pwmcnt_register_ptr);
+	bool isPolarityHigh = ((pwmParent->pwmpol_register & channelMask) != 0);
+
+	// PWM Boundary Cases
+	if (((dty == 0x00) && (period > 0x00) && !isPolarityHigh) ||
+			((period == 0x00) && isPolarityHigh) ||
+			((dty >= period) && isPolarityHigh))
+	{
+		output = true;
+	} else if (((dty == 0x00) && (period > 0x00) && isPolarityHigh) ||
+			((period == 0x00) && !isPolarityHigh) ||
+			((dty >= period) && !isPolarityHigh))
+	{
+		output = false;
+	} else if (isPolarityHigh) {
+		output = true;
+	} else {
+		output = false;
+	}
+
+	pwmParent->refresh_channel_event.notify();
+
+	if (period == 0x00) 	// Counter = 0x00 and does not count
+	{
+		setPwmcnt_register(0);
+		wait(wakeup_event);
+		return;
+	}
 
 	// Check alignment and compute the current period
-	if ((pwmParent->pwmcae_register & getChannelMask()) == 0)  // is Left Aligned ?
+	isCenterAligned = ((pwmParent->pwmcae_register & channelMask) != 0);  // is Center Aligned ?
+
+	toPeriod = period - dty;
+
+	*((T *) pwmcnt_register_ptr) = dty;
+
+	wait(dty*clk);
+
+	output = ~output;
+	pwmParent->refresh_channel_event.notify();
+
+	if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
 	{
-		per = per - 1;
-	}
+		*((T *) pwmcnt_register_ptr) = period;
 
-	if (dty < per) {
-		zeroToDTY = clk * dty;
-		dtyToPeriod = per - dty;
+		wait(toPeriod*clk);
 
-		*((T *) pwmcnt_register_ptr) = dty;
-
-		wait(sc_time(clk*zeroToDTY, SC_NS)); // TODO: replace this with precomputed sc_time
-
-		output = ~output;
-
-		if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
+		if (*((T *) pwmcnt_register_ptr) == period) // The counter can be reset by software during wait
 		{
-			wait(sc_time(clk*dtyToPeriod, SC_NS)); // TODO: replace this with precomputed sc_time
+			if (isCenterAligned) {
+				// count in decrement mode
+
+				*((T *) pwmcnt_register_ptr) = dty;
+
+				wait(toPeriod*clk);
+			}
+
+			output = ~output;
+			pwmParent->refresh_channel_event.notify();
+
+			if (isCenterAligned) {
+
+				if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
+				{
+					wait(dty*clk);
+				}
+
+			}
+
 			setPwmcnt_register(0);	// end of period
-		} else {
-			// do nothing, just loop.
+
 		}
-	} else {
-		wait(sc_time(clk*per, SC_NS)); // TODO: replace this with precomputed sc_time
-		setPwmcnt_register(0);	// end of period
+
 	}
+
 }
 
-template void PWM::Channel_t::checkChangeStateAndWait<uint8_t>(const clock_t clk);
-template void PWM::Channel_t::checkChangeStateAndWait<uint16_t>(const clock_t clk);
+template void PWM::Channel_t::checkChangeStateAndWait<uint8_t>(const sc_time clk);
+template void PWM::Channel_t::checkChangeStateAndWait<uint16_t>(const sc_time clk);
 
 
 } // end of namespace hcs12x
