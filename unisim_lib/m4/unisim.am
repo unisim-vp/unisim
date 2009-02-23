@@ -1,4 +1,4 @@
-all-local: all-local-bin all-local-lib all-local-include # all-local-built
+all-local: all-local-bin all-local-lib all-local-ltlib all-local-include # all-local-built
 	
 all-local-bin: $(bin_PROGRAMS)
 	@list='$(bin_PROGRAMS)'; \
@@ -16,6 +16,14 @@ all-local-lib: $(lib_LIBRARIES)
 		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$$p $$p); \
 	done
 	
+all-local-ltlib: $(lib_LTLIBRARIES)
+	@list='$(lib_LTLIBRARIES)'; \
+	for p in $$list; do \
+		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$$p; \
+		mkdir -p $(top_builddir)/$(ROOT_DIR)/lib; \
+		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$$p $$p); \
+	done
+
 all-local-include: $(include_HEADERS)
 	@if test "x$(include_HEADERS)" != "x"; \
 	then \
