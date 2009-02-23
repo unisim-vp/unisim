@@ -64,11 +64,17 @@ private:
 
 std::ostream & operator<< (std::ostream & os, ParsingException const & pe);
 
-template<class CONFIG>
-struct ConstSeg
+enum SegmentType
 {
-	ConstSeg(std::istream & is);
-	ConstSeg();
+	SegmentConst,
+	SegmentReloc
+};
+
+template<class CONFIG>
+struct MemSegment
+{
+	MemSegment(std::istream & is, SegmentType st);
+	MemSegment();
 	uint32_t Size() const;
 	void Load(Service<Memory<typename CONFIG::address_t> > & mem) const;
 	std::string const & Name() const;
@@ -77,6 +83,7 @@ struct ConstSeg
 private:
 	void SetAttribute(std::string const & name, std::string const & value);
 
+	SegmentType type;
 	std::string name;
 	std::string segname;
 	int segnum;
@@ -93,7 +100,7 @@ struct Module : CUmod_st
 	Module(void const *fatCubin, int);
 	
 	Kernel<CONFIG> & GetKernel(char const * name);
-	ConstSeg<CONFIG> & GetConstant(char const * name);
+	MemSegment<CONFIG> & GetGlobal(char const * name);
 
 private:
 	void LoadCubin(std::istream & is);
@@ -106,8 +113,8 @@ private:
 	typedef std::map<std::string, Kernel<CONFIG> > KernelMap;
 	KernelMap kernels;
 
-	typedef std::map<std::string, ConstSeg<CONFIG> > ConstMap;
-	ConstMap global_constants;
+	typedef std::map<std::string, MemSegment<CONFIG> > SegMap;
+	SegMap global_segments;
 
 //	std::list<CUfunction> functions;
 	

@@ -96,7 +96,7 @@ Kernel<CONFIG>::Kernel(std::istream & is) :
 					else if(cmd == "const")
 					{
 						cerr << "  const {...}\n";
-						const_segs.push_back(ConstSeg<CONFIG>(is));
+						const_segs.push_back(MemSegment<CONFIG>(is, SegmentConst));
 					}
 					else
 					{

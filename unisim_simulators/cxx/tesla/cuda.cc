@@ -271,7 +271,7 @@ CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmo
 	CHECK_PTR(hmod);
 	Module<MyConfig>* mod = static_cast<Module<MyConfig>*>(hmod);
 	try {
-		ConstSeg<MyConfig> const & seg = mod->GetConstant(name);
+		MemSegment<MyConfig> const & seg = mod->GetGlobal(name);
 		if(dptr != 0)
 			*dptr = seg.Address();
 		if(bytes != 0)

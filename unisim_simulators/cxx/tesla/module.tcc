@@ -125,9 +125,16 @@ std::ostream & operator<< (std::ostream & os, ParsingException const & pe)
 }
 
 template<class CONFIG>
-ConstSeg<CONFIG>::ConstSeg(std::istream & is)
+MemSegment<CONFIG>::MemSegment(std::istream & is, SegmentType st) :
+	type(st)
 {
-	cerr << " Constant segment\n";
+	if(st == SegmentConst) {
+		cerr << " Constant segment\n";
+	}
+	else {
+		cerr << " Reloc segment\n";
+	}
+	
 	typedef string::iterator it_t;
 	while(true)
 	{
@@ -177,19 +184,19 @@ ConstSeg<CONFIG>::ConstSeg(std::istream & is)
 }
 
 template<class CONFIG>
-ConstSeg<CONFIG>::ConstSeg()
+MemSegment<CONFIG>::MemSegment()
 {
 }
 
 template<class CONFIG>
-uint32_t ConstSeg<CONFIG>::Size() const
+uint32_t MemSegment<CONFIG>::Size() const
 {
 	assert(mem.size() == 0 || 4 * bytes == mem.size());
 	return bytes;
 }
 
 template<class CONFIG>
-void ConstSeg<CONFIG>::SetAttribute(std::string const & attrname, std::string const & value)
+void MemSegment<CONFIG>::SetAttribute(std::string const & attrname, std::string const & value)
 {
 	cerr << "  " << attrname << " = " << value << endl;
 	if(attrname == "name")
@@ -219,7 +226,7 @@ void ConstSeg<CONFIG>::SetAttribute(std::string const & attrname, std::string co
 }
 
 template<class CONFIG>
-void ConstSeg<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & memory) const
+void MemSegment<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & memory) const
 {
 	if(!memory.WriteMemory(Address(), &mem[0], mem.size() * 4)) {
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error
@@ -227,18 +234,28 @@ void ConstSeg<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & memor
 }
 
 template<class CONFIG>
-std::string const & ConstSeg<CONFIG>::Name() const
+std::string const & MemSegment<CONFIG>::Name() const
 {
 	return name;
 }
 
 template<class CONFIG>
-typename CONFIG::address_t ConstSeg<CONFIG>::Address() const
+typename CONFIG::address_t MemSegment<CONFIG>::Address() const
 {
-	return CONFIG::CONST_START
-		+ segnum * CONFIG::CONST_SEG_SIZE
-		+ offset;
+	if(type == SegmentConst) {
+		return CONFIG::CONST_START
+			+ segnum * CONFIG::CONST_SEG_SIZE
+			+ offset;
+	}
+	else {
+		assert(segnum == 14);
+		return CONFIG::GLOBAL_RELOC_START
+	//		+ segnum * CONFIG::RELOC_SEG_SIZE
+			+ offset * 1024;
+	}
 }
+
+//////////////////////////////////////////////////////////////////////
 
 
 template<class CONFIG>
@@ -271,10 +288,10 @@ Kernel<CONFIG> & Module<CONFIG>::GetKernel(char const * name)
 }
 
 template<class CONFIG>
-ConstSeg<CONFIG> & Module<CONFIG>::GetConstant(char const * name)
+MemSegment<CONFIG> & Module<CONFIG>::GetGlobal(char const * name)
 {
-	typename ConstMap::iterator it = global_constants.find(string(name));
-	if(it == global_constants.end()) {
+	typename SegMap::iterator it = global_segments.find(string(name));
+	if(it == global_segments.end()) {
 		throw CudaException(CUDA_ERROR_NOT_FOUND);
 	}
 	return it->second;
@@ -315,12 +332,12 @@ void Module<CONFIG>::LoadCubin(istream & is)
 					}
 					else if(cmd == "consts")
 					{
-						//global_constants.push_back(ConstSeg<CONFIG>(is));
-						ConstSeg<CONFIG> cs(is);
+						//global_constants.push_back(MemSegment<CONFIG>(is));
+						MemSegment<CONFIG> cs(is, SegmentConst);
 						if(cs.Name().empty()) {
 							throw ParsingException("Unnamed code field");
 						}
-						global_constants[cs.Name()] = cs;
+						global_segments[cs.Name()] = cs;
 					}
 					else if(cmd == "samplers")
 					{
@@ -329,8 +346,11 @@ void Module<CONFIG>::LoadCubin(istream & is)
 					}
 					else if(cmd == "reloc")
 					{
-						// ignore for now
-						cerr << "Warning: skipping section: reloc\n";
+						MemSegment<CONFIG> cs(is, SegmentReloc);
+						if(cs.Name().empty()) {
+							throw ParsingException("Unnamed code field");
+						}
+						global_segments[cs.Name()] = cs;
 					}
 					else
 					{

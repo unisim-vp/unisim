@@ -50,7 +50,7 @@ using unisim::kernel::service::Service;
 // Conflicts with ram::Memory, do NOT use in headers
 
 template<class CONFIG>
-struct ConstSeg;
+struct MemSegment;
 
 template<class CONFIG>
 struct Kernel : CUfunc_st
@@ -95,7 +95,7 @@ private:
 	int bar;
 	std::vector<uint32_t> bincode;
 	//std::vector<uint32_t> const_mem;
-	typedef std::list<ConstSeg<CONFIG> > ConstList;
+	typedef std::list<MemSegment<CONFIG> > ConstList;
 	ConstList const_segs;
 	std::vector<uint8_t> parameters;
 	int param_size;
