@@ -110,39 +110,39 @@ void Instruction<CONFIG>::Disasm(std::ostream & os) const
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc1(int offset, RegType rt) const
+VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc1(int offset) const
 {
 	if(src1 == 0) {
 		src1 = src1_decoder.Decode(addr, iw);
 	}
-	return src1->read(cpu, offset, this, rt);
+	return src1->read(cpu, offset, this);
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc2(int offset, RegType rt) const
+VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc2(int offset) const
 {
 	if(src2 == 0) {
 		src2 = src2_decoder.Decode(addr, iw);
 	}
-	return src2->read(cpu, offset, this, rt);
+	return src2->read(cpu, offset, this);
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc3(int offset, RegType rt) const
+VectorRegister<CONFIG> Instruction<CONFIG>::ReadSrc3(int offset) const
 {
 	if(src3 == 0) {
 		src3 = src3_decoder.Decode(addr, iw);
 	}
-	return src3->read(cpu, offset, this, rt);
+	return src3->read(cpu, offset, this);
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, int offset, RegType rt) const
+void Instruction<CONFIG>::WriteDest(VectorRegister<CONFIG> const & value, int offset) const
 {
 	if(dest == 0) {
 		dest = dest_decoder.Decode(addr, iw);
 	}
-	dest->write(cpu, value, Mask(), offset, rt);
+	dest->write(cpu, this, value, Mask(), offset);
 }
 
 template <class CONFIG>
@@ -193,40 +193,40 @@ bitset<CONFIG::WARP_SIZE> Instruction<CONFIG>::Mask() const
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::DisasmSrc1(std::ostream & os, RegType rt) const
+void Instruction<CONFIG>::DisasmSrc1(std::ostream & os) const
 {
 	if(src1 == 0) {
 		src1 = src1_decoder.Decode(addr, iw);
 	}
-	src1->disasm(cpu, this, rt, os);
+	src1->disasm(cpu, this, os);
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::DisasmSrc2(std::ostream & os, RegType rt) const
+void Instruction<CONFIG>::DisasmSrc2(std::ostream & os) const
 {
 	if(src2 == 0) {
 		src2 = src2_decoder.Decode(addr, iw);
 	}
-	src2->disasm(cpu, this, rt, os);
+	src2->disasm(cpu, this, os);
 }
 
 template <class CONFIG>
-void Instruction<CONFIG>::DisasmSrc3(std::ostream & os, RegType rt) const
+void Instruction<CONFIG>::DisasmSrc3(std::ostream & os) const
 {
 	if(src3 == 0) {
 		src3 = src3_decoder.Decode(addr, iw);
 	}
-	src3->disasm(cpu, this, rt, os);
+	src3->disasm(cpu, this, os);
 }
 
 
 template <class CONFIG>
-void Instruction<CONFIG>::DisasmDest(std::ostream & os, RegType rt) const
+void Instruction<CONFIG>::DisasmDest(std::ostream & os) const
 {
 	if(dest == 0) {
 		dest = dest_decoder.Decode(addr, iw);
 	}
-	dest->disasm(cpu, this, rt, os);
+	dest->disasm(cpu, this, os);
 }
 
 template <class CONFIG>
@@ -254,6 +254,96 @@ bool Instruction<CONFIG>::IsEnd() const
 		control = control_decoder.Decode(addr, iw);
 	}
 	return control->is_end;
+}
+
+template <class CONFIG>
+RegType Instruction<CONFIG>::OperandRegType(Operand op) const
+{
+	DataType dt = OperandDataType(op);
+	switch(dt)
+	{
+	case DT_U16:
+	case DT_S16:
+		return RT_U16;
+	case DT_U32:
+	case DT_S32:
+		return RT_U32;
+	default:
+		assert(false);
+	}
+}
+
+template <class CONFIG>
+SMType Instruction<CONFIG>::OperandSMType(Operand op) const
+{
+	DataType dt = OperandDataType(op);
+	switch(dt)
+	{
+	case DT_U8:
+	case DT_S8:
+		return SM_U8;
+	case DT_U16:
+		return SM_U16;
+	case DT_S16:
+		return SM_S16;
+	case DT_U32:
+	case DT_S32:
+		return SM_U32;
+	default:
+		assert(false);
+	}
+}
+
+template <class CONFIG>
+size_t Instruction<CONFIG>::OperandSize(Operand op) const
+{
+	DataType dt = OperandDataType(op);
+	switch(dt)
+	{
+	case DT_U8:
+	case DT_S8:
+		return 1;
+	case DT_U16:
+	case DT_S16:
+		return 2;
+	case DT_U32:
+	case DT_S32:
+		return 4;
+	case DT_U64:
+		return 8;
+	case DT_U128:
+		return 16;
+	default:
+		assert(false);
+	}
+	
+}
+
+template <class CONFIG>
+DataType Instruction<CONFIG>::OperandDataType(Operand op) const
+{
+	// NOT actual type, can be overriden by operand
+	// TODO: fix with override
+	if(operation == 0) {
+		operation = op_decoder.Decode(addr, iw);
+	}
+	return operation->op_type[op];
+}
+
+template <class CONFIG>
+Domain Instruction<CONFIG>::OperandDomain(Operand op) const
+{
+	assert(false);
+	throw "";
+}
+
+template <class CONFIG>
+bool Instruction<CONFIG>::AllowSegment() const
+{
+	if(operation == 0) {
+		operation = op_decoder.Decode(addr, iw);
+	}
+	return operation->allow_segment;
 }
 
 } // end of namespace tesla

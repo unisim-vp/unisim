@@ -49,6 +49,25 @@ namespace cxx {
 namespace processor {
 namespace tesla {
 
+// Location of operands
+enum Domain
+{
+	DomainNone,	// no operand
+	DomainGPR,
+	DomainAR,	// address register
+	DomainPred,	// pred/flag register
+	DomainConst,
+	DomainShared,
+	DomainGlobal,	// or local
+};
+
+enum Operand
+{
+	OpDest,
+	OpSrc1,
+	OpSrc2,
+	OpSrc3
+};
 
 template <class CONFIG>
 class Instruction
@@ -66,10 +85,10 @@ public:
 
 	void Execute();
 	void Disasm(std::ostream & os) const;
-	VectorRegister<CONFIG> ReadSrc1(int offset = 0, RegType rt = RT_U32) const;
-	VectorRegister<CONFIG> ReadSrc2(int offset = 0, RegType rt = RT_U32) const;
-	VectorRegister<CONFIG> ReadSrc3(int offset = 0, RegType rt = RT_U32) const;
-	void WriteDest(VectorRegister<CONFIG> const & value, int offset = 0, RegType rt = RT_U32) const;
+	VectorRegister<CONFIG> ReadSrc1(int offset = 0) const;
+	VectorRegister<CONFIG> ReadSrc2(int offset = 0) const;
+	VectorRegister<CONFIG> ReadSrc3(int offset = 0) const;
+	void WriteDest(VectorRegister<CONFIG> const & value, int offset = 0) const;
 	void SetPredFP32(VectorRegister<CONFIG> const & value) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value, VectorFlags<CONFIG> flags) const;
 	void SetPredI32(VectorRegister<CONFIG> const & value) const;
@@ -77,10 +96,10 @@ public:
 
 	bitset<CONFIG::WARP_SIZE> Mask() const;
 	
-	void DisasmSrc1(std::ostream & os, RegType rt = RT_U32) const;
-	void DisasmSrc2(std::ostream & os, RegType rt = RT_U32) const;
-	void DisasmSrc3(std::ostream & os, RegType rt = RT_U32) const;
-	void DisasmDest(std::ostream & os, RegType rt = RT_U32) const;
+	void DisasmSrc1(std::ostream & os) const;
+	void DisasmSrc2(std::ostream & os) const;
+	void DisasmSrc3(std::ostream & os) const;
+	void DisasmDest(std::ostream & os) const;
 	void DisasmControl(std::ostream & os) const;
 	
 	bool IsLong() const;
@@ -88,6 +107,13 @@ public:
 	
 	Instruction(CPU<CONFIG> * cpu, typename CONFIG::address_t addr, typename CONFIG::insn_t iw);
 	~Instruction();
+	
+	RegType OperandRegType(Operand op) const;		// 
+	DataType OperandDataType(Operand op) const;	// same value, different type (RegType more restricted)
+	SMType	OperandSMType(Operand op) const;
+	size_t OperandSize(Operand op) const;
+	Domain OperandDomain(Operand op) const;
+	bool AllowSegment() const;
 	
 private:
 	CPU<CONFIG> * cpu;

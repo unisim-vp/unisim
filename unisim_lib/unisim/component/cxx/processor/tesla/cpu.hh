@@ -392,6 +392,11 @@ public:
 	void GatherShared(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, SMType t = SM_U32);	// addr in bytes
 	void GatherShared(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
+	void Gather(VecAddr const & addr, VecReg & data,
+		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+	void Scatter(VecAddr const & addr, VecReg const & data,
+		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);
+
 	// High-level memory access
 	void ReadShared(address_t addr, VecReg & data, SMType t = SM_U32);		// addr in WORDS!!
 	VecReg ReadConstant(VecReg const & addr, uint32_t seg = 0);	// addr in bytes

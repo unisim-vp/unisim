@@ -48,8 +48,8 @@ template <{class} {CONFIG}>
 constructor action initialize() {
 }
 
-action {void} write({CPU<CONFIG> *} {cpu}, {VectorRegister<CONFIG> const &} {value}, \
-	{bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}, {RegType} {rt}) \
+action {void} write({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {VectorRegister<CONFIG> const &} {value}, \
+	{bitset<CONFIG::WARP_SIZE>} {mask}, {int} {offset}) \
 {
 	throw IllegalInstructionException<CONFIG>();
 }
@@ -66,7 +66,7 @@ action {bitset<CONFIG::WARP_SIZE>} predMask({CPU<CONFIG> *} {cpu}) \
 	throw IllegalInstructionException<CONFIG>();
 }
 
-action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {RegType} {rt}, {ostream&} {os}) {
+action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {ostream&} {os}) {
 	os << "???";
 }
 
@@ -108,6 +108,7 @@ alu_full.predMask = {
 }
 
 alu_full.write = {
+	RegType rt = insn->OperandRegType(OpDest);
 	if(output_reg)
 	{
 		// Long insn : o127 = sink
@@ -145,6 +146,7 @@ alu_full.writePred = {
 }
 
 alu_full.disasm = {
+	RegType rt = insn->OperandRegType(OpDest);
 	// Disasm set pred
 	if(set_pred)
 	{
@@ -202,6 +204,7 @@ alu_halfimm.predMask = {
 }
 
 alu_halfimm.write = {
+	RegType rt = insn->OperandRegType(OpDest);
 	if(rt == RT_U32) {
 		cpu->GetGPR(dest + offset).Write(value, mask);
 		if(CONFIG::TRACE_REG) {
@@ -222,6 +225,7 @@ alu_halfimm.writePred = {
 }
 
 alu_halfimm.disasm = {
+	RegType rt = insn->OperandRegType(OpDest);
 	if(rt == RT_U32) {
 		os << "r" << dest;
 	}

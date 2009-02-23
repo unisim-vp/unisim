@@ -151,6 +151,9 @@ VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<C
 
 inline SMType MvSizeToSMType(uint32_t mv_size);
 inline RegType CvtTypeToRT(ConvType ct);
+inline DataType RegTypeToDataType(RegType rt);
+inline DataType MvSizeToDataType(uint32_t mv_size);
+inline DataType CvtTypeToDataType(ConvType ct);
 
 template<class CONFIG>
 VectorRegister<CONFIG> Min(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,

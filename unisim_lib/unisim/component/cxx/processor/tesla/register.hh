@@ -58,7 +58,9 @@ enum DataType
 	DT_U64 = 4,
 	DT_U128 = 5,
 	DT_U32 = 6,
-	DT_S32 = 7
+	DT_S32 = 7,
+	DT_NONE,	// Not in Tesla ISA
+	DT_UNKNOWN	//
 };
 
 enum ConvType

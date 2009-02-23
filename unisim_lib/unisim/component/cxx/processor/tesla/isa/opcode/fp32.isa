@@ -51,6 +51,7 @@ op fsmad_full( \
 //	dest[7]:0[1]:1[1]:\
 //	0[3]:?[1]:imm_hi[26]:/*marker*/3[2])
 
+
 fsmad_full.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
 

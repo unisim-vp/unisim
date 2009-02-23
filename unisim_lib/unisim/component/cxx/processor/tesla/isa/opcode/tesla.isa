@@ -66,6 +66,19 @@ class Instruction;
 
 using namespace unisim::component::cxx::processor::tesla;
 //using unisim::component::cxx::processor::tesla::Instruction;
+
+struct DataTypeArray
+{
+	DataType dt[4];
+	
+	DataType & operator[] (size_t i) {
+		return dt[i];
+	}
+	DataType operator[] (size_t i) const {
+		return dt[i];
+	}
+};
+
 }
 
 impl {
@@ -83,6 +96,18 @@ action {void} execute({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn
 
 action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}, {ostream&} {buffer}) {
 	buffer << "???";
+}
+
+var op_type : { DataTypeArray }
+var allow_segment : { bool }
+
+constructor action init() {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpSrc2] = DT_U32;
+	inherited::op_type[OpSrc3] = DT_U32;
 }
 
 include "isa/opcode/fp32.isa"

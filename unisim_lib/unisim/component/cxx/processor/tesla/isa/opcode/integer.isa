@@ -42,24 +42,34 @@
 
 // what about Decuda's 'subr' instruction?
 op iadd_full_normal( \
-	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:0[2]:?[22]:/*marker*/0[2]: \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:/*seg[4]*/?[24]:/*marker*/0[2]: \
 	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op iadd_full_end( \
-	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:0[2]:?[22]:/*marker*/1[2]: \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:?[24]:/*marker*/1[2]: \
 	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op iadd_full_join( \
-	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:0[2]:?[22]:/*marker*/2[2]: \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:?[24]:/*marker*/2[2]: \
 	0x2[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/0[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 group iadd_full(iadd_full_normal, iadd_full_end, iadd_full_join)
+
+iadd_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(m32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = dt;
+}
 
 iadd_full.disasm = {
 	buffer << "add";
@@ -70,29 +80,29 @@ iadd_full.disasm = {
 		buffer << ".sat";
 		
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(m32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
 	//DisasmSign(src1_neg, buffer);
-	insn->DisasmSrc1(buffer, RegType(m32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
 	DisasmSign(src3_neg, buffer);
-	insn->DisasmSrc3(buffer, RegType(m32));
+	insn->DisasmSrc3(buffer);
 }
 
 iadd_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a + c
-	reg_t a = insn->ReadSrc1(0, RegType(m32));
-	reg_t c = insn->ReadSrc3(0, RegType(m32));
+	reg_t a = insn->ReadSrc1();
+	reg_t c = insn->ReadSrc3();
 	
 	VectorFlags<CONFIG> flags;
 	
 	reg_t output = IAdd(a, c, flags, sat, /*src1_neg*/0, src3_neg, m32);
 	
-	insn->WriteDest(output, 0, RegType(m32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output, flags);
 }
 
@@ -110,7 +120,15 @@ op iadd_imm( \
 
 group iadd_halfimm(iadd_half, iadd_imm)
 
-// TODO: group with iadd_full_imm?
+iadd_halfimm.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(m32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 iadd_halfimm.disasm = {
 	buffer << "add";
@@ -118,28 +136,28 @@ iadd_halfimm.disasm = {
 	DisasmSignWidth(true, m32, buffer);
 		
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(m32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(m32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
 	DisasmSign(src3_neg, buffer);
-	insn->DisasmSrc2(buffer, RegType(m32));
+	insn->DisasmSrc2(buffer);
 }
 
 iadd_halfimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a + c
-	reg_t a = insn->ReadSrc1(0, RegType(m32));
-	reg_t c = insn->ReadSrc2(0, RegType(m32));
+	reg_t a = insn->ReadSrc1();
+	reg_t c = insn->ReadSrc2();
 	
 	VectorFlags<CONFIG> flags;
 	
 	reg_t output = IAdd(a, c, flags, false, false, src3_neg, m32);
 	
-	insn->WriteDest(output, 0, RegType(m32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output, flags);
 }
 
@@ -165,15 +183,39 @@ op imad_full_join( \
 
 group imad_full(imad_full_normal, imad_full_end, imad_full_join)
 
+imad_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt;
+	switch(subop) {
+	case 0:
+		dt = DT_U16;
+		break;
+	// TODO: CHECK semantics of 1, 2
+	case 3:
+	case 6:
+		dt = DT_U32;
+		break;
+	case 4:
+	case 5:
+	case 7:
+		dt = DT_S32;
+	default:
+		dt = DT_UNKNOWN;
+	}
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_U32;	// always 32-bit
+}
+
 imad_full.disasm = {
-	RegType rt = RT_U32;
 	//buffer << "umad16x16+32";
 	buffer << "mad24";
 	insn->DisasmControl(buffer);
 	switch(subop) {
 	case 0:
 		buffer << ".u16.lo";
-		rt = RT_U16;
 		break;
 	// TODO: CHECK semantics of 1, 2
 	case 3:
@@ -200,10 +242,10 @@ imad_full.disasm = {
 
 	buffer << ", ";
 	//DisasmSign(src1_neg, buffer);
-	insn->DisasmSrc1(buffer, rt);
+	insn->DisasmSrc1(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc2(buffer, rt);
+	insn->DisasmSrc2(buffer);
 		
 	buffer << ", ";
 	DisasmSign(src3_neg, buffer);
@@ -235,8 +277,8 @@ imad_full.execute = {
 		assert(false);
 	}
 	// dest = a * b + c
-	reg_t a = insn->ReadSrc1(0, rt);
-	reg_t b = insn->ReadSrc2(0, rt);
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
 	reg_t c = insn->ReadSrc3();	// Always 32-bit
 	
 	VectorFlags<CONFIG> flags;
@@ -253,15 +295,39 @@ op imac_imm( \
 	/*src1*/?[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+imac_imm.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt;
+	switch(subop) {
+	case 0:
+		dt = DT_U16;
+		break;
+	// TODO: CHECK semantics of 1, 2
+	case 3:
+	case 6:
+		dt = DT_U32;
+		break;
+	case 4:
+	case 5:
+	case 7:
+		dt = DT_S32;
+	default:
+		dt = DT_UNKNOWN;
+	}
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 imac_imm.disasm = {
 	// r <- a * b + r
-	RegType rt = RT_U32;
 	buffer << "mac24";
 	insn->DisasmControl(buffer);
 	switch(subop) {
 	case 0:
 		buffer << ".u16.lo";
-		rt = RT_U16;
 		break;
 	// TODO: CHECK semantics of 1, 2
 	case 3:
@@ -288,11 +354,11 @@ imac_imm.disasm = {
 
 	buffer << ", ";
 	//DisasmSign(src1_neg, buffer);
-	insn->DisasmSrc1(buffer, rt);
+	insn->DisasmSrc1(buffer);
 
 	buffer << ", ";
 	DisasmSign(src3_neg, buffer);
-	insn->DisasmSrc2(buffer, rt);
+	insn->DisasmSrc2(buffer);
 }
 
 imac_imm.execute = {
@@ -321,8 +387,8 @@ imac_imm.execute = {
 	}
 
 	// dest = a * b + c
-	reg_t a = insn->ReadSrc1(0, rt);
-	reg_t b = insn->ReadSrc2(0, rt);
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
 	reg_t c = cpu->GetGPR(dest);
 	
 	VectorFlags<CONFIG> flags;
@@ -335,19 +401,19 @@ imac_imm.execute = {
 
 
 op imul24_full_normal( \
-	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:/*const_seg*/?[2]:/*src1_sh*/?[1]:/*?*/0[4]:m32[1]:issigned[1]:hi[1]:?[12]:/*marker*/0[2]: \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*?*/0[4]:m32[1]:issigned[1]:hi[1]:?[12]:/*marker*/0[2]: \
 	0x4[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src2_neg[1]:/*src2*/?[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imul24_full_end( \
-	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:/*const_seg*/?[2]:/*src1_sh*/?[1]:/*?*/0[4]:m32[1]:issigned[1]:hi[1]:?[12]:/*marker*/1[2]: \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*?*/0[4]:m32[1]:issigned[1]:hi[1]:?[12]:/*marker*/1[2]: \
 	0x4[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src2_neg[1]:/*src2*/?[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op imul24_full_join( \
-	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:0[2]:/*const_seg*/?[2]:/*src1_sh*/?[1]:/*?*/0[4]:m32[1]:issigned[1]:hi[1]:?[12]:/*marker*/2[2]: \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:src1_neg[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*?*/0[4]:m32[1]:issigned[1]:hi[1]:?[12]:/*marker*/2[2]: \
 	0x4[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:src2_neg[1]:/*src2*/?[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
@@ -369,6 +435,17 @@ group imul24(imul24_full_normal, imul24_full_end, imul24_full_join)
 
 group imul24_halfimm(imul24_half, imul24_imm)
 
+
+imul24.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(m32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 imul24.disasm = {
 	buffer << "mul24";
 	insn->DisasmControl(buffer);
@@ -387,19 +464,19 @@ imul24.disasm = {
 
 	buffer << ", ";
 	DisasmSign(src1_neg, buffer);
-	insn->DisasmSrc1(buffer, RegType(m32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
 	DisasmSign(src2_neg, buffer);
-	insn->DisasmSrc2(buffer, RegType(m32));
+	insn->DisasmSrc2(buffer);
 }
 
 imul24.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a * b
-	reg_t a = insn->ReadSrc1(0, RegType(m32));
-	reg_t b = insn->ReadSrc2(0, RegType(m32));
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
 	
 	VectorFlags<CONFIG> flags;
 	
@@ -407,6 +484,16 @@ imul24.execute = {
 	
 	insn->WriteDest(output);
 	insn->SetPredI32(output, flags);
+}
+
+imul24_halfimm.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(m32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 imul24_halfimm.disasm = {
@@ -421,18 +508,18 @@ imul24_halfimm.disasm = {
 	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(m32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
-	insn->DisasmSrc2(buffer, RegType(m32));
+	insn->DisasmSrc2(buffer);
 }
 
 imul24_halfimm.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 
 	// dest = a * b
-	reg_t a = insn->ReadSrc1(0, RegType(m32));
-	reg_t b = insn->ReadSrc2(0, RegType(m32));
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
 	
 	VectorFlags<CONFIG> flags;
 	
@@ -450,13 +537,13 @@ imul24_halfimm.execute = {
 // No need to check for "immediate" marker,
 // shift amount fits in 7 bits.
 op shl_full( \
-	/*subop*/6[3]:/*?*/0[1]:issigned[1]:u32[1]:0[2]:?[3]:/*imm*/0[1]:?[18]:/*marker*/?[2]: \
+	/*subop*/6[3]:/*?*/0[1]:issigned[1]:u32[1]:?[5]:/*imm*/0[1]:?[18]:/*marker*/?[2]: \
 	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:/*src2*/?[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op shl_full_imm2( \
-	/*subop*/6[3]:/*?*/0[1]:issigned[1]:u32[1]:0[2]:?[3]:/*imm*/1[1]:?[18]:/*marker*/?[2]: \
+	/*subop*/6[3]:/*?*/0[1]:issigned[1]:u32[1]:?[5]:/*imm*/1[1]:?[18]:/*marker*/?[2]: \
 	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:src2[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
@@ -468,32 +555,52 @@ op shl_full_imm2( \
 
 //group shl_full_imm2(shl_full_imm2_normal)
 
+shl_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(u32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 shl_full.disasm = {
 	buffer << "shl";
 	insn->DisasmControl(buffer);
 	DisasmSignWidth(issigned, u32, buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(u32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(u32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
-	insn->DisasmSrc2(buffer, RegType(u32));
+	insn->DisasmSrc2(buffer);
 }
 
 shl_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = a << c
-	reg_t a = insn->ReadSrc1(0, RegType(u32));
-	reg_t c = insn->ReadSrc2(0, RegType(u32));
+	reg_t a = insn->ReadSrc1();
+	reg_t c = insn->ReadSrc2();
 	
 	reg_t output = ShiftLeft(a, c, u32, issigned);
 	
-	insn->WriteDest(output, 0, RegType(u32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
+}
+
+shl_full_imm2.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(u32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 shl_full_imm2.disasm = {
@@ -502,10 +609,10 @@ shl_full_imm2.disasm = {
 	DisasmSignWidth(issigned, u32, buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(u32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(u32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
 	buffer << src2;
@@ -515,23 +622,23 @@ shl_full_imm2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = a << c
-	reg_t a = insn->ReadSrc1(0, RegType(u32));
+	reg_t a = insn->ReadSrc1();
 	//reg_t c = reg_t(src2);
 	
 	reg_t output = ShiftLeft(a, src2, u32);
 	
-	insn->WriteDest(output, 0, RegType(u32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
 }
 
 op shr_full( \
-	/*subop*/7[3]:/*?*/0[1]:issigned[1]:u32[1]:0[2]:?[3]:/*imm*/0[1]:?[18]:/*marker*/?[2]: \
+	/*subop*/7[3]:/*?*/0[1]:issigned[1]:u32[1]:?[5]:/*imm*/0[1]:?[18]:/*marker*/?[2]: \
 	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:/*src2*/?[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op shr_full_imm2( \
-	/*subop*/7[3]:/*?*/0[1]:issigned[1]:u32[1]:0[2]:?[3]:/*imm*/1[1]:?[18]:/*marker*/?[2]: \
+	/*subop*/7[3]:/*?*/0[1]:issigned[1]:u32[1]:?[5]:/*imm*/1[1]:?[18]:/*marker*/?[2]: \
 	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:src2[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
@@ -539,32 +646,52 @@ op shr_full_imm2( \
 
 // TODO: end, join?
 
+shr_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(u32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 shr_full.disasm = {
 	buffer << "shr";
 	insn->DisasmControl(buffer);
 	DisasmSignWidth(issigned, u32, buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(u32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(u32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
-	insn->DisasmSrc2(buffer, RegType(u32));
+	insn->DisasmSrc2(buffer);
 }
 
 shr_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = a << c
-	reg_t a = insn->ReadSrc1(0, RegType(u32));
-	reg_t c = insn->ReadSrc2(0, RegType(u32));
+	reg_t a = insn->ReadSrc1();
+	reg_t c = insn->ReadSrc2();
 	
 	reg_t output = ShiftRight(a, c, u32, issigned);
 	
-	insn->WriteDest(output, 0, RegType(u32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
+}
+
+shr_full_imm2.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(u32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 shr_full_imm2.disasm = {
@@ -573,10 +700,10 @@ shr_full_imm2.disasm = {
 	DisasmSignWidth(issigned, u32, buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(u32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(u32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
 	buffer << src2;
@@ -586,12 +713,12 @@ shr_full_imm2.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = a << c
-	reg_t a = insn->ReadSrc1(0, RegType(u32));
+	reg_t a = insn->ReadSrc1();
 	//reg_t c = reg_t(src2);
 	
 	reg_t output = ShiftRight(a, src2, u32, issigned);
 	
-	insn->WriteDest(output, 0, RegType(u32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
 }
 
@@ -601,43 +728,53 @@ shr_full_imm2.execute = {
 // TODO: forbid immediate
 
 op and_full( \
-	/*subop*/0[3]:/*?*/0[1]:?[1]:u32[1]:0[2]:?[3]:/*imm*/0[1]:0[2]:src2_not[1]:src1_not[1]:/*lop*/0[2]:?[12]:/*marker*/?[2]: \
+	/*subop*/0[3]:/*?*/0[1]:?[1]:u32[1]:?[5]:/*imm*/0[1]:0[2]:src2_not[1]:src1_not[1]:/*lop*/0[2]:?[12]:/*marker*/?[2]: \
 	0xd[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src3_neg*/?[1]:/*src2*/?[6]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
+
+and_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(u32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 and_full.disasm = {
 	buffer << "and";
 	insn->DisasmControl(buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(u32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
 	DisasmNot(src1_not, buffer);
-	insn->DisasmSrc1(buffer, RegType(u32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
 	DisasmNot(src2_not, buffer);
-	insn->DisasmSrc2(buffer, RegType(u32));
+	insn->DisasmSrc2(buffer);
 }
 
 and_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = (neg?)a & (neg?)b
-	reg_t a = insn->ReadSrc1(0, RegType(u32));
+	reg_t a = insn->ReadSrc1();
 	if(src1_not) {
 		a = BinNeg(a);
 	}
-	reg_t b = insn->ReadSrc2(0, RegType(u32));
+	reg_t b = insn->ReadSrc2();
 	if(src2_not) {
 		b = BinNeg(b);
 	}
 	
 	reg_t output = BinAnd(a, b);
 	
-	insn->WriteDest(output, 0, RegType(u32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
 }
 
@@ -647,38 +784,48 @@ op or_full( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+or_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(u32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 or_full.disasm = {
 	buffer << "or";
 	insn->DisasmControl(buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(u32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
 	DisasmNot(src1_not, buffer);
-	insn->DisasmSrc1(buffer, RegType(u32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
 	DisasmNot(src2_not, buffer);
-	insn->DisasmSrc2(buffer, RegType(u32));
+	insn->DisasmSrc2(buffer);
 }
 
 or_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = (neg?)a & (neg?)b
-	reg_t a = insn->ReadSrc1(0, RegType(u32));
+	reg_t a = insn->ReadSrc1();
 	if(src1_not) {
 		a = BinNeg(a);
 	}
-	reg_t b = insn->ReadSrc2(0, RegType(u32));
+	reg_t b = insn->ReadSrc2();
 	if(src2_not) {
 		b = BinNeg(b);
 	}
 	
 	reg_t output = BinOr(a, b);
 	
-	insn->WriteDest(output, 0, RegType(u32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
 }
 
@@ -688,17 +835,27 @@ op xor_full( \
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
+xor_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(u32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 xor_full.disasm = {
 	buffer << "xor";
 	insn->DisasmControl(buffer);
 
 	buffer << ", ";
 	DisasmNot(src1_not, buffer);
-	insn->DisasmSrc1(buffer, RegType(u32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
 	DisasmNot(src2_not, buffer);
-	insn->DisasmSrc2(buffer, RegType(u32));
+	insn->DisasmSrc2(buffer);
 }
 
 xor_full.execute = {
@@ -707,27 +864,37 @@ xor_full.execute = {
 	//assert(u32);
 
 	// dest = (neg?)a & (neg?)b
-	reg_t a = insn->ReadSrc1(0, RegType(u32));
+	reg_t a = insn->ReadSrc1();
 	if(src1_not) {
 		a = BinNeg(a);
 	}
-	reg_t b = insn->ReadSrc2(0, RegType(u32));
+	reg_t b = insn->ReadSrc2();
 	if(src2_not) {
 		b = BinNeg(b);
 	}
 	
 	reg_t output = BinXor(a, b);
 	
-	insn->WriteDest(output, 0, RegType(u32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
 }
 
 
 op set_full( \
-	/*subop*/3[3]:/*?*/0[1]:sign[1]:w32[1]:const_seg[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cond[3]:?[12]:/*marker*/?[2]: \
-	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*f64*/0[1]:/*src2*/?[6]:\
+	/*subop*/3[3]:/*?*/0[1]:sign[1]:w32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cond[3]:?[12]:/*marker*/?[2]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
+
+set_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(w32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 set_full.disasm = {
 	buffer << "set.";
@@ -737,46 +904,46 @@ set_full.disasm = {
 	DisasmSignWidth(sign, w32, buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(w32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(w32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
-	insn->DisasmSrc2(buffer, RegType(w32));
+	insn->DisasmSrc2(buffer);
 }
 
 set_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	
 	// dest = cond(a, b)
-	reg_t a = insn->ReadSrc1(0, RegType(w32));
-	reg_t b = insn->ReadSrc2(0, RegType(w32));
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
 	
 	reg_t output;
 	VectorFlags<CONFIG> vf;
 
 	vf = ComputePredSetI(output, a, b, SetCond(cond), sign, w32);
 	
-	insn->WriteDest(output, 0, RegType(w32));
+	insn->WriteDest(output);
 	insn->SetPred(vf);
 }
 
 op min_full_normal( \
 	/*subop*/5[3]:/*?*/0[1]:sign[1]:w32[1]:?[24]:/*marker*/0[2]: \
-	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*f64*/0[1]:/*src2*/?[6]:\
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op min_full_end( \
 	/*subop*/5[3]:/*?*/0[1]:sign[1]:w32[1]:?[24]:/*marker*/1[2]: \
-	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*f64*/0[1]:/*src2*/?[6]:\
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
 op min_full_join( \
 	/*subop*/5[3]:/*?*/0[1]:sign[1]:w32[1]:?[24]:/*marker*/2[2]: \
-	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*f64*/0[1]:/*src2*/?[6]:\
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*src2*/?[7]:\
 	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
 )
 
@@ -784,19 +951,29 @@ op min_full_join( \
 
 group min(min_full_normal, min_full_end, min_full_join)
 
+min.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(w32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 min.disasm = {
 	buffer << "min";
 	insn->DisasmControl(buffer);
 	DisasmSignWidth(sign, w32, buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(w32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(w32));
+	insn->DisasmSrc1(buffer);
 	
 	buffer << ", ";
-	insn->DisasmSrc2(buffer, RegType(w32));
+	insn->DisasmSrc2(buffer);
 }
 
 min.execute = {
@@ -805,12 +982,12 @@ min.execute = {
 	 assert(w32);	// TODO
 
 	// dest = cond(a, b)
-	reg_t a = insn->ReadSrc1(0, RegType(w32));
-	reg_t b = insn->ReadSrc2(0, RegType(w32));
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
 	
 	reg_t output = Min(a, b, w32, sign);
 	
-	insn->WriteDest(output, 0, RegType(w32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);
 }
 
@@ -832,6 +1009,15 @@ op nop_full_join( \
 )
 
 group nop_full(nop_full_normal, nop_full_end, nop_full_join)
+
+nop_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_NONE;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 nop_full.disasm = {
 	buffer << "nop";

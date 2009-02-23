@@ -102,9 +102,11 @@ public:
 	
 	static address_t const LOCAL_START = 0x30000000;
 	static address_t const GLOBAL_START = 0x40000000;
+	static address_t const GLOBAL_RELOC_START = 0x80000000;
 
 	static size_t const LOCAL_SIZE = GLOBAL_START - LOCAL_START;
-	static size_t const GLOBAL_SIZE = 0 - GLOBAL_START;
+	static size_t const GLOBAL_SIZE = GLOBAL_RELOC_START - GLOBAL_START;
+
 	
 	static int const COMPUTE_CAP_MAJOR = 1;
 	static int const COMPUTE_CAP_MINOR = 0;
@@ -116,6 +118,7 @@ public:
 	static bool const TRACE_REG = false;
 	static bool const TRACE_BRANCH = false;
 	static bool const TRACE_SYNC = false;
+
 };
 
 

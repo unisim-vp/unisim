@@ -63,6 +63,16 @@ op mov_reg_half( \
 	data_32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1]\
 )
 
+mov_reg_full_noimm.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(data_32));
+	inherited::allow_segment = false;	// ??
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 
 mov_reg_full_noimm.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
@@ -81,11 +91,11 @@ mov_reg_full_noimm.disasm = {
 	buffer << " ";
 //	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
 //	cpu.DisasmDest(dest, ignore_output, buffer);
-	insn->DisasmDest(buffer, RegType(data_32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
 //	cpu.DisasmSrc(src1, 0, src1_sh, 0, addr_lo, addr_hi, addr_imm, buffer);
-	insn->DisasmSrc1(buffer, RegType(data_32));
+	insn->DisasmSrc1(buffer);
 }
 
 mov_reg_full_noimm.execute = {
@@ -94,17 +104,27 @@ mov_reg_full_noimm.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc1(0, RegType(data_32));
+	reg_t a = insn->ReadSrc1(0);
 	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
 
 //	if(!ignore_output)
 //		cpu.WriteOutput(output, dest, pred_cond, pred_reg);
-	insn->WriteDest(output, 0, RegType(data_32));
+	insn->WriteDest(output);
 //	insn->SetPredFP32(output);	// TODO: check type?
 	insn->SetPredI32(output);	// TODO: check type?
 	
 //	if(set_pred)
 //		cpu.WritePred(set_pred_reg, pred_cond, pred_reg, ComputePredFP32(output));	// TODO: FP32 or...?
+}
+
+mov_reg_full_imm.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(data_32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 mov_reg_full_imm.disasm = {
@@ -114,10 +134,10 @@ mov_reg_full_imm.disasm = {
 	DisasmSignWidth(false, data_32, buffer);
 //	DisasmConvert(cvt_round, cvt_type, data_32, buffer);
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(data_32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc2(buffer, RegType(data_32));
+	insn->DisasmSrc2(buffer);
 }
 
 mov_reg_full_imm.execute = {
@@ -125,12 +145,22 @@ mov_reg_full_imm.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc2(0, RegType(data_32));
+	reg_t a = insn->ReadSrc2(0);
 	reg_t output = a;
 
-	insn->WriteDest(output, 0, RegType(data_32));
+	insn->WriteDest(output, 0);
 	//insn->SetPredFP32(output);
 	insn->SetPredI32(output);	// TODO: check type?
+}
+
+mov_reg_half.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(data_32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
 }
 
 mov_reg_half.disasm = {
@@ -139,10 +169,10 @@ mov_reg_half.disasm = {
 	DisasmSignWidth(false, data_32, buffer);
 
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(data_32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, RegType(data_32));
+	insn->DisasmSrc1(buffer);
 }
 
 mov_reg_half.execute = {
@@ -150,10 +180,10 @@ mov_reg_half.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc1(0, RegType(data_32));
+	reg_t a = insn->ReadSrc1(0);
 	reg_t output = a;
 
-	insn->WriteDest(output, 0, RegType(data_32));
+	insn->WriteDest(output, 0);
 	insn->SetPredI32(output);	// TODO: check type?
 }
 
@@ -167,6 +197,16 @@ op stsh_full( \
 
 // Source/dest swapped?
 //  mov g[a?src1], dest
+
+stsh_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(w32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = MvSizeToDataType(m_size);
+	inherited::op_type[OpSrc1] = DT_NONE;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = dt;
+}
 
 stsh_full.disasm = {
 	// m_size = 0 -> b16
@@ -198,14 +238,14 @@ stsh_full.disasm = {
 	buffer << ", ";
 
 //	buffer << "r" << src3;
-	insn->DisasmSrc3(buffer, RegType(w32));
+	insn->DisasmSrc3(buffer);
 }
 
 stsh_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 	// dest = a
 	//reg_t a = cpu->GetGPR(src3);
-	reg_t a = insn->ReadSrc3(0, RegType(w32));
+	reg_t a = insn->ReadSrc3(0);
 
 	reg_t output = a;
 
@@ -224,6 +264,15 @@ op stg_full( \
 
 // Source/dest swapped!
 //  mov g[src1], dest
+
+stg_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DataType(m_size);
+	inherited::op_type[OpSrc1] = DataType(m_size);
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 stg_full.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
@@ -273,6 +322,14 @@ op ldg_full( \
 )
 
 //  mov dest, g[src1]
+ldg_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DataType(m_size);
+	inherited::op_type[OpSrc1] = DataType(m_size);
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 ldg_full.disasm = {
 //	cpu.DisasmPred(pred_cond, pred_reg, buffer);
@@ -324,6 +381,15 @@ group icvt_full_noimm(icvt_full_normal)
 
 // No immediate : dest = conv(src1)
 
+icvt_full_noimm.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(data_32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = CvtTypeToDataType(ConvType(cvt_type));	// Or always 32??
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 icvt_full_noimm.disasm = {
 	// data_32 = 0 -> mov.b16
@@ -336,10 +402,10 @@ icvt_full_noimm.disasm = {
 
 	DisasmConvert(cvt_round, cvt_type, data_32, abs_sat, buffer);
 	buffer << " ";
-	insn->DisasmDest(buffer, RegType(data_32));
+	insn->DisasmDest(buffer);
 
 	buffer << ", ";
-	insn->DisasmSrc1(buffer, CvtTypeToRT(ConvType(cvt_type)));	// Or always 32??
+	insn->DisasmSrc1(buffer);
 }
 
 icvt_full_noimm.execute = {
@@ -347,10 +413,10 @@ icvt_full_noimm.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	reg_t a = insn->ReadSrc1(0, CvtTypeToRT(ConvType(cvt_type)));
+	reg_t a = insn->ReadSrc1();
 	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
 
-	insn->WriteDest(output, 0, RegType(data_32));
+	insn->WriteDest(output);
 	insn->SetPredI32(output);	// TODO: check type?
 	// (16-bit, etc.)
 }
@@ -358,7 +424,7 @@ icvt_full_noimm.execute = {
 // TODO: icvt_neg (subop = 1)
 
 op ldam_full_normal( \
-	/*subop*/6[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
+	/*subop*/6[3]:/*?*/0[1]:/*cvt_round_half*/0[1]:/*data_32*/0[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:abs_sat[2]:cvt_round[2]:cvt_type[3]:\
 	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
 	0x0[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:src2[7]:\
 	/*src1*/?[7]:dest[7]:/*flow*/0[1]:/*IWidth*/1[1]\
@@ -367,6 +433,16 @@ op ldam_full_normal( \
 // TODO: end, join, imm, half
 
 group ldam_full(ldam_full_normal)
+
+ldam_full.init = {
+	typedef Operation<CONFIG> inherited;
+	//DataType dt = RegTypeToDataType(RegType(data_32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_U32;//dt;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 ldam_full.disasm = {
 	buffer << "lda";
@@ -400,6 +476,15 @@ op ldaa_full_normal( \
 group ldaa_full(ldaa_full_normal)
 
 // TODO: end, join, imm, half
+
+ldaa_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
 
 ldaa_full.disasm = {
 	buffer << "lda";

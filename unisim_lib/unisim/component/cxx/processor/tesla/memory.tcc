@@ -377,6 +377,51 @@ void CPU<CONFIG>::Write8(address_t addr, uint32_t data,
 	}
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::Gather(VecAddr const & addr, VecReg & data,
+	std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+{
+	switch(dt)
+	{
+	case DT_U32:
+	case DT_S32:
+		Gather32(addr, data, mask, 1, 0);
+		break;
+	case DT_U16:
+	case DT_S16:
+		Gather16(addr, data, mask, 1, 0);
+		break;
+	case DT_U8:
+	case DT_S8:
+		Gather8(addr, data, mask, 1, 0);
+		break;
+	default:
+		assert(false);
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::Scatter(VecAddr const & addr, VecReg const & data,
+	std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
+{
+	switch(dt)
+	{
+	case DT_U32:
+	case DT_S32:
+		Scatter32(addr, data, mask, 1, 0);
+		break;
+	case DT_U16:
+	case DT_S16:
+		Scatter16(addr, data, mask, 1, 0);
+		break;
+	case DT_U8:
+	case DT_S8:
+		Scatter8(addr, data, mask, 1, 0);
+		break;
+	default:
+		assert(false);
+	}
+}
 
 template <class CONFIG>
 void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
@@ -392,9 +437,7 @@ void CPU<CONFIG>::ScatterGlobal(VecReg output, uint32_t dest, uint32_t addr_lo, 
 
 	// TODO: segment
 	assert(segment == 14);
-	address_t base = 0;
-	assert(dt == DT_U32 || dt == DT_S32);
-	Scatter32(offset, output, mask, 1, base);
+	Scatter(offset, output, mask, dt);
 }
 
 template <class CONFIG>
@@ -411,10 +454,7 @@ void CPU<CONFIG>::GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, 
 	
 	// TODO: segment??
 	assert(segment == 14);
-	address_t base = 0;
-	assert(dt == DT_U32 || dt == DT_S32);
-	Gather32(offset, output, mask, 1, base);
-
+	Gather(offset, output, mask, dt);
 }
 
 template <class CONFIG>
@@ -431,8 +471,7 @@ void CPU<CONFIG>::ScatterLocal(VecReg output, uint32_t dest, uint32_t addr_lo, u
 
 	offset = LocalAddress(offset, segment);
 
-	assert(dt == DT_U32 || dt == DT_S32);
-	Scatter32(offset, output, mask);
+	Scatter(offset, output, mask, dt);
 }
 
 template <class CONFIG>
@@ -449,8 +488,7 @@ void CPU<CONFIG>::GatherLocal(VecReg & output, uint32_t src, uint32_t addr_lo, u
 	
 	offset = LocalAddress(offset, segment);
 
-	assert(dt == DT_U32 || dt == DT_S32);
-	Gather32(offset, output, mask);
+	Gather(offset, output, mask, dt);
 }
 
 

@@ -714,6 +714,55 @@ inline RegType CvtTypeToRT(ConvType ct)
 	}
 }
 
+inline DataType RegTypeToDataType(RegType rt)
+{
+	switch(rt) {
+	case RT_U16:
+		return DT_U16;
+	case RT_U32:
+		return DT_U32;
+	default:
+		assert(false);
+	}
+}
+
+inline DataType MvSizeToDataType(uint32_t mv_size)
+{
+	switch(mv_size) {
+	case 0:
+		return DT_U16;
+	case 1:
+		return DT_U32;
+	case 2:
+		return DT_U8;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
+inline DataType CvtTypeToDataType(ConvType ct)
+{
+	switch(ct) {
+	case CT_U16:
+		return DT_U16;
+	case CT_S16:
+		return DT_S16;
+	case CT_U8:
+		return DT_U8;
+	case CT_S8:
+		return DT_S8;
+	case CT_U32:
+	case CT_NONE:
+		return DT_U32;
+	case CT_S32:
+		return DT_S32;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
 template<class CONFIG>
 VectorRegister<CONFIG> Min(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	unsigned int m32, unsigned int issigned)
