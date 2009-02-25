@@ -49,8 +49,12 @@ PWM::PWM(const sc_module_name& name, Object *parent) :
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	param_baseAddress("base-address", this, baseAddress),
-	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time),
-	quantumkeeper_cycle_time(10.0, SC_NS) // TODO: as parameter ...
+	bus_cycle_time_int(250), // 250ns => 4 MHz
+	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+	quantumkeeper_cycles(2),
+	quantumkeeper_cycle_time(),
+	param_quantumkeeper_cycles("quantumkeeper-cycles", this, quantumkeeper_cycles)
+
 {
 	uint8_t channel_number;
 	for (int i=0; i<CONFIG::PWM_SIZE; i++) {
@@ -67,9 +71,13 @@ PWM::PWM(const sc_module_name& name, Object *parent) :
 	// Reserved Register for factory testing
 	pwmtst_register = pwmprsc_register = pwmscnta_register = pwmscntb_register = 0;
 
-	clockVector[0] = sc_time(bus_cycle_time, SC_NS);
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_NS);
+
+	quantumkeeper_cycle_time = quantumkeeper_cycles * bus_cycle_time;
+
+	clockVector[0] = bus_cycle_time;
 	for (int i=1; i < 8; i++) {
-		clockVector[i] = sc_time(bus_cycle_time/(2 << i), SC_NS);
+		clockVector[i] = bus_cycle_time/(2 << i);
 	}
 
 	master_sock(*this);
@@ -84,6 +92,71 @@ PWM::PWM(const sc_module_name& name, Object *parent) :
 
 PWM::~PWM() {
 
+}
+
+void PWM::start() {
+	for (int i=0; i<CONFIG::PWM_SIZE; i++) {
+		channel[i]->wakeup();
+	}
+}
+
+/**
+ * This function is called when PWN7IN (when channel[7].mode == INPUT) input pin is asserted
+ *
+ * remark: PWN7IN is channel[7]
+ */
+bool PWM::pwm7in_ChangeStatus(bool pwm7in_status) {
+
+	const uint8_t pwm7ena_mask = 0x01;
+	const uint8_t pwmlvl_mask = 0x10;
+	const uint8_t set_pwm7in_mask = 0x04;
+	const uint8_t clear_pwm7in_mask = 0xFB;
+	const uint8_t pwm7inl_mask = 0x02;
+
+	bool pwmLVL = ((pwmsdn_register & pwmlvl_mask) != 0);
+
+	/**
+	 * Any change from passive to asserted(active) state or from active to passive state
+	 * will be flagged by setting the PWMIF flag = 1
+	 */
+	if (((pwmsdn_register & pwm7inl_mask) != 0) ^ pwm7in_status) {
+		setPWMInterruptFlag();
+		assertPWMEmmergencyShutdown_Interrupt();
+	}
+
+	if (pwm7in_status) {
+		pwmsdn_register = pwmsdn_register | set_pwm7in_mask;
+	} else {
+		pwmsdn_register = pwmsdn_register & clear_pwm7in_mask;
+	}
+
+	if (((pwmsdn_register & pwm7inl_mask) != 0) == pwm7in_status) {
+		for (int i=0; i<CONFIG::PWM_SIZE; i++) {
+			channel[i]->setOutput(pwmLVL);
+		}
+	}
+}
+
+
+bool PWM::isEmergencyShutdownEnable() {
+	const uint8_t pwn7ena_mask = 0x01;
+
+	return ((pwmsdn_register & pwn7ena_mask) != 0);
+}
+
+void PWM::setPWMInterruptFlag() {
+
+	const uint8_t pwmif_mask = 0x80;
+
+	pwmsdn_register = pwmsdn_register | pwmif_mask;
+}
+
+void PWM::assertPWMEmmergencyShutdown_Interrupt() {
+	const uint8_t pwmie_mask = 0x40;
+
+	if ((pwmsdn_register & pwmie_mask) != 0) {
+		// TODO: assert a PWM Emergency Shutdown Interrupt (vector = VectorBase + 0x8C)
+	}
 }
 
 // Master methods
@@ -156,7 +229,7 @@ void PWM::refreshOutput(bool pwmValue[CONFIG::PWM_SIZE])
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	cout << sc_time_stamp() << ":" << name() << "(PWMx) : send " << payload->serialize() << endl;
+//	cout << sc_time_stamp() << ":" << name() << "(PWMx) : send " << payload->serialize() << endl;
 
 	tlm_sync_enum ret = master_sock->nb_transport_fw(*payload, phase, local_time);
 
@@ -281,7 +354,7 @@ void PWM::write(uint8_t offset, uint8_t val) {
 			for (uint8_t index=0; index<CONFIG::PWM_SIZE; index++) {
 				isEnable = ((pwme_register & mask) != 0);
 				if ((val & mask) && !isEnable) {
-					channel[index]->enable();
+					channel[index]->wakeup();
 				}
 				if (!(val & mask) && isEnable) {
 					channel[index]->disable();
@@ -360,8 +433,48 @@ void PWM::write(uint8_t offset, uint8_t val) {
 		case PWMSCNTB: /* Intended for factory test purposes only */ break;
 
 		case PWMSDN: {
-			// TODO: not finalized
+
 			const uint8_t pwmsdn_writeMask = 0xF3;
+			const uint8_t pwmif_mask = 0x80;
+			const uint8_t pwm7ena_mask = 0x01;
+			const uint8_t pwmrstrt_mask = 0x20;
+			const uint8_t pwm7inl_mask = 0x02;
+			const uint8_t pwm7in_mask = 0x04;
+
+
+			/*
+			 * The flag PWMIF (bit-7) is cleared by writing a logic 1 to it.
+			 * Writing a 0 has no effect.
+			 */
+			if ((val & pwmif_mask) != 0) {
+				val = val & 0x7F;
+			} else {
+				val = val & ((pwmsdn_register & pwmif_mask) | 0x7F);
+			}
+
+			/**
+			 * The PWM can only be restarted if the PWM channel input 7 is de-asserted
+			 */
+			if (((val & pwmrstrt_mask) != 0) && !((pwmsdn_register & pwm7ena_mask) != 0) && !((val & pwm7ena_mask) != 0)) {
+				/*
+				 * After writing a logic 1 to the PWMRSTRT bit (trigger event)
+				 * the PWM channel start running after the corresponding counter passes next "counter=0" phase.
+				 */
+				start();
+			}
+
+			/**
+			 * The interrupt flag PWMIF is set when PWMENA is being asserted while the level at PWM7 is active
+			 *
+			 * i.e. the channel 7 is forced to INPUT mode (emergency enable) and the current pin7 signal level
+			 *      is the same as the active level of the emergency shutdown
+			 */
+			if (((pwmsdn_register & pwm7ena_mask) == 0) && ((val & pwm7ena_mask) != 0) &&
+					(((val & pwm7inl_mask) != 0) == channel[7]->getOutput()))
+			{
+				setPWMInterruptFlag();
+			}
+
 			pwmsdn_register = val & pwmsdn_writeMask;
 		}
 		break;
@@ -523,11 +636,11 @@ PWM::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, const uint8_t
 	channel_number(channel_num),
 	pwmcnt_register_ptr(pwmcnt_ptr),
 	pwmper_register_value_ptr(pwmper_ptr),
-	pwmdty_register_value_ptr(pwmdty_ptr)
+	pwmdty_register_value_ptr(pwmdty_ptr),
+	output(false)
 
 {
 
-	setOutput(false);
 	channelMask = (0x01 << channel_number);
 
 	SC_HAS_PROCESS(Channel_t);
@@ -600,7 +713,7 @@ void PWM::Channel_t::Run() {
 	}
 }
 
-void PWM::Channel_t::enable() {
+void PWM::Channel_t::wakeup() {
 	wakeup_event.notify();
 }
 
@@ -617,7 +730,13 @@ void PWM::Channel_t::disable() {
 }
 
 bool PWM::Channel_t::getOutput() { return output; }
-void PWM::Channel_t::setOutput(bool val) { output = val; }
+/**
+ * The channel output is meaningful only if the channel is enabled
+ */
+void PWM::Channel_t::setOutput(bool val) {
+
+	if ((pwmParent->pwme_register & channelMask) != 0) output = val;
+}
 
 uint8_t PWM::Channel_t::getPwmcnt_register() { return *pwmcnt_register_ptr; }
 void PWM::Channel_t::setPwmcnt_register(uint8_t val) {
@@ -647,14 +766,20 @@ void PWM::Channel_t::setPWMDTYBuffer(uint8_t val) { pwmdty_register_buffer = val
 
 bool PWM::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	// TODO: read PWM registers (!à voir si ce n'est pas mieux de passer par le bus interne!)
+	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))){
+		read(addr-baseAddress, *((uint8_t *)buffer));
+		return true;
+	}
 
 	return false;
 }
 
 bool PWM::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	// TODO: write to PWM registers (!à voir si ce n'est pas mieux de passer par le bus interne!)
+	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))){
+		write(addr-baseAddress, *((uint8_t *)buffer));
+		return true;
+	}
 
 	return false;
 }

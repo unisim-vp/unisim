@@ -134,6 +134,12 @@ public:
 
     void Run();
 
+    void	start();
+    bool	pwm7in_ChangeStatus(bool pwm7in_status);
+    bool	isEmergencyShutdownEnable();
+    void	assertPWMEmmergencyShutdown_Interrupt();
+    void	setPWMInterruptFlag();
+
     sc_time getClockA();
     sc_time getClockB();
     sc_time getClockSA();
@@ -169,13 +175,17 @@ public:
     void write(uint8_t offset, uint8_t val);
 
 private:
-	tlm_quantumkeeper quantumkeeper;
+	uint8_t	quantumkeeper_cycles;
+	Parameter<uint8_t>   param_quantumkeeper_cycles;
 	sc_time quantumkeeper_cycle_time;
+	tlm_quantumkeeper quantumkeeper;
 
 	PayloadFabric<PWM_Payload> payload_fabric;
 
-	uint32_t	bus_cycle_time;
-	Parameter<uint32_t>	param_bus_cycle_time;
+	clock_t	bus_cycle_time_int;
+	Parameter<clock_t>	param_bus_cycle_time_int;
+	sc_time		bus_cycle_time;
+
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
@@ -208,7 +218,7 @@ private:
 		Channel_t(const sc_module_name& name, PWM *parent, const uint8_t channel_number, uint8_t *pwmcnt_ptr, uint8_t *pwmper_ptr, uint8_t *pwmdty_ptr);
 
 		void Run();
-		void enable();
+		void wakeup();
 		void disable();
 
 		bool getOutput();
@@ -226,8 +236,10 @@ private:
 		uint8_t getPWMDTYBuffer();
 		void setPWMDTYBuffer(uint8_t val);
 
+
 	private:
 		bool output;
+
 		uint8_t channelMask;
 		uint8_t *pwmcnt_register_ptr;
 		uint8_t *pwmper_register_value_ptr;
