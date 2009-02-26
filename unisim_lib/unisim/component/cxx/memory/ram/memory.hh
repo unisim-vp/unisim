@@ -91,7 +91,7 @@ public:
 	virtual bool ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size);
 	bool WriteMemory(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);
 	bool ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);
-
+	void *GetDirectAccess(PHYSICAL_ADDR physical_addr, PHYSICAL_ADDR& physical_start_addr, PHYSICAL_ADDR& physical_end_addr);
 protected:
 	PHYSICAL_ADDR org;
 	uint32_t bytesize;

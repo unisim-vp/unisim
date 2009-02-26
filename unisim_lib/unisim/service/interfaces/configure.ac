@@ -45,7 +45,10 @@ AC_PATH_PROGS(SH, sh)
 # AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
+AC_PROG_LIBTOOL
+AC_ENABLE_STATIC
+AC_ENABLE_SHARED
 AC_PROG_LN_S
 		
 AC_LANG([C++])
@@ -58,6 +61,8 @@ AC_CHECK_HEADERS([inttypes.h],,\
 AC_CHECK_HEADERS([iostream sstream string],,\
      AC_MSG_ERROR([Some standard C++ headers are missing.]))
      
+UNISIM_LIBTOOL
+
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])

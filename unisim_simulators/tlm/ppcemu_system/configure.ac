@@ -47,10 +47,13 @@ AM_INIT_AUTOMAKE
 AC_PATH_PROGS(SH, sh)
 AC_PROG_CXX
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_LN_S
 
 AC_LANG([C++])
+
+# ppcemu-system can't be statically linked because of SDL
+#UNISIM_STATIC
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
@@ -109,7 +112,6 @@ UNISIM_LINK(unisim_service_loader_linux_loader)
 UNISIM_LINK(unisim_service_logger)
 UNISIM_LINK(unisim_service_sdl)
 
-UNISIM_LINK(unisim_component_cxx_processor_arm)
 UNISIM_LINK(unisim_component_cxx_processor_powerpc)
 UNISIM_LINK(unisim_component_cxx_pci_debug)
 UNISIM_LINK(unisim_component_cxx_pci_macio)
@@ -126,7 +128,6 @@ UNISIM_LINK(unisim_component_cxx_memory_ram)
 UNISIM_LINK(unisim_component_cxx_memory_flash_am29lv)
 
 UNISIM_LINK(unisim_component_tlm_processor_powerpc)
-UNISIM_LINK(unisim_component_tlm_processor_arm)
 UNISIM_LINK(unisim_component_tlm_memory_flash_am29lv)
 UNISIM_LINK(unisim_component_tlm_memory_ram)
 UNISIM_LINK(unisim_component_tlm_bridge_pci_isa)
@@ -140,6 +141,8 @@ UNISIM_LINK(unisim_component_tlm_pci_video)
 UNISIM_LINK(unisim_component_tlm_pci_ide)
 UNISIM_LINK(unisim_component_tlm_pci_macio)
 UNISIM_LINK(unisim_component_tlm_pci_debug)
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate

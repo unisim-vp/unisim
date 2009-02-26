@@ -16,6 +16,7 @@ if test "x$1" = x || test "x$2" = x || test "x$3" = x || test "x$4" = x; then
 fi
 
 TARGET=$1
+BUILD=i686-pc-linux-gnu
 VERSION=$2
 
 HERE=`pwd`
@@ -24,7 +25,8 @@ MAINTAINER="Gilles Mouchard <gilles.mouchard@cea.fr>"
 case ${TARGET} in
 	*mingw32*)
 		ARCH=i386
-		UNISIM_PREFIX=
+		#UNISIM_PREFIX=
+		UNISIM_PREFIX=/usr
 		;;
 	*86*deb*)
 		ARCH=i386
@@ -306,7 +308,7 @@ function Package {
 			echo "AppUpdatesURL=http://www.unisim.org" >> ${ISS_FILENAME}
 			echo "DefaultDirName={pf}\\${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 			echo "DefaultGroupName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
-			echo "LicenseFile=./${LICENSE_FILE}" >> ${ISS_FILENAME}
+			echo "LicenseFile=.${UNISIM_PREFIX}/${LICENSE_FILE}" >> ${ISS_FILENAME}
 			echo "OutputDir=dist" >> ${ISS_FILENAME}
 			echo "OutputBaseFilename=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 			echo "Compression=lzma" >> ${ISS_FILENAME}
@@ -560,7 +562,8 @@ function Configure
 	rm -rf ${CONFIG_DIR}
 	mkdir -p ${CONFIG_DIR}
 	cd ${CONFIG_DIR}
-	${SOURCE_DIR}/configure -C --prefix=${INSTALL_DIR}${UNISIM_PREFIX} "${args[@]}" || exit
+	#${SOURCE_DIR}/configure -C --prefix=${INSTALL_DIR}${UNISIM_PREFIX} "${args[@]}" || exit
+	${SOURCE_DIR}/configure -C --prefix=${UNISIM_PREFIX} "${args[@]}" || exit
 }
 
 function Compile
@@ -584,7 +587,7 @@ function Install
 	echo "========================================="
 	rm -rf ${INSTALL_DIR}
 	cd ${CONFIG_DIR}
-	fakeroot make install || exit
+	fakeroot make install prefix=${INSTALL_DIR}${UNISIM_PREFIX} || exit
 }
 
 function Uninstall
@@ -663,6 +666,7 @@ Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DI
 case ${TARGET} in
 	*mingw32*)
 		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=i586-mingw32msvc \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
@@ -672,10 +676,12 @@ case ${TARGET} in
           --with-boost=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/boost \
           --with-zlib=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/zlib \
           --with-libxml2=${UNISIM_BOOTSTRAP_MINGW32_DIR}/install/libxml2 \
-          --enable-release
+          --enable-release \
+          --disable-shared
 		;;
 	*86*darwin*)
 		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=i686-apple-darwin8 \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
@@ -690,6 +696,7 @@ case ${TARGET} in
 		;;
 	*powerpc*darwin*)
 		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=powerpc-apple-darwin8 \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
@@ -704,6 +711,7 @@ case ${TARGET} in
 		;;
 	*86*deb* | *86*rpm*)
 		Configure ${UNISIM_LIB_TEMPORARY_SOURCE_DIR} ${UNISIM_LIB_TEMPORARY_CONFIG_DIR} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=i686-pc-linux-gnu \
           --with-unisim-tools=${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
@@ -722,6 +730,7 @@ Package ${UNISIM_LIB_SHORT_NAME} ${UNISIM_LIB_TEMPORARY_INSTALL_DIR} ${UNISIM_LI
 case ${TARGET} in
 	*mingw32*)
 		Configure ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR} ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=i586-mingw32msvc \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
@@ -735,6 +744,7 @@ case ${TARGET} in
 		;;
 	*86*darwin*)
 		Configure ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR} ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=i686-apple-darwin8 \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
@@ -749,6 +759,7 @@ case ${TARGET} in
 		;;
 	*powerpc*darwin*)
 		Configure ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR} ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=powerpc-apple-darwin8 \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
@@ -763,6 +774,7 @@ case ${TARGET} in
 		;;
 	*86*deb* | *86*rpm*)
 		Configure ${UNISIM_SIMULATORS_TEMPORARY_SOURCE_DIR} ${UNISIM_SIMULATORS_TEMPORARY_CONFIG_DIR} ${UNISIM_SIMULATORS_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=i686-pc-linux-gnu \
           --with-unisim-lib=${UNISIM_LIB_TEMPORARY_INSTALL_DIR}${UNISIM_PREFIX} \
           --with-systemc=${SYSTEMC_INSTALL_DIR} \
@@ -792,6 +804,7 @@ case ${TARGET} in
 		Uninstall ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Clean ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR}
 		Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=i586-mingw32msvc
 		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
@@ -800,6 +813,7 @@ case ${TARGET} in
 		Uninstall ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Clean ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR}
 		Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=i686-apple-darwin8
 		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
@@ -808,6 +822,7 @@ case ${TARGET} in
 		Uninstall ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Clean ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR}
 		Configure ${UNISIM_TOOLS_TEMPORARY_SOURCE_DIR} ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR} \
+          --build=${BUILD} \
           --host=powerpc-apple-darwin8
 		Compile ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}
 		Install ${UNISIM_TOOLS_TEMPORARY_CONFIG_DIR} ${UNISIM_TOOLS_TEMPORARY_INSTALL_DIR}

@@ -48,6 +48,7 @@ AC_PATH_PROGS(SH, sh)
 # AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
+AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
 AC_PROG_LIBTOOL
 AC_ENABLE_STATIC
 AC_ENABLE_SHARED
@@ -65,6 +66,8 @@ UNISIM_CHECK_BOOST_GRAPH
 
 ###### CHECK FOR LIBXML2 ######################################################
 UNISIM_CHECK_LIBXML2
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate

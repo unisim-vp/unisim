@@ -2,9 +2,9 @@ INCLUDES=-I$(top_srcdir)/../../../..
 includedir = $(prefix)/include/unisim/component/tlm/message
 sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm/message
 
-lib_LIBRARIES = libunisim_component_tlm_message.a
+lib_LTLIBRARIES = libunisim_component_tlm_message.la
 
-libunisim_component_tlm_message_a_SOURCES = \
+libunisim_component_tlm_message_la_SOURCES = \
 	interrupt.cc
 		
 include_HEADERS = \

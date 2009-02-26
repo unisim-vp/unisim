@@ -6,9 +6,9 @@ INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
 includedir = $(prefix)/include/unisim/component/cxx/processor/arm
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/arm
 
-lib_LIBRARIES = libunisim_component_cxx_processor_arm.a
+lib_LTLIBRARIES = libunisim_component_cxx_processor_arm.la
 
-libunisim_component_cxx_processor_arm_a_SOURCES = \
+libunisim_component_cxx_processor_arm_la_SOURCES = \
 	cpu_arm7tdmi_debug.cc \
 	cpu_arm9tdmi_debug.cc \
 	cpu_arm9tdmi_nocache_debug.cc \
@@ -19,7 +19,7 @@ libunisim_component_cxx_processor_arm_a_SOURCES = \
 	tcm/tcm.cc
 
 if COND_release
-libunisim_component_cxx_processor_arm_a_SOURCES += \
+libunisim_component_cxx_processor_arm_la_SOURCES += \
 	cpu_arm7tdmi.cc \
 	cpu_arm9tdmi.cc \
 	cpu_arm9tdmi_nocache.cc \

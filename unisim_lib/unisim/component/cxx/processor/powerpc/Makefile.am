@@ -1,11 +1,11 @@
 INCLUDES=-I$(top_srcdir)/../../../../.. -I$(top_builddir)/../../../../..
 includedir = $(prefix)/include/unisim/component/cxx/processor/powerpc
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/powerpc
-lib_LIBRARIES = libunisim_component_cxx_processor_powerpc.a
-libunisim_component_cxx_processor_powerpc_a_SOURCES = cpu.cc config.cc exception.cc mpc755_debug.cc mpc7447a_debug.cc
+lib_LTLIBRARIES = libunisim_component_cxx_processor_powerpc.la
+libunisim_component_cxx_processor_powerpc_la_SOURCES = cpu.cc config.cc exception.cc mpc755_debug.cc mpc7447a_debug.cc
 
 if COND_release
-libunisim_component_cxx_processor_powerpc_a_SOURCES += mpc755.cc mpc7447a.cc
+libunisim_component_cxx_processor_powerpc_la_SOURCES += mpc755.cc mpc7447a.cc
 endif
 
 include_HEADERS = cpu.hh exception.hh \

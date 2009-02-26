@@ -61,6 +61,12 @@ clean-local-lib:
 		rm -rf $(top_builddir)/$(ROOT_DIR)/lib; \
 	fi
 
+clean-local-ltlib:
+	@if test "x$(lib_LTLIBRARIES)" != "x"; \
+	then \
+		rm -rf $(top_builddir)/$(ROOT_DIR)/lib; \
+	fi
+
 clean-local-include:
 	@if test "x$(include_HEADERS)" != "x"; \
 	then \

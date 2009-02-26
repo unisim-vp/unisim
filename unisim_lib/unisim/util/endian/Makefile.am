@@ -3,8 +3,8 @@ includedir = $(prefix)/include/unisim/util/endian
 sharedir = $(prefix)/share/unisim_lib/unisim/util/endian
 include_HEADERS = endian.hh
 
-lib_LIBRARIES = libunisim_util_endian.a
-libunisim_util_endian_a_SOURCES = endian.cc
+lib_LTLIBRARIES = libunisim_util_endian.la
+libunisim_util_endian_la_SOURCES = endian.cc
 
 dist_share_DATA = COPYING
 

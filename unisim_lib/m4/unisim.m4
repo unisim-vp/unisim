@@ -59,9 +59,6 @@ AC_DEFUN([UNISIM_CHECK_BOOST_THREAD], [
     # Check for boost thread headers
     AC_CHECK_HEADERS([boost/thread/thread.hpp boost/thread/mutex.hpp boost/thread/xtime.hpp],,\
 	AC_MSG_ERROR([boost thread headers not found. Please install the boost thread development library. Use --with-boost=<path> to overload default includes search path.]))
-
-	# Note: we can't check libboost_thread functions from libboost_thread because it's a library of C++ classes with no C functions.
-	LIBS=${LIBS}" -lboost_thread"
 ])
 
 ## UNISIM_CHECK_BOOST_FUNCTION
@@ -244,7 +241,6 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
     if test "$broken_sdl" == "yes"; then
 		AC_MSG_NOTICE([SDL not found. No video frame buffer or input devices will be available.])
     else
-		LIBS="-lSDL ${LIBS}"
 		AC_DEFINE([HAVE_SDL], [], [Whether SDL is available])
     fi
 ])
@@ -468,4 +464,19 @@ AC_DEFUN([UNISIM_CHECK_CACTI], [
     else
 		AC_DEFINE([HAVE_CACTI4_2], [], [Whether Cacti 4.2 is available])
 	fi
+])
+
+# UNISIM_LIBTOOL
+# Add some additional argument to gcc command interpreted by libtool
+# This macro should be called just before generating the Makefile
+# No parameters
+####################################################
+AC_DEFUN([UNISIM_LIBTOOL], [
+	case $host in
+		*mingw32*)  # win32 host
+			if test "$enable_win32_dll" = "yes"; then
+				LDFLAGS="-no-undefined ${LDFLAGS}"
+			fi
+			;;
+	esac
 ])

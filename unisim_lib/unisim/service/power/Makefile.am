@@ -1,6 +1,6 @@
 INCLUDES=-I$(top_srcdir)/../../..
-lib_LIBRARIES = libunisim_service_power.a
-libunisim_service_power_a_SOURCES = cache_power_estimator.cc
+lib_LTLIBRARIES = libunisim_service_power.la
+libunisim_service_power_la_SOURCES = cache_power_estimator.cc
 
 includedir = $(prefix)/include/unisim/service/power
 sharedir = $(prefix)/share/unisim_lib/unisim/service/power

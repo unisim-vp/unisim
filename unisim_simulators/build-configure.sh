@@ -76,18 +76,24 @@ do
 		then
 			message_to_display=$message_to_display" (Makefile.in missing)"
 		fi
-		if test "x$is_libtool_missing" != "x"
+		has_ac_prog_libtool=`grep AC_PROG_LIBTOOL configure.ac`
+		if test "x$has_ac_prog_libtool" != "x";
 		then
-			message_to_display=$message_to_display" (config/ltmain.sh missing)"
+			if test "x$is_libtool_missing" != "x"
+			then
+				message_to_display=$message_to_display" (config/ltmain.sh missing)"
+			fi
 		fi
 		echo "$message_to_display"
-		aclocal -I $m4_path
-		libtoolize --force
-		if [ `uname` == "Darwin" ]; then
-			glibtoolize --force
-		else
-			libtoolize --force
+		if test "x$has_ac_prog_libtool" != "x";
+		then
+			if [ `uname` == "Darwin" ]; then
+				glibtoolize --force
+			else
+				libtoolize --force
+			fi
 		fi
+		aclocal -I $m4_path
 		autoconf --force
 		has_ac_config_headers=`grep AC_CONFIG_HEADERS configure.ac`
 		if test "x$has_ac_config_headers" != "x";

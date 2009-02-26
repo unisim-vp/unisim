@@ -664,22 +664,33 @@ AC_ARG_ENABLE(release,
 	AM_CONDITIONAL(COND_release, test x$unisim_enabled_release = xtrue)
 ])
 
-## UNISIM_STATIC
-## Create the variable COND_static that the user can use 
-##   in Makefile.am to decide what needs to be compile for release (--enable-static)
-##   or just for development (--disable-static) (default)
-## No parameters
-#####################################################
+# UNISIM_STATIC
+# Create the variable COND_static that the user can use 
+#   in Makefile.am to decide what needs to be compile for release (--enable-static)
+#   or just for development (--disable-static) (default)
+# No parameters
+####################################################
 AC_DEFUN([UNISIM_STATIC], [
-AC_ARG_ENABLE(static,
-	AS_HELP_STRING([--enable-static], [build statically linked simulators if possible])
-	AS_HELP_STRING([--disable-static], [build dynamically linked simulators if possible (default)]),
+AC_ARG_ENABLE(static-simulators,
+	AS_HELP_STRING([--enable-static-simulators], [build statically linked simulators if possible])
+	AS_HELP_STRING([--disable-static-simulators], [build dynamically linked simulators if possible (default)]),
 	[case "${enableval}" in
 	yes) unisim_enabled_static=yes ;;
 	no) unisim_enabled_static=no ;;
-	*) AC_MSG_ERROR(bad value ${enableval} for --enable-static) ;;
+	*) AC_MSG_ERROR(bad value ${enableval} for --enable-static-simulators) ;;
 	esac], [unisim_enabled_static=no])
     if test "x$unisim_enabled_static" = "xyes"; then
 		LDFLAGS="-static ${LDFLAGS}"
+	fi
+])
+
+# UNISIM_LIBTOOL
+# Add some additional argument to gcc command interpreted by libtool
+# This macro should be called just before generating the Makefile
+# No parameters
+####################################################
+AC_DEFUN([UNISIM_LIBTOOL], [
+    if test "$unisim_enabled_static" = "yes"; then
+		LDFLAGS="-all-static ${LDFLAGS}"
 	fi
 ])

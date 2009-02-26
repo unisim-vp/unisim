@@ -166,6 +166,7 @@
 
 #include <unisim/component/clm/interfaces/memreq.hh>
 
+#include <unisim/component/cxx/memory/ram/memory.hh>
 /* Following includes have been moved into cpu_emulator.hh */
 /*
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>

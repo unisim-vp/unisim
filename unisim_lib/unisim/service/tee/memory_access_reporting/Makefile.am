@@ -1,6 +1,6 @@
 INCLUDES=-I$(top_srcdir)/../../../..
-lib_LIBRARIES = libunisim_service_tee_memory_access_reporting.a
-libunisim_service_tee_memory_access_reporting_a_SOURCES = tee_32.cc tee_64.cc
+lib_LTLIBRARIES = libunisim_service_tee_memory_access_reporting.la
+libunisim_service_tee_memory_access_reporting_la_SOURCES = tee_32.cc tee_64.cc
 
 includedir = $(prefix)/include/unisim/service/tee/memory_access_reporting
 sharedir = $(prefix)/share/unisim_lib/unisim/service/tee/memory_access_reporting

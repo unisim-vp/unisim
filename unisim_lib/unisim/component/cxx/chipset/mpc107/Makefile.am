@@ -5,8 +5,8 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/chipset/mpc107
 SUBDIRS=dma epic atu
 INCLUDE_SUBDIRS=dma epic atu
 
-lib_LIBRARIES = libunisim_component_cxx_chipset_mpc107.a
-libunisim_component_cxx_chipset_mpc107_a_SOURCES = \
+lib_LTLIBRARIES = libunisim_component_cxx_chipset_mpc107.la
+libunisim_component_cxx_chipset_mpc107_la_SOURCES = \
 	address_map_entry.cc \
 	config_regs.cc \
 	address_maps.cc \

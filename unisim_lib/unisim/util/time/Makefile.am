@@ -1,6 +1,6 @@
 INCLUDES=-I$(top_srcdir)/../../..
-lib_LIBRARIES = libunisim_util_time.a
-libunisim_util_time_a_SOURCES = time.cc
+lib_LTLIBRARIES = libunisim_util_time.la
+libunisim_util_time_la_SOURCES = time.cc
 
 includedir = $(prefix)/include/unisim/util/time
 sharedir = $(prefix)/share/unisim_lib/unisim/util/time

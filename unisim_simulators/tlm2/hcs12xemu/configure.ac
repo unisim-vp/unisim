@@ -46,10 +46,12 @@ AM_INIT_AUTOMAKE
 AC_PATH_PROGS(SH, sh)
 AC_PROG_CXX
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_LN_S
 
 AC_LANG([C++])
+
+UNISIM_STATIC
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
@@ -58,7 +60,7 @@ AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
 
-UNISIM_STATIC
+
 
 case $host in
 	*linux*)   # linux host
@@ -100,17 +102,12 @@ UNISIM_LINK(unisim_util_queue)
 
 UNISIM_LINK(unisim_service_time_sc_time)
 UNISIM_LINK(unisim_service_time_host_time)
-UNISIM_LINK(unisim_service_power)
 UNISIM_LINK(unisim_service_debug_gdb_server)
 UNISIM_LINK(unisim_service_debug_inline_debugger)
 UNISIM_LINK(unisim_service_loader_s19_loader)
 UNISIM_LINK(unisim_service_loader_elf_loader)
 UNISIM_LINK(unisim_service_debug_symbol_table)
-UNISIM_LINK(unisim_service_loader_pmac_bootx)
-UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
-UNISIM_LINK(unisim_service_loader_linux_loader)
 UNISIM_LINK(unisim_service_logger)
-UNISIM_LINK(unisim_service_sdl)
 
 UNISIM_LINK(unisim_component_cxx_processor_hcs12x)
 UNISIM_LINK(unisim_component_cxx_memory_ram)
@@ -118,6 +115,8 @@ UNISIM_LINK(unisim_component_cxx_memory_ram)
 UNISIM_LINK(unisim_component_tlm2_processor_hcs12x)
 UNISIM_LINK(unisim_component_tlm2_memory_ram)
 UNISIM_LINK(unisim_component_tlm2_interconnect_generic_router)
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate

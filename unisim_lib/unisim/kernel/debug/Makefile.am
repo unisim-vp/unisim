@@ -3,8 +3,8 @@ includedir = $(prefix)/include/unisim/kernel/debug
 sharedir = $(prefix)/share/unisim_lib/unisim/kernel/debug
 include_HEADERS = debug.hh
 
-lib_LIBRARIES = libunisim_kernel_debug.a
-libunisim_kernel_debug_a_SOURCES = debug.cc
+lib_LTLIBRARIES = libunisim_kernel_debug.la
+libunisim_kernel_debug_la_SOURCES = debug.cc
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

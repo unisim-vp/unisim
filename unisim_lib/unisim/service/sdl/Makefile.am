@@ -1,6 +1,6 @@
 INCLUDES=-I$(top_srcdir)/../../..
-lib_LIBRARIES = libunisim_service_sdl.a
-libunisim_service_sdl_a_SOURCES = sdl.cc
+lib_LTLIBRARIES = libunisim_service_sdl.la
+libunisim_service_sdl_la_SOURCES = sdl.cc
 
 includedir = $(prefix)/include/unisim/service/sdl
 sharedir = $(prefix)/share/unisim_lib/unisim/service/sdl

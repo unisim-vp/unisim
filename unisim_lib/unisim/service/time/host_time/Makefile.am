@@ -3,8 +3,8 @@ includedir = $(prefix)/include/unisim/service/time/host_time
 sharedir = $(prefix)/share/unisim_lib/unisim/service/time/host_time
 include_HEADERS = time.hh
 
-lib_LIBRARIES = libunisim_service_time_host_time.a
-libunisim_service_time_host_time_a_SOURCES = time.cc
+lib_LTLIBRARIES = libunisim_service_time_host_time.la
+libunisim_service_time_host_time_la_SOURCES = time.cc
 
 dist_share_DATA = COPYING
 

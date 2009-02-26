@@ -3,8 +3,8 @@ includedir = $(prefix)/include/unisim/service/loader/s19_loader
 sharedir = $(prefix)/share/unisim_lib/unisim/service/loader/elf_loader
 include_HEADERS = s19_loader.hh s19_loader.tcc
 
-lib_LIBRARIES = libunisim_service_loader_s19_loader.a
-libunisim_service_loader_s19_loader_a_SOURCES = s19_loader.cc
+lib_LTLIBRARIES = libunisim_service_loader_s19_loader.la
+libunisim_service_loader_s19_loader_la_SOURCES = s19_loader.cc
 
 dist_share_DATA = COPYING
 

@@ -47,23 +47,26 @@ AM_INIT_AUTOMAKE
 AC_PATH_PROGS(SH, sh)
 AC_PROG_CXX
 AC_PROG_INSTALL
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_LN_S
 
 AC_LANG([C++])
 
 AC_PROG_CC
 
+UNISIM_STATIC
+
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
+
 
 UNISIM_WITH_BOOST
 UNISIM_CHECK_BOOST_ARRAY
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
 
-UNISIM_STATIC
+
 
 case $host in
 	*linux*)   # linux host
@@ -101,7 +104,6 @@ UNISIM_LINK(unisim_util_endian)
 UNISIM_LINK(unisim_util_garbage_collector)
 UNISIM_LINK(unisim_util_queue)
 
-UNISIM_LINK(unisim_service_time_sc_time)
 UNISIM_LINK(unisim_service_time_host_time)
 UNISIM_LINK(unisim_service_power)
 UNISIM_LINK(unisim_service_debug_gdb_server)
@@ -109,26 +111,13 @@ UNISIM_LINK(unisim_service_debug_inline_debugger)
 UNISIM_LINK(unisim_service_os_linux_os)
 UNISIM_LINK(unisim_service_loader_elf_loader)
 UNISIM_LINK(unisim_service_debug_symbol_table)
-#UNISIM_LINK(unisim_service_loader_pmac_bootx)
-#UNISIM_LINK(unisim_service_loader_pmac_linux_kernel_loader)
 UNISIM_LINK(unisim_service_loader_linux_loader)
 UNISIM_LINK(unisim_service_logger)
-UNISIM_LINK(unisim_service_sdl)
 
-#UNISIM_LINK(unisim_component_cxx_processor_arm)
 UNISIM_LINK(unisim_component_cxx_processor_powerpc)
-#UNISIM_LINK(unisim_component_cxx_pci_debug)
-#UNISIM_LINK(unisim_component_cxx_pci_macio)
-#UNISIM_LINK(unisim_component_cxx_pci)
-#UNISIM_LINK(unisim_component_cxx_pci_ide)
-#UNISIM_LINK(unisim_component_cxx_pci_video)
-#UNISIM_LINK(unisim_component_cxx_chipset_mpc107_epic)
-#UNISIM_LINK(unisim_component_cxx_chipset_mpc107_dma)
-#UNISIM_LINK(unisim_component_cxx_chipset_mpc107)
-#UNISIM_LINK(unisim_component_cxx_isa_i8042)
-#UNISIM_LINK(unisim_component_cxx_bridge_pci_isa)
 UNISIM_LINK(unisim_component_cxx_memory_ram)
-#UNISIM_LINK(unisim_component_cxx_memory_flash_am29lv)
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate

@@ -71,7 +71,7 @@ UNISIM_CHECK_BOOST_ARRAY
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
 
-UNISIM_STATIC
+
 
 case $host in
 	*linux*)   # linux host
@@ -133,6 +133,8 @@ UNISIM_LINK(unisim_component_cxx_processor_tesla)
 #UNISIM_LINK(unisim_component_cxx_bridge_pci_isa)
 UNISIM_LINK(unisim_component_cxx_memory_ram)
 #UNISIM_LINK(unisim_component_cxx_memory_flash_am29lv)
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate

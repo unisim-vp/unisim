@@ -105,7 +105,8 @@ function Configure
 	echo "=              Configuring              ="
 	echo "========================================="
 	cd ${TMP_DIR}/${NAME}
-	./configure --prefix=${INSTALL_DIR} "${args[@]}" || exit
+#	./configure --prefix=${INSTALL_DIR} "${args[@]}" || exit
+	./configure --prefix=/usr "${args[@]}" || exit
 }
 
 function Compile
@@ -125,7 +126,7 @@ function Install
 	echo "=              Installing               ="
 	echo "========================================="
 	cd ${TMP_DIR}/${NAME}
-	make install || exit
+	make install prefix=${INSTALL_DIR} || exit
 }
 
 function Download
@@ -195,7 +196,7 @@ function InstallBinArchive
 			tar zxf ${ARCHIVE} || exit
 			;;
 		zip)
-			unzip -q ${ARCHIVE}
+			unzip -qo ${ARCHIVE}
 			;;
 	esac
 }
@@ -207,7 +208,7 @@ mkdir -p ${INSTALL_DIR}
 
 # expat
 Download expat-2.0.1 expat-2.0.1.tar.gz http://ovh.dl.sourceforge.net/expat/expat-2.0.1.tar.gz
-Configure expat-2.0.1 --host=i586-mingw32msvc
+Configure expat-2.0.1 --host=i586-mingw32msvc --build=i686-pc-linux-gnu
 Compile expat-2.0.1
 Install expat-2.0.1
 
@@ -222,13 +223,14 @@ Install gdb-6.8
 
 # SDL
 Download SDL-1.2.13 SDL-1.2.13.tar.gz http://www.libsdl.org/release/SDL-1.2.13.tar.gz
-Configure SDL-1.2.13 --host=i586-mingw32msvc
+Configure SDL-1.2.13 --host=i586-mingw32msvc --build=i686-pc-linux-gnu
 Compile SDL-1.2.13
 Install SDL-1.2.13
 
 # libxml2
 Download libxml2-2.6.31 libxml2-2.6.31.tar.gz ftp://xmlsoft.org/libxml2/libxml2-2.6.31.tar.gz
-Configure libxml2-2.6.31 --host=i586-mingw32msvc --without-python
+cd ${TMP_DIR}/libxml2-2.6.31
+Configure libxml2-2.6.31 --host=i586-mingw32msvc --build=i686-pc-linux-gnu --without-python
 Compile libxml2-2.6.31
 Install libxml2-2.6.31
 
@@ -392,6 +394,8 @@ InstallBinArchive unrar-bin.zip http://gnuwin32.sourceforge.net/downlinks/unrar-
 InstallBinArchive unzip-bin.zip http://gnuwin32.sourceforge.net/downlinks/unzip-bin-zip.php
 InstallBinArchive zip-bin.zip http://gnuwin32.sourceforge.net/downlinks/zip-bin-zip.php
 InstallBinArchive wget-bin.zip http://gnuwin32.sourceforge.net/downlinks/wget-bin-zip.php
+InstallBinArchive regex-2.7-bin.zip http://gnuwin32.sourceforge.net/downlinks/regex-bin-zip.php
+InstallBinArchive zlib-1.2.3-bin.zip http://gnuwin32.sourceforge.net/downlinks/zlib-bin-zip.php
 
 # Install subversion client
 InstallBinArchive svn-win32-1.3.2.zip http://subversion.tigris.org/files/documents/15/32473/svn-win32-1.3.2.zip

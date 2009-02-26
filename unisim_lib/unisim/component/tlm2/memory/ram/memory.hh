@@ -58,7 +58,7 @@ using unisim::kernel::logger::Logger;
 
 const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus
 const uint32_t DEFAULT_PAGE_SIZE = 1024 * 1024; // 1 MB page size (implementation detail)
-const bool DEFAULT_DEBUG = true; // no debug
+const bool DEFAULT_DEBUG = false; // no debug
 
 /**
  * Memory module for the simple bus.

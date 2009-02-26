@@ -517,7 +517,7 @@ void CPU<CONFIG>::Reset()
 	for(i = 0; i < 32; i++) SetGPR(i, 0);
 
 	SetFPSCR(0);
-	flags.clear();
+	//flags.clear();
 	for(i = 0; i < 32; i++) SetFPR(i, SoftDouble(0));
 
 	SetCR(0);
@@ -6746,6 +6746,8 @@ void CPU<CONFIG>::LSUExecute2()
 				break;
 			case LoadStoreAccess<CONFIG>::FP32_STORE:
 				{
+					Flags flags;
+					flags.setRoundingMode((fpscr & CONFIG::FPSCR_RN_MASK) >> CONFIG::FPSCR_RN_OFFSET);
 					uint32_t value = Host2BigEndian(SoftFloat(instruction->GetFPR(load_store_access->reg_num), flags).queryValue());
 					memcpy(load_store_access->data, (uint8_t *) &value + load_store_access->offset, load_store_access->size);
 				}

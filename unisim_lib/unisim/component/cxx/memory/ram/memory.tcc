@@ -377,6 +377,31 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 	return true;
 }
 
+template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
+void *Memory<PHYSICAL_ADDR, PAGE_SIZE>::GetDirectAccess(PHYSICAL_ADDR physical_addr, PHYSICAL_ADDR& physical_start_addr, PHYSICAL_ADDR& physical_end_addr)
+{
+	PHYSICAL_ADDR addr;
+
+	if(physical_addr < lo_addr || physical_addr > hi_addr) return 0;
+
+	PHYSICAL_ADDR key;
+	MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> *page;
+	
+	addr = physical_addr - lo_addr;
+	key = addr / PAGE_SIZE;
+	page = hash_table.Find(key);
+	if(!page)
+	{
+		page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+		hash_table.Insert(page);
+	}
+	
+	physical_start_addr = key * PAGE_SIZE;
+	physical_end_addr = physical_start_addr + PAGE_SIZE - 1;
+	return page->storage;
+}
+
+
 } // end of namespace ram
 } // end of namespace memory
 } // end of namespace cxx
