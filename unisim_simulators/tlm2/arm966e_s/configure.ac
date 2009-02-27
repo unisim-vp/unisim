@@ -52,18 +52,17 @@ AC_PROG_LN_S
 
 AC_LANG([C++])
 
+UNISIM_STATIC
+
 ###### CHECK FOR STANDARD C HEADERS ###########################################
 AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR TARGET SPECIFIC HEADERS/LIBRARIES ######################
 
-UNISIM_STATIC
-
 case $host in
 	*linux*)   # linux host
 		UNISIM_CHECK_CURSES
-		#UNISIM_CHECK_TERMCAP
 		UNISIM_CHECK_LIBEDIT
 		;;
 	*darwin*)   # darwin host
@@ -106,6 +105,8 @@ UNISIM_LINK(unisim_component_cxx_memory_ram)
 
 UNISIM_LINK(unisim_component_tlm2_processor_arm)
 UNISIM_LINK(unisim_component_tlm2_memory_ram)
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate

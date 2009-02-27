@@ -65,7 +65,6 @@ AC_CHECK_HEADERS([string.h stdio.h stdlib.h inttypes.h stdarg.h],,\
 case $host in
 	*linux*)   # linux host
 		UNISIM_CHECK_CURSES
-		#UNISIM_CHECK_TERMCAP
 		UNISIM_CHECK_LIBEDIT
 		;;
 	*darwin*)   # darwin host
