@@ -16,12 +16,20 @@ all-local-lib: $(lib_LIBRARIES)
 		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$$p $$p); \
 	done
 	
+# all-local-ltlib: $(lib_LTLIBRARIES)
+# 	@list='$(lib_LTLIBRARIES)'; \
+# 	for p in $$list; do \
+# 		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$$p; \
+# 		mkdir -p $(top_builddir)/$(ROOT_DIR)/lib; \
+# 		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$$p $$p); \
+# 	done
+
 all-local-ltlib: $(lib_LTLIBRARIES)
 	@list='$(lib_LTLIBRARIES)'; \
 	for p in $$list; do \
 		rm -f $(top_builddir)/$(ROOT_DIR)/lib/$$p; \
 		mkdir -p $(top_builddir)/$(ROOT_DIR)/lib; \
-		(cd $(top_builddir)/$(ROOT_DIR)/lib && $(LN_S) $(abs_top_builddir)/$$p $$p); \
+		cat $(abs_top_builddir)/$$p | sed -e "s#\(installed=\).*\$$#\1yes#" -e "s#\(libdir=\).*\$$#\1'$(abs_top_builddir)/.libs'#" > $(top_builddir)/$(ROOT_DIR)/lib/$$p; \
 	done
 
 all-local-include: $(include_HEADERS)
