@@ -346,6 +346,29 @@ bool Instruction<CONFIG>::AllowSegment() const
 	return operation->allow_segment;
 }
 
+template <class CONFIG>
+bool Instruction<CONFIG>::ForceReg(Operand op) const
+{
+	if(operation == 0) {
+		operation = op_decoder.Decode(addr, iw);
+	}
+	return operation->force_reg[op];
+}
+
+template <class CONFIG>
+size_t Instruction<CONFIG>::NumGPRsIn() const
+{
+	assert(false);
+	throw "";
+}
+
+template <class CONFIG>
+VectorAddress<CONFIG> Instruction<CONFIG>::EffectiveAddress(Operand op) const
+{
+	assert(false);
+	throw "";
+}
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

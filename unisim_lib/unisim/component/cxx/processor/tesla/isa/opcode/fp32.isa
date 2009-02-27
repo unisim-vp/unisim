@@ -39,27 +39,35 @@
 
 ****************************************************/
 
-op fsmad_full( \
+op fsmad_full_normal( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
 	0xe[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
 
-// Sat?
+op fsmad_full_end( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
+	0xe[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
 
-//op fsmac_full(0xe[4]:addr_lo[2]:addr_imm[1]:/*src3_cm*/1[1]:src2_cm[1]:src2[7]:src1[7]:\
-//	dest[7]:0[1]:1[1]:\
-//	0[3]:?[1]:imm_hi[26]:/*marker*/3[2])
+op fsmad_full_join( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
+	0xe[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
+
+group fsmad_full(fsmad_full_normal, fsmad_full_end, fsmad_full_join)
+
+
+// Sat?
 
 
 fsmad_full.disasm = {
-//	cpu.DisasmPred(pred_cond, pred_reg, buffer);
-
 	buffer << "mad";
 	insn->DisasmControl(buffer);
 	buffer << ".f32";
 	DisasmRounding(rounding_mode, buffer);
-//	cpu.DisasmMarker(marker, buffer);
 	buffer << " ";
 //	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
 //	cpu.DisasmDest(dest, ignore_output, buffer);
@@ -80,24 +88,6 @@ fsmad_full.disasm = {
 	insn->DisasmSrc3(buffer);
 }
 
-/*
-fsmac_full.disasm = {
-	cpu.DisasmPred(pred_cond, pred_reg, buffer);
-
-	buffer << "mac.f32";
-	cpu.DisasmRounding(rounding_mode, buffer);
-	//cpu.DisasmMarker(marker, buffer);
-	buffer << " ";
-	cpu.DisasmSetPred(set_pred_reg, set_pred, buffer);
-	cpu.DisasmDest(dest, 0, buffer);
-	buffer << ", ";
-	cpu.DisasmSrc(src1, 0, src1_sh, src1_neg, addr_lo, addr_hi, addr_imm, buffer);
-	buffer << ", ";
-	cpu.DisasmImm(imm_hi, src2, buffer);
-}
-*/
-
-
 fsmad_full.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
 //	cpu.ExecMarker(marker);
@@ -110,24 +100,55 @@ fsmad_full.execute = {
 	
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);
-//	if(set_pred)
-//		cpu.WritePred(set_pred_reg, pred_cond, pred_reg, ComputePredFP32(output));
 }
-/*
-fsmac_full.execute = {
+
+op fsmac_imm(\
+	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
+	0xe[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:/*src2_neg*/0[1]:/*src1_neg[1]:WTF*//*src2*/?[6]:src3_neg[1]:/*src1*/?[6]: \
+	dest[7]:/*flow*/0[1]:/*long*/1[1] \
+)
+
+op fsmad_half(\
+	?[32]: \
+	0xe[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:/*src2_neg*/0[1]:/*src1_neg*/?[1]:/*src2*/?[5]:src3_neg[1]:/*src1*/?[6]: \
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1] \
+)
+
+// TODO: fsmad_half
+
+group fsmac(fsmac_imm)
+
+fsmac.disasm = {
+	if(src3_neg) {		// ??
+		buffer << "msc";
+	}
+	else {
+		buffer << "mac";
+	}
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
+	buffer << " ";
+	insn->DisasmDest(buffer);
+	buffer << ", ";
+//	DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer);
+	buffer << ", ";
+	insn->DisasmSrc2(buffer);
+}
+
+fsmac.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
-	cpu.ExecMarker(marker);
 	// dest += a * b
 	// b immediate
-	reg_t dest = cpu.ReadOperandFP32(dest, 0, 0, 0);
-	reg_t a = cpu.ReadOperandFP32(src1, 0, 0, 0, addr_lo, addr_hi, addr_imm);
-	reg_t b = cpu.ReadImmediate(imm_hi, src2);
-	reg_t output = cpu.FSMad(a, b, c, rounding_mode);
-	cpu.WriteOutput(output, pred_cond, pred_reg);
-	if(set_pred)
-		cpu.WritePred(set_pred_reg, pred_cond, pred_reg);
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
+	reg_t c = cpu->GetGPR(dest);
+
+	reg_t output = FSMad(a, b, c, /*src1_neg*/0, 0, src3_neg, RM_RN);
+	insn->WriteDest(output);
+	insn->SetPredFP32(output);
 }
-*/
+
 
 // Single-precision FP Add
 // full: dest = src1 + src3
@@ -235,15 +256,40 @@ fsadd_halfimm.execute = {
 
 // TODO: enforce no src2?
 
-op fsmul_full( \
+op fsmul_full_normal( \
 	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
-	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
 	0xc[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
 
-group fsmul(fsmul_full)
+op fsmul_full_end( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/1[2]: \
+	0xc[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
 
-fsmul.disasm = {
+op fsmul_full_join( \
+	/*subop*/0[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:/*src3*/?[7]\
+	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/2[2]: \
+	0xc[4]:?[26]:0[1]:/*IWidth*/1[1]\
+)
+
+op fsmul_imm( \
+	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
+	0xc[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/?[6]:src1_neg[1]:/*src1*/?[6]: \
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/1[1] \
+)
+
+op fsmul_half( \
+	?[32]: \
+	0xc[4]:/*addr_reg*/?[3]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:src3_neg[1]:/*src2*/?[6]:src1_neg[1]:/*src1*/?[6]: \
+	/*dest*/?[7]:/*flow*/0[1]:/*long*/0[1] \
+)
+
+group fsmul_full(fsmul_full_normal, fsmul_full_end, fsmul_full_join)
+group fsmul_halfimm(fsmul_imm, fsmul_half)
+
+fsmul_full.disasm = {
 
 	buffer << "mul";
 	insn->DisasmControl(buffer);
@@ -277,36 +323,197 @@ fsmul_full.execute = {
 	insn->SetPredFP32(output);
 }
 
+fsmul_halfimm.disasm = {
 
-// TODO: forbit immediate?
+	buffer << "mul";
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
+	
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	DisasmSign(src3_neg, buffer);
+	insn->DisasmSrc2(buffer);
+}
+
+fsmul_halfimm.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a * b
+	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
+
+	// src3_neg applies to Src2 here
+	// (not very useful to have -a * -b btw)
+	reg_t output = FSMul(a, b, src1_neg, src3_neg, RM_RN);
+	
+	insn->WriteDest(output);
+	insn->SetPredFP32(output);
+}
+
+
+
+// TODO: forbid immediate?
 op fsset_full( \
-	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:setcond[7]\
+	/*subop*/3[3]:/*?*/0[1]:src3_neg[1]:m32[1]:0[2]:rounding_mode[2]:/*src1_sh*/?[1]:src1_abs[1]:0[3]:setcond[3]\
 	:/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output_reg*/?[1]:/*addr_hi*/?[1]:/*marker*/?[2]: \
 	0xb[4]:?[26]:0[1]:/*IWidth*/1[1]\
 )
 
 group fsset(fsset_full)
 
+fsset.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(m32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpSrc2] = DT_U32;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
 fsset.disasm = {
-	buffer << "set";
+	buffer << "set.";
 	buffer << SetCondString(SetCond(setcond));
 	insn->DisasmControl(buffer);
+	DisasmSignWidth(true, m32, buffer);
 	buffer << ".f32";
 	
-//	DisasmRounding(rounding_mode, buffer);
 	buffer << " ";
+	insn->DisasmDest(buffer);
+	buffer << " ";
+	if(src1_abs) {
+		buffer << "|";
+	}
 	insn->DisasmSrc1(buffer);
+	if(src1_abs) {
+		buffer << "|";
+	}
+	
+	buffer << ", ";
+	insn->DisasmSrc2(buffer);
 	
 }
 
 fsset.execute = {
 	typedef VectorRegister<CONFIG> reg_t;
+	
+	assert(!src3_neg);	// Is this allowed?
+	//assert(!src1_neg);
 
 	// dest = a * b
 	reg_t a = insn->ReadSrc1();
+	reg_t b = insn->ReadSrc2();
 	reg_t output;
-	assert(false);
+	VectorFlags<CONFIG> vf;
+
+	vf = ComputePredSetFP32(output, a, b, SetCond(setcond), src1_abs);
 	
+	insn->WriteDest(output);
+	insn->SetPred(vf);
+}
+
+
+// Int to float
+op fcvti_full_normal( \
+	/*subop*/2[3]:/*?*/0[1]:sign[1]:data_32[1]:/*const_seg*/?[4]:/*src1_sh*/?[1]:/*abs_sat*/0[2]:cvt_round[2]:cvt_type[3]:\
+	/*pred_reg*/?[2]:/*pred_cond*/?[5]:/*set_pred*/?[1]:/*set_pred_reg*/?[2]:/*output*/?[1]:/*addr_hi*/?[1]:/*marker*/0[2]: \
+	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+
+
+group fcvti_full(fcvti_full_normal)
+
+// No immediate : dest = conv(src1)
+
+fcvti_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(data_32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = CvtTypeToDataType(ConvType(cvt_type));	// Or always 32??
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fcvti_full.disasm = {
+	// data_32 = 0 -> mov.b16
+	// data_32 = 1 -> mov.b32
+	// cvt_round = 1 -> default, round down?
+	// cvt_type = 7 -> default, no conv
+	// pred_cond = 15 -> default, true
+	buffer << "cvt";
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
+
+	DisasmConvert(cvt_round, cvt_type, sign, data_32, AS_NONE, buffer);
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	insn->DisasmSrc1(buffer);
+}
+
+fcvti_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	// dest = a
+	// TODO: Read 2 regs if 64-bit
+	assert(!f64);
+	reg_t a = insn->ReadSrc1();
+	reg_t output = ConvertFloatInt(a, cvt_round, cvt_type, data_32);
+
+	insn->WriteDest(output);
+	insn->SetPredFP32(output);
+}
+
+
+// "delta" in decuda and nouveau??
+// behaves like a mov.f32...
+// used only for negating floats?
+op fmov_full( \
+	/*subop*/7[3]:/*?*/0[1]:/*?*/0[1]:src1_neg[1]:/*const_seg*/?[4]:?[20]:/*marker*/?[2]: \
+	0xa[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/0[1]:/*src2_cm*/0[1]:f64[1]:/*?*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1]\
+)
+
+//group fmov_full(fmov_full_normal)
+
+// No immediate : dest = conv(src1)
+
+fmov_full.init = {
+	typedef Operation<CONFIG> inherited;
+	inherited::op_type[OpDest] = DT_U32;
+	inherited::op_type[OpSrc1] = DT_U32;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+fmov_full.disasm = {
+	buffer << "mov";
+	insn->DisasmControl(buffer);
+	buffer << ".f32";
+
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	DisasmSign(src1_neg, buffer);
+	insn->DisasmSrc1(buffer);
+}
+
+fmov_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+	assert(!f64);
+	reg_t a = insn->ReadSrc1();
+	reg_t output = FSMov(a, src1_neg);
+
 	insn->WriteDest(output);
 	insn->SetPredFP32(output);
 }

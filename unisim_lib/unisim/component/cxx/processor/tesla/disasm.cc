@@ -142,14 +142,25 @@ void DisasmImm(uint32_t imm_hi, uint32_t imm_lo, ostream & buffer)
 	buffer << hex << imm;
 }
 
-void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, uint32_t data_32, uint32_t abssat, ostream & buffer)
+void DisasmConvert(uint32_t cvt_round, uint32_t cvt_type, bool sign,
+	uint32_t data_32, uint32_t abssat, ostream & buffer)
 {
-	if(data_32 == 0)
-		buffer << ".b16";
+//	if(data_32 == 0)
+//		buffer << ".b16";
+	DisasmSignWidth(sign, data_32, buffer);
 	buffer << ConvTypeString(ConvType(cvt_type))
 		<< RoundingModeString(RoundingMode(cvt_round))
 		<< AbsSatString(AbsSat(abssat));
 }
+
+/*void DisasmConvertFP32(uint32_t cvt_round, uint32_t cvt_type, bool sign,
+	uint32_t data_32, uint32_t abssat, ostream & buffer)
+{
+	DisasmSignWidth(sign, data_32, buffer);
+	buffer << ConvTypeString(ConvType(cvt_type))
+		<< RoundingModeString(RoundingMode(cvt_round))
+		<< AbsSatString(AbsSat(abssat));
+}*/
 
 void DisasmDataType(uint32_t dt, ostream & buffer)
 {
@@ -230,12 +241,18 @@ void DisasmSign(uint32_t sign, ostream & buffer)
 		buffer << "-";
 }
 
-void DisasmAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t shift, ostream & buffer)
+void DisasmAddress(uint32_t reg, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t shift, ostream & buffer, bool addr_inc)
 {
 	uint32_t addr_reg = (addr_hi << 2) | addr_lo;
 	if(addr_reg != 0)
 	{
 		buffer << "a" << addr_reg << "+";
+		if(addr_inc) {
+			buffer << "=";
+		}
+	}
+	else {
+		assert(!addr_inc);
 	}
 
 	if(addr_imm)
@@ -267,6 +284,21 @@ void DisasmGlobal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t ad
 	buffer << "]";
 }
 
+void DisasmLocal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, uint32_t dt, ostream & buffer, bool addr_inc)
+{
+	buffer << "l" << segment << "[";
+
+	int shift = 0;
+	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
+	else if(dt == DT_U32 || dt == DT_S32) shift = 2;	// 32-bit
+	else if(dt == DT_U64) shift = 3;	// 32-bit
+	else if(dt == DT_U128) shift = 4;
+	
+	DisasmAddress(dest, addr_lo, addr_hi, addr_imm, shift, buffer, addr_inc);
+	
+	buffer << "]";
+}
+
 void DisasmShared(uint32_t addr, uint32_t type, ostream & buffer)
 {
 	static int sm_size[] = {
@@ -280,7 +312,7 @@ void DisasmShared(uint32_t addr, uint32_t type, ostream & buffer)
 	buffer << std::dec;
 }
 
-void DisasmShared(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, SMType type, ostream & buffer)
+void DisasmShared(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, SMType type, ostream & buffer, bool addr_inc)
 {
 	buffer << "s" << "[";
 	
@@ -288,10 +320,23 @@ void DisasmShared(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t ad
 	if(type == SM_U16 || type == SM_S16) shift = 1;
 	else if(type == SM_U32) shift = 2;
 
-	DisasmAddress(dest, addr_lo, addr_hi, addr_imm, shift, buffer);
+	DisasmAddress(dest, addr_lo, addr_hi, addr_imm, shift, buffer, addr_inc);
 	
 	buffer << "]";
 	
+}
+
+void DisasmConstant(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, SMType type, ostream & buffer, bool addr_inc)
+{
+	buffer << "c" << segment << "[";
+	
+	int shift = 0;
+	if(type == SM_U16 || type == SM_S16) shift = 1;
+	else if(type == SM_U32) shift = 2;
+
+	DisasmAddress(dest, addr_lo, addr_hi, addr_imm, shift, buffer, addr_inc);
+	
+	buffer << "]";
 }
 
 void DisasmNot(uint32_t bnot, ostream & buffer)

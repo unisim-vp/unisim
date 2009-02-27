@@ -83,6 +83,7 @@ enum SetCond
 {
 	// Actually a LUT
 	// addressed by SZ flags
+	// Unordered comparisons?
 	SC_FL = 0,
 	SC_LT = 1,
 	SC_EQ = 2,
@@ -90,7 +91,7 @@ enum SetCond
 	SC_GT = 4,
 	SC_NE = 5,
 	SC_GE = 6,
-	SC_TR = 7
+	SC_TR = 7,
 };
 
 

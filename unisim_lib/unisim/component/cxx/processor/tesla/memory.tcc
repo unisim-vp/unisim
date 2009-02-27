@@ -190,6 +190,30 @@ void CPU<CONFIG>::ReadShared(typename CONFIG::address_t addr, VectorRegister<CON
 	}
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::GatherConstant(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, SMType type)
+{
+	uint32_t shift = 0;
+	if(type == SM_U16 || type == SM_S16) shift = 1;
+	else if(type == SM_U32) shift = 2;
+	VecAddr addr = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
+	address_t base = CONFIG::CONST_START + segment * CONFIG::CONST_SEG_SIZE;
+	switch(type)
+	{
+	case SM_U32:
+		Gather32(addr, output, mask, 1, base);
+		break;
+	case SM_U16:
+	case SM_S16:
+		Gather16(addr, output, mask, 1, base);
+		break;
+	case SM_U8:
+		Gather8(addr, output, mask, 1, base);
+		break;
+	default:
+		assert(false);
+	}
+}
 
 template <class CONFIG>
 void CPU<CONFIG>::Gather32(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask,

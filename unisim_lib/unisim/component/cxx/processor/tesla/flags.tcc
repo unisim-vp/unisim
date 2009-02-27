@@ -84,6 +84,7 @@ VectorFlags<CONFIG> ComputePredFP32(VectorRegister<CONFIG> const & output)
 	flags.Reset();
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
+		// TODO: use softfloats
 		float f = output.ReadFloat(i);
 		switch(fpclassify(f))
 		{

@@ -179,12 +179,24 @@ VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a,
 	return rv;
 }
 
-#if 0
 template <class CONFIG>
-void FSNegate(VectorRegister<CONFIG> & a)
+VectorRegister<CONFIG> FSMov(VectorRegister<CONFIG> & a, bool neg)
 {
-	throw "Not implemented!";
+	typedef typename CONFIG::float_t float_t;
+	typedef typename float_t::StatusAndControlFlags FPFlags;
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float_t sa = a.ReadSimfloat(i);
+		if(neg) {
+			sa.opposite();
+		}
+		rv.WriteSimfloat(sa, i);
+	}
+	return rv;
 }
+
+#if 0
 
 template<class CONFIG>
 VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
@@ -402,7 +414,6 @@ VectorRegister<CONFIG> Mul24(VectorRegister<CONFIG> const & a,
 }
 
 
-
 template<class CONFIG>
 VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	VectorRegister<CONFIG> const & b,
@@ -459,6 +470,8 @@ VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	return rv;
 	
 }
+
+
 
 template<class CONFIG>
 VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
@@ -592,21 +605,22 @@ void I32Negate(VectorRegister<CONFIG> & a)
 }
 
 template <class CONFIG>
-VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat)
+VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg)
 {
 	// cvt_type = *SOURCE* type
 	// b32 = *DEST* type
 	assert(abssat == AS_NONE);	// TODO: sat, abs, ssat
 
 	// Unless abs, dest>source means no-op
-	if(cvt_type == CT_NONE
-		|| (cvt_type == CT_U32 || cvt_type == CT_S32) && b32)
+	if(!neg && (cvt_type == CT_NONE
+		|| (cvt_type == CT_U32 || cvt_type == CT_S32) && b32))
 	{
 		// No-op
 		return a;
 	}
 	else if(cvt_type == CT_U16)
 	{
+		assert(!neg);
 		return a.Split(0);	// Extract lower part
 	}
 	
@@ -614,26 +628,103 @@ VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_ro
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		// Also when !b32
-		if(cvt_type == CT_U8)
+		uint32_t r;
+		switch(cvt_type)
 		{
+		case CT_U8:
 			// Should not be necessary, just 0-extend (default action)
-			rv[i] = a[i] & 0x000000ff;
-		}
-		else if(cvt_type == CT_S8)
-		{
-			rv[i] = (a[i] << 24) >> 24;	// sign-extend
-		}
-		else if(cvt_type == CT_S16)
-		{
-			rv[i] = (a[i] << 16) >> 16;	// sign-extend
-		}
-		else {
+			r = a[i] & 0x000000ff;
+			assert(!neg);
+			break;
+		case CT_S8:
+			r = int32_t(a[i] << 24) >> 24;	// sign-extend
+			break;
+		case CT_U16:
+			r = a[i] & 0x0000ffff;
+			assert(!neg);
+		case CT_S16:
+			r = int32_t(a[i] << 16) >> 16;	// sign-extend
+			break;
+		case CT_U32:
+			assert(!neg);
+		case CT_S32:
+			r = a[i];
+			break;
+		default:
 			assert(false);
 		}
+		if(neg) {
+			r = -int32_t(r);
+		}
+		rv[i] = r;
 	}
 	return rv;
 }
 
+// Int to float
+template<class CONFIG>
+VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> & a, uint32_t rounding_mode, uint32_t cvt_type, bool b32)
+{
+	typedef typename CONFIG::float_t float_t;
+	typedef typename float_t::StatusAndControlFlags FPFlags;
+	// cvt_type = *SOURCE* type
+	// b32 = ??? type
+	assert(b32);
+
+	FPFlags flags;
+	switch(rounding_mode)
+	{
+	case RM_RN:
+		flags.setNearestRound();
+		break;
+	case RM_RZ:
+		flags.setZeroRound();
+		break;
+	case RM_RD:
+		flags.setLowestRound();
+		break;
+	case RM_RU:
+		flags.setHighestRound();
+		break;
+	}
+
+	// TODO: u32/s32???
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		typename float_t::IntConversion conv;
+		switch(cvt_type)
+		{
+		case CT_U32:
+			conv.setUnsigned();
+			conv.assign(a[i]);
+			break;
+		case CT_U16:
+			conv.setUnsigned();
+			conv.assign(a[i] & 0xffff);
+			break;
+		case CT_U8:
+			conv.setUnsigned();
+			conv.assign(a[i] & 0xff);
+			break;
+		case CT_S32:
+			conv.assign(int32_t(a[i]));
+			break;
+		case CT_S16:
+			conv.assign(int32_t(a[i] & 0xffff));
+			break;
+		case CT_S8:
+			conv.assign(int32_t(a[i] & 0xff));
+			break;
+		default:
+			assert(false);
+		}
+		float_t r;
+		r.setInteger(conv, flags);
+		rv.WriteSimfloat(r, i);
+	}
+	return rv;
+}
 
 
 template<class CONFIG>
@@ -681,88 +772,6 @@ VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<C
 }
 
 
-inline SMType MvSizeToSMType(uint32_t mv_size)
-{
-	switch(mv_size) {
-	case 0:
-		return SM_U16;
-	case 1:
-		return SM_U32;
-	case 2:
-		return SM_U8;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-inline RegType CvtTypeToRT(ConvType ct)
-{
-	switch(ct) {
-	case CT_U16:
-	case CT_S16:
-	case CT_U8:	// hack!
-	case CT_S8:
-		return RT_U16;
-	case CT_U32:
-	case CT_S32:
-	case CT_NONE:
-		return RT_U32;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-inline DataType RegTypeToDataType(RegType rt)
-{
-	switch(rt) {
-	case RT_U16:
-		return DT_U16;
-	case RT_U32:
-		return DT_U32;
-	default:
-		assert(false);
-	}
-}
-
-inline DataType MvSizeToDataType(uint32_t mv_size)
-{
-	switch(mv_size) {
-	case 0:
-		return DT_U16;
-	case 1:
-		return DT_U32;
-	case 2:
-		return DT_U8;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
-inline DataType CvtTypeToDataType(ConvType ct)
-{
-	switch(ct) {
-	case CT_U16:
-		return DT_U16;
-	case CT_S16:
-		return DT_S16;
-	case CT_U8:
-		return DT_U8;
-	case CT_S8:
-		return DT_S8;
-	case CT_U32:
-	case CT_NONE:
-		return DT_U32;
-	case CT_S32:
-		return DT_S32;
-	default:
-		assert(false);
-		throw "";
-	}
-}
-
 template<class CONFIG>
 VectorRegister<CONFIG> Min(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	unsigned int m32, unsigned int issigned)
@@ -798,6 +807,78 @@ VectorRegister<CONFIG> Max(VectorRegister<CONFIG> const & a, VectorRegister<CONF
 	unsigned int m32, unsigned int issigned)
 {
 	assert(false);
+}
+
+template<class CONFIG>
+VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
+	VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	SetCond sc,
+	bool a_abs)
+{
+	// TODO: check it only outputs boolean values
+	// input:
+	// SZ
+	// 00  01  10
+	// +1  0   -1
+/*	uint8 truth_table[8][3] = 
+		{ 0, 0, 0 },	// FL
+		{ 0, 0, 1 },	// LT
+		{ 0, 1, 0 },	// EQ
+		{ 0, 1, 1 },	// LE
+		{ 1, 0, 0 },	// GT
+		{ 1, 0, 1 },	// NE
+		{ },	// GE
+		{ },	// TR*/
+	
+	bitset<3> lut = bitset<3>(sc);
+
+	VectorFlags<CONFIG> flags;
+	
+	flags.Reset();
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		typename CONFIG::float_t fa = a.ReadSimfloat(i);
+		if(a_abs) {
+			fa.setPositive();
+		}
+		uint8_t cond = Compare<CONFIG>(fa, b.ReadSimfloat(i));
+		
+		//cerr << "  cond[" << i << "] = " << uint32_t(cond) << endl;
+		if(cond == 3) {
+			// ??
+			flags.SetZero(true, i);
+			flags.SetSign(true, i);
+		}
+		else {
+			assert(cond <= 2);
+			bool r = lut[2 - cond];	// addressed from the left
+			output[i] = -r;	// G80Spec -> extend
+		
+			// TODO: CHECK is this correct (=ComputePredI32)?
+			flags.SetZero(output[i] == 0, i);
+			flags.SetSign(output[i] < 0, i);
+		}
+	}
+	return flags;
+}
+
+template<class CONFIG>
+inline uint8_t Compare(typename CONFIG::float_t a, typename CONFIG::float_t b)
+{
+	switch(a.compareValue(b))
+	{
+	case CONFIG::float_t::CRNaN:
+		return 3;
+	case CONFIG::float_t::CRLess:
+		return 2;
+	case CONFIG::float_t::CREqual:
+		return 1;
+	case CONFIG::float_t::CRGreater:
+		return 0;
+	default:
+		assert(false);
+	}
 }
 
 

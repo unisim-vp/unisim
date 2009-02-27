@@ -114,6 +114,9 @@ public:
 	size_t OperandSize(Operand op) const;
 	Domain OperandDomain(Operand op) const;
 	bool AllowSegment() const;
+	bool ForceReg(Operand op) const;
+	size_t NumGPRsIn() const;
+	VectorAddress<CONFIG> EffectiveAddress(Operand op) const;
 	
 private:
 	CPU<CONFIG> * cpu;

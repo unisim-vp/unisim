@@ -59,7 +59,7 @@ VectorRegister<CONFIG> FSAdd(VectorRegister<CONFIG> const & a, VectorRegister<CO
 	uint32_t nega, uint32_t negb,
 	uint32_t rounding_mode, uint32_t sat = 0);
 template<class CONFIG>
-void FSNegate(VectorRegister<CONFIG> & a);
+VectorRegister<CONFIG> FSMov(VectorRegister<CONFIG> & a, bool do_neg);
 
 template<class CONFIG>
 VectorRegister<CONFIG> IAdd(VectorRegister<CONFIG> const & a,
@@ -99,6 +99,15 @@ VectorRegister<CONFIG> Mad24(VectorRegister<CONFIG> const & a,
 	bool issigned,
 	bool hi);
 
+
+template<class CONFIG>
+VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
+	VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	SetCond sc,
+	bool is_signed,
+	bool b32);
+
 #if 0
 template<class CONFIG>
 VectorRegister<CONFIG> I32Mad24(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
@@ -120,7 +129,10 @@ template<class CONFIG>
 void I32Negate(VectorRegister<CONFIG> & a);
 #endif
 template<class CONFIG>
-VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat);
+VectorRegister<CONFIG> ConvertIntInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32, AbsSat abssat, bool neg = false);
+
+template<class CONFIG>
+VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> & a, uint32_t cvt_round, uint32_t cvt_type, bool b32);
 
 template<class CONFIG>
 VectorRegister<CONFIG> ShiftLeft(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
@@ -149,12 +161,6 @@ VectorRegister<CONFIG> BinOr(VectorRegister<CONFIG> const & a, VectorRegister<CO
 template<class CONFIG>
 VectorRegister<CONFIG> BinXor(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
 
-inline SMType MvSizeToSMType(uint32_t mv_size);
-inline RegType CvtTypeToRT(ConvType ct);
-inline DataType RegTypeToDataType(RegType rt);
-inline DataType MvSizeToDataType(uint32_t mv_size);
-inline DataType CvtTypeToDataType(ConvType ct);
-
 template<class CONFIG>
 VectorRegister<CONFIG> Min(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	unsigned int m32, unsigned int issigned);
@@ -163,6 +169,15 @@ template<class CONFIG>
 VectorRegister<CONFIG> Max(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b,
 	unsigned int m32, unsigned int issigned);
 
+template<class CONFIG>
+inline uint8_t Compare(typename CONFIG::float_t a, typename CONFIG::float_t b);
+
+template<class CONFIG>
+VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
+	VectorRegister<CONFIG> const & a,
+	VectorRegister<CONFIG> const & b,
+	SetCond sc,
+	bool a_abs);
 
 } // end of namespace tesla
 } // end of namespace processor

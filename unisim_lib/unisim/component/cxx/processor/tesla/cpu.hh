@@ -391,6 +391,7 @@ public:
 
 	void GatherShared(VecAddr const & addr, VecReg & data, std::bitset<CONFIG::WARP_SIZE> mask, SMType t = SM_U32);	// addr in bytes
 	void GatherShared(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
+	void GatherConstant(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, SMType type);
 
 	void Gather(VecAddr const & addr, VecReg & data,
 		std::bitset<CONFIG::WARP_SIZE> mask, DataType dt);

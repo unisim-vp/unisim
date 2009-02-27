@@ -66,13 +66,6 @@ public:
 		uint32_t pp;                            /*< 2-bit page protection field */
 	};
 
-	// Debug stuff
-	static const bool DEBUG_ENABLE = false; // Debug is disabled by default
-	static const bool DEBUG_STEP_ENABLE = false;
-	static const bool DEBUG_LOAD_ENABLE = false;
-	static const bool DEBUG_STORE_ENABLE = false;
-	static const bool DEBUG_READ_MEMORY_ENABLE = false;
-	static const bool DEBUG_WRITE_MEMORY_ENABLE = false;
 
 	// start address
 //	static const uint32_t START_ADDR = 0xfff00100UL; // processor starts at system reset interrupt handler

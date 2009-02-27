@@ -124,7 +124,19 @@ op alu_full_join_const(/*subop*/?[3]:/*?*/?[1]:/*src3_neg*/?[1]:/*src1_neg*/?[1]
 group alu_const(alu_full_normal_const, alu_full_end_const, alu_full_join_const)
 
 alu_const.read = {
-	if(insn->AllowSegment()) {
+	if(insn->ForceReg(OpSrc3)) {
+		RegType rt = insn->OperandRegType(OpSrc3);
+		if(rt == RT_U32) {
+			return cpu->GetGPR(src3 + offset);
+		}
+		else {
+			assert(!offset);	// No use for offset
+			uint32_t rnum = src3 >> 1;
+			uint32_t hilo = (src3 & 1);
+			return cpu->GetGPR(rnum).Split(hilo);
+		}
+	}
+	else if(insn->AllowSegment()) {
 		return cpu->ReadConstant(src3 + offset * 4, segment);
 	}
 	else {
@@ -133,7 +145,18 @@ alu_const.read = {
 }
 
 alu_const.disasm = {
-	if(insn->AllowSegment()) {
+	if(insn->ForceReg(OpSrc3)) {
+		RegType rt = insn->OperandRegType(OpSrc3);
+		if(rt == RT_U32) {
+			os << "r" << src3;
+		}
+		else {
+			uint32_t rnum = src3 >> 1;
+			uint32_t hilo = (src3 & 1);
+			os << "r" << rnum << (hilo ? ".hi" : ".lo");
+		}
+	}
+	else if(insn->AllowSegment()) {
 		os << "c" << segment << "[" << src3 << "]";
 	}
 	else {

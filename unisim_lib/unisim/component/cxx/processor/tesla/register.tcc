@@ -46,6 +46,129 @@ namespace processor {
 namespace tesla {
 
 
+
+inline SMType MvSizeToSMType(uint32_t mv_size)
+{
+	switch(mv_size) {
+	case 0:
+		return SM_U16;
+	case 1:
+		return SM_U32;
+	case 2:
+		return SM_U8;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
+inline RegType CvtTypeToRT(ConvType ct)
+{
+	switch(ct) {
+	case CT_U16:
+	case CT_S16:
+	case CT_U8:	// hack!
+	case CT_S8:
+		return RT_U16;
+	case CT_U32:
+	case CT_S32:
+	case CT_NONE:
+		return RT_U32;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
+inline DataType RegTypeToDataType(RegType rt)
+{
+	switch(rt) {
+	case RT_U16:
+		return DT_U16;
+	case RT_U32:
+		return DT_U32;
+	default:
+		assert(false);
+	}
+}
+
+inline DataType MvSizeToDataType(uint32_t mv_size)
+{
+	switch(mv_size) {
+	case 0:
+		return DT_U16;
+	case 1:
+		return DT_U32;
+	case 2:
+		return DT_U8;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
+inline DataType CvtTypeToDataType(ConvType ct)
+{
+	switch(ct) {
+	case CT_U16:
+		return DT_U16;
+	case CT_S16:
+		return DT_S16;
+	case CT_U8:
+		return DT_U8;
+	case CT_S8:
+		return DT_S8;
+	case CT_U32:
+	case CT_NONE:
+		return DT_U32;
+	case CT_S32:
+		return DT_S32;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
+inline size_t DataTypeSize(DataType dt)
+{
+	switch(dt) {
+	case DT_U8:
+	case DT_S8:
+		return 1;
+	case DT_U16:
+	case DT_S16:
+		return 2;
+	case DT_U32:
+	case DT_S32:
+		return 4;
+	case DT_U64:
+		return 8;
+	case DT_U128:
+		return 16;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
+inline DataType SMTypeToDataType(SMType st)
+{
+	switch(st) {
+	case SM_U8:
+		return DT_U8;
+	case SM_U16:
+		return DT_U16;
+	case SM_S16:
+		return DT_S16;
+	case SM_U32:
+		return DT_U32;
+	default:
+		assert(false);
+		throw "";
+	}
+}
+
+
 template <class CONFIG>
 void VectorRegister<CONFIG>::NegateFP32()
 {
@@ -217,6 +340,17 @@ template <class CONFIG>
 void VectorAddress<CONFIG>::Reset()
 {
 	std::fill(v, v + WARP_SIZE, 0);
+}
+
+template <class CONFIG>
+void VectorAddress<CONFIG>::Increment(DataType dt, std::bitset<CONFIG::WARP_SIZE> mask)
+{
+	assert(false);	// this is just wrong
+	size_t inc = DataTypeSize(dt);
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i) {
+		if(mask[i])
+			v[i] += inc;
+	}
 }
 
 template <class CONFIG>

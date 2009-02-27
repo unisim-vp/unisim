@@ -67,19 +67,27 @@ class Instruction;
 using namespace unisim::component::cxx::processor::tesla;
 //using unisim::component::cxx::processor::tesla::Instruction;
 
-struct DataTypeArray
+
+template <class T, size_t SIZE>
+struct SimpleArray
 {
-	DataType dt[4];
+	T dt[SIZE];
 	
-	DataType & operator[] (size_t i) {
+	T & operator[] (size_t i) {
+		assert(i < SIZE);
 		return dt[i];
 	}
-	DataType operator[] (size_t i) const {
+	T operator[] (size_t i) const {
+		assert(i < SIZE);
 		return dt[i];
 	}
 };
 
+typedef SimpleArray<DataType, 4> DataTypeArray;
+
+
 }
+
 
 impl {
 #include <unisim/component/cxx/processor/tesla/instruction.hh>
@@ -100,6 +108,7 @@ action {void} disasm({CPU<CONFIG> *} {cpu}, {Instruction<CONFIG> const *} {insn}
 
 var op_type : { DataTypeArray }
 var allow_segment : { bool }
+var force_reg : { SimpleArray<bool, 4> }
 
 constructor action init() {
 	typedef Operation<CONFIG> inherited;
@@ -108,6 +117,14 @@ constructor action init() {
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_U32;
 	inherited::op_type[OpSrc3] = DT_U32;
+}
+
+constructor action init_force_reg() {
+	typedef Operation<CONFIG> inherited;
+	inherited::force_reg[OpDest] = false;
+	inherited::force_reg[OpSrc1] = false;
+	inherited::force_reg[OpSrc2] = false;
+	inherited::force_reg[OpSrc3] = false;
 }
 
 include "isa/opcode/fp32.isa"

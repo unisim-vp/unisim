@@ -107,6 +107,16 @@ enum AbsSat
 	AS_SSAT = 3
 };
 
+inline SMType MvSizeToSMType(uint32_t mv_size);
+inline RegType CvtTypeToRT(ConvType ct);
+inline DataType RegTypeToDataType(RegType rt);
+inline DataType MvSizeToDataType(uint32_t mv_size);
+inline DataType CvtTypeToDataType(ConvType ct);
+inline size_t DataTypeSize(DataType dt);
+inline DataType SMTypeToDataType(SMType st);
+
+
+
 // Inherit from valarray<CONFIG::reg_t>??
 template <class CONFIG>
 struct VectorRegister
@@ -153,6 +163,8 @@ struct VectorAddress
 	address_t & operator[] (unsigned int lane);
 	
 	VectorAddress<CONFIG> & operator+=(VectorAddress<CONFIG> const & other);
+	
+	void Increment(DataType dt, std::bitset<CONFIG::WARP_SIZE> mask);
 	
 	address_t v[WARP_SIZE];
 };
