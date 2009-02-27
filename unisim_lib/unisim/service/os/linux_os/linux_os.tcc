@@ -58,18 +58,18 @@
 #endif
 
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/cpu_linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
 
-#define LOCATION Function << __FUNCTION__ << File << __FILE__ << Line << __LINE__
+#define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/linux_os/linux_os.tcc:" << __LINE__
 
 namespace unisim {
 namespace service {
@@ -90,24 +90,17 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::EndDebug;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Line;
-using unisim::service::interfaces::Endl;
 using unisim::util::endian::endian_type;
 using unisim::util::debug::Register;
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -127,18 +120,17 @@ LinuxOS(const char *name, Object *parent) :
 	Client<MemoryInjection<ADDRESS_TYPE> >(name, parent),
 	Client<Registers>(name, parent),
 	Client<Loader<ADDRESS_TYPE> >(name, parent),
-	Client<Logger>(name, parent),
 	linux_os_export("linux-os-export", this),
 	memory_import("memory-import", this),
 	memory_injection_import("memory-injection-import", this),
 	registers_import("registers-import", this),
-	logger_import("logger-import", this),
 	loader_import("loader-import", this),
 	cpu_linux_os_import("cpu-linux-os-import", this),
 	system(""),
 	param_system("system", this, system),
     endianess(E_LITTLE_ENDIAN),
     param_endian("endianess", this, endianess),
+	logger(*this),
     verbose(false),
     param_verbose("verbose", this, verbose),
 	memory_page_size(4096),
@@ -155,86 +147,90 @@ LinuxOS(const char *name, Object *parent) :
 
 	Object::SetupDependsOn(registers_import);
 	Object::SetupDependsOn(loader_import);
-	Object::SetupDependsOn(logger_import);
  }
 
 /** Destructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-~LinuxOS() {
+~LinuxOS() 
+{
 }
 
 /** Method to execute when the LinuxOS is disconnected from its client. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-OnDisconnect() {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION 
-			<< LOCATION
+OnDisconnect() 
+{
+	logger << DebugWarning << LOCATION << endl
 			<< "TODO"
-			<< Endl << EndDebugWarning;
+			<< EndDebugWarning;
 }
 
 /** Method to setup the service */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-Setup() {
-	if(!cpu_linux_os_import) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< cpu_linux_os_import.GetName() << " is not connected" << Endl
-				<< EndDebugError;
-		}
+Setup() 
+{
+	if (!cpu_linux_os_import) 
+	{
+		logger << DebugError
+			<< cpu_linux_os_import.GetName() << " is not connected" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
-	if(!memory_import) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< memory_import.GetName() << " is not connected" << Endl
-				<< EndDebugError;
-		}
+	if (!memory_import) 
+	{
+		logger << DebugError
+			<< memory_import.GetName() << " is not connected" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
-	if(!memory_injection_import) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< memory_injection_import.GetName() << " is not connected" << Endl
-				<< EndDebugError;
-		}
+	if (!memory_injection_import) 
+	{
+		logger << DebugError
+			<< memory_injection_import.GetName() << " is not connected" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
 	
-	if(!registers_import) {
-		if(logger_import) {
-			(*logger_import) << DebugError << LOCATION
-				<< registers_import.GetName() << " is not connected" << Endl
-				<< EndDebugError;
-		}
+	if (!registers_import) 
+	{
+		logger << DebugError
+			<< registers_import.GetName() << " is not connected" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
 	
 	// check that the given system is supported
-	if(system != "arm" && system != "powerpc") {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "Unsupported system (" << system << "), this service only supports"
-				<< " arm and ppc systems" << Endl
-				<< EndDebugError;
+	if (system != "arm" && system != "powerpc") 
+	{
+		logger << DebugError
+			<< "Unsupported system (" << system << "), this service only supports"
+			<< " arm and ppc systems" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
 	// Call the system dependent setup
-	if(system == "arm") {
-		if(!ARMSetup()) return false;
+	if (system == "arm") 
+	{
+		if (!ARMSetup()) return false;
 	}
-	if(system == "powerpc") {
-		if(!PPCSetup()) return false;
+	if (system == "powerpc")
+	{
+		if (!PPCSetup()) return false;
 	}
-	if(logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Setup finished with success"
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo 
+			<< "Setup finished with success" << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	return true;
 }
 
@@ -246,7 +242,8 @@ Setup() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-ARMSetup() {
+ARMSetup() 
+{
 	// Set the system calls mappings
 	SetSyscallId(string("exit"), 1);
 	SetSyscallId(string("read"), 3);
@@ -295,66 +292,75 @@ ARMSetup() {
 	brk_point = loader_import->GetTopAddr() +
     	(memory_page_size - (loader_import->GetTopAddr() % memory_page_size));
 
-	for(unsigned int i = 0; i < 13; i++) {
+	for (unsigned int i = 0; i < 13; i++) 
+	{
 		stringstream buf;
 		buf << "r" << i;
 		arm_regs[i] = registers_import->GetRegister(buf.str().c_str());
-		if(!arm_regs[i]) {
-			if(logger_import)
-				(*logger_import) << DebugError << LOCATION
-					<< "CPU has no register named " << buf.str()
-					<< Endl << EndDebugError;
+		if (!arm_regs[i]) 
+		{
+			logger << DebugError
+				<< "CPU has no register named " << buf.str() << endl
+				<< LOCATION
+				<< EndDebugError;
 			return false;
 		}
 	}
 	arm_regs[13] = registers_import->GetRegister("sp");
-	if(!arm_regs[13]) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "CPU has no register named sp"
-				<< Endl << EndDebugError;
+	if (!arm_regs[13]) 
+	{
+		logger << DebugError
+			<< "CPU has no register named sp" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
 	arm_regs[14] = registers_import->GetRegister("lr");
-	if(!arm_regs[14]) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "CPU has no register named lr"
-				<< Endl << EndDebugError;
+	if (!arm_regs[14]) 
+	{
+		logger << DebugError
+			<< "CPU has no register named lr" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
 	arm_regs[15] = registers_import->GetRegister("pc");
-	if(!arm_regs[15]) {
-		if(logger_import)
-			(*logger_import) << DebugError << LOCATION
-				<< "CPU has no register named pc"
-				<< Endl << EndDebugError;
+	if (!arm_regs[15]) 
+	{
+		logger << DebugError
+			<< "CPU has no register named pc" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
-	for(unsigned int i = 0; i < 16; i++) {
-		if(arm_regs[i]->GetSize() != sizeof(PARAMETER_TYPE)) {
-			if(logger_import)
-				(*logger_import) << DebugError << LOCATION
-					<< "Unexpected register size for register " << i
-					<< Endl << EndDebugError;
+	for (unsigned int i = 0; i < 16; i++) 
+	{
+		if (arm_regs[i]->GetSize() != sizeof(PARAMETER_TYPE)) 
+		{
+			logger << DebugError
+				<< "Unexpected register size for register " << i << endl
+				<< LOCATION
+				<< EndDebugError;
 			return false;
 		}
 	}
 
 	// Set initial CPU registers
 	PARAMETER_TYPE pc = loader_import->GetEntryPoint();
-	if(logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose)
+		logger << DebugInfo
 			<< "Setting register \"" << arm_regs[15]->GetName() << "\""
-			<< " to value 0x" << Hex << pc << Dec
-			<< Endl << EndDebugInfo;
+			<< " to value 0x" << hex << pc << dec << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	arm_regs[15]->SetValue(&pc);
 	PARAMETER_TYPE st = loader_import->GetStackBase();
-	if(logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose)
+		logger << DebugInfo
 			<< "Setting register \"" << arm_regs[13]->GetName() << "\""
-			<< " to value 0x" << Hex << st << Dec
-			<< Endl << EndDebugInfo;
+			<< " to value 0x" << hex << st << dec << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	arm_regs[13]->SetValue(&st);
 	
 	return true;
@@ -368,7 +374,8 @@ ARMSetup() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-PPCSetup() {
+PPCSetup() 
+{
     // Set the system calls mappings
     SetSyscallId(string("exit"), 1);
     SetSyscallId(string("read"), 3);
@@ -417,25 +424,26 @@ PPCSetup() {
 	            (memory_page_size - (loader_import->GetTopAddr() % memory_page_size));
 
     ppc_cr = registers_import->GetRegister("cr");
-    if(!ppc_cr) {
-		if(logger_import) {
-			(*logger_import) << DebugError;
-			(*logger_import) << "CPU has no register named \"cr\"" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+    if (!ppc_cr) 
+	{
+		logger << DebugError
+			<< "CPU has no register named \"cr\"" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
 
-    for(unsigned int i = 0; i < 31; i++) {
+    for (unsigned int i = 0; i < 31; i++) 
+	{
 		stringstream buf;
 		buf << "r" << i;
 		ppc_regs[i] = registers_import->GetRegister(buf.str().c_str());
-		if(!ppc_regs[i]) {
-			if(logger_import) {
-				(*logger_import) << DebugError;
-				(*logger_import) << "CPU has no register named \"" << buf.str() << "\"" << Endl;
-				(*logger_import) << EndDebugError;
-			}
+		if (!ppc_regs[i]) 
+		{
+			logger << DebugError
+				<< "CPU has no register named \"" << buf.str() << "\"" << endl
+				<< LOCATION
+				<< EndDebugError;
 			return false;
 		}
     }
@@ -443,12 +451,12 @@ PPCSetup() {
     // Set initial CPU registers
     PARAMETER_TYPE pc = loader_import->GetEntryPoint();
     Register *ppc_cia = registers_import->GetRegister("cia");
-    if(!ppc_cia) {
-		if(logger_import) {
-			(*logger_import) << DebugError;
-			(*logger_import) << "CPU has no register named \"cia\"" << Endl;
-			(*logger_import) << EndDebugError;
-		}
+    if (!ppc_cia) 
+	{
+		logger << DebugError
+			<< "CPU has no register named \"cia\"" << endl
+			<< LOCATION
+			<< EndDebugError;
 		return false;
 	}
     ppc_cia->SetValue(&pc);
@@ -461,18 +469,20 @@ PPCSetup() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size) {
+ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size) 
+{
 	memory_injection_import->InjectReadMemory(addr, buffer, size);
-	if(verbose && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "OS read memory: " << Endl
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
-		for(unsigned int i = 0; i < size; i++) {
-			(*logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
-		}
-		(*logger_import) << Dec << Endl
+	if (verbose) 
+	{
+		logger << DebugInfo
+			<< "OS read memory: " << endl
+			<< " - addr = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
+		for (unsigned int i = 0; i < size; i++)
+			logger << " " << (unsigned int)(((uint8_t *)buffer)[i]);
+		logger << dec << endl
+			<< LOCATION
 			<< EndDebugInfo;
 	}
 }
@@ -480,17 +490,19 @@ ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
-	if(verbose && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "OS write memory: " << Endl
-			<< " - addr = 0x" << Hex << addr << Dec << Endl
-			<< " - size = " << size << Endl
-			<< " - data =" << Hex;
-		for(unsigned int i = 0; i < size; i++) {
-			(*logger_import) << " " << (unsigned int)(((uint8_t *)buffer)[i]);
-		}
-		(*logger_import) << Dec << Endl
+WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size) 
+{
+	if(verbose) 
+	{
+		logger << DebugInfo 
+			<< "OS write memory: " << endl
+			<< " - addr = 0x" << hex << addr << dec << endl
+			<< " - size = " << size << endl
+			<< " - data =" << hex;
+		for (unsigned int i = 0; i < size; i++)
+			logger << " " << (unsigned int)(((uint8_t *)buffer)[i]);
+		logger << dec << endl
+			<< LOCATION
 			<< EndDebugInfo;
 	}
 	memory_injection_import->InjectWriteMemory(addr, buffer, size);
@@ -505,7 +517,8 @@ WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-HasSyscall(const string &syscall_name) {
+HasSyscall(const string &syscall_name) 
+{
 	return syscall_name_map.find(syscall_name) != syscall_name_map.end();
 }
 
@@ -518,7 +531,8 @@ HasSyscall(const string &syscall_name) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-HasSyscall(int syscall_id) {
+HasSyscall(int syscall_id) 
+{
 	return syscall_impl_assoc_map.find(syscall_id) != syscall_impl_assoc_map.end();
 }
 
@@ -531,16 +545,20 @@ HasSyscall(int syscall_id) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-SetSyscallId(const string &syscall_name, int syscall_id) {
+SetSyscallId(const string &syscall_name, int syscall_id) 
+{
     syscall_t syscall_impl;
 
-    if(logger_import)
-    	(*logger_import) << DebugInfo << LOCATION
-    		<< "Associating syscall_name \"" << syscall_name << "\""
-    		<< "to syscall_id number " << syscall_id
-    		<< Endl << EndDebugInfo;
-    if(HasSyscall(syscall_name)) {
-    	if(HasSyscall(syscall_id)) {
+	if (verbose)
+		logger << DebugInfo
+			<< "Associating syscall_name \"" << syscall_name << "\""
+			<< "to syscall_id number " << syscall_id << endl
+			<< LOCATION
+			<< EndDebugInfo;
+    if (HasSyscall(syscall_name)) 
+	{
+    	if (HasSyscall(syscall_id)) 
+		{
     		stringstream s;
     		s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << endl;
     		s << "syscall_id already associated to syscall \"" << syscall_name_assoc_map[syscall_id] << "\"" << endl;
@@ -549,7 +567,9 @@ SetSyscallId(const string &syscall_name, int syscall_id) {
     	}
     	syscall_name_assoc_map[syscall_id] = syscall_name;
     	syscall_impl_assoc_map[syscall_id] = syscall_name_map[syscall_name];
-    } else {
+    } 
+	else 
+	{
     	stringstream s;
     	s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << endl;
     	s << "Unimplemented system call (" << syscall_name << ")";
@@ -563,21 +583,25 @@ SetSyscallId(const string &syscall_name, int syscall_id) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-ExecuteSystemCall(int id) {
+ExecuteSystemCall(int id) 
+{
 	int translated_id = GetSyscallNumber(id);
 
-	if (HasSyscall(translated_id)) {
+	if (HasSyscall(translated_id)) 
+	{
 		current_syscall_id = translated_id;
 		current_syscall_name = syscall_name_assoc_map[translated_id];
-		if(logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if (verbose)
+			logger << DebugInfo
 				<< "Executing syscall(name = " << current_syscall_name << ";"
 				<< " id = " << translated_id << ";"
-				<< " unstranslated id = " << id << ")" << Endl
+				<< " unstranslated id = " << id << ")" << endl
+				<< LOCATION
 				<< EndDebugInfo;
 		syscall_t y = syscall_impl_assoc_map[translated_id];
 		(this->*y)();
-    } else
+    } 
+	else
     	throw UnimplementedSystemCall(__FUNCTION__,
 				    __FILE__,
 				    __LINE__,
@@ -590,12 +614,13 @@ ExecuteSystemCall(int id) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-Swap() {
+Swap() 
+{
 #if BYTE_ORDER == BIG_ENDIAN
-	if(GetEndianess() == E_BIG_ENDIAN) return false;
+	if (GetEndianess() == E_BIG_ENDIAN) return false;
 	else return true;
 #else
-    if(GetEndianess() == E_BIG_ENDIAN) return true;
+    if (GetEndianess() == E_BIG_ENDIAN) return true;
     else return false;
 #endif
 }
@@ -604,10 +629,12 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 PerformSwap(void *buf,
-		int count) {
+		int count) 
+{
 	int size = count;
     
-    if(count > 0) {
+    if (count > 0) 
+	{
     	char *dst_base, *dst;
     	char *src;
 
@@ -615,9 +642,11 @@ PerformSwap(void *buf,
     	dst_base = dst;
     	src = (char *)buf + count - 1;
       
-    	do {
+    	do 
+		{
     		*dst = *src;
-        } while(src--, dst++, --count);
+        }
+ 		while (src--, dst++, --count);
     	memcpy(buf, dst_base, size);
     	free(dst_base);
     }
@@ -626,13 +655,15 @@ PerformSwap(void *buf,
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-StringLength(ADDRESS_TYPE addr) {
+StringLength(ADDRESS_TYPE addr) 
+{
     int len = 0;
     char buffer;
     
-    while(1) {
+    while (1) 
+	{
     	ReadMem(addr, &buffer, 1);
-    	if(buffer == 0) return len;
+    	if (buffer == 0) return len;
     	len++;
     	addr += 1;
     }
@@ -640,34 +671,38 @@ StringLength(ADDRESS_TYPE addr) {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unknown() {
-	if(verbose && logger_import) {
-		(*logger_import) << DebugInfo << LOCATION
-			<< "Unimplemented system call #" << current_syscall_id
-			<< Endl << EndDebugInfo;
-	}
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unknown() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "Unimplemented system call #" << current_syscall_id << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(-1, true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_exit() {
+LSC_exit() 
+{
 	string name = "exit";
 	int ret;
     
 	ret = GetSystemCallParam(0);
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "LSC_exit with ret = 0X" << Hex << ret << Dec
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "LSC_exit with ret = 0X" << hex << ret << dec
+			<< LOCATION
+			<< EndDebugInfo;
 	cpu_linux_os_import->PerformExit(ret);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_read() {
+LSC_read() 
+{
 	string name = "read";
 	int fd;
 	size_t count;
@@ -681,19 +716,21 @@ LSC_read() {
 	
 	buf = malloc(count);
    
-	if(buf) {
+	if (buf) 
+	{
 		ret = read(fd, buf, count);
-		if(ret > 0) WriteMem(buf_addr, buf, ret);
+		if (ret > 0) WriteMem(buf_addr, buf, ret);
 		free(buf);
-	} else {
-		ret = (size_t)-1;
 	}
+	else 
+		ret = (size_t)-1;
 		
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "read(fd=" << fd << ", buf=0x" << Hex << buf_addr << Dec 
-			<< ", count=" << count << ") return " << ret 
-			<< Endl << EndDebugInfo;
+	if(verbose)
+		logger << DebugInfo
+			<< "read(fd=" << fd << ", buf=0x" << hex << buf_addr << dec 
+			<< ", count=" << count << ") return " << ret << endl 
+			<< LOCATION 
+			<< EndDebugInfo;
 		
 	SetSystemCallStatus(ret, ret < 0);
 }
@@ -701,7 +738,8 @@ LSC_read() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_write() {
+LSC_write() 
+{
 	int fd; 
 	size_t count;
 	void *buf;
@@ -715,9 +753,11 @@ LSC_write() {
    
 	ret = (size_t)-1;
    
-	if(buf) {
+	if (buf) 
+	{
 		ReadMem(buf_addr, buf, count);
-		if((fd == 1 || fd == 2)) {
+		if ((fd == 1 || fd == 2)) 
+		{
 			char *tbuf = new char[count + 1];
 			memcpy(tbuf, buf, count);
 			tbuf[count] = '\0';
@@ -726,24 +766,28 @@ LSC_write() {
 			cout << flush;
 			ret = count;
 			delete[] tbuf;
-		} else 
+		}
+		else 
 			ret = write(fd, buf, count);
 		free(buf);
-	} else 
+	} 
+	else 
 		ret = (size_t)-1;
 		
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "write(fd=" << fd << ", buf=0x" << Hex << buf_addr << Dec 
-			<< ", count=" << count << ") return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose) 
+		logger << DebugInfo
+			<< "write(fd=" << fd << ", buf=0x" << hex << buf_addr << dec 
+			<< ", count=" << count << ") return " << ret << endl 
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(ret, ret < 0);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_open() {
+LSC_open() 
+{
 	ADDRESS_TYPE addr;
 	int pathnamelen;
 	char *pathname;
@@ -763,19 +807,19 @@ LSC_open() {
 	int host_flags = 0;
 	int host_mode = 0;
 	// non-Linux open flags encoding may differ from a true Linux host
-	if((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
-	if((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
-	if((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
-	if(flags & LINUX_O_CREAT) host_flags |= O_CREAT;
-	if(flags & LINUX_O_EXCL) host_flags |= O_EXCL;
-	if(flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
-	if(flags & LINUX_O_APPEND) host_flags |= O_APPEND;
+	if ((flags & LINUX_O_ACCMODE) == LINUX_O_RDONLY) host_flags = (host_flags & ~O_ACCMODE) | O_RDONLY;
+	if ((flags & LINUX_O_ACCMODE) == LINUX_O_WRONLY) host_flags = (host_flags & ~O_ACCMODE) | O_WRONLY;
+	if ((flags & LINUX_O_ACCMODE) == LINUX_O_RDWR) host_flags = (host_flags & ~O_ACCMODE) | O_RDWR;
+	if (flags & LINUX_O_CREAT) host_flags |= O_CREAT;
+	if (flags & LINUX_O_EXCL) host_flags |= O_EXCL;
+	if (flags & LINUX_O_TRUNC) host_flags |= O_TRUNC;
+	if (flags & LINUX_O_APPEND) host_flags |= O_APPEND;
 #if defined(WIN32) || defined(WIN64)
 	host_mode = mode & S_IRWXU; // Windows doesn't have bits for group and others
 #else
 	host_mode = mode; // other UNIX systems should have the same bit encoding for protection
 #endif
-	if(strcmp(pathname, osrelease_filename) == 0)
+	if (strcmp(pathname, osrelease_filename) == 0)
 	{
 		{
 			std::ofstream fake_file(fake_osrelease_filename);
@@ -789,11 +833,12 @@ LSC_open() {
 	}
 #endif
 	
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "open(pathname=\"" << pathname << "\", flags=0x" << Hex << flags 
-			<< ", mode=0x" << mode << Dec << ") return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "open(pathname=\"" << pathname << "\", flags=0x" << hex << flags 
+			<< ", mode=0x" << mode << dec << ") return " << ret << endl 
+			<< LOCATION
+			<< EndDebugInfo;
 		
 	free(pathname);
 	SetSystemCallStatus(ret, (ret < 0));
@@ -802,16 +847,18 @@ LSC_open() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_close() {
+LSC_close() 
+{
 	int fd;
 	int ret;
    
 	fd = GetSystemCallParam(0);
 	ret = close(fd);
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "close(fd=" << fd << ") return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "close(fd=" << fd << ") return " << ret << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(ret, ret < 0);
 }
 	
@@ -819,7 +866,8 @@ LSC_close() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_lseek() {
+LSC_lseek() 
+{
 	int fildes;
 	off_t offset;
 	int whence;
@@ -829,11 +877,12 @@ LSC_lseek() {
 	offset = GetSystemCallParam(1);
 	whence = GetSystemCallParam(2);
 	ret = lseek(fildes, offset, whence);
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose)
+		logger << DebugInfo
 			<< "lseek(fildes=" << fildes << ", offset=" << offset 
-			<< ", whence=" << whence << ") return " << ret 
-			<< Endl << EndDebugInfo;
+			<< ", whence=" << whence << ") return " << ret << endl
+			<< LOCATION
+			<< EndDebugInfo;
   
 	if (ret == (off_t)-1) 
 		SetSystemCallStatus(errno, true);
@@ -845,21 +894,24 @@ LSC_lseek() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getpid() {
+LSC_getpid() 
+{
 	pid_t ret;
     
 	ret = (pid_t) 1000;
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "getpid() return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "getpid() return " << ret << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(ret,false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE> 
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getuid() {
+LSC_getuid() 
+{
 #ifdef WIN32
 	uint32_t ret = 0;
 #else
@@ -867,17 +919,19 @@ LSC_getuid() {
     
 	ret = getuid();
 #endif
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "getuid() return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "getuid() return " << ret << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(ret,false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_access() {
+LSC_access() 
+{
 	ADDRESS_TYPE addr;
 	int pathnamelen;
 	char *pathname;
@@ -896,11 +950,12 @@ LSC_access() {
 #else
 	ret = access(pathname, mode);
 #endif
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose)
+		logger << DebugInfo
 			<< "access(pathname=\"" << pathname 
-			<< "\", mode=0x" << Hex << mode << Dec << ") return " << ret 
-			<< Endl << EndDebugInfo;
+			<< "\", mode=0x" << hex << mode << dec << ") return " << ret << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	free(pathname);
 	SetSystemCallStatus(ret, ret < 0);
 }
@@ -908,63 +963,69 @@ LSC_access() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE> 
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_times() {
+LSC_times() 
+{
 	int ret;
 	ADDRESS_TYPE buf_addr;
 	buf_addr = GetSystemCallParam(0);
 
-	if(system == "arm")
+	if (system == "arm")
 	{
 		struct arm_tms_t target_tms;
 		ret = Times(&target_tms);
 
-		if(ret >= 0)
+		if (ret >= 0)
 		{
 			WriteMem(buf_addr, &target_tms, sizeof(target_tms));
 		}
 	}
-	else if(system == "powerpc")
+	else if (system == "powerpc")
 	{
 		struct powerpc_tms_t target_tms;
 		ret = Times(&target_tms);
 
-		if(ret >= 0)
+		if (ret >= 0)
 		{
 			WriteMem(buf_addr, &target_tms, sizeof(target_tms));
 		}
 	}
 	else ret = -1;
 
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "times(buf=0x" << Hex << buf_addr << Dec << ") return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "times(buf=0x" << hex << buf_addr << dec << ") return " << ret 
+			<< endl 
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(ret, ret != -1);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_brk() {
+LSC_brk() 
+{
 	ADDRESS_TYPE new_brk_point;
     
 	new_brk_point = GetSystemCallParam(0);
     
-	if(new_brk_point > GetBrkPoint())
+	if (new_brk_point > GetBrkPoint())
 		SetBrkPoint(new_brk_point);      
 		
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "brk(new_brk_point=0x" << Hex << new_brk_point 
-			<< ") return 0x" << GetBrkPoint() << Dec 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "brk(new_brk_point=0x" << hex << new_brk_point 
+			<< ") return 0x" << GetBrkPoint() << dec << endl
+			<< LOCATION 
+			<< EndDebugInfo;
 	SetSystemCallStatus(GetBrkPoint(),false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE> 
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getgid() {
+LSC_getgid() 
+{
 #ifdef WIN32
 	uint32_t ret = 0;
 #else
@@ -972,17 +1033,19 @@ LSC_getgid() {
     
 	ret = getgid();
 #endif
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "getgid() return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "getgid() return " << ret << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(ret,false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_geteuid() {
+LSC_geteuid() 
+{
 #ifdef WIN32
 	uint32_t ret = 0;
 #else
@@ -990,17 +1053,19 @@ LSC_geteuid() {
     
 	ret = geteuid();
 #endif
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "geteuid() return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "geteuid() return " << ret << endl 
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(ret,false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE> 
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getegid() {
+LSC_getegid() 
+{
 #ifdef WIN32
 	uint32_t ret = 0;
 #else
@@ -1008,10 +1073,11 @@ LSC_getegid() {
     
 	ret = getegid();
 #endif
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "getegid() return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "getegid() return " << ret << endl
+			<< LOCATION
+			<< EndDebugInfo;
 	SetSystemCallStatus(ret,false);
 }
 
@@ -1019,38 +1085,44 @@ LSC_getegid() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE> 
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_munmap() {
+LSC_munmap() 
+{
 	size_t u = (size_t)(GetSystemCallParam(1));
    
-	if(GetMmapBrkPoint() - u > GetMmapBrkPoint()) {
+	if (GetMmapBrkPoint() - u > GetMmapBrkPoint()) 
+	{
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-		if(verbose && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if (verbose)
+			logger << DebugInfo
 				<< "size = " << u 
-				<< ", ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-				<< Endl << EndDebugInfo;
+				<< ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
+				<< endl
+				<< LOCATION << EndDebugInfo;
 		return;
 	}
     
-	if(GetMmapBrkPoint() - u < GetMmapBase())
+	if (GetMmapBrkPoint() - u < GetMmapBase())
 		u = (size_t)(GetMmapBrkPoint() - GetMmapBase());
    
-	if(GetMmapBrkPoint() - u >= GetMmapBrkPoint()) {
+	if (GetMmapBrkPoint() - u >= GetMmapBrkPoint()) 
+	{
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-		if(verbose && logger_import)
-			(*logger_import) << DebugInfo << LOCATION
+		if (verbose)
+			logger << DebugInfo
 				<< "size = " << u 
-				<< ", ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-				<< Endl << EndDebugInfo;
+				<< ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+				<< endl
+				<< LOCATION << EndDebugInfo;
 		return;
 	}
 
 	SetSystemCallStatus((PARAMETER_TYPE)0,false);
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose)
+		logger << DebugInfo
 			<< "size = " << u 
-			<< ", ret = 0x" << Hex << 0 << Dec 
-			<< Endl << EndDebugInfo;
+			<< ", ret = 0x" << hex << 0 << dec 
+			<< endl 
+			<< LOCATION << EndDebugInfo;
 	SetMmapBrkPoint(GetMmapBrkPoint() - u);
 }
 	
@@ -1058,11 +1130,12 @@ LSC_munmap() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_stat() {
-	if(logger_import) 
-		(*logger_import) << DebugWarning << LOCATION
-			<< "TODO" 
-			<< Endl << EndDebugWarning;
+LSC_stat() 
+{
+	logger << DebugWarning
+			<< "TODO" << endl
+			<< LOCATION
+			<< EndDebugWarning;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1072,7 +1145,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	int ret;
 	struct stat host_stat;
 	ret = fstat(fd, &host_stat);
-	if(ret < 0) return ret;
+	if (ret < 0) return ret;
 
 #if defined(__x86_64) || defined(__amd64) || defined(__LP64__) || defined(_LP64) || defined(__amd64__)
 	// 64-bit host
@@ -1094,7 +1167,7 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_mtim.tv_nsec = 0;
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim);
 	target_stat->st_ctim.tv_nsec = 0;
-#elfif defined(linux) // Linux x64
+#elif defined(linux) // Linux x64
 	target_stat->st_blksize = Host2Target(endianess, (int64_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
 	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
@@ -1135,14 +1208,14 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctime);
 	target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux 32
-        target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
-        target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
-        target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
-        target_stat->st_atim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_nsec);
-        target_stat->st_mtim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_mtim.tv_sec);
-        target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_mtim.tv_nsec);
-        target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_sec);
-        target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_nsec);
+	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
+	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
+	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
+	target_stat->st_atim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_atim.tv_nsec);
+	target_stat->st_mtim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_mtim.tv_sec);
+	target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_mtim.tv_nsec);
+	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_sec);
+	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // Darwin PPC32/x86
 	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
 	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
@@ -1155,8 +1228,8 @@ Stat(int fd, struct powerpc_stat_t *target_stat)
 #endif
 
 #endif
-    target_stat->__unused4 = 0;
-    target_stat->__unused5 = 0;
+	target_stat->__unused4 = 0;
+	target_stat->__unused5 = 0;
 	return ret;
 }
 
@@ -1176,7 +1249,7 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	ret = fstat(fd, &host_stat);
 #endif
 
-	if(ret < 0) return ret;
+	if (ret < 0) return ret;
 
 #if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
 	// 64-bit host
@@ -1208,14 +1281,14 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_sec);
 	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // Darwin PPC64/x86_64
-        target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
-        target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
-        target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_sec);
-        target_stat->st_atim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_nsec);
-        target_stat->st_mtim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_sec);
-        target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_nsec);
-        target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_sec);
-        target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_nsec);
+	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
+	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
+	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_sec);
+	target_stat->st_atim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_nsec);
+	target_stat->st_mtim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_sec);
+	target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_nsec);
+	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_sec);
+	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #else
@@ -1248,14 +1321,14 @@ Stat64(int fd, struct powerpc_stat64_t *target_stat)
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_sec);
 	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // Darwin PPC32/x86
-        target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
-        target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
-        target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_sec);
-        target_stat->st_atim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_nsec);
-        target_stat->st_mtim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_sec);
-        target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_nsec);
-        target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_sec);
-        target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_nsec);
+	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
+	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
+	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_sec);
+	target_stat->st_atim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_nsec);
+	target_stat->st_mtim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_sec);
+	target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_nsec);
+	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_sec);
+	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #endif
@@ -1311,14 +1384,14 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_sec);
 	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // darwin PPC64/x86_64
-        target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
-        target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
-        target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_sec);
-        target_stat->st_atim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_nsec);
-        target_stat->st_mtim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_sec);
-        target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_nsec);
-        target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_sec);
-        target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_nsec);
+	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
+	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
+	target_stat->st_atim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_sec);
+	target_stat->st_atim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_nsec);
+	target_stat->st_mtim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_sec);
+	target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_nsec);
+	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_sec);
+	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #else
@@ -1351,14 +1424,14 @@ Stat64(int fd, arm_stat64_t *target_stat)
 	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_sec);
 	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // Darwin PPC32/x86
-        target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
-        target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
-        target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_sec);
-        target_stat->st_atim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_nsec);
-        target_stat->st_mtim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_sec);
-        target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_nsec);
-        target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_sec);
-        target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_nsec);
+	target_stat->st_blksize = Host2Target(endianess, (int32_t) host_stat.st_blksize);
+	target_stat->st_blocks = Host2Target(endianess, (int64_t) host_stat.st_blocks);
+	target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_sec);
+	target_stat->st_atim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_nsec);
+	target_stat->st_mtim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_sec);
+	target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_nsec);
+	target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_sec);
+	target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #endif
@@ -1376,7 +1449,7 @@ Times(struct powerpc_tms_t *target_tms)
 	FILETIME ftKernelTime;
 	FILETIME ftUserTime;
 
-	if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime)) return -1;
+	if (GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime)) return -1;
 
 	target_tms->tms_utime = Host2Target(endianess, (uint32_t) ftUserTime.dwLowDateTime);
 	target_tms->tms_stime = Host2Target(endianess, (uint32_t) ftKernelTime.dwLowDateTime);
@@ -1405,7 +1478,7 @@ Times(struct arm_tms_t *target_tms)
 	FILETIME ftKernelTime;
 	FILETIME ftUserTime;
 
-	if(GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime)) return -1;
+	if (GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime, &ftKernelTime, &ftUserTime)) return -1;
 
 	target_tms->tms_utime = Host2Target(endianess, (uint32_t) ftUserTime.dwLowDateTime);
 	target_tms->tms_stime = Host2Target(endianess, (uint32_t) ftKernelTime.dwLowDateTime);
@@ -1426,7 +1499,8 @@ Times(struct arm_tms_t *target_tms)
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_fstat() {
+LSC_fstat() 
+{
 	int ret;
 	int fd;
 	ADDRESS_TYPE buf_address;
@@ -1434,11 +1508,11 @@ LSC_fstat() {
     
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if(system == "arm")
+	if (system == "arm")
 	{
 		ret = -1;
 	}
-	else if(system == "powerpc")
+	else if (system == "powerpc")
 	{
 		struct powerpc_stat_t target_stat;
 		ret = Stat(fd, &target_stat);
@@ -1446,29 +1520,31 @@ LSC_fstat() {
 	}
 	else ret = -1;
 
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose)
+		logger << DebugInfo
 			<< "stat(fd=" << fd 
-			<< ", buf_addr=0x" << Hex << buf_address << Dec 
-			<< ") return " << ret 
-			<< Endl << EndDebugInfo;
+			<< ", buf_addr=0x" << hex << buf_address << dec 
+			<< ") return " << ret << endl
+			<< LOCATION 
+			<< EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_uname() {
+LSC_uname() 
+{
 	int ret;
 // 	static const char sysname[] = "Linux\0localhost\0""2.6.8\0#1 SMP Tue Feb 12 07:42:25 UTC 2008\0armv5teb\0(none)\0";
 // 	ADDRESS_TYPE buf_addr = GetSystemCallParam(0);
 // 	WriteMem(buf_addr, sysname, sizeof(sysname));
 // 	ret = 0;
 	ret = -1;
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "uname() return " << ret 
-			<< Endl << EndDebugInfo;
+	if (verbose)
+		logger << DebugInfo
+			<< "uname() return " << ret << endl
+			<< LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE) ret, ret < 0);
 }
 	
@@ -1476,7 +1552,8 @@ LSC_uname() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_llseek() {
+LSC_llseek() 
+{
 	int fd;
 	uint32_t offset_high;
 	uint32_t offset_low;
@@ -1491,24 +1568,28 @@ LSC_llseek() {
 	offset_low = GetSystemCallParam(2);
 	result_addr = GetSystemCallParam(3);
 	whence = GetSystemCallParam(4);
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose)
+		logger << DebugInfo
 			<< "llseek(fd=" << fd 
 			<< ", offset=" << (((int64_t) offset_high << 32) | (int64_t) offset_low)
-			<< ", result_addr=0x" << Hex << result_addr << Dec 
-			<< ", whence=" << whence << ")" 
-			<< Endl << EndDebugInfo;
-	if(offset_high == 0) {
+			<< ", result_addr=0x" << hex << result_addr << dec 
+			<< ", whence=" << whence << ")" << endl 
+			<< LOCATION << EndDebugInfo;
+	if (offset_high == 0) 
+	{
 		lseek_ret = lseek(fd, offset_low, whence);
-		if(lseek_ret >= 0) {
+		if (lseek_ret >= 0) 
+		{
 			lseek_ret64 = lseek_ret;
-			if(Swap())
+			if (Swap())
 				PerformSwap(&lseek_ret64, sizeof(lseek_ret64));
 			WriteMem(result_addr, &lseek_ret64, sizeof(lseek_ret64));
 			SetSystemCallStatus((PARAMETER_TYPE)lseek_ret, false);
-		} else 
+		} 
+		else 
 			SetSystemCallStatus((PARAMETER_TYPE)errno, true);
-	} else 
+	} 
+	else 
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 
@@ -1516,12 +1597,13 @@ LSC_llseek() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_writev() {
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+LSC_writev() 
+{
+	if(verbose) 
+		logger << DebugInfo
 			<< "ret = 0x" 
-			<< Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+			<< hex << ((PARAMETER_TYPE)(-EINVAL)) << dec << endl
+			<< LOCATION << EndDebugInfo;
 
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
@@ -1529,70 +1611,78 @@ LSC_writev() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_mmap() {
+LSC_mmap() 
+{
 	SetSystemCallStatus(-1,true); return;
-	if(GetSystemCallParam(3) == 0x32) { /* MAP_PRIVATE | MAP_ANONYMOUS */
+	if (GetSystemCallParam(3) == 0x32) 
+	{ /* MAP_PRIVATE | MAP_ANONYMOUS */
 		SetSystemCallStatus(GetSystemCallParam(0),false);
-		if(verbose && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
-				<< "map_type = 0x" << Hex << GetSystemCallParam(3) << Dec 
+		if (verbose) 
+			logger << DebugInfo
+				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
-				<< ", ret = 0x" << Hex << ((PARAMETER_TYPE)GetSystemCallParam(0)) << Dec 
-				<< Endl << EndDebugInfo;
+				<< ", ret = 0x" << hex << ((PARAMETER_TYPE)GetSystemCallParam(0)) << dec 
+				<< endl << LOCATION << EndDebugInfo;
 		return;
 	}
 		
-	if((GetSystemCallParam(3)&0xFF) != 0x22) { /* MAP_PRIVATE | MAP_ANONYMOUS */
+	if ((GetSystemCallParam(3)&0xFF) != 0x22) 
+	{ /* MAP_PRIVATE | MAP_ANONYMOUS */
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-		if(verbose && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
-				<< "map_type = 0x" << Hex << GetSystemCallParam(3) << Dec 
+		if(verbose) 
+			logger << DebugInfo
+				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
-				<< ", ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-				<< Endl << EndDebugInfo;
+				<< ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+				<< endl << LOCATION << EndDebugInfo;
 		return;
 	}
 	SetSystemCallStatus(GetMmapBrkPoint(),false);
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "map_type = 0x" << Hex << GetSystemCallParam(3) << Dec 
+	if(verbose) 
+		logger << DebugInfo
+			<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 			<< ", size = " << GetSystemCallParam(1)
-			<< ", ret = 0x" << Hex << GetMmapBrkPoint() << Dec 
-			<< Endl << EndDebugInfo;
+			<< ", ret = 0x" << hex << GetMmapBrkPoint() << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetMmapBrkPoint(GetMmapBrkPoint() + GetSystemCallParam(1));
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_mmap2() {
-	if(GetSystemCallParam(3) != 0x22) { /* MAP_PRIVATE | MAP_ANONYMOUS */
+LSC_mmap2() 
+{
+	if (GetSystemCallParam(3) != 0x22) 
+	{ /* MAP_PRIVATE | MAP_ANONYMOUS */
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-		if(verbose && logger_import)    
-			(*logger_import) << DebugInfo << LOCATION 
-				<< "map_type = 0x" << Hex << GetSystemCallParam(3) << Dec 
+		if(verbose)    
+			logger << DebugInfo 
+				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
-				<< ", ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-				<< Endl << EndDebugInfo;
+				<< ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+				<< endl << LOCATION << EndDebugInfo;
 		return;
 	}
     
-	if(GetMmapBrkPoint() + GetSystemCallParam(1) > GetSystemCallParam(1)) {
+	if (GetMmapBrkPoint() + GetSystemCallParam(1) > GetSystemCallParam(1)) 
+	{
 		SetSystemCallStatus(GetMmapBrkPoint(),false);
-		if(verbose && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
-				<< "map_type = 0x" << Hex << GetSystemCallParam(3) << Dec 
+		if (verbose) 
+			logger << DebugInfo
+				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
-				<< ", ret = 0x" << Hex << GetMmapBrkPoint() << Dec 
-				<< Endl << EndDebugInfo;
+				<< ", ret = 0x" << hex << GetMmapBrkPoint() << dec 
+				<< endl << LOCATION << EndDebugInfo;
 		SetMmapBrkPoint(GetMmapBrkPoint() + GetSystemCallParam(1));
-	} else {
-		if(verbose && logger_import) 
-			(*logger_import) << DebugInfo << LOCATION
-				<< "map_type = 0x" << Hex << GetSystemCallParam(3) << Dec 
+	} 
+	else 
+	{
+		if (verbose) 
+			logger << DebugInfo
+				<< "map_type = 0x" << hex << GetSystemCallParam(3) << dec 
 				<< ", size = " << GetSystemCallParam(1)
-				<< ", ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-				<< Endl << EndDebugInfo;
+				<< ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+				<< endl << LOCATION << EndDebugInfo;
 		SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 	}
 }
@@ -1600,7 +1690,8 @@ LSC_mmap2() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_stat64() { 
+LSC_stat64() 
+{ 
 	int ret;
 	ADDRESS_TYPE buf_address;
 	int fd;
@@ -1608,31 +1699,32 @@ LSC_stat64() {
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if(system == "arm")
+	if (system == "arm")
 	{
 		struct arm_stat64_t target_stat;
 		ret = Stat64(fd, &target_stat);
 		WriteMem(buf_address, &target_stat, sizeof(target_stat));
 	}
-	else if(system == "powerpc")
+	else if (system == "powerpc")
 	{
 		struct powerpc_stat64_t target_stat;
 		ret = Stat64(fd, &target_stat);
 		WriteMem(buf_address, &target_stat, sizeof(target_stat));
 	}
 	else ret = -1;
-	if(verbose && logger_import)     
-		(*logger_import) << DebugInfo << LOCATION
-			<< "fd = " << fd << ", buf_address = 0x" << Hex << buf_address << Dec 
-			<< ", ret = 0x" << Hex << ret << Dec 
-			<< Endl << EndDebugInfo;
+	if(verbose)     
+		logger << DebugInfo
+			<< "fd = " << fd << ", buf_address = 0x" << hex << buf_address << dec 
+			<< ", ret = 0x" << hex << ret << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_fstat64() { 
+LSC_fstat64() 
+{ 
 	int ret;
 	ADDRESS_TYPE buf_address;
 	int fd;
@@ -1640,31 +1732,32 @@ LSC_fstat64() {
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if(system == "arm")
+	if (system == "arm")
 	{
 		struct arm_stat64_t target_stat;
 		ret = Stat64(fd, &target_stat);
 		WriteMem(buf_address, &target_stat, sizeof(target_stat));
 	}
-	else if(system == "powerpc")
+	else if (system == "powerpc")
 	{
 		struct powerpc_stat64_t target_stat;
 		ret = Stat64(fd, &target_stat);
 		WriteMem(buf_address, &target_stat, sizeof(target_stat));
 	}
 	else ret = -1;
-	if(verbose && logger_import)     
-		(*logger_import) << DebugInfo << LOCATION
-			<< "fd = " << fd << ", buf_address = 0x" << Hex << buf_address << Dec 
-			<< ", ret = 0x" << Hex << ret << Dec 
-			<< Endl << EndDebugInfo;
+	if(verbose)     
+		logger << DebugInfo
+			<< "fd = " << fd << ", buf_address = 0x" << hex << buf_address << dec 
+			<< ", ret = 0x" << hex << ret << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getuid32() {
+LSC_getuid32() 
+{
 #ifdef WIN32
 	uint32_t ret = 0;
 #else
@@ -1672,17 +1765,18 @@ LSC_getuid32() {
 
 	ret = getuid();
 #endif
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)ret) << Dec 
-			<< Endl << EndDebugInfo;
+	if (verbose) 
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret,false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getgid32() {
+LSC_getgid32() 
+{
 #ifdef WIN32
 	uint32_t ret = 0;
 #else
@@ -1690,17 +1784,18 @@ LSC_getgid32() {
     
 	ret = getgid();
 #endif
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)ret) << Dec 
-			<< Endl << EndDebugInfo;
+	if (verbose) 
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret,false);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_geteuid32() {
+LSC_geteuid32() 
+{
 #ifdef WIN32
 	uint32_t ret = 0;
 #else
@@ -1708,17 +1803,18 @@ LSC_geteuid32() {
     
 	ret = geteuid();
 #endif
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)ret) << Dec 
-			<< Endl << EndDebugInfo;
+	if (verbose) 
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret,false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getegid32() {
+LSC_getegid32() 
+{
 #ifdef WIN32
 	uint32_t ret = 0;
 #else
@@ -1726,38 +1822,40 @@ LSC_getegid32() {
     
 	ret = getegid();
 #endif
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)ret) << Dec 
-			<< Endl << EndDebugInfo;
+	if (verbose) 
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret,false);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_flistxattr() {
-	if(logger_import)
-		(*logger_import) << DebugWarning << LOCATION
-			<< "TODO" 
-			<< Endl << EndDebugWarning;
+LSC_flistxattr() 
+{
+	logger << DebugWarning
+		<< "TODO" 
+		<< endl << LOCATION << EndDebugWarning;
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_exit_group() { 
-	if(verbose && logger_import)  
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_exit_group() 
+{ 
+	if (verbose)  
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_fcntl() { 
+LSC_fcntl() 
+{ 
 	int64_t ret;
     
 #if defined(WIN32) || defined(WIN64)
@@ -1767,183 +1865,198 @@ LSC_fcntl() {
 			GetSystemCallParam(1),
 			GetSystemCallParam(2));
 #endif
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose) 
+		logger << DebugInfo
 			<< "ret = " <<  ((PARAMETER_TYPE)ret)  
-			<< Endl << EndDebugInfo;
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_fcntl64() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_fcntl64() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_dup() {
+LSC_dup() 
+{
 	int ret;
 	int oldfd = GetSystemCallParam(0);
     
 	ret = dup(oldfd);
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
+	if (verbose) 
+		logger << DebugInfo
 			<< "oldfd = " << oldfd << ", new fd = " << ((PARAMETER_TYPE)ret) 
-			<< Endl << EndDebugInfo;
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)ret, ret < 0);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_ioctl() {
-	if(verbose && logger_import)  
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_ioctl() 
+{
+	if (verbose)  
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_ugetrlimit() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_ugetrlimit() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getrlimit() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_getrlimit() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_setrlimit() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_setrlimit() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_rt_sigaction() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_rt_sigaction() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_getrusage() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_getrusage() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_unlink() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_unlink() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_rename() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_rename() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_time() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_time() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_socketcall() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_socketcall() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_rt_sigprocmask() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_rt_sigprocmask() 
+{
+	if (verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_kill() {
-	if(verbose && logger_import)
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)(-EINVAL)) << Dec 
-			<< Endl << EndDebugInfo;
+LSC_kill() 
+{
+	if(verbose)
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)0, false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_ftruncate() {
+LSC_ftruncate()
+{
 	int ret;
 	
 	ret = ftruncate(GetSystemCallParam(0), GetSystemCallParam(1));
 
-	if(verbose && logger_import) 
-		(*logger_import) << DebugInfo << LOCATION
-			<< "ret = 0x" << Hex << ((PARAMETER_TYPE)ret) << Dec 
-			<< Endl << EndDebugInfo;
+	if(verbose) 
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec 
+			<< endl << LOCATION << EndDebugInfo;
 
 	SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
@@ -1951,7 +2064,8 @@ LSC_ftruncate() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-SetSyscallNameMap() {
+SetSyscallNameMap()
+{
 	syscall_name_map[string("unknown")] = &thistype::LSC_unknown;
 	syscall_name_map[string("exit")] = &thistype::LSC_exit;
 	syscall_name_map[string("read")] = &thistype::LSC_read;
@@ -2004,8 +2118,9 @@ SetSyscallNameMap() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetSyscallNumber(int id) {
-	if(system == "arm")
+GetSyscallNumber(int id) 
+{
+	if (system == "arm")
 		return ARMGetSyscallNumber(id);
 	else
 		return PPCGetSyscallNumber(id);
@@ -2014,7 +2129,8 @@ GetSyscallNumber(int id) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-ARMGetSyscallNumber(int id) {
+ARMGetSyscallNumber(int id) 
+{
 	int translated_id = id - 0x0900000;
 	return translated_id;
 }
@@ -2022,7 +2138,8 @@ ARMGetSyscallNumber(int id) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-PPCGetSyscallNumber(int id) {
+PPCGetSyscallNumber(int id) 
+{
 	return id;
 }
 
@@ -2360,50 +2477,57 @@ PPCConvertTms(struct tms *t) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetMmapBase() const {
+GetMmapBase() const 
+{
 	return mmap_base;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-SetMmapBase(ADDRESS_TYPE base) {
+SetMmapBase(ADDRESS_TYPE base) 
+{
 	mmap_base = base;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetMmapBrkPoint() const {
+GetMmapBrkPoint() const 
+{
 	return mmap_brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-SetMmapBrkPoint(ADDRESS_TYPE brk_point) {
+SetMmapBrkPoint(ADDRESS_TYPE brk_point) 
+{
 	mmap_brk_point = brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetBrkPoint() const {
+GetBrkPoint() const 
+{
 	return brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-SetBrkPoint(ADDRESS_TYPE brk_point) {
+SetBrkPoint(ADDRESS_TYPE brk_point) 
+{
 	this->brk_point = brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetSystemCallParam(int id) {
-	if(system == "arm")
+GetSystemCallParam(int id) 
+{
+	if (system == "arm")
 		return ARMGetSystemCallParam(id);
 	else
 		return PPCGetSystemCallParam(id);
@@ -2412,7 +2536,8 @@ GetSystemCallParam(int id) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-ARMGetSystemCallParam(int id) {
+ARMGetSystemCallParam(int id) 
+{
 	PARAMETER_TYPE val;
 	arm_regs[id]->GetValue(&val);
 	return val;
@@ -2421,7 +2546,8 @@ ARMGetSystemCallParam(int id) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-PPCGetSystemCallParam(int id) {
+PPCGetSystemCallParam(int id) 
+{
     PARAMETER_TYPE val;
     ppc_regs[id+3]->GetValue(&val);
     return val;
@@ -2430,8 +2556,9 @@ PPCGetSystemCallParam(int id) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-SetSystemCallStatus(int ret, bool error) {
-	if(system == "arm")
+SetSystemCallStatus(int ret, bool error) 
+{
+	if (system == "arm")
 		ARMSetSystemCallStatus(ret, error);
 	else
 		PPCSetSystemCallStatus(ret, error);
@@ -2440,7 +2567,8 @@ SetSystemCallStatus(int ret, bool error) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-ARMSetSystemCallStatus(int ret, bool error) {
+ARMSetSystemCallStatus(int ret, bool error) 
+{
 	PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
 	arm_regs[0]->SetValue(&val);
 }
@@ -2448,13 +2576,17 @@ ARMSetSystemCallStatus(int ret, bool error) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-PPCSetSystemCallStatus(int ret, bool error) {
+PPCSetSystemCallStatus(int ret, bool error) 
+{
     PARAMETER_TYPE val;
-    if(error) {
+    if (error) 
+	{
 		ppc_cr->GetValue(&val);
 		val |= (1 << 28); // CR0[SO] <- 1
       	ppc_cr->SetValue(&val);
-    } else {
+    }
+ 	else
+	{
 		ppc_cr->GetValue(&val);
 		val &= ~(1 << 28); // CR0[SO] <- 0
 		ppc_cr->SetValue(&val);
@@ -2466,7 +2598,8 @@ PPCSetSystemCallStatus(int ret, bool error) {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 endian_type
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetEndianess() {
+GetEndianess()
+{
 	return endianess;
 }
 //

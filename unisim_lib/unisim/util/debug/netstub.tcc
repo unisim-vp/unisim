@@ -38,6 +38,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <string.h>
 #include <sys/types.h>
 
 #ifdef WIN32 /* Windows 32 */

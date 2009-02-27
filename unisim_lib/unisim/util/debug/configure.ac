@@ -56,7 +56,7 @@ AC_PROG_LN_S
 AC_LANG([C++])
 
 ###### CHECK FOR STANDARD C HEADERS ###########################################
-AC_CHECK_HEADERS([inttypes.h],,\
+AC_CHECK_HEADERS([inttypes.h string.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 ###### CHECK FOR STANDARD C++ HEADERS #########################################
@@ -67,7 +67,10 @@ AC_CHECK_HEADERS([list iostream],,\
 
 case $host in
 	*linux*)   # linux host
-		AC_CHECK_HEADERS([sys/times.h endian.h sys/socket.h netinet/in.h arpa/inet.h netinet/tcp.h netdb.h],, AC_MSG_ERROR([Some standard headers are missing.]))
+		AC_CHECK_HEADERS([sys/times.h sys/socket.h netinet/in.h arpa/inet.h netinet/tcp.h netdb.h],, AC_MSG_ERROR([Some standard headers are missing.]))
+		;;
+	*darwin*)   # darwin host
+		AC_CHECK_HEADERS([sys/times.h sys/socket.h netinet/in.h arpa/inet.h netinet/tcp.h netdb.h],, AC_MSG_ERROR([Some standard headers are missing.]))
 		;;
 	*mingw32*)  # win32 host
 		UNISIM_CHECK_WINSOCK2

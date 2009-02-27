@@ -50,12 +50,12 @@
 #include <sys/times.h>
 #endif
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/cpu_linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
-#include "unisim/service/interfaces/logger.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
@@ -79,16 +79,12 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::logger::Logger;
 using unisim::service::interfaces::CPULinuxOS;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
-using unisim::service::interfaces::Logger;
-//using unisim::service::interfaces::operator<<;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugError;
-using unisim::service::interfaces::Endl;
 using unisim::util::endian::endian_type;
 using unisim::util::debug::Register;
 
@@ -99,8 +95,7 @@ class LinuxOS :
 	public Client<Memory<ADDRESS_TYPE> >,
 	public Client<MemoryInjection<ADDRESS_TYPE> >,
 	public Client<Registers>,
-	public Client<Loader<ADDRESS_TYPE> >,
-	public Client<Logger> {
+	public Client<Loader<ADDRESS_TYPE> > {
 public:
     /* Exported services */
 	ServiceExport<unisim::service::interfaces::LinuxOS> linux_os_export;
@@ -110,7 +105,6 @@ public:
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
 	ServiceImport<MemoryInjection<ADDRESS_TYPE> > memory_injection_import;
 	ServiceImport<Registers> registers_import;
-	ServiceImport<Logger> logger_import;
 	ServiceImport<Loader<ADDRESS_TYPE> > loader_import; 
 
     /* Constructor/Destructor */
@@ -173,6 +167,7 @@ private:
     Parameter<endian_type> param_endian;
     PARAMETER_TYPE memory_page_size;
     Parameter<PARAMETER_TYPE> param_memory_page_size;
+	Logger logger;
     bool verbose;
     Parameter<bool> param_verbose;
 		

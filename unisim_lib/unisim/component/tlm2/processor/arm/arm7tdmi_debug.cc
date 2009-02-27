@@ -45,7 +45,10 @@ namespace arm {
 using unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig;
 
 template
-class ARM<ARM7TDMI_DebugConfig>;
+class ARM<ARM7TDMI_DebugConfig, false>;
+
+template
+class ARM<ARM7TDMI_DebugConfig, true>;
 
 } // end of namespace arm
 } // end of namespace processor

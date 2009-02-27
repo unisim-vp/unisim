@@ -45,7 +45,10 @@ namespace arm {
 using unisim::component::cxx::processor::arm::ARM7TDMI_Config;
 
 template
-class ARM<ARM7TDMI_Config>;
+class ARM<ARM7TDMI_Config, false>;
+
+template
+class ARM<ARM7TDMI_Config, true>;
 
 } // end of namespace arm
 } // end of namespace processor
