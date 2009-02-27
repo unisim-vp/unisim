@@ -63,10 +63,10 @@
 
 #endif
 
-#ifdef ARM7TDMI_DEBUG
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_DebugConfig CPU_CONFIG;
+#ifdef ARM966E_S_DEBUG
+	typedef unisim::component::cxx::processor::arm::ARM966E_S_DebugConfig CPU_CONFIG;
 #else
-	typedef unisim::component::cxx::processor::arm::ARM7TDMI_Config CPU_CONFIG;
+	typedef unisim::component::cxx::processor::arm::ARM966E_S_Config CPU_CONFIG;
 #endif
 	
 //static const bool DEBUG_INFORMATION = true;
@@ -213,8 +213,7 @@ int sc_main(int argc, char *argv[]) {
 		}
 	}
 
-	if(optind != argc) {
-		cerr << "Error? (optind = " << optind << ", argc = " << argc <<" )" << endl;
+	if(optind >= argc) {
 		help(argv[0]);
 		return 0;
 	}
@@ -241,8 +240,8 @@ int sc_main(int argc, char *argv[]) {
 		use_gdb_server ? new GDBServer<uint64_t>("gdb-server") : 0;
 	InlineDebugger<uint64_t> *inline_debugger = 
 		use_inline_debugger ? new InlineDebugger<uint64_t>("inline-debugger") : 0;
-	unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, false> *cpu =
-		new unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, false>("cpu"); 
+	unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG> *cpu =
+		new unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG>("cpu"); 
 
 	// Instanciate an ELF32 loader
 	elf32_loader = new Elf32Loader("elf32-loader");
@@ -285,10 +284,7 @@ int sc_main(int argc, char *argv[]) {
 #endif
 
 	if(get_variables)
-	{
-		cerr << "getting variables" << endl;
 		ServiceManager::XmlfyVariables(get_variables_name);
-	}
 	if(get_config)
 		ServiceManager::XmlfyParameters(get_config_name);
 	if(!set_config) {
@@ -308,9 +304,9 @@ int sc_main(int argc, char *argv[]) {
 		}
 	}
 	{
-//		cerr << "filename = " << filename << endl;
-		// VariableBase *var = ServiceManager::GetParameter("elf32-loader.filename");
-		// *var = filename;
+		cerr << "filename = " << filename << endl;
+		VariableBase *var = ServiceManager::GetParameter("elf32-loader.filename");
+		*var = filename;
 	}
 	
 	if(ServiceManager::Setup())

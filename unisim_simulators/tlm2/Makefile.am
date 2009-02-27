@@ -18,6 +18,11 @@ SUBDIRS += arm7tdmi
 INCLUDE_SUBDIRS += arm7tdmi
 endif
 
+if COND_arm966e_s
+SUBDIRS += arm966e_s
+INCLUDE_SUBDIRS += arm966e_s
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:
