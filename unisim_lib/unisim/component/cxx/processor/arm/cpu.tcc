@@ -134,15 +134,15 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	/* Reset all the registers */
 	InitGPR();
 
+
 	/* we are running in system mode */
 	/* currently supported: arm966e_s
 	 * if different report error */
 	if(CONFIG::MODEL != ARM966E_S && CONFIG::MODEL != ARM7TDMI) {
-		logger << DebugError
+		cerr << DebugError
 			<< "Running arm in system mode. Only arm966e_s and arm7tdmi can run under this mode" << endl
-			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-			<< EndDebug;
-		Stop(-1);
+			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << endl;
+		exit(-1);
 	}
 	// set CPSR to system mode
 	cpsr = 0;
