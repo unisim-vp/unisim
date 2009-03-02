@@ -125,8 +125,7 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	verbose_step(false),
 	verbose_step_insn(false),
 	verbose_dump_regs_start(false),
-	verbose_dump_regs_end(false),
-	logger(*this)
+	verbose_dump_regs_end(false)
 #ifdef PROFILE_ARM966
 	, insn_profile()
 #endif //PROFILE_ARM966

@@ -946,7 +946,9 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 #ifdef __ARM_ADDRESS_MUNGING__
 		address = address ^ munged_address_mask8;
 #endif
+#ifdef PROFILE_ARM966
 		MemProfile(false, address, 1);
+#endif
 
 		val8 = (uint8_t)memop->GetWriteValue();
 		if(CONFIG::MODEL == ARM966E_S) {
@@ -960,14 +962,18 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 #ifdef __ARM_ADDRESS_MUNGING__
 		address = address ^ munged_address_mask16;
 #endif
+#ifdef PROFILE_ARM966
 		MemProfile(false, address, 2);
+#endif
 
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrWrite(address, (uint8_t *)&val16, 2);
 		}
 		break;
 	case 4:
+#ifdef PROFILE_ARM966
 		MemProfile(false, address, 4);
+#endif
 		val32 = memop->GetWriteValue();
 		val32 = Host2BigEndian(val32);
 
@@ -1000,8 +1006,9 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 #ifdef __ARM_ADDRESS_MUNGING__
 		read_address = read_address ^ munged_address_mask8;
 #endif
+#ifdef PROFILE_ARM966
 		MemProfile(true, read_address, 1);
-
+#endif
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrRead(read_address, &val8, 1);
 			if(external_memory_request) return;
@@ -1016,8 +1023,9 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 #ifdef __ARM_ADDRESS_MUNGING__
 		read_address = read_address ^ munged_address_mask16;
 #endif
+#ifdef PROFILE_ARM966
 		MemProfile(true, read_address, 2);
-
+#endif
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrRead(read_address, (uint8_t *)&val16, 2);
 			if(external_memory_request) return;
@@ -1031,7 +1039,9 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 			value = val16;
 		break;
 	case 4:
+#ifdef PROFILE_ARM966
 		MemProfile(true, read_address, 1);
+#endif
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrRead(read_address, (uint8_t *)&val32, 4);
 			if(external_memory_request) return;
@@ -1466,6 +1476,7 @@ SetDebugPC(uint32_t new_pc) {
 	// TODO
 // }
 
+#ifdef PROFILE_ARM966
 template<class CONFIG>
 void
 CPU<CONFIG> ::
@@ -1493,6 +1504,7 @@ MemProfile(bool read, uint32_t addr, uint32_t size) {
 		}
 	}
 }
+#endif
 
 } // end of namespace arm
 } // end of namespace processor
