@@ -499,7 +499,7 @@ class BuiltDoubleTraits : public Details::DBuiltDoubleTraits::Access {
       bool isPositive() const { return fUnsigned || ((int) uResult >= 0); }
       bool isNegative() const { return !fUnsigned && ((int) uResult < 0); }
       bool isDifferentZero() const { return uResult != 0; }
-      bool log_base_2() const { return Integer::Details::Access::log_base_2(uResult); }
+      int log_base_2() const { return Integer::Details::Access::log_base_2(uResult); }
       bool hasZero(int uDigits) const { return uResult & ~(~0U << uDigits); }
       bool cbitArray(int uLocalIndex) const { return uResult & (1U << uLocalIndex); }
       IntConversion& operator>>=(int uShift) { uResult >>= uShift; return *this; }
