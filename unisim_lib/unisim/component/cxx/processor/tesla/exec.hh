@@ -179,6 +179,39 @@ VectorFlags<CONFIG> ComputePredSetFP32(VectorRegister<CONFIG> & output,
 	SetCond sc,
 	bool a_abs);
 
+template<class CONFIG>
+VectorRegister<CONFIG> Rcp(VectorRegister<CONFIG> const & a);
+
+template<class CONFIG>
+VectorRegister<CONFIG> Rsq(VectorRegister<CONFIG> const & a);
+
+template<class CONFIG>
+VectorRegister<CONFIG> Log2(VectorRegister<CONFIG> const & a);
+
+template<class CONFIG>
+VectorRegister<CONFIG> RRExp2(VectorRegister<CONFIG> const & a);
+
+template<class CONFIG>
+VectorRegister<CONFIG> RRTrig(VectorRegister<CONFIG> const & a);
+
+template<class CONFIG>
+VectorRegister<CONFIG> Exp2(VectorRegister<CONFIG> const & a);
+
+template<class CONFIG>
+VectorRegister<CONFIG> Sin(VectorRegister<CONFIG> const & a);
+
+template<class CONFIG>
+VectorRegister<CONFIG> Cos(VectorRegister<CONFIG> const & a);
+
+inline uint32_t FPToFX(float f);
+inline float FXToFP(uint32_t f);
+
+template<class CONFIG>
+VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+
+template<class CONFIG>
+VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);
+
 } // end of namespace tesla
 } // end of namespace processor
 } // end of namespace cxx

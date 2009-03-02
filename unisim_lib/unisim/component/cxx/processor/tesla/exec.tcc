@@ -38,6 +38,7 @@
 #include <unisim/component/cxx/processor/tesla/exec.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 
+#include <cmath>
 
 namespace unisim {
 namespace component {
@@ -711,10 +712,10 @@ VectorRegister<CONFIG> ConvertFloatInt(VectorRegister<CONFIG> & a, uint32_t roun
 			conv.assign(int32_t(a[i]));
 			break;
 		case CT_S16:
-			conv.assign(int32_t(a[i] & 0xffff));
+			conv.assign(int16_t(a[i] & 0xffff));
 			break;
 		case CT_S8:
-			conv.assign(int32_t(a[i] & 0xff));
+			conv.assign(int8_t(a[i] & 0xff));
 			break;
 		default:
 			assert(false);
@@ -881,6 +882,192 @@ inline uint8_t Compare(typename CONFIG::float_t a, typename CONFIG::float_t b)
 	}
 }
 
+//////////////////////////////////////////////////////////////////////
+// Transcendantals, rcp, rsq
+// Currently based on host libm
+// Deviates from actual hardware (~round to nearest)
+// Assumes host is little-endian!
+// TODO: Rewrite from scratch using softfloats and detailed models
+
+template<class CONFIG>
+VectorRegister<CONFIG> Rcp(VectorRegister<CONFIG> const & a)
+{
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float r = 1.f / a.ReadFloat(i);
+		rv.WriteFloat(r, i);
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> Rsq(VectorRegister<CONFIG> const & a)
+{
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		// Intermediate comp. in double
+		float r = float(1. / sqrt(double(a.ReadFloat(i))));
+		rv.WriteFloat(r, i);
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> Log2(VectorRegister<CONFIG> const & a)
+{
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float r = log2(a.ReadFloat(i));
+		rv.WriteFloat(r, i);
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> RRExp2(VectorRegister<CONFIG> const & a)
+{
+	// Convert to FX sv7.23
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float f = a.ReadFloat(i);
+		rv[i] = FPToFX(f);
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> RRTrig(VectorRegister<CONFIG> const & a)
+{
+	// Dirty range reduction (like actual hardware)
+	// Multiply by 2/Pi
+	// Convert to FX sv7.23
+	// In which order??
+	// 2/Pi on 24 (FP)
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float f = a.ReadFloat(i) * float(M_2_PI);	// Convert 2/pi to float first
+		rv[i] = FPToFX(f);
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> Exp2(VectorRegister<CONFIG> const & a)
+{
+	// Input in FX sv7.23
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		uint32_t ia = a[i];
+		float r = FXToFP(ia);
+		rv.WriteFloat(exp2(r), i);
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> Sin(VectorRegister<CONFIG> const & a)
+{
+	// Input in FX sv7.23
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		uint32_t ia = a[i];
+		float r = FXToFP(ia);
+		rv.WriteFloat(sin(r), i);
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> Cos(VectorRegister<CONFIG> const & a)
+{
+	// Input in FX sv7.23
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		uint32_t ia = a[i];
+		float r = FXToFP(ia);
+		rv.WriteFloat(cos(r), i);
+	}
+	return rv;
+}
+
+inline uint32_t FPToFX(float f)
+{
+	uint32_t r = uint32_t(fabs(ldexp(f, 23)));
+	if(!(fabs(f) < float(1 << 23))) {
+		r |= 0x40000000;
+	}
+	if(f < 0) {	// or -0?
+		r |= 0x80000000;
+	}
+	// What do we do with NaN???
+	return r;
+}
+
+inline float FXToFP(uint32_t f)
+{
+	float r;
+	if(f & 0x40000000) {	// ovf
+		r = INFINITY;	// Compatibility??
+	}
+	else if(f & 0x800000000) {
+		r = -ldexp(float(f & ~0x800000000), -23);
+	}
+	else {
+		r = ldexp(float(f), -23);
+	}
+	return r;
+}
+
+// IEEE-754:2008-compliant min and max
+template<class CONFIG>
+VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	typedef typename CONFIG::float_t float_t;
+	typedef typename float_t::StatusAndControlFlags FPFlags;
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float_t sa = a.ReadSimfloat(i);
+		float_t sb = b.ReadSimfloat(i);
+		float_t r;
+		if(sb < sa || sa.isNaN()) {
+			r = sb;
+		} else {
+			r = sa;	// Return first argument if both args are +/- zero
+		}
+		rv.WriteSimfloat(r, i);
+	}
+	return rv;
+}
+
+template<class CONFIG>
+VectorRegister<CONFIG> FSMax(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b)
+{
+	typedef typename CONFIG::float_t float_t;
+	typedef typename float_t::StatusAndControlFlags FPFlags;
+	VectorRegister<CONFIG> rv;
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
+	{
+		float_t sa = a.ReadSimfloat(i);
+		float_t sb = b.ReadSimfloat(i);
+		float_t r;
+		if(sb > sa || sa.isNaN()) {
+			r = sb;
+		} else {
+			r = sa;	// Return first argument if both args are +/- zero
+		}
+		rv.WriteSimfloat(r, i);
+	}
+	return rv;
+}
 
 } // end of namespace tesla
 } // end of namespace processor

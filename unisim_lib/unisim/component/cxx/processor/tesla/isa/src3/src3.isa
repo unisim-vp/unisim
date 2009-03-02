@@ -137,10 +137,10 @@ alu_const.read = {
 		}
 	}
 	else if(insn->AllowSegment()) {
-		return cpu->ReadConstant(src3 + offset * 4, segment);
+		return cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3) + offset * 4, segment);
 	}
 	else {
-		return cpu->ReadConstant(src3 + offset * 4, 0);
+		return cpu->ReadConstant(src3 * insn->OperandSize(OpSrc3) + offset * 4, 0);
 	}
 }
 
@@ -157,10 +157,10 @@ alu_const.disasm = {
 		}
 	}
 	else if(insn->AllowSegment()) {
-		os << "c" << segment << "[" << src3 << "]";
+		DisasmConstant(src3, 0, 0, 1, segment, insn->OperandSMType(OpSrc3), os);
 	}
 	else {
-		os << "c0[" << src3 << "]";
+		DisasmConstant(src3, 0, 0, 1, 0, insn->OperandSMType(OpSrc3), os);
 	}
 }
 

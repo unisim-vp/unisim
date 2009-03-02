@@ -161,6 +161,126 @@ iadd_halfimm.execute = {
 	insn->SetPredI32(output, flags);
 }
 
+op isubr_full_normal( \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:/*seg[4]*/?[24]:/*marker*/0[2]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*addc*/0[1]:/*src2*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+op isubr_full_end( \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:/*seg[4]*/?[24]:/*marker*/1[2]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*addc*/0[1]:/*src2*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+op isubr_full_join( \
+	/*subop*/0[3]:/*?*/0[1]:sat[1]:m32[1]:/*seg[4]*/?[24]:/*marker*/2[2]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src3_cm*/?[1]:/*src2_cm*/?[1]:/*addc*/0[1]:/*src2*/0[6]:\
+	/*src1*/?[7]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+group isubr_full(isubr_full_normal, isubr_full_end, isubr_full_join)
+
+isubr_full.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(m32));
+	inherited::allow_segment = true;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = DT_NONE;
+	inherited::op_type[OpSrc3] = dt;
+}
+
+isubr_full.disasm = {
+	buffer << "add";
+	insn->DisasmControl(buffer);
+	DisasmSignWidth(true, m32, buffer);
+	// no unsigned saturation, so always signed
+	if(sat)
+		buffer << ".sat";
+		
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	buffer << "-";
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	insn->DisasmSrc3(buffer);
+}
+
+isubr_full.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a + c
+	reg_t a = insn->ReadSrc1();
+	reg_t c = insn->ReadSrc3();
+	
+	VectorFlags<CONFIG> flags;
+	
+	reg_t output = IAdd(a, c, flags, sat, true, false, m32);
+	
+	insn->WriteDest(output);
+	insn->SetPredI32(output, flags);
+}
+
+op isubr_half( \
+	?[32]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:/*addc*/0[1]:/*imm_lo*/?[6]:\
+	m32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/0[1] \
+)
+
+op isubr_imm( \
+	/*subop*/0[3]:/*?*/0[1]:/*imm_hi*/?[26]:/*marker*/3[2]: \
+	0x3[4]:/*addr_lo*/?[2]:/*addr_imm*/?[1]:/*src1_sh*/?[1]:/*src2_cm*/?[1]:/*addc*/0[1]:/*imm_lo*/?[6]:\
+	m32[1]:/*src1*/?[6]:/*dest*/?[7]:/*flow*/0[1]:/*IWidth*/1[1] \
+)
+
+group isubr_halfimm(isubr_half, isubr_imm)
+
+isubr_halfimm.init = {
+	typedef Operation<CONFIG> inherited;
+	DataType dt = RegTypeToDataType(RegType(m32));
+	inherited::allow_segment = false;
+	inherited::op_type[OpDest] = dt;
+	inherited::op_type[OpSrc1] = dt;
+	inherited::op_type[OpSrc2] = dt;
+	inherited::op_type[OpSrc3] = DT_NONE;
+}
+
+isubr_halfimm.disasm = {
+	buffer << "add";
+	insn->DisasmControl(buffer);
+	DisasmSignWidth(true, m32, buffer);
+		
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
+	buffer << ", ";
+	buffer << "-";
+	insn->DisasmSrc1(buffer);
+	
+	buffer << ", ";
+	insn->DisasmSrc2(buffer);
+}
+
+isubr_halfimm.execute = {
+	typedef VectorRegister<CONFIG> reg_t;
+
+	// dest = a + c
+	reg_t a = insn->ReadSrc1();
+	reg_t c = insn->ReadSrc2();
+	
+	VectorFlags<CONFIG> flags;
+	
+	reg_t output = IAdd(a, c, flags, false, true, false, m32);
+	
+	insn->WriteDest(output);
+	insn->SetPredI32(output, flags);
+}
+
+
 
 op imad_full_normal( \
 	subop[3]:/*?*/0[1]:src3_neg[1]:src1_neg[1]:0[2]:?[22]:/*marker*/0[2]: \
@@ -589,7 +709,7 @@ op icvt_full_join( \
 )
 
 
-group icvt_full_noimm(icvt_full_normal, icvt_full_normal, icvt_full_join)
+group icvt_full_noimm(icvt_full_normal, icvt_full_end, icvt_full_join)
 
 // No immediate : dest = conv(src1)
 
@@ -625,7 +745,7 @@ icvt_full_noimm.execute = {
 	// dest = a
 	// TODO: Read 2 regs if 64-bit
 	assert(!f64);
-	assert(!sign);
+//	assert(!sign);	// TODO
 	reg_t a = insn->ReadSrc1();
 	reg_t output = ConvertIntInt(a, cvt_round, cvt_type, data_32, AbsSat(abs_sat));
 
@@ -656,7 +776,7 @@ op icvtn_full_join( \
 )
 
 
-group icvtn_full_noimm(icvtn_full_normal, icvtn_full_normal, icvtn_full_join)
+group icvtn_full_noimm(icvtn_full_normal, icvtn_full_end, icvtn_full_join)
 
 // No immediate : dest = conv(src1)
 
