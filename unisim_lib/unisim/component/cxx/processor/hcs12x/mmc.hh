@@ -229,6 +229,11 @@ private:
 
 	bool directSet;
 
+	uint8_t mode_int;
+	uint8_t mmcctl1_int;
+	Parameter<uint8_t> param_mode;
+	Parameter<uint8_t> param_mmcctl1;
+
 	uint8_t	address_encoding;
 	Parameter<uint8_t> param_address_encoding;
 

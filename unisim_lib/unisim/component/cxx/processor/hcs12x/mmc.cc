@@ -51,9 +51,14 @@ MMC::MMC(const char *name, Object *parent):
 	internal_memory_import("internal_memory_import", this),
 	external_memory_import("external_memory_import", this),
 	address_encoding(ADDRESS::BANKED),
-	param_address_encoding("address-encoding",this,address_encoding)
+	param_address_encoding("address-encoding",this,address_encoding),
+	mode_int(MMC_MODE_RESET),
+	mmcctl1_int(MMCCTL1_RESET),
+	param_mode("mode", this, mode_int),
+	param_mmcctl1("mmcctl1", this, mmcctl1_int)
 
 {
+
 	Reset();
 }
 
@@ -61,10 +66,10 @@ void MMC::Reset() {
 
 	directSet = false;
 	write(MMCCTL0_REG_ADDRESS, MMCCTL0_RESET);
-	write(MMC_MODE_REG_ADDRESS, MMC_MODE_RESET);
+	write(MMC_MODE_REG_ADDRESS, mode_int);
 	write(GPAGE_REG_ADDRESS, GLOBAL_RESET_PAGE);
 	write(DIRECT_REG_ADDRESS, DIRECT_RESET_PAGE);
-	write(MMCCTL1_REG_ADDRESS, MMCCTL1_RESET);
+	write(MMCCTL1_REG_ADDRESS, mmcctl1_int);
 
 	write(RPAGE_REG_ADDRESS, RAM_RESET_PAGE);
 	write(EPAGE_REG_ADDRESS, EEPROM_RESET_PAGE);
