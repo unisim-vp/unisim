@@ -225,9 +225,9 @@ int sc_main(int argc, char *argv[])
 	bool logger_out = false;
 	bool logger_on = false;
 	bool logger_messages = false;
-	
+
 	char *symbol_filename = NULL;
-	
+
 //	double cpu_frequency = 40.0; // in Mhz
 	double cpu_frequency = 2.0; // in Mhz
 
@@ -282,7 +282,7 @@ int sc_main(int argc, char *argv[])
 				break;
 			case 's':
 				symbol_filename = optarg;
-				break;	
+				break;
 			case 'f':
 				force_use_virtual_address = true;
 				break;
@@ -406,7 +406,7 @@ int sc_main(int argc, char *argv[])
 
 	// MMC parameter
 	(*mmc)["address-encoding"] = address_encoding;
-	
+
 	//  - External Memory
 	(*external_memory)["cycle-time"] = mem_cycle_time;
 	(*external_memory)["org"] = 0x00000000UL;
@@ -481,7 +481,7 @@ int sc_main(int argc, char *argv[])
 
 	mmc->local_socket(internal_router->targ_socket);
 	mmc->external_socket(external_router->targ_socket);
-	
+
 	// This order is mandatory (see the memoryMapping)
 	internal_router->init_socket(s12xint->slave_socket);
 	internal_router->init_socket(internal_memory->slave_sock); // to connect to the MMC
@@ -551,14 +551,14 @@ int sc_main(int argc, char *argv[])
 	{
 
 		physical_address_t entry_point;
-		
+
 		if (isS19) {
 			entry_point = loaderS19->GetEntryPoint();
 		}
 		else{
 			entry_point = loaderELF->GetEntryPoint();
 		}
-		
+
 		address_t cpu_address;
 		uint8_t page = 0;
 
