@@ -266,19 +266,17 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 		if(ra && rb) {
 			sa = -int32_t(sa);
 			sb = -int32_t(sb);
-			ra = false;
-			rb = false;
 		}
 		else if(ra) {
 			std::swap(sa, sb);
-			std::swap(ra, rb);
+//			std::swap(ra, rb);
 		}
 
 		uint32_t r;
 		if(sat) {
 			uint8_t does_sat;
 
-			if(rb) {
+			if((ra || rb) && !(ra && rb)) {
 				SignedSatSub32(r, does_sat, sa, sb);
 			}
 			else {
@@ -291,7 +289,7 @@ VectorRegister<CONFIG> IAdd32(VectorRegister<CONFIG> const & a,
 		}
 		else {
 			uint8_t carry_out, overflow;
-			if(rb) {
+			if((ra || rb) && !(ra && rb)) {
 				Sub32(r, carry_out, overflow, sa, sb, 0);
 			}
 			else {
