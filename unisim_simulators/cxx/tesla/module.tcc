@@ -126,7 +126,8 @@ std::ostream & operator<< (std::ostream & os, ParsingException const & pe)
 
 template<class CONFIG>
 MemSegment<CONFIG>::MemSegment(std::istream & is, SegmentType st) :
-	type(st)
+	type(st),
+	reloc_address(0)
 {
 	if(st == SegmentConst) {
 		cerr << " Constant segment\n";
@@ -226,10 +227,50 @@ void MemSegment<CONFIG>::SetAttribute(std::string const & attrname, std::string 
 }
 
 template<class CONFIG>
-void MemSegment<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & memory) const
+void MemSegment<CONFIG>::Load(Service<Memory<typename CONFIG::address_t> > & memory,
+	Allocator<CONFIG> & allocator)
 {
-	if(!memory.WriteMemory(Address(), &mem[0], mem.size() * 4)) {
-		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error
+	
+	// Reloc:
+	//  - Malloc in device memory (global segment 14)
+	//  - Copy initial values from host to device, if applicable
+	//  - Write the address to constant segment 14 at given offset
+	if(type == SegmentReloc) {
+		if(reloc_address == 0) {
+			reloc_address = allocator.Alloc(bytes);
+		}
+	}
+	
+	cerr << "Loading " << bytes << "B "
+		<< (type == SegmentReloc ? "reloc" : "const")
+		<< " @" << std::hex << Address() << std::endl;
+	
+	if(!mem.empty()) {
+		if(!memory.WriteMemory(Address(), &mem[0], mem.size() * 4)) {
+			throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error
+		}
+	}
+	
+	if(type == SegmentReloc) {
+		typename CONFIG::address_t const_addr = CONFIG::CONST_START
+			+ CONFIG::CONST_SEG_SIZE * 14
+			+ offset;
+
+		// 32-bit pointer
+		// Assumes little-endianness or 32-bit address...			
+		if(!memory.WriteMemory(const_addr, &reloc_address, 4)) {
+			throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error
+		}
+	}
+}
+
+template<class CONFIG>
+void MemSegment<CONFIG>::Unload(Service<Memory<typename CONFIG::address_t> > & memory,
+	Allocator<CONFIG> & allocator)
+{
+	if(reloc_address != 0) {
+		allocator.Free(reloc_address);
+		reloc_address = 0;
 	}
 }
 
@@ -249,10 +290,18 @@ typename CONFIG::address_t MemSegment<CONFIG>::Address() const
 	}
 	else {
 		assert(segnum == 14);
-		return CONFIG::GLOBAL_RELOC_START
-	//		+ segnum * CONFIG::RELOC_SEG_SIZE
-			+ offset * 1024;
+		//return CONFIG::GLOBAL_RELOC_START
+		//	+ offset * 1024;			// No, I don't think so
+										// need to malloc
+		assert(reloc_address != 0);
+		return reloc_address;
 	}
+}
+
+template<class CONFIG>
+SegmentType MemSegment<CONFIG>::Type() const
+{
+	return type;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -298,6 +347,18 @@ MemSegment<CONFIG> & Module<CONFIG>::GetGlobal(char const * name)
 }
 
 template<class CONFIG>
+void Module<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,
+	Allocator<CONFIG> & allocator)
+{
+	// Pointers to relocable segments are stored in constant segment 14
+	typedef typename SegMap::iterator it_t;
+	for(it_t it = global_segments.begin(); it != global_segments.end(); ++it)
+	{
+		it->second.Load(mem, allocator);
+	}
+}
+
+template<class CONFIG>
 void Module<CONFIG>::LoadCubin(istream & is)
 {
 	// Mostly adapted from Decuda
@@ -323,8 +384,7 @@ void Module<CONFIG>::LoadCubin(istream & is)
 				{
 					if(cmd == "code")
 					{
-						Kernel<CONFIG> kernel(is);
-						//kernels.push_back(Kernel<CONFIG>(is));
+						Kernel<CONFIG> kernel(this, is);
 						if(kernel.Name().empty()) {
 							throw ParsingException("Unnamed code field");
 						}

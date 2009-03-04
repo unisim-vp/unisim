@@ -53,15 +53,22 @@ template<class CONFIG>
 struct MemSegment;
 
 template<class CONFIG>
+struct Module;
+
+template<class CONFIG>
+struct Allocator;
+
+template<class CONFIG>
 struct Kernel : CUfunc_st
 {
-	Kernel(std::istream & is);
-	Kernel();
+	Kernel(Module<CONFIG> * module, std::istream & is);
+	Kernel();	// Default constructor needed for std containers
 //	uint32_t ConstSize() const;
 //	uint32_t LocalSize() const;
 	uint32_t CodeSize() const;
 
-	void Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, uint32_t offset = 0) const;
+	void Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,
+		Allocator<CONFIG> & allocator, uint32_t offset = 0);
 	std::string const & Name() const;
 	void Dump(std::ostream & os) const;
 	void SetBlockShape(int x, int y, int z);
@@ -88,6 +95,7 @@ struct Kernel : CUfunc_st
 private:
 	void SetAttribute(std::string const & name, std::string const & value);
 
+	Module<CONFIG> * module;
 	std::string name;
 	int lmem;
 	int smem;

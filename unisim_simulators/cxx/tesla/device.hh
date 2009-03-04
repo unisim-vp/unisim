@@ -75,7 +75,7 @@ struct Device: CUdevice_st, Object
 {
 	Device();
 
-	void DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os);
+	void DumpCode(Kernel<CONFIG> & kernel, std::ostream & os);
 	void Run(Kernel<CONFIG> & kernel, int width = 1, int height = 1);
 	
 	typename CONFIG::address_t MAlloc(size_t size);
@@ -95,9 +95,12 @@ struct Device: CUdevice_st, Object
 	int ComputeCapabilityMinor();
 	CUdevprop Properties();
 	int Attribute(int attrib);
+	Allocator<CONFIG> & GlobalAllocator();
+	
+	void LoadSegment(MemSegment<CONFIG> & seg);
 
 private:
-	void Load(Kernel<CONFIG> const & kernel);
+	void Load(Kernel<CONFIG> & kernel);
 	void Reset();
 	void SetThreadIDs(Kernel<CONFIG> const & kernel, int bnum);
 	uint32_t BuildTID(int x, int y, int z);

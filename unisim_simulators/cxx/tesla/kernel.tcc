@@ -52,7 +52,8 @@
 
 using namespace std;
 template<class CONFIG>
-Kernel<CONFIG>::Kernel(std::istream & is) :
+Kernel<CONFIG>::Kernel(Module<CONFIG> * module, std::istream & is) :
+	module(module),
 	lmem(0),
 	smem(0),
 	reg(0),
@@ -120,7 +121,8 @@ Kernel<CONFIG>::Kernel(std::istream & is) :
 }
 
 template<class CONFIG>
-Kernel<CONFIG>::Kernel()
+Kernel<CONFIG>::Kernel() :
+	module(0)
 {
 }
 
@@ -143,18 +145,22 @@ uint32_t Kernel<CONFIG>::CodeSize() const
 }
 
 template<class CONFIG>
-void Kernel<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem, uint32_t offset) const
+void Kernel<CONFIG>::Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,
+	Allocator<CONFIG> & allocator, uint32_t offset)
 {
+	// (Re-)load module-level constants
+	module->Load(mem, allocator);
+
 	cerr << "Loading " << CodeSize() << "B code @" << std::hex << CONFIG::CODE_START + offset << std::endl;
 	if(!mem.WriteMemory(CONFIG::CODE_START + offset, &bincode[0], CodeSize())) {
 		cerr << "Kernel::Load : Cannot write memory??\n";
 		throw CudaException(CUDA_ERROR_OUT_OF_MEMORY);	// Generic memory error
 	}
-	for(typename ConstList::const_iterator it = const_segs.begin();
+	for(typename ConstList::iterator it = const_segs.begin();
 		it != const_segs.end();
 		++it)
 	{
-		it->Load(mem);
+		it->Load(mem, allocator);
 	}
 	
 }

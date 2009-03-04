@@ -172,7 +172,7 @@ void Driver<CONFIG>::Free(typename CONFIG::address_t addr)
 }
 
 template<class CONFIG>
-void Driver<CONFIG>::FunctionDump(Kernel<CONFIG> const & kernel)
+void Driver<CONFIG>::FunctionDump(Kernel<CONFIG> & kernel)
 {
 	int dev = current_context->GetDevice();
 	device[dev].DumpCode(kernel, std::cout);
@@ -247,6 +247,20 @@ Device<CONFIG> & Driver<CONFIG>::Dev(int dev)
 {
 	if(dev < 0 || dev >= MAXDEVICE)
 		throw CudaException(CUDA_ERROR_INVALID_DEVICE);
+	return device[dev];
+}
+
+template<class CONFIG>
+Device<CONFIG> const & Driver<CONFIG>::CurrentDevice() const
+{
+	int dev = current_context->GetDevice();
+	return device[dev];
+}
+
+template<class CONFIG>
+Device<CONFIG> & Driver<CONFIG>::CurrentDevice()
+{
+	int dev = current_context->GetDevice();
 	return device[dev];
 }
 

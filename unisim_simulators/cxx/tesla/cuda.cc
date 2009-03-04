@@ -271,9 +271,12 @@ CUresult  CUDAAPI cuModuleGetGlobal(CUdeviceptr *dptr, unsigned int *bytes, CUmo
 	CHECK_PTR(hmod);
 	Module<MyConfig>* mod = static_cast<Module<MyConfig>*>(hmod);
 	try {
-		MemSegment<MyConfig> const & seg = mod->GetGlobal(name);
-		if(dptr != 0)
+		MemSegment<MyConfig> & seg = mod->GetGlobal(name);
+		if(dptr != 0) {
+			// If reloc, need to alloc in device mem first
+			driver.CurrentDevice().LoadSegment(seg);
 			*dptr = seg.Address();
+		}
 		if(bytes != 0)
 			*bytes = seg.Size();
 		return CUDA_SUCCESS;

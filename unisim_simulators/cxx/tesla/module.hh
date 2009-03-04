@@ -76,9 +76,11 @@ struct MemSegment
 	MemSegment(std::istream & is, SegmentType st);
 	MemSegment();
 	uint32_t Size() const;
-	void Load(Service<Memory<typename CONFIG::address_t> > & mem) const;
+	void Load(Service<Memory<typename CONFIG::address_t> > & mem, Allocator<CONFIG> & allocator);
+	void Unload(Service<Memory<typename CONFIG::address_t> > & mem, Allocator<CONFIG> & allocator);
 	std::string const & Name() const;
 	typename CONFIG::address_t Address() const;
+	SegmentType Type() const;
 	
 private:
 	void SetAttribute(std::string const & name, std::string const & value);
@@ -90,6 +92,7 @@ private:
 	uint32_t offset;
 	uint32_t bytes;
 	std::vector<uint32_t> mem;
+	typename CONFIG::address_t reloc_address;
 };
 
 
@@ -101,6 +104,8 @@ struct Module : CUmod_st
 	
 	Kernel<CONFIG> & GetKernel(char const * name);
 	MemSegment<CONFIG> & GetGlobal(char const * name);
+	void Load(Service<unisim::service::interfaces::Memory<typename CONFIG::address_t> > & mem,
+		Allocator<CONFIG> & allocator);
 
 private:
 	void LoadCubin(std::istream & is);

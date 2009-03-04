@@ -85,13 +85,13 @@ Device<CONFIG>::Device() :
 }
 
 template<class CONFIG>
-void Device<CONFIG>::Load(Kernel<CONFIG> const & kernel)
+void Device<CONFIG>::Load(Kernel<CONFIG> & kernel)
 {
-	kernel.Load(memory);
+	kernel.Load(memory, global_allocator);
 }
 
 template<class CONFIG>
-void Device<CONFIG>::DumpCode(Kernel<CONFIG> const & kernel, std::ostream & os)
+void Device<CONFIG>::DumpCode(Kernel<CONFIG> & kernel, std::ostream & os)
 {
 	Load(kernel);
 	typename CONFIG::address_t pc = CONFIG::CODE_START;
@@ -338,6 +338,18 @@ int Device<CONFIG>::Attribute(int attrib)
     default:
     	throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
+}
+
+template<class CONFIG>
+Allocator<CONFIG> & Device<CONFIG>::GlobalAllocator()
+{
+	return global_allocator;
+}
+
+template<class CONFIG>
+void Device<CONFIG>::LoadSegment(MemSegment<CONFIG> & seg)
+{
+	seg.Load(memory, global_allocator);
 }
 
 #endif

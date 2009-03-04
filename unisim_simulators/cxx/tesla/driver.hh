@@ -76,7 +76,7 @@ public:
 	typename CONFIG::address_t MAlloc(size_t size);
 	void Free(typename CONFIG::address_t addr);
  
-	void FunctionDump(Kernel<CONFIG> const & kernel);
+	void FunctionDump(Kernel<CONFIG> & kernel);
 	void Launch(Kernel<CONFIG> & kernel);
 	void LaunchGrid(Kernel<CONFIG> & kernel, int width, int height);
 	
@@ -90,6 +90,9 @@ public:
 	
 	Device<CONFIG> const & Dev(int dev) const;
 	Device<CONFIG> & Dev(int dev);
+
+	Device<CONFIG> const & CurrentDevice() const;
+	Device<CONFIG> & CurrentDevice();
 
 private:
 	//CUcontext context_list; // TODO: have to be a list of context.
