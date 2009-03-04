@@ -1143,6 +1143,9 @@ xor_full.disasm = {
 	buffer << "xor";
 	insn->DisasmControl(buffer);
 
+	buffer << " ";
+	insn->DisasmDest(buffer);
+
 	buffer << ", ";
 	DisasmNot(src1_not, buffer);
 	insn->DisasmSrc1(buffer);

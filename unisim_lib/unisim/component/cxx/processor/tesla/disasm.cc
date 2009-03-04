@@ -289,10 +289,11 @@ void DisasmLocal(uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t add
 	buffer << "l" << segment << "[";
 
 	int shift = 0;
-	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
+/*	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
 	else if(dt == DT_U32 || dt == DT_S32) shift = 2;	// 32-bit
 	else if(dt == DT_U64) shift = 3;	// 32-bit
-	else if(dt == DT_U128) shift = 4;
+	else if(dt == DT_U128) shift = 4;*/
+	// Local memory always byte-indexed
 	
 	DisasmAddress(dest, addr_lo, addr_hi, addr_imm, shift, buffer, addr_inc);
 	

@@ -204,7 +204,7 @@ template<class CONFIG>
 VectorRegister<CONFIG> Cos(VectorRegister<CONFIG> const & a);
 
 inline uint32_t FPToFX(float f);
-inline float FXToFP(uint32_t f);
+inline double FXToFP(uint32_t f);
 
 template<class CONFIG>
 VectorRegister<CONFIG> FSMin(VectorRegister<CONFIG> const & a, VectorRegister<CONFIG> const & b);

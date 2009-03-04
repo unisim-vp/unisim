@@ -107,8 +107,10 @@ public:
 	static int const CORE_COUNT = 1;
 
 	static bool const TRACE_INSN = false;
-	static bool const TRACE_LOADSTORE = false;
+	static bool const TRACE_MASK = false;
 	static bool const TRACE_REG = false;
+	static bool const TRACE_REG_FLOAT = false;
+	static bool const TRACE_LOADSTORE = false;
 	static bool const TRACE_BRANCH = false;
 	static bool const TRACE_SYNC = false;
 

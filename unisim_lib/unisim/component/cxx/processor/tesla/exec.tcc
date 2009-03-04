@@ -964,7 +964,7 @@ VectorRegister<CONFIG> Exp2(VectorRegister<CONFIG> const & a)
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		uint32_t ia = a[i];
-		float r = FXToFP(ia);
+		double r = FXToFP(ia);
 		rv.WriteFloat(exp2(r), i);
 	}
 	return rv;
@@ -978,8 +978,10 @@ VectorRegister<CONFIG> Sin(VectorRegister<CONFIG> const & a)
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		uint32_t ia = a[i];
-		float r = FXToFP(ia);
-		rv.WriteFloat(sin(r), i);
+		double r = FXToFP(ia);
+		rv.WriteFloat(sin(r * .5 * M_PI), i);
+		// In double precision
+		// (until sinpif and cospif functions are available...)
 	}
 	return rv;
 }
@@ -992,8 +994,8 @@ VectorRegister<CONFIG> Cos(VectorRegister<CONFIG> const & a)
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		uint32_t ia = a[i];
-		float r = FXToFP(ia);
-		rv.WriteFloat(cos(r), i);
+		double r = FXToFP(ia);
+		rv.WriteFloat(cos(r * .5 * M_PI), i);
 	}
 	return rv;
 }
@@ -1011,17 +1013,17 @@ inline uint32_t FPToFX(float f)
 	return r;
 }
 
-inline float FXToFP(uint32_t f)
+inline double FXToFP(uint32_t f)
 {
 	float r;
 	if(f & 0x40000000) {	// ovf
 		r = INFINITY;	// Compatibility??
 	}
-	else if(f & 0x800000000) {
-		r = -ldexp(float(f & ~0x800000000), -23);
+	else if(f & 0x80000000) {
+		r = -ldexp(double(f & ~0x80000000), -23);
 	}
 	else {
-		r = ldexp(float(f), -23);
+		r = ldexp(double(f), -23);
 	}
 	return r;
 }

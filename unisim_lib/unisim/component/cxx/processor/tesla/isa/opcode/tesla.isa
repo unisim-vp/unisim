@@ -112,7 +112,7 @@ var force_reg : { SimpleArray<bool, 4> }
 
 constructor action init() {
 	typedef Operation<CONFIG> inherited;
-	inherited::allow_segment = false;
+	inherited::allow_segment = true;		// Actually always true (?)
 	inherited::op_type[OpDest] = DT_U32;
 	inherited::op_type[OpSrc1] = DT_U32;
 	inherited::op_type[OpSrc2] = DT_U32;

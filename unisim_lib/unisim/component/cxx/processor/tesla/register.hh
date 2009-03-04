@@ -136,6 +136,7 @@ struct VectorRegister
 	void WriteSimfloat(typename CONFIG::float_t val, unsigned int lane);
 	typename CONFIG::float_t ReadSimfloat(unsigned int lane) const;
 	VectorRegister<CONFIG> Split(int hilo) const;
+	void DumpFloat(std::ostream & os);
 	
 	uint32_t operator[] (unsigned int lane) const;
 	uint32_t & operator[] (unsigned int lane);

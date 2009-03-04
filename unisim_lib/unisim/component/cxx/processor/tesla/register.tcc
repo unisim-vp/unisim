@@ -294,6 +294,18 @@ uint32_t & VectorRegister<CONFIG>::operator[] (unsigned int lane)
 }
 
 template <class CONFIG>
+void VectorRegister<CONFIG>::DumpFloat(std::ostream & os)
+{
+	os << "(";
+	for(unsigned int i = 0; i != CONFIG::WARP_SIZE-1; ++i)
+	{
+		os << ReadFloat(i) << ", ";
+	}
+	os << ReadFloat(CONFIG::WARP_SIZE-1);
+	os << ")";
+}
+
+template <class CONFIG>
 std::ostream & operator << (std::ostream & os, VectorRegister<CONFIG> const & r)
 {
 	os << "(";

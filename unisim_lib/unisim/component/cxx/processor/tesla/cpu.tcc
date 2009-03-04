@@ -297,6 +297,10 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	insn.Execute();
 	// Join or take other branch?
 	CheckJoin();
+
+	if(CONFIG::TRACE_MASK) {
+		cerr << " " << GetCurrentMask() << endl;
+	}
 	
 	SetPC(GetNPC());
 }
@@ -472,6 +476,11 @@ template <class CONFIG>
 void CPU<CONFIG>::DumpGPR(int warpid, int reg, ostream & os) const
 {
 	os << " r" << reg << " = " << GetGPR(warpid, reg) << endl;
+	if(CONFIG::TRACE_REG_FLOAT) {
+		os << " r" << reg << " = ";
+		GetGPR(warpid, reg).DumpFloat(os);
+		os << endl;
+	}
 }
 
 template <class CONFIG>

@@ -116,7 +116,7 @@ VectorFlags<CONFIG> ComputePredI32(VectorRegister<CONFIG> const & output, Vector
 	for(unsigned int i = 0; i != CONFIG::WARP_SIZE; ++i)
 	{
 		flags.SetZero((output[i] == 0), i);
-		flags.SetSign((output[i] < 0), i);
+		flags.SetSign((int32_t(output[i]) < 0), i);
 	}
 	return flags;
 }

@@ -484,11 +484,12 @@ void CPU<CONFIG>::GatherGlobal(VecReg & output, uint32_t src, uint32_t addr_lo, 
 template <class CONFIG>
 void CPU<CONFIG>::ScatterLocal(VecReg output, uint32_t dest, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
+	// Local memory always byte-indexed
 	unsigned int shift = 0;
-	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
+	/*if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
 	else if(dt == DT_U32 || dt == DT_S32) shift = 2;	// 32-bit
 	else if(dt == DT_U64) shift = 3;
-	else if(dt == DT_U128) shift = 4;
+	else if(dt == DT_U128) shift = 4;*/
 	
 	// [seg][$a#addr_reg + dest]
 	VecAddr offset = EffectiveAddress(dest, addr_lo, addr_hi, addr_imm, shift);
@@ -501,11 +502,12 @@ void CPU<CONFIG>::ScatterLocal(VecReg output, uint32_t dest, uint32_t addr_lo, u
 template <class CONFIG>
 void CPU<CONFIG>::GatherLocal(VecReg & output, uint32_t src, uint32_t addr_lo, uint32_t addr_hi, uint32_t addr_imm, uint32_t segment, std::bitset<CONFIG::WARP_SIZE> mask, DataType dt)
 {
+	// Local memory always byte-indexed
 	unsigned int shift = 0;
-	if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
+	/*if(dt == DT_U16 || dt == DT_S16) shift = 1;	// 16-bit
 	else if(dt == DT_U32 || dt == DT_S32) shift = 2;	// 32-bit
 	else if(dt == DT_U64) shift = 3;
-	else if(dt == DT_U128) shift = 4;
+	else if(dt == DT_U128) shift = 4;*/
 	
 	// [seg][$a#addr_reg + dest]
 	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
