@@ -36,7 +36,34 @@ translates cudaXxx calls into cuYyy calls.
 We can then trick the Runtime library into using our driver instead of NVidia's
 driver, just as we do with programs using the Driver API directly.
 
-Launch helper script pending...
+
+  How To Use It?
+
+First, compile and install unisim-tools, unisim-lib and unisim-simulators
+according to each INSTALL instructions.
+
+Let's assume we want to simulate the matrixMul sample of the NVidia CUDA SDK
+under GNU/Linux.
+The Barra driver is named libunisimsimulator_cxx_tesla_tesla.so (this might
+change in the future. libbarra.so or even libcuda.so are good candidates).
+Since we want to override libcuda.so, we create some symbolic links to our
+library. Assuming Unisim was installed in /usr/local/unisim:
+> cd NVIDIA_CUDA_SDK/bin/linux/debug
+> ln -s /usr/local/unisim/lib/libunisimsimulator_cxx_tesla_tesla.so libcuda.so.1
+> ln -s libcuda.so.1 libcuda.so
+(Note: we need to create both files, as the CUDA Runtime looks for libcuda.so.1,
+while most programs using the CUDA Driver API will look for libcuda.so.)
+
+We then temporarily override the default library search path:
+> LD_LIBRARY_PATH=".:/usr/local/unisim/lib/"
+
+Finally, we can launch our executable:
+> ./matrixMul
+
+Barra currently outputs lots of debug information (CUDA function calls,
+cubin data, disassembly, memory allocation, thread scheduling...) 
+
+We are working on a script that will automate these manipulations.
 
 
   What Is Supported?
@@ -48,6 +75,7 @@ Simulator
 * Basic control flow instructions;
 * Reciprocal, reciprocal square root and transcendental instructions (not
   bit-accurate).
+* Synchronization barrier instruction.
 
 Driver
 * Most of the CUDA Driver API;
@@ -113,11 +141,37 @@ of magnitude slower than execution on a high-end GPU.
 
   What We Plan To Do Next
 
+* Instrumentation to gather statistics about the CUDA code.
 * Transaction-Level Modeling of the G80 memory architecture to provide a
   realistic timing model.
 * (Close to) cycle-accurate modeling of Streaming Multiprocessors.
 * Modeling of power consumption.
 * Simulation speed optimization.
+
+
+  Hacking, debugging
+
+As a computer architecture research tool, Barra is designed to be modified
+to suit the user's needs (e.g. gathering statistics on instructions, generating
+traces...)
+
+Some support is already present to generate traces. It is intended to be used
+for manual debugging and trace format may change without notice.
+The file unisim_lib/unisim/component/cxx/processor/tesla/config.hh, which
+describes the default configuration, contains several constants controlling
+the level of verbosity of traces.
+* TRACE_INSN outputs to stderr each instruction executed along with the warp
+  number and program counter.
+  All subsequent trace types are designed to be used with TRACE_INSN.
+* TRACE_MASK outputs the current predication mask of the warp after (not during)
+  each instruction.
+* TRACE_REG outputs the destination register of each instruction executed,
+  in hex.
+* TRACE_REG_FLOAT. Same as TRACE_REG, but as floating-point. Requires TRACE_REG.
+* TRACE_LOADSTORE. *Very* verbose. Traces every load and store from/to any memory
+  type.
+* TRACE_BRANCH controls the output of the SIMD branching algorithms.
+* TRACE_SYNC outputs which warps are waiting at synchronization barriers.
 
 
   Feedback
