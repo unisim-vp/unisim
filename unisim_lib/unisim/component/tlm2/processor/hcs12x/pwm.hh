@@ -175,10 +175,6 @@ public:
     void write(uint8_t offset, uint8_t val);
 
 private:
-	uint8_t	quantumkeeper_cycles;
-	Parameter<uint8_t>   param_quantumkeeper_cycles;
-	sc_time quantumkeeper_cycle_time;
-	tlm_quantumkeeper quantumkeeper;
 
 	PayloadFabric<PWM_Payload> payload_fabric;
 

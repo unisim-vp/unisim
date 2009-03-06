@@ -48,12 +48,10 @@ PWM::PWM(const sc_module_name& name, Object *parent) :
 	Client<Memory<service_address_t> >(name, parent),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
+	baseAddress(0x0300), // MC9S12XDP512V2 - PWM baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	bus_cycle_time_int(250), // 250ns => 4 MHz
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
-	quantumkeeper_cycles(2),
-	quantumkeeper_cycle_time(),
-	param_quantumkeeper_cycles("quantumkeeper-cycles", this, quantumkeeper_cycles)
+	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
 {
 	uint8_t channel_number;
@@ -70,15 +68,6 @@ PWM::PWM(const sc_module_name& name, Object *parent) :
 
 	// Reserved Register for factory testing
 	pwmtst_register = pwmprsc_register = pwmscnta_register = pwmscntb_register = 0;
-
-	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_NS);
-
-	quantumkeeper_cycle_time = quantumkeeper_cycles * bus_cycle_time;
-
-	clockVector[0] = bus_cycle_time;
-	for (int i=1; i < 8; i++) {
-		clockVector[i] = bus_cycle_time/(2 << i);
-	}
 
 	master_sock(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
@@ -209,9 +198,6 @@ void PWM::Run() {
 			pwmChannelOutput[i] = channel[i]->getOutput();
 		}
 
-		quantumkeeper.inc(quantumkeeper_cycle_time); // Processing the input takes one cycle
-		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-
 		refreshOutput(pwmChannelOutput);
 
 		wait();
@@ -227,7 +213,7 @@ void PWM::refreshOutput(bool pwmValue[CONFIG::PWM_SIZE])
 		payload->pwmChannel[i] = pwmValue[i];
 	}
 
-	sc_time local_time = quantumkeeper.get_local_time();
+	sc_time local_time = sc_time_stamp();
 
 //	cout << sc_time_stamp() << ":" << name() << "(PWMx) : send " << payload->serialize() << endl;
 
@@ -237,18 +223,12 @@ void PWM::refreshOutput(bool pwmValue[CONFIG::PWM_SIZE])
 	{
 		case TLM_ACCEPTED:
 			// neither payload, nor phase and local_time have been modified by the callee
-			quantumkeeper.sync(); // synchronize to leave control to the callee
 			break;
 		case TLM_UPDATED:
 			// the callee may have modified 'payload', 'phase' and 'local_time'
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
-
 			break;
 		case TLM_COMPLETED:
 			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
 
@@ -578,6 +558,23 @@ sc_time PWM::getClockSB() {
 	//=====================================================================
 
 bool PWM::Setup() {
+
+	if (bus_cycle_time_int < 250) // 250ns => 4 MHz
+	{
+		cerr << "PWM: Incorrect Bus Clock Value.\n";
+
+		return false;
+	}
+
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_NS);
+
+	clockVector[0] = bus_cycle_time;
+	for (int i=1; i < 8; i++) {
+		clockVector[i] = bus_cycle_time/(2 << i);
+	}
+
+	Reset();
+
 	return true;
 }
 
