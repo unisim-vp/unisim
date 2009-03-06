@@ -122,8 +122,8 @@ Simulator
 * Bit-accurate transcendentals;
 * Run-time checks. As Barra is primarily designed to run valid CUDA benchmarks,
   few safety checks are performed on instruction validity, memory addresses...
-  Running an invalid CUDA program is most likely to result in a segmentation
-  fault.
+  Running an invalid or buggy CUDA program is most likely to result in a
+  segmentation fault.
 
 Driver
 * Asynchronous execution;
