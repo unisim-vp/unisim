@@ -3,13 +3,13 @@ Barra - NVidia G80 functional simulator
  Sylvain Collange (sylvain.collange @ univ-perp.fr), 2009
 
 Barra simulates CUDA programs at the assembly language level (Tesla ISA). Its
-goal is to be 100% bit-accurate, offering the exact same behavior as NVidia
-hardware. It works directly on the executable; no modification nor
-recompilation is required.
+ultimate goal is to provide a 100% bit-accurate simulation, offering the exact
+same behavior as NVidia hardware. It works directly with CUDA executables; no
+source modification nor recompilation is required.
 
-It is primarily intended as a tool for research on hardware architecture, although
-it can also be used to debug, profile and optimize CUDA programs at the lowest
-level.
+Barra is primarily intended as a tool for research on computer architecture,
+although it can also be used to debug, profile and optimize CUDA programs at
+the lowest level.
 
 Supported platforms:
 Barra was tested on GNU/Linux i386 and x86_64. It should be easily portable to
@@ -20,7 +20,7 @@ Win32 with Cygwin and Mac OS X, but this has not been tested so far.
 
 Barra is comprised of a simulator and a driver.
 The Barra driver is a dynamic library which exports the same symbols and API
-as the CUDA Driver library (libcudart.so/cudart.dll).
+as the CUDA Driver library (libcuda.so/cuda.dll).
 
 To simulate a CUDA program which uses the Driver API, we temporarily replace
 the NVidia-provided CUDA Driver library with our Barra library by setting
@@ -30,7 +30,7 @@ it were an actual GPU. When cuLaunch or cuLaunchGrid is called, control is
 transferred to the simulator for execution.
 
 Programs that use the CUDA Runtime API are still linked with the official CUDA
-Runtime library provided by NVidia (libcuda.so/cuda.dll).
+Runtime library provided by NVidia (libcudart.so/cudart.dll).
 This Runtime library is only a wrapper over the Driver library, which
 translates cudaXxx calls into cuYyy calls.
 We can then trick the Runtime library into using our driver instead of NVidia's
@@ -51,7 +51,7 @@ Simulator
 
 Driver
 * Most of the CUDA Driver API;
-* CUDA runtime API, through NVidia-provided libcuda.so/cuda.dll;
+* CUDA runtime API, through NVidia-provided libcudart.so/cudart.dll;
 * Support for cubin files and Fat Executables (through CUDA Runtime);
 * Host <-> Device linear memory copy.
 
@@ -115,15 +115,15 @@ of magnitude slower than execution on a high-end GPU.
 
 * Transaction-Level Modeling of the G80 memory architecture to provide a
   realistic timing model.
-* Cycle-accurate modeling of the Streaming Multiprocessor.
+* (Close to) cycle-accurate modeling of Streaming Multiprocessors.
 * Modeling of power consumption.
-* Simulation speed optimizations.
+* Simulation speed optimization.
 
 
   Feedback
   
-Bug reports and comments are welcome. You can contact me at
-sylvain.collange @ univ-perp.fr
+Contact: sylvain.collange @ univ-perp.fr
+Bug reports and comments are welcome.
 
 
   Special Thanks
