@@ -40,6 +40,7 @@
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/config.hh"
+#include <stdlib.h>
 #include <inttypes.h>
 #include <map>
 
@@ -1358,13 +1359,13 @@ SetDataResponse(bool error, uint32_t rdata) {
 			break;
 		case 2:
 			hdata = data;
-			if (default_endian == E_BIG_ENDIAN)
+			if (GetEndianness() == E_BIG_ENDIAN)
 				data = Host2BigEndian(hdata);
 			else
 				data = Host2LittleEndian(hdata);
 			break;
 		case 4:
-			if (default_endian == E_BIG_ENDIAN)
+			if (GetEndianness() == E_BIG_ENDIAN)
 				data = Host2BigEndian(data);
 			else
 				data = Host2LittleEndian(data);
