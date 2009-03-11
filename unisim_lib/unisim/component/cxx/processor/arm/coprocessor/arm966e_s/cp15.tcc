@@ -1362,7 +1362,7 @@ InitRegs() {
 		control_reg += ((reg_t)1) << 12;
 	control_reg += ((reg_t)0x0f) << 8;
 	//if(CONFIG::ENDIANESS != E_BIG_ENDIAN)
-	if(inherited::cpu->CoprocessorGetEndianess() != E_BIG_ENDIAN)
+	if(inherited::cpu->CoprocessorGetEndianness() != E_BIG_ENDIAN)
 		control_reg += ((reg_t)1) << 7;
 	control_reg += ((reg_t)0x07) << 4;
 	if(inherited::cpu->CoprocessorGetInitram())

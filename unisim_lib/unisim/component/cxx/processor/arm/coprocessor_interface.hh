@@ -78,7 +78,7 @@ using unisim::util::endian::endian_type;
 class CPUCPInterface {
 public:
 	virtual ~CPUCPInterface() {};
-	virtual endian_type CoprocessorGetEndianess() = 0;
+	virtual endian_type CoprocessorGetEndianness() = 0;
 	virtual void CoprocessorStop(unsigned int cp_id, int ret) = 0;
 	virtual bool CoprocessorGetVinithi() = 0;
 	virtual bool CoprocessorGetInitram() = 0;

@@ -115,7 +115,7 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 	freeLSQueue(),
 	external_memory_request(false),
 	instruction_counter(0),
-	default_endianess(E_BIG_ENDIAN),
+	default_endianness(E_BIG_ENDIAN),
 	/* initialization of parameters for the 966es  START*/
 	arm966es_initram(false),
 	arm966es_vinithi(false),
@@ -173,7 +173,7 @@ CPU(CacheInterface<typename CONFIG::address_t> *_memory_interface) :
 
 	// initialize the variables to compute the final address on memory 
     //   accesses
-	if(GetEndianess() == E_BIG_ENDIAN) {
+	if(GetEndianness() == E_BIG_ENDIAN) {
 		munged_address_mask8 = (typename CONFIG::address_t)0x03;;
 		munged_address_mask16 = (typename CONFIG::address_t)0x02;
 	} else {
@@ -261,8 +261,8 @@ CPU(const char *name,
 //	dtcm_logger_import("dtcm_logger_import", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
-	default_endianess(E_BIG_ENDIAN),
-	param_default_endianess("default-endianess", this, default_endianess),
+	default_endianness(E_BIG_ENDIAN),
+	param_default_endianness("default-endianness", this, default_endianness),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
@@ -332,7 +332,7 @@ CPU(const char *name,
 
 	// initialize the variables to compute the final address on memory 
     //   accesses
-	if(GetEndianess() == E_BIG_ENDIAN) {
+	if(GetEndianness() == E_BIG_ENDIAN) {
 		munged_address_mask8 = (typename CONFIG::address_t)0x03;;
 		munged_address_mask16 = (typename CONFIG::address_t)0x02;
 	} else {
@@ -450,7 +450,7 @@ Setup() {
 
 		// initialize the variables to compute the final address on memory 
         //   accesses
-		if(GetEndianess() == E_BIG_ENDIAN) {
+		if(GetEndianness() == E_BIG_ENDIAN) {
 			munged_address_mask8 = (typename CONFIG::address_t)0x03;;
 			munged_address_mask16 = (typename CONFIG::address_t)0x02;
 		} else {
@@ -779,8 +779,8 @@ CoprocessorStop(unsigned int cp_id, int ret) {
 template<class CONFIG>
 endian_type
 CPU<CONFIG> ::
-CoprocessorGetEndianess() {
-	return GetEndianess();
+CoprocessorGetEndianness() {
+	return GetEndianness();
 }
 
 template<class CONFIG>
@@ -4024,12 +4024,12 @@ PerformExit(int ret) {
 
 #endif // SOCLIB
 
-/* endianess methods */
+/* endianness methods */
 template<class CONFIG>
 endian_type 
 CPU<CONFIG> ::
-GetEndianess() {
-	return default_endianess;
+GetEndianness() {
+	return default_endianness;
 //	return CONFIG::ENDIANESS;
 }
 

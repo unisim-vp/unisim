@@ -52,8 +52,28 @@ namespace processor {
 namespace arm {
 
 using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::LittleEndian2Host;
 using unisim::util::endian::Host2BigEndian;
+using unisim::util::endian::Host2LittleEndian;
+using unisim::util::endian::endian_type;
 
+template<class CONFIG>
+void
+CPU<CONFIG> ::
+SetEndianness(endian_type type)
+{
+	default_endianness = type;
+	
+	// initialize the variables to compute the final address on memory 
+    //   accesses
+	if(GetEndianness() == E_BIG_ENDIAN) {
+		munged_address_mask8 = (typename CONFIG::address_t)0x03;;
+		munged_address_mask16 = (typename CONFIG::address_t)0x02;
+	} else {
+		munged_address_mask8 = 0;
+		munged_address_mask16 = 0;
+	}
+}
 	
 template<class CONFIG>
 void 
@@ -124,7 +144,10 @@ Reset() {
 			external_memory_request = false;
 			ReadInsn(fetchQueue->GetFetchAddress(), insn);
 			if(!external_memory_request) {
-				insn = BigEndian2Host(insn);
+				if (GetEndianness() == E_BIG_ENDIAN)
+					insn = BigEndian2Host(insn);
+				else
+					insn = LittleEndian2Host(insn);
 				fetchQueue->SetThumbEncoding(insn);
 				fetchQueue->SetRequested(true);
 				fetchQueue->SetFetched(true);
@@ -139,7 +162,10 @@ Reset() {
 			external_memory_request = false;
 			ReadInsn(fetchQueue->GetFetchAddress(), insn);
 			if(!external_memory_request) {
-				insn = BigEndian2Host(insn);
+				if (GetEndianness() == E_BIG_ENDIAN)
+					insn = BigEndian2Host(insn);
+				else
+					insn = LittleEndian2Host(insn);
 				fetchQueue->SetArm32Encoding(insn);
 				fetchQueue->SetRequested(true);
 				fetchQueue->SetFetched(true);
@@ -634,7 +660,10 @@ StepCycle() {
 #ifdef SOCLIB_DEBUG
 					cerr << "    - instruction found in internal memory" << endl;
 #endif
-					insn = BigEndian2Host(insn);
+					if (GetEndianness() == E_BIG_ENDIAN)
+						insn = BigEndian2Host(insn);
+					else
+						insn = LittleEndian2Host(insn);
 					fetchQueue->SetThumbEncoding(insn);
 					fetchQueue->SetRequested(true);
 					fetchQueue->SetFetched(true);
@@ -652,7 +681,10 @@ StepCycle() {
 #ifdef SOCLIB_DEBUG
 					cerr << "   - instruction found in internal memory" << endl;
 #endif
-					insn = BigEndian2Host(insn);
+					if (GetEndianness() == E_BIG_ENDIAN)
+						insn = BigEndian2Host(insn);
+					else
+						insn = LittleEndian2Host(insn);
 					fetchQueue->SetArm32Encoding(insn);
 					fetchQueue->SetRequested(true);
 					fetchQueue->SetFetched(true);
@@ -746,7 +778,10 @@ SetInstruction(bool error, uint32_t val) {
 		}
 		val16 = val & UINT32_C(0x0000ffff);
 		thumb_insn_t insn = val16;
-		insn = BigEndian2Host(insn);
+		if (GetEndianness() == E_BIG_ENDIAN)
+			insn = BigEndian2Host(insn);
+		else
+			insn = LittleEndian2Host(insn);
 		fetchQueue->SetThumbEncoding(insn);
 		// op = thumb_decoder.Decode(addr, insn);
 		// fetchQueue->SetOpcode(op);
@@ -754,7 +789,10 @@ SetInstruction(bool error, uint32_t val) {
 		// it is an arm32 instruction
 		// typename isa::arm32::Operation<CONFIG> *op = NULL;
 		insn_t insn = val;
-		insn = BigEndian2Host(insn);
+		if (GetEndianness() == E_BIG_ENDIAN)
+			insn = BigEndian2Host(insn);
+		else
+			insn = LittleEndian2Host(insn);
 		fetchQueue->SetArm32Encoding(insn);
 		// op = arm32_decoder.Decode(addr, insn);
 		// fetchQueue->SetOpcode(op);
@@ -820,10 +858,18 @@ GetDataRequest(bool &reg, bool &is_read, int &size, uint32_t &addr,
 			addr = addr ^ munged_address_mask16;
 #endif
 			hdata = data;
-			data = Host2BigEndian(hdata);
+			{
+			if (default_endianness == E_BIG_ENDIAN)
+				data = Host2BigEndian(hdata);
+			else
+				data = Host2LittleEndian(hdata);
+			}
 			break;
 		case 4:
-			data = Host2BigEndian(data);
+			if (default_endianness == E_BIG_ENDIAN)
+				data = Host2BigEndian(data);
+			else
+				data = Host2LittleEndian(data);
 			break;
 		}
 		break;
@@ -957,7 +1003,10 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 		break;
 	case 2:
 		val16 = (uint16_t)memop->GetWriteValue();
-		val16 = Host2BigEndian(val16);
+		if (GetEndianness() == E_BIG_ENDIAN)
+			val16 = Host2BigEndian(val16);
+		else
+			val16 = Host2LittleEndian(val16);
 
 #ifdef __ARM_ADDRESS_MUNGING__
 		address = address ^ munged_address_mask16;
@@ -975,7 +1024,10 @@ PerformWriteAccess(MemoryOp<CONFIG> *memop) {
 		MemProfile(false, address, 4);
 #endif
 		val32 = memop->GetWriteValue();
-		val32 = Host2BigEndian(val32);
+		if (GetEndianness() == E_BIG_ENDIAN)
+			val32 = Host2BigEndian(val32);
+		else
+			val32 = Host2LittleEndian(val32);
 
 		if(CONFIG::MODEL == ARM966E_S) {
 			cp15_966es->PrWrite(address, (uint8_t *)&val32, 4);
@@ -1031,7 +1083,10 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 			if(external_memory_request) return;
 		}
 		
-		val16 = BigEndian2Host(val16);
+		if (GetEndianness() == E_BIG_ENDIAN)
+			val16 = BigEndian2Host(val16);
+		else
+			val16 = LittleEndian2Host(val16);
 		
 		if(memop->IsSigned()) {
 			value = (typename CONFIG::sreg_t)(int16_t)val16;
@@ -1047,7 +1102,10 @@ PerformReadAccess(MemoryOp<CONFIG> *memop) {
 			if(external_memory_request) return;
 		}		
 		
-		val32 = BigEndian2Host(val32);
+		if (GetEndianness() == E_BIG_ENDIAN)
+			val32 = BigEndian2Host(val32);
+		else
+			val32 = LittleEndian2Host(val32);
 		
 		switch(address & 0x03) {
 		case 0x00:
@@ -1094,7 +1152,10 @@ PerformReadToPCUpdateTAccess(MemoryOp<CONFIG> *memop) {
 		if(external_memory_request) return;
 	}
 	
-	value = BigEndian2Host(value);
+	if (GetEndianness() == E_BIG_ENDIAN)
+		value = BigEndian2Host(value);
+	else
+		value = LittleEndian2Host(value);
 	
 	switch(address & 0x03) {
 	case 0x00:
@@ -1147,7 +1208,10 @@ PerformReadToPCAccess(MemoryOp<CONFIG> *memop) {
 		if(external_memory_request) return;
 	}
 	
-	value = BigEndian2Host(value);
+	if (GetEndianness() == E_BIG_ENDIAN)
+		value = BigEndian2Host(value);
+	else
+		value = LittleEndian2Host(value);
 	
 	switch(address & 0x03) {
 	case 0x00:
@@ -1239,10 +1303,16 @@ SetDataResponse(bool error, uint32_t rdata) {
 			break;
 		case 2:
 			hdata = data;
-			data = Host2BigEndian(hdata);
+			if (GetEndianness() == E_BIG_ENDIAN)
+				data = Host2BigEndian(hdata);
+			else
+				data = Host2LittleEndian(hdata);
 			break;
 		case 4:
-			data = Host2BigEndian(data);
+			if (GetEndianness() == E_BIG_ENDIAN)
+				data = Host2BigEndian(data);
+			else
+				data = Host2LittleEndian(data);
 			break;
 		}
 		cerr << " + data: 0x" << hex << memop->GetWriteValue() << dec << " (0x" << hex << data << dec << ")" << endl;
@@ -1259,10 +1329,16 @@ SetDataResponse(bool error, uint32_t rdata) {
 			break;
 		case 2:
 			hdata = data;
-			data = Host2BigEndian(hdata);
+			if (GetEndianness() == E_BIG_ENDIAN)
+				data = Host2BigEndian(hdata);
+			else
+				data = Host2LittleEndian(hdata);
 			break;
 		case 4:
-			data = Host2BigEndian(data);
+			if (GetEndianness() == E_BIG_ENDIAN)
+				data = Host2BigEndian(data);
+			else
+				data = Host2LittleEndian(data);
 			break;
 		}
 		cerr << " + data: 0x" << hex << data << dec << " (0x" << hex << rdata << dec << ")" << endl;
@@ -1282,10 +1358,16 @@ SetDataResponse(bool error, uint32_t rdata) {
 			break;
 		case 2:
 			hdata = data;
-			data = Host2BigEndian(hdata);
+			if (default_endian == E_BIG_ENDIAN)
+				data = Host2BigEndian(hdata);
+			else
+				data = Host2LittleEndian(hdata);
 			break;
 		case 4:
-			data = Host2BigEndian(data);
+			if (default_endian == E_BIG_ENDIAN)
+				data = Host2BigEndian(data);
+			else
+				data = Host2LittleEndian(data);
 			break;
 		}
 		cerr << " + data: 0x" << hex << data << dec << " (0x" << hex << rdata << dec << ")" << endl;
@@ -1306,10 +1388,16 @@ SetDataResponse(bool error, uint32_t rdata) {
 				break;
 			case 2:
 				rhdata = rdata;
-				rdata = BigEndian2Host(rhdata);
+				if (GetEndianness() == E_BIG_ENDIAN)
+					rdata = BigEndian2Host(rhdata);
+				else
+					rdata = LittleEndian2Host(rhdata);
 				break;
 			case 4:
-				rdata = BigEndian2Host(rdata);
+				if (GetEndianness() == E_BIG_ENDIAN)
+					rdata = BigEndian2Host(rdata);
+				else
+					rdata = LittleEndian2Host(rdata);
 				break;
 			}
 			SetGPR(dest, rdata);
@@ -1329,10 +1417,16 @@ SetDataResponse(bool error, uint32_t rdata) {
 				break;
 			case 2:
 				rhdata = rdata;
-				rdata = BigEndian2Host(rhdata);
+				if (GetEndianness() == E_BIG_ENDIAN)
+					rdata = BigEndian2Host(rhdata);
+				else
+					rdata = LittleEndian2Host(rhdata);
 				break;
 			case 4:
-				rdata = BigEndian2Host(rdata);
+				if (GetEndianness() == E_BIG_ENDIAN)
+					rdata = BigEndian2Host(rdata);
+				else
+					rdata = LittleEndian2Host(rdata);
 				break;
 			}
 			rdata = rdata & UINT32_C(0xfffffffe);
@@ -1347,10 +1441,16 @@ SetDataResponse(bool error, uint32_t rdata) {
 				break;
 			case 2:
 				rhdata = rdata;
-				rdata = BigEndian2Host(rhdata);
+				if (GetEndianness() == E_BIG_ENDIAN)
+					rdata = BigEndian2Host(rhdata);
+				else
+					rdata = LittleEndian2Host(rhdata);
 				break;
 			case 4:
-				rdata = BigEndian2Host(rdata);
+				if (GetEndianness() == E_BIG_ENDIAN)
+					rdata = BigEndian2Host(rdata);
+				else
+					rdata = LittleEndian2Host(rdata);
 				break;
 			}
 			SetGPR(PC_reg, rdata);

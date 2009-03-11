@@ -297,6 +297,8 @@ public:
 	
 #ifdef SOCLIB
 	
+	void SetEndianness(endian_type type);
+	
 	virtual void Stop(int ret);
 	
 	void Reset();
@@ -360,7 +362,7 @@ public:
 	
 	// methods required by coprocessors
 	virtual void CoprocessorStop(unsigned int cp_id, int ret);
-	virtual endian_type CoprocessorGetEndianess();
+	virtual endian_type CoprocessorGetEndianness();
 	virtual bool CoprocessorGetVinithi();
 	virtual bool CoprocessorGetInitram();
 	
@@ -606,7 +608,7 @@ public:
 #endif // SOCLIB
 	
 	// Endian interface
-	virtual endian_type GetEndianess();
+	virtual endian_type GetEndianness();
 
 	/**************************************************************/
 	/* Registers access methods    START                          */
@@ -1261,8 +1263,8 @@ protected:
 	uint64_t instruction_counter;
 	
 	uint32_t statistics_id;
-	// endianess parameter
-	endian_type default_endianess;
+	// endianness parameter
+	endian_type default_endianness;
 	// parameters for the 966E_S configuration
 	bool arm966es_initram;
 	bool arm966es_vinithi;
@@ -1276,7 +1278,7 @@ protected:
 
 #ifndef SOCLIB
 	
-	Parameter<endian_type> param_default_endianess;
+	Parameter<endian_type> param_default_endianness;
 	Parameter<bool> param_arm966es_initram;
 	Parameter<bool> param_arm966es_vinithi;
 	Parameter<bool> param_verbose_all;
