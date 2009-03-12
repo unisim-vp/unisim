@@ -1494,19 +1494,27 @@ SetIrq(uint32_t irq) {
 	// List of avalaible interrupts:
 	// - irq 1 (IRQ_IRQ) == normal IRQ
 	// - irq 2 (FIQ_IRQ) == fast IRQ
-	
-	if(irq) {
-		if(irq == IRQ_IRQ) {
+
+	if (irq) {
+		if (irq & IRQ_IRQ) {
+#if SOCLIB_DEBUG
+			cerr << "+++ Received IRQ #" << IRQ_IRQ << endl;
+#endif // SOCLIB_DEBUG
 			exception |= IRQ_EXCEPTION;
-		} else if(irq == FIQ_IRQ) {
+		}
+		if (irq & FIQ_IRQ) {
+#if SOCLIB_DEBUG
+			cerr << "+++ Received IRQ #" << FIQ_IRQ << endl;
+#endif // SOCLIB_DEBUG
 			exception |= FIQ_EXCEPTION;
-		} else {
-			cerr << "ERROR(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
-				<< "Received unknow interruption type (irq = 0x" << hex << irq << dec << ")" << endl;
+}
+		if (irq & !(IRQ_IRQ | FIQ_IRQ)) {
+			cerr << "WARNING(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+				<< "Received unknow interruption type (irq = 0x" << hex << irq << dec << ")" << endl
+				<< " Ignoring it" << endl;
 			exit(-1);
 		}
 	}
-	return;
 }
 		
 template<class CONFIG>
