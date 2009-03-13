@@ -50,13 +50,17 @@ ATD10B::ATD10B(const sc_module_name& name, Object *parent) :
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
+	conversionStop(false),
+	abortSequence(false),
 	param_baseAddress("base-address", this, baseAddress),
 	bus_cycle_time_int(250), // 250ns => 4 MHz
 	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
 	vrl(0),
 	vrh(5.12),
 	param_vrl("vrl", this, vrl),
-	param_vrh("vrh", this, vrh)
+	param_vrh("vrh", this, vrh),
+	hasExternalTrigger(false),
+	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
 
 {
 
@@ -64,8 +68,13 @@ ATD10B::ATD10B(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(ATD10B);
 
-	SC_THREAD(Run);
+	SC_THREAD(RunScanMode);
 	sensitive << scan_event;
+
+	// TODO: Scan External Trigger Channels. I think to use ANx Channels !!!
+	SC_THREAD(RunTriggerMode);
+	sensitive << trigger_event;
+
 }
 
 
@@ -93,8 +102,6 @@ unsigned int ATD10B::transport_dbg(ATD_Payload& payload)
  *
  * Role :
  * 1/ Sample and Hold machine accepts analog signals from external world and stores them as capacitor charge on a storage node.
- * 2/ TODO: The analog input multiplexer connects one of the external analog input channels to the sample and hold machine
- * 3/
  */
 tlm_sync_enum ATD10B::nb_transport_fw(ATD_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
 {
@@ -132,72 +139,214 @@ tlm_sync_enum ATD10B::nb_transport_fw(ATD_Payload& payload, tlm_phase& phase, sc
 	return TLM_ACCEPTED;
 }
 
-// Store external analog signals as capacitor charge
+/**
+ * Store external analog signals as capacitor charge
+ *  1/ Is Multi-Channel or Single-Channel scan
+ *  2/ The analog input multiplexer connects one of the external analog input channels to the sample and hold machine
+ */
 
 void ATD10B::Input(ATD_Payload& payload, double anValue[ATD_SIZE])
 {
 
-	for (int i=0; i<ATD_SIZE; i++) {
-		anValue[i] = payload.anPort[i];
+
+	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
+	{
+		for (int i=0; i<ATD_SIZE; i++) {
+			anValue[i] = payload.anPort[i];
+		}
+
+		scan_event.notify();
+
+	} else {
+		cerr << "Warning: ATD10B16C ==> The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
 	}
 
 	payload.release();
 
-	scan_event.notify();
 }
 
+void ATD10B::RunTriggerMode() {
 
-void ATD10B::Run()
-{
-	while(1)
+	/**
+	 *  TODO: Not Implemented at all.
+	 *        Here after is just a try to understand/extract all relevant informations to External-Trigger
+	 */
+
+	while (1)
 	{
 		wait();
 
-		/**
-		 * TODO:
-		 *  - check ATDCTL0::wrap bits to identify the channel to wrap around
-		 *  - check ATDCTL1 to identify which channel to scan
-		 *  - check ATDCTL3 to determine the sequence length and storage mode of the result
-		 *  - take in account The A/D Resolution Select ATDCTL4::SRES
+		// Check External Trigger
+		/*
+		 * if ATDCTL2::ETRIGE is set
+		 * then
+		 *   - enable the external trigger
+		 *   - set ExternalTrigger configuration using ATDCTL2::ETRIGLE and ATDCTL2::ETRIGP
+		 * else
+		 *   disable external trigger
 		 */
-		// Find referential potential
-		for (int i=0; i < ATD_SIZE; i++) {
-			for (int j=0; j < REFERENCIAL_SIZE; j++ ) {
-				if (analog_signal[i] < reference_potentials[j]) {
-					// TODO: take in account signed/unsigned and 8-10 bits
-					atddrhl_register[i] = reference_potentials[j];
-				}
+
+/*  NOT usable code as it is.
+ *
+		// isExternalTriggerEnabled ? get ATDCTL2::ETRIGE
+		if ((atdctl2_register & 0x04) != 0) {
+
+			// - check ATDCTL1 to select External Trigger Source
+			bool isExternalTriggerSelect = ((atdctl1_register & 0x80) != 0);
+			uint8_t currentChannel = atdctl1_register & 0x0F;
+
+			if ((isExternalTriggerSelect) && hasExternalTrigger) {
+				// set wait event to External_Trigger Channel (currentChannel)
+			} else {
+				// set wait event to ANx Channel (currentChannel)
 			}
+
+		}
+ */
+	}
+
+}
+
+void ATD10B::RunScanMode()
+{
+	uint8_t resultIndex = 0;
+
+	while(1)
+	{
+
+		wait();
+
+		// - check ATDCTL0::wrap bits to identify the channel to wrap around
+		uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
+		if (wrapArroundChannel == 0) {
+			cerr << "Warning: ATD10B => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
+			wrapArroundChannel = ATD_SIZE-1;
 		}
 
-		sequenceComplete();
+		uint8_t sequenceLength = 1; // default is single channel scan
+		// - check ATDCTL3 to determine the sequence length and storage mode of the result
+		sequenceLength = atdctl3_register & 0x78; // get S8C S4C S2C S1C
+		if (sequenceLength == 0) {
+			sequenceLength = 16;
+		}
+
+		if (sequenceLength > ATD_SIZE) {
+			cerr << "Warning: ATD10B => sequence length is higher than the ATD size.\n";
+			sequenceLength = ATD_SIZE;
+		}
+
+		uint8_t rightShift = 0; // default left-justified
+		uint16_t resultMask = 0xFFC0; // default 10-bits
+		// - take in account The A/D Resolution Select ATDCTL4::SRES
+		// is 8-bit resolution
+		if ((atdctl4_register & 0x80) != 0) {
+			resultMask = 0xFF00;
+			rightShift = rightShift + 2;
+		}
+
+		// - take in account The A/D Justification ATDCTL5::DJM
+		// isRightJustified
+		if ((atdctl5_register & 0x80) != 0) {
+			rightShift = rightShift + 6;
+		}
+
+		// - take in account The A/D sign ATDCTL5::DSGN
+		bool isDataSigned = ((atdctl5_register & 0x40) != 0);
+
+		// - is Multi-Channel Sample mode
+		bool isMultiChannel = ((atdctl5_register & 0x10) != 0);
+
+		uint8_t currentChannel = atdctl5_register & 0x0F; // get CD/CC/CB/CA;
+		conversionStop = false;
+
+		do
+		{
+
+			/**
+			 *  check is FIFO mode
+			 *  if (fifo == 0) reset the result index at the start of a sequence
+			 *  else the result index will wrap when it rich the last result register
+			 */
+			if ((atdctl3_register & 0x04) == 0) {
+				resultIndex = 0;
+			}
+
+			// Store the result of conversion
+			uint8_t sequenceIndex = 0;
+			abortSequence = false;
+
+			while ((sequenceIndex < sequenceLength) /* && !abortSequence */ ) {
+
+				/**
+				 * - scan current channel,
+				 * - Find referential potential,
+				 * - check sign and justification,
+				 * - and store in atddrhl_register[i] register
+				 */
+				uint16_t digitalToken = analog_digital_map.getDigitalValue(analog_signal[currentChannel], isDataSigned);
+
+				digitalToken = (digitalToken & resultMask) >> rightShift;
+
+				atddrhl_register[resultIndex] = digitalToken;
+
+				/**
+				 * - identify nextChannel
+				 * - take in account the wrap channel
+				 */
+				if (currentChannel == wrapArroundChannel) {
+					currentChannel = 0;
+				} else {
+					currentChannel = (currentChannel+1) % ATD_SIZE;
+				}
+
+				resultIndex = (resultIndex + 1) % ATD_SIZE;
+				sequenceIndex++;
+			}
+
+			wait((first_phase_clock + second_phase_clock) * sequenceLength);
+
+			// The abordSequence flag can be set during the wait state by writing to any control register
+			if (!abortSequence) {
+				sequenceComplete();
+			}
+
+			/* **
+			 *  - The conversionStop flag can be set during the wait state by writing to any control register [1-4]
+			 *  - writing to control register 5 abort only the current sequence scan but restart a new one
+			 */
+			// identify scan mode SingleConversion/ContinuousConversion
+		} while ((((atdctl5_register & 0x20) != 0) && ((atdctl2_register & 0x04) == 0)) && !conversionStop);
 
 	}
+
 }
 
 void ATD10B::sequenceComplete() {
-	/** TODO:
-	 *  1/ set ATDCTL2::ASCIF bit
-	 *  2/ if ATDCTL2::ASCIE bit is set then assert ATD_Interrupt
-	 */
-}
 
-void ATD10B::setExternalTriggerMode() {
-	/** TODO:
-	 *  1/ if ATDCTL2::ETRIGE is set
-	 *     then
-	 *       - enable the external trigger
-	 *       - set ExternalTrigger configuration using ATDCTL2::ETRIGLE and ATDCTL2::ETRIGP
-	 *     else disable external trigger
+	conversionStop = true;
+
+	/**
+	 *  set ATDCTL2::ASCIF bit
 	 */
+	atdctl2_register = atdctl2_register | 0x01;
+	/**
+	 *  if ATDCTL2::ASCIE bit is set then assert ATD_SequenceComplete_Interrupt
+	 */
+	if ((atdctl2_register & 0x02) != 0) {
+		// TODO: assert ATD_SequenceComplete_Interrupt (channel ID 0x68)
+	}
 }
 
 void ATD10B::abortConversion() {
-	// TODO:
+
+	conversionStop = true;
+	abortSequence = true;
 }
 
 void ATD10B::abortAndStartNewConversion() {
-	// TODO:
+
+	conversionStop = false;
+	abortSequence = true;
 }
 
 void ATD10B::setATDClock() {
@@ -257,7 +406,7 @@ void ATD10B::read(uint8_t offset, void *buffer) {
 				atdstat2_register = atdstat2_register & clearMask;
 			}
 		} else {
-			// TODO: wrong offset
+			cerr << "ERROR: ATD10B => Wrong offset.\n";
 		}
 	}
 
@@ -276,8 +425,10 @@ void ATD10B::write(uint8_t offset, const void *buffer) {
 		} break;
 		case ATDCTL2: {
 			atdctl2_register = (*((uint8_t *) buffer) & 0xFE) | (atdctl2_register & 0x01);
+			if ((atdctl2_register & 0x04) != 0) {
+				cerr << "Warning: ATD10B => Trigger mode not support Yet. \n";
+			}
 			abortConversion();
-			setExternalTriggerMode();
 		} break;
 		case ATDCTL3: {
 			atdctl3_register = *((uint8_t *) buffer) & 0x7F;
@@ -288,13 +439,12 @@ void ATD10B::write(uint8_t offset, const void *buffer) {
 			abortConversion();
 
 			setATDClock();
-			// TODO: take in account The A/D Resolution Select ATDCTL4::SRES
 
 		} break;
 		case ATDCTL5: {
 			atdctl5_register = *((uint8_t *) buffer);
 			abortAndStartNewConversion();
-			// TODO: see specifications
+
 		} break;
 		case ATDSTAT0: {
 			atdstat0_register = (*((uint8_t *) buffer) & 0xB0) | (atdstat0_register & 0x0F);
@@ -376,13 +526,6 @@ bool ATD10B::Setup() {
 	for (int i=0; i<32; i++) {
 		busClockRange[i].minBusClock = i+1;
 		busClockRange[i].maxBusClock = (i+1)*4;
-	}
-
-	double refInc = (vrh - vrl) / REFERENCIAL_SIZE;
-	double val = vrl;
-	for (int i=0; i < REFERENCIAL_SIZE; i++) {
-		val += refInc;
-		reference_potentials[i] = val;
 	}
 
 	Reset();

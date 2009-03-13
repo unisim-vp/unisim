@@ -76,7 +76,6 @@ using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
 #define ATD_SIZE 16
-#define REFERENCIAL_SIZE 100
 
 class ATD_Payload : public ManagedPayload
 {
@@ -132,7 +131,8 @@ public:
 		ATD10B(const sc_module_name& name, Object *parent=0);
 		~ATD10B();
 
-		void Run();
+		void RunScanMode();
+		void RunTriggerMode();
 
 	    //================================================================
 	    //=                    tlm2 Interface                            =
@@ -179,6 +179,7 @@ private:
 	sc_time		second_phase_clock;
 
 	sc_event scan_event;
+	sc_event trigger_event;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -187,6 +188,13 @@ private:
 	double vrl, vrh;
 	Parameter <double> param_vrl;
 	Parameter <double> param_vrh;
+
+	// External Trigger Parameter
+	bool			hasExternalTrigger;
+	Parameter<bool>	param_hasExternalTrigger;
+
+	bool conversionStop;
+	bool abortSequence;
 
 	void Input(ATD_Payload& payload, double anValue[ATD_SIZE]);
 	void abortConversion();
@@ -210,9 +218,93 @@ private:
 	double analog_signal[ATD_SIZE];
 
 	/**
-	 * Reference potentials Vrl = 0 Volts and Vrh = 5.12 Volts
+	 * Theory
+	 *    AnalogVoltage = (Delta * DigitalToken) + VRL
+	 *      where
+	 *        Delta = (VRH-VRL)/(pow(2, resolution) - 1)
+	 *
+	 * In the Adapt9S12XD VRL and VRH are set to GND and VDD respectively.
+	 * In the MC9S12XDP512, each analog channel is capable of producing 10 bit digital tokens.
+	 * Therefore the smallest digital token ('$000') would be equivalent to 0 volts (GND),
+	 * the largest digital token ('$3FF') would be equal to 5 volts (VDD)
+	 * and an increase by one in the digital token would represent an increase by 5mV in the analog voltage.
+	 *
+	 * ===========================
+	 * ATD Referencial Map
+	 *  - Input : input signal. Values are between [Vrl = 0 Volts , Vrh = 5.12 Volts]
+	 *  - Output Code: depend on
+	 *       ATDCTL4::SRES (resolution 8/10),
+	 *       ATDCTL5::DJM (justification left/right),
+	 *       ATDCTL5::DSGN (data sign)
 	 */
-	double reference_potentials[REFERENCIAL_SIZE];
+	class AnalogDigital_Map {
+	public:
+		static const uint8_t REFERENCIAL_SIZE = 8;
+
+		AnalogDigital_Map(){
+			map[0].inputSignal = 5.120;
+			map[0].signed_code = 0x7FC0;
+			map[0].unsigned_code = 0xFFC0;
+
+			map[1].inputSignal = 5.100;
+			map[1].signed_code = 0x7F00;
+			map[1].unsigned_code = 0xFF00;
+
+			map[2].inputSignal = 5.080;
+			map[2].signed_code = 0x7E00;
+			map[2].unsigned_code = 0xFE00;
+
+			map[3].inputSignal = 2.580;
+			map[3].signed_code = 0x0100;
+			map[3].unsigned_code = 0x8100;
+
+			map[4].inputSignal = 2.560;
+			map[4].signed_code = 0x0000;
+			map[4].unsigned_code = 0x8000;
+
+			map[5].inputSignal = 2.540;
+			map[5].signed_code = 0xFF00;
+			map[5].unsigned_code = 0x7F00;
+
+			map[6].inputSignal = 0.020;
+			map[6].signed_code = 0x8100;
+			map[6].unsigned_code = 0x0100;
+
+			map[7].inputSignal = 0.000;
+			map[7].signed_code = 0x8000;
+			map[7].unsigned_code = 0x0000;
+
+		}
+
+		uint16_t getDigitalValue(double inputVoltage, bool isSigned) {
+
+			double average;
+			uint8_t index=0;
+
+			for (; index < REFERENCIAL_SIZE - 1; index++) {
+				average = (map[index].inputSignal + map[index+1].inputSignal) / 2;
+
+				if (inputVoltage > average) {
+					break;
+				}
+			}
+
+			if (isSigned) {
+				return map[index].signed_code;
+			} else {
+				return map[index].unsigned_code;
+			}
+
+		}
+
+	private:
+		struct {
+			double		inputSignal;
+			uint16_t	signed_code;
+			uint16_t	unsigned_code;
+		} map[REFERENCIAL_SIZE];
+
+	} analog_digital_map;
 
 	// Authorised Bus Clock
 	struct {
