@@ -1,0 +1,234 @@
+/*
+ *  Copyright (c) 2009,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+/* List of program-control operations:
+ * - Bcond        branch conditionally (standard)
+ * - BcondD       branch conditionally (delayed)
+ * - BR           branch unconditionally (standard)
+ * - BRD          branch unconditionally (delayed)
+ * - CALL         call subroutine
+ * - CALLcond     call subroutine conditionally
+ * - DBcond       decrement and branch conditionally (standard)
+ * - DBcondD      decrement and branch conditionally (delayed)
+ * - IACK         interrupt acknowledge
+ * - IDLE         idle until interrupt
+ * - NOP          no operation
+ * - RETIcond     return from interrupt conditionally
+ * - RETScond     return form subroutine conditionally
+ * - RPTB         repeat block of instructions
+ * - RPTS         repeat single instruction
+ * - SWI          software interrupt
+ * - TRAPcond     trap conditionally
+ */
+
+/**********************************************************
+ * Bcond (branch conditionally (standard))
+ * op Bcond(0b011010[6]:b[1]:0b000[3]:0b0[1]:cond[5]:reg_or_disp[16])
+ */
+ 
+ op Bcond_reg (0b011010[6]:0b0[1]:0b000[3]:0b0[1]:cond[5]:0[11]:reg[5])
+ op Bcond_disp(0b011010[6]:0b1[1]:0b000[3]:0b0[1]:cond[5]:sext<32> imm[16])
+ 
+/* end of Bcond (branch conditionally (standard))
+ **********************************************************/
+
+/**********************************************************
+ * BcondD (branch conditionally (delayed))
+ * op BcondD(0b011010[6]:b[1]:0b000[3]:0b1[1]:cond[5]:reg_or_disp[16])
+ */
+
+op BcondD_reg (0b011010[6]:0b0[1]:0b000[3]:0b1[1]:cond[5]:0[11]:reg[5])
+op BcondD_disp(0b011010[6]:0b1[1]:0b000[3]:0b1[1]:cond[5]:sext<32> imm[16])
+
+/* end of BcondD (branch conditionally (delayed))
+ **********************************************************/
+
+/**********************************************************
+ * BR (branch unconditionally (standard))
+ * op BR(0b0110000[7]:0b0[1]:src[24])
+ */
+ 
+ op BR(0b0110000[7]:0b0[1]:<32> src[24])
+ 
+/* end of BR (branch unconditionally (standard))
+ **********************************************************/
+
+/**********************************************************
+ * BRD (branch unconditionally (delayed))
+ * op BRD(0b0110000[7]:0b1[1]:src[24])
+ */
+ 
+ op BRD(0b0110000[7]:0b0[1]:<32> src[24])
+ 
+/* end of BRD (branch unconditionally (delayed))
+ **********************************************************/
+
+/**********************************************************
+ * CALL (call subroutine)
+ * op CALL(0b0110001[7]:0b0[1]:src[24])
+ */
+ 
+ op CALL(0b0110001[7]:0b0[1]:<32> src[24])
+ 
+/* end of CALL (call subroutine)
+ **********************************************************/
+
+/**********************************************************
+ * CALLcond (call subroutine conditionally)
+ * op CALLcond(0b011100[6]:b[1]:0b0000[4]:cond[5]:reg_or_disp[16])
+ */
+
+op CALLcond_reg (0b011100[6]:0b0[1]:0b0000[4]:cond[5]:0[11]:reg[5])
+op CALLcond_disp(0b011100[6]:0b1[1]:0b0000[4]:cond[5]:sext<32> imm[16])
+
+/* end of CALLcond (call subroutine conditionally)
+ **********************************************************/
+
+/**********************************************************
+ * DBcond (decrement and branch conditionally (standard))
+ * op DBcond(0b011011[6]:b[1]:ar[3]:0b0[1]:cond[5]:reg_or_disp[16])
+ */
+
+op DBcond_reg (0b011011[6]:0b0[1]:ar[3]:0b0[1]:cond[5]:0[11]:reg[5])
+op DBcond_disp(0b011011[6]:0b1[1]:ar[3]:0b0[1]:cond[5]:sext<32> imm[16])
+
+/* end of DBcond (decrement and branch conditionally (standard))
+ **********************************************************/
+
+/**********************************************************
+ * DBcondD (decrement and branch conditionally (delayed))
+ * op DBcondD(0b011011[6]:b[1]:ar[3]:0b1[1]:cond[5]:reg_or_disp[16])
+ */
+
+op DBcondD_reg (0b011011[6]:0b0[1]:ar[3]:0b1[1]:cond[5]:0[11]:reg[5])
+op DBcondD_disp(0b011011[6]:0b1[1]:ar[3]:0b1[1]:cond[5]:sext<32> imm[16])
+
+/* end of DBcondD (decrement and branch conditionally (delayed))
+ **********************************************************/
+
+/**********************************************************
+ * IACK (interrupt acknowledge)
+ * op IACK(0b000[3]:0b110110[6]:g[2]:0b00000[5]:src[16])
+ */
+
+op IACK_dir  (0b000[3]:0b110110[6]:0b01[2]:0b00000[5]:direct[16])
+op IACK_indir(0b000[3]:0b110110[6]:0b10[2]:0b00000[5]:mod[4]:ar[4]:disp[8])
+
+/* end of IACK (interrupt acknowledge)
+ **********************************************************/
+
+/**********************************************************
+ * IDLE (idle until interrupt)
+ * op IDLE(0b000[3]:0b001100[6]:0[23])
+ */
+ 
+ op IDLE(0b000[3]:0b001100[6]:0[23])
+ 
+/* end of IDLE (idle until interrupt)
+ **********************************************************/
+
+/**********************************************************
+ * NOP (no operation)
+ * op NOP(0b000[3]:0b011001[6]:g[2]:0b00000[5]:src[16])
+ */
+
+op NOP_dir  (0b000[3]:0b011001[6]:0b01[2]:0b00000[5]:direct[16])
+op NOP_indir(0b000[3]:0b011001[6]:0b10[2]:0b00000[5]:mod[4]:ar[4]:disp[8])
+
+/* end of NOP (no operation)
+ **********************************************************/
+
+/**********************************************************
+ * RETIcond (return from interrupt conditionally)
+ * op RETIcond(0b01111[5]:0b0000[4]:0b00[2]:cond[5]:0[16])
+ */
+
+op RETIcond(0b01111[5]:0b0000[4]:0b00[2]:cond[5]:0[16])
+
+/* end of RETIcond (return from interrupt conditionally)
+ **********************************************************/
+
+/**********************************************************
+ * RETScond (return form subroutine conditionally)
+ * op RETScond(0b01111[5]:0b0001[4]:0b00[2]:cond[5]:0[16])
+ */
+
+op RETScond(0b01111[5]:0b0001[4]:0b00[2]:cond[5]:0[16])
+
+/* end of RETScond (return form subroutine conditionally)
+ **********************************************************/
+
+/**********************************************************
+ * RPTB (repeat block of instructions)
+ * op RPTB(0b01100100[8]:src[24])
+ */
+ 
+op RPTB(0b01100100[8]:<32> src[24])
+
+/* end of RPTB (repeat block of instructions)
+ **********************************************************/
+
+/**********************************************************
+ * RPTS (repeat single instruction)
+ * op RPTS(0b000[3]:0b100111[6]:g[2]:0b11011[5]:src[16])
+ */
+
+op RPTS_reg  (0b000[3]:0b100111[6]:0b00[2]:0b11011[5]:0[11]:src[5])
+op RPTS_dir  (0b000[3]:0b100111[6]:0b01[2]:0b11011[5]:direct[16])
+op RPTS_indir(0b000[3]:0b100111[6]:0b10[2]:0b11011[5]:mod[4]:ar[4]:disp[8])
+op RPTS_imm  (0b000[3]:0b100111[6]:0b11[2]:0b11011[5]:sext<32> imm[16])
+
+/* end of RPTS (repeat single instruction)
+ **********************************************************/
+
+/**********************************************************
+ * SWI (software interrupt)
+ * op SWI(0b0110011[7]:0b0000[4]:0[21])
+ */
+
+op SWI(0b0110011[7]:0b0000[4]:0[21])
+
+/* end of SWI (software interrupt)
+ **********************************************************/
+
+/**********************************************************
+ * TRAPcond (trap conditionally)
+ * op TRAPcond(0b0111010[7]:0b0000[4]:cond[5]:0b01[11]:n[5])
+ */
+
+op TRAPcond(0b0111010[7]:0b0000[4]:cond[5]:0b01[11]:<32> n[5])
+
+/* end of TRAPcond (trap conditionally)
+ **********************************************************/
