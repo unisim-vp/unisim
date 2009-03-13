@@ -181,29 +181,22 @@ mfspr.disasm = {
 		case 541: os << "mfdbatl r" << rd << ", 2"; return;
 		case 542: os << "mfdbatu r" << rd << ", 3"; return;
 		case 543: os << "mfdbatl r" << rd << ", 3"; return;
-	}
-
-	if(CPU<CONFIG>::IsMPC7X5() || CPU<CONFIG>::IsMPC7XXX())
-	{
-		switch(n)
-		{
-			case 560: os << "mfibatu r" << rd << ", 4"; return;
-			case 561: os << "mfibatl r" << rd << ", 4"; return;
-			case 562: os << "mfibatu r" << rd << ", 5"; return;
-			case 563: os << "mfibatl r" << rd << ", 5"; return;
-			case 564: os << "mfibatu r" << rd << ", 6"; return;
-			case 565: os << "mfibatl r" << rd << ", 6"; return;
-			case 566: os << "mfibatu r" << rd << ", 7"; return;
-			case 567: os << "mfibatl r" << rd << ", 7"; return;
-			case 568: os << "mfdbatu r" << rd << ", 4"; return;
-			case 569: os << "mfdbatl r" << rd << ", 4"; return;
-			case 570: os << "mfdbatu r" << rd << ", 5"; return;
-			case 571: os << "mfdbatl r" << rd << ", 5"; return;
-			case 572: os << "mfdbatu r" << rd << ", 6"; return;
-			case 573: os << "mfdbatl r" << rd << ", 6"; return;
-			case 574: os << "mfdbatu r" << rd << ", 7"; return;
-			case 575: os << "mfdbatl r" << rd << ", 7"; return;
-		}
+		case 560: os << "mfibatu r" << rd << ", 4"; return;
+		case 561: os << "mfibatl r" << rd << ", 4"; return;
+		case 562: os << "mfibatu r" << rd << ", 5"; return;
+		case 563: os << "mfibatl r" << rd << ", 5"; return;
+		case 564: os << "mfibatu r" << rd << ", 6"; return;
+		case 565: os << "mfibatl r" << rd << ", 6"; return;
+		case 566: os << "mfibatu r" << rd << ", 7"; return;
+		case 567: os << "mfibatl r" << rd << ", 7"; return;
+		case 568: os << "mfdbatu r" << rd << ", 4"; return;
+		case 569: os << "mfdbatl r" << rd << ", 4"; return;
+		case 570: os << "mfdbatu r" << rd << ", 5"; return;
+		case 571: os << "mfdbatl r" << rd << ", 5"; return;
+		case 572: os << "mfdbatu r" << rd << ", 6"; return;
+		case 573: os << "mfdbatl r" << rd << ", 6"; return;
+		case 574: os << "mfdbatu r" << rd << ", 7"; return;
+		case 575: os << "mfdbatl r" << rd << ", 7"; return;
 	}
 
 	os << "mfspr r" << rd << ", " << n;
@@ -239,29 +232,22 @@ mtspr.disasm = {
 		case 541: os << "mtdbatl 2, r" << rs; return;
 		case 542: os << "mtdbatu 3, r" << rs; return;
 		case 543: os << "mtdbatl 3, r" << rs; return;
-	}
-
-	if(CPU<CONFIG>::IsMPC7X5() || CPU<CONFIG>::IsMPC7XXX())
-	{
-		switch(n)
-		{
-			case 560: os << "mtibatu 4, r" << rs; return;
-			case 561: os << "mtibatl 4, r" << rs; return;
-			case 562: os << "mtibatu 5, r" << rs; return;
-			case 563: os << "mtibatl 5, r" << rs; return;
-			case 564: os << "mtibatu 6, r" << rs; return;
-			case 565: os << "mtibatl 6, r" << rs; return;
-			case 566: os << "mtibatu 7, r" << rs; return;
-			case 567: os << "mtibatl 7, r" << rs; return;
-			case 568: os << "mtdbatu 4, r" << rs; return;
-			case 569: os << "mtdbatl 4, r" << rs; return;
-			case 570: os << "mtdbatu 5, r" << rs; return;
-			case 571: os << "mtdbatl 5, r" << rs; return;
-			case 572: os << "mtdbatu 6, r" << rs; return;
-			case 573: os << "mtdbatl 6, r" << rs; return;
-			case 574: os << "mtdbatu 7, r" << rs; return;
-			case 575: os << "mtdbatl 7, r" << rs; return;
-		}
+		case 560: os << "mtibatu 4, r" << rs; return;
+		case 561: os << "mtibatl 4, r" << rs; return;
+		case 562: os << "mtibatu 5, r" << rs; return;
+		case 563: os << "mtibatl 5, r" << rs; return;
+		case 564: os << "mtibatu 6, r" << rs; return;
+		case 565: os << "mtibatl 6, r" << rs; return;
+		case 566: os << "mtibatu 7, r" << rs; return;
+		case 567: os << "mtibatl 7, r" << rs; return;
+		case 568: os << "mtdbatu 4, r" << rs; return;
+		case 569: os << "mtdbatl 4, r" << rs; return;
+		case 570: os << "mtdbatu 5, r" << rs; return;
+		case 571: os << "mtdbatl 5, r" << rs; return;
+		case 572: os << "mtdbatu 6, r" << rs; return;
+		case 573: os << "mtdbatl 6, r" << rs; return;
+		case 574: os << "mtdbatu 7, r" << rs; return;
+		case 575: os << "mtdbatl 7, r" << rs; return;
 	}
 
 	os << "mtspr " << n << ", r" << rs;

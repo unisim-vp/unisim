@@ -384,16 +384,16 @@ public:
 	void SetSPR(unsigned int n, uint32_t value);
 	void SetFPSCR(uint32_t value);
 
-	typename CONFIG::address_t GetCIA();
-	uint32_t GetGPR(unsigned int n);
-	const SoftDouble& GetFPR(unsigned int n);
-	uint32_t GetCR();
-	uint32_t GetLR();
-	uint32_t GetCTR();
-	uint32_t GetXER();
-	uint32_t GetSPR(unsigned int n);
-	uint32_t GetFPSCR();
-	uint32_t GetMSR();
+	typename CONFIG::address_t GetCIA() const;
+	uint32_t GetGPR(unsigned int n) const;
+	const SoftDouble& GetFPR(unsigned int n) const;
+	uint32_t GetCR() const;
+	uint32_t GetLR() const;
+	uint32_t GetCTR() const;
+	uint32_t GetXER() const;
+	uint32_t GetSPR(unsigned int n) const;
+	uint32_t GetFPSCR() const;
+	uint32_t GetMSR() const;
 
 	void Int8Load(unsigned int rd, typename CONFIG::address_t ea);
 	void Int16Load(unsigned int rd, typename CONFIG::address_t ea);
@@ -416,7 +416,7 @@ public:
 
 	/*************************************************************************/
 
-	Operand<CONFIG> *SearchInputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num = 0);
+	const Operand<CONFIG> *SearchInputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num = 0) const;
 	Operand<CONFIG> *SearchOutputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num = 0);
 
 	typename CONFIG::execution_unit_type_t GetExecutionUnit() const { return execution_unit; }
@@ -833,6 +833,10 @@ public:
 	virtual void BusZeroBlock(physical_address_t physical_addr);
 	virtual void BusFlushBlock(physical_address_t physical_addr);
 
+#ifdef SOCLIB
+	virtual void GenLoadStore(typename LoadStoreAccess<CONFIG>::Type type, unsigned int reg_num, address_t munged_ea, uint32_t size) = 0;
+#endif
+
 	//=====================================================================
 	//=             memory access reporting control interface methods     =
 	//=====================================================================
@@ -901,9 +905,9 @@ public:
 	//=                  instruction address set/get methods              =
 	//=====================================================================
 	
-	inline uint32_t GetCIA() { return cia; }
+	inline uint32_t GetCIA() const { return cia; }
 	inline void SetCIA(uint32_t value) { cia = value; }
-	inline uint32_t GetNIA() { return nia; }
+	inline uint32_t GetNIA() const { return nia; }
 	inline void SetNIA(uint32_t value) { nia = value; }
 
 	//=====================================================================
@@ -1182,8 +1186,8 @@ public:
 	inline uint32_t GetHID1() { return hid1; }
 	void SetHID1(uint32_t value);
 	inline uint32_t GetHID1_ABE() { return (GetHID1() & HID1_ABE_MASK) >> CONFIG::HID1_ABE_OFFSET; }
-	inline uint32_t SetHID1_ABE() { SetHID1(GetHID1() | HID1_ABE_MASK); }
-	inline uint32_t ResetHID1_ABE() { SetHID1(GetHID1() & ~HID1_ABE_MASK); }
+	inline void SetHID1_ABE() { SetHID1(GetHID1() | HID1_ABE_MASK); }
+	inline void ResetHID1_ABE() { SetHID1(GetHID1() & ~HID1_ABE_MASK); }
 	
 	//=====================================================================
 	//=                  HID2 register set/get methods                    =
@@ -1465,6 +1469,8 @@ public:
 	//=====================================================================
 	
 	void FlushSubsequentInstructions();
+	void FillPrefetchBuffer(uint32_t insn);
+	bool NeedFillingPrefetchBuffer() const;
 	
 	//=====================================================================
 	//=          DEC/TBL/TBU bus-time based update methods                =

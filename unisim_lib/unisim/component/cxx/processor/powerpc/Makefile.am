@@ -3,6 +3,7 @@ includedir = $(prefix)/include/unisim/component/cxx/processor/powerpc
 sharedir = $(prefix)/share/unisim_lib/unisim/component/cxx/processor/powerpc
 lib_LTLIBRARIES = libunisim_component_cxx_processor_powerpc.la
 libunisim_component_cxx_processor_powerpc_la_SOURCES = cpu.cc config.cc exception.cc mpc755_debug.cc mpc7447a_debug.cc
+# emu_mpc7447a.cc sim_cache_mpc7447a.cc sim_e600_mpc7447a.cc
 
 if COND_release
 libunisim_component_cxx_processor_powerpc_la_SOURCES += mpc755.cc mpc7447a.cc
@@ -13,6 +14,10 @@ include_HEADERS = cpu.hh exception.hh \
 	integer.isa loadstore.isa misc.isa altivec.isa ppc.isa perf.isa \
 	sim_branch.isa sim_dependencies.isa sim_latencies.isa sim_load.isa sim_ppc.isa\
 	cpu.tcc exception.tcc
+#	emu_cpu.hh sim_cache.hh sim_e600.hh \
+#	emu_cpu.tcc sim_cache.tcc sim_e600.tcc \
+#	emu_exception.tcc
+
 nodist_include_HEADERS = $(top_srcdir)/powerpc.hh $(top_srcdir)/powerpc.tcc
 BUILT_SOURCES = $(top_srcdir)/powerpc.hh $(top_srcdir)/powerpc.tcc
 CLEANFILES = $(top_srcdir)/powerpc.tcc $(top_srcdir)/powerpc.hh

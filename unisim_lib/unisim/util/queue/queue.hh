@@ -95,9 +95,11 @@ public:
 	~Queue();
 
 	typename CONFIG::ELEMENT& operator [] (unsigned int idx);
+	const typename CONFIG::ELEMENT& operator [] (unsigned int idx) const;
 	typename CONFIG::ELEMENT *Allocate();
 	void Push(typename CONFIG::ELEMENT& elt);
 	typename CONFIG::ELEMENT& Front();
+	const typename CONFIG::ELEMENT& ConstFront() const;
 	void Pop();
 	unsigned int Size() const;
 	bool Empty() const;

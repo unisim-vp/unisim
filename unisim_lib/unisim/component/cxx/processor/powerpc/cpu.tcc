@@ -55,115 +55,115 @@ namespace processor {
 namespace powerpc {
 
 using namespace std;
+
 using unisim::service::interfaces::File;
 using unisim::service::interfaces::Function;
 using unisim::service::interfaces::Line;
 
 
-
 template <class CONFIG>
-CPU<CONFIG>::CPU(const char *name, Object *parent) :
-	Object(name, parent),
-	Client<Loader<typename CONFIG::physical_address_t> >(name, parent),
-	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
-	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
-	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
-	Client<TrapReporting>(name, parent),
-	Service<MemoryAccessReportingControl>(name, parent),
-	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
-	Service<unisim::service::interfaces::Registers>(name, parent),
-	Service<Memory<typename CONFIG::address_t> >(name, parent),
-	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
-	Service<CPULinuxOS>(name, parent),
-	Client<Memory<typename CONFIG::address_t> >(name, parent),
-	Client<LinuxOS>(name, parent),
-	Client<Logger>(name, parent),
-	Client<CachePowerEstimator>(name, parent),
-	Client<PowerMode>(name, parent),
-	Service<Synchronizable>(name, parent),
-	disasm_export("disasm-export", this),
-	registers_export("registers-export", this),
-	memory_export("memory-export", this),
-	memory_injection_export("memory-injection-export", this),
-	cpu_linux_os_export("cpu-linux-os-export", this),
-	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
-	kernel_loader_import("kernel-loader-import", this),
-	debug_control_import("debug-control-import", this),
-	memory_access_reporting_import("memory-access-reporting-import", this),
-	symbol_table_lookup_import("symbol-table-lookup-import", this),
-	memory_import("memory-import", this),
-	linux_os_import("linux-os-import", this),
-	trap_reporting_import("trap-reporting-import", this),
-	logger_import("logger-import", this),
-	fpu_logger_import("fpu-logger-import", this),
-	mmu_logger_import("mmu-logger-import", this),
-	il1_power_estimator_import("il1-power-estimator-import", this),
-	dl1_power_estimator_import("dl1-power-estimator-import", this),
-	l2_power_estimator_import("l2-power-estimator-import", this),
-	itlb_power_estimator_import("itlb-power-estimator-import", this),
-	dtlb_power_estimator_import("dtlb-power-estimator-import", this),
-	il1_power_mode_import("il1-power-mode-import", this),
-	dl1_power_mode_import("dl1-power-mode-import", this),
-	l2_power_mode_import("l2-power-mode-import", this),
-	itlb_power_mode_import("itlb-power-mode-import", this),
-	dtlb_power_mode_import("dtlb-power-mode-import", this),
-	synchronizable_export("synchronizable-export", this),
-	requires_memory_access_reporting(true),
-	requires_finished_instruction_reporting(true),
-	dl1(),
-	il1(),
-	l2(),
-	itlb(),
-	dtlb(),
-	cpu_cycle_time(0),
-	voltage(0),
-	bus_cycle_time(0),
-	max_inst(0xffffffffffffffffULL),
-	num_insn_in_prefetch_buffer(0),
-	cur_insn_in_prefetch_buffer(0),
-	fp32_estimate_inv_warning(false),
-	fp64_estimate_inv_sqrt_warning(false),
-	verbose_all(false),
-	verbose_step(false),
-	verbose_dtlb(false),
-	verbose_dl1(false),
-	verbose_il1(false),
-	verbose_l2(false),
-	verbose_load(false),
-	verbose_store(false),
-	verbose_read_memory(false),
-	verbose_write_memory(false),
-	verbose_exception(false),
-	verbose_set_msr(false),
-	verbose_set_hid0(false),
-	verbose_set_hid1(false),
-	verbose_set_hid2(false),
-	verbose_set_l2cr(false),
-	trap_on_instruction_counter(0xffffffffffffffffULL),
-	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time),
-	param_voltage("voltage", this, voltage),
-	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time),
-	param_max_inst("max-inst", this, max_inst),
-	param_verbose_all("verbose-all", this, verbose_all),
-	param_verbose_step("verbose-step", this, verbose_step),
-	param_verbose_dtlb("verbose-dtlb", this, verbose_dtlb),
-	param_verbose_dl1("verbose-dl1", this, verbose_dl1),
-	param_verbose_il1("verbose-il1", this, verbose_il1),
-	param_verbose_l2("verbose-l2", this, verbose_l2),
-	param_verbose_load("verbose-load", this, verbose_load),
-	param_verbose_store("verbose-store", this, verbose_store),
-	param_verbose_read_memory("verbose-read-memory", this, verbose_read_memory),
-	param_verbose_write_memory("verbose-write-memory", this, verbose_write_memory),
-	param_verbose_exception("verbose-exception", this, verbose_exception),
-	param_verbose_set_msr("verbose-set-msr", this, verbose_set_msr),
-	param_verbose_set_hid0("verbose-set-hid0", this, verbose_set_hid0),
-	param_verbose_set_hid1("verbose-set-hid1", this, verbose_set_hid1),
-	param_verbose_set_hid2("verbose-set-hid2", this, verbose_set_hid2),
-	param_verbose_set_l2cr("verbose-set-l2cr", this, verbose_set_l2cr),
-	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
-	stat_instruction_counter("instruction-counter", this, instruction_counter),
-	stat_bus_cycle("bus-cycle", this, bus_cycle),
-	stat_cpu_cycle("cpu-cycle", this, cpu_cycle)
+CPU<CONFIG>::CPU(const char *name, Object *parent)
+	: Object(name, parent)
+	, Client<Loader<typename CONFIG::physical_address_t> >(name,  parent)
+	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
+	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
+	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)
+	, Client<TrapReporting>(name,  parent)
+	, Service<MemoryAccessReportingControl>(name,  parent)
+	, Service<Disassembly<typename CONFIG::address_t> >(name,  parent)
+	, Service<unisim::service::interfaces::Registers>(name,  parent)
+	, Service<Memory<typename CONFIG::address_t> >(name,  parent)
+	, Service<MemoryInjection<typename CONFIG::address_t> >(name,  parent)
+	, Service<CPULinuxOS>(name,  parent)
+	, Client<Memory<typename CONFIG::address_t> >(name,  parent)
+	, Client<LinuxOS>(name,  parent)
+	, Client<Logger>(name,  parent)
+	, Client<CachePowerEstimator>(name,  parent)
+	, Client<PowerMode>(name,  parent)
+	, Service<Synchronizable>(name,  parent)
+	, disasm_export("disasm-export",  this)
+	, registers_export("registers-export",  this)
+	, memory_export("memory-export",  this)
+	, memory_injection_export("memory-injection-export",  this)
+	, cpu_linux_os_export("cpu-linux-os-export",  this)
+	, memory_access_reporting_control_export("memory_access_reporting_control_export",  this)
+	, kernel_loader_import("kernel-loader-import",  this)
+	, debug_control_import("debug-control-import",  this)
+	, memory_access_reporting_import("memory-access-reporting-import",  this)
+	, symbol_table_lookup_import("symbol-table-lookup-import",  this)
+	, memory_import("memory-import",  this)
+	, linux_os_import("linux-os-import",  this)
+	, trap_reporting_import("trap-reporting-import",  this)
+	, logger_import("logger-import",  this)
+	, fpu_logger_import("fpu-logger-import",  this)
+	, mmu_logger_import("mmu-logger-import",  this)
+	, il1_power_estimator_import("il1-power-estimator-import",  this)
+	, dl1_power_estimator_import("dl1-power-estimator-import",  this)
+	, l2_power_estimator_import("l2-power-estimator-import",  this)
+	, itlb_power_estimator_import("itlb-power-estimator-import",  this)
+	, dtlb_power_estimator_import("dtlb-power-estimator-import",  this)
+	, il1_power_mode_import("il1-power-mode-import",  this)
+	, dl1_power_mode_import("dl1-power-mode-import",  this)
+	, l2_power_mode_import("l2-power-mode-import",  this)
+	, itlb_power_mode_import("itlb-power-mode-import",  this)
+	, dtlb_power_mode_import("dtlb-power-mode-import",  this)
+	, synchronizable_export("synchronizable-export",  this)
+	, requires_memory_access_reporting(true)
+	, requires_finished_instruction_reporting(true)
+	, dl1()
+	, il1()
+	, l2()
+	, itlb()
+	, dtlb()
+	, cpu_cycle_time(0)
+	, voltage(0)
+	, bus_cycle_time(0)
+	, max_inst(0xffffffffffffffffULL)
+	, num_insn_in_prefetch_buffer(0)
+	, cur_insn_in_prefetch_buffer(0)
+	, fp32_estimate_inv_warning(false)
+	, fp64_estimate_inv_sqrt_warning(false)
+	, verbose_all(false)
+	, verbose_step(false)
+	, verbose_dtlb(false)
+	, verbose_dl1(false)
+	, verbose_il1(false)
+	, verbose_l2(false)
+	, verbose_load(false)
+	, verbose_store(false)
+	, verbose_read_memory(false)
+	, verbose_write_memory(false)
+	, verbose_exception(false)
+	, verbose_set_msr(false)
+	, verbose_set_hid0(false)
+	, verbose_set_hid1(false)
+	, verbose_set_hid2(false)
+	, verbose_set_l2cr(false)
+	, trap_on_instruction_counter(0xffffffffffffffffULL)
+	, param_cpu_cycle_time("cpu-cycle-time",  this,  cpu_cycle_time)
+	, param_voltage("voltage",  this,  voltage)
+	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time)
+	, param_max_inst("max-inst",  this,  max_inst)
+	, param_verbose_all("verbose-all",  this,  verbose_all)
+	, param_verbose_step("verbose-step",  this,  verbose_step)
+	, param_verbose_dtlb("verbose-dtlb",  this,  verbose_dtlb)
+	, param_verbose_dl1("verbose-dl1",  this,  verbose_dl1)
+	, param_verbose_il1("verbose-il1",  this,  verbose_il1)
+	, param_verbose_l2("verbose-l2",  this,  verbose_l2)
+	, param_verbose_load("verbose-load",  this,  verbose_load)
+	, param_verbose_store("verbose-store",  this,  verbose_store)
+	, param_verbose_read_memory("verbose-read-memory",  this,  verbose_read_memory)
+	, param_verbose_write_memory("verbose-write-memory",  this,  verbose_write_memory)
+	, param_verbose_exception("verbose-exception",  this,  verbose_exception)
+	, param_verbose_set_msr("verbose-set-msr",  this,  verbose_set_msr)
+	, param_verbose_set_hid0("verbose-set-hid0",  this,  verbose_set_hid0)
+	, param_verbose_set_hid1("verbose-set-hid1",  this,  verbose_set_hid1)
+	, param_verbose_set_hid2("verbose-set-hid2",  this,  verbose_set_hid2)
+	, param_verbose_set_l2cr("verbose-set-l2cr",  this,  verbose_set_l2cr)
+	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter)
+	, stat_instruction_counter("instruction-counter",  this,  instruction_counter)
+	, stat_bus_cycle("bus-cycle",  this,  bus_cycle)
+	, stat_cpu_cycle("cpu-cycle",  this,  cpu_cycle)
 {
 	Object::SetupDependsOn(logger_import);
 
@@ -1933,7 +1933,15 @@ void CPU<CONFIG>::StepOneInstruction()
 	{
 		address_t addr = GetCIA();
 		uint32_t insn;
-		
+
+#ifdef SOCLIB
+		if(unlikely(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer))
+		{
+			std::cerr << "No instructions in prefetch buffer" << std::endl;
+			return;
+		}
+		insn = prefetch_buffer[cur_insn_in_prefetch_buffer];
+#else
 		if(CONFIG::PREFETCH_BUFFER_ENABLE)
 		{
 			if(unlikely(cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer))
@@ -1951,6 +1959,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		{
 			EmuFetch(addr, &insn, 4);
 		}
+#endif
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 		BSwap(insn);
@@ -1963,7 +1972,6 @@ void CPU<CONFIG>::StepOneInstruction()
 				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<address_t>::MAT_READ, MemoryAccessReporting<address_t>::MT_INSN, addr, 4);
 			}
 		}
-		
 		if(CONFIG::IABR_ENABLE && CONFIG::HAS_IABR)
 		{
 			/* Check for instruction address breakpoint */
@@ -1974,6 +1982,10 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 
 		operation = Decoder<CONFIG>::Decode(addr, insn);
+
+//		stringstream sstr;
+//		operation->disasm((CPU<CONFIG> *) this, sstr);
+//		std::cerr << DebugInfo << "#" << instruction_counter << ":0x" << std::hex << addr << std::dec << ":" << sstr.str() << std::endl;
 
 		if(unlikely(IsVerboseStep()))
 		{
@@ -2052,6 +2064,7 @@ void CPU<CONFIG>::StepOneInstruction()
 
 	/* update the instruction counter */
 	instruction_counter++;
+
 	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
 	{
 		trap_reporting_import->ReportTrap();
@@ -2066,7 +2079,6 @@ void CPU<CONFIG>::StepOneInstruction()
 	}
 
 	if(unlikely(instruction_counter >= max_inst)) Stop(0);
-
 }
 
 template <class CONFIG>
@@ -2119,6 +2131,20 @@ template <class CONFIG>
 void CPU<CONFIG>::FlushSubsequentInstructions()
 {
 	cur_insn_in_prefetch_buffer = num_insn_in_prefetch_buffer - 1;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::FillPrefetchBuffer(uint32_t insn)
+{
+	prefetch_buffer[0] = insn;
+	num_insn_in_prefetch_buffer = 1;
+	cur_insn_in_prefetch_buffer = 0;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::NeedFillingPrefetchBuffer() const
+{
+	return cur_insn_in_prefetch_buffer == num_insn_in_prefetch_buffer;
 }
 
 template <class CONFIG>
@@ -2563,7 +2589,7 @@ string CPU<CONFIG>::GetObjectFriendlyName(address_t addr)
 {
 	stringstream sstr;
 	
-	const Symbol<address_t> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<address_t>::SYM_OBJECT);
+	const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<address_t>::SYM_OBJECT) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -2577,7 +2603,7 @@ string CPU<CONFIG>::GetFunctionFriendlyName(address_t addr)
 {
 	stringstream sstr;
 	
-	const Symbol<address_t> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<address_t>::SYM_FUNC);
+	const Symbol<address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<address_t>::SYM_FUNC) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
@@ -3776,46 +3802,65 @@ inline void CPU<CONFIG>::MonitorStore(address_t ea, uint32_t size)
 template <class CONFIG>
 void CPU<CONFIG>::Int8Load(unsigned int rd, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT8_LOAD, rd, MungEffectiveAddress(ea, 1), 1);
+#else
 	uint8_t value;
 	EmuLoad<uint8_t>(value, ea);
 	gpr[rd] = (uint32_t) value; // 8-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int16Load(unsigned int rd, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_LOAD, rd, MungEffectiveAddress(ea, 2), 2);
+#else
 	uint16_t value;
 	EmuLoad<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) BigEndian2Host(value); // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::SInt16Load(unsigned int rd, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::SINT16_LOAD, rd, ea, 2);
+#else
 	uint16_t value;
 	EmuLoad<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) (int16_t) BigEndian2Host(value); // 16-bit to 32-bit sign extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int32Load(unsigned int rd, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_LOAD, rd, MungEffectiveAddress(ea, 4), 4);
+#else
 	uint32_t value;
 	EmuLoad<uint32_t>(value, ea);
 	gpr[rd] = BigEndian2Host(value);
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Fp32Load(unsigned int fd, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::FP32_LOAD, fd, MungEffectiveAddress(ea, 4), 4);
+#else
 	uint32_t value;
 	EmuLoad<uint32_t>(value, ea);
 	Flags flags;
@@ -3823,41 +3868,57 @@ void CPU<CONFIG>::Fp32Load(unsigned int fd, address_t ea)
 	fpr[fd].assign(SoftFloat(BigEndian2Host(value)), flags);
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Fp64Load(unsigned int fd, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::FP64_LOAD, fd, MungEffectiveAddress(ea, 8), 8);
+#else
 	uint64_t value;
 	EmuLoad<uint64_t>(value, ea);
 	fpr[fd] = SoftDouble(BigEndian2Host(value));
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_LOAD_BYTE_REVERSE, rd, MungEffectiveAddress(ea, 2), 2);
+#else
 	uint16_t value;
 	EmuLoad<uint16_t>(value, ea);
 	gpr[rd] = (uint32_t) LittleEndian2Host(value); // reverse bytes and 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_LOAD_BYTE_REVERSE, rd, MungEffectiveAddress(ea, 4), 4);
+#else
 	uint32_t value;
 	EmuLoad<uint32_t>(value, ea);
 	gpr[rd] = LittleEndian2Host(value); // reverse bytes
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT_LOAD_MSB, rd, ea, size);
+#else
 	switch(size)
 	{
 		case 1:
@@ -3894,85 +3955,121 @@ void CPU<CONFIG>::IntLoadMSBFirst(unsigned int rd, address_t ea, uint32_t size)
 		}
 	}
 	MonitorLoad(ea, size);
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int8Store(unsigned int rs, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT8_STORE, rs, MungEffectiveAddress(ea, 1), 1);
+#else
 	uint8_t value = gpr[rs];
 	EmuStore<uint8_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int16Store(unsigned int rs, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_STORE, rs, MungEffectiveAddress(ea, 2), 2);
+#else
 	uint16_t value = Host2BigEndian((uint16_t) gpr[rs]);
 	EmuStore<uint16_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int32Store(unsigned int rs, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_STORE, rs, MungEffectiveAddress(ea, 4), 4);
+#else
 	uint32_t value = Host2BigEndian(gpr[rs]);
 	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Fp32Store(unsigned int fs, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::FP32_STORE, fs, MungEffectiveAddress(ea, 4), 4);
+#else
 	Flags flags;
 	flags.setRoundingMode(RN_ZERO);
 	uint32_t value = Host2BigEndian(SoftFloat(fpr[fs], flags).queryValue());
 	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Fp64Store(unsigned int fs, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::FP64_STORE, fs, MungEffectiveAddress(ea, 8), 8);
+#else
 	uint64_t value = Host2BigEndian(fpr[fs].queryValue());
 	EmuStore<uint64_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::FpStoreLSW(unsigned int fs, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::FP_STORE_LSW, fs, MungEffectiveAddress(ea, 4), 4);
+#else
 	uint32_t value = Host2BigEndian((uint32_t) fpr[fs].queryValue());
 	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT16_STORE_BYTE_REVERSE, rs, MungEffectiveAddress(ea, 2), 2);
+#else
 	uint16_t value = Host2LittleEndian((uint16_t) gpr[rs]);
 	EmuStore<uint16_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, address_t ea)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT32_STORE_BYTE_REVERSE, rs, MungEffectiveAddress(ea, 4), 4);
+#else
 	uint32_t value = Host2LittleEndian(gpr[rs]);
 	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
 	effective_address = ea;
+#endif
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, address_t ea, uint32_t size)
 {
+#ifdef SOCLIB
+	GenLoadStore(LoadStoreAccess<CONFIG>::INT_STORE_MSB, rs, ea, size);
+#else
 	switch(size)
 	{
 		case 1:
@@ -4009,6 +4106,7 @@ void CPU<CONFIG>::IntStoreMSBFirst(unsigned int rs, address_t ea, uint32_t size)
 	}
 
 	MonitorStore(ea, size);
+#endif
 }
 
 template <class CONFIG>
@@ -5665,6 +5763,10 @@ void CPU<CONFIG>::Tlbia()
 	{
 		throw IllegalInstructionException<CONFIG>();
 	}
+	if(GetMSR_PR())
+	{
+		throw PrivilegeViolationException<CONFIG>();
+	}
 
 	InvalidateDTLB();
 	InvalidateITLB();
@@ -5673,6 +5775,10 @@ void CPU<CONFIG>::Tlbia()
 template <class CONFIG>
 void CPU<CONFIG>::Tlbie(address_t addr)
 {
+	if(GetMSR_PR())
+	{
+		throw PrivilegeViolationException<CONFIG>();
+	}
 	InvalidateDTLBSet((addr / MEMORY_PAGE_SIZE) & ((CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES / CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY) - 1));
 	InvalidateITLBSet((addr / MEMORY_PAGE_SIZE) & ((CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES / CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY) - 1));
 }
@@ -5723,6 +5829,16 @@ void CPU<CONFIG>::LoadDTLBEntry(address_t addr, uint32_t way, uint32_t pte_hi, u
 template <class CONFIG>
 void CPU<CONFIG>::Tlbld(address_t addr)
 {
+	if(!IsMPC7X5() && !IsMPC7XXX())
+	{
+		throw IllegalInstructionException<CONFIG>();
+	}
+	
+	if(GetMSR_PR())
+	{
+			throw PrivilegeViolationException<CONFIG>();
+	}
+
 	Stop(-1);
 	throw IllegalInstructionException<CONFIG>();
 	if(IsMPC7XXX())
@@ -5738,6 +5854,16 @@ void CPU<CONFIG>::Tlbld(address_t addr)
 template <class CONFIG>
 void CPU<CONFIG>::Tlbli(address_t addr)
 {
+	if(!IsMPC7X5() && !IsMPC7XXX())
+	{
+		throw IllegalInstructionException<CONFIG>();
+	}
+	
+	if(GetMSR_PR())
+	{
+		throw PrivilegeViolationException<CONFIG>();
+	}
+
 	throw IllegalInstructionException<CONFIG>();
 	if(IsMPC7X5())
 	{
@@ -7730,14 +7856,14 @@ uint32_t Instruction<CONFIG>::GetGPR(unsigned int n)
 */
 
 template <class CONFIG>
-Operand<CONFIG> *Instruction<CONFIG>::SearchInputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num)
+const Operand<CONFIG> *Instruction<CONFIG>::SearchInputOperand(typename Operand<CONFIG>::Type type, unsigned int reg_num) const
 {
 	unsigned int num_input_operands = input_operands.Size();
 	unsigned int i;
 
 	for(i = 0; i < num_input_operands; i++)
 	{
-		Operand<CONFIG> *operand = input_operands[i];
+		const Operand<CONFIG> *operand = input_operands[i];
 		if(operand->type == type && operand->reg_num == reg_num)
 		{
 			return operand;
@@ -7849,41 +7975,41 @@ void Instruction<CONFIG>::SetNIA(typename CONFIG::address_t value)
 
 
 template <class CONFIG>
-uint32_t Instruction<CONFIG>::GetGPR(unsigned int n)
+uint32_t Instruction<CONFIG>::GetGPR(unsigned int n) const
 {
-	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::GPR);
+	const Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::GPR);
 	assert(operand != 0);
 	return operand->int_value;
 }
 
 template <class CONFIG>
-const SoftDouble& Instruction<CONFIG>::GetFPR(unsigned int n)
+const SoftDouble& Instruction<CONFIG>::GetFPR(unsigned int n) const
 {
-	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::FPR);
+	const Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::FPR);
 	assert(operand != 0);
 	return operand->float_value;
 }
 
 template <class CONFIG>
-uint32_t Instruction<CONFIG>::GetCR()
+uint32_t Instruction<CONFIG>::GetCR() const
 {
-	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::CR);
+	const Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::CR);
 	assert(operand != 0);
 	return operand->int_value;
 }
 
 template <class CONFIG>
-uint32_t Instruction<CONFIG>::GetLR()
+uint32_t Instruction<CONFIG>::GetLR() const
 {
-	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::LR);
+	const Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::LR);
 	assert(operand != 0);
 	return operand->int_value;
 }
 
 template <class CONFIG>
-uint32_t Instruction<CONFIG>::GetCTR()
+uint32_t Instruction<CONFIG>::GetCTR() const
 {
-	Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::CTR);
+	const Operand<CONFIG> *operand = SearchInputOperand(Operand<CONFIG>::CTR);
 	assert(operand != 0);
 	return operand->int_value;
 }
@@ -7891,10 +8017,14 @@ uint32_t Instruction<CONFIG>::GetCTR()
 template <class CONFIG>
 void Instruction<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
 {
+#ifdef SOCLIB
+	GenSocLibLoadStore(LoadStoreAccess<CONFIG>::INT8_LOAD, rd, ea, 1);
+#else
 	if(sim_mode == PERFORMANCE_SIMULATION_MODE)
 		cpu->GenLoadStoreAccess(LoadStoreAccess<CONFIG>::INT8_LOAD, rd, ea, 1, this);
 	else
 		cpu->Int8Load(rd, ea);
+#endif
 }
 
 template <class CONFIG>

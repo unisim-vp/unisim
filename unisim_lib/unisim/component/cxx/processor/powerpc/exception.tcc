@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_EXCEPTION_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_EXCEPTION_TCC__
 
+#include <sstream>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -88,9 +90,9 @@ const char * ExternalInterruptException<CONFIG>::what () const throw ()
 template <class CONFIG>
 ISIException<CONFIG>::ISIException(const char *name, address_t addr)
 {
-	stringstream sstr;
+	std::stringstream sstr;
 	this->addr = addr;
-	sstr.setf(ios::right | ios::hex | ios::showbase);
+	sstr.setf(std::ios::right | std::ios::hex | std::ios::showbase);
 	sstr << "ISI " << name << " exception";
 	what_str = sstr.str();
 }
@@ -143,8 +145,8 @@ DSIException<CONFIG>::DSIException(const char *name, address_t addr, typename CO
 	this->addr = addr;
 	this->memory_access_type = memory_access_type;
 	
-	stringstream sstr;
-	sstr.setf(ios::right | ios::hex | ios::showbase);
+	std::stringstream sstr;
+	sstr.setf(std::ios::right | std::ios::hex | std::ios::showbase);
 	sstr << "DSI " << name << " exception";
 	what_str = sstr.str();
 }
@@ -234,7 +236,7 @@ const char * AlignmentException<CONFIG>::what () const throw ()
 template <class CONFIG>
 ProgramException<CONFIG>::ProgramException(const char *name)
 {
-	stringstream sstr;
+	std::stringstream sstr;
 	sstr << "Program " << name << " exception";
 	what_str = sstr.str();
 }

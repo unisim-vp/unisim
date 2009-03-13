@@ -1358,26 +1358,12 @@ LOOKASIDE BUFFER MANAGEMENT INSTRUCTIONS
 
 op tlbia(31[6]:?[5]:?[5]:?[5]:370[10]:?[1])
 tlbia.execute = {
-	if(CPU<CONFIG>::IsMPC7X5() || CPU<CONFIG>::IsMPC7XXX())
-	{
-		throw IllegalInstructionException<CONFIG>();
-	}
-	if(cpu->GetMSR_PR())
-	{
-		throw PrivilegeViolationException<CONFIG>();
-	}
-	
 	cpu->Tlbia();
 }
 tlbia.disasm = { os << "tlbia"; }
 
 op tlbie(31[6]:?[5]:?[5]:rb[5]:306[10]:?[1])
 tlbie.execute = {
-	if(cpu->GetMSR_PR())
-	{
-		throw PrivilegeViolationException<CONFIG>();
-	}
-
 	typename CONFIG::address_t ea = cpu->GetGPR(rb);
 	cpu->Tlbie(ea);
 }
@@ -1391,16 +1377,6 @@ tlbsync.disasm = { os << "tlbsync"; }
 
 op tlbld(31[6]:0[5]:0[5]:rb[5]:978[10]:0[1])
 tlbld.execute = {
-	if(!CPU<CONFIG>::IsMPC7X5() && !CPU<CONFIG>::IsMPC7XXX())
-	{
-		throw IllegalInstructionException<CONFIG>();
-	}
-	
-	if(cpu->GetMSR_PR())
-	{
-			throw PrivilegeViolationException<CONFIG>();
-	}
-
 	typename CONFIG::address_t ea = cpu->GetGPR(rb);
 	cpu->Tlbld(ea);
 }
@@ -1410,16 +1386,6 @@ tlbld.disasm = {
 
 op tlbli(31[6]:0[5]:0[5]:rb[5]:1010[10]:0[1])
 tlbli.execute = {
-	if(!CPU<CONFIG>::IsMPC7X5() && !CPU<CONFIG>::IsMPC7XXX())
-	{
-		throw IllegalInstructionException<CONFIG>();
-	}
-	
-	if(cpu->GetMSR_PR())
-	{
-		throw PrivilegeViolationException<CONFIG>();
-	}
-
 	typename CONFIG::address_t ea = cpu->GetGPR(rb);
 	cpu->Tlbli(ea);
 }

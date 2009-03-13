@@ -213,35 +213,19 @@ mfspr.initialize_serialization = {
 		case 533: // IBAT2L
 		case 534: // IBAT3U
 		case 535: // IBAT3L
+		case 560: // IBAT4U
+		case 561: // IBAT4L
+		case 562: // IBAT5U
+		case 563: // IBAT5L
+		case 564: // IBAT6U
+		case 565: // IBAT6L
+		case 566: // IBAT7U
+		case 567: // IBAT7L
 			Operation<CONFIG>::serialization = CONFIG::NO_SERIALIZATION;
 			return;
-	}
-
-	if(CPU<CONFIG>::IsMPC7X5() || CPU<CONFIG>::IsMPC7XXX())
-	{
-		switch(n)
-		{
-			case 560: // IBAT4U
-			case 561: // IBAT4L
-			case 562: // IBAT5U
-			case 563: // IBAT5L
-			case 564: // IBAT6U
-			case 565: // IBAT6L
-			case 566: // IBAT7U
-			case 567: // IBAT7L
-				Operation<CONFIG>::serialization = CONFIG::NO_SERIALIZATION;
-				return;
-		}
-	}
-
-	if(CPU<CONFIG>::IsMPC7XXX())
-	{
-		switch(n)
-		{
-			case 256: // VRSAVE
-				Operation<CONFIG>::serialization = CONFIG::NO_SERIALIZATION;
-				return;
-		}
+		case 256: // VRSAVE
+			Operation<CONFIG>::serialization = CONFIG::NO_SERIALIZATION;
+			return;
 	}
 
 	// mtspr (DBAT, MSS, Time Base, other)

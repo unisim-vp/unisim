@@ -63,6 +63,13 @@ void Queue<CONFIG>::Clear()
 }
 
 template <class CONFIG>
+const typename CONFIG::ELEMENT& Queue<CONFIG>::operator [] (unsigned int idx) const
+{
+	if(CONFIG::DEBUG && idx >= size) throw QueueException("out of range access", __FILE__, __FUNCTION__, __LINE__);
+	return buffer[(front_idx + idx) & (BUFFER_SIZE - 1)];
+}
+
+template <class CONFIG>
 typename CONFIG::ELEMENT& Queue<CONFIG>::operator [] (unsigned int idx)
 {
 	if(CONFIG::DEBUG && idx >= size) throw QueueException("out of range access", __FILE__, __FUNCTION__, __LINE__);
@@ -95,11 +102,17 @@ typename CONFIG::ELEMENT& Queue<CONFIG>::Front()
 }
 
 template <class CONFIG>
+const typename CONFIG::ELEMENT& Queue<CONFIG>::ConstFront() const
+{
+	return buffer[front_idx];
+}
+
+template <class CONFIG>
 void Queue<CONFIG>::Pop()
 {
 	if(CONFIG::DEBUG && size == 0) throw QueueException("underflow", __FILE__, __FUNCTION__, __LINE__);
 	front_idx = (front_idx + 1) & (BUFFER_SIZE - 1);
-	size++;
+	size--;
 }
 
 template <class CONFIG>
