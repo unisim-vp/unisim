@@ -52,14 +52,6 @@
 
 #endif // SOCLIB
 
-#ifndef SOCLIB
-
-#define LOCATION Function << __FUNCTION__ \
-                        << File <<  __FILE__ \
-                        << Line << __LINE__
-
-#endif // SOCLIB
-
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE __attribute__((always_inline))
 #else
@@ -1188,8 +1180,9 @@ LSWUBReg(const uint32_t u,
 #else // SOCLIB
 	
 		logger << DebugError
-			<< "unknown shift value (" << shift << ")" << endl
-			<< LOCATION << EndDebug;
+			<< "(" << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << "): "
+			<< "unknown shift value (" << shift << ")"
+			<< EndDebugError;
 
 #endif // SOCLIB
 		Stop(-1);
