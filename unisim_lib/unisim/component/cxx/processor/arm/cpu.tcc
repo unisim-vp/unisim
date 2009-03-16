@@ -2528,7 +2528,7 @@ GetSPSRIndex() {
 		Stop(-1);
 #else // SOCLIB
 		logger << DebugError
-				<< "Trying to modify SPSR under USER_MODE" << Endl
+				<< "Trying to modify SPSR under USER_MODE" << endl
 				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 				<< EndDebugError;
 		Stop(-1);
@@ -2541,7 +2541,7 @@ GetSPSRIndex() {
 		Stop(-1);
 #else // ifndef SOCLIB
 		logger << DebugError
-			<< "Trying to modify SPSR under SYSTEM_MODE" << Endl
+			<< "Trying to modify SPSR under SYSTEM_MODE" << endl
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 			<< EndDebugError;
 		Stop(-1);
@@ -2569,7 +2569,7 @@ GetSPSRIndex() {
 		Stop(-1);
 #else // SOCLIB
 		logger << DebugError
-			<< "unkonwn running mode." << Endl
+			<< "unkonwn running mode." << endl
 			<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ": "
 			<< EndDebugError;
 		Stop(-1);
@@ -3990,7 +3990,7 @@ CheckAlignmentExcep(typename CONFIG::address_t addr) {
 //	if(CONFIG::DEBUG_ENABLE && logger_import)
 //		(*logger_import) << DebugError << LOCATION
 //			<< "TODO"
-//			<< Endl << EndDebugError;
+//			<< endl << EndDebugError;
 }
 
 /**************************************************************/
