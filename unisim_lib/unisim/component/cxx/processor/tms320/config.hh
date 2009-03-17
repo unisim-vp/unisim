@@ -32,50 +32,39 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
-
-/**********************************************
-
-             ARM EMULATOR ISA
-
-**********************************************/
-
-namespace unisim::component::cxx::processor::tms320::isa::tms320
-big_endian
-address {typename CONFIG::address_t}
-template <{class} {CONFIG}>
-
-decl {
-/* code to be inserted at the declaration of the library */
-
-/* Forward declaration of the cpu */
+ 
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
+ 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace tms320 {
 
-template<class CONFIG>
-class CPU;
+typedef enum {
+	TMS320C30 = 0,
+	TMS320C31,
+	TMS320C32,
+	TMS320VC33
+} Model;
+
+class TMS320Base {
+public:
+	static const bool DEBUG_ENABLE = false;
+	typedef uint32_t address_t;
+	typedef uint32_t insn_t;
+};
+
+class TMS320VC33 :
+	public TMS320Base {
+	
+};
 
 } // end of namespace tms320
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
-} // end of decl
-
-impl {
-/* code to be included at the beginning of the implementation of the library */
-}
-
-// include "constructors_dec.isa"
-include "actions_dec.isa"
-
-include "load_store.isa"
-include "2op.isa"
-include "3op.isa"
-include "control.isa"
-include "power.isa"
-include "interlock.isa"
-include "parallel.isa"
+ 
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__

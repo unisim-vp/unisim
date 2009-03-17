@@ -68,208 +68,208 @@ op ADDC3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:
 
 /**********************************************************
  * ADDF3 (add floating-point values)
- * op ADDF3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op ADDF3(0b001[3]:0b000001[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op ADDF3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op ADDF3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op ADDF3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op ADDF3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op ADDF3_reg_reg(0b001[3]:0b000001[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op ADDF3_indir_reg(0b001[3]:0b000001[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op ADDF3_reg_indir(0b001[3]:0b000001[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op ADDF3_indir_indir(0b001[3]:0b000001[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of ADDF3 (add floating-point values)
  **********************************************************/
 
 /**********************************************************
  * ADDI3 (add integers)
- * op ADDI3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op ADDI3(0b001[3]:0b000010[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op ADDI3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op ADDI3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op ADDI3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op ADDI3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op ADDI3_reg_reg(0b001[3]:0b000010[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op ADDI3_indir_reg(0b001[3]:0b000010[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op ADDI3_reg_indir(0b001[3]:0b000010[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op ADDI3_indir_indir(0b001[3]:0b000010[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of ADDI3 (add integers)
  **********************************************************/
 
 /**********************************************************
  * AND3 (bitwise-logical AND)
- * op AND3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op AND3(0b001[3]:0b000011[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op AND3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op AND3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op AND3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op AND3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op AND3_reg_reg(0b001[3]:0b000011[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op AND3_indir_reg(0b001[3]:0b000011[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op AND3_reg_indir(0b001[3]:0b000011[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op AND3_indir_indir(0b001[3]:0b000011[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of AND3 (bitwise-logical AND)
  **********************************************************/
 
 /**********************************************************
  * ANDN3 (bitwise-logical AND with complement)
- * op ANDN3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op ANDN3(0b001[3]:0b000100[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op ANDN3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op ANDN3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op ANDN3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op ANDN3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op ANDN3_reg_reg(0b001[3]:0b000100[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op ANDN3_indir_reg(0b001[3]:0b000100[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op ANDN3_reg_indir(0b001[3]:0b000100[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op ANDN3_indir_indir(0b001[3]:0b000100[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of ANDN3 (bitwise-logical AND with complement)
  **********************************************************/
 
 /**********************************************************
  * ASH3 (arithmetic shift)
- * op ASH3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op ASH3(0b001[3]:0b000101[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op ASH3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op ASH3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op ASH3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op ASH3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op ASH3_reg_reg(0b001[3]:0b000101[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op ASH3_indir_reg(0b001[3]:0b000101[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op ASH3_reg_indir(0b001[3]:0b000101[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op ASH3_indir_indir(0b001[3]:0b000101[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of ASH3 (arithmetic shift)
  **********************************************************/
 
 /**********************************************************
  * CMPF3 (compare floating-point values)
- * op CMPF3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op CMPF3(0b001[3]:0b000110[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op CMPF3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op CMPF3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op CMPF3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op CMPF3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op CMPF3_reg_reg(0b001[3]:0b000110[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op CMPF3_indir_reg(0b001[3]:0b000110[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op CMPF3_reg_indir(0b001[3]:0b000110[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op CMPF3_indir_indir(0b001[3]:0b000110[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of CMPF3 (compare floating-point values)
  **********************************************************/
 
 /**********************************************************
  * CMPI3 (compare integers)
- * op CMPI3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op CMPI3(0b001[3]:0b000111[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op CMPI3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op CMPI3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op CMPI3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op CMPI3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op CMPI3_reg_reg(0b001[3]:0b000111[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op CMPI3_indir_reg(0b001[3]:0b000111[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op CMPI3_reg_indir(0b001[3]:0b000111[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op CMPI3_indir_indir(0b001[3]:0b000111[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of CMPI3 (compare integers)
  **********************************************************/
 
 /**********************************************************
  * LSH3 (logical shift)
- * op LSH3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op LSH3(0b001[3]:0b001000[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op LSH3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op LSH3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op LSH3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op LSH3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op LSH3_reg_reg(0b001[3]:0b001000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op LSH3_indir_reg(0b001[3]:0b001000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op LSH3_reg_indir(0b001[3]:0b001000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op LSH3_indir_indir(0b001[3]:0b001000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of LSH3 (logical shift)
  **********************************************************/
 
 /**********************************************************
  * MPYF3 (multiply floating-point values)
- * op MPYF3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op MPYF3(0b001[3]:0b001001[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op MPYF3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op MPYF3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op MPYF3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op MPYF3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op MPYF3_reg_reg(0b001[3]:0b001001[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op MPYF3_indir_reg(0b001[3]:0b001001[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op MPYF3_reg_indir(0b001[3]:0b001001[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op MPYF3_indir_indir(0b001[3]:0b001001[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of MPYF3 (multiply floating-point values)
  **********************************************************/
 
 /**********************************************************
  * MPYI3 (multiply integers)
- * op MPYI3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op MPYI3(0b001[3]:0b001010[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op MPYI3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op MPYI3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op MPYI3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op MPYI3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op MPYI3_reg_reg(0b001[3]:0b001010[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op MPYI3_indir_reg(0b001[3]:0b001010[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op MPYI3_reg_indir(0b001[3]:0b001010[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op MPYI3_indir_indir(0b001[3]:0b001010[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of MPYI3 (multiply integers)
  **********************************************************/
 
 /**********************************************************
  * OR3 (bitwise-logical OR)
- * op OR3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op OR3(0b001[3]:0b001011[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op OR3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op OR3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op OR3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op OR3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op OR3_reg_reg(0b001[3]:0b001011[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op OR3_indir_reg(0b001[3]:0b001011[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op OR3_reg_indir(0b001[3]:0b001011[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op OR3_indir_indir(0b001[3]:0b001011[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of OR3 (bitwise-logical OR)
  **********************************************************/
 
 /**********************************************************
  * SUBB3 (subtract integers with borrow)
- * op SUBB3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op SUBB3(0b001[3]:0b001100[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op SUBB3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op SUBB3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op SUBB3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op SUBB3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op SUBB3_reg_reg(0b001[3]:0b001100[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op SUBB3_indir_reg(0b001[3]:0b001100[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op SUBB3_reg_indir(0b001[3]:0b001100[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op SUBB3_indir_indir(0b001[3]:0b001100[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of SUBB3 (subtract integers with borrow)
  **********************************************************/
 
 /**********************************************************
  * SUBF3 (subtract floating-point values)
- * op SUBF3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op SUBF3(0b001[3]:0b001101[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op SUBF3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op SUBF3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op SUBF3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op SUBF3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op SUBF3_reg_reg(0b001[3]:0b001101[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op SUBF3_indir_reg(0b001[3]:0b001101[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op SUBF3_reg_indir(0b001[3]:0b001101[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op SUBF3_indir_indir(0b001[3]:0b001101[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of SUBF3 (subtract floating-point values)
  **********************************************************/
 
 /**********************************************************
  * SUBI3 (subtract integers)
- * op SUBI3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op SUBI3(0b001[3]:0b001110[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op SUBI3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op SUBI3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op SUBI3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op SUBI3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op SUBI3_reg_reg(0b001[3]:0b001110[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op SUBI3_indir_reg(0b001[3]:0b001110[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op SUBI3_reg_indir(0b001[3]:0b001110[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op SUBI3_indir_indir(0b001[3]:0b001110[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of SUBI3 (subtract integers)
  **********************************************************/
 
 /**********************************************************
  * TSTB3 (test bit fields)
- * op TSTB3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op TSTB3(0b001[3]:0b001111[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op TSTB3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op TSTB3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op TSTB3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op TSTB3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op TSTB3_reg_reg(0b001[3]:0b001111[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op TSTB3_indir_reg(0b001[3]:0b001111[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op TSTB3_reg_indir(0b001[3]:0b001111[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op TSTB3_indir_indir(0b001[3]:0b001111[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of TSTB3 (test bit fields)
  **********************************************************/
 
 /**********************************************************
  * XOR3 (bitwise-exclusive OR)
- * op XOR3(0b001[3]:0b000000[6]:t[2]:dst[5]:src1[8]:src2[8])
+ * op XOR3(0b001[3]:0b010000[6]:t[2]:dst[5]:src1[8]:src2[8])
  */
 
-op XOR3_reg_reg(0b001[3]:0b000000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
-op XOR3_indir_reg(0b001[3]:0b000000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
-op XOR3_reg_indir(0b001[3]:0b000000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
-op XOR3_indir_indir(0b001[3]:0b000000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
+op XOR3_reg_reg(0b001[3]:0b010000[6]:0b00[2]:dst[5]:0b000[3]:src1[5]:0b000[3]:src2[5])
+op XOR3_indir_reg(0b001[3]:0b010000[6]:0b01[2]:dst[5]:mod1[5]:ar1[3]:0b000[3]:src2[5])
+op XOR3_reg_indir(0b001[3]:0b010000[6]:0b10[2]:dst[5]:0b000[3]:src1[5]:mod2[5]:ar2[3])
+op XOR3_indir_indir(0b001[3]:0b010000[6]:0b11[2]:dst[5]:mod1[5]:ar1[3]:mod2[5]:ar2[3])
 
 /* end of XOR3 (bitwise-exclusive OR)
  **********************************************************/
