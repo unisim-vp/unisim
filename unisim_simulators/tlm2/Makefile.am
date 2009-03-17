@@ -23,6 +23,11 @@ SUBDIRS += arm966e_s
 INCLUDE_SUBDIRS += arm966e_s
 endif
 
+if COND_tms320
+SUBDIRS += tms320
+INCLUDE_SUBDIRS += tms320
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:

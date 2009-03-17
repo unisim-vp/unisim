@@ -46,6 +46,7 @@
 #include <list>
 #include <string>
 #include <iostream>
+#include <inttypes.h>
 
 using namespace std;
 

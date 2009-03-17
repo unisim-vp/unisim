@@ -46,6 +46,7 @@ AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-service-loader-elf_loader, elf_loader)
 UNISIM_CONFIG_SUBDIR(unisim-service-loader-s19_loader, s19_loader)
+UNISIM_CONFIG_SUBDIR(unisim-service-loader-coff_loader, coff_loader)
 UNISIM_CONFIG_SUBDIR(unisim-service-loader-pmac_bootx, pmac_bootx)
 UNISIM_CONFIG_SUBDIR(unisim-service-loader-pmac_linux_kernel_loader, pmac_linux_kernel_loader)
 UNISIM_CONFIG_SUBDIR(unisim-service-loader-linux_loader, linux_loader)

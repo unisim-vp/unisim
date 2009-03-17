@@ -47,14 +47,20 @@ Logger::~Logger() {
 	LoggerServer::RemoveInstance();
 }
 
-Logger& Logger::operator <<(ostream& (*f)(ostream &)) {
-	if(mode == NO_MODE) return *this;
-	buffer << f;
-	return *this;
+Logger& operator <<(Logger& logger, std::ostream& (*f)(std::ostream &)) {
+	if(logger.mode == Logger::NO_MODE) return logger;
+	logger.buffer << f;
+	return logger;
 }
 
-Logger& Logger::operator <<(Logger& (*f)(Logger &)) {
-	return f(*this);
+Logger& operator <<(Logger& logger, std::ios_base& (*f)(std::ios_base &)) {
+	if(logger.mode == Logger::NO_MODE) return logger;
+	logger.buffer << f;
+	return logger;
+}
+
+Logger& operator <<(Logger& logger, Logger& (*f)(Logger &)) {
+	return f(logger);
 }
 
 void Logger::PrintMode() {

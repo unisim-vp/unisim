@@ -30,30 +30,54 @@
 #  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+#          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM TLM20 Simulator Library], [1.0])
+AC_INIT([UNISIM COFF Loader service], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[coff_loader])
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
-
 AM_INIT_AUTOMAKE
 
+AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_INSTALL
+AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
+AC_PROG_LIBTOOL
+AC_ENABLE_STATIC
+AC_ENABLE_SHARED
+AC_PROG_LN_S
+
+AC_LANG([C++])
+
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([inttypes.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+AC_CHECK_HEADERS([iostream fstream],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR TARGET SPECIFIC HEADERS ######################
+
+case $host in
+	*linux*)   # linux host
+		;;
+	*mingw32*)  # win32 host
+		;;
+esac
+
+UNISIM_LIBTOOL
 
 # files to generate
 #   this should include all the makefiles to generate
 AC_CONFIG_FILES([Makefile])
 
-###### CHECK FOR HOST ######################
-
-UNISIM_CONFIG_SUBDIR(simulator-tlm2-hcs12xemu, hcs12xemu)
-UNISIM_CONFIG_SUBDIR(simulator-tlm2-arm7tdmi, arm7tdmi)
-UNISIM_CONFIG_SUBDIR(simulator-tlm2-arm966e_s, arm966e_s)
-UNISIM_CONFIG_SUBDIR(simulator-tlm2-tms320, tms320)
-
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

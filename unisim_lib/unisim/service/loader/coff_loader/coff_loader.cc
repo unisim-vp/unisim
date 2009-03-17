@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,68 +29,20 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr) 
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
-
-#ifndef __UNISIM_KERNEL_LOGGER_HH__
-#define __UNISIM_KERNEL_LOGGER_HH__
-
-#include <sstream>
-#include "unisim/kernel/logger/logger_server.hh"
-#include "unisim/kernel/service/service.hh"
+ 
+#include <unisim/service/loader/coff_loader/coff_loader.hh>
+#include <unisim/service/loader/coff_loader/coff_loader.tcc>
 
 namespace unisim {
-namespace kernel {
-namespace logger {
+namespace service {
+namespace loader {
+namespace coff_loader {
 
-using namespace std;
+template class CoffLoader<uint32_t>;
 
-class Logger {
-public:
-	Logger(const unisim::kernel::service::Object &_obj);
-	~Logger();
-
-	friend Logger& operator << (Logger& logger, std::ios_base& (*f)(std::ios_base &));
-	friend Logger& operator << (Logger& logger, std::ostream& (*f)(std::ostream &));
-	friend Logger& operator << (Logger& logger, Logger& (*f)(Logger &));
-
-	template<typename T> Logger& operator << (const T& t) {
-		buffer << t;
-		return *this;
-	}
-
-	void DebugInfo();
-	void EndDebugInfo();
-	void DebugWarning();
-	void EndDebugWarning();
-	void DebugError();
-	void EndDebugError();
-	void EndDebug();
-
-private:
-	std::stringstream buffer;
-	const unisim::kernel::service::Object &obj;
-	enum mode_t {NO_MODE,
-		INFO_MODE,
-		WARNING_MODE,
-		ERROR_MODE};
-	mode_t mode;
-	void PrintMode();
-
-	LoggerServer *server;
-};
-
-Logger& DebugInfo(Logger&);
-Logger& EndDebugInfo(Logger&);
-Logger& DebugWarning(Logger&);
-Logger& EndDebugWarning(Logger&);
-Logger& DebugError(Logger&);
-Logger& EndDebugError(Logger&);
-Logger& EndDebug(Logger&);
-
-} // end of namespace logger
-} // end of namespace kernel
+} // end of namespace coff_loader
+} // end of namespace loader
+} // end of namespace service
 } // end of namespace unisim
-
-#endif // __UNISIM_KERNEL_LOGGER_HH__
-

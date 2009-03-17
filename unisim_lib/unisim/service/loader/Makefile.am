@@ -13,6 +13,11 @@ SUBDIRS += s19_loader
 INCLUDE_SUBDIRS += s19_loader
 endif
 
+if COND_coff_loader
+SUBDIRS += coff_loader
+INCLUDE_SUBDIRS += coff_loader
+endif
+
 if COND_pmac_bootx
 SUBDIRS += pmac_bootx
 INCLUDE_SUBDIRS += pmac_bootx

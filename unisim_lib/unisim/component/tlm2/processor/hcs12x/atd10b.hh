@@ -298,11 +298,12 @@ private:
 		}
 
 	private:
-		struct {
+		typedef struct {
 			double		inputSignal;
 			uint16_t	signed_code;
 			uint16_t	unsigned_code;
-		} map[REFERENCIAL_SIZE];
+		} Map;
+		Map map[REFERENCIAL_SIZE];
 
 	} analog_digital_map;
 
