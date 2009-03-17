@@ -294,7 +294,7 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 					<< ":" << (sc_time_stamp() + t).to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
-					<< " of " << data_length << " bytes in length" << std::endl
+					<< " of " << data_length << " bytes in length"
 					<< EndDebugInfo;
 			}
 
@@ -302,6 +302,15 @@ void Memory<BUSWIDTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& p
 				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
+			if (status && IsVerbose())
+			{
+				logger << DebugInfo << LOCATION
+					<< ": raw data read (0x" << std::hex << addr << std::dec
+					<< ", " << data_length << ") = 0x";
+				for (unsigned int i = 0; i < data_length; i++)
+					logger << (unsigned int)(uint8_t)data_ptr[i] << " ";
+				logger << EndDebugInfo;
+			}
 			break;
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
