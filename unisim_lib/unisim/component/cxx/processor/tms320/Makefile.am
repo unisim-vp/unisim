@@ -15,7 +15,7 @@ include_HEADERS = config.hh \
 	exception.hh \
 	exception.tcc
 
-nobase_include_HEADERS = isa/tms.isa \
+nobase_include_HEADERS = isa/tms320.isa \
 	isa/actions_dec.isa \
 	isa/2op.isa \
 	isa/3op.isa \

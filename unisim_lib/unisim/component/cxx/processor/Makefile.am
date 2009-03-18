@@ -24,7 +24,7 @@ SUBDIRS += tesla
 INCLUDE_SUBDIRS += tesla
 endif
 
-if COND_tesla
+if COND_tms320
 SUBDIRS += tms320
 INCLUDE_SUBDIRS += tms320
 endif
