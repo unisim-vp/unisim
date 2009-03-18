@@ -110,7 +110,6 @@ bool PWM::pwm7in_ChangeStatus(bool pwm7in_status) {
 	 */
 	if (((pwmsdn_register & pwm7inl_mask) != 0) ^ pwm7in_status) {
 		setPWMInterruptFlag();
-		assertPWMEmmergencyShutdown_Interrupt();
 	}
 
 	if (pwm7in_status) {
@@ -138,15 +137,14 @@ void PWM::setPWMInterruptFlag() {
 	const uint8_t pwmif_mask = 0x80;
 
 	pwmsdn_register = pwmsdn_register | pwmif_mask;
-}
 
-void PWM::assertPWMEmmergencyShutdown_Interrupt() {
 	const uint8_t pwmie_mask = 0x40;
 
 	if ((pwmsdn_register & pwmie_mask) != 0) {
 		// TODO: assert a PWM Emergency Shutdown Interrupt (vector = VectorBase + 0x8C)
 	}
 }
+
 
 // Master methods
 void PWM::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)

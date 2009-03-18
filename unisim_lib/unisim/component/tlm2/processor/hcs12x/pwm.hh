@@ -137,7 +137,6 @@ public:
     void	start();
     bool	pwm7in_ChangeStatus(bool pwm7in_status);
     bool	isEmergencyShutdownEnable();
-    void	assertPWMEmmergencyShutdown_Interrupt();
     void	setPWMInterruptFlag();
 
     sc_time getClockA();

@@ -50,8 +50,6 @@ ATD10B::ATD10B(const sc_module_name& name, Object *parent) :
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
-	conversionStop(false),
-	abortSequence(false),
 	param_baseAddress("base-address", this, baseAddress),
 	bus_cycle_time_int(250), // 250ns => 4 MHz
 	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
@@ -59,8 +57,14 @@ ATD10B::ATD10B(const sc_module_name& name, Object *parent) :
 	vrh(5.12),
 	param_vrl("vrl", this, vrl),
 	param_vrh("vrh", this, vrh),
+	vil(1.75),
+	vih(3.25),
+	param_vih("vih", this, vih),
+	param_vil("vil", this, vil),
 	hasExternalTrigger(false),
-	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
+	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger),
+	conversionStop(false),
+	abortSequence(false)
 
 {
 
@@ -148,7 +152,6 @@ tlm_sync_enum ATD10B::nb_transport_fw(ATD_Payload& payload, tlm_phase& phase, sc
 void ATD10B::Input(ATD_Payload& payload, double anValue[ATD_SIZE])
 {
 
-
 	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
 	{
 		for (int i=0; i<ATD_SIZE; i++) {
@@ -170,6 +173,13 @@ void ATD10B::RunTriggerMode() {
 	/**
 	 *  TODO: Not Implemented at all.
 	 *        Here after is just a try to understand/extract all relevant informations to External-Trigger
+	 */
+
+	/**
+	 * ATDSTAT0::ETORF External Trigger Overrun Flag
+	 *   While in edge trigger mode (ATDCTL2::ETRIGLE=0),
+	 *     if additional active edges are detected while a conversion sequence is in process
+	 *     then overrun flag is set.
 	 */
 
 	while (1)
@@ -223,7 +233,7 @@ void ATD10B::RunScanMode()
 			wrapArroundChannel = ATD_SIZE-1;
 		}
 
-		uint8_t sequenceLength = 1; // default is single channel scan
+		uint8_t sequenceLength = 1;
 		// - check ATDCTL3 to determine the sequence length and storage mode of the result
 		sequenceLength = atdctl3_register & 0x78; // get S8C S4C S2C S1C
 		if (sequenceLength == 0) {
@@ -253,9 +263,6 @@ void ATD10B::RunScanMode()
 		// - take in account The A/D sign ATDCTL5::DSGN
 		bool isDataSigned = ((atdctl5_register & 0x40) != 0);
 
-		// - is Multi-Channel Sample mode
-		bool isMultiChannel = ((atdctl5_register & 0x10) != 0);
-
 		uint8_t currentChannel = atdctl5_register & 0x0F; // get CD/CC/CB/CA;
 		conversionStop = false;
 
@@ -277,26 +284,60 @@ void ATD10B::RunScanMode()
 
 			while ((sequenceIndex < sequenceLength) /* && !abortSequence */ ) {
 
+				// set the conversion counter ATDSTAT0::CC (result register which will receive the current conversion)
+				atdstat0_register = (atdstat0_register & 0xF0) | resultIndex;
+
 				/**
 				 * - scan current channel,
 				 * - Find referential potential,
 				 * - check sign and justification,
 				 * - and store in atddrhl_register[i] register
 				 */
-				uint16_t digitalToken = analog_digital_map.getDigitalValue(analog_signal[currentChannel], isDataSigned);
+				double anSignal;
+				const uint8_t scMask = 0x01;
+				// is Special Channel Select enabled ?
+				if ((atdtest1_register & scMask) != 0) {
+					switch (currentChannel) {
+					case 4: anSignal = vrh; break;
+					case 5: anSignal = vrl; break;
+					case 6: anSignal = (vrh + vrl)/2; break;
+					default: cerr << "Warning: ATD10B => Reserved value of CD/CC/CB/CA.\n";
+					}
+				} else {
+					anSignal = analog_signal[currentChannel];
+				}
+				uint16_t digitalToken = analog_digital_map.getDigitalValue(anSignal, isDataSigned);
 
 				digitalToken = (digitalToken & resultMask) >> rightShift;
 
-				atddrhl_register[resultIndex] = digitalToken;
+				uint16_t atdstat21 = ((uint16_t) atdstat2_register << 8) | atdstat1_register;
+				uint16_t ccfMask = 0x01;
+				// is Result registers out of sync ?
+				if ((atdstat21  & (ccfMask << resultIndex)) != 0) {
 
-				/**
-				 * - identify nextChannel
-				 * - take in account the wrap channel
-				 */
-				if (currentChannel == wrapArroundChannel) {
-					currentChannel = 0;
+					// Set the ATDSTAT0::FIFOR FIFO Over Run Flag
+					atdstat0_register = atdstat0_register | 0x10;
+				}
+
+				atddrhl_register[resultIndex] = digitalToken;
+				// set the ATDSTAT1 & ATDSTAT2 CCFx flags
+				if (resultIndex < 8) {
+					atdstat1_register = atdstat1_register | (0x01 < resultIndex);
 				} else {
-					currentChannel = (currentChannel+1) % ATD_SIZE;
+					atdstat2_register = atdstat2_register | (0x01 < (resultIndex-8));
+				}
+
+				// - if Multi-channel then select next channel else keep the same channel
+				if ((atdctl5_register & 0x10) != 0) {
+					/**
+					 * - identify nextChannel
+					 * - take in account the wrap channel
+					 */
+					if (currentChannel == wrapArroundChannel) {
+						currentChannel = 0;
+					} else {
+						currentChannel = (currentChannel+1) % ATD_SIZE;
+					}
 				}
 
 				resultIndex = (resultIndex + 1) % ATD_SIZE;
@@ -325,6 +366,9 @@ void ATD10B::sequenceComplete() {
 
 	conversionStop = true;
 
+	// Set the SCF (Sequence Complete Flag)
+	atdstat0_register = atdstat0_register | 0x80;
+
 	/**
 	 *  set ATDCTL2::ASCIF bit
 	 */
@@ -341,12 +385,21 @@ void ATD10B::abortConversion() {
 
 	conversionStop = true;
 	abortSequence = true;
+
+	// Clear ATDSTAT0::ETORF and ATDSTAT0::CC
+	atdstat0_register = atdstat0_register & 0xD0;
+
 }
 
 void ATD10B::abortAndStartNewConversion() {
 
 	conversionStop = false;
 	abortSequence = true;
+
+	// Clear ATDSTAT0,1,2 registers
+	atdstat0_register = 0;
+	atdstat1_register = 0;
+	atdstat2_register = 0;
 }
 
 void ATD10B::setATDClock() {
@@ -390,8 +443,48 @@ void ATD10B::read(uint8_t offset, void *buffer) {
 		case ATDSTAT1: *((uint8_t *) buffer) = atdstat1_register; break;
 		case ATDDIEN0: *((uint8_t *) buffer) = atddien0_register; break;
 		case ATDDIEN1: *((uint8_t *) buffer) = atddien1_register; break;
-		case PORTAD0: *((uint8_t *) buffer) = portad0_register; break;
-		case PORTAD1: *((uint8_t *) buffer) = portad1_register; break;
+		case PORTAD0: {
+			bool isETRIGE = ((atdctl2_register & 0x04) != 0);
+			bool isETRIGCHx = atdctl1_register & 0x0F;
+			bool isETRIGSEL = ((atdctl1_register & 0x80) != 0);
+
+			portad0_register = 0;
+			uint8_t ienMask = 0x01;
+			for (int i=8; i<ATD_SIZE; i++) {
+				if (((atddien0_register & ienMask) != 0) || (isETRIGE && (isETRIGCHx == i) && !isETRIGSEL)) {
+					if (analog_signal[i] >= vih) {
+						portad0_register = portad0_register | ienMask;
+					}
+				} else {
+					portad0_register = portad0_register | ienMask;
+				}
+
+				ienMask = ienMask << 1;
+			}
+
+			*((uint8_t *) buffer) = portad0_register;
+		} break;
+		case PORTAD1: {
+			bool isETRIGE = ((atdctl2_register & 0x04) != 0);
+			bool isETRIGCHx = atdctl1_register & 0x0F;
+			bool isETRIGSEL = ((atdctl1_register & 0x80) != 0);
+
+			portad1_register = 0;
+			uint8_t ienMask = 0x01;
+			for (int i=0; i<8; i++) {
+				if (((atddien1_register & ienMask) != 0) || (isETRIGE && (isETRIGCHx == i) && !isETRIGSEL)) {
+					if (analog_signal[i] >= vih) {
+						portad1_register = portad1_register | ienMask;
+					}
+				} else {
+					portad1_register = portad1_register | ienMask;
+				}
+
+				ienMask = ienMask << 1;
+			}
+
+			*((uint8_t *) buffer) = portad1_register;
+		} break;
 
 		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H + ATD_SIZE)) {
 			*((uint16_t *) buffer) = atddrhl_register[offset] & 0xFFC0;
@@ -404,6 +497,11 @@ void ATD10B::read(uint8_t offset, void *buffer) {
 			} else {
 				clearMask = clearMask ^ (0x01 < (index-8));
 				atdstat2_register = atdstat2_register & clearMask;
+			}
+
+			// check ATDCTL2::AFFC Fast Clear bit
+			if ((atdctl2_register & 0x40) != 0) {
+				atdstat0_register = atdstat0_register & 0x7F;
 			}
 		} else {
 			cerr << "ERROR: ATD10B => Wrong offset.\n";
@@ -447,46 +545,48 @@ void ATD10B::write(uint8_t offset, const void *buffer) {
 
 		} break;
 		case ATDSTAT0: {
-			atdstat0_register = (*((uint8_t *) buffer) & 0xB0) | (atdstat0_register & 0x0F);
-			// TODO: see specifications
+			uint8_t highMask = (*((uint8_t *) buffer) & 0xB0);
+			if ((highMask & 0x80) != 0) {
+				atdstat0_register = atdstat0_register & 0x7F;
+			}
+			if ((highMask & 0x20) != 0) {
+				atdstat0_register = atdstat0_register & 0xDF;
+			}
+			if ((highMask & 0x10) != 0) {
+				atdstat0_register = atdstat0_register & 0xEF;
+			}
+
 		} break;
 		case UNIMPL0007: break;
-		case ATDTEST0: atdtest0_register = *((uint8_t *) buffer); break;
-		case ATDTEST1: atdtest1_register = *((uint8_t *) buffer); break;
+		case ATDTEST0:
+			// atdtest0_register = *((uint8_t *) buffer);
+			cerr << "Warning: ATD10B => Not implemented yet. Write to ATDTEST0 in special modes can alter functionality.\n";
+			break;
+		case ATDTEST1: {
+			const uint8_t scMask = 0x01;
+			atdtest1_register = *((uint8_t *) buffer) & scMask;
+		} break;
 		case ATDSTAT2: {
 			/* write has no effect */
-			// TODO: see specifications
 		} break;
 		case ATDSTAT1: {
 			/* write has no effect */
-			// TODO: see specifications
 		} break;
 		case ATDDIEN0: {
 			atddien0_register = *((uint8_t *) buffer);
-			// TODO: see specifications
 		} break;
 		case ATDDIEN1: {
 			atddien1_register = *((uint8_t *) buffer);
-			// TODO: see specifications
 		} break;
 		case PORTAD0: {
 			/* write has no effect */
-			/* TODO
-			 *   - PORTAD0 is mapped to external input pins
-			 *   - The A/D input channels may be used for general-purpose digital input
-			 */
 		} break;
 		case PORTAD1: {
 			/* write has no effect */
-			/* TODO
-			 *   - PORTAD1 is mapped to external input pins
-			 *   - The A/D input channels may be used for general-purpose digital input
-			 */
 		} break;
 
 		default: if ((offset >= ATDDR0H) && (offset < ATDDR0H+ATD_SIZE)) {
 			/* write has no effect */
-			// TODO: see specifications
 		} else {
 		}
 	}

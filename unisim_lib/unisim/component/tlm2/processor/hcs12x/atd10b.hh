@@ -189,6 +189,15 @@ private:
 	Parameter <double> param_vrl;
 	Parameter <double> param_vrh;
 
+	/**
+	 * Vih and Vil are logical levels
+	 *  - Vih minimum voltage to model logical "1" the default is 3.25 V (min)
+	 *  - vil maximum voltage to model logical "0" the default is 1.75 V (max)
+	 */
+	double vih, vil;
+	Parameter<double> param_vih;
+	Parameter<double> param_vil;
+
 	// External Trigger Parameter
 	bool			hasExternalTrigger;
 	Parameter<bool>	param_hasExternalTrigger;
