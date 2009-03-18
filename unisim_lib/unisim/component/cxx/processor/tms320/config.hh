@@ -51,14 +51,14 @@ typedef enum {
 
 class TMS320Base {
 public:
-	static const bool DEBUG_ENABLE = false;
 	typedef uint32_t address_t;
 	typedef uint32_t insn_t;
 };
 
-class TMS320VC33 :
+class TMS320VC33_Config :
 	public TMS320Base {
-	
+public:
+	static const Model MODEL = TMS320VC33;
 };
 
 } // end of namespace tms320

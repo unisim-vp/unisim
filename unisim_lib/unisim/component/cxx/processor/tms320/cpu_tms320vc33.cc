@@ -32,11 +32,25 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#include "unisim/component/cxx/processor/tms320/cpu.hh"
+#include "unisim/component/cxx/processor/tms320/cpu.tcc"
+#include "unisim/component/cxx/processor/tms320/config.hh"
+#include "unisim/component/cxx/processor/tms320/exception.hh"
+#include "unisim/component/cxx/processor/tms320/exception.tcc"
 
-action {void} execute({CPU<CONFIG, DEBUG> &} {cpu}) {
-        throw UndefinedInstructionException<CONFIG>();
-}
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace tms320 {
 
-action {void} disasm({CPU<CONFIG, DEBUG> &} {cpu}, {std::stringstream &} {buffer}) {
-        buffer << "Unknown instruction";
-}
+template
+class CPU<TMS320VC33_Config, false>;
+
+} // end of namespace tms320
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+

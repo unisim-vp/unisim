@@ -24,6 +24,10 @@ SUBDIRS += tesla
 INCLUDE_SUBDIRS += tesla
 endif
 
+if COND_tesla
+SUBDIRS += tms320
+INCLUDE_SUBDIRS += tms320
+endif
 
 dist_share_DATA = COPYING
 

@@ -32,50 +32,31 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_EXCEPTION_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_EXCEPTION_HH__
 
-/**********************************************
+#include <stdexcept>
 
-             ARM EMULATOR ISA
-
-**********************************************/
-
-namespace unisim::component::cxx::processor::tms320::isa::tms320
-big_endian
-address {typename CONFIG::address_t}
-template <{class} {CONFIG}>
-
-decl {
-/* code to be inserted at the declaration of the library */
-
-/* Forward declaration of the cpu */
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
 namespace tms320 {
 
-template<class CONFIG>
-class CPU;
+class Exception : public std::exception {};
 
+template <class CONFIG>
+class UndefinedInstructionException :
+	public Exception {
+public:
+	UndefinedInstructionException();
+	virtual const char *what() const throw();
+};
 } // end of namespace tms320
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-} // end of decl
-
-impl {
-/* code to be included at the beginning of the implementation of the library */
-}
-
-// include "constructors_dec.isa"
-include "actions_dec.isa"
-
-include "load_store.isa"
-include "2op.isa"
-include "3op.isa"
-include "control.isa"
-include "power.isa"
-include "interlock.isa"
-include "parallel.isa"
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_EXCEPTION_HH__

@@ -40,8 +40,16 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
-#include "unisim/component/cxx/processor/tms320/isa_tms.hh"
+#include "unisim/service/interfaces/memory_access_reporting.hh"
+#include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/memory_injection.hh"
+#include "unisim/service/interfaces/registers.hh"
+#include "unisim/service/interfaces/symbol_table_lookup.hh"
+#include "unisim/component/cxx/processor/tms320/isa_tms320.hh"
 #include "unisim/util/endian/endian.hh"
+
+#include <string>
+#include <map>
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 #define INLINE __attribute__((always_inline))
@@ -63,10 +71,12 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
+using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::SymbolTableLookup;
 using unisim::util::debug::Register;
 
 template<class CONFIG, bool DEBUG = false>
@@ -81,7 +91,7 @@ class CPU :
 	public Client<Memory<typename CONFIG::address_t> >
 {
 private:
-	typedef CONFIG::address_t address_t;
+	typedef typename CONFIG::address_t address_t;
 	
 	// the kernel logger
 	unisim::kernel::logger::Logger logger;
@@ -190,7 +200,7 @@ public:
 	 * @param   next_addr  The address following the requested instruction.
 	 * @return             The disassembling of the requested instruction address.
 	 */
-	 virtual string Disasm(address_t addr, address_t &next_addr);
+	 virtual std::string Disasm(address_t addr, address_t &next_addr);
 	
     //===============================================================
 	//= DebugDisasmInterface interface methods                 STOP =
@@ -210,10 +220,18 @@ public:
 	//===============================================================
 
 private:
+	/** The registers interface for debugging purpose */
+	std::map<std::string, Register *> registers_registry;
+	/** indicates if the memory accesses require to be reported */
+	bool requires_memory_access_reporting;
+	/** indicates if the finished instructions require to be reported */
+	bool requires_finished_instruction_reporting;
+  
 	//===============================================================
 	//= Instruction set decoder variables                     START =
 	//===============================================================
 
+	typename isa::tms320::Decoder<CONFIG, DEBUG> decoder;
 
     //===============================================================
 	//= Verbose variables, parameters, and methods            START =
@@ -236,3 +254,6 @@ private:
 } // end of namespace unisim
 
 #undef INLINE
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CPU_HH__
+

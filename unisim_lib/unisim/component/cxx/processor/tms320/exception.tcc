@@ -33,10 +33,30 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-action {void} execute({CPU<CONFIG, DEBUG> &} {cpu}) {
-        throw UndefinedInstructionException<CONFIG>();
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_EXCEPTION_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_EXCEPTION_TCC__
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace tms320 {
+
+template <class CONFIG>
+UndefinedInstructionException<CONFIG>::
+UndefinedInstructionException() {}
+
+template <class CONFIG>
+const char *
+UndefinedInstructionException<CONFIG>::
+what() const throw() {
+	return "undefined instruction exception";
 }
 
-action {void} disasm({CPU<CONFIG, DEBUG> &} {cpu}, {std::stringstream &} {buffer}) {
-        buffer << "Unknown instruction";
-}
+} // end of namespace tms320
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_EXCEPTION_TCC__

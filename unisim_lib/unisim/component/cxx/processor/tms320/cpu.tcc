@@ -45,6 +45,10 @@
 #define INLINE
 #endif
 
+#include "unisim/component/cxx/processor/tms320/isa_tms320.tcc"
+
+#include "unisim/util/debug/simple_register.hh"
+
 #define LOCATION "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 
 namespace unisim {
@@ -79,7 +83,7 @@ CPU(const char *name,
 	Object(name, parent),
 	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
 	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
-	Service<MemoryAccessReporting<typename CONFIG::address_t> > (name, parent),
+	Service<MemoryAccessReportingControl> (name, parent),
 	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
@@ -125,14 +129,14 @@ Setup()
 {
 	bool success = true;
 	
-	if (VerboseAll)
+	if (VerboseAll())
 	{
 		verbose_setup = true;
 	}
 	
-	if (VerboseSetup)
+	if (VerboseSetup())
 	{
-		logger << DebugInfo << "Starting \"" << name << "\" setup" << endl;
+		logger << DebugInfo << "Starting \"" << Object::GetName() << "\" setup" << endl;
 		if (VerboseAll())
 			logger << "- verbose_all = true" << endl;
 		else
@@ -309,7 +313,7 @@ string
 CPU<CONFIG, DEBUG> ::
 Disasm(address_t addr, address_t &next_addr) 
 {
-	typename isa::tms320::Operation<CONFIG> *op = NULL;
+	typename isa::tms320::Operation<CONFIG, DEBUG> *op = NULL;
 	typename CONFIG::insn_t insn;
 	stringstream buffer;
 	
@@ -397,3 +401,6 @@ VerboseSetup()
 
 #undef INLINE
 #undef LOCATION
+
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CPU_TCC__
+

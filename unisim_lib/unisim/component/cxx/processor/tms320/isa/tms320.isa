@@ -33,10 +33,51 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-action {void} execute({CPU<CONFIG, DEBUG> &} {cpu}) {
-        throw UndefinedInstructionException<CONFIG>();
+/**********************************************
+
+             ARM EMULATOR ISA
+
+**********************************************/
+
+namespace unisim::component::cxx::processor::tms320::isa::tms320
+big_endian
+address {typename CONFIG::address_t}
+template <{class} {CONFIG}, {bool} {DEBUG}>
+
+decl {
+/* code to be inserted at the declaration of the library */
+
+/* Forward declaration of the cpu */
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace tms320 {
+
+template<class CONFIG, bool DEBUG>
+class CPU;
+
+} // end of namespace tms320
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+} // end of decl
+
+impl {
+/* code to be included at the beginning of the implementation of the library */
+#include <sstream>
+#include "unisim/component/cxx/processor/tms320/exception.hh"
 }
 
-action {void} disasm({CPU<CONFIG, DEBUG> &} {cpu}, {std::stringstream &} {buffer}) {
-        buffer << "Unknown instruction";
-}
+// include "constructors_dec.isa"
+include "actions_dec.isa"
+
+include "load_store.isa"
+include "2op.isa"
+include "3op.isa"
+include "control.isa"
+include "power.isa"
+include "interlock.isa"
+include "parallel.isa"
