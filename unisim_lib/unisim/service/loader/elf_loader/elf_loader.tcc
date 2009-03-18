@@ -564,7 +564,7 @@ Elf_Shdr *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, El
 		}
 	
 		for(i = 0; i < hdr->e_shnum; i++)
-			AdjustSectionHeader(hdr, shdr + i);
+			AdjustSectionHeader(hdr, shdr + i); // FIXME: "shdr + i" is not a way to walk through the table if hdr->e_shentsize != sizeof(Elf_Shdr)
 	
 		return shdr;
 	}
