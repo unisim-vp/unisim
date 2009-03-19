@@ -245,23 +245,6 @@ void ATD10B::RunScanMode()
 			sequenceLength = ATD_SIZE;
 		}
 
-		uint8_t rightShift = 0; // default left-justified
-		uint16_t resultMask = 0xFFC0; // default 10-bits
-		// - take in account The A/D Resolution Select ATDCTL4::SRES
-		// is 8-bit resolution
-		if ((atdctl4_register & 0x80) != 0) {
-			resultMask = 0xFF00;
-			rightShift = rightShift + 2;
-		}
-
-		// - take in account The A/D Justification ATDCTL5::DJM
-		// isRightJustified
-		if ((atdctl5_register & 0x80) != 0) {
-			rightShift = rightShift + 6;
-		}
-
-		// - take in account The A/D sign ATDCTL5::DSGN
-		bool isDataSigned = ((atdctl5_register & 0x40) != 0);
 
 		uint8_t currentChannel = atdctl5_register & 0x0F; // get CD/CC/CB/CA;
 		conversionStop = false;
@@ -306,9 +289,7 @@ void ATD10B::RunScanMode()
 				} else {
 					anSignal = analog_signal[currentChannel];
 				}
-				uint16_t digitalToken = analog_digital_map.getDigitalValue(anSignal, isDataSigned);
-
-				digitalToken = (digitalToken & resultMask) >> rightShift;
+				uint16_t digitalToken = getDigitalToken(anSignal);
 
 				uint16_t atdstat21 = ((uint16_t) atdstat2_register << 8) | atdstat1_register;
 				uint16_t ccfMask = 0x01;
@@ -415,12 +396,84 @@ void ATD10B::setATDClock() {
 
 	atd_clock = bus_cycle_time / prsValue;
 	first_phase_clock = atd_clock * 2;
-	if (smpValue == 0) {
-		second_phase_clock = first_phase_clock;
-	} else {
-		second_phase_clock = first_phase_clock * (2 << smpValue);
-	}
+	second_phase_clock = first_phase_clock * (1 << smpValue);
 }
+
+/*	===========================
+ * ATD Reference
+ *  - Input : input signal. Values are between [Vrl = 0 Volts , Vrh = 5.12 Volts]
+ *  - Output Code: depend on
+ *       ATDCTL4::SRES (resolution 8/10),
+ *       ATDCTL5::DJM (justification left/right),
+ *       ATDCTL5::DSGN (data sign)
+ */
+
+uint16_t ATD10B::getDigitalToken(double analogVoltage) {
+
+	uint16_t digitalToken = 0;
+
+	int resolution = 10; // default resolution is 10-bit
+
+	// - Take in account The A/D Resolution Select ATDCTL4::SRES
+	// is 8-bit resolution or 10-bit resolution
+	if ((atdctl4_register & 0x80) != 0) {
+		resolution = 8;
+	}
+
+	// - take in account The A/D Justification ATDCTL5::DJM
+	bool isRightJustified = ((atdctl5_register & 0x80) != 0);
+
+	// - take in account The A/D sign ATDCTL5::DSGN
+	bool isDataSigned = ((atdctl5_register & 0x40) != 0);
+
+	/*
+	 *
+
+			AnalogVoltage = (delta * DigitalToken) + Vrl
+
+			delta = (Vrh – Vrl) / (2^resolution – 1)
+
+			ZeroAnalogVoltage = (Vrh - Vrl)/2 + Vrl
+		=>
+			Unsigned
+			 if ((AnalogVoltage < ZeroAnalogVoltage) ou (AnalogVoltage = Vrh))
+				DigitalToken = ARRONDI( (AnalogVoltage – Vrl) / delta )
+			 else
+				  DigitalToken = ARRONDI( (AnalogVoltage – Vrl + delta) / delta )
+
+			Signed  (setVrl(ZeroAnalogVoltage)
+			  if (AnalogVoltage = Vrh)
+				 DigitalToken = ARRONDI( (AnalogVoltage – ZeroAnalogVoltage - delta) / delta )
+			  else
+				 DigitalToken = ARRONDI( (AnalogVoltage – ZeroAnalogVoltage) / delta )
+
+	 *
+	 */
+
+	double delta = (vrh - vrl) / ((1 << resolution) - 1);
+	double zeroAnalogVoltage = (vrh - vrl)/2 + vrl;
+
+	if (isDataSigned) {
+		if (analogVoltage == vrh) {
+			digitalToken =  0xFFFF & llround((analogVoltage - zeroAnalogVoltage - delta) / delta);
+		} else {
+			digitalToken = 0xFFFF & llround((analogVoltage - zeroAnalogVoltage) / delta);
+		}
+	} else {
+		if ((analogVoltage < zeroAnalogVoltage) || (analogVoltage == vrh)) {
+			digitalToken = 0xFFFF & llround((analogVoltage - vrl) / delta);
+		} else {
+			digitalToken = 0xFFFF & llround((analogVoltage - vrl + delta) / delta);
+		}
+	}
+
+	if (!isRightJustified) {
+		digitalToken = digitalToken << (16 - resolution);
+	}
+
+	return digitalToken;
+}
+
 
 //=====================================================================
 //=             registers setters and getters                         =

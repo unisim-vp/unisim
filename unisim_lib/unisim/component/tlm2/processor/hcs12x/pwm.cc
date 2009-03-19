@@ -566,9 +566,8 @@ bool PWM::Setup() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_NS);
 
-	clockVector[0] = bus_cycle_time;
-	for (int i=1; i < 8; i++) {
-		clockVector[i] = bus_cycle_time/(2 << i);
+	for (int i=0; i < 8; i++) {
+		clockVector[i] = bus_cycle_time/(1 << i);
 	}
 
 	Reset();

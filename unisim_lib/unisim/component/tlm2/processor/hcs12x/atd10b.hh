@@ -212,20 +212,6 @@ private:
 	void setExternalTriggerMode();
 	void setATDClock();
 
-	//==============================================
-	//=              ATD Registers Set             =
-	//==============================================
-
-	uint8_t atdctl0_register, atdctl1_register, atdctl2_register, atdctl3_register, atdctl4_register, atdctl5_register;
-	uint8_t atdstat0_register, atdtest0_register, atdtest1_register, atdstat2_register, atdstat1_register;
-	uint8_t atddien0_register, atddien1_register, portad0_register, portad1_register;
-	uint16_t atddrhl_register[ATD_SIZE];
-
-	/**
-	 * Analog signals are modeled as sample potential within VSSA and VDDA given by external tool
-	 */
-	double analog_signal[ATD_SIZE];
-
 	/**
 	 * Theory
 	 *    AnalogVoltage = (Delta * DigitalToken) + VRL
@@ -239,82 +225,28 @@ private:
 	 * and an increase by one in the digital token would represent an increase by 5mV in the analog voltage.
 	 *
 	 * ===========================
-	 * ATD Referencial Map
+	 * ATD Reference
 	 *  - Input : input signal. Values are between [Vrl = 0 Volts , Vrh = 5.12 Volts]
 	 *  - Output Code: depend on
 	 *       ATDCTL4::SRES (resolution 8/10),
 	 *       ATDCTL5::DJM (justification left/right),
 	 *       ATDCTL5::DSGN (data sign)
 	 */
-	class AnalogDigital_Map {
-	public:
-		static const uint8_t REFERENCIAL_SIZE = 8;
+	uint16_t getDigitalToken(double inputVoltage);
 
-		AnalogDigital_Map(){
-			map[0].inputSignal = 5.120;
-			map[0].signed_code = 0x7FC0;
-			map[0].unsigned_code = 0xFFC0;
+	//==============================================
+	//=              ATD Registers Set             =
+	//==============================================
 
-			map[1].inputSignal = 5.100;
-			map[1].signed_code = 0x7F00;
-			map[1].unsigned_code = 0xFF00;
+	uint8_t atdctl0_register, atdctl1_register, atdctl2_register, atdctl3_register, atdctl4_register, atdctl5_register;
+	uint8_t atdstat0_register, atdtest0_register, atdtest1_register, atdstat2_register, atdstat1_register;
+	uint8_t atddien0_register, atddien1_register, portad0_register, portad1_register;
+	uint16_t atddrhl_register[ATD_SIZE];
 
-			map[2].inputSignal = 5.080;
-			map[2].signed_code = 0x7E00;
-			map[2].unsigned_code = 0xFE00;
-
-			map[3].inputSignal = 2.580;
-			map[3].signed_code = 0x0100;
-			map[3].unsigned_code = 0x8100;
-
-			map[4].inputSignal = 2.560;
-			map[4].signed_code = 0x0000;
-			map[4].unsigned_code = 0x8000;
-
-			map[5].inputSignal = 2.540;
-			map[5].signed_code = 0xFF00;
-			map[5].unsigned_code = 0x7F00;
-
-			map[6].inputSignal = 0.020;
-			map[6].signed_code = 0x8100;
-			map[6].unsigned_code = 0x0100;
-
-			map[7].inputSignal = 0.000;
-			map[7].signed_code = 0x8000;
-			map[7].unsigned_code = 0x0000;
-
-		}
-
-		uint16_t getDigitalValue(double inputVoltage, bool isSigned) {
-
-			double average;
-			uint8_t index=0;
-
-			for (; index < REFERENCIAL_SIZE - 1; index++) {
-				average = (map[index].inputSignal + map[index+1].inputSignal) / 2;
-
-				if (inputVoltage > average) {
-					break;
-				}
-			}
-
-			if (isSigned) {
-				return map[index].signed_code;
-			} else {
-				return map[index].unsigned_code;
-			}
-
-		}
-
-	private:
-		typedef struct {
-			double		inputSignal;
-			uint16_t	signed_code;
-			uint16_t	unsigned_code;
-		} Map;
-		Map map[REFERENCIAL_SIZE];
-
-	} analog_digital_map;
+	/**
+	 * Analog signals are modeled as sample potential within VSSA and VDDA given by external tool
+	 */
+	double analog_signal[ATD_SIZE];
 
 	// Authorised Bus Clock
 	struct {
