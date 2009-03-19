@@ -53,6 +53,8 @@
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
+#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -72,37 +74,15 @@ using unisim::kernel::service::Parameter;
 
 using unisim::service::interfaces::Memory;
 
-using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
+using unisim::component::tlm2::processor::hcs12x::UNISIM_PWM_ProtocolTypes;
+using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 
-class PWM_Payload : public ManagedPayload
-{
-public:
-	bool pwmChannel[CONFIG::PWM_SIZE];
-
-	std::string serialize() {
-
-		std::stringstream os;
-		os << "[ ";
-		for (int i=0; i<CONFIG::PWM_SIZE; i++) {
-			os << " " << this->pwmChannel[i] << " ";
-		}
-		os << " ]";
-
-		return os.str();
-	}
-};
-
-struct UNISIM_PWM_ProtocolTypes
-{
-  typedef PWM_Payload tlm_payload_type;
-  typedef tlm_phase tlm_phase_type;
-};
-
+template <uint8_t PWM_SIZE>
 class PWM :
 	public sc_module,
-	virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes>,
+	virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >
 {
@@ -122,7 +102,7 @@ public:
 						PWMPER0, PWMPER1, PWMPER2, PWMPER3, PWMPER4, PWMPER5, PWMPER6, PWMPER7,
 						PWMDTY0, PWMDTY1, PWMDTY2, PWMDTY3, PWMDTY4, PWMDTY5, PWMDTY6, PWMDTY7, PWMSDN};
 
-	tlm_initiator_socket<CONFIG::UNISIM2EXTERNAL_BUS_WIDTH, UNISIM_PWM_ProtocolTypes> master_sock;
+	tlm_initiator_socket<CONFIG::UNISIM2EXTERNAL_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > master_sock;
 	// interface with bus
 	tlm_utils::simple_target_socket<PWM> slave_socket;
 
@@ -148,7 +128,7 @@ public:
     //=                    tlm2 Interface                            =
     //================================================================
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-    virtual tlm_sync_enum nb_transport_bw(PWM_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+    virtual tlm_sync_enum nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 	//=====================================================================
@@ -175,7 +155,7 @@ public:
 
 private:
 
-	PayloadFabric<PWM_Payload> payload_fabric;
+	PayloadFabric<PWM_Payload<PWM_SIZE> > payload_fabric;
 
 	clock_t	bus_cycle_time_int;
 	Parameter<clock_t>	param_bus_cycle_time_int;
@@ -183,6 +163,9 @@ private:
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
+
+	uint8_t interruptOffset;
+	Parameter<uint8_t> param_interruptOffset;
 
 	sc_event refresh_channel_event;
 
@@ -193,7 +176,7 @@ private:
 	void updateScaledClockA();
 	void updateScaledClockB();
 
-	void refreshOutput(bool pwmValue[CONFIG::PWM_SIZE]);
+	void refreshOutput(bool pwmValue[PWM_SIZE]);
 
 	uint8_t	pwme_register, pwmpol_register, pwmclk_register, pwmprclk_register;
 	uint8_t pwmcae_register, pwmctl_register;
@@ -203,9 +186,9 @@ private:
 
 	uint8_t pwmscla_register, pwmsclb_register;
 
-	uint8_t pwmcnt16_register[CONFIG::PWM_SIZE];
-	uint8_t pwmper16_register[CONFIG::PWM_SIZE];
-	uint8_t pwmdty16_register_value[CONFIG::PWM_SIZE];
+	uint8_t pwmcnt16_register[PWM_SIZE];
+	uint8_t pwmper16_register[PWM_SIZE];
+	uint8_t pwmdty16_register_value[PWM_SIZE];
 
 	class Channel_t : public sc_module {
 	public:
@@ -248,99 +231,11 @@ private:
 
 		template <class T> void checkChangeStateAndWait(const sc_time clk);
 
-	} *channel[CONFIG::PWM_SIZE];
+	} *channel[PWM_SIZE];
 
 	uint8_t pwmsdn_register;
 
 };
-
-template <class T> void PWM::Channel_t::checkChangeStateAndWait(const sc_time clk) {
-
-	clock_t toPeriod;
-	bool	isCenterAligned = true;
-	int8_t increment = 1;
-
-	T dty = *((T *) pwmdty_register_value_ptr);
-	T period = *((T *) pwmper_register_value_ptr);
-	T cnt = *((T *) pwmcnt_register_ptr);
-	bool isPolarityHigh = ((pwmParent->pwmpol_register & channelMask) != 0);
-
-	// PWM Boundary Cases
-	if (((dty == 0x00) && (period > 0x00) && !isPolarityHigh) ||
-			((period == 0x00) && isPolarityHigh) ||
-			((dty >= period) && isPolarityHigh))
-	{
-		output = true;
-	} else if (((dty == 0x00) && (period > 0x00) && isPolarityHigh) ||
-			((period == 0x00) && !isPolarityHigh) ||
-			((dty >= period) && !isPolarityHigh))
-	{
-		output = false;
-	} else if (isPolarityHigh) {
-		output = true;
-	} else {
-		output = false;
-	}
-
-	pwmParent->refresh_channel_event.notify();
-
-	if (period == 0x00) 	// Counter = 0x00 and does not count
-	{
-		setPwmcnt_register(0);
-		wait(wakeup_event);
-		return;
-	}
-
-	// Check alignment and compute the current period
-	isCenterAligned = ((pwmParent->pwmcae_register & channelMask) != 0);  // is Center Aligned ?
-
-	toPeriod = period - dty;
-
-	*((T *) pwmcnt_register_ptr) = dty;
-
-	wait(dty*clk);
-
-	output = ~output;
-	pwmParent->refresh_channel_event.notify();
-
-	if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
-	{
-		*((T *) pwmcnt_register_ptr) = period;
-
-		wait(toPeriod*clk);
-
-		if (*((T *) pwmcnt_register_ptr) == period) // The counter can be reset by software during wait
-		{
-			if (isCenterAligned) {
-				// count in decrement mode
-
-				*((T *) pwmcnt_register_ptr) = dty;
-
-				wait(toPeriod*clk);
-			}
-
-			output = ~output;
-			pwmParent->refresh_channel_event.notify();
-
-			if (isCenterAligned) {
-
-				if (*((T *) pwmcnt_register_ptr) == dty) // The counter can be reset by software during wait
-				{
-					wait(dty*clk);
-				}
-
-			}
-
-			setPwmcnt_register(0);	// end of period
-
-		}
-
-	}
-
-}
-
-template void PWM::Channel_t::checkChangeStateAndWait<uint8_t>(const sc_time clk);
-template void PWM::Channel_t::checkChangeStateAndWait<uint16_t>(const sc_time clk);
 
 
 } // end of namespace hcs12x

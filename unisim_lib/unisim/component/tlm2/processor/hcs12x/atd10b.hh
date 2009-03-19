@@ -39,7 +39,6 @@
 
 #include <inttypes.h>
 #include <iostream>
-#include <string>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -52,6 +51,8 @@
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
+
+#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
 namespace unisim {
 namespace component {
@@ -72,43 +73,16 @@ using unisim::kernel::service::Parameter;
 
 using unisim::service::interfaces::Memory;
 
-using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
-#define ATD_SIZE 16
-
-class ATD_Payload : public ManagedPayload
-{
-public:
-	double anPort[ATD_SIZE];
-
-	string serialize() {
-
-		stringstream os;
-		os << "[ ";
-		os.precision(5);
-
-		for (int i=0; i<ATD_SIZE; i++) {
-			os << " " << fixed << this->anPort[i] << " ";
-		}
-		os << " ]";
-
-		return os.str();
-
-	}
-};
-
-struct UNISIM_ATD_ProtocolTypes
-{
-  typedef ATD_Payload tlm_payload_type;
-  typedef tlm_phase tlm_phase_type;
-};
+using unisim::component::tlm2::processor::hcs12x::UNISIM_ATD_ProtocolTypes;
+using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
 
 
-
+template <uint8_t ATD_SIZE>
 class ATD10B :
 	public sc_module,
-	virtual public tlm_fw_transport_if<UNISIM_ATD_ProtocolTypes >,
+	virtual public tlm_fw_transport_if<UNISIM_ATD_ProtocolTypes<ATD_SIZE> >,
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >
 {
@@ -138,8 +112,8 @@ public:
 	    //=                    tlm2 Interface                            =
 	    //================================================================
 	    virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-		virtual unsigned int transport_dbg(ATD_Payload& payload);
-		virtual tlm_sync_enum nb_transport_fw(ATD_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+		virtual unsigned int transport_dbg(ATD_Payload<ATD_SIZE>& payload);
+		virtual tlm_sync_enum nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
 
 		void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
@@ -168,7 +142,7 @@ protected:
 
 private:
 
-	PayloadFabric<ATD_Payload > payload_fabric;
+	PayloadFabric<ATD_Payload<ATD_SIZE> > payload_fabric;
 
 	clock_t	bus_cycle_time_int;
 	Parameter<clock_t>	param_bus_cycle_time_int;
@@ -183,6 +157,9 @@ private:
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
+
+	uint8_t interruptOffset;
+	Parameter<uint8_t> param_interruptOffset;
 
 	// A/D reference potentials
 	double vrl, vrh;
@@ -205,7 +182,7 @@ private:
 	bool conversionStop;
 	bool abortSequence;
 
-	void Input(ATD_Payload& payload, double anValue[ATD_SIZE]);
+	void Input(ATD_Payload<ATD_SIZE>& payload, double anValue[ATD_SIZE]);
 	void abortConversion();
 	void abortAndStartNewConversion();
 	void sequenceComplete();
@@ -256,7 +233,6 @@ private:
 
 
 };
-
 
 } // end of namespace hcs12x
 } // end of namespace processor

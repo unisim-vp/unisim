@@ -4,7 +4,7 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/tlm2/processor/hcs12x
 lib_LTLIBRARIES = libunisim_component_tlm2_processor_hcs12x.la
 libunisim_component_tlm2_processor_hcs12x_la_SOURCES = hcs12x.cc xint.cc s12xmmc.cc pwm.cc atd10b.cc
 	
-include_HEADERS = hcs12x.hh xint.hh tlm_types.hh s12xmmc.hh pwm.hh atd10b.hh
+include_HEADERS = hcs12x.hh xint.hh tlm_types.hh s12xmmc.hh pwm.hh pwm.tcc atd10b.hh atd10b.tcc
 
 dist_share_DATA = COPYING
 
