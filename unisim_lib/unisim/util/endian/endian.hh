@@ -58,10 +58,16 @@ namespace endian {
 typedef enum {E_BIG_ENDIAN, E_LITTLE_ENDIAN} endian_type;
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
+
 inline void BSwap(uint8_t& value) __attribute__((always_inline));
 inline void BSwap(uint16_t& value) __attribute__((always_inline));
 inline void BSwap(uint32_t& value) __attribute__((always_inline));
 inline void BSwap(uint64_t& value) __attribute__((always_inline));
+
+inline uint8_t ByteSwap(uint8_t value) __attribute__((always_inline));
+inline uint16_t ByteSwap(uint16_t value) __attribute__((always_inline));
+inline uint32_t ByteSwap(uint32_t value) __attribute__((always_inline));
+inline uint64_t ByteSwap(uint64_t value) __attribute__((always_inline));
 
 inline uint8_t Host2BigEndian(uint8_t value) __attribute__((always_inline));
 inline uint8_t BigEndian2Host(uint8_t value) __attribute__((always_inline));
@@ -147,6 +153,30 @@ inline void BSwap(uint64_t& value)
 	        ((value & 0x00000000ff000000ULL) << 8) | ((value & 0x0000000000ff0000ULL) << 24) |
 	        ((value & 0x000000000000ff00ULL) << 40) | ((value << 56));
 #endif
+}
+
+inline uint8_t ByteSwap(uint8_t value)
+{
+	BSwap(value);
+	return value;
+}
+
+inline uint16_t ByteSwap(uint16_t value)
+{
+	BSwap(value);
+	return value;
+}
+
+inline uint32_t ByteSwap(uint32_t value)
+{
+	BSwap(value);
+	return value;
+}
+
+inline uint64_t ByteSwap(uint64_t value)
+{
+	BSwap(value);
+	return value;
 }
 
 inline uint8_t Host2BigEndian(uint8_t value)

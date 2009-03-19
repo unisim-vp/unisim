@@ -47,6 +47,9 @@
 
 #include <iosfwd>
 #include <inttypes.h>
+#include <vector>
+#include <map>
+
 
 namespace unisim {
 namespace service {
@@ -66,95 +69,87 @@ using unisim::util::debug::Symbol;
 using unisim::service::interfaces::SymbolTableBuild;
 using unisim::service::interfaces::Loader;
 
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-#define PACKED __attribute__ ((packed))
-#else
-#define PACKED
-#endif
+template <class MEMORY_ADDR> class FileHandler;
+template <class MEMORY_ADDR> class File;
+template <class MEMORY_ADDR> class Section;
+template <class MEMORY_ADDR> class SectionTable;
+template <class MEMORY_ADDR> class FileHandlerRegister;
 
-const uint16_t TI_TARGET_ID_TMS320_C3X_C4X = 0x0093;
-
-const uint16_t TI_COFF0_MAGIC = TI_TARGET_ID_TMS320_C3X_C4X;
-const uint16_t TI_COFF1_MAGIC = 0x00c1;
-const uint16_t TI_COFF2_MAGIC = 0x00c2;
-
-// TI's COFF file header
-typedef struct PACKED
+template <class MEMORY_ADDR>
+class FileHandler
 {
-	uint16_t f_magic;     // magic number
-	uint16_t f_nscns;     // number of sections
-	int32_t f_timdat;     // time and date stamp
-	int32_t f_symptr;     // file ptr to symtab
-	int32_t f_nsyms;      // number of symtab entries
-	uint16_t f_opthdr;    // size of optional header
-	uint16_t f_flags;     // flags
-	uint16_t f_target_id; // COFF-TI specific: TI target magic number that can execute the file
-} ti_filehdr;
+public:
+	virtual uint16_t GetMagic() const = 0;
+	virtual const char *What() const = 0;
+	virtual File<MEMORY_ADDR> *GetFile() const = 0;
+};
 
-typedef union
+template <class MEMORY_ADDR>
+class File
 {
-	uint16_t f_magic;     // magic number
-	ti_filehdr ti;
-} filehdr;
+public:
+	virtual bool ParseFileHeader(const void *hdr_raw_data) = 0;
+	virtual bool ParseAoutHeader(const void *aout_hdr_raw_data) = 0;
+	virtual bool ParseSectionHeader(unsigned int section_num, const void *shdr_raw_data) = 0;
 
-// TI's COFF Optional file header
-typedef struct PACKED
-{
-	int16_t o_magic;        // magic number (0x108)
-	int16_t o_vstamp;       // version stamp
-	int32_t o_tsize;        // text size in bytes, padded to FW bdry
-	int32_t o_dsize;        // initialized data
-	int32_t o_bsize;        // uninitialized data
-	int32_t o_entry;        // entry point
-	int32_t o_text_start;   // base of text used for this file
-	int32_t o_data_start;   // base of data used for this file
-} ti_aouthdr;
+	virtual const char *GetArchitectureName() const = 0;
+	virtual bool IsExecutable() const = 0;
+	virtual unsigned int GetFileHeaderSize() const = 0;
+	virtual unsigned int GetAoutHeaderSize() const = 0;
+	virtual unsigned int GetSectionHeaderSize() const = 0;
+	virtual unsigned int GetNumSections() const = 0;
+	virtual MEMORY_ADDR GetEntryPoint() const = 0;
+	virtual MEMORY_ADDR GetTextBase() const = 0;
+	virtual MEMORY_ADDR GetDataBase() const = 0;
+	virtual MEMORY_ADDR GetTextSize() const = 0;
+	virtual MEMORY_ADDR GetDataSize() const = 0;
+	virtual MEMORY_ADDR GetBssSize() const = 0;
+	virtual void DumpFileHeader(ostream& os) const = 0;
+	virtual void DumpAoutHeader(ostream& os) const = 0;
 
-typedef union
-{
-	int16_t magic;        // magic number
-	ti_aouthdr ti;
-} aouthdr;
+	virtual const SectionTable<MEMORY_ADDR> *GetSectionTable() const = 0;
+private:
+};
 
-// Section header for TI's COFF0 and COFF1 files
-typedef struct PACKED
+template <class MEMORY_ADDR>
+class Section
 {
-	char s_name[8];        // section name
-	int32_t s_paddr;       // physical address
-	int32_t s_vaddr;       // virtual address
-	int32_t s_size;        // section size
-	int32_t s_scnptr;      // file ptr to raw data
-	int32_t s_relptr;      // file ptr to relocation
-	int32_t s_lnnoptr;     // file ptr to line numbers
-	uint16_t s_nreloc;     // number of reloc entries
-	uint16_t s_nlnno;      // number of line number entries
-	uint16_t s_flags;      // flags
-	int8_t s_reserved;     // reserved
-	uint8_t s_page;        // memory page number */
-} ti_scnhdr_v01;
+public:
+	virtual const char *GetName() const = 0;
+	virtual MEMORY_ADDR GetVirtualAddress() const = 0;
+	virtual MEMORY_ADDR GetPhysicalAddress() const = 0;
+	virtual MEMORY_ADDR GetSize() const = 0;
+	virtual long GetContentFilePtr() const = 0;
+	virtual void DumpHeader(ostream& os) const = 0;
+	virtual bool IsLoadable() const = 0;
+};
 
-// Section header for TI's COFF2 files
-typedef struct PACKED
+template <class MEMORY_ADDR>
+class SectionTable
 {
-	char s_name[8];        // section name
-	int32_t s_paddr;       // physical address
-	int32_t s_vaddr;       // virtual address
-	int32_t s_size;        // section size
-	int32_t s_scnptr;      // file ptr to raw data
-	int32_t s_relptr;      // file ptr to relocation
-	int32_t s_lnnoptr;     // file ptr to line numbers
-	uint32_t s_nreloc;     // number of reloc entries
-	uint32_t s_nlnno;      // number of line number entries
-	uint32_t s_flags;      // flags
-	int16_t s_reserved;    // reserved
-	uint16_t s_page;       // memory page number */
-} ti_scnhdr_v2;
+public:
+	SectionTable(unsigned int num_sections);
+	virtual ~SectionTable();
+	void Insert(unsigned int section_num, Section<MEMORY_ADDR> *section);
+	const Section<MEMORY_ADDR> *operator [] (unsigned int section_num) const;
+	unsigned int GetSize() const;
+private:
+	std::vector<Section<MEMORY_ADDR> *> sections;
+};
 
-typedef union
+template <class MEMORY_ADDR>
+class FileHandlerRegistry
 {
-	ti_scnhdr_v01 ti_v01;
-	ti_scnhdr_v2 ti_v2;
-} scnhdr;
+public:
+	FileHandlerRegistry();
+	virtual ~FileHandlerRegistry();
+	void Register(FileHandler<MEMORY_ADDR> *file_handler);
+	FileHandler<MEMORY_ADDR> *operator [] (uint16_t magic);
+	void DumpFileHandlers(ostream& os);
+	void Reset();
+private:
+	std::map<uint16_t, FileHandler<MEMORY_ADDR> *> file_handlers;
+};
 
 template <class MEMORY_ADDR>
 class CoffLoader :
@@ -185,51 +180,14 @@ private:
 	MEMORY_ADDR top_addr;
 	MEMORY_ADDR base_addr;
 	bool dump_headers;
-	endian_type endianness;
 
 	// Run-time parameters (accessors)
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_dump_headers;
-	Parameter<endian_type> param_endianness;
 
-	// Target to Host endian conversion
-	void Target2Host(filehdr *hdr);
-	void Target2Host(ti_filehdr *hdr);
-	void Target2Host(const filehdr *hdr, scnhdr *shdr);
-	void Target2Host(ti_scnhdr_v01 *shdr);
-	void Target2Host(ti_scnhdr_v2 *shdr);
-
-	// File handling
-	filehdr *ReadFileHeader(istream& is);
-	scnhdr *ReadSectionHeaders(const filehdr *hdr, istream& is);
-	unsigned int GetFileHeaderSize(const filehdr *hdr);
-	unsigned int GetSectionHeaderSize(const filehdr *hdr);
-	bool LoadSection(const filehdr *hdr, const scnhdr *shdr, void *buffer, istream& is);
-
-	// Dump headers
-	void DumpFileHeader(const filehdr *hdr, ostream& os);
-	void DumpFileHeader(const ti_filehdr *hdr, ostream& os);
-	void DumpSectionHeader(const filehdr *hdr, const scnhdr *shdr, ostream& os);
-	void DumpSectionHeader(const ti_scnhdr_v01 *shdr, ostream& os);
-	void DumpSectionHeader(const ti_scnhdr_v2 *shdr, ostream& os);
-
-	// Navigate into headers
-	unsigned int GetNumSectionHeaders(const filehdr *hdr);
-	const scnhdr *GetNextSectionHeader(const filehdr *hdr, const scnhdr *shdr);
-	const char *GetSectionName(string& name, const filehdr *hdr, const scnhdr *shdr);
-	MEMORY_ADDR GetSectionVirtualAddress(const filehdr *hdr, const scnhdr *shdr);
-	MEMORY_ADDR GetSectionPhysicalAddress(const filehdr *hdr, const scnhdr *shdr);
-	MEMORY_ADDR GetSectionVirtualAddress(const ti_scnhdr_v01 *shdr);
-	MEMORY_ADDR GetSectionVirtualAddress(const ti_scnhdr_v2 *shdr);
-	MEMORY_ADDR GetSectionPhysicalAddress(const ti_scnhdr_v01 *shdr);
-	MEMORY_ADDR GetSectionPhysicalAddress(const ti_scnhdr_v2 *shdr);
-	MEMORY_ADDR GetSectionSize(const filehdr *hdr, const scnhdr *shdr);
-	MEMORY_ADDR GetSectionSize(const ti_scnhdr_v01 *shdr);
-	MEMORY_ADDR GetSectionSize(const ti_scnhdr_v2 *shdr);
-	long GetSectionFilePtr(const filehdr *hdr, const scnhdr *shdr);
-	long GetSectionFilePtr(const ti_scnhdr_v01 *shdr);
-	long GetSectionFilePtr(const ti_scnhdr_v2 *shdr);
+	// File handler registry
+	FileHandlerRegistry<MEMORY_ADDR> file_handler_registry;
 };
 
 } // end of namespace coff_loader
