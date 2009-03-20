@@ -90,7 +90,6 @@ CPU(const char *name,
 	Client<Memory<uint64_t> >(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
-	memory_injection_export("memory_injection_export", this),
 	memory_access_reporting_control_export(
 		"memory_access_reporting_control_export",
 		this),
@@ -182,34 +181,6 @@ OnDisconnect()
 //===============================================================
 
 //===============================================================
-//= Memory injection interface methods                    START =
-//===============================================================
-
-template<class CONFIG, bool DEBUG>
-bool 
-CPU<CONFIG, DEBUG> ::
-InjectReadMemory(address_t addr, void *buffer, uint32_t size)
-{
-	logger << DebugWarning << "TODO: implement InjectReadMemory" << endl
-		<< LOCATION << EndDebug;
-	return false;
-}
-
-template<class CONFIG, bool DEBUG>
-bool
-CPU<CONFIG, DEBUG> ::
-InjectWriteMemory(address_t addr, const void *buffer, uint32_t size)
-{
-	logger << DebugWarning << "TODO: implement InjectWriteMemory" << endl
-		<< LOCATION << EndDebug;
-	return false;
-}
-
-//===============================================================
-//= Memory injection interface methods                     STOP =
-//===============================================================
-
-//===============================================================
 //= Memory access reporting control interface methods     START =
 //===============================================================
 
@@ -249,7 +220,7 @@ Reset()
 template<class CONFIG, bool DEBUG>
 bool
 CPU<CONFIG, DEBUG> ::
-ReadMemory(address_t addr, void *buffer, uint32_t size)
+ReadMemory(uint64_t addr, void *buffer, uint32_t size)
 {
 	if (memory_import)
 		return memory_import->ReadMemory(addr, buffer, size);
@@ -259,7 +230,7 @@ ReadMemory(address_t addr, void *buffer, uint32_t size)
 template<class CONFIG, bool DEBUG>
 bool
 CPU<CONFIG, DEBUG> ::
-WriteMemory(address_t addr, const void *buffer, uint32_t size)
+WriteMemory(uint64_t addr, const void *buffer, uint32_t size)
 {
 	if (memory_import)
 		return memory_import->WriteMemory(addr, buffer, size);
@@ -310,7 +281,7 @@ GetRegister(const char *name)
 template<class CONFIG, bool DEBUG>
 string 
 CPU<CONFIG, DEBUG> ::
-Disasm(address_t addr, address_t &next_addr) 
+Disasm(uint64_t addr, address_t &next_addr) 
 {
 	typename isa::tms320::Operation<CONFIG, DEBUG> *op = NULL;
 	typename CONFIG::insn_t insn;

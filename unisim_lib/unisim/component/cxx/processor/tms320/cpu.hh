@@ -50,6 +50,7 @@
 
 #include <string>
 #include <map>
+#include <inttypes.h>
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 #define INLINE __attribute__((always_inline))
