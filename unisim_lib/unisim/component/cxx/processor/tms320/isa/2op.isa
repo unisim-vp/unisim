@@ -78,7 +78,7 @@
  
 op ABSF_reg  (0b000[3]:0b000000[6]:0b00[2]:dst[5]:0[11]:src[5])
 op ABSF_dir  (0b000[3]:0b000000[6]:0b01[2]:dst[5]:direct[16])
-op ABSF_indir(0b000[3]:0b000000[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op ABSF_indir(0b000[3]:0b000000[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op ABSF_imm  (0b000[3]:0b000000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of ABSF (absolute value of a floating-point number)
@@ -91,7 +91,7 @@ op ABSF_imm  (0b000[3]:0b000000[6]:0b11[2]:dst[5]:sext<32> imm[16])
  
 op ABSI_reg  (0b000[3]:0b000001[6]:0b00[2]:dst[5]:0[11]:src[5])
 op ABSI_dir  (0b000[3]:0b000001[6]:0b01[2]:dst[5]:direct[16])
-op ABSI_indir(0b000[3]:0b000001[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op ABSI_indir(0b000[3]:0b000001[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op ABSI_imm  (0b000[3]:0b000001[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of ABSI (absolute value of an integer)
@@ -104,7 +104,7 @@ op ABSI_imm  (0b000[3]:0b000001[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op ADDC_reg  (0b000[3]:0b000010[6]:0b00[2]:dst[5]:0[11]:src[5])
 op ADDC_dir  (0b000[3]:0b000010[6]:0b01[2]:dst[5]:direct[16])
-op ADDC_indir(0b000[3]:0b000010[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op ADDC_indir(0b000[3]:0b000010[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op ADDC_imm  (0b000[3]:0b000010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of ADDC (add integers with carry)
@@ -117,7 +117,7 @@ op ADDC_imm  (0b000[3]:0b000010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op ADDF_reg  (0b000[3]:0b000011[6]:0b00[2]:dst[5]:0[11]:src[5])
 op ADDF_dir  (0b000[3]:0b000011[6]:0b01[2]:dst[5]:direct[16])
-op ADDF_indir(0b000[3]:0b000011[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op ADDF_indir(0b000[3]:0b000011[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op ADDF_imm  (0b000[3]:0b000011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of ADDF (add floating-point values)
@@ -130,7 +130,7 @@ op ADDF_imm  (0b000[3]:0b000011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op ADDI_reg  (0b000[3]:0b000100[6]:0b00[2]:dst[5]:0[11]:src[5])
 op ADDI_dir  (0b000[3]:0b000100[6]:0b01[2]:dst[5]:direct[16])
-op ADDI_indir(0b000[3]:0b000100[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op ADDI_indir(0b000[3]:0b000100[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op ADDI_imm  (0b000[3]:0b000100[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of ADDI (add integers)
@@ -143,7 +143,7 @@ op ADDI_imm  (0b000[3]:0b000100[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op AND_reg  (0b000[3]:0b000101[6]:0b00[2]:dst[5]:0[11]:src[5])
 op AND_dir  (0b000[3]:0b000101[6]:0b01[2]:dst[5]:direct[16])
-op AND_indir(0b000[3]:0b000101[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op AND_indir(0b000[3]:0b000101[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op AND_imm  (0b000[3]:0b000101[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of AND (bitwise-logical AND)
@@ -156,7 +156,7 @@ op AND_imm  (0b000[3]:0b000101[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op ANDN_reg  (0b000[3]:0b000110[6]:0b00[2]:dst[5]:0[11]:src[5])
 op ANDN_dir  (0b000[3]:0b000110[6]:0b01[2]:dst[5]:direct[16])
-op ANDN_indir(0b000[3]:0b000110[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op ANDN_indir(0b000[3]:0b000110[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op ANDN_imm  (0b000[3]:0b000110[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of ANDN (bitwise-logical AND with complement)
@@ -169,7 +169,7 @@ op ANDN_imm  (0b000[3]:0b000110[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op ASH_reg  (0b000[3]:0b000111[6]:0b00[2]:dst[5]:0[11]:src[5])
 op ASH_dir  (0b000[3]:0b000111[6]:0b01[2]:dst[5]:direct[16])
-op ASH_indir(0b000[3]:0b000111[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op ASH_indir(0b000[3]:0b000111[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op ASH_imm  (0b000[3]:0b000111[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of ASH (arithmetic shift)
@@ -182,7 +182,7 @@ op ASH_imm  (0b000[3]:0b000111[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op CMPF_reg  (0b000[3]:0b001000[6]:0b00[2]:dst[5]:0[11]:src[5])
 op CMPF_dir  (0b000[3]:0b001000[6]:0b01[2]:dst[5]:direct[16])
-op CMPF_indir(0b000[3]:0b001000[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op CMPF_indir(0b000[3]:0b001000[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op CMPF_imm  (0b000[3]:0b001000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of CMPF (compare floating-point values)
@@ -195,7 +195,7 @@ op CMPF_imm  (0b000[3]:0b001000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op CMPI_reg  (0b000[3]:0b001001[6]:0b00[2]:dst[5]:0[11]:src[5])
 op CMPI_dir  (0b000[3]:0b001001[6]:0b01[2]:dst[5]:direct[16])
-op CMPI_indir(0b000[3]:0b001001[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op CMPI_indir(0b000[3]:0b001001[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op CMPI_imm  (0b000[3]:0b001001[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of CMPI (compare integers)
@@ -208,7 +208,7 @@ op CMPI_imm  (0b000[3]:0b001001[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op FIX_reg  (0b000[3]:0b001010[6]:0b00[2]:dst[5]:0[11]:src[5])
 op FIX_dir  (0b000[3]:0b001010[6]:0b01[2]:dst[5]:direct[16])
-op FIX_indir(0b000[3]:0b001010[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op FIX_indir(0b000[3]:0b001010[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op FIX_imm  (0b000[3]:0b001010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of FIX (convert floating-point value to integer)
@@ -221,7 +221,7 @@ op FIX_imm  (0b000[3]:0b001010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op FLOAT_reg  (0b000[3]:0b001011[6]:0b00[2]:dst[5]:0[11]:src[5])
 op FLOAT_dir  (0b000[3]:0b001011[6]:0b01[2]:dst[5]:direct[16])
-op FLOAT_indir(0b000[3]:0b001011[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op FLOAT_indir(0b000[3]:0b001011[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op FLOAT_imm  (0b000[3]:0b001011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of FLOAT (convert integer to floating-point value)
@@ -234,7 +234,7 @@ op FLOAT_imm  (0b000[3]:0b001011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op LSH_reg  (0b000[3]:0b010011[6]:0b00[2]:dst[5]:0[11]:src[5])
 op LSH_dir  (0b000[3]:0b010011[6]:0b01[2]:dst[5]:direct[16])
-op LSH_indir(0b000[3]:0b010011[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op LSH_indir(0b000[3]:0b010011[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op LSH_imm  (0b000[3]:0b010011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of LSH (logical shift)
@@ -247,7 +247,7 @@ op LSH_imm  (0b000[3]:0b010011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op MPYF_reg  (0b000[3]:0b010100[6]:0b00[2]:dst[5]:0[11]:src[5])
 op MPYF_dir  (0b000[3]:0b010100[6]:0b01[2]:dst[5]:direct[16])
-op MPYF_indir(0b000[3]:0b010100[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op MPYF_indir(0b000[3]:0b010100[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op MPYF_imm  (0b000[3]:0b010100[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of MPYF (multiply floating-point values)
@@ -260,7 +260,7 @@ op MPYF_imm  (0b000[3]:0b010100[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op MPYI_reg  (0b000[3]:0b010101[6]:0b00[2]:dst[5]:0[11]:src[5])
 op MPYI_dir  (0b000[3]:0b010101[6]:0b01[2]:dst[5]:direct[16])
-op MPYI_indir(0b000[3]:0b010101[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op MPYI_indir(0b000[3]:0b010101[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op MPYI_imm  (0b000[3]:0b010101[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of MPYI (multiply integers)
@@ -273,7 +273,7 @@ op MPYI_imm  (0b000[3]:0b010101[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op NEGB_reg  (0b000[3]:0b010110[6]:0b00[2]:dst[5]:0[11]:src[5])
 op NEGB_dir  (0b000[3]:0b010110[6]:0b01[2]:dst[5]:direct[16])
-op NEGB_indir(0b000[3]:0b010110[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op NEGB_indir(0b000[3]:0b010110[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op NEGB_imm  (0b000[3]:0b010110[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of NEGB (negate integer with borrow)
@@ -286,7 +286,7 @@ op NEGB_imm  (0b000[3]:0b010110[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op NEGF_reg  (0b000[3]:0b010111[6]:0b00[2]:dst[5]:0[11]:src[5])
 op NEGF_dir  (0b000[3]:0b010111[6]:0b01[2]:dst[5]:direct[16])
-op NEGF_indir(0b000[3]:0b010111[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op NEGF_indir(0b000[3]:0b010111[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op NEGF_imm  (0b000[3]:0b010111[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of NEGF (negate floating-point value)
@@ -299,7 +299,7 @@ op NEGF_imm  (0b000[3]:0b010111[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op NEGI_reg  (0b000[3]:0b011000[6]:0b00[2]:dst[5]:0[11]:src[5])
 op NEGI_dir  (0b000[3]:0b011000[6]:0b01[2]:dst[5]:direct[16])
-op NEGI_indir(0b000[3]:0b011000[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op NEGI_indir(0b000[3]:0b011000[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op NEGI_imm  (0b000[3]:0b011000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of NEGI (negate integer)
@@ -312,7 +312,7 @@ op NEGI_imm  (0b000[3]:0b011000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op NORM_reg  (0b000[3]:0b011010[6]:0b00[2]:dst[5]:0[11]:src[5])
 op NORM_dir  (0b000[3]:0b011010[6]:0b01[2]:dst[5]:direct[16])
-op NORM_indir(0b000[3]:0b011010[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op NORM_indir(0b000[3]:0b011010[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op NORM_imm  (0b000[3]:0b011010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of NORM (normalize floating-point value)
@@ -325,7 +325,7 @@ op NORM_imm  (0b000[3]:0b011010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op NOT_reg  (0b000[3]:0b011011[6]:0b00[2]:dst[5]:0[11]:src[5])
 op NOT_dir  (0b000[3]:0b011011[6]:0b01[2]:dst[5]:direct[16])
-op NOT_indir(0b000[3]:0b011011[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op NOT_indir(0b000[3]:0b011011[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op NOT_imm  (0b000[3]:0b011011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of NOT (bitwise-logical complement)
@@ -338,7 +338,7 @@ op NOT_imm  (0b000[3]:0b011011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op OR_reg  (0b000[3]:0b100000[6]:0b00[2]:dst[5]:0[11]:src[5])
 op OR_dir  (0b000[3]:0b100000[6]:0b01[2]:dst[5]:direct[16])
-op OR_indir(0b000[3]:0b100000[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op OR_indir(0b000[3]:0b100000[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op OR_imm  (0b000[3]:0b100000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of OR (bitwise-logical OR)
@@ -351,7 +351,7 @@ op OR_imm  (0b000[3]:0b100000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op RND_reg  (0b000[3]:0b100010[6]:0b00[2]:dst[5]:0[11]:src[5])
 op RND_dir  (0b000[3]:0b100010[6]:0b01[2]:dst[5]:direct[16])
-op RND_indir(0b000[3]:0b100010[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op RND_indir(0b000[3]:0b100010[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op RND_imm  (0b000[3]:0b100010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of RND (round floating-point value)
@@ -404,7 +404,7 @@ op RORC(0b000[3]:0b100110[6]:0b11[2]:dst[5]:0b1111111111111111[16])
 
 op SUBB_reg  (0b000[3]:0b101101[6]:0b00[2]:dst[5]:0[11]:src[5])
 op SUBB_dir  (0b000[3]:0b101101[6]:0b01[2]:dst[5]:direct[16])
-op SUBB_indir(0b000[3]:0b101101[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op SUBB_indir(0b000[3]:0b101101[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op SUBB_imm  (0b000[3]:0b101101[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of SUBB (subtract integers with borrow)
@@ -417,7 +417,7 @@ op SUBB_imm  (0b000[3]:0b101101[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op SUBC_reg  (0b000[3]:0b101110[6]:0b00[2]:dst[5]:0[11]:src[5])
 op SUBC_dir  (0b000[3]:0b101110[6]:0b01[2]:dst[5]:direct[16])
-op SUBC_indir(0b000[3]:0b101110[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op SUBC_indir(0b000[3]:0b101110[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op SUBC_imm  (0b000[3]:0b101110[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of SUBC (subtract integers conditionally)
@@ -430,7 +430,7 @@ op SUBC_imm  (0b000[3]:0b101110[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op SUBF_reg  (0b000[3]:0b101111[6]:0b00[2]:dst[5]:0[11]:src[5])
 op SUBF_dir  (0b000[3]:0b101111[6]:0b01[2]:dst[5]:direct[16])
-op SUBF_indir(0b000[3]:0b101111[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op SUBF_indir(0b000[3]:0b101111[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op SUBF_imm  (0b000[3]:0b101111[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of SUBF (subtract floating-point values)
@@ -443,7 +443,7 @@ op SUBF_imm  (0b000[3]:0b101111[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op SUBI_reg  (0b000[3]:0b110000[6]:0b00[2]:dst[5]:0[11]:src[5])
 op SUBI_dir  (0b000[3]:0b110000[6]:0b01[2]:dst[5]:direct[16])
-op SUBI_indir(0b000[3]:0b110000[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op SUBI_indir(0b000[3]:0b110000[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op SUBI_imm  (0b000[3]:0b110000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of SUBI (subtract integer)
@@ -456,7 +456,7 @@ op SUBI_imm  (0b000[3]:0b110000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op SUBRB_reg  (0b000[3]:0b110001[6]:0b00[2]:dst[5]:0[11]:src[5])
 op SUBRB_dir  (0b000[3]:0b110001[6]:0b01[2]:dst[5]:direct[16])
-op SUBRB_indir(0b000[3]:0b110001[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op SUBRB_indir(0b000[3]:0b110001[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op SUBRB_imm  (0b000[3]:0b110001[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of SUBRB (subtract reverse integer with borrow)
@@ -469,7 +469,7 @@ op SUBRB_imm  (0b000[3]:0b110001[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op SUBRF_reg  (0b000[3]:0b110010[6]:0b00[2]:dst[5]:0[11]:src[5])
 op SUBRF_dir  (0b000[3]:0b110010[6]:0b01[2]:dst[5]:direct[16])
-op SUBRF_indir(0b000[3]:0b110010[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op SUBRF_indir(0b000[3]:0b110010[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op SUBRF_imm  (0b000[3]:0b110010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of SUBRF (subtract reverse floating-point value)
@@ -482,7 +482,7 @@ op SUBRF_imm  (0b000[3]:0b110010[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op SUBRI_reg  (0b000[3]:0b110011[6]:0b00[2]:dst[5]:0[11]:src[5])
 op SUBRI_dir  (0b000[3]:0b110011[6]:0b01[2]:dst[5]:direct[16])
-op SUBRI_indir(0b000[3]:0b110011[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op SUBRI_indir(0b000[3]:0b110011[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op SUBRI_imm  (0b000[3]:0b110011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of SUBRI (subtract reverse integer)
@@ -495,7 +495,7 @@ op SUBRI_imm  (0b000[3]:0b110011[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op TSTB_reg  (0b000[3]:0b110100[6]:0b00[2]:dst[5]:0[11]:src[5])
 op TSTB_dir  (0b000[3]:0b110100[6]:0b01[2]:dst[5]:direct[16])
-op TSTB_indir(0b000[3]:0b110100[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op TSTB_indir(0b000[3]:0b110100[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op TSTB_imm  (0b000[3]:0b110100[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of TSTB (test bit fields)
@@ -508,7 +508,7 @@ op TSTB_imm  (0b000[3]:0b110100[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 op XOR_reg  (0b000[3]:0b110101[6]:0b00[2]:dst[5]:0[11]:src[5])
 op XOR_dir  (0b000[3]:0b110101[6]:0b01[2]:dst[5]:direct[16])
-op XOR_indir(0b000[3]:0b110101[6]:0b10[2]:dst[5]:mod[4]:ar[4]:disp[8])
+op XOR_indir(0b000[3]:0b110101[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 op XOR_imm  (0b000[3]:0b110101[6]:0b11[2]:dst[5]:sext<32> imm[16])
 
 /* end of XOR (bitwise-exclusive OR)
