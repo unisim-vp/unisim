@@ -194,7 +194,7 @@ const char *FileHandler<MEMORY_ADDR>::What() const
 		case TARGET_ID_TMS320_C54X:
 			return "TI COFF v0 for TMS320C54x (little-endian headers)";
 		case TARGET_ID_TMS320_C6X:
-			return "TI COFF v0 for TMS320C3x/C4x (little-endian headers)";
+			return "TI COFF v0 for TMS320C6x (little-endian headers)";
 		case TARGET_ID_TMS320_C28X:
 			return "TI COFF v0 for TMS320C28x (little-endian headers)";
 		case COFF_V1_MAGIC:

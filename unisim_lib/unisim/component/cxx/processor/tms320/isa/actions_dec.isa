@@ -37,6 +37,6 @@ action {void} execute({CPU<CONFIG, DEBUG> &} {cpu}) {
         throw UndefinedInstructionException<CONFIG>();
 }
 
-action {void} disasm({CPU<CONFIG, DEBUG> &} {cpu}, {std::stringstream &} {buffer}) {
-        buffer << "Unknown instruction";
+action {void} disasm({CPU<CONFIG, DEBUG> &} {cpu}, {std::ostream &} {os}) {
+        os << "Unknown instruction";
 }

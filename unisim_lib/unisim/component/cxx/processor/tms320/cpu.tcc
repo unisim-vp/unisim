@@ -309,7 +309,11 @@ Disasm(uint64_t _addr, uint64_t &next_addr)
 		return buffer.str();
 	}
 	insn = LittleEndian2Host(insn);
+	buffer << "0x" << std::hex;
+	buffer.fill('0');
+	buffer.width(8); 
 	op = decoder.Decode(addr, insn);
+	buffer << op->GetEncoding() << std::dec << " ";
 	op->disasm(*this, buffer);
 	next_addr = (addr + 4);
 

@@ -220,6 +220,8 @@ private:
 } } } } } } }
 #line 47 "isa/tms320.isa"
 
+#include <iosfwd>
+
 /* code to be inserted at the declaration of the library */
 
 /* Forward declaration of the cpu */
@@ -238,22 +240,22 @@ namespace unisim {
 	} // end of namespace component
 } // end of namespace unisim
 
-#line 242 "isa_tms320.hh"
+#line 244 "isa_tms320.hh"
 namespace unisim { namespace component { namespace cxx { namespace processor { namespace tms320 { namespace isa { namespace tms320 {
 template <
 #line 45 "isa/tms320.isa"
 class
-#line 247 "isa_tms320.hh"
+#line 249 "isa_tms320.hh"
 #line 45 "isa/tms320.isa"
 CONFIG
-#line 250 "isa_tms320.hh"
+#line 252 "isa_tms320.hh"
 ,
 #line 45 "isa/tms320.isa"
 bool
-#line 254 "isa_tms320.hh"
+#line 256 "isa_tms320.hh"
 #line 45 "isa/tms320.isa"
 DEBUG
-#line 257 "isa_tms320.hh"
+#line 259 "isa_tms320.hh"
 >
 class Operation
 {
@@ -266,33 +268,33 @@ public:
 	virtual
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	void
-#line 270 "isa_tms320.hh"
+#line 272 "isa_tms320.hh"
 	disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	CPU<CONFIG, DEBUG> &
-#line 274 "isa_tms320.hh"
+#line 276 "isa_tms320.hh"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	cpu
-#line 277 "isa_tms320.hh"
+#line 279 "isa_tms320.hh"
 	,
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
-	std::stringstream &
-#line 281 "isa_tms320.hh"
+	std::ostream &
+#line 283 "isa_tms320.hh"
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
-	buffer
-#line 284 "isa_tms320.hh"
+	os
+#line 286 "isa_tms320.hh"
 	);
 	virtual
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	void
-#line 289 "isa_tms320.hh"
+#line 291 "isa_tms320.hh"
 	execute(
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	CPU<CONFIG, DEBUG> &
-#line 293 "isa_tms320.hh"
+#line 295 "isa_tms320.hh"
 #line 36 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
 	cpu
-#line 296 "isa_tms320.hh"
+#line 298 "isa_tms320.hh"
 	);
 protected:
 	CodeType encoding;
