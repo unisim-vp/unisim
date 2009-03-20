@@ -195,7 +195,7 @@ public:
 	 * @param   next_addr  The address following the requested instruction.
 	 * @return             The disassembling of the requested instruction address.
 	 */
-	 virtual std::string Disasm(uint64_t addr, address_t &next_addr);
+	 virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
 	
     //===============================================================
 	//= DebugDisasmInterface interface methods                 STOP =

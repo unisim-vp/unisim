@@ -67,22 +67,28 @@ const bool CPU_DEBUG = true;
 const bool CPU_DEBUG = false;
 #endif
 
+// Front Side Bus template parameters
+const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
+const uint32_t FSB_NUM_PROCS = 1;
 typedef unisim::component::cxx::processor::tms320::TMS320VC33_Config CPU_CONFIG;
 typedef unisim::component::tlm2::processor::tms320::TMS320<CPU_CONFIG, CPU_DEBUG, true> CPU;
+typedef unisim::service::loader::coff_loader::CoffLoader<uint64_t> LOADER;
+typedef unisim::service::debug::symbol_table::SymbolTable<uint64_t> SYMBOL_TABLE;
+typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
+typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
+typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
+typedef unisim::service::time::sc_time::ScTime SC_TIME;
+typedef  unisim::service::time::host_time::HostTime HOST_TIME;
 
-typedef unisim::service::loader::coff_loader::CoffLoader<CPU_ADDRESS_TYPE> CoffLoader;
-
-//static const bool DEBUG_INFORMATION = true;
-
-bool debug_enabled;
-
-void EnableDebug() {
-	debug_enabled = true;
-}
-
-void DisableDebug() {
-	debug_enabled = false;
-}
+// bool debug_enabled;
+// 
+// void EnableDebug() {
+// 	debug_enabled = true;
+// }
+// 
+// void DisableDebug() {
+// 	debug_enabled = false;
+// }
 
 void SigIntHandler(int signum) {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
@@ -91,11 +97,6 @@ void SigIntHandler(int signum) {
 
 
 using namespace std;
-using unisim::service::debug::gdb_server::GDBServer;
-using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::service::debug::symbol_table::SymbolTable;
-using unisim::service::time::sc_time::ScTime;
-using unisim::service::time::host_time::HostTime;
 using unisim::kernel::service::ServiceManager;
 using unisim::kernel::service::VariableBase;
 
@@ -127,12 +128,6 @@ void help(char *prog_name) {
 	cerr << " -i" << endl;
 	cerr << "            activate the inline debugger (only active if logger option used)" << endl << endl;
 }
-
-// Front Side Bus template parameters
-typedef CPU_CONFIG::address_t FSB_ADDRESS_TYPE;
-typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
-const uint32_t FSB_NUM_PROCS = 1;
 
 int sc_main(int argc, char *argv[]) {
 
@@ -223,30 +218,28 @@ int sc_main(int argc, char *argv[]) {
 	// 	logger = new LoggerServer("logger");
 	
 	// Time
-	ScTime *time = new ScTime("time");
-	HostTime *host_time = new HostTime("host-time");
+	SC_TIME *time = new SC_TIME("time");
+	HOST_TIME *host_time = new HOST_TIME("host-time");
 	
 	// if(use_logger)
 	// 	logger->time_import >> time->time_export;
 
-	CoffLoader *coff_loader = 0;
-	SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = 0;
-	unisim::component::tlm2::memory::ram::Memory<> *memory = 
-		new unisim::component::tlm2::memory::ram::Memory<>("memory");
-	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = 
-		use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
-	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = 
-		use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	LOADER *loader = 0;
+	SYMBOL_TABLE *symbol_table = 0;
+	MEMORY *memory = new MEMORY("memory");
+	GDB_SERVER *gdb_server = use_gdb_server ? new GDB_SERVER("gdb-server") : 0;
+	INLINE_DEBUGGER *inline_debugger = use_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
 	CPU *cpu = new CPU("cpu"); 
 
 	// Instanciate an COFF loader
-	coff_loader = new CoffLoader("coff-loader");
+	loader = new LOADER("loader");
 	
 	// Instanciate a symbol table to be filled-in by the ELF32 loader
-	symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol_table");
+	symbol_table = new SYMBOL_TABLE("symbol_table");
 
 	// Connect the CPU to the memory
 	cpu->master_socket(memory->slave_sock);
+	cpu->memory_import >> memory->memory_export;
 
 	if(use_inline_debugger) {
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
@@ -264,8 +257,8 @@ int sc_main(int argc, char *argv[]) {
 	}
 
 	// Connect everything
-	coff_loader->memory_import >> memory->memory_export;
-	coff_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
+	loader->memory_import >> memory->memory_export;
+	loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 
@@ -313,7 +306,7 @@ int sc_main(int argc, char *argv[]) {
 
 		double time_start = host_time->GetTime();
 
-		EnableDebug();
+//		EnableDebug();
 		void (*prev_sig_int_handler)(int);
 
 		if(!use_inline_debugger)
@@ -350,7 +343,7 @@ int sc_main(int argc, char *argv[]) {
 	}
 
 
-	if(coff_loader) delete coff_loader;
+	if(loader) delete loader;
 	if(symbol_table) delete symbol_table;
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;

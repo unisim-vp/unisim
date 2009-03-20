@@ -181,6 +181,15 @@ OnDisconnect()
 //===============================================================
 
 //===============================================================
+//= Memory injection interface methods                    START =
+//===============================================================
+
+
+//===============================================================
+//= Memory injection interface methods                     STOP =
+//===============================================================
+
+//===============================================================
 //= Memory access reporting control interface methods     START =
 //===============================================================
 
@@ -281,8 +290,9 @@ GetRegister(const char *name)
 template<class CONFIG, bool DEBUG>
 string 
 CPU<CONFIG, DEBUG> ::
-Disasm(uint64_t addr, address_t &next_addr) 
+Disasm(uint64_t _addr, uint64_t &next_addr) 
 {
+	address_t addr = (address_t) _addr;
 	typename isa::tms320::Operation<CONFIG, DEBUG> *op = NULL;
 	typename CONFIG::insn_t insn;
 	stringstream buffer;
@@ -301,6 +311,7 @@ Disasm(uint64_t addr, address_t &next_addr)
 	insn = LittleEndian2Host(insn);
 	op = decoder.Decode(addr, insn);
 	op->disasm(*this, buffer);
+	next_addr = (addr + 4);
 
 	return buffer.str();
 }

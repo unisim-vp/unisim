@@ -214,6 +214,8 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 		entry_point = file->GetEntryPoint();
 
+		cerr << Object::GetName() << ": program entry point at 0x" << hex << entry_point << dec << endl;
+
 		if(dump_headers)
 		{
 			file->DumpAoutHeader(cerr);
@@ -222,6 +224,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 	else
 	{
 		cerr << Object::GetName() << ": WARNING! File \"" << filename << "\" has no optional header." << endl;
+		cerr << Object::GetName() << ": program entry point is unknown" << endl;
 	}
 
 	unsigned int num_sections = file->GetNumSections();

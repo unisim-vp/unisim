@@ -97,7 +97,7 @@ typedef struct PACKED
 // TI's COFF Optional file header
 typedef struct PACKED
 {
-	uint16_t o_magic;        // magic number (0x108)
+	uint16_t o_magic;        // magic number
 	uint16_t o_vstamp;       // version stamp
 	uint32_t o_tsize;        // text size in bytes, padded to FW bdry
 	uint32_t o_dsize;        // initialized data
@@ -315,6 +315,7 @@ template <class MEMORY_ADDR>
 bool File<MEMORY_ADDR>::ParseAoutHeader(const void *raw_data)
 {
 	const aouthdr *hdr = (const aouthdr *) raw_data;
+	if(unisim::util::endian::Target2Host(header_endianness, hdr->o_magic) != AOUT_MAGIC) return false;
 	entry_point = unisim::util::endian::Target2Host(header_endianness, hdr->o_entry);
 	text_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_text_start);
 	data_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_data_start);
