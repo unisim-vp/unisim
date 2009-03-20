@@ -193,8 +193,8 @@ private:
 
 } // end of namespace arm
 } // end of namespace processor
-} // end of namespace tlm
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_HH__
+#endif // __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_HH__

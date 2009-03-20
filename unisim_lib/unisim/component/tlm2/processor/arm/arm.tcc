@@ -32,8 +32,8 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_TCC__
-#define __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_TCC__
+#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_TCC__
+#define __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_TCC__
 
 #include <systemc.h>
 #include <tlm.h>
@@ -836,10 +836,10 @@ PrZeroBlock(address_t addr) {
 
 } // end of namespace arm
 } // end of namespace processor
-} // end of namespace tlm
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
 #undef LOCATION
 
-#endif // __UNISIM_COMPONENT_TLM_PROCESSOR_ARM_TCC__
+#endif // __UNISIM_COMPONENT_TLM2_PROCESSOR_ARM_TCC__
