@@ -81,14 +81,13 @@ CPU<CONFIG, DEBUG> ::
 CPU(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
-	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
+	Client<DebugControl<uint64_t> >(name, parent),
+	Client<MemoryAccessReporting<uint64_t> >(name, parent),
 	Service<MemoryAccessReportingControl> (name, parent),
-	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
+	Service<Disassembly<uint64_t> >(name, parent),
 	Service<Registers>(name, parent),
-	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
-	Service<Memory<typename CONFIG::address_t> >(name, parent),
-	Client<Memory<typename CONFIG::address_t> >(name, parent),
+	Service<Memory<uint64_t> >(name, parent),
+	Client<Memory<uint64_t> >(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_injection_export("memory_injection_export", this),
@@ -352,6 +351,21 @@ StepInstruction()
 {
 	logger << DebugWarning << "TODO: implement StepInstruction" << endl
 		<< LOCATION << EndDebug;
+
+	if(debug_control_import)
+	{
+		do
+		{
+			typename DebugControl<uint64_t>::DebugCommand dbg_cmd;
+
+			dbg_cmd = debug_control_import->FetchDebugCommand(0 /*pc*/);
+	
+			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) break;
+			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL) Stop(0);
+		} while(1);
+	}
+
+	Stop(-1);
 }
 
 template<class CONFIG, bool DEBUG>

@@ -29,45 +29,30 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
- *          Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
-
-#include <inttypes.h>
+#include "unisim/component/tlm2/processor/tms320/tms320.hh"
+#include "unisim/component/tlm2/processor/tms320/tms320.tcc"
+#include "unisim/component/cxx/processor/tms320/config.hh"
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace processor {
 namespace tms320 {
 
-typedef enum {
-	TMS320C30 = 0,
-	TMS320C31,
-	TMS320C32,
-	TMS320VC33
-} Model;
+using unisim::component::cxx::processor::tms320::TMS320VC33_Config;
 
-class TMS320Base {
-public:
-	typedef uint32_t address_t;
-	typedef uint32_t insn_t;
-	static const uint32_t FSB_BURST_SIZE = 32;
-};
+template
+class TMS320<TMS320VC33_Config, false, false>;
 
-class TMS320VC33_Config :
-	public TMS320Base {
-public:
-	static const Model MODEL = TMS320VC33;
-};
+template
+class TMS320<TMS320VC33_Config, false, true>;
 
 } // end of namespace tms320
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
- 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__

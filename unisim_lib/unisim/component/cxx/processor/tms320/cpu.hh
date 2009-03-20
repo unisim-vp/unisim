@@ -74,21 +74,19 @@ using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::Memory;
-using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::util::debug::Register;
 
 template<class CONFIG, bool DEBUG = false>
 class CPU :
-	public Service<MemoryInjection<typename CONFIG::address_t> >,
-	public Client<DebugControl<typename CONFIG::address_t> >,
-	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
+	public Client<DebugControl<uint64_t> >,
+	public Client<MemoryAccessReporting<uint64_t> >,
 	public Service<MemoryAccessReportingControl>,
-	public Service<Disassembly<typename CONFIG::address_t> >,
+	public Service<Disassembly<uint64_t> >,
 	public Service<Registers>,
-	public Service<Memory<typename CONFIG::address_t> >,
-	public Client<Memory<typename CONFIG::address_t> >
+	public Service<Memory<uint64_t> >,
+	public Client<Memory<uint64_t> >
 {
 private:
 	typedef typename CONFIG::address_t address_t;
@@ -114,7 +112,6 @@ public:
 	
 	ServiceExport<Disassembly<uint64_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
-	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
 	ServiceExport<Memory<uint64_t> > memory_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 	
@@ -142,9 +139,6 @@ public:
 	//= Memory injection interface methods                    START =
 	//===============================================================
 	
-	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
-	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
-
     //===============================================================
 	//= Memory injection interface methods                     STOP =
 	//===============================================================
@@ -165,8 +159,8 @@ public:
 	//===============================================================
 
 	virtual void Reset();
-	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
 
     //===============================================================
 	//= Memory interface methods                               STOP =
@@ -200,7 +194,7 @@ public:
 	 * @param   next_addr  The address following the requested instruction.
 	 * @return             The disassembling of the requested instruction address.
 	 */
-	 virtual std::string Disasm(address_t addr, address_t &next_addr);
+	 virtual std::string Disasm(uint64_t addr, address_t &next_addr);
 	
     //===============================================================
 	//= DebugDisasmInterface interface methods                 STOP =
@@ -237,6 +231,7 @@ private:
 	//= Verbose variables, parameters, and methods            START =
 	//===============================================================
 
+protected:
 	bool verbose_all;
 	bool verbose_setup;
 	

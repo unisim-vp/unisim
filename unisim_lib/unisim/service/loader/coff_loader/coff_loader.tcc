@@ -212,10 +212,16 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 			return false;
 		}
 
+		entry_point = file->GetEntryPoint();
+
 		if(dump_headers)
 		{
 			file->DumpAoutHeader(cerr);
 		}
+	}
+	else
+	{
+		cerr << Object::GetName() << ": WARNING! File \"" << filename << "\" has no optional header." << endl;
 	}
 
 	unsigned int num_sections = file->GetNumSections();

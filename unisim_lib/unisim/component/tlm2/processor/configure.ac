@@ -47,6 +47,7 @@ AC_CONFIG_FILES([Makefile])
 
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-processor-arm, arm)
 UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-processor-hcs12x, hcs12x)
+UNISIM_CONFIG_SUBDIR(unisim-component-tlm2-processor-tms320, tms320)
 
 
 # launch the generation of makefiles

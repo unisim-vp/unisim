@@ -40,8 +40,8 @@
 
 #include "unisim/kernel/service/service.hh"
 
-//#include "unisim/component/cxx/processor/tms320/config.hh"
-//#include "unisim/component/tlm2/processor/tms320/tms320.hh"
+#include "unisim/component/cxx/processor/tms320/config.hh"
+#include "unisim/component/tlm2/processor/tms320/tms320.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
@@ -62,11 +62,16 @@
 #endif
 
 #ifdef TMS320_DEBUG
-//	typedef unisim::component::cxx::processor::tms320::TMS320_DebugConfig CPU_CONFIG;
+const bool CPU_DEBUG = true;
 #else
-//	typedef unisim::component::cxx::processor::tms320::TMS320_Config CPU_CONFIG;
+const bool CPU_DEBUG = false;
 #endif
-	
+
+typedef unisim::component::cxx::processor::tms320::TMS320VC33_Config CPU_CONFIG;
+typedef unisim::component::tlm2::processor::tms320::TMS320<CPU_CONFIG, CPU_DEBUG, true> CPU;
+
+typedef unisim::service::loader::coff_loader::CoffLoader<CPU_ADDRESS_TYPE> CoffLoader;
+
 //static const bool DEBUG_INFORMATION = true;
 
 bool debug_enabled;
@@ -89,9 +94,6 @@ using namespace std;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::debug::symbol_table::SymbolTable;
-
-typedef unisim::service::loader::coff_loader::CoffLoader<uint64_t> CoffLoader;
-
 using unisim::service::time::sc_time::ScTime;
 using unisim::service::time::host_time::HostTime;
 using unisim::kernel::service::ServiceManager;
@@ -127,13 +129,8 @@ void help(char *prog_name) {
 }
 
 // Front Side Bus template parameters
-#if 0
 typedef CPU_CONFIG::address_t FSB_ADDRESS_TYPE;
 typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-#else
-typedef uint32_t FSB_ADDRESS_TYPE;
-typedef uint32_t CPU_ADDRESS_TYPE;
-#endif
 const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 const uint32_t FSB_NUM_PROCS = 1;
 
@@ -233,26 +230,22 @@ int sc_main(int argc, char *argv[]) {
 	// 	logger->time_import >> time->time_export;
 
 	CoffLoader *coff_loader = 0;
-	SymbolTable<uint64_t> *symbol_table = 0;
+	SymbolTable<CPU_ADDRESS_TYPE> *symbol_table = 0;
 	unisim::component::tlm2::memory::ram::Memory<> *memory = 
 		new unisim::component::tlm2::memory::ram::Memory<>("memory");
-	GDBServer<uint64_t> *gdb_server = 
-		use_gdb_server ? new GDBServer<uint64_t>("gdb-server") : 0;
-	InlineDebugger<uint64_t> *inline_debugger = 
-		use_inline_debugger ? new InlineDebugger<uint64_t>("inline-debugger") : 0;
-#if 0
-	unisim::component::tlm2::processor::tms320::TMS320<CPU_CONFIG, false> *cpu =
-		new unisim::component::tlm2::processor::tms320::TMS320<CPU_CONFIG, false>("cpu"); 
-#endif
+	GDBServer<CPU_ADDRESS_TYPE> *gdb_server = 
+		use_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
+	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger = 
+		use_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	CPU *cpu = new CPU("cpu"); 
 
 	// Instanciate an COFF loader
 	coff_loader = new CoffLoader("coff-loader");
 	
 	// Instanciate a symbol table to be filled-in by the ELF32 loader
-	symbol_table = new SymbolTable<uint64_t>("symbol_table");
+	symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("symbol_table");
 
 	// Connect the CPU to the memory
-#if 0
 	cpu->master_socket(memory->slave_sock);
 
 	if(use_inline_debugger) {
@@ -269,15 +262,12 @@ int sc_main(int argc, char *argv[]) {
 		gdb_server->registers_import >> cpu->registers_export;
 		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
-#endif
 
 	// Connect everything
 	coff_loader->memory_import >> memory->memory_export;
 	coff_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 
-#if 0
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
-#endif
 
 	if(use_inline_debugger) {
 		inline_debugger->symbol_table_lookup_import >> 
@@ -365,9 +355,7 @@ int sc_main(int argc, char *argv[]) {
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
-#if 0
 	if(cpu) delete cpu;
-#endif
 	if(time) delete time;
 
 #ifdef WIN32
