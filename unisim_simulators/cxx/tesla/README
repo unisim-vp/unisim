@@ -3,13 +3,23 @@ Barra - NVidia G80 functional simulator
  Sylvain Collange (sylvain.collange @ univ-perp.fr), 2009
 
 Barra simulates CUDA programs at the assembly language level (Tesla ISA). Its
-ultimate goal is to provide a 100% bit-accurate simulation, offering the exact
-same behavior as NVidia hardware. It works directly with CUDA executables; no
-source modification nor recompilation is required.
+ultimate goal is to provide a 100% bit-accurate simulation, offering
+bug-for-bug compatibility with NVidia G80-based GPUs. It works directly with
+CUDA executables; no source modification nor recompilation is required. 
 
 Barra is primarily intended as a tool for research on computer architecture,
 although it can also be used to debug, profile and optimize CUDA programs at
 the lowest level.
+
+Publication:
+Sylvain Collange, David Defour, David Parello.
+Barra, a Modular Functional GPU Simulator for GPGPU.
+Technical Report hal-00359342, Université de Perpignan, 2009.
+http://hal.archives-ouvertes.fr/hal-00359342
+
+Download:
+Barra source code can be accessed through the Unisim subversion repository at
+http://unisim.org/site/download/start#subversion_repository
 
 Supported platforms:
 Barra was tested on GNU/Linux i386 and x86_64. It should be easily portable to
@@ -69,18 +79,18 @@ We are working on a script that will automate these manipulations.
   What Is Supported?
 
 Simulator
-* Most integer arithmetic, floating-point arithmetic, logical instructions;
+* Most integer arithmetic, floating-point arithmetic, logical instructions.
 * Memory scatter/gather instructions from/to global and local memory up to
-  32-bit;
-* Basic control flow instructions;
+  32-bit.
+* Basic control flow instructions.
 * Reciprocal, reciprocal square root and transcendental instructions (not
   bit-accurate).
 * Synchronization barrier instruction.
 
 Driver
-* Most of the CUDA Driver API;
-* CUDA runtime API, through NVidia-provided libcudart.so/cudart.dll;
-* Support for cubin files and Fat Executables (through CUDA Runtime);
+* Most of the CUDA Driver API.
+* CUDA runtime API, through NVidia-provided libcudart.so/cudart.dll.
+* Support for cubin files and Fat Executables (through CUDA Runtime).
 * Host <-> Device linear memory copy.
 
 
@@ -111,33 +121,33 @@ time reasonable (as with device emulation mode).
   What Is NOT Currently Supported? (Aka TODO List)
 
 Simulator
-* Some conversion and comparison instructions;
-* 64-bit and 128-bit memory access;
-* Exotic control flow instructions: break, continue;
-* Atomic instructions;
-* Warp vote instructions;
-* Double precision instructions;
-* Texture sampling;
-* Multiple Streaming Multiprocessors (after adding TLM timing, see below);
-* Bit-accurate transcendentals;
+* Some conversion and comparison instructions.
+* 64-bit and 128-bit memory access.
+* Exotic control flow instructions: break, continue.
+* Atomic instructions.
+* Warp vote instructions.
+* Double precision instructions.
+* Texture sampling.
+* Multiple Streaming Multiprocessors (after adding TLM timing, see below).
+* Bit-accurate transcendentals.
 * Run-time checks. As Barra is primarily designed to run valid CUDA benchmarks,
   few safety checks are performed on instruction validity, memory addresses...
   Running an invalid or buggy CUDA program is most likely to result in a
   segmentation fault.
 
 Driver
-* Asynchronous execution;
-* Textures;
-* Arrays;
-* Events;
+* Asynchronous execution.
+* Textures.
+* Arrays.
+* Events.
 
 
   How Fast (Or How Slow) Is It?
 
-In most SDK samples, Barra performs 3 to 10 times slower than source-level
-emulation in debug mode (nvcc --deviceemu), which is itself several orders
-of magnitude slower than execution on a high-end GPU.
-
+Depending on the simulated code, Barra performs from 10 times slower to 10
+times faster than source-level emulation in debug mode (nvcc --deviceemu),
+which is itself several orders of magnitude slower than execution on a
+high-end GPU. 
 
   What We Plan To Do Next
 
@@ -178,6 +188,13 @@ the level of verbosity of traces.
   
 Contact: sylvain.collange @ univ-perp.fr
 Bug reports and comments are welcome.
+
+  Credits
+
+* Sylvain Collange (sylvain.collange @ univ-perp.fr), developer
+* Marc Daumas (marc.daumas @ univ-perp.fr)
+* David Defour (david.defour @ univ-perp.fr)
+* David Parello (david.parello @ univ-perp.fr)
 
 
   Special Thanks
