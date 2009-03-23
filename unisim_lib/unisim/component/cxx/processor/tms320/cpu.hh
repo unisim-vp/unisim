@@ -80,6 +80,26 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::util::debug::Register;
 using std::string;
 
+typedef struct
+{
+	uint32_t lo; // 32 LSB
+	uint8_t hi;  // 8 MSB
+} ext_reg_t;
+
+class ExtendedPrecisionRegisterDebugInterface : public unisim::util::debug::Register
+{
+public:
+	ExtendedPrecisionRegisterDebugInterface(const char *name, ext_reg_t *reg);
+	virtual ~ExtendedPrecisionRegisterDebugInterface();
+	virtual const char *GetName() const;
+	virtual void GetValue(void *buffer) const;
+	virtual void SetValue(const void *buffer);
+	virtual int GetSize() const;
+private:
+	string name;
+	ext_reg_t *reg;
+};
+
 template<class CONFIG, bool DEBUG = false>
 class CPU :
 	public Client<DebugControl<uint64_t> >,
@@ -234,6 +254,98 @@ private:
     //===============================================================
 	//= Verbose variables, parameters, and methods            START =
 	//===============================================================
+
+	//===============================================================
+	//= Registers                                             START =
+	//===============================================================
+
+	// Register machine values (hex)
+	static const unsigned int REG_R0 = 0x00;
+	static const unsigned int REG_R1 = 0x01;
+	static const unsigned int REG_R2 = 0x02;
+	static const unsigned int REG_R3 = 0x03;
+	static const unsigned int REG_R4 = 0x04;
+	static const unsigned int REG_R5 = 0x05;
+	static const unsigned int REG_R6 = 0x06;
+	static const unsigned int REG_R7 = 0x07;
+	static const unsigned int REG_AR0 = 0x08;
+	static const unsigned int REG_AR1 = 0x09;
+	static const unsigned int REG_AR2 = 0x0a;
+	static const unsigned int REG_AR3 = 0x0b;
+	static const unsigned int REG_AR4 = 0x0c;
+	static const unsigned int REG_AR5 = 0x0d;
+	static const unsigned int REG_AR6 = 0x0e;
+	static const unsigned int REG_AR7 = 0x0f;
+	static const unsigned int REG_DP = 0x10;
+	static const unsigned int REG_IR0 = 0x11;
+	static const unsigned int REG_IR1 = 0x12;
+	static const unsigned int REG_BK = 0x13;
+	static const unsigned int REG_SP = 0x14;
+	static const unsigned int REG_ST = 0x15;
+	static const unsigned int REG_IE = 0x16;
+	static const unsigned int REG_IF = 0x17;
+	static const unsigned int REG_IOF = 0x18;
+	static const unsigned int REG_RS = 0x19;
+	static const unsigned int REG_RE = 0x1a;
+	static const unsigned int REG_RC = 0x1b;
+
+	// Registers
+	address_t reg_pc;    // Program counter
+	address_t reg_npc;   // Next program counter (invisible for the programmer)
+	ext_reg_t reg_r[8];  // Extended precision registers
+	uint32_t reg_ar[8];  // Auxiliary registers
+	uint32_t reg_dp;     // Data-page pointer
+	uint32_t reg_ir0;    // Index register 0
+	uint32_t reg_ir1;    // Index register 1
+	uint32_t reg_bk;     // Block-size register
+	uint32_t reg_sp;     // Stack pointer
+	uint32_t reg_st;     // Status register
+	uint32_t reg_ie;     // CPU/DMA interrupt-enable register
+	uint32_t reg_if;     // CPU interrupt flag
+	uint32_t reg_iof;    // I/O flag
+	uint32_t reg_rs;     // Repeat start-address
+	uint32_t reg_re;     // Repeat End-address
+	uint32_t reg_rc;     // Repeat counter
+
+	uint32_t *int_reg_lookup[32];   // Integer register lookup table
+
+public:
+	inline uint32_t GetAR(unsigned int reg_num) const
+	{
+		return reg_ar[reg_num];
+	}
+
+	inline void GetExtReg(unsigned int reg_num, ext_reg_t& value) const
+	{
+		value = reg_r[reg_num];
+	}
+
+	inline bool GetIntReg(unsigned int reg_num, uint32_t& value) const
+	{
+		uint32_t *reg = int_reg_lookup[reg_num];
+		value = *reg;
+		return reg != 0;
+	}
+
+	inline bool SetIntReg(unsigned int reg_num, uint32_t value)
+	{
+		uint32_t *reg = int_reg_lookup[reg_num];
+		*reg = value;
+		return reg != 0;
+	}
+
+	inline uint32_t SetAR(unsigned int reg_num, uint32_t value)
+	{
+		reg_ar[reg_num] = value;
+	}
+
+	inline void SetExtReg(unsigned int reg_num, const ext_reg_t& value)
+	{
+		reg_r[reg_num] = value;
+	}
+
+	inline address_t GetPC() const { return reg_pc; }
+	inline void SetPC(address_t value) { reg_npc = value; }
 
 protected:
 	bool verbose_all;

@@ -104,12 +104,74 @@ CPU(const char *name,
 	verbose_setup(false),
 	param_verbose_setup("verbose-setup", this, verbose_setup)
 {
+	int_reg_lookup[REG_R0] = &reg_r[0].lo;
+	int_reg_lookup[REG_R1] = &reg_r[1].lo;
+	int_reg_lookup[REG_R2] = &reg_r[2].lo;
+	int_reg_lookup[REG_R3] = &reg_r[3].lo;
+	int_reg_lookup[REG_R4] = &reg_r[4].lo;
+	int_reg_lookup[REG_R5] = &reg_r[5].lo;
+	int_reg_lookup[REG_R6] = &reg_r[6].lo;
+	int_reg_lookup[REG_R7] = &reg_r[7].lo;
+	int_reg_lookup[REG_AR0] = &reg_ar[0];
+	int_reg_lookup[REG_AR1] = &reg_ar[1];
+	int_reg_lookup[REG_AR2] = &reg_ar[2];
+	int_reg_lookup[REG_AR3] = &reg_ar[3];
+	int_reg_lookup[REG_AR4] = &reg_ar[4];
+	int_reg_lookup[REG_AR5] = &reg_ar[5];
+	int_reg_lookup[REG_AR6] = &reg_ar[6];
+	int_reg_lookup[REG_AR7] = &reg_ar[7];
+	int_reg_lookup[REG_DP] = &reg_dp;
+	int_reg_lookup[REG_IR0] = &reg_ir0;
+	int_reg_lookup[REG_IR1] = &reg_ir1;
+	int_reg_lookup[REG_BK] = &reg_bk;
+	int_reg_lookup[REG_SP] = &reg_sp;
+	int_reg_lookup[REG_ST] = &reg_st;
+	int_reg_lookup[REG_IE] = &reg_ie;
+	int_reg_lookup[REG_IF] = &reg_if;
+	int_reg_lookup[REG_IOF] = &reg_iof;
+	int_reg_lookup[REG_RS] = &reg_rs;
+	int_reg_lookup[REG_RE] = &reg_re;
+	int_reg_lookup[REG_RC] = &reg_rc;
+
+	unsigned int i;
+	for(i = 0; i < 8; i++)
+	{
+		stringstream sstr;
+		sstr << "R" << i;
+		registers_registry[sstr.str().c_str()] = new ExtendedPrecisionRegisterDebugInterface(sstr.str().c_str(), &reg_r[0]);
+	}
+
+	for(i = 0; i < 8; i++)
+	{
+		stringstream sstr;
+		sstr << "AR" << i;
+		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &reg_ar[0]);
+	}
+
+	registers_registry["IR0"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR0", &reg_ir0);
+	registers_registry["IR1"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR1", &reg_ir1);
+	registers_registry["BK"] = new unisim::util::debug::SimpleRegister<uint32_t>("BK", &reg_bk);
+	registers_registry["SP"] = new unisim::util::debug::SimpleRegister<uint32_t>("SP", &reg_sp);
+	registers_registry["ST"] = new unisim::util::debug::SimpleRegister<uint32_t>("ST", &reg_st);
+	registers_registry["IE"] = new unisim::util::debug::SimpleRegister<uint32_t>("IE", &reg_ie);
+	registers_registry["IF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IF", &reg_if);
+	registers_registry["IOF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IOF", &reg_iof);
+	registers_registry["RS"] = new unisim::util::debug::SimpleRegister<uint32_t>("RS", &reg_rs);
+	registers_registry["RE"] = new unisim::util::debug::SimpleRegister<uint32_t>("RE", &reg_re);
+	registers_registry["RC"] = new unisim::util::debug::SimpleRegister<uint32_t>("RC", &reg_rc);
+
 }
 
 template<class CONFIG, bool DEBUG>
 CPU<CONFIG, DEBUG> ::
 ~CPU() 
 {
+	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		delete reg_iter->second;
+	}
 }
 
 //===============================================================
@@ -265,10 +327,13 @@ Register *
 CPU<CONFIG, DEBUG> ::
 GetRegister(const char *name)
 {
-	if (registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
-	else
-		return NULL;
+	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
+	if(reg_iter != registers_registry.end())
+	{
+		return (*reg_iter).second;
+	}
+
+	return 0;
 }
 
 //===============================================================

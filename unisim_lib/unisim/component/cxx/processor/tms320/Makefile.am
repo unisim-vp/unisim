@@ -7,7 +7,8 @@ lib_LTLIBRARIES = libunisim_component_cxx_processor_tms320.la
 
 libunisim_component_cxx_processor_tms320_la_SOURCES = \
 	cpu_tms320vc33_debug.cc \
-	cpu_tms320vc33.cc
+	cpu_tms320vc33.cc \
+	cpu.cc
 
 include_HEADERS = config.hh \
 	cpu.hh \
