@@ -58,8 +58,26 @@
  * op Bcond(0b011010[6]:b[1]:0b000[3]:0b0[1]:cond[5]:reg_or_disp[16])
  */
  
- op Bcond_reg (0b011010[6]:0b0[1]:0b000[3]:0b0[1]:cond[5]:0[11]:reg[5])
- op Bcond_disp(0b011010[6]:0b1[1]:0b000[3]:0b0[1]:cond[5]:sext<32> imm[16])
+op Bcond_reg (0b011010[6]:0b0[1]:0b000[3]:0b0[1]:cond[5]:0[11]:reg[5])
+
+Bcond_reg.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	const char *reg_name = REG_NAME[reg];
+	
+	if(!cond_name || !reg_name) return false;
+	os << "B" << cond_name << " " << reg_name;
+	return true;
+}
+
+op Bcond_disp(0b011010[6]:0b1[1]:0b000[3]:0b0[1]:cond[5]:sext<32> imm[16])
+
+Bcond_disp.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	
+	if(!cond_name) return false;
+	os << "B" << cond_name << " 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+	return true;
+}
  
 /* end of Bcond (branch conditionally (standard))
  **********************************************************/
@@ -70,7 +88,26 @@
  */
 
 op BcondD_reg (0b011010[6]:0b0[1]:0b000[3]:0b1[1]:cond[5]:0[11]:reg[5])
+
+BcondD_reg.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	const char *reg_name = REG_NAME[reg];
+	
+	if(!cond_name || !reg_name) return false;
+	os << "B" << cond_name << "D " << reg_name;
+	return true;
+}
+
+
 op BcondD_disp(0b011010[6]:0b1[1]:0b000[3]:0b1[1]:cond[5]:sext<32> imm[16])
+
+BcondD_disp.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	
+	if(!cond_name) return false;
+	os << "B" << cond_name << "D 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 12 + (4 * imm)) << dec;
+	return true;
+}
 
 /* end of BcondD (branch conditionally (delayed))
  **********************************************************/
@@ -81,6 +118,11 @@ op BcondD_disp(0b011010[6]:0b1[1]:0b000[3]:0b1[1]:cond[5]:sext<32> imm[16])
  */
  
  op BR(0b0110000[7]:0b0[1]:<32> src[24])
+
+BR.disasm = {
+	os << "BR 0x" << hex << src << dec;
+	return true;
+}
  
 /* end of BR (branch unconditionally (standard))
  **********************************************************/
@@ -90,7 +132,12 @@ op BcondD_disp(0b011010[6]:0b1[1]:0b000[3]:0b1[1]:cond[5]:sext<32> imm[16])
  * op BRD(0b0110000[7]:0b1[1]:src[24])
  */
  
- op BRD(0b0110000[7]:0b1[1]:<32> src[24])
+op BRD(0b0110000[7]:0b1[1]:<32> src[24])
+
+BRD.disasm = {
+	os << "BRD 0x" << hex << src << dec;
+	return true;
+}
  
 /* end of BRD (branch unconditionally (delayed))
  **********************************************************/
@@ -100,7 +147,12 @@ op BcondD_disp(0b011010[6]:0b1[1]:0b000[3]:0b1[1]:cond[5]:sext<32> imm[16])
  * op CALL(0b0110001[7]:0b0[1]:src[24])
  */
  
- op CALL(0b0110001[7]:0b0[1]:<32> src[24])
+op CALL(0b0110001[7]:0b0[1]:<32> src[24])
+
+CALL.disasm = {
+	os << "CALL 0x" << hex << src << dec;
+	return true;
+}
  
 /* end of CALL (call subroutine)
  **********************************************************/
@@ -111,7 +163,25 @@ op BcondD_disp(0b011010[6]:0b1[1]:0b000[3]:0b1[1]:cond[5]:sext<32> imm[16])
  */
 
 op CALLcond_reg (0b011100[6]:0b0[1]:0b0000[4]:cond[5]:0[11]:reg[5])
+
+CALLcond_reg.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	const char *reg_name = REG_NAME[reg];
+	
+	if(!cond_name || !reg_name) return false;
+	os << "CALL" << cond_name << " " << reg_name;
+	return true;
+}
+
 op CALLcond_disp(0b011100[6]:0b1[1]:0b0000[4]:cond[5]:sext<32> imm[16])
+
+CALLcond_disp.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	
+	if(!cond_name) return false;
+	os << "CALL" << cond_name << " 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+	return true;
+}
 
 /* end of CALLcond (call subroutine conditionally)
  **********************************************************/
@@ -122,7 +192,25 @@ op CALLcond_disp(0b011100[6]:0b1[1]:0b0000[4]:cond[5]:sext<32> imm[16])
  */
 
 op DBcond_reg (0b011011[6]:0b0[1]:ar[3]:0b0[1]:cond[5]:0[11]:reg[5])
+
+DBcond_reg.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	const char *reg_name = REG_NAME[reg];
+
+	if(!cond_name || !reg_name) return false;
+	os << "DB" << cond_name << " AR" << ar << ", " << reg_name;
+	return true;
+}
+
 op DBcond_disp(0b011011[6]:0b1[1]:ar[3]:0b0[1]:cond[5]:sext<32> imm[16])
+
+DBcond_disp.disasm = {
+	const char *cond_name = COND_NAME[cond];
+
+	if(!cond_name) return false;
+	os << "DB" << cond_name << " AR" << ar << ", 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+	return true;
+}
 
 /* end of DBcond (decrement and branch conditionally (standard))
  **********************************************************/
@@ -133,7 +221,25 @@ op DBcond_disp(0b011011[6]:0b1[1]:ar[3]:0b0[1]:cond[5]:sext<32> imm[16])
  */
 
 op DBcondD_reg (0b011011[6]:0b0[1]:ar[3]:0b1[1]:cond[5]:0[11]:reg[5])
+
+DBcondD_reg.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	const char *reg_name = REG_NAME[reg];
+
+	if(!cond_name || !reg_name) return false;
+	os << "DB" << cond_name << "D AR" << ar << ", " << reg_name;
+	return true;
+}
+
 op DBcondD_disp(0b011011[6]:0b1[1]:ar[3]:0b1[1]:cond[5]:sext<32> imm[16])
+
+DBcondD_disp.disasm = {
+	const char *cond_name = COND_NAME[cond];
+
+	if(!cond_name) return false;
+	os << "DB" << cond_name << "D AR" << ar << ", 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 12 + (4 * imm)) << dec;
+	return true;
+}
 
 /* end of DBcondD (decrement and branch conditionally (delayed))
  **********************************************************/
@@ -144,7 +250,20 @@ op DBcondD_disp(0b011011[6]:0b1[1]:ar[3]:0b1[1]:cond[5]:sext<32> imm[16])
  */
 
 op IACK_dir  (0b000[3]:0b110110[6]:0b01[2]:0b00000[5]:direct[16])
+
+IACK_dir.disasm = {
+	os << "IACK @0x" << direct;
+	return true;
+}
+
 op IACK_indir(0b000[3]:0b110110[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
+
+IACK_indir.disasm = {
+	string disasm_indir;
+	if(!cpu.DisasmIndir(disasm_indir, mod, ar, disp)) return false;
+	os << "IACK " << disasm_indir;
+	return true;
+}
 
 /* end of IACK (interrupt acknowledge)
  **********************************************************/
@@ -154,7 +273,12 @@ op IACK_indir(0b000[3]:0b110110[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
  * op IDLE(0b000[3]:0b001100[6]:0[23])
  */
  
- op IDLE(0b000[3]:0b001100[6]:0[23])
+op IDLE(0b000[3]:0b001100[6]:0[23])
+
+IDLE.disasm = {
+	os << "IDLE";
+	return true;
+}
  
 /* end of IDLE (idle until interrupt)
  **********************************************************/
@@ -164,8 +288,22 @@ op IACK_indir(0b000[3]:0b110110[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
  * op NOP(0b000[3]:0b011001[6]:g[2]:0b00000[5]:src[16])
  */
 
-op NOP_dir  (0b000[3]:0b011001[6]:0b01[2]:0b00000[5]:direct[16])
+op NOP_reg  (0b000[3]:0b011001[6]:0b00[2]:0b00000[5]:0[11]:reg[5])
+
+NOP_reg.disasm = {
+	
+	os << "NOP";
+	return true;
+}
+
 op NOP_indir(0b000[3]:0b011001[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
+
+NOP_indir.disasm = {
+	string disasm_indir;
+	if(!cpu.DisasmIndir(disasm_indir, mod, ar, disp)) return false;
+	os << "NOP " << disasm_indir;
+	return true;
+}
 
 /* end of NOP (no operation)
  **********************************************************/
@@ -177,6 +315,14 @@ op NOP_indir(0b000[3]:0b011001[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
 
 op RETIcond(0b01111[5]:0b0000[4]:0b00[2]:cond[5]:0[16])
 
+RETIcond.disasm = {
+	const char *cond_name = COND_NAME[cond];
+
+	if(!cond_name) return false;
+	os << "RETI" << cond_name;
+	return true;
+}
+
 /* end of RETIcond (return from interrupt conditionally)
  **********************************************************/
 
@@ -186,6 +332,14 @@ op RETIcond(0b01111[5]:0b0000[4]:0b00[2]:cond[5]:0[16])
  */
 
 op RETScond(0b01111[5]:0b0001[4]:0b00[2]:cond[5]:0[16])
+
+RETScond.disasm = {
+	const char *cond_name = COND_NAME[cond];
+
+	if(!cond_name) return false;
+	os << "RETS" << cond_name;
+	return true;
+}
 
 /* end of RETScond (return form subroutine conditionally)
  **********************************************************/
@@ -197,6 +351,11 @@ op RETScond(0b01111[5]:0b0001[4]:0b00[2]:cond[5]:0[16])
  
 op RPTB(0b01100100[8]:<32> src[24])
 
+RPTB.disasm = {
+	os << "RPTB 0x" << hex << src << dec;
+	return true;
+}
+
 /* end of RPTB (repeat block of instructions)
  **********************************************************/
 
@@ -206,9 +365,37 @@ op RPTB(0b01100100[8]:<32> src[24])
  */
 
 op RPTS_reg  (0b000[3]:0b100111[6]:0b00[2]:0b11011[5]:0[11]:src[5])
+
+RPTS_reg.disasm = {
+	const char *src_reg_name = REG_NAME[src];
+
+	if(!src_reg_name) return false;
+	os << "RPTS " << src_reg_name;
+	return true;
+}
+
 op RPTS_dir  (0b000[3]:0b100111[6]:0b01[2]:0b11011[5]:direct[16])
+
+RPTS_dir.disasm = {
+	os << "RPTS @0x" << hex << direct << dec;
+	return true;
+}
+
 op RPTS_indir(0b000[3]:0b100111[6]:0b10[2]:0b11011[5]:mod[5]:ar[3]:disp[8])
-op RPTS_imm  (0b000[3]:0b100111[6]:0b11[2]:0b11011[5]:sext<32> imm[16])
+
+RPTS_indir.disasm = {
+	string disasm_indir;
+	if(!cpu.DisasmIndir(disasm_indir, mod, ar, disp)) return false;
+	os << "RPTS " << disasm_indir;
+	return true;
+}
+
+op RPTS_imm  (0b000[3]:0b100111[6]:0b11[2]:0b11011[5]:imm[16])
+
+RPTS_imm.disasm = {
+	os << "RPTS @0x" << hex << imm << dec;
+	return true;
+}
 
 /* end of RPTS (repeat single instruction)
  **********************************************************/
@@ -220,6 +407,11 @@ op RPTS_imm  (0b000[3]:0b100111[6]:0b11[2]:0b11011[5]:sext<32> imm[16])
 
 op SWI(0b0110011[7]:0b0000[4]:0[21])
 
+SWI.disasm = {
+	os << "SWI";
+	return true;
+}
+
 /* end of SWI (software interrupt)
  **********************************************************/
 
@@ -229,6 +421,13 @@ op SWI(0b0110011[7]:0b0000[4]:0[21])
  */
 
 op TRAPcond(0b0111010[7]:0b0000[4]:cond[5]:0b01[11]:<32> n[5])
+
+TRAPcond.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	if(!cond_name) return false;
+	os << "TRAP" << cond_name << " " << n;
+	return true;
+}
 
 /* end of TRAPcond (trap conditionally)
  **********************************************************/

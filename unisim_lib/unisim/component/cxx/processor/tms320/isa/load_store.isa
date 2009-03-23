@@ -93,6 +93,7 @@ LDE_imm.disasm = {
 
 	if(!dst_reg_name) return false;
 	os << "LDE " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
+	return true;
 }
 
 /* end of LDE (load floating-point exponent)
@@ -142,6 +143,7 @@ LDF_imm.disasm = {
 
 	if(!dst_reg_name) return false;
 	os << "LDF " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
+	return true;
 }
 
 /* end of LDF (load floating-point value)
@@ -195,6 +197,7 @@ LDFcond_imm.disasm = {
 
 	if(!cond_name || !dst_reg_name) return false;
 	os << "LDF" << cond_name << " " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
+	return true;
 }
 
 /* end of LDFcond (load floating-point value conditionally)
@@ -350,6 +353,7 @@ LDM_imm.disasm = {
 
 	if(!dst_reg_name) return false;
 	os << "LDM " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
+	return true;
 }
 
 /* end of LDM (load floating-point mantissa)
@@ -414,7 +418,7 @@ POPF.disasm = {
  * op PUSH(0b000[3]:0b011110[6]:0b01[2]:src[5]:0[16])
  */
 
-op PUSH(0b000[3]:0b011110[6]:0b01[2]:0b00[2]:src[3]:0[16])
+op PUSH(0b000[3]:0b011110[6]:0b01[2]:src[5]:0[16])
 
 PUSH.disasm = {
 	const char *src_reg_name = REG_NAME[src];
