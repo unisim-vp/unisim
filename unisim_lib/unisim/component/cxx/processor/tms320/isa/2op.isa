@@ -79,13 +79,13 @@
 op ABSF_reg  (0b000[3]:0b000000[6]:0b00[2]:0b00[2]:dst[3]:0[11]:0b00[2]:src[3])
 op ABSF_dir  (0b000[3]:0b000000[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op ABSF_indir(0b000[3]:0b000000[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op ABSF_imm  (0b000[3]:0b000000[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op ABSF_imm  (0b000[3]:0b000000[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 ABSF_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "ABSF " << src_name << ", " << dst_name;
@@ -120,7 +120,7 @@ ABSF_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "ABSF " << imm << ", " << dst_name;
+	os << "ABSF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -141,7 +141,7 @@ ABSI_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "ABSI " << src_name << ", " << dst_name;
@@ -197,7 +197,7 @@ ADDC_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "ADDC " << src_name << ", " << dst_name;
@@ -247,13 +247,13 @@ ADDC_imm.disasm = {
 op ADDF_reg  (0b000[3]:0b000011[6]:0b00[2]:0b00[2]:dst[3]:0[11]:0b00[2]:src[3])
 op ADDF_dir  (0b000[3]:0b000011[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op ADDF_indir(0b000[3]:0b000011[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op ADDF_imm  (0b000[3]:0b000011[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op ADDF_imm  (0b000[3]:0b000011[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 ADDF_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "ADDF " << src_name << ", " << dst_name;
@@ -288,7 +288,7 @@ ADDF_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "ADDF " << imm << ", " << dst_name;
+	os << "ADDF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -310,7 +310,7 @@ ADDI_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "ADDI " << src_name << ", " << dst_name;
@@ -366,7 +366,7 @@ AND_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "AND " << src_name << ", " << dst_name;
@@ -422,7 +422,7 @@ ANDN_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "ANDN " << src_name << ", " << dst_name;
@@ -478,7 +478,7 @@ ASH_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "ASH " << src_name << ", " << dst_name;
@@ -528,13 +528,13 @@ ASH_imm.disasm = {
 op CMPF_reg  (0b000[3]:0b001000[6]:0b00[2]:0b00[2]:dst[3]:0[11]:0b00[2]:src[3])
 op CMPF_dir  (0b000[3]:0b001000[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op CMPF_indir(0b000[3]:0b001000[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op CMPF_imm  (0b000[3]:0b001000[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op CMPF_imm  (0b000[3]:0b001000[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 CMPF_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "CMPF " << src_name << ", " << dst_name;
@@ -569,7 +569,7 @@ CMPF_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "CMPF " << imm << ", " << dst_name;
+	os << "CMPF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -590,7 +590,7 @@ CMPI_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "CMPI " << src_name << ", " << dst_name;
@@ -640,13 +640,13 @@ CMPI_imm.disasm = {
 op FIX_reg  (0b000[3]:0b001010[6]:0b00[2]:dst[5]:0[11]:0b00[2]:src[3])
 op FIX_dir  (0b000[3]:0b001010[6]:0b01[2]:dst[5]:direct[16])
 op FIX_indir(0b000[3]:0b001010[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
-op FIX_imm  (0b000[3]:0b001010[6]:0b11[2]:dst[5]:sext<32> imm[16])
+op FIX_imm  (0b000[3]:0b001010[6]:0b11[2]:dst[5]:imm[16])
 
 FIX_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "FIX " << src_name << ", " << dst_name;
@@ -681,7 +681,7 @@ FIX_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "FIX " << imm << ", " << dst_name;
+	os << "FIX " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -696,13 +696,13 @@ FIX_imm.disasm = {
 op FLOAT_reg  (0b000[3]:0b001011[6]:0b00[2]:0b00[2]:dst[3]:0[11]:0b00[2]:src[3])
 op FLOAT_dir  (0b000[3]:0b001011[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op FLOAT_indir(0b000[3]:0b001011[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op FLOAT_imm  (0b000[3]:0b001011[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op FLOAT_imm  (0b000[3]:0b001011[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 FLOAT_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "FLOAT " << src_name << ", " << dst_name;
@@ -737,7 +737,7 @@ FLOAT_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "FLOAT " << imm << ", " << dst_name;
+	os << "FLOAT " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -758,7 +758,7 @@ LSH_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "LSH " << src_name << ", " << dst_name;
@@ -808,13 +808,13 @@ LSH_imm.disasm = {
 op MPYF_reg  (0b000[3]:0b010100[6]:0b00[2]:0b00[2]:dst[3]:0[11]:0b00[2]:src[3])
 op MPYF_dir  (0b000[3]:0b010100[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op MPYF_indir(0b000[3]:0b010100[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op MPYF_imm  (0b000[3]:0b010100[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op MPYF_imm  (0b000[3]:0b010100[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 MPYF_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "MPYF " << src_name << ", " << dst_name;
@@ -849,7 +849,7 @@ MPYF_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "MPYF " << imm << ", " << dst_name;
+	os << "MPYF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -870,7 +870,7 @@ MPYI_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "MPYI " << src_name << ", " << dst_name;
@@ -926,7 +926,7 @@ NEGB_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "NEGB " << src_name << ", " << dst_name;
@@ -976,13 +976,13 @@ NEGB_imm.disasm = {
 op NEGF_reg  (0b000[3]:0b010111[6]:0b00[2]:0b00[2]:dst[3]:0[11]:0b00[2]:src[3])
 op NEGF_dir  (0b000[3]:0b010111[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op NEGF_indir(0b000[3]:0b010111[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op NEGF_imm  (0b000[3]:0b010111[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op NEGF_imm  (0b000[3]:0b010111[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 NEGF_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "NEGF " << src_name << ", " << dst_name;
@@ -1017,7 +1017,7 @@ NEGF_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "NEGF " << imm << ", " << dst_name;
+	os << "NEGF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -1038,7 +1038,7 @@ NEGI_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "NEGI " << src_name << ", " << dst_name;
@@ -1094,7 +1094,7 @@ NORM_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "NORM " << src_name << ", " << dst_name;
@@ -1150,7 +1150,7 @@ NOT_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "NOT " << src_name << ", " << dst_name;
@@ -1206,7 +1206,7 @@ OR_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "OR " << src_name << ", " << dst_name;
@@ -1262,7 +1262,7 @@ RND_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "RND " << src_name << ", " << dst_name;
@@ -1398,7 +1398,7 @@ SUBB_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "SUBB " << src_name << ", " << dst_name;
@@ -1454,7 +1454,7 @@ SUBC_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "SUBC " << src_name << ", " << dst_name;
@@ -1504,13 +1504,13 @@ SUBC_imm.disasm = {
 op SUBF_reg  (0b000[3]:0b101111[6]:0b00[2]:0b00[2]:dst[3]:0[11]:0b00[2]:src[3])
 op SUBF_dir  (0b000[3]:0b101111[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op SUBF_indir(0b000[3]:0b101111[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op SUBF_imm  (0b000[3]:0b101111[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op SUBF_imm  (0b000[3]:0b101111[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 SUBF_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "SUBF " << src_name << ", " << dst_name;
@@ -1545,7 +1545,7 @@ SUBF_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "SUBF " << imm << ", " << dst_name;
+	os << "SUBF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -1566,7 +1566,7 @@ SUBI_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "SUBI " << src_name << ", " << dst_name;
@@ -1622,7 +1622,7 @@ SUBRB_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "SUBRB " << src_name << ", " << dst_name;
@@ -1672,13 +1672,13 @@ SUBRB_imm.disasm = {
 op SUBRF_reg  (0b000[3]:0b110010[6]:0b00[2]:0b00[2]:dst[3]:0[11]:0b00[2]:src[3])
 op SUBRF_dir  (0b000[3]:0b110010[6]:0b01[2]:0b00[2]:dst[3]:direct[16])
 op SUBRF_indir(0b000[3]:0b110010[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
-op SUBRF_imm  (0b000[3]:0b110010[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op SUBRF_imm  (0b000[3]:0b110010[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
 
 SUBRF_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "SUBRF " << src_name << ", " << dst_name;
@@ -1713,7 +1713,7 @@ SUBRF_imm.disasm = {
 	if (!dst_name)
 		return false;
 
-	os << "SUBRF " << imm << ", " << dst_name;
+	os << "SUBRF " << cpu.DisasmShortFloat(imm) << ", " << dst_name;
 	return true;
 }
 
@@ -1734,7 +1734,7 @@ SUBRI_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "SUBRI " << src_name << ", " << dst_name;
@@ -1790,7 +1790,7 @@ TSTB_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "TSTB " << src_name << ", " << dst_name;
@@ -1846,7 +1846,7 @@ XOR_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
 	const char *src_name = REG_NAME[src];
 	
-	if (!dst_name && !src_name)
+	if (!dst_name || !src_name)
 		return false;
 	
 	os << "XOR " << src_name << ", " << dst_name;
