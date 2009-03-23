@@ -78,6 +78,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::util::debug::Register;
+using std::string;
 
 template<class CONFIG, bool DEBUG = false>
 class CPU :
@@ -195,7 +196,8 @@ public:
 	 * @param   next_addr  The address following the requested instruction.
 	 * @return             The disassembling of the requested instruction address.
 	 */
-	 virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
+	virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
+	bool DisasmIndir(string& s, unsigned int mod, unsigned int ar, unsigned int disp);
 	
     //===============================================================
 	//= DebugDisasmInterface interface methods                 STOP =

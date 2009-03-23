@@ -109,15 +109,28 @@ op LDI_imm  (0b000[3]:0b010000[6]:0b11[2]:dst[5]:sext<32> imm[16])
 op LDIcond_reg  (0b0101[4]:cond[5]:0b00[2]:dst[5]:0[11]:src[5])
 
 LDIcond_reg.disasm = {
-	os << "LDI" << COND_NAME[cond] << " " << REG_NAME[src] << ", " << REG_NAME[dst];
+	const char *cond_name = COND_NAME[cond];
+	const char *src_reg_name = REG_NAME[src];
+	const char *dst_reg_name = REG_NAME[dst];
+	if(!cond_name || !src_reg_name || !dst_reg_name) return false;
+
+	os << "LDI" << cond_name << " " << src_reg_name << ", " << dst_reg_name;
+	return true;
 }
 
 op LDIcond_dir  (0b0101[4]:cond[5]:0b01[2]:dst[5]:direct[16])
 op LDIcond_indir(0b0101[4]:cond[5]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 
-//LDIcond_indir.disasm = {
-//	os << "LDI" << COND_NAME[cond] << " " << 
-//}
+LDIcond_indir.disasm = {
+	string disasm_src_indir;
+	const char *cond_name = COND_NAME[cond];
+	const char *dst_reg_name = REG_NAME[dst];
+
+	if(!cond_name || !dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
+
+	os << "LDI" << cond_name << " " << disasm_src_indir << ", " << dst_reg_name;
+	return true;
+}
 
 op LDIcond_imm  (0b0101[4]:cond[5]:0b11[2]:dst[5]:sext<32> imm[16])
 
@@ -155,10 +168,12 @@ op LDP(0b000[3]:0b010000[6]:0b11[2]:0b10000[5]:0b00000000[8]:src[8])
 op POP(0b000[3]:0b011100[6]:0b01[2]:dst[5]:0[16])
 
 POP.disasm = {
-	if(dst < 28)
-		os << "POP " << REG_NAME[dst];
-	else
-		os << "?";
+	const char *dst_reg_name = REG_NAME[dst];
+
+	if(!dst_reg_name) return false;
+
+	os << "POP " << dst_reg_name;
+	return true;
 }
 
 /* end of POP (pop integer from stack)
@@ -172,10 +187,12 @@ POP.disasm = {
 op POPF(0b000[3]:0b011101[6]:0b01[2]:dst[5]:0[16])
 
 POPF.disasm = {
-	if(dst < 8)
-		os << "POPF " << REG_NAME[dst];
-	else
-		os << "?";
+	const char *dst_reg_name = REG_NAME[dst];
+
+	if(!dst_reg_name) return false;
+
+	os << "POPF " << dst_reg_name;
+	return true;
 }
 
 /* end of POPF (pop floating-point value from stack)
@@ -189,10 +206,12 @@ POPF.disasm = {
 op PUSH(0b000[3]:0b011110[6]:0b01[2]:src[5]:0[16])
 
 PUSH.disasm = {
-	if(src < 28)
-		os << "PUSH " << REG_NAME[src];
-	else
-		os << "?";
+	const char *src_reg_name = REG_NAME[src];
+
+	if(!src_reg_name) return false;
+
+	os << "PUSH " << src_reg_name;
+	return true;
 }
 
 /* end of POPF (pop floating-point value from stack)
@@ -206,10 +225,12 @@ PUSH.disasm = {
 op PUSHF(0b000[3]:0b011111[6]:0b01[2]:src[5]:0[16])
 
 PUSHF.disasm = {
-	if(src < 8)
-		os << "PUSH " << REG_NAME[src];
-	else
-		os << "?";
+	const char *src_reg_name = REG_NAME[src];
+
+	if(!src_reg_name) return false;
+
+	os << "PUSHF " << src_reg_name;
+	return true;
 }
 
 /* end of PUSHF (push floating-point value on stack)

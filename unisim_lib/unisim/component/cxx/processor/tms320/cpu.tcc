@@ -314,10 +314,125 @@ Disasm(uint64_t _addr, uint64_t &next_addr)
 	buffer.width(8); 
 	op = decoder.Decode(addr, insn);
 	buffer << op->GetEncoding() << std::dec << " ";
-	op->disasm(*this, buffer);
+	if(!op->disasm(*this, buffer)) buffer << "?";
 	next_addr = (addr + 4);
 
 	return buffer.str();
+}
+
+template <class CONFIG, bool DEBUG>
+bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int ar, unsigned int disp)
+{
+	stringstream sstr;
+
+	switch(mod)
+	{
+		case 0x00: // 00000
+			sstr << "*+AR" << ar << "("<< disp << ")";
+			s = sstr.str();
+			return true;
+		case 0x01: // 00001
+			sstr << "*-AR" << ar << "("<< disp << ")";
+			s = sstr.str();
+			return true;
+		case 0x02: // 00010
+			sstr << "*++AR" << ar << "("<< disp << ")";
+			s = sstr.str();
+			return true;
+		case 0x03: // 00011
+			sstr << "*--AR" << ar << "("<< disp << ")";
+			s = sstr.str();
+			return true;
+		case 0x04: // 00100
+			sstr << "*AR++" << ar << "("<< disp << ")";
+			s = sstr.str();
+			return true;
+		case 0x05: // 00101
+			sstr << "*AR--" << ar << "("<< disp << ")";
+			s = sstr.str();
+			return true;
+		case 0x06: // 00110
+			sstr << "*AR++" << ar << "("<< disp << ")%";
+			s = sstr.str();
+			return true;
+		case 0x07: // 00111
+			sstr << "*AR--" << ar << "("<< disp << ")%";
+			s = sstr.str();
+			return true;
+		case 0x08: // 01000
+			sstr << "*+AR" << ar << "(IR0)";
+			s = sstr.str();
+			return true;
+		case 0x09: // 01001
+			sstr << "*-AR" << ar << "(IR0)";
+			s = sstr.str();
+			return true;
+		case 0x0a: // 01010
+			sstr << "*++AR" << ar << "(IR0)";
+			s = sstr.str();
+			return true;
+		case 0x0b: // 01011
+			sstr << "*--AR" << ar << "(IR0)";
+			s = sstr.str();
+			return true;
+		case 0x0c: // 01100
+			sstr << "*AR++" << ar << "(IR0)";
+			s = sstr.str();
+			return true;
+		case 0x0d: // 01101
+			sstr << "*AR--" << ar << "(IR0)";
+			s = sstr.str();
+			return true;
+		case 0x0e: // 01110
+			sstr << "*AR++" << ar << "(IR0)%";
+			s = sstr.str();
+			return true;
+		case 0x0f: // 01111
+			sstr << "*AR--" << ar << "(IR0)%";
+			s = sstr.str();
+			return true;
+		case 0x10: // 10000
+			sstr << "*+AR" << ar << "(IR1)";
+			s = sstr.str();
+			return true;
+		case 0x11: // 10001
+			sstr << "*-AR" << ar << "(IR1)";
+			s = sstr.str();
+			return true;
+		case 0x12: // 10010
+			sstr << "*++AR" << ar << "(IR1)";
+			s = sstr.str();
+			return true;
+		case 0x13: // 10011
+			sstr << "*--AR" << ar << "(IR1)";
+			s = sstr.str();
+			return true;
+		case 0x14: // 10100
+			sstr << "*AR++" << ar << "(IR1)";
+			s = sstr.str();
+			return true;
+		case 0x15: // 10101
+			sstr << "*AR--" << ar << "(IR1)";
+			s = sstr.str();
+			return true;
+		case 0x16: // 10110
+			sstr << "*AR++" << ar << "(IR1)%";
+			s = sstr.str();
+			return true;
+		case 0x17: // 10111
+			sstr << "*AR--" << ar << "(IR1)%";
+			s = sstr.str();
+			return true;
+		case 0x18: // 11000
+			sstr << "*AR" << ar;
+			s = sstr.str();
+			return true;
+		case 0x19: // 11001
+			sstr << "*AR" << ar << "++(IR0)B";
+			s = sstr.str();
+			return true;
+	}
+	return false;
 }
 
 //===============================================================

@@ -218,7 +218,7 @@ private:
 };
 
 } } } } } } }
-#line 47 "isa/tms320.isa"
+#line 48 "isa/tms320.isa"
 
 #include <iosfwd>
 
@@ -267,7 +267,7 @@ public:
 	inline const char *GetName() const { return name; }
 	virtual
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"
-	void
+	bool
 #line 272 "isa_tms320.hh"
 	disasm(
 #line 40 "/local/home/gmouchard/unisim/svn/devel/unisim_lib/unisim/component/cxx/processor/tms320/isa/actions_dec.isa"

@@ -40,9 +40,10 @@
 **********************************************/
 
 namespace unisim::component::cxx::processor::tms320::isa::tms320
-big_endian
+little_endian
 address {typename CONFIG::address_t}
 template <{class} {CONFIG}, {bool} {DEBUG}>
+decoder( risc )
 
 decl {
 #include <iosfwd>
@@ -70,6 +71,7 @@ class CPU;
 impl {
 /* code to be included at the beginning of the implementation of the library */
 #include <iostream>
+#include <string>
 #include "unisim/component/cxx/processor/tms320/exception.hh"
 
 namespace unisim {
@@ -82,12 +84,13 @@ using std::ostream;
 using std::hex;
 using std::dec;
 using std::endl;
+using std::string;
 
 static const char *REG_NAME[] = {
 	"R0",  "R1",  "R2",  "R3",  "R4",  "R5",  "R6",  "R7",
 	"AR0", "AR1", "AR2", "AR3", "AR4", "AR5", "AR6", "AR7",
 	"DP", "IR0", "IR1",  "BK",  "SP",  "ST",  "IE",  "IF",
-	"IOF",  "RS",  "RE",  "RC", "#28", "#29", "#30",  "#31"
+	"IOF",  "RS",  "RE",  "RC",    0,     0,     0,     0
 };
 
 static const char *COND_NAME[] = {
@@ -102,7 +105,7 @@ static const char *COND_NAME[] = {
 	"LE",   // 01000
 	"GT",   // 01001
 	"GE",   // 01010
-	"?",    // 01011
+	0,      // 01011
 	"NV",   // 01100
 	"V",    // 01101
 	"NUF",  // 01110
@@ -112,17 +115,17 @@ static const char *COND_NAME[] = {
 	"NLUV", // 10010
 	"LUF",  // 10011
 	"ZUF",  // 10100
-	"?",    // 10101
-	"?",    // 10110
-	"?",    // 10111
-	"?",    // 11000
-	"?",    // 11001
-	"?",    // 11010
-	"?",    // 11011
-	"?",    // 11100
-	"?",    // 11101
-	"?",    // 11110
-    "?",    // 11111
+	0,      // 10101
+	0,      // 10110
+	0,      // 10111
+	0,      // 11000
+	0,      // 11001
+	0,      // 11010
+	0,      // 11011
+	0,      // 11100
+	0,      // 11101
+	0,      // 11110
+    0       // 11111
 };
 
 } // end of namespace tms320

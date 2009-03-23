@@ -316,9 +316,9 @@ bool File<MEMORY_ADDR>::ParseAoutHeader(const void *raw_data)
 {
 	const aouthdr *hdr = (const aouthdr *) raw_data;
 	if(unisim::util::endian::Target2Host(header_endianness, hdr->o_magic) != AOUT_MAGIC) return false;
-	entry_point = unisim::util::endian::Target2Host(header_endianness, hdr->o_entry);
-	text_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_text_start);
-	data_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_data_start);
+	entry_point = unisim::util::endian::Target2Host(header_endianness, hdr->o_entry) * 4;
+	text_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_text_start) * 4;
+	data_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_data_start) * 4;
 	text_size = unisim::util::endian::Target2Host(header_endianness, hdr->o_tsize) * 4;
 	data_size = unisim::util::endian::Target2Host(header_endianness, hdr->o_dsize) * 4;
 	bss_size = (unisim::util::endian::Target2Host(header_endianness, hdr->o_bsize) + 7) / 8;
