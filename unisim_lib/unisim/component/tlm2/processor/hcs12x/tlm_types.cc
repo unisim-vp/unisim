@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,18 +32,7 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
-
-#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_TLM_TYPES_HH__
-#define __UNISIM_COMPONENT_TLM2_PROCESSOR_TLM_TYPES_HH__
-
-#include <inttypes.h>
-#include <string>
-
-#include <tlm.h>
-
-#include "unisim/kernel/tlm2/tlm.hh"
-
-#include <unisim/component/cxx/processor/hcs12x/types.hh>
+#include "unisim/component/tlm2/processor/hcs12x/tlm_types.hh"
 
 namespace unisim {
 namespace component {
@@ -51,75 +40,14 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-using namespace std;
-using namespace tlm;
+template class PWM_Payload<8>;
+template class UNISIM_PWM_ProtocolTypes<8>;
 
-using unisim::kernel::tlm2::ManagedPayload;
+template class ATD_Payload<8>;
+template class UNISIM_ATD_ProtocolTypes<8>;
 
-using unisim::component::cxx::processor::hcs12x::address_t;
-
-struct INT_TRANS_T {
-	uint8_t ipl;
-	address_t vectorAddress;
-} ;
-
-template <uint8_t PWM_SIZE>
-class PWM_Payload : public ManagedPayload
-{
-public:
-	bool pwmChannel[PWM_SIZE];
-
-	std::string serialize() {
-
-		std::stringstream os;
-		os << "[ ";
-		for (int i=0; i<PWM_SIZE; i++) {
-			os << " " << this->pwmChannel[i] << " ";
-		}
-		os << " ]";
-
-		return os.str();
-	}
-};
-
-template <uint8_t PWM_SIZE>
-class UNISIM_PWM_ProtocolTypes
-{
-public:
-  typedef PWM_Payload<PWM_SIZE> tlm_payload_type;
-  typedef tlm_phase tlm_phase_type;
-};
-
-template <uint8_t ATD_SIZE>
-class ATD_Payload : public ManagedPayload
-{
-public:
-	double anPort[ATD_SIZE];
-
-	string serialize() {
-
-		stringstream os;
-		os << "[ ";
-		os.precision(5);
-
-		for (int i=0; i<ATD_SIZE; i++) {
-			os << " " << fixed << this->anPort[i] << " ";
-		}
-		os << " ]";
-
-		return os.str();
-
-	}
-};
-
-template <uint8_t ATD_SIZE>
-class UNISIM_ATD_ProtocolTypes
-{
-public:
-  typedef ATD_Payload<ATD_SIZE> tlm_payload_type;
-  typedef tlm_phase tlm_phase_type;
-};
-
+template class ATD_Payload<16>;
+template class UNISIM_ATD_ProtocolTypes <16>;
 
 } // end of namespace hcs12x
 } // end of namespace processor
@@ -127,4 +55,3 @@ public:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif /*__UNISIM_COMPONENT_TLM2_PROCESSOR_TLM_TYPES_HH__*/
