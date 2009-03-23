@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2008,
+#  Copyright (c) 2009,
 #  Commissariat a l'Energie Atomique (CEA)
 #  All rights reserved.
 #
@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM ARM7TDMI TLM simulator], [1.0],
+AC_INIT([UNISIM TMS320 TLM2 simulator], [1.0],
 	[Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Gilles Mouchard <gilles.mouchard@cea.fr>],
 	[tms320])
 AC_CONFIG_AUX_DIR(config)

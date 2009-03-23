@@ -4,7 +4,7 @@ INCLUDES=-I$(top_srcdir)/../../.. -I$(top_builddir)/../../..
 bin_PROGRAMS = tms320-debug
 
 tms320_debug_SOURCES = main.cc
-tms320_debug_CPPFLAGS = -DARM7TDMI_DEBUG
+tms320_debug_CPPFLAGS = -DTMS320_DEBUG
 
 if COND_release
 bin_PROGRAMS += tms320

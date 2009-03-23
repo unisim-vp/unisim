@@ -95,6 +95,8 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::debug::symbol_table::SymbolTable;
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true>
+	MEMORY;
 // using unisim::service::loader::elf_loader::Elf32Loader;
 
 using unisim::service::time::sc_time::ScTime;
@@ -235,14 +237,14 @@ int sc_main(int argc, char *argv[]) {
 
 	Elf32Loader *elf32_loader = 0;
 	SymbolTable<uint64_t> *symbol_table = 0;
-	unisim::component::tlm2::memory::ram::Memory<> *memory = 
-		new unisim::component::tlm2::memory::ram::Memory<>("memory");
+	MEMORY *memory = 
+		new MEMORY("memory");
 	GDBServer<uint64_t> *gdb_server = 
 		use_gdb_server ? new GDBServer<uint64_t>("gdb-server") : 0;
 	InlineDebugger<uint64_t> *inline_debugger = 
 		use_inline_debugger ? new InlineDebugger<uint64_t>("inline-debugger") : 0;
-	unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, false> *cpu =
-		new unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, false>("cpu"); 
+	unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true> *cpu =
+		new unisim::component::tlm2::processor::arm::ARM<CPU_CONFIG, true>("cpu"); 
 
 	// Instanciate an ELF32 loader
 	elf32_loader = new Elf32Loader("elf32-loader");
