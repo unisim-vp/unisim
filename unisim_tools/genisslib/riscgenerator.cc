@@ -276,9 +276,9 @@ RiscGenerator::insn_fetch_impl( Product_t& _product, char const* _codename ) con
   _product.code( "CodeType %s;\n", _codename );
   _product.code( "Fetch(&%s, addr, sizeof(%s));\n", _codename, _codename );
   _product.code( "#if BYTE_ORDER == LITTLE_ENDIAN\n" );
-  _product.code( "if(!little_endian)\n" );
+  _product.code( "if(!is_little_endian)\n" );
   _product.code( "#else\n" );
-  _product.code( "if(little_endian)\n" );
+  _product.code( "if(is_little_endian)\n" );
   _product.code( "#endif\n" );
   _product.code( "{\n" );
   

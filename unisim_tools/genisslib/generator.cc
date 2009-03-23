@@ -258,7 +258,7 @@ Generator::decoder_decl( Product_t& _product ) const {
   _product.code( " void SetLittleEndian();\n" );
   _product.code( " void SetBigEndian();\n" );
   _product.code( "private:\n" );
-  _product.code( " bool little_endian;\n" );
+  _product.code( " bool is_little_endian;\n" );
   _product.code( " std::vector<DecodeTableEntry" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( " > decode_table;\n" );
@@ -653,12 +653,12 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.code( "Decoder" );
   _product.template_abbrev( isa().m_tparams );
   _product.code( "::Decoder()\n" );
-  _product.code( "{\n" );
-  _product.code( " little_endian = %s;\n", isa().m_little_endian ? "true" : "false" );
-  if( not isa().m_is_subdecoder ) {
-    _product.code( " mru_page = 0;\n" );
+  _product.code( ": is_little_endian( %s )", isa().m_little_endian ? "true" : "false" );
+  if( not isa().m_is_subdecoder)
+    _product.code( ", mru_page( 0 )" );
+  _product.code( "\n{\n" );
+  if( not isa().m_is_subdecoder )
     _product.code( " memset(decode_hash_table, 0, sizeof(decode_hash_table));\n" );
-  }
   
   for( Vect_t<Operation_t>::const_reverse_iterator op = isa().m_operations.rbegin(); op < isa().m_operations.rend(); ++ op ) {
     if( (**op).m_condition ) {
@@ -976,7 +976,7 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.template_abbrev( isa().m_tparams );
   _product.code( "::SetLittleEndian()\n" );
   _product.code( "{\n" );
-  _product.code( " little_endian = true;\n" );
+  _product.code( " is_little_endian = true;\n" );
   _product.code( "}\n\n" );
 
   /*** SetBigEndian() ***/
@@ -985,6 +985,6 @@ Generator::decoder_impl( Product_t& _product ) const {
   _product.template_abbrev( isa().m_tparams );
   _product.code( "::SetBigEndian()\n" );
   _product.code( "{\n" );
-  _product.code( " little_endian = false;\n" );
+  _product.code( " is_little_endian = false;\n" );
   _product.code( "}\n\n" );
 }
