@@ -198,6 +198,7 @@ public:
 	 */
 	virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
 	bool DisasmIndir(string& s, unsigned int mod, unsigned int ar, unsigned int disp);
+	string DisasmShortFloat(uint16_t x);
 	
     //===============================================================
 	//= DebugDisasmInterface interface methods                 STOP =

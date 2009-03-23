@@ -435,6 +435,14 @@ bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int a
 	return false;
 }
 
+template <class CONFIG, bool DEBUG>
+string CPU<CONFIG, DEBUG>::DisasmShortFloat(uint16_t x)
+{
+	stringstream sstr;
+	sstr << "short_float(0x" << hex << x << dec << ")";
+	return sstr.str();
+}
+
 //===============================================================
 //= DebugDisasmInterface interface methods                 STOP =
 //===============================================================

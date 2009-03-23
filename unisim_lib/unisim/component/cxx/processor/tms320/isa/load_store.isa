@@ -86,7 +86,14 @@ LDE_indir.disasm = {
 	return true;
 }
 
-op LDE_imm  (0b000[3]:0b001101[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op LDE_imm  (0b000[3]:0b001101[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
+
+LDE_imm.disasm = {
+	const char *dst_reg_name = REG_NAME[dst];
+
+	if(!dst_reg_name) return false;
+	os << "LDE " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
+}
 
 /* end of LDE (load floating-point exponent)
  *************************************************/
@@ -128,7 +135,14 @@ LDF_indir.disasm = {
 	return true;
 }
 
-op LDF_imm  (0b000[3]:0b001110[6]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op LDF_imm  (0b000[3]:0b001110[6]:0b11[2]:0b00[2]:dst[3]:imm[16])
+
+LDF_imm.disasm = {
+	const char *dst_reg_name = REG_NAME[dst];
+
+	if(!dst_reg_name) return false;
+	os << "LDF " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
+}
 
 /* end of LDF (load floating-point value)
  *************************************************/
@@ -173,7 +187,15 @@ LDFcond_indir.disasm = {
 	return true;
 }
 
-op LDFcond_imm  (0b0100[4]:cond[5]:0b11[2]:0b00[2]:dst[3]:sext<32> imm[16])
+op LDFcond_imm  (0b0100[4]:cond[5]:0b11[2]:0b00[2]:dst[3]:imm[16])
+
+LDFcond_imm.disasm = {
+	const char *cond_name = COND_NAME[cond];
+	const char *dst_reg_name = REG_NAME[dst];
+
+	if(!cond_name || !dst_reg_name) return false;
+	os << "LDF" << cond_name << " " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
+}
 
 /* end of LDFcond (load floating-point value conditionally)
  *************************************************/
@@ -322,6 +344,13 @@ LDM_indir.disasm = {
 }
 
 op LDM_imm  (0b000[3]:0b010010[6]:0b11[2]:0b00[2]:dst[3]:0[4]:imm[12])
+
+LDM_imm.disasm = {
+	const char *dst_reg_name = REG_NAME[dst];
+
+	if(!dst_reg_name) return false;
+	os << "LDM " << cpu.DisasmShortFloat(imm) << ", " << dst_reg_name;
+}
 
 /* end of LDM (load floating-point mantissa)
  *************************************************/
