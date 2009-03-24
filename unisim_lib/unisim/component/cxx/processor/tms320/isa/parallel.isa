@@ -34,6 +34,13 @@
  */
 
 /* List of parallel operations:
+ * - ABSF || STF		absolute value of a floating-point number and store floating-point value
+ * - ABSI || STI		absolute value of an integer and store integer
+ * - ADDF3 || STF		add floating-point values and store floating-point value
+ * - ADDI3 || STI		add integers and store integer
+ * - AND3 || STI		bitwise-logical AND and store integer
+ * - ASH3 || STI		arithmetic shift and store integer
+ * - FIX || STI			convert floating-point value to integer and store integer
  * - FLOAT || STF		convert integer to floating-point value and store floating-point value
  * - LDF || STF			load floating-point value and store floating-point value
  * - LDI || STI			load integer and store integer
@@ -56,6 +63,90 @@
  * - MPYI3 || ADDI3		multiply and add integer
  * - MPYI3 || SUBI3		multiply and subtract integer
  */
+
+/**********************************************************
+ * ABSF || STF (absolute value of a floating-point number and store floating-point value)
+ * op ABSF_STF(0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:dst2[8]:src2[8])
+ */
+
+op ABSF_STF    (0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
+op ABSF_STF_ext(0b11[2]:0b00100[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+
+/*
+ * end of ABSF || STF (absolute value of a floating-point number and store floating-point value)
+ **********************************************************/
+
+/**********************************************************
+ * ABSI || STI (absolute value of an integer and store integer)
+ * op ABSI_STI(0b11[2]:0b00101[5]:dst1[3]:0b000[3]:src3[3]:dst2[8]:src2[8])
+ */
+
+op ABSI_STI    (0b11[2]:0b00101[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
+op ABSI_STI_ext(0b11[2]:0b00101[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+
+/*
+ * end of ABSI || STI (absolute value of an integer and store integer)
+ **********************************************************/
+
+/**********************************************************
+ * ADDF3 || STF (add floating-point values and store floating-point value)
+ * op ADDF3_STF(0b11[2]:0b00110[5]:dst1[3]:src1[3]:src3[3]:dst2[8]:src2[8])
+ */
+
+op ADDF3_STF    (0b11[2]:0b00110[5]:dst1[3]:src1[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
+op ADDF3_STF_ext(0b11[2]:0b00110[5]:dst1[3]:src1[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+
+/*
+ * end of ADDF3 || STF (add floating-point values and store floating-point value)
+ **********************************************************/
+
+/**********************************************************
+ * ADDI3 || STI (add integers and store integer)
+ * op ADDI3_STI(0b11[2]:0b00111[5]:dst1[3]:src1[3]:src3[3]:dst2[8]:src2[8])
+ */
+
+op ADDI3_STI    (0b11[2]:0b00111[5]:dst1[3]:src1[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
+op ADDI3_STI_ext(0b11[2]:0b00111[5]:dst1[3]:src1[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+
+/*
+ * end of ADDI3 || STI (add integers and store integer)
+ **********************************************************/
+
+/**********************************************************
+ * AND3 || STI (bitwise-logical AND and store integer)
+ * op AND3_STI(0b11[2]:0b01000[5]:dst1[3]:src1[3]:src3[3]:dst2[8]:src2[8])
+ */
+
+op AND3_STI    (0b11[2]:0b01000[5]:dst1[3]:src1[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
+op AND3_STI_ext(0b11[2]:0b01000[5]:dst1[3]:src1[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+
+/*
+ * end of AND3 || STI (bitwise-logical AND and store integer)
+ **********************************************************/
+
+/**********************************************************
+ * ASH3 || STI (arithmetic shift and store integer)
+ * op ASH3_STI(0b11[2]:0b01001[5]:dst1[3]:count[3]:src3[3]:dst2[8]:src2[8])
+ */
+
+op ASH3_STI    (0b11[2]:0b01001[5]:dst1[3]:count[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
+op ASH3_STI_ext(0b11[2]:0b01001[5]:dst1[3]:count[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+
+/*
+ * end of ASH3 || STI (arithmetic shift and store integer)
+ **********************************************************/
+
+/**********************************************************
+ * FIX || STI (convert floating-point value to integer and store integer)
+ * op FIX_STI(0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:dst2[8]:src2[8])
+ */
+
+op FIX_STI    (0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:s2_mod[5]:s2_ar[3])
+op FIX_STI_ext(0b11[2]:0b01010[5]:dst1[3]:0b000[3]:src3[3]:d2_mod[5]:d2_ar[3]:0b111[3]:src2[5])
+
+/*
+ * end of FIX || STI (convert floating-point value to integer and store integer)
+ **********************************************************/
 
 /**********************************************************
  * FLOAT || STF (convert integer to floating-point value and store floating-point value)
