@@ -10,7 +10,12 @@ INCLUDE_SUBDIRS=
  
 if COND_hcs12xemu
 SUBDIRS += hcs12xemu
-INCLUDE_SUBDIRS += hcs12x
+INCLUDE_SUBDIRS += hcs12xemu
+endif
+
+if COND_s12x
+SUBDIRS += s12x
+INCLUDE_SUBDIRS += s12x
 endif
 
 if COND_arm7tdmi
