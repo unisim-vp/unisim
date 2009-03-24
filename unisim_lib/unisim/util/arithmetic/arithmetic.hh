@@ -87,6 +87,21 @@ inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_ou
 inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
 inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
 
+inline bool BitScanForward(unsigned int& n, uint32_t v) __attribute__((always_inline));
+inline bool BitScanForward(unsigned int& n, uint64_t v) __attribute__((always_inline));
+
+inline bool BitScanReverse(unsigned int& n, uint32_t v) __attribute__((always_inline));
+inline bool BitScanReverse(unsigned int& n, uint64_t v) __attribute__((always_inline));
+
+inline unsigned int CountLeadingZeros(uint32_t v) __attribute__((always_inline));
+inline unsigned int CountLeadingZeros(uint64_t v) __attribute__((always_inline));
+
+inline unsigned int Log2(uint32_t v) __attribute__((always_inline));
+inline unsigned int Log2(uint64_t v) __attribute__((always_inline));
+
+inline unsigned int CeilLog2(uint32_t v) __attribute__((always_inline));
+inline unsigned int CeilLog2(uint64_t v) __attribute__((always_inline));
+
 #endif
 
 inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t x, uint8_t y, uint8_t carry_in)
@@ -510,6 +525,114 @@ inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 	bit_out = (v >> (n - 1)) & 1;
 	return (v >> n) | (v << (32 - n));
 #endif
+}
+
+inline bool BitScanForward(unsigned int& n, uint32_t v)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	bool notfound;
+	asm("bsf %2, %0\nsetz %1" : "=r" (n), "=qQ" (notfound) : "r" (v) : "cc");
+	return !notfound;
+#else
+	if(!v) return false;
+
+	unsigned int i = 0;
+	if(!(v & 1))
+	{
+		do
+		{
+			i++;
+			v = v >> 1;
+		} while(!(v & 1));
+	}
+	n = i;
+	return true;
+#endif
+}
+
+inline bool BitScanForward(unsigned int& n, uint64_t v)
+{
+	unsigned int tmp_n;
+	if(BitScanForward(tmp_n, (uint32_t) v))
+	{
+		n = tmp_n;
+		return true;
+	}
+	if(BitScanForward(tmp_n, (uint32_t)(v >> 32)))
+	{
+		n = tmp_n + 32;
+		return true;
+	}
+	return false;
+}
+
+inline bool BitScanReverse(unsigned int& n, uint32_t v)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	bool notfound;
+	asm("bsr %2, %0\nsetz %1" : "=r" (n), "=qQ" (notfound) : "r" (v) : "cc");
+	return !notfound;
+#else
+	if(!v) return false;
+
+	unsigned int i = 31;
+	if(!(v & 0x80000000))
+	{
+		do
+		{
+			i--;
+			v = v << 1;
+		} while(!(v & 0x80000000));
+	}
+	n = i;
+	return true;
+#endif
+}
+
+inline bool BitScanReverse(unsigned int& n, uint64_t v)
+{
+	unsigned int tmp_n;
+	if(BitScanReverse(tmp_n, (uint32_t)(v >> 32)))
+	{
+		n = tmp_n + 32;
+		return true;
+	}
+	if(BitScanReverse(tmp_n, (uint32_t) v))
+	{
+		n = tmp_n;
+		return true;
+	}
+	return false;
+}
+
+inline unsigned int CountLeadingZeros(uint32_t v)
+{
+	unsigned int n;
+	return BitScanReverse(n, v) ? 31 - n : 32;
+}
+
+inline unsigned int CountLeadingZeros(uint64_t v)
+{
+	unsigned int n;
+	return BitScanReverse(n, v) ? 63 - n : 64;
+}
+
+inline unsigned int Log2(uint32_t v)
+{
+	unsigned int n;
+	return BitScanReverse(n, v) ? n : 0;
+}
+
+inline unsigned int Log2(uint64_t v)
+{
+	unsigned int n;
+	return BitScanReverse(n, v) ? n : 0;
+}
+
+inline unsigned int CeilLog2(uint64_t v)
+{
+	unsigned int log2v = Log2(v);
+	return (v > (1ULL << log2v)) ? log2v + 1 : log2v;
 }
 
 } // end of namespace arithmetic

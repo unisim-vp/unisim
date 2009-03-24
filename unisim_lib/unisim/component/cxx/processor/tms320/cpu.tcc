@@ -38,6 +38,7 @@
   
 #include "unisim/component/cxx/processor/tms320/cpu.hh"
 #include "unisim/component/cxx/processor/tms320/config.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 #define INLINE __attribute__((always_inline))
@@ -63,6 +64,7 @@ using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::util::endian::Host2LittleEndian;
+using unisim::util::arithmetic::CeilLog2;
 
 using std::endl;
 using std::hex;
@@ -392,107 +394,107 @@ bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int a
 
 	switch(mod)
 	{
-		case 0x00: // 00000
+		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD:
 			sstr << "*+AR" << ar << "("<< disp << ")";
 			s = sstr.str();
 			return true;
-		case 0x01: // 00001
+		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT:
 			sstr << "*-AR" << ar << "("<< disp << ")";
 			s = sstr.str();
 			return true;
-		case 0x02: // 00010
+		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "("<< disp << ")";
 			s = sstr.str();
 			return true;
-		case 0x03: // 00011
+		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "("<< disp << ")";
 			s = sstr.str();
 			return true;
-		case 0x04: // 00100
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY:
 			sstr << "*AR++" << ar << "("<< disp << ")";
 			s = sstr.str();
 			return true;
-		case 0x05: // 00101
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR--" << ar << "("<< disp << ")";
 			s = sstr.str();
 			return true;
-		case 0x06: // 00110
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR++" << ar << "("<< disp << ")%";
 			s = sstr.str();
 			return true;
-		case 0x07: // 00111
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR--" << ar << "("<< disp << ")%";
 			s = sstr.str();
 			return true;
-		case 0x08: // 01000
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD:
 			sstr << "*+AR" << ar << "(IR0)";
 			s = sstr.str();
 			return true;
-		case 0x09: // 01001
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT:
 			sstr << "*-AR" << ar << "(IR0)";
 			s = sstr.str();
 			return true;
-		case 0x0a: // 01010
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "(IR0)";
 			s = sstr.str();
 			return true;
-		case 0x0b: // 01011
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "(IR0)";
 			s = sstr.str();
 			return true;
-		case 0x0c: // 01100
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_MODIFY:
 			sstr << "*AR++" << ar << "(IR0)";
 			s = sstr.str();
 			return true;
-		case 0x0d: // 01101
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR--" << ar << "(IR0)";
 			s = sstr.str();
 			return true;
-		case 0x0e: // 01110
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR++" << ar << "(IR0)%";
 			s = sstr.str();
 			return true;
-		case 0x0f: // 01111
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR--" << ar << "(IR0)%";
 			s = sstr.str();
 			return true;
-		case 0x10: // 10000
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD:
 			sstr << "*+AR" << ar << "(IR1)";
 			s = sstr.str();
 			return true;
-		case 0x11: // 10001
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT:
 			sstr << "*-AR" << ar << "(IR1)";
 			s = sstr.str();
 			return true;
-		case 0x12: // 10010
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "(IR1)";
 			s = sstr.str();
 			return true;
-		case 0x13: // 10011
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "(IR1)";
 			s = sstr.str();
 			return true;
-		case 0x14: // 10100
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_MODIFY:
 			sstr << "*AR++" << ar << "(IR1)";
 			s = sstr.str();
 			return true;
-		case 0x15: // 10101
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR--" << ar << "(IR1)";
 			s = sstr.str();
 			return true;
-		case 0x16: // 10110
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR++" << ar << "(IR1)%";
 			s = sstr.str();
 			return true;
-		case 0x17: // 10111
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR--" << ar << "(IR1)%";
 			s = sstr.str();
 			return true;
-		case 0x18: // 11000
+		case MOD_INDIRECT_ADDRESSING:
 			sstr << "*AR" << ar;
 			s = sstr.str();
 			return true;
-		case 0x19: // 11001
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_BIT_REVERSED_MODIFY:
 			sstr << "*AR" << ar << "++(IR0)B";
 			s = sstr.str();
 			return true;
@@ -510,6 +512,127 @@ string CPU<CONFIG, DEBUG>::DisasmShortFloat(uint16_t x)
 
 //===============================================================
 //= DebugDisasmInterface interface methods                 STOP =
+//===============================================================
+
+//===============================================================
+//= Effective address calculation                         START =
+//===============================================================
+
+/** Compute the effective address for indirect addressing mode
+ */
+template<class CONFIG, bool DEBUG>
+bool 
+CPU<CONFIG, DEBUG> ::
+ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar, unsigned int disp)
+{
+	switch(mod)
+	{
+		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD:
+			// mnemonic: *+ARn(disp)
+			ea = reg_ar[ar] + disp;
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT:
+			// mnemonic: *-ARn(disp)
+			ea = reg_ar[ar] - disp;
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD_AND_MODIFY:
+			// mnemonic: *++ARn(disp)
+			ea = reg_ar[ar] + disp;
+			reg_ar[ar] = ea;
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT_AND_MODIFY:
+			// mnemonic: *--ARn(disp)
+			ea = reg_ar[ar] - disp;
+			reg_ar[ar] = ea;
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY:
+			// mnemonic: *ARn++(disp)
+			ea = reg_ar[ar];
+			reg_ar[ar] = reg_ar[ar] + disp;
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
+			// mnemonic: *AR--(disp)
+			ea = reg_ar[ar];
+			reg_ar[ar] = reg_ar[ar] - disp;
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
+			// mnemonic: *ARn++(disp)%
+			{
+				// The code below is just a try to understand circular addressing
+				address_t buffer_start_addr = reg_ar[ar] & ~((1 << CeilLog2(reg_bk)) - 1);
+				address_t k_lsb_mask = ((1 << CeilLog2(reg_bk)) - 1);
+				address_t index = reg_ar[ar] & k_lsb_mask;
+				if(index + disp < 0)
+					reg_ar[ar] = (reg_ar[ar] & ~k_lsb_mask) | (index + disp + reg_bk);
+				else if(index + disp < reg_bk)
+					reg_ar[ar] = (reg_ar[ar] & ~k_lsb_mask) | (index + disp); else
+				if(index + disp >= reg_bk)
+					reg_ar[ar] = (reg_ar[ar] & ~k_lsb_mask) | (index + disp - reg_bk);
+			}
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY:
+			// mnemonic: *ARn--(disp)%
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD:
+			// mnemonic: *+ARn(IR0)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT:
+			// mnemonic: *-ARn(IR0)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD_AND_MODIFY:
+			// mnemonic: *++ARn(IR0)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT_AND_MODIFY:
+			// mnemonic: *--ARn(IR0)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_MODIFY:
+			// mnemonic: *ARn++(IR0)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY:
+			// mnemonic: *ARn--(IR0)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY:
+			// mnemonic: *ARn++(IR0)%
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_CIRCULAR_MODIFY:
+			// mnemonic: *ARn--(IR0)%
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD:
+			// mnemonic: *+ARn(IR1)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT:
+			// mnemonic: *-ARn(IR1)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD_AND_MODIFY:
+			// mnemonic: *++ARn(IR1)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT_AND_MODIFY:
+			// mnemonic: *--ARn(IR1)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_MODIFY:
+			// mnemonic: *ARn++(IR1)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY:
+			// mnemonic: *ARn--(IR1)
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY:
+			// mnemonic: *ARn++(IR1)%
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_CIRCULAR_MODIFY:
+			// mnemonic: *ARn--(IR1)%
+			return true;
+		case MOD_INDIRECT_ADDRESSING:
+			// mnemonic: *ARn
+			return true;
+		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_BIT_REVERSED_MODIFY:
+			// mnemonic: *ARn++(IR0)B
+			return true;
+	}
+	return false;
+}
+
+//===============================================================
+//= Effective address calculation                          STOP =
 //===============================================================
 
 //===============================================================

@@ -44,6 +44,7 @@ namespace powerpc {
 
 using unisim::util::arithmetic::Add32;
 using unisim::util::arithmetic::RotateLeft;
+using unisim::util::arithmetic::CountLeadingZeros;
 
 inline uint32_t Mask(uint32_t mb, uint32_t me)
 {
@@ -1244,14 +1245,16 @@ cntlzw.execute = {
 	uint32_t s = cpu->GetGPR(rs);
 	
 	// Compute the result
-	uint32_t result = 0;
-	uint32_t m = 1 << 31;
-	while(result < 32)
-	{
-		if(s & m) break;
-		m >>= 1;
-		result++;
-	}
+// 	uint32_t result = 0;
+// 	uint32_t m = 1 << 31;
+// 	while(result < 32)
+// 	{
+// 		if(s & m) break;
+// 		m >>= 1;
+// 		result++;
+// 	}
+
+	uint32_t result = CountLeadingZeros(s);
 	
 	// Write back the result
 	cpu->SetGPR(ra, result);

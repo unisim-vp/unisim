@@ -225,6 +225,53 @@ public:
 	//===============================================================
 
     //===============================================================
+	//= Effective address calculation                         START =
+	//===============================================================
+
+	// Indirect addressing with displacement                                                              mod4-0
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD                            = 0x00; // 00000
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT                      = 0x01; // 00001
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD_AND_MODIFY                 = 0x02; // 00010
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT_AND_MODIFY           = 0x03; // 00011
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY                = 0x04; // 00100
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY          = 0x05; // 00101
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY       = 0x06; // 00110
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY = 0x07; // 00111
+
+	// Indirect addressing with index register IR0
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD                               = 0x08; // 01000
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT                         = 0x09; // 01001
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD_AND_MODIFY                    = 0x0a; // 01010
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT_AND_MODIFY              = 0x0b; // 01011
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_MODIFY                   = 0x0c; // 01100
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY             = 0x0d; // 01101
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY          = 0x0e; // 01110
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_CIRCULAR_MODIFY    = 0x0f; // 01111
+
+	// Indirect addressing with index register IR1
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD                               = 0x10; // 10000
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT                         = 0x11; // 10001
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD_AND_MODIFY                    = 0x12; // 10010
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT_AND_MODIFY              = 0x13; // 10011
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_MODIFY                   = 0x14; // 10100
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY             = 0x15; // 10101
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY          = 0x16; // 10110
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_CIRCULAR_MODIFY    = 0x17; // 10111
+
+	// Indirect addressing (special cases)
+	static const unsigned int MOD_INDIRECT_ADDRESSING                                                     = 0x18; // 11000
+	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_BIT_REVERSED_MODIFY      = 0x19; // 11001
+
+	/** Compute the effective address for indirect addressing mode
+	    @param ea The effective address (output)
+	    @param mod The 5-bit 'mod' instruction bit field
+	    @param mod The 3-bit 'ar' instruction bit field
+	    @param mod The 8-bit 'disp' instruction bit field (sign extended) or an implied 1 displacement
+		@return whether the encoding of mod is valid
+	*/
+	bool ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar, unsigned int disp = 1);
+
+    //===============================================================
 	//= Execution methods                                     START =
 	//===============================================================
 
