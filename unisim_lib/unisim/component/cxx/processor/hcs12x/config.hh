@@ -83,7 +83,6 @@ struct CONFIG {
 	//=            PWM external configuration and constants     =
 	//===========================================================
 
-	static const uint8_t PWM_SIZE	= 8; // The Number Channel
 	static const unsigned int UNISIM2EXTERNAL_BUS_WIDTH = 32; // in bits (unused in this example)
 	static const unsigned int EXTERNAL2UNISIM_BUS_WIDTH = 32; // in bits (unused in this example)
 
