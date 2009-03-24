@@ -472,12 +472,7 @@ int sc_main(int argc, char *argv[])
 	s12xint->toCPU_Initiator(interruptReq);
 	cpu->interruptRequest(interruptReq);
 
-	sc_signal<bool>  gen_interruptReq[128];
-	for (int i=0; i<128; i++) {
-		int_gen->intReq[i](gen_interruptReq[i]);
-
-		s12xint->interrupt_request(gen_interruptReq[i]);
-	}
+	int_gen->interrupt_request(s12xint->interrupt_request);
 
 	mmc->local_socket(internal_router->targ_socket);
 	mmc->external_socket(external_router->targ_socket);
@@ -618,6 +613,7 @@ int sc_main(int argc, char *argv[])
 	if(loaderELF) { delete loaderELF; loaderELF = NULL; }
 
 	if (int_gen) { delete int_gen; int_gen = NULL; }
+
 	if (s12xint) { delete s12xint; s12xint = NULL; }
 	if (mmc) { delete mmc; mmc = NULL; }
 	if(external_memory) { delete external_memory; external_memory = NULL; }
