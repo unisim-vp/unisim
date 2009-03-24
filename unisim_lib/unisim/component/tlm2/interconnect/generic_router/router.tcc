@@ -544,17 +544,17 @@ T_transport_dbg_cb(int id, transaction_type &trans)
 		if (mapping[*it].range_start > trans_addr) {
 			buffer_addr = mapping[*it].range_start;
 			buffer_index = mapping[*it].range_start - trans_addr;
-			if (mapping[*it].range_end > trans_addr + trans_size)
-				buffer_size = (trans_addr + trans_size) - mapping[*it].range_start;
+			if (mapping[*it].range_end >= trans_addr + trans_size - 1)
+				buffer_size = 1 + (trans_addr + trans_size - 1) - mapping[*it].range_start;
 			else
-				buffer_size = mapping[*it].range_end - mapping[*it].range_start;
+				buffer_size = 1 + mapping[*it].range_end - mapping[*it].range_start;
 		} else {
 			buffer_addr = trans_addr;
 			buffer_index = 0;
-			if (mapping[*it].range_end > trans_addr + trans_size)
+			if (mapping[*it].range_end >= trans_addr + trans_size - 1)
 				buffer_size = trans_size;
 			else
-				buffer_size = mapping[*it].range_end - trans_addr;
+				buffer_size = 1 + mapping[*it].range_end - trans_addr;
 		}
 		trans.set_data_ptr(trans_buffer + buffer_index);
 		trans.set_data_length(buffer_size);
@@ -569,14 +569,6 @@ T_transport_dbg_cb(int id, transaction_type &trans)
 	if (trans.is_write())
 		m_rsp_dispatcher[id]->WriteTransportDbg(id, trans);
 	return counter;
-
-//	if (trans.is_read())
-//		return ReadTransportDbg(id, trans);
-//	else
-//		if (trans.is_write())
-//			return WriteTransportDbg(id, trans);
-//	
-//	return 0;
 }
 
 template<class CONFIG>
@@ -597,17 +589,17 @@ ReadTransportDbg(unsigned int id, transaction_type &trans) {
 		if (mapping[*it].range_start > trans_addr) {
 			buffer_addr = mapping[*it].range_start;
 			buffer_index = mapping[*it].range_start - trans_addr;
-			if (mapping[*it].range_end > trans_addr + trans_size)
-				buffer_size = (trans_addr + trans_size) - mapping[*it].range_start;
+			if (mapping[*it].range_end >= trans_addr + trans_size - 1)
+				buffer_size = 1 + (trans_addr + trans_size - 1) - mapping[*it].range_start;
 			else
-				buffer_size = mapping[*it].range_end - mapping[*it].range_start;
+				buffer_size = 1 + mapping[*it].range_end - mapping[*it].range_start;
 		} else {
 			buffer_addr = trans_addr;
 			buffer_index = 0;
-			if (mapping[*it].range_end > trans_addr + trans_size)
+			if (mapping[*it].range_end >= trans_addr + trans_size - 1)
 				buffer_size = trans_size;
 			else
-				buffer_size = mapping[*it].range_end - trans_addr;
+				buffer_size = 1 + mapping[*it].range_end - trans_addr;
 		}
 		trans.set_data_ptr(trans_buffer + buffer_index);
 		trans.set_data_length(buffer_size);
@@ -636,17 +628,17 @@ WriteTransportDbg(unsigned int id, transaction_type &trans) {
 		if (mapping[*it].range_start > trans_addr) {
 			buffer_addr = mapping[*it].range_start;
 			buffer_index = mapping[*it].range_start - trans_addr;
-			if (mapping[*it].range_end > trans_addr + trans_size)
-				buffer_size = (trans_addr + trans_size) - mapping[*it].range_start;
+			if (mapping[*it].range_end >= trans_addr + trans_size - 1)
+				buffer_size = 1 + (trans_addr + trans_size - 1) - mapping[*it].range_start;
 			else
-				buffer_size = mapping[*it].range_end - mapping[*it].range_start;
+				buffer_size = 1 + mapping[*it].range_end - mapping[*it].range_start;
 		} else {
 			buffer_addr = trans_addr;
 			buffer_index = 0;
-			if (mapping[*it].range_end > trans_addr + trans_size)
-				buffer_size = trans_size;
+			if (mapping[*it].range_end >= trans_addr + trans_size - 1)
+				buffer_size = trans_size; 
 			else
-				buffer_size = mapping[*it].range_end - trans_addr;
+				buffer_size = 1 + mapping[*it].range_end - trans_addr;
 		}
 		trans.set_data_ptr(trans_buffer + buffer_index);
 		trans.set_data_length(buffer_size);
@@ -953,7 +945,7 @@ ApplyMap(const transaction_type &trans, unsigned int &port) const
 	unsigned int size = trans.get_data_length();
 	for(unsigned int i = 0; !found && i < MAX_NUM_MAPPINGS; i++) {
 		if(mapping[i].used) {
-			if(address >= mapping[i].range_start && (address + size) < mapping[i].range_end) {
+			if(address >= mapping[i].range_start && (address + size - 1) <= mapping[i].range_end) {
 				found = true;
 				port = mapping[i].output_port;
 			}
@@ -966,7 +958,7 @@ ApplyMap(const transaction_type &trans, unsigned int &port) const
 template<class CONFIG>
 inline void
 Router<CONFIG>::
-ApplyMap(const transaction_type &trans, std::vector<unsigned int> &mappings) const
+ApplyMap(const transaction_type &trans, std::vector<unsigned int> &port_mappings) const
 {
 	sc_dt::uint64 addr = trans.get_address();
 	unsigned int size = trans.get_data_length();
@@ -977,19 +969,18 @@ ApplyMap(const transaction_type &trans, std::vector<unsigned int> &mappings) con
 		bool found = false;
 		for (; !found && index < MAX_NUM_MAPPINGS; index++) {
 			if (mapping[index].used) {
-				if (cur_addr >= mapping[index].range_start && cur_addr < mapping[index].range_end) {
+				if (cur_addr >= mapping[index].range_start && cur_addr <= mapping[index].range_end) {
 					found = true;
-					mappings.push_back(index);
-					if (cur_size <= mapping[index].range_end - cur_addr) {
-						cur_addr = mapping[index].range_end;
-						cur_size = size - (mapping[index].range_end - addr);
+					port_mappings.push_back(index);
+					if (cur_size - 1 <= mapping[index].range_end - cur_addr) {
+						cur_addr = mapping[index].range_end + 1;
+						cur_size = 1 + size - (mapping[index].range_end - addr);
 					} else 
 						cur_addr = addr + size;
 				}
 			}
 		}
 		if (!found) {
-			found = false;
 			sc_dt::uint64 closest_range_start = 0;
 			for (index = 0; index < MAX_NUM_MAPPINGS; index++) {
 				if (mapping[index].used) {
