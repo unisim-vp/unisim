@@ -629,6 +629,12 @@ inline unsigned int Log2(uint64_t v)
 	return BitScanReverse(n, v) ? n : 0;
 }
 
+inline unsigned int CeilLog2(uint32_t v)
+{
+	unsigned int log2v = Log2(v);
+	return (v > (1ULL << log2v)) ? log2v + 1 : log2v;
+}
+
 inline unsigned int CeilLog2(uint64_t v)
 {
 	unsigned int log2v = Log2(v);
