@@ -37,7 +37,7 @@
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
@@ -47,7 +47,7 @@ template class ATD10B <16>;
 
 } // end of namespace hcs12x
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 

@@ -56,7 +56,7 @@
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
@@ -71,6 +71,9 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 
+using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::CONFIG;
+
 using unisim::service::interfaces::Memory;
 
 using unisim::kernel::tlm2::PayloadFabric;
@@ -83,10 +86,12 @@ template <uint8_t ATD_SIZE>
 class ATD10B :
 	public sc_module,
 	virtual public tlm_fw_transport_if<UNISIM_ATD_ProtocolTypes<ATD_SIZE> >,
+	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >
 {
 public:
+
 
 		//=========================================================
 		//=                REGISTERS OFFSETS                      =
@@ -95,6 +100,10 @@ public:
 		enum REGS_OFFSETS {ATDCTL0, ATDCTL1, ATDCTL2, ATDCTL3, ATDCTL4, ATDCTL5,
 			ATDSTAT0, UNIMPL0007, ATDTEST0, ATDTEST1, ATDSTAT2, ATDSTAT1,
 			ATDDIEN0, ATDDIEN1, PORTAD0, PORTAD1, ATDDR0H};
+
+		tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD_SIZE> > anx_socket;
+
+		tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
 		// interface with bus
 		tlm_utils::simple_target_socket<ATD10B> slave_socket;
@@ -114,6 +123,11 @@ public:
 	    virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 		virtual unsigned int transport_dbg(ATD_Payload<ATD_SIZE>& payload);
 		virtual tlm_sync_enum nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
+
+		virtual void b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t);
+		virtual bool get_direct_mem_ptr(ATD_Payload<ATD_SIZE>& payload, tlm_dmi&  dmi_data);
+
+		virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
 		void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
@@ -141,6 +155,8 @@ public:
 protected:
 
 private:
+	tlm_quantumkeeper quantumkeeper;
+	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
 	PayloadFabric<ATD_Payload<ATD_SIZE> > payload_fabric;
 
@@ -188,7 +204,7 @@ private:
 	void sequenceComplete();
 	void setExternalTriggerMode();
 	void setATDClock();
-
+	void assertInterrupt();
 	/**
 	 * Theory
 	 *    AnalogVoltage = (Delta * DigitalToken) + VRL
@@ -236,7 +252,7 @@ private:
 
 } // end of namespace hcs12x
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 

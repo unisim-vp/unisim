@@ -36,7 +36,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/pwm.tcc>
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
@@ -48,7 +48,7 @@ template void PWM<8>::Channel_t::checkChangeStateAndWait<uint16_t>(const sc_time
 
 } // end of namespace hcs12x
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 

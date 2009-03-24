@@ -61,7 +61,22 @@ using unisim::component::cxx::processor::hcs12x::address_t;
 struct INT_TRANS_T {
 	uint8_t ipl;
 	address_t vectorAddress;
-} ;
+};
+
+class XINT_Payload : public ManagedPayload
+{
+public:
+	uint8_t	interrupt_offset;
+
+};
+
+class XINT_REQ_ProtocolTypes
+{
+public:
+  typedef XINT_Payload tlm_payload_type;
+  typedef tlm_phase tlm_phase_type;
+
+};
 
 template <uint8_t PWM_SIZE>
 class PWM_Payload : public ManagedPayload

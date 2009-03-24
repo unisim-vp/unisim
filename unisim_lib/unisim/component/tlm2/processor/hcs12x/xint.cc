@@ -45,28 +45,93 @@ namespace hcs12x {
 
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	sc_module(name),
+	interrupt_request("interrupt_request"),
 	isHardwareInterrupt(false)
 {
 
 	reset();
 
-	fromCPU_Target.register_b_transport(this, &XINT::b_transport);
+	interrupt_request(*this);
+	fromCPU_Target.register_b_transport(this, &XINT::getVectorAddress);
 	slave_socket.register_b_transport(this, &XINT::read_write);
 
 	SC_HAS_PROCESS(XINT);
 
 	SC_THREAD(Run);
-	sensitive << interrupt_request;
+	interrupt_request_event;
+
+	for (int i=0; i<128; i++) {
+		interrupt_flags[i] = false;
+	}
 }
 
 XINT::~XINT() {
 
 }
 
+// Master methods
+void XINT::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	// Leave this empty as it is designed for memory mapped buses
+}
+
+unsigned int XINT::transport_dbg(XINT_Payload& payload)
+{
+	// Leave this empty as it is designed for memory mapped buses
+	return 0;
+}
+
+void XINT::b_transport(XINT_Payload& payload, sc_core::sc_time& t) {
+
+}
+
+bool XINT::get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data) {
+	return false;
+}
+
+tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch(phase)
+	{
+		case BEGIN_REQ:
+			// accepts an interrupt request modeled by payload
+			phase = END_REQ; // update the phase
+
+			interrupt_flags[payload.interrupt_offset/2] = true;
+			cout << "XINT: Receive INT " << payload.interrupt_offset/2 << std::endl;
+
+			interrupt_request_event.notify();
+
+			return TLM_UPDATED;
+		case END_REQ:
+			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
+			sc_stop();
+			wait(); // leave control to the SystemC kernel
+			break;
+		case BEGIN_RESP:
+			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_RESP" << endl;
+			sc_stop();
+			wait(); // leave control to the SystemC kernel
+			break;
+		case END_RESP:
+			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
+			sc_stop();
+			wait(); // leave control to the SystemC kernel
+			break;
+		default:
+			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
+			sc_stop();
+			wait(); // leave control to the SystemC kernel
+			break;
+	}
+
+	return TLM_ACCEPTED;
+}
+
 /*
  *    This method is called to compute the interrupt vector based on currentIPL
  */
-void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
+void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
 
 	// The CPU has taken in account the external interrupt request => disactivate the interrupt request
@@ -82,20 +147,30 @@ void XINT::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 	/*
 	 * Check if it is reset
 	 */
-	if (interrupt_request[XINT::INT_CLK_MONITOR_RESET_OFFSET/2]->read())
+	if (interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2]) {
 		vectorAddress = get_ClockMonitorReset_Vector();
-	else if (interrupt_request[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2]->read())
+		interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2] = false;
+	}
+	else if (interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2]) {
 		vectorAddress = get_COPWatchdogReset_Vector();
-	else if (interrupt_request[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]->read())
+		interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2] = false;
+	}
+	else if (interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]) {
 		vectorAddress = get_IllegalAccessReset_Vector();
-	else if (interrupt_request[XINT::INT_SYS_RESET_OFFSET/2]->read())
+		interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2] = false;
+	}
+	else if (interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2]) {
 		vectorAddress = get_SysReset_Vector();
-	else if (interrupt_request[XINT::INT_XIRQ_OFFSET/2]->read())
+		interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2] = false;
+	}
+	else if (interrupt_flags[XINT::INT_XIRQ_OFFSET/2]) {
 		vectorAddress = get_XIRQ_Vector();
+		interrupt_flags[XINT::INT_XIRQ_OFFSET/2] = false;
+	}
 	else
 		for (int index=cfaddr; index < cfaddr+8; index++) { // Check only the selected interrupts
-			if (interrupt_request[index]->read()) {
-
+			if (interrupt_flags[index]) {
+				interrupt_flags[index] = false;
 				uint8_t dataPriority = int_cfdata[index] && 0x07;
 
 				// if 7-bit=0 then cpu else xgate
@@ -140,10 +215,10 @@ void XINT::Run()
 		 *  Check which interrupt if (reset) setIVBR(0xFF)
 		 */
 
-		if (interrupt_request[XINT::INT_CLK_MONITOR_RESET_OFFSET/2]->read() ||
-				interrupt_request[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2]->read() ||
-				interrupt_request[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]->read() ||
-				interrupt_request[XINT::INT_SYS_RESET_OFFSET/2]->read() )
+		if (interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2] ||
+				interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2] ||
+				interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2] ||
+				interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2] )
 		{
 			setIVBR(0xFF);
 		}
@@ -154,13 +229,6 @@ void XINT::Run()
 
 }
 
-
-address_t XINT::getIntVector(uint8_t index) {
-
-	// TODO:
-
-	return 0;
-}
 
 void XINT::reset() {
 

@@ -36,7 +36,7 @@
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
@@ -45,6 +45,8 @@ template <uint8_t ATD_SIZE>
 ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
+	anx_socket("anx_socket"),
+	slave_socket("slave_socket"),
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	memory_export("memory_export", this),
@@ -70,6 +72,8 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 {
 
+	anx_socket(*this);
+	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ATD10B::read_write);
 
 	SC_HAS_PROCESS(ATD10B);
@@ -101,6 +105,16 @@ unsigned int ATD10B<ATD_SIZE>::transport_dbg(ATD_Payload<ATD_SIZE>& payload)
 {
 	// Leave this empty as it is designed for memory mapped buses
 	return 0;
+}
+
+template <uint8_t ATD_SIZE>
+void ATD10B<ATD_SIZE>::b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t) {
+
+}
+
+template <uint8_t ATD_SIZE>
+bool ATD10B<ATD_SIZE>::get_direct_mem_ptr(ATD_Payload<ATD_SIZE>& payload, tlm_dmi&  dmi_data) {
+	return false;
 }
 
 /**
@@ -348,6 +362,53 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 
 }
 
+// Master methods
+template <uint8_t ATD_SIZE>
+tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	if(phase == BEGIN_RESP)
+	{
+		payload.release();
+		return TLM_COMPLETED;
+	}
+	return TLM_ACCEPTED;
+}
+
+
+template <uint8_t ATD_SIZE>
+void ATD10B<ATD_SIZE>::assertInterrupt() {
+	// assert ATD_SequenceComplete_Interrupt (Offset 0xD0)
+
+	tlm_phase phase = BEGIN_REQ;
+	XINT_Payload *payload = xint_payload_fabric.allocate();
+
+	payload->interrupt_offset = interruptOffset;
+
+	sc_time local_time = quantumkeeper.get_local_time();
+
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
+}
+
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::sequenceComplete() {
 
@@ -364,7 +425,7 @@ void ATD10B<ATD_SIZE>::sequenceComplete() {
 	 *  if ATDCTL2::ASCIE bit is set then assert ATD_SequenceComplete_Interrupt
 	 */
 	if ((atdctl2_register & 0x02) != 0) {
-		// TODO: assert ATD_SequenceComplete_Interrupt (channel ID 0x68)
+		assertInterrupt();
 	}
 }
 
@@ -748,7 +809,7 @@ bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, u
 
 } // end of namespace hcs12x
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 

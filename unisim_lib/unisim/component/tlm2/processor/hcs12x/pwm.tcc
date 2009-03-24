@@ -36,7 +36,7 @@
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
@@ -44,6 +44,8 @@ template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
+	master_sock("master_socket"),
+	slave_socket("slave_socket"),
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	memory_export("memory_export", this),
@@ -72,6 +74,7 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	pwmtst_register = pwmprsc_register = pwmscnta_register = pwmscntb_register = 0;
 
 	master_sock(*this);
+	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
 
 	SC_HAS_PROCESS(PWM);
@@ -137,6 +140,53 @@ bool PWM<PWM_SIZE>::isEmergencyShutdownEnable() {
 	return ((pwmsdn_register & pwn7ena_mask) != 0);
 }
 
+// Master methods
+template <uint8_t PWM_SIZE>
+tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	if(phase == BEGIN_RESP)
+	{
+		payload.release();
+		return TLM_COMPLETED;
+	}
+	return TLM_ACCEPTED;
+}
+
+
+template <uint8_t PWM_SIZE>
+void PWM<PWM_SIZE>::assertInterrupt() {
+	// assert a PWM Emergency Shutdown Interrupt (vector = VectorBase + 0x8C)
+
+	tlm_phase phase = BEGIN_REQ;
+	XINT_Payload *payload = xint_payload_fabric.allocate();
+
+	payload->interrupt_offset = interruptOffset;
+
+	sc_time local_time = quantumkeeper.get_local_time();
+
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
+}
+
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::setPWMInterruptFlag() {
 
@@ -147,7 +197,7 @@ void PWM<PWM_SIZE>::setPWMInterruptFlag() {
 	const uint8_t pwmie_mask = 0x40;
 
 	if ((pwmsdn_register & pwmie_mask) != 0) {
-		// TODO: assert a PWM Emergency Shutdown Interrupt (vector = VectorBase + 0x8C)
+		assertInterrupt();
 	}
 }
 

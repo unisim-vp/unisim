@@ -57,7 +57,7 @@
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
@@ -74,6 +74,9 @@ using unisim::kernel::service::Parameter;
 
 using unisim::service::interfaces::Memory;
 
+using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::CONFIG;
+
 using unisim::kernel::tlm2::PayloadFabric;
 
 using unisim::component::tlm2::processor::hcs12x::UNISIM_PWM_ProtocolTypes;
@@ -83,6 +86,7 @@ template <uint8_t PWM_SIZE>
 class PWM :
 	public sc_module,
 	virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
+	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >
 {
@@ -103,6 +107,9 @@ public:
 						PWMDTY0, PWMDTY1, PWMDTY2, PWMDTY3, PWMDTY4, PWMDTY5, PWMDTY6, PWMDTY7, PWMSDN};
 
 	tlm_initiator_socket<CONFIG::UNISIM2EXTERNAL_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > master_sock;
+
+	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
+
 	// interface with bus
 	tlm_utils::simple_target_socket<PWM> slave_socket;
 
@@ -129,6 +136,9 @@ public:
     //================================================================
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
     virtual tlm_sync_enum nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm_phase& phase, sc_core::sc_time& t);
+
+    virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 	//=====================================================================
@@ -155,6 +165,9 @@ public:
 
 private:
 
+	tlm_quantumkeeper quantumkeeper;
+	PayloadFabric<XINT_Payload> xint_payload_fabric;
+
 	PayloadFabric<PWM_Payload<PWM_SIZE> > payload_fabric;
 
 	clock_t	bus_cycle_time_int;
@@ -177,6 +190,7 @@ private:
 	void updateScaledClockB();
 
 	void refreshOutput(bool pwmValue[PWM_SIZE]);
+	void assertInterrupt();
 
 	uint8_t	pwme_register, pwmpol_register, pwmclk_register, pwmprclk_register;
 	uint8_t pwmcae_register, pwmctl_register;
@@ -240,7 +254,7 @@ private:
 
 } // end of namespace hcs12x
 } // end of namespace processor
-} // end of namespace cxx
+} // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 

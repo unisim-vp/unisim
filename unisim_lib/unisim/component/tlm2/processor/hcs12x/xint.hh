@@ -44,6 +44,7 @@
 #include <cmath>
 
 #include <systemc.h>
+#include "tlm_utils/tlm_quantumkeeper.h"
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_target_socket.h"
@@ -51,17 +52,30 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/kernel/service/service.hh>
 
+#include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using namespace std;
+using namespace tlm;
+using namespace tlm_utils;
+
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::service::Object;
 
-class INT_GEN : public sc_module
+using unisim::component::tlm2::processor::hcs12x::XINT_REQ_ProtocolTypes;
+using unisim::component::tlm2::processor::hcs12x::XINT_Payload;
+
+using unisim::kernel::tlm2::PayloadFabric;
+
+class INT_GEN :
+	public sc_module,
+	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
 {
 public:
 /*
@@ -76,39 +90,87 @@ public:
  * (ivbr + 0x0010)		: Spurious interrupt
  */
 
-	sc_out<bool> intReq[128];
+	tlm_quantumkeeper quantumkeeper;
+	PayloadFabric<XINT_Payload> payload_fabric;
 
-	INT_GEN(const sc_module_name& name, Object *parent = 0) {
+
+	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
+
+	INT_GEN(const sc_module_name& name, Object *parent = 0) : interrupt_request("interrupt_request") {
 		SC_HAS_PROCESS(INT_GEN);
-		SC_THREAD(Run);
+//		SC_THREAD(Run);
+		interrupt_request(*this);
 	}
 
 	virtual ~INT_GEN() {};
 
+    virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
+
+    }
+
+	// Master methods
+	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+	{
+		if(phase == BEGIN_RESP)
+		{
+			payload.release();
+			return TLM_COMPLETED;
+		}
+		return TLM_ACCEPTED;
+	}
+
+
 	void Run() {
-/*
+
 		while (1) {
-			wait(sc_time(100,SC_NS));
 
 			for (int index=0; index<128; index++)
 			{
-				intReq[index] = false; // disable the previous request
+				wait(sc_time(10,SC_NS));
 
-				if (rand() % 19 == 0)
+				tlm_phase phase = BEGIN_REQ;
+				XINT_Payload *payload = payload_fabric.allocate();
+
+				int offset = rand() % 128; // disable the previous request
+				cout << "GEN_INT => " << offset << "\n";
+
+				payload->interrupt_offset = offset;
+
+				sc_time local_time = quantumkeeper.get_local_time();
+
+				tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+
+				switch(ret)
 				{
-					intReq[index] = true;
-					cout << "GEN_INT => " << index << "\n";
+					case TLM_ACCEPTED:
+						// neither payload, nor phase and local_time have been modified by the callee
+						quantumkeeper.sync(); // synchronize to leave control to the callee
+						break;
+					case TLM_UPDATED:
+						// the callee may have modified 'payload', 'phase' and 'local_time'
+						quantumkeeper.set(local_time); // increase the time
+						if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+						break;
+					case TLM_COMPLETED:
+						// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+						quantumkeeper.set(local_time); // increase the time
+						if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+						break;
 				}
 			}
 		}
-*/
+
 	}
 
 private:
 
 };
 
-class XINT : public sc_module
+class XINT :
+	public sc_module,
+	virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
+
 {
 public:
 	//========================================================
@@ -177,8 +239,9 @@ public:
 	 * (ivbr + 0x0010)		: Spurious interrupt
 	 */
 
-	// Interrupt requests
-	sc_port< sc_signal_in_if<bool>, 128>  interrupt_request;
+	// interface with bus
+	tlm_target_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes,0> interrupt_request;
+
 
 	// to connect to CPU
 	sc_out<bool> toCPU_Initiator;
@@ -197,9 +260,17 @@ public:
 
 	void Run(); // Priority Decoder and Interrupt selection
 
-	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+	virtual void getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay );
 
-	address_t getIntVector(uint8_t index);
+
+    //================================================================
+    //=                    tlm2 Interface                            =
+    //================================================================
+    virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	virtual unsigned int transport_dbg(XINT_Payload& payload);
+	virtual tlm_sync_enum nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void b_transport(XINT_Payload& payload, sc_core::sc_time& t);
+	virtual bool get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data);
 
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
@@ -222,6 +293,10 @@ public:
 protected:
 
 private:
+
+	bool	interrupt_flags[128];
+
+	sc_event interrupt_request_event;
 
 	void write(address_t address, uint8_t value);
 	void read(address_t address, uint8_t &value);
