@@ -84,12 +84,12 @@ typedef struct
 {
 	uint32_t lo; // 32 LSB
 	uint8_t hi;  // 8 MSB
-} ext_reg_t;
+} reg_t;
 
 class ExtendedPrecisionRegisterDebugInterface : public unisim::util::debug::Register
 {
 public:
-	ExtendedPrecisionRegisterDebugInterface(const char *name, ext_reg_t *reg);
+	ExtendedPrecisionRegisterDebugInterface(const char *name, reg_t *reg);
 	virtual ~ExtendedPrecisionRegisterDebugInterface();
 	virtual const char *GetName() const;
 	virtual void GetValue(void *buffer) const;
@@ -97,7 +97,7 @@ public:
 	virtual int GetSize() const;
 private:
 	string name;
-	ext_reg_t *reg;
+	reg_t *reg;
 };
 
 template<class CONFIG, bool DEBUG = false>
@@ -217,7 +217,7 @@ public:
 	 * @return             The disassembling of the requested instruction address.
 	 */
 	virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
-	bool DisasmIndir(string& s, unsigned int mod, unsigned int ar, unsigned int disp = 1);
+	bool DisasmIndir(string& s, unsigned int mod, unsigned int ar, uint32_t disp = 1);
 	string DisasmShortFloat(uint16_t x);
 	
     //===============================================================
@@ -269,7 +269,7 @@ public:
 	    @param mod The 8-bit 'disp' instruction bit field (sign extended) or an implied 1 displacement
 		@return whether the encoding of mod is valid
 	*/
-	bool ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar, unsigned int disp = 1);
+	bool ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar, uint32_t disp = 1);
 
     //===============================================================
 	//= Execution methods                                     START =
@@ -336,63 +336,58 @@ private:
 	static const unsigned int REG_RE = 0x1a;
 	static const unsigned int REG_RC = 0x1b;
 
+	static const uint32_t VALID_REGS_MASK = 
+		(1 << REG_R0)  | (1 << REG_R1)  | (1 << REG_R2)  | (1 << REG_R3)  |
+		(1 << REG_R4)  | (1 << REG_R5)  | (1 << REG_R6)  | (1 << REG_R7)  |
+		(1 << REG_AR0) | (1 << REG_AR1) | (1 << REG_AR2) | (1 << REG_AR3) |
+		(1 << REG_AR4) | (1 << REG_AR5) | (1 << REG_AR6) | (1 << REG_AR7) |
+		(1 << REG_DP)  | (1 << REG_IR0) | (1 << REG_IR1) | (1 << REG_BK)  |
+		(1 << REG_SP)  | (1 << REG_ST)  | (1 << REG_IE)  | (1 << REG_IF)  |
+		(1 << REG_IOF) | (1 << REG_RS)  | (1 << REG_RE)  | (1 << REG_RC);
+
 	// Registers
 	address_t reg_pc;    // Program counter
 	address_t reg_npc;   // Next program counter (invisible for the programmer)
-	ext_reg_t reg_r[8];  // Extended precision registers
-	uint32_t reg_ar[8];  // Auxiliary registers
-	uint32_t reg_dp;     // Data-page pointer
-	uint32_t reg_ir0;    // Index register 0
-	uint32_t reg_ir1;    // Index register 1
-	uint32_t reg_bk;     // Block-size register
-	uint32_t reg_sp;     // Stack pointer
-	uint32_t reg_st;     // Status register
-	uint32_t reg_ie;     // CPU/DMA interrupt-enable register
-	uint32_t reg_if;     // CPU interrupt flag
-	uint32_t reg_iof;    // I/O flag
-	uint32_t reg_rs;     // Repeat start-address
-	uint32_t reg_re;     // Repeat End-address
-	uint32_t reg_rc;     // Repeat counter
-
-	uint32_t *int_reg_lookup[32];   // Integer register lookup table
+	reg_t regs[32];
 
 public:
 	inline uint32_t GetAR(unsigned int reg_num) const
 	{
-		return reg_ar[reg_num];
+		return regs[REG_AR0 + reg_num].lo;
 	}
 
-	inline void GetExtReg(unsigned int reg_num, ext_reg_t& value) const
+	inline void GetExtReg(unsigned int reg_num, reg_t& value) const
 	{
-		value = reg_r[reg_num];
+		value = regs[REG_R0 + reg_num];
 	}
 
 	inline bool GetIntReg(unsigned int reg_num, uint32_t& value) const
 	{
-		uint32_t *reg = int_reg_lookup[reg_num];
-		value = *reg;
-		return reg != 0;
+		value = regs[reg_num].lo;
+		return (VALID_REGS_MASK >> reg_num);
 	}
 
 	inline bool SetIntReg(unsigned int reg_num, uint32_t value)
 	{
-		uint32_t *reg = int_reg_lookup[reg_num];
-		*reg = value;
-		return reg != 0;
+		regs[reg_num].lo = value;
+		return (VALID_REGS_MASK >> reg_num);
 	}
 
-	inline uint32_t SetAR(unsigned int reg_num, uint32_t value)
+	inline void SetAR(unsigned int reg_num, uint32_t value)
 	{
-		reg_ar[reg_num] = value;
+		regs[REG_AR0 + reg_num].lo = value;
 	}
 
-	inline void SetExtReg(unsigned int reg_num, const ext_reg_t& value)
+	inline void SetExtReg(unsigned int reg_num, const reg_t& value)
 	{
-		reg_r[reg_num] = value;
+		regs[REG_R0 + reg_num] = value;
 	}
 
 	inline address_t GetPC() const { return reg_pc; }
-	inline void SetPC(address_t value) { reg_npc = value; }
+	inline void SetPC(address_t value) { reg_pc = value; }
+
+	inline address_t GetNPC(address_t value) { return reg_npc; }
+	inline void SetNPC(address_t value) { reg_npc = value; }
 
 protected:
 	bool verbose_all;

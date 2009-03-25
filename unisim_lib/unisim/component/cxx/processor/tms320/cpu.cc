@@ -41,7 +41,7 @@ namespace cxx {
 namespace processor {
 namespace tms320 {
 
-ExtendedPrecisionRegisterDebugInterface::ExtendedPrecisionRegisterDebugInterface(const char *_name, ext_reg_t *_reg)
+ExtendedPrecisionRegisterDebugInterface::ExtendedPrecisionRegisterDebugInterface(const char *_name, reg_t *_reg)
 	: name(_name)
 	, reg(_reg)
 {

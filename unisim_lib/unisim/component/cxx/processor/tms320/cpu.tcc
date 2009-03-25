@@ -106,61 +106,32 @@ CPU(const char *name,
 	verbose_setup(false),
 	param_verbose_setup("verbose-setup", this, verbose_setup)
 {
-	int_reg_lookup[REG_R0] = &reg_r[0].lo;
-	int_reg_lookup[REG_R1] = &reg_r[1].lo;
-	int_reg_lookup[REG_R2] = &reg_r[2].lo;
-	int_reg_lookup[REG_R3] = &reg_r[3].lo;
-	int_reg_lookup[REG_R4] = &reg_r[4].lo;
-	int_reg_lookup[REG_R5] = &reg_r[5].lo;
-	int_reg_lookup[REG_R6] = &reg_r[6].lo;
-	int_reg_lookup[REG_R7] = &reg_r[7].lo;
-	int_reg_lookup[REG_AR0] = &reg_ar[0];
-	int_reg_lookup[REG_AR1] = &reg_ar[1];
-	int_reg_lookup[REG_AR2] = &reg_ar[2];
-	int_reg_lookup[REG_AR3] = &reg_ar[3];
-	int_reg_lookup[REG_AR4] = &reg_ar[4];
-	int_reg_lookup[REG_AR5] = &reg_ar[5];
-	int_reg_lookup[REG_AR6] = &reg_ar[6];
-	int_reg_lookup[REG_AR7] = &reg_ar[7];
-	int_reg_lookup[REG_DP] = &reg_dp;
-	int_reg_lookup[REG_IR0] = &reg_ir0;
-	int_reg_lookup[REG_IR1] = &reg_ir1;
-	int_reg_lookup[REG_BK] = &reg_bk;
-	int_reg_lookup[REG_SP] = &reg_sp;
-	int_reg_lookup[REG_ST] = &reg_st;
-	int_reg_lookup[REG_IE] = &reg_ie;
-	int_reg_lookup[REG_IF] = &reg_if;
-	int_reg_lookup[REG_IOF] = &reg_iof;
-	int_reg_lookup[REG_RS] = &reg_rs;
-	int_reg_lookup[REG_RE] = &reg_re;
-	int_reg_lookup[REG_RC] = &reg_rc;
-
 	unsigned int i;
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "R" << i;
-		registers_registry[sstr.str().c_str()] = new ExtendedPrecisionRegisterDebugInterface(sstr.str().c_str(), &reg_r[0]);
+		registers_registry[sstr.str().c_str()] = new ExtendedPrecisionRegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i]);
 	}
 
 	for(i = 0; i < 8; i++)
 	{
 		stringstream sstr;
 		sstr << "AR" << i;
-		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &reg_ar[0]);
+		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &regs[REG_AR0 + i].lo);
 	}
 
-	registers_registry["IR0"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR0", &reg_ir0);
-	registers_registry["IR1"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR1", &reg_ir1);
-	registers_registry["BK"] = new unisim::util::debug::SimpleRegister<uint32_t>("BK", &reg_bk);
-	registers_registry["SP"] = new unisim::util::debug::SimpleRegister<uint32_t>("SP", &reg_sp);
-	registers_registry["ST"] = new unisim::util::debug::SimpleRegister<uint32_t>("ST", &reg_st);
-	registers_registry["IE"] = new unisim::util::debug::SimpleRegister<uint32_t>("IE", &reg_ie);
-	registers_registry["IF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IF", &reg_if);
-	registers_registry["IOF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IOF", &reg_iof);
-	registers_registry["RS"] = new unisim::util::debug::SimpleRegister<uint32_t>("RS", &reg_rs);
-	registers_registry["RE"] = new unisim::util::debug::SimpleRegister<uint32_t>("RE", &reg_re);
-	registers_registry["RC"] = new unisim::util::debug::SimpleRegister<uint32_t>("RC", &reg_rc);
+	registers_registry["IR0"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR0", &regs[REG_IR0].lo);
+	registers_registry["IR1"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR1", &regs[REG_IR1].lo);
+	registers_registry["BK"] = new unisim::util::debug::SimpleRegister<uint32_t>("BK", &regs[REG_BK].lo);
+	registers_registry["SP"] = new unisim::util::debug::SimpleRegister<uint32_t>("SP", &regs[REG_SP].lo);
+	registers_registry["ST"] = new unisim::util::debug::SimpleRegister<uint32_t>("ST", &regs[REG_ST].lo);
+	registers_registry["IE"] = new unisim::util::debug::SimpleRegister<uint32_t>("IE", &regs[REG_IE].lo);
+	registers_registry["IF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IF", &regs[REG_IF].lo);
+	registers_registry["IOF"] = new unisim::util::debug::SimpleRegister<uint32_t>("IOF", &regs[REG_IOF].lo);
+	registers_registry["RS"] = new unisim::util::debug::SimpleRegister<uint32_t>("RS", &regs[REG_RS].lo);
+	registers_registry["RE"] = new unisim::util::debug::SimpleRegister<uint32_t>("RE", &regs[REG_RE].lo);
+	registers_registry["RC"] = new unisim::util::debug::SimpleRegister<uint32_t>("RC", &regs[REG_RC].lo);
 
 }
 
@@ -388,7 +359,7 @@ Disasm(uint64_t _addr, uint64_t &next_addr)
 }
 
 template <class CONFIG, bool DEBUG>
-bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int ar, unsigned int disp)
+bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int ar, uint32_t disp)
 {
 	stringstream sstr;
 
@@ -523,51 +494,49 @@ string CPU<CONFIG, DEBUG>::DisasmShortFloat(uint16_t x)
 template<class CONFIG, bool DEBUG>
 bool 
 CPU<CONFIG, DEBUG> ::
-ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar, unsigned int disp)
+ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar, uint32_t disp)
 {
 	switch(mod)
 	{
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD:
 			// mnemonic: *+ARn(disp)
-			ea = reg_ar[ar] + disp;
+			ea = regs[REG_AR0 + ar].lo + disp;
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT:
 			// mnemonic: *-ARn(disp)
-			ea = reg_ar[ar] - disp;
+			ea = regs[REG_AR0 + ar].lo - disp;
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD_AND_MODIFY:
 			// mnemonic: *++ARn(disp)
-			ea = reg_ar[ar] + disp;
-			reg_ar[ar] = ea;
+			ea = regs[REG_AR0 + ar].lo + disp;
+			regs[REG_AR0 + ar].lo = ea;
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *--ARn(disp)
-			ea = reg_ar[ar] - disp;
-			reg_ar[ar] = ea;
+			ea = regs[REG_AR0 + ar].lo - disp;
+			regs[REG_AR0 + ar].lo = ea;
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY:
 			// mnemonic: *ARn++(disp)
-			ea = reg_ar[ar];
-			reg_ar[ar] = reg_ar[ar] + disp;
+			ea = regs[REG_AR0 + ar].lo;
+			regs[REG_AR0 + ar].lo = regs[REG_AR0 + ar].lo + disp;
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *AR--(disp)
-			ea = reg_ar[ar];
-			reg_ar[ar] = reg_ar[ar] - disp;
+			ea = regs[REG_AR0 + ar].lo;
+			regs[REG_AR0 + ar].lo = regs[REG_AR0 + ar].lo - disp;
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(disp)%
 			{
 				// The code below is just a try to understand circular addressing
-				address_t buffer_start_addr = reg_ar[ar] & ~((1 << CeilLog2(reg_bk)) - 1);
-				address_t k_lsb_mask = ((1 << CeilLog2(reg_bk)) - 1);
-				address_t index = reg_ar[ar] & k_lsb_mask;
-				if(index + disp < 0)
-					reg_ar[ar] = (reg_ar[ar] & ~k_lsb_mask) | (index + disp + reg_bk);
-				else if(index + disp < reg_bk)
-					reg_ar[ar] = (reg_ar[ar] & ~k_lsb_mask) | (index + disp); else
-				if(index + disp >= reg_bk)
-					reg_ar[ar] = (reg_ar[ar] & ~k_lsb_mask) | (index + disp - reg_bk);
+/*				address_t k_lsb_mask = ((1 << CeilLog2(reg_bk)) - 1);
+				address_t base_addr = regs[REG_AR0 + ar].lo & ~k_lsb_mask;
+				address_t index = regs[REG_AR0 + ar].lo & k_lsb_mask;
+				address_t next_index = index + disp;
+
+				if(next_index > reg_bk)
+					next_index = next_index - reg_bk;*/
 			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY:
