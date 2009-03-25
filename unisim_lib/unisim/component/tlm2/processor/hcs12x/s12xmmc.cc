@@ -56,6 +56,29 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 
+	MMC_REGS_ADDRESSES[0] = 0x000A;
+	MMC_REGS_ADDRESSES[1] = 0x000B;
+	MMC_REGS_ADDRESSES[2] = 0x0010;
+	MMC_REGS_ADDRESSES[3] = 0x0011;
+	MMC_REGS_ADDRESSES[4] = 0x0013;
+	MMC_REGS_ADDRESSES[5] = 0x0016;
+	MMC_REGS_ADDRESSES[6] = 0x0017;
+	MMC_REGS_ADDRESSES[7] = 0x0030;
+	MMC_REGS_ADDRESSES[8] = 0x011C;
+	MMC_REGS_ADDRESSES[9] = 0x011D;
+	MMC_REGS_ADDRESSES[10] = 0x011E;
+	MMC_REGS_ADDRESSES[11] = 0x011F;
+
+
+	deviceMap[0].start_address = 0x0080;
+	deviceMap[0].end_address = 0x00AF;
+
+	deviceMap[1].start_address = 0x0120;
+	deviceMap[1].end_address = 0x012F;
+
+	deviceMap[2].start_address = 0x0300;
+	deviceMap[2].end_address = 0x0327;
+
 /*
 	SC_HAS_PROCESS(S12XMMC);
 	sensitive << cpu_socket;
@@ -84,8 +107,20 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 	MMC_DATA *buffer = (MMC_DATA *) trans.get_data_ptr();
 	tlm::tlm_command cmd = trans.get_command();
 
-	// MMC Registers. To speed-up simulation.
-	if ((logicalAddress >= MMC_LOW_ADDRESS) && (logicalAddress <= MMC_HIGH_ADDRESS)) {
+
+	/**
+	 *  TODO:
+	 *   - remove internal router
+	 *   - use a Device Register Memory Map to identify the read/write target
+	 */
+
+
+	bool find = false;
+	for (int i=0; (i<MMC_SIZE) && !find; i++) {
+		find = (MMC_REGS_ADDRESSES[i] == logicalAddress);
+	}
+
+	if (find) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			*((uint8_t *) buffer->buffer) = inherited::read(logicalAddress);
 		} else {
@@ -94,39 +129,55 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 	} else {
 
-		tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
+		if (logicalAddress <= REG_HIGH_OFFSET) {
+			find = false;
+			for (int i=0; (i<DEVICE_MAP_SIZE) && !find; i++) {
+				find = ((deviceMap[i].start_address <= logicalAddress) && (logicalAddress <= deviceMap[i].end_address));
+			}
 
-		mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
+			if (!find) {
+				cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::endl;
+			}
 
-		mmc_trans->set_data_length( buffer->data_size );
-		mmc_trans->set_streaming_width( buffer->data_size );
-
-		mmc_trans->set_byte_enable_ptr( 0 );
-		mmc_trans->set_dmi_allowed( false );
-		mmc_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-		if (cmd == tlm::TLM_READ_COMMAND) {
-			mmc_trans->set_command( tlm::TLM_READ_COMMAND );
 		} else {
-			mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
+
+			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
+
+			mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
+
+			mmc_trans->set_data_length( buffer->data_size );
+			mmc_trans->set_streaming_width( buffer->data_size );
+
+			mmc_trans->set_byte_enable_ptr( 0 );
+			mmc_trans->set_dmi_allowed( false );
+			mmc_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+			if (cmd == tlm::TLM_READ_COMMAND) {
+				mmc_trans->set_command( tlm::TLM_READ_COMMAND );
+			} else {
+				mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
+			}
+
+			if (isPaged(logicalAddress, 0x00, false)) {
+				physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
+				mmc_trans->set_address( addr );
+				external_socket->b_transport( *mmc_trans, tlm2_btrans_time );
+			} else {
+
+				mmc_trans->set_address( logicalAddress );
+				local_socket->b_transport( *mmc_trans, tlm2_btrans_time );
+
+			}
+
+			if (mmc_trans->is_response_error() ) {
+				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << std::dec << endl;
+				SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
+			}
+
+
+			mmc_trans->release();
+
 		}
-
-		if (isPaged(logicalAddress, 0x00, false)) {
-			physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
-			mmc_trans->set_address( addr );
-			external_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-		} else {
-			mmc_trans->set_address( logicalAddress );
-			local_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-		}
-
-		if (mmc_trans->is_response_error() ) {
-			cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << std::dec << endl;
-			SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
-		}
-
-
-		mmc_trans->release();
 
 	}
 

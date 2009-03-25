@@ -69,13 +69,13 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::PayloadFabric;
 
-class S12XMMC : 
+class S12XMMC :
 	public sc_module,
 	public MMC
 {
 public:
 	typedef MMC inherited;
-	
+
 	tlm_utils::simple_target_socket<S12XMMC> cpu_socket;
 	tlm_utils::simple_initiator_socket<S12XMMC> local_socket;
 	tlm_utils::simple_initiator_socket<S12XMMC> external_socket;
@@ -85,13 +85,23 @@ public:
 
 	void reset();
 
-	void Run(); 
+	void Run();
 
 	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 private:
 	sc_time tlm2_btrans_time;
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+
+	static const uint8_t MMC_SIZE = 12;
+	address_t MMC_REGS_ADDRESSES[MMC_SIZE];
+
+	// TODO: complete by integrating the routing functionality to the MMC
+	static const uint8_t DEVICE_MAP_SIZE = 3;
+	struct {
+		address_t	start_address;
+		address_t	end_address;
+	} deviceMap[3];
 
 }; /* end class S12XMMC */
 
