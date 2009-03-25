@@ -3,11 +3,11 @@ sharedir = $(prefix)/share/unisim_simulators
 SUBDIRS=
 INCLUDE_SUBDIRS=
 
-# if COND_cxx
-# SUBDIRS += cxx
-# INCLUDE_SUBDIRS += cxx
-# endif
-#  
+if COND_cxx
+SUBDIRS += cxx
+INCLUDE_SUBDIRS += cxx
+endif
+
 # if COND_cycle_level
 # SUBDIRS += cycle_level
 # INCLUDE_SUBDIRS += cycle_level
