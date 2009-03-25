@@ -101,9 +101,6 @@ public:
 	static const address_t FLASH_LOW_OFFSET	= 0x4000;
 	static const address_t FLASH_HIGH_OFFSET=0xFFFF;
 
-	static const address_t MMC_LOW_ADDRESS		= 0x000A;
-	static const address_t MMC_HIGH_ADDRESS		= 0x011F;
-
 	static const address_t MMCCTL0_REG_ADDRESS	= 0x000A;
 	static const address_t MMC_MODE_REG_ADDRESS	= 0x000B;
 	static const address_t GPAGE_REG_ADDRESS	= 0x0010;

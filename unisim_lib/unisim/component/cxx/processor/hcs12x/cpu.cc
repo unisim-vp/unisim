@@ -87,8 +87,8 @@ CPU::CPU(const char *name, Object *parent):
 //	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
 	logger_import("logger_import", this),
-	requires_memory_access_reporting(false),
-	requires_finished_instruction_reporting(false),
+	requires_memory_access_reporting(true),
+	requires_finished_instruction_reporting(true),
 	verbose_all(false),
 	verbose_exception(false),
 	verbose_setup(false),
@@ -205,7 +205,7 @@ uint8_t CPU::Step()
 						<< "Fetching debug command (PC = 0x"
 						<< Hex << current_pc << Dec << ")"
 						<< Endl << EndDebugInfo;
-						
+
 				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
@@ -251,6 +251,8 @@ uint8_t CPU::Step()
 						<< "Reporting memory acces for fetch at address 0x"
 						<< Hex << current_pc << Dec
 						<< Endl << EndDebugInfo;
+
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, current_pc, MAX_INS_SIZE);
 			}
 		}
 
@@ -337,7 +339,7 @@ uint8_t CPU::Step()
 	}
 
 	if (instruction_counter >= max_inst) Stop(0);
-	
+
 	return opCycles;
 }
 
@@ -376,7 +378,7 @@ void CPU::queueFill(address_t addr, int position, uint8_t nByte)
 	uint8_t buff[QUEUE_SIZE];
 
 	MMC_DATA mmc_data;
-	
+
 	mmc_data.type = ADDRESS::EXTENDED;
 	mmc_data.isGlobal = false;
 	mmc_data.buffer = buff;
@@ -437,13 +439,13 @@ void CPU::HandleException(const AsynchronousException& exc)
 	uint8_t newIPL = ccr->getIPL();
 	address_t asyncVector = GetIntVector(newIPL);
 
-	if (CONFIG::HAS_RESET && HasReset()) 
+	if (CONFIG::HAS_RESET && HasReset())
 		HandleResetException(asyncVector);
-		
-	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0)) 
+
+	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0))
 		HandleNonMaskableXIRQException(asyncVector, newIPL);
-		
-	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && (ccr->getX() == 0) && (ccr->getI() == 0)) 
+
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && (ccr->getX() == 0) && (ccr->getI() == 0))
 		HandleMaskableIbitException(asyncVector, newIPL);
 
 	// It is necessary to call AckAsynchronousInterrupt() if XIRQ and I-bit interrupt are masked
@@ -518,11 +520,11 @@ void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 
 	if (newIPL > ccr->getIPL()) {
 		PrepareInterrupt();
-	
+
 		ccr->setI();
 		// clear U-bit for CPU12XV2
 		ccr->setIPL(newIPL);
-	
+
 		SetEntryPoint(memRead16(ibitVector));
 	}
 
@@ -633,7 +635,7 @@ void CPU::HandleException(const SpuriousInterrupt& exc)
 
 	uint8_t newIPL = ccr->getIPL();
 
-	address_t spuriousVector = GetIntVector(newIPL); 
+	address_t spuriousVector = GetIntVector(newIPL);
 
 	PrepareInterrupt();
 

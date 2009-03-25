@@ -456,6 +456,9 @@ public:
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report) ;
 
+	inline void MonitorStore(address_t ea, uint32_t size);
+	inline void MonitorLoad(address_t ea, uint32_t size);
+
 	//=====================================================================
 	//=             memory interface methods                              =
 	//=====================================================================
@@ -574,17 +577,38 @@ private:
 // =          MEMORY ACCESS ROUTINES            =
 // ==============================================
 
+inline void CPU::MonitorLoad(address_t ea, uint32_t size)
+{
+	// Memory access reporting
+	if(requires_memory_access_reporting && memory_access_reporting_import)
+	{
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_DATA, ea, size);
+	}
+}
+
+inline void CPU::MonitorStore(address_t ea, uint32_t size)
+{
+	// Memory access reporting
+	if(requires_memory_access_reporting && memory_access_reporting_import)
+	{
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_WRITE, MemoryAccessReporting<service_address_t>::MT_DATA, ea, size);
+	}
+}
+
+
 inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal) {
 
 	uint8_t data;
 	MMC_DATA mmc_data;
-	
+
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
-	
+
 	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
+
+	MonitorLoad(logicalAddress, sizeof(data));
 
 	return data;
 }
@@ -593,15 +617,17 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 
 	uint16_t data;
 	MMC_DATA mmc_data;
-	
+
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
-	
+
 	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
 	data = BigEndian2Host(data);
+
+	MonitorLoad(logicalAddress, sizeof(data));
 
 	return data;
 }
@@ -609,13 +635,15 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 inline void CPU::memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE type, bool isGlobal) {
 
 	MMC_DATA mmc_data;
-	
+
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &val;
 	mmc_data.data_size = 1;
-	
+
 	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+
+	MonitorStore(logicalAddress, sizeof(val));
 
 }
 
@@ -624,13 +652,15 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE
 	MMC_DATA mmc_data;
 
 	val = Host2BigEndian(val);
-	
+
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &val;
 	mmc_data.data_size = 2;
-	
+
 	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
+
+	MonitorStore(logicalAddress, sizeof(val));
 
 }
 
