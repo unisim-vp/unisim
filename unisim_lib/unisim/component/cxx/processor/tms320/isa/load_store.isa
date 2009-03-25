@@ -429,6 +429,25 @@ PUSH.disasm = {
 	return true;
 }
 
+PUSH.execute = {
+	uint32_t src_value;
+
+	// Read the source operand
+	if(!cpu.GetIntReg(src, src_value))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the new SP value
+	typename CONFIG::address_t sp = cpu.GetSP() + 1;
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Store the source operand at SP
+	cpu.IntStore(sp, src_value);
+}
+
 /* end of POPF (pop floating-point value from stack)
  *************************************************/
 

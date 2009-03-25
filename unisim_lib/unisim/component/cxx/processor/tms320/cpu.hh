@@ -47,10 +47,19 @@
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 #include "unisim/component/cxx/processor/tms320/isa_tms320.hh"
 #include "unisim/util/endian/endian.hh"
+#include <stdexcept>
 
 #include <string>
 #include <map>
 #include <inttypes.h>
+
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 #define INLINE __attribute__((always_inline))
@@ -303,6 +312,17 @@ public:
 	//= Execution methods                                      STOP =
 	//===============================================================
 
+    //===============================================================
+	//= Interface with the outside world                      START =
+	//===============================================================
+
+	virtual bool PrWrite(address_t addr, const void *buffer, uint32_t size) = 0;
+	virtual bool PrRead(address_t addr, void *buffer, uint32_t size) = 0;
+
+    //===============================================================
+	//= Interface with the outside world                        END =
+	//===============================================================
+
 private:
 	/** The registers interface for debugging purpose */
 	std::map<std::string, Register *> registers_registry;
@@ -379,6 +399,14 @@ public:
 		return regs[REG_AR0 + reg_num].lo & 0xffffff;
 	}
 
+	/** Get SP[23-0]
+	    @return bits 23-0 of SP
+	*/
+	inline uint32_t GetSP() const
+	{
+		return regs[REG_SP].lo & 0xffffff;
+	}
+
 	inline void GetExtReg(unsigned int reg_num, reg_t& value) const
 	{
 		value = regs[REG_R0 + reg_num];
@@ -405,6 +433,14 @@ public:
 		regs[REG_AR0 + reg_num].lo = (regs[REG_AR0 + reg_num].lo & 0xff000000) | (value & 0xffffff);
 	}
 
+	/** Set SP[23-0] to a new value
+	    @param value the value to write (bits 31-24 are ignored)
+	*/
+	inline void SetSP(uint32_t value)
+	{
+		regs[REG_SP].lo = (regs[REG_SP].lo & 0xff000000) | (value & 0xffffff);
+	}
+
 	inline void SetExtReg(unsigned int reg_num, const reg_t& value)
 	{
 		regs[REG_R0 + reg_num] = value;
@@ -413,7 +449,7 @@ public:
 	inline address_t GetPC() const { return reg_pc; }
 	inline void SetPC(address_t value) { reg_pc = value; }
 
-	inline address_t GetNPC(address_t value) { return reg_npc; }
+	inline address_t GetNPC() const { return reg_npc; }
 	inline void SetNPC(address_t value) { reg_npc = value; }
 
 	inline uint32_t GetBK() const { return regs[REG_BK].lo; }
@@ -428,6 +464,9 @@ public:
 	*/
 	inline uint32_t GetIR1() const { return regs[REG_IR1].lo & 0xffffff; }
 
+	inline void IntStore(address_t ea, uint32_t value);
+	inline uint32_t IntLoad(address_t ea);
+	inline uint32_t Fetch(address_t pc);
 protected:
 	bool verbose_all;
 	bool verbose_setup;

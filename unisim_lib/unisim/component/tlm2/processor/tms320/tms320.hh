@@ -104,8 +104,8 @@ public:
 	virtual void Reset();
 	
 	// cache interface implemented by the tms320 processor to get the request from the caches
-	virtual void PrWrite(address_t addr, const uint8_t *buffer, uint32_t size);
-	virtual void PrRead(address_t addr, uint8_t *buffer, uint32_t size);
+	virtual bool PrWrite(address_t addr, const void *buffer, uint32_t size);
+	virtual bool PrRead(address_t addr, void *buffer, uint32_t size);
 
 private:
 	/** Event used to signalize the end of a read transaction.

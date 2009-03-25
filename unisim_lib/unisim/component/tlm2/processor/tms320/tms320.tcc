@@ -447,10 +447,10 @@ invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
  * @param size    the size of the read
  */
 template<class CONFIG, bool DEBUG, bool BLOCKING> 
-void 
+bool 
 TMS320<CONFIG, DEBUG, BLOCKING> :: 
 PrRead(address_t addr, 
-	uint8_t *buffer, 
+	void *buffer, 
 	uint32_t size) {
 	if(DEBUG && verbose_tlm_commands)
 		logger << DebugInfo << LOCATION
@@ -472,9 +472,9 @@ PrRead(address_t addr,
 		// 2 - create the transaction
 		transaction_type *trans;
 		trans = payload_fabric.allocate();
-		trans->set_address(addr);
+		trans->set_address(4 * addr); // convert the word address into a byte address
 		trans->set_data_length(size);
-		trans->set_data_ptr(buffer);
+		trans->set_data_ptr((unsigned char *) buffer);
 		trans->set_read();
 		
 		// 3 - send the transaction
@@ -485,7 +485,7 @@ PrRead(address_t addr,
 			
 		// 4 - release the transaction
 		trans->release();
-		return;
+		return true;
 	}	
 
 	// synchonize with bus cycle time
@@ -494,9 +494,9 @@ PrRead(address_t addr,
 	// create the transaction
 	tlm::tlm_generic_payload *trans;
 	trans = payload_fabric.allocate();
-	trans->set_address(addr);
+	trans->set_address(4 * addr);  // convert the word address into a byte address
 	trans->set_data_length(size);
-	trans->set_data_ptr(buffer);
+	trans->set_data_ptr((unsigned char *) buffer);
 	trans->set_read();
 
 	
@@ -574,18 +574,18 @@ PrRead(address_t addr,
 		trans->release();
 
 	}
-
+	return false;
 }
 
 template<class CONFIG, bool DEBUG, bool BLOCKING> 
-void 
+bool 
 TMS320<CONFIG, DEBUG, BLOCKING> :: 
 PrWrite(address_t addr, 
-	const uint8_t *buffer, 
+	const void *buffer, 
 	uint32_t size) {
 		if(DEBUG && verbose_tlm_commands)
 			logger << DebugInfo << LOCATION
-				<< "Performing PrRead"
+				<< "Performing PrWrite"
 				<< EndDebugInfo;
 
 		if (BLOCKING)
@@ -602,7 +602,7 @@ PrWrite(address_t addr,
 			// 2 - create the transaction
 			transaction_type *trans;
 			trans = payload_fabric.allocate();
-			trans->set_address(addr);
+			trans->set_address(4 * addr); // convert the word address into a byte address
 			trans->set_data_length(size);
 			trans->set_data_ptr((unsigned char *)buffer);
 			trans->set_write();
@@ -612,8 +612,9 @@ PrWrite(address_t addr,
 			cpu_time = sc_time_stamp() + quantum_time;
 			if (quantum_time > nice_time)
 				wait(quantum_time);
-			return;
+			return true;
 		}	
+	return false;
 }
 
 } // end of namespace tms320

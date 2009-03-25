@@ -42,15 +42,89 @@ namespace cxx {
 namespace processor {
 namespace tms320 {
 
-template <class CONFIG>
-UndefinedInstructionException<CONFIG>::
-UndefinedInstructionException() {}
+template<class CONFIG, bool DEBUG>
+UnknownOpcodeException<CONFIG, DEBUG>::UnknownOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
+	: operation(_operation)
+{
+	stringstream sstr;
+	sstr << "Unknown opcode";
+	if(operation)
+	{
+		sstr << " 0x" << hex << operation->GetEncoding() << " at 0x" << operation->GetAddr();
+	}
+	what_str = sstr.str();
+}
 
-template <class CONFIG>
-const char *
-UndefinedInstructionException<CONFIG>::
-what() const throw() {
-	return "undefined instruction exception";
+template<class CONFIG, bool DEBUG>
+UnknownOpcodeException<CONFIG, DEBUG>::~UnknownOpcodeException() throw ()
+{
+}
+
+template<class CONFIG, bool DEBUG>
+const char * UnknownOpcodeException<CONFIG, DEBUG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template<class CONFIG, bool DEBUG>
+isa::tms320::Operation<CONFIG, DEBUG> *UnknownOpcodeException<CONFIG, DEBUG>::GetOperation() const
+{
+	return operation;
+}
+
+template<class CONFIG, bool DEBUG>
+BogusOpcodeException<CONFIG, DEBUG>::BogusOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
+	: operation(_operation)
+{
+	stringstream sstr;
+	sstr << "Bogus opcode";
+	if(operation)
+	{
+		sstr << " 0x" << hex << operation->GetEncoding() << " (\"" << operation->GetName() << "\") at 0x" << operation->GetAddr();
+	}
+	what_str = sstr.str();
+}
+
+template<class CONFIG, bool DEBUG>
+BogusOpcodeException<CONFIG, DEBUG>::~BogusOpcodeException() throw ()
+{
+}
+
+template<class CONFIG, bool DEBUG>
+const char * BogusOpcodeException<CONFIG, DEBUG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template<class CONFIG, bool DEBUG>
+isa::tms320::Operation<CONFIG, DEBUG> *BogusOpcodeException<CONFIG, DEBUG>::GetOperation() const
+{
+	return operation;
+}
+
+template<class CONFIG, bool DEBUG>
+BadMemoryAccessException<CONFIG, DEBUG>::BadMemoryAccessException(typename CONFIG::address_t _addr)
+	: addr(_addr)
+{
+	stringstream sstr;
+	sstr << "Bad memory access at 0x" << hex << addr;
+}
+
+template<class CONFIG, bool DEBUG>
+BadMemoryAccessException<CONFIG, DEBUG>::~BadMemoryAccessException() throw ()
+{
+}
+
+template<class CONFIG, bool DEBUG>
+const char * BadMemoryAccessException<CONFIG, DEBUG>::what () const throw ()
+{
+	return what_str.c_str();
+}
+
+template<class CONFIG, bool DEBUG>
+typename CONFIG::address_t BadMemoryAccessException<CONFIG, DEBUG>::GetAddr() const
+{
+	return addr;
 }
 
 } // end of namespace tms320

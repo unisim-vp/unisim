@@ -46,13 +46,45 @@ namespace tms320 {
 
 class Exception : public std::exception {};
 
-template <class CONFIG>
-class UndefinedInstructionException :
-	public Exception {
+template <class CONFIG, bool DEBUG>
+class UnknownOpcodeException : public Exception
+{
 public:
-	UndefinedInstructionException();
-	virtual const char *what() const throw();
+	UnknownOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
+	virtual const char * what () const throw ();
+	virtual ~UnknownOpcodeException() throw();
+	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
+private:
+	isa::tms320::Operation<CONFIG, DEBUG> *operation;
+	string what_str;
 };
+
+template <class CONFIG, bool DEBUG>
+class BogusOpcodeException : public Exception
+{
+public:
+	BogusOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
+	virtual const char * what () const throw ();
+	virtual ~BogusOpcodeException() throw();
+	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
+private:
+	isa::tms320::Operation<CONFIG, DEBUG> *operation;
+	string what_str;
+};
+
+template <class CONFIG, bool DEBUG>
+class BadMemoryAccessException : public Exception
+{
+public:
+	BadMemoryAccessException(typename CONFIG::address_t addr);
+	virtual const char * what () const throw ();
+	virtual ~BadMemoryAccessException() throw();
+	typename CONFIG::address_t GetAddr() const;
+private:
+	typename CONFIG::address_t addr;
+	string what_str;
+};
+
 } // end of namespace tms320
 } // end of namespace processor
 } // end of namespace cxx

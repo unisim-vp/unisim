@@ -107,6 +107,8 @@ CPU(const char *name,
 	verbose_setup(false),
 	param_verbose_setup("verbose-setup", this, verbose_setup)
 {
+	registers_registry["PC"] = new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc);
+
 	unsigned int i;
 	for(i = 0; i < 8; i++)
 	{
@@ -258,8 +260,9 @@ void
 CPU<CONFIG, DEBUG> ::
 Reset()
 {
-	logger << DebugWarning << "TODO: implement reset" << endl
-		<< LOCATION << EndDebug;
+	reg_pc = 0;
+	reg_npc = 0;
+	memset(regs, 0, sizeof(regs));
 }
 
 template<class CONFIG, bool DEBUG>
@@ -353,7 +356,13 @@ Disasm(uint64_t _addr, uint64_t &next_addr)
 	buffer.width(8); 
 	op = decoder.Decode(addr, insn);
 	buffer << op->GetEncoding() << std::dec << " ";
-	if(!op->disasm(*this, buffer)) buffer << "?";
+	try
+	{
+		if(!op->disasm(*this, buffer)) buffer << "?";
+	} catch(BogusOpcodeException<CONFIG, DEBUG>& bogus_opcode_exception)
+	{
+		logger << DebugError << bogus_opcode_exception.what() << EndDebugError;
+	}
 	next_addr = (addr + 4);
 
 	return buffer.str();
@@ -701,23 +710,66 @@ void
 CPU<CONFIG, DEBUG> ::
 StepInstruction()
 {
-	logger << DebugWarning << "TODO: implement StepInstruction" << endl
-		<< LOCATION << EndDebug;
-
 	if(debug_control_import)
 	{
 		do
 		{
 			typename DebugControl<uint64_t>::DebugCommand dbg_cmd;
 
-			dbg_cmd = debug_control_import->FetchDebugCommand(0 /*pc*/);
+			dbg_cmd = debug_control_import->FetchDebugCommand(4 * GetPC());
 	
 			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) break;
 			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL) Stop(0);
 		} while(1);
 	}
 
-	Stop(-1);
+	typename isa::tms320::Operation<CONFIG, DEBUG> *operation = 0;
+
+	// Read the PC
+	address_t addr = GetPC();
+
+	SetNPC(addr + 1);
+
+	try
+	{
+		// Fetch the instruction
+		uint32_t insn = Fetch(addr);
+
+		// Decode the instruction
+		operation = decoder.Decode(4 * addr, insn);
+
+		// Execute the instruction
+		operation->execute(*this);
+	}
+	catch(BogusOpcodeException<CONFIG, DEBUG>& exc)
+	{
+		logger << DebugError << exc.what() << EndDebugError;
+	}
+	catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
+	{
+		logger << DebugError << exc.what() << EndDebugError;
+	}
+	catch(Exception& e)
+	{
+		logger << DebugError << "uncaught exception :" << e.what() << EndDebugError;
+		Stop(1);
+	}
+
+	/* go to the next instruction */
+	SetPC(GetNPC());
+
+	/* update the instruction counter */
+//	instruction_counter++;
+
+	if(unlikely(requires_finished_instruction_reporting))
+	{
+		if(unlikely(memory_access_reporting_import != 0))
+		{
+			memory_access_reporting_import->ReportFinishedInstruction(4 * GetNPC());
+		}
+	}
+
+//	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 }
 
 template<class CONFIG, bool DEBUG>
@@ -754,6 +806,71 @@ VerboseSetup()
 {
 	return DEBUG && verbose_setup;
 }
+
+template<class CONFIG, bool DEBUG>
+inline
+void
+CPU<CONFIG, DEBUG> ::
+IntStore(address_t ea, uint32_t value)
+{
+	value = Host2LittleEndian(value);
+
+	if(!PrWrite(ea, &value, sizeof(value)))
+	{
+		throw BadMemoryAccessException<CONFIG, DEBUG>(ea);
+	}
+
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE, MemoryAccessReporting<uint64_t>::MT_DATA, 4 * ea, 4);
+	}
+}
+
+template<class CONFIG, bool DEBUG>
+inline
+uint32_t
+CPU<CONFIG, DEBUG> ::
+IntLoad(address_t ea)
+{
+	uint32_t value;
+
+	if(!PrRead(ea, &value, sizeof(value)))
+	{
+		throw BadMemoryAccessException<CONFIG, DEBUG>(ea);
+	}
+
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_DATA, 4 * ea, 4);
+	}
+
+	return LittleEndian2Host(value);
+}
+
+template<class CONFIG, bool DEBUG>
+inline
+uint32_t
+CPU<CONFIG, DEBUG> ::
+Fetch(address_t addr)
+{
+	uint32_t insn;
+
+	if(!PrRead(addr, &insn, sizeof(insn)))
+	{
+		throw BadMemoryAccessException<CONFIG, DEBUG>(addr);
+	}
+
+	// Memory access reporting
+	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	{
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_INSN, 4 * addr, 4);
+	}
+
+	return LittleEndian2Host(insn);
+}
+
 
 //===============================================================
 //= Verbose variables, parameters, and methods             STOP =

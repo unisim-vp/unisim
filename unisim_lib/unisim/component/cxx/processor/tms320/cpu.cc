@@ -85,6 +85,7 @@ int ExtendedPrecisionRegisterDebugInterface::GetSize() const
 	return sizeof(reg->lo) + sizeof(reg->hi);
 }
 
+
 } // end of namespace tms320
 } // end of namespace processor
 } // end of namespace cxx

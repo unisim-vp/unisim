@@ -34,9 +34,14 @@
  */
 
 action {void} execute({CPU<CONFIG, DEBUG> &} {cpu}) {
-        throw UndefinedInstructionException<CONFIG>();
+// To enable once every execute methods will be implemented
+#if 0
+	throw BogusOpcodeException<CONFIG, DEBUG>(this);
+#else
+	throw UnknownOpcodeException<CONFIG, DEBUG>(this);
+#endif
 }
 
 action {bool} disasm({CPU<CONFIG, DEBUG> &} {cpu}, {std::ostream &} {os}) {
-        return false;
+	return false;
 }
