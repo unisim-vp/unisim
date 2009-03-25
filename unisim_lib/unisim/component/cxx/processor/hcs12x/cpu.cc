@@ -596,7 +596,7 @@ void CPU::AckSWIInterrupt()
 
 void CPU::ReqSWIInterrupt()
 {
-	nonMascableSWI_interrupt = false;
+	nonMascableSWI_interrupt = true;
 }
 
 // A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)
