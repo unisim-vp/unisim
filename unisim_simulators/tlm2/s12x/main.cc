@@ -418,10 +418,10 @@ int sc_main(int argc, char *argv[])
 	*var1 = "range_start=\"0x000080\" range_end=\"0x0000AF\" output_port=\"0\""; // ATD10B 47 bytes
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_1");
-	*var1 = "range_start=\"0x000121\" range_end=\"0x00012F\" output_port=\"1\""; // S12XINT
+	*var1 = "range_start=\"0x000120\" range_end=\"0x00012F\" output_port=\"1\""; // S12XINT
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_2");
-	*var1 = "range_start=\"0x000300\" range_end=\"0x000324\" output_port=\"2\""; // PWM - 37 bytes
+	*var1 = "range_start=\"0x000300\" range_end=\"0x000327\" output_port=\"2\""; // PWM - 37 bytes
 
 	var1 = ServiceManager::GetParameter("internal_router.mapping_3");
 	*var1 = "range_start=\"0x000800\" range_end=\"0xFFFF\" output_port=\"3\""; // 64KByte - RAM-EEPROM-FLASH
