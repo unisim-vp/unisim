@@ -64,7 +64,8 @@ using unisim::util::endian::BigEndian2Host;
 using unisim::util::endian::Host2BigEndian;
 using unisim::util::endian::LittleEndian2Host;
 using unisim::util::endian::Host2LittleEndian;
-using unisim::util::arithmetic::CeilLog2;
+using unisim::util::arithmetic::Log2;
+using unisim::util::arithmetic::ReverseCarryPropagationAdd;
 
 using std::endl;
 using std::hex;
@@ -489,112 +490,197 @@ string CPU<CONFIG, DEBUG>::DisasmShortFloat(uint16_t x)
 //= Effective address calculation                         START =
 //===============================================================
 
+template<class CONFIG, bool DEBUG>
+uint32_t
+CPU<CONFIG, DEBUG> ::
+CircularAdd(uint32_t ar, uint32_t bk, uint32_t step)
+{
+	if(bk > MAX_BLOCK_SIZE)
+	{
+		logger << DebugWarning << "Circular buffer length (stored in register BK) is greater than 64K" << EndDebugWarning;
+	}
+	if(step > bk)
+	{
+		logger << DebugWarning << "Step is greater than block-size/circular buffer length (stored in register BK)" << EndDebugWarning;
+	}
+	// Compute K
+	unsigned int k = 1 + Log2(bk);
+
+	// K LSB Mask
+	address_t k_lsb_mask = (1 << k) - 1;
+
+	// Compute the circular buffer base address
+	address_t base_addr = ar & ~k_lsb_mask;
+
+	// Compute the new index in the circular buffer
+	int32_t index = (int32_t) (ar & k_lsb_mask) + (int32_t) step;
+	if(index > bk) index = index - bk;
+
+	// Return the new circular address
+	return base_addr + index;
+}
+
+template<class CONFIG, bool DEBUG>
+uint32_t
+CPU<CONFIG, DEBUG> ::
+CircularSubstract(uint32_t ar, uint32_t bk, uint32_t step)
+{
+	if(bk > MAX_BLOCK_SIZE)
+	{
+		logger << DebugWarning << "Circular buffer length (stored in register BK) is greater than 64K" << EndDebugWarning;
+	}
+	if(step > bk)
+	{
+		logger << DebugWarning << "Step is greater than block-size/circular buffer length (stored in register BK)" << EndDebugWarning;
+	}
+	// Compute K
+	unsigned int k = 1 + Log2(bk);
+
+	// K LSB Mask
+	address_t k_lsb_mask = (1 << k) - 1;
+
+	// Compute the circular buffer base address
+	address_t base_addr = ar & ~k_lsb_mask;
+
+	// Compute the new index in the circular buffer
+	int32_t index = (int32_t) (ar & k_lsb_mask) - (int32_t) step;
+	if(index < 0) index = index + bk;
+
+	// Return the new circular address
+	return base_addr + index;
+}
+
 /** Compute the effective address for indirect addressing mode
  */
 template<class CONFIG, bool DEBUG>
 bool 
 CPU<CONFIG, DEBUG> ::
-ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar, uint32_t disp)
+ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar_num, uint32_t disp)
 {
 	switch(mod)
 	{
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD:
 			// mnemonic: *+ARn(disp)
-			ea = regs[REG_AR0 + ar].lo + disp;
+			ea = GetAR(ar_num) + disp;
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT:
 			// mnemonic: *-ARn(disp)
-			ea = regs[REG_AR0 + ar].lo - disp;
+			ea = GetAR(ar_num) - disp;
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD_AND_MODIFY:
 			// mnemonic: *++ARn(disp)
-			ea = regs[REG_AR0 + ar].lo + disp;
-			regs[REG_AR0 + ar].lo = ea;
+			ea = GetAR(ar_num) + disp;
+			SetAR(ar_num, ea);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *--ARn(disp)
-			ea = regs[REG_AR0 + ar].lo - disp;
-			regs[REG_AR0 + ar].lo = ea;
+			ea = GetAR(ar_num) - disp;
+			SetAR(ar_num, ea);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY:
 			// mnemonic: *ARn++(disp)
-			ea = regs[REG_AR0 + ar].lo;
-			regs[REG_AR0 + ar].lo = regs[REG_AR0 + ar].lo + disp;
+			ea = GetAR(ar_num);
+			SetAR(ar_num, ea + disp);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *AR--(disp)
-			ea = regs[REG_AR0 + ar].lo;
-			regs[REG_AR0 + ar].lo = regs[REG_AR0 + ar].lo - disp;
+			ea = GetAR(ar_num);
+			SetAR(ar_num, ea - disp);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(disp)%
-			{
-				// The code below is just a try to understand circular addressing
-/*				address_t k_lsb_mask = ((1 << CeilLog2(reg_bk)) - 1);
-				address_t base_addr = regs[REG_AR0 + ar].lo & ~k_lsb_mask;
-				address_t index = regs[REG_AR0 + ar].lo & k_lsb_mask;
-				address_t next_index = index + disp;
-
-				if(next_index > reg_bk)
-					next_index = next_index - reg_bk;*/
-			}
+			ea = GetAR(ar_num);
+			SetAR(ar_num, CircularAdd(ea, GetBK(), disp));
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn--(disp)%
+			ea = GetAR(ar_num);
+			SetAR(ar_num, CircularSubstract(ea, GetBK(), disp));
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD:
 			// mnemonic: *+ARn(IR0)
+			ea = GetAR(ar_num) + GetIR0();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT:
 			// mnemonic: *-ARn(IR0)
+			ea = GetAR(ar_num) - GetIR0();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD_AND_MODIFY:
 			// mnemonic: *++ARn(IR0)
+			ea = GetAR(ar_num) + GetIR0();
+			SetAR(ar_num, ea);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *--ARn(IR0)
+			ea = GetAR(ar_num) - GetIR0();
+			SetAR(ar_num, ea);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_MODIFY:
 			// mnemonic: *ARn++(IR0)
+			ea = GetAR(ar_num);
+			SetAR(ar_num, ea + GetIR0());
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *ARn--(IR0)
+			ea = GetAR(ar_num);
+			SetAR(ar_num, ea - GetIR0());
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(IR0)%
+			ea = GetAR(ar_num);
+			SetAR(ar_num, CircularAdd(ea, GetBK(), GetIR0()));
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn--(IR0)%
+			ea = GetAR(ar_num);
+			SetAR(ar_num, CircularSubstract(ea, GetBK(), GetIR0()));
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD:
 			// mnemonic: *+ARn(IR1)
+			ea = GetAR(ar_num) + GetIR1();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT:
 			// mnemonic: *-ARn(IR1)
+			ea = GetAR(ar_num) - GetIR0();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD_AND_MODIFY:
 			// mnemonic: *++ARn(IR1)
+			ea = GetAR(ar_num) + GetIR1();
+			SetAR(ar_num, ea);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *--ARn(IR1)
+			ea = GetAR(ar_num) - GetIR1();
+			SetAR(ar_num, ea);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_MODIFY:
 			// mnemonic: *ARn++(IR1)
+			ea = GetAR(ar_num);
+			SetAR(ar_num, ea + GetIR1());
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *ARn--(IR1)
+			ea = GetAR(ar_num);
+			SetAR(ar_num, ea - GetIR1());
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(IR1)%
+			ea = GetAR(ar_num);
+			SetAR(ar_num, CircularAdd(ea, GetBK(), GetIR1()));
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn--(IR1)%
+			ea = GetAR(ar_num);
+			SetAR(ar_num, CircularSubstract(ea, GetBK(), GetIR1()));
 			return true;
 		case MOD_INDIRECT_ADDRESSING:
 			// mnemonic: *ARn
+			ea = GetAR(ar_num);
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_BIT_REVERSED_MODIFY:
 			// mnemonic: *ARn++(IR0)B
+			ea = GetAR(ar_num);
+			SetAR(ar_num, ReverseCarryPropagationAdd(ea, GetIR0()));
 			return true;
 	}
 	return false;

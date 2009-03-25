@@ -56,6 +56,8 @@ inline void SignedSatSub32(uint32_t& result, uint8_t& does_sat, uint32_t x, uint
 inline void SignedSatAdd16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 inline void SignedSatSub16(uint32_t& result, uint8_t& does_sat, uint32_t x, uint32_t y) __attribute__((always_inline));
 
+inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y) __attribute__((always_inline));
+
 inline uint8_t RotateLeft(uint8_t v, unsigned int n) __attribute__((always_inline));
 inline uint16_t RotateLeft(uint16_t v, unsigned int n) __attribute__((always_inline));
 inline uint32_t RotateLeft(uint32_t v, unsigned int n) __attribute__((always_inline));
@@ -365,6 +367,39 @@ inline void SignedSatSub16(uint16_t& result, uint8_t& does_sat, uint16_t x, uint
 		}
 	}
 }
+
+inline uint32_t ReverseCarryPropagationAdd(uint32_t x, uint32_t y)
+{
+	// Compute the result as if there were no carry generation and propagation at all
+	uint32_t r = x ^ y;
+
+	// Compute local carry generation
+	uint32_t x_and_y = x & y;
+	unsigned int n;
+
+	// Compute the bit index of the first carry generation to save time
+	if(!BitScanReverse(n, x_and_y)) return r;
+
+	unsigned int i;
+	uint32_t mask = (1 << n);
+	uint32_t c = 0;
+	uint32_t x_or_y = x | y;
+
+	// loop n times
+	do
+	{
+		// Update result with carry in
+		r = r ^ (mask & c);
+
+		// Compute carry out: carry_out = (x & y) | (carry_in & (x | y))
+		c = ((x_and_y | (c & x_or_y)) & mask) >> 1;
+
+		// Go to next bit
+		mask = mask >> 1;
+	} while(--n);
+	return r;
+}
+
 
 /* Rotate functions: WARNING! only least significative bits of n are used !!!! */
 inline uint8_t RotateLeft(uint8_t v, unsigned int n)

@@ -262,14 +262,33 @@ public:
 	static const unsigned int MOD_INDIRECT_ADDRESSING                                                     = 0x18; // 11000
 	static const unsigned int MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_BIT_REVERSED_MODIFY      = 0x19; // 11001
 
+	// maximal circular buffer length is 64K
+	static const uint32_t MAX_BLOCK_SIZE = 64 * 1024;
+
+	/** Compute the next address in a circular buffer after an address increment
+	    @param ar Current address in the circular buffer
+	    @param bk Circular buffer length
+	    @param step Address increment step
+		@return the next address in the circular buffer
+	*/
+	uint32_t CircularAdd(uint32_t ar, uint32_t bk, uint32_t step);
+
+	/** Compute the next address in a circular buffer after an address decrement
+	    @param ar Current address in the circular buffer
+	    @param bk Circular buffer length
+	    @param step Address decrement step
+		@return the next address in the circular buffer
+	*/
+	uint32_t CircularSubstract(uint32_t ar, uint32_t bk, uint32_t step);
+
 	/** Compute the effective address for indirect addressing mode
 	    @param ea The effective address (output)
 	    @param mod The 5-bit 'mod' instruction bit field
-	    @param mod The 3-bit 'ar' instruction bit field
+	    @param ar_num The 3-bit 'ar' instruction bit field (AR register number)
 	    @param mod The 8-bit 'disp' instruction bit field (sign extended) or an implied 1 displacement
 		@return whether the encoding of mod is valid
 	*/
-	bool ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar, uint32_t disp = 1);
+	bool ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar_num, uint32_t disp = 1);
 
     //===============================================================
 	//= Execution methods                                     START =
@@ -351,9 +370,13 @@ private:
 	reg_t regs[32];
 
 public:
+	/** Get ARn[23-0]
+	    @param reg_num the AR register number
+	    @return bits 23-0 of ARn
+	*/
 	inline uint32_t GetAR(unsigned int reg_num) const
 	{
-		return regs[REG_AR0 + reg_num].lo;
+		return regs[REG_AR0 + reg_num].lo & 0xffffff;
 	}
 
 	inline void GetExtReg(unsigned int reg_num, reg_t& value) const
@@ -373,9 +396,13 @@ public:
 		return (VALID_REGS_MASK >> reg_num);
 	}
 
+	/** Set ARn[23-0] to a new value
+	    @param reg_num the AR register number
+	    @param value the value to write (bits 31-24 are ignored)
+	*/
 	inline void SetAR(unsigned int reg_num, uint32_t value)
 	{
-		regs[REG_AR0 + reg_num].lo = value;
+		regs[REG_AR0 + reg_num].lo = (regs[REG_AR0 + reg_num].lo & 0xff000000) | (value & 0xffffff);
 	}
 
 	inline void SetExtReg(unsigned int reg_num, const reg_t& value)
@@ -388,6 +415,18 @@ public:
 
 	inline address_t GetNPC(address_t value) { return reg_npc; }
 	inline void SetNPC(address_t value) { reg_npc = value; }
+
+	inline uint32_t GetBK() const { return regs[REG_BK].lo; }
+
+	/** Get IR0[23-0]
+	    @return bits 23-0 of IR0
+	*/
+	inline uint32_t GetIR0() const { return regs[REG_IR0].lo & 0xffffff; }
+
+	/** Get IR1[23-0]
+	    @return bits 23-0 of IR1
+	*/
+	inline uint32_t GetIR1() const { return regs[REG_IR1].lo & 0xffffff; }
 
 protected:
 	bool verbose_all;
