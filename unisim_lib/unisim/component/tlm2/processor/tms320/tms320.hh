@@ -60,7 +60,7 @@ using unisim::kernel::service::ServiceImport;
 
 using std::string;
 
-template <class CONFIG, bool DEBUG = false, bool BLOCKING = false>
+template <class CONFIG, bool DEBUG = false>
 class TMS320 :
 	public sc_module,
 	public tlm::tlm_bw_transport_if<>,

@@ -182,19 +182,6 @@ Setup()
 		}
 	}
 	
-	/* setting debugging registers */
-	if (VerboseSetup())
-		logger << "- initializing debugging registers" << endl;
-		
-	//	for (int i = 0; i < 13; i++)
-	//	{
-	//		stringstream str;
-	//		str << "r" << i;
-	//		registers_registry[str.str()] =
-	//			new SimpleRegister<reg_t>(str.str().c_str() &gpr[i]);
-	//	}
-	//	register_registry["sp"] = new SimpleRegister<reg_t>("sp", &gpr[13]);
-	
 	if (!memory_access_reporting_import)
 	{
 		if (VerboseSetup())
@@ -203,8 +190,9 @@ Setup()
 		requires_finished_instruction_reporting = false;
 	}
 	
+	Reset();
+
 	return success;
-	return true;
 }
 
 template<class CONFIG, bool DEBUG>
@@ -263,6 +251,9 @@ Reset()
 	reg_pc = 0;
 	reg_npc = 0;
 	memset(regs, 0, sizeof(regs));
+
+	SetPC(0x1d);
+	SetSP(0x1000);
 }
 
 template<class CONFIG, bool DEBUG>
@@ -270,9 +261,7 @@ bool
 CPU<CONFIG, DEBUG> ::
 ReadMemory(uint64_t addr, void *buffer, uint32_t size)
 {
-	if (memory_import)
-		return memory_import->ReadMemory(addr, buffer, size);
-	return false;
+	return memory_import ? memory_import->ReadMemory(addr, buffer, size) : false;
 }
 
 template<class CONFIG, bool DEBUG>
@@ -280,9 +269,7 @@ bool
 CPU<CONFIG, DEBUG> ::
 WriteMemory(uint64_t addr, const void *buffer, uint32_t size)
 {
-	if (memory_import)
-		return memory_import->WriteMemory(addr, buffer, size);
-	return false;
+	return memory_import ? memory_import->WriteMemory(addr, buffer, size) : false;
 }
 
 //===============================================================
@@ -305,12 +292,7 @@ CPU<CONFIG, DEBUG> ::
 GetRegister(const char *name)
 {
 	map<string, unisim::util::debug::Register *>::iterator reg_iter = registers_registry.find(name);
-	if(reg_iter != registers_registry.end())
-	{
-		return (*reg_iter).second;
-	}
-
-	return 0;
+	return (reg_iter != registers_registry.end()) ? (*reg_iter).second : 0;
 }
 
 //===============================================================
@@ -356,13 +338,7 @@ Disasm(uint64_t _addr, uint64_t &next_addr)
 	buffer.width(8); 
 	op = decoder.Decode(addr, insn);
 	buffer << op->GetEncoding() << std::dec << " ";
-	try
-	{
-		if(!op->disasm(*this, buffer)) buffer << "?";
-	} catch(BogusOpcodeException<CONFIG, DEBUG>& bogus_opcode_exception)
-	{
-		logger << DebugError << bogus_opcode_exception.what() << EndDebugError;
-	}
+	if(!op->disasm(*this, buffer)) buffer << "?";
 	next_addr = (addr + 4);
 
 	return buffer.str();
@@ -564,132 +540,438 @@ CircularSubstract(uint32_t ar, uint32_t bk, uint32_t step)
 template<class CONFIG, bool DEBUG>
 bool 
 CPU<CONFIG, DEBUG> ::
-ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar_num, uint32_t disp)
+ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsigned int mod, unsigned int ar_num, uint32_t disp)
 {
+	// Read ARn
+	address_t ar = GetAR(ar_num);
+
 	switch(mod)
 	{
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD:
 			// mnemonic: *+ARn(disp)
-			ea = GetAR(ar_num) + disp;
+			{
+				// Compute the effective address
+				address_t ea = ar + disp;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Do not update ARn
+				update_ar = false;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT:
 			// mnemonic: *-ARn(disp)
-			ea = GetAR(ar_num) - disp;
+			{
+				// Compute the effective address
+				address_t ea = ar - disp;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Do not update ARn
+				update_ar = false;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD_AND_MODIFY:
 			// mnemonic: *++ARn(disp)
-			ea = GetAR(ar_num) + disp;
-			SetAR(ar_num, ea);
+			{
+				// Compute the effective address
+				address_t ea = ar + disp;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ea;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *--ARn(disp)
-			ea = GetAR(ar_num) - disp;
-			SetAR(ar_num, ea);
+			{
+				// Compute the effective address
+				address_t ea = ar - disp;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ea;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY:
 			// mnemonic: *ARn++(disp)
-			ea = GetAR(ar_num);
-			SetAR(ar_num, ea + disp);
+			{
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ar + disp;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *AR--(disp)
-			ea = GetAR(ar_num);
-			SetAR(ar_num, ea - disp);
+			{
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ar - disp;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(disp)%
-			ea = GetAR(ar_num);
-			SetAR(ar_num, CircularAdd(ea, GetBK(), disp));
+			{
+				// Read BK
+				uint32_t bk = GetBK();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = CircularAdd(ar, bk, disp);
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn--(disp)%
-			ea = GetAR(ar_num);
-			SetAR(ar_num, CircularSubstract(ea, GetBK(), disp));
+			{
+				// Read BK
+				uint32_t bk = GetBK();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = CircularSubstract(ar, bk, disp);
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD:
 			// mnemonic: *+ARn(IR0)
-			ea = GetAR(ar_num) + GetIR0();
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Compute the effective address
+				address_t ea = ar + ir0;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Do not update ARn
+				update_ar = false;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT:
 			// mnemonic: *-ARn(IR0)
-			ea = GetAR(ar_num) - GetIR0();
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Compute the effective address
+				address_t ea = ar - ir0;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Do not update ARn
+				update_ar = false;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD_AND_MODIFY:
 			// mnemonic: *++ARn(IR0)
-			ea = GetAR(ar_num) + GetIR0();
-			SetAR(ar_num, ea);
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Compute the effective address
+				address_t ea = ar + ir0;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ea;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *--ARn(IR0)
-			ea = GetAR(ar_num) - GetIR0();
-			SetAR(ar_num, ea);
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Compute the effective address
+				address_t ea = ar - ir0;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ea;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_MODIFY:
 			// mnemonic: *ARn++(IR0)
-			ea = GetAR(ar_num);
-			SetAR(ar_num, ea + GetIR0());
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ar + ir0;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *ARn--(IR0)
-			ea = GetAR(ar_num);
-			SetAR(ar_num, ea - GetIR0());
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ar - ir0;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(IR0)%
-			ea = GetAR(ar_num);
-			SetAR(ar_num, CircularAdd(ea, GetBK(), GetIR0()));
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Read BK
+				uint32_t bk = GetBK();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = CircularAdd(ar, bk, ir0);
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn--(IR0)%
-			ea = GetAR(ar_num);
-			SetAR(ar_num, CircularSubstract(ea, GetBK(), GetIR0()));
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Read BK
+				uint32_t bk = GetBK();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = CircularSubstract(ar, bk, ir0);
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD:
 			// mnemonic: *+ARn(IR1)
-			ea = GetAR(ar_num) + GetIR1();
+			{
+				// Read IR1
+				uint32_t ir1 = GetIR1();
+
+				// Compute the effective address
+				address_t ea = ar + ir1;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Do not update ARn
+				update_ar = false;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT:
 			// mnemonic: *-ARn(IR1)
-			ea = GetAR(ar_num) - GetIR0();
+			{
+				// Read IR1
+				uint32_t ir1 = GetIR1();
+
+				// Compute the effective address
+				address_t ea = ar - ir1;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Do not update ARn
+				update_ar = false;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD_AND_MODIFY:
 			// mnemonic: *++ARn(IR1)
-			ea = GetAR(ar_num) + GetIR1();
-			SetAR(ar_num, ea);
+			{
+				// Read IR1
+				uint32_t ir1 = GetIR1();
+
+				// Compute the effective address
+				address_t ea = ar + ir1;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ea;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *--ARn(IR1)
-			ea = GetAR(ar_num) - GetIR1();
-			SetAR(ar_num, ea);
+			{
+				// Read IR1
+				uint32_t ir1 = GetIR1();
+
+				// Compute the effective address
+				address_t ea = ar - ir1;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ea;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_MODIFY:
 			// mnemonic: *ARn++(IR1)
-			ea = GetAR(ar_num);
-			SetAR(ar_num, ea + GetIR1());
+			{
+				// Read IR1
+				uint32_t ir1 = GetIR1();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ar + ir1;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			// mnemonic: *ARn--(IR1)
-			ea = GetAR(ar_num);
-			SetAR(ar_num, ea - GetIR1());
+			{
+				// Read IR1
+				uint32_t ir1 = GetIR1();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ar - ir1;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn++(IR1)%
-			ea = GetAR(ar_num);
-			SetAR(ar_num, CircularAdd(ea, GetBK(), GetIR1()));
+			{
+				// Read IR1
+				uint32_t ir1 = GetIR1();
+
+				// Read BK
+				uint32_t bk = GetBK();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = CircularAdd(ar, bk, ir1);
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			// mnemonic: *ARn--(IR1)%
-			ea = GetAR(ar_num);
-			SetAR(ar_num, CircularSubstract(ea, GetBK(), GetIR1()));
+			{
+				// Read IR1
+				uint32_t ir1 = GetIR1();
+
+				// Read BK
+				uint32_t bk = GetBK();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = CircularSubstract(ar, bk, ir1);
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING:
 			// mnemonic: *ARn
-			ea = GetAR(ar_num);
+			{
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Do not update ARn
+				update_ar = false;
+			}
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_BIT_REVERSED_MODIFY:
 			// mnemonic: *ARn++(IR0)B
-			ea = GetAR(ar_num);
-			SetAR(ar_num, ReverseCarryPropagationAdd(ea, GetIR0()));
+			{
+				// Read IR0
+				uint32_t ir0 = GetIR0();
+
+				// Compute the effective address
+				address_t ea = ar;
+
+				// Output the effective address
+				output_ea = ea;
+
+				// Compute and output update for ARn
+				update_ar = true;
+				output_ar = ReverseCarryPropagationAdd(ar, ir0);
+			}
 			return true;
 	}
 	return false;
@@ -813,6 +1095,8 @@ void
 CPU<CONFIG, DEBUG> ::
 IntStore(address_t ea, uint32_t value)
 {
+	cerr << "Store of 0x" << hex << value << " at 0x" << ea << dec << endl;
+
 	value = Host2LittleEndian(value);
 
 	if(!PrWrite(ea, &value, sizeof(value)))
@@ -871,6 +1155,98 @@ Fetch(address_t addr)
 	return LittleEndian2Host(insn);
 }
 
+template<class CONFIG, bool DEBUG>
+inline
+bool
+CPU<CONFIG, DEBUG> ::
+CheckCondition(unsigned int cond) const
+{
+	uint32_t st = GetST();
+
+	switch(cond)
+	{
+		case COND_U: // unconditional
+			return true;
+		case COND_LO: // C
+			return st & M_ST_C;
+		case COND_LS: // C OR Z
+			return ((st >> ST_C) | (st >> ST_Z)) & 1;
+		case COND_HI: // ~C OR ~Z <==> ~(C AND Z)
+			return (~((st >> ST_C) & (st >> ST_Z)) & 1);
+		case COND_HS: // ~C
+			return !(st & M_ST_C);
+		case COND_EQ: // Z
+			return st & M_ST_Z;
+		case COND_NE: // ~Z
+			return !(st & M_ST_Z);
+		case COND_LT: // N
+			return st & M_ST_N;
+		case COND_LE: // N OR Z
+			return ((st >> ST_N) | (st >> ST_Z)) & 1;
+		case COND_GT: // ~N AND ~Z <==> ~(N OR Z)
+			return (~((st >> ST_N) | (st >> ST_Z))) & 1;
+		case COND_GE: // ~N
+			return !(st & M_ST_N);
+		case COND_NV: // ~V
+			return !(st & M_ST_V);
+		case COND_V: // V
+			return st & M_ST_V;
+		case COND_NUF: // ~UF
+			return !(st & M_ST_UF);
+		case COND_UF: // UF
+			return st & M_ST_UF;
+		case COND_NLV: // ~LV
+			return !(st & M_ST_LV);
+		case COND_LV: // LV
+			return st & ST_LV;
+		case COND_NLUF: // ~LUF
+			return !(st & M_ST_LUF);
+		case COND_LUF: // LUF
+			return st & M_ST_LUF;
+		case COND_ZUF: // Z OR UF
+			return ((st >> ST_Z) | (st >> ST_UF)) & 1;
+	}
+	return false;
+}
+
+template<class CONFIG, bool DEBUG>
+inline
+void
+CPU<CONFIG, DEBUG> ::
+GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out, uint32_t overflow)
+{
+	// Read ST
+	uint32_t st = GetST();
+
+	// Apply a reset mask
+	st = st & ~reset_mask;
+
+	// LV
+	if(or_mask & M_ST_LV) st |= (overflow << ST_LV);
+
+	// N
+	if(or_mask & M_ST_N)
+	{
+		uint32_t is_negative = ((int32_t) result < 0);
+		st |= (is_negative << ST_N);
+	}
+
+	// Z
+	if(or_mask & M_ST_Z)
+	{
+		uint32_t is_zero = ((int32_t) result == 0);
+		st |= (is_zero << ST_Z);
+	}
+
+	// C
+	if(or_mask & M_ST_C) st |= (carry_out << ST_C);
+
+	// V
+	if(or_mask & M_ST_V) st |= (overflow << ST_V);
+
+	// Write back ST
+	SetST(st);
+}
 
 //===============================================================
 //= Verbose variables, parameters, and methods             STOP =

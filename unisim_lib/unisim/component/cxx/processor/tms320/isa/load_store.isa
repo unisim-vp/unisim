@@ -250,6 +250,43 @@ LDI_imm.disasm = {
 	return true;
 }
 
+LDI_indir.execute = {
+	// Check whether the destination register number is valid
+	if(!cpu.HasReg(dst))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the effective address
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load the word from memory
+	uint32_t result = cpu.IntLoad(ea);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
+}
+
 /* end of LDI (load integer)
  *************************************************/
 
@@ -430,22 +467,23 @@ PUSH.disasm = {
 }
 
 PUSH.execute = {
-	uint32_t src_value;
-
-	// Read the source operand
-	if(!cpu.GetIntReg(src, src_value))
+	// Check whether the source register number is valid
+	if(!cpu.HasReg(src))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Read the source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
 	// Compute the new SP value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
-	// Update SP
-	cpu.SetSP(sp);
-
 	// Store the source operand at SP
 	cpu.IntStore(sp, src_value);
+
+	// Update SP
+	cpu.SetSP(sp);
 }
 
 /* end of POPF (pop floating-point value from stack)

@@ -89,6 +89,36 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::util::debug::Register;
 using std::string;
 
+// Status register bitfields offsets
+static const unsigned int ST_C = 0;
+static const unsigned int ST_V = 1;
+static const unsigned int ST_Z = 2;
+static const unsigned int ST_N = 3;
+static const unsigned int ST_UF = 4;
+static const unsigned int ST_LV = 5;
+static const unsigned int ST_LUF = 6;
+static const unsigned int ST_OVM = 7;
+static const unsigned int ST_RM = 8;
+static const unsigned int ST_CF = 10;
+static const unsigned int ST_CE = 11;
+static const unsigned int ST_CC = 12;
+static const unsigned int ST_GIE = 13;
+
+// Status register bitfields masks
+static const unsigned int M_ST_C = 1 << ST_C;
+static const unsigned int M_ST_V = 1 << ST_V;
+static const unsigned int M_ST_Z = 1 << ST_Z;
+static const unsigned int M_ST_N = 1 << ST_N;
+static const unsigned int M_ST_UF = 1 << ST_UF;
+static const unsigned int M_ST_LV = 1 << ST_LV;
+static const unsigned int M_ST_LUF = 1 << ST_LUF;
+static const unsigned int M_ST_OVM = 1 << ST_OVM;
+static const unsigned int M_ST_RM = 1 << ST_RM;
+static const unsigned int M_ST_CF = 1 << ST_CF;
+static const unsigned int M_ST_CE = 1 << ST_CE;
+static const unsigned int M_ST_CC = 1 << ST_CC;
+static const unsigned int M_ST_GIE = 1 << ST_GIE;
+
 typedef struct
 {
 	uint32_t lo; // 32 LSB
@@ -292,12 +322,14 @@ public:
 
 	/** Compute the effective address for indirect addressing mode
 	    @param ea The effective address (output)
+	    @param update_ar Whether the auxiliary register must be updated with 'next_ar' (output)
+	    @param output_ar The effective address to write into the auxiliary register (output)
 	    @param mod The 5-bit 'mod' instruction bit field
 	    @param ar_num The 3-bit 'ar' instruction bit field (AR register number)
 	    @param mod The 8-bit 'disp' instruction bit field (sign extended) or an implied 1 displacement
 		@return whether the encoding of mod is valid
 	*/
-	bool ComputeIndirEA(address_t& ea, unsigned int mod, unsigned int ar_num, uint32_t disp = 1);
+	bool ComputeIndirEA(address_t& ea, bool& update_ar, address_t& ouput_ar, unsigned int mod, unsigned int ar_num, uint32_t disp = 1);
 
     //===============================================================
 	//= Execution methods                                     START =
@@ -384,6 +416,29 @@ private:
 		(1 << REG_SP)  | (1 << REG_ST)  | (1 << REG_IE)  | (1 << REG_IF)  |
 		(1 << REG_IOF) | (1 << REG_RS)  | (1 << REG_RE)  | (1 << REG_RC);
 
+	// Condition encoding                          cond4-0
+	static const unsigned int COND_U    = 0x00;  // 00000
+	static const unsigned int COND_LO   = 0x01;  // 00001
+	static const unsigned int COND_LS   = 0x02;  // 00010
+	static const unsigned int COND_HI   = 0x03;  // 00011
+	static const unsigned int COND_HS   = 0x04;  // 00100
+	static const unsigned int COND_EQ   = 0x05;  // 00101
+	static const unsigned int COND_NE   = 0x06;  // 00110
+	static const unsigned int COND_LT   = 0x07;  // 00111
+	static const unsigned int COND_LE   = 0x08;  // 01000
+	static const unsigned int COND_GT   = 0x09;  // 01001
+	static const unsigned int COND_GE   = 0x0a;  // 01010
+	static const unsigned int COND_NV   = 0x0c;  // 01100
+	static const unsigned int COND_V    = 0x0d;  // 01101
+	static const unsigned int COND_NUF  = 0x0e;  // 01110
+	static const unsigned int COND_UF   = 0x0f;  // 01111
+	static const unsigned int COND_NLV  = 0x10;  // 10000
+	static const unsigned int COND_LV   = 0x11;  // 10001
+	static const unsigned int COND_NLUF = 0x12;  // 10010
+	static const unsigned int COND_LUF  = 0x13;  // 10011
+	static const unsigned int COND_ZUF  = 0x14;  // 10100
+
+
 	// Registers
 	address_t reg_pc;    // Program counter
 	address_t reg_npc;   // Next program counter (invisible for the programmer)
@@ -407,21 +462,56 @@ public:
 		return regs[REG_SP].lo & 0xffffff;
 	}
 
+	/** Get ST
+	    @return 32-bit value of ST
+	*/
+	inline uint32_t GetST() const
+	{
+		return regs[REG_ST].lo;
+	}
+
+	/** Set ST
+	    @param the 32-bit value to write into ST
+	*/
+	inline void SetST(uint32_t value)
+	{
+		regs[REG_ST].lo = value;
+	}
+
+	/** Check wether a register exists
+	    @param reg_num the register number
+	    @return true if the register exists (i.e. 0 <= reg_num <= 27), false otherwise
+	*/
+	inline static bool HasReg(unsigned int reg_num)
+	{
+		return (VALID_REGS_MASK >> reg_num) & 1;
+	}
+
+	/** Get 40-bit extended precision register value.
+	    @param reg_num the register number (0 <= reg_num <= 7)
+	    @return the 40-bit value stored into the extended precision register
+	*/
 	inline void GetExtReg(unsigned int reg_num, reg_t& value) const
 	{
 		value = regs[REG_R0 + reg_num];
 	}
 
-	inline bool GetIntReg(unsigned int reg_num, uint32_t& value) const
+	/** Get 32-bit integer register value.
+	    @param reg_num the register number (0 <= reg_num <= 27)
+	    @return the 32-bit value stored into the register
+	*/
+	inline uint32_t GetIntReg(unsigned int reg_num) const
 	{
-		value = regs[reg_num].lo;
-		return (VALID_REGS_MASK >> reg_num);
+		return regs[reg_num].lo;
 	}
 
-	inline bool SetIntReg(unsigned int reg_num, uint32_t value)
+	/** Set 32-bit integer register value.
+	    @param reg_num the register number (0 <= reg_num <= 27)
+	    @param value the 32-bit value to write into the register
+	*/
+	inline void SetIntReg(unsigned int reg_num, uint32_t value)
 	{
 		regs[reg_num].lo = value;
-		return (VALID_REGS_MASK >> reg_num);
 	}
 
 	/** Set ARn[23-0] to a new value
@@ -441,17 +531,38 @@ public:
 		regs[REG_SP].lo = (regs[REG_SP].lo & 0xff000000) | (value & 0xffffff);
 	}
 
+	/** Set 40-bit extended precision register value.
+	    @param reg_num the register number (0 <= reg_num <= 7)
+	    @param value the 40-bit value to write into the register
+	*/
 	inline void SetExtReg(unsigned int reg_num, const reg_t& value)
 	{
 		regs[REG_R0 + reg_num] = value;
 	}
 
+	/** Get the address of the current instruction
+	    @param addr the current instruction word address
+	*/
 	inline address_t GetPC() const { return reg_pc; }
-	inline void SetPC(address_t value) { reg_pc = value; }
 
+	/** Set the address of the current instruction
+	    @param addr the current instruction word address
+	*/
+	inline void SetPC(address_t addr) { reg_pc = addr; }
+
+	/** Get the address of the next instruction
+	    @return the instruction word address to branch
+	*/
 	inline address_t GetNPC() const { return reg_npc; }
-	inline void SetNPC(address_t value) { reg_npc = value; }
 
+	/** Set the address of the next instruction (used by control instructions)
+	    @param addr the instruction word address to branch
+	*/
+	inline void SetNPC(address_t addr) { reg_npc = addr; }
+
+	/** Get BK value
+	    @return the value of register BK
+	*/
 	inline uint32_t GetBK() const { return regs[REG_BK].lo; }
 
 	/** Get IR0[23-0]
@@ -464,9 +575,45 @@ public:
 	*/
 	inline uint32_t GetIR1() const { return regs[REG_IR1].lo & 0xffffff; }
 
+	/** Store a 32-bit integer into memory
+	    @param ea the effective word address
+		@param value the 32-bit integer value to store into memory
+	*/
 	inline void IntStore(address_t ea, uint32_t value);
+
+	/** Load a 32-bit integer from memory
+	    @param ea the effective word address
+		@return the 32-bit integer value read from memory
+	*/
 	inline uint32_t IntLoad(address_t ea);
+
+	/** Load a 32-bit instruction word from memory
+	    @param ea the effective word address
+		@return the 32-bit instruction word read from memory
+	*/
 	inline uint32_t Fetch(address_t pc);
+
+	/** Check a condition
+	    @param cond 5-bit encoding of condition
+		@return whether the condition is met
+	*/
+	inline bool CheckCondition(unsigned int cond) const;
+
+	inline uint8_t GetST_C() const { return (GetST() >> ST_C) & 1; }
+	inline uint8_t GetST_V() const { return (GetST() >> ST_V) & 1; }
+	inline uint8_t GetST_N() const { return (GetST() >> ST_N) & 1; }
+	inline uint8_t GetST_UF() const { return (GetST() >> ST_UF) & 1; }
+	inline uint8_t GetST_LV() const { return (GetST() >> ST_LV) & 1; }
+	inline uint8_t GetST_LUF() const { return (GetST() >> ST_LUF) & 1; }
+	inline uint8_t GetST_OVM() const { return (GetST() >> ST_OVM) & 1; }
+	inline uint8_t GetST_RM() const { return (GetST() >> ST_RM) & 1; }
+	inline uint8_t GetST_CF() const { return (GetST() >> ST_CF) & 1; }
+	inline uint8_t GetST_CE() const { return (GetST() >> ST_CE) & 1; }
+	inline bool GetST_CC() const { return (GetST() >> ST_CC) & 1; }
+	inline bool GetST_GIE() const { return (GetST() >> ST_GIE) & 1; }
+
+	inline void GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out = 0, uint32_t overflow = 0);
+
 protected:
 	bool verbose_all;
 	bool verbose_setup;

@@ -46,10 +46,7 @@ namespace tms320 {
 using unisim::component::cxx::processor::tms320::TMS320VC33_Config;
 
 template
-class TMS320<TMS320VC33_Config, false, false>;
-
-template
-class TMS320<TMS320VC33_Config, false, true>;
+class TMS320<TMS320VC33_Config, false>;
 
 } // end of namespace tms320
 } // end of namespace processor

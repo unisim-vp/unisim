@@ -71,7 +71,7 @@ const bool CPU_DEBUG = false;
 const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 const uint32_t FSB_NUM_PROCS = 1;
 typedef unisim::component::cxx::processor::tms320::TMS320VC33_Config CPU_CONFIG;
-typedef unisim::component::tlm2::processor::tms320::TMS320<CPU_CONFIG, CPU_DEBUG, true> CPU;
+typedef unisim::component::tlm2::processor::tms320::TMS320<CPU_CONFIG, CPU_DEBUG> CPU;
 typedef unisim::service::loader::coff_loader::CoffLoader<uint64_t> LOADER;
 typedef unisim::service::debug::symbol_table::SymbolTable<uint64_t> SYMBOL_TABLE;
 typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;

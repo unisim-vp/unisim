@@ -111,6 +111,36 @@ ADDC3_indir_indir.disasm = {
 	return true;
 }
 
+ADDC3_reg_reg.execute = {
+	// Read 1st source operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read 2nd source operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read carry in
+	uint8_t carry_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t carry_out;    // the carry out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		carry_out,
+		overflow
+	);
+}
+
 /* end of ADDC3 (add with carry)
  **********************************************************/
 
@@ -292,6 +322,27 @@ AND3_indir_indir.disasm = {
 
 	os << "AND3 " << disasm_src2_indir << ", " << disasm_src1_indir << ", " << dst_name;
 	return true;
+}
+
+AND3_reg_reg.execute = {
+	// Read 1st source operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read 2nd source operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Compute the result
+	uint32_t result = src1_value & src2_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 /* end of AND3 (bitwise-logical AND)

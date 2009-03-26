@@ -87,7 +87,10 @@ inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n) __attribute__((
 inline uint32_t ShiftArithmeticRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
 
 inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) __attribute__((always_inline));
+
 inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out) __attribute__((always_inline));
+inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out) __attribute__((always_inline));
 
 inline bool BitScanForward(unsigned int& n, uint32_t v) __attribute__((always_inline));
 inline bool BitScanForward(unsigned int& n, uint64_t v) __attribute__((always_inline));
@@ -553,7 +556,7 @@ inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
-	__asm__ ("shr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	__asm__ ("ror %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
 	return v;
 #else
 	n &= 31;
@@ -561,6 +564,45 @@ inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t& bit_out)
 	return (v >> n) | (v << (32 - n));
 #endif
 }
+
+inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	if(bit_in)
+	{
+		__asm__ ("stc\nrcl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	}
+	else
+	{
+		__asm__ ("clc\nrcl %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	}
+	return v;
+#else
+	n &= 31;
+	bit_out = (v >> (31 - n)) & 1;
+	return (uint32_t) (((uint64_t) v << n) | ((uint64_t) bit_in << (n - 1)) | ((uint64_t) v >> (33 - n)));
+#endif
+}
+
+inline uint32_t RotateRight(uint32_t v, unsigned int n, uint8_t bit_in, uint8_t& bit_out)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
+	if(bit_in)
+	{
+		__asm__ ("stc\nrcr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	}
+	else
+	{
+		__asm__ ("clc\nrcr %%cl, %0\nsetc %1" : "=r" (v), "=qQ" (bit_out) : "0" (v), "c" (n) : "cc");	
+	}
+	return v;
+#else
+	n &= 31;
+	bit_out = (v >> (n - 1)) & 1;
+	return (uint32_t) (((uint64_t) v >> n) | ((uint64_t) bit_in << (32 - n)) | ((uint64_t) v << (33 - n)));
+#endif
+}
+
 
 inline bool BitScanForward(unsigned int& n, uint32_t v)
 {

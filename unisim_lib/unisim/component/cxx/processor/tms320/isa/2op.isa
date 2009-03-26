@@ -33,6 +33,30 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+impl {
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace tms320 {
+namespace isa {
+namespace tms320 {
+
+using unisim::util::arithmetic::Add32;
+using unisim::util::arithmetic::RotateLeft;
+using unisim::util::arithmetic::RotateRight;
+
+} // end of namespace tms320
+} // end of namespace isa
+} // end of namespace tms320
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+}
+
 /* List of 2 operands operations:
  * - ABSF         absolute value of a floating-point number
  * - ABSI         absolute value of an integer
@@ -236,6 +260,36 @@ ADDC_imm.disasm = {
 	return true;
 }
 
+ADDC_reg.execute = {
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Read carry in
+	uint8_t carry_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t carry_out;    // the carry out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	Add32(result, carry_out, overflow, dst_value, src_value, carry_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		carry_out,
+		overflow
+	);
+}
+
 /* end of ADDC (add integers with carry)
  **********************************************************/
 
@@ -403,6 +457,27 @@ AND_imm.disasm = {
 
 	os << "AND " << imm << ", " << dst_name;
 	return true;
+}
+
+AND_reg.execute = {
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result = src_value & dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 /* end of AND (bitwise-logical AND)
@@ -1361,6 +1436,32 @@ ROR.disasm = {
 	return true;
 }
 
+ROR.execute = {
+	// Check whether the destination register number is valid
+	if(!cpu.HasReg(dst))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint8_t carry_out;
+	uint32_t result = RotateRight(dst_value, 1, carry_out);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		carry_out
+	);
+}
+
 /* end of ROR (rotate right)
  **********************************************************/
 
@@ -1379,6 +1480,35 @@ RORC.disasm = {
 	
 	os << "RORC " << dst_name;
 	return true;
+}
+
+RORC.execute = {
+	// Check whether the destination register number is valid
+	if(!cpu.HasReg(dst))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Read carry in
+	uint8_t carry_in = cpu.GetST_C();
+
+	// Compute the result
+	uint8_t carry_out;
+	uint32_t result = RotateRight(dst_value, 1, carry_in, carry_out);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_N | M_ST_Z | M_ST_C,  // or mask
+		carry_out
+	);
 }
 
 /* end of RORC (rotate right through carry)

@@ -110,8 +110,8 @@ namespace tms320 {
 
 using namespace unisim::kernel::logger;
 
-template<class CONFIG, bool DEBUG, bool BLOCKING>
-TMS320<CONFIG, DEBUG, BLOCKING> :: 
+template<class CONFIG, bool DEBUG>
+TMS320<CONFIG, DEBUG> :: 
 TMS320(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
@@ -154,8 +154,8 @@ TMS320(const sc_module_name& name, Object *parent) :
 	SC_THREAD(Run);
 }
 
-template<class CONFIG, bool DEBUG, bool BLOCKING>
-TMS320<CONFIG, DEBUG, BLOCKING> ::
+template<class CONFIG, bool DEBUG>
+TMS320<CONFIG, DEBUG> ::
 ~TMS320() 
 {
 }
@@ -165,24 +165,15 @@ TMS320<CONFIG, DEBUG, BLOCKING> ::
  *
  * @return  true if the initialization suceeds, false otherwise
  */
-template<class CONFIG, bool DEBUG, bool BLOCKING>
+template<class CONFIG, bool DEBUG>
 bool 
-TMS320<CONFIG, DEBUG, BLOCKING> :: 
+TMS320<CONFIG, DEBUG> :: 
 Setup() 
 {
 	if (!inherited::Setup()) 
 	{
 		logger << DebugError << LOCATION
 			<< "Error while trying to set up the TMS320 cpu"
-			<< EndDebugError;
-		return false;
-	}
-	
-	/* TODO: remove once the non-blocking version has been implemented */
-	if (!BLOCKING)
-	{
-		logger << DebugError << LOCATION 
-		    << "Non-blocking mode not still implemented"
 			<< EndDebugError;
 		return false;
 	}
@@ -223,9 +214,9 @@ Setup()
 	return true;
 }
 
-template<class CONFIG, bool DEBUG, bool BLOCKING>
+template<class CONFIG, bool DEBUG>
 void 
-TMS320<CONFIG, DEBUG, BLOCKING> ::
+TMS320<CONFIG, DEBUG> ::
 Stop(int ret) 
 {
 	// Call BusSynchronize to account for the remaining time spent in the cpu 
@@ -239,9 +230,9 @@ Stop(int ret)
  * An example (an for the moment the only synchronization demanded by the CPU
  * implmentation) is the a synchronization demanded by the debugger.
  */
-template<class CONFIG, bool DEBUG, bool BLOCKING>
+template<class CONFIG, bool DEBUG>
 void
-TMS320<CONFIG, DEBUG, BLOCKING> ::
+TMS320<CONFIG, DEBUG> ::
 Sync() 
 {
 	wait(cpu_time - sc_time_stamp());
@@ -253,9 +244,9 @@ Sync()
  * Updates the cpu time to the next bus cycle. Additionally it updates the
  * quantum time and if necessary synchronizes with the global SystemC clock.
  */
-template<class CONFIG, bool DEBUG, bool BLOCKING>
+template<class CONFIG, bool DEBUG>
 void 
-TMS320<CONFIG, DEBUG, BLOCKING> :: 
+TMS320<CONFIG, DEBUG> :: 
 BusSynchronize() {
 	quantum_time += 
 		(((cpu_time / bus_cycle_time) + 1) * bus_cycle_time) -
@@ -278,9 +269,9 @@ BusSynchronize() {
  * Also the quantum time is updated, and if it is bigger than the nice time, the
  * global SystemC time is updated.
  */
-template<class CONFIG, bool DEBUG, bool BLOCKING>
+template<class CONFIG, bool DEBUG>
 void
-TMS320<CONFIG, DEBUG, BLOCKING> ::
+TMS320<CONFIG, DEBUG> ::
 Run()
 {
 	/* compute the average time of each instruction */
@@ -307,9 +298,9 @@ Run()
 	}
 }
 
-template<class CONFIG, bool DEBUG, bool BLOCKING>
+template<class CONFIG, bool DEBUG>
 void 
-TMS320<CONFIG, DEBUG, BLOCKING> :: 
+TMS320<CONFIG, DEBUG> :: 
 Reset() {
 }
 	
@@ -324,9 +315,9 @@ Reset() {
  *
  * @return      the synchronization status
  */
-template<class CONFIG, bool DEBUG, bool BLOCKING>
+template<class CONFIG, bool DEBUG>
 tlm::tlm_sync_enum 
-TMS320<CONFIG, DEBUG, BLOCKING> ::
+TMS320<CONFIG, DEBUG> ::
 nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &time) 
 {
 	sync_enum_type ret = tlm::TLM_ACCEPTED;
@@ -426,9 +417,9 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
  * @param start_range the start address of the memory range to remove
  * @param end_range   the end address of the memory range to remove
  */
-template<class CONFIG, bool DEBUG, bool BLOCKING>
+template<class CONFIG, bool DEBUG>
 void 
-TMS320<CONFIG, DEBUG, BLOCKING> ::
+TMS320<CONFIG, DEBUG> ::
 invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
 	// nothing to do, we are not using dmi
 }
@@ -436,19 +427,17 @@ invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) {
 /**
  * Virtual method implementation to handle memory read operations performed by 
  * the TMS320 processor implementation.
- * If working with a blocking (BLOCKING = TRUE) version of the TMS320 processor 
- * this method synchronizes the  processor with the bus (increase local time) 
+ * This method synchronizes the  processor with the bus (increase local time) 
  * and sends it. If a synchronization is necessary a SystemC synchronization is 
  * performed.
- * TODO: if working with a non-block
  * 
  * @param addr    the read base address
  * @param buffer  the buffer to copy the data to read
  * @param size    the size of the read
  */
-template<class CONFIG, bool DEBUG, bool BLOCKING> 
+template<class CONFIG, bool DEBUG> 
 bool 
-TMS320<CONFIG, DEBUG, BLOCKING> :: 
+TMS320<CONFIG, DEBUG> :: 
 PrRead(address_t addr, 
 	void *buffer, 
 	uint32_t size) {
@@ -457,129 +446,43 @@ PrRead(address_t addr,
 			<< "Performing PrRead"
 			<< EndDebugInfo;
 		
-	if (BLOCKING)
-	{
-		/* Use blocking transactions.
-		 * Steps:
-		 * 1 - check when the request can be send (synchronize with the bus)
-		 * 2 - create the transaction
-		 * 3 - send the transaction
-		 * 4 - release the transaction
-		 */
-		// 1 - synchronize with the bus
-		BusSynchronize();
-		
-		// 2 - create the transaction
-		transaction_type *trans;
-		trans = payload_fabric.allocate();
-		trans->set_address(4 * addr); // convert the word address into a byte address
-		trans->set_data_length(size);
-		trans->set_data_ptr((unsigned char *) buffer);
-		trans->set_read();
-		
-		// 3 - send the transaction
-		master_socket->b_transport(*trans, quantum_time);
-		cpu_time = sc_time_stamp() + quantum_time;
-		if (quantum_time > nice_time)
-			wait(quantum_time);
-			
-		// 4 - release the transaction
-		trans->release();
-		return true;
-	}	
-
-	// synchonize with bus cycle time
+	/* Use blocking transactions.
+		* Steps:
+		* 1 - check when the request can be send (synchronize with the bus)
+		* 2 - create the transaction
+		* 3 - send the transaction
+		* 4 - check the transaction response status
+		* 5 - release the transaction
+		*/
+	// 1 - synchronize with the bus
 	BusSynchronize();
-
-	// create the transaction
-	tlm::tlm_generic_payload *trans;
+	
+	// 2 - create the transaction
+	transaction_type *trans;
 	trans = payload_fabric.allocate();
-	trans->set_address(4 * addr);  // convert the word address into a byte address
+	trans->set_address(4 * addr); // convert the word address into a byte address
 	trans->set_data_length(size);
 	trans->set_data_ptr((unsigned char *) buffer);
 	trans->set_read();
-
 	
-	if (BLOCKING)
-	{
-		// send the transaction (blocking version)
-		sc_time time(SC_ZERO_TIME);
-		master_socket->b_transport(*trans, time);
-	}
-	else
-	{
-		// send the transaction (non-blocking version)
-		sc_time time(SC_ZERO_TIME);
-		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		switch (master_socket->nb_transport_fw(*trans, phase, time)) 
-		{
-			case tlm::TLM_ACCEPTED:
-				if (DEBUG)
-				{
-					logger << DebugInfo << "Read transaction accepted, waiting for the response" << endl
-						<< TIME(time) << endl;
-					TRANS(logger, *trans);
-					logger << EndDebugInfo;
-				}
-				wait(end_read_rsp_event);
-				if (DEBUG)
-				{			
-					logger << DebugInfo << "Read transaction finished" << endl
-						<< TIME(time) << endl;
-					ETRANS(logger, *trans);
-					logger << EndDebugInfo;
-				}
-				break;
-			case tlm::TLM_UPDATED:
-				switch(phase) {
-				case tlm::BEGIN_REQ:
-				case tlm::END_RESP:
-				case tlm::BEGIN_RESP:
-					logger << DebugError << "Received TLM_UPDATED with unexpected phase" << endl
-						<< LOCATION << endl
-						<< TIME(time) << endl
-						<< PHASE(phase) << endl;
-						TRANS(logger, *trans);
-						logger << EndDebug;
-						sc_stop();
-						wait();
-						break;
-				case tlm::END_REQ:
-					if (DEBUG) {
-						logger << DebugInfo << "Received TLM_UPDATED with END_REQ, waiting for the response event" << endl
-							<< TIME(time) << endl;
-						TRANS(logger, *trans);
-						logger << EndDebug;
-					}
-					wait(end_read_rsp_event);
-					if (DEBUG) {
-						logger << DebugInfo << "end response event received" << endl
-							<< TIME(time) << EndDebug;
-					}
-					break;
-				}
-				break;
-			case tlm::TLM_COMPLETED:
-				break;
-		}
-		if (DEBUG) {
-			logger << DebugInfo << "Transaction answer received" << endl
-				<< " - time = " << sc_time_stamp() + time << endl;
-			ETRANS(logger, *trans);
-			logger << EndDebug;
-		}
+	// 3 - send the transaction
+	master_socket->b_transport(*trans, quantum_time);
+	cpu_time = sc_time_stamp() + quantum_time;
+	if (quantum_time > nice_time)
+		wait(quantum_time);
+	
+	// 4 - check the transaction response status
+	bool status = trans->is_response_ok();
+	
+	// 5 - release the transaction
+	trans->release();
 
-		wait(time);
-
-		trans->release();
-
-	}
-	return false;
+	return status;
 }
 
-template<class CONFIG, bool DEBUG, bool BLOCKING> 
+template<class CONFIG, bool DEBUG> 
 bool 
-TMS320<CONFIG, DEBUG, BLOCKING> :: 
+TMS320<CONFIG, DEBUG> :: 
 PrWrite(address_t addr, 
 	const void *buffer, 
 	uint32_t size) {
@@ -588,33 +491,38 @@ PrWrite(address_t addr,
 				<< "Performing PrWrite"
 				<< EndDebugInfo;
 
-		if (BLOCKING)
-		{
-			/* Use blocking transactions.
-			 * Steps:
-			 * 1 - check when the request can be send (synchronize with the bus)
-			 * 2 - create the transaction
-			 * 3 - send the transaction
-			 */
-			// 1 - synchronize with the bus
-			BusSynchronize();
+	/* Use blocking transactions.
+		* Steps:
+		* 1 - check when the request can be send (synchronize with the bus)
+		* 2 - create the transaction
+		* 3 - send the transaction
+		* 4 - check the transaction response status
+		* 5 - release the transaction
+		*/
+	// 1 - synchronize with the bus
+	BusSynchronize();
 
-			// 2 - create the transaction
-			transaction_type *trans;
-			trans = payload_fabric.allocate();
-			trans->set_address(4 * addr); // convert the word address into a byte address
-			trans->set_data_length(size);
-			trans->set_data_ptr((unsigned char *)buffer);
-			trans->set_write();
+	// 2 - create the transaction
+	transaction_type *trans;
+	trans = payload_fabric.allocate();
+	trans->set_address(4 * addr); // convert the word address into a byte address
+	trans->set_data_length(size);
+	trans->set_data_ptr((unsigned char *)buffer);
+	trans->set_write();
 
-			// 3 - send the transaction
-			master_socket->b_transport(*trans, quantum_time);
-			cpu_time = sc_time_stamp() + quantum_time;
-			if (quantum_time > nice_time)
-				wait(quantum_time);
-			return true;
-		}	
-	return false;
+	// 3 - send the transaction
+	master_socket->b_transport(*trans, quantum_time);
+	cpu_time = sc_time_stamp() + quantum_time;
+	if (quantum_time > nice_time)
+		wait(quantum_time);
+
+	// 4 - check the transaction response status
+	bool status = trans->is_response_ok();
+
+	// 5 - release the transaction
+	trans->release();
+
+	return status;
 }
 
 } // end of namespace tms320
