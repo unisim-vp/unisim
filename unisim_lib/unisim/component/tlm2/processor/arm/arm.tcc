@@ -499,80 +499,70 @@ PrRead(address_t addr,
 	trans->set_read();
 
 	
-	if (BLOCKING)
+	// send the transaction (non-blocking version)
+	sc_time time(SC_ZERO_TIME);
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	switch (master_socket->nb_transport_fw(*trans, phase, time)) 
 	{
-		// send the transaction (blocking version)
-		sc_time time(SC_ZERO_TIME);
-		master_socket->b_transport(*trans, time);
-	}
-	else
-	{
-		// send the transaction (non-blocking version)
-		sc_time time(SC_ZERO_TIME);
-		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		switch (master_socket->nb_transport_fw(*trans, phase, time)) 
-		{
-			case tlm::TLM_ACCEPTED:
-				if (CONFIG::DEBUG_ENABLE)
-				{
-					logger << DebugInfo << "Read transaction accepted, waiting for the response" << endl
+		case tlm::TLM_ACCEPTED:
+			if (CONFIG::DEBUG_ENABLE)
+			{
+				logger << DebugInfo << "Read transaction accepted, waiting for the response" << endl
+					<< TIME(time) << endl;
+				TRANS(logger, *trans);
+				logger << EndDebugInfo;
+			}
+			wait(end_read_rsp_event);
+			if (CONFIG::DEBUG_ENABLE)
+			{			
+				logger << DebugInfo << "Read transaction finished" << endl
+					<< TIME(time) << endl;
+				ETRANS(logger, *trans);
+				logger << EndDebugInfo;
+			}
+			break;
+		case tlm::TLM_UPDATED:
+			switch(phase) {
+			case tlm::BEGIN_REQ:
+			case tlm::END_RESP:
+			case tlm::BEGIN_RESP:
+				logger << DebugError << "Received TLM_UPDATED with unexpected phase" << endl
+					<< LOCATION << endl
+					<< TIME(time) << endl
+					<< PHASE(phase) << endl;
+				TRANS(logger, *trans);
+				logger << EndDebug;
+				sc_stop();
+				wait();
+				break;
+			case tlm::END_REQ:
+				if (CONFIG::DEBUG_ENABLE) {
+					logger << DebugInfo << "Received TLM_UPDATED with END_REQ, waiting for the response event" << endl
 						<< TIME(time) << endl;
 					TRANS(logger, *trans);
-					logger << EndDebugInfo;
+					logger << EndDebug;
 				}
 				wait(end_read_rsp_event);
-				if (CONFIG::DEBUG_ENABLE)
-				{			
-					logger << DebugInfo << "Read transaction finished" << endl
-						<< TIME(time) << endl;
-					ETRANS(logger, *trans);
-					logger << EndDebugInfo;
+				if (CONFIG::DEBUG_ENABLE) {
+					logger << DebugInfo << "end response event received" << endl
+						<< TIME(time) << EndDebug;
 				}
 				break;
-			case tlm::TLM_UPDATED:
-				switch(phase) {
-				case tlm::BEGIN_REQ:
-				case tlm::END_RESP:
-				case tlm::BEGIN_RESP:
-					logger << DebugError << "Received TLM_UPDATED with unexpected phase" << endl
-						<< LOCATION << endl
-						<< TIME(time) << endl
-						<< PHASE(phase) << endl;
-						TRANS(logger, *trans);
-						logger << EndDebug;
-						sc_stop();
-						wait();
-						break;
-				case tlm::END_REQ:
-					if (CONFIG::DEBUG_ENABLE) {
-						logger << DebugInfo << "Received TLM_UPDATED with END_REQ, waiting for the response event" << endl
-							<< TIME(time) << endl;
-						TRANS(logger, *trans);
-						logger << EndDebug;
-					}
-					wait(end_read_rsp_event);
-					if (CONFIG::DEBUG_ENABLE) {
-						logger << DebugInfo << "end response event received" << endl
-							<< TIME(time) << EndDebug;
-					}
-					break;
-				}
-				break;
-			case tlm::TLM_COMPLETED:
-				break;
-		}
-		if (CONFIG::DEBUG_ENABLE) {
-			logger << DebugInfo << "Transaction answer received" << endl
-				<< " - time = " << sc_time_stamp() + time << endl;
-			ETRANS(logger, *trans);
-			logger << EndDebug;
-		}
-
-		wait(time);
-
-		trans->release();
-
+			}
+			break;
+		case tlm::TLM_COMPLETED:
+			break;
 	}
+	if (CONFIG::DEBUG_ENABLE) {
+		logger << DebugInfo << "Transaction answer received" << endl
+			<< " - time = " << sc_time_stamp() + time << endl;
+		ETRANS(logger, *trans);
+		logger << EndDebug;
+	}
+
+	wait(time);
+
+	trans->release();
 
 }
 
@@ -584,7 +574,7 @@ PrWrite(address_t addr,
 	uint32_t size) {
 		if(CONFIG::DEBUG_ENABLE && verbose_tlm_commands)
 			logger << DebugInfo << LOCATION
-				<< "Performing PrRead"
+				<< "Performing PrWrite"
 				<< EndDebugInfo;
 
 		if (BLOCKING)
@@ -611,6 +601,9 @@ PrWrite(address_t addr,
 			cpu_time = sc_time_stamp() + quantum_time;
 			if (quantum_time > nice_time)
 				wait(quantum_time);
+		
+			// 4 - release the transaction
+			trans->release();
 			return;
 		}	
 }

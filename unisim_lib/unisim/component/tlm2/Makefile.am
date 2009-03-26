@@ -19,6 +19,11 @@ SUBDIRS += interconnect
 INCLUDE_SUBDIRS += interconnect
 endif
 
+if COND_interrupt
+SUBDIRS += interrupt
+INCLUDE_SUBDIRS += interrupt
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:
