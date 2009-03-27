@@ -219,6 +219,31 @@ LDI_reg.disasm = {
 	return true;
 }
 
+LDI_reg.execute = {
+	// Check whether the source and destination register number are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand
+	uint32_t result = cpu.GetIntReg(src);
+
+	// Write back result in destination operand
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
 op LDI_dir  (0b000[3]:0b010000[6]:0b01[2]:dst[5]:direct[16])
 
 LDI_dir.disasm = {
@@ -227,6 +252,34 @@ LDI_dir.disasm = {
 
 	os << "LDI @0x" << hex << direct << dec << ", " << dst_reg_name;
 	return true;
+}
+
+LDI_dir.execute = {
+	// Check whether the destination register number is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Load the word from memory
+	uint32_t result = cpu.IntLoad(ea);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 op LDI_indir(0b000[3]:0b010000[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
@@ -240,29 +293,19 @@ LDI_indir.disasm = {
 	return true;
 }
 
-op LDI_imm  (0b000[3]:0b010000[6]:0b11[2]:dst[5]:sext<32> imm[16])
-
-LDI_imm.disasm = {
-	const char *dst_reg_name = REG_NAME[dst];
-	if(!dst_reg_name) return false;
-
-	os << "LDI " << imm << ", " << dst_reg_name;
-	return true;
-}
-
 LDI_indir.execute = {
 	// Check whether the destination register number is valid
-	if(!cpu.HasReg(dst))
+	if(unlikely(!cpu.HasReg(dst)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Compute the effective address
+	// Check that indirect addressing mode is valid and compute the effective address
 	typename CONFIG::address_t ea;        // The effective address
 	bool update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
 
-	if(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
@@ -279,12 +322,51 @@ LDI_indir.execute = {
 		cpu.SetAR(ar, output_ar);
 	}
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
-	);
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+op LDI_imm  (0b000[3]:0b010000[6]:0b11[2]:dst[5]:sext<32> imm[16])
+
+LDI_imm.disasm = {
+	const char *dst_reg_name = REG_NAME[dst];
+	if(!dst_reg_name) return false;
+
+	os << "LDI " << imm << ", " << dst_reg_name;
+	return true;
+}
+
+LDI_imm.execute = {
+	// Check whether the destination register number is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result
+	uint32_t result = imm; // imm has already been sign extended by the decoder
+
+	// Write back result in destination operand
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 /* end of LDI (load integer)
@@ -307,6 +389,23 @@ LDIcond_reg.disasm = {
 	return true;
 }
 
+LDIcond_reg.execute = {
+	// Check whether the source and destination registers, and the condition are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read the source operand
+	uint32_t result = cpu.GetIntReg(src);
+
+	// Write back result in destination operand
+	cpu.SetIntReg(dst, result);
+}
+
 op LDIcond_dir  (0b0101[4]:cond[5]:0b01[2]:dst[5]:direct[16])
 
 LDIcond_dir.disasm = {
@@ -316,6 +415,26 @@ LDIcond_dir.disasm = {
 
 	os << "LDI" << cond_name << " @0x" << hex << direct << dec << ", " << dst_reg_name;
 	return true;
+}
+
+LDIcond_dir.execute = {
+	// Check whether the destination register and the condition are valid
+	if(unlikely(!cpu.HasReg(dst) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Compute the effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Load the word from memory
+	uint32_t result = cpu.IntLoad(ea);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
 }
 
 op LDIcond_indir(0b0101[4]:cond[5]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
@@ -331,6 +450,39 @@ LDIcond_indir.disasm = {
 	return true;
 }
 
+LDIcond_indir.execute = {
+	// Check whether the destination register and the condition are valid
+	if(unlikely(!cpu.HasReg(dst) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Load the word from memory
+	uint32_t result = cpu.IntLoad(ea);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+}
+
 op LDIcond_imm  (0b0101[4]:cond[5]:0b11[2]:dst[5]:sext<32> imm[16])
 
 LDIcond_imm.disasm = {
@@ -341,6 +493,23 @@ LDIcond_imm.disasm = {
 
 	os << "LDI" << cond_name << " " << imm << ", " << dst_reg_name;
 	return true;
+}
+
+LDIcond_imm.execute = {
+	// Check whether the destination register and the condition are valid
+	if(unlikely(!cpu.HasReg(dst) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Compute the result
+	uint32_t result = imm; // imm has already been sign extended by the decoder
+
+	// Write back result in destination operand
+	cpu.SetIntReg(dst, result);
 }
 
 /* end of LDIcond (load integer conditionally)
@@ -408,6 +577,10 @@ LDP.disasm = {
 	return true;
 }
 
+LDP.execute = {
+	// Update DP
+	cpu.SetDP(src);
+}
 
 /* end of LDP (load data page pointer)
  *************************************************/
@@ -426,6 +599,40 @@ POP.disasm = {
 
 	os << "POP " << dst_reg_name;
 	return true;
+}
+
+POP.execute = {
+	// Check whether the destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read SP
+	typename CONFIG::address_t sp = cpu.GetSP();
+
+	// Read the word at SP from memory
+	uint32_t result = cpu.IntLoad(sp);
+
+	// Compute the new value of SP
+	sp = sp - 1;
+
+	// Write back the result
+	cpu.SetIntReg(dst, result);
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 /* end of POP (pop integer from stack)
@@ -468,7 +675,7 @@ PUSH.disasm = {
 
 PUSH.execute = {
 	// Check whether the source register number is valid
-	if(!cpu.HasReg(src))
+	if(unlikely(!cpu.HasReg(src)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
@@ -476,10 +683,10 @@ PUSH.execute = {
 	// Read the source operand
 	uint32_t src_value = cpu.GetIntReg(src);
 
-	// Compute the new SP value
+	// Read SP and compute its new value
 	typename CONFIG::address_t sp = cpu.GetSP() + 1;
 
-	// Store the source operand at SP
+	// Store the source operand at SP + 1
 	cpu.IntStore(sp, src_value);
 
 	// Update SP
@@ -543,7 +750,7 @@ STF_indir.disasm = {
  * op STI(0b000[3]:0b101010[6]:g[2]:src[5]:dst[16])
  */
  
-op STI_dir  (0b000[3]:0b101010[6]:0b01[2]:src[5]:direct[16])
+op STI_dir  (0b000[3]:0b101010[6]:0b01[2]:0b00[2]:src[3]:direct[16])
 
 STI_dir.disasm = {
 	const char *src_reg_name = REG_NAME[src];
@@ -551,6 +758,17 @@ STI_dir.disasm = {
 
 	os << "STI " << src_reg_name << ", @0x" << direct;
 	return true;
+}
+
+STI_dir.execute = {
+	// Read the source operand
+	uint32_t result = cpu.GetIntReg(src);
+
+	// Compute the effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Store the word into memory
+	cpu.IntStore(ea, result);
 }
 
 op STI_indir(0b000[3]:0b101010[6]:0b10[2]:src[5]:mod[5]:ar[3]:disp[8])
@@ -562,6 +780,30 @@ STI_indir.disasm = {
 
 	os << "STI " << src_reg_name << ", " << disasm_dst_indir;
 	return true;
+}
+
+STI_indir.execute = {
+	// Read the source operand
+	uint32_t result = cpu.GetIntReg(src);
+
+	// Check that indirect addressing mode is valid and compute the effective address
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Store the word into memory
+	cpu.IntStore(ea, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
 }
 
 /* end of STI (store integer)

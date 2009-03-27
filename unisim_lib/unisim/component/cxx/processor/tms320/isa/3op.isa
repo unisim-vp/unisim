@@ -112,6 +112,12 @@ ADDC3_indir_indir.disasm = {
 }
 
 ADDC3_reg_reg.execute = {
+	// Check whether source and destination operands are valid
+	if(unlikely(!cpu.HasReg(src1) || !cpu.HasReg(src2) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read 1st source operand
 	uint32_t src1_value = cpu.GetIntReg(src1);
 
@@ -131,14 +137,18 @@ ADDC3_reg_reg.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
-		carry_out,
-		overflow
-	);
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			carry_out,
+			overflow
+		);
+	}
 }
 
 /* end of ADDC3 (add with carry)
@@ -325,6 +335,12 @@ AND3_indir_indir.disasm = {
 }
 
 AND3_reg_reg.execute = {
+	// Check whether source and destination operands are valid
+	if(unlikely(!cpu.HasReg(src1) || !cpu.HasReg(src2) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read 1st source operand
 	uint32_t src1_value = cpu.GetIntReg(src1);
 
@@ -337,12 +353,16 @@ AND3_reg_reg.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
-	);
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 /* end of AND3 (bitwise-logical AND)

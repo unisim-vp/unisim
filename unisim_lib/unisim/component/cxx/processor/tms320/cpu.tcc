@@ -1095,11 +1095,9 @@ void
 CPU<CONFIG, DEBUG> ::
 IntStore(address_t ea, uint32_t value)
 {
-	cerr << "Store of 0x" << hex << value << " at 0x" << ea << dec << endl;
-
 	value = Host2LittleEndian(value);
 
-	if(!PrWrite(ea, &value, sizeof(value)))
+	if(unlikely(!PrWrite(ea, &value, sizeof(value))))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(ea);
 	}
@@ -1119,7 +1117,7 @@ IntLoad(address_t ea)
 {
 	uint32_t value;
 
-	if(!PrRead(ea, &value, sizeof(value)))
+	if(unlikely(!PrRead(ea, &value, sizeof(value))))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(ea);
 	}
@@ -1141,7 +1139,7 @@ Fetch(address_t addr)
 {
 	uint32_t insn;
 
-	if(!PrRead(addr, &insn, sizeof(insn)))
+	if(unlikely(!PrRead(addr, &insn, sizeof(insn))))
 	{
 		throw BadMemoryAccessException<CONFIG, DEBUG>(addr);
 	}

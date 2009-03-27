@@ -331,6 +331,15 @@ public:
 	*/
 	bool ComputeIndirEA(address_t& ea, bool& update_ar, address_t& ouput_ar, unsigned int mod, unsigned int ar_num, uint32_t disp = 1);
 
+	/** Compute the effective address for indirect addressing mode
+	    @param direct The 16-bit 'direct' instruction bit field
+	    @return the effective address
+	*/
+	inline address_t ComputeDirEA(uint32_t direct) const
+	{
+		return (GetDP() << 16) | direct;
+	}
+
     //===============================================================
 	//= Execution methods                                     START =
 	//===============================================================
@@ -407,15 +416,6 @@ private:
 	static const unsigned int REG_RE = 0x1a;
 	static const unsigned int REG_RC = 0x1b;
 
-	static const uint32_t VALID_REGS_MASK = 
-		(1 << REG_R0)  | (1 << REG_R1)  | (1 << REG_R2)  | (1 << REG_R3)  |
-		(1 << REG_R4)  | (1 << REG_R5)  | (1 << REG_R6)  | (1 << REG_R7)  |
-		(1 << REG_AR0) | (1 << REG_AR1) | (1 << REG_AR2) | (1 << REG_AR3) |
-		(1 << REG_AR4) | (1 << REG_AR5) | (1 << REG_AR6) | (1 << REG_AR7) |
-		(1 << REG_DP)  | (1 << REG_IR0) | (1 << REG_IR1) | (1 << REG_BK)  |
-		(1 << REG_SP)  | (1 << REG_ST)  | (1 << REG_IE)  | (1 << REG_IF)  |
-		(1 << REG_IOF) | (1 << REG_RS)  | (1 << REG_RE)  | (1 << REG_RC);
-
 	// Condition encoding                          cond4-0
 	static const unsigned int COND_U    = 0x00;  // 00000
 	static const unsigned int COND_LO   = 0x01;  // 00001
@@ -438,6 +438,12 @@ private:
 	static const unsigned int COND_LUF  = 0x13;  // 10011
 	static const unsigned int COND_ZUF  = 0x14;  // 10100
 
+	static const unsigned int COND_VALID_MASK =
+		(1 << COND_U) | (1 << COND_LO) | (1 << COND_LS) | (1 << COND_HI) |
+		(1 << COND_HS) | (1 << COND_EQ) | (1 << COND_NE) | (1 << COND_LT) |
+		(1 << COND_LE) | (1 << COND_GT) | (1 << COND_GE) | (1 << COND_NV) |
+		(1 << COND_V) | (1 << COND_NUF) | (1 << COND_UF) | (1 << COND_NLV) |
+		(1 << COND_LV) | (1 << COND_NLUF) | (1 << COND_LUF) | (1 << COND_ZUF);
 
 	// Registers
 	address_t reg_pc;    // Program counter
@@ -470,6 +476,22 @@ public:
 		return regs[REG_ST].lo;
 	}
 
+	/** Get the 8 least significative bits of DP
+	    @return 8 least significative bits of DP
+	*/
+	inline uint32_t GetDP() const
+	{
+		return regs[REG_DP].lo & 0xff;
+	}
+
+	/** Set the 8 least significative bits of DP
+	    @param 8-bit value to write
+	*/
+	inline void SetDP(uint32_t value)
+	{
+		regs[REG_DP].lo = (regs[REG_DP].lo & ~0xff) | (value & 0xff);
+	}
+
 	/** Set ST
 	    @param the 32-bit value to write into ST
 	*/
@@ -484,7 +506,34 @@ public:
 	*/
 	inline static bool HasReg(unsigned int reg_num)
 	{
-		return (VALID_REGS_MASK >> reg_num) & 1;
+		return reg_num <= 27;
+	}
+
+	/** Check wether register is an extended precision register
+	    @param reg_num the register number
+	    @return true if the register is an extended precision register (i.e. 0 <= reg_num <= 7), false otherwise
+	*/
+	inline static bool IsExtReg(unsigned int reg_num)
+	{
+		return reg_num <= 7;
+	}
+
+	/** Check wether a condition is valid
+	    @param cond the 5-bit 'cond' bit fields of the instruction
+	    @return true if the condition is valid, false otherwise
+	*/
+	inline static bool HasCondition(unsigned int cond)
+	{
+		return (COND_VALID_MASK >> cond) & 1;
+	}
+
+	/** Check wether register is the status register (ST)
+	    @param reg_num the register number
+	    @return true if the register is the status register (i.e. reg_num is REG_ST), false otherwise
+	*/
+	inline static bool IsStatusReg(unsigned int reg_num)
+	{
+		return reg_num == REG_ST;
 	}
 
 	/** Get 40-bit extended precision register value.

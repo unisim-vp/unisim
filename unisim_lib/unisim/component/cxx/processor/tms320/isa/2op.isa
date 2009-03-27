@@ -261,6 +261,12 @@ ADDC_imm.disasm = {
 }
 
 ADDC_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read source operand
 	uint32_t src_value = cpu.GetIntReg(src);
 
@@ -280,14 +286,18 @@ ADDC_reg.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
-		carry_out,
-		overflow
-	);
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			carry_out,
+			overflow
+		);
+	}
 }
 
 /* end of ADDC (add integers with carry)
@@ -460,6 +470,12 @@ AND_imm.disasm = {
 }
 
 AND_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read source operand
 	uint32_t src_value = cpu.GetIntReg(src);
 
@@ -472,12 +488,16 @@ AND_reg.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_V,  // reset mask
-		M_ST_N | M_ST_Z    // or mask
-	);
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 /* end of AND (bitwise-logical AND)
@@ -1437,8 +1457,8 @@ ROR.disasm = {
 }
 
 ROR.execute = {
-	// Check whether the destination register number is valid
-	if(!cpu.HasReg(dst))
+	// Check whether the destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
@@ -1453,13 +1473,17 @@ ROR.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-		M_ST_N | M_ST_Z | M_ST_C,  // or mask
-		carry_out
-	);
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			carry_out
+		);
+	}
 }
 
 /* end of ROR (rotate right)
@@ -1483,8 +1507,8 @@ RORC.disasm = {
 }
 
 RORC.execute = {
-	// Check whether the destination register number is valid
-	if(!cpu.HasReg(dst))
+	// Check whether the destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
@@ -1502,13 +1526,17 @@ RORC.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
-	// Generate flags (into ST)
-	cpu.GenFlags(
-		result,
-		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
-		M_ST_N | M_ST_Z | M_ST_C,  // or mask
-		carry_out
-	);
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			carry_out
+		);
+	}
 }
 
 /* end of RORC (rotate right through carry)
