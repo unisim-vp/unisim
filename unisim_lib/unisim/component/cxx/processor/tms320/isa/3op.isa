@@ -132,7 +132,11 @@ ADDC3_reg_reg.execute = {
 	uint8_t carry_out;    // the carry out (0 or 1)
 	uint8_t overflow;     // the overflow (0 or 1)
 
-	Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, carry_in);
+	else
+		Add32(result, carry_out, overflow, src1_value, src2_value, carry_in);
 
 	// Write back result
 	cpu.SetIntReg(dst, result);
