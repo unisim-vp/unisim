@@ -136,7 +136,7 @@ CUresult  CUDAAPI cuDeviceGetProperties(CUdevprop *prop, CUdevice dev)
 
 CUresult  CUDAAPI cuDeviceGetAttribute(int *pi, CUdevice_attribute attrib, CUdevice dev)
 {
-	if(verbose) cerr << "cuDeviceGetAttributes(..., " << attrib << ", " << dev << ")" << endl;
+	if(verbose) cerr << "cuDeviceGetAttribute(..., " << attrib << ", " << dev << ")" << endl;
  	try {
 		*pi = driver.Dev(dev).Attribute(attrib);
 		return CUDA_SUCCESS;

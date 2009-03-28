@@ -335,7 +335,9 @@ int Device<CONFIG>::Attribute(int attrib)
 		return 0;
     case CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT:
     	return CONFIG::CORE_COUNT;
-    default:
+	case CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT:
+		return 1664;  // undocumented attribute, random value used.
+	default:
     	throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
 }
