@@ -69,6 +69,23 @@ Bcond_reg.disasm = {
 	return true;
 }
 
+Bcond_reg.execute = {
+	// Check whether the source register and the condition are valid
+	if(unlikely(!cpu.HasReg(reg) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read the source operand
+	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+
+	// Branch to the target address
+	cpu.Branch(target_addr);
+}
+
 op Bcond_disp(0b011010[6]:0b1[1]:0b000[3]:0b0[1]:cond[5]:sext<32> imm[16])
 
 Bcond_disp.disasm = {
@@ -77,6 +94,26 @@ Bcond_disp.disasm = {
 	if(!cond_name) return false;
 	os << "B" << cond_name << " 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
 	return true;
+}
+
+Bcond_disp.execute = {
+	// Check whether the condition is valid
+	if(unlikely(!cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Compute the branch target address
+	typename CONFIG::address_t target_addr = pc + imm + 1;
+
+	// Branch to the target address
+	cpu.Branch(target_addr);
 }
  
 /* end of Bcond (branch conditionally (standard))
@@ -98,6 +135,22 @@ BcondD_reg.disasm = {
 	return true;
 }
 
+BcondD_reg.execute = {
+	// Check whether the source register and the condition are valid
+	if(unlikely(!cpu.HasReg(reg) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read the source operand
+	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+
+	// Branch to the target address with a delay of 3 instructions
+	cpu.Branch(target_addr, 3);
+}
 
 op BcondD_disp(0b011010[6]:0b1[1]:0b000[3]:0b1[1]:cond[5]:sext<32> imm[16])
 
@@ -107,6 +160,26 @@ BcondD_disp.disasm = {
 	if(!cond_name) return false;
 	os << "B" << cond_name << "D 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 12 + (4 * imm)) << dec;
 	return true;
+}
+
+BcondD_disp.execute = {
+	// Check whether the condition is valid
+	if(unlikely(!cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Compute the branch target address
+	typename CONFIG::address_t target_addr = pc + imm + 3;
+
+	// Branch to the target address with a delay of 3 instructions
+	cpu.Branch(target_addr, 3);
 }
 
 /* end of BcondD (branch conditionally (delayed))
@@ -123,7 +196,15 @@ BR.disasm = {
 	os << "BR 0x" << hex << src << dec;
 	return true;
 }
- 
+
+BR.execute = {
+	// Compute the branch target address
+	typename CONFIG::address_t target_addr = src;
+
+	// Branch to the target address
+	cpu.Branch(target_addr);
+}
+
 /* end of BR (branch unconditionally (standard))
  **********************************************************/
 
@@ -137,6 +218,14 @@ op BRD(0b0110000[7]:0b1[1]:<32> src[24])
 BRD.disasm = {
 	os << "BRD 0x" << hex << src << dec;
 	return true;
+}
+
+BRD.execute = {
+	// Compute the branch target address
+	typename CONFIG::address_t target_addr = src;
+
+	// Branch to the target address with a delay of 3 instructions
+	cpu.Branch(target_addr, 3);	
 }
  
 /* end of BRD (branch unconditionally (delayed))
@@ -153,7 +242,30 @@ CALL.disasm = {
 	os << "CALL 0x" << hex << src << dec;
 	return true;
 }
- 
+
+CALL.execute = {
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Read SP and compute its new value
+	typename CONFIG::address_t sp = cpu.GetSP() + 1;
+
+	// Compute the next PC
+	typename CONFIG::address_t next_pc = pc + 1;
+
+	// Compute the target call address
+	typename CONFIG::address_t target_addr = src;
+
+	// Store the next PC at SP + 1
+	cpu.IntStore(sp, next_pc);
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Branch to the target address
+	cpu.Branch(target_addr);	
+}
+
 /* end of CALL (call subroutine)
  **********************************************************/
 
@@ -173,6 +285,38 @@ CALLcond_reg.disasm = {
 	return true;
 }
 
+CALLcond_reg.execute = {
+	// Check whether the source register and the condition are valid
+	if(unlikely(!cpu.HasReg(reg) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read the source operand
+	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Read SP and compute its new value
+	typename CONFIG::address_t sp = cpu.GetSP() + 1;
+
+	// Compute the next PC
+	typename CONFIG::address_t next_pc = pc + 1;
+
+	// Store the next PC at SP + 1
+	cpu.IntStore(sp, next_pc);
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Branch to the target address
+	cpu.Branch(target_addr);	
+}
+
 op CALLcond_disp(0b011100[6]:0b1[1]:0b0000[4]:cond[5]:sext<32> imm[16])
 
 CALLcond_disp.disasm = {
@@ -181,6 +325,38 @@ CALLcond_disp.disasm = {
 	if(!cond_name) return false;
 	os << "CALL" << cond_name << " 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
 	return true;
+}
+
+CALLcond_disp.execute = {
+	// Check whether the condition is valid
+	if(unlikely(!cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Read SP and compute its new value
+	typename CONFIG::address_t sp = cpu.GetSP() + 1;
+
+	// Compute the next PC
+	typename CONFIG::address_t next_pc = pc + 1;
+
+	// Compute the target address
+	typename CONFIG::address_t target_addr = pc + imm + 1;
+
+	// Store the next PC at SP + 1
+	cpu.IntStore(sp, next_pc);
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Branch to the target address
+	cpu.Branch(target_addr);	
 }
 
 /* end of CALLcond (call subroutine conditionally)
@@ -202,6 +378,35 @@ DBcond_reg.disasm = {
 	return true;
 }
 
+DBcond_reg.execute = {
+	// Check whether the source register and the condition are valid
+	if(unlikely(!cpu.HasReg(reg) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read ARn
+	int32_t ar_value = cpu.GetIntReg(ar);
+
+	// Compute new value for ARn
+	ar_value = ar_value - 1;
+
+	// Update ARn
+	cpu.SetAR(ar, (uint32_t) ar_value);
+
+	// Check whether ARn is >= 0
+	if(ar_value < 0) return;
+
+	// Read the source operand
+	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+
+	// Branch to the target address
+	cpu.Branch(target_addr);
+}
+
 op DBcond_disp(0b011011[6]:0b1[1]:ar[3]:0b0[1]:cond[5]:sext<32> imm[16])
 
 DBcond_disp.disasm = {
@@ -210,6 +415,38 @@ DBcond_disp.disasm = {
 	if(!cond_name) return false;
 	os << "DB" << cond_name << " AR" << ar << ", 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
 	return true;
+}
+
+DBcond_disp.execute = {
+	// Check whether the source register and the condition are valid
+	if(unlikely(!cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read ARn
+	int32_t ar_value = cpu.GetIntReg(ar);
+
+	// Compute new value for ARn
+	ar_value = ar_value - 1;
+
+	// Update ARn
+	cpu.SetAR(ar, (uint32_t) ar_value);
+
+	// Check whether ARn is >= 0
+	if(ar_value < 0) return;
+
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Compute the target address
+	typename CONFIG::address_t target_addr = pc + imm + 1;
+
+	// Branch to the target address
+	cpu.Branch(target_addr);
 }
 
 /* end of DBcond (decrement and branch conditionally (standard))
@@ -231,6 +468,35 @@ DBcondD_reg.disasm = {
 	return true;
 }
 
+DBcondD_reg.execute = {
+	// Check whether the source register and the condition are valid
+	if(unlikely(!cpu.HasReg(reg) || !cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read ARn
+	int32_t ar_value = cpu.GetIntReg(ar);
+
+	// Compute new value for ARn
+	ar_value = ar_value - 1;
+
+	// Update ARn
+	cpu.SetAR(ar, (uint32_t) ar_value);
+
+	// Check whether ARn is >= 0
+	if(ar_value < 0) return;
+
+	// Read the source operand
+	typename CONFIG::address_t target_addr = cpu.GetIntReg(reg);
+
+	// Branch to the target address with a delay of 3 instructions
+	cpu.Branch(target_addr, 3);
+}
+
 op DBcondD_disp(0b011011[6]:0b1[1]:ar[3]:0b1[1]:cond[5]:sext<32> imm[16])
 
 DBcondD_disp.disasm = {
@@ -239,6 +505,38 @@ DBcondD_disp.disasm = {
 	if(!cond_name) return false;
 	os << "DB" << cond_name << "D AR" << ar << ", 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 12 + (4 * imm)) << dec;
 	return true;
+}
+
+DBcondD_disp.execute = {
+	// Check whether the source register and the condition are valid
+	if(unlikely(!cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read ARn
+	int32_t ar_value = cpu.GetIntReg(ar);
+
+	// Compute new value for ARn
+	ar_value = ar_value - 1;
+
+	// Update ARn
+	cpu.SetAR(ar, (uint32_t) ar_value);
+
+	// Check whether ARn is >= 0
+	if(ar_value < 0) return;
+
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Compute the target address
+	typename CONFIG::address_t target_addr = pc + imm + 3;
+
+	// Branch to the target address with a delay of 3 instructions
+	cpu.Branch(target_addr, 3);
 }
 
 /* end of DBcondD (decrement and branch conditionally (delayed))
@@ -296,6 +594,10 @@ NOP_reg.disasm = {
 	return true;
 }
 
+NOP_reg.execute = {
+	// No operation
+}
+
 op NOP_indir(0b000[3]:0b011001[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
 
 NOP_indir.disasm = {
@@ -303,6 +605,21 @@ NOP_indir.disasm = {
 	if(!cpu.DisasmIndir(disasm_indir, mod, ar, disp)) return false;
 	os << "NOP " << disasm_indir;
 	return true;
+}
+
+NOP_indir.execute = {
+	// Check that indirect addressing mode is valid and compute the effective address
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Do a dummy load from memory
+	cpu.IntLoad(ea);
 }
 
 /* end of NOP (no operation)
@@ -323,6 +640,35 @@ RETIcond.disasm = {
 	return true;
 }
 
+RETIcond.execute = {
+	// Check whether the condition is valid
+	if(unlikely(!cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read SP
+	typename CONFIG::address_t sp = cpu.GetSP();
+
+	// Load the target address stored at SP
+	typename CONFIG::address_t target_addr = cpu.IntLoad(sp);
+
+	// Compute the new value of SP
+	sp = sp - 1;
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Set ST[GIE]
+	cpu.SetST_GIE();
+
+	// Branch to the target address
+	cpu.Branch(target_addr);	
+}
+
 /* end of RETIcond (return from interrupt conditionally)
  **********************************************************/
 
@@ -341,6 +687,32 @@ RETScond.disasm = {
 	return true;
 }
 
+RETScond.execute = {
+	// Check whether the condition is valid
+	if(unlikely(!cpu.HasCondition(cond)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check the condition
+	if(!cpu.CheckCondition(cond)) return;
+
+	// Read SP
+	typename CONFIG::address_t sp = cpu.GetSP();
+
+	// Load the target address stored at SP
+	typename CONFIG::address_t target_addr = cpu.IntLoad(sp);
+
+	// Compute the new value of SP
+	sp = sp - 1;
+
+	// Update SP
+	cpu.SetSP(sp);
+
+	// Branch to the target address
+	cpu.Branch(target_addr);	
+}
+
 /* end of RETScond (return form subroutine conditionally)
  **********************************************************/
 
@@ -354,6 +726,26 @@ op RPTB(0b01100100[8]:<32> src[24])
 RPTB.disasm = {
 	os << "RPTB 0x" << hex << src << dec;
 	return true;
+}
+
+RPTB.execute = {
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Compute next PC
+	typename CONFIG::address_t next_pc = pc + 1;
+
+	// Write next PC into RS and RE
+	cpu.SetRS(next_pc);
+
+	// Set ST[RM]
+	cpu.SetST_RM();
+
+	// Set S
+	cpu.ResetS();
+
+	// Load RE with source operand value
+	cpu.SetRC(src);
 }
 
 /* end of RPTB (repeat block of instructions)
@@ -374,11 +766,68 @@ RPTS_reg.disasm = {
 	return true;
 }
 
+RPTS_reg.execute = {
+	// Check that source register is valid
+	if(unlikely(!cpu.HasReg(src)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Read the source operand
+	typename CONFIG::address_t src_value = cpu.GetIntReg(src);
+
+	// Compute next PC
+	typename CONFIG::address_t next_pc = pc + 1;
+
+	// Write next PC into RS and RE
+	cpu.SetRS(next_pc);
+	cpu.SetRE(next_pc);
+
+	// Set ST[RM]
+	cpu.SetST_RM();
+
+	// Set S
+	cpu.SetS();
+
+	// Load RC with source operand value
+	cpu.SetRC(src_value);
+}
+
 op RPTS_dir  (0b000[3]:0b100111[6]:0b01[2]:0b11011[5]:direct[16])
 
 RPTS_dir.disasm = {
 	os << "RPTS @0x" << hex << direct << dec;
 	return true;
+}
+
+RPTS_dir.execute = {
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Compute the effective address of the source operand
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Load the source operand value from memory
+	typename CONFIG::address_t src_value = cpu.IntLoad(ea);
+
+	// Compute next PC
+	typename CONFIG::address_t next_pc = pc + 1;
+
+	// Write next PC into RS and RE
+	cpu.SetRS(next_pc);
+	cpu.SetRE(next_pc);
+
+	// Set ST[RM]
+	cpu.SetST_RM();
+
+	// Set S
+	cpu.SetS();
+
+	// Load RC with source operand value
+	cpu.SetRC(src_value);
 }
 
 op RPTS_indir(0b000[3]:0b100111[6]:0b10[2]:0b11011[5]:mod[5]:ar[3]:disp[8])
@@ -390,11 +839,69 @@ RPTS_indir.disasm = {
 	return true;
 }
 
+RPTS_indir.execute = {
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Load the source operand value from memory
+	typename CONFIG::address_t src_value = cpu.IntLoad(ea);
+
+	// Compute next PC
+	typename CONFIG::address_t next_pc = pc + 1;
+
+	// Write next PC into RS and RE
+	cpu.SetRS(next_pc);
+	cpu.SetRE(next_pc);
+
+	// Set ST[RM]
+	cpu.SetST_RM();
+
+	// Set S
+	cpu.SetS();
+
+	// Load RC with source operand value
+	cpu.SetRC(src_value);
+}
+
 op RPTS_imm  (0b000[3]:0b100111[6]:0b11[2]:0b11011[5]:imm[16])
 
 RPTS_imm.disasm = {
 	os << "RPTS @0x" << hex << imm << dec;
 	return true;
+}
+
+RPTS_imm.execute = {
+	// Read the PC
+	typename CONFIG::address_t pc = cpu.GetPC();
+
+	// Compute the result
+	uint32_t src_value = imm; // imm has already been sign extended by the decoder
+
+	// Compute next PC
+	typename CONFIG::address_t next_pc = pc + 1;
+
+	// Write next PC into RS and RE
+	cpu.SetRS(next_pc);
+	cpu.SetRE(next_pc);
+
+	// Set ST[RM]
+	cpu.SetST_RM();
+
+	// Set S
+	cpu.SetS();
+
+	// Load RC with source operand value
+	cpu.SetRC(src_value);
 }
 
 /* end of RPTS (repeat single instruction)

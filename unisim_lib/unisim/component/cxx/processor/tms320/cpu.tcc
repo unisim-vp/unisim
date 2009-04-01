@@ -998,60 +998,164 @@ StepInstruction()
 		{
 			typename DebugControl<uint64_t>::DebugCommand dbg_cmd;
 
-			dbg_cmd = debug_control_import->FetchDebugCommand(4 * GetPC());
+			dbg_cmd = debug_control_import->FetchDebugCommand(4 * reg_pc);
 	
 			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) break;
 			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL) Stop(0);
 		} while(1);
 	}
 
-	typename isa::tms320::Operation<CONFIG, DEBUG> *operation = 0;
-
-	// Read the PC
-	address_t addr = GetPC();
-
-	SetNPC(addr + 1);
-
 	try
 	{
-		// Fetch the instruction
-		uint32_t insn = Fetch(addr);
+		// Check whether the processor is running in repeat mode (RPTB or RPTS)
+		if(unlikely(GetST_RM()))
+		{
+			// Check whether this is a repeat single (RPTS)
+			if(repeat_single)
+			{
+				// Check whether instruction to repeat has already been fetched from memory to IR
+				if(unlikely(first_time_through_repeat_single))
+				{
+					// Fetch the instruction from memory into IR
+					try
+					{
+						reg_ir = Fetch(reg_pc);
+					}
+					catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
+					{
+						logger << DebugError << exc.what() << EndDebugError;
+						Stop(-1);
+					}
+					first_time_through_repeat_single = false;
+				}
 
-		// Decode the instruction
-		operation = decoder.Decode(4 * addr, insn);
+				// Decrement RC
+				regs[REG_RC].lo = regs[REG_RC].lo - 1;
 
-		// Execute the instruction
-		operation->execute(*this);
-	}
-	catch(BogusOpcodeException<CONFIG, DEBUG>& exc)
-	{
-		logger << DebugError << exc.what() << EndDebugError;
-	}
-	catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
-	{
-		logger << DebugError << exc.what() << EndDebugError;
+				// Check if RC is < 0
+				if((int32_t) regs[REG_RC].lo < 0)
+				{
+					// Disable the repeat mode by resetting ST[RM] bit
+					ResetST_RM();
+					repeat_single = false;
+					// Compute the address of the next instruction, i.e. PC + 1
+					reg_npc = reg_pc + 1;
+				}
+				else
+				{
+					// Compute the address of the next instruction, i.e. PC so that current instruction in IR will be repeated again
+					reg_npc = reg_pc;
+				}
+			}
+			else
+			{
+				// Fetch the instruction from memory into IR
+				try
+				{
+					reg_ir = Fetch(reg_pc);
+				}
+				catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
+				{
+					logger << DebugError << exc.what() << EndDebugError;
+					Stop(-1);
+				}
+
+				// Check whether the end of the block to repeat has been reached
+				if(reg_pc == regs[REG_RE].lo)
+				{
+					// Decrement RC
+					regs[REG_RC].lo = regs[REG_RC].lo - 1;
+
+					// Check if RC is >= 0
+					if((int32_t) regs[REG_RC].lo >= 0)
+					{
+						// Compute the address the next instruction, i.e. the start of the block to repeat
+						reg_npc = regs[REG_RS].lo;
+					}
+					else
+					{
+						// Disable the repeat mode by resetting ST[RM] bit
+						ResetST_RM();
+						repeat_single = false;
+						// Compute the address of the next instruction, i.e. PC + 1
+						reg_npc = reg_pc + 1;
+					}
+				}
+				else
+				{
+					// Compute the address of the next instruction, i.e. PC + 1
+					reg_npc = reg_pc + 1;
+				}
+			}
+		}
+		else
+		{
+			// Fetch the instruction from memory into IR
+			try
+			{
+				reg_ir = Fetch(reg_pc);
+			}
+			catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
+			{
+				logger << DebugError << exc.what() << EndDebugError;
+				Stop(-1);
+			}
+
+			// Compute the address of the next instruction, i.e. PC + 1
+			reg_npc = reg_pc + 1;
+		}
+
+		try
+		{
+			// Decode the instruction
+			typename isa::tms320::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * reg_pc, reg_ir);
+
+			// Execute the instruction
+			operation->execute(*this);
+		}
+		catch(BogusOpcodeException<CONFIG, DEBUG>& exc)
+		{
+			logger << DebugError << exc.what() << EndDebugError;
+			Stop(-1);
+		}
+		catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
+		{
+			logger << DebugError << exc.what() << EndDebugError;
+			Stop(-1);
+		}
+
+		// Check whether a delay branch is pending
+		if(branch_delay)
+		{
+			// Decrement the delay and branch once it has reached zero
+			if(--branch_delay == 0)
+			{
+				reg_npc = branch_addr;
+			}
+		}
+
+		/* go to the next instruction */
+		reg_pc = reg_npc;
+
+		/* update the instruction counter */
+	//	instruction_counter++;
+
+		if(unlikely(requires_finished_instruction_reporting))
+		{
+			if(unlikely(memory_access_reporting_import != 0))
+			{
+				memory_access_reporting_import->ReportFinishedInstruction(4 * reg_pc);
+			}
+		}
+
+	//	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 	}
 	catch(Exception& e)
 	{
 		logger << DebugError << "uncaught exception :" << e.what() << EndDebugError;
-		Stop(1);
+		Stop(-1);
 	}
 
-	/* go to the next instruction */
-	SetPC(GetNPC());
-
-	/* update the instruction counter */
-//	instruction_counter++;
-
-	if(unlikely(requires_finished_instruction_reporting))
-	{
-		if(unlikely(memory_access_reporting_import != 0))
-		{
-			memory_access_reporting_import->ReportFinishedInstruction(4 * GetNPC());
-		}
-	}
-
-//	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 }
 
 template<class CONFIG, bool DEBUG>
