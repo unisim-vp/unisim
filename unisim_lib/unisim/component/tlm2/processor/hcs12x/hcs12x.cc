@@ -137,7 +137,7 @@ void HCS12X ::Sleep() {
  * Asserting the ~RESET, ~XIRQ, or ~IRQ signals ends standby mode.
  */
 
-	wait(irq_event | reset_event | xirq_event);
+	wait(irq_event | reset_event);
 }
 
 void HCS12X ::Wait() {
@@ -147,7 +147,9 @@ void HCS12X ::Wait() {
  * Wait for not masked interrupts or non-masquable interrupts
  */
 
-	wait(irq_event | xirq_event);
+	wait(bus_cycle_time*3);
+
+//	wait(irq_event);
 }
 
 address_t HCS12X ::GetIntVector(uint8_t &ipl)
@@ -456,6 +458,8 @@ void HCS12X::AsyncIntThread()
 
 	while (true) {
 		wait();
+
+		irq_event.notify();
 
 		ReqAsynchronousInterrupt();
 	}

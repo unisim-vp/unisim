@@ -60,7 +60,7 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	SC_THREAD(Run);
 	interrupt_request_event;
 
-	for (int i=0; i<128; i++) {
+	for (int i=0; i<XINT_SIZE; i++) {
 		interrupt_flags[i] = false;
 	}
 }
@@ -167,10 +167,10 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 		vectorAddress = get_XIRQ_Vector();
 		interrupt_flags[XINT::INT_XIRQ_OFFSET/2] = false;
 	}
-	else
-		for (int index=cfaddr; index < cfaddr+8; index++) { // Check only the selected interrupts
-			if (interrupt_flags[index]) {
-				interrupt_flags[index] = false;
+	else {
+		int selectedInterrupt = 0;
+		for (int index=0; index < CFDATA_SIZE; index++) { // Check only the selected interrupts
+			if (interrupt_flags[cfaddr+index]) {
 				uint8_t dataPriority = int_cfdata[index] && 0x07;
 
 				// if 7-bit=0 then cpu else xgate
@@ -178,13 +178,16 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 				{
 					if (dataPriority > newIPL) {
 						newIPL = dataPriority;
-						vectorAddress = ((address_t) getIVBR() << 8) + cfaddr + index;
+						selectedInterrupt = cfaddr+index;
 					}
 				}
 				else ;
 
 			}
 		}
+		vectorAddress = ((address_t) getIVBR() << 8) + selectedInterrupt;
+		interrupt_flags[selectedInterrupt] = false;
+	}
 
 	if (vectorAddress == 0) {
 		if (isHardwareInterrupt) {
@@ -267,14 +270,14 @@ void XINT::write(address_t address, uint8_t value)
 		case IVBR_ADDRESS: setIVBR(value); break;
 		case INT_XGPRIO: setINT_XGPRIO(value); break;
 		case INT_CFADDR: setINT_CFADDR(value); break;
-		case INT_CFDATA0: setINT_CFDATA(0, value); break;
-		case INT_CFDATA1: setINT_CFDATA(1, value); break;
-		case INT_CFDATA2: setINT_CFDATA(2, value); break;
-		case INT_CFDATA3: setINT_CFDATA(3, value); break;
-		case INT_CFDATA4: setINT_CFDATA(4, value); break;
-		case INT_CFDATA5: setINT_CFDATA(5, value); break;
-		case INT_CFDATA6: setINT_CFDATA(6, value); break;
-		case INT_CFDATA7: setINT_CFDATA(7, value); break;
+		case INT_CFDATA0: write_INT_CFDATA(0, value); break;
+		case INT_CFDATA1: write_INT_CFDATA(1, value); break;
+		case INT_CFDATA2: write_INT_CFDATA(2, value); break;
+		case INT_CFDATA3: write_INT_CFDATA(3, value); break;
+		case INT_CFDATA4: write_INT_CFDATA(4, value); break;
+		case INT_CFDATA5: write_INT_CFDATA(5, value); break;
+		case INT_CFDATA6: write_INT_CFDATA(6, value); break;
+		case INT_CFDATA7: write_INT_CFDATA(7, value); break;
 		default: ;
 	}
 }
@@ -286,14 +289,14 @@ void XINT::read(address_t address, uint8_t &value)
 		case IVBR_ADDRESS: value = getIVBR();
 		case INT_XGPRIO: value = getINT_XGPRIO();;
 		case INT_CFADDR: value = getINT_CFADDR();
-		case INT_CFDATA0: value = getINT_CFDATA(0);
-		case INT_CFDATA1: value = getINT_CFDATA(1);
-		case INT_CFDATA2: value = getINT_CFDATA(2);
-		case INT_CFDATA3: value = getINT_CFDATA(3);
-		case INT_CFDATA4: value = getINT_CFDATA(4);
-		case INT_CFDATA5: value = getINT_CFDATA(5);
-		case INT_CFDATA6: value = getINT_CFDATA(6);
-		case INT_CFDATA7: value = getINT_CFDATA(7);
+		case INT_CFDATA0: value = read_INT_CFDATA(0);
+		case INT_CFDATA1: value = read_INT_CFDATA(1);
+		case INT_CFDATA2: value = read_INT_CFDATA(2);
+		case INT_CFDATA3: value = read_INT_CFDATA(3);
+		case INT_CFDATA4: value = read_INT_CFDATA(4);
+		case INT_CFDATA5: value = read_INT_CFDATA(5);
+		case INT_CFDATA6: value = read_INT_CFDATA(6);
+		case INT_CFDATA7: value = read_INT_CFDATA(7);
 		default: value = 0;
 	}
 }
@@ -307,9 +310,9 @@ void XINT::setINT_XGPRIO(uint8_t value) { int_xgprio = value; }
 uint8_t	XINT::getINT_CFADDR() { return int_cfaddr; }
 void XINT::setINT_CFADDR(uint8_t value) { int_cfaddr = value; }
 
-uint8_t	XINT::getINT_CFDATA(uint8_t index)
+uint8_t	XINT::read_INT_CFDATA(uint8_t index)
 {
-	assert(index < 8);
+	assert(index < CFDATA_SIZE);
 
 	uint8_t cfaddr = getINT_CFADDR();
 
@@ -344,9 +347,9 @@ uint8_t	XINT::getINT_CFDATA(uint8_t index)
 	return int_cfdata[index];
 }
 
-void XINT::setINT_CFDATA(uint8_t index, uint8_t value)
+void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 {
-	assert(index < 8);
+	assert(index < CFDATA_SIZE);
 
 	uint8_t cfaddr = getINT_CFADDR();
 

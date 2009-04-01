@@ -287,14 +287,16 @@ public:
 	uint8_t	getINT_CFADDR();
 	void setINT_CFADDR(uint8_t value);
 
-	uint8_t	getINT_CFDATA(uint8_t index);
-	void setINT_CFDATA(uint8_t index, uint8_t value);
+	uint8_t	read_INT_CFDATA(uint8_t index);
+	void write_INT_CFDATA(uint8_t index, uint8_t value);
 
 protected:
 
 private:
+	static const uint8_t XINT_SIZE		= 128; // Number of recognized/handled interrupts
+	static const uint8_t CFDATA_SIZE	= 8;
 
-	bool	interrupt_flags[128];
+	bool	interrupt_flags[XINT_SIZE];
 
 	sc_event interrupt_request_event;
 
@@ -304,7 +306,7 @@ private:
 	uint8_t ivbr;
 	uint8_t	int_xgprio;
 	uint8_t	int_cfaddr;
-	uint8_t	int_cfdata[8];
+	uint8_t	int_cfdata[CFDATA_SIZE];
 
 	bool isHardwareInterrupt;
 

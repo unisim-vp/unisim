@@ -137,9 +137,8 @@ private:
 	void Synchronize();
 	bool DebugEnable();
 
-	sc_event	irq_event,		// I-bit-Maskable Interrupt Requests
-				reset_event,	// Hardware and Software Reset
-				xirq_event;		// X-bit Non-Maskable Interrupt Requests
+	sc_event	irq_event,		// I-bit-Maskable Interrupt Requests and X-bit Non-Maskable Interrupt Requests
+				reset_event;	// Hardware and Software Reset
 
 	sc_time cpu_cycle_time;
 	sc_time bus_cycle_time;

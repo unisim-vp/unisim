@@ -251,13 +251,14 @@ void PWM<PWM_SIZE>::Run() {
 		 */
 		bool pwmChannelOutput[PWM_SIZE];
 
+		wait();
+
 		for (int i=0; i < PWM_SIZE; i++) {
 			pwmChannelOutput[i] = channel[i]->getOutput();
 		}
 
 		refreshOutput(pwmChannelOutput);
 
-		wait();
 	}
 }
 
