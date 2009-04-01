@@ -219,17 +219,17 @@ CPU(const char *name,
 		CacheInterface<typename CONFIG::address_t> *_memory_interface, 
 		Object *parent) :
 	Object(name, parent),
-	Client<Loader<typename CONFIG::address_t> >(name, parent),
+	// Client<Loader<typename CONFIG::address_t> >(name, parent),
 	Client<LinuxOS>(name, parent),
 	Service<CPULinuxOS>(name, parent),
-	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
-	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
+	Client<DebugControl<uint64_t> >(name, parent),
+	Client<MemoryAccessReporting<uint64_t> >(name, parent),
 	Service<MemoryAccessReportingControl>(name, parent),
-	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
+	Service<Disassembly<uint64_t> >(name, parent),
 	Service<Registers>(name, parent),
-	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
-	Service<Memory<typename CONFIG::address_t> >(name, parent),
-	Client<Memory<typename CONFIG::address_t> >(name, parent),
+	Service<MemoryInjection<uint64_t> >(name, parent),
+	Service<Memory<uint64_t> >(name, parent),
+	Client<Memory<uint64_t> >(name, parent),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
 	memory_injection_export("memory_injection_export", this),
@@ -368,18 +368,36 @@ Setup() {
 		verbose_dump_regs_end = true;
 	}
 	if( CONFIG::DEBUG_ENABLE && verbose_all) {
-		logger << DebugInfo << "verbose-all = true" << EndDebug;
+		logger << DebugInfo << "- verbose-all = true";
 	} else {
 		if (CONFIG::DEBUG_ENABLE) {
 			if (verbose_setup) 
-				logger << DebugInfo << "verbose-setup = true" << EndDebug;
+				logger << DebugInfo << "- verbose-setup = true" << EndDebug;
 			if (verbose_step)
-				logger << DebugInfo << "verbose-step = true" << EndDebug;
+				logger << DebugInfo << "- verbose-step = true" << EndDebug;
 			if (verbose_dump_regs_start)
-				logger << DebugInfo << "verbose-dump-regs-start = true" << EndDebug;
+				logger << DebugInfo << "- verbose-dump-regs-start = true" << EndDebug;
 			if (verbose_dump_regs_end)
-				logger << DebugInfo << "verbose-dump-regs-end = true" << EndDebug;
+				logger << DebugInfo << "- verbose-dump-regs-end = true" << EndDebug;
 		}
+	}
+
+	if (verbose_setup)
+	{
+		logger << DebugInfo;
+		logger << "Service imports connected:" << endl;
+		logger << " - debug_control = ";
+		if (debug_control_import)
+			logger << "ON";
+		else
+			logger << "OFF";
+		logger << endl;
+		logger << " - memory = ";
+		if (memory_import)
+			logger << "ON";
+		else
+			logger << "OFF";
+		logger << EndDebugInfo;
 	}
 	
 	/* check if the emulator is running in user or system mode and perform
@@ -496,7 +514,7 @@ OnDisconnect() {
 template<class CONFIG>
 bool 
 CPU<CONFIG> :: 
-InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
+InjectReadMemory(uint64_t addr, void *buffer, uint32_t size) {
 	uint32_t index = 0;
 	typename CONFIG::address_t ef_address;
 
@@ -521,7 +539,7 @@ InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
 template<class CONFIG>
 bool 
 CPU<CONFIG> ::
-InjectWriteMemory(typename CONFIG::address_t addr, 
+InjectWriteMemory(uint64_t addr, 
                     const void *buffer, 
                     uint32_t size) {
 	uint32_t index = 0;
@@ -590,7 +608,7 @@ CPU<CONFIG> :: Reset() {
 template<class CONFIG>
 bool 
 CPU<CONFIG> :: 
-ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
+ReadMemory(uint64_t addr, void *buffer, uint32_t size) {
 	if(memory_import) 
 		return memory_import->ReadMemory(addr, buffer, size);
 	return false;
@@ -599,7 +617,7 @@ ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size) {
 template<class CONFIG>
 bool 
 CPU<CONFIG> ::
-WriteMemory(typename CONFIG::address_t addr, 
+WriteMemory(uint64_t addr, 
 		const void *buffer, uint32_t size) {
 	if(memory_import)
 		return memory_import->WriteMemory(addr, buffer, size);
@@ -642,7 +660,7 @@ GetRegister(const char *name) {
 template<class CONFIG>
 string
 CPU<CONFIG> ::
-Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr) {
+Disasm(uint64_t addr, uint64_t &next_addr) {
 	typename isa::arm32::Operation<CONFIG> *op = NULL;
 	typename isa::thumb::Operation<CONFIG> *top = NULL;
 	insn_t insn;
@@ -688,7 +706,7 @@ Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr) {
 template<class CONFIG>
 string 
 CPU<CONFIG> ::
-GetObjectFriendlyName(typename CONFIG::address_t addr) {
+GetObjectFriendlyName(uint64_t addr) {
 	stringstream sstr;
 	
 	const Symbol<uint64_t> *symbol = 
@@ -705,7 +723,7 @@ GetObjectFriendlyName(typename CONFIG::address_t addr) {
 template<class CONFIG>
 string
 CPU<CONFIG> ::
-GetFunctionFriendlyName(typename CONFIG::address_t addr) {
+GetFunctionFriendlyName(uint64_t addr) {
 	stringstream sstr;
 	
 	const Symbol<uint64_t> *symbol = 

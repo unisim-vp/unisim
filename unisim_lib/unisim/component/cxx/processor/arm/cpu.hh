@@ -180,17 +180,17 @@ class CPU :
 #else
 	
 	public CPUCPInterface,
-	public Client<Loader<typename CONFIG::address_t> >,
+	// public Client<Loader<typename CONFIG::address_t> >,
     public Client<LinuxOS>,
     public Service<CPULinuxOS>,
-    public Service<MemoryInjection<typename CONFIG::address_t> >,
-	public Client<DebugControl<typename CONFIG::address_t> >,
-	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
+    public Service<MemoryInjection<uint64_t> >,
+	public Client<DebugControl<uint64_t> >,
+	public Client<MemoryAccessReporting<uint64_t> >,
 	public Service<MemoryAccessReportingControl>,
-	public Service<Disassembly<typename CONFIG::address_t> >,
+	public Service<Disassembly<uint64_t> >,
     public Service<Registers>,
-	public Service<Memory<typename CONFIG::address_t> >,
-	public Client<Memory<typename CONFIG::address_t> >
+	public Service<Memory<uint64_t> >,
+	public Client<Memory<uint64_t> >
 	
 #endif // SOCLIB
 
@@ -233,7 +233,7 @@ public:
 	
 	ServiceExport<Disassembly<uint64_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
-	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
+	ServiceExport<MemoryInjection<uint64_t> > memory_injection_export;
 	ServiceExport<Memory<uint64_t> > memory_export;
 	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
@@ -371,8 +371,8 @@ public:
 	//=====================================================================
 	//=             memory injection interface methods                    =
 	//=====================================================================
-	virtual bool InjectReadMemory(address_t addr, void *buffer, uint32_t size);
-	virtual bool InjectWriteMemory(address_t addr, const void *buffer, uint32_t size);
+	virtual bool InjectReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool InjectWriteMemory(uint64_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             memory access reporting control interface methods     =
@@ -385,8 +385,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 	virtual void Reset();
-	virtual bool ReadMemory(address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             CPURegistersInterface interface methods                              =
@@ -412,7 +412,7 @@ public:
 	 * @param next_addr The address following the requested instruction.
 	 * @return The disassembling of the requested instruction address.
 	 */
-	virtual string Disasm(address_t addr, address_t &next_addr);
+	virtual string Disasm(uint64_t addr, uint64_t &next_addr);
 
 	//=====================================================================
 	//=                   Debugging methods                               =
@@ -420,8 +420,8 @@ public:
 
 	inline uint64_t GetInstructionCounter() const 
 		{ return instruction_counter; }
-	string GetObjectFriendlyName(address_t addr);
-	string GetFunctionFriendlyName(address_t addr);
+	string GetObjectFriendlyName(uint64_t addr);
+	string GetFunctionFriendlyName(uint64_t addr);
 
 #endif // SOCLIB
 	
