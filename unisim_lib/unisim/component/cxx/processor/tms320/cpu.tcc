@@ -1118,6 +1118,11 @@ StepInstruction()
 			logger << DebugError << exc.what() << EndDebugError;
 			Stop(-1);
 		}
+		catch(UnknownOpcodeException<CONFIG, DEBUG>& exc)
+		{
+			logger << DebugError << exc.what() << EndDebugError;
+			Stop(-1);
+		}
 		catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
 		{
 			logger << DebugError << exc.what() << EndDebugError;
