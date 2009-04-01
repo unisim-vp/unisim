@@ -497,8 +497,8 @@ Section<MEMORY_ADDR>::Section(endian_type _header_endianness, unsigned _ti_coff_
 				buffer[sizeof(hdr->s_name)] = 0;
 				name = buffer;
 
-				vaddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_vaddr);
-				paddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_paddr);
+				vaddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_vaddr) * 4;
+				paddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_paddr) * 4;
 				size = unisim::util::endian::Target2Host(header_endianness, hdr->s_size) * 4;
 				content_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_scnptr);
 				reloc_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_relptr);
@@ -518,8 +518,8 @@ Section<MEMORY_ADDR>::Section(endian_type _header_endianness, unsigned _ti_coff_
 				buffer[sizeof(hdr->s_name)] = 0;
 				name = buffer;
 
-				vaddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_vaddr);
-				paddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_paddr);
+				vaddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_vaddr) * 4;
+				paddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_paddr) * 4;
 				size = unisim::util::endian::Target2Host(header_endianness, hdr->s_size) * 4;
 				content_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_scnptr);
 				reloc_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_relptr);
