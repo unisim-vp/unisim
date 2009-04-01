@@ -110,7 +110,7 @@ ABSF_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "ABSF " << " " << disasm_src_indir << ", " << dst_name;
+	os << "ABSF " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -166,7 +166,7 @@ ABSI_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "ABSI " << " " << disasm_src_indir << ", " << dst_name;
+	os << "ABSI " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -222,7 +222,7 @@ ADDC_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "ADDC " << " " << disasm_src_indir << ", " << dst_name;
+	os << "ADDC " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -464,7 +464,7 @@ ADDF_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "ADDF " << " " << disasm_src_indir << ", " << dst_name;
+	os << "ADDF " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -521,7 +521,7 @@ ADDI_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "ADDI " << " " << disasm_src_indir << ", " << dst_name;
+	os << "ADDI " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -751,7 +751,7 @@ AND_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "AND " << " " << disasm_src_indir << ", " << dst_name;
+	os << "AND " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -941,7 +941,7 @@ ANDN_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "ANDN " << " " << disasm_src_indir << ", " << dst_name;
+	os << "ANDN " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1131,7 +1131,7 @@ ASH_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "ASH " << " " << disasm_src_indir << ", " << dst_name;
+	os << "ASH " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1187,7 +1187,7 @@ CMPF_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "CMPF " << " " << disasm_src_indir << ", " << dst_name;
+	os << "CMPF " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1243,7 +1243,7 @@ CMPI_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "CMPI " << " " << disasm_src_indir << ", " << dst_name;
+	os << "CMPI " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1255,6 +1255,136 @@ CMPI_imm.disasm = {
 
 	os << "CMPI " << imm << ", " << dst_name;
 	return true;
+}
+
+CMPI_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		borrow_out,
+		overflow
+	);
+}
+
+CMPI_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		borrow_out,
+		overflow
+	);
+}
+
+CMPI_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		borrow_out,
+		overflow
+	);
+}
+
+CMPI_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	Sub32(result, borrow_out, overflow, dst_value, imm, 0);
+
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+		M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+		borrow_out,
+		overflow
+	);
 }
 
 /* end of CMPI (compare integers)
@@ -1299,7 +1429,7 @@ FIX_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "FIX " << " " << disasm_src_indir << ", " << dst_name;
+	os << "FIX " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1355,7 +1485,7 @@ FLOAT_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "FLOAT " << " " << disasm_src_indir << ", " << dst_name;
+	os << "FLOAT " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1411,7 +1541,7 @@ LSH_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "LSH " << " " << disasm_src_indir << ", " << dst_name;
+	os << "LSH " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1467,7 +1597,7 @@ MPYF_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "MPYF " << " " << disasm_src_indir << ", " << dst_name;
+	os << "MPYF " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1523,7 +1653,7 @@ MPYI_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "MPYI " << " " << disasm_src_indir << ", " << dst_name;
+	os << "MPYI " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1579,7 +1709,7 @@ NEGB_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "NEGB " << " " << disasm_src_indir << ", " << dst_name;
+	os << "NEGB " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1635,7 +1765,7 @@ NEGF_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "NEGF " << " " << disasm_src_indir << ", " << dst_name;
+	os << "NEGF " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1691,7 +1821,7 @@ NEGI_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "NEGI " << " " << disasm_src_indir << ", " << dst_name;
+	os << "NEGI " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1747,7 +1877,7 @@ NORM_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "NORM " << " " << disasm_src_indir << ", " << dst_name;
+	os << "NORM " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1803,7 +1933,7 @@ NOT_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "NOT " << " " << disasm_src_indir << ", " << dst_name;
+	os << "NOT " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1859,7 +1989,7 @@ OR_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "OR " << " " << disasm_src_indir << ", " << dst_name;
+	os << "OR " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -1915,7 +2045,7 @@ RND_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "RND " << " " << disasm_src_indir << ", " << dst_name;
+	os << "RND " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2114,7 +2244,7 @@ SUBB_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "SUBB " << " " << disasm_src_indir << ", " << dst_name;
+	os << "SUBB " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2126,6 +2256,192 @@ SUBB_imm.disasm = {
 
 	os << "SUBB " << imm << ", " << dst_name;
 	return true;
+}
+
+SUBB_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Read borrow in
+	uint8_t borrow_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, dst_value, src_value, borrow_in);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, src_value, borrow_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBB_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Read borrow in
+	uint8_t borrow_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, dst_value, src_value, borrow_in);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, src_value, borrow_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBB_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Read borrow in
+	uint8_t borrow_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, dst_value, src_value, borrow_in);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, src_value, borrow_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBB_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Read borrow in
+	uint8_t borrow_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, dst_value, imm, borrow_in);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, imm, borrow_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
 }
 
 /* end of SUBB (subtract integers with borrow)
@@ -2170,7 +2486,7 @@ SUBC_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "SUBC " << " " << disasm_src_indir << ", " << dst_name;
+	os << "SUBC " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2226,7 +2542,7 @@ SUBF_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "SUBF " << " " << disasm_src_indir << ", " << dst_name;
+	os << "SUBF " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2282,7 +2598,7 @@ SUBI_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "SUBI " << " " << disasm_src_indir << ", " << dst_name;
+	os << "SUBI " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2294,6 +2610,180 @@ SUBI_imm.disasm = {
 
 	os << "SUBI " << imm << ", " << dst_name;
 	return true;
+}
+
+SUBI_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, dst_value, src_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBI_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, dst_value, src_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBI_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, dst_value, src_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBI_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, dst_value, imm, 0);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, imm, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
 }
 
 /* end of SUBI (subtract integer)
@@ -2338,7 +2828,7 @@ SUBRB_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "SUBRB " << " " << disasm_src_indir << ", " << dst_name;
+	os << "SUBRB " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2350,6 +2840,192 @@ SUBRB_imm.disasm = {
 
 	os << "SUBRB " << imm << ", " << dst_name;
 	return true;
+}
+
+SUBRB_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Read borrow in
+	uint8_t borrow_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, src_value, dst_value, borrow_in);
+	else
+		Sub32(result, borrow_out, overflow, src_value, dst_value, borrow_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBRB_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Read borrow in
+	uint8_t borrow_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, src_value, dst_value, borrow_in);
+	else
+		Sub32(result, borrow_out, overflow, src_value, dst_value, borrow_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBRB_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Read borrow in
+	uint8_t borrow_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, src_value, dst_value, borrow_in);
+	else
+		Sub32(result, borrow_out, overflow, src_value, dst_value, borrow_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBRB_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Read borrow in
+	uint8_t borrow_in = cpu.GetST_C();
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, imm, dst_value, borrow_in);
+	else
+		Sub32(result, borrow_out, overflow, imm, dst_value, borrow_in);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
 }
 
 /* end of SUBRB (subtract reverse integer with borrow)
@@ -2394,7 +3070,7 @@ SUBRF_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "SUBRF " << " " << disasm_src_indir << ", " << dst_name;
+	os << "SUBRF " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2450,7 +3126,7 @@ SUBRI_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "SUBRI " << " " << disasm_src_indir << ", " << dst_name;
+	os << "SUBRI " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2462,6 +3138,180 @@ SUBRI_imm.disasm = {
 
 	os << "SUBRI " << imm << ", " << dst_name;
 	return true;
+}
+
+SUBRI_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, src_value, dst_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, src_value, dst_value, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBRI_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, src_value, dst_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, src_value, dst_value, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBRI_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, src_value, dst_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
+}
+
+SUBRI_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t borrow_out;   // the borrow out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatSub32(result, borrow_out, overflow, imm, dst_value, 0);
+	else
+		Sub32(result, borrow_out, overflow, imm, dst_value, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			borrow_out,
+			overflow
+		);
+	}
 }
 
 /* end of SUBRI (subtract reverse integer)
@@ -2506,7 +3356,7 @@ TSTB_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "TSTB " << " " << disasm_src_indir << ", " << dst_name;
+	os << "TSTB " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
@@ -2562,7 +3412,7 @@ XOR_indir.disasm = {
 	if (!dst_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) 
 		return false;
 
-	os << "XOR " << " " << disasm_src_indir << ", " << dst_name;
+	os << "XOR " << disasm_src_indir << ", " << dst_name;
 	return true;
 }
 
