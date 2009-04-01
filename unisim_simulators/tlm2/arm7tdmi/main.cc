@@ -254,8 +254,10 @@ int sc_main(int argc, char *argv[]) {
 
 	// Connect the CPU to the memory
 	cpu->master_socket(memory->slave_sock);
+	cpu->memory_import >> memory->memory_export;
 
 	if(use_inline_debugger) {
+		cerr << "Using inline debugger" << endl;
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
@@ -263,6 +265,7 @@ int sc_main(int argc, char *argv[]) {
 		inline_debugger->registers_import >> cpu->registers_export;
 	} else if(use_gdb_server) {
 		// Connect gdb-server to CPU
+		cerr << "Using gdb server debug support" << endl;
 		cpu->debug_control_import >> gdb_server->debug_control_export;
 		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
@@ -281,10 +284,12 @@ int sc_main(int argc, char *argv[]) {
 		inline_debugger->symbol_table_lookup_import >> 
 			symbol_table->symbol_table_lookup_export;
 	}
-	
-#ifdef DEBUG_SERVICE
+
+	// cerr << "++++++++++++++++++++++++++" << endl;
+	#ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
-#endif
+	#endif
+	// cerr << "++++++++++++++++++++++++++" << endl;
 
 	if(get_variables)
 	{
@@ -314,7 +319,7 @@ int sc_main(int argc, char *argv[]) {
 		// VariableBase *var = ServiceManager::GetParameter("elf32-loader.filename");
 		// *var = filename;
 	}
-	
+
 	if(ServiceManager::Setup())
 	{
 		cerr << "Starting simulation at system privilege level" << endl;
@@ -336,6 +341,13 @@ int sc_main(int argc, char *argv[]) {
 			cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
 			cerr << e.what() << endl;
 		}
+		
+//		cerr << "------------------------" << endl;
+// #ifdef DEBUG_SERVICE
+//		ServiceManager::Dump(cerr);
+// #endif
+//		cerr << "------------------------" << endl;
+//		return 0;
 
 		if(!use_inline_debugger)
 			signal(SIGINT, prev_sig_int_handler);
