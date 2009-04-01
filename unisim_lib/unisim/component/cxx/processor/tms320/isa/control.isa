@@ -92,7 +92,7 @@ Bcond_disp.disasm = {
 	const char *cond_name = COND_NAME[cond];
 	
 	if(!cond_name) return false;
-	os << "B" << cond_name << " 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+	os << "B" << cond_name << " 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
 	return true;
 }
 
@@ -158,7 +158,7 @@ BcondD_disp.disasm = {
 	const char *cond_name = COND_NAME[cond];
 	
 	if(!cond_name) return false;
-	os << "B" << cond_name << "D 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 12 + (4 * imm)) << dec;
+	os << "B" << cond_name << "D 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 3 + imm) << dec;
 	return true;
 }
 
@@ -323,7 +323,7 @@ CALLcond_disp.disasm = {
 	const char *cond_name = COND_NAME[cond];
 	
 	if(!cond_name) return false;
-	os << "CALL" << cond_name << " 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+	os << "CALL" << cond_name << " 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
 	return true;
 }
 
@@ -413,7 +413,7 @@ DBcond_disp.disasm = {
 	const char *cond_name = COND_NAME[cond];
 
 	if(!cond_name) return false;
-	os << "DB" << cond_name << " AR" << ar << ", 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+	os << "DB" << cond_name << " AR" << ar << ", 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
 	return true;
 }
 
@@ -503,7 +503,7 @@ DBcondD_disp.disasm = {
 	const char *cond_name = COND_NAME[cond];
 
 	if(!cond_name) return false;
-	os << "DB" << cond_name << "D AR" << ar << ", 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 12 + (4 * imm)) << dec;
+	os << "DB" << cond_name << "D AR" << ar << ", 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 3 + imm) << dec;
 	return true;
 }
 

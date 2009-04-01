@@ -49237,7 +49237,7 @@ os
 		const char *cond_name = COND_NAME[cond];
 
 		if(!cond_name) return false;
-		os << "B" << cond_name << " 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+		os << "B" << cond_name << " 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
 		return true;
 	}
 #line 49244 "isa_tms320.tcc"
@@ -49533,7 +49533,7 @@ os
 		const char *cond_name = COND_NAME[cond];
 
 		if(!cond_name) return false;
-		os << "B" << cond_name << "D 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 12 + (4 * imm)) << dec;
+		os << "B" << cond_name << "D 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 3 + imm) << dec;
 		return true;
 	}
 #line 49540 "isa_tms320.tcc"
@@ -50270,7 +50270,7 @@ os
 		const char *cond_name = COND_NAME[cond];
 
 		if(!cond_name) return false;
-		os << "CALL" << cond_name << " 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+		os << "CALL" << cond_name << " 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
 		return true;
 	}
 #line 50277 "isa_tms320.tcc"
@@ -50590,7 +50590,7 @@ os
 		const char *cond_name = COND_NAME[cond];
 
 		if(!cond_name) return false;
-		os << "DB" << cond_name << " AR" << ar << ", 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 4 + (4 * imm)) << dec;
+		os << "DB" << cond_name << " AR" << ar << ", 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
 		return true;
 	}
 #line 50597 "isa_tms320.tcc"
@@ -50910,7 +50910,7 @@ os
 		const char *cond_name = COND_NAME[cond];
 
 		if(!cond_name) return false;
-		os << "DB" << cond_name << "D AR" << ar << ", 0x" << hex << (Operation<CONFIG, DEBUG>::GetAddr() + 12 + (4 * imm)) << dec;
+		os << "DB" << cond_name << "D AR" << ar << ", 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 3 + imm) << dec;
 		return true;
 	}
 #line 50917 "isa_tms320.tcc"

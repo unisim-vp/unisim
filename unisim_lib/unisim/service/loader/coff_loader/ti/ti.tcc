@@ -316,12 +316,12 @@ bool File<MEMORY_ADDR>::ParseAoutHeader(const void *raw_data)
 {
 	const aouthdr *hdr = (const aouthdr *) raw_data;
 	if(unisim::util::endian::Target2Host(header_endianness, hdr->o_magic) != AOUT_MAGIC) return false;
-	entry_point = unisim::util::endian::Target2Host(header_endianness, hdr->o_entry) * 4;
-	text_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_text_start) * 4;
-	data_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_data_start) * 4;
-	text_size = unisim::util::endian::Target2Host(header_endianness, hdr->o_tsize) * 4;
-	data_size = unisim::util::endian::Target2Host(header_endianness, hdr->o_dsize) * 4;
-	bss_size = (unisim::util::endian::Target2Host(header_endianness, hdr->o_bsize) + 7) / 8;
+	entry_point = unisim::util::endian::Target2Host(header_endianness, hdr->o_entry);
+	text_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_text_start);
+	data_base = unisim::util::endian::Target2Host(header_endianness, hdr->o_data_start);
+	text_size = unisim::util::endian::Target2Host(header_endianness, hdr->o_tsize);
+	data_size = unisim::util::endian::Target2Host(header_endianness, hdr->o_dsize);
+	bss_size = unisim::util::endian::Target2Host(header_endianness, hdr->o_bsize);
 	return true;
 }
 
@@ -330,6 +330,12 @@ bool File<MEMORY_ADDR>::ParseSectionHeader(unsigned int section_num, const void 
 {
 	section_table->Insert(section_num, new Section<MEMORY_ADDR>(header_endianness, ti_coff_version, shdr_raw_data));
 	return true;
+}
+
+template <class MEMORY_ADDR>
+unsigned int File<MEMORY_ADDR>::GetMemoryAtomSize() const
+{
+	return 4;
 }
 
 template <class MEMORY_ADDR>
@@ -444,7 +450,7 @@ MEMORY_ADDR File<MEMORY_ADDR>::GetDataSize() const
 template <class MEMORY_ADDR>
 MEMORY_ADDR File<MEMORY_ADDR>::GetBssSize() const
 {
-	return bss_size;
+	return (bss_size + 31) / 32;
 }
 
 template <class MEMORY_ADDR>
@@ -474,9 +480,9 @@ void File<MEMORY_ADDR>::DumpAoutHeader(ostream& os) const
 	os << endl << "entry point: 0x" << hex << entry_point << dec;
 	os << endl << "text base: 0x" << hex << text_base << dec;
 	os << endl << "data base: 0x" << hex << data_base << dec;
-	os << endl << "text size: " << text_size << " bytes";
-	os << endl << "data size: " << data_size << " bytes";
-	os << endl << "bss size: " << bss_size << " bytes";
+	os << endl << "text size: " << text_size << " 32-bit words";
+	os << endl << "data size: " << data_size << " 32-bit words";
+	os << endl << "bss size: " << bss_size << " bits";
 	os << endl;
 }
 
@@ -497,9 +503,9 @@ Section<MEMORY_ADDR>::Section(endian_type _header_endianness, unsigned _ti_coff_
 				buffer[sizeof(hdr->s_name)] = 0;
 				name = buffer;
 
-				vaddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_vaddr) * 4;
-				paddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_paddr) * 4;
-				size = unisim::util::endian::Target2Host(header_endianness, hdr->s_size) * 4;
+				vaddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_vaddr);
+				paddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_paddr);
+				size = unisim::util::endian::Target2Host(header_endianness, hdr->s_size);
 				content_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_scnptr);
 				reloc_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_relptr);
 				lineno_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_lnnoptr);
@@ -518,9 +524,9 @@ Section<MEMORY_ADDR>::Section(endian_type _header_endianness, unsigned _ti_coff_
 				buffer[sizeof(hdr->s_name)] = 0;
 				name = buffer;
 
-				vaddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_vaddr) * 4;
-				paddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_paddr) * 4;
-				size = unisim::util::endian::Target2Host(header_endianness, hdr->s_size) * 4;
+				vaddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_vaddr);
+				paddr = unisim::util::endian::Target2Host(header_endianness, hdr->s_paddr);
+				size = unisim::util::endian::Target2Host(header_endianness, hdr->s_size);
 				content_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_scnptr);
 				reloc_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_relptr);
 				lineno_file_ptr = unisim::util::endian::Target2Host(header_endianness, hdr->s_lnnoptr);
@@ -581,7 +587,7 @@ void Section<MEMORY_ADDR>::DumpHeader(ostream& os) const
 	os << endl << "Section name: " << name;
 	os << endl << "Physical address: 0x" << hex << paddr << dec;
 	os << endl << "Virtual address: 0x" << hex << vaddr << dec;
-	os << endl << "Section size: " << size;
+	os << endl << "Section size: " << size << " 32-bit words";
 	os << endl << "File pointer to content: " << content_file_ptr;
 	os << endl << "File pointer to relocation: " << reloc_file_ptr;
 	os << endl << "File pointer to line number: " << lineno_file_ptr;

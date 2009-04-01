@@ -56,6 +56,7 @@ using std::cin;
 using std::cout;
 using std::hex;
 using std::dec;
+using std::streamsize;
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
@@ -68,6 +69,8 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	Client<Memory<ADDRESS> >(_name, _parent),
 	Client<Registers>(_name, _parent),
 	Client<SymbolTableLookup<ADDRESS> >(_name, _parent),
+	memory_atom_size(1),
+	param_memory_atom_size("memory-atom-size", this, memory_atom_size),
 	debug_control_export("debug-control-export", this),
 	memory_access_reporting_export("memory-access-reporting-export", this),
 	trap_reporting_export("trap-reporting-export", this),
@@ -99,6 +102,16 @@ bool InlineDebugger<ADDRESS>::Setup() {
 				false);
 		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 				false);
+	}
+
+	if(memory_atom_size != 1 &&
+	   memory_atom_size != 2 &&
+	   memory_atom_size != 4 &&
+	   memory_atom_size != 8 &&
+	   memory_atom_size != 16)
+	{
+		cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << endl;
+		return false;
 	}
 	return true;
 }
@@ -461,7 +474,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 				{
 					cout << "0x" << hex;
 					cout.width(8);
-					cout << addr << dec;
+					cout << (addr / memory_atom_size) << dec;
 					cout << " <";
 					cout << symbol->GetFriendlyName(addr);
 					
@@ -480,7 +493,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 			}
 			cout << "0x" << hex;
 			cout.width(8);
-			cout << addr << ":" << dec << s << endl;
+			cout << (addr / memory_atom_size) << ":" << dec << s << endl;
 			cout.fill(' ');
 		} while(addr = next_addr, --count > 0);
 	}
@@ -581,7 +594,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 	{
 		ADDRESS addr = iter->GetAddress();
 		
-		cout << "*0x" << hex << addr << dec << " (";
+		cout << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
 		if(symbol_table_lookup_import)
 		{
 			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
@@ -633,7 +646,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		}
 		cout << " ";
 		
-		cout << "*0x" << hex << addr << dec << ":" << size << " (";
+		cout << "*0x" << hex << (addr / memory_atom_size) << dec << ":" << (size / memory_atom_size) << " (";
 		
 		if(symbol_table_lookup_import)
 		{
@@ -657,13 +670,21 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 {
 	int i, j;
+	streamsize width = cout.width();
 
 	cout.fill(' ');
-	cout.width(56);
-	cout << "address  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f" << endl;
+	cout.width(2 * sizeof(addr));
+	cout << "address" << hex;
+	cout.width(0);
+	for(i = 0; i < 16 / memory_atom_size; i++)
+	{
+		cout << "  " << i;
+		for(j = 1; j < memory_atom_size; j++) cout << "   ";
+	}
+	cout << endl;
 	for(i = 0; i < 16; i++)
 	{
-		cout << hex; cout.fill('0'); cout.width(8); cout << addr << " "; cout.fill(' ');
+		cout << hex; cout.fill('0'); cout.width(2 * sizeof(addr)); cout << (addr / memory_atom_size) << " "; cout.fill(' ');
 		for(j = 0; j < 16; j++, addr++)
 		{
 			uint8_t value;
@@ -682,16 +703,22 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 		}
 		cout << endl;
 	}
+	cout.width(width);
 }
 
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
-	if(sscanf(s, "*%u:%u", &addr, &size) == 2) return true;
-	if(sscanf(s, "*%x:%u", &addr, &size) == 2) return true;
-	if(sscanf(s, "*%x", &addr) == 1) return true;
-	if(sscanf(s, "*%u", &addr) == 1) return true;
-	
+	if(sscanf(s, "*%u:%u", &addr, &size) == 2 ||
+	   sscanf(s, "*%x:%u", &addr, &size) == 2 ||
+	   sscanf(s, "*%x", &addr) == 1 ||
+	   sscanf(s, "*%u", &addr) == 1)
+	{
+		addr *= memory_atom_size;
+		size *= memory_atom_size;
+		return true;
+	}
+
 	if(symbol_table_lookup_import)
 	{
 		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
@@ -711,8 +738,12 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 {
-	if(sscanf(s, "*%x", &addr) == 1) return true;
-	if(sscanf(s, "*%u", &addr) == 1) return true;
+	if(sscanf(s, "*%x", &addr) == 1 ||
+	   sscanf(s, "*%u", &addr) == 1)
+	{
+		addr *= memory_atom_size;
+		return true;
+	}
 	
 	if(symbol_table_lookup_import)
 	{

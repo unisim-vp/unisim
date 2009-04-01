@@ -229,6 +229,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 
 	unsigned int num_sections = file->GetNumSections();
 	unsigned int shdr_size = file->GetSectionHeaderSize();
+	unsigned int memory_atom_size = file->GetMemoryAtomSize();
 	unsigned int section_num;
 
 	for(section_num = 0; section_num < num_sections; section_num++)
@@ -268,20 +269,20 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 			MEMORY_ADDR section_size = section->GetSize();
 			long section_content_file_ptr = section->GetContentFilePtr();
 
-			cerr << Object::GetName() << ": Loading section " << section_name << " at 0x" << hex << section_addr << dec << " (" << section_size << " bytes) " << endl;
+			cerr << Object::GetName() << ": Loading section " << section_name << " at 0x" << hex << section_addr << dec << " (" << (section_size * memory_atom_size) << " bytes) " << endl;
 
 			if(section_size > 0)
 			{
-				void *section_content = calloc(section_size, 1);
+				void *section_content = calloc(section_size, memory_atom_size);
 
-				if(is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size).fail())
+				if(is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
 				{
 					cerr << Object::GetName() << ": WARNING! Can't load section " << section_name << endl;
 					success = false;
 				}
 				else
 				{
-					if(!memory_import->WriteMemory(section_addr, section_content, section_size))
+					if(!memory_import->WriteMemory(section_addr * memory_atom_size, section_content, section_size * memory_atom_size))
 					{
 						cerr << Object::GetName() << ": Can't write into memory (@0x" << hex << section_addr << " - @0x" << (section_addr +  section_size - 1) << dec << ")" << endl;
 						success = false;

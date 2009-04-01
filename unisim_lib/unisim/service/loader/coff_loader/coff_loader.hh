@@ -92,6 +92,7 @@ public:
 	virtual bool ParseAoutHeader(const void *aout_hdr_raw_data) = 0;
 	virtual bool ParseSectionHeader(unsigned int section_num, const void *shdr_raw_data) = 0;
 
+	virtual unsigned int GetMemoryAtomSize() const = 0;
 	virtual const char *GetArchitectureName() const = 0;
 	virtual bool IsExecutable() const = 0;
 	virtual unsigned int GetFileHeaderSize() const = 0;

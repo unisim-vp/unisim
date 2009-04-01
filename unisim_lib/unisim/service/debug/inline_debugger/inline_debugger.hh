@@ -76,6 +76,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
+using unisim::kernel::service::Parameter;
 
 using std::list;
 using std::string;
@@ -140,6 +141,9 @@ public:
 	virtual bool Setup();
 	virtual void OnDisconnect();
 private:
+	unsigned int memory_atom_size;
+	Parameter<unsigned int> param_memory_atom_size;
+
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
 	InlineDebuggerRunningMode running_mode;

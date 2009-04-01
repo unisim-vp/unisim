@@ -71,6 +71,7 @@ public:
 	virtual bool ParseAoutHeader(const void *header);
 	virtual bool ParseSectionHeader(unsigned int section_num, const void *section_headers);
 
+	virtual unsigned int GetMemoryAtomSize() const;
 	virtual const char *GetArchitectureName() const;
 	virtual bool IsExecutable() const;
 	virtual unsigned int GetFileHeaderSize() const;

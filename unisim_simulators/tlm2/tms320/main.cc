@@ -227,8 +227,8 @@ int sc_main(int argc, char *argv[]) {
 	LOADER *loader = 0;
 	SYMBOL_TABLE *symbol_table = 0;
 	MEMORY *memory = new MEMORY("memory");
-	GDB_SERVER *gdb_server = use_gdb_server ? new GDB_SERVER("gdb-server") : 0;
-	INLINE_DEBUGGER *inline_debugger = use_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
+	GDB_SERVER *gdb_server = (use_gdb_server || get_config) ? new GDB_SERVER("gdb-server") : 0;
+	INLINE_DEBUGGER *inline_debugger = (use_inline_debugger || get_config) ? new INLINE_DEBUGGER("inline-debugger") : 0;
 	CPU *cpu = new CPU("cpu"); 
 
 	// Instanciate an COFF loader
