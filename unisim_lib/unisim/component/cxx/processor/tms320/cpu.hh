@@ -79,6 +79,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -258,6 +259,8 @@ public:
 	virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
 	bool DisasmIndir(string& s, unsigned int mod, unsigned int ar, uint32_t disp = 1);
 	string DisasmShortFloat(uint16_t x);
+	string GetObjectFriendlyName(address_t addr);
+	string GetFunctionFriendlyName(address_t addr);
 	
     //===============================================================
 	//= DebugDisasmInterface interface methods                 STOP =
@@ -310,7 +313,7 @@ public:
 	    @param step Address increment step
 		@return the next address in the circular buffer
 	*/
-	uint32_t CircularAdd(uint32_t ar, uint32_t bk, uint32_t step);
+	inline uint32_t CircularAdd(uint32_t ar, uint32_t bk, uint32_t step) INLINE;
 
 	/** Compute the next address in a circular buffer after an address decrement
 	    @param ar Current address in the circular buffer
@@ -318,7 +321,7 @@ public:
 	    @param step Address decrement step
 		@return the next address in the circular buffer
 	*/
-	uint32_t CircularSubstract(uint32_t ar, uint32_t bk, uint32_t step);
+	inline uint32_t CircularSubstract(uint32_t ar, uint32_t bk, uint32_t step) INLINE;
 
 	/** Compute the effective address for indirect addressing mode
 	    @param ea The effective address (output)
@@ -335,10 +338,7 @@ public:
 	    @param direct The 16-bit 'direct' instruction bit field
 	    @return the effective address
 	*/
-	inline address_t ComputeDirEA(uint32_t direct) const
-	{
-		return (GetDP() << 16) | direct;
-	}
+	inline address_t ComputeDirEA(uint32_t direct) const INLINE;
 
     //===============================================================
 	//= Execution methods                                     START =
@@ -381,6 +381,11 @@ private:
     //===============================================================
 	//= Verbose variables, parameters, and methods            START =
 	//===============================================================
+
+	uint64_t instruction_counter;                              //!< Number of executed instructions
+	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
+	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
+	Statistic<uint64_t> stat_instruction_counter;
 
 	//===============================================================
 	//= Registers                                             START =
@@ -447,8 +452,8 @@ private:
 		(1 << COND_LV) | (1 << COND_NLUF) | (1 << COND_LUF) | (1 << COND_ZUF);
 
 	// Branch handling
-	unsigned int branch_delay; // Delay before branching
-	address_t branch_addr;     // Target Branch Address
+	unsigned int delay_before_branching; // Delay before branching
+	address_t branch_addr;               // Target Branch Address
 
 	// Repeat Single handling
 	bool repeat_single;                     // Whether repeat operation is a RPTS or not
@@ -621,19 +626,12 @@ public:
 
 	/** Branch to a branch target address (used by control instructions)
 	    @param target_addr the instruction word address to branch
-		@param delay the branch delay (0 for standard branches)
+		@param num_delay_slots the number of delay slots (0 for standard branches)
 	*/
-	inline void Branch(address_t target_addr, unsigned int delay = 0)
+	inline void Branch(address_t target_addr, unsigned int num_delay_slots = 0)
 	{
-		if(delay)
-		{
-			branch_addr = target_addr;
-			branch_delay = delay;
-		}
-		else
-		{
-			reg_npc = target_addr;
-		}
+		branch_addr = target_addr;
+		delay_before_branching = num_delay_slots + 1;
 	}
 
 	/** Get BK value
@@ -655,25 +653,25 @@ public:
 	    @param ea the effective word address
 		@param value the 32-bit integer value to store into memory
 	*/
-	inline void IntStore(address_t ea, uint32_t value);
+	inline void IntStore(address_t ea, uint32_t value) INLINE;
 
 	/** Load a 32-bit integer from memory
 	    @param ea the effective word address
 		@return the 32-bit integer value read from memory
 	*/
-	inline uint32_t IntLoad(address_t ea);
+	inline uint32_t IntLoad(address_t ea) INLINE;
 
 	/** Load a 32-bit instruction word from memory
 	    @param ea the effective word address
 		@return the 32-bit instruction word read from memory
 	*/
-	inline uint32_t Fetch(address_t pc);
+	inline uint32_t Fetch(address_t pc) INLINE;
 
 	/** Check a condition
 	    @param cond 5-bit encoding of condition
 		@return whether the condition is met
 	*/
-	inline bool CheckCondition(unsigned int cond) const;
+	inline bool CheckCondition(unsigned int cond) const INLINE;
 
 	/** Get ST[C]
 	    @return bit C of register ST
@@ -793,7 +791,7 @@ public:
 		@param carry_out the carry out (0 or 1) generated by the arithmetic operation (default is 0)
 		@param overflow the overflow (0 or 1) generated by the arithmetic operation (default is 0)
 	*/
-	inline void GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out = 0, uint32_t overflow = 0);
+	inline void GenFlags(uint32_t result, uint32_t reset_mask, uint32_t or_mask, uint32_t carry_out = 0, uint32_t overflow = 0) INLINE;
 
 protected:
 	bool verbose_all;

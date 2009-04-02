@@ -267,9 +267,9 @@ int sc_main(int argc, char *argv[]) {
 			symbol_table->symbol_table_lookup_export;
 	}
 	
-#ifdef DEBUG_SERVICE
+//#ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
-#endif
+//#endif
 
 	if(get_variables)
 	{
@@ -331,10 +331,14 @@ int sc_main(int argc, char *argv[]) {
 		double time_stop = host_time->GetTime();
 		double spent_time = time_stop - time_start;
 
+		VariableBase *stat_instruction_counter = ServiceManager::GetVariable("cpu.instruction-counter");
 		cerr << "simulation time: " << spent_time << " seconds" << endl;
 		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		//cerr << "simulated instructions : " << cpu->GetInstructionCounter() << " instructions" << endl;
-		//cerr << "host simulation speed: " << ((double) cpu->GetInstructionCounter() / spent_time / 1000000.0) << " MIPS" << endl;
+		if(stat_instruction_counter)
+		{
+			cerr << "simulated instructions : " << (uint64_t)(*stat_instruction_counter) << " instructions" << endl;
+			cerr << "host simulation speed: " << ((double)(*stat_instruction_counter) / spent_time / 1000000.0) << " MIPS" << endl;
+		}
 		cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 	}
 	else

@@ -710,12 +710,18 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
 	if(sscanf(s, "*%u:%u", &addr, &size) == 2 ||
-	   sscanf(s, "*%x:%u", &addr, &size) == 2 ||
-	   sscanf(s, "*%x", &addr) == 1 ||
-	   sscanf(s, "*%u", &addr) == 1)
+	   sscanf(s, "*%x:%u", &addr, &size) == 2)
 	{
 		addr *= memory_atom_size;
 		size *= memory_atom_size;
+		return true;
+	}
+
+	if(sscanf(s, "*%x", &addr) == 1 ||
+	   sscanf(s, "*%u", &addr) == 1)
+	{
+		addr *= memory_atom_size;
+		size = memory_atom_size;
 		return true;
 	}
 

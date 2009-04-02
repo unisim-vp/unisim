@@ -101,11 +101,17 @@ CPU(const char *name,
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
+	requires_memory_access_reporting(true),
+	requires_finished_instruction_reporting(true),
 	logger(*this),
 	verbose_all(false),
 	param_verbose_all("verbose-all", this, verbose_all),
 	verbose_setup(false),
-	param_verbose_setup("verbose-setup", this, verbose_setup)
+	param_verbose_setup("verbose-setup", this, verbose_setup),
+	instruction_counter(0),
+	stat_instruction_counter("instruction-counter", this, instruction_counter),
+	max_inst(0xffffffffffffffffULL),
+	param_max_inst("max-inst", this, max_inst)
 {
 	registers_registry["PC"] = new unisim::util::debug::SimpleRegister<uint32_t>("PC", &reg_pc);
 
@@ -124,6 +130,7 @@ CPU(const char *name,
 		registers_registry[sstr.str().c_str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &regs[REG_AR0 + i].lo);
 	}
 
+	registers_registry["DP"] = new unisim::util::debug::SimpleRegister<uint32_t>("DP", &regs[REG_DP].lo);
 	registers_registry["IR0"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR0", &regs[REG_IR0].lo);
 	registers_registry["IR1"] = new unisim::util::debug::SimpleRegister<uint32_t>("IR1", &regs[REG_IR1].lo);
 	registers_registry["BK"] = new unisim::util::debug::SimpleRegister<uint32_t>("BK", &regs[REG_BK].lo);
@@ -467,6 +474,38 @@ string CPU<CONFIG, DEBUG>::DisasmShortFloat(uint16_t x)
 	return sstr.str();
 }
 
+template<class CONFIG, bool DEBUG>
+string
+CPU<CONFIG, DEBUG> ::
+GetObjectFriendlyName(address_t addr)
+{
+	stringstream sstr;
+	
+	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<uint64_t>::SYM_OBJECT) : 0;
+	if(symbol)
+		sstr << symbol->GetFriendlyName(addr);
+	else
+		sstr << "0x" << std::hex << addr << std::dec;
+
+	return sstr.str();
+}
+
+template<class CONFIG, bool DEBUG>
+string
+CPU<CONFIG, DEBUG> ::
+GetFunctionFriendlyName(address_t addr)
+{
+	stringstream sstr;
+	
+	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<uint64_t>::SYM_FUNC) : 0;
+	if(symbol)
+		sstr << symbol->GetFriendlyName(addr);
+	else
+		sstr << "0x" << std::hex << addr << std::dec;
+
+	return sstr.str();
+}
+
 //===============================================================
 //= DebugDisasmInterface interface methods                 STOP =
 //===============================================================
@@ -535,8 +574,6 @@ CircularSubstract(uint32_t ar, uint32_t bk, uint32_t step)
 	return base_addr + index;
 }
 
-/** Compute the effective address for indirect addressing mode
- */
 template<class CONFIG, bool DEBUG>
 bool 
 CPU<CONFIG, DEBUG> ::
@@ -977,6 +1014,15 @@ ComputeIndirEA(address_t& output_ea, bool& update_ar, address_t& output_ar, unsi
 	return false;
 }
 
+template<class CONFIG, bool DEBUG>
+inline
+typename CONFIG::address_t 
+CPU<CONFIG, DEBUG> ::
+ComputeDirEA(uint32_t direct) const
+{
+	return (GetDP() << 16) | direct;
+}
+
 //===============================================================
 //= Effective address calculation                          STOP =
 //===============================================================
@@ -992,7 +1038,7 @@ void
 CPU<CONFIG, DEBUG> ::
 StepInstruction()
 {
-	if(debug_control_import)
+	if(unlikely(debug_control_import != 0))
 	{
 		do
 		{
@@ -1017,15 +1063,7 @@ StepInstruction()
 				if(unlikely(first_time_through_repeat_single))
 				{
 					// Fetch the instruction from memory into IR
-					try
-					{
-						reg_ir = Fetch(reg_pc);
-					}
-					catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
-					{
-						logger << DebugError << exc.what() << EndDebugError;
-						Stop(-1);
-					}
+					reg_ir = Fetch(reg_pc);
 					first_time_through_repeat_single = false;
 				}
 
@@ -1050,15 +1088,7 @@ StepInstruction()
 			else
 			{
 				// Fetch the instruction from memory into IR
-				try
-				{
-					reg_ir = Fetch(reg_pc);
-				}
-				catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
-				{
-					logger << DebugError << exc.what() << EndDebugError;
-					Stop(-1);
-				}
+				reg_ir = Fetch(reg_pc);
 
 				// Check whether the end of the block to repeat has been reached
 				if(reg_pc == regs[REG_RE].lo)
@@ -1091,49 +1121,23 @@ StepInstruction()
 		else
 		{
 			// Fetch the instruction from memory into IR
-			try
-			{
-				reg_ir = Fetch(reg_pc);
-			}
-			catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
-			{
-				logger << DebugError << exc.what() << EndDebugError;
-				Stop(-1);
-			}
+			reg_ir = Fetch(reg_pc);
 
 			// Compute the address of the next instruction, i.e. PC + 1
 			reg_npc = reg_pc + 1;
 		}
 
-		try
-		{
-			// Decode the instruction
-			typename isa::tms320::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * reg_pc, reg_ir);
+		// Decode the instruction
+		typename isa::tms320::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * reg_pc, reg_ir);
 
-			// Execute the instruction
-			operation->execute(*this);
-		}
-		catch(BogusOpcodeException<CONFIG, DEBUG>& exc)
-		{
-			logger << DebugError << exc.what() << EndDebugError;
-			Stop(-1);
-		}
-		catch(UnknownOpcodeException<CONFIG, DEBUG>& exc)
-		{
-			logger << DebugError << exc.what() << EndDebugError;
-			Stop(-1);
-		}
-		catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
-		{
-			logger << DebugError << exc.what() << EndDebugError;
-			Stop(-1);
-		}
+		// Execute the instruction
+		operation->execute(*this);
 
-		// Check whether a delay branch is pending
-		if(branch_delay)
+		// Check whether a branch is pending
+		if(unlikely(delay_before_branching))
 		{
 			// Decrement the delay and branch once it has reached zero
-			if(--branch_delay == 0)
+			if(--delay_before_branching == 0)
 			{
 				reg_npc = branch_addr;
 			}
@@ -1143,7 +1147,7 @@ StepInstruction()
 		reg_pc = reg_npc;
 
 		/* update the instruction counter */
-	//	instruction_counter++;
+		instruction_counter++;
 
 		if(unlikely(requires_finished_instruction_reporting))
 		{
@@ -1152,8 +1156,21 @@ StepInstruction()
 				memory_access_reporting_import->ReportFinishedInstruction(4 * reg_pc);
 			}
 		}
-
-	//	if(unlikely(instruction_counter >= max_inst)) Stop(0);
+	}
+	catch(BogusOpcodeException<CONFIG, DEBUG>& exc)
+	{
+		logger << DebugError << exc.what() << EndDebugError;
+		Stop(-1);
+	}
+	catch(UnknownOpcodeException<CONFIG, DEBUG>& exc)
+	{
+		logger << DebugError << exc.what() << EndDebugError;
+		Stop(-1);
+	}
+	catch(BadMemoryAccessException<CONFIG, DEBUG>& exc)
+	{
+		logger << DebugError << exc.what() << EndDebugError;
+		Stop(-1);
 	}
 	catch(Exception& e)
 	{
@@ -1161,6 +1178,7 @@ StepInstruction()
 		Stop(-1);
 	}
 
+	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 }
 
 template<class CONFIG, bool DEBUG>

@@ -50,7 +50,7 @@ UnknownOpcodeException<CONFIG, DEBUG>::UnknownOpcodeException(isa::tms320::Opera
 	sstr << "Unknown opcode";
 	if(operation)
 	{
-		sstr << " 0x" << hex << operation->GetEncoding() << " at 0x" << operation->GetAddr();
+		sstr << " 0x" << hex << operation->GetEncoding() << " at 0x" << (operation->GetAddr() / 4);
 	}
 	what_str = sstr.str();
 }
@@ -80,7 +80,7 @@ BogusOpcodeException<CONFIG, DEBUG>::BogusOpcodeException(isa::tms320::Operation
 	sstr << "Bogus opcode";
 	if(operation)
 	{
-		sstr << " 0x" << hex << operation->GetEncoding() << " (\"" << operation->GetName() << "\") at 0x" << operation->GetAddr();
+		sstr << " 0x" << hex << operation->GetEncoding() << " (\"" << operation->GetName() << "\") at 0x" << (operation->GetAddr() / 4);
 	}
 	what_str = sstr.str();
 }

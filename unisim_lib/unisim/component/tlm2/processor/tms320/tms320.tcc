@@ -248,6 +248,9 @@ template<class CONFIG, bool DEBUG>
 void 
 TMS320<CONFIG, DEBUG> :: 
 BusSynchronize() {
+	// FIXME: Synchronization with the front side bus is disabled as the current
+	//        implementation below consumes at least 70% of the host CPU time
+	return;
 	quantum_time += 
 		(((cpu_time / bus_cycle_time) + 1) * bus_cycle_time) -
 		cpu_time;
@@ -289,7 +292,7 @@ Run()
 			logger << DebugInfo << LOCATION
 				<< "Finished executing step"
 				<< EndDebugInfo;
-		if (quantum_time > nice_time)
+		if (unlikely(quantum_time > nice_time))
 		{
 			wait(quantum_time);
 			quantum_time = SC_ZERO_TIME;

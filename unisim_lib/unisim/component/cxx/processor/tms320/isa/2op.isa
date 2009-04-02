@@ -212,6 +212,10 @@ ADDC_dir.disasm = {
 	
 	os << "ADDC @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -223,6 +227,23 @@ ADDC_indir.disasm = {
 		return false;
 
 	os << "ADDC " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -366,6 +387,12 @@ ADDC_indir.execute = {
 
 	// Write back result
 	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -511,6 +538,10 @@ ADDI_dir.disasm = {
 	
 	os << "ADDI @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -522,6 +553,23 @@ ADDI_indir.disasm = {
 		return false;
 
 	os << "ADDI " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -657,6 +705,12 @@ ADDI_indir.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
 	{
@@ -741,6 +795,10 @@ AND_dir.disasm = {
 	
 	os << "AND @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -752,6 +810,23 @@ AND_indir.disasm = {
 		return false;
 
 	os << "AND " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -859,6 +934,12 @@ AND_indir.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
 	{
@@ -931,6 +1012,10 @@ ANDN_dir.disasm = {
 	
 	os << "ANDN @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -942,6 +1027,23 @@ ANDN_indir.disasm = {
 		return false;
 
 	os << "ANDN " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -1048,6 +1150,12 @@ ANDN_indir.execute = {
 
 	// Write back result
 	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -1233,6 +1341,10 @@ CMPI_dir.disasm = {
 	
 	os << "CMPI @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -1244,6 +1356,23 @@ CMPI_indir.disasm = {
 		return false;
 
 	os << "CMPI " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -1349,6 +1478,12 @@ CMPI_indir.execute = {
 	uint8_t overflow;     // the overflow (0 or 1)
 
 	Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
 
 	// Generate flags (into ST)
 	cpu.GenFlags(
@@ -2234,6 +2369,10 @@ SUBB_dir.disasm = {
 	
 	os << "SUBB @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -2245,6 +2384,23 @@ SUBB_indir.disasm = {
 		return false;
 
 	os << "SUBB " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -2388,6 +2544,12 @@ SUBB_indir.execute = {
 
 	// Write back result
 	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
 
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
@@ -2588,6 +2750,10 @@ SUBI_dir.disasm = {
 	
 	os << "SUBI @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -2599,6 +2765,23 @@ SUBI_indir.disasm = {
 		return false;
 
 	os << "SUBI " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -2734,6 +2917,12 @@ SUBI_indir.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
 	{
@@ -2818,6 +3007,10 @@ SUBRB_dir.disasm = {
 	
 	os << "SUBRB @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -2829,6 +3022,23 @@ SUBRB_indir.disasm = {
 		return false;
 
 	os << "SUBRB " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -2973,6 +3183,12 @@ SUBRB_indir.execute = {
 	// Write back result
 	cpu.SetIntReg(dst, result);
 
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
 	// Check whether destination operand is an extended precision register
 	if(cpu.IsExtReg(dst))
 	{
@@ -3116,6 +3332,10 @@ SUBRI_dir.disasm = {
 	
 	os << "SUBRI @0x" << hex << direct << dec << ", " << dst_name;
 	
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -3127,6 +3347,23 @@ SUBRI_indir.disasm = {
 		return false;
 
 	os << "SUBRI " << disasm_src_indir << ", " << dst_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -3257,7 +3494,7 @@ SUBRI_indir.execute = {
 	if(cpu.GetST_OVM())
 		SignedSatSub32(result, borrow_out, overflow, src_value, dst_value, 0);
 	else
-		Sub32(result, borrow_out, overflow, dst_value, src_value, 0);
+		Sub32(result, borrow_out, overflow, src_value, dst_value, 0);
 
 	// Write back result
 	cpu.SetIntReg(dst, result);

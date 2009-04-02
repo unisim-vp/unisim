@@ -277,6 +277,50 @@ ADDI3_indir_indir.disasm = {
 	return true;
 }
 
+ADDI3_reg_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src1) || !cpu.HasReg(src2) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read 1st source operand
+	uint32_t src1_value = cpu.GetIntReg(src1);
+
+	// Read 2nd source operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result;      // the 32-bit result
+	uint8_t carry_out;    // the carry out (0 or 1)
+	uint8_t overflow;     // the overflow (0 or 1)
+
+	// Depending on overflow mode do signed saturation or not 
+	if(cpu.GetST_OVM())
+		SignedSatAdd32(result, carry_out, overflow, src1_value, src2_value, 0);
+	else
+		Add32(result, carry_out, overflow, src1_value, src2_value, 0);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_LV | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // or mask
+			carry_out,
+			overflow
+		);
+	}
+}
+
 /* end of ADDI3 (add integers)
  **********************************************************/
 

@@ -66,6 +66,7 @@ Bcond_reg.disasm = {
 	
 	if(!cond_name || !reg_name) return false;
 	os << "B" << cond_name << " " << reg_name;
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
 	return true;
 }
 
@@ -93,6 +94,7 @@ Bcond_disp.disasm = {
 	
 	if(!cond_name) return false;
 	os << "B" << cond_name << " 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
+	os << " <" << cpu.GetFunctionFriendlyName((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << ">";
 	return true;
 }
 
@@ -132,6 +134,7 @@ BcondD_reg.disasm = {
 	
 	if(!cond_name || !reg_name) return false;
 	os << "B" << cond_name << "D " << reg_name;
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
 	return true;
 }
 
@@ -159,6 +162,7 @@ BcondD_disp.disasm = {
 	
 	if(!cond_name) return false;
 	os << "B" << cond_name << "D 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 3 + imm) << dec;
+	os << " <" << cpu.GetFunctionFriendlyName((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 3 + imm) << ">";
 	return true;
 }
 
@@ -194,6 +198,7 @@ BcondD_disp.execute = {
 
 BR.disasm = {
 	os << "BR 0x" << hex << src << dec;
+	os << " <" << cpu.GetFunctionFriendlyName(src) << ">";
 	return true;
 }
 
@@ -217,6 +222,7 @@ op BRD(0b0110000[7]:0b1[1]:<32> src[24])
 
 BRD.disasm = {
 	os << "BRD 0x" << hex << src << dec;
+	os << " <" << cpu.GetFunctionFriendlyName(src) << ">";
 	return true;
 }
 
@@ -240,6 +246,7 @@ op CALL(0b0110001[7]:0b0[1]:<32> src[24])
 
 CALL.disasm = {
 	os << "CALL 0x" << hex << src << dec;
+	os << " <" << cpu.GetFunctionFriendlyName(src) << ">";
 	return true;
 }
 
@@ -282,6 +289,7 @@ CALLcond_reg.disasm = {
 	
 	if(!cond_name || !reg_name) return false;
 	os << "CALL" << cond_name << " " << reg_name;
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
 	return true;
 }
 
@@ -324,6 +332,7 @@ CALLcond_disp.disasm = {
 	
 	if(!cond_name) return false;
 	os << "CALL" << cond_name << " 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
+	os << " <" << cpu.GetFunctionFriendlyName((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << ">";
 	return true;
 }
 
@@ -375,6 +384,7 @@ DBcond_reg.disasm = {
 
 	if(!cond_name || !reg_name) return false;
 	os << "DB" << cond_name << " AR" << ar << ", " << reg_name;
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
 	return true;
 }
 
@@ -414,6 +424,7 @@ DBcond_disp.disasm = {
 
 	if(!cond_name) return false;
 	os << "DB" << cond_name << " AR" << ar << ", 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << dec;
+	os << " <" << cpu.GetFunctionFriendlyName((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 1 + imm) << ">";
 	return true;
 }
 
@@ -465,6 +476,7 @@ DBcondD_reg.disasm = {
 
 	if(!cond_name || !reg_name) return false;
 	os << "DB" << cond_name << "D AR" << ar << ", " << reg_name;
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.GetIntReg(reg)) << ">";
 	return true;
 }
 
@@ -504,6 +516,7 @@ DBcondD_disp.disasm = {
 
 	if(!cond_name) return false;
 	os << "DB" << cond_name << "D AR" << ar << ", 0x" << hex << ((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 3 + imm) << dec;
+	os << " <" << cpu.GetFunctionFriendlyName((Operation<CONFIG, DEBUG>::GetAddr() / 4) + 3 + imm) << ">";
 	return true;
 }
 
@@ -637,6 +650,7 @@ RETIcond.disasm = {
 
 	if(!cond_name) return false;
 	os << "RETI" << cond_name;
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP())) << ">";
 	return true;
 }
 
@@ -684,6 +698,7 @@ RETScond.disasm = {
 
 	if(!cond_name) return false;
 	os << "RETS" << cond_name;
+	os << " <" << cpu.GetFunctionFriendlyName(cpu.IntLoad(cpu.GetSP())) << ">";
 	return true;
 }
 
@@ -725,6 +740,7 @@ op RPTB(0b01100100[8]:<32> src[24])
 
 RPTB.disasm = {
 	os << "RPTB 0x" << hex << src << dec;
+	os << " <" << cpu.GetFunctionFriendlyName(src) << ">";
 	return true;
 }
 

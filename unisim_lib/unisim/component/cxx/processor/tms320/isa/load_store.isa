@@ -251,6 +251,11 @@ LDI_dir.disasm = {
 	if(!dst_reg_name) return false;
 
 	os << "LDI @0x" << hex << direct << dec << ", " << dst_reg_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -290,6 +295,23 @@ LDI_indir.disasm = {
 	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
 
 	os << "LDI " << disasm_src_indir << ", " << dst_reg_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -414,6 +436,11 @@ LDIcond_dir.disasm = {
 	if(!cond_name || !dst_reg_name) return false;
 
 	os << "LDI" << cond_name << " @0x" << hex << direct << dec << ", " << dst_reg_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -447,6 +474,23 @@ LDIcond_indir.disasm = {
 	if(!cond_name || !dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
 
 	os << "LDI" << cond_name << " " << disasm_src_indir << ", " << dst_reg_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
@@ -598,6 +642,11 @@ POP.disasm = {
 	if(!dst_reg_name) return false;
 
 	os << "POP " << dst_reg_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.GetSP()) << ">";
+	}
 	return true;
 }
 
@@ -670,6 +719,11 @@ PUSH.disasm = {
 	if(!src_reg_name) return false;
 
 	os << "PUSH " << src_reg_name;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.GetSP() + 1) << ">";
+	}
 	return true;
 }
 
@@ -726,7 +780,7 @@ STF_dir.disasm = {
 	const char *src_reg_name = REG_NAME[src];
 	if(!src_reg_name) return false;
 
-	os << "STF " << src_reg_name << ", @0x" << direct;
+	os << "STF " << src_reg_name << ", @0x" << hex << direct << dec;
 	return true;
 }
 
@@ -756,7 +810,12 @@ STI_dir.disasm = {
 	const char *src_reg_name = REG_NAME[src];
 	if(!src_reg_name) return false;
 
-	os << "STI " << src_reg_name << ", @0x" << direct;
+	os << "STI " << src_reg_name << ", @0x" << hex << direct << dec;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
+	}
 	return true;
 }
 
@@ -779,6 +838,23 @@ STI_indir.disasm = {
 	if(!src_reg_name || !cpu.DisasmIndir(disasm_dst_indir, mod, ar, disp)) return false;
 
 	os << "STI " << src_reg_name << ", " << disasm_dst_indir;
+
+	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
+	{
+		os << " <";
+		typename CONFIG::address_t ea;        // The effective address
+		bool update_ar;                       // Whether to update ARn
+		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
+		{
+			os << cpu.GetObjectFriendlyName(ea);
+		}
+		else
+		{
+			os << "?";
+		}
+		os << ">";
+	}
 	return true;
 }
 
