@@ -42,6 +42,7 @@
 #include "unisim/component/cxx/processor/arm/config.hh"
 #include "unisim/component/tlm2/processor/arm/arm.hh"
 #include "unisim/component/tlm2/memory/ram/memory.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/router.hh"
 
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
@@ -95,8 +96,8 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::debug::symbol_table::SymbolTable;
 
 typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
-typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true>
-	MEMORY;
+typedef unisim::component::tlm2::memory::ram::Memory<32, 1024 * 1024, true> MEMORY;
+// typedef unisim::component::tlm2:interconnect::generic_router::Router<> ROUTER;
 // using unisim::service::loader::elf_loader::Elf32Loader;
 
 using unisim::service::time::sc_time::ScTime;
@@ -237,8 +238,8 @@ int sc_main(int argc, char *argv[]) {
 
 	Elf32Loader *elf32_loader = 0;
 	SymbolTable<uint64_t> *symbol_table = 0;
-	MEMORY *memory = 
-		new MEMORY("memory");
+	MEMORY *memory = new MEMORY("memory");
+	// ROUTER *router = new ROUTER("router");
 	GDBServer<uint64_t> *gdb_server = 
 		use_gdb_server ? new GDBServer<uint64_t>("gdb-server") : 0;
 	InlineDebugger<uint64_t> *inline_debugger = 
@@ -254,6 +255,8 @@ int sc_main(int argc, char *argv[]) {
 
 	// Connect the CPU to the memory
 	cpu->master_socket(memory->slave_sock);
+	//cpu->master_socket(router->targ_socket[0]);
+	//router->init_socket[0](memory->slave_sock);
 	cpu->memory_import >> memory->memory_export;
 
 	if(use_inline_debugger) {
@@ -285,14 +288,12 @@ int sc_main(int argc, char *argv[]) {
 			symbol_table->symbol_table_lookup_export;
 	}
 
-	// cerr << "++++++++++++++++++++++++++" << endl;
 	#ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
 	#endif
-	// cerr << "++++++++++++++++++++++++++" << endl;
 
-	if(set_config)
-		ServiceManager::LoadXmlParameters(set_config_name);
+	//if(set_config)
+	//	ServiceManager::LoadXmlParameters(set_config_name);
 	if(get_variables)
 	{
 		cerr << "getting variables" << endl;
@@ -315,11 +316,6 @@ int sc_main(int argc, char *argv[]) {
 			var = ServiceManager::GetParameter("gdb-server.architecture-description-filename");
 			*var = gdb_xml;
 		}
-	}
-	{
-//		cerr << "filename = " << filename << endl;
-		// VariableBase *var = ServiceManager::GetParameter("elf32-loader.filename");
-		// *var = filename;
 	}
 
 	if(ServiceManager::Setup())
