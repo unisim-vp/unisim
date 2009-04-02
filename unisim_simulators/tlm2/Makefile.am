@@ -33,6 +33,11 @@ SUBDIRS += tms320
 INCLUDE_SUBDIRS += tms320
 endif
 
+if COND_str7
+SUBDIRS += str7
+INCLUDE_SUBDIRS += str7
+endif
+
 dist_share_DATA = COPYING
 
 uninstall-hook:
