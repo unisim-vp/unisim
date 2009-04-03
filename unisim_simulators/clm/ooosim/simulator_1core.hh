@@ -40,7 +40,7 @@
 
 // -------- COMMANDS ------------------------------
 #define USE_REF
-#define DD_UNSAFE_OPTIMIZATION
+//#define DD_UNSAFE_OPTIMIZATION
 //#define STOP
 
 // --------- CYCLE FOR DEBUGING -----------------------------
@@ -53,7 +53,7 @@
 //#define DD_DEBUG_TIMESTAMP 70000
 //#define DD_DEBUG_TIMESTAMP 3552229
 //#define DD_DEBUG_TIMESTAMP 0
-#define DD_DEBUG_TIMESTAMP 5000
+//#define DD_DEBUG_TIMESTAMP 5000
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -146,9 +146,10 @@
 
 
 #include <unisim/component/clm/cache/cache_wb.hh>
-#include <unisim/component/clm/fsb/bus.hh>
-#include <unisim/component/clm/memory/dram/dram2.hh>
+#include <unisim/component/clm/fsb/bus_multiqueue3.hh>
+#include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
+#include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
 #include <unisim/kernel/service/service.hh>
 
 // Includes for services
@@ -163,6 +164,9 @@
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/logger/logger_server.hh>
 
+//#include <unisim/component/clm/interfaces/memreq.hh>
+
+#include <unisim/component/cxx/memory/ram/memory.hh>
 /* Following includes have been moved into cpu_emulator.hh */
 /*
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>
@@ -173,7 +177,7 @@
 */
 
 // Using components
-using unisim::component::clm::fsb::Bus;
+using unisim::component::clm::fsb::BusMultiQueue;
 using unisim::component::clm::memory::dram::DRAM;
 using unisim::component::clm::cache::CacheWB;
 using unisim::component::clm::processor::ooosim::OooSimCpu;
@@ -260,8 +264,23 @@ using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
+/*
+namespace unisim {
+namespace component {
+namespace clm {
+namespace interfaces {
+ 
+  template class memreq<InstructionPtr, DL1_nCPUtoCacheDataPathSize>;
+  template class memreq<InstructionPtr, DL1_nMemtoCacheDataPathSize>;
+  
+  template ostream & 
+  operator<<(ostream &os,
+	     const memreq<unisim::component::clm::interfaces::InstructionPtr, 32> &req);
+  operator<<(ostream &os,
+	     const memreq<unisim::component::clm::interfaces::InstructionPtr, 8> &req);
 
-
+} } } }
+*/
 
 class GeneratedSimulator : public Simulator{
 public:
@@ -280,7 +299,7 @@ public:
     #define RequestWidth 32
     #define Snooping 0
   */
-  typedef Bus<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
+  typedef BusMultiQueue<InstructionPtr,2*nCPU,BUS_BufferSize,BUS_RequestWidth,Snooping> cBUS;
   /*
   // cDRAM
 #define INSTRUCTION Instruction
@@ -393,61 +412,97 @@ public:
 #define nDL1CPUtoCacheDataPathSize 8
 #define nProg 1
   */
-  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg> cCPU;
+  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, false> cCPU;
 
   // Unisim modules
   //  cSAC *__sac;
-  cBUS *__bus;
-  cDRAM *__dram;
-  cDCACHE *__dcache;
-  cICACHE *__icache;
-  cCPU *__cpu;
+  cBUS *ooo_bus;
+  cDRAM *ooo_dram;
+  cDCACHE *ooo_dcache;
+  cICACHE *ooo_icache;
+  cCPU *ooo_cpu;
 
+  bool is_terminated()
+  {
+    bool res=true;
+    //    for (int cfg=0; cfg<nConfig; cfg++)
+    //      {
+    //    	res &= __cpu[cfg]->is_terminated();
+    //      }
+    res = ooo_cpu->is_terminated();
+    return res;
+  }
+
+  void printend()
+  {
+    
+    //    for(int cfg=0; cfg<nConfig; cfg++)
+    //      {
+    //	cerr << "       Cpu[" << cfg << "] ended at cycle : " << ooo_cpu[cfg]->check_emulator->end_at_cycle << endl;
+    //      }
+    cerr << "       Cpu[" << 0 << "] ended at cycle : " << ooo_cpu->check_emulator->end_at_cycle << endl;
+  }
   /**************************************************************************
    *                      CLM COMPONENT GENERATION and CONNECTION           *
    **************************************************************************/
   GeneratedSimulator() {
 #ifdef STOP
-    //    __sac = new cSAC("sac");
+    //    ooo_sac = new cSAC("sac");
     //    sac->clock(global_clock);
 #endif
 
+    
     // Module instantiactions
-    __bus = new cBUS("__bus");
-    __dram = new cDRAM("__dram");
-    __dcache = new cDCACHE("__cache[0]");
-    __icache = new cICACHE("__icache[0]");
-    __cpu = new cCPU("__ppc[0]");
+    ooo_bus = new cBUS("__bus");
 
+    ooo_dcache = new cDCACHE("__cache[0]");
+    ooo_icache = new cICACHE("__icache[0]");
+    ooo_cpu = new cCPU("__ppc[0]");
+
+    ooo_dram = new cDRAM("__dram");
+    
     // Clock connections
-    __bus->clock(global_clock);
-    __dram->inClock(global_clock);
-    __dcache->inClock(global_clock);
-    __icache->inClock(global_clock);
-    __cpu->inClock(global_clock);
+    ooo_bus->clock(global_clock);
+    ooo_dram->inClock(global_clock);
+    ooo_dcache->inClock(global_clock);
+    ooo_icache->inClock(global_clock);
+    ooo_cpu->inClock(global_clock);
 
     // SIGNAL (or Module) connections
-    __dram->out >> __bus->inMEM;
-    __bus->outMEM >> __dram->in;
+    ooo_dram->out >> ooo_bus->inMEM;
+    ooo_bus->outMEM >> ooo_dram->in;
 
-    __dcache->outMEM >> __bus->inCPU[0];
-    __icache->outMEM >> __bus->inCPU[1];
-    __bus->outCPU[0] >> __dcache->inMEM;
-    __bus->outCPU[1] >> __icache->inMEM;
-    /*
-    __dcache->outCPU >> __cpu->inDL1Data;
-    __icache->outCPU >> __cpu->inIL1Data;
-    __cpu->outDL1Data >> __dcache->inCPU;
-    //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
-    __cpu->outIL1Data >> __icache->inCPU;
-    */
-    __dcache->outCPU >> __cpu->lsq->inDL1[0];
-    __icache->outCPU >> __cpu->fetch->inIL1;
-    __cpu->lsq->outDL1[0] >> __dcache->inCPU;
-    //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
-    __cpu->fetch->outIL1 >> __icache->inCPU;
+    ooo_dcache->outMEM >> ooo_bus->inCPU[0];
+    ooo_icache->outMEM >> ooo_bus->inCPU[1];
+    ooo_bus->outCPU[0] >> ooo_dcache->inMEM;
+    ooo_bus->outCPU[1] >> ooo_icache->inMEM;
 
+
+   //  ooo_dcache->outCPU >> ooo_cpu->inDL1Data;
+    //  ooo_icache->outCPU >> ooo_cpu->inIL1Data;
+    //  ooo_cpu->outDL1Data >> ooo_dcache->inCPU;
+    //  //ooo_cpu->lsq->outDL1[0] >> ooo_dcache->inCPU;
+    //  ooo_cpu->outIL1Data >> ooo_icache->inCPU;
+
+    //__icache[cfg]->outCPU >> __cpu[cfg]->fetch->inIL1;
     
+    //    cerr << ooo_cpu->lsq->inDL1[0];
+    //    cerr << "Before bad connexion..." << endl;
+    //    ooo_dcache->outCPU >> ooo_cpu->lsq->inDL1[0];
+    ooo_dcache->outCPU >> ooo_cpu->lsq->inDL1[0];
+    //ooo_dcache->outCPU >> (( (*(*ooo_cpu).lsq).inDL1 )[0]);
+    //    ooo_dcache->outCPU(ooo_cpu->lsq->inDL1[0]);
+    
+    //    cerr << "After bad connexion..." << endl;
+
+    //    cerr << "Before bad connexion..." << endl;
+    ooo_icache->outCPU >> ooo_cpu->fetch->inIL1;
+    //    cerr << "After bad connexion..." << endl;
+
+    ooo_cpu->lsq->outDL1[0] >> ooo_dcache->inCPU;
+    //ooo_cpu->lsq->outDL1[0] >> ooo_dcache->inCPU;
+    ooo_cpu->fetch->outIL1 >> ooo_icache->inCPU;
+
 
     // Service instantiations
     //    PPCLinux = new PowerPCLinux("my-ppclinux",0);
@@ -538,7 +593,7 @@ public:
 	bool logger_out = false;
 	bool logger_on = false;
 	bool logger_messages = false;
-	double cpu_frequency = 300.0; // in Mhz
+	double cpu_frequency = 1000.0; // in Mhz
 	uint32_t cpu_clock_multiplier = 4;
 	uint32_t tech_node = 130; // in nm
 	double cpu_ipc = 1.0; // in instructions per cycle
@@ -562,9 +617,9 @@ public:
 	//  - RAM
 	//	MEMORY *memory = new MEMORY("memory");
 
-	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator;
+	unisim::component::clm::processor::ooosim::CPUEmu *cpu = ooo_cpu->check_emulator;
 
-	unisim::component::cxx::memory::ram::Memory<address_t> *memory = __dram->memory_emulator;
+	unisim::component::cxx::memory::ram::Memory<address_t> *memory = ooo_dram->memory_emulator;
 
 
 	//=========================================================================
@@ -636,8 +691,20 @@ public:
 
 	//  - PowerPC processor
 	// if the following line ("cpu-cycle-time") is commented, the cpu will use the power estimators to find min cpu cycle time
-	/*
+	
 	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
+	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
+	(*cpu)["voltage"] = 1.0 * 1e3; // mV
+	
+	(*(ooo_cpu->fetch_emulator))["cpu-cycle-time"] = cpu_cycle_time;
+	(*(ooo_cpu->fetch_emulator))["bus-cycle-time"] = fsb_cycle_time;
+	(*(ooo_cpu->fetch_emulator))["voltage"] = 1.0 * 1e3; //mV
+
+	(*(ooo_cpu->speculative_cpu_state))["cpu-cycle-time"] = cpu_cycle_time;
+	(*(ooo_cpu->speculative_cpu_state))["bus-cycle-time"] = fsb_cycle_time;
+	(*(ooo_cpu->speculative_cpu_state))["voltage"] = 1.0 * 1e3; //mV
+
+	/*
 	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
 	(*cpu)["voltage"] = 1.3 * 1e3; // mV
 	if(maxinst)
@@ -832,10 +899,10 @@ public:
 	//	cpu->memory_import >> memory->memory_export;
 	cpu->memory_import >> memory->memory_export;
 
-	//	cpu->memory_import >> __dcache->syscall_MemExp;
-	//	__dcache->syscall_MemImp >> __dram->syscall_MemExp;
-	cpu->memory_injection_import >> __dcache->memory_injection_export;
-	__dcache->memory_injection_import >> __dram->memory_injection_export;
+	//	cpu->memory_import >> ooo_dcache->syscall_MemExp;
+	//	ooo_dcache->syscall_MemImp >> ooo_dram->syscall_MemExp;
+	cpu->memory_injection_import >> ooo_dcache->memory_injection_export;
+	ooo_dcache->memory_injection_import >> ooo_dram->memory_injection_export;
 
 	if(inline_debugger)
 	{
@@ -885,11 +952,11 @@ public:
 	}
 
 	//	elf32_loader->memory_import >> memory->memory_export;
-	//	elf32_loader->memory_import >> __dram->syscall_MemExp;
-	elf32_loader->memory_import >> __dram->memory_export;
+	//	elf32_loader->memory_import >> ooo_dram->syscall_MemExp;
+	elf32_loader->memory_import >> ooo_dram->memory_export;
 	elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	//	linux_loader->memory_import >> memory->memory_export;
-	linux_loader->memory_import >> __dram->memory_export;
+	linux_loader->memory_import >> ooo_dram->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
 	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
@@ -899,7 +966,7 @@ public:
 	linux_os->loader_import >> linux_loader->loader_export;
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 
-	//	linux_os->cpu_linux_os_import >> __cpu->fetch_emulator->cpu_linux_os_export;
+	//	linux_os->cpu_linux_os_import >> ooo_cpu->fetch_emulator->cpu_linux_os_export;
 
 	//	bus->memory_import >> fsb_to_mem_bridge->memory_export;
 	//	fsb_to_mem_bridge->memory_import >> memory->memory_export;
@@ -920,7 +987,7 @@ public:
 		//		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
 		//		memory->logger_import >> *logger->logger_export[logger_index++];
 		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
-		linux_os->logger_import >> *logger->logger_export[logger_index++];
+		// linux_os->logger_import >> *logger->logger_export[logger_index++];
 		/*
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)
@@ -931,6 +998,7 @@ public:
 		*/
 	}
 
+	//#define DEBUG_SERVICE
 #ifdef DEBUG_SERVICE
 	ServiceManager::Dump(cerr);
 #endif
@@ -953,7 +1021,7 @@ public:
 	cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
       }
     //    ServiceManager::Dump(cout);
-    __cpu->Reset();
+    ooo_cpu->Reset();
     //ServiceManager::Dump(cout);
     ///////////////////////////////////////// "From Emulator"  End ///////////////////////
   } // ServiceConnection(...)

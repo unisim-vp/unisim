@@ -86,8 +86,8 @@ esac
 
 UNISIM_CHECK_ZLIB
 UNISIM_CHECK_LIBXML2
-#UNISIM_CHECK_SYSTEMC
-UNISIM_CHECK_CACTI
+UNISIM_CHECK_SYSTEMC
+#UNISIM_CHECK_CACTI
 
 UNISIM_CHECK_UNISIM_LIB
 UNISIM_CHECK_CXXABI
@@ -116,6 +116,9 @@ UNISIM_LINK(unisim_service_logger)
 
 UNISIM_LINK(unisim_component_cxx_processor_powerpc)
 UNISIM_LINK(unisim_component_cxx_memory_ram)
+
+UNISIM_LINK(unisim_component_clm_interfaces_memreq)
+
 
 UNISIM_LIBTOOL
 

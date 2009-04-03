@@ -40,7 +40,15 @@
 
 // -------- COMMANDS ------------------------------
 #define USE_REF
-#define DD_UNSAFE_OPTIMIZATION
+
+#define DD_DEBUG_DUMP_TRACE
+//#define USE_PERFECT_FETCH
+#define DDDEBUG_USE_PERFECT_BRANCH_PREDICTION
+
+#define ALL_PERFECT
+//#define CHECK_FPSCR
+
+//#define DD_UNSAFE_OPTIMIZATION
 //#define STOP
 
 // --------- CYCLE FOR DEBUGING -----------------------------
@@ -52,8 +60,12 @@
 //#define DD_DEBUG_TIMESTAMP 381929
 //#define DD_DEBUG_TIMESTAMP 70000
 //#define DD_DEBUG_TIMESTAMP 3552229
+//#define DD_DEBUG_TIMESTAMP 90
+//#define DD_DEBUG_TIMESTAMP 2500
+//#define DD_DEBUG_TIMESTAMP 480
+//#define DD_DEBUG_TIMESTAMP 8350
+//#define DD_DEBUG_TIMESTAMP 250
 //#define DD_DEBUG_TIMESTAMP 0
-//#define DD_DEBUG_TIMESTAMP 5000
 
 // ------------------------------------------------
 // -------- DEBUG TAGS ----------------------------
@@ -66,9 +78,15 @@
 #define DD_DEBUG_OPERATIONREFCOUNT
 */
 
-#define DD_DEBUG_DCACHE_VERB101
-
+//#define DD_DEBUG_DCACHE_VERB101
+//#define DDDFILLING
+//#define DD_DEBUG_FILLING
+//#define DD_DEBUG_CR0
+#define DD_DEBUG_DCACHE_VERB_1000
 #define DD_DEBUG_PIPELINE_VERB2
+
+#define DD_DEBUG_PERFECT_BRANCH_V2
+//#define DD_DEBUG_PERFECT_BRANCH
 /*
 #define DD_DEBUG_DCACHE
 #define DD_DEBUG_DCACHE_VERB2
@@ -96,6 +114,8 @@
 //#define DD_DEBUG_SPLITTING
 //#define DD_DEBUG_FETCH_BHT_VERB2
 //#define DD_DEBUG_SCHEDULER_VERB1
+//#define DD_DEBUG_ALLOCATOR_VERB1
+//#define DD_DEBUG_ALLOCATOR_VERB10
 //#define DD_DEBUG_ALLOCATOR_VERB1
 //#define DD_DEBUG_ALLOCATOR_RETIRE_VERB3
 //#define DD_DEBUG_ALLOCATOR_RETIRE_VERB1
@@ -134,11 +154,13 @@
 #endif
 
 // --------- TO USED !!!
-//#define DD_CHECK_WITH_EMULATOR
+#define DD_CHECK_WITH_EMULATOR
 //#define CHECK_REGISTER_STEP 10000000
-//#define CHECK_REGISTER_STEP 1
+#define CHECK_REGISTER_STEP 1
 
 #define SYSCALL_DISPATCH_WITHOUT_MIB
+
+#include <unisim/component/clm/memory/dram/fetch_memory.hh>
 
 // Simulator paramters
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
@@ -146,11 +168,13 @@
 
 
 #include <unisim/component/clm/cache/cache_wb.hh>
+#include <unisim/component/clm/cache/cache_mperfect.hh>
 #include <unisim/component/clm/fsb/bus_multiqueue3.hh>
 #include <unisim/component/clm/memory/dram/dram.hh>
 #include <unisim/component/clm/processor/ooosim/cpu_simulator.hh>
-//#include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
+#include <unisim/component/clm/processor/ooosim/cpu_simulator.tcc>
 #include <unisim/kernel/service/service.hh>
+
 
 // Includes for services
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -164,9 +188,6 @@
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 #include <unisim/service/logger/logger_server.hh>
 
-//#include <unisim/component/clm/interfaces/memreq.hh>
-
-#include <unisim/component/cxx/memory/ram/memory.hh>
 /* Following includes have been moved into cpu_emulator.hh */
 /*
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>
@@ -180,6 +201,7 @@
 using unisim::component::clm::fsb::BusMultiQueue;
 using unisim::component::clm::memory::dram::DRAM;
 using unisim::component::clm::cache::CacheWB;
+using unisim::component::clm::cache::CacheWBMPerfect;
 using unisim::component::clm::processor::ooosim::OooSimCpu;
 
 //#ifdef interface
@@ -218,6 +240,7 @@ using unisim::component::clm::processor::ooosim::DL1_nCacheLines;
 using unisim::component::clm::processor::ooosim::DL1_nAssociativity;
 using unisim::component::clm::processor::ooosim::DL1_nStages;
 using unisim::component::clm::processor::ooosim::DL1_nDelay;
+using unisim::component::clm::processor::ooosim::DL1_nPorts;
 
 using unisim::component::clm::processor::ooosim::IL1_nCPUtoCacheDataPathSize;
 using unisim::component::clm::processor::ooosim::IL1_nCachetoCPUDataPathSize;
@@ -264,23 +287,8 @@ using unisim::service::logger::LoggerServer;
 using unisim::kernel::service::ServiceManager;
 
 
-/*
-namespace unisim {
-namespace component {
-namespace clm {
-namespace interfaces {
- 
-  template class memreq<InstructionPtr, DL1_nCPUtoCacheDataPathSize>;
-  template class memreq<InstructionPtr, DL1_nMemtoCacheDataPathSize>;
-  
-  template ostream & 
-  operator<<(ostream &os,
-	     const memreq<unisim::component::clm::interfaces::InstructionPtr, 32> &req);
-  operator<<(ostream &os,
-	     const memreq<unisim::component::clm::interfaces::InstructionPtr, 8> &req);
 
-} } } }
-*/
+
 
 class GeneratedSimulator : public Simulator{
 public:
@@ -352,19 +360,22 @@ public:
 #define nProg 1
 #define Snooping 0
   */
-  typedef CacheWB<InstructionPtr,
-		  DL1_nCPUtoCacheDataPathSize,
-		  DL1_nCachetoCPUDataPathSize,
-		  //		  DL1_nCPULineSize,
-		  DL1_nMemtoCacheDataPathSize,
-		  DL1_nCachetoMemDataPathSize,
-		  DL1_nLineSize,
-		  DL1_nCacheLines,
-		  DL1_nAssociativity,
-		  DL1_nStages,
-		  DL1_nDelay,
-		  nProg,
-		  Snooping> cDCACHE;
+  typedef CacheWBMPerfect<InstructionPtr,
+			  DL1_nCPUtoCacheDataPathSize,
+			  DL1_nCachetoCPUDataPathSize,
+			  //		  DL1_nCPULineSize,
+			  DL1_nMemtoCacheDataPathSize,
+			  DL1_nCachetoMemDataPathSize,
+			  DL1_nLineSize,
+			  DL1_nCacheLines,
+			  DL1_nAssociativity,
+			  DL1_nStages,
+			  DL1_nDelay,
+			  nProg,
+			  Snooping,
+			  false,
+			  DL1_nPorts
+			  > cDCACHE;
 
   /*
   // cICACHE
@@ -412,15 +423,15 @@ public:
 #define nDL1CPUtoCacheDataPathSize 8
 #define nProg 1
   */
-  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg, false> cCPU;
+  typedef OooSimCpu<nIntegerRegisters,IL1_nCachetoCPUDataPathSize,IL1_nCPUtoCacheDataPathSize,DL1_nCachetoCPUDataPathSize,DL1_nCPUtoCacheDataPathSize,nProg> cCPU;
 
   // Unisim modules
   //  cSAC *__sac;
-  cBUS *ooo_bus;
-  cDRAM *ooo_dram;
-  cDCACHE *ooo_dcache;
-  cICACHE *ooo_icache;
-  cCPU *ooo_cpu;
+  cBUS *__bus;
+  cDRAM *__dram;
+  cDCACHE *__dcache;
+  cICACHE *__icache;
+  cCPU *__cpu;
 
   bool is_terminated()
   {
@@ -429,7 +440,7 @@ public:
     //      {
     //    	res &= __cpu[cfg]->is_terminated();
     //      }
-    res = ooo_cpu->is_terminated();
+    res = __cpu->is_terminated();
     return res;
   }
 
@@ -438,67 +449,66 @@ public:
     
     //    for(int cfg=0; cfg<nConfig; cfg++)
     //      {
-    //	cerr << "       Cpu[" << cfg << "] ended at cycle : " << ooo_cpu[cfg]->check_emulator->end_at_cycle << endl;
+    //	cerr << "       Cpu[" << cfg << "] ended at cycle : " << __cpu[cfg]->check_emulator->end_at_cycle << endl;
     //      }
-    cerr << "       Cpu[" << 0 << "] ended at cycle : " << ooo_cpu->check_emulator->end_at_cycle << endl;
+    cerr << "       Cpu[" << 0 << "] ended at cycle : " << __cpu->check_emulator->end_at_cycle << endl;
   }
   /**************************************************************************
    *                      CLM COMPONENT GENERATION and CONNECTION           *
    **************************************************************************/
   GeneratedSimulator() {
 #ifdef STOP
-    //    ooo_sac = new cSAC("sac");
+    //    __sac = new cSAC("sac");
     //    sac->clock(global_clock);
 #endif
 
-    
     // Module instantiactions
-    ooo_bus = new cBUS("__bus");
+    __bus = new cBUS("__bus");
+    __dram = new cDRAM("__dram");
+    __dcache = new cDCACHE("__cache[0]");
+    __icache = new cICACHE("__icache[0]");
+    __cpu = new cCPU("__ppc[0]");
 
-    ooo_dcache = new cDCACHE("__cache[0]");
-    ooo_icache = new cICACHE("__icache[0]");
-    ooo_cpu = new cCPU("__ppc[0]");
-
-    ooo_dram = new cDRAM("__dram");
-    
     // Clock connections
-    ooo_bus->clock(global_clock);
-    ooo_dram->inClock(global_clock);
-    ooo_dcache->inClock(global_clock);
-    ooo_icache->inClock(global_clock);
-    ooo_cpu->inClock(global_clock);
+    __bus->clock(global_clock);
+    __dram->inClock(global_clock);
+    __dcache->inClock(global_clock);
+    __icache->inClock(global_clock);
+    __cpu->inClock(global_clock);
 
     // SIGNAL (or Module) connections
-    ooo_dram->out >> ooo_bus->inMEM;
-    ooo_bus->outMEM >> ooo_dram->in;
+    __dram->out >> __bus->inMEM;
+    __bus->outMEM >> __dram->in;
 
-    ooo_dcache->outMEM >> ooo_bus->inCPU[0];
-    ooo_icache->outMEM >> ooo_bus->inCPU[1];
-    ooo_bus->outCPU[0] >> ooo_dcache->inMEM;
-    ooo_bus->outCPU[1] >> ooo_icache->inMEM;
-
-
-   //  ooo_dcache->outCPU >> ooo_cpu->inDL1Data;
-    //  ooo_icache->outCPU >> ooo_cpu->inIL1Data;
-    //  ooo_cpu->outDL1Data >> ooo_dcache->inCPU;
-    //  //ooo_cpu->lsq->outDL1[0] >> ooo_dcache->inCPU;
-    //  ooo_cpu->outIL1Data >> ooo_icache->inCPU;
-
-    //__icache[cfg]->outCPU >> __cpu[cfg]->fetch->inIL1;
-    
-    ooo_dcache->outCPU >> ooo_cpu->lsq->inDL1[0];
-    ooo_icache->outCPU >> ooo_cpu->fetch->inIL1;
-    ooo_cpu->lsq->outDL1[0] >> ooo_dcache->inCPU;
-    //ooo_cpu->lsq->outDL1[0] >> ooo_dcache->inCPU;
-    ooo_cpu->fetch->outIL1 >> ooo_icache->inCPU;
-
+    __dcache->outMEM >> __bus->inCPU[0];
+    __icache->outMEM >> __bus->inCPU[1];
+    __bus->outCPU[0] >> __dcache->inMEM;
+    __bus->outCPU[1] >> __icache->inMEM;
+    /*
+    __dcache->outCPU >> __cpu->inDL1Data;
+    __icache->outCPU >> __cpu->inIL1Data;
+    __cpu->outDL1Data >> __dcache->inCPU;
+    //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    __cpu->outIL1Data >> __icache->inCPU;
+    */
+    //    __dcache->outCPU >> __cpu->lsq->inDL1[0];
+    for (int port=0; port<DL1_nPorts; port++)
+      {
+	__dcache->outCPU[port] >> __cpu->lsq->inDL1[port];
+      }
+    __icache->outCPU >> __cpu->fetch->inIL1;
+    //    __cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    __cpu->fetch->outIL1 >> __icache->inCPU;
+    for (int port=0; port<DL1_nPorts; port++)
+      {
+	__cpu->lsq->outDL1[port] >> __dcache->inCPU[port];
+      }
 
     // Service instantiations
     //    PPCLinux = new PowerPCLinux("my-ppclinux",0);
     // David : MIB no more usefull
     //    MIB = new MemoryInterfaceBroadcast<address_t>("MIB",0);
-
-
 
   } //GeneratedSimulator()
 
@@ -606,11 +616,39 @@ public:
 	//  - RAM
 	//	MEMORY *memory = new MEMORY("memory");
 
-	unisim::component::clm::processor::ooosim::CPUEmu *cpu = ooo_cpu->check_emulator;
+	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator;
 
-	unisim::component::cxx::memory::ram::Memory<address_t> *memory = ooo_dram->memory_emulator;
+	unisim::component::cxx::memory::ram::Memory<address_t> *memory = __dram->memory_emulator;
 
+#ifdef DDDEBUG_USE_PERFECT_BRANCH_PREDICTION
+	//	unisim::component::cxx::memory::ram::Memory<address_t> *fetchmemory = new unisim::component::cxx::memory::ram::Memory<address_t>("fetchmem");
+	unisim::component::clm::memory::dram::Fetch_Memory<address_t> *fetchmemory = 
+	  new unisim::component::clm::memory::dram::Fetch_Memory<address_t>("fetchmem");
 
+	//  - ELF32 loader
+	Elf32Loader *fetch_elf32_loader = new Elf32Loader("fetch_elf32-loader");
+	//  - Linux loader
+	LinuxLoader<FSB_ADDRESS_TYPE> *fetch_linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("fetch_linux-loader");
+	//  - Symbol table
+	SymbolTable<CPU_ADDRESS_TYPE> *fetch_symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("fetch_symbol-table");
+	//  - Linux OS
+	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *fetch_linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("fetch_linux_os");
+
+	/*
+	unisim::component::clm::memory::dram::Fetch_Memory<address_t> *fetchmemory2 = 
+	  new unisim::component::clm::memory::dram::Fetch_Memory<address_t>("fetchmem2");
+
+	//  - ELF32 loader
+	Elf32Loader *fetch_elf32_loader = new Elf32Loader("fetch_elf32-loader");
+	//  - Linux loader
+	LinuxLoader<FSB_ADDRESS_TYPE> *fetch_linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("fetch_linux-loader");
+	//  - Symbol table
+	SymbolTable<CPU_ADDRESS_TYPE> *fetch_symbol_table = new SymbolTable<CPU_ADDRESS_TYPE>("fetch_symbol-table");
+	//  - Linux OS
+	LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE> *fetch_linux_os = new LinuxOS<CPU_ADDRESS_TYPE, CPU_REG_TYPE>("fetch_linux_os");
+	*/
+#endif
+	//  - GDB server
 	//=========================================================================
 	//===            Debugging stuff: Transaction spy instantiations        ===
 	//=========================================================================
@@ -729,6 +767,30 @@ public:
 	(*linux_os)["system"] = "powerpc";
 	(*linux_os)["endianess"] = E_BIG_ENDIAN;
 	(*linux_os)["verbose"] = false;
+
+
+#ifdef DDDEBUG_USE_PERFECT_BRANCH_PREDICTION
+	//  - ELF32 Loader run-time configuration
+	(*fetch_elf32_loader)["filename"] = filename;
+
+	//  - Linux loader run-time configuration
+	(*fetch_linux_loader)["endianess"] = E_BIG_ENDIAN;
+	(*fetch_linux_loader)["stack-base"] = 0xc0000000;
+	(*fetch_linux_loader)["max-environ"] = 16 * 1024;
+	//	(*linux_loader)["argc"] = sim_argc;
+	(*fetch_linux_loader)["argc"] = sim_argc;//command_line.count();
+	for(unsigned int i = 0; i < sim_argc; i++)
+	{
+	  //	(*linux_loader)["argv"][i] = sim_argv[i];
+		(*fetch_linux_loader)["argv"][i] = command_line[i];
+	}
+	(*fetch_linux_loader)["envc"] = 0;
+
+	//  - Linux OS run-time configuration
+	(*fetch_linux_os)["system"] = "powerpc";
+	(*fetch_linux_os)["endianess"] = E_BIG_ENDIAN;
+	(*fetch_linux_os)["verbose"] = false;
+#endif
 
 	//  - Loggers
 	if(logger_on)
@@ -876,10 +938,10 @@ public:
 	//	cpu->memory_import >> memory->memory_export;
 	cpu->memory_import >> memory->memory_export;
 
-	//	cpu->memory_import >> ooo_dcache->syscall_MemExp;
-	//	ooo_dcache->syscall_MemImp >> ooo_dram->syscall_MemExp;
-	cpu->memory_injection_import >> ooo_dcache->memory_injection_export;
-	ooo_dcache->memory_injection_import >> ooo_dram->memory_injection_export;
+	//	cpu->memory_import >> __dcache->syscall_MemExp;
+	//	__dcache->syscall_MemImp >> __dram->syscall_MemExp;
+	cpu->memory_injection_import >> __dcache->memory_injection_export;
+	__dcache->memory_injection_import >> __dram->memory_injection_export;
 
 	if(inline_debugger)
 	{
@@ -929,11 +991,11 @@ public:
 	}
 
 	//	elf32_loader->memory_import >> memory->memory_export;
-	//	elf32_loader->memory_import >> ooo_dram->syscall_MemExp;
-	elf32_loader->memory_import >> ooo_dram->memory_export;
+	//	elf32_loader->memory_import >> __dram->syscall_MemExp;
+	elf32_loader->memory_import >> __dram->memory_export;
 	elf32_loader->symbol_table_build_import >> symbol_table->symbol_table_build_export;
 	//	linux_loader->memory_import >> memory->memory_export;
-	linux_loader->memory_import >> ooo_dram->memory_export;
+	linux_loader->memory_import >> __dram->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
 	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
@@ -943,10 +1005,31 @@ public:
 	linux_os->loader_import >> linux_loader->loader_export;
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 
-	//	linux_os->cpu_linux_os_import >> ooo_cpu->fetch_emulator->cpu_linux_os_export;
+	//	linux_os->cpu_linux_os_import >> __cpu->fetch_emulator->cpu_linux_os_export;
 
 	//	bus->memory_import >> fsb_to_mem_bridge->memory_export;
 	//	fsb_to_mem_bridge->memory_import >> memory->memory_export;
+
+#ifdef DDDEBUG_USE_PERFECT_BRANCH_PREDICTION
+	// FOR FETCH FOR PERFECT PREDICTION
+	__cpu->fetch_emulator->memory_import >> fetchmemory->memory_export;
+	__cpu->fetch_emulator->memory_injection_import >> fetchmemory->memory_injection_export;
+
+
+	fetch_elf32_loader->memory_import >> fetchmemory->memory_export;
+	fetch_elf32_loader->symbol_table_build_import >> fetch_symbol_table->symbol_table_build_export;
+	//	linux_loader->memory_import >> memory->memory_export;
+	fetch_linux_loader->memory_import >> fetchmemory->memory_export;
+	fetch_linux_loader->loader_import >> fetch_elf32_loader->loader_export;
+	__cpu->fetch_emulator->linux_os_import >> fetch_linux_os->linux_os_export;
+	fetch_linux_os->cpu_linux_os_import >> __cpu->fetch_emulator->cpu_linux_os_export;
+	fetch_linux_os->memory_import >> __cpu->fetch_emulator->memory_export;
+	fetch_linux_os->memory_injection_import >> __cpu->fetch_emulator->memory_injection_export;
+	fetch_linux_os->registers_import >> __cpu->fetch_emulator->registers_export;
+	fetch_linux_os->loader_import >> fetch_linux_loader->loader_export;
+	__cpu->fetch_emulator->symbol_table_lookup_import >> fetch_symbol_table->symbol_table_lookup_export;
+#endif
+
 
 	if(inline_debugger)
 	{
@@ -964,7 +1047,8 @@ public:
 		//		fsb_to_mem_bridge->logger_import >> *logger->logger_export[logger_index++];
 		//		memory->logger_import >> *logger->logger_export[logger_index++];
 		if(gdb_server) gdb_server->logger_import >> *logger->logger_export[logger_index++];
-		// linux_os->logger_import >> *logger->logger_export[logger_index++];
+
+		//		linux_os->logger_import >> *logger->logger_export[logger_index++];
 		/*
 		for(unsigned int i = 0; i < MAX_BUS_TRANSACTION_SPY; i++)
 			if(bus_msg_spy[i] != NULL)
@@ -997,7 +1081,7 @@ public:
 	cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
       }
     //    ServiceManager::Dump(cout);
-    ooo_cpu->Reset();
+    __cpu->Reset();
     //ServiceManager::Dump(cout);
     ///////////////////////////////////////// "From Emulator"  End ///////////////////////
   } // ServiceConnection(...)

@@ -8,8 +8,8 @@
 #include <stdio.h>
 //#include <getopt.h>
 
-//#include "simulator.hh"
-#include "simulator_1core.hh"
+#include "parameters_d4.hh"
+#include "simulator_ideal.hh"
 
 int main(int argc, char **argv, char **envp)
 { 
@@ -90,11 +90,9 @@ int main(int argc, char **argv, char **envp)
   const char *filename = command_line[0];
   unsigned int sim_argc = command_line.count();
   */
-
-  //  GeneratedSimulator *ps= new GeneratedSimulator();
-  //  GeneratedSimulator &s=*ps;
+  
   GeneratedSimulator s;
-
+  
   if(command_line["dump-machine-description"])
     { s.dump_machine_description(command_line["dump-machine-description"]);
     exit(0);
@@ -111,11 +109,11 @@ int main(int argc, char **argv, char **envp)
   }
 
 
-  unisim_port::check_connections();
 
 
   ///////////////////////////////////////// "From Emulator"  End ///////////////////////
   //  GeneratedSimulator s;
+  unisim_port::check_connections();
   //#include "cmp-nosnoop.uni.inc.init.cxx"
   
   //  s.ServiceConnection(kernel_mode,use_gdb_server,use_inline_debugger);
@@ -185,6 +183,7 @@ int main(int argc, char **argv, char **envp)
 	terminate_now();
       }
   }
+  ServiceManager::DumpStatistics(cerr);
 
   /* 
   if(command_line["dump-statistics"])
