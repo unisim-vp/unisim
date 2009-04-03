@@ -52,7 +52,7 @@
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 //#include <unisim/component/clm/utility/error.h>
 //#include "memreq.h"
-#include <unisim/component/clm/interfaces/memreq.hh>
+//#include <unisim/component/clm/interfaces/memreq.hh>
 #include <unisim/component/clm/memory/mem_common.hh>
 
 #include <unisim/component/clm/utility/utility.hh>
@@ -73,8 +73,11 @@
 ////////////////////////////////////////////////////////////////////
 // Pipeline Stages
 ////////////////////////////////////////////////////////////////////
+#ifdef ALL_PERFECT
+#include <unisim/component/clm/pipeline/fetch/fetcher_perfect.hh>
+#else
 #include <unisim/component/clm/pipeline/fetch/fetcher.hh>
-
+#endif
 #include <unisim/component/clm/pipeline/decode/dispatcher.hh>
 #include <unisim/component/clm/pipeline/decode/allocator_renamer.hh>
 
@@ -83,7 +86,11 @@
 
 #include <unisim/component/clm/pipeline/execute/functional_unit.hh>
 #include <unisim/component/clm/pipeline/execute/address_generation_unit.hh>
+#ifdef ALL_PERFECT
+#include <unisim/component/clm/pipeline/execute/load_store_queue_nospec.hh>
+#else
 #include <unisim/component/clm/pipeline/execute/load_store_queue.hh>
+#endif
 
 #include <unisim/component/clm/pipeline/common/simple_arbiter.hh>
 
@@ -519,14 +526,16 @@ class OooSimCpu : public module, public Object//, public MI_Client, public MI_Se
  public:
   CPUSim *speculative_cpu_state;
   CPUEmu *check_emulator;
+#ifdef ALL_PERFECT
+  CPUEmu *fetch_emulator;
+#else
   CPUSim *fetch_emulator;
-
+#endif
   // For spec and fetch emu :
   //  MyMemEmulator *mem_emu;
 
 
- private:
-
+private:
   // Pipeline Stages
   //   Fetch
   //  typedef Fetcher<UInt64, nSources, fetchWidth, IL1_nLineSize, IL1_nCachetoCPUDataPathSize, InstructionQueueSize, InstructionSize, BHT_Size, BHT_nLevels, BHT_nHistorySize, BTB_nlines, BTB_associativity, RAS_Size, retireWidth, WriteBackWidth,fetchMaxPendingRequests, MaxBranches> FetcherClass;
@@ -605,7 +614,6 @@ typedef Arbiter<UInt64, nSources, retireWidth, retireWidth, nRetireChannels> Ret
 typedef ReorderBuffer<UInt64, nSources, reorderBufferSize, allocateRenameWidth, WriteBackWidth, retireWidth> ReorderBufferClass;
   ReorderBufferClass *rob;
  
-  
   /* Registers interface */
   /*
   static void write_gpr(void *, int, uint32_t);

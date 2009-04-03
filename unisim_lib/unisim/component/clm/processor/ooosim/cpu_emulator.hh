@@ -179,6 +179,12 @@ public:
     os << endl;
   }
 
+  /*
+  bool Setup()
+  {
+    return true;
+  }
+  */
 
 };
 
@@ -340,7 +346,12 @@ public:
     if (this->GetCTR() != another_cpu->GetCTR()) os << "* ";
     os << endl;
   }
-
+  /*
+  bool Setup()
+  {
+    return true;
+  }
+  */
 };
 
 

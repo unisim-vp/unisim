@@ -1,8 +1,18 @@
+INCLUDES=-I$(top_srcdir)/../../../.. -I$(top_builddir)/../../../..
 includedir = $(prefix)/include/unisim/component/clm/interfaces
 sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/interfaces
 
 #SUBDIRS=
 #INCLUDE_SUBDIRS=
+lib_LIBRARIES = libunisim_component_clm_interfaces_memreq.a
+libunisim_component_clm_interfaces_memreq_a_SOURCES = memreq.cc
+
+
+#if COND_release
+#libunisim_component_cxx_processor_powerpc_a_SOURCES += mpc755.cc mpc7447a.cc
+#endif
+
+#nobase_include_HEADERS =
 
 nobase_include_HEADERS = \
 	instruction_interface.hh \

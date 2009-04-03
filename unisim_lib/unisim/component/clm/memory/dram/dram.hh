@@ -137,7 +137,8 @@ template
 >
 class DRAM : public module
 	     , public MI_Service
-	     , public Service<MemoryInjection<address_t> >
+	     , public MJI_Service
+  //	     , public Service<MemoryInjection<address_t> >
 	     , public Client<SVGmemreqInterface<INSTRUCTION> >
 //           , public StatisticService
 {public:
@@ -160,13 +161,13 @@ class DRAM : public module
   DRAM(const char *name) :
     module(name),
     Object(name, 0),
-    MJI_Service(name, 0),
     MI_Service(name, 0),
+    MJI_Service(name, 0),
     //    syscall_MemExp("syscall_MemExp", this),
     memory_export("memory_export", this),
     memory_injection_export("memory_injection_export", this),
     Client<SVGmemreqInterface<INSTRUCTION> >(name, this),
-			 svg("svg", this)//,
+    svg("svg", this)//,
     //    StatisticService(name, this)
   { // Interface naming to enhance debugging
     class_name = " DRAM";
@@ -210,6 +211,7 @@ class DRAM : public module
     
     //    memory_emulator = new MyMemEmulator("memory_emulator", this);
     memory_emulator = new unisim::component::cxx::memory::ram::Memory<address_t>("memory_emulator", this);
+    //    memory_emulator = new Memory<address_t>("memory_emulator", this);
 
     // ---  Registring parameters ----------------
     parameters.add("nBanks",nBanks,2,4);

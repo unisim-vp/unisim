@@ -9,6 +9,7 @@ nobase_include_HEADERS = \
 	dram/dram_components_mc.hh \
 	dram/dram.hh \
 	dram/dram2.hh \
+	dram/fetch_memory.hh \
 	mem_common.hh \
 	memory_container.hh
 

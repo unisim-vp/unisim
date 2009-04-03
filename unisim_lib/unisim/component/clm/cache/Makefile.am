@@ -12,6 +12,7 @@ include_HEADERS = \
 	cache_container.hh \
 	cache_wb.hh \
 	cache_wb_mc.hh \
+	cache_mperfect.hh \
 	mesi.h \
 	MSHR_container.hh \
 	MSHR_container_prefetcher.hh \

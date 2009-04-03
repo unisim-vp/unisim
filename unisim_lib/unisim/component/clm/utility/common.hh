@@ -133,13 +133,13 @@ INLINE string hexa(int32_t v)
 
 INLINE string hexa(uint64_t v)
 { static char buffer[19]={0};
-  sprintf(buffer, "0x%016llx", v);
+  sprintf(buffer, "0x%016llx", (long long unsigned int)v);
   return buffer;
 }
 
 INLINE string hexa(int64_t v)
 { static char buffer[19]={0};
-  sprintf(buffer, "0x%016llx", v);
+  sprintf(buffer, "0x%016llx", (long long unsigned int)v);
   return buffer;
 }
 

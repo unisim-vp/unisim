@@ -45,6 +45,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include <unisim/component/clm/interfaces/memreq.hh>
+#include <unisim/component/clm/interfaces/memreq.tcc>
+
 #include <unisim/component/clm/utility/error.h>
 #include <unisim/component/clm/utility/utility.hh>
 #include <sstream>
@@ -141,12 +143,11 @@ class BusMultiQueue : public module, public Client<SVGmemreqInterface<INSTRUCTIO
  #ifdef DISTRIBUTED_SHARED_SYSTEM
   int local_id;
   BusMultiQueue(const char *name,int id) 
-  : module(name),local_id(id)
+  : Object(name, 0), module(name),local_id(id)
  #else	
   BusMultiQueue(const char *name) 
-  : module(name)
+    : Object(name, 0), module(name)
  #endif	
-  , Object(name, 0)
   , Client<SVGmemreqInterface<INSTRUCTION> >(name, this)
   , svg("svg", this)
   { //Interface naming to enhance debugging info

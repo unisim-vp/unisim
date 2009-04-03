@@ -20,10 +20,12 @@ nobase_include_HEADERS = \
 	execute/functional_unit.hh \
 	execute/functional_unit_mc.hh \
 	execute/load_store_queue.hh \
+	execute/load_store_queue_nospec.hh \
 	execute/load_store_queue_mc.hh \
 	fetch/branch_history_table.hh \
 	fetch/branch_target_buffer.hh \
 	fetch/fetcher.hh \
+	fetch/fetcher_perfect.hh \
 	fetch/fetcher_mc.hh \
 	fetch/return_address_stack.hh \
 	issue/register_file.hh \

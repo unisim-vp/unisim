@@ -43,7 +43,7 @@
 #ifndef __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_TCC__
 #define __UNISIM_COMPONENT_CLM_PROCESSOR_OOOSIM_CPU_SIMULATOR_TCC__
 
-#include <unisim/component/clm/interfaces/memreq.tcc>
+//#include <unisim/component/clm/interfaces/memreq.tcc>
 
 #define TAG_SEND_ON_MEMORY_REQUEST 0
 //#define __BYTE_ORDER __BIG_ENDIAN
@@ -135,7 +135,12 @@ OooSimCpu(const char *name, Object *parent) : module(name)
     
     speculative_cpu_state = new CPUSim("speculative_cpu_state",this);
     check_emulator = new CPUEmu("check_emulator",this);
+
+#ifdef ALL_PERFECT
+    fetch_emulator = new CPUEmu("fetch_emulator",this);
+#else
     fetch_emulator = new CPUSim("fetch_emulator",this);
+#endif
     
     // For spec emu...
     //    mem_emu = new MyMemEmulator("mem_emu",this);
@@ -540,7 +545,7 @@ start_of_cycle()
 		}
 	    }
 #endif
-	  if (rob->syscall_retired || timestamp() == 0)
+   	  if (rob->syscall_retired || timestamp() == 0)
 	    {
 	      RepaireAfterSyscall();
 	      //cerr << "(" << timestamp() << ") REPAIRE AFTER SYSCALL !!!" << endl;
@@ -563,6 +568,15 @@ if (DD_DEBUG_TIMESTAMP < timestamp())
 #endif
   }
 
+  /*
+  bool
+  OooSimCpu<nIntegerRegisters,nIL1CachetoCPUDataPathSize,nIL1CPUtoCacheDataPathSize,
+	    nDL1CachetoCPUDataPathSize,nDL1CPUtoCacheDataPathSize,nProg,VERBOSE>::
+  Setup()
+  {
+    return true;
+  }
+  */
   /**
    * \brief Automatic Setup of OooSimCpu
    */

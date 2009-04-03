@@ -42,6 +42,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __UNISIM_COMPONENT_CLM_INTERFACES_MEMREQ_TCC__
 #define __UNISIM_COMPONENT_CLM_INTERFACES_MEMREQ_TCC__
 
+#include <unisim/component/clm/interfaces/memreq.hh>
+
 namespace unisim {
 namespace component {
 namespace clm {
@@ -51,84 +53,6 @@ namespace interfaces {
   using namespace std;
 
 /**
- * \brief Non-templated type class for memreq defining the enums and their pretty printers
- */
-  /** 
-   * \brief Pretty printer for the command_t enum 
-   */
-  ostream & operator<<(ostream &os, const memreq_types::command_t &c)
-  { switch(c)
-    { case memreq_types::cmd_UNKNOWN:
-        os << "UNK  ";
-        break;
-      case memreq_types::cmd_READ:
-        os << "READ ";
-        break;
-      case memreq_types::cmd_READX:
-        os << "READX";
-        break;
-      case memreq_types::cmd_WRITE:
-        os << "WRITE";
-        break;
-      case memreq_types::cmd_PREFETCH:
-        os << "PREFETCH";
-        break;
-      case memreq_types::cmd_EVICT:
-        os << "EVICT";
-        break;
-      case memreq_types::cmd_FLUSH:
-        os << "FLUSH";
-        break;
-      case memreq_types::cmd_BLOCK_INVALIDATE:
-        os << "BLOCK_INVALIDATE";
-        break;
-    }
-    return os;
-  }
-
-  /** 
-   * \brief Pretty printer for the sender_type_t enum 
-   */
-  ostream & operator<<(ostream &os, const memreq_types::sender_type_t &t)
-  { switch(t)
-    { case memreq_types::sender_UNKNOWN: 
-        os << "\e[1;35mUNK\e[0m";
-        break;
-      case memreq_types::sender_CPU:
-        os << "\e[1;31mCPU\e[0m";
-        break;
-      case memreq_types::sender_CACHE:
-        os << "\e[1;33mCAC\e[0m";
-        break;
-      case memreq_types::sender_MEM:
-        os << "\e[1;34mMEM\e[0m";
-        break;
-    }
-    return os;
-  }
-
-  /** 
-   * \brief Pretty printer for the sender_type_t enum 
-   */
-  ostream & operator<<(ostream &os, const memreq_types::message_type_t &m)
-  { switch(m)
-    { case memreq_types::type_UNKNOWN: 
-//        os << "\e[1;35mUNK\e[0m";
-        os << "UNK";
-        break;
-      case memreq_types::type_REQUEST:
-//        os << "\e[1;32mREQ\e[0m";
-        os << "REQ";
-        break;
-      case memreq_types::type_ANSWER:
-//        os << "\e[1;31mANS\e[0m";
-        os << "ANS";
-        break;
-    }
-    return os;
-  }
-  
-/**
  * \brief Data-less memory request class
  */
   /** 
@@ -136,7 +60,7 @@ namespace interfaces {
    */
   template <class INSTRUCTION>
   memreq_dataless<INSTRUCTION>::
-  memreq_dataless()
+  memreq_dataless(): memreq_types()
   { size=0;
     address=0;
     command=cmd_UNKNOWN;
@@ -154,6 +78,10 @@ namespace interfaces {
     src_id = 0;
 #endif
   }
+
+  template <class INSTRUCTION>
+  memreq_dataless<INSTRUCTION>::
+  ~memreq_dataless() {}
 
   /** 
    * \brief Pretty printer for the memreq class 
@@ -284,9 +212,6 @@ namespace interfaces {
   { memcpy(data.buffer, &val, 4);
   }
 
-  //static uint64_t memreq_types::memreq_id_max;
-
-uint64_t memreq_types::memreq_id_max=0;
 
 } // end of namespace interfaces
 } // end of namespace clm

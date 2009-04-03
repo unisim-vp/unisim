@@ -1,5 +1,5 @@
 /***************************************************************************
-   memreq.h  -  Memory request object
+   memreq.hh  -  Memory request object
  ***************************************************************************/
 
 /* *****************************************************************************  
@@ -44,6 +44,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //#include <unisim/unisim_inttypes.h>
 #include <unisim/kernel/clm/engine/unisim_inttypes.h>
+#include <unisim/kernel/clm/engine/unisim.h>
 #include <iostream>
 //#include "mem_common.h"
 #include <unisim/component/clm/memory/mem_common.hh>
@@ -163,6 +164,7 @@ class memreq_dataless : public memreq_types
    */
   virtual const char * Read() const;
 
+  virtual ~memreq_dataless();
 };
 
 /**

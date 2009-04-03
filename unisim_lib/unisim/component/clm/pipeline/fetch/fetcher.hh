@@ -2056,7 +2056,9 @@ private:
 	endianess_t endianess;					/*< either little_endian or big_endian */
 	uint64_t inum;							/*< instruction number */
 	//DD	Emulator *emulator;						/*< pointer to the emulator wrapper */
+public:
 	CPUSim *emulator;						/*< pointer to the emulator wrapper */
+private:
 	bool btb_miss;							/*< true if a BTB miss occured, used to stop fetching until branch resolution */
 	bool ras_miss;							/*< true if a RAS miss occured, used to stop fetching until branch resolution */
 	int in_flight_branches;

@@ -25,7 +25,6 @@
 #include <unisim/component/clm/processor/ooosim/iss_interface.hh>
 #include <unisim/component/cxx/processor/powerpc/powerpc.hh>
 
-#include <unisim/component/clm/memory/mem_common.hh>
 #include <unisim/component/clm/utility/common.hh>
 
 namespace unisim {
@@ -317,7 +316,21 @@ class Instruction
   vector<Source> sources;
   //  Destination destination;
   vector<Destination> destinations;
-  
+
+	uint64_t timing_fetch_cycle;
+	uint64_t timing_allocate_cycle;
+	uint64_t timing_schedule_cycle;
+	uint64_t timing_register_cycle;
+	uint64_t timing_execute_cycle;
+	uint64_t timing_writeback_cycle;
+	uint64_t timing_retire_cycle;
+
+  uint64_t alloc_stall_sched_reject;
+  uint64_t alloc_stall_reord_reject;
+  uint64_t alloc_stall_loadq_reject;
+  uint64_t alloc_stall_storq_reject;
+
+
   Instruction()
   { 
     predecoded = false;
@@ -366,7 +379,20 @@ class Instruction
     sources.clear();
     destinations.clear();
 
-  }
+	timing_fetch_cycle=0;
+	timing_allocate_cycle=0;
+	timing_schedule_cycle=0;
+	timing_register_cycle=0;
+	timing_execute_cycle=0;
+	timing_writeback_cycle=0;
+	timing_retire_cycle=0;
+
+	alloc_stall_sched_reject=0;
+	alloc_stall_reord_reject=0;
+	alloc_stall_loadq_reject=0;
+	alloc_stall_storq_reject=0;
+
+ }
 
   ~Instruction()
   {
@@ -496,7 +522,19 @@ class Instruction
     //    destination = instruction.destination;
     destinations = instruction.destinations;
 
-  }
+    timing_fetch_cycle = instruction.timing_fetch_cycle;
+    timing_allocate_cycle = instruction.timing_allocate_cycle;
+    timing_schedule_cycle = instruction.timing_schedule_cycle;
+    timing_register_cycle = instruction.timing_register_cycle;
+    timing_execute_cycle = instruction.timing_execute_cycle;
+    timing_writeback_cycle = instruction.timing_writeback_cycle;
+    timing_retire_cycle = instruction.timing_retire_cycle;
+    
+    alloc_stall_sched_reject = instruction.alloc_stall_sched_reject;
+    alloc_stall_reord_reject = instruction.alloc_stall_reord_reject;
+    alloc_stall_loadq_reject = instruction.alloc_stall_loadq_reject;
+    alloc_stall_storq_reject = instruction.alloc_stall_storq_reject;
+ }
 
   Instruction &operator = (const Instruction& instruction) GCC_INLINE
   {
@@ -582,6 +620,19 @@ class Instruction
     sources = instruction.sources;
     //    destination = instruction.destination;
     destinations = instruction.destinations;
+
+    timing_fetch_cycle = instruction.timing_fetch_cycle;
+    timing_allocate_cycle = instruction.timing_allocate_cycle;
+    timing_schedule_cycle = instruction.timing_schedule_cycle;
+    timing_register_cycle = instruction.timing_register_cycle;
+    timing_execute_cycle = instruction.timing_execute_cycle;
+    timing_writeback_cycle = instruction.timing_writeback_cycle;
+    timing_retire_cycle = instruction.timing_retire_cycle;
+    
+    alloc_stall_sched_reject = instruction.alloc_stall_sched_reject;
+    alloc_stall_reord_reject = instruction.alloc_stall_reord_reject;
+    alloc_stall_loadq_reject = instruction.alloc_stall_loadq_reject;
+    alloc_stall_storq_reject = instruction.alloc_stall_storq_reject;
 
   }
 
