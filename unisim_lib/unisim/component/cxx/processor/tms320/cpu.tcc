@@ -375,19 +375,19 @@ bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int a
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY:
-			sstr << "*AR++" << ar << "("<< disp << ")";
+			sstr << "*AR" << ar << "++("<< disp << ")";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
-			sstr << "*AR--" << ar << "("<< disp << ")";
+			sstr << "*AR" << ar << "--("<< disp << ")";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
-			sstr << "*AR++" << ar << "("<< disp << ")%";
+			sstr << "*AR" << ar << "++("<< disp << ")%";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY:
-			sstr << "*AR--" << ar << "("<< disp << ")%";
+			sstr << "*AR" << ar << "--("<< disp << ")%";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD:
@@ -407,19 +407,19 @@ bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int a
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_MODIFY:
-			sstr << "*AR++" << ar << "(IR0)";
+			sstr << "*AR" << ar << "++(IR0)";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY:
-			sstr << "*AR--" << ar << "(IR0)";
+			sstr << "*AR" << ar << "--(IR0)";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY:
-			sstr << "*AR++" << ar << "(IR0)%";
+			sstr << "*AR" << ar << "++(IR0)%";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_CIRCULAR_MODIFY:
-			sstr << "*AR--" << ar << "(IR0)%";
+			sstr << "*AR" << ar << "--(IR0)%";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD:
@@ -439,19 +439,19 @@ bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int a
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_MODIFY:
-			sstr << "*AR++" << ar << "(IR1)";
+			sstr << "*AR" << ar << "++(IR1)";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY:
-			sstr << "*AR--" << ar << "(IR1)";
+			sstr << "*AR" << ar << "--(IR1)";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY:
-			sstr << "*AR++" << ar << "(IR1)%";
+			sstr << "*AR" << ar << "++(IR1)%";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_CIRCULAR_MODIFY:
-			sstr << "*AR--" << ar << "(IR1)%";
+			sstr << "*AR" << ar << "--(IR1)%";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING:

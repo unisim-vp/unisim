@@ -31,6 +31,10 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
  
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.tcc>

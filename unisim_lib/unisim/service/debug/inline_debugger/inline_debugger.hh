@@ -152,9 +152,11 @@ private:
 	ADDRESS dump_addr;
 
 	string prompt;
+	char *hex_addr_fmt;
+	char *int_addr_fmt;
 	char last_line[256];
 	char line[256];
-	
+
 	bool ParseAddr(const char *s, ADDRESS& addr);
 	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
 	bool GetLine(char *line, int size);

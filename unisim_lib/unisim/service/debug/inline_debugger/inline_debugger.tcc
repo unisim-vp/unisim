@@ -36,6 +36,8 @@
 #define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_TCC_
 
 #include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
 
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
@@ -87,12 +89,47 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent) :
 	disasm_addr = 0;
 	dump_addr = 0;
 	prompt = string(_name) + "> ";
+
+	switch(sizeof(ADDRESS))
+	{
+		case 1:
+			hex_addr_fmt = strdup(PRIx8);
+			break;
+		case 2:
+			hex_addr_fmt = strdup(PRIx16);
+			break;
+		case 4:
+			hex_addr_fmt = strdup(PRIx32);
+			break;
+		case 8:
+			hex_addr_fmt = strdup(PRIx64);
+			break;
+	}
+
+	switch(sizeof(ADDRESS))
+	{
+		case 1:
+			int_addr_fmt = strdup(PRIu8);
+			break;
+		case 2:
+			int_addr_fmt = strdup(PRIu16);
+			break;
+		case 4:
+			int_addr_fmt = strdup(PRIu32);
+			break;
+		case 8:
+			int_addr_fmt = strdup(PRIu64);
+			break;
+	}
+
 	Object::SetupDependsOn(memory_access_reporting_control_import);
 }
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::~InlineDebugger()
 {
+	free(hex_addr_fmt);
+	free(int_addr_fmt);
 }
 
 template<class ADDRESS>
@@ -709,16 +746,24 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
-	if(sscanf(s, "*%u:%u", &addr, &size) == 2 ||
-	   sscanf(s, "*%x:%u", &addr, &size) == 2)
+	char fmt1[16];
+	char fmt2[16];
+	snprintf(fmt1, sizeof(fmt1), "*%%%s:%%%s", hex_addr_fmt, int_addr_fmt);
+	snprintf(fmt2, sizeof(fmt2), "*%%%s:%%%s", int_addr_fmt, int_addr_fmt);
+
+	if(sscanf(s, fmt1, &addr, &size) == 2 ||
+	   sscanf(s, fmt2, &addr, &size) == 2)
 	{
 		addr *= memory_atom_size;
 		size *= memory_atom_size;
 		return true;
 	}
 
-	if(sscanf(s, "*%x", &addr) == 1 ||
-	   sscanf(s, "*%u", &addr) == 1)
+	snprintf(fmt1, sizeof(fmt1), "*%%%s", hex_addr_fmt);
+	snprintf(fmt2, sizeof(fmt2), "*%%%s", int_addr_fmt);
+
+	if(sscanf(s, fmt1, &addr) == 1 ||
+	   sscanf(s, fmt2, &addr) == 1)
 	{
 		addr *= memory_atom_size;
 		size = memory_atom_size;
@@ -741,11 +786,17 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 	return false;
 }
 
+
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 {
-	if(sscanf(s, "*%x", &addr) == 1 ||
-	   sscanf(s, "*%u", &addr) == 1)
+	char fmt1[16];
+	char fmt2[16];
+	snprintf(fmt1, sizeof(fmt1), "*%%%s", hex_addr_fmt);
+	snprintf(fmt2, sizeof(fmt2), "*%%%s", int_addr_fmt);
+
+	if(sscanf(s, fmt1, &addr) == 1 ||
+	   sscanf(s, fmt2, &addr) == 1)
 	{
 		addr *= memory_atom_size;
 		return true;
