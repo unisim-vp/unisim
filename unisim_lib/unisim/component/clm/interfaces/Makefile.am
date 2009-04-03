@@ -4,8 +4,8 @@ sharedir = $(prefix)/share/unisim_lib/unisim/component/clm/interfaces
 
 #SUBDIRS=
 #INCLUDE_SUBDIRS=
-lib_LIBRARIES = libunisim_component_clm_interfaces_memreq.a
-libunisim_component_clm_interfaces_memreq_a_SOURCES = memreq.cc
+lib_LTLIBRARIES = libunisim_component_clm_interfaces_memreq.la
+libunisim_component_clm_interfaces_memreq_la_SOURCES = memreq.cc
 
 
 #if COND_release
@@ -27,4 +27,5 @@ uninstall-hook:
 	(rmdir $(includedir) || true)
 	(rmdir $(sharedir) || true)
 
-ROOT_DIR = ../../../../..
+ROOT_DIR = ../../../..
+include $(top_srcdir)/../../../../m4/unisim.am

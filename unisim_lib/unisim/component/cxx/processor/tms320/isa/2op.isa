@@ -1690,6 +1690,73 @@ LSH_imm.disasm = {
 	return true;
 }
 
+LSH_reg.execute = {
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Sign extend the 7 LSB of the source operand value to get the shift count
+	int32_t count = SignExtend(src_value, 7);
+
+	// Compute the result
+	uint8_t bit_out;
+	uint32_t result;
+
+	if(count == 0)
+	{
+		result = dst_value;
+		bit_out = 0;
+	}
+	else if(count >= 0)
+	{
+		if(count >= 32)
+		{
+			result = 0;
+			bit_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(dst_value, count, bit_out);
+		}
+	}
+	else
+	{
+		count = -count;
+		if(count >= 32)
+		{
+			result = 0;
+			bit_out = 0;
+		}
+		else
+		{
+			result = ShiftRight(dst_value, count, bit_out);
+		}
+	}
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			bit_out
+		);
+	}
+}
+
 /* end of LSH (logical shift)
  **********************************************************/
 

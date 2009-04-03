@@ -134,6 +134,9 @@ using unisim::util::arithmetic::Sub32;
 using unisim::util::arithmetic::SignedSatSub32;
 using unisim::util::arithmetic::RotateLeft;
 using unisim::util::arithmetic::RotateRight;
+using unisim::util::arithmetic::ShiftLeft;
+using unisim::util::arithmetic::ShiftRight;
+using unisim::util::arithmetic::SignExtend;
 
 } // end of namespace tms320
 } // end of namespace processor

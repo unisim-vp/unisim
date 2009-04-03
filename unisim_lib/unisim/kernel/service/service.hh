@@ -171,7 +171,8 @@ public:
 	static void Unregister(VariableBase *variable);
 
 	static void Dump(ostream& os);
-	static void DumpVariables(ostream& os);
+	static void DumpVariables(ostream& os, VariableBase::Type filter_type = VariableBase::VAR_VOID);
+	static void DumpStatistics(ostream& os);
 	static bool XmlfyParameters(const char *filename);
 	static bool LoadXmlParameters(const char *filename);
 	static bool XmlfyVariables(const char *filename);

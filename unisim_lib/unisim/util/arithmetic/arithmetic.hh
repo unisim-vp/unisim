@@ -116,6 +116,11 @@ inline unsigned int Log2(uint64_t v) __attribute__((always_inline));
 inline unsigned int CeilLog2(uint32_t v) __attribute__((always_inline));
 inline unsigned int CeilLog2(uint64_t v) __attribute__((always_inline));
 
+inline int8_t SignExtend(uint8_t v, unsigned int n) __attribute__((always_inline));
+inline int16_t SignExtend(uint16_t v, unsigned int n) __attribute__((always_inline));
+inline int32_t SignExtend(uint32_t v, unsigned int n) __attribute__((always_inline));
+inline int64_t SignExtend(uint64_t v, unsigned int n) __attribute__((always_inline));
+
 #endif
 
 //=============================================================================
@@ -477,6 +482,7 @@ inline int16_t RotateRight(int16_t v, unsigned int n) { return RotateRight((uint
 inline int32_t RotateRight(int32_t v, unsigned int n) { return RotateRight((uint32_t) v, n); }
 inline int64_t RotateRight(int64_t v, unsigned int n) { return RotateRight((uint64_t) v, n); }
 
+// WARNING! bit_out value is undefined when rotating of 0 bits
 inline uint32_t RotateLeft(uint32_t v, unsigned int n, uint8_t& bit_out)
 {
 #if defined(__GNUC__) && (__GNUC__ >= 3) && defined(__i386)
@@ -736,6 +742,34 @@ inline unsigned int CeilLog2(uint64_t v)
 {
 	unsigned int log2v = Log2(v);
 	return (v > (1ULL << log2v)) ? log2v + 1 : log2v;
+}
+
+//=============================================================================
+//=                       2's complement sign Extension                       =
+//=============================================================================
+
+inline int8_t SignExtend(uint8_t v, unsigned int n)
+{
+	unsigned int m = 8 * (sizeof(v) - n);
+	return (int8_t) (v << m) >> m; 
+}
+
+inline int16_t SignExtend(uint16_t v, unsigned int n)
+{
+	unsigned int m = 8 * (sizeof(v) - n);
+	return (int16_t) (v << m) >> m; 
+}
+
+inline int32_t SignExtend(uint32_t v, unsigned int n)
+{
+	unsigned int m = 8 * (sizeof(v) - n);
+	return (int32_t) (v << m) >> m; 
+}
+
+inline int64_t SignExtend(uint64_t v, unsigned int n)
+{
+	unsigned int m = 8 * (sizeof(v) - n);
+	return (int64_t) (v << m) >> m; 
 }
 
 } // end of namespace arithmetic

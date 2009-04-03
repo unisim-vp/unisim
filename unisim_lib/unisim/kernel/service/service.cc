@@ -775,15 +775,41 @@ void ServiceManager::Dump(ostream& os)
 	}
 }
 
-void ServiceManager::DumpVariables(ostream &os) {
-	os << "PARAMETERS:" << endl;
+void ServiceManager::DumpVariables(ostream &os, VariableBase::Type filter_type) {
+	switch(filter_type)
+	{
+		case VariableBase::VAR_VOID:
+			os << "VARIABLES:" << endl;
+			break;
+		case VariableBase::VAR_ARRAY:
+			os << "VARIABLES ARRAYS:" << endl;
+			break;
+		case VariableBase::VAR_PARAMETER:
+			os << "PARAMETERS:" << endl;
+			break;
+		case VariableBase::VAR_STATISTIC:
+			os << "STATISTICS:" << endl;
+			break;
+		case VariableBase::VAR_REGISTER:
+			os << "REGISTERS:" << endl;
+			break;
+	}
 	map<const char *, VariableBase *, ltstr>::iterator variable_iter;
 
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		os << (*variable_iter).second->GetName() << " = \"" << ((string) *(*variable_iter).second) << "\"" << endl;
+		VariableBase::Type var_type = (*variable_iter).second->GetType();
+		if(var_type == VariableBase::VAR_VOID || var_type == filter_type)
+		{
+			os << (*variable_iter).second->GetName() << " = \"" << ((string) *(*variable_iter).second) << "\"" << endl;
+		}
 	}
 	os << endl;
+}
+
+void ServiceManager::DumpStatistics(ostream &os)
+{
+	DumpVariables(os, VariableBase::VAR_STATISTIC);
 }
 
 bool ServiceManager::XmlfyVariables(const char *filename) {
