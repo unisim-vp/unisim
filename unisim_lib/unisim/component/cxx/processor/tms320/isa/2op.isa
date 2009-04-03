@@ -1253,6 +1253,284 @@ ASH_imm.disasm = {
 	return true;
 }
 
+ASH_reg.execute = {
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Sign extend the 7 LSB of the source operand value to get the shift count
+	int32_t count = SignExtend(src_value, 7);
+
+	// Compute the result
+	uint8_t carry_out;
+	uint32_t result;
+
+	if(count == 0)
+	{
+		result = dst_value;
+		carry_out = 0;
+	}
+	else if(count >= 0)
+	{
+		if(count >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(dst_value, count, carry_out);
+		}
+	}
+	else
+	{
+		count = -count;
+		if(count >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftArithmeticRight(dst_value, count, carry_out);
+		}
+	}
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			carry_out
+		);
+	}
+}
+
+ASH_dir.execute = {
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Sign extend the 7 LSB of the source operand value to get the shift count
+	int32_t count = SignExtend(src_value, 7);
+
+	// Compute the result
+	uint8_t carry_out;
+	uint32_t result;
+
+	if(count == 0)
+	{
+		result = dst_value;
+		carry_out = 0;
+	}
+	else if(count >= 0)
+	{
+		if(count >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(dst_value, count, carry_out);
+		}
+	}
+	else
+	{
+		count = -count;
+		if(count >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftArithmeticRight(dst_value, count, carry_out);
+		}
+	}
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			carry_out
+		);
+	}
+}
+
+ASH_indir.execute = {
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Sign extend the 7 LSB of the source operand value to get the shift count
+	int32_t count = SignExtend(src_value, 7);
+
+	// Compute the result
+	uint8_t carry_out;
+	uint32_t result;
+
+	if(count == 0)
+	{
+		result = dst_value;
+		carry_out = 0;
+	}
+	else if(count >= 0)
+	{
+		if(count >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(dst_value, count, carry_out);
+		}
+	}
+	else
+	{
+		count = -count;
+		if(count >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftArithmeticRight(dst_value, count, carry_out);
+		}
+	}
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			carry_out
+		);
+	}
+}
+
+ASH_imm.execute = {
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Sign extend the 7 LSB of the immediate value to get the shift count
+	int32_t count = imm; // imm has alread been sign extended by the decoder
+
+	// Compute the result
+	uint8_t carry_out;
+	uint32_t result;
+
+	if(count == 0)
+	{
+		result = dst_value;
+		carry_out = 0;
+	}
+	else if(count >= 0)
+	{
+		if(count >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(dst_value, count, carry_out);
+		}
+	}
+	else
+	{
+		count = -count;
+		if(count >= 32)
+		{
+			result = 0;
+			carry_out = 0;
+		}
+		else
+		{
+			result = ShiftArithmeticRight(dst_value, count, carry_out);
+		}
+	}
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			carry_out
+		);
+	}
+}
+
 /* end of ASH (arithmetic shift)
  **********************************************************/
 
@@ -1645,7 +1923,7 @@ FLOAT_imm.disasm = {
 op LSH_reg  (0b000[3]:0b010011[6]:0b00[2]:dst[5]:0[11]:src[5])
 op LSH_dir  (0b000[3]:0b010011[6]:0b01[2]:dst[5]:direct[16])
 op LSH_indir(0b000[3]:0b010011[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
-op LSH_imm  (0b000[3]:0b010011[6]:0b11[2]:dst[5]:sext<32> imm[16])
+op LSH_imm  (0b000[3]:0b010011[6]:0b11[2]:dst[5]:?[9]:sext<32> imm[7])
 
 LSH_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -1705,6 +1983,217 @@ LSH_reg.execute = {
 
 	// Sign extend the 7 LSB of the source operand value to get the shift count
 	int32_t count = SignExtend(src_value, 7);
+
+	// Compute the result
+	uint8_t bit_out;
+	uint32_t result;
+
+	if(count == 0)
+	{
+		result = dst_value;
+		bit_out = 0;
+	}
+	else if(count >= 0)
+	{
+		if(count >= 32)
+		{
+			result = 0;
+			bit_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(dst_value, count, bit_out);
+		}
+	}
+	else
+	{
+		count = -count;
+		if(count >= 32)
+		{
+			result = 0;
+			bit_out = 0;
+		}
+		else
+		{
+			result = ShiftRight(dst_value, count, bit_out);
+		}
+	}
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			bit_out
+		);
+	}
+}
+
+LSH_dir.execute = {
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Sign extend the 7 LSB of the source operand value to get the shift count
+	int32_t count = SignExtend(src_value, 7);
+
+	// Compute the result
+	uint8_t bit_out;
+	uint32_t result;
+
+	if(count == 0)
+	{
+		result = dst_value;
+		bit_out = 0;
+	}
+	else if(count >= 0)
+	{
+		if(count >= 32)
+		{
+			result = 0;
+			bit_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(dst_value, count, bit_out);
+		}
+	}
+	else
+	{
+		count = -count;
+		if(count >= 32)
+		{
+			result = 0;
+			bit_out = 0;
+		}
+		else
+		{
+			result = ShiftRight(dst_value, count, bit_out);
+		}
+	}
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			bit_out
+		);
+	}
+}
+
+LSH_indir.execute = {
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Sign extend the 7 LSB of the source operand value to get the shift count
+	int32_t count = SignExtend(src_value, 7);
+
+	// Compute the result
+	uint8_t bit_out;
+	uint32_t result;
+
+	if(count == 0)
+	{
+		result = dst_value;
+		bit_out = 0;
+	}
+	else if(count >= 0)
+	{
+		if(count >= 32)
+		{
+			result = 0;
+			bit_out = 0;
+		}
+		else
+		{
+			result = ShiftLeft(dst_value, count, bit_out);
+		}
+	}
+	else
+	{
+		count = -count;
+		if(count >= 32)
+		{
+			result = 0;
+			bit_out = 0;
+		}
+		else
+		{
+			result = ShiftRight(dst_value, count, bit_out);
+		}
+	}
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			bit_out
+		);
+	}
+}
+
+LSH_imm.execute = {
+	// Check whether the source and destination registers are valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Sign extend the 7 LSB of the immediate value to get the shift count
+	int32_t count = imm; // imm has alread been sign extended by the decoder
 
 	// Compute the result
 	uint8_t bit_out;
@@ -2037,6 +2526,137 @@ NEGI_imm.disasm = {
 	return true;
 }
 
+NEGI_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Compute the result
+	uint32_t result = -src_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+NEGI_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result = -src_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+NEGI_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result = -src_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+NEGI_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result = -imm;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
 /* end of NEGI (negate integer)
  **********************************************************/
 
@@ -2104,7 +2724,7 @@ NORM_imm.disasm = {
 op NOT_reg  (0b000[3]:0b011011[6]:0b00[2]:dst[5]:0[11]:src[5])
 op NOT_dir  (0b000[3]:0b011011[6]:0b01[2]:dst[5]:direct[16])
 op NOT_indir(0b000[3]:0b011011[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
-op NOT_imm  (0b000[3]:0b011011[6]:0b11[2]:dst[5]:sext<32> imm[16])
+op NOT_imm  (0b000[3]:0b011011[6]:0b11[2]:dst[5]:<32> imm[16])
 
 NOT_reg.disasm = {
 	const char *dst_name = REG_NAME[dst];
@@ -2147,6 +2767,137 @@ NOT_imm.disasm = {
 
 	os << "NOT " << imm << ", " << dst_name;
 	return true;
+}
+
+NOT_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Compute the result
+	uint32_t result = ~src_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+NOT_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result = ~src_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+NOT_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result = ~src_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+NOT_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result = ~imm;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 /* end of NOT (bitwise-logical complement)
@@ -2203,6 +2954,146 @@ OR_imm.disasm = {
 
 	os << "OR " << imm << ", " << dst_name;
 	return true;
+}
+
+OR_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result = src_value | dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+OR_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result = src_value | dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+OR_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result = src_value | dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+OR_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result = imm | dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 /* end of OR (bitwise-logical OR)
@@ -2281,6 +3172,36 @@ ROL.disasm = {
 	return true;
 }
 
+ROL.execute = {
+	// Check whether the destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint8_t carry_out;
+	uint32_t result = RotateLeft(dst_value, 1, carry_out);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			carry_out
+		);
+	}
+}
+
 /* end of ROL (rotate left)
  **********************************************************/
 
@@ -2299,6 +3220,39 @@ ROLC.disasm = {
 	
 	os << "ROLC " << dst_name;
 	return true;
+}
+
+ROLC.execute = {
+	// Check whether the destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Read carry in
+	uint8_t carry_in = cpu.GetST_C();
+
+	// Compute the result
+	uint8_t carry_out;
+	uint32_t result = RotateLeft(dst_value, 1, carry_in, carry_out);
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V | M_ST_C,  // reset mask
+			M_ST_N | M_ST_Z | M_ST_C,  // or mask
+			carry_out
+		);
+	}
 }
 
 /* end of ROLC (rotate left through carry)
@@ -3728,6 +4682,146 @@ XOR_imm.disasm = {
 
 	os << "XOR " << imm << ", " << dst_name;
 	return true;
+}
+
+XOR_reg.execute = {
+	// Check that source and destination registers are valid
+	if(unlikely(!cpu.HasReg(src) || !cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read source operand
+	uint32_t src_value = cpu.GetIntReg(src);
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result = src_value ^ dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+XOR_dir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the source operand effective address
+	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result = src_value ^ dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+XOR_indir.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Check that indirect addressing mode is valid and compute the effective address of the source operand
+	typename CONFIG::address_t ea;        // The effective address
+	bool update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the source operand from memory
+	uint32_t src_value = cpu.IntLoad(ea);
+
+	// Compute the result
+	uint32_t result = src_value ^ dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	if(update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(ar, output_ar);
+	}
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
+}
+
+XOR_imm.execute = {
+	// Check that destination register is valid
+	if(unlikely(!cpu.HasReg(dst)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read destination operand
+	uint32_t dst_value = cpu.GetIntReg(dst);
+
+	// Compute the result
+	uint32_t result = imm ^ dst_value;
+
+	// Write back result
+	cpu.SetIntReg(dst, result);
+
+	// Check whether destination operand is an extended precision register
+	if(cpu.IsExtReg(dst))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_N | M_ST_Z    // or mask
+		);
+	}
 }
 
 /* end of XOR (bitwise-exclusive OR)

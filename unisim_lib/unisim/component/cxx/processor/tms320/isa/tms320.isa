@@ -136,6 +136,7 @@ using unisim::util::arithmetic::RotateLeft;
 using unisim::util::arithmetic::RotateRight;
 using unisim::util::arithmetic::ShiftLeft;
 using unisim::util::arithmetic::ShiftRight;
+using unisim::util::arithmetic::ShiftArithmeticRight;
 using unisim::util::arithmetic::SignExtend;
 
 } // end of namespace tms320
