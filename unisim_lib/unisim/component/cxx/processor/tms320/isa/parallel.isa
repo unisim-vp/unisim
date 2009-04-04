@@ -78,8 +78,8 @@ ABSF_STF.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "ABSF " << disasm_src2_indir << ", " << dst1_name
@@ -93,7 +93,7 @@ ABSF_STF_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "ABSF " << src2_name << ", " << dst1_name
@@ -119,8 +119,8 @@ ABSI_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "ABSI " << disasm_src2_indir << ", " << dst1_name
@@ -134,7 +134,7 @@ ABSI_STI_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "ABSI " << src2_name << ", " << dst1_name
@@ -161,8 +161,8 @@ ADDF3_STF.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "ADDF3 " << disasm_src2_indir << ", " << src1_name << ", " << dst1_name
@@ -177,7 +177,7 @@ ADDF3_STF_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "ADDF3 " << src2_name << ", " << src1_name << ", " << dst1_name
@@ -204,8 +204,8 @@ ADDI3_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "ADDI3 " << disasm_src2_indir << ", " << src1_name << ", " << dst1_name
@@ -220,7 +220,7 @@ ADDI3_STI_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "ADDI3 " << src2_name << ", " << src1_name << ", " << dst1_name
@@ -247,8 +247,8 @@ AND3_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "AND3 " << disasm_src2_indir << ", " << src1_name << ", " << dst1_name
@@ -263,7 +263,7 @@ AND3_STI_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "AND3 " << src2_name << ", " << src1_name << ", " << dst1_name
@@ -290,8 +290,8 @@ ASH3_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "ASH3 " << count_name << ", " << disasm_src2_indir << ", " << dst1_name
@@ -306,7 +306,7 @@ ASH3_STI_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "ASH3 " << count_name << ", " << src2_name << ", " << dst1_name
@@ -332,8 +332,8 @@ FIX_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "FIX " << disasm_src2_indir << ", " << dst1_name
@@ -347,7 +347,7 @@ FIX_STI_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "FIX " << src2_name << ", " << dst1_name
@@ -373,8 +373,8 @@ FLOAT_STF.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "FLOAT " << disasm_src2_indir << ", " << dst1_name
@@ -388,7 +388,7 @@ FLOAT_STF_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "FLOAT " << src2_name << ", " << dst1_name
@@ -413,8 +413,8 @@ LDF_STF.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "LDF " << disasm_src2_indir << ", " << dst1_name
@@ -428,7 +428,7 @@ LDF_STF_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "LDF " << src2_name << ", " << dst1_name
@@ -453,8 +453,8 @@ LDI_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "LDI " << disasm_src2_indir << ", " << dst1_name
@@ -468,7 +468,7 @@ LDI_STI_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "LDI " << src2_name << ", " << dst1_name
@@ -494,8 +494,8 @@ LSH3_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "LSH3 " << count << ", " << disasm_src2_indir << ", " << dst1_name
@@ -510,7 +510,7 @@ LSH3_STI_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "LSH3 " << count << ", " << src2_name << ", " << dst1_name
@@ -536,8 +536,8 @@ MPYF3_STF.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "MPYF3 " << disasm_src2_indir << ", " << src1_name << ", " << dst1_name
@@ -552,7 +552,7 @@ MPYF3_STF_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "MPYF3 " << src2_name << ", " << src1_name << ", " << dst1_name
@@ -578,8 +578,8 @@ MPYI3_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "MPYI3 " << disasm_src2_indir << ", " << src1_name << ", " << dst1_name
@@ -594,7 +594,7 @@ MPYI3_STI_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "MPYI3 " << src2_name << ", " << src1_name << ", " << dst1_name
@@ -619,8 +619,8 @@ NEGF_STF.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "NEGF " << disasm_src2_indir << ", " << dst1_name
@@ -634,7 +634,7 @@ NEGF_STF_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "NEGF " << src2_name << ", " << dst1_name
@@ -659,8 +659,8 @@ NEGI_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "NEGI " << disasm_src2_indir << ", " << dst1_name
@@ -674,7 +674,7 @@ NEGI_STI_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "NEGI " << src2_name << ", " << dst1_name
@@ -699,8 +699,8 @@ NOT_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "NOT " << disasm_src2_indir << ", " << dst1_name
@@ -714,7 +714,7 @@ NOT_STI_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "NOT " << src2_name << ", " << dst1_name
@@ -740,8 +740,8 @@ OR3_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "OR3 " << disasm_src2_indir << ", " << src1_name << ", " << dst1_name
@@ -756,7 +756,7 @@ OR3_STI_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "OR3 " << src2_name << ", " << src1_name << ", " << dst1_name
@@ -781,8 +781,8 @@ STF_STF.disasm = {
 	string disasm_dst1_indir;
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst1_indir, d1_mod, d1_ar) ||
-			!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst1_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d1_mod, d1_ar) ||
+			!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "STF " << src2_name << ", " << disasm_dst2_indir
@@ -796,7 +796,7 @@ STF_STF_ext.disasm = {
 	string disasm_dst1_indir;
 	const char *dst2_name = REG_NAME[dst2];
 
-	if (!cpu.DisasmIndir(disasm_dst1_indir, d1_mod, d1_ar) || !dst2_name)
+	if (!cpu.DisasmIndir(disasm_dst1_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d1_mod, d1_ar) || !dst2_name)
 		return false;
 	
 	os << "STF " << src2_name << ", " << dst2_name
@@ -821,8 +821,8 @@ STI_STI.disasm = {
 	string disasm_dst1_indir;
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst1_indir, d1_mod, d1_ar) ||
-			!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar))
+	if (!cpu.DisasmIndir(disasm_dst1_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d1_mod, d1_ar) ||
+			!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
 	os << "STI " << src2_name << ", " << disasm_dst2_indir
@@ -836,7 +836,7 @@ STI_STI_ext.disasm = {
 	string disasm_dst1_indir;
 	const char *dst2_name = REG_NAME[dst2];
 
-	if (!cpu.DisasmIndir(disasm_dst1_indir, d1_mod, d1_ar) || !dst2_name)
+	if (!cpu.DisasmIndir(disasm_dst1_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d1_mod, d1_ar) || !dst2_name)
 		return false;
 	
 	os << "STI " << src2_name << ", " << dst2_name
@@ -862,8 +862,8 @@ SUBF3_STF.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "SUBF3 " << src1_name << ", " << disasm_src2_indir << ", " << dst1_name
@@ -878,7 +878,7 @@ SUBF3_STF_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "SUBF3 " << src1_name << ", " << src2_name << ", " << dst1_name
@@ -904,8 +904,8 @@ SUBI3_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "SUBI3 " << src1_name << ", " << disasm_src2_indir << ", " << dst1_name
@@ -920,7 +920,7 @@ SUBI3_STI_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "SUBI3 " << src1_name << ", " << src2_name << ", " << dst1_name
@@ -946,8 +946,8 @@ XOR3_STI.disasm = {
 	string disasm_dst2_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "XOR3 " << disasm_src2_indir << ", " << src1_name << ", " << dst1_name
@@ -962,7 +962,7 @@ XOR3_STI_ext.disasm = {
 	const char *src3_name = REG_NAME[src3];
 	string disasm_dst2_indir;
 
-	if (!cpu.DisasmIndir(disasm_dst2_indir, d2_mod, d2_ar) || !src2_name)
+	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar) || !src2_name)
 		return false;
 	
 	os << "XOR3 " << src2_name << ", " << src1_name << ", " << dst1_name
@@ -987,8 +987,8 @@ LDF_LDF.disasm = {
 	string disasm_src1_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_src1_indir, s1_mod, s1_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_src1_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s1_mod, s1_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "LDF " << disasm_src2_indir << ", " << dst2_name
@@ -1002,7 +1002,7 @@ LDF_LDF_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_src1_indir;
 
-	if (!cpu.DisasmIndir(disasm_src1_indir, s1_mod, s1_ar))
+	if (!cpu.DisasmIndir(disasm_src1_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s1_mod, s1_ar))
 		return false;
 	
 	os << "LDF " << ", " << src2_name << ", " << dst2_name
@@ -1027,8 +1027,8 @@ LDI_LDI.disasm = {
 	string disasm_src1_indir;
 	string disasm_src2_indir;
 
-	if (!cpu.DisasmIndir(disasm_src1_indir, s1_mod, s1_ar) ||
-			!cpu.DisasmIndir(disasm_src2_indir, s2_mod, s2_ar))
+	if (!cpu.DisasmIndir(disasm_src1_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s1_mod, s1_ar) ||
+			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
 	os << "LDI " << disasm_src2_indir << ", " << dst2_name
@@ -1042,7 +1042,7 @@ LDI_LDI_ext.disasm = {
 	const char *src2_name = REG_NAME[src2];
 	string disasm_src1_indir;
 
-	if (!cpu.DisasmIndir(disasm_src1_indir, s1_mod, s1_ar))
+	if (!cpu.DisasmIndir(disasm_src1_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s1_mod, s1_ar))
 		return false;
 	
 	os << "LDI " << ", " << src2_name << ", " << dst2_name
@@ -1073,8 +1073,8 @@ MPYF3_ADDF3.disasm = {
 	const char *srcC_name = 0;
 	const char *srcD_name = 0;
 
-	if (!cpu.DisasmIndir(disasm_src3_indir, s3_mod, s3_ar) ||
-			!cpu.DisasmIndir(disasm_src4_indir, s4_mod, s4_ar))
+	if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s3_mod, s3_ar) ||
+			!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s4_mod, s4_ar))
 		return false;
 
 	switch(p)
@@ -1182,8 +1182,8 @@ MPYF3_SUBF3.disasm = {
 	const char *srcC_name = 0;
 	const char *srcD_name = 0;
 
-	if (!cpu.DisasmIndir(disasm_src3_indir, s3_mod, s3_ar) ||
-			!cpu.DisasmIndir(disasm_src4_indir, s4_mod, s4_ar))
+	if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s3_mod, s3_ar) ||
+			!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s4_mod, s4_ar))
 		return false;
 
 	switch(p)
@@ -1291,8 +1291,8 @@ MPYI3_ADDI3.disasm = {
 	const char *srcC_name = 0;
 	const char *srcD_name = 0;
 
-	if (!cpu.DisasmIndir(disasm_src3_indir, s3_mod, s3_ar) ||
-			!cpu.DisasmIndir(disasm_src4_indir, s4_mod, s4_ar))
+	if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s3_mod, s3_ar) ||
+			!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s4_mod, s4_ar))
 		return false;
 
 	switch(p)
@@ -1400,8 +1400,8 @@ MPYI3_SUBI3.disasm = {
 	const char *srcC_name = 0;
 	const char *srcD_name = 0;
 
-	if (!cpu.DisasmIndir(disasm_src3_indir, s3_mod, s3_ar) ||
-			!cpu.DisasmIndir(disasm_src4_indir, s4_mod, s4_ar))
+	if (!cpu.DisasmIndir(disasm_src3_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s3_mod, s3_ar) ||
+			!cpu.DisasmIndir(disasm_src4_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s4_mod, s4_ar))
 		return false;
 
 	switch(p)

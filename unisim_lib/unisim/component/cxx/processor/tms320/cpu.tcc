@@ -352,7 +352,16 @@ Disasm(uint64_t _addr, uint64_t &next_addr)
 }
 
 template <class CONFIG, bool DEBUG>
-bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int ar, uint32_t disp)
+string CPU<CONFIG, DEBUG>::DisasmDir(address_t pc, uint32_t direct)
+{
+	stringstream sstr;
+	sstr << "@0x" << hex << direct << dec;
+	if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName((GetDP() << 16) | direct) << ">";
+	return sstr.str();
+}
+
+template <class CONFIG, bool DEBUG>
+bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, address_t pc, unsigned int mod, unsigned int ar, uint32_t disp)
 {
 	stringstream sstr;
 
@@ -360,106 +369,132 @@ bool CPU<CONFIG, DEBUG>::DisasmIndir(string& s, unsigned int mod, unsigned int a
 	{
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD:
 			sstr << "*+AR" << ar << "("<< disp << ")";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + disp) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT:
 			sstr << "*-AR" << ar << "("<< disp << ")";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - disp) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "("<< disp << ")";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + disp) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "("<< disp << ")";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - disp) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_MODIFY:
 			sstr << "*AR" << ar << "++("<< disp << ")";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR" << ar << "--("<< disp << ")";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "++("<< disp << ")%";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTDISPLACEMENT_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "--("<< disp << ")%";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD:
 			sstr << "*+AR" << ar << "(IR0)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + GetIR0()) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT:
 			sstr << "*-AR" << ar << "(IR0)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - GetIR0()) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "(IR0)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + GetIR0()) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "(IR0)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - GetIR0()) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_MODIFY:
 			sstr << "*AR" << ar << "++(IR0)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR" << ar << "--(IR0)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "++(IR0)%";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "--(IR0)%";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD:
 			sstr << "*+AR" << ar << "(IR1)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + GetIR1()) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT:
 			sstr << "*-AR" << ar << "(IR1)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - GetIR1()) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_ADD_AND_MODIFY:
 			sstr << "*++AR" << ar << "(IR1)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) + GetIR1()) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_PREINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			sstr << "*--AR" << ar << "(IR1)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar) - GetIR1()) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_MODIFY:
 			sstr << "*AR" << ar << "++(IR1)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_MODIFY:
 			sstr << "*AR" << ar << "--(IR1)";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_ADD_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "++(IR1)%";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR1_SUBSTRACT_AND_CIRCULAR_MODIFY:
 			sstr << "*AR" << ar << "--(IR1)%";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING:
 			sstr << "*AR" << ar;
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 		case MOD_INDIRECT_ADDRESSING_WITH_POSTINDEX_IR0_ADD_AND_BIT_REVERSED_MODIFY:
 			sstr << "*AR" << ar << "++(IR0)B";
+			if(pc == GetPC()) sstr << " <" << GetObjectFriendlyName(GetAR(ar)) << ">";
 			s = sstr.str();
 			return true;
 	}
@@ -485,7 +520,7 @@ GetObjectFriendlyName(address_t addr)
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
-		sstr << "0x" << std::hex << addr << std::dec;
+		sstr << "@0x" << std::hex << addr << std::dec;
 
 	return sstr.str();
 }
@@ -501,7 +536,7 @@ GetFunctionFriendlyName(address_t addr)
 	if(symbol)
 		sstr << symbol->GetFriendlyName(addr);
 	else
-		sstr << "0x" << std::hex << addr << std::dec;
+		sstr << "@0x" << std::hex << addr << std::dec;
 
 	return sstr.str();
 }

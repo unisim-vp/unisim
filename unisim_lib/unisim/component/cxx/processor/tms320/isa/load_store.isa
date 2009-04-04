@@ -71,7 +71,7 @@ LDE_dir.disasm = {
 	const char *dst_reg_name = REG_NAME[dst];
 	if(!dst_reg_name) return false;
 
-	os << "LDE @0x" << hex << direct << dec << ", " << dst_reg_name;
+	os << "LDE " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 	return true;
 }
 
@@ -80,7 +80,7 @@ op LDE_indir(0b000[3]:0b001101[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
 LDE_indir.disasm = {
 	string disasm_src_indir;
 	const char *dst_reg_name = REG_NAME[dst];
-	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
+	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 
 	os << "LDE " << disasm_src_indir << ", " << dst_reg_name;
 	return true;
@@ -121,7 +121,7 @@ LDF_dir.disasm = {
 	const char *dst_reg_name = REG_NAME[dst];
 	if(!dst_reg_name) return false;
 
-	os << "LDF @0x" << hex << direct << dec << ", " << dst_reg_name;
+	os << "LDF " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 	return true;
 }
 
@@ -130,7 +130,7 @@ op LDF_indir(0b000[3]:0b001110[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
 LDF_indir.disasm = {
 	string disasm_src_indir;
 	const char *dst_reg_name = REG_NAME[dst];
-	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
+	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 
 	os << "LDF " << disasm_src_indir << ", " << dst_reg_name;
 	return true;
@@ -173,7 +173,7 @@ LDFcond_dir.disasm = {
 	const char *dst_reg_name = REG_NAME[dst];
 	if(!cond_name || !dst_reg_name) return false;
 
-	os << "LDF" << cond_name << " @0x" << hex << direct << dec << ", " << dst_reg_name;
+	os << "LDF" << cond_name << " " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 	return true;
 }
 
@@ -183,7 +183,7 @@ LDFcond_indir.disasm = {
 	string disasm_src_indir;
 	const char *cond_name = COND_NAME[cond];
 	const char *dst_reg_name = REG_NAME[dst];
-	if(!cond_name || !dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
+	if(!cond_name || !dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 
 	os << "LDF" << cond_name << " " << disasm_src_indir << ", " << dst_reg_name;
 	return true;
@@ -250,12 +250,8 @@ LDI_dir.disasm = {
 	const char *dst_reg_name = REG_NAME[dst];
 	if(!dst_reg_name) return false;
 
-	os << "LDI @0x" << hex << direct << dec << ", " << dst_reg_name;
+	os << "LDI " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 
-	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
-	{
-		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
-	}
 	return true;
 }
 
@@ -292,26 +288,10 @@ op LDI_indir(0b000[3]:0b010000[6]:0b10[2]:dst[5]:mod[5]:ar[3]:disp[8])
 LDI_indir.disasm = {
 	string disasm_src_indir;
 	const char *dst_reg_name = REG_NAME[dst];
-	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
+	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 
 	os << "LDI " << disasm_src_indir << ", " << dst_reg_name;
 
-	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
-	{
-		os << " <";
-		typename CONFIG::address_t ea;        // The effective address
-		bool update_ar;                       // Whether to update ARn
-		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
-		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
-		{
-			os << cpu.GetObjectFriendlyName(ea);
-		}
-		else
-		{
-			os << "?";
-		}
-		os << ">";
-	}
 	return true;
 }
 
@@ -435,12 +415,8 @@ LDIcond_dir.disasm = {
 	const char *dst_reg_name = REG_NAME[dst];
 	if(!cond_name || !dst_reg_name) return false;
 
-	os << "LDI" << cond_name << " @0x" << hex << direct << dec << ", " << dst_reg_name;
+	os << "LDI" << cond_name << " " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 
-	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
-	{
-		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
-	}
 	return true;
 }
 
@@ -471,26 +447,10 @@ LDIcond_indir.disasm = {
 	const char *cond_name = COND_NAME[cond];
 	const char *dst_reg_name = REG_NAME[dst];
 
-	if(!cond_name || !dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
+	if(!cond_name || !dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 
 	os << "LDI" << cond_name << " " << disasm_src_indir << ", " << dst_reg_name;
 
-	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
-	{
-		os << " <";
-		typename CONFIG::address_t ea;        // The effective address
-		bool update_ar;                       // Whether to update ARn
-		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
-		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
-		{
-			os << cpu.GetObjectFriendlyName(ea);
-		}
-		else
-		{
-			os << "?";
-		}
-		os << ">";
-	}
 	return true;
 }
 
@@ -581,7 +541,7 @@ LDM_dir.disasm = {
 	const char *dst_reg_name = REG_NAME[dst];
 	if(!dst_reg_name) return false;
 
-	os << "LDM @0x" << hex << direct << dec << ", " << dst_reg_name;
+	os << "LDM " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec << ", " << dst_reg_name;
 	return true;
 }
 
@@ -590,7 +550,7 @@ op LDM_indir(0b000[3]:0b010010[6]:0b10[2]:0b00[2]:dst[3]:mod[5]:ar[3]:disp[8])
 LDM_indir.disasm = {
 	string disasm_src_indir;
 	const char *dst_reg_name = REG_NAME[dst];
-	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, mod, ar, disp)) return false;
+	if(!dst_reg_name || !cpu.DisasmIndir(disasm_src_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 
 	os << "LDM " << disasm_src_indir << ", " << dst_reg_name;
 	return true;
@@ -780,7 +740,7 @@ STF_dir.disasm = {
 	const char *src_reg_name = REG_NAME[src];
 	if(!src_reg_name) return false;
 
-	os << "STF " << src_reg_name << ", @0x" << hex << direct << dec;
+	os << "STF " << src_reg_name << ", " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec;
 	return true;
 }
 
@@ -789,7 +749,7 @@ op STF_indir(0b000[3]:0b101000[6]:0b10[2]:0b00[2]:src[3]:mod[5]:ar[3]:disp[8])
 STF_indir.disasm = {
 	string disasm_dst_indir;
 	const char *src_reg_name = REG_NAME[src];
-	if(!src_reg_name || !cpu.DisasmIndir(disasm_dst_indir, mod, ar, disp)) return false;
+	if(!src_reg_name || !cpu.DisasmIndir(disasm_dst_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 
 	os << "STF " << src_reg_name << ", " << disasm_dst_indir;
 	return true;
@@ -810,12 +770,8 @@ STI_dir.disasm = {
 	const char *src_reg_name = REG_NAME[src];
 	if(!src_reg_name) return false;
 
-	os << "STI " << src_reg_name << ", @0x" << hex << direct << dec;
+	os << "STI " << src_reg_name << ", " << hex << cpu.DisasmDir(Operation<CONFIG, DEBUG>::GetAddr() / 4, direct) << dec;
 
-	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
-	{
-		os << " <" << cpu.GetObjectFriendlyName(cpu.ComputeDirEA(direct)) << ">";
-	}
 	return true;
 }
 
@@ -835,26 +791,10 @@ op STI_indir(0b000[3]:0b101010[6]:0b10[2]:src[5]:mod[5]:ar[3]:disp[8])
 STI_indir.disasm = {
 	string disasm_dst_indir;
 	const char *src_reg_name = REG_NAME[src];
-	if(!src_reg_name || !cpu.DisasmIndir(disasm_dst_indir, mod, ar, disp)) return false;
+	if(!src_reg_name || !cpu.DisasmIndir(disasm_dst_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 
 	os << "STI " << src_reg_name << ", " << disasm_dst_indir;
 
-	if(cpu.GetPC() == (Operation<CONFIG, DEBUG>::GetAddr() / 4))
-	{
-		os << " <";
-		typename CONFIG::address_t ea;        // The effective address
-		bool update_ar;                       // Whether to update ARn
-		typename CONFIG::address_t output_ar; // New value of ARn if it is updated
-		if(cpu.ComputeIndirEA(ea, update_ar, output_ar, mod, ar, disp))
-		{
-			os << cpu.GetObjectFriendlyName(ea);
-		}
-		else
-		{
-			os << "?";
-		}
-		os << ">";
-	}
 	return true;
 }
 

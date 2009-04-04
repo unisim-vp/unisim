@@ -257,7 +257,8 @@ public:
 	 * @return             The disassembling of the requested instruction address.
 	 */
 	virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
-	bool DisasmIndir(string& s, unsigned int mod, unsigned int ar, uint32_t disp = 1);
+	string DisasmDir(address_t pc, uint32_t direct);
+	bool DisasmIndir(string& s, address_t pc, unsigned int mod, unsigned int ar, uint32_t disp = 1);
 	string DisasmShortFloat(uint16_t x);
 	string GetObjectFriendlyName(address_t addr);
 	string GetFunctionFriendlyName(address_t addr);

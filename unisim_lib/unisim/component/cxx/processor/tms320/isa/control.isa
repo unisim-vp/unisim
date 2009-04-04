@@ -571,7 +571,7 @@ op IACK_indir(0b000[3]:0b110110[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
 
 IACK_indir.disasm = {
 	string disasm_indir;
-	if(!cpu.DisasmIndir(disasm_indir, mod, ar, disp)) return false;
+	if(!cpu.DisasmIndir(disasm_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 	os << "IACK " << disasm_indir;
 	return true;
 }
@@ -615,7 +615,7 @@ op NOP_indir(0b000[3]:0b011001[6]:0b10[2]:0b00000[5]:mod[5]:ar[3]:disp[8])
 
 NOP_indir.disasm = {
 	string disasm_indir;
-	if(!cpu.DisasmIndir(disasm_indir, mod, ar, disp)) return false;
+	if(!cpu.DisasmIndir(disasm_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 	os << "NOP " << disasm_indir;
 	return true;
 }
@@ -850,7 +850,7 @@ op RPTS_indir(0b000[3]:0b100111[6]:0b10[2]:0b11011[5]:mod[5]:ar[3]:disp[8])
 
 RPTS_indir.disasm = {
 	string disasm_indir;
-	if(!cpu.DisasmIndir(disasm_indir, mod, ar, disp)) return false;
+	if(!cpu.DisasmIndir(disasm_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, mod, ar, disp)) return false;
 	os << "RPTS " << disasm_indir;
 	return true;
 }
