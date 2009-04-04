@@ -2416,7 +2416,7 @@ MPYI_dir.execute = {
 	typename CONFIG::address_t ea = cpu.ComputeDirEA(direct);
 
 	// Read the source operand from memory and sign extend value from 24 bits to 64 bits
-	uint32_t src_value = SignExtend((uint64_t)(cpu.IntLoad(ea) & 0xffffff), 24);
+	int64_t src_value = SignExtend((uint64_t)(cpu.IntLoad(ea) & 0xffffff), 24);
 
 	// Compute the 32-bit result and overflow
 	int64_t result64 = src_value * dst_value;   // Only 48 bits are useful
@@ -5158,16 +5158,12 @@ TSTB_reg.execute = {
 	// Compute the result
 	uint32_t result = src_value & dst_value;
 
-	// Check whether destination operand is an extended precision register
-	if(cpu.IsExtReg(dst))
-	{
-		// Generate flags (into ST)
-		cpu.GenFlags(
-			result,
-			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
-		);
-	}
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 TSTB_dir.execute = {
@@ -5189,16 +5185,12 @@ TSTB_dir.execute = {
 	// Compute the result
 	uint32_t result = src_value & dst_value;
 
-	// Check whether destination operand is an extended precision register
-	if(cpu.IsExtReg(dst))
-	{
-		// Generate flags (into ST)
-		cpu.GenFlags(
-			result,
-			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
-		);
-	}
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 TSTB_indir.execute = {
@@ -5233,16 +5225,12 @@ TSTB_indir.execute = {
 		cpu.SetAR(ar, output_ar);
 	}
 
-	// Check whether destination operand is an extended precision register
-	if(cpu.IsExtReg(dst))
-	{
-		// Generate flags (into ST)
-		cpu.GenFlags(
-			result,
-			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
-		);
-	}
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 TSTB_imm.execute = {
@@ -5258,16 +5246,12 @@ TSTB_imm.execute = {
 	// Compute the result
 	uint32_t result = imm & dst_value;
 
-	// Check whether destination operand is an extended precision register
-	if(cpu.IsExtReg(dst))
-	{
-		// Generate flags (into ST)
-		cpu.GenFlags(
-			result,
-			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
-			M_ST_N | M_ST_Z    // or mask
-		);
-	}
+	// Generate flags (into ST)
+	cpu.GenFlags(
+		result,
+		M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+		M_ST_N | M_ST_Z    // or mask
+	);
 }
 
 /* end of TSTB (test bit fields)
