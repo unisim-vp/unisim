@@ -764,7 +764,7 @@ STF_indir.disasm = {
  * op STI(0b000[3]:0b101010[6]:g[2]:src[5]:dst[16])
  */
  
-op STI_dir  (0b000[3]:0b101010[6]:0b01[2]:0b00[2]:src[3]:direct[16])
+op STI_dir  (0b000[3]:0b101010[6]:0b01[2]:src[5]:direct[16])
 
 STI_dir.disasm = {
 	const char *src_reg_name = REG_NAME[src];
@@ -776,6 +776,12 @@ STI_dir.disasm = {
 }
 
 STI_dir.execute = {
+	// Check whether the source register number is valid
+	if(unlikely(!cpu.HasReg(src)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read the source operand
 	uint32_t result = cpu.GetIntReg(src);
 
@@ -799,6 +805,12 @@ STI_indir.disasm = {
 }
 
 STI_indir.execute = {
+	// Check whether the source register number is valid
+	if(unlikely(!cpu.HasReg(src)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
 	// Read the source operand
 	uint32_t result = cpu.GetIntReg(src);
 

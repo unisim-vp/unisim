@@ -142,6 +142,156 @@ ABSI_STI_ext.disasm = {
 	return true;
 }
 
+ABSI_STI.execute = {
+	// Check that 'src3' and 'dst1' registers are valid
+	if(unlikely(!cpu.HasReg(src3) || !cpu.HasReg(dst1)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'src2' operand
+	typename CONFIG::address_t s2_ea;        // The effective address
+	bool s2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t s2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(s2_ea, s2_update_ar, s2_output_ar, s2_mod, s2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' operand from memory
+	uint32_t src2_value = cpu.IntLoad(s2_ea);
+
+	// Compute the result of ABSI
+	uint32_t result;  // the 32-bit result
+	uint8_t overflow;      // the overflow (0 or 1)
+
+	if(src2_value == 0x80000000)
+	{
+		overflow = 1;
+		// Depending on overflow mode do signed saturation or not 
+		result = cpu.GetST_OVM() ? 0x7fffffff : 0x80000000;
+	}
+	else
+	{
+		overflow = 0;
+		result = ((int32_t) src2_value >= 0) ? src2_value : -src2_value;
+	}
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result of ABSI in register 'dst1'
+	cpu.SetIntReg(dst1, result);
+
+	// Note: ...if the src3 and src4 fields use the same auxiliary register,
+	// both addresses are correctly generated, but only the value created by
+	// the src3 field is saved in the auxiliary register specified...
+
+	if(s2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(s2_ar, s2_output_ar);
+	}
+
+	if(d2_update_ar && s2_ar != d2_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Check whether 'dst1' operand is an extended precision register
+	if(cpu.IsExtReg(dst1))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_Z | M_ST_V,    // or mask
+			0,
+			overflow
+		);
+	}
+}
+
+ABSI_STI_ext.execute = {
+	// Check that 'src2', 'src3' and 'dst1' registers are valid
+	if(unlikely(!cpu.HasReg(src2) || !cpu.HasReg(src3) || !cpu.HasReg(dst1)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Read the 'src2' register operand
+	uint32_t src2_value = cpu.GetIntReg(src2);
+
+	// Read the 'src3' register operand
+	uint32_t src3_value = cpu.GetIntReg(src3);
+
+	// Check that indirect addressing mode is valid and compute the effective address of 'dst2' operand
+	typename CONFIG::address_t d2_ea;        // The effective address
+	bool d2_update_ar;                       // Whether to update ARn
+	typename CONFIG::address_t d2_output_ar; // New value of ARn if it is updated
+
+	if(unlikely(!cpu.ComputeIndirEA(d2_ea, d2_update_ar, d2_output_ar, d2_mod, d2_ar)))
+	{
+		throw BogusOpcodeException<CONFIG, DEBUG>(this);
+	}
+
+	// Compute the result of ABSI
+	uint32_t result;  // the 32-bit result
+	uint8_t overflow;      // the overflow (0 or 1)
+
+	if(src2_value == 0x80000000)
+	{
+		overflow = 1;
+		// Depending on overflow mode do signed saturation or not 
+		result = cpu.GetST_OVM() ? 0x7fffffff : 0x80000000;
+	}
+	else
+	{
+		overflow = 0;
+		result = ((int32_t) src2_value >= 0) ? src2_value : -src2_value;
+	}
+
+	// Store the word into memory
+	cpu.IntStore(d2_ea, src3_value);
+
+	// Write back result of ABSI in register 'dst1'
+	cpu.SetIntReg(dst1, result);
+
+	if(d2_update_ar)
+	{
+		// Write back ARn
+		cpu.SetAR(d2_ar, d2_output_ar);
+	}
+
+	// Check whether 'dst1' operand is an extended precision register
+	if(cpu.IsExtReg(dst1))
+	{
+		// Generate flags (into ST)
+		cpu.GenFlags(
+			result,
+			M_ST_UF | M_ST_N | M_ST_Z | M_ST_V,  // reset mask
+			M_ST_Z | M_ST_V,    // or mask
+			0,
+			overflow
+		);
+	}
+}
+
 /*
  * end of ABSI || STI (absolute value of an integer and store integer)
  **********************************************************/
