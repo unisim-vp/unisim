@@ -104,6 +104,7 @@ class unisim_desactivated_signal
 template < class T, uint32_t NCONFIG >
 class unisim_3_signals
 {public:
+  unisim_3_signals(): data(), enable(), accept() {}
   fsc_prim_signal < T > data;           ///< Data signal
   fsc_prim_signal < boost::array<bool,NCONFIG> > enable;      ///< Enable signal
   fsc_prim_signal < boost::array<bool,NCONFIG> > accept;      ///< Accept signal
@@ -115,6 +116,8 @@ class unisim_3_signals
 template < class T >
 class unisim_3_signals<T,1>
 {public:
+  unisim_3_signals(): data(), enable(), accept() {}
+
   fsc_prim_signal < T > data;           ///< Data signal
   fsc_prim_signal < bool > enable;      ///< Enable signal
   fsc_prim_signal < bool > accept;      ///< Accept signal

@@ -521,7 +521,7 @@ class Unisim_Inport_Base : public unisim_port
   unisim_prim_out < bool, NCONFIG > accept;    ///< Accept signal
   //  Unisim_Inport_Base();                 // Constructor
   Unisim_Inport_Base(): unisim_port(), enable("enable"), accept("accept")
-    { unisim_module::unisim_current_module->register_outport(this);
+    { unisim_module::unisim_current_module->register_inport(this);
     }
   
   virtual ~Unisim_Inport_Base() { }     // Destructor
@@ -547,7 +547,7 @@ class Unisim_Inport_Base<1> : public unisim_port
 
   //  Unisim_Inport_Base();                 // Constructor
   Unisim_Inport_Base(): unisim_port(), enable("enable"), accept("accept")
-    { unisim_module::unisim_current_module->register_outport(this);
+    { unisim_module::unisim_current_module->register_inport(this);
     }
   virtual ~Unisim_Inport_Base() { }     // Destructor
   /**
@@ -694,6 +694,9 @@ class inport <T, NCONFIG, true> : public Unisim_Inport_Base<NCONFIG>
   void operator() (inport < T, NCONFIG, true > & ip)
   { Unisim_Inport_Base<NCONFIG>::forward = true;
     forwarded_port = &ip;
+    cerr << "Port forwarding is now disabled !!!" << endl;
+    abort();
+
   }
 
   /**
@@ -933,6 +936,8 @@ class inport <T,1,true> : public Unisim_Inport_Base<1>
   void operator() (inport < T, true > & ip)
   { forward = true;
     forwarded_port = &ip;
+    cerr << "Port forwarding is now disabled !!!" << endl;
+    abort();
   }
 
   /**
@@ -1178,6 +1183,8 @@ class outport <T, NCONFIG, true> : public Unisim_Outport_Base<NCONFIG>
   void operator() (outport < T, NCONFIG,true > & op)
   { Unisim_Outport_Base<NCONFIG>::forward=true;
     forwarded_port = &op;
+    cerr << "Port forwarding is now disabled !!!" << endl;
+    abort();
   }
 
   /**
@@ -1373,7 +1380,7 @@ class outport <T, 1, true> : public Unisim_Outport_Base<1>
   outport<T, true> *forwarded_port;  ///< Pointer to the forwarded port (output to output connections)
   unisim_3_signals<T, 1> signal;              ///< The 3-signals object connecting this output port to an input port
 
-  outport() : Unisim_Outport_Base<1>(), data("data")
+  outport() : Unisim_Outport_Base<1>(), data("data"), signal()
   { forwarded_port = NULL;
     this->unisim_outport_list << this;
   }
@@ -1405,9 +1412,15 @@ class outport <T, 1, true> : public Unisim_Outport_Base<1>
    * \brief Connects the output port to an input port
    */
   void operator() (inport < T,true > & ip)
-    { //(*this)(signal);
+    { 
+      //      cerr << "Connecting outport to a input port..." << endl;
+      //(*this)(signal);
+      //      cerr << "Before call to this->operator()..." << endl;
       this->operator()(signal);
-    ip(signal);
+      //      cerr << "After call to this->operator()..." << endl;
+      ip(signal);
+      //      cerr << "After call to ip(signal)..." << endl;
+
     connected_port = &ip;
     ip.connected_port = this;
   }
@@ -1418,13 +1431,15 @@ class outport <T, 1, true> : public Unisim_Outport_Base<1>
   void operator() (outport < T,true > & op)
   { forward=true;
     forwarded_port = &op;
+    cerr << "Port forwarding is now disabled !!!" << endl;
+    abort();
   }
 
   /**
    * \brief Connects the port to a 3-signals object
    */
   void operator() (unisim_3_signals < T, 1 > &sig)
-  { if (forward) 
+  { if (forward)
     { (*forwarded_port)(sig);
     } else 
     { data(sig.data);
@@ -1677,6 +1692,9 @@ void operator >> (outport<T,true> &a, inport<U,true> &b) {
     throw std::runtime_error(std::string("Port types do not match: ") + typeid(T).name() + " and " +typeid(U).name());
   }
 #endif
+  //  cerr << "Debug info 001: " << endl;
+  //  cerr << "a: " << a << endl; 
+  //  cerr << "b: " << b << endl; 
   a(b);
 }
 
