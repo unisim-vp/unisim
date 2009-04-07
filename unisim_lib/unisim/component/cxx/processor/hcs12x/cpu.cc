@@ -71,6 +71,7 @@ CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
 	Client<DebugControl<service_address_t> >(name, parent),
 	Client<MemoryAccessReporting<service_address_t> >(name, parent),
+	Client<TrapReporting>(name, parent),
 	Service<MemoryAccessReportingControl>(name, parent),
 	Service<Disassembly<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
@@ -89,6 +90,7 @@ CPU::CPU(const char *name, Object *parent):
 	logger_import("logger_import", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
+	trap_reporting_import("trap_reproting_import", this),
 	verbose_all(false),
 	verbose_exception(false),
 	verbose_setup(false),
@@ -281,6 +283,7 @@ uint8_t CPU::Step()
 		}
 
 		op = this->Decode(current_pc, insn);
+		lastPC = current_pc;
 		setRegPC(current_pc+op->GetEncoding().size);
 
 		queueFlush(op->GetEncoding().size);

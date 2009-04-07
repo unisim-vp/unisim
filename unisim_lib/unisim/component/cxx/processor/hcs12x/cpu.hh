@@ -48,6 +48,7 @@
 
 #include "unisim/kernel/service/service.hh"
 
+#include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
@@ -86,6 +87,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 
+using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -216,7 +218,9 @@ class CPU : public Decoder,
 	public Service<Memory<service_address_t> >,
 	public Client<Memory<service_address_t> >,
 	public Client<SymbolTableLookup<service_address_t> >,
-	public Client<Logger>
+	public Client<Logger>,
+	public Client<TrapReporting >
+
 {
 public:
 
@@ -248,6 +252,7 @@ public:
 	ServiceImport<Memory<service_address_t> > memory_import;
 	ServiceImport<Logger> logger_import;
 
+	ServiceImport<TrapReporting > trap_reporting_import;
 
 	//=====================================================================
 	//=                    Constructor/Destructor                         =
@@ -505,6 +510,7 @@ public:
     inline uint64_t GetInstructionCounter() const { return instruction_counter; }
 	inline bool IsVerboseException() const { return logger_import && CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 
+	address_t getLastPC() {return lastPC; }
 
 //protected:
     class CCR_t *ccr;
@@ -547,6 +553,8 @@ private:
 	uint8_t		regA, regB;
     uint16_t    regX, regY, regSP, regPC;
     uint16_t	regTMP[3];
+
+    address_t lastPC;
 
 	//=====================================================================
 	//=                   68HCS12X interrupt signals                      =
@@ -710,6 +718,7 @@ default:
 
 
 void CPU::setRegA(uint8_t val) { regA = val; }
+
 uint8_t CPU::getRegA() { return regA; }
 
 void CPU::setRegB(uint8_t val) { regB = val; }
@@ -733,6 +742,7 @@ void CPU::setRegX(uint16_t val) { regX = val; }
 uint16_t CPU::getRegX() { return regX; }
 
 void CPU::setRegY(uint16_t val) { regY = val; }
+
 uint16_t CPU::getRegY() { return regY; }
 
 void CPU::setRegSP(uint16_t val) { regSP = val; }
