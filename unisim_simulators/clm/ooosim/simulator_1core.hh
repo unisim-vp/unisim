@@ -52,7 +52,7 @@
 //#define DD_DEBUG_TIMESTAMP 381929
 //#define DD_DEBUG_TIMESTAMP 70000
 //#define DD_DEBUG_TIMESTAMP 3552229
-//#define DD_DEBUG_TIMESTAMP 0
+//#define DD_DEBUG_TIMESTAMP 200
 //#define DD_DEBUG_TIMESTAMP 5000
 
 // ------------------------------------------------
@@ -69,6 +69,9 @@
 #define DD_DEBUG_DCACHE_VERB101
 
 #define DD_DEBUG_PIPELINE_VERB2
+
+//#define DD_DEBUG_EMULATOR
+
 /*
 #define DD_DEBUG_DCACHE
 #define DD_DEBUG_DCACHE_VERB2
