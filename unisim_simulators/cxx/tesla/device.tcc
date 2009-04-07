@@ -71,6 +71,15 @@ void Allocator<CONFIG>::Free(typename CONFIG::address_t addr)
 {
 }
 
+bool ParseBool(char const * str)
+{
+	if(str == 0 || strcmp(str, "0") == 0
+		|| strcmp(str, "false") == 0) {
+		return false;
+	}
+	return true;
+}
+
 template<class CONFIG>
 Device<CONFIG>::Device() :
 	Object("device_0"),
@@ -82,6 +91,35 @@ Device<CONFIG>::Device() :
 	memory.Setup();
 	cpu.Setup();
 
+	// Parse environment variables and set GPU parameters accordingly
+	char const * env;
+	env = getenv("TRACE_INSN");
+	if(env != 0)
+		cpu["trace-insn"] = ParseBool(env);
+
+	env = getenv("TRACE_MASK");
+	if(env != 0)
+		cpu["trace-mask"] = ParseBool(env);
+
+	env = getenv("TRACE_REG");
+	if(env != 0)
+		cpu["trace-reg"] = ParseBool(env);
+
+	env = getenv("TRACE_REG_FLOAT");
+	if(env != 0)
+		cpu["trace-reg-float"] = ParseBool(env);
+
+	env = getenv("TRACE_LOADSTORE");
+	if(env != 0)
+		cpu["trace-loadstore"] = ParseBool(env);
+
+	env = getenv("TRACE_BRANCH");
+	if(env != 0)
+		cpu["trace-branch"] = ParseBool(env);
+
+	env = getenv("TRACE_SYNC");
+	if(env != 0)
+		cpu["trace-sync"] = ParseBool(env);
 }
 
 template<class CONFIG>
@@ -337,6 +375,8 @@ int Device<CONFIG>::Attribute(int attrib)
     	return CONFIG::CORE_COUNT;
 	case CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT:
 		return 1664;  // undocumented attribute, random value used.
+	case 0x20080403:
+		//return 1;    // Happy birthday!
 	default:
     	throw CudaException(CUDA_ERROR_INVALID_VALUE);
 	}
