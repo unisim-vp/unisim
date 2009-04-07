@@ -46,7 +46,10 @@ namespace hcs12x {
 S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	MMC(name, parent)
+	MMC(name, parent),
+	Client<TrapReporting>(name, parent),
+	trap_reporting_import("trap_reproting_import", this)
+
 
 {
 
@@ -137,13 +140,18 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 				find = ((deviceMap[i].start_address <= logicalAddress) && (logicalAddress <= deviceMap[i].end_address));
 			}
 
-			if (CONFIG::DEBUG_ENABLE) {
 				if (!find) {
-					cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::endl;
-				} else {
-					cout << "*************  S12XMMC => Write Register at 0x" << std::hex << logicalAddress << endl;
+					if (CONFIG::DEBUG_ENABLE && trap_reporting_import) {
+						trap_reporting_import->ReportTrap();
+					}
+
+					cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 				}
-			}
+				/*
+				else {
+					cout << "*************  S12XMMC => Write Register at 0x" << std::hex << logicalAddress << std::dec << endl;
+				}
+				*/
 
 		}
 

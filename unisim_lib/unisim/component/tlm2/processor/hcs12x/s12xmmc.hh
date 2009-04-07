@@ -44,11 +44,15 @@
 #include <cmath>
 
 #include <systemc.h>
+
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_target_socket.h"
+
+#include "unisim/service/interfaces/trap_reporting.hh"
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
+
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
@@ -59,11 +63,16 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::Client;
+using unisim::service::interfaces::TrapReporting;
+
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::MMC;
 using unisim::component::cxx::processor::hcs12x::MMC_DATA;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
+using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::kernel::service::Object;
@@ -71,10 +80,14 @@ using unisim::kernel::tlm2::PayloadFabric;
 
 class S12XMMC :
 	public sc_module,
-	public MMC
+	public MMC,
+	public Client<TrapReporting >
+
 {
 public:
 	typedef MMC inherited;
+
+	ServiceImport<TrapReporting > trap_reporting_import;
 
 	tlm_utils::simple_target_socket<S12XMMC> cpu_socket;
 	tlm_utils::simple_initiator_socket<S12XMMC> local_socket;
@@ -90,6 +103,7 @@ public:
 	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 private:
+
 	sc_time tlm2_btrans_time;
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
