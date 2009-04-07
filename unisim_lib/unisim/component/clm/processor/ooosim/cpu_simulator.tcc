@@ -164,6 +164,15 @@ OooSimCpu(const char *name, Object *parent) : module(name)
 
     schedule = new SchedulerClass("schedule");
 
+    schedule->SetIntegerIssueQueueFunction( FnNop | FnIntBasic | FnIntBasicSerial | FnIntExtended | FnBranch 
+					    | FnConditionalBranch | FnBranchCountReg | FnBranchLinkReg | FnCondRegister 
+					    | FnSysRegister | FnSysRegisterSerial | FnSysCall | FnMac | FnCache );
+    //      FnInteger | FnBranch | FnSystem | FnSysCall);
+    schedule->SetFloatingPointIssueQueueFunction( FnFpCommon | FnFpFPSCR | FnFpFPSCRSerial );
+    // FnFloatingPoint);
+    schedule->SetLoadStoreIssueQueueFunction(FnLoad | FnStore | FnPrefetchLoad);
+    
+
     registerfile = new RegisterFileClass("registerfile");
 
     
@@ -255,6 +264,7 @@ OooSimCpu(const char *name, Object *parent) : module(name)
     outIL1Data >>  fetch->outIL1;
     */
     
+
     for (int i=0; i<Degree; i++)
       {
 	// Fetch -> Allocator
@@ -270,26 +280,51 @@ OooSimCpu(const char *name, Object *parent) : module(name)
 	dispatch->outIntegerInstruction[i] >> schedule->inIntegerInstruction[i];
 	dispatch->outFloatingPointInstruction[i] >> schedule->inFloatingPointInstruction[i];
 	dispatch->outLoadStoreInstruction[i] >> schedule->inLoadStoreInstruction[i];
+      }
+    
+    //    for (int i=0; i < nIntegerUnits; i++)
+    for (int i=0; i < nIntegerUnits; i++)
+      {
 	// Scheduler -> RegisterFile
 	schedule->outIntegerInstruction[i] >> registerfile->inIntegerInstruction[i];
-	schedule->outFloatingPointInstruction[i] >> registerfile->inFloatingPointInstruction[i];
-	schedule->outLoadStoreInstruction[i] >> registerfile->inLoadStoreInstruction[i];
 	// RegisterFile -> "Execution stage"
 	registerfile->outIntegerInstruction[i] >> iu[i]->inInstruction;
+	// AGU -> LSQ
+	// "Execution stage" -> CDBA
+	iu[i]->outInstruction >> cdba->inInstruction[i+0*nIntegerUnits];
+
+      }
+    for (int i=0; i < nFloatingPointUnits; i++)
+      {
+	// Scheduler -> RegisterFile
+	schedule->outFloatingPointInstruction[i] >> registerfile->inFloatingPointInstruction[i];
+	// RegisterFile -> "Execution stage"
 	registerfile->outFloatingPointInstruction[i] >> fpu[i]->inInstruction;
+	// "Execution stage" -> CDBA
+	fpu[i]->outInstruction >> cdba->inInstruction[i+nIntegerUnits];
+      }
+
+    for (int i=0; i<nAddressGenerationUnits; i++)
+      {
+	// Scheduler -> RegisterFile
+	schedule->outLoadStoreInstruction[i] >> registerfile->inLoadStoreInstruction[i];
+	// RegisterFile -> "Execution stage"
 	registerfile->outLoadStoreInstruction[i] >> agu[i]->inInstruction;
+	// "Execution stage" -> CDBA
 	// AGU -> LSQ
 	agu[i]->outLSQInstruction >> lsq->inInstruction[i];
 	// "Execution stage" -> CDBA
-	iu[i]->outInstruction >> cdba->inInstruction[i+0*Degree];
-	fpu[i]->outInstruction >> cdba->inInstruction[i+1*Degree];
-	agu[i]->outCDBInstruction >> cdba->inInstruction[i+2*Degree];
+	agu[i]->outCDBInstruction >> cdba->inInstruction[i+nIntegerUnits+nFloatingPointUnits];
 	//	lsq->outInstruction[i] >> cdba->inInstruction[i+3*Degree];
       }
+
+
     for (int i=0; i<LSQ_nCDBPorts; i++)
       {    
-	lsq->outInstruction[i] >> cdba->inInstruction[i+3*Degree];
+	//	lsq->outInstruction[i] >> cdba->inInstruction[i+3*Degree * MoultUnits];
+	lsq->outInstruction[i] >> cdba->inInstruction[i+nIntegerUnits+nFloatingPointUnits+nAddressGenerationUnits];
       }
+
     // to CDBA
     /*
     for (int i=0; i<WriteBackWidth; i++)
@@ -363,12 +398,12 @@ OooSimCpu(const char *name, Object *parent) : module(name)
 
     //// Flush signals
     rob->outFlush >> lsq->inFlush;
-    lsq->outFlush >> agu[Degree-1]->inFlush;
-    agu[0]->outFlush >> fpu[Degree-1]->inFlush;
-    fpu[0]->outFlush >> iu[Degree-1]->inFlush;
+    lsq->outFlush >> agu[OOOPathSize-1]->inFlush;
+    agu[0]->outFlush >> fpu[OOOPathSize-1]->inFlush;
+    fpu[0]->outFlush >> iu[OOOPathSize-1]->inFlush;
     iu[0]->outFlush >> registerfile->inFlush;
     
-    for (int i=1; i<Degree; i++)
+    for (int i=1; i< OOOPathSize; i++)
       {
 	agu[i]->outFlush >> agu[i-1]->inFlush;
 	fpu[i]->outFlush >> fpu[i-1]->inFlush;
