@@ -8,7 +8,7 @@
 #include <stdio.h>
 //#include <getopt.h>
 
-//#include "simulator.hh"
+#include "parameters_dg_mcores.hh"
 #include "simulator_1core.hh"
 
 int main(int argc, char **argv, char **envp)
