@@ -110,7 +110,7 @@ void CPU<CONFIG>::GatherShared(VectorRegister<CONFIG> & output, uint32_t src, ui
 	else if(type == SM_U32) shift = 2;
 	VecAddr offset = EffectiveAddress(src, addr_lo, addr_hi, addr_imm, shift);
 
-//	if(CONFIG::TRACE_LOADSTORE)
+//	if(trace_loadstore)
 //		cerr << " GatherShared, EA = " << offset << endl;
 	GatherShared(offset, output, mask, type);
 }
@@ -330,7 +330,7 @@ void CPU<CONFIG>::Read32(address_t addr, uint32_t & data,
 	if(!ReadMemory(addr * factor + offset, &data, 4)) {
 		throw MemoryAccessException<CONFIG>();
 	}
-	if(CONFIG::TRACE_LOADSTORE) {
+	if(trace_loadstore) {
 		cerr << " Read32 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
 			<< data << std::dec << endl;
 	}
@@ -340,7 +340,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Write32(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
-	if(CONFIG::TRACE_LOADSTORE) {
+	if(trace_loadstore) {
 		cerr << " Write32: " << std::hex << data
 			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
 	}
@@ -356,7 +356,7 @@ void CPU<CONFIG>::Read16(address_t addr, uint32_t & data,
 	if(!ReadMemory(addr * factor + offset, &data, 2)) {
 		throw MemoryAccessException<CONFIG>();
 	}
-	if(CONFIG::TRACE_LOADSTORE) {
+	if(trace_loadstore) {
 		cerr << " Read16 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
 			<< data << std::dec << endl;
 	}
@@ -366,7 +366,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Write16(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
-	if(CONFIG::TRACE_LOADSTORE) {
+	if(trace_loadstore) {
 		cerr << " Write16: " << std::hex << data
 			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
 	}
@@ -382,7 +382,7 @@ void CPU<CONFIG>::Read8(address_t addr, uint32_t & data,
 	if(!ReadMemory(addr * factor + offset, &data, 1)) {
 		throw MemoryAccessException<CONFIG>();
 	}
-	if(CONFIG::TRACE_LOADSTORE) {
+	if(trace_loadstore) {
 		cerr << " Read8 @" << std::hex << offset << "+" << addr << "*" << factor << ": "
 			<< data << std::dec << endl;
 	}
@@ -392,7 +392,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Write8(address_t addr, uint32_t data,
 	uint32_t factor, address_t offset)
 {
-	if(CONFIG::TRACE_LOADSTORE) {
+	if(trace_loadstore) {
 		cerr << " Write8: " << std::hex << data
 			<< " @" << offset << "+" << addr << "*" << factor << std::dec << endl;
 	}

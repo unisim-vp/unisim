@@ -48,7 +48,8 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
-#include <unisim/service/interfaces/logger.hh>
+//#include <unisim/service/interfaces/logger.hh>
+#include "unisim/kernel/logger/logger.hh"
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/util/queue/queue.hh>
@@ -87,19 +88,11 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::ParameterArray;
-using unisim::service::interfaces::Logger;
-using unisim::service::interfaces::Hex;
-using unisim::service::interfaces::Dec;
-using unisim::service::interfaces::Endl;
-using unisim::service::interfaces::DebugInfo;
-using unisim::service::interfaces::DebugWarning;
-using unisim::service::interfaces::DebugError;
-using unisim::service::interfaces::EndDebugInfo;
-using unisim::service::interfaces::EndDebugWarning;
-using unisim::service::interfaces::EndDebugError;
 using namespace std;
 using unisim::util::queue::Queue;
 using namespace boost;
+
+using unisim::kernel::logger::Logger;
 
 template <class CONFIG>
 class CPU :
@@ -114,9 +107,7 @@ class CPU :
 //	public Client<TrapReporting>,
 //	public Service<MemoryAccessReportingControl>,
 //	public Service<unisim::service::interfaces::Registers>,
-//	public Service<CPULinuxOS>,
 	public Client<Memory<typename CONFIG::address_t> >
-//	public Client<LinuxOS>,
 //	public Client<Logger>
 //	public Client<CachePowerEstimator>,
 //	public Client<PowerMode>,
@@ -157,7 +148,6 @@ public:
 //	ServiceExport<unisim::service::interfaces::Registers> registers_export;
 	ServiceExport<Memory<address_t> > memory_export;
 	ServiceExport<MemoryInjection<address_t> > memory_injection_export;
-//	ServiceExport<CPULinuxOS> cpu_linux_os_export;
 //	ServiceExport<Synchronizable> synchronizable_export;
 //	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
@@ -166,7 +156,6 @@ public:
 //	ServiceImport<MemoryAccessReporting<address_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<address_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<physical_address_t> > memory_import;
-//	ServiceImport<LinuxOS> linux_os_import;
 //	ServiceImport<TrapReporting> trap_reporting_import;
 //	ServiceImport<Logger> logger_import;
 
@@ -432,12 +421,6 @@ public:
 	Warp & GetWarp(unsigned int wid);
 	Warp const & GetWarp(unsigned int wid) const;
 private:
-	//int GetCurrentWarpID() const;
-	
-	//=====================================================================
-	//=                         Exception vectors                         =
-	//=====================================================================
-
 	//=====================================================================
 	//=                           G80 registers                           =
 	//=====================================================================
@@ -451,24 +434,10 @@ private:
 	
 	VecReg zero_reg;
 	
-//	uint32_t num_blocks;
-//	uint32_t warps_per_block;
-
-//	uint32_t regs_per_warp;
 	uint32_t num_warps;
 
-//	SM mapped in memory	
-//	uint32_t shared_mem[SHARED_MEM_SIZE];
-	
-	
-//	stack<uint_t<MAX_WARPS>::fast > branch_mask_stack[MAX_WARPS];
-//	stack<virtual_address_t> call_stack[MAX_WARPS];
-	
 	// GT200
 //	bool mutex[SHARED_MEM_SIZE];
-	
-	//uint32_t current_blockid;
-	
 	
 	//=====================================================================
 	//=                      Debugging stuffs                             =
@@ -485,6 +454,15 @@ private:
 //	Parameter<uint64_t> param_voltage;                    //!< linked to member voltage
 //	Parameter<uint64_t> param_bus_cycle_time;             //!< linked to member bus_cycle_time
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
+
+	Parameter<bool> param_trace_insn;
+	Parameter<bool> param_trace_mask;
+	Parameter<bool> param_trace_reg;
+	Parameter<bool> param_trace_reg_float;
+	Parameter<bool> param_trace_loadstore;
+	Parameter<bool> param_trace_branch;
+	Parameter<bool> param_trace_sync;
+	
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =
@@ -504,9 +482,18 @@ protected:
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 
-
 //	void Fetch();
 	
+public:
+	bool trace_insn;
+	bool trace_mask;
+	bool trace_reg;
+	bool trace_reg_float;
+	bool trace_loadstore;
+	bool trace_branch;
+	bool trace_sync;
+
+	Logger trace_logger;
 
 };
 

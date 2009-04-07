@@ -52,7 +52,7 @@ public:
 	typedef uint32_t physical_address_t;    // 32-bit physical address
 	typedef uint32_t reg_t;                 // register type
 	typedef uint64_t insn_t;				// instruction word
-//	static const uint32_t MEMORY_PAGE_SIZE = 4096; // DO NOT MODIFY THIS VALUE !!!!!
+//	static const uint32_t MEMORY_PAGE_SIZE = 4096;
 	
 	typedef FloatDAZFTZ<SoftFloatIEEE> float_t;
 
@@ -66,9 +66,6 @@ public:
 		uint32_t pp;                            /*< 2-bit page protection field */
 	};
 
-
-	// start address
-//	static const uint32_t START_ADDR = 0xfff00100UL; // processor starts at system reset interrupt handler
 
 	static uint32_t const WARP_SIZE = 32;
 	static uint32_t const MAX_WARPS_PER_BLOCK = 16;

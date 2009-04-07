@@ -64,7 +64,7 @@ br.execute = {
 	// Side effect: take other side of cond branch???
 	std::bitset<CONFIG::WARP_SIZE> mask = insn->Mask();
 	typename CONFIG::address_t abs_target = target_addr + CONFIG::CODE_START;
-	if(CONFIG::TRACE_BRANCH) {
+	if(cpu->trace_branch) {
 		cerr << " Branch mask = " << mask << endl;
 	}
 	
@@ -72,7 +72,7 @@ br.execute = {
 
 	if((mask).none())
 	{
-		if(CONFIG::TRACE_BRANCH) {
+		if(cpu->trace_branch) {
 			cerr << "  Coherent, not taken." << endl;
 		}
 		if(adjpc > target_addr)
@@ -82,7 +82,7 @@ br.execute = {
 			// Compare PC with top of loop address stack
 			// if ==, pop
 			if(cpu->GetLoop() != 0 && cpu->GetLoop() == cpu->GetPC()) {
-				if(CONFIG::TRACE_BRANCH) {
+				if(cpu->trace_branch) {
 					cerr << hex;
 					cerr << " End of loop " << cpu->GetPC() - CONFIG::CODE_START
 						<< "  detected, restoring context\n";
@@ -90,7 +90,7 @@ br.execute = {
 				}
 				cpu->PopLoop();
 				cpu->GetCurrentMask() = cpu->PopMask();
-				if(CONFIG::TRACE_BRANCH) {
+				if(cpu->trace_branch) {
 					cerr << "  Mask = " << cpu->GetCurrentMask() << endl;
 				}
 			}
@@ -98,7 +98,7 @@ br.execute = {
 	}
 	else if(mask == cpu->GetCurrentMask())	// Same number of enabled threads as before
 	{
-		if(CONFIG::TRACE_BRANCH) {
+		if(cpu->trace_branch) {
 			cerr << "  Coherent, taken." << endl;
 		}
 		cpu->SetNPC(abs_target);
@@ -110,13 +110,13 @@ br.execute = {
 			// backward jump, loop
 			// Compare PC with top of loop address stack
 			// if !=, push PC and mask
-			if(CONFIG::TRACE_BRANCH) {
+			if(cpu->trace_branch) {
 				cerr << " Conditional non-coherent backward jump from " << hex
 					<< adjpc << " to " << target_addr << dec << endl;
 			}
 
 			if(cpu->GetLoop() != cpu->GetPC()) {
-				if(CONFIG::TRACE_BRANCH) {
+				if(cpu->trace_branch) {
 					cerr << hex;
 					cerr << " Start of loop " << cpu->GetPC() - CONFIG::CODE_START << " detected, saving context\n";
 					cerr << "  Current mask = " << cpu->GetCurrentMask() << endl;
@@ -134,7 +134,7 @@ br.execute = {
 			// forward jump
 			// Push lots of stuff in stacks
 			// then don't take the branch.
-			if(CONFIG::TRACE_BRANCH) {
+			if(cpu->trace_branch) {
 				cerr << hex;
 				cerr << " Conditional non-coherent forward jump from "
 					<< adjpc << " to " << target_addr << endl;
@@ -150,7 +150,7 @@ br.execute = {
 			// take the branch.
 			// Keep comparing PC to top of stack, go back (1st pass) or pop (2nd pass) if >=.
 		}
-		if(CONFIG::TRACE_BRANCH) {
+		if(cpu->trace_branch) {
 			cerr << "  New mask = " << cpu->GetCurrentMask() << endl;
 		}
 	}

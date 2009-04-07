@@ -580,7 +580,7 @@ ldam_full.execute = {
 	reg_t a = insn->ReadSrc1();
 	reg_t output = ShiftLeft(a, src2, 1);
 	cpu->GetAddr(dest).Write(VectorAddress<CONFIG>(output), insn->Mask());
-	if(CONFIG::TRACE_REG) {
+	if(cpu->trace_reg) {
 		cpu->DumpAddr(dest, cerr);
 	}
 }
@@ -633,7 +633,7 @@ ldaa_full.execute = {
 
 	VecAddr output = cpu->EffectiveAddress(src, addr_lo, addr_hi, 1, 0);
 	cpu->GetAddr(dest).Write(output, insn->Mask());
-	if(CONFIG::TRACE_REG) {
+	if(cpu->trace_reg) {
 		cpu->DumpAddr(dest, cerr);
 	}
 }

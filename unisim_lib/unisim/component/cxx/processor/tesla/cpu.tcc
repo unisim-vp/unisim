@@ -60,9 +60,6 @@ namespace processor {
 namespace tesla {
 
 using namespace std;
-using unisim::service::interfaces::File;
-using unisim::service::interfaces::Function;
-using unisim::service::interfaces::Line;
 
 #define VERBOSE
 
@@ -80,7 +77,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 //	Client<TrapReporting>(name, parent),
 //	Service<MemoryAccessReportingControl>(name, parent),
 //	Service<unisim::service::interfaces::Registers>(name, parent),
-//	Service<CPULinuxOS>(name, parent),
 	Client<Memory<typename CONFIG::address_t> >(name, parent),
 //	Client<LinuxOS>(name, parent),
 //	Client<Logger>(name, parent),
@@ -98,7 +94,6 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 //	memory_access_reporting_import("memory-access-reporting-import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import", this),
 	memory_import("memory-import", this),
-//	linux_os_import("linux-os-import", this),
 //	trap_reporting_import("trap-reporting-import", this),
 //	logger_import("logger-import", this),
 //	synchronizable_export("synchronizable-export", this),
@@ -109,19 +104,30 @@ CPU<CONFIG>::CPU(const char *name, Object *parent, int coreid) :
 	zero_reg(0),
 	instruction_counter(0),
 	max_inst(0xffffffffffffffffULL),
-//	num_insn_in_prefetch_buffer(0),
-//	cur_insn_in_prefetch_buffer(0),
-//	verbose_all(false),
-//	trap_on_instruction_counter(0xffffffffffffffffULL),
 //	param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time),
 //	param_voltage("voltage", this, voltage),
 //	param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time),
 	param_max_inst("max-inst", this, max_inst),
 //	param_verbose_all("verbose-all", this, verbose_all),
 //	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
+	param_trace_insn("trace-insn", this, trace_insn),
+	param_trace_mask("trace-mask", this, trace_mask),
+	param_trace_reg("trace-reg", this, trace_reg),
+	param_trace_reg_float("trace-reg-float", this, trace_reg_float),
+	param_trace_loadstore("trace-loadstor", this, trace_loadstore),
+	param_trace_branch("trace-branch", this, trace_branch),
+	param_trace_sync("trace-sync", this, trace_sync),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	stat_cpu_cycle("cpu-cycle", this, cpu_cycle),
-	stat_bus_cycle("bus-cycle", this, bus_cycle)
+	stat_bus_cycle("bus-cycle", this, bus_cycle),
+	trace_insn(CONFIG::TRACE_INSN),
+	trace_mask(CONFIG::TRACE_MASK),
+	trace_reg(CONFIG::TRACE_REG),
+	trace_reg_float(CONFIG::TRACE_REG_FLOAT),
+	trace_loadstore(CONFIG::TRACE_LOADSTORE),
+	trace_branch(CONFIG::TRACE_BRANCH),
+	trace_sync(CONFIG::TRACE_SYNC),
+	trace_logger(*this)
 {
 //	Object::SetupDependsOn(logger_import);
 
@@ -275,7 +281,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	}
 	Instruction<CONFIG> insn(this, fetchaddr, iw);
 
-	if(CONFIG::TRACE_INSN)
+	if(trace_insn)
 	{
 		cerr << warpid << ": ";
 		//address_t dummy;
@@ -298,7 +304,7 @@ void CPU<CONFIG>::StepWarp(uint32_t warpid)
 	// Join or take other branch?
 	CheckJoin();
 
-	if(CONFIG::TRACE_MASK) {
+	if(trace_mask) {
 		cerr << " " << GetCurrentMask() << endl;
 	}
 	
@@ -476,7 +482,7 @@ template <class CONFIG>
 void CPU<CONFIG>::DumpGPR(int warpid, int reg, ostream & os) const
 {
 	os << " r" << reg << " = " << GetGPR(warpid, reg) << endl;
-	if(CONFIG::TRACE_REG_FLOAT) {
+	if(trace_reg_float) {
 		os << " r" << reg << " = ";
 		GetGPR(warpid, reg).DumpFloat(os);
 		os << endl;
@@ -779,16 +785,16 @@ void CPU<CONFIG>::CheckFenceCompleted()
 	std::fill(synchronized, synchronized + MAX_BLOCKS, true);
 	for(unsigned int i = 0; i != num_warps; ++i)
 	{
-		if(CONFIG::TRACE_SYNC) {
+		if(trace_sync) {
 			cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
 		}
 		if(warps[i].state != Warp::WaitingFence) {
 			synchronized[warps[i].blockid] = false;
-			if(CONFIG::TRACE_SYNC) {
+			if(trace_sync) {
 				cerr << "   Not synchronized\n";
 			}
 		}
-		else if(CONFIG::TRACE_SYNC) {
+		else if(trace_sync) {
 			cerr << "   Synchronized\n";
 		}
 	}
@@ -798,7 +804,7 @@ void CPU<CONFIG>::CheckFenceCompleted()
 	{
 		if(synchronized[warps[i].blockid]) {
 			warps[i].state = Warp::Active;
-			if(CONFIG::TRACE_SYNC) {
+			if(trace_sync) {
 				cerr << "  Warp " << i << ", block " << warps[i].blockid << endl;
 				cerr << "   Activated\n";
 			}
@@ -813,7 +819,7 @@ void CPU<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 	// GetCurrentMask() & ~mask : threads alive
 	Warp & warp = CurrentWarp();
 	std::bitset<CONFIG::WARP_SIZE> alive = warp.mask & ~mask;
-	if(CONFIG::TRACE_BRANCH) {
+	if(trace_branch) {
 		cerr << " Kill, mask=" << mask << endl;
 	}
 	if(alive.none())
@@ -823,7 +829,7 @@ void CPU<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 		while(!warp.join_stack.empty()) warp.join_stack.pop();
 		while(!warp.loop_stack.empty()) warp.loop_stack.pop();
 		warp.state = Warp::Finished;
-		if(CONFIG::TRACE_BRANCH) {
+		if(trace_branch) {
 			cerr << "  Warp killed" << endl;
 		}
 	}
@@ -832,12 +838,12 @@ void CPU<CONFIG>::Kill(std::bitset<CONFIG::WARP_SIZE> mask)
 		// Remove masked threads from whole stack
 		warp.mask_stack.dig(mask, 0);
 		warp.mask = alive;
-		if(CONFIG::TRACE_BRANCH) {
+		if(trace_branch) {
 			cerr << "  Inactive threads killed. Mask="
 				<< GetCurrentMask() << endl;
 		}
 	}
-	else if(CONFIG::TRACE_BRANCH) {
+	else if(trace_branch) {
 		cerr << "  No thread killed. Mask="
 			<< GetCurrentMask() << endl;
 	}
