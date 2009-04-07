@@ -200,6 +200,7 @@ public:
 
 /*
 		cout << "delay (#cycles) ? : ";
+
 		cin >> num_cycles;
 */
 		num_cycles = 2;
@@ -210,9 +211,11 @@ public:
 			double anValue[ATD_SIZE];
 			bool pwmValue[PWM_SIZE];
 
-				for (int i=0; i<ATD_SIZE; i++) {
+			for (int i=0; i<ATD_SIZE; i++) {
 				anValue[i] = 5.0 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
 			}
+
+			cout << "RTb_STUB " << std::endl;
 
 			quantumkeeper.inc(delay);
 

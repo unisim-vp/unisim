@@ -321,9 +321,9 @@ int sc_main(int argc, char *argv[])
 	//=========================================================================
 	//  - 68HCS12X processor
 
-	MMC *mmc = 	new MMC("mmc");
-
 	CPU *cpu =new CPU("cpu");
+
+	MMC *mmc = 	new MMC("mmc");
 
 	ATD *atd = new ATD("ATD");
 	PWM *pwm = new PWM("PWM");
@@ -336,7 +336,7 @@ int sc_main(int argc, char *argv[])
 	MEMORY *internal_memory = new MEMORY("internal-memory");
 	MEMORY *external_memory = new MEMORY("external-memory");
 
-	// - Interrupt controler
+	// - Interrupt controller
 	XINT *s12xint = new XINT("s12xint");
 
 	INT_GEN *int_gen = new INT_GEN("INT_GEN");
@@ -527,6 +527,7 @@ int sc_main(int argc, char *argv[])
 	{
 		// Connect inline-debugger to CPU
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
+		mmc->trap_reporting_import >> inline_debugger->trap_reporting_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
