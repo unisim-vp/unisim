@@ -42,6 +42,10 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_FUNCTIONAL_UNIT_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_FUNCTIONAL_UNIT_HH__
 
+//#include <types.h>
+//#include <utility.h>
+//#include <common.h>
+//#include <systemc.h>
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 
@@ -299,6 +303,9 @@ class FunctionalUnit : public module
 			  //		const InstructionPtr<T, nSources>& instruction = inInstruction;
 				InstructionPtr instruction = inInstruction.data;
 				
+				// For Dump
+				instruction->timing_execute_cycle = timestamp();	
+
 				if(!instruction->must_reschedule)
 				{
 				  //changed = true;
@@ -441,6 +448,11 @@ class FunctionalUnit : public module
 							break;
 					case CR_T:
 							state->SetCRF(srcreg, (*instruction)->sources[i].data);
+#ifdef DD_DEBUG_CR0
+					  cerr << "DD_DEBUG_CR0 (Exec): Instruction: "<< (*instruction) << endl;
+					  cerr << "DD_DEBUG_CR0 (Exec):  CR="<< hex << state->GetCR() << dec << endl;
+					  cerr << "DD_DEBUG_CR0 (Exec): CRF[0]="<< hex << state->GetCRF(0) << dec << endl;
+#endif
 							break;
 					case FPSCR_T:
 					  //state->SetFPSCR(srcreg, (*instruction)->sources[i].data);
@@ -522,6 +534,11 @@ class FunctionalUnit : public module
 					  (*instruction)->destinations[j].data = state->GetFPR(dstreg).queryValue();
 					  break;
 					case CR_T:
+#ifdef DD_DEBUG_CR0
+					  cerr << "DD_DEBUG_CR0 (Exec): Instruction: "<< (*instruction) << endl;
+					  cerr << "DD_DEBUG_CR0 (Exec):  CR="<< hex << state->GetCR() << dec << endl;
+					  cerr << "DD_DEBUG_CR0 (Exec): CRF[0]="<< hex << state->GetCRF(0) << dec << endl;
+#endif
 					  //(*instruction)->destinations[j].data = state->GetCRF(dstreg);
 							(*instruction)->destinations[j].data = state->GetCRF(dstreg) & 0xf;
 							break;
@@ -611,10 +628,30 @@ class FunctionalUnit : public module
 			}
 
 			/* Copy the latencies from the emulator */
+			/*
 			for(i = 0; i < nStages && i < (*instruction)->operation->nstages; i++)
 				latencies[i] = (*instruction)->operation->latencies[i];
 			for(; i < nStages && i < (*instruction)->operation->nstages; i++)
 				latencies[i] = 1;
+			*/
+			
+			int latency= (*instruction)->operation->latency;
+			int stage=nStages-1;
+			while((latency>0) && (stage>0))
+			  {
+			    //latencies[stage--] = 1;
+			    latencies[stage--] = 0;
+			    latency--;
+			  }
+			if (latency>0)
+			  { 
+			    latencies[stage] = latency; 
+			  }
+			else 
+			  { 
+			    //latencies[stage]=1;
+			    latencies[0] = 1;
+			  }
 		}
 
 		/** Returns the function supported by the functional unit

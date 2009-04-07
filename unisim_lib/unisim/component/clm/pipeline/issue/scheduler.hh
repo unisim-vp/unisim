@@ -42,6 +42,11 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_ISSUE_SCHEDULER_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_ISSUE_SCHEDULER_HH__
 
+//#include <systemc.h>
+//#include <utility.h>
+//#include <types.h>
+//#include <common.h>
+
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
 #include <unisim/component/clm/interfaces/instruction_interface.hh>
 
@@ -65,6 +70,9 @@ using unisim::component::clm::processor::ooosim::nXERRegisters;
 
 using unisim::component::clm::processor::ooosim::IssueWidth;
 
+  using unisim::component::clm::processor::ooosim::integerPipelineDepth;
+  using unisim::component::clm::processor::ooosim::floatingPointPipelineDepth;
+  using unisim::component::clm::processor::ooosim::addressGenerationPipelineDepth;
 
 /** A C++ class representing a reservation station
 T: the data type used for storing instruction sources and destinations
@@ -415,43 +423,41 @@ public:
 				}
 				else
 				{
-				  /*
+				  
 
 				  // else see if source operand is being written back by another instruction
-					bool bypassed = false;
-					int writeBackPort;
-					// For each write back port
-					for(writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
+				  bool bypassed = false;
+				  int writeBackPort;
+				  // For each write back port
+				  for(writeBackPort = 0; writeBackPort < WriteBackWidth; writeBackPort++)
+				    {
+				      // Is there an instruction being written back ?
+				      if(inWriteBackInstruction[writeBackPort].enable)
 					{
-					  // Is there an instruction being written back ?
-						if(inWriteBackInstruction[writeBackPort].enable)
+					  // Get the instruction
+					  InstructionPtr instruction = inWriteBackInstruction[writeBackPort].data;
+					  //const Instruction *instruction = &inst;
+					  //if(instruction->destination.tag >= 0)
+					  for (int j=0; j<instruction->destinations.size(); j++)
+					    {
+					      // See if source operand match the destination operand
+					      if(rs->instruction->sources[i].type == instruction->destinations[j].type &&
+						 instruction->destinations[j].tag == tag)
 						{
-						  // Get the instruction
-						  InstructionPtr instruction = inWriteBackInstruction[writeBackPort].data;
-						  //const Instruction *instruction = &inst;
-						  
-						  //if(instruction->destination.tag >= 0)
-						  for (int j=0; j<instruction->destinations.size(); j++)
-						    {
-							  
-						      // See if source operand match the destination operand
-						      if(rs->instruction->sources[i].type == instruction->destinations[j].type &&
-							 instruction->destinations[j].tag == tag)
-							{
-							  // Count the source operand as ready
-							  ready++;
-							  // source operand was bypassed
-							  bypassed = true;
-							  break;
-							}
-						    }
+						  // Count the source operand as ready
+						  ready++;
+						  // source operand was bypassed
+						  bypassed = true;
+						  break;
 						}
+					    }
 					}
-				  */
-					/* If source operand was not bypassed */
-				  //					if(!bypassed)
-				  //					{
-						/* Check when source operand will be produced */
+				    }
+				  
+				  /* If source operand was not bypassed */
+				  if(!bypassed)
+				    {
+				      /* Check when source operand will be produced */
 						switch(rs->instruction->sources[i].type)
 						{
 							case GPR_T:
@@ -487,7 +493,7 @@ public:
 
 							default: ;
 						}
-						//	}
+				    }
 				}
 			}
 		}
@@ -815,7 +821,7 @@ public:
 		      cerr << ")" << endl;
 		    */
 		    /* Records when the operand will be produced */
-		    integerRegisterTimeStamp[tag] = time_stamp + latency;
+		    integerRegisterTimeStamp[tag] = time_stamp + max(latency,integerPipelineDepth);
 		  }
 		break;
 		
@@ -836,7 +842,8 @@ public:
 			abort();
 		      }
 		    /* Records when the operand will be produced */
-		    floatingPointRegisterTimeStamp[tag] = time_stamp + latency;
+		    //floatingPointRegisterTimeStamp[tag] = time_stamp + latency;
+		    floatingPointRegisterTimeStamp[tag] = time_stamp + max(latency,floatingPointPipelineDepth);
 		  }
 		break;
 		
@@ -857,7 +864,7 @@ public:
 			abort();
 		      }
 		    /* Records when the operand will be produced */
-		    conditionRegisterTimeStamp[tag] = time_stamp + latency;
+		    conditionRegisterTimeStamp[tag] = time_stamp + max(latency,integerPipelineDepth);
 		  }
 		break;
 		
@@ -962,7 +969,7 @@ public:
 	    for (int j=0; j <instruction->destinations.size(); j++)
 	    {
 	      int tag = instruction->destinations[j].tag;
-	      int RegTimeStamp = -1; 
+	      unsigned long int RegTimeStamp = -1; 
 	      int latency;
 	      if (!(instruction->fn & FnLoad))
 		{
@@ -972,6 +979,18 @@ public:
 		    {
 		      cerr << "instruction (" << instruction << ") has a bad latency (<= 0)" << endl;
 		      abort();
+		    }
+		  if(instruction->fn & integerIssueQueueFunction)
+		    {
+		      RegTimeStamp = max(RegTimeStamp, time_stamp + integerPipelineDepth);
+		    }
+		  else if(instruction->fn & floatingPointIssueQueueFunction)
+		    {
+		      RegTimeStamp = max(RegTimeStamp, time_stamp + floatingPointPipelineDepth);
+		    }
+		  else if(instruction->fn & loadStoreIssueQueueFunction)
+		    {
+		      RegTimeStamp = max(RegTimeStamp, time_stamp + addressGenerationPipelineDepth);
 		    }
 		}
 	      
@@ -1614,7 +1633,10 @@ public:
 
 			// DD if latency is greater than the pipeline depth then stall issue on this function unit
 			// Here in this case: we assume that FU pipeline depth is 1.
-			integerIssueBusy[integerIssuePort] = GetLatency(integerRs->instruction)-1 +1;
+			//integerIssueBusy[integerIssuePort] = GetLatency(integerRs->instruction)-1 +1;
+			integerIssueBusy[integerIssuePort] = 
+			  ((GetLatency(integerRs->instruction)-integerPipelineDepth+1)>0)?
+			  (GetLatency(integerRs->instruction)-integerPipelineDepth+1):0;
 			
 
 			/* Remove the instruction from the integer issue queue */
@@ -1649,7 +1671,10 @@ public:
 
 			// DD if latency is greater than the pipeline depth then stall issue on this function unit
 			// Here in this case: we assume that FU pipeline depth is 1.
-			floatingPointIssueBusy[floatingPointIssuePort] = GetLatency(floatingPointRs->instruction)-1 +1;
+			//floatingPointIssueBusy[floatingPointIssuePort] = GetLatency(floatingPointRs->instruction)-1 +1;
+			floatingPointIssueBusy[floatingPointIssuePort] = 
+			  ((GetLatency(floatingPointRs->instruction)-floatingPointPipelineDepth+1)>0)?
+			  (GetLatency(floatingPointRs->instruction)-floatingPointPipelineDepth+1):0;
 
 			/* Remove the instruction from the floating point issue queue */
 			floatingPointIssueQueue.Remove(floatingPointRs);
@@ -1682,7 +1707,10 @@ public:
 			Issued(loadStoreRs->instruction);
 			// DD if latency is greater than the pipeline depth then stall issue on this function unit
 			// Here in this case: we assume that FU pipeline depth is 1.
-			loadStoreIssueBusy[loadStoreIssuePort] = GetLatency(loadStoreRs->instruction)-1 +1;
+			//loadStoreIssueBusy[loadStoreIssuePort] = GetLatency(loadStoreRs->instruction)-1 +1;
+			loadStoreIssueBusy[loadStoreIssuePort] = 
+			  ((1-addressGenerationPipelineDepth)>0+1)?
+			  (1-addressGenerationPipelineDepth+1):0;
 			/* Remove the instruction from the load/store issue queue */
 			loadStoreIssueQueue.Remove(loadStoreRs);
 			/* Peek another issuable load/store instruction */
@@ -1772,7 +1800,9 @@ public:
 		/* Get the instruction */
 		InstructionPtr instruction = inIntegerInstruction[writePort].data;
 		//		const Instruction *instruction = &inst;
-		
+		// For Dump
+		instruction->timing_schedule_cycle = timestamp();	
+
 		/* Allocate a reservation station in the integer issue queue */
 		ReservationStation<T, nSources> *new_rs = integerIssueQueue.New();
 		
@@ -1839,8 +1869,10 @@ public:
 		if(!inFloatingPointInstruction[writePort].enable) break;
 		/* Get the instruction */
 		InstructionPtr instruction = inFloatingPointInstruction[writePort].data;
-		//		const Instruction *instruction = &inst;
-		
+		//		const Instruction *instruction = &inst;	
+		// For Dump
+		instruction->timing_schedule_cycle = timestamp();	
+
 		/* Allocate a reservation station in the floating point issue queue */
 		ReservationStation<T, nSources> *new_rs = floatingPointIssueQueue.New();
 		
@@ -1904,6 +1936,8 @@ public:
 		/* Get the instruction */
 		InstructionPtr instruction = inLoadStoreInstruction[writePort].data;
 		//		const Instruction *instruction = &inst;
+		// For Dump
+		instruction->timing_schedule_cycle = timestamp();
 		
 		/* Allocate a reservation station in the load/store issue queue */
 		ReservationStation<T, nSources> *new_rs = loadStoreIssueQueue.New();
@@ -2282,6 +2316,30 @@ public:
 		return os;
 	}
 */
+	/** Set the function of the integer issue queue
+		@param function a function
+	*/
+	void SetIntegerIssueQueueFunction(function_t function)
+	{
+		integerIssueQueueFunction = function;
+	}
+
+	/** Set the function of the floating point issue queue
+		@param function a function
+	*/
+	void SetFloatingPointIssueQueueFunction(function_t function)
+	{
+		floatingPointIssueQueueFunction = function;
+	}
+
+	/** Set the function of the load/store issue queue
+		@param function a function
+	*/
+	void SetLoadStoreIssueQueueFunction(function_t function)
+	{
+		loadStoreIssueQueueFunction = function;
+	}
+
 
 private:
 	OoOQueue<ReservationStation<T, nSources>, IntegerIssueQueueSize> integerIssueQueue;		/* A queue of reservation stations */
@@ -2314,6 +2372,10 @@ private:
   int integerIssueBusy[IntegerIssueWidth];
   int floatingPointIssueBusy[FloatingPointIssueWidth];
   int loadStoreIssueBusy[LoadStoreIssueWidth];
+
+	function_t integerIssueQueueFunction;
+	function_t floatingPointIssueQueueFunction;
+	function_t loadStoreIssueQueueFunction;
 
 };
 

@@ -42,6 +42,12 @@
 #ifndef __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_ADDRESS_GENERATION_UNIT_HH__
 #define __UNISIM_COMPONENT_CLM_PIPELINE_EXECUTE_ADDRESS_GENERATION_UNIT_HH__
 
+/*
+#include <systemc.h>
+#include <types.h>
+#include <utility.h>
+#include <common.h>
+*/
 #include <unisim/component/cxx/processor/powerpc/exception.hh>
 
 #include <unisim/component/clm/processor/ooosim/parameters.hh>
@@ -484,6 +490,9 @@ class AddressGenerationUnit : public module
 				/* Get the instruction */
 			  InstructionPtr instruction = inInstruction.data;
 			  //			  const Instruction *instruction = &inst;
+
+			  // For Dump
+			  instruction->timing_execute_cycle = timestamp();	
 
 				if(!instruction->must_reschedule)
 				{

@@ -197,7 +197,7 @@ public:
 
 	//DD	inport<InstructionPtr<T, nSources> > inRetireInstruction[RetireWidth];
   //	inport<Instruction *> inRetireInstruction[RetireWidth];
-	inport<InstructionPtr> inRetireInstruction[Width];
+	inport<InstructionPtr> inRetireInstruction[RetireWidth];
 
 	/* From the common data bus */
 	//	inport<InstructionPtr<T, nSources> > inWriteBackInstruction[WriteBackWidth];
@@ -436,7 +436,7 @@ public:
  {	
    if (inIL1.data.something())
      {
-       cerr << "[FETCH] ==== We are accepting Data == ("<< inIL1.data <<") ======== ["<< timestamp()<<"]"<< endl;
+       cerr << "[FETCH] ==== We are accepting Data == (" << endl;//<< inIL1.data <<") ======== ["<< timestamp()<<"]"<< endl;
      }
  }
 #endif
@@ -942,7 +942,7 @@ public:
 		/* Update the branch predictors according to the retired branches */
 		/* For each retire port */
 		//		for(i = 0; i < RetireWidth; i++)
-		for(i = 0; i < Width; i++)
+		for(i = 0; i < RetireWidth; i++)
 		{
 			/* Is there a retired instruction ? */
 		  //DD			if(!inRetireEnable[i]) break;
@@ -963,6 +963,14 @@ public:
 			  cerr << "[FETCH] ["<< timestamp()<<"]  /// " << instruction << endl;
 			  #endif
 			*/
+#ifdef DD_DEBUG_FETCH_VERB2
+			if (DD_DEBUG_TIMESTAMP < timestamp())
+			  {
+			    cerr << "[FETCH] ==== We are Retiring ========== ["<< timestamp()<<"]"<< endl;
+			    cerr << "INST: " << *instruction << endl;
+			  }
+#endif
+
 			if (instruction->fn == FnSysCall)
 			  { syscall_in_pipeline = false; }
 
@@ -1044,9 +1052,26 @@ public:
 
 				    }
 				  nia = instruction->nia;/* nia is used by flush to redirect fetch on the correct path */
+#ifdef DD_DEBUG_FETCH_VERB2
+				  if (DD_DEBUG_TIMESTAMP < timestamp())
+				    {
+				      cerr << "[FETCH] ==== We are setting NIA on Branch Miss ========== ["<< timestamp()<<"]"<< endl;
+				      cerr << "INST : " << *instruction << endl; 
+				      cerr << "NIA  : " << hex << nia << dec << endl;
+
+				    }
+#endif
 				} // End of if NIA != PREDICTED_NIA 
 			      else
 				{
+#ifdef DD_DEBUG_FETCH_VERB2
+				  if (DD_DEBUG_TIMESTAMP < timestamp())
+				    {
+				      cerr << "[FETCH] ==== We are NOT setting NIA on Branch Miss ========== ["<< timestamp()<<"]"<< endl;
+				      cerr << "INST : " << *instruction << endl; 
+				      cerr << "NIA  : " << hex << nia << dec << endl;
+				    }
+#endif
 				  
 				}
 				
@@ -1670,8 +1695,11 @@ public:
 						pending_instr_cache_access_size = 0;
 
 #ifdef DD_DEBUG_FETCH_VERB2
+						  if (DD_DEBUG_TIMESTAMP < timestamp())
+						    {
 						cerr << "[FETCH] ==== Correct fetcher on Speculative path ======== ["<< timestamp()<<"]"<< endl;
 						cerr << *this << endl;
+						    }
 #endif
 					      //if((entry->instruction->operation->function & FnIndirectBranch) && entry->instruction->btb_miss)
 					      if( (
@@ -1755,7 +1783,10 @@ public:
 		  {
 		  
 #ifdef DD_DEBUG_FLUSH
+			if (DD_DEBUG_TIMESTAMP < timestamp())
+			    {
 		cerr << "["<<this->name()<<"("<<timestamp()<<")] ==== EOC ====  Flush !!!" << endl;
+			    }
 #endif
 		  //			changed = true;
 			/* Flush the instruction queue */

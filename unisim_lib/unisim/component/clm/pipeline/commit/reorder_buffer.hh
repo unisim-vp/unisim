@@ -56,8 +56,6 @@ namespace clm {
 namespace pipeline {
 namespace commit {
 
-  using unisim::component::clm::memory::address_t;
-
 using unisim::component::clm::interfaces::InstructionPtr;
 
 using unisim::component::clm::processor::ooosim::CPUEmu;
@@ -69,6 +67,8 @@ using unisim::component::clm::utility::hexa;
   using unisim::component::clm::utility::MISALIGNMENT_EXCEPTION;
   using unisim::component::clm::utility::INVALID_OPCODE_EXCEPTION;
 
+  using unisim::kernel::service::Object;
+  using unisim::kernel::service::Statistic;
 
 /** State of a reorder buffer entry */
 enum ReorderBufferEntryState { unallocated_instruction, allocated_instruction, finished_instruction, written_back_instruction, committed_instruction };
@@ -134,7 +134,7 @@ void sc_trace(sc_trace_file *tf, const ReorderBufferEntry<T, nSources>& e, const
 
 /** A SystemC module implementing a reorder buffer */
 template <class T, int nSources, int ReorderBufferSize, int AllocateWidth, int WriteBackWidth, int RetireWidth>
-class ReorderBuffer : public module//, public StatisticService
+class ReorderBuffer : public module, public Object//, public StatisticService
 
 {
 	public:
@@ -148,7 +148,14 @@ class ReorderBuffer : public module//, public StatisticService
    **************************************/
   uint64_t retired_instructions;
   uint64_t flushed_instructions;
+
+  uint64_t flush_on_mispred;
+  uint64_t flush_on_replay;
+  uint64_t flush_on_previous;
   
+  Statistic<uint64_t> stat_retired_instructions;
+  Statistic<uint64_t> stat_flushed_instructions;
+
   /**************************************
    * Module ports 
    **************************************/
@@ -191,7 +198,14 @@ class ReorderBuffer : public module//, public StatisticService
   //		ReorderBuffer(const char *name, Emulator *emulator) :
 		ReorderBuffer(const char *name, CPUEmu *emulator) :
 		  module(name)
-		  //		  ,Object(name)
+		  , Object(name)
+		  , retired_instructions(0)
+		  , flushed_instructions(0)
+		  , flush_on_mispred(0)
+		  , flush_on_replay(0)
+		  , flush_on_previous(0)
+		  , stat_retired_instructions("stat_retired_instructions", this, retired_instructions)
+		  , stat_flushed_instructions("stat_flushed_instructions", this, flushed_instructions)
 		  //		  ,StatisticService(name, this)
 		{
 			int i;
@@ -675,6 +689,40 @@ class ReorderBuffer : public module//, public StatisticService
 	  }
 	else
 	  {
+	    // Dump Trace of instructions.
+	    #ifdef DD_DEBUG_DUMP_TRACE
+	    #ifdef DD_DEBUG_TIMESTAMP
+	    if(DD_DEBUG_TIMESTAMP < timestamp())
+	      {
+	    #endif
+		entry.instruction->timing_retire_cycle = timestamp();
+		cerr << hex << entry.instruction->cia << dec << "   ";
+		entry.instruction->operation->disasm(NULL,cerr);
+		cerr << "\t f: " << entry.instruction->timing_fetch_cycle;
+		cerr << "\t a: " << entry.instruction->timing_allocate_cycle;
+		cerr << "\t s: " << entry.instruction->timing_schedule_cycle;
+		cerr << "\t r: " << entry.instruction->timing_register_cycle;
+		cerr << "\t e: " << entry.instruction->timing_execute_cycle;
+		cerr << "\t w: " << entry.instruction->timing_writeback_cycle;
+		cerr << "\t r: " << entry.instruction->timing_retire_cycle;
+		cerr << "\t RetIns: " << retired_instructions;
+		cerr << "\t sim_num_ins: " << sim_num_insn;
+		cerr << "\t sim_num_refs: " << sim_num_refs;
+		cerr << "\t sim_num_loads: " << sim_num_loads;
+		cerr << "\t stall_sched: " << entry.instruction->alloc_stall_sched_reject;
+		cerr << "\t stall_reord: " << entry.instruction->alloc_stall_reord_reject;
+		cerr << "\t stall_loadq: " << entry.instruction->alloc_stall_loadq_reject;
+		cerr << "\t stall_storq: " << entry.instruction->alloc_stall_storq_reject;
+		cerr << "\t inst_flushed: " << flushed_instructions;
+		cerr << "\t flush_on_mispred: " << flush_on_mispred;
+		cerr << "\t flush_on_replay: " << flush_on_replay;
+		cerr << "\t flush_on_previous: " << flush_on_previous;
+		
+		cerr << endl;
+	    #ifdef DD_DEBUG_TIMESTAMP
+	      }// if(DD_DEBUG_TIMESTAMP < timestamp())
+	    #endif
+	    #endif
 	    entry.state = unallocated_instruction;
 	  }
       }
@@ -990,6 +1038,14 @@ class ReorderBuffer : public module//, public StatisticService
     }
     else
       {
+	if (mispredicted_branch)
+	  {  flush_on_mispred++; }
+	else if (replay_trap)
+	  { flush_on_replay++; }
+	else
+	  {
+	    flush_on_previous++;
+	  }
 #ifdef DD_DEBUG_FLUSH
     if (DD_DEBUG_TIMESTAMP < timestamp())
       {
