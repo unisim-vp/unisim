@@ -25,6 +25,7 @@ Supported platforms:
 Barra was tested on GNU/Linux i386 and x86_64. It should be easily portable to
 Win32 with Cygwin and Mac OS X, but this has not been tested so far.
 
+CUDA 2.0 and CUDA 2.1 are supported. 
 
   How Does It Work?
 
@@ -71,7 +72,8 @@ Finally, we can launch our executable:
 > ./matrixMul
 
 Barra currently outputs lots of debug information (CUDA function calls,
-cubin data, disassembly, memory allocation, thread scheduling...) 
+cubin data, disassembly, memory allocation, thread scheduling...) during
+program execution. 
 
 We are working on a script that will automate these manipulations.
 
@@ -108,6 +110,7 @@ built-in regression tests:
 * matrixMulDrv
 * MersenneTwister
 * MonteCarlo
+* quasirandomGenerator
 * reduction
 * scan
 * scanLargeArray
@@ -132,7 +135,7 @@ Simulator
 * Bit-accurate transcendentals.
 * Run-time checks. As Barra is primarily designed to run valid CUDA benchmarks,
   few safety checks are performed on instruction validity, memory addresses...
-  Running an invalid or buggy CUDA program is most likely to result in a
+  Running an invalid or buggy CUDA program is likely to result in a
   segmentation fault.
 
 Driver
@@ -140,7 +143,8 @@ Driver
 * Textures.
 * Arrays.
 * Events.
-
+* Multiple contexts.
+* Multiple devices.
 
   How Fast (Or How Slow) Is It?
 
@@ -167,9 +171,8 @@ traces...)
 
 Some support is already present to generate traces. It is intended to be used
 for manual debugging and trace format may change without notice.
-The file unisim_lib/unisim/component/cxx/processor/tesla/config.hh, which
-describes the default configuration, contains several constants controlling
-the level of verbosity of traces.
+Several environment variables control the level of verbosity of traces. 
+
 * TRACE_INSN outputs to stderr each instruction executed along with the warp
   number and program counter.
   All subsequent trace types are designed to be used with TRACE_INSN.
