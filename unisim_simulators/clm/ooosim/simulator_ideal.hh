@@ -431,16 +431,16 @@ public:
   cDRAM *__dram;
   cDCACHE *__dcache;
   cICACHE *__icache;
-  cCPU *__cpu;
+  cCPU *ooo_cpu;
 
   bool is_terminated()
   {
     bool res=true;
     //    for (int cfg=0; cfg<nConfig; cfg++)
     //      {
-    //    	res &= __cpu[cfg]->is_terminated();
+    //    	res &= ooo_cpu[cfg]->is_terminated();
     //      }
-    res = __cpu->is_terminated();
+    res = ooo_cpu->is_terminated();
     return res;
   }
 
@@ -449,9 +449,9 @@ public:
     
     //    for(int cfg=0; cfg<nConfig; cfg++)
     //      {
-    //	cerr << "       Cpu[" << cfg << "] ended at cycle : " << __cpu[cfg]->check_emulator->end_at_cycle << endl;
+    //	cerr << "       Cpu[" << cfg << "] ended at cycle : " << ooo_cpu[cfg]->check_emulator->end_at_cycle << endl;
     //      }
-    cerr << "       Cpu[" << 0 << "] ended at cycle : " << __cpu->check_emulator->end_at_cycle << endl;
+    cerr << "       Cpu[" << 0 << "] ended at cycle : " << ooo_cpu->check_emulator->end_at_cycle << endl;
   }
   /**************************************************************************
    *                      CLM COMPONENT GENERATION and CONNECTION           *
@@ -467,14 +467,14 @@ public:
     __dram = new cDRAM("__dram");
     __dcache = new cDCACHE("__cache[0]");
     __icache = new cICACHE("__icache[0]");
-    __cpu = new cCPU("__ppc[0]");
+    ooo_cpu = new cCPU("__ppc[0]");
 
     // Clock connections
     __bus->clock(global_clock);
     __dram->inClock(global_clock);
     __dcache->inClock(global_clock);
     __icache->inClock(global_clock);
-    __cpu->inClock(global_clock);
+    ooo_cpu->inClock(global_clock);
 
     // SIGNAL (or Module) connections
     __dram->out >> __bus->inMEM;
@@ -485,24 +485,24 @@ public:
     __bus->outCPU[0] >> __dcache->inMEM;
     __bus->outCPU[1] >> __icache->inMEM;
     /*
-    __dcache->outCPU >> __cpu->inDL1Data;
-    __icache->outCPU >> __cpu->inIL1Data;
-    __cpu->outDL1Data >> __dcache->inCPU;
-    //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
-    __cpu->outIL1Data >> __icache->inCPU;
+    __dcache->outCPU >> ooo_cpu->inDL1Data;
+    __icache->outCPU >> ooo_cpu->inIL1Data;
+    ooo_cpu->outDL1Data >> __dcache->inCPU;
+    //ooo_cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    ooo_cpu->outIL1Data >> __icache->inCPU;
     */
-    //    __dcache->outCPU >> __cpu->lsq->inDL1[0];
+    //    __dcache->outCPU >> ooo_cpu->lsq->inDL1[0];
     for (int port=0; port<DL1_nPorts; port++)
       {
-	__dcache->outCPU[port] >> __cpu->lsq->inDL1[port];
+	__dcache->outCPU[port] >> ooo_cpu->lsq->inDL1[port];
       }
-    __icache->outCPU >> __cpu->fetch->inIL1;
-    //    __cpu->lsq->outDL1[0] >> __dcache->inCPU;
-    //__cpu->lsq->outDL1[0] >> __dcache->inCPU;
-    __cpu->fetch->outIL1 >> __icache->inCPU;
+    __icache->outCPU >> ooo_cpu->fetch->inIL1;
+    //    ooo_cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    //ooo_cpu->lsq->outDL1[0] >> __dcache->inCPU;
+    ooo_cpu->fetch->outIL1 >> __icache->inCPU;
     for (int port=0; port<DL1_nPorts; port++)
       {
-	__cpu->lsq->outDL1[port] >> __dcache->inCPU[port];
+	ooo_cpu->lsq->outDL1[port] >> __dcache->inCPU[port];
       }
 
     // Service instantiations
@@ -616,7 +616,7 @@ public:
 	//  - RAM
 	//	MEMORY *memory = new MEMORY("memory");
 
-	unisim::component::clm::processor::ooosim::CPUEmu *cpu = __cpu->check_emulator;
+	unisim::component::clm::processor::ooosim::CPUEmu *cpu = ooo_cpu->check_emulator;
 
 	unisim::component::cxx::memory::ram::Memory<address_t> *memory = __dram->memory_emulator;
 
@@ -740,6 +740,18 @@ public:
 	//=========================================================================
 	//===                      Service run-time configuration               ===
 	//=========================================================================
+
+	(*cpu)["cpu-cycle-time"] = cpu_cycle_time;
+	(*cpu)["bus-cycle-time"] = fsb_cycle_time;
+	(*cpu)["voltage"] = 1.0 * 1e3; // mV
+	
+	(*(ooo_cpu->fetch_emulator))["cpu-cycle-time"] = cpu_cycle_time;
+	(*(ooo_cpu->fetch_emulator))["bus-cycle-time"] = fsb_cycle_time;
+	(*(ooo_cpu->fetch_emulator))["voltage"] = 1.0 * 1e3; //mV
+
+	(*(ooo_cpu->speculative_cpu_state))["cpu-cycle-time"] = cpu_cycle_time;
+	(*(ooo_cpu->speculative_cpu_state))["bus-cycle-time"] = fsb_cycle_time;
+	(*(ooo_cpu->speculative_cpu_state))["voltage"] = 1.0 * 1e3; //mV
 
 	//  - GDB Server run-time configuration
 	if(gdb_server)
@@ -1005,15 +1017,15 @@ public:
 	linux_os->loader_import >> linux_loader->loader_export;
 	cpu->symbol_table_lookup_import >> symbol_table->symbol_table_lookup_export;
 
-	//	linux_os->cpu_linux_os_import >> __cpu->fetch_emulator->cpu_linux_os_export;
+	//	linux_os->cpu_linux_os_import >> ooo_cpu->fetch_emulator->cpu_linux_os_export;
 
 	//	bus->memory_import >> fsb_to_mem_bridge->memory_export;
 	//	fsb_to_mem_bridge->memory_import >> memory->memory_export;
 
 #ifdef DDDEBUG_USE_PERFECT_BRANCH_PREDICTION
 	// FOR FETCH FOR PERFECT PREDICTION
-	__cpu->fetch_emulator->memory_import >> fetchmemory->memory_export;
-	__cpu->fetch_emulator->memory_injection_import >> fetchmemory->memory_injection_export;
+	ooo_cpu->fetch_emulator->memory_import >> fetchmemory->memory_export;
+	ooo_cpu->fetch_emulator->memory_injection_import >> fetchmemory->memory_injection_export;
 
 
 	fetch_elf32_loader->memory_import >> fetchmemory->memory_export;
@@ -1021,13 +1033,13 @@ public:
 	//	linux_loader->memory_import >> memory->memory_export;
 	fetch_linux_loader->memory_import >> fetchmemory->memory_export;
 	fetch_linux_loader->loader_import >> fetch_elf32_loader->loader_export;
-	__cpu->fetch_emulator->linux_os_import >> fetch_linux_os->linux_os_export;
-	fetch_linux_os->cpu_linux_os_import >> __cpu->fetch_emulator->cpu_linux_os_export;
-	fetch_linux_os->memory_import >> __cpu->fetch_emulator->memory_export;
-	fetch_linux_os->memory_injection_import >> __cpu->fetch_emulator->memory_injection_export;
-	fetch_linux_os->registers_import >> __cpu->fetch_emulator->registers_export;
+	ooo_cpu->fetch_emulator->linux_os_import >> fetch_linux_os->linux_os_export;
+	fetch_linux_os->cpu_linux_os_import >> ooo_cpu->fetch_emulator->cpu_linux_os_export;
+	fetch_linux_os->memory_import >> ooo_cpu->fetch_emulator->memory_export;
+	fetch_linux_os->memory_injection_import >> ooo_cpu->fetch_emulator->memory_injection_export;
+	fetch_linux_os->registers_import >> ooo_cpu->fetch_emulator->registers_export;
 	fetch_linux_os->loader_import >> fetch_linux_loader->loader_export;
-	__cpu->fetch_emulator->symbol_table_lookup_import >> fetch_symbol_table->symbol_table_lookup_export;
+	ooo_cpu->fetch_emulator->symbol_table_lookup_import >> fetch_symbol_table->symbol_table_lookup_export;
 #endif
 
 
@@ -1081,7 +1093,7 @@ public:
 	cerr << "Starting simulation at user privilege level (Linux system calls translation enabled)" << endl;
       }
     //    ServiceManager::Dump(cout);
-    __cpu->Reset();
+    ooo_cpu->Reset();
     //ServiceManager::Dump(cout);
     ///////////////////////////////////////// "From Emulator"  End ///////////////////////
   } // ServiceConnection(...)
